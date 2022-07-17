@@ -27,6 +27,8 @@ import Alert from "react-bootstrap/Alert";
 import Dropdown from "react-bootstrap/Dropdown";
 import Button from "react-bootstrap/Button";
 
+import {SparkQuickstart} from "./wizard/spark_quickstart_wizard";
+
 
 const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 
@@ -52,6 +54,23 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
             </Modal.Header>
             <Modal.Body>
                 <RepositoryCreateForm config={response} error={showError} onSubmit={onSubmit} onCancel={onCancel}/>
+            </Modal.Body>
+        </Modal>
+    );
+};
+
+const RepositoryTemplatesModal = ({show, onExit, createRepo, repoCreationError}) => {
+    return (
+        <Modal show={show} onHide={onExit} size="xl">
+            <Modal.Header closeButton>
+                <TemplatesModalTitleContainer/>
+            </Modal.Header>
+            <Modal.Body>
+                <SparkQuickstart
+                    onExit={onExit}
+                    createRepo={createRepo}
+                    repoCreationError={repoCreationError}
+                />
             </Modal.Body>
         </Modal>
     );
@@ -119,8 +138,9 @@ const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateRepo }) =>
 
 const RepositoriesPage = () => {
     const router = useRouter();
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [createError, setCreateError] = useState(null);
+    const [showCreateRepositoryModal, setShowCreateRepositoryModal] = useState(false);
+    const [showRepositoryTemplatesModal, setShowRepositoryTemplatesModal] = useState(false);
+    const [createRepoError, setCreateRepoError] = useState(null);
     const [refresh, setRefresh] = useState(false);
 
     const enableRepoTemplates = localStorage.getItem(`enable_repo_templates`)
@@ -131,14 +151,18 @@ const RepositoriesPage = () => {
         (prefix) => router.push({pathname: `/repositories`, query: {prefix}})
     );
 
-    const createRepo = async (repo) => {
+    const createRepo = async (repo, presentRepo = true) => {
         try {
-            await repositories.create(repo)
+            await repositories.create(repo);
             setRefresh(!refresh);
-            setCreateError(null)
-            router.push({pathname: `/repositories/:repoId/objects`, params: {repoId: repo.name}});
+            setCreateRepoError(null);
+            if (presentRepo) {
+                router.push({pathname: `/repositories/:repoId/objects`, params: {repoId: repo.name}});
+            }
+            return true;
         } catch (error) {
-            setCreateError(error);
+            setCreateRepoError(error);
+            return false;
         }
     }
 
@@ -173,18 +197,18 @@ const RepositoriesPage = () => {
                                 </Dropdown.Toggle>
                                 <Dropdown.Menu>
                                     <Dropdown.Item onClick={() => {
-                                        setShowCreateModal(true);
-                                        setCreateError(null);
+                                        setShowCreateRepositoryModal(true);
+                                        setCreateRepoError(null);
                                     }}>Blank Repository</Dropdown.Item>
                                     <Dropdown.Item onClick={() => {
-                                        setShowCreateModal(false);
-                                        setCreateError(null);
+                                        setShowRepositoryTemplatesModal(true);
+                                        setCreateRepoError(null);
                                     }}>Spark Quickstart</Dropdown.Item>
                                 </Dropdown.Menu>
                             </Dropdown> :
                             <Button variant="success" onClick={() => {
-                                setShowCreateModal(true);
-                                setCreateError(null);
+                                setShowCreateRepositoryModal(true);
+                                setCreateRepoError(null);
                             }}>
                                 <RepoIcon/> Create Repository
                             </Button>
@@ -201,14 +225,27 @@ const RepositoriesPage = () => {
                         if (router.query.prefix) query.prefix = router.query.prefix;
                         router.push({pathname: `/repositories`, query});
                     }}
-                    onCreateRepo={() => setShowCreateModal(true)}
+                    onCreateRepo={() => setShowCreateRepositoryModal(true)}
                     />
 
                 <CreateRepositoryModal
-                    onCancel={() => setShowCreateModal(false)}
-                    show={showCreateModal}
-                    error={createError}
-                    onSubmit={(repo) => createRepo(repo)}/>
+                    onCancel={() => {
+                        setShowCreateRepositoryModal(false);
+                        setCreateRepoError(null);
+                    }}
+                    show={showCreateRepositoryModal}
+                    error={createRepoError}
+                    onSubmit={(repo) => createRepo(repo, true)}/>
+
+                <RepositoryTemplatesModal
+                    onExit={() => {
+                        setShowRepositoryTemplatesModal(false);
+                        setCreateRepoError(null);
+                    }}
+                    show={showRepositoryTemplatesModal}
+                    createRepo={(repo) => createRepo(repo, false)}
+                    repoCreationError={createRepoError}
+                />
             </Container>
         </Layout>
     );
@@ -228,6 +265,12 @@ const ModalTitleContainer = () => {
                 </Col>
             </Row>
         </Container>
+    );
+};
+
+const TemplatesModalTitleContainer = () => {
+    return (
+        <Modal.Title>Spark Quickstart</Modal.Title>
     );
 };
 

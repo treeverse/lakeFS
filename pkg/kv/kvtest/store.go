@@ -215,6 +215,14 @@ func testStoreDelete(t *testing.T, ms MakeStore) {
 			t.Fatalf("delete missing key '%s', err=%v expected nil", keyToDel, err)
 		}
 	})
+
+	t.Run("non_exists_partition", func(t *testing.T) {
+		keyToDel := uniqueKey("missing-key-to-delete")
+		err := store.Delete(ctx, []byte("invalid_partition"), keyToDel)
+		if err != nil {
+			t.Fatalf("delete missing key '%s', err=%v expected nil", keyToDel, err)
+		}
+	})
 }
 
 func testStoreSetIf(t *testing.T, ms MakeStore) {

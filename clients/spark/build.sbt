@@ -49,6 +49,7 @@ def generateCoreProject(buildType: BuildType) =
         "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
         "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion,
         "org.apache.hadoop" % "hadoop-common" % buildType.hadoopVersion,
+        "org.apache.hadoop" % "hadoop-azure" % buildType.hadoopVersion % "provided",
         "com.google.cloud.bigdataoss" % "gcs-connector" % buildType.gcpConnectorVersion,
         "org.scalaj" %% "scalaj-http" % "2.4.2",
         "org.json4s" %% "json4s-native" % "3.7.0-M8",
@@ -104,7 +105,7 @@ lazy val spark3Type =
 
 // EMR-6.5.0 beta, managed GC
 lazy val spark312Type =
-  new BuildType("312-hadoop3", scala212Version, "3.1.2", "0.10.11", "3.2.1", "hadoop3", "hadoop2-2.0.1")
+  new BuildType("312-hadoop3", scala212Version, "3.1.2", "0.10.11", "3.2.1", "hadoop3", "hadoop3-2.0.1")
 
 lazy val core2 = generateCoreProject(spark2Type)
 lazy val core3 = generateCoreProject(spark3Type)

@@ -5,6 +5,13 @@ import "google/protobuf/timestamp.proto";
 
 package io.treeverse.lakefs.graveler;
 
+message RepositoryData {
+  string id = 1;
+  string storage_namespace = 2;
+  string default_branch_id = 3;
+  google.protobuf.Timestamp creation_date = 4;
+}
+
 message BranchData {
   string id = 1;
   string commit_id = 2;
@@ -49,4 +56,10 @@ message BranchProtectionBlockedActions {
 
 message BranchProtectionRules {
   map<string, BranchProtectionBlockedActions> branch_pattern_to_blocked_actions = 1;
+}
+
+message StagedEntry {
+  bytes key = 1;
+  bytes identity = 2;
+  bytes data = 3;
 }

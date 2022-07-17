@@ -39,6 +39,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
 )
@@ -85,6 +86,7 @@ type Controller struct {
 	AuditChecker          AuditChecker
 	Logger                logging.Logger
 	Emailer               *email.Emailer
+	Templater             templater.Service
 	sessionStore          sessions.Store
 	oidcAuthenticator     *oidc.Authenticator
 }
@@ -205,7 +207,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	expires := loginTime.Add(DefaultLoginExpiration)
 	secret := c.Auth.SecretStore().SharedSecret()
 
-	tokenString, err := GenerateJWTLogin(secret, user.ID, loginTime, expires)
+	tokenString, err := GenerateJWTLogin(secret, user.Username, loginTime, expires)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
@@ -412,7 +414,7 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body Cr
 	ctx := r.Context()
 	c.LogAction(ctx, "create_group")
 
-	g := &model.BaseGroup{
+	g := &model.Group{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
 	}
@@ -588,7 +590,7 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 	writeResponse(w, http.StatusOK, response)
 }
 
-func serializePolicy(p *model.BasePolicy) Policy {
+func serializePolicy(p *model.Policy) Policy {
 	stmts := make([]Statement, 0, len(p.Statement))
 	for _, s := range p.Statement {
 		stmts = append(stmts, Statement{
@@ -698,7 +700,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 		}
 	}
 
-	p := &model.BasePolicy{
+	p := &model.Policy{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
 		Statement:   stmts,
@@ -779,7 +781,7 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body U
 		}
 	}
 
-	p := &model.BasePolicy{
+	p := &model.Policy{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: policyID,
 		Statement:   stmts,
@@ -869,7 +871,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 		writeResponse(w, http.StatusCreated, User{Id: *parsedEmail})
 		return
 	}
-	u := &model.BaseUser{
+	u := &model.User{
 		CreatedAt:    time.Now().UTC(),
 		Username:     id,
 		FriendlyName: nil,
@@ -1098,7 +1100,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 
 	ctx := r.Context()
 	c.LogAction(ctx, "list_user_policies")
-	var listPolicies func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error)
+	var listPolicies func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 	if params.Effective != nil && *params.Effective {
 		listPolicies = c.Auth.ListEffectivePolicies
 	} else {
@@ -3247,6 +3249,50 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 	w.WriteHeader(http.StatusCreated)
 }
 
+func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, templateLocation string, p ExpandTemplateParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadObjectAction,
+			Resource: permissions.TemplateArn(templateLocation),
+		},
+	}) {
+		return
+	}
+
+	u, ok := r.Context().Value(UserContextKey).(*model.User)
+	if !ok {
+		writeError(w, http.StatusInternalServerError, "request performed with no user")
+	}
+
+	// Override bug in OpenAPI generated code: parameters do not show up
+	// in p.Params.AdditionalProperties, so force them in there.
+	if len(p.Params.AdditionalProperties) == 0 && len(r.URL.Query()) > 0 {
+		p.Params.AdditionalProperties = make(map[string]string, len(r.Header))
+		for k, v := range r.URL.Query() {
+			p.Params.AdditionalProperties[k] = v[0]
+		}
+	}
+	err := c.Templater.Expand(r.Context(), w, u, templateLocation, p.Params.AdditionalProperties)
+
+	if err != nil {
+		c.Logger.WithError(err).WithField("location", templateLocation).Error("Template expansion failed")
+	}
+
+	if errors.Is(err, templater.ErrNotAuthorized) {
+		writeError(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+		return
+	}
+	if errors.Is(err, templater.ErrNotFound) {
+		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "expansion failed")
+		return
+	}
+	// Response already written during expansion.
+}
+
 func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user, ok := ctx.Value(UserContextKey).(*model.User)
@@ -3410,6 +3456,7 @@ func NewController(
 	auditChecker AuditChecker,
 	logger logging.Logger,
 	emailer *email.Emailer,
+	templater templater.Service,
 	oidcAuthenticator *oidc.Authenticator,
 	sessionStore sessions.Store,
 ) *Controller {
@@ -3428,6 +3475,7 @@ func NewController(
 		AuditChecker:          auditChecker,
 		Logger:                logger,
 		Emailer:               emailer,
+		Templater:             templater,
 		sessionStore:          sessionStore,
 		oidcAuthenticator:     oidcAuthenticator,
 	}

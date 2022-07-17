@@ -55,7 +55,7 @@ func runWorker(jobChan <-chan *runResultMigrate) error {
 			return err
 		}
 
-		key := []byte(RunPath(m.RepoID, m.RunResult.RunID))
+		key := RunPath(m.RepoID, m.RunResult.RunID)
 		if err = encoder.Encode(kv.Entry{
 			PartitionKey: []byte(PartitionKey),
 			Key:          key,
@@ -66,7 +66,7 @@ func runWorker(jobChan <-chan *runResultMigrate) error {
 
 		// Add secondary keys branch
 		if m.BranchID != "" {
-			secKey := []byte(RunByBranchPath(m.RepoID, m.BranchID, m.RunResult.RunID))
+			secKey := RunByBranchPath(m.RepoID, m.BranchID, m.RunResult.RunID)
 			sec := kv.SecondaryIndex{PrimaryKey: key}
 			data, err := proto.Marshal(&sec)
 			if err != nil {
@@ -84,7 +84,7 @@ func runWorker(jobChan <-chan *runResultMigrate) error {
 
 		// Add secondary keys commit
 		if m.CommitID != "" {
-			secKey := []byte(RunByCommitPath(m.RepoID, m.CommitID, m.RunResult.RunID))
+			secKey := RunByCommitPath(m.RepoID, m.CommitID, m.RunResult.RunID)
 			sec := kv.SecondaryIndex{PrimaryKey: key}
 			data, err := proto.Marshal(&sec)
 			if err != nil {

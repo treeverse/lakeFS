@@ -336,9 +336,12 @@ object GarbageCollector {
     val runID = res.getRunId
     println("apiURL: " + apiURL)
 
-    val gcCommitsLocation = ApiClient.translateS3(new URI(res.getGcCommitsLocation)).toString
+    val storageType = apiClient.getBlockstoreType()
+    val gcCommitsLocation =
+      ApiClient.translateURI(new URI(res.getGcCommitsLocation), storageType).toString
     println("gcCommitsLocation: " + gcCommitsLocation)
-    val gcAddressesLocation = ApiClient.translateS3(new URI(res.getGcAddressesLocation)).toString
+    val gcAddressesLocation =
+      ApiClient.translateURI(new URI(res.getGcAddressesLocation), storageType).toString
     println("gcAddressesLocation: " + gcAddressesLocation)
     val expiredAddresses = getExpiredAddresses(repo,
                                                runID,

@@ -30,8 +30,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/version"
+	"github.com/treeverse/lakefs/templates"
 )
 
 const (
@@ -80,6 +82,8 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	ctx := context.Background()
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
+	// Disable KV by default (used for determining KV state by certain packages such as catalog)
+	viper.Set("database.kv_enabled", false)
 
 	collector := &nullCollector{}
 
@@ -88,9 +92,12 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 		actionsStore   actions.Store
 		idGen          actions.IDGenerator
 		authService    auth.Service
+		meta           auth.MetadataManager
 		kvStoreMessage *kv.StoreMessage
 	)
 
+	cfg, err := config.NewConfig()
+	testutil.MustDo(t, "config", err)
 	if kvEnabled {
 		kvStore := kvtest.GetStore(ctx, t)
 		kvStoreMessage = &kv.StoreMessage{Store: kvStore}
@@ -99,6 +106,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 		authService = auth.NewKVAuthService(*kvStoreMessage, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 			Enabled: false,
 		}, logging.Default())
+		meta = auth.NewKVMetadataManager("serve_test", cfg.GetFixedInstallationID(), kvStore)
 		viper.Set("database.kv_enabled", true)
 	} else {
 		actionsStore = actions.NewActionsDBStore(conn)
@@ -106,14 +114,14 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 		authService = auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
 			Enabled: false,
 		}, logging.Default())
+		meta = auth.NewDBMetadataManager("serve_test", cfg.GetFixedInstallationID(), conn)
 	}
 
-	cfg, err := config.NewConfig()
-	testutil.MustDo(t, "config", err)
 	// Do not validate invalid config (missing required fields).
 	c, err := catalog.New(ctx, catalog.Config{
 		Config:        cfg,
 		DB:            conn,
+		KVStore:       kvStoreMessage,
 		WalkerFactory: factory,
 	})
 	testutil.MustDo(t, "build catalog", err)
@@ -131,7 +139,6 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	c.SetHooksHandler(actionsService)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)
-	meta := auth.NewDBMetadataManager("dev", cfg.GetFixedInstallationID(), conn)
 	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: handlerDatabaseURI})
 
 	t.Cleanup(func() {
@@ -142,8 +149,10 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
 	emailParams, _ := cfg.GetEmailParams()
 	emailer, err := email.NewEmailer(emailParams)
+	templater := templater.NewService(templates.Content, cfg, authService)
+
 	testutil.Must(t, err)
-	handler := api.Serve(cfg, c, authenticator, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.Default(), emailer, nil, nil, nil, nil)
+	handler := api.Serve(cfg, c, authenticator, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.Default(), emailer, templater, nil, nil, nil, nil)
 
 	return handler, &dependencies{
 		blocks:      c.BlockAdapter,

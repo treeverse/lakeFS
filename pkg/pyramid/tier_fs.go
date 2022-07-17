@@ -194,7 +194,8 @@ func (tfs *TierFS) Create(_ context.Context, namespace string) (StoredFile, erro
 	}
 
 	return &WRFile{
-		File: fh,
+		File:   fh,
+		logger: tfs.logger,
 		store: func(ctx context.Context, filename string) error {
 			return tfs.store(ctx, namespace, tempPath, nsPath, filename)
 		},

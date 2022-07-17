@@ -4376,6 +4376,60 @@ paths:
       tags:
       - config
       x-accepts: application/json
+  /templates/{template_location}:
+    get:
+      description: fetch and expand template
+      operationId: expandTemplate
+      parameters:
+      - description: URL of the template; must be relative (to a URL configured on
+          the server).
+        example: spark.conf.tt
+        explode: false
+        in: path
+        name: template_location
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: params
+        required: false
+        schema:
+          additionalProperties:
+            type: string
+          example:
+            lakefs_url: https://lakefs.example.com
+          type: object
+        style: form
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                format: binary
+          description: expanded template
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - templates
+      x-accepts: application/json
 components:
   parameters:
     PaginationPrefix:

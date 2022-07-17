@@ -80,7 +80,7 @@ func (m *tracker) Create(ctx context.Context, multipart MultipartUpload) error {
 	if multipart.UploadID == "" {
 		return ErrInvalidUploadID
 	}
-	return m.store.SetMsgIf(ctx, multipartsPartitionKey, multipart.UploadID, protoFromMultipart(&multipart), nil)
+	return m.store.SetMsgIf(ctx, multipartsPartitionKey, []byte(multipart.UploadID), protoFromMultipart(&multipart), nil)
 }
 
 func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, error) {
@@ -88,7 +88,7 @@ func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, e
 		return nil, ErrInvalidUploadID
 	}
 	data := &MultipartUploadData{}
-	_, err := m.store.GetMsg(ctx, multipartsPartitionKey, uploadID, data)
+	_, err := m.store.GetMsg(ctx, multipartsPartitionKey, []byte(uploadID), data)
 	if err != nil {
 		return nil, err
 	}

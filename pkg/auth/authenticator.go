@@ -72,7 +72,7 @@ func (e EmailAuthenticator) AuthenticateUser(ctx context.Context, username, pass
 	if err := user.Authenticate(password); err != nil {
 		return InvalidUserID, err
 	}
-	return user.ID, nil
+	return user.Username, nil
 }
 
 func (e EmailAuthenticator) String() string {
@@ -98,7 +98,7 @@ func (ba *BuiltinAuthenticator) AuthenticateUser(ctx context.Context, username, 
 	if subtle.ConstantTimeCompare([]byte(password), []byte(cred.SecretAccessKey)) != 1 {
 		return InvalidUserID, ErrInvalidSecretAccessKey
 	}
-	return cred.UserID, nil
+	return cred.Username, nil
 }
 
 func (ba *BuiltinAuthenticator) String() string {
@@ -218,19 +218,19 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 	user, err := la.AuthService.GetUser(ctx, dn)
 	if err == nil {
 		logger.WithField("user", fmt.Sprintf("%+v", user)).Debug("Got existing user")
-		return user.ID, nil
+		return user.Username, nil
 	}
 	if !errors.Is(err, ErrNotFound) {
 		logger.WithError(err).Info("Could not get user; create them")
 	}
 
-	newUser := &model.BaseUser{
+	newUser := &model.User{
 		CreatedAt:    time.Now(),
 		Username:     dn,
 		FriendlyName: &username,
 		Source:       "ldap",
 	}
-	id, err := la.AuthService.CreateUser(ctx, newUser)
+	_, err = la.AuthService.CreateUser(ctx, newUser)
 	if err != nil {
 		return InvalidUserID, fmt.Errorf("create backing user for LDAP user %s: %w", dn, err)
 	}
@@ -243,7 +243,7 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 	if err != nil {
 		return InvalidUserID, fmt.Errorf("add newly created LDAP user %s to %s: %w", dn, la.DefaultUserGroup, err)
 	}
-	return id, nil
+	return newUser.Username, nil
 }
 
 func (la *LDAPAuthenticator) String() string {

@@ -30,38 +30,43 @@ const (
 	usersCredentialsPrefix = "uCredentials" //#nosec G101 -- False positive: this is only a kv key prefix
 	credentialsPrefix      = "credentials"
 	expiredTokensPrefix    = "expiredTokens"
+	metadataPrefix         = "installation_metadata"
 )
 
-func UserPath(userName string) string {
-	return kv.FormatPath(usersPrefix, userName)
+func UserPath(userName string) []byte {
+	return []byte(kv.FormatPath(usersPrefix, userName))
 }
 
-func PolicyPath(displayName string) string {
-	return kv.FormatPath(policiesPrefix, displayName)
+func PolicyPath(displayName string) []byte {
+	return []byte(kv.FormatPath(policiesPrefix, displayName))
 }
 
-func GroupPath(displayName string) string {
-	return kv.FormatPath(groupsPrefix, displayName)
+func GroupPath(displayName string) []byte {
+	return []byte(kv.FormatPath(groupsPrefix, displayName))
 }
 
-func CredentialPath(userName string, accessKeyID string) string {
-	return kv.FormatPath(usersCredentialsPrefix, userName, credentialsPrefix, accessKeyID)
+func CredentialPath(userName string, accessKeyID string) []byte {
+	return []byte(kv.FormatPath(usersCredentialsPrefix, userName, credentialsPrefix, accessKeyID))
 }
 
-func GroupUserPath(groupDisplayName string, userName string) string {
-	return kv.FormatPath(groupsUsersPrefix, groupDisplayName, usersPrefix, userName)
+func GroupUserPath(groupDisplayName string, userName string) []byte {
+	return []byte(kv.FormatPath(groupsUsersPrefix, groupDisplayName, usersPrefix, userName))
 }
 
-func UserPolicyPath(userName string, policyDisplayName string) string {
-	return kv.FormatPath(usersPoliciesPrefix, userName, policiesPrefix, policyDisplayName)
+func UserPolicyPath(userName string, policyDisplayName string) []byte {
+	return []byte(kv.FormatPath(usersPoliciesPrefix, userName, policiesPrefix, policyDisplayName))
 }
 
-func GroupPolicyPath(groupDisplayName string, policyDisplayName string) string {
-	return kv.FormatPath(groupsPoliciesPrefix, groupDisplayName, policiesPrefix, policyDisplayName)
+func GroupPolicyPath(groupDisplayName string, policyDisplayName string) []byte {
+	return []byte(kv.FormatPath(groupsPoliciesPrefix, groupDisplayName, policiesPrefix, policyDisplayName))
 }
 
-func ExpiredTokenPath(tokenID string) string {
-	return kv.FormatPath(expiredTokensPrefix, tokenID)
+func ExpiredTokenPath(tokenID string) []byte {
+	return []byte(kv.FormatPath(expiredTokensPrefix, tokenID))
+}
+
+func MetadataKeyPath(key string) string {
+	return kv.FormatPath(metadataPrefix, key)
 }
 
 var (
@@ -87,7 +92,7 @@ type SuperuserConfiguration struct {
 	SecretAccessKey string
 }
 
-type BaseUser struct {
+type User struct {
 	CreatedAt time.Time `db:"created_at"`
 	Username  string    `db:"display_name" json:"display_name"`
 	// FriendlyName, if set, is a shorter name for the user than
@@ -101,21 +106,9 @@ type BaseUser struct {
 	ExternalID        *string `db:"external_id" json:"external_id"`
 }
 
-type User struct {
-	ID string
-	BaseUser
-}
-
 type DBUser struct {
 	ID int64 `db:"id"`
-	BaseUser
-}
-
-func ConvertUser(u *DBUser) *User {
-	return &User{
-		ID:       ConvertDBID(u.ID),
-		BaseUser: u.BaseUser,
-	}
+	User
 }
 
 func ConvertDBID(id int64) string {
@@ -123,22 +116,17 @@ func ConvertDBID(id int64) string {
 	return strconv.FormatInt(id, base)
 }
 
-type BaseGroup struct {
+type Group struct {
 	CreatedAt   time.Time `db:"created_at"`
 	DisplayName string    `db:"display_name" json:"display_name"`
 }
 
-type Group struct {
-	ID string
-	BaseGroup
-}
-
 type DBGroup struct {
 	ID int `db:"id"`
-	BaseGroup
+	Group
 }
 
-type BasePolicy struct {
+type Policy struct {
 	CreatedAt   time.Time  `db:"created_at"`
 	DisplayName string     `db:"display_name" json:"display_name"`
 	Statement   Statements `db:"statement"`
@@ -146,7 +134,7 @@ type BasePolicy struct {
 
 type DBPolicy struct {
 	ID int `db:"id"`
-	BasePolicy
+	Policy
 }
 
 type Statement struct {
@@ -165,7 +153,7 @@ type BaseCredential struct {
 }
 
 type Credential struct {
-	UserID string
+	Username string
 	BaseCredential
 }
 
@@ -180,7 +168,7 @@ type CredentialKeys struct {
 	SecretAccessKey string `json:"secret_access_key"`
 }
 
-func (u *BaseUser) UpdatePassword(password string) error {
+func (u *User) UpdatePassword(password string) error {
 	pw, err := HashPassword(password)
 	if err != nil {
 		return err
@@ -195,7 +183,7 @@ func HashPassword(password string) ([]byte, error) {
 }
 
 // Authenticate a user from a password Returns nil on success, or an error on failure.
-func (u *BaseUser) Authenticate(password string) error {
+func (u *User) Authenticate(password string) error {
 	return bcrypt.CompareHashAndPassword(u.EncryptedPassword, []byte(password))
 }
 
@@ -219,21 +207,18 @@ func (s *Statements) Scan(src interface{}) error {
 
 func UserFromProto(pb *UserData) *User {
 	return &User{
-		ID: string(pb.Id),
-		BaseUser: BaseUser{
-			CreatedAt:         pb.CreatedAt.AsTime(),
-			Username:          pb.Username,
-			FriendlyName:      &pb.FriendlyName,
-			Email:             &pb.Email,
-			EncryptedPassword: pb.EncryptedPassword,
-			Source:            pb.Source,
-		},
+		CreatedAt:         pb.CreatedAt.AsTime(),
+		Username:          pb.Username,
+		FriendlyName:      &pb.FriendlyName,
+		Email:             &pb.Email,
+		EncryptedPassword: pb.EncryptedPassword,
+		Source:            pb.Source,
+		ExternalID:        &pb.ExternalId,
 	}
 }
 
 func ProtoFromUser(u *User) *UserData {
 	return &UserData{
-		Id:                []byte(u.ID),
 		CreatedAt:         timestamppb.New(u.CreatedAt),
 		Username:          u.Username,
 		FriendlyName:      swag.StringValue(u.FriendlyName),
@@ -246,36 +231,31 @@ func ProtoFromUser(u *User) *UserData {
 
 func GroupFromProto(pb *GroupData) *Group {
 	return &Group{
-		ID: string(pb.Id),
-		BaseGroup: BaseGroup{
-			CreatedAt:   pb.CreatedAt.AsTime(),
-			DisplayName: pb.DisplayName,
-		},
+		CreatedAt:   pb.CreatedAt.AsTime(),
+		DisplayName: pb.DisplayName,
 	}
 }
 
 func ProtoFromGroup(g *Group) *GroupData {
 	return &GroupData{
-		Id:          []byte(g.ID),
 		CreatedAt:   timestamppb.New(g.CreatedAt),
 		DisplayName: g.DisplayName,
 	}
 }
 
-func PolicyFromProto(pb *PolicyData) *BasePolicy {
-	return &BasePolicy{
+func PolicyFromProto(pb *PolicyData) *Policy {
+	return &Policy{
 		CreatedAt:   pb.CreatedAt.AsTime(),
 		DisplayName: pb.DisplayName,
 		Statement:   *statementsFromProto(pb.Statements),
 	}
 }
 
-func ProtoFromPolicy(p *BasePolicy, id string) *PolicyData {
+func ProtoFromPolicy(p *Policy) *PolicyData {
 	return &PolicyData{
 		CreatedAt:   timestamppb.New(p.CreatedAt),
 		DisplayName: p.DisplayName,
 		Statements:  protoFromStatements(&p.Statement),
-		Id:          []byte(id),
 	}
 }
 
@@ -285,7 +265,7 @@ func CredentialFromProto(s crypt.SecretStore, pb *CredentialData) *Credential {
 		return nil
 	}
 	return &Credential{
-		UserID: string(pb.UserId),
+		Username: string(pb.UserId),
 		BaseCredential: BaseCredential{
 			AccessKeyID:                   pb.AccessKeyId,
 			SecretAccessKey:               secret,
@@ -300,7 +280,7 @@ func ProtoFromCredential(c *Credential) *CredentialData {
 		AccessKeyId:                   c.AccessKeyID,
 		SecretAccessKeyEncryptedBytes: c.SecretAccessKeyEncryptedBytes,
 		IssuedDate:                    timestamppb.New(c.IssuedDate),
-		UserId:                        []byte(c.UserID),
+		UserId:                        []byte(c.Username),
 	}
 }
 
@@ -340,7 +320,7 @@ func protoFromStatements(s *Statements) []*StatementData {
 func ConvertUsersList(users []*DBUser) []*User {
 	kvUsers := make([]*User, 0, len(users))
 	for _, u := range users {
-		kvUsers = append(kvUsers, ConvertUser(u))
+		kvUsers = append(kvUsers, &u.User)
 	}
 	return kvUsers
 }
@@ -354,34 +334,23 @@ func ConvertUsersDataList(users []proto.Message) []*User {
 	return kvUsers
 }
 
-func ConvertCredList(creds []*DBCredential) []*Credential {
+func ConvertCredList(creds []*DBCredential, username string) []*Credential {
 	res := make([]*Credential, 0, len(creds))
 	for _, c := range creds {
-		res = append(res, ConvertCreds(c))
+		res = append(res, &Credential{
+			Username:       username,
+			BaseCredential: c.BaseCredential,
+		})
 	}
 	return res
-}
-
-func ConvertCreds(c *DBCredential) *Credential {
-	return &Credential{
-		UserID:         ConvertDBID(c.UserID),
-		BaseCredential: c.BaseCredential,
-	}
 }
 
 func ConvertGroupList(groups []*DBGroup) []*Group {
 	res := make([]*Group, 0, len(groups))
 	for _, g := range groups {
-		res = append(res, ConvertGroup(g))
+		res = append(res, &g.Group)
 	}
 	return res
-}
-
-func ConvertGroup(g *DBGroup) *Group {
-	return &Group{
-		ID:        strconv.Itoa(g.ID),
-		BaseGroup: g.BaseGroup,
-	}
 }
 
 func ConvertGroupDataList(group []proto.Message) []*Group {
@@ -393,8 +362,8 @@ func ConvertGroupDataList(group []proto.Message) []*Group {
 	return res
 }
 
-func ConvertPolicyDataList(policies []proto.Message) []*BasePolicy {
-	res := make([]*BasePolicy, 0, len(policies))
+func ConvertPolicyDataList(policies []proto.Message) []*Policy {
+	res := make([]*Policy, 0, len(policies))
 	for _, p := range policies {
 		a := p.(*PolicyData)
 		res = append(res, PolicyFromProto(a))

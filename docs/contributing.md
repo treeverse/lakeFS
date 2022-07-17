@@ -51,6 +51,8 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
    make build
    ```
 
+Note: Make build won't work for Windows user for building lakeFS.
+
 1. Make sure tests are passing:
 
    ```shell

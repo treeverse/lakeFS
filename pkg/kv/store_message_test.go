@@ -48,10 +48,10 @@ func TestStoreMessage(t *testing.T) {
 func testStoreMessageSetGet(t testing.TB, ctx context.Context, sm kv.StoreMessage) {
 	// set model info
 	setModel := &kvtest.TestModel{
-		Name:          "SetGetModel",
-		AnotherString: "This is another string",
-		ADouble:       2.4,
-		TestTime:      timestamppb.New(time.Now().UTC()),
+		Name:        []byte("SetGetModel"),
+		JustAString: "This is another string",
+		ADouble:     2.4,
+		TestTime:    timestamppb.New(time.Now().UTC()),
 		TestMap: map[string]int32{
 			"one":   1,
 			"two":   2,
@@ -79,10 +79,10 @@ func testStoreMessageSetGet(t testing.TB, ctx context.Context, sm kv.StoreMessag
 func testStoreMessageSetIf(t testing.TB, ctx context.Context, sm kv.StoreMessage) {
 	// set model info
 	setModel := &kvtest.TestModel{
-		Name:          "SetIfModel",
-		AnotherString: "This is another string",
-		ADouble:       2.4,
-		TestTime:      timestamppb.New(time.Now()),
+		Name:        []byte("SetIfModel"),
+		JustAString: "This is another string",
+		ADouble:     2.4,
+		TestTime:    timestamppb.New(time.Now()),
 		TestMap: map[string]int32{
 			"one":   1,
 			"two":   2,
@@ -101,10 +101,10 @@ func testStoreMessageSetIf(t testing.TB, ctx context.Context, sm kv.StoreMessage
 
 	// SetIf model
 	m1 := &kvtest.TestModel{
-		Name:          setModel.Name,
-		AnotherString: "just another string",
-		ADouble:       3.14159,
-		TestTime:      timestamppb.New(time.Now().UTC()),
+		Name:        setModel.Name,
+		JustAString: "just another string",
+		ADouble:     3.14159,
+		TestTime:    timestamppb.New(time.Now().UTC()),
 		TestMap: map[string]int32{
 			"red":   1,
 			"green": 2,
@@ -150,10 +150,10 @@ func testStoreMessageSetIf(t testing.TB, ctx context.Context, sm kv.StoreMessage
 func testStoreMessageDelete(t testing.TB, ctx context.Context, sm kv.StoreMessage) {
 	// set model info
 	m1 := &kvtest.TestModel{
-		Name:          "DeleteModel",
-		AnotherString: "This is another string",
-		ADouble:       2.4,
-		TestTime:      timestamppb.New(time.Now().UTC()),
+		Name:        []byte("DeleteModel"),
+		JustAString: "This is another string",
+		ADouble:     2.4,
+		TestTime:    timestamppb.New(time.Now().UTC()),
 		TestMap: map[string]int32{
 			"one":   1,
 			"two":   2,
@@ -167,12 +167,12 @@ func testStoreMessageDelete(t testing.TB, ctx context.Context, sm kv.StoreMessag
 	}
 
 	m2 := &kvtest.TestModel{
-		Name:          "model2",
-		AnotherString: "",
-		ADouble:       0,
-		TestTime:      nil,
-		TestMap:       nil,
-		TestList:      nil,
+		Name:        []byte("model2"),
+		JustAString: "",
+		ADouble:     0,
+		TestTime:    nil,
+		TestMap:     nil,
+		TestList:    nil,
 	}
 	err = sm.SetMsg(ctx, modelPartitionKey, m2.Name, m2)
 	if err != nil {
@@ -225,10 +225,10 @@ func testStoreMessageDelete(t testing.TB, ctx context.Context, sm kv.StoreMessag
 func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage) {
 	// set model info
 	m := &kvtest.TestModel{
-		Name:          "ScanModel",
-		AnotherString: "This is another string",
-		ADouble:       2.4,
-		TestTime:      timestamppb.New(time.Now().UTC()),
+		Name:        []byte("ScanModel"),
+		JustAString: "This is another string",
+		ADouble:     2.4,
+		TestTime:    timestamppb.New(time.Now().UTC()),
 		TestMap: map[string]int32{
 			"one":   1,
 			"two":   2,
@@ -236,7 +236,7 @@ func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage)
 		},
 		TestList: []bool{true, true, false, true, false},
 	}
-	modelKeyPrefix := "m"
+	modelKeyPrefix := []byte("m")
 	modelNum := 5
 
 	var testData []testItem
@@ -244,9 +244,9 @@ func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage)
 	for i := 0; i < modelNum; i++ {
 		msgNew := proto.Clone(m).(*kvtest.TestModel)
 		msgNew.TestMap["special"] = int32(i)
-		key := kv.FormatPath(modelKeyPrefix, strconv.Itoa(i))
-		testData = append(testData, testItem{key, msgNew})
-		require.NoError(t, sm.SetMsg(ctx, modelPartitionKey, key, msgNew))
+		key := kv.FormatPath(string(modelKeyPrefix), strconv.Itoa(i))
+		testData = append(testData, testItem{[]byte(key), msgNew})
+		require.NoError(t, sm.SetMsg(ctx, modelPartitionKey, []byte(key), msgNew))
 	}
 
 	preModelKey := "l"
@@ -264,7 +264,7 @@ func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage)
 	})
 	t.Run("skip not equal", func(t *testing.T) {
 		skip := 2
-		after := testData[skip-1].key + "_00000000000"
+		after := []byte(string(testData[skip-1].key) + "_00000000000")
 
 		testScan(t, sm, ctx, testData, modelKeyPrefix, after, skip)
 	})
@@ -277,16 +277,16 @@ func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage)
 	t.Run("skip none", func(t *testing.T) {
 		skip := 0
 
-		testScan(t, sm, ctx, testData, modelKeyPrefix, "", skip)
+		testScan(t, sm, ctx, testData, modelKeyPrefix, []byte(""), skip)
 	})
 }
 
 type testItem struct {
-	key string
+	key []byte
 	msg *kvtest.TestModel
 }
 
-func testScan(t *testing.T, sm kv.StoreMessage, ctx context.Context, testData []testItem, modelKeyPrefix string, after string, skip int) {
+func testScan(t *testing.T, sm kv.StoreMessage, ctx context.Context, testData []testItem, modelKeyPrefix, after []byte, skip int) {
 	itr, err := sm.Scan(ctx, testData[0].msg.ProtoReflect().Type(), modelPartitionKey, modelKeyPrefix, after)
 	testutil.MustDo(t, "get iterator", err)
 	defer itr.Close()
@@ -308,10 +308,10 @@ func testScan(t *testing.T, sm kv.StoreMessage, ctx context.Context, testData []
 func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.StoreMessage) {
 	// set model info
 	m := &kvtest.TestModel{
-		Name:          "DeleteModel",
-		AnotherString: "This is another string",
-		ADouble:       2.4,
-		TestTime:      timestamppb.New(time.Now().UTC()),
+		Name:        []byte("DeleteModel"),
+		JustAString: "This is another string",
+		ADouble:     2.4,
+		TestTime:    timestamppb.New(time.Now().UTC()),
 		TestMap: map[string]int32{
 			"one":   1,
 			"two":   2,
@@ -324,13 +324,13 @@ func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.St
 
 	// Add test models to store
 	for i := 0; i < modelNum; i++ {
-		require.NoError(t, sm.SetMsg(ctx, modelPartitionKey, kv.FormatPath(modelKeyPrefix, strconv.Itoa(i)), m))
+		require.NoError(t, sm.SetMsg(ctx, modelPartitionKey, []byte(kv.FormatPath(modelKeyPrefix, strconv.Itoa(i))), m))
 	}
 
 	badModelData := "This is a bad model data"
 	require.NoError(t, sm.Store.Set(ctx, []byte(modelPartitionKey), []byte(kv.FormatPath(modelKeyPrefix, strconv.Itoa(modelNum))), []byte(badModelData)))
 
-	itr, err := sm.Scan(ctx, m.ProtoReflect().Type(), modelPartitionKey, modelKeyPrefix, "")
+	itr, err := sm.Scan(ctx, m.ProtoReflect().Type(), modelPartitionKey, []byte(modelKeyPrefix), []byte(""))
 	testutil.MustDo(t, "get iterator", err)
 	defer itr.Close()
 
@@ -339,7 +339,7 @@ func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.St
 		entry := itr.Entry()
 		value, ok := entry.Value.(*kvtest.TestModel)
 		require.True(t, ok)
-		require.Equal(t, kv.FormatPath(modelKeyPrefix, strconv.Itoa(i)), entry.Key)
+		require.Equal(t, []byte(kv.FormatPath(modelKeyPrefix, strconv.Itoa(i))), entry.Key)
 		require.True(t, proto.Equal(value, m))
 	}
 
