@@ -60,7 +60,7 @@ func TestStructKeys_SimpleTagged(t *testing.T) {
 	type s struct {
 		A int `test:"Aaa"`
 		B int `toast:"bee"`
-		c int `test:"ccc" toast:"sea"`
+		C int `test:"ccc" toast:"sea"`
 	}
 
 	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName, squashTagValue)
@@ -234,7 +234,7 @@ func TestValidateMissingRequired_SimpleTagged(t *testing.T) {
 	type s struct {
 		A int `test:"Aaa" validate:"required"`
 		B int `toast:"bee" validate:"required"`
-		c int `test:"ccc" toast:"sea" validate:"required"`
+		C int `test:"ccc" toast:"sea" validate:"required"`
 	}
 
 	keys := config.ValidateMissingRequiredKeys(s{}, tagName, squashTagValue)
