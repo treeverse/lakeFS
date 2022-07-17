@@ -109,9 +109,10 @@ const ImportDone = ({numObjects, importBranch, currBranch = ''}) => {
     </Row>);
 }
 const ExecuteImportButton = ({isEnabled, importPhase, importFunc}) => {
+    const enableImport = importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed;
     return (
         <Button variant="success"
-                disabled={!isEnabled}
+                disabled={!isEnabled || !enableImport}
                 onClick={() => {
                         if (importPhase !== ImportPhase.InProgress) {
                             importFunc();
