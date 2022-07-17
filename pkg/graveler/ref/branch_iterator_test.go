@@ -6,9 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/go-test/deep"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -98,7 +97,6 @@ func TestDBBranchIterator(t *testing.T) {
 	})
 }
 
-// TODO: Need repository PR
 func TestBranchSimpleIterator(t *testing.T) {
 	r, kvStore := testRefManagerWithKV(t)
 	branches := []graveler.BranchID{"a", "aa", "b", "c", "e", "d"}
