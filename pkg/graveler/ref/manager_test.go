@@ -771,8 +771,7 @@ func TestManager_GetCommitByPrefix(t *testing.T) {
 	}
 }
 
-// TODO: temporarily disabled due to dependency in GetRepository
-func _TestManager_FillGenerations(t *testing.T) {
+func TestManager_FillGenerations(t *testing.T) {
 	r := testRefManager(t)
 	for _, tt := range r {
 		ctx := context.Background()

@@ -8,26 +8,56 @@ import (
 )
 
 type KVOrderedCommitIterator struct {
-	it     kv.MessageIterator
-	err    error
-	value  *graveler.CommitRecord
-	repoID graveler.RepositoryID
-	store  kv.Store
-	ctx    context.Context
+	it                 kv.MessageIterator
+	err                error
+	value              *graveler.CommitRecord
+	repoID             graveler.RepositoryID
+	store              kv.Store
+	ctx                context.Context
+	onlyAncestryLeaves bool
+	firstParents       map[string]bool
 }
 
-func NewKVOrderedCommitIterator(ctx context.Context, store *kv.StoreMessage, repositoryID graveler.RepositoryID) (*KVOrderedCommitIterator, error) {
-	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.TagData{}).ProtoReflect().Type(),
+func getAllFirstParents(ctx context.Context, store *kv.StoreMessage, repositoryID graveler.RepositoryID) (map[string]bool, error) {
+	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.CommitData{}).ProtoReflect().Type(),
 		graveler.CommitPartition(repositoryID),
-		[]byte(graveler.CommitPath("")), []byte(""), true)
+		[]byte(graveler.CommitPath("")), kv.IteratorOptionsFrom([]byte("")))
 	if err != nil {
 		return nil, err
 	}
+	defer it.Close()
+	firstParents := make(map[string]bool)
+	for it.Next() {
+		entry := it.Entry()
+		commit := entry.Value.(*graveler.CommitData)
+		if len(commit.Parents) > 0 {
+			firstParents[commit.Parents[0]] = true
+		}
+	}
+	return firstParents, nil
+}
+
+func NewKVOrderedCommitIterator(ctx context.Context, store *kv.StoreMessage, repositoryID graveler.RepositoryID, onlyAncestryLeaves bool) (*KVOrderedCommitIterator, error) {
+	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.CommitData{}).ProtoReflect().Type(),
+		graveler.CommitPartition(repositoryID),
+		[]byte(graveler.CommitPath("")), kv.IteratorOptionsFrom([]byte("")))
+	if err != nil {
+		return nil, err
+	}
+	var parents map[string]bool
+	if onlyAncestryLeaves {
+		parents, err = getAllFirstParents(ctx, store, repositoryID)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return &KVOrderedCommitIterator{
-		it:     it,
-		store:  store.Store,
-		repoID: repositoryID,
-		ctx:    ctx,
+		it:                 it,
+		store:              store.Store,
+		repoID:             repositoryID,
+		ctx:                ctx,
+		onlyAncestryLeaves: onlyAncestryLeaves,
+		firstParents:       parents,
 	}, nil
 }
 
@@ -35,22 +65,24 @@ func (i *KVOrderedCommitIterator) Next() bool {
 	if i.Err() != nil {
 		return false
 	}
-	if !i.it.Next() {
-		i.value = nil
-		return false
+	for i.it.Next() {
+		e := i.it.Entry()
+		if e == nil {
+			i.err = graveler.ErrInvalid
+			return false
+		}
+		commit, ok := e.Value.(*graveler.CommitData)
+		if commit == nil || !ok {
+			i.err = graveler.ErrReadingFromStore
+			return false
+		}
+		if !i.onlyAncestryLeaves || !i.firstParents[commit.Id] {
+			i.value = CommitDataToCommitRecord(commit)
+			return true
+		}
 	}
-	e := i.it.Entry()
-	if e == nil {
-		i.err = graveler.ErrReadingFromStore
-		return false
-	}
-	c, ok := e.Value.(*graveler.CommitData)
-	if !ok {
-		i.err = graveler.ErrReadingFromStore
-		return false
-	}
-	i.value = CommitDataToCommitRecord(c)
-	return true
+	i.value = nil
+	return false
 }
 
 func (i *KVOrderedCommitIterator) SeekGE(id graveler.CommitID) {
@@ -58,7 +90,7 @@ func (i *KVOrderedCommitIterator) SeekGE(id graveler.CommitID) {
 		i.it.Close()
 		it, err := kv.NewPrimaryIterator(i.ctx, i.store, (&graveler.CommitData{}).ProtoReflect().Type(),
 			graveler.CommitPartition(i.repoID),
-			[]byte(graveler.CommitPath("")), []byte(graveler.CommitPath(id)), false)
+			[]byte(graveler.CommitPath("")), kv.IteratorOptionsFrom([]byte(graveler.CommitPath(id))))
 		i.it = it
 		i.value = nil
 		i.err = err

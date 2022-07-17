@@ -147,7 +147,7 @@ func (m *KVGarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Co
 	}
 	branchIterator := ref.NewBranchIterator(ctx, m.db, repositoryID, 1000, ref.WithOrderByCommitID()) //nolint: gomnd
 	// get all commits that are not the first parent of any commit:
-	commitIterator, err := ref.NewKVOrderedCommitIterator(ctx, m.refManager.Store(), repositoryID) //nolint: gomnd
+	commitIterator, err := ref.NewKVOrderedCommitIterator(ctx, m.refManager.Store(), repositoryID, true) //nolint: gomnd
 	if err != nil {
 		return "", fmt.Errorf("create kv orderd commit iterator commits: %w", err)
 	}

@@ -3,6 +3,7 @@ package ref
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/batch"
@@ -193,7 +194,28 @@ func (m *KVManager) ListTags(ctx context.Context, repositoryID graveler.Reposito
 }
 
 func (m *KVManager) GetCommitByPrefix(ctx context.Context, repositoryID graveler.RepositoryID, prefix graveler.CommitID) (*graveler.Commit, error) {
-	return m.db.GetCommitByPrefix(ctx, repositoryID, prefix)
+	it, err := NewKVOrderedCommitIterator(ctx, m.Store(), repositoryID, false)
+	if err != nil {
+		return nil, err
+	}
+	defer it.Close()
+	it.SeekGE(prefix)
+	var commit *graveler.Commit
+	for it.Next() {
+		c := it.Value()
+		if strings.HasPrefix(string(c.CommitID), string(prefix)) {
+			if commit != nil {
+				return nil, graveler.ErrRefAmbiguous // more than 1 commit starts with the ID prefix
+			}
+			commit = c.Commit
+		} else {
+			break
+		}
+	}
+	if commit == nil {
+		return nil, graveler.ErrCommitNotFound
+	}
+	return commit, nil
 }
 
 func (m *KVManager) GetCommit(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (*graveler.Commit, error) {
@@ -261,7 +283,7 @@ func (m *KVManager) ListCommits(ctx context.Context, repositoryID graveler.Repos
 	if err != nil {
 		return nil, err
 	}
-	return NewKVOrderedCommitIterator(ctx, &m.kvStore, repositoryID)
+	return NewKVOrderedCommitIterator(ctx, &m.kvStore, repositoryID, false)
 }
 
 func (m *KVManager) FillGenerations(ctx context.Context, repositoryID graveler.RepositoryID) error {

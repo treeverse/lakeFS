@@ -9,7 +9,7 @@ const (
 	gravelerPartition = "graveler"
 	reposPrefix       = "repos"
 	tagsPrefix        = "tags"
-	commitsPrefix = "commits"
+	commitsPrefix     = "commits"
 )
 
 func RepoPath(repoID RepositoryID) string {
