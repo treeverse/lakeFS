@@ -18,6 +18,7 @@ type KVOrderedCommitIterator struct {
 	firstParents       map[string]bool
 }
 
+// getAllFirstParents returns a set of all commits that are not a first parent of other commit in the given repository.
 func getAllFirstParents(ctx context.Context, store *kv.StoreMessage, repositoryID graveler.RepositoryID) (map[string]bool, error) {
 	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.CommitData{}).ProtoReflect().Type(),
 		graveler.CommitPartition(repositoryID),
@@ -37,6 +38,10 @@ func getAllFirstParents(ctx context.Context, store *kv.StoreMessage, repositoryI
 	return firstParents, nil
 }
 
+// NewKVOrderedCommitIterator returns an iterator over all commits in the given repository.
+// Ordering is based on the Commit ID value.
+// WithOnlyAncestryLeaves causes the iterator to return only commits which are not the first parent of any other commit.
+// Consider a commit graph where all non-first-parent edges are removed. This graph is a tree, and ancestry leaves are its leaves.
 func NewKVOrderedCommitIterator(ctx context.Context, store *kv.StoreMessage, repositoryID graveler.RepositoryID, onlyAncestryLeaves bool) (*KVOrderedCommitIterator, error) {
 	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.CommitData{}).ProtoReflect().Type(),
 		graveler.CommitPartition(repositoryID),

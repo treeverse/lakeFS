@@ -5,9 +5,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/treeverse/lakefs/pkg/kv"
-
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/kv"
 )
 
 type KVCommitIterator struct {
@@ -60,6 +59,8 @@ func (c *commitsPriorityQueue) Pop() interface{} {
 	return item
 }
 
+// NewKVCommitIterator returns an iterator over all commits in the given repository.
+// Ordering is based on the Commit Creation Date.
 func NewKVCommitIterator(ctx context.Context, kvStore kv.StoreMessage, repositoryID graveler.RepositoryID, start graveler.CommitID) *KVCommitIterator {
 	return &KVCommitIterator{
 		kvStore:      kvStore,

@@ -7,14 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/treeverse/lakefs/pkg/kv"
-
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/ident"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 //go:generate mockgen -source=graveler.go -destination=mock/graveler.go -package=mock

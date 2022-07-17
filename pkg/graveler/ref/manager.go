@@ -205,7 +205,7 @@ func (m *KVManager) GetCommitByPrefix(ctx context.Context, repositoryID graveler
 		c := it.Value()
 		if strings.HasPrefix(string(c.CommitID), string(prefix)) {
 			if commit != nil {
-				return nil, graveler.ErrRefAmbiguous // more than 1 commit starts with the ID prefix
+				return nil, graveler.ErrCommitNotFound // more than 1 commit starts with the ID prefixבםצצ
 			}
 			commit = c.Commit
 		} else {
