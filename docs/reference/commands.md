@@ -94,7 +94,7 @@ Abuse a running lakeFS instance. See sub commands for more info.
 
 ### lakectl abuse commit
 
-Commits to the source ref every 2 seconds
+Commits to the source ref repeatedly
 
 ```
 lakectl abuse commit <source ref uri> [flags]
@@ -105,7 +105,7 @@ lakectl abuse commit <source ref uri> [flags]
 
 ```
       --amount int     amount of commits to do (default 100)
-      --gap duration   time in seconds to wait between commits (default 2ns)
+      --gap duration   duration to wait between commits (default 2s)
   -h, --help           help for commit
 ```
 
