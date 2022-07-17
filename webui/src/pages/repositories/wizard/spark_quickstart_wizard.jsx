@@ -28,7 +28,7 @@ const RepositoryCreationStep = ({repoCreationError, createRepo, onCancel, onComp
         const success = await createRepo(repo, false);
         if (success) {
             setRepoCreationPhase(RepositoryCreationPhase.Completed);
-            onComplete({ 'branch': repo.default_branch, 'namespace': repo.storage_namespace },);
+            onComplete({ 'branch': repo.default_branch, 'namespace': repo.storage_namespace, 'repoId': repo.name },);
             setRepoName(repo.name);
         }
         else {
@@ -71,7 +71,6 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
     }
     return (
         <Wizard
-            showSkipButton
             canProceed={nextEnabled}
             onNextStep={() => setNextEnabled(false)}
             onComplete={onComplete}
