@@ -73,6 +73,9 @@ func (kvs *KVStore) UpdateCommitID(ctx context.Context, repositoryID string, run
 	run := RunResultData{}
 	_, err := kvs.store.GetMsg(ctx, PartitionKey, runKey, &run)
 	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) { // no pre action run
+			return nil, nil
+		}
 		return nil, fmt.Errorf("run id %s: %w", runID, err)
 	}
 	if run.CommitId == commitID { // return if no update is required
