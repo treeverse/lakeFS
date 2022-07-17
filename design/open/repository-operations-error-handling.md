@@ -42,6 +42,9 @@ The new `repository_state` attribute can have one of four values: `initial`, `ac
   * Once all correlated entities were successfully deleted, the `Repository` entry itself will can be deleted too
   * Any failure to delete any entity during the deletion process, still leaves the DB in consistent state as the `Repository` entity, and by that its correlated entities, are unreachable due to the `deleted` state
 
+![Repository State Transitions](diagrams/repository-state-transitions.png)
+[(excalidraw file)](diagrams/repository-state-transitions.excalidraw)
+
 ### Repository Unique Identifier
 Each `Repository` will have a `unique_identifier` (To be discussed later) which can differ it from other repositories with the same **Name** (`RepositoryID`). This will provide us with the ability to differ object correlated with different repositories with the same **Name**, from different points in time. Each repository will have a designated KV partition, identified by its **Name** and `unique_identifier` and all correlated objects will be handled in this partition, making it possible to identify objects correlated only to an `active` `Repository`. Moreover, as the `unique_identifier` is an attribute of the `Repository`, in order to create the partition name, the `Repository` entity must be acquired, and so non-exist or unusable `Repository` entries will make unreachable partitions and, in turn, unreachable entities, making it safe to use any reachable entity
 
