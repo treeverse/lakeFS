@@ -13,13 +13,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/auth/email"
-
 	sq "github.com/Masterminds/squirrel"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
+	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/params"
@@ -1001,7 +1000,8 @@ func (s *KVAuthService) HashAndUpdatePassword(ctx context.Context, username stri
 		FriendlyName:      user.FriendlyName,
 		Email:             user.Email,
 		EncryptedPassword: pw,
-		Source:            user.Source}
+		Source:            user.Source,
+	}
 	err = s.store.SetMsgIf(ctx, model.PartitionKey, userKey, model.ProtoFromUser(&userUpdatePassword), user)
 	if err != nil {
 		return fmt.Errorf("update user password (userKey %s): %w", userKey, err)
@@ -1079,7 +1079,6 @@ func (s *KVAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 		After:  "", // all
 		Amount: -1, // all
 	})
-
 	if err != nil {
 		return nil, err
 	}
