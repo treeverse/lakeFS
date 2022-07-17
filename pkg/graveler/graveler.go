@@ -971,7 +971,7 @@ func (g *KVGraveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID
 		}
 		for _, st := range b.SealedTokens {
 			err = func() error {
-				iter, err = g.StagingManager.List(ctx, st, ListingDefaultBatchSize)
+				iter, err = g.StagingManager.List(ctx, st, 1)
 				if err != nil {
 					return err
 				}
