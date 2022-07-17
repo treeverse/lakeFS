@@ -22,7 +22,7 @@ func NewManager(store kv.StoreMessage) *Manager {
 }
 
 func (m *Manager) Get(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.Value, error) {
-	data := &graveler.StagedEntry{}
+	data := &graveler.StagedEntryData{}
 	_, err := m.store.GetMsg(ctx, string(st), key, data)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
@@ -60,7 +60,7 @@ func (m *Manager) Set(ctx context.Context, st graveler.StagingToken, key gravele
 
 func (m *Manager) DropKey(ctx context.Context, st graveler.StagingToken, key graveler.Key) error {
 	// Simulate DB behavior - fail if key doesn't exist. See: https://github.com/treeverse/lakeFS/issues/3640
-	data := &graveler.StagedEntry{}
+	data := &graveler.StagedEntryData{}
 	_, err := m.store.GetMsg(ctx, string(st), key, data)
 	if err != nil {
 		return err

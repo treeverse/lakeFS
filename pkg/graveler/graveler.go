@@ -939,6 +939,19 @@ func (g *KVGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 	return &newBranch, nil
 }
 
+// checkEmptyToken Checks whether token contains etries. Returns error if List operation fails or token contains entries, False otherwise
+func (g *KVGraveler) checkEmptyToken(ctx context.Context, stagingToken StagingToken) error {
+	iter, err := g.StagingManager.List(ctx, stagingToken, 1)
+	if err != nil {
+		return err
+	}
+	defer iter.Close()
+	if iter.Next() {
+		return ErrConflictFound
+	}
+	return nil
+}
+
 func (g *KVGraveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
 	reference, err := g.Dereference(ctx, repositoryID, ref)
 	if err != nil {
@@ -961,26 +974,14 @@ func (g *KVGraveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID
 	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, &newBranch, func(b *Branch) error {
 		// validate no conflict (Check Staging Token and Sealed Tokens are empty)
 		// TODO(Guys) return error only on conflicts, currently returns error for any changes on staging
-		iter, err := g.StagingManager.List(ctx, b.StagingToken, 1)
-		if err != nil {
+		if err = g.checkEmptyToken(ctx, b.StagingToken); err != nil {
 			return err
 		}
-		defer iter.Close()
-		if iter.Next() {
-			return ErrConflictFound
-		}
 		for _, st := range b.SealedTokens {
-			err = func() error {
-				iter, err = g.StagingManager.List(ctx, st, 1)
-				if err != nil {
-					return err
-				}
-				defer iter.Close()
-				if iter.Next() {
-					return ErrConflictFound
-				}
-				return nil
-			}()
+			err = g.checkEmptyToken(ctx, st)
+			if err != nil {
+				return err // First token with entries found, break
+			}
 		}
 		return nil
 	})
@@ -1138,7 +1139,7 @@ func (g *KVGraveler) dropBranchStaging(ctx context.Context, branch *Branch) erro
 	var wg multierror.Group
 	tokens := make([]StagingToken, len(branch.SealedTokens)+1)
 	copy(tokens, branch.SealedTokens)
-	tokens = append(tokens, branch.StagingToken)
+	tokens[len(tokens)-1] = branch.StagingToken
 
 	for _, st := range tokens {
 		st := st // Pinning
@@ -1197,8 +1198,6 @@ func (g *KVGraveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID
 	}
 
 	// TODO (niro): Should be a background operation
-	// TODO (niro): What do we do on a partial failure
-	// TODO (niro): Do we need branch state as well
 	err = g.dropBranchStaging(ctx, branch)
 	if err != nil {
 		return err

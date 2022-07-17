@@ -99,15 +99,15 @@ func ProtoFromRepo(repo *RepositoryRecord) *RepositoryData {
 	}
 }
 
-func StagedEntryFromProto(pb *StagedEntry) *Value {
+func StagedEntryFromProto(pb *StagedEntryData) *Value {
 	return &Value{
 		Identity: pb.Identity,
 		Data:     pb.Data,
 	}
 }
 
-func ProtoFromStagedEntry(key []byte, v *Value) *StagedEntry {
-	return &StagedEntry{
+func ProtoFromStagedEntry(key []byte, v *Value) *StagedEntryData {
+	return &StagedEntryData{
 		Key:      key,
 		Identity: v.Identity,
 		Data:     v.Data,

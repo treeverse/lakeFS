@@ -12,14 +12,6 @@ import (
 // sort.Slice algorithm, implementors need to decide how to handle equal values
 type CompareFunc func(i, j int) bool
 
-type BranchIterator interface {
-	Next() bool
-	SeekGE(id graveler.BranchID)
-	Value() *graveler.BranchRecord
-	Err() error
-	Close()
-}
-
 type BranchSimpleIterator struct {
 	ctx   context.Context
 	store *kv.StoreMessage
@@ -132,11 +124,11 @@ func NewBranchByCommitIterator(ctx context.Context, store *kv.StoreMessage, part
 			Branch:   branchFromProto(value),
 		})
 	}
-
-	sort.Slice(bi.values, bi.SortByCommitID)
 	if itr.Err() != nil {
 		return nil, err
 	}
+
+	sort.Slice(bi.values, bi.SortByCommitID)
 	return bi, nil
 }
 
@@ -152,8 +144,9 @@ func (b *BranchByCommitIterator) Next() bool {
 func (b *BranchByCommitIterator) SeekGE(id graveler.CommitID) {
 	b.idx = len(b.values) // If key not found, next will return false
 	for i, e := range b.values {
-		if id.String() == e.CommitID.String() {
+		if id.String() <= e.CommitID.String() {
 			b.idx = i
+			return
 		}
 	}
 }
