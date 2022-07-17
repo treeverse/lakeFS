@@ -9,6 +9,7 @@ import Col from "react-bootstrap/Col";
 import {Spinner} from "react-bootstrap";
 import Alert from "react-bootstrap/Alert";
 import RepositoryCreateForm from "../../../lib/components/repositoryCreateForm";
+import ImportDataStep from "./import_data_wizard_step";
 
 const RepositoryCreationPhase = {
     NotStarted: 0,
@@ -27,7 +28,7 @@ const RepositoryCreationStep = ({repoCreationError, createRepo, onCancel, onComp
         const success = await createRepo(repo, false);
         if (success) {
             setRepoCreationPhase(RepositoryCreationPhase.Completed);
-            onComplete({ 'branch': repo.default_branch, 'namespace': repo.storage_namespace },);
+            onComplete({ 'branch': repo.default_branch, 'namespace': repo.storage_namespace, 'repoId': repo.name },);
             setRepoName(repo.name);
         }
         else {
@@ -35,37 +36,32 @@ const RepositoryCreationStep = ({repoCreationError, createRepo, onCancel, onComp
         }
     }
     const showError = repoCreationError ? repoCreationError : err;
-    let present;
+    let content;
     if (loading) {
-        present = <Loading/>;
+        content = <Loading/>;
     } else if (repoCreationPhase === RepositoryCreationPhase.InProgress) {
-        present = <Container>
-            <Row className={'justify-content-left'}>
-                <Col className={"col-1 mb-2 mt-2"}>
-                    <Spinner animation="border" variant="primary" size="xl" role="status" />
-                </Col>
-                <Col className={"col-3 mb-2 mt-2"}>
-                    <span>Creating repository...</span>
-                </Col>
-            </Row>
-        </Container>;
+        content = <ProgressSpinner text={'Creating repository...'} />;
     } else if (repoCreationPhase === RepositoryCreationPhase.Completed) {
-        present = <Alert variant="info" className={"mt-3"}>Repository <span className={"font-weight-bold"}>{repoName}</span> created successfully</Alert>;
+        content = <Alert variant="info" className={"mt-3"}>Repository <span className={"font-weight-bold"}>{repoName}</span> created successfully</Alert>;
     }
     else {
-        present = <RepositoryCreateForm config={response} error={showError} onSubmit={onSubmit} onCancel={onCancel}/>;
+        content = <RepositoryCreateForm config={response} error={showError} onSubmit={onSubmit} onCancel={onCancel}/>;
     }
     return (
         <>
             <h2 className={"wizard-step-header"}>Create a repository</h2>
-            {present}
+            {content}
         </>
     );
 }
 
 export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
     const [nextEnabled, setNextEnabled] = useState(false)
-    const [state, setState] = useState({});
+    const [state, setState] = useState({
+        'branch': '',
+        'namespace': '',
+        'repoId': '',
+    });
     const completedStep = (val = {}) => {
         setState({...state, ...val});
         setNextEnabled(true);
@@ -75,7 +71,6 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
     }
     return (
         <Wizard
-            showSkipButton
             canProceed={nextEnabled}
             onNextStep={() => setNextEnabled(false)}
             onComplete={onComplete}
@@ -86,6 +81,26 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
                 createRepo={createRepo}
                 onCancel={onExit}
                 onComplete={completedStep} />
+
+            <ImportDataStep
+                repoId={state.repoId}
+                onComplete={completedStep}
+                branchName={state.branch} />
         </Wizard>
+    );
+}
+
+const ProgressSpinner = ({text, changingElement =''}) => {
+    return (
+        <Container>
+            <Row className={'justify-content-left'}>
+                <Col className={"col-1 mb-2 mt-2"}>
+                    <Spinner animation="border" variant="primary" size="xl" role="status" />
+                </Col>
+                <Col className={"col-3 mb-2 mt-2"}>
+                    <span>{text}{changingElement}</span>
+                </Col>
+            </Row>
+        </Container>
     );
 }
