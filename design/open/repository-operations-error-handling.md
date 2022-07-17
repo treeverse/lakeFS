@@ -107,7 +107,7 @@ The logic is very simple, given the solution above is implemented:
   * If it is in `active` state - ignore
   * If it is in `deleted` or `failed` state - delete it applying the same steps as described above for `DeleteRepository`
   * If it is in `initial` state - decide if it should move to `failed` and if so, set to `failed` and try to delete, as described above
-Run periodically
+Run periodically (**TBD** How often?) as a background worker and upon error just skip the `Repository`.
 
 ## Open Questions
 1. What error value should we return for a `GetRepository` when the repository is in `deleted` or `failed` state?
