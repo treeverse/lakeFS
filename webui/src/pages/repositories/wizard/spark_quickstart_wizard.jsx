@@ -10,6 +10,7 @@ import {Spinner} from "react-bootstrap";
 import Alert from "react-bootstrap/Alert";
 import RepositoryCreateForm from "../../../lib/components/repositoryCreateForm";
 import ImportDataStep from "./import_data_wizard_step";
+import {SparkConfigStep} from "./spark_config_step";
 
 const RepositoryCreationPhase = {
     NotStarted: 0,
@@ -70,6 +71,10 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
         onExit();
     }
     const steps = [
+        {
+            label: 'Spark Configurations',
+            component: <SparkConfigStep />
+        },
         {
             label: 'Create Repository',
             component: <RepositoryCreationStep
