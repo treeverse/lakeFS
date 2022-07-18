@@ -541,3 +541,9 @@ td .form-group {
 .wizard-progress-bar {
   margin-bottom: 25px;
 }
+
+.wizard-step-header {
+  display: flex;
+  justify-content: left;
+  margin-bottom: 40px;
+}

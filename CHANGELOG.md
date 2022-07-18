@@ -1,4 +1,9 @@
 # Changelog
+## v0.69.1 - 2022-07-14
+
+Bug fixes: 
+- Fix crash on group listing by remote API (#3655)
+
 ## v0.69.0 - 2022-07-11
 
 Note: this version contains performance and security improvements to the authentication mechanism.

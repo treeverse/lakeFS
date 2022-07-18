@@ -318,6 +318,10 @@ func (m *RefsFake) GetCommit(_ context.Context, _ graveler.RepositoryID, id grav
 	return nil, graveler.ErrCommitNotFound
 }
 
+func (m *RefsFake) GetCommitByPrefix(_ context.Context, _ graveler.RepositoryID, prefix graveler.CommitID) (*graveler.Commit, error) {
+	return &graveler.Commit{}, nil
+}
+
 func (m *RefsFake) AddCommit(_ context.Context, _ graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {
 	if m.CommitErr != nil {
 		return "", m.CommitErr

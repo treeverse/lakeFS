@@ -64,7 +64,7 @@ var setupCmd = &cobra.Command{
 				os.Exit(1)
 			}
 			storeMessage := kv.StoreMessage{Store: kvStore}
-			authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), cfg.GetAuthCacheConfig(), authLogger)
+			authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), authLogger)
 			metadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), kvStore)
 		} else {
 			authService = auth.NewDBAuthService(dbPool, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), authLogger)

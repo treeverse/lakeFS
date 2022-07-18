@@ -3516,25 +3516,30 @@ paths:
                 $ref: "#/components/schemas/StorageConfig"
         401:
           $ref: "#/components/responses/Unauthorized"
-  /templates:
+  /templates/{template_location}:
     get:
       tags:
         - templates
       operationId: expandTemplate
       description: fetch and expand template
       parameters:
-        - in: query
+        - in: path
           name: template_location
           required: true
           schema:
             type: string
-            description: URL of the template; must be relative (to a URL configured on the server).
+          description: URL of the template; must be relative (to a URL configured on the server).
+          example: spark.conf.tt
         - in: query
           name: params
           schema:
             type: object
             additionalProperties:
               type: string
+            example:
+              lakefs_url: https://lakefs.example.com
+          style: form
+          explode: true
       responses:
         200:
           description: expanded template
