@@ -61,7 +61,7 @@ lakeFS hooks allow you to automate and ensure that a given set of checks and val
 Creating a branch in lakeFS provides an isolated environment containing a snapshot of your repository. While working on your branch in isolation, all other data users will be looking at the repository's main branch. So they won't see your changes, and you also won't see the changes applied to the main branch. All of this happens without any data duplication but metadata management.
 
 ### Main Branch
-Every Git repository has the main branch (unless you take explicit steps to remove it) and it plays a key role in the software development process. In most projects, it represents the source of truth - all the code that works has been tested and is ready to be pushed to production. Similar to that, main branch in lakeFS represents the source of truth and can be live data in production.
+Every Git repository has the main branch (unless you take explicit steps to remove it) and it plays a key role in the software development process. In most projects, it represents the source of truth - all the code that works has been tested and is ready to be pushed to production. Similarly, main branch in lakeFS could be used as the single source of truth. For example, the live production data can be on the main branch. 
 
 ### Metadata Management
 Where there is data, there is also metadata. lakeFS uses metadata to define schema, data types, data versions, relations to other datasets, etc. This helps to improve discoverability and manageability. lakeFS performs data versioning through metadata operations. 
