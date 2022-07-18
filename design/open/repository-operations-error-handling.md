@@ -39,7 +39,7 @@ The new `repository_state` attribute can have one of four values: `initial`, `ac
   * If the `Repository` entry exists and is not in `active` state - **TBD #1** - should we return `ErrRepositoryNotFound` here too? Maybe a new error - `ErrRepositoryDeletionInProgress`-ish?
 * Deleting a `Repository` will be done by first setting the `Repository` state to `deleted`, making it immediately unavailable. Once the `Repository` is set to deleted all its correlated entities can be removed safely, as none of them should be accessible. In case of a failure at any step, the `Repository` and all its entities remain unreachable due to the `deleted` status.
   * A failure to set the `Repository` state to `deleted`, will result in no change to `KV` and so the data remains consistent. The error from the failed update operation will be returned
-  * Once all correlated entities were successfully deleted, the `Repository` entry itself will can be deleted too
+  * Once all the associated entities were successfully deleted, the `Repository` entry itself can be deleted too
   * Any failure to delete any entity during the deletion process, still leaves the DB in consistent state as the `Repository` entity, and by that its correlated entities, are unreachable due to the `deleted` state
 
 ![Repository State Transitions](diagrams/repository-state-transitions.png)
