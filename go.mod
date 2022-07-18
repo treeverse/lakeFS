@@ -11,7 +11,7 @@ require (
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.7
 	github.com/Masterminds/squirrel v1.5.0
 	github.com/apache/thrift v0.14.1
-	github.com/aws/aws-sdk-go v1.37.26
+	github.com/aws/aws-sdk-go v1.44.56
 	github.com/cockroachdb/pebble v0.0.0-20210308135031-3c37882d2ac8
 	github.com/cubewise-code/go-mime v0.0.0-20200519001935-8c5762b177d8
 	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369
