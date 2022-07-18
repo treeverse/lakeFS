@@ -159,7 +159,7 @@ func (w *GeneralMetaRangeWriter) writeRangesToMetaRange() (*graveler.MetaRangeID
 
 	defer func() {
 		if abortErr := metaRangeWriter.Abort(); abortErr != nil {
-			logging.Default().WithField("namespace", w.namespace).Errorf("failed aborting metarange writer: %w", err)
+			logging.Default().WithField("namespace", w.namespace).Errorf("failed aborting metarange writer: %s", err)
 		}
 	}()
 	for _, p := range w.ranges {

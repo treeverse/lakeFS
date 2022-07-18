@@ -97,7 +97,7 @@ func (it *InventoryIterator) fillBuffer() bool {
 	defer func() {
 		err = rdr.Close()
 		if err != nil {
-			it.logger.Errorf("failed to close manifest file reader. file=%s, err=%w", it.Manifest.Files[it.inventoryFileIndex].Key, err)
+			it.logger.Errorf("failed to close manifest file reader. file=%s, err=%s", it.Manifest.Files[it.inventoryFileIndex].Key, err)
 		}
 	}()
 	it.buffer, err = rdr.Read(int(rdr.GetNumRows()))
