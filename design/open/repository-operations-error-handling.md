@@ -82,7 +82,7 @@ Only the repository is created so this is pretty trivial
   * Otherwise, return error (according to the state? **TBD #1**)
 
 ### DeleteRepository
-* Get the `Repository`, using the `GetRepository` flow above 
+* Get the `Repository`, using the `GetRepository` command as described above 
   * In case of error return the error
 * SetIf the `Repository` state to `deleted`
   * If failed return the error
