@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -152,6 +153,57 @@ var abuseRandomWritesCmd = &cobra.Command{
 	},
 }
 
+var abuseCommitCmd = &cobra.Command{
+	Use:    "commit <source ref uri>",
+	Short:  "Commits to the source ref repeatedly",
+	Hidden: false,
+	Args:   cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		u := MustParseRefURI("source ref", args[0])
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		gapDuration := MustDuration(cmd.Flags().GetDuration("gap"))
+
+		Fmt("Source branch: %s\n", u.String())
+		generator := stress.NewGenerator(1, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
+
+		// generate randomly selected keys as input
+		rand.Seed(time.Now().Unix())
+		generator.Setup(func(add stress.GeneratorAddFn) {
+			for i := 0; i < amount; i++ {
+				add(strconv.Itoa(i + 1))
+			}
+		})
+
+		// generate randomly selected keys as input
+		client := getClient()
+		resp, err := client.GetRepositoryWithResponse(cmd.Context(), u.Repository)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+
+		// execute the things!
+		generator.Run(func(input chan string, output chan stress.Result) {
+			ctx := cmd.Context()
+			client := getClient()
+			for work := range input {
+				start := time.Now()
+				resp, err := client.CommitWithResponse(ctx, u.Repository, u.Ref, &api.CommitParams{},
+					api.CommitJSONRequestBody(api.CommitCreation{Message: work}))
+				if err == nil && resp.StatusCode() != http.StatusOK {
+					err = helpers.ResponseAsError(resp)
+				}
+				output <- stress.Result{
+					Error: err,
+					Took:  time.Since(start),
+				}
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(gapDuration):
+				}
+			}
+		})
+	},
+}
+
 var abuseCreateBranchesCmd = &cobra.Command{
 	Use:    "create-branches <source ref uri>",
 	Short:  "Create a lot of branches very quickly.",
@@ -261,4 +313,8 @@ func init() {
 	abuseRandomWritesCmd.Flags().String("prefix", "abuse/", "prefix to create paths under")
 	abuseRandomWritesCmd.Flags().Int("amount", 1000000, "amount of writes to do")
 	abuseRandomWritesCmd.Flags().Int("parallelism", 100, "amount of writes to do in parallel")
+
+	abuseCmd.AddCommand(abuseCommitCmd)
+	abuseCommitCmd.Flags().Int("amount", 100, "amount of commits to do")
+	abuseCommitCmd.Flags().Duration("gap", 2*time.Second, "duration to wait between commits")
 }
