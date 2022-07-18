@@ -13,7 +13,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-var regionError = errors.New("failed to get region")
+var errRegion = errors.New("failed to get region")
 
 func TestClientCache(t *testing.T) {
 	defaultRegion := "us-west-2"
@@ -76,7 +76,7 @@ func TestClientCache(t *testing.T) {
 				}
 				actualRegionFetch[bucket] = true
 				if tst.regionErrorsIndexes[callIdx] {
-					return "", regionError
+					return "", errRegion
 				}
 				return tst.bucketToRegion[bucket], nil
 			})

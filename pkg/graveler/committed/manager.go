@@ -72,7 +72,7 @@ func (c *committedManager) WriteRange(ctx context.Context, ns graveler.StorageNa
 
 	defer func() {
 		if err := writer.Abort(); err != nil {
-			c.logger.Errorf("Aborting write to range: %w", err)
+			c.logger.WithError(err).Error("Aborting write to range")
 		}
 	}()
 
@@ -112,7 +112,7 @@ func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.Stora
 	writer := c.metaRangeManager.NewWriter(ctx, ns, nil)
 	defer func() {
 		if err := writer.Abort(); err != nil {
-			c.logger.Errorf("Aborting write to meta range: %w", err)
+			c.logger.WithError(err).Error("Aborting write to meta range")
 		}
 	}()
 
@@ -129,7 +129,7 @@ func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.Stora
 			Count:         int64(r.Count),
 			Tombstone:     false,
 		}); err != nil {
-			c.logger.Errorf("Aborting writing range to meta range: %w", err)
+			c.logger.WithError(err).Error("Aborting writing range to meta range")
 			return nil, fmt.Errorf("writing range: %w", err)
 		}
 	}
@@ -148,7 +148,7 @@ func (c *committedManager) WriteMetaRangeByIterator(ctx context.Context, ns grav
 	writer := c.metaRangeManager.NewWriter(ctx, ns, metadata)
 	defer func() {
 		if err := writer.Abort(); err != nil {
-			c.logger.Errorf("Aborting write to meta range: %w", err)
+			c.logger.WithError(err).Error("Aborting write to meta range")
 		}
 	}()
 
