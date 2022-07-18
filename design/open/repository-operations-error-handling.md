@@ -1,7 +1,7 @@
 # Respository Operations Error Handling
 
 ## Abstract
-As part of porting our DB from SQL to KV Store we are facing certain limitations forced by the later. One of the main differences between the to is the support of transactions. While SQL DBs enjoy the benefit of atomic transactional operations, and so can bind several DB operations and guarantee the completion, or rollback, of the entire transaction, KV Stores does not support this attribute and each operation has to stand on its own.
+As part of porting our DB from SQL to KV Store we are facing certain limitations forced by the latter. One of the main differences between the two is the support of transactions. While SQL DBs enjoy the benefit of atomic transactional operations, and therefore can bind several DB operations and guarantee the completion, or rollback, of the entire transaction, KV Stores does not support this functionality and each operation has to stand on its own.
 This document purpose is to describe the way a `Repository` is currently being created and deleted by `graveler`, describe the challenges it poses when using it over KV Store and propose possible solutions
 
 ## Challenges
