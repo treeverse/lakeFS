@@ -88,6 +88,7 @@ class SetupState(ModelNormal):
         return {
             'state': (str,),  # noqa: E501
             'oidc_enabled': (bool,),  # noqa: E501
+            'oidc_default_login': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -98,6 +99,7 @@ class SetupState(ModelNormal):
     attribute_map = {
         'state': 'state',  # noqa: E501
         'oidc_enabled': 'oidc_enabled',  # noqa: E501
+        'oidc_default_login': 'oidc_default_login',  # noqa: E501
     }
 
     read_only_vars = {
@@ -143,6 +145,7 @@ class SetupState(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             state (str): [optional]  # noqa: E501
             oidc_enabled (bool): [optional]  # noqa: E501
+            oidc_default_login (bool): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -226,6 +229,7 @@ class SetupState(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             state (str): [optional]  # noqa: E501
             oidc_enabled (bool): [optional]  # noqa: E501
+            oidc_default_login (bool): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

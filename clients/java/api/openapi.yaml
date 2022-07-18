@@ -5199,6 +5199,7 @@ components:
     SetupState:
       example:
         oidc_enabled: true
+        oidc_default_login: true
         state: initialized
       properties:
         state:
@@ -5207,6 +5208,8 @@ components:
           - not_initialized
           type: string
         oidc_enabled:
+          type: boolean
+        oidc_default_login:
           type: boolean
       type: object
     AccessKeyCredentials:
