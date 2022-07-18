@@ -206,12 +206,6 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	var protectedBranchesManager graveler.ProtectedBranchesManager
 	branchLocker := ref.NewBranchLocker(cfg.LockDB) // TODO (niro): Will not be needed in KV implementation
 
-	if m.kvEnabled {
-		commitIterator, err = ref.NewKVOrderedCommitIterator(ctx, m.refManager.Store(), repositoryID, true)
-	} else {
-		commitIterator, err = ref.NewDBOrderedCommitIterator(ctx, m.db, repositoryID, 1000, ref.WithOnlyAncestryLeaves()) //nolint: gomnd
-	}
-
 	if cfg.Config.GetDatabaseParams().KVEnabled { // TODO (niro): Each module should be replaced by an appropriate KV implementation
 		refManager = ref.NewKVRefManager(executor, *cfg.KVStore, cfg.DB, ident.NewHexAddressProvider())
 		gcManager = retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix(),
