@@ -32,6 +32,7 @@ type GarbageCollectionManager struct {
 	commitIteratorCreator       iteratorCreator
 }
 
+// iteratorCreator - returns an ordered iterator (DB or KV) over all commits in the given repository
 type iteratorCreator func(ctx context.Context, repoID graveler.RepositoryID) (graveler.CommitIterator, error)
 
 func (m *GarbageCollectionManager) GetCommitsCSVLocation(runID string, sn graveler.StorageNamespace) (string, error) {

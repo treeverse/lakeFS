@@ -593,7 +593,3 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 	}
 	return nil
 }
-
-func (m *DBManager) Store() *kv.StoreMessage {
-	return nil
-}

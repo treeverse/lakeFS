@@ -785,22 +785,6 @@ func (g *DBGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 	return newCommitID, nil
 }
 
-func (g *DBGraveler) validateCommitParent(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
-	if len(commit.Parents) > 1 {
-		return "", ErrMultipleParents
-	}
-	if len(commit.Parents) == 0 {
-		return "", nil
-	}
-
-	parentCommitID := commit.Parents[0]
-	_, err := g.RefManager.GetCommit(ctx, repositoryID, parentCommitID)
-	if err != nil {
-		return "", fmt.Errorf("get parent commit %s: %w", parentCommitID, err)
-	}
-	return parentCommitID, nil
-}
-
 func (g *DBGraveler) isCommitExist(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (bool, error) {
 	_, err := g.RefManager.GetCommit(ctx, repositoryID, commitID)
 	if err == nil {
@@ -817,7 +801,7 @@ func (g *DBGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID Rep
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
 		// parentCommitID should always match the HEAD of the branch.
 		// Empty parentCommitID matches first commit of the branch.
-		parentCommitID, err := g.validateCommitParent(ctx, repositoryID, commit)
+		parentCommitID, err := validateCommitParent(ctx, repositoryID, commit, g.RefManager)
 		if err != nil {
 			return nil, err
 		}
@@ -859,7 +843,7 @@ func (g *DBGraveler) AddCommit(ctx context.Context, repositoryID RepositoryID, c
 	if len(commit.Parents) == 0 {
 		return "", ErrAddCommitNoParent
 	}
-	_, err := g.validateCommitParent(ctx, repositoryID, commit)
+	_, err := validateCommitParent(ctx, repositoryID, commit, g.RefManager)
 	if err != nil {
 		return "", err
 	}

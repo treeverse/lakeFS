@@ -236,6 +236,8 @@ func (m *KVManager) AddCommit(ctx context.Context, repositoryID graveler.Reposit
 	c := graveler.ProtoFromCommit(graveler.CommitID(commitID), &commit)
 	commitKey := graveler.CommitPath(graveler.CommitID(commitID))
 	err := m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(repositoryID), []byte(commitKey), c, nil)
+	// commits are written based on their content hash, if we insert the same ID again,
+	// it will necessarily have the same attributes as the existing one, so if a commit already exists doesn't return an error
 	if err != nil && !errors.Is(err, kv.ErrPredicateFailed) {
 		return "", err
 	}
@@ -264,8 +266,4 @@ func (m *KVManager) ListCommits(ctx context.Context, repositoryID graveler.Repos
 		return nil, err
 	}
 	return NewKVOrderedCommitIterator(ctx, &m.kvStore, repositoryID, false)
-}
-
-func (m *KVManager) Store() *kv.StoreMessage {
-	return &m.kvStore
 }

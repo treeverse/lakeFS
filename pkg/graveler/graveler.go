@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/ident"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -661,8 +660,6 @@ type RefManager interface {
 
 	// ListCommits returns an iterator over all known commits, ordered by their commit ID
 	ListCommits(ctx context.Context, repositoryID RepositoryID) (CommitIterator, error)
-
-	Store() *kv.StoreMessage
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -1214,7 +1211,7 @@ func newStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken 
 	return StagingToken(v)
 }
 
-func (g *KVGraveler) validateCommitParent(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
+func validateCommitParent(ctx context.Context, repositoryID RepositoryID, commit Commit, manager RefManager) (CommitID, error) {
 	if len(commit.Parents) > 1 {
 		return "", ErrMultipleParents
 	}
@@ -1223,7 +1220,7 @@ func (g *KVGraveler) validateCommitParent(ctx context.Context, repositoryID Repo
 	}
 
 	parentCommitID := commit.Parents[0]
-	_, err := g.RefManager.GetCommit(ctx, repositoryID, parentCommitID)
+	_, err := manager.GetCommit(ctx, repositoryID, parentCommitID)
 	if err != nil {
 		return "", fmt.Errorf("get parent commit %s: %w", parentCommitID, err)
 	}
@@ -1246,7 +1243,7 @@ func (g *KVGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID Rep
 	res, err := g.db.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
 		// parentCommitID should always match the HEAD of the branch.
 		// Empty parentCommitID matches first commit of the branch.
-		parentCommitID, err := g.validateCommitParent(ctx, repositoryID, commit)
+		parentCommitID, err := validateCommitParent(ctx, repositoryID, commit, g.RefManager)
 		if err != nil {
 			return nil, err
 		}
@@ -1288,7 +1285,7 @@ func (g *KVGraveler) AddCommit(ctx context.Context, repositoryID RepositoryID, c
 	if len(commit.Parents) == 0 {
 		return "", ErrAddCommitNoParent
 	}
-	_, err := g.validateCommitParent(ctx, repositoryID, commit)
+	_, err := validateCommitParent(ctx, repositoryID, commit, g.RefManager)
 	if err != nil {
 		return "", err
 	}
