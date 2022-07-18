@@ -33,7 +33,7 @@ These unused `Repository` entries, which now can be easily detected, can later b
 The new `repository_state` attribute can have one of four values: `initial`, `active`, `deleted` or `failed`
 * Upon creation, a `Repository` entry will have an `initial` state, to indicate it is not usable yet. It will also indicate that this `Repository` is soon to be valid for usage, so other threads/processes treat it as such
   * A failure in the next creation steps - default `Branch`, initial `Commit` or any other future step, will transfer the `Repository` to state `failed`, if possible. If that cannot be achieved (e.g. the creating process crashed, or KV connectivity is lost) the `Repository` can stay in state `initial` as it is still unused
-  * If during creation, a `Repository` with identical ID (name) is found, the creation of the new `Repository` is stopped before any update the the `KV` is done. This is similar to the current behavior and will be done regardless of the existing `Repository` status
+  * If during creation, a `Repository` with identical ID (name) is found, the creation of the new `Repository` is stopped before any update to the `KV` is done. This is similar to the current behavior and will be done regardless of the existing `Repository` status
 * When retrieving a `Repository` it will only be retrieved if it is in `active` status. Otherwise an error will be returned.
   * If the `Repository` entry does not exist, an `ErrRepositoryNotFound` will be returned
   * If the `Repository` entry exists and is not in `active` state - **TBD #1** - should we return `ErrRepositoryNotFound` here too? Maybe a new error - `ErrRepositoryDeletionInProgress`-ish?
