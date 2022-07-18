@@ -63,9 +63,7 @@ func TestStructKeys_SimpleTagged(t *testing.T) {
 		c int `test:"ccc" toast:"sea"`
 	}
 
-	v := s{}
-	v.c = v.c // mark field as used
-	keys := config.GetStructKeys(reflect.TypeOf(v), tagName, squashTagValue)
+	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"Aaa", "b", "ccc"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
 	}
@@ -236,7 +234,7 @@ func TestValidateMissingRequired_SimpleTagged(t *testing.T) {
 	type s struct {
 		A int `test:"Aaa" validate:"required"`
 		B int `toast:"bee" validate:"required"`
-		C int `test:"ccc" toast:"sea" validate:"required"`
+		c int `test:"ccc" toast:"sea" validate:"required"`
 	}
 
 	keys := config.ValidateMissingRequiredKeys(s{}, tagName, squashTagValue)
