@@ -3,14 +3,12 @@ package ref
 import (
 	"container/heap"
 	"context"
-	"errors"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/kv"
 )
 
-type KVCommitIterator struct {
-	kvStore      kv.StoreMessage
+type CommitIterator struct {
+	manager      graveler.RefManager
 	ctx          context.Context
 	repositoryID graveler.RepositoryID
 	start        graveler.CommitID
@@ -59,33 +57,31 @@ func (c *commitsPriorityQueue) Pop() interface{} {
 	return item
 }
 
-// NewKVCommitIterator returns an iterator over all commits in the given repository.
+// NewCommitIterator returns an iterator over all commits in the given repository.
 // Ordering is based on the Commit Creation Date.
-func NewKVCommitIterator(ctx context.Context, kvStore kv.StoreMessage, repositoryID graveler.RepositoryID, start graveler.CommitID) *KVCommitIterator {
-	return &KVCommitIterator{
-		kvStore:      kvStore,
+func NewCommitIterator(ctx context.Context, repositoryID graveler.RepositoryID, start graveler.CommitID, manager graveler.RefManager) *CommitIterator {
+	return &CommitIterator{
 		ctx:          ctx,
 		repositoryID: repositoryID,
 		start:        start,
 		queue:        make(commitsPriorityQueue, 0),
 		visit:        make(map[graveler.CommitID]struct{}),
+		manager:      manager,
 	}
 }
 
-func (ci *KVCommitIterator) getCommitRecord(commitID graveler.CommitID) (*graveler.CommitRecord, error) {
-	commitKey := graveler.CommitPath(commitID)
-	c := graveler.CommitData{}
-	_, err := ci.kvStore.GetMsg(ci.ctx, graveler.RepoPartition(ci.repositoryID), []byte(commitKey), &c)
+func (ci *CommitIterator) getCommitRecord(commitID graveler.CommitID) (*graveler.CommitRecord, error) {
+	commit, err := ci.manager.GetCommit(ci.ctx, ci.repositoryID, commitID)
 	if err != nil {
-		if errors.Is(err, kv.ErrNotFound) {
-			err = graveler.ErrNotFound
-		}
 		return nil, err
 	}
-	return CommitDataToCommitRecord(&c), nil
+	return &graveler.CommitRecord{
+		CommitID: commitID,
+		Commit:   commit,
+	}, nil
 }
 
-func (ci *KVCommitIterator) Next() bool {
+func (ci *CommitIterator) Next() bool {
 	if ci.err != nil || ci.state == commitIteratorStateDone {
 		return false
 	}
@@ -131,7 +127,7 @@ func (ci *KVCommitIterator) Next() bool {
 
 // SeekGE skip under the point of 'id' commit ID based on a a new
 //   The list of commit
-func (ci *KVCommitIterator) SeekGE(id graveler.CommitID) {
+func (ci *CommitIterator) SeekGE(id graveler.CommitID) {
 	ci.err = nil
 	ci.queue = make(commitsPriorityQueue, 0)
 	ci.visit = make(map[graveler.CommitID]struct{})
@@ -153,12 +149,12 @@ func (ci *KVCommitIterator) SeekGE(id graveler.CommitID) {
 	ci.value = nil
 }
 
-func (ci *KVCommitIterator) Value() *graveler.CommitRecord {
+func (ci *CommitIterator) Value() *graveler.CommitRecord {
 	return ci.value
 }
 
-func (ci *KVCommitIterator) Err() error {
+func (ci *CommitIterator) Err() error {
 	return ci.err
 }
 
-func (ci *KVCommitIterator) Close() {}
+func (ci *CommitIterator) Close() {}

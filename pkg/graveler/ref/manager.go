@@ -257,7 +257,7 @@ func (m *KVManager) Log(ctx context.Context, repositoryID graveler.RepositoryID,
 	if err != nil {
 		return nil, err
 	}
-	return NewKVCommitIterator(ctx, m.kvStore, repositoryID, from), nil
+	return NewCommitIterator(ctx, repositoryID, from, m), nil
 }
 
 func (m *KVManager) ListCommits(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.CommitIterator, error) {

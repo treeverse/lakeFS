@@ -1227,8 +1227,8 @@ func validateCommitParent(ctx context.Context, repositoryID RepositoryID, commit
 	return parentCommitID, nil
 }
 
-func (g *KVGraveler) CommitExists(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (bool, error) {
-	_, err := g.RefManager.GetCommit(ctx, repositoryID, commitID)
+func CommitExists(ctx context.Context, repositoryID RepositoryID, commitID CommitID, manager RefManager) (bool, error) {
+	_, err := manager.GetCommit(ctx, repositoryID, commitID)
 	if err == nil {
 		// commit already exists
 		return true, nil
@@ -1258,7 +1258,7 @@ func (g *KVGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID Rep
 
 		// check if commit already exists.
 		commitID := CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
-		if exists, err := g.CommitExists(ctx, repositoryID, commitID); err != nil {
+		if exists, err := CommitExists(ctx, repositoryID, commitID, g.RefManager); err != nil {
 			return nil, err
 		} else if exists {
 			return commitID, nil
@@ -1292,7 +1292,7 @@ func (g *KVGraveler) AddCommit(ctx context.Context, repositoryID RepositoryID, c
 
 	// check if commit already exists.
 	commitID := CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
-	if exists, err := g.CommitExists(ctx, repositoryID, commitID); err != nil {
+	if exists, err := CommitExists(ctx, repositoryID, commitID, g.RefManager); err != nil {
 		return "", err
 	} else if exists {
 		return commitID, nil
@@ -1331,7 +1331,7 @@ func (g *KVGraveler) addCommitNoLock(ctx context.Context, repositoryID Repositor
 }
 
 func (g *KVGraveler) stagingEmpty(ctx context.Context, branch *Branch) (bool, error) {
-	// TODO - change to the kv branch implementation version
+	// TODO(eden) - change to the kv branch implementation version
 	stIt, err := g.StagingManager.List(ctx, branch.StagingToken, 1)
 	if err != nil {
 		return false, fmt.Errorf("staging list (token %s): %w", branch.StagingToken, err)

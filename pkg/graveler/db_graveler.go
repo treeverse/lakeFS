@@ -785,18 +785,6 @@ func (g *DBGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 	return newCommitID, nil
 }
 
-func (g *DBGraveler) isCommitExist(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (bool, error) {
-	_, err := g.RefManager.GetCommit(ctx, repositoryID, commitID)
-	if err == nil {
-		// commit already exists
-		return true, nil
-	}
-	if !errors.Is(err, ErrCommitNotFound) {
-		return false, fmt.Errorf("getting commit %s: %w", commitID, err)
-	}
-	return false, nil
-}
-
 func (g *DBGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) (CommitID, error) {
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
 		// parentCommitID should always match the HEAD of the branch.
@@ -816,7 +804,7 @@ func (g *DBGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID Rep
 
 		// check if commit already exists.
 		commitID := CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
-		if exists, err := g.isCommitExist(ctx, repositoryID, commitID); err != nil {
+		if exists, err := CommitExists(ctx, repositoryID, commitID, g.RefManager); err != nil {
 			return nil, err
 		} else if exists {
 			return commitID, nil
@@ -850,7 +838,7 @@ func (g *DBGraveler) AddCommit(ctx context.Context, repositoryID RepositoryID, c
 
 	// check if commit already exists.
 	commitID := CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
-	if exists, err := g.isCommitExist(ctx, repositoryID, commitID); err != nil {
+	if exists, err := CommitExists(ctx, repositoryID, commitID, g.RefManager); err != nil {
 		return "", err
 	} else if exists {
 		return commitID, nil
@@ -1303,7 +1291,7 @@ func (g *DBGraveler) LoadCommits(ctx context.Context, repositoryID RepositoryID,
 			parents[i] = CommitID(p)
 		}
 		if commit.GetGeneration() == 0 {
-			return fmt.Errorf("no longer support for dumps created by lakeFS versions below v0.61.0: %w", ErrNoCommitGeneration)
+			return fmt.Errorf("dumps created by lakeFS versions before v0.61.0 are no longer supported: %w", ErrNoCommitGeneration)
 		}
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
 			Version:      CommitVersion(commit.Version),
