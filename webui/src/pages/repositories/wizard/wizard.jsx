@@ -1,100 +1,103 @@
 import React, {useState} from "react";
-import StepWizard from "react-step-wizard";
-import {ProgressBar} from "react-bootstrap";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
+import {Box, Button, Step, StepLabel, Stepper, Typography} from "@mui/material";
 
-const transitionDefaults = {
-    enterRight: "",
-    enterLeft: "",
-    exitRight: "",
-    exitLeft: "",
-    intro: "",
-}
+const defaultSteps = [{label: '', component: <></>, optional: false}];
 
-const Wizard = ({
-                    hashEnabled=false,
-                    transitions=transitionDefaults,
-                    showProgressBar = false,
-                    showSkipButton = false,
-                    onComplete = () => {},
-                    canProceed = true,
-                    onNextStep = () => {},
-                    children,
-                }) => {
+export const Wizard = ({steps = defaultSteps, isShowBack= true, completed= {}, onDone = () => {}}) => {
+    const [activeStep, setActiveStep] = useState(0);
+    const [skipped, setSkipped] = useState(new Set());
 
-    const [state, setState] = useState({
-        stepWizard: {},
-    });
-    const [refresh, setRefresh] = useState(false);
-
-    const onStepChange = () => {
-        setRefresh(!refresh);
-        onNextStep();
+    const isStepOptional = (stepIndex) => {
+        return steps[stepIndex].optional;
     };
 
-    const setInstance = stepWizard => {
-        setState({...state, stepWizard: stepWizard});
+    const isStepSkipped = (stepIndex) => {
+        return skipped.has(stepIndex);
+    };
+
+    const isStepCompleted = (stepIndex) => {
+        return completed.has(stepIndex);
     }
 
+    const handleNext = () => {
+        if (activeStep === steps.length - 1) {
+            onDone();
+        }
+        else {
+            let newSkipped = skipped;
+            if (isStepSkipped(activeStep)) {
+                newSkipped = new Set(newSkipped.values());
+                newSkipped.delete(activeStep);
+            }
+            setActiveStep((prevActiveStep) => prevActiveStep + 1);
+            setSkipped(newSkipped);
+        }
+    };
+
+    const handleBack = () => {
+        setActiveStep((prevActiveStep) => prevActiveStep - 1);
+    };
+
+    const handleSkip = () => {
+        if (!isStepOptional(activeStep)) {
+            throw new Error("You can't skip a step that isn't optional.");
+        }
+        if (activeStep === steps.length - 1) {
+            onDone();
+        }
+        else {
+            setActiveStep((prevActiveStep) => prevActiveStep + 1);
+            setSkipped((prevSkipped) => new Set(prevSkipped).add(activeStep));
+        }
+    };
+
     return (
-        <Container className='container'>
-            <div className='jumbotron'>
-                <Row className={'justify-content-center'}>
-                    <Col>
-                        <StepWizard
-                            onStepChange={onStepChange}
-                            transitions={transitions}
-                            nav={showProgressBar && <WizardNav />}
-                            instance={setInstance}
-                            isHashEnabled={hashEnabled}
-                        >
-                            {children}
-                        </StepWizard>
-                    </Col>
-                </Row>
-            </div>
+        <Box className={'jumbotron'}>
+            <Stepper activeStep={activeStep} alternativeLabel>
+                {steps.map((step, index) => {
+                    const stepProps = {};
+                    const labelProps = {};
+                    if (step.optional) {
+                        labelProps.optional = (
+                            <Typography variant="caption">Optional</Typography>
+                        );
 
-            {<WizardController
-                stepWizard={state.stepWizard}
-                canProceed={canProceed}
-                skipButton={showSkipButton}
-                onComplete={onComplete}/>}
-
-        </Container>
-    );
-};
-
-const WizardNav = ({totalSteps, currentStep}) => {
-    return (
-        <ProgressBar className={'wizard-progress-bar'} striped max={totalSteps} min={1} now={currentStep} />
-    );
-}
-
-const WizardController = ({stepWizard, canProceed, skipButton = false, onComplete}) => {
-    return (
-        <Container>
-            <Row className={'justify-content-center'}>
-                {
-                    skipButton && stepWizard.currentStep < stepWizard.totalSteps ?
-                        <Col className={"col-1 mb-2 mt-2"}>
-                            <button className='btn btn-secondary btn-block' onClick={stepWizard.nextStep}>Skip</button>
-                        </Col>
-                        :
-                        null
-                }
-                <Col className={"col-2 mb-2 mt-2"}>
-                    {
-                        stepWizard.currentStep < stepWizard.totalSteps ?
-                            <button className='btn btn-primary btn-block' disabled={!canProceed} onClick={stepWizard.nextStep}>Next Step</button>
-                            :
-                            <button className='btn btn-success btn-block' disabled={!canProceed} onClick={onComplete} >Finish</button>
                     }
-                </Col>
-            </Row>
-        </Container>
+                    if (isStepSkipped(index)) {
+                        stepProps.completed = false;
+                    }
+                    return (
+                        <Step key={step.label} {...stepProps}>
+                            <StepLabel align={"center"} {...labelProps}>{step.label}</StepLabel>
+                        </Step>
+                    );
+                })}
+            </Stepper>
+            <>
+                <Box sx={{ mt: 2, mb: 1 }}>
+                    {steps[activeStep].component}
+                </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'row', pt: 2 }}>
+                    {isShowBack && <Button
+                        color="inherit"
+                        disabled={activeStep === 0}
+                        onClick={handleBack}
+                        sx={{mr: 1}}
+                    >
+                        Back
+                    </Button>
+                    }
+                    <Box sx={{ flex: '1 1 auto' }} />
+                    {isStepOptional(activeStep) && (
+                        <Button color="inherit" onClick={handleSkip} sx={{ mr: 1 }}>
+                            Skip
+                        </Button>
+                    )}
+                    <Button onClick={handleNext} disabled={!isStepCompleted(activeStep)}>
+                        {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
+                    </Button>
+                </Box>
+            </>
+        </Box>
     );
 }
-
-export default Wizard;
