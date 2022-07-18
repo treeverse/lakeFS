@@ -60,10 +60,12 @@ func TestStructKeys_SimpleTagged(t *testing.T) {
 	type s struct {
 		A int `test:"Aaa"`
 		B int `toast:"bee"`
-		C int `test:"ccc" toast:"sea"`
+		c int `test:"ccc" toast:"sea"`
 	}
 
-	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName, squashTagValue)
+	v := s{}
+	v.c = v.c // mark field as used
+	keys := config.GetStructKeys(reflect.TypeOf(v), tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"Aaa", "b", "ccc"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
 	}
