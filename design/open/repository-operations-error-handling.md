@@ -7,7 +7,7 @@ This document purpose is to describe the way a `Repository` is currently being c
 ## Challenges
 ### CreateRepository
 `CreateRepository` operation create a `Repository` entry, a default `Branch` entry and first `Commit`. All DB operations are executed under a single transaction and so, a failure at a later step (e.g. `Commit` or `Branch` creation) is rolled back and the DB remains consistent and clean (i.e. No `Repository` DB Entry without correlated default `Branch` and first `Commit`).
-With KV in mind, the transaction protection is absent and the above transaction is translated to 3 stand-alone operations. A failure in a later step does not derive an automatic cleanup of the previously successful steps and so a failure in creating the default-branch will leave the DB with a Repository entry with no default-branch associated. This Repository is unusable on one hand, and cannot be recreated on the other, as there is a "valid" repository entry in the KV Store
+With KV in mind, the transaction protection is absent and the above transaction is translated to 3 stand-alone operations. A failure in a later step does not derive an automatic cleanup of the previously successful steps and so a failure in creating the default-branch (or any following step, for that matter) will leave the DB with a Repository entry with no default-branch associated. This Repository is unusable on one hand, and cannot be recreated on the other, as there is a "valid" repository entry in the KV Store
 
 ### CreateBareRepository
 `CreateBareRepository` is brought here as it uses the same logic to create the `Repository` entry. The `Repository` is created with neither a default `Branch` nor an initial `Commit`. At first sight, it seems that failure in `CreateRepositry`, after the `Repository` entry is created, can be treated as a successful `CreateBareRepository` but this is not the case, as `CreateBareRepository` is a plumbing command that is meant to be used alongside `RestoreRefs`. Creating a `bare Repository` is not part of the common usage of `lakeFS` and should be treated as such
@@ -55,7 +55,9 @@ This can be checked every time the `Repository` is accessed (trivial) and by a d
 ##  Flows
 ### CreateRepository
 * Create a `Repository` entity with its given `RepositoryID`, randomly generated `UniqueID` and `State` = `initial`, under the common `graveler` partition
-  * If failed return the error (`graveler.ErrNotUnique` will be returned in case a `Repository` entity with the same `RepositoryID` exists) - entity was not created - no harm done.
+  * If failed return the error (`graveler.ErrNotUnique` will be returned in case a `Repository` entity with the same `RepositoryID` exists)
+    * If the entity was not created - no harm done
+    * If it was created and the failure is due to inability to get the response - entity is in `initial` state and will eventually be turned `failed`
 * Generate the partition key for the new `Repository`, from its `RepositoryID` and `unique_identifier`
 * Create the initial `Commit` with a `CommitID` (same as it is done today) and store it with the partition key generated above
   * If failed - try to set the `Repository` entry state to `failed` and return the error from the KV layer
@@ -63,13 +65,13 @@ This can be checked every time the `Repository` is accessed (trivial) and by a d
 * Create the default `Branch` set to the initial `CommitID` and store it with the partition key generated above
   * If failed - try to set the `Repository` entry state to `failed` and return the error from the KV layer
   * If cannot set the `Repository` state to `failed` it is still consistent, as it is still in `initial` state
-* Set the `Repository` state to `active`
+* SetIf the `Repository` state to `active`
   * If failed - try to set the `Repository` entry state to `failed` and return the error from the KV layer
   * If cannot set the `Repository` state to `failed` it is still consistent, as it is still in `initial` state
 * Success
 
 ### CreateBareRepository
-Just the repository is created so this is pretty trivial
+Only the repository is created so this is pretty trivial
 * Create a `Repository` entity with its given `RepositoryID`, randomly generated `UniqueID` and `State` = `active`, under the common `graveler` partition
 * Return the result of the creation operation. If failed to create due to existence, return `graveler.ErrNotUnique`
 
@@ -82,7 +84,7 @@ Just the repository is created so this is pretty trivial
 ### DeleteRepository
 * Get the `Repository`, using the `GetRepository` flow above 
   * In case of error return the error
-* Set the `Repository` state to `deleted`
+* SetIf the `Repository` state to `deleted`
   * If failed return the error
 * Generate the partition key for the `Repository`, from its `RepositoryID` and `unique_identifier`
 * Scan through the branches in the partition partition and for each `Branch`:
