@@ -14,7 +14,7 @@
     "@react-icons/all-files": "^4.1.0",
     "bootstrap": "^4.6.0",
     "http-proxy-middleware": "^1.1.1",
-    "moment": "^2.29.2",
+    "moment": "^2.29.4",
     "query-string": "^7.1.1",
     "react": "^17.0.0",
     "react-bootstrap": "^1.5.2",
