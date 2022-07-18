@@ -92,6 +92,25 @@ Abuse a running lakeFS instance. See sub commands for more info.
 
 
 
+### lakectl abuse commit
+
+Commits to the source ref repeatedly
+
+```
+lakectl abuse commit <source ref uri> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int     amount of commits to do (default 100)
+      --gap duration   duration to wait between commits (default 2s)
+  -h, --help           help for commit
+```
+
+
+
 ### lakectl abuse create-branches
 
 Create a lot of branches very quickly.
