@@ -194,7 +194,11 @@ var abuseCommitCmd = &cobra.Command{
 					Error: err,
 					Took:  time.Since(start),
 				}
-				time.Sleep(gapDuration)
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(gapDuration):
+				}
 			}
 		})
 	},
