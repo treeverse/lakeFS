@@ -206,16 +206,28 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	var protectedBranchesManager graveler.ProtectedBranchesManager
 	branchLocker := ref.NewBranchLocker(cfg.LockDB) // TODO (niro): Will not be needed in KV implementation
 
+	if m.kvEnabled {
+		commitIterator, err = ref.NewKVOrderedCommitIterator(ctx, m.refManager.Store(), repositoryID, true)
+	} else {
+		commitIterator, err = ref.NewDBOrderedCommitIterator(ctx, m.db, repositoryID, 1000, ref.WithOnlyAncestryLeaves()) //nolint: gomnd
+	}
+
 	if cfg.Config.GetDatabaseParams().KVEnabled { // TODO (niro): Each module should be replaced by an appropriate KV implementation
 		refManager = ref.NewKVRefManager(executor, *cfg.KVStore, cfg.DB, ident.NewHexAddressProvider())
-		gcManager = retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix(), true)
+		gcManager = retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix(),
+			func(ctx context.Context, repoID graveler.RepositoryID) (graveler.CommitIterator, error) {
+				return ref.NewKVOrderedCommitIterator(ctx, cfg.KVStore, repoID, true)
+			})
 		settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
 		protectedBranchesManager = branch.NewProtectionManager(settingManager)
 		stagingManager = staging.NewManager(*cfg.KVStore)
 		gStore = graveler.NewKVGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 	} else {
 		refManager = ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
-		gcManager = retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix(), false)
+		gcManager = retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix(),
+			func(ctx context.Context, repoID graveler.RepositoryID) (graveler.CommitIterator, error) {
+				return ref.NewDBOrderedCommitIterator(ctx, cfg.DB, repoID, 1000, ref.WithOnlyAncestryLeaves()) //nolint: gomnd
+			})
 		settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
 		protectedBranchesManager = branch.NewProtectionManager(settingManager)
 		stagingManager = staging.NewDBManager(cfg.DB)
