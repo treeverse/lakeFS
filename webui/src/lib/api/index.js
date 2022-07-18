@@ -883,6 +883,23 @@ class MetaRanges {
         return response.json();
     }
 }
+
+class Templates {
+    async expandTemplate(templateLocation, params) {
+        const urlParams = new URLSearchParams();
+        for (const [k, v] of Object.entries(params)) {
+            urlParams.set(k, v);
+        }
+        const response = await apiRequest(
+            encodeURI(`/templates/${templateLocation}?${urlParams.toString()}`),
+            { method: 'GET' });
+        if (!response.ok) {
+            throw new Error(await extractError(response));
+        }
+        return response.text();
+    }
+}
+
 export const repositories = new Repositories();
 export const branches = new Branches();
 export const tags = new Tags();
@@ -897,3 +914,4 @@ export const config = new Config();
 export const branchProtectionRules = new BranchProtectionRules();
 export const ranges = new Ranges();
 export const metaRanges = new MetaRanges();
+export const templates = new Templates();

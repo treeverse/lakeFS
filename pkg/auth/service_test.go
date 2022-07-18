@@ -69,7 +69,7 @@ func setupKVService(t *testing.T, ctx context.Context) auth.Service {
 	t.Helper()
 	kvStore := kvtest.GetStore(ctx, t)
 	storeMessage := kv.StoreMessage{Store: kvStore}
-	return auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+	return auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
 }
@@ -191,7 +191,7 @@ func TestKVAuthService_ListPaged(t *testing.T) {
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
 	storeMessage := kv.StoreMessage{Store: kvStore}
-	s := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+	s := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
 
@@ -1273,16 +1273,16 @@ func BenchmarkKVAuthService_ListEffectivePolicies(b *testing.B) {
 	kvStore := kvtest.GetStore(ctx, b)
 	storeMessage := kv.StoreMessage{Store: kvStore}
 
-	serviceWithoutCache := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+	serviceWithoutCache := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
-	serviceWithCache := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+	serviceWithCache := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled:        true,
 		Size:           1024,
 		TTL:            20 * time.Second,
 		EvictionJitter: 3 * time.Second,
 	}, logging.Default())
-	serviceWithCacheLowTTL := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+	serviceWithCacheLowTTL := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled:        true,
 		Size:           1024,
 		TTL:            1 * time.Millisecond,

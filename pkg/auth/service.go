@@ -18,6 +18,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
+	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/params"
@@ -159,7 +160,7 @@ func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.
 		if secondary {
 			it, err = kv.NewSecondaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, []byte(params.After))
 		} else {
-			it, err = kv.NewPrimaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, []byte(params.After))
+			it, err = kv.NewPrimaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, kv.IteratorOptionsAfter([]byte(params.After)))
 		}
 		defer it.Close()
 		if err != nil {
@@ -196,7 +197,7 @@ type KVAuthService struct {
 	*InviteHandler
 }
 
-func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) *KVAuthService {
+func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, emailer *email.Emailer, cacheConf params.ServiceCache, logger logging.Logger) *KVAuthService {
 	logger.Info("initialized Auth service")
 	var cache Cache
 	if cacheConf.Enabled {
@@ -209,6 +210,11 @@ func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, cach
 		secretStore: secretStore,
 		cache:       cache,
 		log:         logger,
+		InviteHandler: &InviteHandler{
+			secretStore: secretStore,
+			log:         logger,
+			emailer:     emailer,
+		},
 	}
 }
 
@@ -262,7 +268,7 @@ func (s *KVAuthService) DeleteUser(ctx context.Context, username string) error {
 
 	// delete user membership of group
 	groupKey := model.GroupPath("")
-	itr, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, []byte(""))
+	itr, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, kv.IteratorOptionsAfter([]byte("")))
 	if err != nil {
 		return err
 	}
@@ -776,7 +782,7 @@ func (s *KVAuthService) DeletePolicy(ctx context.Context, policyDisplayName stri
 
 	// delete policy attachment to user
 	usersKey := model.UserPath("")
-	it, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, []byte(""))
+	it, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, kv.IteratorOptionsAfter([]byte("")))
 	if err != nil {
 		return err
 	}
@@ -791,7 +797,7 @@ func (s *KVAuthService) DeletePolicy(ctx context.Context, policyDisplayName stri
 
 	// delete policy attachment to group
 	groupKey := model.GroupPath("")
-	it, err = kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, []byte(""))
+	it, err = kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, kv.IteratorOptionsAfter([]byte("")))
 	if err != nil {
 		return err
 	}
@@ -994,7 +1000,8 @@ func (s *KVAuthService) HashAndUpdatePassword(ctx context.Context, username stri
 		FriendlyName:      user.FriendlyName,
 		Email:             user.Email,
 		EncryptedPassword: pw,
-		Source:            user.Source}
+		Source:            user.Source,
+	}
 	err = s.store.SetMsgIf(ctx, model.PartitionKey, userKey, model.ProtoFromUser(&userUpdatePassword), user)
 	if err != nil {
 		return fmt.Errorf("update user password (userKey %s): %w", userKey, err)
@@ -1072,7 +1079,6 @@ func (s *KVAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 		After:  "", // all
 		Amount: -1, // all
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -1370,6 +1376,12 @@ func (a *APIAuthService) ListGroups(ctx context.Context, params *model.Paginatio
 	}
 	groups := make([]*model.Group, len(resp.JSON200.Results))
 
+	for i, r := range resp.JSON200.Results {
+		groups[i] = &model.Group{
+			CreatedAt:   time.Unix(r.CreationDate, 0),
+			DisplayName: r.Name,
+		}
+	}
 	return groups, toPagination(resp.JSON200.Pagination), nil
 }
 
@@ -1402,7 +1414,12 @@ func (a *APIAuthService) ListUserGroups(ctx context.Context, username string, pa
 		return nil, nil, err
 	}
 	userGroups := make([]*model.Group, len(resp.JSON200.Results))
-
+	for i, r := range resp.JSON200.Results {
+		userGroups[i] = &model.Group{
+			CreatedAt:   time.Unix(r.CreationDate, 0),
+			DisplayName: r.Name,
+		}
+	}
 	return userGroups, toPagination(resp.JSON200.Pagination), nil
 }
 

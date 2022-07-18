@@ -312,8 +312,8 @@ func (c *Config) GetKVParams() kvparams.KV {
 			ScanLimit:          c.values.Database.BetaDynamoDB.ScanLimit,
 			Endpoint:           c.values.Database.BetaDynamoDB.Endpoint,
 			AwsRegion:          c.values.Database.BetaDynamoDB.AwsRegion,
-			AwsAccessKeyID:     c.values.Database.BetaDynamoDB.AwsAccessKeyID,
-			AwsSecretAccessKey: c.values.Database.BetaDynamoDB.AwsSecretAccessKey,
+			AwsAccessKeyID:     c.values.Database.BetaDynamoDB.AwsAccessKeyID.String(),
+			AwsSecretAccessKey: c.values.Database.BetaDynamoDB.AwsSecretAccessKey.String(),
 		},
 	}
 }

@@ -4,99 +4,87 @@ import (
 	"context"
 	"errors"
 
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/kv"
 )
 
-type RepositoryIterator struct {
-	db        db.Database
-	ctx       context.Context
-	value     *graveler.RepositoryRecord
-	buf       []*graveler.RepositoryRecord
-	offset    string
-	fetchSize int
-	err       error
-	state     iteratorState
+type RepositoryIterator interface {
+	Next() bool
+	SeekGE(id graveler.RepositoryID)
+	Value() *graveler.RepositoryRecord
+	Err() error
+	Close()
 }
 
-func NewRepositoryIterator(ctx context.Context, db db.Database, fetchSize int) *RepositoryIterator {
-	return &RepositoryIterator{
-		db:        db,
-		ctx:       ctx,
-		fetchSize: fetchSize,
-		buf:       make([]*graveler.RepositoryRecord, 0, fetchSize),
+type KVRepositoryIterator struct {
+	ctx   context.Context
+	it    kv.MessageIterator
+	err   error
+	value *graveler.RepositoryRecord
+	store kv.Store
+}
+
+func NewKVRepositoryIterator(ctx context.Context, store *kv.StoreMessage) (*KVRepositoryIterator, error) {
+	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.RepositoryData{}).ProtoReflect().Type(), graveler.RepositoriesPartition(), []byte(graveler.RepoPath("")), kv.IteratorOptionsAfter([]byte{}))
+	if err != nil {
+		return nil, err
 	}
+	return &KVRepositoryIterator{
+		it:    it,
+		store: store.Store,
+		ctx:   ctx,
+	}, nil
 }
 
-func (ri *RepositoryIterator) Next() bool {
-	if ri.err != nil {
+func (ri *KVRepositoryIterator) Next() bool {
+	if ri.Err() != nil {
 		return false
 	}
 
-	ri.maybeFetch()
-
-	// stage a value and increment offset
-	if len(ri.buf) == 0 {
+	if !ri.it.Next() {
+		ri.value = nil
 		return false
 	}
-	ri.value = ri.buf[0]
-	ri.buf = ri.buf[1:]
-	ri.offset = string(ri.value.RepositoryID)
+	e := ri.it.Entry()
+	if e == nil {
+		ri.err = graveler.ErrInvalid
+		return false
+	}
+
+	repo, ok := e.Value.(*graveler.RepositoryData)
+	if repo == nil || !ok {
+		ri.err = graveler.ErrReadingFromStore
+		return false
+	}
+
+	ri.value = graveler.RepoFromProto(repo)
 	return true
 }
 
-func (ri *RepositoryIterator) maybeFetch() {
-	if ri.state == iteratorStateDone {
+func (ri *KVRepositoryIterator) SeekGE(id graveler.RepositoryID) {
+	if errors.Is(ri.Err(), kv.ErrClosedEntries) {
 		return
 	}
-	if len(ri.buf) > 0 {
-		return
-	}
-
-	var offsetCondition string
-	if ri.state == iteratorStateInit {
-		offsetCondition = iteratorOffsetCondition(true)
-		ri.state = iteratorStateQuerying
-	} else {
-		offsetCondition = iteratorOffsetCondition(false)
-	}
-	ri.err = ri.db.Select(ri.ctx, &ri.buf, `
-			SELECT id, storage_namespace, creation_date, default_branch
-			FROM graveler_repositories
-			WHERE id `+offsetCondition+` $1
-			ORDER BY id ASC
-			LIMIT $2`, ri.offset, ri.fetchSize)
-	if ri.err != nil {
-		return
-	}
-	if len(ri.buf) < ri.fetchSize {
-		ri.state = iteratorStateDone
-	}
-}
-
-func (ri *RepositoryIterator) SeekGE(id graveler.RepositoryID) {
-	if errors.Is(ri.err, ErrIteratorClosed) {
-		return
-	}
-	ri.offset = string(id)
-	ri.buf = ri.buf[:0]
+	ri.it.Close()
+	ri.it, ri.err = kv.NewPrimaryIterator(ri.ctx, ri.store, (&graveler.RepositoryData{}).ProtoReflect().Type(), graveler.RepositoriesPartition(), []byte(graveler.RepoPath("")), kv.IteratorOptionsFrom([]byte(graveler.RepoPath(id))))
 	ri.value = nil
-	ri.err = nil
-	ri.state = iteratorStateInit
 }
 
-func (ri *RepositoryIterator) Value() *graveler.RepositoryRecord {
-	if ri.err != nil {
+func (ri *KVRepositoryIterator) Value() *graveler.RepositoryRecord {
+	if ri.Err() != nil {
 		return nil
 	}
 	return ri.value
 }
 
-func (ri *RepositoryIterator) Err() error {
+func (ri *KVRepositoryIterator) Err() error {
+	if ri.err == nil {
+		return ri.it.Err()
+	}
 	return ri.err
 }
 
-func (ri *RepositoryIterator) Close() {
+func (ri *KVRepositoryIterator) Close() {
+	ri.it.Close()
 	ri.err = ErrIteratorClosed
-	ri.buf = nil
 }
