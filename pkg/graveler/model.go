@@ -24,7 +24,7 @@ func RepositoriesPartition() string {
 // RepoPartition - The partition under which all the repository's entities (branched, commits, tags)
 // The Repository object itself is found under the common RepositoriesPartition, as it is needed to
 // generate this partition
-func RepoPartition(repoID RepositoryID, _ Repository) string {
+func RepoPartition(repoID RepositoryID) string {
 	return repoID.String()
 }
 
@@ -32,16 +32,8 @@ func TagPath(tagID TagID) string {
 	return kv.FormatPath(tagsPrefix, tagID.String())
 }
 
-func TagPartition(repoID RepositoryID) string {
-	return repoID.String()
-}
-
 func CommitPath(commitID CommitID) string {
 	return kv.FormatPath(commitsPrefix, commitID.String())
-}
-
-func CommitPartition(repoID RepositoryID) string {
-	return repoID.String()
 }
 
 func CommitFromProto(pb *CommitData) *Commit {

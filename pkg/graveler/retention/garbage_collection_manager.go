@@ -24,14 +24,15 @@ const (
 	commitsFileSuffixTemplate   = "%s/retention/gc/commits/run_id=%s/commits.csv"
 )
 
-type KVGarbageCollectionManager struct {
+type GarbageCollectionManager struct {
 	blockAdapter                block.Adapter
 	refManager                  graveler.RefManager
 	committedBlockStoragePrefix string
 	db                          db.Database
+	kvEnabled                   bool
 }
 
-func (m *KVGarbageCollectionManager) GetCommitsCSVLocation(runID string, sn graveler.StorageNamespace) (string, error) {
+func (m *GarbageCollectionManager) GetCommitsCSVLocation(runID string, sn graveler.StorageNamespace) (string, error) {
 	key := fmt.Sprintf(commitsFileSuffixTemplate, m.committedBlockStoragePrefix, runID)
 	qk, err := block.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)
 	if err != nil {
@@ -40,7 +41,7 @@ func (m *KVGarbageCollectionManager) GetCommitsCSVLocation(runID string, sn grav
 	return qk.Format(), nil
 }
 
-func (m *KVGarbageCollectionManager) GetAddressesLocation(sn graveler.StorageNamespace) (string, error) {
+func (m *GarbageCollectionManager) GetAddressesLocation(sn graveler.StorageNamespace) (string, error) {
 	key := fmt.Sprintf(addressesFilePrefixTemplate, m.committedBlockStoragePrefix)
 	qk, err := block.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)
 	if err != nil {
@@ -58,16 +59,17 @@ func (r *RepositoryCommitGetter) GetCommit(ctx context.Context, commitID gravele
 	return r.refManager.GetCommit(ctx, r.repositoryID, commitID)
 }
 
-func NewKVGarbageCollectionManager(db db.Database, blockAdapter block.Adapter, refManager graveler.RefManager, committedBlockStoragePrefix string) *KVGarbageCollectionManager {
-	return &KVGarbageCollectionManager{
+func NewGarbageCollectionManager(db db.Database, blockAdapter block.Adapter, refManager graveler.RefManager, committedBlockStoragePrefix string, kvEnabled bool) *GarbageCollectionManager {
+	return &GarbageCollectionManager{
 		blockAdapter:                blockAdapter,
 		refManager:                  refManager,
 		committedBlockStoragePrefix: committedBlockStoragePrefix,
 		db:                          db,
+		kvEnabled:                   kvEnabled,
 	}
 }
 
-func (m *KVGarbageCollectionManager) GetRules(ctx context.Context, storageNamespace graveler.StorageNamespace) (*graveler.GarbageCollectionRules, error) {
+func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageNamespace graveler.StorageNamespace) (*graveler.GarbageCollectionRules, error) {
 	objectPointer := block.ObjectPointer{
 		StorageNamespace: string(storageNamespace),
 		Identifier:       fmt.Sprintf(configFileSuffixTemplate, m.committedBlockStoragePrefix),
@@ -95,7 +97,7 @@ func (m *KVGarbageCollectionManager) GetRules(ctx context.Context, storageNamesp
 	return &rules, nil
 }
 
-func (m *KVGarbageCollectionManager) SaveRules(ctx context.Context, storageNamespace graveler.StorageNamespace, rules *graveler.GarbageCollectionRules) error {
+func (m *GarbageCollectionManager) SaveRules(ctx context.Context, storageNamespace graveler.StorageNamespace, rules *graveler.GarbageCollectionRules) error {
 	rulesBytes, err := proto.Marshal(rules)
 	if err != nil {
 		return err
@@ -107,7 +109,7 @@ func (m *KVGarbageCollectionManager) SaveRules(ctx context.Context, storageNames
 	}, int64(len(rulesBytes)), bytes.NewReader(rulesBytes), block.PutOpts{})
 }
 
-func (m *KVGarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, storageNamespace graveler.StorageNamespace, runID string) ([]graveler.CommitID, error) {
+func (m *GarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, storageNamespace graveler.StorageNamespace, runID string) ([]graveler.CommitID, error) {
 	if runID == "" {
 		return nil, nil
 	}
@@ -139,15 +141,28 @@ func (m *KVGarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, s
 	}
 	return res, nil
 }
+func (m *GarbageCollectionManager) GetCommitIterator(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.CommitIterator, error) {
+	var commitIterator graveler.CommitIterator
+	var err error
+	if m.kvEnabled {
+		commitIterator, err = ref.NewKVOrderedCommitIterator(ctx, m.refManager.Store(), repositoryID, true)
+	} else {
+		commitIterator, err = ref.NewDBOrderedCommitIterator(ctx, m.db, repositoryID, 1000, ref.WithOnlyAncestryLeaves()) //nolint: gomnd
+	}
+	if err != nil {
+		return nil, err
+	}
+	return commitIterator, nil
+}
 
-func (m *KVGarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, storageNamespace graveler.StorageNamespace, repositoryID graveler.RepositoryID, rules *graveler.GarbageCollectionRules, previouslyExpiredCommits []graveler.CommitID) (string, error) {
+func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, storageNamespace graveler.StorageNamespace, repositoryID graveler.RepositoryID, rules *graveler.GarbageCollectionRules, previouslyExpiredCommits []graveler.CommitID) (string, error) {
 	commitGetter := &RepositoryCommitGetter{
 		refManager:   m.refManager,
 		repositoryID: repositoryID,
 	}
 	branchIterator := ref.NewBranchIterator(ctx, m.db, repositoryID, 1000, ref.WithOrderByCommitID()) //nolint: gomnd
 	// get all commits that are not the first parent of any commit:
-	commitIterator, err := ref.NewKVOrderedCommitIterator(ctx, m.refManager.Store(), repositoryID, true) //nolint: gomnd
+	commitIterator, err := m.GetCommitIterator(ctx, repositoryID)
 	if err != nil {
 		return "", fmt.Errorf("create kv orderd commit iterator commits: %w", err)
 	}

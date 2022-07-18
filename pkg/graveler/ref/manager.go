@@ -152,7 +152,7 @@ func (m *KVManager) ListBranches(ctx context.Context, repositoryID graveler.Repo
 func (m *KVManager) GetTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) (*graveler.CommitID, error) {
 	tagKey := graveler.TagPath(tagID)
 	t := graveler.TagData{}
-	_, err := m.kvStore.GetMsg(ctx, graveler.TagPartition(repositoryID), []byte(tagKey), &t)
+	_, err := m.kvStore.GetMsg(ctx, graveler.RepoPartition(repositoryID), []byte(tagKey), &t)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrTagNotFound
@@ -169,7 +169,7 @@ func (m *KVManager) CreateTag(ctx context.Context, repositoryID graveler.Reposit
 		CommitId: commitID.String(),
 	}
 	tagKey := graveler.TagPath(tagID)
-	err := m.kvStore.SetMsgIf(ctx, graveler.TagPartition(repositoryID), []byte(tagKey), t, nil)
+	err := m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(repositoryID), []byte(tagKey), t, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = graveler.ErrTagAlreadyExists
@@ -182,7 +182,7 @@ func (m *KVManager) CreateTag(ctx context.Context, repositoryID graveler.Reposit
 func (m *KVManager) DeleteTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) error {
 	tagKey := graveler.TagPath(tagID)
 	// TODO (issue 3640) align with delete tag DB - return ErrNotFound when tag does not exist
-	return m.kvStore.DeleteMsg(ctx, graveler.TagPartition(repositoryID), []byte(tagKey))
+	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repositoryID), []byte(tagKey))
 }
 
 func (m *KVManager) ListTags(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.TagIterator, error) {
@@ -194,7 +194,7 @@ func (m *KVManager) ListTags(ctx context.Context, repositoryID graveler.Reposito
 }
 
 func (m *KVManager) GetCommitByPrefix(ctx context.Context, repositoryID graveler.RepositoryID, prefix graveler.CommitID) (*graveler.Commit, error) {
-	it, err := NewKVOrderedCommitIterator(ctx, m.Store(), repositoryID, false)
+	it, err := NewKVOrderedCommitIterator(ctx, &m.kvStore, repositoryID, false)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func (m *KVManager) GetCommitByPrefix(ctx context.Context, repositoryID graveler
 		c := it.Value()
 		if strings.HasPrefix(string(c.CommitID), string(prefix)) {
 			if commit != nil {
-				return nil, graveler.ErrCommitNotFound // more than 1 commit starts with the ID prefixבםצצ
+				return nil, graveler.ErrCommitNotFound // more than 1 commit starts with the ID prefix
 			}
 			commit = c.Commit
 		} else {
@@ -221,45 +221,25 @@ func (m *KVManager) GetCommitByPrefix(ctx context.Context, repositoryID graveler
 func (m *KVManager) GetCommit(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (*graveler.Commit, error) {
 	commitKey := graveler.CommitPath(commitID)
 	c := graveler.CommitData{}
-	_, err := m.kvStore.GetMsg(ctx, graveler.CommitPartition(repositoryID), []byte(commitKey), &c)
+	_, err := m.kvStore.GetMsg(ctx, graveler.RepoPartition(repositoryID), []byte(commitKey), &c)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrCommitNotFound
 		}
 		return nil, err
 	}
-	commit := graveler.CommitFromProto(&c)
-	return commit, nil
+	return graveler.CommitFromProto(&c), nil
 }
 
 func (m *KVManager) AddCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {
 	commitID := m.addressProvider.ContentAddress(commit)
 	c := graveler.ProtoFromCommit(graveler.CommitID(commitID), &commit)
 	commitKey := graveler.CommitPath(graveler.CommitID(commitID))
-	err := m.kvStore.SetMsgIf(ctx, graveler.CommitPartition(repositoryID), []byte(commitKey), c, nil)
+	err := m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(repositoryID), []byte(commitKey), c, nil)
 	if err != nil && !errors.Is(err, kv.ErrPredicateFailed) {
 		return "", err
 	}
 	return graveler.CommitID(commitID), nil
-}
-
-func (m *KVManager) updateCommitGeneration(ctx context.Context, repositoryID graveler.RepositoryID, nodes map[graveler.CommitID]*CommitNode) error {
-	for len(nodes) != 0 {
-		for commitID, node := range nodes {
-			c, err := m.GetCommit(ctx, repositoryID, commitID)
-			if err != nil {
-				return nil
-			}
-			c.Generation = node.generation
-			commit := graveler.ProtoFromCommit(commitID, c)
-			err = m.kvStore.SetMsg(ctx, graveler.CommitPartition(repositoryID), []byte(graveler.CommitPath(commitID)), commit)
-			if err != nil {
-				return err
-			}
-			delete(nodes, commitID)
-		}
-	}
-	return nil
 }
 
 func (m *KVManager) FindMergeBase(ctx context.Context, repositoryID graveler.RepositoryID, commitIDs ...graveler.CommitID) (*graveler.Commit, error) {
@@ -284,80 +264,6 @@ func (m *KVManager) ListCommits(ctx context.Context, repositoryID graveler.Repos
 		return nil, err
 	}
 	return NewKVOrderedCommitIterator(ctx, &m.kvStore, repositoryID, false)
-}
-
-func (m *KVManager) FillGenerations(ctx context.Context, repositoryID graveler.RepositoryID) error {
-	// update commitNodes' generation in nodes "tree" using BFS algorithm.
-	// using a queue implementation
-	// adding a node to the queue only after all of its parents were visited in order to avoid redundant visits of nodesCommitIDs
-	nodes, err := m.createCommitIDsMap(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	rootsCommitIDs := m.getRootNodes(nodes)
-	m.mapCommitNodesToChildren(nodes)
-	m.addGenerationToNodes(nodes, rootsCommitIDs)
-	return m.updateCommitGeneration(ctx, repositoryID, nodes)
-}
-
-func (m *KVManager) createCommitIDsMap(ctx context.Context, repositoryID graveler.RepositoryID) (map[graveler.CommitID]*CommitNode, error) {
-	iter, err := m.ListCommits(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	defer iter.Close()
-
-	nodes := make(map[graveler.CommitID]*CommitNode)
-	for iter.Next() {
-		commit := iter.Value()
-		parentsToVisit := map[graveler.CommitID]struct{}{}
-		for _, parentID := range commit.Parents {
-			parentsToVisit[parentID] = struct{}{}
-		}
-
-		nodes[commit.CommitID] = &CommitNode{parentsToVisit: parentsToVisit}
-	}
-	if err := iter.Err(); err != nil {
-		return nil, err
-	}
-	return nodes, nil
-}
-
-func (m *KVManager) getRootNodes(nodes map[graveler.CommitID]*CommitNode) []graveler.CommitID {
-	var rootsCommitIDs []graveler.CommitID
-	for commitID, node := range nodes {
-		if len(node.parentsToVisit) == 0 {
-			rootsCommitIDs = append(rootsCommitIDs, commitID)
-		}
-	}
-	return rootsCommitIDs
-}
-
-func (m *KVManager) mapCommitNodesToChildren(nodes map[graveler.CommitID]*CommitNode) {
-	for commitID, commitNode := range nodes {
-		// adding current node as a child to all parents in commitNode.parentsToVisit
-		for parentID := range commitNode.parentsToVisit {
-			nodes[parentID].children = append(nodes[parentID].children, commitID)
-		}
-	}
-}
-
-func (m *KVManager) addGenerationToNodes(nodes map[graveler.CommitID]*CommitNode, rootsCommitIDs []graveler.CommitID) {
-	nodesCommitIDs := rootsCommitIDs
-	for currentGeneration := 1; len(nodesCommitIDs) > 0; currentGeneration++ {
-		var nextIterationNodes []graveler.CommitID
-		for _, nodeCommitID := range nodesCommitIDs {
-			currentNode := nodes[nodeCommitID]
-			nodes[nodeCommitID].generation = currentGeneration
-			for _, childNodeID := range currentNode.children {
-				delete(nodes[childNodeID].parentsToVisit, nodeCommitID)
-				if len(nodes[childNodeID].parentsToVisit) == 0 {
-					nextIterationNodes = append(nextIterationNodes, childNodeID)
-				}
-			}
-		}
-		nodesCommitIDs = nextIterationNodes
-	}
 }
 
 func (m *KVManager) Store() *kv.StoreMessage {

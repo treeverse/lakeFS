@@ -21,7 +21,7 @@ type KVOrderedCommitIterator struct {
 // getAllFirstParents returns a set of all commits that are not a first parent of other commit in the given repository.
 func getAllFirstParents(ctx context.Context, store *kv.StoreMessage, repositoryID graveler.RepositoryID) (map[string]bool, error) {
 	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.CommitData{}).ProtoReflect().Type(),
-		graveler.CommitPartition(repositoryID),
+		graveler.RepoPartition(repositoryID),
 		[]byte(graveler.CommitPath("")), kv.IteratorOptionsFrom([]byte("")))
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func getAllFirstParents(ctx context.Context, store *kv.StoreMessage, repositoryI
 // Consider a commit graph where all non-first-parent edges are removed. This graph is a tree, and ancestry leaves are its leaves.
 func NewKVOrderedCommitIterator(ctx context.Context, store *kv.StoreMessage, repositoryID graveler.RepositoryID, onlyAncestryLeaves bool) (*KVOrderedCommitIterator, error) {
 	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.CommitData{}).ProtoReflect().Type(),
-		graveler.CommitPartition(repositoryID),
+		graveler.RepoPartition(repositoryID),
 		[]byte(graveler.CommitPath("")), kv.IteratorOptionsFrom([]byte("")))
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func (i *KVOrderedCommitIterator) SeekGE(id graveler.CommitID) {
 	if i.Err() == nil {
 		i.it.Close()
 		it, err := kv.NewPrimaryIterator(i.ctx, i.store, (&graveler.CommitData{}).ProtoReflect().Type(),
-			graveler.CommitPartition(i.repoID),
+			graveler.RepoPartition(i.repoID),
 			[]byte(graveler.CommitPath("")), kv.IteratorOptionsFrom([]byte(graveler.CommitPath(id))))
 		i.it = it
 		i.value = nil

@@ -18,7 +18,7 @@ type KVTagIterator struct {
 
 func NewKVTagIterator(ctx context.Context, store *kv.StoreMessage, repositoryID graveler.RepositoryID) (*KVTagIterator, error) {
 	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.TagData{}).ProtoReflect().Type(),
-		graveler.TagPartition(repositoryID),
+		graveler.RepoPartition(repositoryID),
 		[]byte(graveler.TagPath("")), kv.IteratorOptionsFrom([]byte("")))
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (i *KVTagIterator) SeekGE(id graveler.TagID) {
 	if i.Err() == nil {
 		i.it.Close()
 		it, err := kv.NewPrimaryIterator(i.ctx, i.store, (&graveler.TagData{}).ProtoReflect().Type(),
-			graveler.TagPartition(i.repoID),
+			graveler.RepoPartition(i.repoID),
 			[]byte(graveler.TagPath("")), kv.IteratorOptionsFrom([]byte(graveler.TagPath(id))))
 		i.it = it
 		i.value = nil

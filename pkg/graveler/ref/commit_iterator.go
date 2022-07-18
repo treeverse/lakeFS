@@ -75,10 +75,10 @@ func NewKVCommitIterator(ctx context.Context, kvStore kv.StoreMessage, repositor
 func (ci *KVCommitIterator) getCommitRecord(commitID graveler.CommitID) (*graveler.CommitRecord, error) {
 	commitKey := graveler.CommitPath(commitID)
 	c := graveler.CommitData{}
-	_, err := ci.kvStore.GetMsg(ci.ctx, graveler.CommitPartition(ci.repositoryID), []byte(commitKey), &c)
+	_, err := ci.kvStore.GetMsg(ci.ctx, graveler.RepoPartition(ci.repositoryID), []byte(commitKey), &c)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
-			err = graveler.ErrCommitNotFound
+			err = graveler.ErrNotFound
 		}
 		return nil, err
 	}

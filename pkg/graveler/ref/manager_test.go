@@ -771,58 +771,6 @@ func TestManager_GetCommitByPrefix(t *testing.T) {
 	}
 }
 
-// TODO: temporarily disabled due to dependency in GetRepository
-func _TestManager_FillGenerations(t *testing.T) {
-	r := testRefManager(t)
-	for _, tt := range r {
-		ctx := context.Background()
-		testutil.Must(t, tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
-			StorageNamespace: "s3://",
-			CreationDate:     time.Now(),
-			DefaultBranchID:  "main",
-		}, ""))
-		nextCommitNumber := 0
-		addNextCommit := func(parents ...graveler.CommitID) graveler.CommitID {
-			nextCommitNumber++
-			id := "c" + strconv.Itoa(nextCommitNumber)
-			c := graveler.Commit{
-				Message: id,
-				Parents: parents,
-			}
-			cid, err := tt.refManager.AddCommit(ctx, "repo1", c)
-			testutil.MustDo(t, "Add commit "+id, err)
-			return cid
-		}
-		c1 := addNextCommit()
-		c2 := addNextCommit(c1)
-		c3 := addNextCommit(c1)
-		c4 := addNextCommit(c2)
-		c5 := addNextCommit(c3)
-		c6 := addNextCommit(c5)
-		c7 := addNextCommit(c4)
-		c8 := addNextCommit(c6, c1)
-		/*
-		 1----2----4---7
-		 | \
-		 |  3----5----6
-		 |             \
-		 ---------------8
-		*/
-		commits := []graveler.CommitID{c1, c2, c3, c4, c5, c6, c7, c8}
-		expectedGenerations := []int{1, 2, 2, 3, 3, 4, 4, 5}
-		err := tt.refManager.FillGenerations(ctx, "repo1")
-		testutil.MustDo(t, "fill generations", err)
-		for i, commitID := range commits {
-			commitIdx := i + 1
-			commit, err := tt.refManager.GetCommit(ctx, "repo1", commitID)
-			testutil.MustDo(t, fmt.Sprintf("get commit c%d", commitIdx), err)
-			if commit.Generation != expectedGenerations[i] {
-				t.Errorf("wrong gen for c%d. expected=%d, got=%d", commitIdx, expectedGenerations[i], commit.Generation)
-			}
-		}
-	}
-}
-
 func TestManager_ListCommits(t *testing.T) {
 	r := testRefManager(t)
 	for _, tt := range r {

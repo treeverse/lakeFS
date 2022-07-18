@@ -1307,7 +1307,6 @@ func (g *DBGraveler) LoadCommits(ctx context.Context, repositoryID RepositoryID,
 		return err
 	}
 	defer iter.Close()
-	missingGenerations := false
 	for iter.Next() {
 		rawValue := iter.Value()
 		commit := &CommitData{}
@@ -1320,7 +1319,7 @@ func (g *DBGraveler) LoadCommits(ctx context.Context, repositoryID RepositoryID,
 			parents[i] = CommitID(p)
 		}
 		if commit.GetGeneration() == 0 {
-			missingGenerations = true
+			return fmt.Errorf("no longer support for dumps created by lakeFS versions below v0.61.0: %w", ErrNoCommitGeneration)
 		}
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
 			Version:      CommitVersion(commit.Version),
@@ -1342,11 +1341,6 @@ func (g *DBGraveler) LoadCommits(ctx context.Context, repositoryID RepositoryID,
 	}
 	if iter.Err() != nil {
 		return iter.Err()
-	}
-	// TODO(#3022): Remove this code to drop support for dumps created by lakeFS versions below v0.61.0.
-	if missingGenerations {
-		g.log.WithFields(logging.Fields{"repo": repositoryID, "meta_range_id": metaRangeID}).Debug("computing the generation field for loaded commits")
-		return g.RefManager.FillGenerations(ctx, repositoryID)
 	}
 	return nil
 }
