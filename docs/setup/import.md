@@ -52,8 +52,7 @@ and in the same region of your destination bucket.
 
 #### Limitations
 
-Import is feasible only from source object storage that matches the storage namespace of the
-current repository. The lakeFS S3 Installation cannot import from Azure bucket.
+Importing is only possible from the object storage service in which your installation stores its data. For example, if lakeFS is configured on top of S3, you cannot import data from Azure.
 
 Although created by lakeFS, import branches are just like any other branch.
 Authorization policies, CI/CD triggering, branch protection rules and all other lakeFS concepts apply to them
