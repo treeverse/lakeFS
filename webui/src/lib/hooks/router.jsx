@@ -27,6 +27,7 @@ export const useRouter = () => {
         query,
         params,
         route: location.pathname,
+        history: history,
         push: (url) => history.push(buildURL(url))
     };
 };

@@ -81,11 +81,18 @@ const LoginPage = () => {
     if (loading) {
         return null;
     }
+
     if (!error && response && response.state !== SETUP_STATE_INITIALIZED) {
         router.push({pathname: '/setup', query: router.query})
+        return
     }
-    if (!error && response && response.oidc_default_login) {
-        window.location = OIDC_LOGIN_URL;
+    if (router.query.redirected)  {
+        if(!error && response && response.oidc_default_login) {
+            window.location = OIDC_LOGIN_URL;
+            return
+        }
+        delete router.query.redirected;
+        router.push({pathname: '/auth/login', query: router.query})
     }
     return (
         <Layout logged={false}>
