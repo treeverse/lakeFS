@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **state** | [**StateEnum**](#StateEnum) |  |  [optional]
 **oidcEnabled** | **Boolean** |  |  [optional]
+**oidcDefaultLogin** | **Boolean** |  |  [optional]
 
 
 
