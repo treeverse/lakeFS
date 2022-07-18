@@ -86,7 +86,8 @@ Only the repository is created so this is pretty trivial
   * In case of error return the error
 * SetIf the `Repository` state to `deleted`
   * If failed return the error
-* Generate the partition key for the `Repository`, from its `RepositoryID` and `unique_identifier`
+**Note** at this point the `Repository` is marked as `deleted` and is unreachable. The following steps clean the relevant entities from the KV, and can later be moved to a designated garbage cleaning procedure, leaving `DeleteRepository` with only setting the `Repository` status (following a successful `GetRepository`)
+* Retrieve the partition key for the `Repository`, from its `RepositoryID` and `unique_identifier`
 * Scan through the branches in the partition partition and for each `Branch`:
   * Delete all the relevant staged objects (based on `staging_token` and `sealed_tokens`) - same as with `DeleteBranch`
   * If an error occurs at each step, return the error - the `Repository` is already marked as deleted and so it and all its correlated entities are unreachable
