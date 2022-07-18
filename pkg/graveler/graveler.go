@@ -1068,6 +1068,7 @@ func (g *KVGraveler) List(ctx context.Context, repositoryID RepositoryID, ref Re
 }
 
 func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, params CommitParams) (CommitID, error) {
+	// TODO(issue 3569) - kv implementation optimistic lock commit
 	var preRunID string
 	var commit Commit
 	var storageNamespace StorageNamespace
@@ -1240,6 +1241,7 @@ func CommitExists(ctx context.Context, repositoryID RepositoryID, commitID Commi
 }
 
 func (g *KVGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) (CommitID, error) {
+	// TODO(issue 3569) - kv implementation optimistic lock commit
 	res, err := g.db.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
 		// parentCommitID should always match the HEAD of the branch.
 		// Empty parentCommitID matches first commit of the branch.
@@ -1281,6 +1283,7 @@ func (g *KVGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID Rep
 }
 
 func (g *KVGraveler) AddCommit(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
+	// TODO(issue 3569) - kv implementation optimistic lock commit
 	// at least a single parent must exists
 	if len(commit.Parents) == 0 {
 		return "", ErrAddCommitNoParent
@@ -1308,6 +1311,7 @@ func (g *KVGraveler) AddCommit(ctx context.Context, repositoryID RepositoryID, c
 
 // addCommitNoLock lower API used to add commit into a repository. It will verify that the commit meta-range is accessible but will not lock any metadata update.
 func (g *KVGraveler) addCommitNoLock(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
+	// TODO(issue 3569) - kv implementation optimistic lock commit
 	repo, err := g.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return "", fmt.Errorf("get repository %s: %w", repositoryID, err)
