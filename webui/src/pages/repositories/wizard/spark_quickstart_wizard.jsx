@@ -64,9 +64,7 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
     const [completed, setCompleted] = useState(new Set());
     const completedStep = (vals = {}, stepNum) => {
         setState({...state, ...vals});
-        let newCompleted = new Set(completed.values());
-        newCompleted.add(stepNum);
-        setCompleted(newCompleted)
+        setCompleted(currentCompleted => new Set(currentCompleted).add(stepNum));
     }
     const onComplete = async () => {
         onExit();

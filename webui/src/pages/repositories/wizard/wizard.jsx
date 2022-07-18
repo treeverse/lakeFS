@@ -47,11 +47,7 @@ export const Wizard = ({steps = defaultSteps, isShowBack= true, completed= {}, o
         }
         else {
             setActiveStep((prevActiveStep) => prevActiveStep + 1);
-            setSkipped((prevSkipped) => {
-                const newSkipped = new Set(prevSkipped.values());
-                newSkipped.add(activeStep);
-                return newSkipped;
-            });
+            setSkipped((prevSkipped) => new Set(prevSkipped).add(activeStep));
         }
     };
 
