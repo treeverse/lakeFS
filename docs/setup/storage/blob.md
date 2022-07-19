@@ -23,10 +23,10 @@ If you want lakeFS to authenticate with your storage using the storage account k
 ## Authenticate with Active Directory
 {: .no_toc }
 
-In case you want your lakeFS Installation to access this Container using Active Directory authentication,
+In case you want your lakeFS installation to access this Container using Active Directory authentication,
 first go to the container you created in step 1.
 * Go to `Access Control (IAM)`
 * Go to the `Role assignments` tab
-* Add the `Storage Blob Data Contributor` role to the Installation running lakeFS.
+* Add the `Storage Blob Data Contributor` role to the installation running lakeFS.
 
 You're now ready to [create your first lakeFS repository](../create-repo.md).
