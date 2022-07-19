@@ -5,13 +5,17 @@ import (
 )
 
 // CombinedIterator iterates over two listing iterators,
-// in case of duplication (in values or in errors) returns value in iterA
+// in case of duplication (in values or in errors) returns value in iterA.
+// CombinedIterator can be constructed from other CombinedIterator to allow
+// chaining of multiple ValueIterators.
 type CombinedIterator struct {
 	iterA ValueIterator
 	iterB ValueIterator
 	p     ValueIterator
 }
 
+// NewCombinedIterator combines multiple ValueIterators into a single CombinedIterator.
+// The returned iterator precedence order is first-to-last in case of matching keys in 2 or more iterators.
 func NewCombinedIterator(iters ...ValueIterator) *CombinedIterator {
 	if len(iters) < 2 { //nolint:gomnd
 		panic("at least two iterators are required")
