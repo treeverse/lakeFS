@@ -2,8 +2,6 @@ package graveler
 
 import (
 	"bytes"
-
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 // CombinedIterator iterates over two listing iterators,
@@ -14,7 +12,19 @@ type CombinedIterator struct {
 	p     ValueIterator
 }
 
-func NewCombinedIterator(iterA, iterB ValueIterator) *CombinedIterator {
+func NewCombinedIterator(iters ...ValueIterator) *CombinedIterator {
+	if len(iters) < 2 { //nolint:gomnd
+		panic("at least two iterators are required")
+	}
+	iter := newCombinedIterator(iters[0], iters[1])
+	for i := 2; i < len(iters); i++ {
+		iter = newCombinedIterator(iter, iters[i])
+	}
+
+	return iter
+}
+
+func newCombinedIterator(iterA, iterB ValueIterator) *CombinedIterator {
 	return &CombinedIterator{
 		iterA: iterA,
 		iterB: iterB,
@@ -67,35 +77,26 @@ func (c *CombinedIterator) advanceInnerIterators() bool {
 }
 
 func (c *CombinedIterator) Next() bool {
-	for {
-		if !c.advanceInnerIterators() {
-			return false
-		}
-		// set c.p to be the next (smaller) value or continue in case of tombstone
-		valA := c.iterA.Value()
-		valB := c.iterB.Value()
-		switch {
-		case valA == nil && valB == nil:
-			c.p = c.iterA
-			return false
-		case valA == nil:
-			c.p = c.iterB
-		case valB == nil:
-			c.p = c.iterA
-		case bytes.Equal(valA.Key, valB.Key) && valA.IsTombstone():
-			// continue without tombstone error
-			continue
-		case bytes.Compare(valA.Key, valB.Key) <= 0:
-			c.p = c.iterA
-		default:
-			c.p = c.iterB
-		}
-		if c.p.Value().IsTombstone() {
-			logging.Default().Error("unexpected tombstone")
-			continue
-		}
-		return true
+	if !c.advanceInnerIterators() {
+		return false
 	}
+	// set c.p to be the next (smaller) value
+	valA := c.iterA.Value()
+	valB := c.iterB.Value()
+	switch {
+	case valA == nil && valB == nil:
+		c.p = c.iterA
+		return false
+	case valA == nil:
+		c.p = c.iterB
+	case valB == nil:
+		c.p = c.iterA
+	case bytes.Compare(valA.Key, valB.Key) <= 0:
+		c.p = c.iterA
+	default:
+		c.p = c.iterB
+	}
+	return true
 }
 
 func (c *CombinedIterator) SeekGE(id Key) {
@@ -121,4 +122,38 @@ func (c *CombinedIterator) Err() error {
 func (c *CombinedIterator) Close() {
 	c.iterA.Close()
 	c.iterB.Close()
+}
+
+// FilterTombstoneIterator wraps a value iterator and filters out tombstones.
+type FilterTombstoneIterator struct {
+	iter ValueIterator
+}
+
+func NewFilterTombstoneIterator(iter ValueIterator) *FilterTombstoneIterator {
+	return &FilterTombstoneIterator{iter: iter}
+}
+
+func (f *FilterTombstoneIterator) Next() bool {
+	for f.iter.Next() {
+		if !f.iter.Value().IsTombstone() {
+			return true
+		}
+	}
+	return false
+}
+
+func (f *FilterTombstoneIterator) SeekGE(id Key) {
+	f.iter.SeekGE(id)
+}
+
+func (f *FilterTombstoneIterator) Value() *ValueRecord {
+	return f.iter.Value()
+}
+
+func (f *FilterTombstoneIterator) Err() error {
+	return f.iter.Err()
+}
+
+func (f *FilterTombstoneIterator) Close() {
+	f.iter.Close()
 }
