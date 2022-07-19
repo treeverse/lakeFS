@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Protected Branches
-description: Branch protection rules prevent direct changes on your important branches
+description: Branch protection rules prevent direct changes from being applied to your important branches.
 parent: Reference
 nav_order: 4
 has_children: false
@@ -13,11 +13,11 @@ Define branch protection rules to prevent direct changes and commits to specific
 Only merges are allowed into protected branches. Together with the power of pre-merge [hooks](../setup/hooks.md),
 you can run validations on your data before it reaches your important branches and is exposed to consumers.
 
-You can create rules for a specific branch, or to any branch that matches a name pattern you specify with [glob](https://en.wikipedia.org/wiki/Glob_(programming)) syntax (supporting `?` and `*` wildcards).
+You can create rules for a specific branch or any branch that matches a name pattern you specify with [glob](https://en.wikipedia.org/wiki/Glob_(programming)) syntax (supporting `?` and `*` wildcards).
 
 ## How it works
 
-When at least one protection rules applies to a branch, the branch is protected. The following operations will fail on protected branches:
+When at least one protection rule applies to a branch, the branch is protected. The following operations will fail on protected branches:
 1. Object write operations: **upload** and **delete** objects.
 1. Branch operations: **commit** and **reset uncommitted changes**.
 

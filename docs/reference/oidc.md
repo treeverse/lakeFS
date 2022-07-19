@@ -1,7 +1,7 @@
 ---
 layout: default
 title: OIDC support
-description: Use an OIDC provider to manage lakeFS users
+description: Use an OIDC provider to manage lakeFS users.
 parent: Reference
 nav_order: 67
 has_children: false
@@ -11,7 +11,7 @@ has_children: false
 
 {: .no_toc }
 
-You can manage lakeFS users externally using an OpenID Connect (OIDC) compatible identity provider.
+You can manage lakeFS users externally using an identity provider compatible with OpenID Connect (OIDC).
 
 {% include toc.html %}
 
@@ -31,7 +31,7 @@ auth:
     friendly_name_claim_name: name                      #  Optional: use the value from this claim as the user's display name 
 ```
 
-Your login page will now include a link to sign-in using the 
+Your login page will now include a link to sign in using the 
 OIDC provider. When a user first logs in through the provider, a corresponding user is created in lakeFS.
 
 #### Notes
