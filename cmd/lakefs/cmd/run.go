@@ -142,11 +142,16 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("Emailer has not been properly configured, check the values in sender field")
 		}
 		if cfg.IsAuthTypeAPI() {
+			var apiEmailer *email.Emailer
+			if !cfg.GetAuthAPISupportsInvites() {
+				// invites not supported by API - delegate it to emailer
+				apiEmailer = emailer
+			}
 			authService, err = auth.NewAPIAuthService(
 				cfg.GetAuthAPIEndpoint(),
 				cfg.GetAuthAPIToken(),
 				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-				cfg.GetAuthCacheConfig(), nil)
+				cfg.GetAuthCacheConfig(), nil, apiEmailer)
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create authentication service")
 			}

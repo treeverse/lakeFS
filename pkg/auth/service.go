@@ -71,14 +71,13 @@ type CredentialsCreator interface {
 }
 
 type Service interface {
+	InviteHandler
+
 	SecretStore() crypt.SecretStore
 	Cache() Cache
 
 	// users
 	CreateUser(ctx context.Context, user *model.User) (string, error)
-	InviteUser(ctx context.Context, email string) error
-
-	IsInviteSupported() bool
 	DeleteUser(ctx context.Context, username string) error
 	GetUserByID(ctx context.Context, userID string) (*model.User, error)
 	GetUser(ctx context.Context, username string) (*model.User, error)
@@ -193,7 +192,7 @@ type KVAuthService struct {
 	secretStore crypt.SecretStore
 	cache       Cache
 	log         logging.Logger
-	*InviteHandler
+	*EmailInviteHandler
 }
 
 func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) *KVAuthService {
@@ -204,12 +203,14 @@ func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, cach
 	} else {
 		cache = &DummyCache{}
 	}
-	return &KVAuthService{
+	res := &KVAuthService{
 		store:       store,
 		secretStore: secretStore,
 		cache:       cache,
 		log:         logger,
 	}
+	res.EmailInviteHandler = NewEmailInviteHandler(res, logger, emailer)
+	return res
 }
 
 func (s *KVAuthService) SecretStore() crypt.SecretStore {
@@ -1119,15 +1120,20 @@ func (s *KVAuthService) markTokenSingleUse(ctx context.Context, tokenID string, 
 }
 
 type APIAuthService struct {
-	apiClient   *ClientWithResponses
-	secretStore crypt.SecretStore
-	cache       Cache
+	apiClient              *ClientWithResponses
+	secretStore            crypt.SecretStore
+	cache                  Cache
+	delegatedInviteHandler *EmailInviteHandler
 }
 
 func (a *APIAuthService) InviteUser(ctx context.Context, email string) error {
+	if a.delegatedInviteHandler != nil {
+		return a.delegatedInviteHandler.InviteUser(ctx, email)
+	}
 	resp, err := a.apiClient.CreateUserWithResponse(ctx, CreateUserJSONRequestBody{
-		Email:  swag.String(email),
-		Invite: swag.Bool(true),
+		Email:    swag.String(email),
+		Invite:   swag.Bool(true),
+		Username: email,
 	})
 	if err != nil {
 		return err
@@ -1794,7 +1800,7 @@ func (a *APIAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, e
 	return a.validateResponse(res, http.StatusCreated)
 }
 
-func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, timeout *time.Duration) (*APIAuthService, error) {
+func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, timeout *time.Duration, emailer *email.Emailer) (*APIAuthService, error) {
 	bearerToken, err := securityprovider.NewSecurityProviderBearerToken(token)
 	if err != nil {
 		return nil, err
@@ -1819,9 +1825,13 @@ func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore,
 	} else {
 		cache = &DummyCache{}
 	}
-	return &APIAuthService{
+	res := &APIAuthService{
 		apiClient:   client,
 		secretStore: secretStore,
 		cache:       cache,
-	}, nil
+	}
+	if emailer != nil {
+		res.delegatedInviteHandler = NewEmailInviteHandler(res, logging.Default(), emailer)
+	}
+	return res, nil
 }
