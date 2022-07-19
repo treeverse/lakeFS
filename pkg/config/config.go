@@ -555,6 +555,10 @@ func (c *Config) GetAuthAPIToken() string {
 	return c.values.Auth.API.Token
 }
 
+func (c *Config) GetAuthAPISupportsInvites() bool {
+	return c.values.Auth.API.SupportsInvites
+}
+
 func (c *Config) GetUISnippets() []apiparams.CodeSnippet {
 	snippets := make([]apiparams.CodeSnippet, 0, len(c.values.UI.Snippets))
 	for _, item := range c.values.UI.Snippets {
