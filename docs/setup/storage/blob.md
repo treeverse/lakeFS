@@ -3,7 +3,7 @@ layout: default
 title: Azure Blob Storage
 description: This guide explains how to configure Azure Blob Storage as the underlying storage layer.
 parent: Prepare Your Storage
-grand_parent: Setup lakeFS
+grand_parent: Set up lakeFS
 nav_order: 30
 has_children: false
 ---
