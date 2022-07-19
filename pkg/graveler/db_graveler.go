@@ -641,7 +641,7 @@ func (g *DBGraveler) List(ctx context.Context, repositoryID RepositoryID, ref Re
 		if err != nil {
 			return nil, err
 		}
-		listing = NewCombinedIterator(stagingList, listing)
+		listing = NewFilterTombstoneIterator(NewCombinedIterator(stagingList, listing))
 	}
 	return listing, nil
 }
