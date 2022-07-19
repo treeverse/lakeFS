@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Configuration Reference
-description: Configuring lakeFS is done using a yaml configuration file. This reference uses . to denote the nesting of values.
+description: Configuring lakeFS is done using a YAML configuration file. This reference uses `.` to denote the nesting of values.
 parent: Reference
 nav_order: 2
 has_children: false
@@ -12,8 +12,8 @@ has_children: false
 
 {% include toc.html %}
 
-Configuring lakeFS is done using a yaml configuration file and/or environment variable.
-The configuration file location can be set with the '--config' flag. If not specified, the first file found in the following order will be used:
+Configuring lakeFS is done using a YAML configuration file and/or environment variable.
+The configuration file's location can be set with the '--config' flag. If not specified, the first file found in the following order will be used:
 1. ./config.yaml
 1. `$HOME`/lakefs/config.yaml
 1. /etc/lakefs/config.yaml
@@ -49,7 +49,7 @@ This reference uses `.` to denote the nesting of values.
 
    **Note:** It is best to keep this somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
    {: .note }
-* <a name="ldap"/>`auth.ldap.server_endpoint` `(string : required)` - If specified, also authenticate users via this LDAP server
+* <a name="ldap"/>`auth.ldap.server_endpoint` `(string : required)` - If specified, also authenticate users via this LDAP server.
 * `auth.ldap.bind_dn` `(string : required)` - Use this DN to bind lakeFS on the LDAP server for searching for users.
 * `auth.ldap.bind_password` `(string : )` - If set, use this password for binding `bind_dn`.
 * `auth.ldap.username_attribute` `(string : required)` - Attribute holding login username on LDAP users, e.g. `cn` or `uid`.
@@ -67,9 +67,9 @@ This reference uses `.` to denote the nesting of values.
 * `auth.oidc.friendly_name_claim_name` `(string[] : )` - If specified, the value from the claim with this name will be used as the user's display name.
 * `auth.oidc.authorize_endpoint_query_parameters` `(map[string]string : )` - Add these parameters when calling the provider's `/authorize` endpoint
 * `auth.oidc.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
-* `blockstore.type` `(one of ["local", "s3", "gs", "azure", "mem"] : required)`.  Block adapter to use. This controls where the underlying data will be stored
+* `blockstore.type` `(one of ["local", "s3", "gs", "azure", "mem"] : required)`. Block adapter to use. This controls where the underlying data will be stored
 * `blockstore.default_namespace_prefix` `(string : )` - Use this to help your users choose a storage namespace for their repositories. 
-   If specified, the storage namespace will be filled with this default value as a prefix, when creating a repository from the UI.
+   If specified, the storage namespace will be filled with this default value as a prefix when creating a repository from the UI.
    The user may still change it to something else.
 * `blockstore.local.path` `(string: "~/lakefs/data")` - When using the local Block Adapter, which directory to store files in
 * `blockstore.gs.credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key
@@ -131,15 +131,15 @@ This reference uses `.` to denote the nesting of values.
   representing the S3 endpoint used by S3 clients to call this server
   (`*.s3.local.lakefs.io` always resolves to 127.0.0.1, useful for
   local development, if using [virtual-host addressing](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html).
-* `gateways.s3.region` `(string : "us-east-1")` - AWS region we're pretending to be. Should match the region configuration used in AWS SDK clients
-* `gateways.s3.fallback_url` `(string)` - If specified, requests with a non-existing repository will be forwarded to this url. This can be useful for using lakeFS side-by-side with S3, with the URL pointing at an [S3Proxy](https://github.com/gaul/s3proxy) instance.
+* `gateways.s3.region` `(string : "us-east-1")` - AWS region we're pretending to be in, it should match the region configuration used in AWS SDK clients
+* `gateways.s3.fallback_url` `(string)` - If specified, requests with a non-existing repository will be forwarded to this URL. This can be useful for using lakeFS side-by-side with S3, with the URL pointing at an [S3Proxy](https://github.com/gaul/s3proxy) instance.
 * `stats.enabled` `(boolean : true)` - Whether to periodically collect anonymous usage statistics
-* `security.audit_check_interval` `(duration : 12h)` - Duration in which we check for security audit
+* `security.audit_check_interval` `(duration : 12h)` - Duration in which we check for security audit.
 {: .ref-list }
 
 ## Using Environment Variables
 
-All configuration variables can be set or overridden using environment variables.
+All the configuration variables can be set or overridden using environment variables.
 To set an environment variable, prepend `LAKEFS_` to its name, convert it to upper case, and replace `.` with `_`:
 
 For example, `logging.format` becomes `LAKEFS_LOGGING_FORMAT`, `blockstore.s3.region` becomes `LAKEFS_BLOCKSTORE_S3_REGION`, etc.

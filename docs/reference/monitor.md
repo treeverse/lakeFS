@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Monitoring using Prometheus
-description: Monitor your lakeFS installation with Prometheus
+description: A guide to monitoring your lakeFS Installation with Prometheus.
 parent: Reference
 nav_order: 30
 has_children: false
@@ -30,7 +30,7 @@ scrape_configs:
 
 ## Metrics exposed by lakeFS
 By default, Prometheus exports metrics with OS process information like memory and CPU.
-It also includes Go-specific metrics like details about GC and number of goroutines.
+It also includes Go-specific metrics such as details about GC and a number of goroutines.
 You can learn about these default metrics in this [post](https://povilasv.me/prometheus-go-metrics/){: target="_blank" }.
 
 In addition, lakeFS exposes the following metrics to help monitor your deployment: 

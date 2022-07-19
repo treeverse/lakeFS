@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Hooks
-parent: Setup lakeFS
-description: lakeFS allows the configuration of hooks to trigger when predefined events occur
+parent: Set up lakeFS
+description: lakeFS allows you to configure hooks to trigger when predefined events occur.
 nav_order: 30
 has_children: false
 redirect_from: ../hooks.html
@@ -12,7 +12,7 @@ redirect_from: ../hooks.html
 
 {% include toc.html %}
 
-Like other version control systems, lakeFS allows the configuration of `Actions` to trigger when predefined events occur.
+Like other version control systems, lakeFS allows you to configure `Actions` to trigger when predefined events occur.
 
 Supported Events:
 
@@ -32,19 +32,19 @@ Supported Events:
 | `post_delete_tag`    | Runs after the tag was deleted                                                 |
 
 lakeFS `Actions` are handled per repository and cannot be shared between repositories.
-Failure of any `Hook` under any `Action` of a `pre_*` event will result in aborting the lakeFS operation that is taking place.
+A failure of any `Hook` under any `Action` of a `pre_*` event will result in aborting the lakeFS operation that is taking place.
 `Hook` failures under any `Action` of a `post_*` event will not revert the operation.
 
 `Hooks` are managed by `Action` files that are written to a prefix in the lakeFS repository.
 This allows configuration-as-code inside lakeFS, where `Action` files are declarative and written in YAML.
 
-## Example use-cases
+## Example use cases
 
 1. Format Validator:
    A webhook that checks new files to ensure they are of a set of allowed data format.
 1. Schema Validator:
    A webhook that reads new Parquet and ORC files to ensure they don't contain a block list of column names (or name prefixes).
-   This is useful when we want to avoid accidental PII exposure.
+   This is useful for avoiding accidental PII exposure.
 
 For more examples and configuration samples, check out [lakeFS-hooks](https://github.com/treeverse/lakeFS-hooks) example repo.
 
@@ -53,14 +53,14 @@ For more examples and configuration samples, check out [lakeFS-hooks](https://gi
 ### Action
 {: .no_toc }
 
-An `Action` is a list of `Hooks` with the same trigger configuration, i.e. an event will trigger all `Hooks` under an `Action`, or none at all.
-The `Hooks` under an `Action` are ordered and so is their execution. A `Hook` will only be executed if all previous `Hooks` that were triggered with it, had passed.
+An `Action` is a list of `Hooks` with the same trigger configuration, i.e. an event will trigger all `Hooks` under an `Action` or none at all.
+The `Hooks` under an `Action` are ordered and so is their execution. A `Hook` will only be executed if all the previous `Hooks` that were triggered with it had passed.
 
 ### Hook
 {: .no_toc }
 
 A `Hook` is the basic building block of an `Action`.
-Failure of a single `Hook` will stop the execution of the containing `Action` and fail the `Run`.
+The failure of a single `Hook` will stop the execution of the containing `Action` and fail the `Run`.
 
 ### Action file
 {: .no_toc }
@@ -100,7 +100,7 @@ hooks:
       url: "https://your.domain.io/webhook?nofreeze=true?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
 ```
 
-**Note:** lakeFS will validate action files only when an `Event` occurred. <br/>
+**Note:** lakeFS will validate action files only when an `Event` has occurred. <br/>
 Use `lakectl actions validate <path>` to validate your action files locally.
 {: .note }
 
@@ -108,10 +108,10 @@ Use `lakectl actions validate <path>` to validate your action files locally.
 {: .no_toc }
 
 A `Run` is an instantiation of the repository's `Action` files when the triggering event occurs.
-For example, if our repository contains a pre-commit hook, every commit would generate a `Run` for that specific commit.
+For example, if your repository contains a pre-commit hook, every commit would generate a `Run` for that specific commit.
 
 lakeFS will fetch, parse and filter the repository `Action` files and start to execute the `Hooks` under each `Action`.
-All executed `Hooks` (each with `hook_run_id`) exists in the context of that `Run` (`run_id`).
+All executed `Hooks` (each with `hook_run_id`) exist in the context of that `Run` (`run_id`).
 
 ---
 ## Uploading Action files
@@ -121,20 +121,20 @@ When an actionable event (see Supported Events above) takes place, lakeFS will r
 in the repository branch where the action occurred.
 A failure to parse an `Action` file will result with a failing `Run`.
 
-For example, lakeFS will search and execute all matching `Action` files with the prefix `lakefs://repo1/feature-1/_lakefs_actions/` on:
+For example, lakeFS will search and execute all the matching `Action` files with the prefix `lakefs://repo1/feature-1/_lakefs_actions/` on:
 1. Commit to `feature-1` branch on `repo1` repository.
 1. Merge to `main` branch from `feature-1` branch on `repo1` repository.
 
 ## Runs API & CLI
 
-The [lakeFS API](../reference/api.md) and [lakectl](../reference/commands.md#lakectl-actions) expose the results of executions per repository, branch, commit and specific `Action`.
+The [lakeFS API](../reference/api.md) and [lakectl](../reference/commands.md#lakectl-actions) expose the results of executions per repository, branch, commit, and specific `Action`.
 The endpoint also allows to download the execution log of any executed `Hook` under each `Run` for observability.
 
 
 ### Result Files
 {: .no_toc }
 
-There are 2 types of files that are stored in the metadata section of lakeFS repository with each `Run`:
+The metadata section of lakeFS repository with each `Run` contains two types of files:
 1. `_lakefs/actions/log/<runID>/<hookRunID>.log` - Execution log of the specific `Hook` run.
 1. `_lakefs/actions/log/<runID>/run.manifest` - Manifest with all `Hooks` execution for the run with their results and additional metadata.
 
@@ -154,7 +154,7 @@ Any non 2XX response by the responding endpoint will fail the `Hook`, cancel the
 under the same `Action`. For `pre_*` hooks, the triggering operation will also be aborted.
 
 **Warning:** You should not use `pre_*` webhooks for long-running tasks, since they block the performed operation.
-Moreover, the branch is locked during the execution of `pre_*` hooks, so the webhook server cannot perform any write operations (like uploading or commits) on the branch.
+Moreover, the branch is locked during the execution of `pre_*` hooks, so the webhook server cannot perform any write operations on the branch (like uploading or commits).
 {: .note } 
 
 #### Action file Webhook properties
@@ -168,7 +168,7 @@ Moreover, the branch is locked during the execution of `pre_*` hooks, so the web
 
 **Secrets & Environment Variables**<br/>
 lakeFS Actions supports secrets by using environment variables.
-The following format `{% raw %}{{{% endraw %} ENV.SOME_ENV_VAR {% raw %}}}{% endraw %}` will be replaced with the value of `SOME_ENV_VAR`
+The format `{% raw %}{{{% endraw %} ENV.SOME_ENV_VAR {% raw %}}}{% endraw %}` will be replaced with the value of `SOME_ENV_VAR`
 during the execution of the action. If that environment variable doesn't exist in the lakeFS server environment, the action run will fail.
 {: .note }
 
@@ -273,8 +273,8 @@ The key of the record will be `lakeFS_event` and the value will match the one de
 ---
 ## Experimentation
 
-It's sometimes easier to start experimenting with lakeFS webhooks, even before you have a running server to receive the calls.
-There are a couple of online tools that can intercept and display the webhook requests, one of them is Svix.
+Sometimes it may be easier to start experimenting with lakeFS webhooks, even before you have a running server to receive the calls.
+There are a couple of online tools that can intercept and display the webhook requests, and one of them is Svix.
 
 1. Go to [play.svix.com](https://play.svix.com) and copy the URL address supplied by Svix.
 It should look like `https://api.relay.svix.com/api/v1/play/receive/<Random_Gen_String>/`

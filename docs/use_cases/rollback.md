@@ -1,7 +1,7 @@
 ---
 layout: default 
 title: Rollback
-description: In this tutorial we will explore how to use lakeFS for rollback operations.
+description: In this tutorial, we will explore how to use lakeFS for rollback operations.
 parent: Use Cases
 nav_order: 20
 has_children: false
@@ -13,17 +13,17 @@ has_children: false
 
 A rollback operation is used to to fix critical data errors immediately.
 
-What is a critical data error? Think of a situation where erroneous or misformatted data causes a signficant issue with an important service or function. In these situations, the first thing to do is stop the bleeding.
+What is a critical data error? Think of a situation where erroneous or misformatted data causes a signficant issue with an important service or function. In such situations, the first thing to do is stop the bleeding.
 
 Rolling back returns data to a state in the past, before the error was present. You might not be showing all the latest data after a rollback, but at least you aren’t showing incorrect data or raising errors.
 
-## Why Rollbacks are Useful
+## Why Rollbacks Are Useful
 
-A Rollback is used as a stopgap measure to “put out the fire” as quickly as possible while RCA (root cause analysis) is performed to understand 1) exactly how the error happened and 2) what can be done to prevent it from happening again.
+A Rollback is used as a stopgap measure to “put out the fire” as quickly as possible while RCA (root cause analysis) is performed to understand 1) exactly how the error happened, and 2) what can be done to prevent it from happening again.
 
-It can be a pressured, stressful situation to deal with  a critical data error. Having the ability to employ a rollback relieves some of the pressure, and makes it more likely you can figure out what happened without creating additional issues.
+It can be a pressured, stressful situation to deal with a critical data error. Having the ability to employ a rollback relieves some of the pressure and makes it more likely you can figure out what happened without creating additional issues.
 
-As a real world example, the [14 day outage](https://devops.com/what-sres-can-learn-from-the-atlassian-outage-of-2022/) some Atlassian users experienced in May '22 could have been an uninteresting minor incident had rolling back the deleted customer data been an option.
+As a real world example, the [14-day outage](https://devops.com/what-sres-can-learn-from-the-atlassian-outage-of-2022/) some Atlassian users experienced in May 2022 could have been an uninteresting minor incident had rolling back the deleted customer data been an option.
 
 ## Performing Rollbacks with lakeFS
 
@@ -39,13 +39,13 @@ As can be inferred from the history, this repo is updated every minute with a da
 
 ### How to Rollback From a Bad Data Sync?
 
-Say the situation occurs where one of the syncs had bad data and is causing downstream dashboards to fail to load. Since we took a commit of the repo right after the sync ran, we can use a `revert` operation to undo the changes introduced in that sync.
+Say a situation occurs where one of the syncs had bad data and is causing downstream dashboards to fail to load. Since we took a commit of the repo right after the sync ran, we can use a `revert` operation to undo the changes introduced in that sync.
 
 ![Copy Commit ID]({{ site.baseurl }}/assets/img/rollback-copy-id.png)
 
-Step 1: Copy the `commit_id` associated with the commit we want to revert. As shown in the screenshot above you can use the `Copy ID to Clipboard` button to do this.
+Step 1: Copy the `commit_id` associated with the commit we want to revert. As the screenshot above shows, you can use the `Copy ID to Clipboard` button to do this.
 
-Step 2: Run the revert command using [lakectl]({{ site.baseurl }}/reference/commands.html), the lakeFS CLI. In this example this command will be:
+Step 2: Run the revert command using [lakectl]({{ site.baseurl }}/reference/commands.html), the lakeFS CLI. In this example, the command will be as follows:
 
 ```bash
 lakectl branch revert lakefs://example/main 9666d7c9daf37b3ba6964e733d08596ace2ec2c7bc3a4023ad8e80737a6c3e9d
@@ -55,6 +55,6 @@ This will undo the changes introduced by this commit, completing the rollback!
 
 ![Rollback Commit]({{ site.baseurl }}/assets/img/rollback-revert-commit.png)
 
-The rollback operation is this simple even if many changes were introduced in a commit, spanning multiple data collections.
+The rollback operation is that simple, even if many changes were introduced in a commit, spanning acrossmultiple data collections.
 
-In lakeFS, it is always a one-liner to rollback data.
+In lakeFS, rolling back data is always a one-liner.

@@ -2,7 +2,7 @@
 layout: default
 title: Versioning Internals
 parent: Understanding lakeFS
-description: How lakeFS does versioning
+description: This section explains how versioning works in lakeFS.
 nav_order: 20
 has_children: false
 redirect_from: ["../architecture/data-model.html","../understand/data-model.html"]
@@ -16,9 +16,9 @@ redirect_from: ["../architecture/data-model.html","../understand/data-model.html
 
 Since commits in lakeFS are immutable, they are easy to store on an immutable object store.
 
-Older commits are rarely accessed, while newer commits are accessed very frequently, a tiered storage approach can work very well - The object store is the source of truth, while local disk and even RAM can be used to cache the more frequently accessed ones.
+Older commits are rarely accessed, while newer commits are accessed very frequently, a tiered storage approach can work very well - the object store is the source of truth, while local disk and even RAM can be used to cache the more frequently accessed ones.
 
-Since they are immutable - once cached, we only need to evict them when space is running out. There’s no complex invalidation that needs to happen.
+Since they are immutable - once cached, you only need to evict them when space is running out. There’s no complex invalidation that needs to happen.
 
 In terms of storage format, commits are be stored as [SSTables](https://en.wikipedia.org/wiki/Log-structured_merge-tree){: target="_blank" }, compatible with [RocksDB](https://rocksdb.org/){: target="_blank" }.
 
@@ -36,11 +36,11 @@ lakeFS metadata is encoded into a format called **"Graveler"** - a standardized 
 
 ![Graveler File]({{ site.baseurl }}/assets/img/graveler1.png)
 
-Each Key/Value pair (**"ValueRecord"**) is constructed of a `key`, an `identity` and a `value`.
+Each Key/Value pair (**"ValueRecord"**) is constructed of a `key`, `identity`, and `value`.
 
-A simple identity could be, for example, a sha256 hash of the value’s bytes, but it could be any sequence of bytes that uniquely identifies the value. As far as Graveler is concerned, two `ValueRecord`s are considered identical, if their key and identity fields are equal.
+A simple identity could be, for example, a sha256 hash of the value’s bytes. It could be any sequence of bytes that uniquely identifies the value. As far as the Graveler is concerned, two `ValueRecord`s are considered identical if their key and identity fields are equal.
 
-A Graveler file itself is content-addressable, i.e. similarly to Git, the name of the file is its identity.
+A Graveler file itself is content-addressable, i.e., similarly to Git, the name of the file is its identity.
 File identity is calculated based on the identity of the ValueRecords the file contains:
 
 
@@ -49,7 +49,7 @@ File identity is calculated based on the identity of the ValueRecords the file c
 
 ## Constructing a consistent view of the keyspace (i.e., a commit)
 
-We have 2 additional requirements for the storage format:
+We have two additional requirements for the storage format:
 
 1. Be space and time efficient when creating a commit - assuming a commit changes a single object out of a billion, we don’t want to write a full snapshot of the entire repository. Ideally, we’ll be able to reuse some data files that haven’t changed to make the commit operations (in both space and time) proportional to the size of the difference as opposed to the total size of the repository.
 1. Allow an efficient diff between commits which runs in time proportional to the size of their difference and not their absolute sizes.
@@ -58,11 +58,11 @@ To support these requirements, we decided to essentially build a 2-layer [Merkle
 
 ![Metarange to ranges relationship]({{ site.baseurl }}/assets/img/graveler2.png)
 
-Assuming commit B is derived from commit A, and only changed files in range `e-f`, it can reuse all ranges except for SSTable #N (the one containing the modified range of keys), which will be recreated with a new hash, representing the state as exists after applying commit B’s changes. This will in turn, also create a new Metarange since its hash is now changed as well (as it is derived from the hash of all contained ranges).
+Assuming commit B is derived from commit A, and only changed files in range `e-f`, it can reuse all ranges except for SSTable #N (the one containing the modified range of keys), which will be recreated with a new hash representing the state as exists after applying commit B’s changes. This will, in turn, also create a new Metarange since its hash is now changed as well (as it is derived from the hash of all contained ranges).
 
-Assuming most commits usually change related objects (i.e. that are likely to share some common prefix), the reuse ratio could be very high. We tested this assumption using S3 inventory from 2 design partners - we partitioned the keyspace to an arbitrary number of simulated blocks and measured their change over time. We saw a daily change rate of about 5-20%.
+Assuming most commits usually change related objects (i.e., that are likely to share some common prefix), the reuse ratio could be very high. We tested this assumption using S3 inventory from 2 design partners - we partitioned the keyspace to an arbitrary number of simulated blocks and measured their change over time. We saw a daily change rate of about 5-20%.
 
-Given the size of the repositories, it is safe to assume that a single day would translate into multiple commits. At a modest 20 commits per day, a commit is expected to reuse >= 99% of the previous commit blocks, so acceptable in terms of write amplification generated on commit.
+Given the size of the repositories, it's safe to assume that a single day would translate into multiple commits. At a modest 20 commits per day, a commit is expected to reuse >= 99% of the previous commit blocks, so acceptable in terms of write amplification generated on commit.
 
 On the object store, ranges are stored in the following hierarchy:
 
@@ -83,7 +83,7 @@ On the object store, ranges are stored in the following hierarchy:
     ...
 ```
 
-*Note: this relatively flat structure could be modified in the future: looking at the diagram above, it imposes no real limitations on the depth of the tree. A tree could easily be made recursive by having Meta Ranges point to other Meta Ranges - and still provide all the same characteristics. For simplicity, we decided to start with a fixed 2-level hierarchy.*
+*Note: This relatively flat structure could be modified in the future. Looking at the diagram above, it imposes no real limitations on the depth of the tree. A tree could easily be made recursive by having Meta Ranges point to other Meta Ranges - and still provide all the same characteristics. For simplicity, we decided to start with a fixed 2-level hierarchy.*
 
 ## Representing references and uncommitted metadata
 
@@ -95,9 +95,9 @@ Unlike committed metadata which is immutable, uncommitted (or "staged") metadata
 
 Both these types of metadata are not only mutable, but also require strong consistency guarantees while also being fault tolerant. If we can’t access the current pointer of the main branch, a big portion of the system is essentially down. 
 
-Luckily, this is also much smaller set of metadata, compared to the committed metadata.
+Luckily, this is also much smaller set of metadata compared to the committed metadata.
 
 References and uncommitted metadata are currently stored on PostgreSQL for its strong consistency and transactional guarantees.
 
-[In the future](roadmap.md#decouple-ref-store-from-postgresql) we plan on eliminating the need for an RDBMS by using a pluggable Key-Value store interface that would allow the use of [many databases](https://github.com/treeverse/lakeFS/blob/master/design/open/metadata_kv/index.md#databases-that-meet-these-requirements-examples) that meet its naive requirements.
-Non-production single server installations can leverage an embedded key-value store like RocksDB, that will allow running with only a single container.
+[In the future](roadmap.md#decouple-ref-store-from-postgresql), we plan on eliminating the need for an RDBMS by using a pluggable Key-Value store interface that would allow the use of [many databases](https://github.com/treeverse/lakeFS/blob/master/design/open/metadata_kv/index.md#databases-that-meet-these-requirements-examples) that meet its naive requirements.
+Non-production single server installations can leverage an embedded key-value store like RocksDB that will allow running with only a single container.

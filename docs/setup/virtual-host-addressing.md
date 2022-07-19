@@ -1,8 +1,8 @@
 ---
 layout: default
 title: "S3 Virtual-host addressing (advanced)"
-description: Configure the lakeFS S3 API to use virtual host addressing 
-parent: Setup lakeFS
+description: Configure the lakeFS S3 API to use virtual-host addressing.
+parent: Set up lakeFS
 has_children: false
 ---
 
@@ -23,7 +23,7 @@ GET http://foo.example.com/some/location
 In this case, there's no way for lakeFS to determine whether this is a virtual-host request where the endpoint url is `example.com`, the bucket name is `foo` and the path is `/some/location`,
 or a path-based request where the endpoint is `foo.example.com`, the bucket name is `some` and the path is `location`.
 
-This requires an extra step: Defining an explicit set of DNS record for lakeFS S3 gateway.
+This requires an extra step: defining an explicit set of DNS record for lakeFS S3 gateway.
 
 ## Adding an explicit S3 domain name to the S3 Gateway configuration
 
@@ -57,10 +57,10 @@ For more information on how to configure lakeFS, check out the [configuration re
 
 ## Setting up the appropriate DNS records
 
-Once our lakeFS installation is configured with an explicit S3 gateway endpoint address, we need to define 2 DNS records and have them point at our lakeFS installation.
-This requires 2 CNAME records:
+Once your lakeFS installation is configured with an explicit S3 gateway endpoint address, you need to define two DNS records and have them point at your lakeFS installation.
+This requires two CNAME records:
 
-1. `s3.lakefs.example.com` - CNAME to `lakefs.example.com`. This would be used as the S3 endpoint when configuring clients and will serve as our bare domain.
+1. `s3.lakefs.example.com` - CNAME to `lakefs.example.com`. This will be used as the S3 endpoint when configuring clients and serve as our bare domain.
 1. `*.s3.lakefs.example.com` - Also a CNAME to `lakefs.example.com`. This will resolve virtual-host requests such as `example-repo.s3.lakefs.example.com` that lakeFS would now know how to parse.
 
 
