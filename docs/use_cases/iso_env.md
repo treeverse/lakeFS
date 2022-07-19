@@ -110,8 +110,6 @@ As expected, there are now twice as many rows, 972k, on the `double-branch` bran
 
 Data duplication introduce errors into our data analytics, BI and machine learning efforts, hence we would like to avoid duplicating our data.
 
-There's lots to afraid of! 
-
 On the `main` branch however, there is still just the origin 486k rows. This shows the utility of branch-based isolated environments with lakeFS.
 
 You can safely continue working with the data from main which is unharmed due to lakeFS isolation capabilities. 
