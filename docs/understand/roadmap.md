@@ -29,7 +29,7 @@ For unstructured data and some forms of tabluar data (namely, Hive structured ta
 
 However, in some cases simply creating a union of object modifications from both references isn't good enough. 
 Modern table formats such as Delta Lake, Hudi, and Iceberg rely on a set of manifest or log files that describe the logical structure of the table. 
-In those cases, a merge operation might have to be aware of the data structure: 
+In those cases, a merge operation might have to be aware of the structure of the data: 
 generate a new manifest or re-order the log in order for the output to make sense.
 Additionally, the definition of a conflict is also a bit different: 
 simply looking at object names to determine whether or not a conflict occured might not be good enough.
