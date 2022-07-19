@@ -21,7 +21,7 @@ When creating a new branch, we are actually creating a consistent snapshot of th
 
 A branch is a mutable pointer to a commit and uncommitted changes in its staging area (i.e., mutable storage where users can create, update, and delete objects). When a user creates a commit from a branch, all the files from the staging area will be merged into the contents of the current branch, generating a new set of objects. The pointer is updated to reference the new set of objects. The new branch tip is set to the latest commit and the previous branch tip serves as the commit's parent. 
 
-Just like in git, a branch spans a repository. Learn more about the [lakeFS branching model](/understand/branching-model.md).
+Just like in git, a branch spans a repository. Learn more about the [lakeFS branching model](./understand/branching-model.md).
 
 ### Collection
 Collection, roughly speaking, is a set of data. A set of structured data is often referred to as a table. Whereas collection could comprise a data set that can be either structured or unstructured.
@@ -37,10 +37,10 @@ It is sometimes referred as multi-table transactions, i.e., lakeFS offers transa
 <!---Learn more about cross-collection consistency here (link to CCC blog) -->
 
 ### Data Lifecycle Management
-In data-intensive applications, data should be managed through its entire lifecycle similar to how teams manage code. By doing so, we could leverage the best practices and tools from application lifecycle management (like CI/CD operations) and apply them to data. lakeFS offers data lifecycle management via [isolated data development environments](/use_cases/iso_env.md) instead of shared buckets.
+In data-intensive applications, data should be managed through its entire lifecycle similar to how teams manage code. By doing so, we could leverage the best practices and tools from application lifecycle management (like CI/CD operations) and apply them to data. lakeFS offers data lifecycle management via [isolated data development environments](./use_cases/iso_env.md) instead of shared buckets.
 
 ### Data Pipeline Reproducibility
-Reproducibility in data pipelines is the ability to repeat a process. An example of this is recreating an issue that occurred in the production pipeline. Reproducibility allows for the controlled manufacture of an error to debug and troubleshoot it at a later point in time. Reproducing a data pipeline issue is a challenge that most data engineers face on a daily basis. Learn more about how lakeFS supports data pipeline [reproducibility](/use_cases/reproducibility.md). Other use cases include running ad-hoc queries (useful for data science), review, and backfill.
+Reproducibility in data pipelines is the ability to repeat a process. An example of this is recreating an issue that occurred in the production pipeline. Reproducibility allows for the controlled manufacture of an error to debug and troubleshoot it at a later point in time. Reproducing a data pipeline issue is a challenge that most data engineers face on a daily basis. Learn more about how lakeFS supports data pipeline [reproducibility](./use_cases/reproducibility.md). Other use cases include running ad-hoc queries (useful for data science), review, and backfill.
 
 ### Data Quality Testing
 This term describes ways to test data for its accuracy, completeness, consistency, timeliness, validity, and integrity. lakeFS hooks can be used to implement and run data quality tests before promoting staging data into production. 
@@ -52,7 +52,7 @@ To version data means creating a unique point-in-time reference for data that ca
 lakeFS allows teams to treat their data lake as a Git repository. i.e., Git versions code whereas lakeFS versions data through git-like operations such as branch, commit, merge and revert. Data versioning is an essential part of data infrastructure of an organization and lakeFS offers versioning through git-like operations.
 
 ### Graveler
-Graveler is the core versioning engine of lakeFS. It handles versioning by translating lakeFS addresses to the actual stored objects. See the [data model section](/understand/versioning-internals.md) to learn about the data model used to store lakeFS metadata.
+Graveler is the core versioning engine of lakeFS. It handles versioning by translating lakeFS addresses to the actual stored objects. See the [versioning internals section](./understand/versioning-internals.md) to learn how lakeFS stores metadata.
 
 ### Hooks
 lakeFS hooks allow you to automate and ensure that a given set of checks and validations happens before important lifecycle events. They are similar conceptually to [Git Hooks](https://git-scm.com/docs/githooks), but in contrast, they run remotely on a server. Currently, lakeFS allows executing hooks when two types of events occur: pre-commit events that run before a commit is acknowledged and pre-merge events that trigger right before a merge operation. 
@@ -73,7 +73,7 @@ In lakeFS, once you commit data, you can review it and then merge the committed 
 A repository is a collection of objects with common history tracking. lakeFS manages versions of the repository identified by their commits. 
 
 ### Rollback
-A rollback is an atomic operation reversing the effects of a previous commit. If a developer introduces a new code version to production and discovers that it has a critical bug, they can simply roll back to the previous version. In lakeFS, a rollback is an atomic action that prevents the data consumers from receiving low-quality data until the issue is resolved. Learn more about how lakeFS supports the [rollback](/use_cases/rollback.md) operation.
+A rollback is an atomic operation reversing the effects of a previous commit. If a developer introduces a new code version to production and discovers that it has a critical bug, they can simply roll back to the previous version. In lakeFS, a rollback is an atomic action that prevents the data consumers from receiving low-quality data until the issue is resolved. Learn more about how lakeFS supports the [rollback](./use_cases/rollback.md) operation.
 
 ### Tag
 A tag is an immutable pointer to a single commit. Tags have readable names. Because tags are commits, a repository can be read from any tag. Example tags:
