@@ -209,10 +209,9 @@ func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, emai
 		secretStore: secretStore,
 		cache:       cache,
 		log:         logger,
-		InviteHandler: &InviteHandler{
-			secretStore: secretStore,
-			log:         logger,
-			emailer:     emailer,
+		EmailInviteHandler: &EmailInviteHandler{
+			log:     logger,
+			emailer: emailer,
 		},
 	}
 	res.EmailInviteHandler = NewEmailInviteHandler(res, logger, emailer)
