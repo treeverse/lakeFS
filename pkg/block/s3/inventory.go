@@ -147,7 +147,7 @@ func sortManifest(m *Manifest, logger logging.Logger, reader s3inventory.IReader
 		m.Files[i].lastKey = mr.LastObjectKey()
 		err = mr.Close()
 		if err != nil {
-			logger.Errorf("failed to close inventory file. file=%s, err=%w", f, err)
+			logger.WithError(err).WithField("file", f).Error("Failed to close inventory file")
 		}
 	}
 	sort.Slice(m.Files, func(i, j int) bool {

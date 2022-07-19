@@ -545,5 +545,6 @@ td .form-group {
 .wizard-step-header {
   display: flex;
   justify-content: left;
-  margin-bottom: 40px;
+  margin-bottom: 20px;
+  margin-top: 40px;
 }

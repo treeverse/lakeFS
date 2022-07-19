@@ -26,7 +26,6 @@ var (
 type DBType struct {
 	name       string
 	refManager graveler.RefManager
-	db         db.Database
 }
 
 func testRefManagerWithDB(t testing.TB) (graveler.RefManager, db.Database) {

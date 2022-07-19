@@ -51,7 +51,7 @@ const ImportDataStep = ({repoId, branchName, onComplete, prependPath = ''}) => {
 
     return (
         <>
-            <h2 className={"wizard-step-header"}>Import Data</h2>
+            <h3 className={"wizard-step-header"}>Import Data</h3>
             {
                 (importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed) &&
                 <ImportForm

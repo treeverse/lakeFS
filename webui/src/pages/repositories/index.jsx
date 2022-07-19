@@ -61,7 +61,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 
 const RepositoryTemplatesModal = ({show, onExit, createRepo, repoCreationError}) => {
     return (
-        <Modal show={show} onHide={onExit} size="xl">
+        <Modal show={show} onHide={onExit} size="lg">
             <Modal.Header closeButton>
                 <TemplatesModalTitleContainer/>
             </Modal.Header>

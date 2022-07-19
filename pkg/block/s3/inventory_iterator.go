@@ -29,7 +29,7 @@ type InventoryIterator struct {
 func NewInventoryIterator(inv *Inventory) *InventoryIterator {
 	creationTimestamp, err := strconv.ParseInt(inv.Manifest.CreationTimestamp, 10, 64) //nolint: gomnd
 	if err != nil {
-		inv.logger.Errorf("failed to get creation timestamp from manifest")
+		inv.logger.WithError(err).Error("Failed to get creation timestamp from manifest")
 		creationTimestamp = 0
 	}
 	t := time.Unix(creationTimestamp/int64(time.Second/time.Millisecond), 0)
@@ -80,13 +80,13 @@ func (it *InventoryIterator) moveToNextInventoryFile() bool {
 	}
 	it.inventoryFileIndex += 1
 	it.inventoryFileProgress.Incr()
-	it.logger.Debugf("moving to next manifest file: %s", it.Manifest.Files[it.inventoryFileIndex].Key)
+	it.logger.WithField("file", it.Manifest.Files[it.inventoryFileIndex].Key).Debug("Moving to next manifest file")
 	it.buffer = nil
 	return true
 }
 
 func (it *InventoryIterator) fillBuffer() bool {
-	it.logger.Debug("start reading rows from inventory to buffer")
+	it.logger.Debug("Start reading rows from inventory to buffer")
 	rdr, err := it.reader.GetFileReader(it.Manifest.Format, it.Manifest.inventoryBucket, it.Manifest.Files[it.inventoryFileIndex].Key)
 	if err != nil {
 		it.err = err
@@ -97,7 +97,7 @@ func (it *InventoryIterator) fillBuffer() bool {
 	defer func() {
 		err = rdr.Close()
 		if err != nil {
-			it.logger.Errorf("failed to close manifest file reader. file=%s, err=%w", it.Manifest.Files[it.inventoryFileIndex].Key, err)
+			it.logger.WithError(err).WithField("file", it.Manifest.Files[it.inventoryFileIndex].Key).Error("Failed to close manifest file reader")
 		}
 	}()
 	it.buffer, err = rdr.Read(int(rdr.GetNumRows()))
