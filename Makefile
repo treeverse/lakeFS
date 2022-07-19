@@ -63,6 +63,7 @@ clean:
 		$(LAKECTL_BINARY_NAME) \
 		$(LAKEFS_BINARY_NAME) \
 		$(UI_BUILD_DIR) \
+		$(UI_DIR)/node_modules \
 		pkg/actions/mock \
 		pkg/api/lakefs.gen.go \
 		pkg/auth/client.gen.go \
