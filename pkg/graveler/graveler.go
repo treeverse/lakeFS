@@ -638,7 +638,7 @@ type RefManager interface {
 	// ListBranches lists branches
 	ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
 
-	// TODO (niro): Remove when DB implementation is deleted
+	// GCBranchIterator TODO (niro): Remove when DB implementation is deleted
 	// GCBranchIterator temporary WA to support both DB and KV GC BranchIterator, which iterates over branches by order of commit ID
 	GCBranchIterator(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
 
@@ -674,6 +674,10 @@ type RefManager interface {
 
 	// ListCommits returns an iterator over all known commits, ordered by their commit ID
 	ListCommits(ctx context.Context, repositoryID RepositoryID) (CommitIterator, error)
+
+	// GCCommitIterator TODO (niro): Remove when DB implementation is deleted
+	// GCCommitIterator temporary WA to support both DB and KV GC CommitIterator
+	GCCommitIterator(ctx context.Context, repositoryID RepositoryID) (CommitIterator, error)
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -1885,7 +1889,7 @@ type GarbageCollectionManager interface {
 	GetRules(ctx context.Context, storageNamespace StorageNamespace) (*GarbageCollectionRules, error)
 	SaveRules(ctx context.Context, storageNamespace StorageNamespace, rules *GarbageCollectionRules) error
 
-	SaveGarbageCollectionCommits(ctx context.Context, storageNamespace StorageNamespace, repositoryID RepositoryID, repo Repository, rules *GarbageCollectionRules, previouslyExpiredCommits []CommitID) (string, error)
+	SaveGarbageCollectionCommits(ctx context.Context, storageNamespace StorageNamespace, repositoryID RepositoryID, rules *GarbageCollectionRules, previouslyExpiredCommits []CommitID) (string, error)
 	GetRunExpiredCommits(ctx context.Context, storageNamespace StorageNamespace, runID string) ([]CommitID, error)
 	GetCommitsCSVLocation(runID string, sn StorageNamespace) (string, error)
 	GetAddressesLocation(sn StorageNamespace) (string, error)

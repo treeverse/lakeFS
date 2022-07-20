@@ -8,7 +8,6 @@ import (
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
-	"github.com/treeverse/lakefs/pkg/kv"
 )
 
 const DefaultBranchID = graveler.BranchID("main")
@@ -228,6 +227,10 @@ func (m *RefsFake) CreateBareRepository(_ context.Context, _ graveler.Repository
 }
 
 func (m *RefsFake) ListCommits(_ context.Context, _ graveler.RepositoryID) (graveler.CommitIterator, error) {
+	return nil, nil
+}
+
+func (m *RefsFake) GCCommitIterator(_ context.Context, _ graveler.RepositoryID) (graveler.CommitIterator, error) {
 	return nil, nil
 }
 

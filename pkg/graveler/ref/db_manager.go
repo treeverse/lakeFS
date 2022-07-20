@@ -463,6 +463,10 @@ func (m *DBManager) ListCommits(ctx context.Context, repositoryID graveler.Repos
 	return NewDBOrderedCommitIterator(ctx, m.db, repositoryID, IteratorPrefetchSize)
 }
 
+func (m *DBManager) GCCommitIterator(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.CommitIterator, error) {
+	return NewDBOrderedCommitIterator(ctx, m.db, repositoryID, IteratorPrefetchSize, WithOnlyAncestryLeaves())
+}
+
 func (m *DBManager) FillGenerations(ctx context.Context, repositoryID graveler.RepositoryID) error {
 	// update commitNodes' generation in nodes "tree" using BFS algorithm.
 	// using a queue implementation

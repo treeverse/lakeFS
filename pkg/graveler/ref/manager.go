@@ -304,11 +304,11 @@ func (m *KVManager) ListTags(ctx context.Context, repositoryID graveler.Reposito
 }
 
 func (m *KVManager) GetCommitByPrefix(ctx context.Context, repositoryID graveler.RepositoryID, prefix graveler.CommitID) (*graveler.Commit, error) {
-	repo, err := m.GetRepository(ctx, repositoryID)
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
-	it, err := NewKVOrderedCommitIterator(ctx, &m.kvStore, repositoryID, *repo, false)
+	it, err := NewKVOrderedCommitIterator(ctx, &m.kvStore, repo, false)
 	if err != nil {
 		return nil, err
 	}
@@ -333,13 +333,13 @@ func (m *KVManager) GetCommitByPrefix(ctx context.Context, repositoryID graveler
 }
 
 func (m *KVManager) GetCommit(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (*graveler.Commit, error) {
-	repo, err := m.GetRepository(ctx, repositoryID)
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
 	commitKey := graveler.CommitPath(commitID)
 	c := graveler.CommitData{}
-	_, err = m.kvStore.GetMsg(ctx, graveler.RepoPartition(repositoryID, *repo), []byte(commitKey), &c)
+	_, err = m.kvStore.GetMsg(ctx, graveler.RepoPartition(repo), []byte(commitKey), &c)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrCommitNotFound
@@ -350,14 +350,14 @@ func (m *KVManager) GetCommit(ctx context.Context, repositoryID graveler.Reposit
 }
 
 func (m *KVManager) AddCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {
-	repo, err := m.GetRepository(ctx, repositoryID)
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
 	if err != nil {
 		return "", err
 	}
 	commitID := m.addressProvider.ContentAddress(commit)
 	c := graveler.ProtoFromCommit(graveler.CommitID(commitID), &commit)
 	commitKey := graveler.CommitPath(graveler.CommitID(commitID))
-	err = m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(repositoryID, *repo), []byte(commitKey), c, nil)
+	err = m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(repo), []byte(commitKey), c, nil)
 	// commits are written based on their content hash, if we insert the same ID again,
 	// it will necessarily have the same attributes as the existing one, so if a commit already exists doesn't return an error
 	if err != nil && !errors.Is(err, kv.ErrPredicateFailed) {
@@ -375,7 +375,7 @@ func (m *KVManager) FindMergeBase(ctx context.Context, repositoryID graveler.Rep
 }
 
 func (m *KVManager) Log(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.CommitID) (graveler.CommitIterator, error) {
-	_, err := m.GetRepository(ctx, repositoryID)
+	_, err := m.getRepositoryRec(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -383,9 +383,17 @@ func (m *KVManager) Log(ctx context.Context, repositoryID graveler.RepositoryID,
 }
 
 func (m *KVManager) ListCommits(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.CommitIterator, error) {
-	repo, err := m.GetRepository(ctx, repositoryID)
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
-	return NewKVOrderedCommitIterator(ctx, &m.kvStore, repositoryID, *repo, false)
+	return NewKVOrderedCommitIterator(ctx, &m.kvStore, repo, false)
+}
+
+func (m *KVManager) GCCommitIterator(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.CommitIterator, error) {
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	return NewKVOrderedCommitIterator(ctx, &m.kvStore, repo, true)
 }
