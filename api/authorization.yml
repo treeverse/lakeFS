@@ -145,6 +145,8 @@ components:
       properties:
         username:
           type: string
+          minLength: 1
+          description: A unique identifier for the user. For password-based authentication, it is the email.
         email:
           type: string
         friendlyName:
