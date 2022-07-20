@@ -299,7 +299,7 @@ type CommitRecord struct {
 type Branch struct {
 	CommitID     CommitID
 	StagingToken StagingToken
-	// SealedTokens - Staging tokens are appended to the back so that iteration of tokens will be from oldest to newest
+	// SealedTokens - Staging tokens are appended to the front, this allows building the diff iterator esaily
 	SealedTokens []StagingToken
 }
 
@@ -572,7 +572,7 @@ type DiffIterator interface {
 
 type BranchIterator interface {
 	Next() bool
-	SeekGE(id string)
+	SeekGE(id BranchID)
 	Value() *BranchRecord
 	Err() error
 	Close()
@@ -638,7 +638,8 @@ type RefManager interface {
 	// ListBranches lists branches
 	ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
 
-	// GCBranchIterator temporary WA to support both DB and KV GC BranchIterator TODO (niro): Remove when DB implementation is deleted
+	// TODO (niro): Remove when DB implementation is deleted
+	// GCBranchIterator temporary WA to support both DB and KV GC BranchIterator, which iterates over branches by order of commit ID
 	GCBranchIterator(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
 
 	// GetTag returns the Tag metadata object for the given TagID
@@ -943,7 +944,7 @@ func (g *KVGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 	return &newBranch, nil
 }
 
-// checkEmptyToken Checks whether token contains etries. Returns error if List operation fails or token contains entries, False otherwise
+// checkEmptyToken Checks whether token contains entries. Returns error if List operation fails or token contains entries, False otherwise
 func (g *KVGraveler) checkEmptyToken(ctx context.Context, stagingToken StagingToken) error {
 	iter, err := g.StagingManager.List(ctx, stagingToken, 1)
 	if err != nil {
@@ -1792,7 +1793,7 @@ func (b *branchValueIterator) setValue() bool {
 func (b *branchValueIterator) SeekGE(id Key) {
 	b.err = nil
 	b.value = nil
-	b.src.SeekGE(id.String())
+	b.src.SeekGE(BranchID(id))
 }
 
 func (b *branchValueIterator) Value() *ValueRecord {

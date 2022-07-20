@@ -45,24 +45,6 @@ func TestDBBranchIterator(t *testing.T) {
 		}
 	})
 
-	t.Run("listing branches using prefix", func(t *testing.T) {
-		iter := ref.NewDBBranchIterator(ctx, db, "repo1", 3)
-		iter.SeekGE("b")
-		ids := make([]graveler.BranchID, 0)
-		for iter.Next() {
-			b := iter.Value()
-			ids = append(ids, b.BranchID)
-		}
-		if iter.Err() != nil {
-			t.Fatalf("unexpected error: %v", iter.Err())
-		}
-		iter.Close()
-
-		if diffs := deep.Equal(ids, []graveler.BranchID{"b", "c", "d", "e", "main"}); diffs != nil {
-			t.Fatalf("got wrong list of branch IDs: %v", diffs)
-		}
-	})
-
 	t.Run("listing branches SeekGE", func(t *testing.T) {
 		iter := ref.NewDBBranchIterator(ctx, db, "repo1", 3)
 		iter.SeekGE("b")
@@ -134,25 +116,6 @@ func TestBranchSimpleIterator(t *testing.T) {
 		}
 	})
 
-	t.Run("listing branches using prefix", func(t *testing.T) {
-		iter, err := ref.NewBranchSimpleIterator(ctx, &kvStore, repo)
-		require.NoError(t, err)
-		iter.SeekGE("b")
-		ids := make([]graveler.BranchID, 0)
-		for iter.Next() {
-			b := iter.Value()
-			ids = append(ids, b.BranchID)
-		}
-		if iter.Err() != nil {
-			t.Fatalf("unexpected error: %v", iter.Err())
-		}
-		iter.Close()
-
-		if diffs := deep.Equal(ids, []graveler.BranchID{"b", "c", "d", "e", "main"}); diffs != nil {
-			t.Fatalf("got wrong list of branch IDs: %v", diffs)
-		}
-	})
-
 	t.Run("listing branches SeekGE", func(t *testing.T) {
 		iter, err := ref.NewBranchSimpleIterator(ctx, &kvStore, repo)
 		require.NoError(t, err)
@@ -185,6 +148,10 @@ func TestBranchSimpleIterator(t *testing.T) {
 		if diffs := deep.Equal(ids, []graveler.BranchID{"aa", "b", "c", "d", "e", "main"}); diffs != nil {
 			t.Fatalf("got wrong list of branch IDs")
 		}
+
+		require.False(t, iter.Next())
+		require.Nil(t, iter.Value())
+		require.ErrorIs(t, iter.Err(), ref.ErrIteratorClosed)
 	})
 }
 
@@ -225,62 +192,5 @@ func TestBranchByCommitIterator(t *testing.T) {
 		if diffs := deep.Equal(ids, []graveler.CommitID{"a", "aa", "b", "c", "d", "e", "main"}); diffs != nil {
 			t.Fatalf("got wrong list of IDs: %v", diffs)
 		}
-	})
-
-	t.Run("listing branches using prefix", func(t *testing.T) {
-		iter, err := ref.NewBranchByCommitIterator(ctx, &kvStore, repo)
-		require.NoError(t, err)
-		iter.SeekGE("b")
-		ids := make([]graveler.CommitID, 0)
-		for iter.Next() {
-			b := iter.Value()
-			ids = append(ids, b.CommitID)
-		}
-		if iter.Err() != nil {
-			t.Fatalf("unexpected error: %v", iter.Err())
-		}
-		iter.Close()
-		fmt.Println(ids)
-		if diffs := deep.Equal(ids, []graveler.CommitID{"b", "c", "d", "e", "main"}); diffs != nil {
-			t.Fatalf("got wrong list of branch IDs: %v", diffs)
-		}
-	})
-
-	t.Run("listing branches SeekGE", func(t *testing.T) {
-		iter, err := ref.NewBranchByCommitIterator(ctx, &kvStore, repo)
-		require.NoError(t, err)
-		iter.SeekGE("b")
-		ids := make([]graveler.CommitID, 0)
-		for iter.Next() {
-			b := iter.Value()
-			ids = append(ids, b.CommitID)
-		}
-		if iter.Err() != nil {
-			t.Fatalf("unexpected error: %v", iter.Err())
-		}
-
-		if diffs := deep.Equal(ids, []graveler.CommitID{"b", "c", "d", "e", "main"}); diffs != nil {
-			t.Fatalf("got wrong list of branch IDs: %v", diffs)
-		}
-
-		// now let's seek
-		iter.SeekGE("aa")
-		ids = make([]graveler.CommitID, 0)
-		for iter.Next() {
-			b := iter.Value()
-			ids = append(ids, b.CommitID)
-		}
-		if iter.Err() != nil {
-			t.Fatalf("unexpected error: %v", iter.Err())
-		}
-		iter.Close()
-
-		if diffs := deep.Equal(ids, []graveler.CommitID{"aa", "b", "c", "d", "e", "main"}); diffs != nil {
-			t.Fatalf("got wrong list of branch IDs")
-		}
-
-		require.False(t, iter.Next())
-		require.Nil(t, iter.Value())
-		require.ErrorIs(t, iter.Err(), ref.ErrIteratorClosed)
 	})
 }

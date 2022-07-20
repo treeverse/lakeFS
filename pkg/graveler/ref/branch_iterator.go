@@ -12,6 +12,7 @@ import (
 // sort.Slice algorithm, implementors need to decide how to handle equal values
 type CompareFunc func(i, j int) bool
 
+// BranchSimpleIterator Iterates over repository's branches in a sorted way, since the branches are already sorted in DB according to BranchID
 type BranchSimpleIterator struct {
 	ctx           context.Context
 	store         *kv.StoreMessage
@@ -65,11 +66,11 @@ func (bi *BranchSimpleIterator) Next() bool {
 	return true
 }
 
-func (bi *BranchSimpleIterator) SeekGE(id string) {
+func (bi *BranchSimpleIterator) SeekGE(id graveler.BranchID) {
 	if bi.Err() == nil {
 		bi.itr.Close() // Close previous before creating new iterator
 		bi.itr, bi.err = kv.NewPrimaryIterator(bi.ctx, bi.store.Store, (&graveler.BranchData{}).ProtoReflect().Type(),
-			bi.repoPartition, []byte(graveler.BranchPath("")), kv.IteratorOptionsFrom([]byte(graveler.BranchPath(graveler.BranchID(id)))))
+			bi.repoPartition, []byte(graveler.BranchPath("")), kv.IteratorOptionsFrom([]byte(graveler.BranchPath(id))))
 	}
 }
 
@@ -92,6 +93,7 @@ func (bi *BranchSimpleIterator) Close() {
 	bi.itr.Close()
 }
 
+// BranchByCommitIterator iterates over repository's branches ordered by Commit ID. Currently, implemented as in-mem iterator
 type BranchByCommitIterator struct {
 	ctx    context.Context
 	values []*graveler.BranchRecord
@@ -109,20 +111,17 @@ func NewBranchByCommitIterator(ctx context.Context, store *kv.StoreMessage, repo
 		ctx:    ctx,
 		values: make([]*graveler.BranchRecord, 0),
 	}
-	itr, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.BranchData{}).ProtoReflect().Type(), graveler.RepoPartition(repo), []byte(""), kv.IteratorOptionsFrom([]byte("")))
+	itr, err := NewBranchSimpleIterator(ctx, store, repo)
 	if err != nil {
 		return nil, err
 	}
 	defer itr.Close()
 	for itr.Next() {
-		value, ok := itr.Entry().Value.(*graveler.BranchData)
-		if !ok {
-			return nil, graveler.ErrReadingFromStore
+		value := itr.Value()
+		if value == nil { // nil only if internal itr has errors
+			return nil, itr.Err()
 		}
-		bi.values = append(bi.values, &graveler.BranchRecord{
-			BranchID: graveler.BranchID(value.Id),
-			Branch:   branchFromProto(value),
-		})
+		bi.values = append(bi.values, itr.Value())
 	}
 	if itr.Err() != nil {
 		return nil, err
@@ -141,14 +140,8 @@ func (b *BranchByCommitIterator) Next() bool {
 	return true
 }
 
-func (b *BranchByCommitIterator) SeekGE(id string) {
-	b.idx = len(b.values) // If key not found, next will return false
-	for i, e := range b.values {
-		if id <= e.CommitID.String() {
-			b.idx = i
-			return
-		}
-	}
+func (b *BranchByCommitIterator) SeekGE(_ graveler.BranchID) {
+	panic("Not Implemented")
 }
 
 func (b *BranchByCommitIterator) Value() *graveler.BranchRecord {

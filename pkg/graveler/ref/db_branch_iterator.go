@@ -109,11 +109,11 @@ func (ri *DBBranchIterator) maybeFetch() {
 	}
 }
 
-func (ri *DBBranchIterator) SeekGE(id string) {
+func (ri *DBBranchIterator) SeekGE(id graveler.BranchID) {
 	if errors.Is(ri.err, ErrIteratorClosed) {
 		return
 	}
-	ri.offset = id
+	ri.offset = id.String()
 	ri.state = iteratorStateInit
 	ri.buf = ri.buf[:0]
 	ri.value = nil

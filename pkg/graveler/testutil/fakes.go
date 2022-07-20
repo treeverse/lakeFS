@@ -712,10 +712,10 @@ func (m *FakeBranchIterator) Next() bool {
 	return m.Index < len(m.Data)
 }
 
-func (m *FakeBranchIterator) SeekGE(id string) {
+func (m *FakeBranchIterator) SeekGE(id graveler.BranchID) {
 	m.Index = len(m.Data)
 	for i, item := range m.Data {
-		if item.BranchID.String() >= id {
+		if item.BranchID >= id {
 			m.Index = i - 1
 			return
 		}

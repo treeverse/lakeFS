@@ -150,7 +150,7 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 		refManager:   m.refManager,
 		repositoryID: repositoryID,
 	}
-	branchIterator, err := m.refManager.GCBranchIterator(ctx, repositoryID) //nolint: gomnd
+	branchIterator, err := m.refManager.GCBranchIterator(ctx, repositoryID)
 	if err != nil {
 		return "", err
 	}

@@ -145,7 +145,7 @@ func (g *FakeGraveler) GetBranch(ctx context.Context, repositoryID graveler.Repo
 	}
 	it := g.BranchIteratorFactory()
 	// TODO(nopcoder): handle repositoryID
-	it.SeekGE(branchID.String())
+	it.SeekGE(branchID)
 	if it.Err() != nil {
 		return nil, it.Err()
 	}

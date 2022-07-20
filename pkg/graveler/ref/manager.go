@@ -161,7 +161,7 @@ func (m *KVManager) ResolveRawRef(ctx context.Context, repositoryID graveler.Rep
 	return ResolveRawRef(ctx, m, m.addressProvider, repositoryID, raw)
 }
 
-func (m *KVManager) getBranchWithPredicate(ctx context.Context, repo *graveler.RepositoryRecord, branchID graveler.BranchID) (kv.Predicate, *graveler.Branch, error) {
+func (m *KVManager) getBranchWithPredicate(ctx context.Context, repo *graveler.RepositoryRecord, branchID graveler.BranchID) (*graveler.Branch, kv.Predicate, error) {
 	key := graveler.BranchPath(branchID)
 	data := graveler.BranchData{}
 	pred, err := m.kvStore.GetMsg(ctx, graveler.RepoPartition(repo), []byte(key), &data)
@@ -171,7 +171,7 @@ func (m *KVManager) getBranchWithPredicate(ctx context.Context, repo *graveler.R
 		}
 		return nil, nil, err
 	}
-	return pred, branchFromProto(&data), nil
+	return branchFromProto(&data), pred, nil
 }
 
 func (m *KVManager) GetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (*graveler.Branch, error) {
@@ -179,7 +179,7 @@ func (m *KVManager) GetBranch(ctx context.Context, repositoryID graveler.Reposit
 	if err != nil {
 		return nil, err
 	}
-	_, branch, err := m.getBranchWithPredicate(ctx, repo, branchID)
+	branch, _, err := m.getBranchWithPredicate(ctx, repo, branchID)
 	return branch, err
 }
 
@@ -208,7 +208,7 @@ func (m *KVManager) BranchUpdate(ctx context.Context, repositoryID graveler.Repo
 	if err != nil {
 		return err
 	}
-	pred, b, err := m.getBranchWithPredicate(ctx, repo, branchID)
+	b, pred, err := m.getBranchWithPredicate(ctx, repo, branchID)
 	if err != nil {
 		return err
 	}
@@ -224,13 +224,8 @@ func (m *KVManager) DeleteBranch(ctx context.Context, repositoryID graveler.Repo
 	if err != nil {
 		return err
 	}
-	// Simulate same behavior as was in DB implementation
-	data := graveler.BranchData{}
-	_, err = m.kvStore.GetMsg(ctx, graveler.RepoPartition(repo), []byte(graveler.BranchPath(branchID)), &data)
+	_, err = m.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
-		if errors.Is(err, kv.ErrNotFound) {
-			err = graveler.ErrBranchNotFound
-		}
 		return err
 	}
 	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repo), []byte(graveler.BranchPath(branchID)))
