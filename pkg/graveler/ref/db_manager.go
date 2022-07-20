@@ -216,6 +216,11 @@ func (m *DBManager) SetBranch(ctx context.Context, repositoryID graveler.Reposit
 	return err
 }
 
+// BranchUpdate Implement refManager interface - in DB implementation simply panics
+func (m *DBManager) BranchUpdate(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, _ graveler.BranchUpdateFunc) error {
+	panic("Unimplemented")
+}
+
 func (m *DBManager) DeleteBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) error {
 	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		r, err := tx.Exec(
@@ -240,7 +245,15 @@ func (m *DBManager) ListBranches(ctx context.Context, repositoryID graveler.Repo
 	if err != nil {
 		return nil, err
 	}
-	return NewBranchIterator(ctx, m.db, repositoryID, IteratorPrefetchSize), nil
+	return NewDBBranchIterator(ctx, m.db, repositoryID, IteratorPrefetchSize), nil
+}
+
+func (m *DBManager) GCBranchIterator(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.BranchIterator, error) {
+	_, err := m.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	return NewDBBranchIterator(ctx, m.db, repositoryID, IteratorPrefetchSize, WithOrderByCommitID()), nil
 }
 
 func (m *DBManager) GetTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) (*graveler.CommitID, error) {
@@ -448,6 +461,10 @@ func (m *DBManager) ListCommits(ctx context.Context, repositoryID graveler.Repos
 		return nil, err
 	}
 	return NewDBOrderedCommitIterator(ctx, m.db, repositoryID, IteratorPrefetchSize)
+}
+
+func (m *DBManager) GCCommitIterator(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.CommitIterator, error) {
+	return NewDBOrderedCommitIterator(ctx, m.db, repositoryID, IteratorPrefetchSize, WithOnlyAncestryLeaves())
 }
 
 func (m *DBManager) FillGenerations(ctx context.Context, repositoryID graveler.RepositoryID) error {

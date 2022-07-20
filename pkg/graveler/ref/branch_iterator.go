@@ -2,143 +2,159 @@ package ref
 
 import (
 	"context"
-	"errors"
+	"sort"
 
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/kv"
 )
 
-type BranchIterator struct {
-	db              db.Database
-	ctx             context.Context
-	repositoryID    graveler.RepositoryID
-	value           *graveler.BranchRecord
-	buf             []*graveler.BranchRecord
-	offset          string
-	fetchSize       int
-	err             error
-	state           iteratorState
-	orderByCommitID bool
+// CompareFunc type used for sorting in InMemIterator, it is a strictly bigger comparison function required for the
+// sort.Slice algorithm, implementors need to decide how to handle equal values
+type CompareFunc func(i, j int) bool
+
+// BranchSimpleIterator Iterates over repository's branches in a sorted way, since the branches are already sorted in DB according to BranchID
+type BranchSimpleIterator struct {
+	ctx           context.Context
+	store         *kv.StoreMessage
+	itr           *kv.PrimaryIterator
+	repoPartition string
+	value         *graveler.BranchRecord
+	err           error
 }
 
-type BranchIteratorOption func(bi *BranchIterator)
-
-func WithOrderByCommitID() BranchIteratorOption {
-	return func(bi *BranchIterator) {
-		bi.orderByCommitID = true
+func NewBranchSimpleIterator(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord) (*BranchSimpleIterator, error) {
+	repoPartition := graveler.RepoPartition(repo)
+	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.BranchData{}).ProtoReflect().Type(),
+		repoPartition, []byte(graveler.BranchPath("")), kv.IteratorOptionsFrom([]byte("")))
+	if err != nil {
+		return nil, err
 	}
+
+	return &BranchSimpleIterator{
+		ctx:           ctx,
+		store:         store,
+		itr:           it,
+		repoPartition: repoPartition,
+		value:         nil,
+		err:           nil,
+	}, nil
 }
 
-type branchRecord struct {
-	BranchID     graveler.BranchID     `db:"id"`
-	CommitID     graveler.CommitID     `db:"commit_id"`
-	StagingToken graveler.StagingToken `db:"staging_token"`
-}
-
-func NewBranchIterator(ctx context.Context, db db.Database, repositoryID graveler.RepositoryID, prefetchSize int, opts ...BranchIteratorOption) *BranchIterator {
-	res := &BranchIterator{
-		db:              db,
-		ctx:             ctx,
-		repositoryID:    repositoryID,
-		fetchSize:       prefetchSize,
-		buf:             make([]*graveler.BranchRecord, 0, prefetchSize),
-		orderByCommitID: false,
-	}
-	for _, opt := range opts {
-		opt(res)
-	}
-	return res
-}
-
-func (ri *BranchIterator) Next() bool {
-	if ri.err != nil {
+func (bi *BranchSimpleIterator) Next() bool {
+	if bi.Err() != nil {
 		return false
 	}
-	ri.maybeFetch()
-
-	// stage a value and increment offset
-	if len(ri.buf) == 0 {
+	if !bi.itr.Next() {
+		bi.value = nil
 		return false
 	}
-	ri.value = ri.buf[0]
-	ri.buf = ri.buf[1:]
-	ri.offset = string(ri.value.BranchID)
+	entry := bi.itr.Entry()
+	if entry == nil {
+		bi.err = graveler.ErrInvalid
+		return false
+	}
+	value, ok := entry.Value.(*graveler.BranchData)
+	if !ok {
+		bi.err = graveler.ErrReadingFromStore
+		return false
+	}
+
+	bi.value = &graveler.BranchRecord{
+		BranchID: graveler.BranchID(value.Id),
+		Branch:   branchFromProto(value),
+	}
 	return true
 }
 
-func (ri *BranchIterator) maybeFetch() {
-	if ri.state == iteratorStateDone {
-		return
-	}
-	if len(ri.buf) > 0 {
-		return
-	}
-
-	var offsetCondition string
-	if ri.state == iteratorStateInit {
-		offsetCondition = iteratorOffsetCondition(true)
-		ri.state = iteratorStateQuerying
-	} else {
-		offsetCondition = iteratorOffsetCondition(false)
-	}
-
-	var buf []*branchRecord
-	err := ri.db.Select(ri.ctx, &buf, `
-			SELECT id, staging_token, commit_id
-			FROM graveler_branches
-			WHERE repository_id = $1
-			AND id `+offsetCondition+` $2
-			ORDER BY `+ri.getOrderBy()+`  ASC
-			LIMIT $3`, ri.repositoryID, ri.offset, ri.fetchSize)
-	if err != nil {
-		ri.err = err
-		return
-	}
-	if len(buf) < ri.fetchSize {
-		ri.state = iteratorStateDone
-	}
-	for _, b := range buf {
-		rec := &graveler.BranchRecord{
-			BranchID: b.BranchID,
-			Branch: &graveler.Branch{
-				CommitID:     b.CommitID,
-				StagingToken: b.StagingToken,
-			},
-		}
-		ri.buf = append(ri.buf, rec)
+func (bi *BranchSimpleIterator) SeekGE(id graveler.BranchID) {
+	if bi.Err() == nil {
+		bi.itr.Close() // Close previous before creating new iterator
+		bi.itr, bi.err = kv.NewPrimaryIterator(bi.ctx, bi.store.Store, (&graveler.BranchData{}).ProtoReflect().Type(),
+			bi.repoPartition, []byte(graveler.BranchPath("")), kv.IteratorOptionsFrom([]byte(graveler.BranchPath(id))))
 	}
 }
 
-func (ri *BranchIterator) SeekGE(id graveler.BranchID) {
-	if errors.Is(ri.err, ErrIteratorClosed) {
-		return
-	}
-	ri.offset = string(id)
-	ri.state = iteratorStateInit
-	ri.buf = ri.buf[:0]
-	ri.value = nil
-	ri.err = nil
-}
-
-func (ri *BranchIterator) Value() *graveler.BranchRecord {
-	if ri.err != nil {
+func (bi *BranchSimpleIterator) Value() *graveler.BranchRecord {
+	if bi.Err() != nil {
 		return nil
 	}
-	return ri.value
+	return bi.value
 }
 
-func (ri *BranchIterator) Err() error {
-	return ri.err
-}
-
-func (ri *BranchIterator) Close() {
-	ri.err = ErrIteratorClosed
-	ri.buf = nil
-}
-
-func (ri *BranchIterator) getOrderBy() string {
-	if ri.orderByCommitID {
-		return "commit_id"
+func (bi *BranchSimpleIterator) Err() error {
+	if bi.err != nil {
+		return bi.err
 	}
-	return "id"
+	return bi.itr.Err()
+}
+
+func (bi *BranchSimpleIterator) Close() {
+	bi.err = ErrIteratorClosed
+	bi.itr.Close()
+}
+
+// BranchByCommitIterator iterates over repository's branches ordered by Commit ID. Currently, implemented as in-mem iterator
+type BranchByCommitIterator struct {
+	ctx    context.Context
+	values []*graveler.BranchRecord
+	value  *graveler.BranchRecord
+	idx    int
+	err    error
+}
+
+func (b *BranchByCommitIterator) SortByCommitID(i, j int) bool {
+	return b.values[i].CommitID.String() <= b.values[j].CommitID.String()
+}
+
+func NewBranchByCommitIterator(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord) (*BranchByCommitIterator, error) {
+	bi := &BranchByCommitIterator{
+		ctx:    ctx,
+		values: make([]*graveler.BranchRecord, 0),
+	}
+	itr, err := NewBranchSimpleIterator(ctx, store, repo)
+	if err != nil {
+		return nil, err
+	}
+	defer itr.Close()
+	for itr.Next() {
+		value := itr.Value()
+		if value == nil { // nil only if internal itr has errors
+			return nil, itr.Err()
+		}
+		bi.values = append(bi.values, itr.Value())
+	}
+	if itr.Err() != nil {
+		return nil, err
+	}
+
+	sort.Slice(bi.values, bi.SortByCommitID)
+	return bi, nil
+}
+
+func (b *BranchByCommitIterator) Next() bool {
+	if b.idx >= len(b.values) {
+		return false
+	}
+	b.value = b.values[b.idx]
+	b.idx++
+	return true
+}
+
+func (b *BranchByCommitIterator) SeekGE(_ graveler.BranchID) {
+	panic("Not Implemented")
+}
+
+func (b *BranchByCommitIterator) Value() *graveler.BranchRecord {
+	if b.Err() != nil {
+		return nil
+	}
+	return b.value
+}
+
+func (b *BranchByCommitIterator) Err() error {
+	return b.err
+}
+
+func (b *BranchByCommitIterator) Close() {
+	b.err = ErrIteratorClosed
 }

@@ -153,7 +153,7 @@ func runWorker(ctx context.Context, d *pgxpool.Pool, jobChan <-chan string) erro
 			if err != nil {
 				return err
 			}
-			pb := protoFromValue(record.Key, record.Value)
+			pb := graveler.ProtoFromStagedEntry(record.Key, record.Value)
 			data, err := proto.Marshal(pb)
 			if err != nil {
 				return err
