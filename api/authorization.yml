@@ -667,7 +667,7 @@ paths:
         - $ref: "#/components/parameters/PaginationAmount"
       responses:
         200:
-          description: group memeber list
+          description: group member list
           content:
             application/json:
               schema:
