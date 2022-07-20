@@ -55,6 +55,13 @@ func TestAdminPolicies(t *testing.T) {
 	require.NoError(t, err, "Admin failed while creating user")
 	require.Equal(t, http.StatusCreated, resCreateUser.StatusCode(), "Admin unexpectedly failed to create user")
 
+	// try to re-create the same user should fail
+	reCreateUser, err := adminClient.CreateUserWithResponse(ctx, api.CreateUserJSONRequestBody{
+		Id: uid,
+	})
+	require.NoError(t, err, "Admin failed while re-creating the user")
+	require.Equal(t, http.StatusConflict, reCreateUser.StatusCode(), "Admin should fail re-creation")
+
 	// adding group to user should succeed
 	resAddGroup, err := adminClient.AddGroupMembershipWithResponse(ctx, gid, uid)
 	require.NoError(t, err, "Admin failed while adding the group membership to the user")
@@ -75,7 +82,7 @@ func TestSuperUserPolicies(t *testing.T) {
 	// generate the SuperUser client
 	superUserClient := newClientFromGroup(t, ctx, logger, gid)
 
-	// listing the available braches should succeed
+	// listing the available branches should succeed
 	resListBranches, err := superUserClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
 	require.NoError(t, err, "SuperUser unexpectedly failed while listing branches of repository")
 	require.Equal(t, http.StatusOK, resListBranches.StatusCode(), "SuperUser unexpectedly failed to list branches of repository")
