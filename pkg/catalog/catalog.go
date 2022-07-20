@@ -208,14 +208,20 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 	if cfg.Config.GetDatabaseParams().KVEnabled { // TODO (niro): Each module should be replaced by an appropriate KV implementation
 		refManager = ref.NewKVRefManager(executor, *cfg.KVStore, cfg.DB, ident.NewHexAddressProvider())
-		gcManager = retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
+		gcManager = retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix(),
+			func(ctx context.Context, repoID graveler.RepositoryID, repo graveler.Repository) (graveler.CommitIterator, error) {
+				return ref.NewKVOrderedCommitIterator(ctx, cfg.KVStore, repoID, repo, true)
+			})
 		settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
 		protectedBranchesManager = branch.NewProtectionManager(settingManager)
 		stagingManager = staging.NewManager(*cfg.KVStore)
 		gStore = graveler.NewKVGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 	} else {
 		refManager = ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
-		gcManager = retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
+		gcManager = retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix(),
+			func(ctx context.Context, repoID graveler.RepositoryID, repo graveler.Repository) (graveler.CommitIterator, error) {
+				return ref.NewDBOrderedCommitIterator(ctx, cfg.DB, repoID, 1000, ref.WithOnlyAncestryLeaves()) //nolint: gomnd
+			})
 		settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
 		protectedBranchesManager = branch.NewProtectionManager(settingManager)
 		stagingManager = staging.NewDBManager(cfg.DB)

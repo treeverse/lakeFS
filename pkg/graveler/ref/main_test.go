@@ -60,10 +60,36 @@ func testRefManager(t *testing.T) []DBType {
 	return tests
 }
 
-func testRefManagerWithAddressProvider(t testing.TB, addressProvider ident.AddressProvider) (*ref.DBManager, db.Database) {
+func testRefManagerWithDBAndAddressProvider(t testing.TB, addressProvider ident.AddressProvider) (graveler.RefManager, db.Database) {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
 	return ref.NewPGRefManager(batch.NopExecutor(), conn, addressProvider), conn
+}
+
+func testRefManagerWithKVAndAddressProvider(t testing.TB, addressProvider ident.AddressProvider) (graveler.RefManager, kv.StoreMessage) {
+	t.Helper()
+	ctx := context.Background()
+	kvStore := kvtest.GetStore(ctx, t)
+	storeMessage := kv.StoreMessage{Store: kvStore}
+	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
+	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, conn, addressProvider), storeMessage
+}
+
+func testRefManagerWithAddressProvider(t testing.TB, addressProvider ident.AddressProvider) []DBType {
+	dbRefManager, _ := testRefManagerWithDBAndAddressProvider(t, addressProvider)
+	kvRefManager, _ := testRefManagerWithKVAndAddressProvider(t, addressProvider)
+
+	tests := []DBType{
+		{
+			name:       "DB ref manager test with address provider",
+			refManager: dbRefManager,
+		},
+		{
+			name:       "KV ref manager test with address provider",
+			refManager: kvRefManager,
+		},
+	}
+	return tests
 }
 
 func TestMain(m *testing.M) {

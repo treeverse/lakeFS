@@ -439,7 +439,7 @@ func (m *DBManager) Log(ctx context.Context, repositoryID graveler.RepositoryID,
 	if err != nil {
 		return nil, err
 	}
-	return NewCommitIterator(ctx, m.db, repositoryID, from), nil
+	return NewCommitIterator(ctx, repositoryID, from, m), nil
 }
 
 func (m *DBManager) ListCommits(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.CommitIterator, error) {
@@ -447,7 +447,7 @@ func (m *DBManager) ListCommits(ctx context.Context, repositoryID graveler.Repos
 	if err != nil {
 		return nil, err
 	}
-	return NewOrderedCommitIterator(ctx, m.db, repositoryID, IteratorPrefetchSize), nil
+	return NewDBOrderedCommitIterator(ctx, m.db, repositoryID, IteratorPrefetchSize)
 }
 
 func (m *DBManager) FillGenerations(ctx context.Context, repositoryID graveler.RepositoryID) error {

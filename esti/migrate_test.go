@@ -134,7 +134,8 @@ var (
 	}
 )
 
-func TestMigrate(t *testing.T) {
+func _testMigrate(t *testing.T) {
+	//TODO(3573) - enable the migrate test
 	postMigrate := viper.GetViper().GetBool("post_migrate")
 
 	if postMigrate {

@@ -4,12 +4,11 @@ import (
 	"container/heap"
 	"context"
 
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
 type CommitIterator struct {
-	db           db.Database
+	manager      graveler.RefManager
 	ctx          context.Context
 	repositoryID graveler.RepositoryID
 	start        graveler.CommitID
@@ -58,28 +57,28 @@ func (c *commitsPriorityQueue) Pop() interface{} {
 	return item
 }
 
-func NewCommitIterator(ctx context.Context, db db.Database, repositoryID graveler.RepositoryID, start graveler.CommitID) *CommitIterator {
+// NewCommitIterator returns an iterator over all commits in the given repository.
+// Ordering is based on the Commit Creation Date.
+func NewCommitIterator(ctx context.Context, repositoryID graveler.RepositoryID, start graveler.CommitID, manager graveler.RefManager) *CommitIterator {
 	return &CommitIterator{
-		db:           db,
 		ctx:          ctx,
 		repositoryID: repositoryID,
 		start:        start,
 		queue:        make(commitsPriorityQueue, 0),
 		visit:        make(map[graveler.CommitID]struct{}),
+		manager:      manager,
 	}
 }
 
 func (ci *CommitIterator) getCommitRecord(commitID graveler.CommitID) (*graveler.CommitRecord, error) {
-	var rec commitRecord
-	err := ci.db.
-		Get(ci.ctx, &rec, `SELECT id, committer, message, creation_date, parents, meta_range_id, metadata, version, generation
-			FROM graveler_commits
-			WHERE repository_id = $1 AND id = $2`,
-			ci.repositoryID, commitID)
+	commit, err := ci.manager.GetCommit(ci.ctx, ci.repositoryID, commitID)
 	if err != nil {
 		return nil, err
 	}
-	return rec.toGravelerCommitRecord(), nil
+	return &graveler.CommitRecord{
+		CommitID: commitID,
+		Commit:   commit,
+	}, nil
 }
 
 func (ci *CommitIterator) Next() bool {

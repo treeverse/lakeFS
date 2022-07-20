@@ -113,11 +113,12 @@ func TestKVTagIterator(t *testing.T) {
 	r, kvstore := testRefManagerWithKV(t)
 	tags := []graveler.TagID{"a", "aa", "b", "c", "e", "d", "f", "g"}
 	ctx := context.Background()
-	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+	repo1 := graveler.Repository{
 		StorageNamespace: "s3://foo",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, ""))
+	}
+	testutil.Must(t, r.CreateRepository(ctx, "repo1", repo1, ""))
 
 	// prepare data
 	for _, b := range tags {
@@ -126,7 +127,7 @@ func TestKVTagIterator(t *testing.T) {
 	}
 
 	t.Run("listing all tags", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, &kvstore, "repo1")
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, "repo1", repo1)
 		testutil.Must(t, err)
 		ids := make([]graveler.TagID, 0)
 		for iter.Next() {
@@ -144,7 +145,7 @@ func TestKVTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags using prefix", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, &kvstore, "repo1")
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, "repo1", repo1)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
@@ -163,7 +164,7 @@ func TestKVTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags SeekGE", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, &kvstore, "repo1")
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, "repo1", repo1)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
@@ -197,7 +198,7 @@ func TestKVTagIterator(t *testing.T) {
 	})
 
 	t.Run("empty value SeekGE", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, &kvstore, "repo1")
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, "repo1", repo1)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 

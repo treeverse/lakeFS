@@ -21,6 +21,7 @@ var (
 	ErrCommitToProtectedBranch      = wrapError(ErrUserVisible, "cannot commit to protected branch")
 	ErrInvalidValue                 = fmt.Errorf("invalid value: %w", ErrInvalid)
 	ErrInvalidMergeBase             = fmt.Errorf("only 2 commits allowed in FindMergeBase: %w", ErrInvalidValue)
+	ErrNoCommitGeneration           = errors.New("no commit generation")
 	ErrNoMergeBase                  = errors.New("no merge base")
 	ErrInvalidRef                   = fmt.Errorf("ref: %w", ErrInvalidValue)
 	ErrInvalidCommitID              = fmt.Errorf("commit id: %w", ErrInvalidValue)
