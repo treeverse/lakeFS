@@ -33,7 +33,7 @@ type GarbageCollectionManager struct {
 }
 
 // iteratorCreator - returns an ordered iterator (DB or KV) over all commits in the given repository
-type iteratorCreator func(ctx context.Context, repoID graveler.RepositoryID) (graveler.CommitIterator, error)
+type iteratorCreator func(ctx context.Context, repoID graveler.RepositoryID, repo graveler.Repository) (graveler.CommitIterator, error)
 
 func (m *GarbageCollectionManager) GetCommitsCSVLocation(runID string, sn graveler.StorageNamespace) (string, error) {
 	key := fmt.Sprintf(commitsFileSuffixTemplate, m.committedBlockStoragePrefix, runID)
@@ -145,14 +145,14 @@ func (m *GarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, sto
 	return res, nil
 }
 
-func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, storageNamespace graveler.StorageNamespace, repositoryID graveler.RepositoryID, rules *graveler.GarbageCollectionRules, previouslyExpiredCommits []graveler.CommitID) (string, error) {
+func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, storageNamespace graveler.StorageNamespace, repositoryID graveler.RepositoryID, repo graveler.Repository, rules *graveler.GarbageCollectionRules, previouslyExpiredCommits []graveler.CommitID) (string, error) {
 	commitGetter := &RepositoryCommitGetter{
 		refManager:   m.refManager,
 		repositoryID: repositoryID,
 	}
 	branchIterator := ref.NewBranchIterator(ctx, m.db, repositoryID, 1000, ref.WithOrderByCommitID()) //nolint: gomnd
 	// get all commits that are not the first parent of any commit:
-	commitIterator, err := m.commitIteratorCreator(ctx, repositoryID)
+	commitIterator, err := m.commitIteratorCreator(ctx, repositoryID, repo)
 	if err != nil {
 		return "", fmt.Errorf("create kv orderd commit iterator commits: %w", err)
 	}

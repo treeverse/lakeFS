@@ -421,17 +421,18 @@ func TestKVOrderedCommitIterator(t *testing.T) {
 			}
 			r, store := testRefManagerWithKVAndAddressProvider(t, newFakeAddressProvider(commits))
 			repoID := graveler.RepositoryID(tst.Name)
-			testutil.Must(t, r.CreateBareRepository(ctx, repoID, graveler.Repository{
+			repo := graveler.Repository{
 				StorageNamespace: "s3://foo",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "main",
-			}))
+			}
+			testutil.Must(t, r.CreateBareRepository(ctx, repoID, repo))
 			for _, c := range commits {
 				_, err := r.AddCommit(ctx, repoID, *c)
 				testutil.Must(t, err)
 			}
 
-			iterator, err := ref.NewKVOrderedCommitIterator(ctx, &store, repoID, false)
+			iterator, err := ref.NewKVOrderedCommitIterator(ctx, &store, repoID, repo, false)
 			if err != nil {
 				t.Fatal("create kv ordered commit iterator", err)
 			}
@@ -448,7 +449,7 @@ func TestKVOrderedCommitIterator(t *testing.T) {
 				t.Errorf("Unexpected ordered commits from iterator. diff=%s", diff)
 			}
 			iterator.Close()
-			iterator, err = ref.NewKVOrderedCommitIterator(ctx, &store, repoID, true)
+			iterator, err = ref.NewKVOrderedCommitIterator(ctx, &store, repoID, repo, true)
 			if err != nil {
 				t.Fatal("create kv ordered commit iterator", err)
 			}
@@ -511,16 +512,17 @@ func TestKVOrderedCommitIteratorGrid(t *testing.T) {
 	sort.Strings(expectedCommitIDS)
 	r, store := testRefManagerWithKVAndAddressProvider(t, newFakeAddressProvider(commits))
 	ctx := context.Background()
-	testutil.Must(t, r.CreateBareRepository(ctx, "repo", graveler.Repository{
+	repo := graveler.Repository{
 		StorageNamespace: "s3://foo",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}))
+	}
+	testutil.Must(t, r.CreateBareRepository(ctx, "repo", repo))
 	for _, c := range commits {
 		_, err := r.AddCommit(ctx, "repo", *c)
 		testutil.Must(t, err)
 	}
-	iterator, err := ref.NewKVOrderedCommitIterator(ctx, &store, "repo", false)
+	iterator, err := ref.NewKVOrderedCommitIterator(ctx, &store, "repo", repo, false)
 	if err != nil {
 		t.Fatal("create kv ordered commit iterator", err)
 	}
@@ -537,7 +539,7 @@ func TestKVOrderedCommitIteratorGrid(t *testing.T) {
 		t.Errorf("Unexpected ordered commits from iterator. diff=%s", diff)
 	}
 	iterator.Close()
-	iterator, err = ref.NewKVOrderedCommitIterator(ctx, &store, "repo", true)
+	iterator, err = ref.NewKVOrderedCommitIterator(ctx, &store, "repo", repo, true)
 	if err != nil {
 		t.Fatal("create kv ordered commit iterator", err)
 	}

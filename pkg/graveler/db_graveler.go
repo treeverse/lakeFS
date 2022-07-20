@@ -459,7 +459,7 @@ func (g *DBGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositor
 		return nil, fmt.Errorf("get expired commits from previous run: %w", err)
 	}
 
-	runID, err := g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, repo.StorageNamespace, repositoryID, rules, previouslyExpiredCommits)
+	runID, err := g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, repo.StorageNamespace, repositoryID, *repo, rules, previouslyExpiredCommits)
 	if err != nil {
 		return nil, fmt.Errorf("save garbage collection commits: %w", err)
 	}
