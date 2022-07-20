@@ -1386,7 +1386,91 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 			}
 		})
 	}
+}
 
+func TestAPIAuthService_CreateUser(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	tests := []struct {
+		name               string
+		userName           string
+		email              string
+		friendlyName       string
+		source             string
+		responseStatusCode int
+		expectedResponseID int64
+		expectedErr        error
+	}{
+		{
+			name:               "successful",
+			userName:           "foo",
+			email:              "foo@gmail.com",
+			friendlyName:       "friendly foo",
+			source:             "internal",
+			responseStatusCode: http.StatusCreated,
+			expectedResponseID: 1,
+			expectedErr:        nil,
+		},
+		{
+			name:               "Invalid user",
+			userName:           "",
+			email:              "foo@gmail.com",
+			friendlyName:       "friendly foo",
+			source:             "internal",
+			responseStatusCode: http.StatusBadRequest,
+			expectedResponseID: auth.InvalidUserID,
+			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
+		},
+		{
+			name:               "user exists",
+			userName:           "existingUser",
+			email:              "foo@gmail.com",
+			friendlyName:       "friendly foo",
+			source:             "internal",
+			responseStatusCode: http.StatusConflict,
+			expectedResponseID: auth.InvalidUserID,
+			expectedErr:        auth.ErrAlreadyExists,
+		},
+		{
+			name:               "Internal errer",
+			userName:           "user",
+			email:              "foo@gmail.com",
+			source:             "internal",
+			responseStatusCode: http.StatusInternalServerError,
+			expectedResponseID: auth.InvalidUserID,
+			expectedErr:        auth.ErrUnexpectedStatusCode,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			response := &auth.CreateUserResponse{
+				HTTPResponse: &http.Response{
+					StatusCode: tt.responseStatusCode,
+				},
+				JSON201: &auth.User{
+					Id: tt.expectedResponseID,
+				},
+			}
+			mockClient.EXPECT().CreateUserWithResponse(gomock.Any(), auth.CreateUserJSONRequestBody{
+				Email:        &tt.email,
+				FriendlyName: &tt.friendlyName,
+				Source:       &tt.source,
+				Username:     tt.userName,
+			}).Return(response, nil)
+			ctx := context.Background()
+			res, err := s.CreateUser(ctx, &model.User{
+				Username:     tt.userName,
+				FriendlyName: &tt.friendlyName,
+				Email:        &tt.email,
+				Source:       tt.source,
+			})
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("CreateUser: expected err: %s got: %s", tt.expectedErr, err)
+			}
+			if res != tt.expectedResponseID {
+				t.Fatalf("CreateUser: expected user.id: %d got: %d", tt.expectedResponseID, res)
+			}
+		})
+	}
 }
 
 func TestAPIAuthService_GetUserByEmail(t *testing.T) {
@@ -1749,9 +1833,9 @@ func (p PolicyRequest) String() string {
 type StatementRequest struct {
 }
 
-func (s StatementRequest) Matches(x interface{}) bool {
-
-}
+// func (s StatementRequest) Matches(x interface{}) bool {
+//
+// }
 
 func (s StatementRequest) String() string {
 	// TODO implement me
