@@ -51,6 +51,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     ServerError:
       description: Internal Server Error
       content:
@@ -380,6 +386,8 @@ paths:
                 $ref: "#/components/schemas/Error"
         401:
           $ref: "#/components/responses/Unauthorized"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -493,6 +501,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -579,6 +589,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         400:
           $ref: "#/components/responses/ValidationError"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -664,7 +676,7 @@ paths:
         - $ref: "#/components/parameters/PaginationAmount"
       responses:
         200:
-          description: group memeber list
+          description: group member list
           content:
             application/json:
               schema:
@@ -771,6 +783,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 
