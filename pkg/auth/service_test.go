@@ -1668,7 +1668,7 @@ func TestAPIAuthService_ListGroups(t *testing.T) {
 	}
 }
 
-func TestAPIAuthService_ListGUsers(t *testing.T) {
+func TestAPIAuthService_ListUsers(t *testing.T) {
 	mockClient, s := GetApiService(t)
 	const userNamePrefix = "userNamePrefix"
 	const creationDate = 12345678
@@ -1741,7 +1741,6 @@ func TestAPIAuthService_ListGroupUsers(t *testing.T) {
 			if err != nil {
 				t.Errorf("failed with error - %s", err)
 			}
-
 			creationTime := time.Unix(creationDate, 0)
 			for i, g := range user {
 				if g == nil {
@@ -1761,31 +1760,35 @@ func TestAPIAuthService_ListGroupUsers(t *testing.T) {
 
 func TestAPIAuthService_AddUserToGroup(t *testing.T) {
 	mockClient, s := GetApiService(t)
-	const username = "userFoo"
-	const groupName = "groupFoo"
-
 	mockErr := errors.New("this is a mock error")
-
 	testTable := []struct {
 		name        string
+		groupName   string
+		username    string
 		mockErr     error
 		statusCode  int
 		expectedErr error
 	}{
 		{
 			name:        "no error",
+			groupName:   "group_name",
+			username:    "user_ame",
 			mockErr:     nil,
 			statusCode:  http.StatusCreated,
 			expectedErr: nil,
 		},
 		{
-			name:        "api error ",
+			name:        "api internal error ",
+			groupName:   "gname",
+			username:    "uname",
 			mockErr:     mockErr,
-			statusCode:  0,
+			statusCode:  http.StatusInternalServerError,
 			expectedErr: mockErr,
 		},
 		{
 			name:        "not found",
+			groupName:   "no_group",
+			username:    "username",
 			mockErr:     nil,
 			statusCode:  http.StatusNotFound,
 			expectedErr: auth.ErrNotFound,
@@ -1799,8 +1802,8 @@ func TestAPIAuthService_AddUserToGroup(t *testing.T) {
 					StatusCode: tt.statusCode,
 				},
 			}
-			mockClient.EXPECT().AddGroupMembershipWithResponse(gomock.Any(), groupName, username).Return(response, tt.mockErr)
-			err := s.AddUserToGroup(context.Background(), username, groupName)
+			mockClient.EXPECT().AddGroupMembershipWithResponse(gomock.Any(), tt.groupName, tt.username).Return(response, tt.mockErr)
+			err := s.AddUserToGroup(context.Background(), tt.username, tt.groupName)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
 			}
@@ -1810,31 +1813,31 @@ func TestAPIAuthService_AddUserToGroup(t *testing.T) {
 
 func TestAPIAuthService_DeleteGroup(t *testing.T) {
 	mockClient, s := GetApiService(t)
-	const username = "userFoo"
-	const groupName = "groupFoo"
-
 	mockErr := errors.New("this is a mock error")
-
 	testTable := []struct {
 		name        string
+		groupName   string
 		mockErr     error
 		statusCode  int
 		expectedErr error
 	}{
 		{
 			name:        "no error",
+			groupName:   "group_name",
 			mockErr:     nil,
 			statusCode:  http.StatusNoContent,
 			expectedErr: nil,
 		},
 		{
 			name:        "api error ",
+			groupName:   "group_name",
 			mockErr:     mockErr,
-			statusCode:  0,
+			statusCode:  http.StatusInternalServerError,
 			expectedErr: mockErr,
 		},
 		{
 			name:        "not found",
+			groupName:   "no_group",
 			mockErr:     nil,
 			statusCode:  http.StatusNotFound,
 			expectedErr: auth.ErrNotFound,
@@ -1848,8 +1851,8 @@ func TestAPIAuthService_DeleteGroup(t *testing.T) {
 					StatusCode: tt.statusCode,
 				},
 			}
-			mockClient.EXPECT().DeleteGroupWithResponse(gomock.Any(), groupName).Return(response, tt.mockErr)
-			err := s.DeleteGroup(context.Background(), groupName)
+			mockClient.EXPECT().DeleteGroupWithResponse(gomock.Any(), tt.groupName).Return(response, tt.mockErr)
+			err := s.DeleteGroup(context.Background(), tt.groupName)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
 			}
