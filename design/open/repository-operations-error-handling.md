@@ -49,8 +49,19 @@ The new `repository_state` attribute can have one of four values: `initial`, `ac
 Each `Repository` will have a `unique_identifier` (To be discussed later) which can differ it from other repositories with the same **Name** (`RepositoryID`). This will provide us with the ability to differ object correlated with different repositories with the same **Name**, from different points in time. Each repository will have a designated KV partition, identified by its **Name** and `unique_identifier` and all correlated objects will be handled in this partition, making it possible to identify objects correlated only to an `active` `Repository`. Moreover, as the `unique_identifier` is an attribute of the `Repository`, in order to create the partition name, the `Repository` entity must be acquired, and so non-exist or unusable `Repository` entries will make unreachable partitions and, in turn, unreachable entities, making it safe to use any reachable entity
 
 ### Cleaning Up an `initial` Repository
-A `Repository` entity with `initial` status is either being created (which will soon change the status to `active`), or already failed to create without changing status to `failed` (due to, for example, a crashed process). We will decide a `Repository` is failed if it is in `initial` state, and a sufficient time from its creation has passed. In that case, we will change the `Repository` state to `failed` and make him a candidate for deletion.
-This can be checked every time the `Repository` is accessed (trivial) and by a designated cleanup procedure (part of the above mentioned GC, or a designated scan at startup).
+A `Repository` entity with `initial` status is either being created (which will soon change the status to `active`), or already failed to create without changing status to `failed` (due to, for example, a crashed process). We will decide a `Repository` is failed if it is in `initial` state, and a sufficient time of 2 minutes, has passed from its creation attempt. In that case, the `Repository` state will be changed to `failed`, making it a candidate for deletion.
+The status set attempt will occur as part of any access (`GetRepository`) that finds the repository with a status `initial` and a creation time earlier then 2 minutes ago. Note that an attempt to create a repository, that finds a repository with the same name and `status` initial, may move it to status `failed`
+This status change will also be performed by a future designated cleanup procedure (part of the above mentioned Cleaner, or a designated scan at startup).
+
+### New Function - disposeRepository
+This internal function receives a `Repository` object and attempts to `SetIf` its status to `deleting` - this will immediately turns the `Repository` unreachable in terms of `ref/manager` , though it is still reachable in the `KV`.
+If the `Repository` status is already `deleted` (possible due to failure in a previous attempt, for example), it is treated as successful and the logic continues
+After a successful status `SetIf`, a new entry will be added, as a placeholder for that `Repository`, with its `RepositoryID` and its `unique_identifier`. Once successful, the repository and its correlated partition, are reachable can be scanned a designated cleanup logic, such as future Cleaner, making it possible to access the partition, and the entities in it, for deletion
+When the "deletion place holder" key addition is successful, by either a successful creation or if the key already exist, the `Repository` entry can be deleted from the `graveler` partition, making it possible to add a new `Repository` with the same `RepositoryID` (and a **new** `unique_identifier`, obviously)
+Upon successful completion of the steps above, a success is returned to the calling function, to further handle. The DB state will allow both the creation of a new `Repository` with the same `RepositoryID` (as it is no longer exist) and the repository partition is discoverable for cleanup, though cannot be accessed for use, as the repository does not really exist.
+If any failure occurs during `disposeRepository`, it stops, returning the error to the calling function. The DB will still be consistent as, at worse, the `Repository` will both exist (in `deleted` state) in the repository list, making it still inaccessible, or, if the initial status set did not take place, it is same as before, which is acceptable considering the operation failed
+![disposeRepository Flow](diagrams/disposeRepository.png)
+[(excalidraw file)](diagrams/disposeRepository.excalidraw)
  
 ##  Flows
 ### CreateRepository
@@ -84,19 +95,17 @@ Only the repository is created so this is pretty trivial
 ### DeleteRepository
 * Get the `Repository`, using the `GetRepository` command as described above 
   * In case of error return the error
-* SetIf the `Repository` state to `deleted`
-  * If failed return the error
-**Note** at this point the `Repository` is marked as `deleted` and is unreachable. The following steps clean the relevant entities from the KV, and can later be moved to a designated garbage cleaning procedure, leaving `DeleteRepository` with only setting the `Repository` status (following a successful `GetRepository`)
-* Retrieve the partition key for the `Repository`, from its `RepositoryID` and `unique_identifier`
-* Scan through the branches in the partition partition and for each `Branch`:
-  * Delete all the relevant staged objects (based on `staging_token` and `sealed_tokens`) - same as with `DeleteBranch`
-  * If an error occurs at each step, return the error - the `Repository` is already marked as deleted and so it and all its correlated entities are unreachable
-* Delete the `Branch`
-  * If failed - return the error
-* Scan through the rest of the partition and delete all objects. That is `Commit`s and `Tag`s
-  * With any failure, return the error
-* If all deletions above are successful, delete the `Repository` itself
-  * If failed return the error
+* Run `disposeRepository`. If failed, return the error
+* Optional path (as this does not affect correctness), in case no dedicated Garbage Cleaner is implemented:
+  * Retrieve the partition key for the `Repository`, from its `RepositoryID` and `unique_identifier`
+  * Scan through the branches in the partition partition and for each `Branch`:
+    * Delete all the relevant staged objects (based on `staging_token` and `sealed_tokens`) - same as with `DeleteBranch`
+    * If an error occurs at each step, return the error - the `Repository` is already marked as deleted and so it and all its correlated entities are unreachable
+  * Delete the `Branch`
+    * If failed - return the error
+  * Scan through the rest of the partition and delete all objects. That is `Commit`s and `Tag`s
+    * With any failure, return the error
+* If all deletions above are successful, delete the `deleted_repo/<REPO_ID>/<unique_identifier>` key and return the result
 
 ### ListRepositories
 * List repositories should only return `active` entities. That can be achieved by identifying and skipping `Repository` entries with status other than `active`
