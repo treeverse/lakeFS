@@ -891,7 +891,7 @@ class Templates {
             urlParams.set(k, v);
         }
         const response = await apiRequest(
-            encodeURI(`/templates/${templateLocation}?${urlParams.toString()}`),
+            `/templates/${encodeURI(templateLocation)}?${urlParams.toString()}`,
             { method: 'GET' });
         if (!response.ok) {
             throw new Error(await extractError(response));
