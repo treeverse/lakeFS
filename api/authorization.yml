@@ -457,7 +457,7 @@ paths:
               $ref: "#/components/schemas/UserPassword"
       responses:
         200:
-          description: password updated succesfully
+          description: password updated successfully
         400:
           $ref: "#/components/responses/ValidationError"
         401:
