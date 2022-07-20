@@ -1473,6 +1473,44 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 	}
 }
 
+func TestAPIAuthService_DeleteUser(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	tests := []struct {
+		name               string
+		userName           string
+		responseStatusCode int
+		expectedErr        error
+	}{
+		{
+			name:               "successful",
+			userName:           "foo",
+			responseStatusCode: http.StatusNoContent,
+			expectedErr:        nil,
+		},
+		{
+			name:               "non existing user",
+			userName:           "nobody",
+			responseStatusCode: http.StatusNotFound,
+			expectedErr:        auth.ErrNotFound, // TODO(Guys): change this once we change this to the right error
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			response := &auth.DeleteUserResponse{
+				HTTPResponse: &http.Response{
+					StatusCode: tt.responseStatusCode,
+				},
+			}
+			ctx := context.Background()
+			mockClient.EXPECT().DeleteUserWithResponse(ctx, tt.userName).Return(response, nil)
+			err := s.DeleteUser(ctx, tt.userName)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("CreateUser: expected err: %s got: %s", tt.expectedErr, err)
+			}
+		})
+	}
+}
+
 func TestAPIAuthService_GetUserByEmail(t *testing.T) {
 	mockClient, s := GetApiService(t)
 
