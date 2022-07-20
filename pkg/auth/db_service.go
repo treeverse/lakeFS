@@ -159,7 +159,7 @@ func deleteOrNotFoundDB(tx db.Tx, stmt string, args ...interface{}) error {
 }
 
 type DBAuthService struct {
-	*InviteHandler
+	*EmailInviteHandler
 	db          db.Database
 	secretStore crypt.SecretStore
 	cache       Cache
@@ -179,13 +179,8 @@ func NewDBAuthService(db db.Database, secretStore crypt.SecretStore, emailer *em
 		secretStore: secretStore,
 		cache:       cache,
 		log:         logger,
-		InviteHandler: &InviteHandler{
-			secretStore: secretStore,
-			log:         logger,
-			emailer:     emailer,
-		},
 	}
-	d.InviteHandler.svc = d
+	d.EmailInviteHandler = NewEmailInviteHandler(d, logger, emailer)
 	return d
 }
 
