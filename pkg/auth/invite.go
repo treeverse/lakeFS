@@ -4,24 +4,31 @@ import (
 	"context"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-type InviteHandler struct {
-	secretStore crypt.SecretStore
-	svc         Service
-	log         logging.Logger
-	emailer     *email.Emailer
+type InviteHandler interface {
+	InviteUser(ctx context.Context, email string) error
+	IsInviteSupported() bool
+}
+
+type EmailInviteHandler struct {
+	svc     Service
+	log     logging.Logger
+	emailer *email.Emailer
+}
+
+func NewEmailInviteHandler(svc Service, log logging.Logger, emailer *email.Emailer) *EmailInviteHandler {
+	return &EmailInviteHandler{svc: svc, log: log, emailer: emailer}
 }
 
 const (
 	DefaultInvitePasswordExpiration = 6 * time.Hour
 )
 
-func (i *InviteHandler) inviteUserRequest(emailAddr string) error {
+func (i *EmailInviteHandler) inviteUserRequest(emailAddr string) error {
 	secret := i.svc.SecretStore().SharedSecret()
 	currentTime := time.Now()
 	token, err := GenerateJWTResetPassword(secret, emailAddr, currentTime, currentTime.Add(DefaultInvitePasswordExpiration))
@@ -40,21 +47,20 @@ func (i *InviteHandler) inviteUserRequest(emailAddr string) error {
 	return nil
 }
 
-func (i *InviteHandler) InviteUser(ctx context.Context, email string) error {
+func (i *EmailInviteHandler) InviteUser(ctx context.Context, email string) error {
 	u := &model.User{
-		CreatedAt:    time.Now().UTC(),
-		Username:     email,
-		FriendlyName: nil,
-		Source:       "internal",
-		Email:        &email,
+		CreatedAt: time.Now().UTC(),
+		Username:  email,
+		Source:    "internal",
+		Email:     &email,
 	}
 	_, err := i.svc.CreateUser(ctx, u)
 	if err != nil {
 		return err
 	}
-	return i.inviteUserRequest(*u.Email)
+	return i.inviteUserRequest(email)
 }
 
-func (i *InviteHandler) IsInviteSupported() bool {
+func (i *EmailInviteHandler) IsInviteSupported() bool {
 	return i.emailer != nil
 }
