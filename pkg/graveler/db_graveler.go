@@ -150,7 +150,7 @@ func (g *DBGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 
 	err = g.RefManager.CreateBranch(ctx, repositoryID, branchID, newBranch)
 	if err != nil {
-		return nil, fmt.Errorf("set branch '%s' to '%s': %w", branchID, newBranch, err)
+		return nil, fmt.Errorf("set branch '%s' to '%v': %w", branchID, newBranch, err)
 	}
 
 	postRunID := g.hooks.NewRunID()
@@ -459,7 +459,7 @@ func (g *DBGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositor
 		return nil, fmt.Errorf("get expired commits from previous run: %w", err)
 	}
 
-	runID, err := g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, repo.StorageNamespace, repositoryID, *repo, rules, previouslyExpiredCommits)
+	runID, err := g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, repo.StorageNamespace, repositoryID, rules, previouslyExpiredCommits)
 	if err != nil {
 		return nil, fmt.Errorf("save garbage collection commits: %w", err)
 	}

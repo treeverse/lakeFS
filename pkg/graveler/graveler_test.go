@@ -8,10 +8,12 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/graveler/testutil"
+	"github.com/treeverse/lakefs/pkg/kv"
 	tu "github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -430,17 +432,13 @@ func TestGraveler_UpdateBranch(t *testing.T) {
 
 func testGravelerUpdateBranch(t *testing.T, kvEnabled bool) {
 	gravel := newGraveler(t, kvEnabled, nil, &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-		&testutil.RefsFake{Branch: &graveler.Branch{}}, nil, nil)
+		&testutil.RefsFake{Branch: &graveler.Branch{}, UpdateErr: kv.ErrPredicateFailed}, nil, nil)
 	_, err := gravel.UpdateBranch(context.Background(), "", "", "")
-	if !errors.Is(err, graveler.ErrConflictFound) {
-		t.Fatal("expected update to fail on conflict")
-	}
+	require.ErrorIs(t, err, graveler.ErrConflictFound)
 	gravel = newGraveler(t, kvEnabled, nil, &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
 		&testutil.RefsFake{Branch: &graveler.Branch{}}, nil, nil)
 	_, err = gravel.UpdateBranch(context.Background(), "", "", "")
-	if err != nil {
-		t.Fatal("did not expect to get error")
-	}
+	require.NoError(t, err, graveler.ErrConflictFound)
 }
 
 func TestGraveler_Commit(t *testing.T) {

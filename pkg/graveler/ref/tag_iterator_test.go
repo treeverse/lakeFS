@@ -15,20 +15,24 @@ func TestDBTagIterator(t *testing.T) {
 	r, db := testRefManagerWithDB(t)
 	tags := []graveler.TagID{"a", "aa", "b", "c", "e", "d", "f", "g"}
 	ctx := context.Background()
-	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
-		StorageNamespace: "s3://foo",
-		CreationDate:     time.Now(),
-		DefaultBranchID:  "main",
-	}, ""))
+	repo := &graveler.RepositoryRecord{
+		RepositoryID: "repo1",
+		Repository: &graveler.Repository{
+			StorageNamespace: "s3://foo",
+			CreationDate:     time.Now(),
+			DefaultBranchID:  "main",
+		},
+	}
+	testutil.Must(t, r.CreateRepository(ctx, repo.RepositoryID, *repo.Repository, ""))
 
 	// prepare data
 	for _, b := range tags {
-		err := r.CreateTag(ctx, "repo1", b, "c1")
+		err := r.CreateTag(ctx, repo.RepositoryID, b, "c1")
 		testutil.Must(t, err)
 	}
 
 	t.Run("listing all tags", func(t *testing.T) {
-		iter, err := ref.NewDBTagIterator(ctx, db, "repo1", 3)
+		iter, err := ref.NewDBTagIterator(ctx, db, repo.RepositoryID, 3)
 		testutil.Must(t, err)
 		ids := make([]graveler.TagID, 0)
 		for iter.Next() {
@@ -46,7 +50,7 @@ func TestDBTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags using prefix", func(t *testing.T) {
-		iter, err := ref.NewDBTagIterator(ctx, db, "repo1", 3)
+		iter, err := ref.NewDBTagIterator(ctx, db, repo.RepositoryID, 3)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
@@ -65,7 +69,7 @@ func TestDBTagIterator(t *testing.T) {
 	})
 
 	t.Run("empty value SeekGE", func(t *testing.T) {
-		iter, err := ref.NewDBTagIterator(ctx, db, "repo1", 3)
+		iter, err := ref.NewDBTagIterator(ctx, db, repo.RepositoryID, 3)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 
@@ -75,7 +79,7 @@ func TestDBTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags SeekGE", func(t *testing.T) {
-		iter, err := ref.NewDBTagIterator(ctx, db, "repo1", 3)
+		iter, err := ref.NewDBTagIterator(ctx, db, repo.RepositoryID, 3)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
@@ -113,21 +117,24 @@ func TestKVTagIterator(t *testing.T) {
 	r, kvstore := testRefManagerWithKV(t)
 	tags := []graveler.TagID{"a", "aa", "b", "c", "e", "d", "f", "g"}
 	ctx := context.Background()
-	repo1 := graveler.Repository{
-		StorageNamespace: "s3://foo",
-		CreationDate:     time.Now(),
-		DefaultBranchID:  "main",
+	repo := &graveler.RepositoryRecord{
+		RepositoryID: "repo1",
+		Repository: &graveler.Repository{
+			StorageNamespace: "s3://foo",
+			CreationDate:     time.Now(),
+			DefaultBranchID:  "main",
+		},
 	}
-	testutil.Must(t, r.CreateRepository(ctx, "repo1", repo1, ""))
+	testutil.Must(t, r.CreateRepository(ctx, repo.RepositoryID, *repo.Repository, ""))
 
 	// prepare data
 	for _, b := range tags {
-		err := r.CreateTag(ctx, "repo1", b, "c1")
+		err := r.CreateTag(ctx, repo.RepositoryID, b, "c1")
 		testutil.Must(t, err)
 	}
 
 	t.Run("listing all tags", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, &kvstore, "repo1", repo1)
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, repo)
 		testutil.Must(t, err)
 		ids := make([]graveler.TagID, 0)
 		for iter.Next() {
@@ -145,7 +152,7 @@ func TestKVTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags using prefix", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, &kvstore, "repo1", repo1)
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, repo)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
@@ -164,7 +171,7 @@ func TestKVTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags SeekGE", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, &kvstore, "repo1", repo1)
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, repo)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
@@ -198,7 +205,7 @@ func TestKVTagIterator(t *testing.T) {
 	})
 
 	t.Run("empty value SeekGE", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, &kvstore, "repo1", repo1)
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, repo)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 
