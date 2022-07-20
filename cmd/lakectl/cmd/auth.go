@@ -591,6 +591,7 @@ var authPoliciesDelete = &cobra.Command{
 }
 
 func addPaginationFlags(cmd *cobra.Command) {
+	cmd.Flags().SortFlags = false
 	cmd.Flags().Int("amount", defaultAmountArgumentValue, "how many results to return")
 	cmd.Flags().String("after", "", "show results after this value (used for pagination)")
 }
@@ -598,32 +599,28 @@ func addPaginationFlags(cmd *cobra.Command) {
 //nolint:gochecknoinits
 func init() {
 	// users
-	authUsersCreate.Flags().String("id", "", "user identifier")
+	authUsersCreate.Flags().String("id", "", "Username")
 	_ = authUsersCreate.MarkFlagRequired("id")
 
-	authUsersDelete.Flags().String("id", "", "user identifier")
+	authUsersDelete.Flags().String("id", "", "Username (email for password-based users)")
 	_ = authUsersDelete.MarkFlagRequired("id")
 
-	addPaginationFlags(authUsersList)
-
-	addPaginationFlags(authUsersGroupsList)
-	authUsersGroupsList.Flags().String("id", "", "user identifier")
+	authUsersGroupsList.Flags().String("id", "", "Username (email for password-based users)")
 	_ = authUsersGroupsList.MarkFlagRequired("id")
 
 	authUsersGroups.AddCommand(authUsersGroupsList)
 
-	addPaginationFlags(authUsersPoliciesList)
 	authUsersPoliciesList.Flags().Bool("effective", false,
 		"list all distinct policies attached to the user, even through group memberships")
-	authUsersPoliciesList.Flags().String("id", "", "user identifier")
+	authUsersPoliciesList.Flags().String("id", "", "Username (email for password-based users)")
 	_ = authUsersPoliciesList.MarkFlagRequired("id")
 
-	authUsersPoliciesAttach.Flags().String("id", "", "user identifier")
+	authUsersPoliciesAttach.Flags().String("id", "", "Username (email for password-based users)")
 	_ = authUsersPoliciesAttach.MarkFlagRequired("id")
 	authUsersPoliciesAttach.Flags().String("policy", "", "policy identifier")
 	_ = authUsersPoliciesAttach.MarkFlagRequired("policy")
 
-	authUsersPoliciesDetach.Flags().String("id", "", "user identifier")
+	authUsersPoliciesDetach.Flags().String("id", "", "Username (email for password-based users)")
 	_ = authUsersPoliciesDetach.MarkFlagRequired("id")
 	authUsersPoliciesDetach.Flags().String("policy", "", "policy identifier")
 	_ = authUsersPoliciesDetach.MarkFlagRequired("policy")
@@ -632,12 +629,11 @@ func init() {
 	authUsersPolicies.AddCommand(authUsersPoliciesAttach)
 	authUsersPolicies.AddCommand(authUsersPoliciesDetach)
 
-	authUsersCredentialsList.Flags().String("id", "", "user identifier (default: current user)")
-	addPaginationFlags(authUsersCredentialsList)
+	authUsersCredentialsList.Flags().String("id", "", "Username (email for password-based users). Defaults to current user.")
 
-	authUsersCredentialsCreate.Flags().String("id", "", "user identifier (default: current user)")
+	authUsersCredentialsCreate.Flags().String("id", "", "Username (email for password-based users). Defaults to current user.")
 
-	authUsersCredentialsDelete.Flags().String("id", "", "user identifier (default: current user)")
+	authUsersCredentialsDelete.Flags().String("id", "", "Username (email for password-based users). Defaults to current user.")
 	authUsersCredentialsDelete.Flags().String("access-key-id", "", "access key ID to delete")
 	_ = authUsersCredentialsDelete.MarkFlagRequired("access-key-id")
 
@@ -661,25 +657,21 @@ func init() {
 	authGroupsDelete.Flags().String("id", "", "group identifier")
 	_ = authGroupsDelete.MarkFlagRequired("id")
 
-	addPaginationFlags(authGroupsList)
-
 	authGroupsAddMember.Flags().String("id", "", "group identifier")
-	authGroupsAddMember.Flags().String("user", "", "user identifier to add to the group")
+	authGroupsAddMember.Flags().String("user", "", "Username (email for password-based users). Defaults to current user.")
 	_ = authGroupsAddMember.MarkFlagRequired("id")
 	_ = authGroupsAddMember.MarkFlagRequired("user")
 	authGroupsRemoveMember.Flags().String("id", "", "group identifier")
-	authGroupsRemoveMember.Flags().String("user", "", "user identifier to add to the group")
+	authGroupsRemoveMember.Flags().String("user", "", "Username (email for password-based users). Defaults to current user.")
 	_ = authGroupsRemoveMember.MarkFlagRequired("id")
 	_ = authGroupsRemoveMember.MarkFlagRequired("user")
 	authGroupsListMembers.Flags().String("id", "", "group identifier")
-	addPaginationFlags(authGroupsListMembers)
 	_ = authGroupsListMembers.MarkFlagRequired("id")
 
 	authGroupsMembers.AddCommand(authGroupsAddMember)
 	authGroupsMembers.AddCommand(authGroupsRemoveMember)
 	authGroupsMembers.AddCommand(authGroupsListMembers)
 
-	addPaginationFlags(authGroupsPoliciesList)
 	authGroupsPoliciesList.Flags().String("id", "", "group identifier")
 	_ = authGroupsPoliciesList.MarkFlagRequired("id")
 
@@ -716,8 +708,6 @@ func init() {
 	authPoliciesShow.Flags().String("id", "", "policy identifier")
 	_ = authPoliciesShow.MarkFlagRequired("id")
 
-	addPaginationFlags(authPoliciesList)
-
 	authPolicies.AddCommand(authPoliciesDelete)
 	authPolicies.AddCommand(authPoliciesCreate)
 	authPolicies.AddCommand(authPoliciesShow)
@@ -726,4 +716,12 @@ func init() {
 
 	// main auth cmd
 	rootCmd.AddCommand(authCmd)
+	addPaginationFlags(authUsersList)
+	addPaginationFlags(authUsersGroupsList)
+	addPaginationFlags(authUsersPoliciesList)
+	addPaginationFlags(authUsersCredentialsList)
+	addPaginationFlags(authGroupsList)
+	addPaginationFlags(authGroupsListMembers)
+	addPaginationFlags(authGroupsPoliciesList)
+	addPaginationFlags(authPoliciesList)
 }
