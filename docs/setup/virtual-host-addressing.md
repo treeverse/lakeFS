@@ -2,7 +2,7 @@
 layout: default
 title: "S3 Virtual-host addressing (advanced)"
 description: Configure the lakeFS S3 API to use virtual-host addressing.
-parent: Setup lakeFS
+parent: Set up lakeFS
 has_children: false
 ---
 
@@ -27,7 +27,7 @@ This requires an extra step: defining an explicit set of DNS record for lakeFS S
 
 ## Adding an explicit S3 domain name to the S3 Gateway configuration
 
-The first step would be to tell the lakeFS Installation which hostnames are used for the S3 Gateway. This should be a different DNS record from the one used for e.g. the UI or API.
+The first step would be to tell the lakeFS installation which hostnames are used for the S3 Gateway. This should be a different DNS record from the one used for e.g. the UI or API.
 
 Typically, if the lakeFS installation is served under `lakefs.example.com`, a good choice would be `s3.lakefs.example.com`.
 
@@ -57,7 +57,7 @@ For more information on how to configure lakeFS, check out the [configuration re
 
 ## Setting up the appropriate DNS records
 
-Once your lakeFS Installation is configured with an explicit S3 gateway endpoint address, you need to define two DNS records and have them point at your lakeFS Installation.
+Once your lakeFS installation is configured with an explicit S3 gateway endpoint address, you need to define two DNS records and have them point at your lakeFS installation.
 This requires two CNAME records:
 
 1. `s3.lakefs.example.com` - CNAME to `lakefs.example.com`. This will be used as the S3 endpoint when configuring clients and serve as our bare domain.

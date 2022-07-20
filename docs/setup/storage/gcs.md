@@ -3,7 +3,7 @@ layout: default
 title: Google Cloud Storage
 description: This guide explains how to configure Google Cloud Storage as the underlying storage layer.
 parent: Prepare Your Storage
-grand_parent: Setup lakeFS
+grand_parent: Set up lakeFS
 nav_order: 20
 has_children: false
 ---

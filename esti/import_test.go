@@ -19,23 +19,6 @@ const (
 	prefixImport    = "imported/new-prefix/"
 )
 
-var importFilesToCheck = []string{
-	"prefix-1/file002100",
-	"prefix-2/file000568",
-	"prefix-3/file001331",
-	"prefix-4/file001888",
-	"prefix-5/file000987",
-	"prefix-6/file001556",
-	"prefix-7/file000001",
-	"nested/prefix-1/file002005",
-	"nested/prefix-2/file001894",
-	"nested/prefix-3/file000005",
-	"nested/prefix-4/file000645",
-	"nested/prefix-5/file001566",
-	"nested/prefix-6/file002011",
-	"nested/prefix-7/file000101",
-}
-
 func TestImport(t *testing.T) {
 	importPath := ""
 	switch viper.GetViper().GetString("blockstore_type") {
@@ -46,18 +29,16 @@ func TestImport(t *testing.T) {
 	case block.BlockstoreTypeAzure:
 		importPath = azureImportPath
 	default:
-		// import isn't supported for non-production block adapters
-		t.Skip()
+		t.Skip("import isn't supported for non-production block adapters")
 	}
 
 	ctx, log, repoName := setupTest(t)
-
-	hasMore := true
-	after := ""
-	var token *string
-
-	var ranges []api.RangeMetadata
-	for hasMore {
+	var (
+		after  = ""
+		token  *string
+		ranges []api.RangeMetadata
+	)
+	for {
 		resp, err := client.IngestRangeWithResponse(ctx, repoName, api.IngestRangeJSONRequestBody{
 			After:             after,
 			ContinuationToken: token,
@@ -65,12 +46,13 @@ func TestImport(t *testing.T) {
 			Prepend:           prefixImport,
 		})
 		require.NoError(t, err, "failed to ingest range")
-		log.Info("Ingest range response body: %s", string(resp.Body))
+		log.Infof("Ingest range response body: %s", string(resp.Body))
 		require.Equal(t, http.StatusCreated, resp.StatusCode())
-
 		require.NotNil(t, resp.JSON201)
 		ranges = append(ranges, *resp.JSON201.Range)
-		hasMore = resp.JSON201.Pagination.HasMore
+		if !resp.JSON201.Pagination.HasMore {
+			break
+		}
 		after = resp.JSON201.Pagination.LastKey
 		token = resp.JSON201.Pagination.ContinuationToken
 	}
@@ -93,7 +75,7 @@ func TestImport(t *testing.T) {
 	commitResp, err := client.CommitWithResponse(ctx, repoName, ingestionBranch, &api.CommitParams{
 		SourceMetarange: metarangeResp.JSON201.Id,
 	}, api.CommitJSONRequestBody{
-		Message: "created by UI import",
+		Message: "created by import",
 		Metadata: &api.CommitCreation_Metadata{
 			AdditionalProperties: map[string]string{"created_by": "import"},
 		},
@@ -101,6 +83,22 @@ func TestImport(t *testing.T) {
 	require.NoError(t, err, "failed to commit")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
+	importFilesToCheck := []string{
+		"nested/prefix-1/file002005",
+		"nested/prefix-2/file001894",
+		"nested/prefix-3/file000005",
+		"nested/prefix-4/file000645",
+		"nested/prefix-5/file001566",
+		"nested/prefix-6/file002011",
+		"nested/prefix-7/file000101",
+		"prefix-1/file002100",
+		"prefix-2/file000568",
+		"prefix-3/file001331",
+		"prefix-4/file001888",
+		"prefix-5/file000987",
+		"prefix-6/file001556",
+		"prefix-7/file000001",
+	}
 	for _, k := range importFilesToCheck {
 		// try to read some values from that ingested branch
 		objResp, err := client.GetObjectWithResponse(ctx, repoName, ingestionBranch, &api.GetObjectParams{

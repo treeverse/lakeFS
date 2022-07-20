@@ -61,7 +61,7 @@ func downloadRange(ctx context.Context, svc s3iface.S3API, logger logging.Logger
 	}
 	defer func() {
 		if err := os.Remove(f.Name()); err != nil {
-			logger.Errorf("failed to remove orc file after download. file=%s, err=%w", f.Name(), err)
+			logger.WithError(err).WithField("file", f.Name()).Error("Failed to remove orc file after download")
 		}
 	}()
 	downloader := s3manager.NewDownloaderWithClient(svc)
@@ -117,7 +117,7 @@ func DownloadOrc(ctx context.Context, svc s3iface.S3API, logger logging.Logger, 
 		if tailLength > orcInitialReadSize {
 			// tail didn't fit in initially downloaded file
 			if err = f.Close(); err != nil {
-				logger.Errorf("failed to close orc file. file=%s, err=%w", f.Name(), err)
+				logger.WithError(err).WithField("file", f.Name()).Error("failed to close orc file")
 			}
 			f, err = downloadRange(ctx, svc, logger, bucket, key, size-int64(tailLength))
 			if err != nil {

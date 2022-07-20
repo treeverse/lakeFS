@@ -2,7 +2,7 @@
 layout: default
 title: Import data into lakeFS 
 description: To import existing data to lakeFS, you may choose to copy it using S3 CLI or using tools like Apache DistCp.
-parent: Setup lakeFS
+parent: Set up lakeFS
 nav_order: 20
 has_children: false
 redirect_from: ../reference/import.html
@@ -52,8 +52,7 @@ and in the same region of your destination bucket.
 
 #### Limitations
 
-Import is feasible only from source object storage that matches the storage namespace of the
-current repository. The lakeFS S3 Installation cannot import from Azure bucket.
+Importing is only possible from the object storage service in which your installation stores its data. For example, if lakeFS is configured on top of S3, you cannot import data from Azure.
 
 Although created by lakeFS, import branches are just like any other branch.
 Authorization policies, CI/CD triggering, branch protection rules and all other lakeFS concepts apply to them
@@ -200,7 +199,7 @@ lakefs import --with-merge lakefs://example-repo -m s3://example-bucket/path/to/
 
 1. You can download the `lakefs` binary from [here](https://github.com/treeverse/lakeFS/releases). Make sure you choose one compatible with your installation of lakeFS.
 
-1. Use a configuration file like the one used to start your lakeFS Installation. This will be used to access your database. An example can be found [here](../reference/configuration.html#example-aws-deployment).
+1. Use a configuration file like the one used to start your lakeFS installation. This will be used to access your database. An example can be found [here](../reference/configuration.html#example-aws-deployment).
 
 **Warning:** the *import-from-inventory* branch should only be used by lakeFS. You should not make any operations on it.
 {: .note } 

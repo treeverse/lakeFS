@@ -2,7 +2,7 @@
 layout: default
 title: Create a Repository
 description: This section outlines how to setup your environment once lakeFS is configured and running.
-parent: Setup lakeFS
+parent: Set up lakeFS
 nav_order: 10
 has_children: false
 redirect_from:

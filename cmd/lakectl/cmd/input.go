@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/pflag"
@@ -131,6 +132,13 @@ func MustInt64(v int64, err error) int64 {
 }
 
 func MustBool(v bool, err error) bool {
+	if err != nil {
+		DieErr(err)
+	}
+	return v
+}
+
+func MustDuration(v time.Duration, err error) time.Duration {
 	if err != nil {
 		DieErr(err)
 	}

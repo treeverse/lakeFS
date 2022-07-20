@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Hooks
-parent: Setup lakeFS
-description: lakeFS you to configure of hooks to trigger when predefined events occur.
+parent: Set up lakeFS
+description: lakeFS allows you to configure hooks to trigger when predefined events occur.
 nav_order: 30
 has_children: false
 redirect_from: ../hooks.html

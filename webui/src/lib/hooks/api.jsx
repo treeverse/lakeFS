@@ -61,7 +61,7 @@ export const useAPI = (promise, deps = []) => {
             }
             router.push({
                 pathname: loginPathname,
-                query: {next: router.route},
+                query: {next: router.route, redirected: true},
             });
             setLogin(false);
         }

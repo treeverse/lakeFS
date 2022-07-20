@@ -1,4 +1,4 @@
-import Wizard from "./wizard";
+import {Wizard} from "./wizard";
 import React, {useState} from "react";
 import {useAPI} from "../../../lib/hooks/api";
 import {config} from "../../../lib/api";
@@ -45,48 +45,57 @@ const RepositoryCreationStep = ({repoCreationError, createRepo, onCancel, onComp
         content = <Alert variant="info" className={"mt-3"}>Repository <span className={"font-weight-bold"}>{repoName}</span> created successfully</Alert>;
     }
     else {
-        content = <RepositoryCreateForm config={response} error={showError} onSubmit={onSubmit} onCancel={onCancel}/>;
+        content = <RepositoryCreateForm config={response} error={showError} onSubmit={onSubmit} onCancel={onCancel} sm={8}/>;
     }
     return (
         <>
-            <h2 className={"wizard-step-header"}>Create a repository</h2>
+            <h3 className={"wizard-step-header"}>Create a repository</h3>
             {content}
         </>
     );
 }
 
 export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
-    const [nextEnabled, setNextEnabled] = useState(false)
     const [state, setState] = useState({
-        'branch': '',
-        'namespace': '',
-        'repoId': '',
+        branch: '',
+        namespace: '',
+        repoId: '',
     });
-    const completedStep = (val = {}) => {
-        setState({...state, ...val});
-        setNextEnabled(true);
+    const [completed, setCompleted] = useState(new Set());
+    const completedStep = (vals = {}, stepNum) => {
+        setState({...state, ...vals});
+        setCompleted(currentCompleted => new Set(currentCompleted).add(stepNum));
     }
-    const onComplete = () => {
+    const onComplete = async () => {
         onExit();
     }
-    return (
-        <Wizard
-            canProceed={nextEnabled}
-            onNextStep={() => setNextEnabled(false)}
-            onComplete={onComplete}
-            showProgressBar={true}>
-
-            <RepositoryCreationStep
+    const steps = [
+        {
+            label: 'Create Repository',
+            component: <RepositoryCreationStep
+                stepNum
                 repoCreationError={repoCreationError}
                 createRepo={createRepo}
                 onCancel={onExit}
-                onComplete={completedStep} />
-
-            <ImportDataStep
+                onComplete={(values) => {
+                    completedStep(values, 0);
+                }} />,
+        },
+        {
+            label: 'Import Data',
+            optional: true,
+            component: <ImportDataStep
                 repoId={state.repoId}
-                onComplete={completedStep}
-                branchName={state.branch} />
-        </Wizard>
+                onComplete={(values) => {
+                    completedStep(values, 1);
+                }}
+                branchName={state.branch} />,
+        },
+    ];
+    return (
+        <>
+            <Wizard steps={steps} isShowBack={false} completed={completed} onDone={onComplete}/>
+        </>
     );
 }
 

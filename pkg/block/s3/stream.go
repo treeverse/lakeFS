@@ -8,9 +8,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/logging"
-
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 const (

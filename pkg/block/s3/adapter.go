@@ -28,8 +28,6 @@ const (
 
 	// Chunks smaller than that are only allowed for the last chunk upload
 	minChunkSize = 8 * 1024
-
-	ExpireObjectS3Tag = "lakefs_expire_object"
 )
 
 var (
