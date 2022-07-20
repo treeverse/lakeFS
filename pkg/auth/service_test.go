@@ -1397,7 +1397,8 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 		friendlyName       string
 		source             string
 		responseStatusCode int
-		expectedResponseID int64
+		responseID         int64
+		expectedResponseID string
 		expectedErr        error
 	}{
 		{
@@ -1406,8 +1407,9 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 			email:              "foo@gmail.com",
 			friendlyName:       "friendly foo",
 			source:             "internal",
+			responseID:         1,
 			responseStatusCode: http.StatusCreated,
-			expectedResponseID: 1,
+			expectedResponseID: "1",
 			expectedErr:        nil,
 		},
 		{
@@ -1447,7 +1449,7 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 					StatusCode: tt.responseStatusCode,
 				},
 				JSON201: &auth.User{
-					Id: tt.expectedResponseID,
+					Id: tt.responseID,
 				},
 			}
 			mockClient.EXPECT().CreateUserWithResponse(gomock.Any(), auth.CreateUserJSONRequestBody{
@@ -1467,7 +1469,7 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 				t.Fatalf("CreateUser: expected err: %s got: %s", tt.expectedErr, err)
 			}
 			if res != tt.expectedResponseID {
-				t.Fatalf("CreateUser: expected user.id: %d got: %d", tt.expectedResponseID, res)
+				t.Fatalf("CreateUser: expected user.id: %s got: %s", tt.expectedResponseID, res)
 			}
 		})
 	}
