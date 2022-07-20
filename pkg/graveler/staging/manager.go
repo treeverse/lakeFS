@@ -14,21 +14,6 @@ type Manager struct {
 	log   logging.Logger
 }
 
-func valueFromProto(pb *graveler.StagedEntry) *graveler.Value {
-	return &graveler.Value{
-		Identity: pb.Identity,
-		Data:     pb.Data,
-	}
-}
-
-func protoFromValue(key []byte, v *graveler.Value) *graveler.StagedEntry {
-	return &graveler.StagedEntry{
-		Key:      key,
-		Identity: v.Identity,
-		Data:     v.Data,
-	}
-}
-
 func NewManager(store kv.StoreMessage) *Manager {
 	return &Manager{
 		store: store,
@@ -37,7 +22,7 @@ func NewManager(store kv.StoreMessage) *Manager {
 }
 
 func (m *Manager) Get(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.Value, error) {
-	data := &graveler.StagedEntry{}
+	data := &graveler.StagedEntryData{}
 	_, err := m.store.GetMsg(ctx, string(st), key, data)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
@@ -49,7 +34,7 @@ func (m *Manager) Get(ctx context.Context, st graveler.StagingToken, key gravele
 	if data.Identity == nil {
 		return nil, nil
 	}
-	return valueFromProto(data), nil
+	return graveler.StagedEntryFromProto(data), nil
 }
 
 func (m *Manager) Set(ctx context.Context, st graveler.StagingToken, key graveler.Key, value *graveler.Value, overwrite bool) error {
@@ -61,7 +46,7 @@ func (m *Manager) Set(ctx context.Context, st graveler.StagingToken, key gravele
 	}
 
 	var err error
-	pb := protoFromValue(key, value)
+	pb := graveler.ProtoFromStagedEntry(key, value)
 	if overwrite {
 		err = m.store.SetMsg(ctx, string(st), key, pb)
 	} else {
@@ -75,7 +60,7 @@ func (m *Manager) Set(ctx context.Context, st graveler.StagingToken, key gravele
 
 func (m *Manager) DropKey(ctx context.Context, st graveler.StagingToken, key graveler.Key) error {
 	// Simulate DB behavior - fail if key doesn't exist. See: https://github.com/treeverse/lakeFS/issues/3640
-	data := &graveler.StagedEntry{}
+	data := &graveler.StagedEntryData{}
 	_, err := m.store.GetMsg(ctx, string(st), key, data)
 	if err != nil {
 		return err

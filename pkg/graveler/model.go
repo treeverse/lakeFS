@@ -9,6 +9,7 @@ const (
 	gravelerPartition = "graveler"
 	reposPrefix       = "repos"
 	tagsPrefix        = "tags"
+	branchesPrefix    = "branches"
 	commitsPrefix     = "commits"
 )
 
@@ -24,12 +25,16 @@ func RepositoriesPartition() string {
 // RepoPartition - The partition under which all the repository's entities (branched, commits, tags)
 // The Repository object itself is found under the common RepositoriesPartition, as it is needed to
 // generate this partition
-func RepoPartition(repoID RepositoryID, _ Repository) string {
-	return repoID.String()
+func RepoPartition(repo *RepositoryRecord) string {
+	return repo.RepositoryID.String()
 }
 
 func TagPath(tagID TagID) string {
 	return kv.FormatPath(tagsPrefix, tagID.String())
+}
+
+func BranchPath(branchID BranchID) string {
+	return kv.FormatPath(branchesPrefix, branchID.String())
 }
 
 func CommitPath(commitID CommitID) string {
@@ -91,5 +96,20 @@ func ProtoFromRepo(repo *RepositoryRecord) *RepositoryData {
 		StorageNamespace: repo.Repository.StorageNamespace.String(),
 		DefaultBranchId:  repo.Repository.DefaultBranchID.String(),
 		CreationDate:     timestamppb.New(repo.Repository.CreationDate),
+	}
+}
+
+func StagedEntryFromProto(pb *StagedEntryData) *Value {
+	return &Value{
+		Identity: pb.Identity,
+		Data:     pb.Data,
+	}
+}
+
+func ProtoFromStagedEntry(key []byte, v *Value) *StagedEntryData {
+	return &StagedEntryData{
+		Key:      key,
+		Identity: v.Identity,
+		Data:     v.Data,
 	}
 }
