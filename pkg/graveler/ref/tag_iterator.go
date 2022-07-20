@@ -8,26 +8,28 @@ import (
 )
 
 type KVTagIterator struct {
-	it     kv.MessageIterator
-	err    error
-	value  *graveler.TagRecord
-	repoID graveler.RepositoryID
-	store  kv.Store
-	ctx    context.Context
+	it         kv.MessageIterator
+	err        error
+	value      *graveler.TagRecord
+	repoID     graveler.RepositoryID
+	repository graveler.Repository
+	store      kv.Store
+	ctx        context.Context
 }
 
-func NewKVTagIterator(ctx context.Context, store *kv.StoreMessage, repositoryID graveler.RepositoryID) (*KVTagIterator, error) {
+func NewKVTagIterator(ctx context.Context, store *kv.StoreMessage, repositoryID graveler.RepositoryID, repository graveler.Repository) (*KVTagIterator, error) {
 	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.TagData{}).ProtoReflect().Type(),
-		graveler.TagPartition(repositoryID),
+		graveler.RepoPartition(repositoryID, repository),
 		[]byte(graveler.TagPath("")), kv.IteratorOptionsFrom([]byte("")))
 	if err != nil {
 		return nil, err
 	}
 	return &KVTagIterator{
-		it:     it,
-		store:  store.Store,
-		repoID: repositoryID,
-		ctx:    ctx,
+		it:         it,
+		store:      store.Store,
+		repoID:     repositoryID,
+		repository: repository,
+		ctx:        ctx,
 	}, nil
 }
 
@@ -60,7 +62,7 @@ func (i *KVTagIterator) SeekGE(id graveler.TagID) {
 	if i.Err() == nil {
 		i.it.Close()
 		it, err := kv.NewPrimaryIterator(i.ctx, i.store, (&graveler.TagData{}).ProtoReflect().Type(),
-			graveler.TagPartition(i.repoID),
+			graveler.RepoPartition(i.repoID, i.repository),
 			[]byte(graveler.TagPath("")), kv.IteratorOptionsFrom([]byte(graveler.TagPath(id))))
 		i.it = it
 		i.value = nil
