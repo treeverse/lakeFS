@@ -1615,6 +1615,7 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 			return nil, err
 		}
 		credentials := resp.JSON200
+		// TODO(Guys): return username instead of this call
 		user, err := a.GetUserByID(ctx, model.ConvertDBID(credentials.UserId))
 		if err != nil {
 			return nil, err
