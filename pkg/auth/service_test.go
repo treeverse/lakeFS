@@ -2400,10 +2400,11 @@ func TestAPIAuthService_GetPolicy(t *testing.T) {
 			if err != nil {
 				return
 			}
-			if policy.DisplayName != tt.responseName {
-				t.Errorf("expected response policy name:%s, got:%s", tt.responseName, policy.DisplayName)
+
+			if response.JSON200 == nil {
+				t.Fatal("GetPolicy: unexpected return of nil policy")
 			}
-			// TODO(Guys): compare returned policy values
+			policyEquals(t, *response.JSON200, policy)
 		})
 	}
 }
@@ -2466,23 +2467,67 @@ func policyListsEquals(t *testing.T, authPolicies []auth.Policy, modelPolicies [
 		policyEquals(t, ap, modelPolicies[i])
 	}
 }
-func TestAPIAuthService_ListPolicies(t *testing.T) {
+
+func TestAPIAuthService_ListUserPolicies(t *testing.T) {
 	mockClient, s := GetApiService(t)
 	resPolicies := authPoliciesForTesting
 	policyList := auth.PolicyList{
 		Pagination: auth.Pagination{},
 		Results:    resPolicies,
 	}
-	response := &auth.ListPoliciesResponse{
-		HTTPResponse: &http.Response{StatusCode: http.StatusOK},
-	}
-	response.JSON200 = &policyList
-	mockClient.EXPECT().ListPoliciesWithResponse(gomock.Any(), gomock.Any()).Return(response, nil)
-	policies, _, err := s.ListPolicies(context.Background(), &model.PaginationParams{})
-	if err != nil {
-		t.Errorf("failed with error - %s", err)
-	}
-	policyListsEquals(t, resPolicies, policies)
+
+	t.Run("policies", func(t *testing.T) {
+		response := &auth.ListPoliciesResponse{
+			HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+			JSON200:      &policyList,
+		}
+		mockClient.EXPECT().ListPoliciesWithResponse(gomock.Any(), gomock.Any()).Return(response, nil)
+		policies, _, err := s.ListPolicies(context.Background(), &model.PaginationParams{})
+		if err != nil {
+			t.Errorf("failed with error - %s", err)
+		}
+		policyListsEquals(t, resPolicies, policies)
+	})
+
+	t.Run("user policies", func(t *testing.T) {
+		username := "username"
+		response := &auth.ListUserPoliciesResponse{
+			HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+			JSON200:      &policyList,
+		}
+		mockClient.EXPECT().ListUserPoliciesWithResponse(gomock.Any(), username, gomock.Any()).Return(response, nil)
+		policies, _, err := s.ListUserPolicies(context.Background(), username, &model.PaginationParams{})
+		if err != nil {
+			t.Errorf("failed with error - %s", err)
+		}
+		policyListsEquals(t, resPolicies, policies)
+	})
+	t.Run("group policies", func(t *testing.T) {
+		response := &auth.ListGroupPoliciesResponse{
+			HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+			JSON200:      &policyList,
+		}
+		const groupName = "groupName"
+		mockClient.EXPECT().ListGroupPoliciesWithResponse(gomock.Any(), groupName, gomock.Any()).Return(response, nil)
+		policies, _, err := s.ListGroupPolicies(context.Background(), groupName, &model.PaginationParams{})
+		if err != nil {
+			t.Errorf("failed with error - %s", err)
+		}
+		policyListsEquals(t, resPolicies, policies)
+	})
+	t.Run("effective policies", func(t *testing.T) {
+		response := &auth.ListUserPoliciesResponse{
+			HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+			JSON200:      &policyList,
+		}
+		const username = "username"
+		mockClient.EXPECT().ListUserPoliciesWithResponse(gomock.Any(), username, gomock.Any()).Return(response, nil)
+		policies, _, err := s.ListEffectivePolicies(context.Background(), username, &model.PaginationParams{})
+		if err != nil {
+			t.Errorf("failed with error - %s", err)
+		}
+		policyListsEquals(t, resPolicies, policies)
+	})
 }
 
 func TestAPIAuthService_DeletePolicy(t *testing.T) {
