@@ -72,28 +72,42 @@ func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, db db.Data
 	}
 }
 
-// getRepositoryRec returns RepositoryRecord
-func (m *KVManager) getRepositoryRec(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
-	repo, err := m.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	return &graveler.RepositoryRecord{
-		RepositoryID: repositoryID,
-		Repository:   repo,
-	}, nil
-}
-
-func (m *KVManager) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, error) {
+// getRepositoryRecWithPredicate returns a RepositoryRecord and the kv.Predicate returned by GetMsg
+func (m *KVManager) getRepositoryRecWithPredicate(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, kv.Predicate, error) {
 	repo := graveler.RepositoryData{}
-	_, err := m.kvStore.GetMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID)), &repo)
+	pred, err := m.kvStore.GetMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID)), &repo)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrRepositoryNotFound
 		}
-		return nil, err
+		return nil, nil, err
 	}
-	return graveler.RepoFromProto(&repo).Repository, nil
+	return graveler.RepoFromProto(&repo), pred, nil
+}
+
+// getRepositoryRec returns RepositoryRecord
+func (m *KVManager) getRepositoryRec(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
+	repoRec, _, err := m.getRepositoryRecWithPredicate(ctx, repositoryID)
+	return repoRec, err
+}
+
+// getRepositoryWithPredicate returns a Repository and the kv.Predicate returned by GetMsg
+func (m *KVManager) getRepositoryWithPredicate(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, kv.Predicate, error) {
+	repoRec, pred, err := m.getRepositoryRecWithPredicate(ctx, repositoryID)
+	if err != nil {
+		return nil, nil, err
+	}
+	return repoRec.Repository, pred, nil
+}
+
+// getRepositoryWith returns a Repository
+func (m *KVManager) getRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, error) {
+	repo, _, err := m.getRepositoryWithPredicate(ctx, repositoryID)
+	return repo, err
+}
+
+func (m *KVManager) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, error) {
+	return m.getRepository(ctx, repositoryID)
 }
 
 func (m *KVManager) createBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
