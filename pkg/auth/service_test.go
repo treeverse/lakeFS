@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -11,6 +12,8 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/go-openapi/swag"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/davecgh/go-spew/spew"
@@ -1599,27 +1602,220 @@ func GetApiService(t *testing.T) (*mock.MockClientWithResponsesInterface, *auth.
 	return mockClient, s
 }
 
+func TestAPIAuthService_GetUser(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	tests := []struct {
+		name               string
+		userName           string
+		email              string
+		friendlyName       string
+		source             string
+		encryptedPassword  []byte
+		responseStatusCode int
+		responseName       string
+		expectedResponseID string
+		expectedErr        error
+	}{
+		{
+			name:               "successful",
+			userName:           "foo",
+			email:              "foo@gmail.com",
+			encryptedPassword:  []byte("password"),
+			friendlyName:       "friendly foo",
+			source:             "internal",
+			responseName:       "foo",
+			responseStatusCode: http.StatusOK,
+			expectedErr:        nil,
+		},
+		{
+			name:               "Invalid user",
+			userName:           "",
+			email:              "",
+			encryptedPassword:  nil,
+			friendlyName:       "",
+			source:             "",
+			responseStatusCode: http.StatusBadRequest,
+			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
+		},
+		{
+			name:               "Internal error",
+			userName:           "user",
+			email:              "",
+			encryptedPassword:  nil,
+			source:             "",
+			responseStatusCode: http.StatusInternalServerError,
+			expectedErr:        auth.ErrUnexpectedStatusCode,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			response := &auth.GetUserResponse{
+				HTTPResponse: &http.Response{
+					StatusCode: tt.responseStatusCode,
+				},
+				JSON200: &auth.User{
+					Name:              tt.responseName,
+					Email:             &tt.email,
+					FriendlyName:      &tt.friendlyName,
+					Source:            &tt.source,
+					EncryptedPassword: tt.encryptedPassword,
+				},
+			}
+			mockClient.EXPECT().GetUserWithResponse(gomock.Any(), tt.userName).Return(response, nil)
+			ctx := context.Background()
+			user, err := s.GetUser(ctx, tt.userName)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("GetUser: expected err: %s got: %s", tt.expectedErr, err)
+			}
+			if err != nil {
+				return
+			}
+			if user.Username != tt.responseName {
+				t.Errorf("expected response user name:%s, got:%s", tt.responseName, user.Username)
+			}
+			if swag.StringValue(user.Email) != tt.email {
+				t.Errorf("expected response email :%s, got:%s", tt.responseName, swag.StringValue(user.Email))
+			}
+			if swag.StringValue(user.FriendlyName) != tt.friendlyName {
+				t.Errorf("expected response friendly name :%s, got:%s", tt.responseName, swag.StringValue(user.FriendlyName))
+			}
+			if user.Source != tt.source {
+				t.Errorf("expected response source :%s, got:%s", tt.responseName, user.Source)
+			}
+			if !bytes.Equal(user.EncryptedPassword, tt.encryptedPassword) {
+				t.Errorf("expected response password :%s, got:%s", tt.encryptedPassword, user.EncryptedPassword)
+			}
+		})
+	}
+}
+
 func TestAPIAuthService_GetGroup(t *testing.T) {
 	mockClient, s := GetApiService(t)
-	const groupName = "groupName"
-	const creationDate = 12345678
+	tests := []struct {
+		name               string
+		groupName          string
+		responseStatusCode int
+		responseName       string
+		expectedErr        error
+	}{
+		{
+			name:               "successful",
+			groupName:          "foo",
+			responseName:       "foo",
+			responseStatusCode: http.StatusOK,
+			expectedErr:        nil,
+		},
+		{
+			name:               "Invalid group",
+			groupName:          "",
+			responseStatusCode: http.StatusBadRequest,
+			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
+		},
+		{
+			name:        "Internal error",
+			groupName:   "group",
+			expectedErr: auth.ErrUnexpectedStatusCode,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			response := &auth.GetGroupResponse{
+				HTTPResponse: &http.Response{
+					StatusCode: tt.responseStatusCode,
+				},
+				JSON200: &auth.Group{
+					Name: tt.responseName,
+				},
+			}
+			mockClient.EXPECT().GetGroupWithResponse(gomock.Any(), tt.groupName).Return(response, nil)
+			ctx := context.Background()
+			group, err := s.GetGroup(ctx, tt.groupName)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("GetGroup: expected err: %s got: %s", tt.expectedErr, err)
+			}
+			if err != nil {
+				return
+			}
+			if group.DisplayName != tt.responseName {
+				t.Errorf("expected response group name:%s, got:%s", tt.responseName, group.DisplayName)
+			}
+		})
+	}
+}
 
-	response := &auth.GetGroupResponse{
-		HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+func TestAPIAuthService_GetCredentials(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	tests := []struct {
+		name               string
+		responseStatusCode int
+		reqAccessKey       string
+		accessKey          string
+		secretKey          string
+		username           string
+		expectedErr        error
+	}{
+		{
+			name:               "successful",
+			reqAccessKey:       "AKIA",
+			accessKey:          "AKIA",
+			secretKey:          "SECRET",
+			username:           "foo",
+			responseStatusCode: http.StatusOK,
+			expectedErr:        nil,
+		},
+		{
+			name:               "Invalid credentials",
+			reqAccessKey:       "AKIA",
+			responseStatusCode: http.StatusBadRequest,
+			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
+		},
+		{
+			name:         "Internal error",
+			reqAccessKey: "AKIA",
+			expectedErr:  auth.ErrUnexpectedStatusCode,
+		},
 	}
-	if http.StatusOK == http.StatusOK {
-		response.JSON200 = &auth.Group{
-			CreationDate: creationDate,
-			Name:         groupName,
-		}
-	}
-	mockClient.EXPECT().GetGroupWithResponse(gomock.Any(), groupName).Return(response, nil)
-	group, err := s.GetGroup(context.Background(), groupName)
-	if err != nil {
-		t.Errorf("failed with error - %s", err)
-	}
-	if group.DisplayName != groupName {
-		t.Errorf("expected group name: %s got: %s ", groupName, group.DisplayName)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			response := &auth.GetCredentialsResponse{
+				HTTPResponse: &http.Response{
+					StatusCode: tt.responseStatusCode,
+				},
+				JSON200: &auth.CredentialsWithSecret{
+					AccessKeyId:     tt.accessKey,
+					SecretAccessKey: tt.secretKey,
+				},
+			}
+			mockClient.EXPECT().GetCredentialsWithResponse(gomock.Any(), tt.accessKey).Return(response, nil)
+			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(&auth.ListUsersResponse{
+				HTTPResponse: &http.Response{
+					StatusCode: http.StatusOK,
+				},
+				JSON200: &auth.UserList{
+					Pagination: auth.Pagination{},
+					Results: []auth.User{{
+						Name: tt.username,
+					}},
+				},
+			}, nil)
+			ctx := context.Background()
+			credentials, err := s.GetCredentials(ctx, tt.accessKey)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("GetCredentials: expected err: %s got: %s", tt.expectedErr, err)
+			}
+			if err != nil {
+				return
+			}
+			if credentials.AccessKeyID != tt.accessKey {
+				t.Errorf("expected response accessKey:%s, got:%s", tt.accessKey, credentials.AccessKeyID)
+			}
+			if credentials.SecretAccessKey != tt.secretKey {
+				t.Errorf("expected response secretKey:%s, got:%s", tt.accessKey, credentials.SecretAccessKey)
+			}
+			if credentials.Username != tt.username {
+				t.Errorf("expected response username:%s, got:%s", tt.username, credentials.Username)
+			}
+		})
 	}
 }
 
