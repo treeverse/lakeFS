@@ -20,7 +20,7 @@ The lakefs-client pacakge was created by [OpenAPI Generator](https://openapi-gen
 
 ## Install lakeFS Python Client API
 
-Install the Python Client using pip:
+Install the Python client using pip:
 
 
 ```shell
