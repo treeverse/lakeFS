@@ -2408,6 +2408,83 @@ func TestAPIAuthService_GetPolicy(t *testing.T) {
 	}
 }
 
+var authPoliciesForTesting = []auth.Policy{{
+	Statement: []auth.Statement{
+		{
+			Action:   []string{"auth:DeleteUser"},
+			Resource: "arn:lakefs:auth:::user/foobar",
+			Effect:   model.StatementEffectAllow,
+		},
+		{
+			Action:   []string{"auth:*"},
+			Resource: "*",
+			Effect:   model.StatementEffectDeny,
+		},
+	},
+},
+}
+
+func statementEquals(t *testing.T, authStatement []auth.Statement, modalStatement []model.Statement) {
+	t.Helper()
+	if len(authStatement) != len(modalStatement) {
+		t.Errorf(" amoumt of statements:  (authPolicy)%d != (modelPolicy)%d", len(authStatement), len(modalStatement))
+		return
+	}
+	for i, authS := range authStatement {
+		if authS.Effect != modalStatement[i].Effect {
+			t.Errorf("Effect  (authStatement)%s != (modelStatement)%s", modalStatement[i].Effect, authS.Effect)
+		}
+		if authS.Resource != modalStatement[i].Resource {
+			t.Errorf("Resource  (authStatement)%s != (modelStatement)%s", modalStatement[i].Resource, authS.Resource)
+		}
+		if diff := deep.Equal(authS.Action, modalStatement[i].Action); diff != nil {
+			t.Errorf("Action diff %s", diff)
+		}
+	}
+}
+
+func policyEquals(t *testing.T, authPolicy auth.Policy, modelPolicy *model.Policy) {
+	t.Helper()
+	if authPolicy.Name == "" && modelPolicy == nil {
+		return
+	}
+	if modelPolicy == nil {
+		t.Errorf("got nil modelPolicy nil comparing to authPolicy:%s", authPolicy.Name)
+	}
+	if authPolicy.Name != modelPolicy.DisplayName {
+		t.Errorf("non equal name %s != %s", authPolicy.Name, modelPolicy.DisplayName)
+	}
+	statementEquals(t, authPolicy.Statement, modelPolicy.Statement)
+}
+
+func policyListsEquals(t *testing.T, authPolicies []auth.Policy, modelPolicies []*model.Policy) {
+	t.Helper()
+	if len(authPolicies) != len(modelPolicies) {
+		t.Fatalf("got %d policies expected:%d", len(authPolicies), len(modelPolicies))
+	}
+	for i, ap := range authPolicies {
+		policyEquals(t, ap, modelPolicies[i])
+	}
+}
+func TestAPIAuthService_ListPolicies(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	resPolicies := authPoliciesForTesting
+	policyList := auth.PolicyList{
+		Pagination: auth.Pagination{},
+		Results:    resPolicies,
+	}
+	response := &auth.ListPoliciesResponse{
+		HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+	}
+	response.JSON200 = &policyList
+	mockClient.EXPECT().ListPoliciesWithResponse(gomock.Any(), gomock.Any()).Return(response, nil)
+	policies, _, err := s.ListPolicies(context.Background(), &model.PaginationParams{})
+	if err != nil {
+		t.Errorf("failed with error - %s", err)
+	}
+	policyListsEquals(t, resPolicies, policies)
+}
+
 func TestAPIAuthService_DeletePolicy(t *testing.T) {
 	mockClient, s := GetApiService(t)
 	mockErr := errors.New("this is a mock error")
