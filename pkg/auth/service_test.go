@@ -1819,6 +1819,67 @@ func TestAPIAuthService_GetCredentials(t *testing.T) {
 	}
 }
 
+func TestAPIAuthService_GetCredentialsForUser(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	tests := []struct {
+		name               string
+		responseStatusCode int
+		reqAccessKey       string
+		accessKey          string
+		secretKey          string
+		username           string
+		expectedErr        error
+	}{
+		{
+			name:               "successful",
+			reqAccessKey:       "AKIA",
+			accessKey:          "AKIA",
+			secretKey:          "SECRET",
+			username:           "foo",
+			responseStatusCode: http.StatusOK,
+			expectedErr:        nil,
+		},
+		{
+			name:               "Invalid credentials",
+			reqAccessKey:       "AKIA",
+			responseStatusCode: http.StatusBadRequest,
+			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
+		},
+		{
+			name:         "Internal error",
+			reqAccessKey: "AKIA",
+			expectedErr:  auth.ErrUnexpectedStatusCode,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			response := &auth.GetCredentialsForUserResponse{
+				HTTPResponse: &http.Response{
+					StatusCode: tt.responseStatusCode,
+				},
+				JSON200: &auth.Credentials{
+					AccessKeyId: tt.accessKey,
+				},
+			}
+			mockClient.EXPECT().GetCredentialsForUserWithResponse(gomock.Any(), tt.username, tt.accessKey).Return(response, nil)
+			ctx := context.Background()
+			credentials, err := s.GetCredentialsForUser(ctx, tt.username, tt.accessKey)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("GetCredentials: expected err: %s got: %s", tt.expectedErr, err)
+			}
+			if err != nil {
+				return
+			}
+			if credentials.AccessKeyID != tt.accessKey {
+				t.Errorf("expected response accessKey:%s, got:%s", tt.accessKey, credentials.AccessKeyID)
+			}
+			if credentials.Username != tt.username {
+				t.Errorf("expected response username:%s, got:%s", tt.username, credentials.Username)
+			}
+		})
+	}
+}
+
 func TestAPIAuthService_ListGroups(t *testing.T) {
 	mockClient, s := GetApiService(t)
 	const groupNamePrefix = "groupNamePrefix"
