@@ -7,7 +7,7 @@ nav_order: 57
 has_children: false
 ---
 
-[Airbyte](https://airbyte.io//) is an open-source platform for syncinh data from applications, APIs, and databases to
+[Airbyte](https://airbyte.io//) is an open-source platform for syncing data from applications, APIs, and databases to
 warehouses, lakes, and other destinations. You can use Airbyte's connectors to get your data pipelines to consolidate
 many input sources.
 
