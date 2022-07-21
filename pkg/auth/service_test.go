@@ -2100,24 +2100,257 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 
 func TestAPIAuthService_CreateGroup(t *testing.T) {
 	mockClient, s := GetApiService(t)
-	const groupName = "groupName"
-	const creationDate = 12345678
-
-	mockClient.EXPECT().CreateGroupWithResponse(gomock.Any(), auth.CreateGroupJSONRequestBody{
-		Id: groupName,
-	}).Return(&auth.CreateGroupResponse{
-		HTTPResponse: &http.Response{StatusCode: http.StatusCreated},
-		JSON201: &auth.Group{
-			CreationDate: creationDate,
-			Name:         groupName,
+	tests := []struct {
+		name               string
+		groupName          string
+		email              string
+		friendlyName       string
+		source             string
+		responseStatusCode int
+		responseName       string
+		expectedResponseID string
+		expectedErr        error
+	}{
+		{
+			name:               "successful",
+			groupName:          "foo",
+			email:              "foo@gmail.com",
+			friendlyName:       "friendly foo",
+			source:             "internal",
+			responseName:       "foo",
+			responseStatusCode: http.StatusCreated,
+			expectedErr:        nil,
 		},
-	}, nil)
-	err := s.CreateGroup(context.Background(), &model.Group{
-		CreatedAt:   time.Unix(creationDate, 0),
-		DisplayName: groupName,
-	})
-	if err != nil {
-		t.Errorf("failed with error - %s", err)
+		{
+			name:               "Invalid group",
+			groupName:          "",
+			email:              "foo@gmail.com",
+			friendlyName:       "friendly foo",
+			source:             "internal",
+			responseStatusCode: http.StatusBadRequest,
+			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
+		},
+		{
+			name:               "group exists",
+			groupName:          "existingGroup",
+			email:              "foo@gmail.com",
+			friendlyName:       "friendly foo",
+			source:             "internal",
+			responseStatusCode: http.StatusConflict,
+			expectedErr:        auth.ErrAlreadyExists,
+		},
+		{
+			name:               "Internal errer",
+			groupName:          "group",
+			email:              "foo@gmail.com",
+			source:             "internal",
+			responseStatusCode: http.StatusInternalServerError,
+			expectedErr:        auth.ErrUnexpectedStatusCode,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			response := &auth.CreateGroupResponse{
+				HTTPResponse: &http.Response{
+					StatusCode: tt.responseStatusCode,
+				},
+				JSON201: &auth.Group{
+					Name: tt.responseName,
+				},
+			}
+			mockClient.EXPECT().CreateGroupWithResponse(gomock.Any(), auth.CreateGroupJSONRequestBody{
+				Id: tt.groupName,
+			}).Return(response, nil)
+			ctx := context.Background()
+			err := s.CreateGroup(ctx, &model.Group{
+				DisplayName: tt.groupName,
+			})
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("CreateGroup: expected err: %s got: %s", tt.expectedErr, err)
+			}
+		})
+	}
+}
+
+func TestAPIAuthService_CreateCredentials(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	tests := []struct {
+		name               string
+		username           string
+		returnedAccessKey  string
+		returnedSecretKey  string
+		email              string
+		friendlyName       string
+		source             string
+		responseStatusCode int
+		responseName       string
+		expectedResponseID string
+		expectedErr        error
+	}{
+		{
+			name:               "successful",
+			username:           "foo",
+			returnedAccessKey:  "AKIA",
+			returnedSecretKey:  "AKIASECRET",
+			email:              "foo@gmail.com",
+			friendlyName:       "friendly foo",
+			source:             "internal",
+			responseName:       "foo",
+			responseStatusCode: http.StatusCreated,
+			expectedErr:        nil,
+		},
+		{
+			name:               "Invalid username",
+			username:           "",
+			returnedAccessKey:  "AKIA",
+			returnedSecretKey:  "AKIASECRET",
+			email:              "foo@gmail.com",
+			friendlyName:       "friendly foo",
+			source:             "internal",
+			responseStatusCode: http.StatusBadRequest,
+			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
+		},
+		{
+			name:               "Internal errer",
+			username:           "credentials",
+			returnedAccessKey:  "AKIA",
+			returnedSecretKey:  "AKIASECRET",
+			email:              "foo@gmail.com",
+			source:             "internal",
+			responseStatusCode: http.StatusInternalServerError,
+			expectedErr:        auth.ErrUnexpectedStatusCode,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			response := &auth.CreateCredentialsResponse{
+				HTTPResponse: &http.Response{
+					StatusCode: tt.responseStatusCode,
+				},
+				JSON201: &auth.CredentialsWithSecret{
+					AccessKeyId:     tt.returnedAccessKey,
+					SecretAccessKey: tt.returnedSecretKey,
+				},
+			}
+			mockClient.EXPECT().CreateCredentialsWithResponse(gomock.Any(), tt.username, &auth.CreateCredentialsParams{}).Return(response, nil)
+			ctx := context.Background()
+			resCredentials, err := s.CreateCredentials(ctx, tt.username)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("CreateCredentials: expected err: %s got: %s", tt.expectedErr, err)
+			}
+			if err != nil {
+				return
+			}
+			if resCredentials.AccessKeyID != tt.returnedAccessKey {
+				t.Errorf("expected accessKeyID:%s, got:%s", tt.returnedAccessKey, resCredentials.AccessKeyID)
+			}
+			if resCredentials.SecretAccessKey != tt.returnedSecretKey {
+				t.Errorf("expected secretKeyID:%s, got:%s", tt.returnedSecretKey, resCredentials.SecretAccessKey)
+			}
+		})
+	}
+}
+
+func TestAPIAuthService_AddCredentials(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	tests := []struct {
+		name               string
+		username           string
+		returnedAccessKey  string
+		returnedSecretKey  string
+		accessKey          string
+		secretKey          string
+		email              string
+		friendlyName       string
+		source             string
+		responseStatusCode int
+		responseName       string
+		expectedResponseID string
+		expectedErr        error
+	}{
+		{
+			name:               "successful",
+			username:           "foo",
+			returnedAccessKey:  "AKIA",
+			returnedSecretKey:  "AKIASECRET",
+			accessKey:          "AKIA",
+			secretKey:          "AKIASECRET",
+			email:              "foo@gmail.com",
+			friendlyName:       "friendly foo",
+			source:             "internal",
+			responseName:       "foo",
+			responseStatusCode: http.StatusCreated,
+			expectedErr:        nil,
+		},
+		{
+			name:               "Invalid username",
+			username:           "",
+			returnedAccessKey:  "AKIA",
+			returnedSecretKey:  "AKIASECRET",
+			accessKey:          "",
+			secretKey:          "",
+			email:              "foo@gmail.com",
+			friendlyName:       "friendly foo",
+			source:             "internal",
+			responseStatusCode: http.StatusBadRequest,
+			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
+		},
+		{
+			name:               "credentials exists",
+			username:           "existingCredentials",
+			returnedAccessKey:  "",
+			returnedSecretKey:  "",
+			accessKey:          "AKIA",
+			secretKey:          "AKIASECRET",
+			email:              "foo@gmail.com",
+			friendlyName:       "friendly foo",
+			source:             "internal",
+			responseStatusCode: http.StatusConflict,
+			expectedErr:        auth.ErrAlreadyExists,
+		},
+		{
+			name:               "Internal errer",
+			username:           "credentials",
+			returnedAccessKey:  "",
+			returnedSecretKey:  "",
+			accessKey:          "AKIA",
+			secretKey:          "AKIASECRET",
+			email:              "foo@gmail.com",
+			source:             "internal",
+			responseStatusCode: http.StatusInternalServerError,
+			expectedErr:        auth.ErrUnexpectedStatusCode,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			response := &auth.CreateCredentialsResponse{
+				HTTPResponse: &http.Response{
+					StatusCode: tt.responseStatusCode,
+				},
+				JSON201: &auth.CredentialsWithSecret{
+					AccessKeyId:     tt.returnedAccessKey,
+					SecretAccessKey: tt.returnedSecretKey,
+				},
+			}
+			mockClient.EXPECT().CreateCredentialsWithResponse(gomock.Any(), tt.username, &auth.CreateCredentialsParams{
+				AccessKey: &tt.accessKey,
+				SecretKey: &tt.secretKey,
+			}).Return(response, nil)
+			ctx := context.Background()
+			resCredentials, err := s.AddCredentials(ctx, tt.username, tt.accessKey, tt.secretKey)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("CreateCredentials: expected err: %s got: %s", tt.expectedErr, err)
+			}
+			if err != nil {
+				return
+			}
+			if resCredentials.AccessKeyID != tt.returnedAccessKey {
+				t.Errorf("expected accessKeyID:%s, got:%s", tt.returnedAccessKey, resCredentials.AccessKeyID)
+			}
+			if resCredentials.SecretAccessKey != tt.returnedSecretKey {
+				t.Errorf("expected secretKeyID:%s, got:%s", tt.returnedSecretKey, resCredentials.SecretAccessKey)
+			}
+		})
 	}
 }
 
