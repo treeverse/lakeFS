@@ -1860,6 +1860,147 @@ func TestAPIAuthService_DeleteGroup(t *testing.T) {
 	}
 }
 
+func TestAPIAuthService_RemoveUserFromGroup(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	mockErr := errors.New("this is a mock error")
+	testTable := []struct {
+		name        string
+		groupName   string
+		username    string
+		mockErr     error
+		statusCode  int
+		expectedErr error
+	}{
+		{
+			name:        "no error",
+			groupName:   "group_name",
+			username:    "user_name",
+			mockErr:     nil,
+			statusCode:  http.StatusNoContent,
+			expectedErr: nil,
+		},
+		{
+			name:        "api error ",
+			groupName:   "group_name",
+			username:    "user_name",
+			mockErr:     mockErr,
+			statusCode:  http.StatusInternalServerError,
+			expectedErr: mockErr,
+		},
+		{
+			name:        "not found",
+			groupName:   "group_name",
+			username:    "user_name",
+			mockErr:     nil,
+			statusCode:  http.StatusNotFound,
+			expectedErr: auth.ErrNotFound,
+		},
+	}
+	for _, tt := range testTable {
+		t.Run(tt.name, func(t *testing.T) {
+			response := &auth.DeleteGroupMembershipResponse{
+				Body: nil,
+				HTTPResponse: &http.Response{
+					StatusCode: tt.statusCode,
+				},
+			}
+			mockClient.EXPECT().DeleteGroupMembershipWithResponse(gomock.Any(), tt.groupName, tt.username).Return(response, tt.mockErr)
+			err := s.RemoveUserFromGroup(context.Background(), tt.username, tt.groupName)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+			}
+		})
+	}
+}
+
+func TestAPIAuthService_ListUserGroups(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	const groupNamePrefix = "groupNamePrefix"
+	const creationDate = 12345678
+	amounts := []int{0, 1, 5}
+	for _, amount := range amounts {
+		t.Run(fmt.Sprintf("amount=%d", amount), func(t *testing.T) {
+			groups := make([]auth.Group, amount)
+			for i := 0; i < amount; i++ {
+				groups[i] = auth.Group{
+					CreationDate: creationDate,
+					Name:         fmt.Sprintf("%s-%d", groupNamePrefix, i),
+				}
+			}
+			groupList := auth.GroupList{
+				Pagination: auth.Pagination{},
+				Results:    groups,
+			}
+			response := &auth.ListUserGroupsResponse{
+				HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+			}
+			response.JSON200 = &groupList
+			const username = "userFoo"
+			mockClient.EXPECT().ListUserGroupsWithResponse(gomock.Any(), username, gomock.Any()).Return(response, nil)
+			group, _, err := s.ListUserGroups(context.Background(), username, &model.PaginationParams{})
+			if err != nil {
+				t.Errorf("failed with error - %s", err)
+			}
+
+			creationTime := time.Unix(creationDate, 0)
+			for i, g := range group {
+				if g == nil {
+					t.Fatalf("got nil group")
+				}
+				expected := fmt.Sprintf("%s-%d", groupNamePrefix, i)
+				if g.DisplayName != expected {
+					t.Errorf("expected displayName:%s got:%s", g.DisplayName, expected)
+				}
+				if !g.CreatedAt.Equal(creationTime) {
+					t.Errorf("ecpected created date: %s got:%s for %s", g.CreatedAt, creationTime, expected)
+				}
+			}
+		})
+	}
+}
+
+func TestAPIAuthService_ListUserCredentials(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	const accessKeyPrefix = "AKIA"
+	const creationDate = 12345678
+	amounts := []int{0, 1, 5}
+	for _, amount := range amounts {
+		t.Run(fmt.Sprintf("amount=%d", amount), func(t *testing.T) {
+			credentials := make([]auth.Credentials, amount)
+			for i := 0; i < amount; i++ {
+				credentials[i] = auth.Credentials{
+					CreationDate: creationDate,
+					AccessKeyId:  fmt.Sprintf("%s-%d", accessKeyPrefix, i),
+				}
+			}
+			credentialsList := auth.CredentialsList{
+				Pagination: auth.Pagination{},
+				Results:    credentials,
+			}
+			response := &auth.ListUserCredentialsResponse{
+				HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+			}
+			response.JSON200 = &credentialsList
+			const username = "userFoo"
+			mockClient.EXPECT().ListUserCredentialsWithResponse(gomock.Any(), username, gomock.Any()).Return(response, nil)
+			resCredentials, _, err := s.ListUserCredentials(context.Background(), username, &model.PaginationParams{})
+			if err != nil {
+				t.Errorf("failed with error - %s", err)
+			}
+
+			for i, g := range resCredentials {
+				if g == nil {
+					t.Fatalf("got nil credentials")
+				}
+				expected := fmt.Sprintf("%s-%d", accessKeyPrefix, i)
+				if g.AccessKeyID != expected {
+					t.Errorf("expected displayName:%s got:%s", g.AccessKeyID, expected)
+				}
+			}
+		})
+	}
+}
+
 type PolicyRequest struct {
 }
 
@@ -1953,100 +2094,6 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 			}
 
 			// TODO(Guys): compare result with deep or reflect or...
-		})
-	}
-}
-
-func TestAPIAuthService_RemoveUserFromGroup(t *testing.T) {
-	mockClient, s := GetApiService(t)
-	const username = "userFoo"
-	const groupName = "groupFoo"
-
-	mockErr := errors.New("this is a mock error")
-
-	testTable := []struct {
-		name        string
-		mockErr     error
-		statusCode  int
-		expectedErr error
-	}{
-		{
-			name:        "no error",
-			mockErr:     nil,
-			statusCode:  http.StatusNoContent,
-			expectedErr: nil,
-		},
-		{
-			name:        "api error ",
-			mockErr:     mockErr,
-			statusCode:  0,
-			expectedErr: mockErr,
-		},
-		{
-			name:        "not found",
-			mockErr:     nil,
-			statusCode:  http.StatusNotFound,
-			expectedErr: auth.ErrNotFound,
-		},
-	}
-	for _, tt := range testTable {
-		t.Run(tt.name, func(t *testing.T) {
-			response := &auth.DeleteGroupMembershipResponse{
-				Body: nil,
-				HTTPResponse: &http.Response{
-					StatusCode: tt.statusCode,
-				},
-			}
-			mockClient.EXPECT().DeleteGroupMembershipWithResponse(gomock.Any(), groupName, username).Return(response, tt.mockErr)
-			err := s.RemoveUserFromGroup(context.Background(), username, groupName)
-			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
-			}
-		})
-	}
-}
-func TestAPIAuthService_ListUserGroups(t *testing.T) {
-	mockClient, s := GetApiService(t)
-	const groupNamePrefix = "groupNamePrefix"
-	const creationDate = 12345678
-	amounts := []int{0, 1, 5}
-	for _, amount := range amounts {
-		t.Run(fmt.Sprintf("amount=%d", amount), func(t *testing.T) {
-			groups := make([]auth.Group, amount)
-			for i := 0; i < amount; i++ {
-				groups[i] = auth.Group{
-					CreationDate: creationDate,
-					Name:         fmt.Sprintf("%s-%d", groupNamePrefix, i),
-				}
-			}
-			groupList := auth.GroupList{
-				Pagination: auth.Pagination{},
-				Results:    groups,
-			}
-			response := &auth.ListUserGroupsResponse{
-				HTTPResponse: &http.Response{StatusCode: http.StatusOK},
-			}
-			response.JSON200 = &groupList
-			const username = "userFoo"
-			mockClient.EXPECT().ListUserGroupsWithResponse(gomock.Any(), username, gomock.Any()).Return(response, nil)
-			group, _, err := s.ListUserGroups(context.Background(), username, &model.PaginationParams{})
-			if err != nil {
-				t.Errorf("failed with error - %s", err)
-			}
-
-			creationTime := time.Unix(creationDate, 0)
-			for i, g := range group {
-				if g == nil {
-					t.Fatalf("got nil group")
-				}
-				expected := fmt.Sprintf("%s-%d", groupNamePrefix, i)
-				if g.DisplayName != expected {
-					t.Errorf("expected displayName:%s got:%s", g.DisplayName, expected)
-				}
-				if !g.CreatedAt.Equal(creationTime) {
-					t.Errorf("ecpected created date: %s got:%s for %s", g.CreatedAt, creationTime, expected)
-				}
-			}
 		})
 	}
 }
