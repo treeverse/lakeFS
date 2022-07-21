@@ -1,22 +1,22 @@
 import {useAPI} from "../../../lib/hooks/api";
 import {templates} from "../../../lib/api";
-import {Loading} from "../../../lib/components/controls";
-import {Box, Tab, Tabs} from "@mui/material";
+import {Error, Loading} from "../../../lib/components/controls";
+import {Box, Tab} from "@mui/material";
 import React, {useState} from "react";
-import {TabPanel} from "../../../lib/components/tab_utils";
+import {CodeTabPanel, TabsWrapper} from "../../../lib/components/nav";
 
 const SPARK_SUBMIT_TEMPLATE_NAME = 'spark.conf.tt';
 const SPARK_EMR_TEMPLATE_NAME = 'spark.conf.tt';
 const SPARK_DATABRICKS_TEMPLATE_NAME = 'spark.conf.tt';
+const lakeFSURLProp = {lakefs_url: window.location.origin};
 
-export const SparkConfigStep = () => {
+export const SparkConfigStep = ({onComplete=()=>{}}) => {
     const [confIndex, setConfIndex] = useState(0);
     const {loading, error, response} = useAPI(async () => {
-        const lakeFSURLProp = {lakefs_url: window.location.origin};
         const sparkSubmitConfig = await templates.expandTemplate(SPARK_SUBMIT_TEMPLATE_NAME, lakeFSURLProp);
         const sparkEmrConfig = await templates.expandTemplate(SPARK_EMR_TEMPLATE_NAME, lakeFSURLProp);
         const sparkDBConfig = await templates.expandTemplate(SPARK_DATABRICKS_TEMPLATE_NAME, lakeFSURLProp);
-
+        onComplete();
         return [
             {conf: sparkSubmitConfig, title: 'spark-submit'},
             {conf: sparkEmrConfig, title: 'EMR'},
@@ -25,37 +25,34 @@ export const SparkConfigStep = () => {
     });
 
     if (error) {
-       console.log(error);
+        return <Error error={error}/>;
     }
     if (loading) {
-        return  <Loading />;
+        return <Loading/>;
     }
 
     const tabs = response.map((confObj, index) => {
         return {
-            tab: <Tab key={index} label={confObj.title} />,
-            tabPanel: <TabPanel key={index} value={confIndex} index={index}>{confObj.conf}</TabPanel>
+            tab: <Tab key={index} label={confObj.title}/>,
+            tabPanel: <CodeTabPanel key={index} value={confIndex} index={index}>{confObj.conf}</CodeTabPanel>
         }
     });
     const handleChange = (_, newConf) => {
         setConfIndex(newConf);
     }
     return (
-        // error ?
-        <>
-            <Box sx={{width: '100%'}}>
-                <Tabs
-                    value={confIndex}
-                    onChange={handleChange}
-                    textColor="primary"
-                    indicatorColor="primary"
-                    aria-label="spark configurations"
-                    centered
-                >
-                    {tabs.map((tabObj) => tabObj.tab)}
-                </Tabs>
+        error ?
+            <Error error={error}/> :
+            <Box sx={{display: 'flex', flexDirection: 'column', justifyContent: 'space-between'}}>
+                <Box sx={{width: '100%'}}>
+                    <TabsWrapper defaultTabIndex={confIndex} handleTabChange={handleChange}
+                                 ariaLabel='spark-configurations'>
+                        {tabs.map((tabObj) => tabObj.tab)}
+                    </TabsWrapper>
+                </Box>
+                <Box sx={{mt: 1}}>
+                    {tabs.map((tabObj) => tabObj.tabPanel)}
+                </Box>
             </Box>
-            {tabs.map((tabObj) => tabObj.tabPanel)}
-        </>
     );
 }
