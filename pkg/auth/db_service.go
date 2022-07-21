@@ -614,11 +614,11 @@ func (s *DBAuthService) WritePolicy(ctx context.Context, policy *model.Policy) e
 		if err := ValidatePolicy(policy); err != nil {
 			return nil, err
 		}
-		var id int64
-		return nil, tx.Get(&id, `
+		_, err := tx.Exec(`
 			INSERT INTO auth_policies (display_name, created_at, statement)
 			VALUES ($1, $2, $3)`,
 			policy.DisplayName, policy.CreatedAt, policy.Statement)
+		return nil, err
 	})
 	return err
 }
