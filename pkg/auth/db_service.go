@@ -615,12 +615,9 @@ func (s *DBAuthService) WritePolicy(ctx context.Context, policy *model.Policy) e
 			return nil, err
 		}
 		var id int64
-
 		return nil, tx.Get(&id, `
 			INSERT INTO auth_policies (display_name, created_at, statement)
-			VALUES ($1, $2, $3)
-			ON CONFLICT (display_name) DO UPDATE SET statement = $3
-			RETURNING id`,
+			VALUES ($1, $2, $3)`,
 			policy.DisplayName, policy.CreatedAt, policy.Statement)
 	})
 	return err

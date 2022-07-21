@@ -1904,7 +1904,7 @@ func testController_CreatePolicyHandler(t *testing.T, kvEnabled bool) {
 		verifyResponseOK(t, resp, err)
 	})
 
-	t.Run("override", func(t *testing.T) {
+	t.Run("override_policy", func(t *testing.T) {
 		// capture the current behaviour where we do not return conflict when we create a policy with the same ID
 		body := api.CreatePolicyJSONRequestBody{
 			CreationDate: api.Int64Ptr(time.Now().Unix()),
@@ -1922,7 +1922,11 @@ func testController_CreatePolicyHandler(t *testing.T, kvEnabled bool) {
 
 		body.Statement[0].Effect = "deny"
 		resp, err = clt.CreatePolicyWithResponse(ctx, body)
-		verifyResponseOK(t, resp, err)
+		testutil.Must(t, err)
+		expectedStatusCode := http.StatusConflict
+		if resp.StatusCode() != expectedStatusCode {
+			t.Fatalf("CreatePolicy while try to override status code=%d, expected to fail with %d", resp.StatusCode(), expectedStatusCode)
+		}
 	})
 
 	t.Run("invalid_policy_action", func(t *testing.T) {
