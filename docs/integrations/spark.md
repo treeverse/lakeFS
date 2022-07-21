@@ -10,7 +10,7 @@ redirect_from: ../using/spark.html
 
 # Using lakeFS with Spark
 {: .no_toc }
-[Apache Spark](https://spark.apache.org/) is a unified analytics engine for Big Data processing, with built-in modules for streaming, SQL, machine learning and graph processing.
+[Apache Spark](https://spark.apache.org/) is a multi-language engine for executing data engineering, data science, and machine learning on single-node machines or clusters
 
 {: .pb-5 }
 
