@@ -57,7 +57,7 @@ spark.databricks.delta.multiClusterWrites.enabled false
 When using multi-cluster writes, Databricks overrides Delta's S3-commit action. The new action tries to contact lakeFS
 from servers on Databricks' **own** AWS account, which of course won't be able to access your private network. So, if
 you must use multi-cluster writes, you'll have to allow access from Databricks' AWS account to lakeFS.
-We are currently researching  the best ways to achieve that and will update this section soon. 
+If you are trying to achieve that, please [reach out on Slack](https://lakefs.io/slack) and the community will try to assist.
 
 ## Reading Data
 
