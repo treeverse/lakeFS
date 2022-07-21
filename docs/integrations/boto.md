@@ -62,7 +62,7 @@ for obj in list_resp['Contents']:
     print(obj['Key'])
 ```
 
-### Head objects
+### Get object metadata
 
 Get object metadata using branch and path:
 ```python
