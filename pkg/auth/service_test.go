@@ -1433,7 +1433,7 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 			expectedErr:        auth.ErrAlreadyExists,
 		},
 		{
-			name:               "Internal errer",
+			name:               "Internal error",
 			userName:           "user",
 			email:              "foo@gmail.com",
 			source:             "internal",
@@ -2140,7 +2140,7 @@ func TestAPIAuthService_CreateGroup(t *testing.T) {
 			expectedErr:        auth.ErrAlreadyExists,
 		},
 		{
-			name:               "Internal errer",
+			name:               "Internal error",
 			groupName:          "group",
 			email:              "foo@gmail.com",
 			source:             "internal",
@@ -2211,7 +2211,7 @@ func TestAPIAuthService_CreateCredentials(t *testing.T) {
 			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
 		},
 		{
-			name:               "Internal errer",
+			name:               "Internal error",
 			username:           "credentials",
 			returnedAccessKey:  "AKIA",
 			returnedSecretKey:  "AKIASECRET",
@@ -2309,7 +2309,7 @@ func TestAPIAuthService_AddCredentials(t *testing.T) {
 			expectedErr:        auth.ErrAlreadyExists,
 		},
 		{
-			name:               "Internal errer",
+			name:               "Internal error",
 			username:           "credentials",
 			returnedAccessKey:  "",
 			returnedSecretKey:  "",
