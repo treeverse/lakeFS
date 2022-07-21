@@ -2528,6 +2528,19 @@ func TestAPIAuthService_ListUserPolicies(t *testing.T) {
 		}
 		policyListsEquals(t, resPolicies, policies)
 	})
+	t.Run("all effective policies", func(t *testing.T) {
+		response := &auth.ListUserPoliciesResponse{
+			HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+			JSON200:      &policyList,
+		}
+		const username = "username"
+		mockClient.EXPECT().ListUserPoliciesWithResponse(gomock.Any(), username, gomock.Any()).Return(response, nil)
+		policies, _, err := s.ListEffectivePolicies(context.Background(), username, &model.PaginationParams{Amount: -1})
+		if err != nil {
+			t.Errorf("failed with error - %s", err)
+		}
+		policyListsEquals(t, resPolicies, policies)
+	})
 }
 
 func TestAPIAuthService_DeletePolicy(t *testing.T) {
