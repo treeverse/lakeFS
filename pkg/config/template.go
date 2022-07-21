@@ -124,8 +124,9 @@ type configuration struct {
 			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
 		}
 		API struct {
-			Endpoint string
-			Token    string
+			Endpoint        string
+			Token           string
+			SupportsInvites bool `mapstructure:"supports_invites"`
 		}
 		LDAP              *LDAP
 		OIDC              OIDC

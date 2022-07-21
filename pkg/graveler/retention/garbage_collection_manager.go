@@ -14,7 +14,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -145,9 +144,15 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 		refManager:   m.refManager,
 		repositoryID: repositoryID,
 	}
-	branchIterator := ref.NewBranchIterator(ctx, m.db, repositoryID, 1000, ref.WithOrderByCommitID()) //nolint: gomnd
+	branchIterator, err := m.refManager.GCBranchIterator(ctx, repositoryID)
+	if err != nil {
+		return "", err
+	}
 	// get all commits that are not the first parent of any commit:
-	commitIterator := ref.NewOrderedCommitIterator(ctx, m.db, repositoryID, 1000, ref.WithOnlyAncestryLeaves()) //nolint: gomnd
+	commitIterator, err := m.refManager.GCCommitIterator(ctx, repositoryID)
+	if err != nil {
+		return "", fmt.Errorf("create kv orderd commit iterator commits: %w", err)
+	}
 	startingPointIterator := NewGCStartingPointIterator(commitIterator, branchIterator)
 	gcCommits, err := GetGarbageCollectionCommits(ctx, startingPointIterator, commitGetter, rules, previouslyExpiredCommits)
 	if err != nil {

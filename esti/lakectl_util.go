@@ -134,6 +134,13 @@ func RunCmdAndVerifySuccessWithFile(t *testing.T, cmd string, isTerminal bool, g
 	runCmdAndVerifyWithFile(t, cmd, goldenFile, false, isTerminal, vars)
 }
 
+func RunCmdAndVerifyContainsText(t *testing.T, cmd string, isTerminal bool, expectedRaw string, vars map[string]string) {
+	t.Helper()
+	expected := sanitize(expectedRaw, vars)
+	sanitizedResult := runCmd(t, cmd, false, isTerminal, vars)
+	require.Contains(t, sanitizedResult, expected)
+}
+
 func RunCmdAndVerifyFailureWithFile(t *testing.T, cmd string, isTerminal bool, goldenFile string, vars map[string]string) {
 	t.Helper()
 	runCmdAndVerifyWithFile(t, cmd, goldenFile, true, isTerminal, vars)
@@ -176,19 +183,25 @@ func RunCmdAndVerifyFailure(t *testing.T, cmd string, isTerminal bool, expected 
 	runCmdAndVerifyResult(t, cmd, true, isTerminal, expected, vars)
 }
 
-func runCmdAndVerifyResult(t *testing.T, cmd string, expectFail bool, isTerminal bool, expected string, vars map[string]string) {
-	t.Helper()
-	expanded, err := expandVariables(expected, vars)
-	if err != nil {
-		t.Fatal("Failed to extract variables for:", cmd)
-	}
+func runCmd(t *testing.T, cmd string, expectFail bool, isTerminal bool, vars map[string]string) string {
 	result, err := runShellCommand(cmd, isTerminal)
 	if expectFail {
 		require.Error(t, err, "Expected error in '%s' command did not occur. Output: %s", cmd, string(result))
 	} else {
 		require.NoError(t, err, "Failed to run '%s' command - %s", cmd, string(result))
 	}
-	require.Equal(t, expanded, sanitize(string(result), vars), "Unexpected output for %s command", cmd)
+	return sanitize(string(result), vars)
+}
+
+func runCmdAndVerifyResult(t *testing.T, cmd string, expectFail bool, isTerminal bool, expected string, vars map[string]string) {
+	t.Helper()
+	expanded, err := expandVariables(expected, vars)
+	if err != nil {
+		t.Fatal("Failed to extract variables for:", cmd)
+	}
+	sanitizedResult := runCmd(t, cmd, expectFail, isTerminal, vars)
+
+	require.Equal(t, expanded, sanitizedResult, "Unexpected output for %s command", cmd)
 }
 
 var (
