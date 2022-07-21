@@ -157,8 +157,7 @@ func TestBranchSimpleIterator(t *testing.T) {
 
 func TestBranchByCommitIterator(t *testing.T) {
 	r, kvStore := testRefManagerWithKV(t)
-	// TODO niro: Need commits PR (remove 'main' from list when done)
-	branches := []graveler.BranchID{"a", "aa", "b", "c", "e", "d", "main"}
+	branches := []graveler.BranchID{"a", "aa", "b", "c", "e", "d"}
 	ctx := context.Background()
 	repo := &graveler.RepositoryRecord{
 		RepositoryID: "repo1",
@@ -181,6 +180,9 @@ func TestBranchByCommitIterator(t *testing.T) {
 		ids := make([]graveler.CommitID, 0)
 		for iter.Next() {
 			b := iter.Value()
+			if b.BranchID.String() == "main" {
+				continue
+			}
 			ids = append(ids, b.CommitID)
 		}
 		fmt.Println(ids)
@@ -189,7 +191,7 @@ func TestBranchByCommitIterator(t *testing.T) {
 		}
 		iter.Close()
 
-		if diffs := deep.Equal(ids, []graveler.CommitID{"a", "aa", "b", "c", "d", "e", "main"}); diffs != nil {
+		if diffs := deep.Equal(ids, []graveler.CommitID{"a", "aa", "b", "c", "d", "e"}); diffs != nil {
 			t.Fatalf("got wrong list of IDs: %v", diffs)
 		}
 	})

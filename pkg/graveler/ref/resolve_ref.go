@@ -59,7 +59,10 @@ func ResolveRawRef(ctx context.Context, store Store, addressProvider ident.Addre
 			return &graveler.ResolvedRef{
 				Type:                   graveler.ReferenceTypeBranch,
 				ResolvedBranchModifier: graveler.ResolvedBranchModifierCommitted,
-				CommitID:               rr.CommitID,
+				BranchRecord: graveler.BranchRecord{
+					Branch: &graveler.Branch{
+						CommitID: rr.CommitID,
+					}},
 			}, nil
 
 		case graveler.RefModTypeDollar:
@@ -69,9 +72,13 @@ func ResolveRawRef(ctx context.Context, store Store, addressProvider ident.Addre
 			return &graveler.ResolvedRef{
 				Type:                   graveler.ReferenceTypeBranch,
 				ResolvedBranchModifier: graveler.ResolvedBranchModifierStaging,
-				StagingToken:           rr.StagingToken,
-				CommitID:               rr.CommitID,
-				BranchID:               rr.BranchID,
+				BranchRecord: graveler.BranchRecord{
+					BranchID: rr.BranchID,
+					Branch: &graveler.Branch{
+						CommitID:     rr.CommitID,
+						StagingToken: rr.StagingToken,
+						SealedTokens: rr.SealedTokens,
+					}},
 			}, nil
 
 		case graveler.RefModTypeTilde:
@@ -107,9 +114,12 @@ func ResolveRawRef(ctx context.Context, store Store, addressProvider ident.Addre
 	}
 
 	return &graveler.ResolvedRef{
-		Type:     graveler.ReferenceTypeCommit,
-		CommitID: baseCommit,
-		BranchID: rr.BranchID,
+		Type: graveler.ReferenceTypeCommit,
+		BranchRecord: graveler.BranchRecord{
+			BranchID: rr.BranchID,
+			Branch: &graveler.Branch{
+				CommitID: baseCommit,
+			}},
 	}, nil
 }
 
@@ -126,8 +136,11 @@ func revResolveAHash(ctx context.Context, store Store, addressProvider ident.Add
 	}
 	commitID := graveler.CommitID(addressProvider.ContentAddress(commit))
 	return &graveler.ResolvedRef{
-		Type:     graveler.ReferenceTypeCommit,
-		CommitID: commitID,
+		Type: graveler.ReferenceTypeCommit,
+		BranchRecord: graveler.BranchRecord{
+			Branch: &graveler.Branch{
+				CommitID: commitID,
+			}},
 	}, nil
 }
 
@@ -141,10 +154,14 @@ func revResolveBranch(ctx context.Context, store Store, _ ident.AddressProvider,
 		return nil, err
 	}
 	return &graveler.ResolvedRef{
-		Type:         graveler.ReferenceTypeBranch,
-		BranchID:     branchID,
-		StagingToken: branch.StagingToken,
-		CommitID:     branch.CommitID,
+		Type: graveler.ReferenceTypeBranch,
+		BranchRecord: graveler.BranchRecord{
+			BranchID: branchID,
+			Branch: &graveler.Branch{
+				CommitID:     branch.CommitID,
+				StagingToken: branch.StagingToken,
+				SealedTokens: branch.SealedTokens,
+			}},
 	}, nil
 }
 
@@ -157,7 +174,10 @@ func revResolveTag(ctx context.Context, store Store, _ ident.AddressProvider, re
 		return nil, err
 	}
 	return &graveler.ResolvedRef{
-		Type:     graveler.ReferenceTypeTag,
-		CommitID: *commitID,
+		Type: graveler.ReferenceTypeTag,
+		BranchRecord: graveler.BranchRecord{
+			Branch: &graveler.Branch{
+				CommitID: *commitID,
+			}},
 	}, nil
 }
