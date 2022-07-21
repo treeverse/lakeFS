@@ -244,10 +244,8 @@ When using AWS S3 itself, the default configuration works with us-east-1, so you
 need to configure `fs.s3a.endpoint`. Amazon provides [S3
 endpoints](https://docs.aws.amazon.com/general/latest/gr/s3.html) you can use.
 
-**Note:** If not running on AWS, all S3A configuration properties are required! This is contrary to
-using the S3 gateway, when you're using the lakeFS-specific Hadoop FileSystem and configure `s3a` to
-access the S3 underlying object storage, and `lakefs` to access the lakeFS server. When
-running on AWS, you don't need to configure credentials if the instance profile has sufficient
+**Note:** The lakeFS Hadoop FileSystem uses the `fs.s3a.*` properties to directly
+access S3. If your cluster already has access to your buckets (for example, if you're using an AWS instance profile), then you don't need to configure these properties.
 permissions.
 
 Here is how to do it:
