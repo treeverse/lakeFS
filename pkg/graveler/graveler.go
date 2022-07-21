@@ -1293,8 +1293,9 @@ func (g *KVGraveler) CreateBranchProtectionRule(ctx context.Context, repositoryI
 // getFromStagingArea returns the most updated value of a given key in a branch staging area.
 // Iterate over all tokens - staging + sealed in order of last modified. First appearance of key represents the latest update
 func (g *KVGraveler) getFromStagingArea(ctx context.Context, b *Branch, key Key) (*Value, error) {
+	errValue := &Value{} // returned on error - differentiates between tombstone (nil value) and value returned on error
 	if b.StagingToken == "" {
-		return nil, ErrNotFound
+		return errValue, ErrNotFound
 	}
 	tokens := []StagingToken{b.StagingToken}
 	tokens = append(tokens, b.SealedTokens...)
@@ -1304,11 +1305,11 @@ func (g *KVGraveler) getFromStagingArea(ctx context.Context, b *Branch, key Key)
 			if errors.Is(err, ErrNotFound) { // key not found on staging token, advance to the next one
 				continue
 			}
-			return nil, err // Unexpected error
+			return errValue, err // Unexpected error
 		}
 		return value, nil // Found the latest update of the given Key
 	}
-	return nil, ErrNotFound // Key not in staging area
+	return errValue, ErrNotFound // Key not in staging area
 }
 
 func (g *KVGraveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, key Key) (*Value, error) {
@@ -1346,8 +1347,60 @@ func (g *KVGraveler) Set(ctx context.Context, repositoryID RepositoryID, branchI
 	return g.db.Set(ctx, repositoryID, branchID, key, value, writeConditions...)
 }
 
+// Delete removes an entry from the current branch only if not previously deleted in staging area
+// The approach here is to always add a tombstone, even if the entry is not committed, since it is possible it exists
+// in one of the sealed tokens
 func (g *KVGraveler) Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
-	return g.db.Delete(ctx, repositoryID, branchID, key)
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrWriteToProtectedBranch
+	}
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	branch, err := g.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return err
+	}
+
+	// Check if key is in staging
+	stagedValue, err := g.getFromStagingArea(ctx, branch, key)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+
+	// TODO: Can commitID be empty??
+	commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+	if err != nil {
+		return err
+	}
+
+	_, err = g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.MetaRangeID, key)
+	switch {
+	case errors.Is(err, ErrNotFound):
+		// If staged value is tombstone - key doesn't exist
+		// If identity == nil key is not in staged or committed
+		if stagedValue == nil || stagedValue.Identity == nil {
+			return err
+		}
+	case err != nil: // errors other than ErrNotFound
+		return err
+	default: // value committed, ensure tombstone in staging
+		if stagedValue == nil {
+			return ErrNotFound // Already deleted
+		}
+		return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
+	}
+
+	if stagedValue != nil && stagedValue.Identity != nil { // If identity == nil it means key is not staged
+		// Overwrite staging entry with tombstone
+		return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
+	}
+	return nil
 }
 
 // listStagingArea Returns an iterator which is an aggregation of all changes on all the branch's staging area (staging + sealed)
@@ -1369,6 +1422,9 @@ func (g *KVGraveler) listStagingArea(ctx context.Context, b *Branch) (ValueItera
 	for _, st := range b.SealedTokens {
 		it, err = g.StagingManager.List(ctx, st, 1)
 		if err != nil {
+			for _, it = range itrs {
+				it.Close()
+			}
 			return nil, err
 		}
 		itrs = append(itrs, it)
@@ -1401,6 +1457,7 @@ func (g *KVGraveler) List(ctx context.Context, repositoryID RepositoryID, ref Re
 	if reference.StagingToken != "" {
 		stagingList, err := g.listStagingArea(ctx, reference.BranchRecord.Branch)
 		if err != nil {
+			listing.Close()
 			return nil, err
 		}
 		listing = NewFilterTombstoneIterator(NewCombinedIterator(stagingList, listing))
