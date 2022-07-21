@@ -2285,74 +2285,106 @@ func (s StatementRequest) String() string {
 
 func TestAPIAuthService_WritePolicy(t *testing.T) {
 	mockClient, s := GetApiService(t)
-	const policyName = "foo"
-	action := []string{"allow"}
-	const effect = "effect"
-	resource := "bar"
-	policy := model.Policy{
-		DisplayName: policyName,
-		Statement: []model.Statement{{
-			Action:   action,
-			Effect:   effect,
-			Resource: resource,
-		},
-		},
-	}
-	policyRequest := auth.CreatePolicyJSONRequestBody{
-		Name: policyName,
-		Statement: []auth.Statement{{
-			Action:   action,
-			Effect:   effect,
-			Resource: resource,
-		},
-		},
-	}
-	mockErr := errors.New("this is a mock error")
-
-	testTable := []struct {
-		name        string
-		mockErr     error
-		statusCode  int
-		expectedErr error
+	tests := []struct {
+		name                   string
+		policyName             string
+		responseStatusCode     int
+		firstStatementResource string
+		firstStatementEffect   string
+		firstStatementAction   []string
+		responseName           string
+		expectedErr            error
 	}{
 		{
-			name:        "no error",
-			mockErr:     nil,
-			statusCode:  http.StatusCreated,
-			expectedErr: nil,
+			name:                   "successful",
+			firstStatementAction:   []string{"action"},
+			firstStatementEffect:   "effect",
+			firstStatementResource: "resource",
+			policyName:             "foo",
+			responseName:           "foo",
+			responseStatusCode:     http.StatusCreated,
+			expectedErr:            nil,
 		},
 		{
-			name:        "api error ",
-			mockErr:     mockErr,
-			statusCode:  0,
-			expectedErr: mockErr,
+			name:                   "Invalid policy",
+			firstStatementAction:   []string{"action"},
+			firstStatementEffect:   "effect",
+			firstStatementResource: "resource",
+			policyName:             "",
+			responseStatusCode:     http.StatusBadRequest,
+			expectedErr:            model.ErrValidationError, // TODO(Guys): change this once we change this to the right error
 		},
 		{
-			name:        "not found",
-			mockErr:     nil,
-			statusCode:  http.StatusNotFound,
-			expectedErr: auth.ErrNotFound,
+			name:                   "policy exists",
+			policyName:             "existingPolicy",
+			firstStatementAction:   []string{"action"},
+			firstStatementEffect:   "effect",
+			firstStatementResource: "resource",
+			responseStatusCode:     http.StatusBadRequest, // TODO(Guys): should be 409
+			expectedErr:            auth.ErrAlreadyExists,
+		},
+		{
+			name:                   "Internal error",
+			firstStatementAction:   []string{"action"},
+			firstStatementEffect:   "effect",
+			firstStatementResource: "resource",
+			policyName:             "policy",
+			responseStatusCode:     http.StatusInternalServerError,
+			expectedErr:            auth.ErrUnexpectedStatusCode,
 		},
 	}
-	for _, tt := range testTable {
+	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			response := &auth.CreatePolicyResponse{
-				Body: nil,
 				HTTPResponse: &http.Response{
-					StatusCode: tt.statusCode,
+					StatusCode: tt.responseStatusCode,
+				},
+				JSON201: &auth.Policy{
+					Name: tt.responseName,
 				},
 			}
-
-			// TODO(Guys): instead the second gomock any it should be policyRequest, we need someway to compare
-			mockClient.EXPECT().CreatePolicyWithResponse(gomock.Any(), gomock.Eq(policyRequest)).Return(response, tt.mockErr)
-			err := s.WritePolicy(context.Background(), &policy)
+			mockClient.EXPECT().CreatePolicyWithResponse(gomock.Any(), MockPolicy{
+				Name:     tt.policyName,
+				Action:   tt.firstStatementAction,
+				Effect:   tt.firstStatementEffect,
+				Resource: tt.firstStatementResource,
+			}).MaxTimes(1).Return(response, nil)
+			ctx := context.Background()
+			err := s.WritePolicy(ctx, &model.Policy{
+				DisplayName: tt.policyName,
+				Statement: []model.Statement{{
+					Action:   tt.firstStatementAction,
+					Effect:   tt.firstStatementEffect,
+					Resource: tt.firstStatementResource,
+				}},
+			})
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+				t.Fatalf("CreatePolicy: expected err: %s got: %s", tt.expectedErr, err)
 			}
-
-			// TODO(Guys): compare result with deep or reflect or...
 		})
 	}
+}
+
+type MockPolicy struct {
+	Name     string
+	Resource string
+	Effect   string
+	Action   []string
+}
+
+func (m MockPolicy) Matches(x interface{}) bool {
+	if policy, ok := x.(auth.CreatePolicyJSONRequestBody); ok {
+		if len(policy.Statement) == 0 {
+			return false
+		}
+		statement := policy.Statement[0]
+		return policy.Name == m.Name && statement.Resource == m.Resource && statement.Effect == m.Effect && len(statement.Action) == 1 && statement.Action[0] == m.Action[0]
+	}
+	return false
+}
+
+func (m MockPolicy) String() string {
+	return fmt.Sprintf("%s-%s-%s", m.Action, m.Effect, m.Resource)
 }
 
 func TestAPIAuthService_CreateGroup(t *testing.T) {
@@ -2360,20 +2392,13 @@ func TestAPIAuthService_CreateGroup(t *testing.T) {
 	tests := []struct {
 		name               string
 		groupName          string
-		email              string
-		friendlyName       string
-		source             string
 		responseStatusCode int
 		responseName       string
-		expectedResponseID string
 		expectedErr        error
 	}{
 		{
 			name:               "successful",
 			groupName:          "foo",
-			email:              "foo@gmail.com",
-			friendlyName:       "friendly foo",
-			source:             "internal",
 			responseName:       "foo",
 			responseStatusCode: http.StatusCreated,
 			expectedErr:        nil,
@@ -2381,26 +2406,18 @@ func TestAPIAuthService_CreateGroup(t *testing.T) {
 		{
 			name:               "Invalid group",
 			groupName:          "",
-			email:              "foo@gmail.com",
-			friendlyName:       "friendly foo",
-			source:             "internal",
 			responseStatusCode: http.StatusBadRequest,
 			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
 		},
 		{
 			name:               "group exists",
 			groupName:          "existingGroup",
-			email:              "foo@gmail.com",
-			friendlyName:       "friendly foo",
-			source:             "internal",
 			responseStatusCode: http.StatusConflict,
 			expectedErr:        auth.ErrAlreadyExists,
 		},
 		{
 			name:               "Internal error",
 			groupName:          "group",
-			email:              "foo@gmail.com",
-			source:             "internal",
 			responseStatusCode: http.StatusInternalServerError,
 			expectedErr:        auth.ErrUnexpectedStatusCode,
 		},
