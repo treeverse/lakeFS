@@ -2579,6 +2579,138 @@ func TestAPIAuthService_DeletePolicy(t *testing.T) {
 	}
 }
 
+func TestAPIAuthService_DetachPolicyFrom(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	mockErr := errors.New("this is a mock error")
+	testTable := []struct {
+		name        string
+		fromName    string
+		username    string
+		mockErr     error
+		statusCode  int
+		expectedErr error
+	}{
+		{
+			name:        "no error",
+			fromName:    "from_name",
+			username:    "username",
+			mockErr:     nil,
+			statusCode:  http.StatusNoContent,
+			expectedErr: nil,
+		},
+		{
+			name:        "api error ",
+			fromName:    "from_name",
+			username:    "username",
+			mockErr:     mockErr,
+			statusCode:  http.StatusInternalServerError,
+			expectedErr: mockErr,
+		},
+		{
+			name:        "not found",
+			fromName:    "no_from",
+			username:    "userName",
+			mockErr:     nil,
+			statusCode:  http.StatusNotFound,
+			expectedErr: auth.ErrNotFound,
+		},
+	}
+	for _, tt := range testTable {
+		t.Run("from user"+tt.name, func(t *testing.T) {
+			response := &auth.DetachPolicyFromUserResponse{
+				Body: nil,
+				HTTPResponse: &http.Response{
+					StatusCode: tt.statusCode,
+				},
+			}
+			mockClient.EXPECT().DetachPolicyFromUserWithResponse(gomock.Any(), tt.username, tt.fromName).Return(response, tt.mockErr)
+			err := s.DetachPolicyFromUser(context.Background(), tt.fromName, tt.username)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+			}
+		})
+		t.Run("from group "+tt.name, func(t *testing.T) {
+			response := &auth.DetachPolicyFromGroupResponse{
+				Body: nil,
+				HTTPResponse: &http.Response{
+					StatusCode: tt.statusCode,
+				},
+			}
+			mockClient.EXPECT().DetachPolicyFromGroupWithResponse(gomock.Any(), tt.username, tt.fromName).Return(response, tt.mockErr)
+			err := s.DetachPolicyFromGroup(context.Background(), tt.fromName, tt.username)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+			}
+		})
+	}
+}
+
+func TestAPIAuthService_AttachPolicyTo(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	mockErr := errors.New("this is a mock error")
+	testTable := []struct {
+		name        string
+		fromName    string
+		username    string
+		mockErr     error
+		statusCode  int
+		expectedErr error
+	}{
+		{
+			name:        "no error",
+			fromName:    "from_name",
+			username:    "username",
+			mockErr:     nil,
+			statusCode:  http.StatusCreated,
+			expectedErr: nil,
+		},
+		{
+			name:        "api error ",
+			fromName:    "from_name",
+			username:    "username",
+			mockErr:     mockErr,
+			statusCode:  http.StatusInternalServerError,
+			expectedErr: mockErr,
+		},
+		{
+			name:        "not found",
+			fromName:    "no_from",
+			username:    "userName",
+			mockErr:     nil,
+			statusCode:  http.StatusNotFound,
+			expectedErr: auth.ErrNotFound,
+		},
+	}
+	for _, tt := range testTable {
+		t.Run("to user "+tt.name, func(t *testing.T) {
+			response := &auth.AttachPolicyToUserResponse{
+				Body: nil,
+				HTTPResponse: &http.Response{
+					StatusCode: tt.statusCode,
+				},
+			}
+			mockClient.EXPECT().AttachPolicyToUserWithResponse(gomock.Any(), tt.username, tt.fromName).Return(response, tt.mockErr)
+			err := s.AttachPolicyToUser(context.Background(), tt.fromName, tt.username)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+			}
+		})
+		t.Run("to group "+tt.name, func(t *testing.T) {
+			response := &auth.AttachPolicyToGroupResponse{
+				Body: nil,
+				HTTPResponse: &http.Response{
+					StatusCode: tt.statusCode,
+				},
+			}
+			mockClient.EXPECT().AttachPolicyToGroupWithResponse(gomock.Any(), tt.username, tt.fromName).Return(response, tt.mockErr)
+			err := s.AttachPolicyToGroup(context.Background(), tt.fromName, tt.username)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+			}
+		})
+	}
+}
+
 func TestAPIAuthService_DeleteCredentials(t *testing.T) {
 	mockClient, s := GetApiService(t)
 	mockErr := errors.New("this is a mock error")
