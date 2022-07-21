@@ -33,7 +33,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/testutil"
-	"golang.org/x/crypto/bcrypt"
 )
 
 var (
@@ -3046,21 +3045,4 @@ func TestAPIAuthService_AddCredentials(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestAPIAuthService_HashAndUpdatePassword(t *testing.T) {
-	ctx := context.Background()
-	mockClient, s := GetApiService(t)
-	const (
-		username = "foo"
-		password = "password"
-	)
-	encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	mockClient.EXPECT().UpdatePasswordWithResponse(ctx, username, encryptedPassword).Return(
-		&auth.UpdatePasswordResponse{
-			HTTPResponse: &http.Response{StatusCode: http.StatusOK},
-		},
-		nil)
-	testutil.MustDo(t, "encrypt password", err)
-	s.HashAndUpdatePassword(ctx, username, password)
 }
