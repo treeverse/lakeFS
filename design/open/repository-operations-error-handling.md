@@ -147,7 +147,7 @@ The decision is based on the following understandings:
 
 Based on that, the implementation plan is as follows. **Step 1** is to be implemented immediately and **Step 2** remains as a future plan:
 
-**Step 1:** Introduce repository `state` and `unique_identifier`:
+**Step 1:** [Introduce repository `state` and `unique_identifier`](https://github.com/treeverse/lakeFS/issues/3713):
   - Add a state attribute to repository. 2 possible values: `active`, `deleting`
   - Add a `unique_identifier` attribute to repository. This will be the name of the partition to create all entities related to that repository (branches commits and tags)
     - **Note**: The format of the partition key can either include the `RepositoryID` or not. This can be up to the implementation and is not limited, as long is it provides a 1:1 mapping between a repository object and the correlated partition. One option is a combination of the `RepositryID` and its creation timestamp, which will save the need to introduce yet another field
@@ -162,7 +162,7 @@ Based on that, the implementation plan is as follows. **Step 1** is to be implem
 
 Step 1, though naive, is a complete solution to repository management over KV. It guarantees a repository that is not completely created remains inaccessible, as well as a deleted repository. It does limit the reuse ability of the `RepositoryID` during the deletion process, but as this process will eventually complete (given enough retry attempts) the `RepositoryID` will be available for reuse, eventually
 
-**Step 2:** Improved deletion time and introducing The Cleaner
+**Step 2:** [Improved deletion time](https://github.com/treeverse/lakeFS/issues/3714) and [introducing The Cleaner](https://github.com/treeverse/lakeFS/issues/3715)
   - Add a new repository `state` value - `initial`
   - Repositories are created as `initial` and after a successful creation of initial-commit and default-branch, are moved to `active`
   - A failure in the repository creation flow leaves it as `initial` which is unused on one hand, and not (yet) deleted on the other hand
