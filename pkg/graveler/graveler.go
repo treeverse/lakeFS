@@ -799,6 +799,10 @@ func (id StagingToken) String() string {
 	return string(id)
 }
 
+func (id MetaRangeID) String() string {
+	return string(id)
+}
+
 type KVGraveler struct {
 	db                       *DBGraveler
 	hooks                    HooksHandler
@@ -1695,8 +1699,66 @@ func (g *KVGraveler) DiffUncommitted(ctx context.Context, repositoryID Repositor
 	return g.db.DiffUncommitted(ctx, repositoryID, branchID)
 }
 
+// dereferenceCommit will dereference and load the commit record based on 'ref'.
+//   will return an error if 'ref' points to an explicit staging area
+func (g *KVGraveler) dereferenceCommit(ctx context.Context, repositoryID RepositoryID, ref Ref) (*CommitRecord, error) {
+	reference, err := g.Dereference(ctx, repositoryID, ref)
+	if err != nil {
+		return nil, err
+	}
+	if reference.ResolvedBranchModifier == ResolvedBranchModifierStaging {
+		return nil, fmt.Errorf("reference '%s': %w", ref, ErrDereferenceCommitWithStaging)
+	}
+	commit, err := g.RefManager.GetCommit(ctx, repositoryID, reference.CommitID)
+	if err != nil {
+		return nil, err
+	}
+	return &CommitRecord{
+		CommitID: reference.CommitID,
+		Commit:   commit,
+	}, nil
+}
+
 func (g *KVGraveler) Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error) {
-	return g.db.Diff(ctx, repositoryID, left, right)
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	leftCommit, err := g.dereferenceCommit(ctx, repositoryID, left)
+	if err != nil {
+		return nil, err
+	}
+	rightRawRef, err := g.Dereference(ctx, repositoryID, right)
+	if err != nil {
+		return nil, err
+	}
+	rightCommit, err := g.RefManager.GetCommit(ctx, repositoryID, rightRawRef.CommitID)
+	if err != nil {
+		return nil, err
+	}
+	diff, err := g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.MetaRangeID, rightCommit.MetaRangeID)
+	if err != nil {
+		return nil, err
+	}
+	if rightRawRef.ResolvedBranchModifier != ResolvedBranchModifierStaging {
+		return diff, nil
+	}
+	leftValueIterator, err := g.CommittedManager.List(ctx, repo.StorageNamespace, leftCommit.MetaRangeID)
+	if err != nil {
+		return nil, err
+	}
+
+	rightBranch, err := g.RefManager.GetBranch(ctx, repositoryID, rightRawRef.BranchID)
+	if err != nil {
+		leftValueIterator.Close()
+		return nil, err
+	}
+	stagingIterator, err := g.listStagingArea(ctx, rightBranch)
+	if err != nil {
+		leftValueIterator.Close()
+		return nil, err
+	}
+	return NewCombinedDiffIterator(diff, leftValueIterator, stagingIterator), nil
 }
 
 func (g *KVGraveler) Compare(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error) {

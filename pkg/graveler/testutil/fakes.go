@@ -20,6 +20,7 @@ type AppliedData struct {
 type CommittedFake struct {
 	ValuesByKey   map[string]*graveler.Value
 	ValueIterator graveler.ValueIterator
+	Values        map[string]graveler.ValueIterator
 	DiffIterator  graveler.DiffIterator
 	Err           error
 	MetaRangeID   graveler.MetaRangeID
@@ -50,9 +51,12 @@ func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ gr
 	return c.ValuesByKey[string(key)], nil
 }
 
-func (c *CommittedFake) List(context.Context, graveler.StorageNamespace, graveler.MetaRangeID) (graveler.ValueIterator, error) {
+func (c *CommittedFake) List(_ context.Context, _ graveler.StorageNamespace, mr graveler.MetaRangeID) (graveler.ValueIterator, error) {
 	if c.Err != nil {
 		return nil, c.Err
+	}
+	if it, ok := c.Values[mr.String()]; ok {
+		return it, nil
 	}
 	return c.ValueIterator, nil
 }
@@ -169,9 +173,19 @@ func (s *StagingFake) DropKey(_ context.Context, _ graveler.StagingToken, key gr
 	return nil
 }
 
-func (s *StagingFake) List(context.Context, graveler.StagingToken, int) (graveler.ValueIterator, error) {
+func (s *StagingFake) List(_ context.Context, st graveler.StagingToken, _ int) (graveler.ValueIterator, error) {
 	if s.Err != nil {
 		return nil, s.Err
+	}
+	if s.Values != nil && s.Values[st.String()] != nil {
+		values := make([]graveler.ValueRecord, 0)
+		for k, v := range s.Values[st.String()] {
+			values = append(values, graveler.ValueRecord{
+				Key:   graveler.Key(k),
+				Value: v,
+			})
+		}
+		return NewValueIteratorFake(values), nil
 	}
 	return s.ValueIterator, nil
 }
