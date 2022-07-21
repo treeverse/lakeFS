@@ -1619,7 +1619,7 @@ func (a *APIAuthService) GetCredentialsForUser(ctx context.Context, username, ac
 			AccessKeyID: credentials.AccessKeyId,
 			IssuedDate:  time.Unix(credentials.CreationDate, 0),
 		},
-		Username: strconv.Itoa(0),
+		Username: username,
 	}, nil
 }
 
