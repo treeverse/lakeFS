@@ -4,6 +4,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystemContractBaseTest;
 import org.apache.hadoop.fs.Path;
 
+import org.junit.Before;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 /**
  *  Tests a live S3 system. If your keys and bucket aren't specified, all tests
  *  are marked as passed.
@@ -18,20 +22,19 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
 
   private String pathPrefix;
 
-  @Override
+  @Before
   public void setUp() throws Exception {
     Configuration conf = new Configuration();
 
     fs = LakeFSTestUtils.createTestFileSystem(conf);
 
     pathPrefix = conf.get(TEST_FS_LAKEFS_NAME) + "/main";
-    super.setUp();
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     if (fs != null) {
-      fs.delete(path("/test"), true);
+      fs.delete(prefixPath("/test"), true);
     }
     super.tearDown();
   }
@@ -41,15 +44,14 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
     // skip("Not supported");
   }
 
-  @Override
-  protected Path path(String pathString) {
+  protected Path prefixPath(String pathString) {
     return new Path(pathPrefix + pathString);
   }
 
   public void testRenameFileAsExistingFile() throws Exception {
-    Path src = path("/test/hadoop/file");
+    Path src = prefixPath("/test/hadoop/file");
     createFile(src);
-    Path dst = path("/test/new/newfile");
+    Path dst = prefixPath("/test/new/newfile");
     createFile(dst);
 
     rename(src, dst, true, false, true);
@@ -57,22 +59,22 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
 
   @Override
   public void testRenameDirectoryAsExistingDirectory() throws Exception {
-    Path src = path("/test/hadoop/dir");
+    Path src = prefixPath("/test/hadoop/dir");
     fs.mkdirs(src);
-    createFile(path("/test/hadoop/dir/file1"));
-    createFile(path("/test/hadoop/dir/subdir/file2"));
+    createFile(prefixPath("/test/hadoop/dir/file1"));
+    createFile(prefixPath("/test/hadoop/dir/subdir/file2"));
 
-    Path dst = path("/test/new/newdir");
+    Path dst = prefixPath("/test/new/newdir");
     fs.mkdirs(dst);
     rename(src, dst, true, false, true);
     assertFalse("Nested file1 exists",
-        fs.exists(path("/test/hadoop/dir/file1")));
+        fs.exists(prefixPath("/test/hadoop/dir/file1")));
     assertFalse("Nested file2 exists",
-        fs.exists(path("/test/hadoop/dir/subdir/file2")));
+        fs.exists(prefixPath("/test/hadoop/dir/subdir/file2")));
     assertTrue("Renamed nested file1 exists",
-        fs.exists(path("/test/new/newdir/file1")));
+        fs.exists(prefixPath("/test/new/newdir/file1")));
     assertTrue("Renamed nested exists",
-        fs.exists(path("/test/new/newdir/subdir/file2")));
+        fs.exists(prefixPath("/test/new/newdir/subdir/file2")));
   }
 
   @Override
