@@ -1904,31 +1904,6 @@ func testController_CreatePolicyHandler(t *testing.T, kvEnabled bool) {
 		verifyResponseOK(t, resp, err)
 	})
 
-	t.Run("override_policy", func(t *testing.T) {
-		// capture the current behaviour where we do not return conflict when we create a policy with the same ID
-		body := api.CreatePolicyJSONRequestBody{
-			CreationDate: api.Int64Ptr(time.Now().Unix()),
-			Id:           "CheckOverrideID",
-			Statement: []api.Statement{
-				{
-					Action:   []string{"fs:ReadObject"},
-					Effect:   "allow",
-					Resource: "arn:lakefs:fs:::repository/foo/object/*",
-				},
-			},
-		}
-		resp, err := clt.CreatePolicyWithResponse(ctx, body)
-		verifyResponseOK(t, resp, err)
-
-		body.Statement[0].Effect = "deny"
-		resp, err = clt.CreatePolicyWithResponse(ctx, body)
-		testutil.Must(t, err)
-		expectedStatusCode := http.StatusConflict
-		if resp.StatusCode() != expectedStatusCode {
-			t.Fatalf("CreatePolicy while try to override status code=%d, expected to fail with %d", resp.StatusCode(), expectedStatusCode)
-		}
-	})
-
 	t.Run("invalid_policy_action", func(t *testing.T) {
 		resp, err := clt.CreatePolicyWithResponse(ctx, api.CreatePolicyJSONRequestBody{
 			CreationDate: api.Int64Ptr(time.Now().Unix()),
