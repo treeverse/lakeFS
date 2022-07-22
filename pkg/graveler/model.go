@@ -1,6 +1,8 @@
 package graveler
 
 import (
+	"fmt"
+
 	"github.com/treeverse/lakefs/pkg/kv"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -26,7 +28,7 @@ func RepositoriesPartition() string {
 // The Repository object itself is found under the common RepositoriesPartition, as it is needed to
 // generate this partition
 func RepoPartition(repo *RepositoryRecord) string {
-	return repo.RepositoryID.String()
+	return fmt.Sprint("%s-%d", repo.RepositoryID.String(), repo.CreationDate.UnixNano())
 }
 
 func TagPath(tagID TagID) string {

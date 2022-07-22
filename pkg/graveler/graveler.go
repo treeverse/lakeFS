@@ -159,6 +159,15 @@ type StorageNamespace string
 // RepositoryID is an identifier for a repo
 type RepositoryID string
 
+// Repository state represent the repository state. It can either be `active` - the repository is in use - or
+// `deleting` - to indicate this repository is in the process of being deleted
+type RepositoryState int
+
+const (
+	RepositoryStateActive RepositoryState = iota
+	RepositoryStateDeleting
+)
+
 // Key represents a logical path for an value
 type Key []byte
 
@@ -193,6 +202,7 @@ type Repository struct {
 	StorageNamespace StorageNamespace `db:"storage_namespace"`
 	CreationDate     time.Time        `db:"creation_date"`
 	DefaultBranchID  BranchID         `db:"default_branch"`
+	RepositoryState  RepositoryState
 }
 
 type RepositoryRecord struct {
