@@ -117,7 +117,23 @@ lazy val examples312 = generateExamplesProject(spark312Type).dependsOn(core312)
 lazy val root = (project in file(".")).aggregate(core2, core3, core312, examples2, examples3, examples312)
 
 lazy val assemblySettings = Seq(
-  assembly / assemblyMergeStrategy := (_ => MergeStrategy.first),
+  assembly / assemblyMergeStrategy := {
+    case PathList("META-INF", xs @ _*) =>
+      (xs map {_.toLowerCase}) match {
+        case ("manifest.mf" :: Nil) | ("index.list" :: Nil) | ("dependencies" :: Nil) =>
+          MergeStrategy.discard
+        case ps @ (x :: xs) if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") =>
+          MergeStrategy.discard
+        case "plexus" :: xs =>
+          MergeStrategy.discard
+        case "services" :: xs =>
+          MergeStrategy.filterDistinctLines
+        case ("spring.schemas" :: Nil) | ("spring.handlers" :: Nil) =>
+          MergeStrategy.filterDistinctLines
+        case _ => MergeStrategy.first
+      }
+    case _ => MergeStrategy.first
+  },
   assembly / assemblyShadeRules := Seq(
     ShadeRule.rename("org.apache.http.**" -> "org.apache.httpShaded@1").inAll,
     ShadeRule.rename("com.google.protobuf.**" -> "shadeproto.@1").inAll,
