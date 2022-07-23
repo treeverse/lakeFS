@@ -1294,7 +1294,77 @@ func (g *KVGraveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref
 }
 
 func (g *KVGraveler) Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error {
-	return g.db.Set(ctx, repositoryID, branchID, key, value, writeConditions...)
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrWriteToProtectedBranch
+	}
+
+	setFunc := func(branch *Branch) error {
+		writeCondition := &WriteCondition{}
+		for _, cond := range writeConditions {
+			cond(writeCondition)
+		}
+
+		if writeCondition.IfAbsent {
+			// check if the given key exist in the branch first
+			_, err := g.Get(ctx, repositoryID, Ref(branchID), key)
+			if err == nil {
+				// we got a key here already!
+				return ErrPreconditionFailed
+			}
+			if !errors.Is(err, ErrNotFound) {
+				// another error occurred!
+				return err
+			}
+		}
+		if err = g.StagingManager.Set(ctx, branch.StagingToken, key, &value, !writeCondition.IfAbsent); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	return g.safeBranchWrite(ctx, g.log.WithField("key", key).WithField("operation", "set"), repositoryID, branchID, setFunc)
+}
+
+// safeBranchWrite is a helper function that wraps a branch write operation with validation that the staging token
+// didn't change while writing to the branch.
+func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, repositoryID RepositoryID, branchID BranchID, branchOperation func(branch *Branch) error) error {
+	// setTries is the number of times to repeat the set operation if the staging token changed
+	const setTries = 3
+
+	var try int
+	for try = 0; try < setTries; try++ {
+		branch, err := g.GetBranch(ctx, repositoryID, branchID)
+		if err != nil {
+			return err
+		}
+		startToken := branch.StagingToken
+
+		err = branchOperation(branch)
+		// Checking if the token has changed.
+		// If it changed, we need to write the changes to the branch's new staging token
+		branch, err = g.GetBranch(ctx, repositoryID, branchID)
+		if err != nil {
+			return err
+		}
+		endToken := branch.StagingToken
+		if startToken == endToken {
+			break
+		} else {
+			// we got a new token, try again
+			log.WithField("try", try+1).
+				WithField("startToken", startToken).
+				WithField("endToken", endToken).
+				Info("Retrying Set")
+		}
+	}
+	if try == setTries {
+		return ErrTooManyStagingWriteTries
+	}
+	return nil
 }
 
 func (g *KVGraveler) Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
@@ -1308,6 +1378,7 @@ func (g *KVGraveler) listStagingArea(ctx context.Context, b *Branch) (ValueItera
 		return nil, ErrNotFound
 	}
 	it, err := g.StagingManager.List(ctx, b.StagingToken, 1)
+
 	if err != nil {
 		return nil, err
 	}

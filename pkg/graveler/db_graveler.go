@@ -615,7 +615,7 @@ func (g *DBGraveler) Delete(ctx context.Context, repositoryID RepositoryID, bran
 		// Safe to ignore errors when checking staging (if all delete actions worked):
 		// we only give a possible incorrect error message if a tombstone was already
 		// staged.
-		if isStagedTombstone(ctx, g.StagingManager, branch.StagingToken, key) {
+		if isStagedTombstoneDB(ctx, g.StagingManager, branch.StagingToken, key) {
 			return nil, ErrNotFound
 		}
 
