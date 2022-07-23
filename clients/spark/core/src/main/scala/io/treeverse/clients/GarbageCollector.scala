@@ -1,12 +1,7 @@
 package io.treeverse.clients
 
 import com.google.protobuf.timestamp.Timestamp
-import io.treeverse.clients.LakeFSContext.{
-  LAKEFS_CONF_API_ACCESS_KEY_KEY,
-  LAKEFS_CONF_API_SECRET_KEY_KEY,
-  LAKEFS_CONF_API_URL_KEY
-}
-
+import io.treeverse.clients.LakeFSContext.{LAKEFS_CONF_API_ACCESS_KEY_KEY, LAKEFS_CONF_API_SECRET_KEY_KEY, LAKEFS_CONF_API_URL_KEY}
 import org.apache.hadoop.fs._
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.broadcast.Broadcast
@@ -46,6 +41,7 @@ trait S3ClientBuilder extends Serializable {
 }
 
 object GarbageCollector {
+
   type ConfMap = List[(String, String)]
 
   case class APIConfigurations(apiURL: String, accessKey: String, secretKey: String)
@@ -359,17 +355,24 @@ object GarbageCollector {
     println("Expired addresses:")
     expiredAddresses.show()
 
-    var storageNamespace = new ApiClient(apiURL, accessKey, secretKey).getStorageNamespace(repo)
-    if (!storageNamespace.endsWith("/")) {
-      storageNamespace += "/"
+    // The remove operation uses an SDK client to directly access the underlying storage, and therefore does not need
+    // a translated storage namespace that triggers processing by Hadoop FileSystems.
+    var directAccessStorageNS = new ApiClient(apiURL, accessKey, secretKey).getStorageNamespace(repo, StorageAccessType.DirectAccess)
+    if (!directAccessStorageNS.endsWith("/")) {
+      directAccessStorageNS += "/"
     }
 
     val removed =
-      remove(storageNamespace, gcAddressesLocation, expiredAddresses, runID, region, hcValues)
+      remove(directAccessStorageNS, gcAddressesLocation, expiredAddresses, runID, region, hcValues, storageType)
+
+    var hadoopFSAccessStorageNS = new ApiClient(apiURL, accessKey, secretKey).getStorageNamespace(repo, StorageAccessType.HadoopFS)
+    if (!hadoopFSAccessStorageNS.endsWith("/")) {
+      hadoopFSAccessStorageNS += "/"
+    }
 
     val commitsDF = getCommitsDF(runID, gcCommitsLocation, spark)
-    val reportLogsDst = concatToGCLogsPrefix(storageNamespace, "summary")
-    val reportExpiredDst = concatToGCLogsPrefix(storageNamespace, "expired_addresses")
+    val reportLogsDst = concatToGCLogsPrefix(hadoopFSAccessStorageNS, "summary")
+    val reportExpiredDst = concatToGCLogsPrefix(hadoopFSAccessStorageNS, "expired_addresses")
 
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
     writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
@@ -381,7 +384,7 @@ object GarbageCollector {
       .write
       .partitionBy("run_id")
       .mode(SaveMode.Overwrite)
-      .parquet(concatToGCLogsPrefix(storageNamespace, s"deleted_objects/$time/deleted.parquet"))
+      .parquet(concatToGCLogsPrefix(hadoopFSAccessStorageNS, s"deleted_objects/$time/deleted.parquet"))
 
     spark.close()
   }
