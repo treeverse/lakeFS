@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/go-test/deep"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -927,4 +928,53 @@ func TestManager_ListCommits(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestManager_RepositoryState(t *testing.T) {
+	kvRefMgr, kvStore := testRefManagerWithKV(t)
+	ctx := context.Background()
+
+	branchID := graveler.BranchID("test-branch")
+	repositoryID1 := graveler.RepositoryID(fmt.Sprintf("repo1-%s", t.Name()))
+	storageNS1 := graveler.StorageNamespace(fmt.Sprintf("s3://repo1-%s", t.Name()))
+
+	repo := graveler.Repository{
+		StorageNamespace: storageNS1,
+		DefaultBranchID:  branchID,
+		CreationDate:     time.Now(),
+		RepositoryState:  graveler.RepositoryStateActive,
+	}
+
+	require.NoError(t, kvRefMgr.CreateRepository(ctx, repositoryID1, repo, graveler.StagingToken(fmt.Sprintf("%s-%s-%s", repositoryID1, branchID, uuid.New().String()))))
+
+	repositoryID2 := graveler.RepositoryID(fmt.Sprintf("repo2-%s", t.Name()))
+	storageNS2 := graveler.StorageNamespace(fmt.Sprintf("s3://repo2-%s", t.Name()))
+
+	repo = graveler.Repository{
+		StorageNamespace: storageNS2,
+		DefaultBranchID:  branchID,
+		CreationDate:     time.Now(),
+		RepositoryState:  graveler.RepositoryStateDeleting,
+	}
+
+	// Bypassing the standard CreateRepository to force status `deleting`
+	repoRecord := &graveler.RepositoryRecord{
+		RepositoryID: repositoryID2,
+		Repository:   &repo,
+	}
+	repoProto := graveler.ProtoFromRepo(repoRecord)
+	require.NoError(t, kvStore.SetMsgIf(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID2)), repoProto, nil))
+
+	_, err := kvRefMgr.GetRepository(ctx, repositoryID1)
+	require.NoError(t, err)
+
+	_, err = kvRefMgr.GetRepository(ctx, repositoryID2)
+	require.ErrorIs(t, kvRefMgr.CreateRepository(ctx, repositoryID2, repo, graveler.StagingToken(fmt.Sprintf("%s-%s-%s", repositoryID2, branchID, uuid.New().String()))), graveler.ErrNotUnique)
+
+	iter, err := kvRefMgr.ListRepositories(ctx)
+	require.NoError(t, err)
+	defer iter.Close()
+	iter.SeekGE(graveler.RepositoryID(""))
+	require.True(t, iter.Next())
+	require.False(t, iter.Next())
 }

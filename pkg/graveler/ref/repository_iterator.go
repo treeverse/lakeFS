@@ -37,27 +37,33 @@ func NewKVRepositoryIterator(ctx context.Context, store *kv.StoreMessage) (*KVRe
 }
 
 func (ri *KVRepositoryIterator) Next() bool {
-	if ri.Err() != nil {
-		return false
-	}
+	// Iterating until RepositoryState is `active`
+	for {
+		if ri.Err() != nil {
+			return false
+		}
 
-	if !ri.it.Next() {
-		ri.value = nil
-		return false
-	}
-	e := ri.it.Entry()
-	if e == nil {
-		ri.err = graveler.ErrInvalid
-		return false
-	}
+		if !ri.it.Next() {
+			ri.value = nil
+			return false
+		}
+		e := ri.it.Entry()
+		if e == nil {
+			ri.err = graveler.ErrInvalid
+			return false
+		}
 
-	repo, ok := e.Value.(*graveler.RepositoryData)
-	if repo == nil || !ok {
-		ri.err = graveler.ErrReadingFromStore
-		return false
-	}
+		repo, ok := e.Value.(*graveler.RepositoryData)
+		if repo == nil || !ok {
+			ri.err = graveler.ErrReadingFromStore
+			return false
+		}
 
-	ri.value = graveler.RepoFromProto(repo)
+		ri.value = graveler.RepoFromProto(repo)
+		if ri.value.RepositoryState == graveler.RepositoryStateActive {
+			break
+		}
+	}
 	return true
 }
 
