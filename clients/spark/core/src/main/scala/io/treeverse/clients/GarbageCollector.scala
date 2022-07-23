@@ -9,9 +9,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{SparkSession, _}
-
 import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.s3.model
 
 import java.net.URI
 import collection.JavaConverters._
@@ -400,53 +398,31 @@ object GarbageCollector {
     df.repartitionByRange(nPartitions, col(column))
   }
 
-  private def delObjIteration(
-      bucket: String,
-      keys: Seq[String],
-      s3Client: AmazonS3,
-      snPrefix: String
-  ): Seq[String] = {
-    if (keys.isEmpty) return Seq.empty
-    val removeKeyNames = keys.map(x => snPrefix.concat(x))
-
-    println("Remove keys:", removeKeyNames.take(100).mkString(", "))
-
-    val removeKeys = removeKeyNames.map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
-
-    val delObjReq = new model.DeleteObjectsRequest(bucket).withKeys(removeKeys)
-    val res = s3Client.deleteObjects(delObjReq)
-    res.getDeletedObjects.asScala.map(_.getKey())
-  }
-
-  private def getS3Client(
-      hc: Configuration,
-      bucket: String,
-      region: String,
-      numRetries: Int
-  ): AmazonS3 =
-    io.treeverse.clients.conditional.S3ClientBuilder.build(hc, bucket, region, numRetries)
-
   def bulkRemove(
       readKeysDF: DataFrame,
-      bulkSize: Int,
-      bucket: String,
+      storageNamespace: String,
       region: String,
-      numRetries: Int,
-      snPrefix: String,
-      hcValues: Broadcast[ConfMap]
+      hcValues: Broadcast[ConfMap],
+      storageType: String
   ): Dataset[String] = {
+    val bulkRemover = BulkRemoverFactory(storageType, configurationFromValues(hcValues), storageNamespace, region)
+    val bulkSize = bulkRemover.getMaxBulkSize()
     val spark = org.apache.spark.sql.SparkSession.active
     import spark.implicits._
     val repartitionedKeys = repartitionBySize(readKeysDF, bulkSize, "address")
     val bulkedKeyStrings = repartitionedKeys
       .select("address")
       .map(_.getString(0)) // get address as string (address is in index 0 of row)
+
     bulkedKeyStrings
       .mapPartitions(iter => {
-        val s3Client = getS3Client(configurationFromValues(hcValues), bucket, region, numRetries)
+        // mapPartitions lambda executions are sent over to Spark executors, the executors don't have access to the
+        // bulkRemover created above because it was created on the driver and it is not a serializeable object. Therefore,
+        // we create new bulkRemovers.
+        val bulkRemover = BulkRemoverFactory(storageType, configurationFromValues(hcValues), storageNamespace, region)
         iter
           .grouped(bulkSize)
-          .flatMap(delObjIteration(bucket, _, s3Client, snPrefix))
+          .flatMap(bulkRemover.deleteObjects(_, storageNamespace))
       })
   }
 
@@ -456,25 +432,16 @@ object GarbageCollector {
       expiredAddresses: Dataset[Row],
       runID: String,
       region: String,
-      hcValues: Broadcast[ConfMap]
+      hcValues: Broadcast[ConfMap],
+      storageType: String
   ) = {
-    val MaxBulkSize = 1000
-    val awsRetries = 1000
-
-    println("storageNamespace: " + storageNamespace)
-    val uri = new URI(storageNamespace)
-    val bucket = uri.getHost
-    val key = uri.getPath
-    val addSuffixSlash = if (key.endsWith("/")) key else key.concat("/")
-    val snPrefix =
-      if (addSuffixSlash.startsWith("/")) addSuffixSlash.substring(1) else addSuffixSlash
     println("addressDFLocation: " + addressDFLocation)
 
     val df = expiredAddresses
       .where(col("run_id") === runID)
       .where(col("relative") === true)
 
-    bulkRemove(df, MaxBulkSize, bucket, region, awsRetries, snPrefix, hcValues).toDF("addresses")
+    bulkRemove(df, storageNamespace, region, hcValues, storageType).toDF("addresses")
   }
 
   private def writeParquetReport(
