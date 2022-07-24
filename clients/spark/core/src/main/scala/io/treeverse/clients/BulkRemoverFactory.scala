@@ -120,13 +120,12 @@ object BulkRemoverFactory {
         override def test(s: String): Boolean = !EmptyString.equals(s)
       }
 
-      var deletedBlobs = Seq[String]()
       try {
         val responses = blobBatchClient.deleteBlobs(removeKeys, DeleteSnapshotsOptionType.INCLUDE)
         // TODO(Tals): extract urls of successfully deleted objects from response, the current version does not do that.
-        deletedBlobs ++ responses
-          .mapPage[URL](extractUrlIfBlobDeleted)
+        responses
           .stream()
+          .map[URL](extractUrlIfBlobDeleted)
           .map[String](urlToString)
           .filter(isNonEmptyString)
           .collect(Collectors.toList())
@@ -135,8 +134,8 @@ object BulkRemoverFactory {
       } catch {
         case e: Throwable =>
           e.printStackTrace()
+          Seq.empty
       }
-      deletedBlobs
     }
 
     private def getBlobBatchClient(
