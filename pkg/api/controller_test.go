@@ -2434,7 +2434,7 @@ func testController_ExpandTemplate(t *testing.T, kvEnabled bool) {
 		// OpenAPI places additional query params in the wrong
 		// place.  Use a request editor to place them directly as a
 		// query string.
-		resp, err := clt.ExpandTemplateWithResponse(ctx, "spark.conf.tt", &api.ExpandTemplateParams{},
+		resp, err := clt.ExpandTemplateWithResponse(ctx, "spark.submit.conf.tt", &api.ExpandTemplateParams{},
 			api.RequestEditorFn(func(_ context.Context, req *http.Request) error {
 				values := req.URL.Query()
 				values.Add("lakefs_url", lfsURL)

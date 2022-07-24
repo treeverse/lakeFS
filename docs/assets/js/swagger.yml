@@ -623,7 +623,7 @@ components:
       required:
         - username
 
-      
+
     UpdatePasswordByToken:
       type: object
       properties:
@@ -1216,7 +1216,7 @@ paths:
             $ref: "#/components/responses/Unauthorized"
           default:
             $ref: "#/components/responses/ServerError"
- 
+
   /auth/password/forgot:
       post:
         tags:
@@ -2704,7 +2704,7 @@ paths:
           $ref: "#/components/responses/ServerError"
 
     put:
-      tags: 
+      tags:
        - staging
       operationId: linkPhysicalAddress
       summary: associate staging on this physical address with a path
@@ -2984,7 +2984,7 @@ paths:
       - in: query
         name: user_metadata
         required: false
-        schema: 
+        schema:
           type: boolean
           default: true
     get:
@@ -3062,7 +3062,7 @@ paths:
       - in: query
         name: user_metadata
         required: false
-        schema: 
+        schema:
           type: boolean
           default: true
       - $ref: "#/components/parameters/PaginationAfter"
@@ -3531,7 +3531,7 @@ paths:
           schema:
             type: string
           description: URL of the template; must be relative (to a URL configured on the server).
-          example: spark.conf.tt
+          example: spark.submit.conf.tt
         - in: query
           name: params
           schema:
