@@ -560,7 +560,7 @@ func testPreMigrateGraveler(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 
 	// upload files to main branch
-	uploadFiles(t, ctx, repo, mainBranch, "a/foo")
+	uploadFiles(t, ctx, repo, mainBranch, "a/foo/")
 
 	// commit
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
@@ -585,7 +585,7 @@ func testPreMigrateGraveler(t *testing.T) {
 	require.NoError(t, err, "failed to create branch")
 	require.Equal(t, http.StatusCreated, createBranchResp.StatusCode())
 
-	uploadFiles(t, ctx, repo, "pre_branch", "b/foo")
+	uploadFiles(t, ctx, repo, "pre_branch", "b/foo/")
 
 	// update state
 	state.Graveler.Repo = repo
@@ -624,7 +624,7 @@ func testPostMigrateGraveler(t *testing.T) {
 	require.NoError(t, err, "failed to create branch")
 	require.Equal(t, http.StatusCreated, createBranchResp.StatusCode())
 
-	uploadFiles(t, ctx, state.Graveler.Repo, "post_branch", "c/foo")
+	uploadFiles(t, ctx, state.Graveler.Repo, "post_branch", "c/foo/")
 
 	// revert
 	revertResp, err := client.RevertBranchWithResponse(ctx, state.Graveler.Repo, mainBranch, api.RevertBranchJSONRequestBody{
