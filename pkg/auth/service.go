@@ -1201,7 +1201,7 @@ func (a *APIAuthService) getFirstUser(ctx context.Context, userKey *userKey, par
 		u := results[0]
 		username := u.Username
 		if username == "" {
-			username = swag.StringValue(u.Name)
+			username = u.Name
 		}
 		return &model.User{
 			CreatedAt:         time.Unix(u.CreationDate, 0),
@@ -1234,7 +1234,7 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 		u := resp.JSON200
 		returnedUsername := u.Username
 		if returnedUsername == "" {
-			returnedUsername = swag.StringValue(u.Name)
+			returnedUsername = u.Name
 		}
 		return &model.User{
 			CreatedAt:         time.Unix(u.CreationDate, 0),
@@ -1283,7 +1283,7 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 	for i, r := range results {
 		username := r.Username
 		if username == "" {
-			username = swag.StringValue(r.Name)
+			username = r.Name
 		}
 		users[i] = &model.User{
 			CreatedAt:         time.Unix(r.CreationDate, 0),
@@ -1453,7 +1453,7 @@ func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupDisplayName st
 	for i, r := range resp.JSON200.Results {
 		username := r.Username
 		if username == "" {
-			username = swag.StringValue(r.Name)
+			username = r.Name
 		}
 		members[i] = &model.User{
 			CreatedAt:    time.Unix(r.CreationDate, 0),

@@ -107,6 +107,7 @@ components:
       type: object
       required:
         - id
+        - name
         - username
         - creation_date
         - encryptedPassword
