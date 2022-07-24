@@ -1,7 +1,11 @@
 package io.treeverse.clients
 
 import com.google.protobuf.timestamp.Timestamp
-import io.treeverse.clients.LakeFSContext.{LAKEFS_CONF_API_ACCESS_KEY_KEY, LAKEFS_CONF_API_SECRET_KEY_KEY, LAKEFS_CONF_API_URL_KEY}
+import io.treeverse.clients.LakeFSContext.{
+  LAKEFS_CONF_API_ACCESS_KEY_KEY,
+  LAKEFS_CONF_API_SECRET_KEY_KEY,
+  LAKEFS_CONF_API_URL_KEY
+}
 import org.apache.hadoop.fs._
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.broadcast.Broadcast
@@ -355,15 +359,24 @@ object GarbageCollector {
 
     // The remove operation uses an SDK client to directly access the underlying storage, and therefore does not need
     // a translated storage namespace that triggers processing by Hadoop FileSystems.
-    var directAccessStorageNS = new ApiClient(apiURL, accessKey, secretKey).getStorageNamespace(repo, StorageAccessType.DirectAccess)
+    var directAccessStorageNS = new ApiClient(apiURL, accessKey, secretKey)
+      .getStorageNamespace(repo, StorageAccessType.DirectAccess)
     if (!directAccessStorageNS.endsWith("/")) {
       directAccessStorageNS += "/"
     }
 
     val removed =
-      remove(directAccessStorageNS, gcAddressesLocation, expiredAddresses, runID, region, hcValues, storageType)
+      remove(directAccessStorageNS,
+             gcAddressesLocation,
+             expiredAddresses,
+             runID,
+             region,
+             hcValues,
+             storageType
+            )
 
-    var hadoopFSAccessStorageNS = new ApiClient(apiURL, accessKey, secretKey).getStorageNamespace(repo, StorageAccessType.HadoopFS)
+    var hadoopFSAccessStorageNS = new ApiClient(apiURL, accessKey, secretKey)
+      .getStorageNamespace(repo, StorageAccessType.HadoopFS)
     if (!hadoopFSAccessStorageNS.endsWith("/")) {
       hadoopFSAccessStorageNS += "/"
     }
@@ -382,7 +395,9 @@ object GarbageCollector {
       .write
       .partitionBy("run_id")
       .mode(SaveMode.Overwrite)
-      .parquet(concatToGCLogsPrefix(hadoopFSAccessStorageNS, s"deleted_objects/$time/deleted.parquet"))
+      .parquet(
+        concatToGCLogsPrefix(hadoopFSAccessStorageNS, s"deleted_objects/$time/deleted.parquet")
+      )
 
     spark.close()
   }
@@ -405,7 +420,8 @@ object GarbageCollector {
       hcValues: Broadcast[ConfMap],
       storageType: String
   ): Dataset[String] = {
-    val bulkRemover = BulkRemoverFactory(storageType, configurationFromValues(hcValues), storageNamespace, region)
+    val bulkRemover =
+      BulkRemoverFactory(storageType, configurationFromValues(hcValues), storageNamespace, region)
     val bulkSize = bulkRemover.getMaxBulkSize()
     val spark = org.apache.spark.sql.SparkSession.active
     import spark.implicits._
@@ -419,7 +435,11 @@ object GarbageCollector {
         // mapPartitions lambda executions are sent over to Spark executors, the executors don't have access to the
         // bulkRemover created above because it was created on the driver and it is not a serializeable object. Therefore,
         // we create new bulkRemovers.
-        val bulkRemover = BulkRemoverFactory(storageType, configurationFromValues(hcValues), storageNamespace, region)
+        val bulkRemover = BulkRemoverFactory(storageType,
+                                             configurationFromValues(hcValues),
+                                             storageNamespace,
+                                             region
+                                            )
         iter
           .grouped(bulkSize)
           .flatMap(bulkRemover.deleteObjects(_, storageNamespace))

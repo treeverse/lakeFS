@@ -4,7 +4,10 @@ import com.google.common.cache.CacheBuilder
 import io.lakefs.clients.api
 import io.lakefs.clients.api.RetentionApi
 import io.lakefs.clients.api.ConfigApi
-import io.lakefs.clients.api.model.{GarbageCollectionPrepareRequest, GarbageCollectionPrepareResponse}
+import io.lakefs.clients.api.model.{
+  GarbageCollectionPrepareRequest,
+  GarbageCollectionPrepareResponse
+}
 import io.treeverse.clients.StorageAccessType.StorageAccessType
 import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
 
@@ -77,14 +80,14 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
       new CallableFn(() => {
         val repo = repositoriesApi.getRepository(repoName)
 
-        val storageNamespace =  accessType match {
-          case StorageAccessType.HadoopFS  =>
+        val storageNamespace = accessType match {
+          case StorageAccessType.HadoopFS =>
             ApiClient
               .translateURI(URI.create(repo.getStorageNamespace), getBlockstoreType())
               .normalize()
               .toString
-          case StorageAccessType.DirectAccess  => repo.getStorageNamespace
-          case _ => throw new IllegalArgumentException
+          case StorageAccessType.DirectAccess => repo.getStorageNamespace
+          case _                              => throw new IllegalArgumentException
         }
         storageNamespace
       })
@@ -120,7 +123,11 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
     if (metaRangeID != "") {
       val metaRange = metadataApi.getMetaRange(repoName, metaRangeID)
       val location = metaRange.getLocation
-      URI.create(getStorageNamespace(repoName, StorageAccessType.HadoopFS) + "/").resolve(location).normalize().toString
+      URI
+        .create(getStorageNamespace(repoName, StorageAccessType.HadoopFS) + "/")
+        .resolve(location)
+        .normalize()
+        .toString
     } else ""
   }
 
@@ -130,7 +137,10 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
   def getRangeURL(repoName: String, rangeID: String): String = {
     val range = metadataApi.getRange(repoName, rangeID)
     val location = range.getLocation
-    URI.create(getStorageNamespace(repoName, StorageAccessType.HadoopFS) + "/" + location).normalize().toString
+    URI
+      .create(getStorageNamespace(repoName, StorageAccessType.HadoopFS) + "/" + location)
+      .normalize()
+      .toString
   }
 
   def getBranchHEADCommit(repoName: String, branch: String): String =

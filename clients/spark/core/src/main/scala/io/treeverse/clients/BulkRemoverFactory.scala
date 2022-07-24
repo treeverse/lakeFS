@@ -19,35 +19,34 @@ import java.util.stream.Collectors
 import collection.JavaConverters._
 
 trait BulkRemover {
-  /**
-   * Provides the max bulk size allowed by the underlying SDK client that does the actual deletion.
+
+  /** Provides the max bulk size allowed by the underlying SDK client that does the actual deletion.
    *
-   * @return max bulk size
+   *  @return max bulk size
    */
   def getMaxBulkSize(): Int
 
-  /**
-   * Constructs object URIs so that they are consumable by the SDK client that does the actual deletion.
+  /** Constructs object URIs so that they are consumable by the SDK client that does the actual deletion.
    *
-   * @param keys keys of objects to be removed
-   * @param storageNamespace the storage namespace in which the objects are stored
-   * @return object URIs of the keys
+   *  @param keys keys of objects to be removed
+   *  @param storageNamespace the storage namespace in which the objects are stored
+   *  @return object URIs of the keys
    */
-  def constructRemoveKeyNames( keys: Seq[String], storageNamespace: String): Seq[String]
+  def constructRemoveKeyNames(keys: Seq[String], storageNamespace: String): Seq[String]
 
-  /**
-   * Bulk delete objects from the underlying storage.
+  /** Bulk delete objects from the underlying storage.
    *
-   * @param keys of objects to delete
-   * @param storageNamespace the storage namespace in which the objects are stored
-   * @return objects that removed successfully
+   *  @param keys of objects to delete
+   *  @param storageNamespace the storage namespace in which the objects are stored
+   *  @return objects that removed successfully
    */
-  def deleteObjects(keys: Seq[String], storageNamespace: String) : Seq[String]
+  def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String]
 }
 
 object BulkRemoverFactory {
 
-  private class S3BulkRemover(hc: Configuration, storageNamespace: String, region: String) extends BulkRemover {
+  private class S3BulkRemover(hc: Configuration, storageNamespace: String, region: String)
+      extends BulkRemover {
     val uri = new URI(storageNamespace)
     val bucket = uri.getHost
 
@@ -63,15 +62,20 @@ object BulkRemoverFactory {
     }
 
     private def getS3Client(
-                             hc: Configuration,
-                             bucket: String,
-                             region: String,
-                             numRetries: Int
-                           ): AmazonS3 =
+        hc: Configuration,
+        bucket: String,
+        region: String,
+        numRetries: Int
+    ): AmazonS3 =
       io.treeverse.clients.conditional.S3ClientBuilder.build(hc, bucket, region, numRetries)
 
-    override def constructRemoveKeyNames(keys: Seq[String], storageNamespace: String): Seq[String] = {
-      println("storageNamespace: " + storageNamespace) // example storage namespace s3://bucket/repoDir/
+    override def constructRemoveKeyNames(
+        keys: Seq[String],
+        storageNamespace: String
+    ): Seq[String] = {
+      println(
+        "storageNamespace: " + storageNamespace
+      ) // example storage namespace s3://bucket/repoDir/
       val uri = new URI(storageNamespace)
       val key = uri.getPath
       val addSuffixSlash = if (key.endsWith("/")) key else key.concat("/")
@@ -87,7 +91,8 @@ object BulkRemoverFactory {
     }
   }
 
-  private class AzureBlobBulkRemover(hc: Configuration, storageNamespace: String) extends BulkRemover {
+  private class AzureBlobBulkRemover(hc: Configuration, storageNamespace: String)
+      extends BulkRemover {
     val EmptyString = ""
     val uri = new URI(storageNamespace)
     val storageAccountUrl = StorageUtils.AzureBlob.uriToStorageAccountUrl(uri)
@@ -125,7 +130,8 @@ object BulkRemoverFactory {
           .map[String](urlToString)
           .filter(isNonEmptyString)
           .collect(Collectors.toList())
-          .asScala.toSeq
+          .asScala
+          .toSeq
       } catch {
         case e: Throwable =>
           e.printStackTrace()
@@ -133,26 +139,41 @@ object BulkRemoverFactory {
       deletedBlobs
     }
 
-    private def getBlobBatchClient(hc: Configuration, storageAccountUrl: String, storageAccountName: String): BlobBatchClient = {
-      val storageAccountKeyPropName = StorageAccountKeyPropertyPattern.replaceFirst(StorageAccNamePlaceHolder, storageAccountName)
+    private def getBlobBatchClient(
+        hc: Configuration,
+        storageAccountUrl: String,
+        storageAccountName: String
+    ): BlobBatchClient = {
+      val storageAccountKeyPropName =
+        StorageAccountKeyPropertyPattern.replaceFirst(StorageAccNamePlaceHolder, storageAccountName)
       val storageAccountKey = hc.get(storageAccountKeyPropName)
 
       val blobServiceClientSharedKey: BlobServiceClient =
-        new BlobServiceClientBuilder().endpoint(storageAccountUrl)
+        new BlobServiceClientBuilder()
+          .endpoint(storageAccountUrl)
           .credential(new StorageSharedKeyCredential(storageAccountName, storageAccountKey))
-          .retryOptions(new RequestRetryOptions()) // Sets the default retry options for each request done through the client https://docs.microsoft.com/en-us/java/api/com.azure.storage.common.policy.requestretryoptions.requestretryoptions?view=azure-java-stable#com-azure-storage-common-policy-requestretryoptions-requestretryoptions()
+          .retryOptions(
+            new RequestRetryOptions()
+          ) // Sets the default retry options for each request done through the client https://docs.microsoft.com/en-us/java/api/com.azure.storage.common.policy.requestretryoptions.requestretryoptions?view=azure-java-stable#com-azure-storage-common-policy-requestretryoptions-requestretryoptions()
           .httpClient(HttpClient.createDefault())
           .buildClient
 
       new BlobBatchClientBuilder(blobServiceClientSharedKey).buildClient
     }
 
-    override def constructRemoveKeyNames(keys: Seq[String], storageNamespace: String): Seq[String] = {
+    override def constructRemoveKeyNames(
+        keys: Seq[String],
+        storageNamespace: String
+    ): Seq[String] = {
       println("storageNamespace: " + storageNamespace)
-      val addSuffixSlash = if (storageNamespace.endsWith("/")) storageNamespace else storageNamespace.concat("/")
+      val addSuffixSlash =
+        if (storageNamespace.endsWith("/")) storageNamespace else storageNamespace.concat("/")
 
       if (keys.isEmpty) return Seq.empty
-      keys.map(x => addSuffixSlash.concat(x)).map(x => x.getBytes(Charset.forName("UTF-8"))).map(x => new String(x))
+      keys
+        .map(x => addSuffixSlash.concat(x))
+        .map(x => x.getBytes(Charset.forName("UTF-8")))
+        .map(x => new String(x))
     }
 
     override def getMaxBulkSize(): Int = {
@@ -160,7 +181,12 @@ object BulkRemoverFactory {
     }
   }
 
-  def apply(storageType: String, hc: Configuration, storageNamespace: String, region: String): BulkRemover = {
+  def apply(
+      storageType: String,
+      hc: Configuration,
+      storageNamespace: String,
+      region: String
+  ): BulkRemover = {
     if (storageType == StorageTypeS3) {
       new S3BulkRemover(hc, storageNamespace, region)
     } else if (storageType == StorageTypeAzure) {
