@@ -28,7 +28,7 @@ func RepositoriesPartition() string {
 // The Repository object itself is found under the common RepositoriesPartition, as it is needed to
 // generate this partition
 func RepoPartition(repo *RepositoryRecord) string {
-	return fmt.Sprint("%s-%d", repo.RepositoryID.String(), repo.CreationDate.UnixNano())
+	return fmt.Sprintf("%s-%d", repo.RepositoryID.String(), repo.CreationDate.UnixNano())
 }
 
 func TagPath(tagID TagID) string {

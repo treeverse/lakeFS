@@ -464,7 +464,6 @@ func (m *KVManager) addCommit(ctx context.Context, repoPartition string, commit 
 		return "", err
 	}
 	return graveler.CommitID(commitID), nil
-
 }
 
 func (m *KVManager) AddCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {
