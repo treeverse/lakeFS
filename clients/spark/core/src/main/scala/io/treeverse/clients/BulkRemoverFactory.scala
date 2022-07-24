@@ -1,6 +1,5 @@
 package io.treeverse.clients
 
-import com.amazonaws.services.kinesisfirehose.model.RetryOptions
 import com.amazonaws.services.s3.{AmazonS3, model}
 import com.azure.core.http.HttpClient
 import com.azure.core.http.rest.Response
@@ -14,8 +13,9 @@ import io.treeverse.clients.StorageUtils.S3._
 import io.treeverse.clients.StorageUtils._
 import org.apache.hadoop.conf.Configuration
 
-import java.net.URI
+import java.net.{URI, URL}
 import java.nio.charset.Charset
+import java.util.stream.Collectors
 import collection.JavaConverters._
 
 trait BulkRemover {
@@ -88,6 +88,7 @@ object BulkRemoverFactory {
   }
 
   private class AzureBlobBulkRemover(hc: Configuration, storageNamespace: String) extends BulkRemover {
+    val EmptyString = ""
     val uri = new URI(storageNamespace)
     val storageAccountUrl = StorageUtils.AzureBlob.uriToStorageAccountUrl(uri)
     val storageAccountName = StorageUtils.AzureBlob.uriToStorageAccountName(uri)
@@ -99,21 +100,37 @@ object BulkRemoverFactory {
 
       val blobBatchClient = getBlobBatchClient(hc, storageAccountUrl, storageAccountName)
 
-      //TODO (Tals): extract urls of successfully deleted objects from response, the current version does not do that.
+      val extractUrlIfBlobDeleted = new java.util.function.Function[Response[Void], URL]() {
+        def apply(response: Response[Void]): URL = {
+          if (response.getStatusCode == 200) {
+            response.getRequest.getUrl
+          }
+          new URL(EmptyString)
+        }
+      }
+      val urlToString = new java.util.function.Function[URL, String]() {
+        def apply(url: URL): String = url.toString
+      }
+      val isNonEmptyString = new java.util.function.Predicate[String]() {
+        override def test(s: String): Boolean = !EmptyString.equals(s)
+      }
+
+      var deletedBlobs = Seq[String]()
       try {
         val responses = blobBatchClient.deleteBlobs(removeKeys, DeleteSnapshotsOptionType.INCLUDE)
-        responses.mapPage((response: Response[Void]) => {
-            if (response.getStatusCode == 200) {
-              response.getRequest.getUrl
-            }
-          })
-          .mapPage(url => url.toString)
+        // TODO(Tals): extract urls of successfully deleted objects from response, the current version does not do that.
+        deletedBlobs ++ responses
+          .mapPage[URL](extractUrlIfBlobDeleted)
+          .stream()
+          .map[String](urlToString)
+          .filter(isNonEmptyString)
+          .collect(Collectors.toList())
           .asScala.toSeq
       } catch {
         case e: Throwable =>
           e.printStackTrace()
-          Seq.empty
       }
+      deletedBlobs
     }
 
     private def getBlobBatchClient(hc: Configuration, storageAccountUrl: String, storageAccountName: String): BlobBatchClient = {
