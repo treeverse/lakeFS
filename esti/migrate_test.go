@@ -564,7 +564,7 @@ func testPreMigrateGraveler(t *testing.T) {
 
 	// commit
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
-		Message: "mixedOrderCommit1",
+		Message: "pre_commit",
 	})
 	require.NoError(t, err, "failed to commit changes")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())

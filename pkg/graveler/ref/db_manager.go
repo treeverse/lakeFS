@@ -31,7 +31,7 @@ const (
 
 //nolint:gochecknoinits
 func init() {
-	kvpg.RegisterMigrate(packageName, Migrate, []string{"graveler_repositories", "graveler_commits", "graveler_tgs"})
+	kvpg.RegisterMigrate(packageName, Migrate, []string{"graveler_repositories", "graveler_commits", "graveler_tags"})
 }
 
 var encoder kv.SafeEncoder
