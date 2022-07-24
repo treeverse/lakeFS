@@ -548,3 +548,9 @@ td .form-group {
   margin-bottom: 20px;
   margin-top: 40px;
 }
+
+.code-container {
+  border-radius: 10px;
+  border: 1px solid #dadada;
+  background-color: #FBFBFB;
+}
