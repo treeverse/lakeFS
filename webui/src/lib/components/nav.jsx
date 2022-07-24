@@ -7,6 +7,8 @@ import {buildURL} from "../hooks/router";
 import {Box, Tabs} from "@mui/material";
 import {ClipboardButton} from "./controls";
 import {FaRegCopy} from "react-icons/fa";
+import SyntaxHighlighter from "react-syntax-highlighter";
+import { a11yLight } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
 
 function isModifiedEvent(event) {
@@ -79,7 +81,9 @@ export function CodeTabPanel({children, value, index, ...other}) {
                 <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', py: 1}}
                      className={'code-container text-secondary'}>
                     <Box sx={{ml: 2}}>
-                        {children}
+                        <SyntaxHighlighter style={a11yLight} wrapLongLines customStyle={{margin: 0, padding: 0, backgroundColor: 'inherit'}}>
+                            {children}
+                        </SyntaxHighlighter>
                     </Box>
                     <Box sx={{mr: 2}}>
                         <ClipboardButton icon={<FaRegCopy size={16}/>} variant="link" tooltip="Copy to clipboard"
