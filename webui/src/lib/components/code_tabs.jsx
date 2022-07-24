@@ -5,16 +5,16 @@ import React from "react";
 import SyntaxHighlighter from "react-syntax-highlighter/src/light";
 import {a11yLight} from "react-syntax-highlighter/src/styles/hljs";
 
-export function CodeTabPanel({children, value, index, ...other}) {
+export function CodeTabPanel({children, isSelected, index, ...other}) {
     return (
         <div
             role="code-tabpanel"
-            hidden={value !== index}
+            hidden={!isSelected}
             id={`code-tabpanel-${index}`}
             aria-labelledby={`code-tabpanel-${index}`}
             {...other}
         >
-            {value === index && (
+            {isSelected && (
                 <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', py: 1}}
                      className={'code-container text-secondary'}>
                     <Box sx={{ml: 2}}>
