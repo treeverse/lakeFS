@@ -10,6 +10,7 @@ import Table from "react-bootstrap/Table";
 import {OverlayTrigger} from "react-bootstrap";
 import {CheckIcon, ClippyIcon, SyncIcon} from "@primer/octicons-react";
 import {Link} from "./nav";
+import {Box, CircularProgress, Typography} from "@mui/material";
 
 
 const defaultDebounceMs = 300;
@@ -350,3 +351,16 @@ export const Warnings = ({ warnings = [] }) => {
            )}
        </ul>;
 };
+
+export const ProgressSpinner = ({text, changingElement =''}) => {
+    return (
+        <Box sx={{display: 'flex', alignItems: 'center'}}>
+            <Box>
+                <CircularProgress size={50}/>
+            </Box>
+            <Box sx={{p: 4}}>
+                <Typography>{text}{changingElement}</Typography>
+            </Box>
+        </Box>
+    );
+}
