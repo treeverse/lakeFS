@@ -303,7 +303,7 @@ type Branch struct {
 
 // BranchRecord holds BranchID with the associated Branch data
 type BranchRecord struct {
-	BranchID BranchID
+	BranchID BranchID `db:"id"`
 	*Branch
 }
 
@@ -315,7 +315,7 @@ type ValueUpdateFunc func(*Value) (*Value, error)
 
 // TagRecord holds TagID with the associated Tag data
 type TagRecord struct {
-	TagID    TagID
+	TagID    TagID `db:"id"`
 	CommitID CommitID
 }
 
