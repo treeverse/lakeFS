@@ -262,7 +262,7 @@ logging:
   output: "-"
 
 database:
-  connection_string: "postgres://user:pass@lakefs.rds.amazonaws.com:5432/postgres"
+  connection_string: "postgres://azureuser@lakefs-db:pass@lakefs-db.postgres.database.azure.com/postgres"
 
 auth:
   encrypt:
