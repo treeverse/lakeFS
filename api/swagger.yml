@@ -549,6 +549,7 @@ components:
       properties:
         id:
           type: string
+          description: a unique identifier for the user. In password-based authentication, this is the email.
         creation_date:
           type: integer
           format: int64
@@ -579,6 +580,7 @@ components:
       properties:
         id:
           type: string
+          description: a unique identifier for the user. In password-based authentication, this is the email.
         invite_user:
           type: boolean
       required:

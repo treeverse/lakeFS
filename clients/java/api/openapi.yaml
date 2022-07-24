@@ -5149,6 +5149,8 @@ components:
         email: email
       properties:
         id:
+          description: a unique identifier for the user. In password-based authentication,
+            this is the email.
           type: string
         creation_date:
           description: Unix Epoch in seconds
@@ -5190,6 +5192,8 @@ components:
         id: id
       properties:
         id:
+          description: a unique identifier for the user. In password-based authentication,
+            this is the email.
           type: string
         invite_user:
           type: boolean

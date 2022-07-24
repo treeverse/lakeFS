@@ -114,6 +114,7 @@ components:
       required:
         - id
         - name
+        - username
         - creation_date
         - encryptedPassword
       properties:
@@ -122,6 +123,11 @@ components:
           format: int64
         name:
           type: string
+          description: replaced by username
+          deprecated: true
+        username:
+          type: string
+          description: a unique identifier for the user. In password-based authentication, this is the email.
         creation_date:
           type: integer
           format: int64
