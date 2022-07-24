@@ -37,7 +37,7 @@ func (m *Manager) Get(ctx context.Context, st graveler.StagingToken, key gravele
 	return graveler.StagedEntryFromProto(data), nil
 }
 
-func (m *Manager) Set(ctx context.Context, st graveler.StagingToken, key graveler.Key, value *graveler.Value, overwrite bool) error {
+func (m *Manager) Set(ctx context.Context, st graveler.StagingToken, key graveler.Key, value *graveler.Value, _ bool) error {
 	// Tombstone handling
 	if value == nil {
 		value = new(graveler.Value)
@@ -46,37 +46,27 @@ func (m *Manager) Set(ctx context.Context, st graveler.StagingToken, key gravele
 	}
 
 	pb := graveler.ProtoFromStagedEntry(key, value)
-	if overwrite {
-		return m.store.SetMsg(ctx, string(st), key, pb)
-	}
-
-	return m.setWithoutOverwrite(ctx, st, key, pb)
+	return m.store.SetMsg(ctx, string(st), key, pb)
 }
 
-func (m *Manager) setWithoutOverwrite(ctx context.Context, st graveler.StagingToken, key graveler.Key, pb *graveler.StagedEntryData) error {
-	// no overwrite means we need to check if key exists, or value is a tombstone
-	oldValue, err := m.Get(ctx, st, key)
-	if err != nil && !errors.Is(err, graveler.ErrNotFound) {
+func (m *Manager) Update(ctx context.Context, st graveler.StagingToken, key graveler.Key, updateFunc graveler.ValueUpdateFunc) error {
+	oldValueProto := &graveler.StagedEntryData{}
+	var oldValue *graveler.Value
+	pred, err := m.store.GetMsg(ctx, string(st), key, oldValueProto)
+	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			oldValue = nil
+		} else {
+			return err
+		}
+	} else {
+		oldValue = graveler.StagedEntryFromProto(oldValueProto)
+	}
+	updatedValue, err := updateFunc(oldValue)
+	if err != nil {
 		return err
 	}
-
-	switch {
-	case oldValue != nil && oldValue.Identity != nil:
-		// exists but not a tombstone, so we can't overwrite
-		return graveler.ErrPreconditionFailed
-	case oldValue == nil:
-		// doesn't exist, so we can write
-		err = m.store.SetMsgIf(ctx, string(st), key, pb, nil)
-	case oldValue.Identity == nil:
-		// tombstone handling
-		tombstoneProto := graveler.ProtoFromStagedEntry(key, new(graveler.Value))
-		err = m.store.SetMsgIf(ctx, string(st), key, pb, tombstoneProto)
-	}
-
-	if errors.Is(err, kv.ErrPredicateFailed) {
-		return graveler.ErrPreconditionFailed
-	}
-	return err
+	return m.store.SetMsgIf(ctx, string(st), key, graveler.ProtoFromStagedEntry(key, updatedValue), pred)
 }
 
 func (m *Manager) DropKey(ctx context.Context, st graveler.StagingToken, key graveler.Key) error {

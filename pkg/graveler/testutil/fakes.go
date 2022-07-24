@@ -123,6 +123,7 @@ type StagingFake struct {
 	LastRemovedKey     graveler.Key
 	DropCalled         bool
 	SetErr             error
+	UpdateErr          error
 }
 
 func (s *StagingFake) DropByPrefix(context.Context, graveler.StagingToken, graveler.Key) error {
@@ -159,6 +160,25 @@ func (s *StagingFake) Set(_ context.Context, _ graveler.StagingToken, key gravel
 		Value: value,
 	}
 	return nil
+}
+
+func (s *StagingFake) Update(ctx context.Context, st graveler.StagingToken, key graveler.Key, updateFunc graveler.ValueUpdateFunc) error {
+	if s.UpdateErr != nil {
+		return s.UpdateErr
+	}
+	if v, ok := s.Values[st.String()][key.String()]; ok {
+		val, err := updateFunc(v)
+		if err != nil {
+			return err
+		}
+		s.LastSetValueRecord = &graveler.ValueRecord{
+			Key:   key,
+			Value: val,
+		}
+		return nil
+	}
+
+	return graveler.ErrNotFound
 }
 
 func (s *StagingFake) DropKey(_ context.Context, _ graveler.StagingToken, key graveler.Key) error {
