@@ -1318,6 +1318,8 @@ func (a *APIAuthService) validateResponse(resp openapi3filter.StatusCoder, expec
 	case http.StatusNotFound:
 		return ErrNotFound
 	case http.StatusBadRequest:
+		return ErrInvalidRequest
+	case http.StatusConflict:
 		return ErrAlreadyExists
 	case http.StatusUnauthorized:
 		return ErrInsufficientPermissions
