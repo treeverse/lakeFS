@@ -7,7 +7,7 @@ import {TabsWrapper} from "../../../lib/components/nav";
 import {CodeTabPanel} from "../../../lib/components/code_tabs";
 
 const SPARK_SUBMIT_TEMPLATE_NAME = 'spark.conf.tt';
-const SPARK_EMR_TEMPLATE_NAME = 'spark.conf.tt';
+const SPARK_CORE_SITE_TEMPLATE_NAME = 'spark.conf.tt';
 const SPARK_DATABRICKS_TEMPLATE_NAME = 'spark.conf.tt';
 const lakeFSURLProp = {lakefs_url: window.location.origin};
 
