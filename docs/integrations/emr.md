@@ -1,7 +1,7 @@
 ---
 layout: default
 title: EMR
-description: This section covers how you can start using lakeFS with Amazon EMR, an AWS managed service that simplifies running open-source big data frameworks.
+description: This section shows how you can start using lakeFS with Amazon EMR, an AWS managed service that simplifies running open-source Big Data frameworks.
 parent: Integrations
 nav_order: 35
 has_children: false
@@ -10,11 +10,11 @@ redirect_from: ../using/emr.html
 
 # Using lakeFS with EMR
 
-[Amazon EMR](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-what-is-emr.html) is a managed cluster platform that simplifies running big data frameworks, such as Apache Hadoop and Apache Spark.
+[Amazon EMR](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-what-is-emr.html) is a managed cluster platform that simplifies running Big Data frameworks, such as Apache Hadoop and Apache Spark.
 
 ## Configuration
-In order to configure Spark on EMR to work with lakeFS we will set the lakeFS credentials and endpoint in the appropriate fields.
-The exact configuration keys depends on the application running in EMR, but their format is of the form:
+To configure Spark on EMR to work with lakeFS, you need to set the lakeFS credentials and endpoint in the appropriate fields.
+The exact configuration keys depends on the application running in EMR, but their format follows this form:
 
 lakeFS endpoint: `*.fs.s3a.endpoint`
 
@@ -25,17 +25,17 @@ lakeFS secret key: `*.fs.s3a.secret.key`
 EMR will encourage users to use s3:// with Spark as it will use EMR's proprietary driver. Users need to use s3a:// for this guide to work.
 {: .note}
 
-The Spark job reads and writes will be directed to the lakeFS instance, using the [s3 gateway](../understand/architecture.md#s3-gateway).
+The Spark job reads and writes will be directed to the lakeFS instance, using the [S3 gateway](../understand/architecture.md#s3-gateway).
 
-There are 2 options for configuring an EMR cluster to work with lakeFS:
-1. When you create a cluster - All steps will use the cluster configuration.
+You can choose from two options for configuring an EMR cluster to work with lakeFS:
+1. When you create a cluster - All the steps will use the cluster configuration.
    No specific configuration needed when adding a step.
-1. Configuring on each step - cluster is created with the default s3 configuration.
+1. Configuring on each step - A cluster is created with the default S3 configuration.
    Each step using lakeFS should pass the appropriate config params.
 
 ## Configuration on cluster creation
 
-Use the below configuration when creating the cluster. You may delete any app configuration which is not suitable for your use-case.
+Use the below configuration when creating the cluster. You may delete any app configuration that is not suitable for your use case.
 ```json
 [{
    "Classification": "presto-connector-hive",
