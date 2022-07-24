@@ -113,3 +113,17 @@ func ProtoFromStagedEntry(key []byte, v *Value) *StagedEntryData {
 		Data:     v.Data,
 	}
 }
+
+func TagFromProto(pb *TagData) *TagRecord {
+	return &TagRecord{
+		TagID:    TagID(pb.Id),
+		CommitID: CommitID(pb.CommitId),
+	}
+}
+
+func ProtoFromTag(t *TagRecord) *TagData {
+	return &TagData{
+		Id:       string(t.TagID),
+		CommitId: string(t.CommitID),
+	}
+}

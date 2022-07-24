@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"testing"
 	"time"
 
@@ -29,6 +30,7 @@ type migrateTestState struct {
 	Multiparts multipartsState
 	Actions    actionsState
 	Auth       authState
+	Graveler   gravelerState
 }
 
 type multipartsState struct {
@@ -76,6 +78,14 @@ type userPermissions struct {
 	canDeleteBranch bool
 }
 
+type gravelerState struct {
+	Repo               string `json:"repo"`
+	CommitID           string `json:"commit_id"`
+	TagID              string `json:"tag_id"`
+	committedObjPath   string `json:"committed_obj_path"`
+	uncommittedObjPath string `json:"uncommitted_obj_path"`
+}
+
 const (
 	migrateMultipartsFile     = "multipart_file"
 	migrateMultipartsFilepath = mainBranch + "/" + migrateMultipartsFile
@@ -85,6 +95,7 @@ const (
 	migratePrePartsCount      = 3
 	migratePostPartsCount     = 2
 	authCustomGroupName       = "user-defined-group"
+	migrateFileSize           = 5
 )
 
 var (
@@ -149,6 +160,7 @@ func preMigrateTests(t *testing.T) {
 	t.Run("TestPreMigrateMultipart", testPreMigrateMultipart)
 	t.Run("TestPreMigrateActions", testPreMigrateActions)
 	t.Run("TestPreMigrateAuth", testPreMigrateAuth)
+	t.Run("TestPreMigrateGraveler", testPreMigrateGraveler)
 
 	saveStateInLakeFS(t)
 }
@@ -160,6 +172,7 @@ func postMigrateTests(t *testing.T) {
 	t.Run("TestPostMigrateMultipart", testPostMigrateMultipart)
 	t.Run("TestPostMigrateActions", testPostMigrateActions)
 	t.Run("TestPostMigrateAuth", testPostMigrateAuth)
+	t.Run("TestPostMigrateGraveler", testPostMigrateGraveler)
 }
 
 func saveStateInLakeFS(t *testing.T) {
@@ -540,4 +553,148 @@ func verifyUserPermissions(t *testing.T, ctx context.Context, repo, userType str
 	} else {
 		require.Equal(t, http.StatusUnauthorized, respDeleteBranch.StatusCode(), "unexpected success for %s - DeleteBranch", userType)
 	}
+}
+
+func testPreMigrateGraveler(t *testing.T) {
+	//create repository
+	ctx, _, repo := setupTest(t)
+
+	// upload files to main branch
+	uploadFiles(t, ctx, repo, mainBranch, "a/foo")
+
+	// commit
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
+		Message: "mixedOrderCommit1",
+	})
+	require.NoError(t, err, "failed to commit changes")
+	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
+
+	// create tag
+	createTagResp, err := client.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
+		Id:  "pre_tag",
+		Ref: mainBranch,
+	})
+	require.NoError(t, err, "failed to create tag")
+	require.Equal(t, http.StatusCreated, createTagResp.StatusCode())
+
+	// create branch with uncommitted data for the post test
+	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
+		Name:   "pre_branch",
+		Source: mainBranch,
+	})
+	require.NoError(t, err, "failed to create branch")
+	require.Equal(t, http.StatusCreated, createBranchResp.StatusCode())
+
+	uploadFiles(t, ctx, repo, "pre_branch", "b/foo")
+
+	// update state
+	state.Graveler.Repo = repo
+	state.Graveler.CommitID = commitResp.JSON201.Id
+	state.Graveler.TagID = "pre_tag"
+	state.Graveler.committedObjPath = "a/foo/1"
+	state.Graveler.uncommittedObjPath = "b/foo/1"
+}
+
+func testPostMigrateGraveler(t *testing.T) {
+	ctx, _, _ := setupTest(t)
+
+	// verifying all previous resources are preserved through the migration process
+	verifyGravelerEntities(t, ctx)
+
+	// commit to the uncommitted branch
+	commitResp, err := client.CommitWithResponse(ctx, state.Graveler.Repo, "pre_branch", &api.CommitParams{}, api.CommitJSONRequestBody{
+		Message: "commit after migrate",
+	})
+	require.NoError(t, err, "failed to commit changes")
+	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
+
+	// create tag from previous commit
+	createTagResp, err := client.CreateTagWithResponse(ctx, state.Graveler.Repo, api.CreateTagJSONRequestBody{
+		Id:  "post_tag",
+		Ref: state.Graveler.CommitID,
+	})
+	require.NoError(t, err, "failed to create tag")
+	require.Equal(t, http.StatusCreated, createTagResp.StatusCode())
+
+	// create branch from the previous commit
+	createBranchResp, err := client.CreateBranchWithResponse(ctx, state.Graveler.Repo, api.CreateBranchJSONRequestBody{
+		Name:   "post_branch",
+		Source: state.Graveler.CommitID,
+	})
+	require.NoError(t, err, "failed to create branch")
+	require.Equal(t, http.StatusCreated, createBranchResp.StatusCode())
+
+	uploadFiles(t, ctx, state.Graveler.Repo, "post_branch", "c/foo")
+
+	// revert
+	revertResp, err := client.RevertBranchWithResponse(ctx, state.Graveler.Repo, mainBranch, api.RevertBranchJSONRequestBody{
+		Ref: mainBranch,
+	})
+	require.NoError(t, err, "failed to revert")
+	require.Equal(t, http.StatusCreated, revertResp.StatusCode())
+
+	// assert file doesn't exist
+	unobjResp, err := client.GetObjectWithResponse(ctx, state.Graveler.Repo, mainBranch, &api.GetObjectParams{Path: state.Graveler.committedObjPath})
+	require.NoError(t, err)
+	require.Equal(t, unobjResp.HTTPResponse.StatusCode, http.StatusNotFound, "object not found")
+
+	verifyGravelerList(t, ctx)
+}
+
+func uploadFiles(t *testing.T, ctx context.Context, repo string, branch string, prefix string) {
+	for i := 0; i < migrateFileSize; i++ {
+		_, _, err := uploadFileRandomDataAndReport(ctx, repo, branch, prefix+strconv.Itoa(i), true)
+		if err != nil {
+			t.Error(err)
+		}
+	}
+}
+
+func verifyGravelerEntities(t *testing.T, ctx context.Context) {
+	repoResp, err := client.GetRepositoryWithResponse(ctx, state.Graveler.Repo)
+	require.NoError(t, err, "failed to get repository")
+	require.Equal(t, http.StatusOK, repoResp.StatusCode())
+
+	commitResp, err := client.GetCommitWithResponse(ctx, state.Graveler.Repo, state.Graveler.CommitID)
+	require.NoError(t, err, "failed to get commit")
+	require.Equal(t, http.StatusOK, commitResp.StatusCode())
+
+	branchResp, err := client.GetBranchWithResponse(ctx, state.Graveler.Repo, mainBranch)
+	require.NoError(t, err, "failed to get branch")
+	require.Equal(t, http.StatusOK, branchResp.StatusCode())
+
+	objResp, err := client.GetObjectWithResponse(ctx, state.Graveler.Repo, mainBranch, &api.GetObjectParams{Path: state.Graveler.committedObjPath})
+	require.NoError(t, err, "failed to get object")
+	require.Equal(t, http.StatusOK, objResp.StatusCode())
+
+	tagResp, err := client.GetTagWithResponse(ctx, state.Graveler.Repo, state.Graveler.CommitID)
+	require.NoError(t, err, "failed to get tag")
+	require.Equal(t, http.StatusOK, tagResp.StatusCode())
+
+	unobjResp, err := client.GetObjectWithResponse(ctx, state.Graveler.Repo, "pre_branch", &api.GetObjectParams{Path: state.Graveler.uncommittedObjPath})
+	require.NoError(t, err, "failed to get object")
+	require.Equal(t, http.StatusOK, unobjResp.StatusCode())
+}
+
+func verifyGravelerList(t *testing.T, ctx context.Context) {
+	// list pre- and post-entities
+	repoResp, err := client.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+	require.NoError(t, err, "list repositories")
+	require.Equal(t, http.StatusOK, repoResp.StatusCode())
+	repoPayload := repoResp.JSON200
+	require.Equal(t, len(repoPayload.Results), 2)
+	require.Equal(t, repoPayload.Pagination.HasMore, false)
+
+	branchResp, err := client.ListBranchesWithResponse(ctx, state.Graveler.Repo, &api.ListBranchesParams{})
+	require.NoError(t, err, "list branches")
+	require.Equal(t, http.StatusOK, branchResp.StatusCode())
+	branchePayload := branchResp.JSON200
+	require.Equal(t, len(branchePayload.Results), 3)
+	require.Equal(t, branchePayload.Pagination.HasMore, false)
+
+	commitResp, err := client.LogCommitsWithResponse(ctx, state.Graveler.Repo, mainBranch, &api.LogCommitsParams{})
+	require.NoError(t, err, "list commits")
+	commitPayload := commitResp.JSON200
+	require.Equal(t, len(commitResp.JSON200.Results), 3)
+	require.Equal(t, commitPayload.Pagination.HasMore, false)
 }

@@ -31,7 +31,7 @@ const (
 
 //nolint:gochecknoinits
 func init() {
-	kvpg.RegisterMigrate(packageName, Migrate, []string{"graveler_repositories"})
+	kvpg.RegisterMigrate(packageName, Migrate, []string{"graveler_repositories", "graveler_commits", "graveler_tgs"})
 }
 
 var encoder kv.SafeEncoder
@@ -544,8 +544,107 @@ func (m *DBManager) addGenerationToNodes(nodes map[graveler.CommitID]*CommitNode
 	}
 }
 
+func cWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.RepositoryRecord) error {
+	type commitMigrate struct {
+		graveler.CommitRecord
+		RepoID string `db:"repository_id"`
+	}
+	commits, err := d.Query(ctx, "SELECT * FROM graveler_commits WHERE repository_id=$1", repository.RepositoryID)
+	if err != nil {
+		return err
+	}
+	defer commits.Close()
+	commitScanner := pgxscan.NewRowScanner(commits)
+	for commits.Next() {
+		c := new(commitMigrate)
+		err = commitScanner.Scan(c)
+		if err != nil {
+			return err
+		}
+		pb := graveler.ProtoFromCommit(c.CommitID, c.Commit)
+		data, err := proto.Marshal(pb)
+		if err != nil {
+			return err
+		}
+		if err = encoder.Encode(kv.Entry{
+			PartitionKey: []byte(graveler.RepoPartition(repository)),
+			Key:          []byte(graveler.CommitPath(c.CommitID)),
+			Value:        data,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func bWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.RepositoryRecord) error {
+	type branchMigrate struct {
+		graveler.BranchRecord
+		RepoID string `db:"repository_id"`
+	}
+	branches, err := d.Query(ctx, "SELECT * FROM graveler_branches WHERE repository_id=$1", repository.RepositoryID)
+	if err != nil {
+		return err
+	}
+	defer branches.Close()
+	branchesScanner := pgxscan.NewRowScanner(branches)
+	for branches.Next() {
+		b := new(branchMigrate)
+		err = branchesScanner.Scan(b)
+		if err != nil {
+			return err
+		}
+		pb := protoFromBranch(b.BranchID, b.Branch)
+		data, err := proto.Marshal(pb)
+		if err != nil {
+			return err
+		}
+		if err = encoder.Encode(kv.Entry{
+			PartitionKey: []byte(graveler.RepoPartition(repository)),
+			Key:          []byte(graveler.BranchPath(b.BranchID)),
+			Value:        data,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func tWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.RepositoryRecord) error {
+	type tagMigrate struct {
+		graveler.TagRecord
+		RepoID string `db:"repository_id"`
+	}
+	tags, err := d.Query(ctx, "SELECT * FROM graveler_tags WHERE repository_id=$1", repository.RepositoryID)
+	if err != nil {
+		return err
+	}
+	defer tags.Close()
+	tagScanner := pgxscan.NewRowScanner(tags)
+	for tags.Next() {
+		t := new(tagMigrate)
+		err = tagScanner.Scan(t)
+		if err != nil {
+			return err
+		}
+		pb := graveler.ProtoFromTag(&graveler.TagRecord{TagID: t.TagID, CommitID: t.CommitID})
+		data, err := proto.Marshal(pb)
+		if err != nil {
+			return err
+		}
+		if err = encoder.Encode(kv.Entry{
+			PartitionKey: []byte(graveler.RepoPartition(repository)),
+			Key:          []byte(graveler.TagPath(t.TagID)),
+			Value:        data,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // rWorker writes a repository, and all repository related entities, to fd
-func rWorker(rChan <-chan *graveler.RepositoryRecord) error {
+func rWorker(ctx context.Context, d *pgxpool.Pool, rChan <-chan *graveler.RepositoryRecord) error {
 	for r := range rChan {
 		pb := graveler.ProtoFromRepo(r)
 		data, err := proto.Marshal(pb)
@@ -557,6 +656,20 @@ func rWorker(rChan <-chan *graveler.RepositoryRecord) error {
 			Key:          []byte(graveler.RepoPath(r.RepositoryID)),
 			Value:        data,
 		}); err != nil {
+			return err
+		}
+
+		// migrate repository entities
+		err = cWorker(ctx, d, r)
+		if err != nil {
+			return err
+		}
+		err = bWorker(ctx, d, r)
+		if err != nil {
+			return err
+		}
+		err = tWorker(ctx, d, r)
+		if err != nil {
 			return err
 		}
 	}
@@ -582,7 +695,7 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 	var g multierror.Group
 	for i := 0; i < jobWorkers; i++ {
 		g.Go(func() error {
-			return rWorker(rChan)
+			return rWorker(ctx, d, rChan)
 		})
 	}
 
