@@ -422,7 +422,7 @@ lakectl auth groups create [flags]
 
 ```
   -h, --help        help for create
-      --id string   group identifier
+      --id string   Group identifier
 ```
 
 
@@ -440,7 +440,7 @@ lakectl auth groups delete [flags]
 
 ```
   -h, --help        help for delete
-      --id string   group identifier
+      --id string   Group identifier
 ```
 
 
@@ -513,8 +513,8 @@ lakectl auth groups members add [flags]
 
 ```
   -h, --help          help for add
-      --id string     group identifier
-      --user string   Username (email for password-based users). Defaults to current user.
+      --id string     Group identifier
+      --user string   Username (email for password-based users, default: current user)
 ```
 
 
@@ -554,7 +554,7 @@ lakectl auth groups members list [flags]
 {:.no_toc}
 
 ```
-      --id string      group identifier
+      --id string      Group identifier
       --amount int     how many results to return (default 100)
       --after string   show results after this value (used for pagination)
   -h, --help           help for list
@@ -575,8 +575,8 @@ lakectl auth groups members remove [flags]
 
 ```
   -h, --help          help for remove
-      --id string     group identifier
-      --user string   Username (email for password-based users). Defaults to current user.
+      --id string     Group identifier
+      --user string   Username (email for password-based users, default: current user)
 ```
 
 
@@ -607,8 +607,8 @@ lakectl auth groups policies attach [flags]
 
 ```
   -h, --help            help for attach
-      --id string       user identifier
-      --policy string   policy identifier
+      --id string       User identifier
+      --policy string   Policy identifier
 ```
 
 
@@ -626,8 +626,8 @@ lakectl auth groups policies detach [flags]
 
 ```
   -h, --help            help for detach
-      --id string       user identifier
-      --policy string   policy identifier
+      --id string       User identifier
+      --policy string   Policy identifier
 ```
 
 
@@ -667,7 +667,7 @@ lakectl auth groups policies list [flags]
 {:.no_toc}
 
 ```
-      --id string      group identifier
+      --id string      Group identifier
       --amount int     how many results to return (default 100)
       --after string   show results after this value (used for pagination)
   -h, --help           help for list
@@ -724,7 +724,7 @@ lakectl auth policies create [flags]
 
 ```
   -h, --help                        help for create
-      --id string                   policy identifier
+      --id string                   Policy identifier
       --statement-document string   JSON statement document path (or "-" for stdin)
 ```
 
@@ -743,7 +743,7 @@ lakectl auth policies delete [flags]
 
 ```
   -h, --help        help for delete
-      --id string   policy identifier
+      --id string   Policy identifier
 ```
 
 
@@ -803,7 +803,7 @@ lakectl auth policies show [flags]
 
 ```
   -h, --help        help for show
-      --id string   policy identifier
+      --id string   Policy identifier
 ```
 
 
@@ -865,7 +865,7 @@ lakectl auth users credentials create [flags]
 
 ```
   -h, --help        help for create
-      --id string   Username (email for password-based users). Defaults to current user.
+      --id string   Username (email for password-based users, default: current user)
 ```
 
 
@@ -882,9 +882,9 @@ lakectl auth users credentials delete [flags]
 {:.no_toc}
 
 ```
-      --access-key-id string   access key ID to delete
+      --access-key-id string   Access key ID to delete
   -h, --help                   help for delete
-      --id string              Username (email for password-based users). Defaults to current user.
+      --id string              Username (email for password-based users, default: current user)
 ```
 
 
@@ -924,7 +924,7 @@ lakectl auth users credentials list [flags]
 {:.no_toc}
 
 ```
-      --id string      Username (email for password-based users). Defaults to current user.
+      --id string      Username (email for password-based users, default: current user)
       --amount int     how many results to return (default 100)
       --after string   show results after this value (used for pagination)
   -h, --help           help for list
@@ -1075,7 +1075,7 @@ lakectl auth users policies attach [flags]
 ```
   -h, --help            help for attach
       --id string       Username (email for password-based users)
-      --policy string   policy identifier
+      --policy string   Policy identifier
 ```
 
 
@@ -1094,7 +1094,7 @@ lakectl auth users policies detach [flags]
 ```
   -h, --help            help for detach
       --id string       Username (email for password-based users)
-      --policy string   policy identifier
+      --policy string   Policy identifier
 ```
 
 
@@ -1134,7 +1134,7 @@ lakectl auth users policies list [flags]
 {:.no_toc}
 
 ```
-      --effective      list all distinct policies attached to the user, even through group memberships
+      --effective      List all distinct policies attached to the user, including by group memberships
       --id string      Username (email for password-based users)
       --amount int     how many results to return (default 100)
       --after string   show results after this value (used for pagination)
