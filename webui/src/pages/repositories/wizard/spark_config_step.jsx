@@ -5,21 +5,21 @@ import {Box, Tab} from "@mui/material";
 import React, {useState} from "react";
 import {CodeTabPanel, TabsWrapper} from "../../../lib/components/nav";
 
-const SPARK_SUBMIT_TEMPLATE_NAME = 'spark.conf.tt';
-const SPARK_EMR_TEMPLATE_NAME = 'spark.conf.tt';
-const SPARK_DATABRICKS_TEMPLATE_NAME = 'spark.conf.tt';
+const SPARK_SUBMIT_TEMPLATE_NAME = 'spark.submit.conf.tt';
+const SPARK_CORE_SITE_TEMPLATE_NAME = 'spark.core.site.conf.tt';
+const SPARK_DATABRICKS_TEMPLATE_NAME = 'spark.databricks.conf.tt';
 const lakeFSURLProp = {lakefs_url: window.location.origin};
 
 export const SparkConfigStep = ({onComplete=()=>{}}) => {
     const [confIndex, setConfIndex] = useState(0);
     const {loading, error, response} = useAPI(async () => {
         const sparkSubmitConfig = await templates.expandTemplate(SPARK_SUBMIT_TEMPLATE_NAME, lakeFSURLProp);
-        const sparkEmrConfig = await templates.expandTemplate(SPARK_EMR_TEMPLATE_NAME, lakeFSURLProp);
+        const sparkCoreSiteConfig = await templates.expandTemplate(SPARK_CORE_SITE_TEMPLATE_NAME, lakeFSURLProp);
         const sparkDBConfig = await templates.expandTemplate(SPARK_DATABRICKS_TEMPLATE_NAME, lakeFSURLProp);
         onComplete();
         return [
             {conf: sparkSubmitConfig, title: 'spark-submit'},
-            {conf: sparkEmrConfig, title: 'EMR'},
+            {conf: sparkCoreSiteConfig, title: 'core-site.xml'},
             {conf: sparkDBConfig, title: 'Databricks'}
         ]
     });
