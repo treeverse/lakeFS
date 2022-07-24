@@ -82,7 +82,7 @@ func createMigrateTestData(t *testing.T, ctx context.Context, mgr graveler.RefMa
 		}
 		for c := 0; c < numCommits; c++ {
 			commitID, err := mgr.AddCommit(ctx, repoId,
-				graveler.Commit{Version: graveler.CurrentCommitVersion, Message: strconv.Itoa(c), Parents: graveler.CommitParents{"ffsfagds"}})
+				graveler.Commit{Version: graveler.CurrentCommitVersion, Message: strconv.Itoa(c), Parents: graveler.CommitParents{"parent"}})
 			if err != nil {
 				t.Fatalf("Create Commit: %s", err)
 			}

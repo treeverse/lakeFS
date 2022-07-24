@@ -544,11 +544,38 @@ func (m *DBManager) addGenerationToNodes(nodes map[graveler.CommitID]*CommitNode
 	}
 }
 
-func cWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.RepositoryRecord) error {
-	type commitMigrate struct {
-		graveler.CommitRecord
-		RepoID string `db:"repository_id"`
+type commitMigrate struct {
+	CommitID     graveler.CommitID      `db:"id"`
+	Version      graveler.CommitVersion `db:"version"`
+	Committer    string                 `db:"committer"`
+	Message      string                 `db:"message"`
+	MetaRangeID  graveler.MetaRangeID   `db:"meta_range_id"`
+	CreationDate time.Time              `db:"creation_date"`
+	Parents      []string               `db:"parents"`
+	Metadata     graveler.Metadata      `db:"metadata"`
+	Generation   int                    `db:"generation"`
+	RepoID       string                 `db:"repository_id"`
+}
+
+func CommitFromMigrate(c *commitMigrate) *graveler.Commit {
+	var parents []graveler.CommitID
+	for _, parent := range c.Parents {
+		parents = append(parents, graveler.CommitID(parent))
 	}
+
+	return &graveler.Commit{
+		Version:      c.Version,
+		Committer:    c.Committer,
+		Message:      c.Message,
+		MetaRangeID:  c.MetaRangeID,
+		CreationDate: c.CreationDate,
+		Parents:      parents,
+		Metadata:     c.Metadata,
+		Generation:   c.Generation,
+	}
+}
+
+func cWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.RepositoryRecord) error {
 	commits, err := d.Query(ctx, "SELECT * FROM graveler_commits WHERE repository_id=$1", repository.RepositoryID)
 	if err != nil {
 		return err
@@ -561,7 +588,7 @@ func cWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.Reposito
 		if err != nil {
 			return err
 		}
-		pb := graveler.ProtoFromCommit(c.CommitID, c.Commit)
+		pb := graveler.ProtoFromCommit(c.CommitID, CommitFromMigrate(c))
 		data, err := proto.Marshal(pb)
 		if err != nil {
 			return err
