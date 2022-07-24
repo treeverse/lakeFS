@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Boto (Python)
-description: This section covers how you can start using lakeFS with Boto (Python), the AWS SDK for Python.
+description: This section shows how you can start using lakeFS with Boto (Python), the AWS SDK for Python.
 parent: Integrations
 nav_order: 45
 has_children: false
@@ -33,7 +33,8 @@ The client is now configured to operate on your lakeFS installation.
 
 ## Usage Examples
 
-### Put Object
+### Put an object into lakeFS
+
 Use a branch name and a path to put an object in lakeFS:
 
 ```python
@@ -43,9 +44,9 @@ with open('/local/path/to/file_0', 'rb') as f:
 
 You can now commit this change using the lakeFS UI or CLI.
 
-### List Objects
+### List objects
 
-List branch objects starting with a prefix:
+List the branch objects starting with a prefix:
  
 ```python
 list_resp = s3.list_objects_v2(Bucket='example-repo', Prefix='main/example-prefix')
@@ -61,7 +62,8 @@ for obj in list_resp['Contents']:
     print(obj['Key'])
 ```
 
-### Head Object
+### Get object metadata
+
 Get object metadata using branch and path:
 ```python
 s3.head_object(Bucket='example-repo', Key='main/example-file.parquet')
