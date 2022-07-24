@@ -178,11 +178,16 @@ func (s *StagingFake) List(_ context.Context, st graveler.StagingToken, _ int) (
 		return nil, s.Err
 	}
 	if s.Values != nil && s.Values[st.String()] != nil {
+		keys := make([]string, 0)
+		for k := range s.Values[st.String()] {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
 		values := make([]graveler.ValueRecord, 0)
-		for k, v := range s.Values[st.String()] {
+		for _, k := range keys {
 			values = append(values, graveler.ValueRecord{
 				Key:   graveler.Key(k),
-				Value: v,
+				Value: s.Values[st.String()][k],
 			})
 		}
 		return NewValueIteratorFake(values), nil
@@ -423,13 +428,13 @@ func (r *valueIteratorFake) Next() bool {
 }
 
 func (r *valueIteratorFake) SeekGE(id graveler.Key) {
+	r.current = len(r.records)
 	for i, record := range r.records {
 		if bytes.Compare(record.Key, id) >= 0 {
 			r.current = i - 1
 			return
 		}
 	}
-	r.current = len(r.records)
 }
 
 func (r *valueIteratorFake) Value() *graveler.ValueRecord {

@@ -35,8 +35,10 @@ func (d *uncommittedDiffIterator) getIdentityFromCommittedIfExists(val ValueReco
 		return nil, nil
 	}
 	d.committedList.SeekGE(val.Key)
-	if d.committedList.Next() && bytes.Equal(d.committedList.Value().Key, val.Key) {
-		return d.committedList.Value().Identity, nil
+	if d.committedList.Next() {
+		if bytes.Equal(d.committedList.Value().Key, val.Key) {
+			return d.committedList.Value().Identity, nil
+		}
 	}
 	if d.committedList.Err() != nil {
 		return nil, d.committedList.Err()
