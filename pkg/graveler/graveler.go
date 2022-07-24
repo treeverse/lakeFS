@@ -1695,8 +1695,38 @@ func (g *KVGraveler) Merge(ctx context.Context, repositoryID RepositoryID, desti
 	return g.db.Merge(ctx, repositoryID, destination, source, commitParams, strategy)
 }
 
+// DiffUncommitted returns DiffIterator between committed data and staging area of a branch
 func (g *KVGraveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error) {
-	return g.db.DiffUncommitted(ctx, repositoryID, branchID)
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return nil, err
+	}
+	var metaRangeID MetaRangeID
+	if branch.CommitID != "" {
+		commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+		if err != nil {
+			return nil, err
+		}
+		metaRangeID = commit.MetaRangeID
+	}
+
+	valueIterator, err := g.listStagingArea(ctx, branch)
+	if err != nil {
+		return nil, err
+	}
+	var committedValueIterator ValueIterator
+	if metaRangeID != "" {
+		committedValueIterator, err = g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
+		if err != nil {
+			valueIterator.Close()
+			return nil, err
+		}
+	}
+	return NewUncommittedDiffIterator(ctx, committedValueIterator, valueIterator, repo.StorageNamespace, metaRangeID), nil
 }
 
 // dereferenceCommit will dereference and load the commit record based on 'ref'.
