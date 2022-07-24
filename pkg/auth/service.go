@@ -1199,9 +1199,13 @@ func (a *APIAuthService) getFirstUser(ctx context.Context, userKey *userKey, par
 			return nil, ErrNotFound
 		}
 		u := results[0]
+		username := u.Username
+		if username == "" {
+			username = u.Name
+		}
 		return &model.User{
 			CreatedAt:         time.Unix(u.CreationDate, 0),
-			Username:          u.Name,
+			Username:          username,
 			FriendlyName:      u.FriendlyName,
 			Email:             u.Email,
 			EncryptedPassword: u.EncryptedPassword,
@@ -1228,9 +1232,13 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 			return nil, err
 		}
 		u := resp.JSON200
+		returnedUsername := u.Username
+		if returnedUsername == "" {
+			returnedUsername = u.Name
+		}
 		return &model.User{
 			CreatedAt:         time.Unix(u.CreationDate, 0),
-			Username:          u.Name,
+			Username:          returnedUsername,
 			FriendlyName:      u.FriendlyName,
 			Email:             u.Email,
 			EncryptedPassword: u.EncryptedPassword,
@@ -1273,9 +1281,13 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 	results := resp.JSON200.Results
 	users := make([]*model.User, len(results))
 	for i, r := range results {
+		username := r.Username
+		if username == "" {
+			username = r.Name
+		}
 		users[i] = &model.User{
 			CreatedAt:         time.Unix(r.CreationDate, 0),
-			Username:          r.Name,
+			Username:          username,
 			FriendlyName:      r.FriendlyName,
 			Email:             r.Email,
 			EncryptedPassword: nil,
@@ -1441,9 +1453,13 @@ func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupDisplayName st
 	members := make([]*model.User, len(resp.JSON200.Results))
 
 	for i, r := range resp.JSON200.Results {
+		username := r.Username
+		if username == "" {
+			username = r.Name
+		}
 		members[i] = &model.User{
 			CreatedAt:    time.Unix(r.CreationDate, 0),
-			Username:     r.Name,
+			Username:     username,
 			FriendlyName: r.FriendlyName,
 			Email:        r.Email,
 		}

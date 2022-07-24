@@ -840,22 +840,22 @@ func (c *Controller) generateResetPasswordToken(email string, duration time.Dura
 
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
 	invite := swag.BoolValue(body.InviteUser)
-	id := body.Id
+	username := body.Id
 	var parsedEmail *string
 	if invite {
-		addr, err := mail.ParseAddress(body.Id)
+		addr, err := mail.ParseAddress(username)
 		if err != nil {
-			c.Logger.WithError(err).WithField("user_id", id).Warn("failed parsing email")
+			c.Logger.WithError(err).WithField("user_id", username).Warn("failed parsing email")
 			writeError(w, http.StatusBadRequest, "Invalid email format")
 			return
 		}
-		id = strings.ToLower(addr.Address)
+		username = strings.ToLower(addr.Address)
 		parsedEmail = &addr.Address
 	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateUserAction,
-			Resource: permissions.UserArn(id),
+			Resource: permissions.UserArn(username),
 		},
 	}) {
 		return
@@ -873,7 +873,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	}
 	u := &model.User{
 		CreatedAt:    time.Now().UTC(),
-		Username:     id,
+		Username:     username,
 		FriendlyName: nil,
 		Source:       "internal",
 		Email:        parsedEmail,
