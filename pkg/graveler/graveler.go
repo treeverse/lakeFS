@@ -1791,7 +1791,27 @@ func (g *KVGraveler) DumpBranches(ctx context.Context, repositoryID RepositoryID
 }
 
 func (g *KVGraveler) DumpTags(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error) {
-	return g.db.DumpTags(ctx, repositoryID)
+	repo, err := g.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	iter, err := g.RefManager.ListTags(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer iter.Close()
+	schema, err := serializeSchemaDefinition(&TagData{})
+	if err != nil {
+		return nil, err
+	}
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repo.StorageNamespace,
+		tagsToValueIterator(iter),
+		Metadata{
+			EntityTypeKey:             EntityTypeTag,
+			EntitySchemaKey:           EntitySchemaTag,
+			EntitySchemaDefinitionKey: schema,
+		},
+	)
 }
 
 func tagsToValueIterator(src TagIterator) ValueIterator {
