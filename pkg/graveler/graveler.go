@@ -1440,7 +1440,6 @@ func (g *KVGraveler) listStagingArea(ctx context.Context, b *Branch) (ValueItera
 		return nil, ErrNotFound
 	}
 	it, err := g.StagingManager.List(ctx, b.StagingToken, 1)
-
 	if err != nil {
 		return nil, err
 	}

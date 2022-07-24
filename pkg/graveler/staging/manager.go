@@ -23,7 +23,7 @@ func NewManager(store kv.StoreMessage) *Manager {
 
 func (m *Manager) Get(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.Value, error) {
 	data := &graveler.StagedEntryData{}
-	_, err := m.store.GetMsg(ctx, string(st), key, data)
+	_, err := m.store.GetMsg(ctx, graveler.StagingTokenPartition(st), key, data)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrNotFound
@@ -46,13 +46,13 @@ func (m *Manager) Set(ctx context.Context, st graveler.StagingToken, key gravele
 	}
 
 	pb := graveler.ProtoFromStagedEntry(key, value)
-	return m.store.SetMsg(ctx, string(st), key, pb)
+	return m.store.SetMsg(ctx, graveler.StagingTokenPartition(st), key, pb)
 }
 
 func (m *Manager) Update(ctx context.Context, st graveler.StagingToken, key graveler.Key, updateFunc graveler.ValueUpdateFunc) error {
 	oldValueProto := &graveler.StagedEntryData{}
 	var oldValue *graveler.Value
-	pred, err := m.store.GetMsg(ctx, string(st), key, oldValueProto)
+	pred, err := m.store.GetMsg(ctx, graveler.StagingTokenPartition(st), key, oldValueProto)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			oldValue = nil
@@ -66,17 +66,17 @@ func (m *Manager) Update(ctx context.Context, st graveler.StagingToken, key grav
 	if err != nil {
 		return err
 	}
-	return m.store.SetMsgIf(ctx, string(st), key, graveler.ProtoFromStagedEntry(key, updatedValue), pred)
+	return m.store.SetMsgIf(ctx, graveler.StagingTokenPartition(st), key, graveler.ProtoFromStagedEntry(key, updatedValue), pred)
 }
 
 func (m *Manager) DropKey(ctx context.Context, st graveler.StagingToken, key graveler.Key) error {
 	// Simulate DB behavior - fail if key doesn't exist. See: https://github.com/treeverse/lakeFS/issues/3640
 	data := &graveler.StagedEntryData{}
-	_, err := m.store.GetMsg(ctx, string(st), key, data)
+	_, err := m.store.GetMsg(ctx, graveler.StagingTokenPartition(st), key, data)
 	if err != nil {
 		return err
 	}
-	return m.store.DeleteMsg(ctx, string(st), key)
+	return m.store.DeleteMsg(ctx, graveler.StagingTokenPartition(st), key)
 }
 
 // List TODO niro: Remove batchSize parameter post KV
@@ -92,13 +92,13 @@ func (m *Manager) Drop(ctx context.Context, st graveler.StagingToken) error {
 }
 
 func (m *Manager) DropByPrefix(ctx context.Context, st graveler.StagingToken, prefix graveler.Key) error {
-	itr, err := kv.ScanPrefix(ctx, m.store.Store, []byte(st), prefix, []byte(""))
+	itr, err := kv.ScanPrefix(ctx, m.store.Store, []byte(graveler.StagingTokenPartition(st)), prefix, []byte(""))
 	if err != nil {
 		return err
 	}
 	defer itr.Close()
 	for itr.Next() {
-		err = m.store.Delete(ctx, []byte(st), itr.Entry().Key)
+		err = m.store.Delete(ctx, []byte(graveler.StagingTokenPartition(st)), itr.Entry().Key)
 		if err != nil {
 			return err
 		}
