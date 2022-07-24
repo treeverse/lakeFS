@@ -92,10 +92,8 @@ const (
 //
 type ResolvedRef struct {
 	Type                   ReferenceType
-	BranchID               BranchID
 	ResolvedBranchModifier ResolvedBranchModifier
-	CommitID               CommitID
-	StagingToken           StagingToken
+	BranchRecord
 }
 
 // MergeStrategy changes from dest or source are automatically overridden in case of a conflict
@@ -808,6 +806,7 @@ type KVGraveler struct {
 	RefManager               RefManager
 	StagingManager           StagingManager
 	protectedBranchesManager ProtectedBranchesManager
+	garbageCollectionManager GarbageCollectionManager
 	log                      logging.Logger
 }
 
@@ -819,7 +818,9 @@ func NewKVGraveler(branchLocker BranchLocker, committedManager CommittedManager,
 		RefManager:               refManager,
 		StagingManager:           stagingManager,
 		protectedBranchesManager: protectedBranchesManager,
-		log:                      logging.Default().WithField("service_name", "graveler_graveler"),
+		garbageCollectionManager: gcManager,
+
+		log: logging.Default().WithField("service_name", "graveler_graveler"),
 	}
 }
 
@@ -948,20 +949,11 @@ func (g *KVGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 	return &newBranch, nil
 }
 
-// checkEmptyToken Checks whether token contains entries. Returns error if List operation fails or token contains entries, False otherwise
-func (g *KVGraveler) checkEmptyToken(ctx context.Context, stagingToken StagingToken) error {
-	iter, err := g.StagingManager.List(ctx, stagingToken, 1)
-	if err != nil {
-		return err
-	}
-	defer iter.Close()
-	if iter.Next() {
-		return ErrConflictFound
-	}
-	return nil
-}
-
 func (g *KVGraveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
+	repo, err := g.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
 	reference, err := g.Dereference(ctx, repositoryID, ref)
 	if err != nil {
 		return nil, err
@@ -978,16 +970,14 @@ func (g *KVGraveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID
 		}
 		newBranch.CommitID = reference.CommitID
 		newBranch.StagingToken = curBranch.StagingToken
-		// validate no conflict (Check Staging Token and Sealed Tokens are empty)
+
 		// TODO(Guys) return error only on conflicts, currently returns error for any changes on staging
-		if err = g.checkEmptyToken(ctx, b.StagingToken); err != nil {
+		empty, err := g.stagingEmpty(ctx, repositoryID, repo, reference.Branch)
+		if err != nil {
 			return nil, err
 		}
-		for _, st := range b.SealedTokens {
-			err = g.checkEmptyToken(ctx, st)
-			if err != nil {
-				return nil, err // First token with entries found, break
-			}
+		if !empty {
+			return nil, ErrConflictFound
 		}
 		return newBranch, nil
 	})
@@ -1219,7 +1209,11 @@ func (g *KVGraveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID
 }
 
 func (g *KVGraveler) GetStagingToken(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*StagingToken, error) {
-	return g.db.GetStagingToken(ctx, repositoryID, branchID)
+	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return nil, err
+	}
+	return &branch.StagingToken, nil
 }
 
 func (g *KVGraveler) GetGarbageCollectionRules(ctx context.Context, repositoryID RepositoryID) (*GarbageCollectionRules, error) {
@@ -1246,30 +1240,128 @@ func (g *KVGraveler) CreateBranchProtectionRule(ctx context.Context, repositoryI
 	return g.db.CreateBranchProtectionRule(ctx, repositoryID, pattern, blockedActions)
 }
 
+// getFromStagingArea returns the most updated value of a given key in a branch staging area.
+// Iterate over all tokens - staging + sealed in order of last modified. First appearance of key represents the latest update
+// TODO: in most cases it is used by Get flow, assuming that usually the key will be found in committed we need to parallelize the get from tokens
+func (g *KVGraveler) getFromStagingArea(ctx context.Context, b *Branch, key Key) (*Value, error) {
+	if b.StagingToken == "" {
+		return nil, ErrNotFound
+	}
+	tokens := []StagingToken{b.StagingToken}
+	tokens = append(tokens, b.SealedTokens...)
+	for _, st := range tokens {
+		value, err := g.StagingManager.Get(ctx, st, key)
+		if err != nil {
+			if errors.Is(err, ErrNotFound) { // key not found on staging token, advance to the next one
+				continue
+			}
+			return nil, err // Unexpected error
+		}
+		return value, nil // Found the latest update of the given Key
+	}
+	return nil, ErrNotFound // Key not in staging area
+}
+
 func (g *KVGraveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, key Key) (*Value, error) {
-	return g.db.Get(ctx, repositoryID, ref, key)
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	reference, err := g.Dereference(ctx, repositoryID, ref)
+	if err != nil {
+		return nil, err
+	}
+	if reference.StagingToken != "" {
+		// try to get from staging, if not found proceed to committed
+		value, err := g.getFromStagingArea(ctx, reference.Branch, key)
+		if err != nil && !errors.Is(err, ErrNotFound) {
+			return nil, err
+		}
+		if value == nil {
+			// tombstone - the entry was deleted on the branch => doesn't exist
+			return nil, ErrNotFound
+		}
+		return value, nil
+	}
+
+	// If key is not found in staging area (or reference is not a branch), return the key from committed
+	commitID := reference.CommitID
+	commit, err := g.RefManager.GetCommit(ctx, repositoryID, commitID)
+	if err != nil {
+		return nil, err
+	}
+	return g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.MetaRangeID, key)
 }
 
 func (g *KVGraveler) Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error {
 	return g.db.Set(ctx, repositoryID, branchID, key, value, writeConditions...)
 }
 
-// checkStaged returns true if key is staged on manager at token.  It treats staging manager
-// errors by returning "not a tombstone", and is unsafe to use if that matters!
-func isStagedTombstone(ctx context.Context, manager StagingManager, token StagingToken, key Key) bool {
-	e, err := manager.Get(ctx, token, key)
-	if err != nil {
-		return false
-	}
-	return e == nil
-}
-
 func (g *KVGraveler) Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
 	return g.db.Delete(ctx, repositoryID, branchID, key)
 }
 
+// listStagingArea Returns an iterator which is an aggregation of all changes on all the branch's staging area (staging + sealed)
+// for each key in the staging area it will return the latest update for that key (the value that appears in the newest token)
+func (g *KVGraveler) listStagingArea(ctx context.Context, b *Branch) (ValueIterator, error) {
+	if b.StagingToken == "" {
+		return nil, ErrNotFound
+	}
+	it, err := g.StagingManager.List(ctx, b.StagingToken, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(b.SealedTokens) == 0 { // Only staging token exists -> return its iterator
+		return it, nil
+	}
+
+	itrs := []ValueIterator{it}
+	for _, st := range b.SealedTokens {
+		it, err = g.StagingManager.List(ctx, st, 1)
+		if err != nil {
+			for _, it = range itrs {
+				it.Close()
+			}
+			return nil, err
+		}
+		itrs = append(itrs, it)
+	}
+	return NewCombinedIterator(itrs...), nil
+}
+
 func (g *KVGraveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref) (ValueIterator, error) {
-	return g.db.List(ctx, repositoryID, ref)
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	reference, err := g.Dereference(ctx, repositoryID, ref)
+	if err != nil {
+		return nil, err
+	}
+	var metaRangeID MetaRangeID
+	if reference.CommitID != "" {
+		commit, err := g.RefManager.GetCommit(ctx, repositoryID, reference.CommitID)
+		if err != nil {
+			return nil, err
+		}
+		metaRangeID = commit.MetaRangeID
+	}
+
+	listing, err := g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
+	if err != nil {
+		return nil, err
+	}
+	if reference.StagingToken != "" {
+		stagingList, err := g.listStagingArea(ctx, reference.BranchRecord.Branch)
+		if err != nil {
+			listing.Close()
+			return nil, err
+		}
+		listing = NewFilterTombstoneIterator(NewCombinedIterator(stagingList, listing))
+	}
+
+	return listing, nil
 }
 
 func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, params CommitParams) (CommitID, error) {
@@ -1310,7 +1402,7 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		}
 
 		if params.SourceMetaRange != nil {
-			empty, err := g.stagingEmpty(ctx, branch)
+			empty, err := g.stagingEmpty(ctx, repositoryID, repo, branch)
 			if err != nil {
 				return nil, fmt.Errorf("checking empty branch: %w", err)
 			}
@@ -1539,19 +1631,32 @@ func (g *KVGraveler) addCommitNoLock(ctx context.Context, repositoryID Repositor
 	return commitID, nil
 }
 
-func (g *KVGraveler) stagingEmpty(ctx context.Context, branch *Branch) (bool, error) {
-	// TODO(eden) - change to the kv branch implementation version
-	stIt, err := g.StagingManager.List(ctx, branch.StagingToken, 1)
+func (g *KVGraveler) stagingEmpty(ctx context.Context, repositoryID RepositoryID, repo *Repository, branch *Branch) (bool, error) {
+	itr, err := g.listStagingArea(ctx, branch)
 	if err != nil {
-		return false, fmt.Errorf("staging list (token %s): %w", branch.StagingToken, err)
+		return false, err
 	}
+	defer itr.Close()
 
-	defer stIt.Close()
-
-	if stIt.Next() {
-		return false, nil
+	// Iterating over staging area (staging + sealed) of the branch and check for entries
+	// staging is not considered empty IFF it contains any non-tombstone entry or a tombstone entry exists for a key which
+	// is already committed
+	commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+	if err != nil {
+		return false, err
 	}
-
+	for itr.Next() {
+		value := itr.Value()
+		// Check if tombstone entry reflect actual change in branch
+		if value.Value == nil {
+			_, err = g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.MetaRangeID, value.Key)
+			if !errors.Is(err, ErrNotFound) { // if not committed entry, tombstone doesn't reflect any changes on branch
+				return false, err
+			}
+		} else { // Not a tombstone - staging is not empty
+			return false, nil
+		}
+	}
 	return true, nil
 }
 
@@ -1599,7 +1704,7 @@ func (g *KVGraveler) Compare(ctx context.Context, repositoryID RepositoryID, lef
 }
 
 func (g *KVGraveler) SetHooksHandler(handler HooksHandler) {
-	g.db.SetHooksHandler(handler)
+	g.db.SetHooksHandler(handler) // TODO (niro): Remove this line when all logic moved to KV
 	if handler == nil {
 		g.hooks = &HooksNoOp{}
 	} else {

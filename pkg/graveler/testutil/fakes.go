@@ -110,12 +110,15 @@ func (c *CommittedFake) GetRange(_ context.Context, _ graveler.StorageNamespace,
 	return graveler.RangeAddress(fmt.Sprintf("fake://prefix/%s(range)", rangeID)), nil
 }
 
+// Backwards compatibility for test pre-KV
+const defaultKey = "key"
+
 type StagingFake struct {
 	Err                error
 	DropErr            error // specific error for drop call
 	Value              *graveler.Value
 	ValueIterator      graveler.ValueIterator
-	stagingToken       graveler.StagingToken
+	Values             map[string]map[string]*graveler.Value
 	LastSetValueRecord *graveler.ValueRecord
 	LastRemovedKey     graveler.Key
 	DropCalled         bool
@@ -134,11 +137,17 @@ func (s *StagingFake) Drop(context.Context, graveler.StagingToken) error {
 	return nil
 }
 
-func (s *StagingFake) Get(context.Context, graveler.StagingToken, graveler.Key) (*graveler.Value, error) {
+func (s *StagingFake) Get(_ context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.Value, error) {
 	if s.Err != nil {
 		return nil, s.Err
 	}
-	return s.Value, nil
+	if key.String() == defaultKey {
+		return s.Value, nil
+	}
+	if v, ok := s.Values[st.String()][key.String()]; ok {
+		return v, nil
+	}
+	return nil, graveler.ErrNotFound
 }
 
 func (s *StagingFake) Set(_ context.Context, _ graveler.StagingToken, key graveler.Key, value *graveler.Value, _ bool) error {
@@ -161,20 +170,6 @@ func (s *StagingFake) DropKey(_ context.Context, _ graveler.StagingToken, key gr
 }
 
 func (s *StagingFake) List(context.Context, graveler.StagingToken, int) (graveler.ValueIterator, error) {
-	if s.Err != nil {
-		return nil, s.Err
-	}
-	return s.ValueIterator, nil
-}
-
-func (s *StagingFake) Snapshot(context.Context, graveler.StagingToken) (graveler.StagingToken, error) {
-	if s.Err != nil {
-		return "", s.Err
-	}
-	return s.stagingToken, nil
-}
-
-func (s *StagingFake) ListSnapshot(_ context.Context, _ graveler.StagingToken, _ graveler.Key) (graveler.ValueIterator, error) {
 	if s.Err != nil {
 		return nil, s.Err
 	}
@@ -205,6 +200,7 @@ type RefsFake struct {
 	CommitID            graveler.CommitID
 	Commits             map[graveler.CommitID]*graveler.Commit
 	StagingToken        graveler.StagingToken
+	SealedTokens        []graveler.StagingToken
 }
 
 func (m *RefsFake) CreateBranch(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, branch graveler.Branch) error {
@@ -254,16 +250,22 @@ func (m *RefsFake) ResolveRawRef(_ context.Context, _ graveler.RepositoryID, raw
 
 	var branch graveler.BranchID
 	var stagingToken graveler.StagingToken
+	var sealedTokens []graveler.StagingToken
 	if m.RefType == graveler.ReferenceTypeBranch {
 		branch = DefaultBranchID
 		stagingToken = m.StagingToken
+		sealedTokens = m.SealedTokens
 	}
 
 	return &graveler.ResolvedRef{
-		Type:         m.RefType,
-		BranchID:     branch,
-		CommitID:     m.CommitID,
-		StagingToken: stagingToken,
+		Type: m.RefType,
+		BranchRecord: graveler.BranchRecord{
+			BranchID: branch,
+			Branch: &graveler.Branch{
+				CommitID:     m.CommitID,
+				StagingToken: stagingToken,
+				SealedTokens: sealedTokens,
+			}},
 	}, nil
 }
 
