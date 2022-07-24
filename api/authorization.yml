@@ -51,6 +51,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     ServerError:
       description: Internal Server Error
       content:
@@ -145,6 +151,8 @@ components:
       properties:
         username:
           type: string
+          minLength: 1
+          description: A unique identifier for the user. For password-based authentication, it is the email.
         email:
           type: string
         friendlyName:
@@ -378,6 +386,8 @@ paths:
                 $ref: "#/components/schemas/Error"
         401:
           $ref: "#/components/responses/Unauthorized"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -491,6 +501,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -577,6 +589,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         400:
           $ref: "#/components/responses/ValidationError"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -662,7 +676,7 @@ paths:
         - $ref: "#/components/parameters/PaginationAmount"
       responses:
         200:
-          description: group memeber list
+          description: group member list
           content:
             application/json:
               schema:
@@ -769,6 +783,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 

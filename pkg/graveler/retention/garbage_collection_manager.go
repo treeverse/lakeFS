@@ -12,7 +12,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"google.golang.org/protobuf/proto"
 )
@@ -27,7 +26,6 @@ type GarbageCollectionManager struct {
 	blockAdapter                block.Adapter
 	refManager                  graveler.RefManager
 	committedBlockStoragePrefix string
-	db                          db.Database
 }
 
 func (m *GarbageCollectionManager) GetCommitsCSVLocation(runID string, sn graveler.StorageNamespace) (string, error) {
@@ -57,12 +55,11 @@ func (r *RepositoryCommitGetter) GetCommit(ctx context.Context, commitID gravele
 	return r.refManager.GetCommit(ctx, r.repositoryID, commitID)
 }
 
-func NewGarbageCollectionManager(db db.Database, blockAdapter block.Adapter, refManager graveler.RefManager, committedBlockStoragePrefix string) *GarbageCollectionManager {
+func NewGarbageCollectionManager(blockAdapter block.Adapter, refManager graveler.RefManager, committedBlockStoragePrefix string) *GarbageCollectionManager {
 	return &GarbageCollectionManager{
 		blockAdapter:                blockAdapter,
 		refManager:                  refManager,
 		committedBlockStoragePrefix: committedBlockStoragePrefix,
-		db:                          db,
 	}
 }
 

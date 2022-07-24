@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/batch"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -26,7 +25,6 @@ const MaxBatchDelay = time.Millisecond * 3
 const BatchUpdateSQLSize = 10000
 
 type KVManager struct {
-	db              *DBManager
 	kvStore         kv.StoreMessage
 	addressProvider ident.AddressProvider
 	batchExecutor   batch.Batcher
@@ -63,9 +61,8 @@ func protoFromBranch(branchID graveler.BranchID, b *graveler.Branch) *graveler.B
 	return branch
 }
 
-func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, db db.Database, addressProvider ident.AddressProvider) *KVManager {
+func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, addressProvider ident.AddressProvider) *KVManager {
 	return &KVManager{
-		db:              NewPGRefManager(executor, db, addressProvider),
 		kvStore:         kvStore,
 		addressProvider: addressProvider,
 		batchExecutor:   executor,
