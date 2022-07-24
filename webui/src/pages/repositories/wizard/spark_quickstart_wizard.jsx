@@ -66,8 +66,8 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
         setCompleted(currentCompleted => new Set(currentCompleted).add(stepNum));
     }
     const onComplete = async () => {
-        // TODO?: generate README.md file, upload it
-        // TODO?: commit README.md file to repo
+        // TODO(jonathan): generate README.md file, upload it
+        // TODO(jonathan): commit README.md file to repo
         router.push({pathname: `/repositories/:repoId/objects`, params: {repoId: state.repoId}});
         onExit();
     }
