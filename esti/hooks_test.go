@@ -40,7 +40,7 @@ func appendRes(info webhookEventInfo) {
 
 func TestHooksSuccess(t *testing.T) {
 	if viper.GetBool("database_kv_enabled") {
-		t.Skip("Finish implementing Graveler")
+		t.Skip("Finish implementing Graveler.Commit, Graveler.List, ...")
 	}
 	ctx, _, repo := setupTest(t)
 	parseAndUploadActions(t, ctx, repo, mainBranch)
