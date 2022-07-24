@@ -2,7 +2,7 @@ import {Box} from "@mui/material";
 import {ClipboardButton} from "./controls";
 import {FaRegCopy} from "react-icons/fa";
 import React from "react";
-import SyntaxHighlighter from "react-syntax-highlighter/src/light";
+import SyntaxHighlighter from "react-syntax-highlighter";
 import {a11yLight} from "react-syntax-highlighter/src/styles/hljs";
 
 export function CodeTabPanel({children, isSelected, index, ...other}) {

@@ -6,9 +6,9 @@ import React, {useState} from "react";
 import {TabsWrapper} from "../../../lib/components/nav";
 import {CodeTabPanel} from "../../../lib/components/code_tabs";
 
-const SPARK_SUBMIT_TEMPLATE_NAME = 'spark.conf.tt';
-const SPARK_CORE_SITE_TEMPLATE_NAME = 'spark.conf.tt';
-const SPARK_DATABRICKS_TEMPLATE_NAME = 'spark.conf.tt';
+const SPARK_SUBMIT_TEMPLATE_NAME = 'spark.submit.conf.tt';
+const SPARK_CORE_SITE_TEMPLATE_NAME = 'spark.core.site.conf.tt';
+const SPARK_DATABRICKS_TEMPLATE_NAME = 'spark.databricks.conf.tt';
 const lakeFSURLProp = {lakefs_url: window.location.origin};
 
 export const SparkConfigStep = ({onComplete=()=>{}}) => {
