@@ -21,7 +21,7 @@ const (
 // FindMergeBase finds the best common ancestor according to the definition in the git-merge-base documentation: https://git-scm.com/docs/git-merge-base
 // One common ancestor is better than another common ancestor if the latter is an ancestor of the former.
 func FindMergeBase(ctx context.Context, getter CommitGetter, repositoryID graveler.RepositoryID, leftID, rightID graveler.CommitID) (*graveler.Commit, error) {
-	var commitRecord *graveler.CommitRecord
+	var cr *graveler.CommitRecord
 	queue := NewCommitsGenerationPriorityQueue()
 	reached := make(map[graveler.CommitID]reachedFlags)
 	reached[rightID] |= fromRight
@@ -42,9 +42,9 @@ func FindMergeBase(ctx context.Context, getter CommitGetter, repositoryID gravel
 		if queue.Len() == 0 {
 			return nil, nil
 		}
-		commitRecord = heap.Pop(&queue).(*graveler.CommitRecord)
-		commitFlags := reached[commitRecord.CommitID]
-		for _, parent := range commitRecord.Parents {
+		cr = heap.Pop(&queue).(*graveler.CommitRecord)
+		commitFlags := reached[cr.CommitID]
+		for _, parent := range cr.Parents {
 			if _, exist := reached[parent]; !exist {
 				// parent commit is queued only if it was not handled before. Otherwise it, and
 				// all its ancestors were already queued and so, will have entries in 'reached' map
