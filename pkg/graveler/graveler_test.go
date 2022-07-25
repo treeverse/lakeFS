@@ -1288,7 +1288,7 @@ func testGravelerMergeInvalidRef(t *testing.T, kvEnabled bool) {
 	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
 	refManager := &testutil.RefsFake{
 		Err:    graveler.ErrInvalidRef,
-		Branch: &graveler.Branch{CommitID: destinationCommitID},
+		Branch: &graveler.Branch{CommitID: destinationCommitID, StagingToken: "st1"},
 		Refs: map[graveler.Ref]*graveler.ResolvedRef{
 			graveler.Ref(mergeDestination): {
 				Type: graveler.ReferenceTypeBranch,
