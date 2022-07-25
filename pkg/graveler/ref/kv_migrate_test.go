@@ -5,6 +5,7 @@ import (
 	"context"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/batch"
@@ -68,7 +69,7 @@ func createMigrateTestData(t *testing.T, ctx context.Context, mgr graveler.RefMa
 	for i := 0; i < NumRepositories; i++ {
 		repoId := graveler.RepositoryID("repo_" + strconv.Itoa(i))
 		if err := mgr.CreateRepository(ctx, repoId,
-			graveler.Repository{StorageNamespace: graveler.StorageNamespace(strconv.Itoa(i)), DefaultBranchID: "main"},
+			graveler.Repository{StorageNamespace: graveler.StorageNamespace(strconv.Itoa(i)), CreationDate: time.Now(), DefaultBranchID: "main"},
 			graveler.StagingToken("test_token_"+strconv.Itoa(i))); err != nil {
 			t.Fatalf("Create Repository: %s", err)
 		}
@@ -76,13 +77,24 @@ func createMigrateTestData(t *testing.T, ctx context.Context, mgr graveler.RefMa
 
 		for b := 0; b < numBranches; b++ {
 			if err := mgr.CreateBranch(ctx, repoId, graveler.BranchID("branch_"+strconv.Itoa(b)),
-				graveler.Branch{StagingToken: graveler.StagingToken("test_token_" + strconv.Itoa(b))}); err != nil {
+				graveler.Branch{CommitID: graveler.CommitID(strconv.Itoa(b)),
+					StagingToken: graveler.StagingToken("test_token_" + strconv.Itoa(b)),
+					SealedTokens: []graveler.StagingToken{"token"},
+				}); err != nil {
 				t.Fatalf("Create Branch: %s", err)
 			}
 		}
 		for c := 0; c < numCommits; c++ {
 			commitID, err := mgr.AddCommit(ctx, repoId,
-				graveler.Commit{Version: graveler.CurrentCommitVersion, Message: strconv.Itoa(c), Parents: graveler.CommitParents{"parent"}})
+				graveler.Commit{Version: graveler.CurrentCommitVersion,
+					Committer:    "tester",
+					Message:      strconv.Itoa(c),
+					MetaRangeID:  "meta_range_id",
+					CreationDate: time.Now().UTC(),
+					Parents:      graveler.CommitParents{graveler.CommitID(strconv.Itoa(c))},
+					Metadata:     map[string]string{"data": strconv.Itoa(c)},
+					Generation:   1,
+				})
 			if err != nil {
 				t.Fatalf("Create Commit: %s", err)
 			}
@@ -105,7 +117,8 @@ func verifyCommitTagResults(t *testing.T, ctx context.Context, kvMgr, dbMgr grav
 		require.NoError(t, err)
 		dbm, err := dbMgr.GetCommit(ctx, repoID, commit.CommitID)
 		require.NoError(t, err)
-		require.Equal(t, kvc.Message, dbm.Message)
+		dbm.CreationDate = dbm.CreationDate.UTC()
+		require.Equal(t, kvc, dbm)
 		commitNum += 1
 
 		// verify tag
@@ -114,6 +127,15 @@ func verifyCommitTagResults(t *testing.T, ctx context.Context, kvMgr, dbMgr grav
 		require.Equal(t, *tag, commit.CommitID)
 	}
 	require.Equal(t, commitNum, numCommits+1)
+
+	tags, err := kvMgr.ListTags(ctx, repoID)
+	require.NoError(t, err)
+	defer tags.Close()
+	numTags := 0
+	for tags.Next() {
+		numTags += 1
+	}
+	require.Equal(t, commitNum, numTags)
 }
 
 func verifyBranchResults(t *testing.T, ctx context.Context, kvMgr, dbMgr graveler.RefManager, repoID graveler.RepositoryID) {
@@ -128,7 +150,7 @@ func verifyBranchResults(t *testing.T, ctx context.Context, kvMgr, dbMgr gravele
 
 		bdb, err := dbMgr.GetBranch(ctx, repoID, branch.BranchID)
 		require.NoError(t, err)
-		require.Equal(t, bkv.StagingToken, bdb.StagingToken)
+		require.Equal(t, bkv, bdb)
 		branchesNum += 1
 	}
 	require.Equal(t, branchesNum, numBranches+1)
@@ -145,7 +167,8 @@ func verifyMigrationResults(t *testing.T, ctx context.Context, kvMgr, dbMgr grav
 		require.NoError(t, err)
 		dbr, err := dbMgr.GetRepository(ctx, repo.RepositoryID)
 		require.NoError(t, err)
-		require.Equal(t, kvr.StorageNamespace, dbr.StorageNamespace)
+		dbr.CreationDate = dbr.CreationDate.UTC()
+		require.Equal(t, kvr, dbr)
 		repoNum += 1
 
 		// verify repository entities

@@ -31,7 +31,11 @@ const (
 
 //nolint:gochecknoinits
 func init() {
-	kvpg.RegisterMigrate(packageName, Migrate, []string{"graveler_repositories", "graveler_commits", "graveler_tags"})
+	kvpg.RegisterMigrate(packageName, Migrate, []string{
+		"graveler_repositories",
+		"graveler_commits",
+		"graveler_tags",
+		"graveler_branches"})
 }
 
 var encoder kv.SafeEncoder
@@ -544,58 +548,27 @@ func (m *DBManager) addGenerationToNodes(nodes map[graveler.CommitID]*CommitNode
 	}
 }
 
-type commitMigrate struct {
-	CommitID     graveler.CommitID      `db:"id"`
-	Version      graveler.CommitVersion `db:"version"`
-	Committer    string                 `db:"committer"`
-	Message      string                 `db:"message"`
-	MetaRangeID  graveler.MetaRangeID   `db:"meta_range_id"`
-	CreationDate time.Time              `db:"creation_date"`
-	Parents      []string               `db:"parents"`
-	Metadata     graveler.Metadata      `db:"metadata"`
-	Generation   int                    `db:"generation"`
-	RepoID       string                 `db:"repository_id"`
-}
-
-func CommitFromMigrate(c *commitMigrate) *graveler.Commit {
-	var parents []graveler.CommitID
-	for _, parent := range c.Parents {
-		parents = append(parents, graveler.CommitID(parent))
-	}
-
-	return &graveler.Commit{
-		Version:      c.Version,
-		Committer:    c.Committer,
-		Message:      c.Message,
-		MetaRangeID:  c.MetaRangeID,
-		CreationDate: c.CreationDate,
-		Parents:      parents,
-		Metadata:     c.Metadata,
-		Generation:   c.Generation,
-	}
-}
-
 func cWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.RepositoryRecord) error {
-	commits, err := d.Query(ctx, "SELECT * FROM graveler_commits WHERE repository_id=$1", repository.RepositoryID)
+	commits, err := d.Query(ctx, "SELECT id,committer,message,creation_date,meta_range_id,metadata,parents,version,generation FROM graveler_commits WHERE repository_id=$1", repository.RepositoryID)
 	if err != nil {
 		return err
 	}
 	defer commits.Close()
 	commitScanner := pgxscan.NewRowScanner(commits)
 	for commits.Next() {
-		c := new(commitMigrate)
+		c := new(commitRecord)
 		err = commitScanner.Scan(c)
 		if err != nil {
 			return err
 		}
-		pb := graveler.ProtoFromCommit(c.CommitID, CommitFromMigrate(c))
+		pb := CommitRecordToCommitData(c)
 		data, err := proto.Marshal(pb)
 		if err != nil {
 			return err
 		}
 		if err = encoder.Encode(kv.Entry{
 			PartitionKey: []byte(graveler.RepoPartition(repository)),
-			Key:          []byte(graveler.CommitPath(c.CommitID)),
+			Key:          []byte(graveler.CommitPath(graveler.CommitID(c.CommitID))),
 			Value:        data,
 		}); err != nil {
 			return err
@@ -605,18 +578,14 @@ func cWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.Reposito
 }
 
 func bWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.RepositoryRecord) error {
-	type branchMigrate struct {
-		graveler.BranchRecord
-		RepoID string `db:"repository_id"`
-	}
-	branches, err := d.Query(ctx, "SELECT * FROM graveler_branches WHERE repository_id=$1", repository.RepositoryID)
+	branches, err := d.Query(ctx, "SELECT id,staging_token,commit_id FROM graveler_branches WHERE repository_id=$1", repository.RepositoryID)
 	if err != nil {
 		return err
 	}
 	defer branches.Close()
 	branchesScanner := pgxscan.NewRowScanner(branches)
 	for branches.Next() {
-		b := new(branchMigrate)
+		b := new(graveler.BranchRecord)
 		err = branchesScanner.Scan(b)
 		if err != nil {
 			return err
@@ -638,18 +607,14 @@ func bWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.Reposito
 }
 
 func tWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.RepositoryRecord) error {
-	type tagMigrate struct {
-		graveler.TagRecord
-		RepoID string `db:"repository_id"`
-	}
-	tags, err := d.Query(ctx, "SELECT * FROM graveler_tags WHERE repository_id=$1", repository.RepositoryID)
+	tags, err := d.Query(ctx, "SELECT id,commit_id FROM graveler_tags WHERE repository_id=$1", repository.RepositoryID)
 	if err != nil {
 		return err
 	}
 	defer tags.Close()
 	tagScanner := pgxscan.NewRowScanner(tags)
 	for tags.Next() {
-		t := new(tagMigrate)
+		t := new(graveler.TagRecord)
 		err = tagScanner.Scan(t)
 		if err != nil {
 			return err

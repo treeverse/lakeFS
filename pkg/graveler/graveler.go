@@ -291,7 +291,7 @@ func (c Commit) Identity() []byte {
 
 // CommitRecord holds CommitID with the associated Commit data
 type CommitRecord struct {
-	CommitID CommitID `db:"id"`
+	CommitID CommitID
 	*Commit
 }
 

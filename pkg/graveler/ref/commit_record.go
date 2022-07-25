@@ -3,6 +3,8 @@ package ref
 import (
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
@@ -60,5 +62,19 @@ func CommitDataToCommitRecord(c *graveler.CommitData) *graveler.CommitRecord {
 			Version:      graveler.CommitVersion(c.Version),
 			Generation:   int(c.Generation),
 		},
+	}
+}
+
+func CommitRecordToCommitData(c *commitRecord) *graveler.CommitData {
+	return &graveler.CommitData{
+		Id:           c.CommitID,
+		Committer:    c.Committer,
+		Message:      c.Message,
+		CreationDate: timestamppb.New(c.CreationDate),
+		MetaRangeId:  c.RangeID,
+		Metadata:     c.Metadata,
+		Parents:      c.Parents,
+		Version:      int32(c.Version),
+		Generation:   int32(c.Generation),
 	}
 }
