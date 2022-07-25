@@ -1897,10 +1897,6 @@ func (g *KVGraveler) Merge(ctx context.Context, repositoryID RepositoryID, desti
 	// or some other branch changing operation. If commit is in-progress, then staging area wasn't empty after we checked so not retrying is ok.
 	// If another commit/merge succeeded, then the user should decide whether to retry the merge.
 	err = g.RefManager.BranchUpdate(ctx, repositoryID, destination, func(branch *Branch) (*Branch, error) {
-		branch, err := g.GetBranch(ctx, repositoryID, destination)
-		if err != nil {
-			return nil, fmt.Errorf("get branch: %w", err)
-		}
 		empty, err := g.stagingEmpty(ctx, repositoryID, repo, branch)
 		if err != nil {
 			return nil, fmt.Errorf("check if staging empty: %w", err)
