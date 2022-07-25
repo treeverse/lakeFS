@@ -166,19 +166,17 @@ func (s *StagingFake) Update(ctx context.Context, st graveler.StagingToken, key 
 	if s.UpdateErr != nil {
 		return s.UpdateErr
 	}
-	if v, ok := s.Values[st.String()][key.String()]; ok {
-		val, err := updateFunc(v)
-		if err != nil {
-			return err
-		}
-		s.LastSetValueRecord = &graveler.ValueRecord{
-			Key:   key,
-			Value: val,
-		}
-		return nil
-	}
+	v := s.Values[st.String()][key.String()]
 
-	return graveler.ErrNotFound
+	val, err := updateFunc(v)
+	if err != nil {
+		return err
+	}
+	s.LastSetValueRecord = &graveler.ValueRecord{
+		Key:   key,
+		Value: val,
+	}
+	return nil
 }
 
 func (s *StagingFake) DropKey(_ context.Context, _ graveler.StagingToken, key graveler.Key) error {
