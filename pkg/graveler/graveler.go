@@ -1628,6 +1628,20 @@ func (g *KVGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID Rep
 		if branch.CommitID != parentCommitID {
 			return nil, ErrCommitNotHeadBranch
 		}
+
+		// report conflict if there are changes pending on the branch
+		if len(branch.SealedTokens) > 0 {
+			return nil, ErrConflictFound
+		}
+		iterator, err := g.StagingManager.List(ctx, branch.StagingToken, 1)
+		if err != nil {
+			return nil, fmt.Errorf("check branch empty: %w", err)
+		}
+		defer iterator.Close()
+		if iterator.Next() {
+			return nil, ErrConflictFound
+		}
+
 		return &Branch{
 			CommitID:     commitID,
 			StagingToken: branch.StagingToken,
