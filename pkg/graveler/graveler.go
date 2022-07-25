@@ -1846,8 +1846,35 @@ func (g *KVGraveler) Diff(ctx context.Context, repositoryID RepositoryID, left, 
 	return NewCombinedDiffIterator(diff, leftValueIterator, stagingIterator), nil
 }
 
+func (g *KVGraveler) getCommitsForMerge(ctx context.Context, repositoryID RepositoryID, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
+	fromCommit, err := g.dereferenceCommit(ctx, repositoryID, from)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("get commit by ref %s: %w", from, err)
+	}
+	toCommit, err := g.dereferenceCommit(ctx, repositoryID, to)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("get commit by branch %s: %w", to, err)
+	}
+	baseCommit, err := g.RefManager.FindMergeBase(ctx, repositoryID, fromCommit.CommitID, toCommit.CommitID)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("find merge base: %w", err)
+	}
+	if baseCommit == nil {
+		return nil, nil, nil, ErrNoMergeBase
+	}
+	return fromCommit, toCommit, baseCommit, nil
+}
+
 func (g *KVGraveler) Compare(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error) {
-	return g.db.Compare(ctx, repositoryID, left, right)
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, right, left)
+	if err != nil {
+		return nil, err
+	}
+	return g.CommittedManager.Compare(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
 }
 
 func (g *KVGraveler) SetHooksHandler(handler HooksHandler) {
