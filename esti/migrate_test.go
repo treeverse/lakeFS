@@ -79,11 +79,8 @@ type userPermissions struct {
 }
 
 type gravelerState struct {
-	Repo               string `json:"repo"`
-	CommitID           string `json:"commit_id"`
-	TagID              string `json:"tag_id"`
-	committedObjPath   string `json:"committed_obj_path"`
-	uncommittedObjPath string `json:"uncommitted_obj_path"`
+	Repo     string `json:"repo"`
+	CommitID string `json:"commit_id"`
 }
 
 const (
@@ -564,14 +561,14 @@ func testPreMigrateGraveler(t *testing.T) {
 
 	// commit
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
-		Message: "pre_commit",
+		Message: "pre_migrate_commit",
 	})
 	require.NoError(t, err, "failed to commit changes")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
 	// create tag
 	createTagResp, err := client.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
-		Id:  "pre_tag",
+		Id:  "pre_migrate_tag",
 		Ref: mainBranch,
 	})
 	require.NoError(t, err, "failed to create tag")
@@ -579,20 +576,17 @@ func testPreMigrateGraveler(t *testing.T) {
 
 	// create branch with uncommitted data for the post test
 	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
-		Name:   "pre_branch",
+		Name:   "pre_migrate_branch",
 		Source: mainBranch,
 	})
 	require.NoError(t, err, "failed to create branch")
 	require.Equal(t, http.StatusCreated, createBranchResp.StatusCode())
 
-	uploadFiles(t, ctx, repo, "pre_branch", "b/foo/")
+	uploadFiles(t, ctx, repo, "pre_migrate_branch", "b/foo/")
 
 	// update state
 	state.Graveler.Repo = repo
 	state.Graveler.CommitID = commitResp.JSON201.Id
-	state.Graveler.TagID = "pre_tag"
-	state.Graveler.committedObjPath = "a/foo/1"
-	state.Graveler.uncommittedObjPath = "b/foo/1"
 }
 
 func testPostMigrateGraveler(t *testing.T) {
@@ -634,7 +628,7 @@ func testPostMigrateGraveler(t *testing.T) {
 	require.Equal(t, http.StatusCreated, revertResp.StatusCode())
 
 	// assert file doesn't exist
-	unobjResp, err := client.GetObjectWithResponse(ctx, state.Graveler.Repo, mainBranch, &api.GetObjectParams{Path: state.Graveler.committedObjPath})
+	unobjResp, err := client.GetObjectWithResponse(ctx, state.Graveler.Repo, mainBranch, &api.GetObjectParams{Path: "a/foo/1"})
 	require.NoError(t, err)
 	require.Equal(t, unobjResp.HTTPResponse.StatusCode, http.StatusNotFound, "object not found")
 
@@ -663,7 +657,7 @@ func verifyGravelerEntities(t *testing.T, ctx context.Context) {
 	require.NoError(t, err, "failed to get branch")
 	require.Equal(t, http.StatusOK, branchResp.StatusCode())
 
-	objResp, err := client.GetObjectWithResponse(ctx, state.Graveler.Repo, mainBranch, &api.GetObjectParams{Path: state.Graveler.committedObjPath})
+	objResp, err := client.GetObjectWithResponse(ctx, state.Graveler.Repo, mainBranch, &api.GetObjectParams{Path: "a/foo/1"})
 	require.NoError(t, err, "failed to get object")
 	require.Equal(t, http.StatusOK, objResp.StatusCode())
 
@@ -671,7 +665,7 @@ func verifyGravelerEntities(t *testing.T, ctx context.Context) {
 	require.NoError(t, err, "failed to get tag")
 	require.Equal(t, http.StatusOK, tagResp.StatusCode())
 
-	unobjResp, err := client.GetObjectWithResponse(ctx, state.Graveler.Repo, "pre_branch", &api.GetObjectParams{Path: state.Graveler.uncommittedObjPath})
+	unobjResp, err := client.GetObjectWithResponse(ctx, state.Graveler.Repo, "pre_branch", &api.GetObjectParams{Path: "b/foo/1"})
 	require.NoError(t, err, "failed to get object")
 	require.Equal(t, http.StatusOK, unobjResp.StatusCode())
 }

@@ -46,7 +46,7 @@ func CommitPath(commitID CommitID) string {
 }
 
 func CommitFromProto(pb *CommitData) *Commit {
-	var parents []CommitID
+	parents := make([]CommitID, 0)
 	for _, parent := range pb.Parents {
 		parents = append(parents, CommitID(parent))
 	}
@@ -65,7 +65,7 @@ func CommitFromProto(pb *CommitData) *Commit {
 
 func ProtoFromCommit(commitID CommitID, c *Commit) *CommitData {
 	// convert parents to slice of strings
-	var parents []string
+	parents := make([]string, 0)
 	for _, parent := range c.Parents {
 		parents = append(parents, string(parent))
 	}

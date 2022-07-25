@@ -37,26 +37,28 @@ type CommitNode struct {
 }
 
 func branchFromProto(pb *graveler.BranchData) *graveler.Branch {
+	var sealedTokens []graveler.StagingToken
+	for _, st := range pb.SealedTokens {
+		sealedTokens = append(sealedTokens, graveler.StagingToken(st))
+	}
 	branch := &graveler.Branch{
 		CommitID:     graveler.CommitID(pb.CommitId),
 		StagingToken: graveler.StagingToken(pb.StagingToken),
-		SealedTokens: make([]graveler.StagingToken, 0),
-	}
-	for _, st := range pb.SealedTokens {
-		branch.SealedTokens = append(branch.SealedTokens, graveler.StagingToken(st))
+		SealedTokens: sealedTokens,
 	}
 	return branch
 }
 
 func protoFromBranch(branchID graveler.BranchID, b *graveler.Branch) *graveler.BranchData {
+	var sealedTokens []string
+	for _, st := range b.SealedTokens {
+		sealedTokens = append(sealedTokens, st.String())
+	}
 	branch := &graveler.BranchData{
 		Id:           branchID.String(),
 		CommitId:     b.CommitID.String(),
 		StagingToken: b.StagingToken.String(),
-		SealedTokens: make([]string, 0),
-	}
-	for _, st := range b.SealedTokens {
-		branch.SealedTokens = append(branch.SealedTokens, st.String())
+		SealedTokens: sealedTokens,
 	}
 	return branch
 }
