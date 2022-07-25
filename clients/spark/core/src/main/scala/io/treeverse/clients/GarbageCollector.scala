@@ -359,14 +359,14 @@ object GarbageCollector {
 
     // The remove operation uses an SDK client to directly access the underlying storage, and therefore does not need
     // a translated storage namespace that triggers processing by Hadoop FileSystems.
-    var directAccessStorageNS = new ApiClient(apiURL, accessKey, secretKey)
-      .getStorageNamespace(repo, StorageAccessType.DirectAccess)
-    if (!directAccessStorageNS.endsWith("/")) {
-      directAccessStorageNS += "/"
+    var storageNSForSdkClient = new ApiClient(apiURL, accessKey, secretKey)
+      .getStorageNamespace(repo, StorageClientType.SDKClient)
+    if (!storageNSForSdkClient.endsWith("/")) {
+      storageNSForSdkClient += "/"
     }
 
     val removed =
-      remove(directAccessStorageNS,
+      remove(storageNSForSdkClient,
              gcAddressesLocation,
              expiredAddresses,
              runID,
@@ -375,15 +375,15 @@ object GarbageCollector {
              storageType
             )
 
-    var hadoopFSAccessStorageNS = new ApiClient(apiURL, accessKey, secretKey)
-      .getStorageNamespace(repo, StorageAccessType.HadoopFS)
-    if (!hadoopFSAccessStorageNS.endsWith("/")) {
-      hadoopFSAccessStorageNS += "/"
+    var storageNSForHadoopFS = new ApiClient(apiURL, accessKey, secretKey)
+      .getStorageNamespace(repo, StorageClientType.HadoopFS)
+    if (!storageNSForHadoopFS.endsWith("/")) {
+      storageNSForHadoopFS += "/"
     }
 
     val commitsDF = getCommitsDF(runID, gcCommitsLocation, spark)
-    val reportLogsDst = concatToGCLogsPrefix(hadoopFSAccessStorageNS, "summary")
-    val reportExpiredDst = concatToGCLogsPrefix(hadoopFSAccessStorageNS, "expired_addresses")
+    val reportLogsDst = concatToGCLogsPrefix(storageNSForHadoopFS, "summary")
+    val reportExpiredDst = concatToGCLogsPrefix(storageNSForHadoopFS, "expired_addresses")
 
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
     writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
@@ -396,7 +396,7 @@ object GarbageCollector {
       .partitionBy("run_id")
       .mode(SaveMode.Overwrite)
       .parquet(
-        concatToGCLogsPrefix(hadoopFSAccessStorageNS, s"deleted_objects/$time/deleted.parquet")
+        concatToGCLogsPrefix(storageNSForHadoopFS, s"deleted_objects/$time/deleted.parquet")
       )
 
     spark.close()

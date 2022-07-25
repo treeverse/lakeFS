@@ -2,24 +2,19 @@ package io.treeverse.clients
 
 import com.google.common.cache.CacheBuilder
 import io.lakefs.clients.api
-import io.lakefs.clients.api.RetentionApi
-import io.lakefs.clients.api.ConfigApi
-import io.lakefs.clients.api.model.{
-  GarbageCollectionPrepareRequest,
-  GarbageCollectionPrepareResponse
-}
-import io.treeverse.clients.StorageAccessType.StorageAccessType
+import io.lakefs.clients.api.{ConfigApi, RetentionApi}
+import io.lakefs.clients.api.model.{GarbageCollectionPrepareRequest, GarbageCollectionPrepareResponse}
+import io.treeverse.clients.StorageClientType.StorageClientType
 import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
 
 import java.net.URI
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.Callable
+import java.util.concurrent.{Callable, TimeUnit}
 
-// The different types of storage access the metadata client uses.
-object StorageAccessType extends Enumeration {
-  type StorageAccessType = Value
+// The different types of storage clients the metadata client uses to access the object store.
+object StorageClientType extends Enumeration {
+  type StorageClientType = Value
 
-  val DirectAccess, HadoopFS = Value
+  val SDKClient, HadoopFS = Value
 }
 
 private object ApiClient {
@@ -74,19 +69,19 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
     def call(): String = fn()
   }
 
-  def getStorageNamespace(repoName: String, accessType: StorageAccessType): String = {
+  def getStorageNamespace(repoName: String, accessType: StorageClientType): String = {
     storageNamespaceCache.get(
       repoName,
       new CallableFn(() => {
         val repo = repositoriesApi.getRepository(repoName)
 
         val storageNamespace = accessType match {
-          case StorageAccessType.HadoopFS =>
+          case StorageClientType.HadoopFS =>
             ApiClient
               .translateURI(URI.create(repo.getStorageNamespace), getBlockstoreType())
               .normalize()
               .toString
-          case StorageAccessType.DirectAccess => repo.getStorageNamespace
+          case StorageClientType.SDKClient => repo.getStorageNamespace
           case _                              => throw new IllegalArgumentException
         }
         storageNamespace
@@ -124,7 +119,7 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
       val metaRange = metadataApi.getMetaRange(repoName, metaRangeID)
       val location = metaRange.getLocation
       URI
-        .create(getStorageNamespace(repoName, StorageAccessType.HadoopFS) + "/")
+        .create(getStorageNamespace(repoName, StorageClientType.HadoopFS) + "/")
         .resolve(location)
         .normalize()
         .toString
@@ -138,7 +133,7 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
     val range = metadataApi.getRange(repoName, rangeID)
     val location = range.getLocation
     URI
-      .create(getStorageNamespace(repoName, StorageAccessType.HadoopFS) + "/" + location)
+      .create(getStorageNamespace(repoName, StorageClientType.HadoopFS) + "/" + location)
       .normalize()
       .toString
   }

@@ -13,7 +13,7 @@ import io.treeverse.clients.StorageUtils.S3._
 import io.treeverse.clients.StorageUtils._
 import org.apache.hadoop.conf.Configuration
 
-import java.net.{URI, URL}
+import java.net.URI
 import java.nio.charset.Charset
 import java.util.stream.Collectors
 import collection.JavaConverters._
@@ -105,16 +105,16 @@ object BulkRemoverFactory {
 
       val blobBatchClient = getBlobBatchClient(hc, storageAccountUrl, storageAccountName)
 
-      val extractUrlIfBlobDeleted = new java.util.function.Function[Response[Void], URL]() {
-        def apply(response: Response[Void]): URL = {
+      val extractUrlIfBlobDeleted = new java.util.function.Function[Response[Void], URI]() {
+        def apply(response: Response[Void]): URI = {
           if (response.getStatusCode == 200) {
             response.getRequest.getUrl
           }
-          new URL(EmptyString)
+          new URI(EmptyString)
         }
       }
-      val urlToString = new java.util.function.Function[URL, String]() {
-        def apply(url: URL): String = url.toString
+      val uriToString = new java.util.function.Function[URI, String]() {
+        def apply(uri: URI): String = uri.toString
       }
       val isNonEmptyString = new java.util.function.Predicate[String]() {
         override def test(s: String): Boolean = !EmptyString.equals(s)
@@ -122,11 +122,11 @@ object BulkRemoverFactory {
 
       try {
         val responses = blobBatchClient.deleteBlobs(removeKeys, DeleteSnapshotsOptionType.INCLUDE)
-        // TODO(Tals): extract urls of successfully deleted objects from response, the current version does not do that.
+        // TODO(Tals): extract uris of successfully deleted objects from response, the current version does not do that.
         responses
           .stream()
-          .map[URL](extractUrlIfBlobDeleted)
-          .map[String](urlToString)
+          .map[URI](extractUrlIfBlobDeleted)
+          .map[String](uriToString)
           .filter(isNonEmptyString)
           .collect(Collectors.toList())
           .asScala

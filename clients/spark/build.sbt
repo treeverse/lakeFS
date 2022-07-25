@@ -119,6 +119,8 @@ lazy val examples312 = generateExamplesProject(spark312Type).dependsOn(core312)
 
 lazy val root = (project in file(".")).aggregate(core2, core3, core312, examples2, examples3, examples312)
 
+// We are using the default sbt assembly merge strategy https://github.com/sbt/sbt-assembly#merge-strategy with a change
+// to the general case: use MergeStrategy.first instead of MergeStrategy.deduplicate.
 lazy val assemblySettings = Seq(
   assembly / assemblyMergeStrategy := {
     case PathList("META-INF", xs @ _*) =>

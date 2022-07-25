@@ -5,7 +5,6 @@ import java.net.URI
 object StorageUtils {
   val StorageTypeS3 = "s3"
   val StorageTypeAzure = "azure"
-  val SchemeDelimiter = "://"
 
   object AzureBlob {
     val StorageAccountKeyPropertyPattern =
@@ -21,7 +20,7 @@ object StorageUtils {
      *  @return
      */
     def uriToStorageAccountUrl(storageNsURI: URI): String = {
-      storageNsURI.getScheme + SchemeDelimiter + storageNsURI.getHost
+      storageNsURI.getScheme + "://" + storageNsURI.getHost
     }
 
     def uriToStorageAccountName(storageNsURI: URI): String = {
