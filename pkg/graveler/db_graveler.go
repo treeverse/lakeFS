@@ -562,8 +562,8 @@ func (g *DBGraveler) Set(ctx context.Context, repositoryID RepositoryID, branchI
 
 // isStagedTombstone returns true if key is staged as tombstone on manager at token.  It treats staging manager
 // errors by returning "not a tombstone", and is unsafe to use if that matters!
-func isStagedTombstone(ctx context.Context, manager StagingManager, token StagingToken, key Key) bool {
-	e, err := manager.Get(ctx, token, key)
+func (g *DBGraveler) isStagedTombstone(ctx context.Context, token StagingToken, key Key) bool {
+	e, err := g.StagingManager.Get(ctx, token, key)
 	if err != nil {
 		return false
 	}
@@ -615,7 +615,7 @@ func (g *DBGraveler) Delete(ctx context.Context, repositoryID RepositoryID, bran
 		// Safe to ignore errors when checking staging (if all delete actions worked):
 		// we only give a possible incorrect error message if a tombstone was already
 		// staged.
-		if isStagedTombstone(ctx, g.StagingManager, branch.StagingToken, key) {
+		if g.isStagedTombstone(ctx, branch.StagingToken, key) {
 			return nil, ErrNotFound
 		}
 
