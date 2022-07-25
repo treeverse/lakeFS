@@ -11,14 +11,13 @@ type Iterator struct {
 	ctx   context.Context
 	store kv.StoreMessage
 	itr   *kv.PartitionIterator
-	st    graveler.StagingToken
 	entry *graveler.ValueRecord
 	err   error
 }
 
 // NewStagingIterator initiates the staging iterator with a batchSize
 func NewStagingIterator(ctx context.Context, store kv.StoreMessage, st graveler.StagingToken) (*Iterator, error) {
-	itr, err := kv.NewPartitionIterator(ctx, store.Store, (&graveler.StagedEntryData{}).ProtoReflect().Type(), string(st))
+	itr, err := kv.NewPartitionIterator(ctx, store.Store, (&graveler.StagedEntryData{}).ProtoReflect().Type(), graveler.StagingTokenPartition(st))
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +25,6 @@ func NewStagingIterator(ctx context.Context, store kv.StoreMessage, st graveler.
 		ctx:   ctx,
 		store: store,
 		itr:   itr,
-		st:    st,
 	}, nil
 }
 

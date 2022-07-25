@@ -23,7 +23,7 @@ func NewManager(store kv.StoreMessage) *Manager {
 
 func (m *Manager) Get(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.Value, error) {
 	data := &graveler.StagedEntryData{}
-	_, err := m.store.GetMsg(ctx, string(st), key, data)
+	_, err := m.store.GetMsg(ctx, graveler.StagingTokenPartition(st), key, data)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrNotFound
@@ -37,7 +37,7 @@ func (m *Manager) Get(ctx context.Context, st graveler.StagingToken, key gravele
 	return graveler.StagedEntryFromProto(data), nil
 }
 
-func (m *Manager) Set(ctx context.Context, st graveler.StagingToken, key graveler.Key, value *graveler.Value, overwrite bool) error {
+func (m *Manager) Set(ctx context.Context, st graveler.StagingToken, key graveler.Key, value *graveler.Value, _ bool) error {
 	// Tombstone handling
 	if value == nil {
 		value = new(graveler.Value)
@@ -45,27 +45,38 @@ func (m *Manager) Set(ctx context.Context, st graveler.StagingToken, key gravele
 		return graveler.ErrInvalidValue
 	}
 
-	var err error
 	pb := graveler.ProtoFromStagedEntry(key, value)
-	if overwrite {
-		err = m.store.SetMsg(ctx, string(st), key, pb)
-	} else {
-		err = m.store.SetMsgIf(ctx, string(st), key, pb, nil)
-		if errors.Is(err, kv.ErrPredicateFailed) {
-			return graveler.ErrPreconditionFailed
+	return m.store.SetMsg(ctx, graveler.StagingTokenPartition(st), key, pb)
+}
+
+func (m *Manager) Update(ctx context.Context, st graveler.StagingToken, key graveler.Key, updateFunc graveler.ValueUpdateFunc) error {
+	oldValueProto := &graveler.StagedEntryData{}
+	var oldValue *graveler.Value
+	pred, err := m.store.GetMsg(ctx, graveler.StagingTokenPartition(st), key, oldValueProto)
+	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			oldValue = nil
+		} else {
+			return err
 		}
+	} else {
+		oldValue = graveler.StagedEntryFromProto(oldValueProto)
 	}
-	return err
+	updatedValue, err := updateFunc(oldValue)
+	if err != nil {
+		return err
+	}
+	return m.store.SetMsgIf(ctx, graveler.StagingTokenPartition(st), key, graveler.ProtoFromStagedEntry(key, updatedValue), pred)
 }
 
 func (m *Manager) DropKey(ctx context.Context, st graveler.StagingToken, key graveler.Key) error {
 	// Simulate DB behavior - fail if key doesn't exist. See: https://github.com/treeverse/lakeFS/issues/3640
 	data := &graveler.StagedEntryData{}
-	_, err := m.store.GetMsg(ctx, string(st), key, data)
+	_, err := m.store.GetMsg(ctx, graveler.StagingTokenPartition(st), key, data)
 	if err != nil {
 		return err
 	}
-	return m.store.DeleteMsg(ctx, string(st), key)
+	return m.store.DeleteMsg(ctx, graveler.StagingTokenPartition(st), key)
 }
 
 // List TODO niro: Remove batchSize parameter post KV
@@ -81,13 +92,13 @@ func (m *Manager) Drop(ctx context.Context, st graveler.StagingToken) error {
 }
 
 func (m *Manager) DropByPrefix(ctx context.Context, st graveler.StagingToken, prefix graveler.Key) error {
-	itr, err := kv.ScanPrefix(ctx, m.store.Store, []byte(st), prefix, []byte(""))
+	itr, err := kv.ScanPrefix(ctx, m.store.Store, []byte(graveler.StagingTokenPartition(st)), prefix, []byte(""))
 	if err != nil {
 		return err
 	}
 	defer itr.Close()
 	for itr.Next() {
-		err = m.store.Delete(ctx, []byte(st), itr.Entry().Key)
+		err = m.store.Delete(ctx, []byte(graveler.StagingTokenPartition(st)), itr.Entry().Key)
 		if err != nil {
 			return err
 		}

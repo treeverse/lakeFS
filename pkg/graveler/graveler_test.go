@@ -305,8 +305,90 @@ func testGravelerGet(t *testing.T, kvEnabled bool) {
 	}
 }
 
+func TestGraveler_Set(t *testing.T) {
+	t.Run("TestDBGraveler_Set", func(t *testing.T) {
+		testGravelerSet(t, false)
+	})
+	t.Run("TestKVGraveler_Set", func(t *testing.T) {
+		testGravelerSet(t, true)
+	})
+}
+
+func testGravelerSet(t *testing.T, kvEnabled bool) {
+	newSetVal := graveler.ValueRecord{Key: []byte("key"), Value: &graveler.Value{Data: []byte("newValue"), Identity: []byte("newIdentity")}}
+	tests := []struct {
+		name                string
+		ifAbsent            bool
+		expectedValueResult graveler.ValueRecord
+		expectedErr         error
+		committedMgr        *testutil.CommittedFake
+		stagingMgr          *testutil.StagingFake
+		refMgr              *testutil.RefsFake
+	}{
+		{
+			name:                "simple set with nothing before",
+			committedMgr:        &testutil.CommittedFake{},
+			stagingMgr:          &testutil.StagingFake{},
+			refMgr:              &testutil.RefsFake{Branch: &graveler.Branch{}},
+			expectedValueResult: newSetVal,
+		},
+		{
+			name:                "simple set with committed key",
+			committedMgr:        &testutil.CommittedFake{ValuesByKey: map[string]*graveler.Value{string(newSetVal.Key): {Data: []byte("dsa"), Identity: []byte("asd")}}},
+			stagingMgr:          &testutil.StagingFake{},
+			refMgr:              &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "commit1"}},
+			expectedValueResult: newSetVal,
+		},
+		{
+			name:                "simple set overwrite no prior value",
+			committedMgr:        &testutil.CommittedFake{Err: graveler.ErrNotFound},
+			stagingMgr:          &testutil.StagingFake{},
+			refMgr:              &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "bla"}, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}},
+			expectedValueResult: newSetVal,
+			ifAbsent:            true,
+		},
+		{
+			name:         "simple set overwrite with prior committed value",
+			committedMgr: &testutil.CommittedFake{},
+			stagingMgr:   &testutil.StagingFake{},
+			refMgr:       &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "bla"}, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}},
+			expectedErr:  graveler.ErrPreconditionFailed,
+			ifAbsent:     true,
+		},
+		{
+			name:         "simple set overwrite with prior staging value",
+			committedMgr: &testutil.CommittedFake{},
+			stagingMgr:   &testutil.StagingFake{Values: map[string]map[string]*graveler.Value{"st": {"key": &graveler.Value{Identity: []byte("sdf"), Data: []byte("sdf")}}}},
+			refMgr:       &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "bla", StagingToken: "st"}, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}},
+			expectedErr:  graveler.ErrPreconditionFailed,
+			ifAbsent:     true,
+		},
+		{
+			name:                "simple set overwrite with prior staging tombstone",
+			committedMgr:        &testutil.CommittedFake{Err: graveler.ErrNotFound},
+			stagingMgr:          &testutil.StagingFake{Values: map[string]map[string]*graveler.Value{"st1": {"key": nil}, "st2": {"key": &graveler.Value{Identity: []byte("not-nil"), Data: []byte("not-nil")}}}},
+			refMgr:              &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "bla", StagingToken: "st1", SealedTokens: []graveler.StagingToken{"st2"}}, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}},
+			expectedValueResult: newSetVal,
+			ifAbsent:            true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store := newGraveler(t, kvEnabled, tt.committedMgr, tt.stagingMgr, tt.refMgr, nil, testutil.NewProtectedBranchesManagerFake())
+			err := store.Set(context.Background(), "", "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(tt.ifAbsent))
+			if err != tt.expectedErr {
+				t.Fatalf("wrong error, expected:%v got:%v", tt.expectedErr, err)
+			}
+			lastVal := tt.stagingMgr.LastSetValueRecord
+			if err == nil {
+				require.Equal(t, tt.expectedValueResult, *lastVal)
+			} else {
+				require.NotEqual(t, &tt.expectedValueResult, lastVal)
+			}
+		})
+	}
+}
 func TestGravelerGet_Advanced(t *testing.T) {
-	//errTest := errors.New("some kind of err")
 	tests := []struct {
 		name                string
 		r                   catalog.Store

@@ -307,8 +307,11 @@ type BranchRecord struct {
 	*Branch
 }
 
-// BranchUpdateFunc Used to pass validation call back to staging manager for UpdateBranch flow
+// BranchUpdateFunc Used to pass validation call back to ref manager for UpdateBranch flow
 type BranchUpdateFunc func(*Branch) (*Branch, error)
+
+// ValueUpdateFunc Used to pass validation call back to staging manager for UpdateValue flow
+type ValueUpdateFunc func(*Value) (*Value, error)
 
 // TagRecord holds TagID with the associated Tag data
 type TagRecord struct {
@@ -733,6 +736,9 @@ type StagingManager interface {
 	// Set writes a (possibly nil) value under the given staging token and key.
 	Set(ctx context.Context, st StagingToken, key Key, value *Value, overwrite bool) error
 
+	// Update updates a (possibly nil) value under the given staging token and key.
+	Update(ctx context.Context, st StagingToken, key Key, updateFunc ValueUpdateFunc) error
+
 	// List returns a ValueIterator for the given staging token
 	List(ctx context.Context, st StagingToken, batchSize int) (ValueIterator, error)
 
@@ -980,15 +986,11 @@ func (g *KVGraveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID
 	newBranch := &Branch{}
 
 	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(b *Branch) (*Branch, error) {
-		curBranch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
-		if err != nil {
-			return nil, err
-		}
 		newBranch.CommitID = reference.CommitID
-		newBranch.StagingToken = curBranch.StagingToken
+		newBranch.StagingToken = b.StagingToken
 
 		// TODO(Guys) return error only on conflicts, currently returns error for any changes on staging
-		empty, err := g.stagingEmpty(ctx, repositoryID, repo, reference.Branch)
+		empty, err := g.stagingEmpty(ctx, repositoryID, repo, b)
 		if err != nil {
 			return nil, err
 		}
@@ -1353,11 +1355,141 @@ func (g *KVGraveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref
 }
 
 func (g *KVGraveler) Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error {
-	return g.db.Set(ctx, repositoryID, branchID, key, value, writeConditions...)
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrWriteToProtectedBranch
+	}
+
+	setFunc := func(branch *Branch) error {
+		writeCondition := &WriteCondition{}
+		for _, cond := range writeConditions {
+			cond(writeCondition)
+		}
+
+		if !writeCondition.IfAbsent {
+			return g.StagingManager.Set(ctx, branch.StagingToken, key, &value, !writeCondition.IfAbsent)
+		}
+
+		// check if the given key exist in the branch first
+		_, err := g.Get(ctx, repositoryID, Ref(branchID), key)
+		if err == nil {
+			// we got a key here already!
+			return ErrPreconditionFailed
+		}
+		if !errors.Is(err, ErrNotFound) {
+			// another error occurred!
+			return err
+		}
+
+		return g.StagingManager.Update(ctx, branch.StagingToken, key, func(v *Value) (*Value, error) {
+			if v == nil || v.Identity == nil {
+				// value doesn't exist or is a tombstone
+				return &value, nil
+			}
+			return nil, ErrPreconditionFailed
+		})
+	}
+
+	return g.safeBranchWrite(ctx, g.log.WithField("key", key).WithField("operation", "set"), repositoryID, branchID, setFunc)
+}
+
+// safeBranchWrite is a helper function that wraps a branch write operation with validation that the staging token
+// didn't change while writing to the branch.
+func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, repositoryID RepositoryID, branchID BranchID, stagingOperation func(branch *Branch) error) error {
+	// setTries is the number of times to repeat the set operation if the staging token changed
+	const setTries = 3
+
+	var try int
+	for try = 0; try < setTries; try++ {
+		branch, err := g.GetBranch(ctx, repositoryID, branchID)
+		if err != nil {
+			return err
+		}
+		startToken := branch.StagingToken
+
+		if err = stagingOperation(branch); err != nil {
+			return err
+		}
+
+		// Checking if the token has changed.
+		// If it changed, we need to write the changes to the branch's new staging token
+		branch, err = g.GetBranch(ctx, repositoryID, branchID)
+		if err != nil {
+			return err
+		}
+		endToken := branch.StagingToken
+		if startToken == endToken {
+			break
+		} else {
+			// we got a new token, try again
+			log.WithField("try", try+1).
+				WithField("startToken", startToken).
+				WithField("endToken", endToken).
+				Info("Retrying Set")
+		}
+	}
+	if try == setTries {
+		return ErrTooManyStagingWriteTries
+	}
+	return nil
 }
 
 func (g *KVGraveler) Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
-	return g.db.Delete(ctx, repositoryID, branchID, key)
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrWriteToProtectedBranch
+	}
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+
+	deleteEntry := func(branch *Branch) error {
+		commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+		if err != nil {
+			return err
+		}
+
+		// check key in committed - do we need tombstone?
+		foundInCommitted := false
+		_, err = g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.MetaRangeID, key)
+		if err != nil {
+			if !errors.Is(err, ErrNotFound) {
+				// unknown error
+				return fmt.Errorf("reading from committed: %w", err)
+			}
+		} else {
+			foundInCommitted = true
+		}
+
+		foundInStaging := true
+		val, err := g.getFromStagingArea(ctx, branch, key)
+		if err != nil {
+			if !errors.Is(err, ErrNotFound) {
+				// unknown error
+				return fmt.Errorf("reading from staging: %w", err)
+			}
+			foundInStaging = false
+		} else if val == nil {
+			// found tombstone in staging, return ErrNotFound
+			return ErrNotFound
+		}
+
+		if foundInCommitted || foundInStaging {
+			return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
+		}
+
+		// key is nowhere to be found, return ErrNotFound
+		return ErrNotFound
+	}
+
+	return g.safeBranchWrite(ctx, g.log.WithField("key", key).WithField("operation", "delete"), repositoryID, branchID, deleteEntry)
 }
 
 // listStagingArea Returns an iterator which is an aggregation of all changes on all the branch's staging area (staging + sealed)
