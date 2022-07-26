@@ -46,7 +46,7 @@ func TestMigrate(t *testing.T) {
 	require.NoError(t, err)
 
 	testutil.MustDo(t, "Import file", kv.Import(ctx, &buf, kvStore.Store))
-	kvMgr := ref.NewKVRefManager(batch.NopExecutor(), kvStore, conn, ident.NewHexAddressProvider())
+	kvMgr := ref.NewKVRefManager(batch.NopExecutor(), kvStore, ident.NewHexAddressProvider())
 	verifyMigrationResults(t, ctx, kvMgr, dbMgr)
 }
 
