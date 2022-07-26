@@ -1618,27 +1618,25 @@ func (g *KVGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID Rep
 		return "", fmt.Errorf("%w: %s", ErrMetaRangeNotFound, commit.MetaRangeID)
 	}
 
-	// add commit and/or use the commit id of the one we found
+	// add commit to our ref manager
 	commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
-	if err != nil && !errors.Is(err, kv.ErrPredicateFailed) {
+	if err != nil {
 		return "", fmt.Errorf("adding commit: %w", err)
 	}
 
+	// update branch with commit after verify:
+	// 1. commit parent is the current branch head
+	// 2. branch staging is empty
 	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
 		if branch.CommitID != parentCommitID {
 			return nil, ErrCommitNotHeadBranch
 		}
 
-		// report conflict if there are changes pending on the branch
-		if len(branch.SealedTokens) > 0 {
-			return nil, ErrConflictFound
-		}
-		iterator, err := g.StagingManager.List(ctx, branch.StagingToken, 1)
+		empty, err := g.stagingEmpty(ctx, repositoryID, repo, branch)
 		if err != nil {
-			return nil, fmt.Errorf("check branch empty: %w", err)
+			return nil, err
 		}
-		defer iterator.Close()
-		if iterator.Next() {
+		if !empty {
 			return nil, ErrConflictFound
 		}
 
