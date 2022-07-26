@@ -218,7 +218,7 @@ func (m *DBManager) SetBranch(ctx context.Context, repositoryID graveler.Reposit
 
 // BranchUpdate Implement refManager interface - in DB implementation simply panics
 func (m *DBManager) BranchUpdate(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, _ graveler.BranchUpdateFunc) error {
-	panic("Unimplemented")
+	panic("not implemented")
 }
 
 func (m *DBManager) DeleteBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) error {
