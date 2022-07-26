@@ -1387,6 +1387,7 @@ func testGravelerAddCommitToBranchHead(t *testing.T, kvEnabled bool) {
 				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
 				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)},
 				RefManager: &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: unexpectedParentCommitID},
+					UpdateErr: graveler.ErrCommitNotHeadBranch,
 					Commits: map[graveler.CommitID]*graveler.Commit{
 						expectedParentCommitID: {},
 					},

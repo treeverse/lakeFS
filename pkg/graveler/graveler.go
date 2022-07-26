@@ -88,7 +88,7 @@ const (
 //   BranchID: for type ReferenceTypeBranch will hold the branch ID
 //   ResolvedBranchModifier: branch indicator if resolved to a branch latest commit, staging or none was specified.
 //   CommitID: the commit ID of the branch head,  tag or specific hash.
-//   StagingToken: empty if ResolvedBranchModifier is ResolvedBranchModifierCommmitted.
+//   StagingToken: empty if ResolvedBranchModifier is ResolvedBranchModifierCommitted.
 //
 type ResolvedRef struct {
 	Type                   ReferenceType
@@ -133,7 +133,7 @@ type RangeInfo struct {
 // MetaRangeInfo contains information on a MetaRange
 type MetaRangeInfo struct {
 	// ID is the identifier for the written MetaRange.
-	// Calculated by an hash function to all keys and values' identity.
+	// Calculated by a hash function to all keys and values' identity.
 	ID MetaRangeID
 }
 
@@ -157,7 +157,7 @@ type StorageNamespace string
 // RepositoryID is an identifier for a repo
 type RepositoryID string
 
-// Key represents a logical path for an value
+// Key represents a logical path for a value
 type Key []byte
 
 // Ref could be a commit ID, a branch name, a Tag
@@ -297,7 +297,7 @@ type CommitRecord struct {
 type Branch struct {
 	CommitID     CommitID
 	StagingToken StagingToken
-	// SealedTokens - Staging tokens are appended to the front, this allows building the diff iterator esaily
+	// SealedTokens - Staging tokens are appended to the front, this allows building the diff iterator easily
 	SealedTokens []StagingToken
 }
 
@@ -531,7 +531,7 @@ type Loader interface {
 }
 
 // Internal structures used by Graveler
-// xxxIterator used as follow:
+// xxxIterator used as follows:
 // ```
 // it := NewXXXIterator(data)
 // for it.Next() {
@@ -1729,45 +1729,62 @@ func CommitExists(ctx context.Context, repositoryID RepositoryID, commitID Commi
 }
 
 func (g *KVGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) (CommitID, error) {
-	// TODO(issue 3569) - kv implementation optimistic lock commit
-	res, err := g.db.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
-		// parentCommitID should always match the HEAD of the branch.
-		// Empty parentCommitID matches first commit of the branch.
-		parentCommitID, err := validateCommitParent(ctx, repositoryID, commit, g.RefManager)
-		if err != nil {
-			return nil, err
-		}
+	repo, err := g.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return "", err
+	}
 
-		branch, err := g.db.GetBranch(ctx, repositoryID, branchID)
-		if err != nil {
-			return nil, err
-		}
+	// parentCommitID should always match the HEAD of the branch.
+	// Empty parentCommitID matches first commit of the branch.
+	parentCommitID, err := validateCommitParent(ctx, repositoryID, commit, g.RefManager)
+	if err != nil {
+		return "", err
+	}
+
+	// verify access to meta range
+	ok, err := g.CommittedManager.Exists(ctx, repo.StorageNamespace, commit.MetaRangeID)
+	if err != nil {
+		return "", fmt.Errorf("commit missing meta range %s: %w", commit.MetaRangeID, err)
+	}
+	if !ok {
+		return "", fmt.Errorf("%w: %s", ErrMetaRangeNotFound, commit.MetaRangeID)
+	}
+
+	// add commit to our ref manager
+	commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
+	if err != nil {
+		return "", fmt.Errorf("adding commit: %w", err)
+	}
+
+	// update branch with commit after verify:
+	// 1. commit parent is the current branch head
+	// 2. branch staging is empty
+	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
 		if branch.CommitID != parentCommitID {
 			return nil, ErrCommitNotHeadBranch
 		}
 
-		// check if commit already exists.
-		commitID := CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
-		if exists, err := CommitExists(ctx, repositoryID, commitID, g.RefManager); err != nil {
+		empty, err := g.stagingEmpty(ctx, repositoryID, repo, branch)
+		if err != nil {
 			return nil, err
-		} else if exists {
-			return commitID, nil
+		}
+		if !empty {
+			return nil, ErrConflictFound
 		}
 
-		commitID, err = g.addCommitNoLock(ctx, repositoryID, commit)
-		if err != nil {
-			return nil, fmt.Errorf("adding commit: %w", err)
-		}
-		_, err = g.UpdateBranch(ctx, repositoryID, branchID, Ref(commitID))
-		if err != nil {
-			return nil, err
-		}
-		return commitID, nil
+		return &Branch{
+			CommitID:     commitID,
+			StagingToken: branch.StagingToken,
+			SealedTokens: branch.SealedTokens,
+		}, nil
 	})
 	if err != nil {
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			err = ErrConflictFound
+		}
 		return "", err
 	}
-	return res.(CommitID), nil
+	return commitID, nil
 }
 
 func (g *KVGraveler) AddCommit(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
