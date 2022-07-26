@@ -1,0 +1,25 @@
+{{contenttype "application/xml" -}}
+<configuration>
+  <property>
+      <name>fs.s3a.path.style.access</name>
+      <value>true</value>
+  </property>
+  <property>
+      <name>fs.s3a.impl</name>
+      <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
+  </property>
+  <property>
+      <name>fs.s3a.endpoint</name>
+      <value>{{ .Query.lakefs_url }}</value>
+  </property>
+{{- with $creds := new_credentials "spark"}}
+  <property>
+      <name>fs.s3a.access.key</name>
+      <value>{{$creds.Key}}</value>
+  </property>
+  <property>
+      <name>fs.s3a.secret.key</name>
+      <value>{{$creds.Secret}}</value>
+  </property>
+{{- end}}
+</configuration>

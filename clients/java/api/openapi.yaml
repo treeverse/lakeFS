@@ -4383,7 +4383,7 @@ paths:
       parameters:
       - description: URL of the template; must be relative (to a URL configured on
           the server).
-        example: spark.conf.tt
+        example: spark.submit.conf.tt
         explode: false
         in: path
         name: template_location
