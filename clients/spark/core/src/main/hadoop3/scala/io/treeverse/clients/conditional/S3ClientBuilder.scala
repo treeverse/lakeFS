@@ -8,6 +8,7 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
   def build(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3 = {
     import org.apache.hadoop.fs.s3a.Constants
     import org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
+    import com.amazonaws.auth.{BasicAWSCredentials, AWSStaticCredentialsProvider}
 
     val configuration = new ClientConfiguration().withMaxErrorRetry(numRetries)
 
@@ -18,6 +19,12 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
     val credentialsProvider =
       if (hc.get(Constants.AWS_CREDENTIALS_PROVIDER) == AssumedRoleCredentialProvider.NAME)
         Some(new AssumedRoleCredentialProvider(new java.net.URI("s3a://" + bucket), hc))
+      else if (hc.get(Constants.ACCESS_KEY) != null)
+        Some(
+          new AWSStaticCredentialsProvider(
+            new BasicAWSCredentials(hc.get(Constants.ACCESS_KEY), hc.get(Constants.SECRET_KEY))
+          )
+        )
       else None
 
     val builder = AmazonS3ClientBuilder
