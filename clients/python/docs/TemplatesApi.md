@@ -65,7 +65,7 @@ configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = templates_api.TemplatesApi(api_client)
-    template_location = "spark.conf.tt" # str | URL of the template; must be relative (to a URL configured on the server).
+    template_location = "spark.submit.conf.tt" # str | URL of the template; must be relative (to a URL configured on the server).
     params = {
         "key": "key_example",
     } # {str: (str,)} |  (optional)
