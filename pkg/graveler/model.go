@@ -29,6 +29,10 @@ func RepoPartition(repo *RepositoryRecord) string {
 	return repo.RepositoryID.String()
 }
 
+func StagingTokenPartition(token StagingToken) string {
+	return token.String()
+}
+
 func TagPath(tagID TagID) string {
 	return kv.FormatPath(tagsPrefix, tagID.String())
 }

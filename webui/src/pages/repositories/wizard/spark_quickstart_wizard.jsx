@@ -2,14 +2,12 @@ import {Wizard} from "./wizard";
 import React, {useState} from "react";
 import {useAPI} from "../../../lib/hooks/api";
 import {config} from "../../../lib/api";
-import {Loading} from "../../../lib/components/controls";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import {Spinner} from "react-bootstrap";
+import {Loading, ProgressSpinner} from "../../../lib/components/controls";
 import Alert from "react-bootstrap/Alert";
 import RepositoryCreateForm from "../../../lib/components/repositoryCreateForm";
 import ImportDataStep from "./import_data_wizard_step";
+import {SparkConfigStep} from "./spark_config_step";
+import {useRouter} from "../../../lib/hooks/router";
 
 const RepositoryCreationPhase = {
     NotStarted: 0,
@@ -61,12 +59,16 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
         namespace: '',
         repoId: '',
     });
+    const router = useRouter();
     const [completed, setCompleted] = useState(new Set());
     const completedStep = (vals = {}, stepNum) => {
         setState({...state, ...vals});
         setCompleted(currentCompleted => new Set(currentCompleted).add(stepNum));
     }
     const onComplete = async () => {
+        // TODO(jonathan): generate README.md file, upload it
+        // TODO(jonathan): commit README.md file to repo
+        router.push({pathname: `/repositories/:repoId/objects`, params: {repoId: state.repoId}});
         onExit();
     }
     const steps = [
@@ -91,25 +93,14 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
                 }}
                 branchName={state.branch} />,
         },
+        {
+            label: 'Spark Configurations',
+            component: <SparkConfigStep onComplete={(values) => { completedStep(values, 2); }}/>
+        },
     ];
     return (
         <>
             <Wizard steps={steps} isShowBack={false} completed={completed} onDone={onComplete}/>
         </>
-    );
-}
-
-const ProgressSpinner = ({text, changingElement =''}) => {
-    return (
-        <Container>
-            <Row className={'justify-content-left'}>
-                <Col className={"col-1 mb-2 mt-2"}>
-                    <Spinner animation="border" variant="primary" size="xl" role="status" />
-                </Col>
-                <Col className={"col-3 mb-2 mt-2"}>
-                    <span>{text}{changingElement}</span>
-                </Col>
-            </Row>
-        </Container>
     );
 }

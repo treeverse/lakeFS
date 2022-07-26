@@ -6,7 +6,6 @@ import io.treeverse.clients.LakeFSContext.{
   LAKEFS_CONF_API_SECRET_KEY_KEY,
   LAKEFS_CONF_API_URL_KEY
 }
-
 import org.apache.hadoop.fs._
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.broadcast.Broadcast
@@ -14,9 +13,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{SparkSession, _}
-
 import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.s3.model
 
 import java.net.URI
 import collection.JavaConverters._
@@ -46,6 +43,7 @@ trait S3ClientBuilder extends Serializable {
 }
 
 object GarbageCollector {
+
   type ConfMap = List[(String, String)]
 
   case class APIConfigurations(apiURL: String, accessKey: String, secretKey: String)
@@ -359,17 +357,33 @@ object GarbageCollector {
     println("Expired addresses:")
     expiredAddresses.show()
 
-    var storageNamespace = new ApiClient(apiURL, accessKey, secretKey).getStorageNamespace(repo)
-    if (!storageNamespace.endsWith("/")) {
-      storageNamespace += "/"
+    // The remove operation uses an SDK client to directly access the underlying storage, and therefore does not need
+    // a translated storage namespace that triggers processing by Hadoop FileSystems.
+    var storageNSForSdkClient = new ApiClient(apiURL, accessKey, secretKey)
+      .getStorageNamespace(repo, StorageClientType.SDKClient)
+    if (!storageNSForSdkClient.endsWith("/")) {
+      storageNSForSdkClient += "/"
     }
 
     val removed =
-      remove(storageNamespace, gcAddressesLocation, expiredAddresses, runID, region, hcValues)
+      remove(storageNSForSdkClient,
+             gcAddressesLocation,
+             expiredAddresses,
+             runID,
+             region,
+             hcValues,
+             storageType
+            )
+
+    var storageNSForHadoopFS = new ApiClient(apiURL, accessKey, secretKey)
+      .getStorageNamespace(repo, StorageClientType.HadoopFS)
+    if (!storageNSForHadoopFS.endsWith("/")) {
+      storageNSForHadoopFS += "/"
+    }
 
     val commitsDF = getCommitsDF(runID, gcCommitsLocation, spark)
-    val reportLogsDst = concatToGCLogsPrefix(storageNamespace, "summary")
-    val reportExpiredDst = concatToGCLogsPrefix(storageNamespace, "expired_addresses")
+    val reportLogsDst = concatToGCLogsPrefix(storageNSForHadoopFS, "summary")
+    val reportExpiredDst = concatToGCLogsPrefix(storageNSForHadoopFS, "expired_addresses")
 
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
     writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
@@ -381,7 +395,9 @@ object GarbageCollector {
       .write
       .partitionBy("run_id")
       .mode(SaveMode.Overwrite)
-      .parquet(concatToGCLogsPrefix(storageNamespace, s"deleted_objects/$time/deleted.parquet"))
+      .parquet(
+        concatToGCLogsPrefix(storageNSForHadoopFS, s"deleted_objects/$time/deleted.parquet")
+      )
 
     spark.close()
   }
@@ -397,53 +413,36 @@ object GarbageCollector {
     df.repartitionByRange(nPartitions, col(column))
   }
 
-  private def delObjIteration(
-      bucket: String,
-      keys: Seq[String],
-      s3Client: AmazonS3,
-      snPrefix: String
-  ): Seq[String] = {
-    if (keys.isEmpty) return Seq.empty
-    val removeKeyNames = keys.map(x => snPrefix.concat(x))
-
-    println("Remove keys:", removeKeyNames.take(100).mkString(", "))
-
-    val removeKeys = removeKeyNames.map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
-
-    val delObjReq = new model.DeleteObjectsRequest(bucket).withKeys(removeKeys)
-    val res = s3Client.deleteObjects(delObjReq)
-    res.getDeletedObjects.asScala.map(_.getKey())
-  }
-
-  private def getS3Client(
-      hc: Configuration,
-      bucket: String,
-      region: String,
-      numRetries: Int
-  ): AmazonS3 =
-    io.treeverse.clients.conditional.S3ClientBuilder.build(hc, bucket, region, numRetries)
-
   def bulkRemove(
       readKeysDF: DataFrame,
-      bulkSize: Int,
-      bucket: String,
+      storageNamespace: String,
       region: String,
-      numRetries: Int,
-      snPrefix: String,
-      hcValues: Broadcast[ConfMap]
+      hcValues: Broadcast[ConfMap],
+      storageType: String
   ): Dataset[String] = {
+    val bulkRemover =
+      BulkRemoverFactory(storageType, configurationFromValues(hcValues), storageNamespace, region)
+    val bulkSize = bulkRemover.getMaxBulkSize()
     val spark = org.apache.spark.sql.SparkSession.active
     import spark.implicits._
     val repartitionedKeys = repartitionBySize(readKeysDF, bulkSize, "address")
     val bulkedKeyStrings = repartitionedKeys
       .select("address")
       .map(_.getString(0)) // get address as string (address is in index 0 of row)
+
     bulkedKeyStrings
       .mapPartitions(iter => {
-        val s3Client = getS3Client(configurationFromValues(hcValues), bucket, region, numRetries)
+        // mapPartitions lambda executions are sent over to Spark executors, the executors don't have access to the
+        // bulkRemover created above because it was created on the driver and it is not a serializeable object. Therefore,
+        // we create new bulkRemovers.
+        val bulkRemover = BulkRemoverFactory(storageType,
+                                             configurationFromValues(hcValues),
+                                             storageNamespace,
+                                             region
+                                            )
         iter
           .grouped(bulkSize)
-          .flatMap(delObjIteration(bucket, _, s3Client, snPrefix))
+          .flatMap(bulkRemover.deleteObjects(_, storageNamespace))
       })
   }
 
@@ -453,25 +452,16 @@ object GarbageCollector {
       expiredAddresses: Dataset[Row],
       runID: String,
       region: String,
-      hcValues: Broadcast[ConfMap]
+      hcValues: Broadcast[ConfMap],
+      storageType: String
   ) = {
-    val MaxBulkSize = 1000
-    val awsRetries = 1000
-
-    println("storageNamespace: " + storageNamespace)
-    val uri = new URI(storageNamespace)
-    val bucket = uri.getHost
-    val key = uri.getPath
-    val addSuffixSlash = if (key.endsWith("/")) key else key.concat("/")
-    val snPrefix =
-      if (addSuffixSlash.startsWith("/")) addSuffixSlash.substring(1) else addSuffixSlash
     println("addressDFLocation: " + addressDFLocation)
 
     val df = expiredAddresses
       .where(col("run_id") === runID)
       .where(col("relative") === true)
 
-    bulkRemove(df, MaxBulkSize, bucket, region, awsRetries, snPrefix, hcValues).toDF("addresses")
+    bulkRemove(df, storageNamespace, region, hcValues, storageType).toDF("addresses")
   }
 
   private def writeParquetReport(

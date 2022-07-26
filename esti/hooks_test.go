@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
 )
@@ -38,6 +39,9 @@ func appendRes(info webhookEventInfo) {
 }
 
 func TestHooksSuccess(t *testing.T) {
+	if viper.GetBool("database_kv_enabled") {
+		t.Skip("Finish implementing Graveler.Commit, Graveler.List, ...")
+	}
 	ctx, _, repo := setupTest(t)
 	parseAndUploadActions(t, ctx, repo, mainBranch)
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{

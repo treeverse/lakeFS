@@ -30,7 +30,7 @@ class Exporter(
   }
 
   def exportAllFromCommit(commitID: String): Unit = {
-    val ns = apiClient.getStorageNamespace(repoName)
+    val ns = apiClient.getStorageNamespace(repoName, StorageClientType.HadoopFS)
     val df = LakeFSContext.newDF(spark, repoName, commitID)
 
     val tableName = randPrefix() + "_commit"
@@ -89,7 +89,7 @@ class Exporter(
 
   def exportFrom(branch: String, prevCommitID: String): Unit = {
     val commitID = apiClient.getBranchHEADCommit(repoName, branch)
-    val ns = apiClient.getStorageNamespace(repoName)
+    val ns = apiClient.getStorageNamespace(repoName, StorageClientType.HadoopFS)
 
     val newDF = LakeFSContext.newDF(spark, repoName, commitID)
     val prevDF = LakeFSContext.newDF(spark, repoName, prevCommitID)

@@ -52,7 +52,7 @@ public class Example {
     //oidc_auth.setApiKeyPrefix("Token");
 
     TemplatesApi apiInstance = new TemplatesApi(defaultClient);
-    String templateLocation = "spark.conf.tt"; // String | URL of the template; must be relative (to a URL configured on the server).
+    String templateLocation = "spark.submit.conf.tt"; // String | URL of the template; must be relative (to a URL configured on the server).
     Map<String, String> params = new HashMap(); // Map<String, String> | 
     try {
       Object result = apiInstance.expandTemplate(templateLocation, params);

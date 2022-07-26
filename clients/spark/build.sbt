@@ -60,6 +60,9 @@ def generateCoreProject(buildType: BuildType) =
         // version, but ask to use whatever is provided so we do not
         // override what it selects.
         "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194" % "provided",
+        "com.azure" % "azure-core" % "1.10.0",
+        "com.azure" % "azure-storage-blob" % "12.9.0",
+        "com.azure" % "azure-storage-blob-batch" % "12.7.0",
         // Snappy is JNI :-(.  However it does claim to work with
         // ClassLoaders, and (even more importantly!) using a preloaded JNI
         // version will probably continue to work because the C language API
@@ -116,8 +119,26 @@ lazy val examples312 = generateExamplesProject(spark312Type).dependsOn(core312)
 
 lazy val root = (project in file(".")).aggregate(core2, core3, core312, examples2, examples3, examples312)
 
+// We are using the default sbt assembly merge strategy https://github.com/sbt/sbt-assembly#merge-strategy with a change
+// to the general case: use MergeStrategy.first instead of MergeStrategy.deduplicate.
 lazy val assemblySettings = Seq(
-  assembly / assemblyMergeStrategy := (_ => MergeStrategy.first),
+  assembly / assemblyMergeStrategy := {
+    case PathList("META-INF", xs @ _*) =>
+      (xs map {_.toLowerCase}) match {
+        case ("manifest.mf" :: Nil) | ("index.list" :: Nil) | ("dependencies" :: Nil) =>
+          MergeStrategy.discard
+        case ps @ (x :: xs) if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") =>
+          MergeStrategy.discard
+        case "plexus" :: xs =>
+          MergeStrategy.discard
+        case "services" :: xs =>
+          MergeStrategy.filterDistinctLines
+        case ("spring.schemas" :: Nil) | ("spring.handlers" :: Nil) =>
+          MergeStrategy.filterDistinctLines
+        case _ => MergeStrategy.first
+      }
+    case _ => MergeStrategy.first
+  },
   assembly / assemblyShadeRules := Seq(
     ShadeRule.rename("org.apache.http.**" -> "org.apache.httpShaded@1").inAll,
     ShadeRule.rename("com.google.protobuf.**" -> "shadeproto.@1").inAll,

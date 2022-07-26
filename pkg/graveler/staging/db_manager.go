@@ -96,6 +96,10 @@ func (p *DBManager) Set(ctx context.Context, st graveler.StagingToken, key grave
 	return err
 }
 
+func (p *DBManager) Update(_ context.Context, _ graveler.StagingToken, _ graveler.Key, _ graveler.ValueUpdateFunc) error {
+	panic("not implemented")
+}
+
 func (p *DBManager) DropKey(ctx context.Context, st graveler.StagingToken, key graveler.Key) error {
 	_, err := p.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return tx.Exec("DELETE FROM graveler_staging_kv WHERE staging_token=$1 AND key=$2", st, key)
