@@ -210,7 +210,8 @@ func (m *KVManager) BranchUpdate(ctx context.Context, repositoryID graveler.Repo
 		return err
 	}
 	newBranch, err := f(b)
-	if err != nil {
+	// return on error or nothing to update
+	if err != nil || newBranch == nil {
 		return err
 	}
 	return m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(repo), []byte(graveler.BranchPath(branchID)), protoFromBranch(branchID, newBranch), pred)
