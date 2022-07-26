@@ -1,5 +1,7 @@
 database:
   connection_string: "postgres://lakefs:lakefs@localhost:5433/postgres?sslmode=disable"
+#  kv_enabled: "true"
+#  type: "postgres"
 
 auth:
   encrypt:
