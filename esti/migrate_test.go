@@ -596,7 +596,7 @@ func testPostMigrateGraveler(t *testing.T) {
 	verifyGravelerEntities(t, ctx)
 
 	// commit to the uncommitted branch
-	commitResp, err := client.CommitWithResponse(ctx, state.Graveler.Repo, "pre_branch", &api.CommitParams{}, api.CommitJSONRequestBody{
+	commitResp, err := client.CommitWithResponse(ctx, state.Graveler.Repo, "pre_migrate_branch", &api.CommitParams{}, api.CommitJSONRequestBody{
 		Message: "commit after migrate",
 	})
 	require.NoError(t, err, "failed to commit changes")
@@ -625,7 +625,7 @@ func testPostMigrateGraveler(t *testing.T) {
 		Ref: mainBranch,
 	})
 	require.NoError(t, err, "failed to revert")
-	require.Equal(t, http.StatusCreated, revertResp.StatusCode())
+	require.Equal(t, http.StatusNoContent, revertResp.StatusCode())
 
 	// assert file doesn't exist
 	unobjResp, err := client.GetObjectWithResponse(ctx, state.Graveler.Repo, mainBranch, &api.GetObjectParams{Path: "a/foo/1"})
@@ -648,6 +648,10 @@ func verifyGravelerEntities(t *testing.T, ctx context.Context) {
 	repoResp, err := client.GetRepositoryWithResponse(ctx, state.Graveler.Repo)
 	require.NoError(t, err, "failed to get repository")
 	require.Equal(t, http.StatusOK, repoResp.StatusCode())
+	repository := repoResp.JSON200
+	if repository.DefaultBranch != mainBranch {
+		t.Fatalf("unexpected branch name %s, expected %s", repository.DefaultBranch, mainBranch)
+	}
 
 	commitResp, err := client.GetCommitWithResponse(ctx, state.Graveler.Repo, state.Graveler.CommitID)
 	require.NoError(t, err, "failed to get commit")
@@ -661,24 +665,18 @@ func verifyGravelerEntities(t *testing.T, ctx context.Context) {
 	require.NoError(t, err, "failed to get object")
 	require.Equal(t, http.StatusOK, objResp.StatusCode())
 
-	tagResp, err := client.GetTagWithResponse(ctx, state.Graveler.Repo, state.Graveler.CommitID)
+	tagResp, err := client.GetTagWithResponse(ctx, state.Graveler.Repo, "pre_migrate_tag")
 	require.NoError(t, err, "failed to get tag")
 	require.Equal(t, http.StatusOK, tagResp.StatusCode())
+	require.Equal(t, tagResp.JSON200.CommitId, state.Graveler.CommitID)
 
-	unobjResp, err := client.GetObjectWithResponse(ctx, state.Graveler.Repo, "pre_branch", &api.GetObjectParams{Path: "b/foo/1"})
+	unobjResp, err := client.GetObjectWithResponse(ctx, state.Graveler.Repo, "pre_migrate_branch", &api.GetObjectParams{Path: "b/foo/1"})
 	require.NoError(t, err, "failed to get object")
 	require.Equal(t, http.StatusOK, unobjResp.StatusCode())
 }
 
 func verifyGravelerList(t *testing.T, ctx context.Context) {
 	// list pre- and post-entities
-	repoResp, err := client.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
-	require.NoError(t, err, "list repositories")
-	require.Equal(t, http.StatusOK, repoResp.StatusCode())
-	repoPayload := repoResp.JSON200
-	require.Equal(t, len(repoPayload.Results), 2)
-	require.Equal(t, repoPayload.Pagination.HasMore, false)
-
 	branchResp, err := client.ListBranchesWithResponse(ctx, state.Graveler.Repo, &api.ListBranchesParams{})
 	require.NoError(t, err, "list branches")
 	require.Equal(t, http.StatusOK, branchResp.StatusCode())
