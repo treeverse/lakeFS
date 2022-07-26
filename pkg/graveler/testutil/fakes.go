@@ -330,8 +330,12 @@ func (m *RefsFake) SetBranch(context.Context, graveler.RepositoryID, graveler.Br
 	return nil
 }
 
-func (m *RefsFake) BranchUpdate(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, _ graveler.BranchUpdateFunc) error {
-	return m.UpdateErr
+func (m *RefsFake) BranchUpdate(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, update graveler.BranchUpdateFunc) error {
+	_, err := update(m.Branch)
+	if m.UpdateErr != nil {
+		return m.UpdateErr
+	}
+	return err
 }
 
 func (m *RefsFake) DeleteBranch(context.Context, graveler.RepositoryID, graveler.BranchID) error {

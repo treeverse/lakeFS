@@ -1010,10 +1010,11 @@ func testGravelerUpdateBranch(t *testing.T, kvEnabled bool) {
 		&testutil.RefsFake{Branch: &graveler.Branch{}, UpdateErr: kv.ErrPredicateFailed}, nil, nil)
 	_, err := gravel.UpdateBranch(context.Background(), "", "", "")
 	require.ErrorIs(t, err, graveler.ErrConflictFound)
+
 	gravel = newGraveler(t, kvEnabled, nil, &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
-		&testutil.RefsFake{Branch: &graveler.Branch{}}, nil, nil)
+		&testutil.RefsFake{Branch: &graveler.Branch{StagingToken: "st1", CommitID: "commit1"}, Commits: map[graveler.CommitID]*graveler.Commit{"commit1": {}}}, nil, nil)
 	_, err = gravel.UpdateBranch(context.Background(), "", "", "")
-	require.NoError(t, err, graveler.ErrConflictFound)
+	require.NoError(t, err)
 }
 
 func TestGraveler_Commit(t *testing.T) {
@@ -1287,7 +1288,7 @@ func testGravelerMergeInvalidRef(t *testing.T, kvEnabled bool) {
 	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
 	refManager := &testutil.RefsFake{
 		Err:    graveler.ErrInvalidRef,
-		Branch: &graveler.Branch{CommitID: destinationCommitID},
+		Branch: &graveler.Branch{CommitID: destinationCommitID, StagingToken: "st1"},
 		Refs: map[graveler.Ref]*graveler.ResolvedRef{
 			graveler.Ref(mergeDestination): {
 				Type: graveler.ReferenceTypeBranch,
@@ -1364,7 +1365,7 @@ func testGravelerAddCommitToBranchHead(t *testing.T, kvEnabled bool) {
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
 				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)},
-				RefManager: &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedParentCommitID},
+				RefManager: &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedParentCommitID, StagingToken: "st1"},
 					Commits: map[graveler.CommitID]*graveler.Commit{
 						expectedParentCommitID: {},
 					},
@@ -1918,14 +1919,15 @@ func testGravelerPreMergeHook(t *testing.T, kvEnabled bool) {
 	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
 	refManager := &testutil.RefsFake{
 		CommitID: expectedCommitID,
-		Branch:   &graveler.Branch{CommitID: destinationCommitID},
+		Branch:   &graveler.Branch{CommitID: destinationCommitID, StagingToken: "st1"},
 		Refs: map[graveler.Ref]*graveler.ResolvedRef{
 			graveler.Ref(mergeDestination): {
 				Type: graveler.ReferenceTypeBranch,
 				BranchRecord: graveler.BranchRecord{
 					BranchID: mergeDestination,
 					Branch: &graveler.Branch{
-						CommitID: destinationCommitID,
+						CommitID:     destinationCommitID,
+						StagingToken: "st2",
 					},
 				},
 			},
