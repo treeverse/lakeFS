@@ -2019,7 +2019,51 @@ func (g *KVGraveler) SetHooksHandler(handler HooksHandler) {
 }
 
 func (g *KVGraveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error {
-	return g.db.LoadCommits(ctx, repositoryID, metaRangeID)
+	repo, err := g.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	iter, err := g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
+	if err != nil {
+		return err
+	}
+	defer iter.Close()
+	for iter.Next() {
+		rawValue := iter.Value()
+		commit := &CommitData{}
+		err := proto.Unmarshal(rawValue.Data, commit)
+		if err != nil {
+			return err
+		}
+		parents := make(CommitParents, len(commit.GetParents()))
+		for i, p := range commit.GetParents() {
+			parents[i] = CommitID(p)
+		}
+		if commit.GetGeneration() == 0 {
+			return fmt.Errorf("dumps created by lakeFS versions before v0.61.0 are no longer supported: %w", ErrNoCommitGeneration)
+		}
+		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
+			Version:      CommitVersion(commit.Version),
+			Committer:    commit.GetCommitter(),
+			Message:      commit.GetMessage(),
+			MetaRangeID:  MetaRangeID(commit.GetMetaRangeId()),
+			CreationDate: commit.GetCreationDate().AsTime(),
+			Parents:      parents,
+			Metadata:     commit.GetMetadata(),
+			Generation:   int(commit.GetGeneration()),
+		})
+		if err != nil {
+			return err
+		}
+		// integrity check that we get for free!
+		if commitID != CommitID(commit.Id) {
+			return fmt.Errorf("commit ID does not match for %s: %w", commitID, ErrInvalidCommitID)
+		}
+	}
+	if iter.Err() != nil {
+		return iter.Err()
+	}
+	return nil
 }
 
 func (g *KVGraveler) LoadBranches(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error {
@@ -2075,7 +2119,27 @@ func (g *KVGraveler) GetRange(ctx context.Context, repositoryID RepositoryID, ra
 }
 
 func (g *KVGraveler) DumpCommits(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error) {
-	return g.db.DumpCommits(ctx, repositoryID)
+	repo, err := g.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	iter, err := g.RefManager.ListCommits(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer iter.Close()
+	schema, err := serializeSchemaDefinition(&CommitData{})
+	if err != nil {
+		return nil, err
+	}
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repo.StorageNamespace,
+		commitsToValueIterator(iter),
+		Metadata{
+			EntityTypeKey:             EntityTypeCommit,
+			EntitySchemaKey:           EntitySchemaCommit,
+			EntitySchemaDefinitionKey: schema,
+		},
+	)
 }
 
 func (g *KVGraveler) DumpBranches(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error) {
