@@ -983,7 +983,7 @@ func (g *KVGraveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID
 	if reference.ResolvedBranchModifier == ResolvedBranchModifierStaging {
 		return nil, fmt.Errorf("reference '%s': %w", ref, ErrDereferenceCommitWithStaging)
 	}
-	newBranch := &Branch{}
+	newBranch := Branch{}
 
 	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(curBranch *Branch) (*Branch, error) {
 		// TODO(Guys) return error only on conflicts, currently returns error for any changes on staging
@@ -995,10 +995,9 @@ func (g *KVGraveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID
 			return nil, ErrConflictFound
 		}
 
+		newBranch = *curBranch
 		newBranch.CommitID = reference.CommitID
-		newBranch.StagingToken = curBranch.StagingToken
-		newBranch.SealedTokens = curBranch.SealedTokens
-		return newBranch, nil
+		return &newBranch, nil
 	})
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
@@ -1006,7 +1005,7 @@ func (g *KVGraveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID
 		}
 		return nil, err
 	}
-	return newBranch, nil
+	return &newBranch, nil
 }
 
 func (g *KVGraveler) GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*Branch, error) {
