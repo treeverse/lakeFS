@@ -637,7 +637,7 @@ func testPostMigrateGraveler(t *testing.T) {
 
 func uploadFiles(t *testing.T, ctx context.Context, repo string, branch string, prefix string) {
 	for i := 0; i < migrateFileSize; i++ {
-		_, _, err := uploadFileRandomDataAndReport(ctx, repo, branch, prefix+strconv.Itoa(i), true)
+		_, _, err := uploadFileRandomDataAndReport(ctx, repo, branch, prefix+strconv.Itoa(i), false)
 		if err != nil {
 			t.Error(err)
 		}
