@@ -301,9 +301,9 @@ object GarbageCollector {
   }
 
   def main(args: Array[String]) {
-    if (args.length != 2) {
+    if (args.length < 1) {
       Console.err.println(
-        "Usage: ... <repo_name> <region>"
+        "Usage: ... <repo_name> [region]"
       )
       System.exit(1)
     }
@@ -311,7 +311,7 @@ object GarbageCollector {
     val spark = SparkSession.builder().appName("GarbageCollector").getOrCreate()
 
     val repo = args(0)
-    val region = args(1)
+    val region = if (args.length == 2) args(1) else ""
     val previousRunID =
       "" //args(2) // TODO(Guys): get previous runID from arguments or from storage
     val hc = spark.sparkContext.hadoopConfiguration
