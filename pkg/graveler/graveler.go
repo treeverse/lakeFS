@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -931,6 +930,7 @@ func (g *KVGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 	newBranch := Branch{
 		CommitID:     reference.CommitID,
 		StagingToken: generateStagingToken(repositoryID, branchID),
+		SealedTokens: make([]StagingToken, 0),
 	}
 	storageNamespace := repo.StorageNamespace
 	preRunID := g.hooks.NewRunID()
@@ -1656,7 +1656,7 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		}
 		err = g.RefManager.SetBranch(ctx, repositoryID, branchID, Branch{
 			CommitID:     newCommit,
-			StagingToken: newStagingToken(repositoryID, branchID),
+			StagingToken: generateStagingToken(repositoryID, branchID),
 		})
 		if err != nil {
 			return "", fmt.Errorf("set branch commit %s: %w", newCommit, err)
@@ -1696,11 +1696,6 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 			Error("Post-commit hook failed")
 	}
 	return newCommitID, nil
-}
-
-func newStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken {
-	v := strings.Join([]string{repositoryID.String(), branchID.String(), uuid.New().String()}, "-")
-	return StagingToken(v)
 }
 
 func validateCommitParent(ctx context.Context, repositoryID RepositoryID, commit Commit, manager RefManager) (CommitID, error) {
@@ -1871,8 +1866,45 @@ func (g *KVGraveler) stagingEmpty(ctx context.Context, repositoryID RepositoryID
 	return true, nil
 }
 
+// dropStaging deletes all staging area entries of a given branch from store
+// We do not wait for result as this is an asynchronous operation
+func (g *KVGraveler) dropTokens(ctx context.Context, tokens []StagingToken) {
+	for _, st := range tokens {
+		token := st // pinning
+		go func() {
+			err := g.StagingManager.Drop(ctx, token)
+			if err != nil {
+				logging.Default().WithError(err).WithField("staging_token", token).Error("failed to drop staging token")
+			}
+		}()
+	}
+}
+
 func (g *KVGraveler) Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
-	return g.db.Reset(ctx, repositoryID, branchID)
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrWriteToProtectedBranch
+	}
+	tokensToDrop := make([]StagingToken, 0)
+	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
+		// Save current branch tokens for drop
+		tokensToDrop = append(tokensToDrop, branch.StagingToken)
+		tokensToDrop = append(tokensToDrop, branch.SealedTokens...)
+
+		// Zero tokens and try to set branch
+		branch.StagingToken = generateStagingToken(repositoryID, branchID)
+		branch.SealedTokens = make([]StagingToken, 0)
+		return branch, nil
+	})
+	if err != nil { // Branch update failed, don't drop staging tokens
+		return err
+	}
+
+	g.dropTokens(ctx, tokensToDrop)
+	return nil
 }
 
 func (g *KVGraveler) ResetKey(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
@@ -2216,6 +2248,7 @@ func (g *KVGraveler) LoadBranches(ctx context.Context, repositoryID RepositoryID
 		err = g.RefManager.SetBranch(ctx, repositoryID, branchID, Branch{
 			CommitID:     CommitID(branch.CommitId),
 			StagingToken: generateStagingToken(repositoryID, branchID),
+			SealedTokens: make([]StagingToken, 0),
 		})
 		if err != nil {
 			return err
