@@ -1922,7 +1922,7 @@ func (g *KVGraveler) resetKey(ctx context.Context, repositoryID RepositoryID, br
 	}
 
 	if isCommitted { // entry committed and changed in staging area => override with entry from commit
-		if bytes.Equal(committed.Identity, stagedValue.Identity) {
+		if stagedValue != nil && bytes.Equal(committed.Identity, stagedValue.Identity) {
 			return nil // No change
 		}
 		return g.StagingManager.Set(ctx, st, key, committed, true)
@@ -1931,6 +1931,7 @@ func (g *KVGraveler) resetKey(ctx context.Context, repositoryID RepositoryID, br
 	} else if !isCommitted && stagedValue != nil {
 		return g.StagingManager.Set(ctx, st, key, nil, true)
 	}
+
 	return nil
 }
 
