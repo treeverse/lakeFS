@@ -102,6 +102,8 @@ services:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
+      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
+      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
       - "docker.lakefs.io:10.5.0.55"
