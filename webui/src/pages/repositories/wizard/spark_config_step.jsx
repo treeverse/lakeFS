@@ -46,7 +46,7 @@ export const SparkConfigStep = ({onComplete=()=>{}}) => {
     return (
         <Box sx={{display: 'flex', flexDirection: 'column', justifyContent: 'space-between'}}>
             <Box sx={{width: '100%'}}>
-                <Alert variant="warning" className="mt-3">Copy the credentials and store it somewhere safe. You will not be able to access it again.</Alert>
+                <Alert variant="warning" className="mt-3">Copy the credentials and store them somewhere safe. You will not be able to access them again.</Alert>
             </Box>
             <Box sx={{width: '100%'}}>
                 <TabsWrapper defaultTabIndex={selectedIndex} handleTabChange={handleChange}
