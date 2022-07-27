@@ -892,8 +892,38 @@ func (g *KVGraveler) WriteMetaRangeByIterator(ctx context.Context, repositoryID 
 	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repo.StorageNamespace, it, nil)
 }
 
+func (g *KVGraveler) deleteRepositoryBranches(ctx context.Context, repositoryID RepositoryID, itr BranchIterator) error {
+	var wg multierror.Group
+	for itr.Next() {
+		b := itr.Value()
+		wg.Go(func() error {
+			return g.DeleteBranch(ctx, repositoryID, b.BranchID)
+		})
+	}
+	return wg.Wait().ErrorOrNil()
+}
+
 func (g *KVGraveler) DeleteRepository(ctx context.Context, repositoryID RepositoryID) error {
-	return g.RefManager.DeleteRepository(ctx, repositoryID)
+	bItr, err := g.ListBranches(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	defer bItr.Close()
+
+	err = g.RefManager.DeleteRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+
+	// TODO (niro): Delete background
+	err = g.deleteRepositoryBranches(ctx, repositoryID, bItr)
+	if err != nil {
+		logging.Default().WithField("repository", repositoryID).WithError(err).Error("Failed on delete repository branches")
+	}
+
+	// TODO(niro): Commits deletion from storage
+	// https://github.com/treeverse/lakeFS/issues/3774
+	return nil
 }
 
 func (g *KVGraveler) GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error) {
@@ -1148,25 +1178,6 @@ func (g *KVGraveler) ListBranches(ctx context.Context, repositoryID RepositoryID
 	return g.RefManager.ListBranches(ctx, repositoryID)
 }
 
-// dropBranchStaging Deletes all staging data (Staging Token + Sealed Tokens) of the given branch
-func (g *KVGraveler) dropBranchStaging(ctx context.Context, branch *Branch) error {
-	var wg multierror.Group
-	tokens := make([]StagingToken, len(branch.SealedTokens)+1)
-	copy(tokens, branch.SealedTokens)
-	tokens[len(tokens)-1] = branch.StagingToken
-
-	for _, st := range tokens {
-		st := st // Pinning
-		wg.Go(func() error {
-			if err := g.StagingManager.Drop(ctx, st); err != nil && !errors.Is(err, ErrNotFound) {
-				return err
-			}
-			return nil
-		})
-	}
-	return wg.Wait().ErrorOrNil()
-}
-
 func (g *KVGraveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
@@ -1206,11 +1217,9 @@ func (g *KVGraveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID
 		return err
 	}
 
-	// TODO (niro): Should be a background operation
-	err = g.dropBranchStaging(ctx, branch)
-	if err != nil {
-		return err
-	}
+	tokens := branch.SealedTokens
+	tokens = append(tokens, branch.StagingToken)
+	g.dropTokens(ctx, tokens...)
 
 	postRunID := g.hooks.NewRunID()
 	g.hooks.PostDeleteBranchHook(ctx, HookRecord{
@@ -1868,7 +1877,7 @@ func (g *KVGraveler) stagingEmpty(ctx context.Context, repositoryID RepositoryID
 
 // dropStaging deletes all staging area entries of a given branch from store
 // We do not wait for result as this is an asynchronous operation
-func (g *KVGraveler) dropTokens(ctx context.Context, tokens []StagingToken) {
+func (g *KVGraveler) dropTokens(ctx context.Context, tokens ...StagingToken) {
 	for _, st := range tokens {
 		token := st // pinning
 		go func() {
@@ -1903,7 +1912,7 @@ func (g *KVGraveler) Reset(ctx context.Context, repositoryID RepositoryID, branc
 		return err
 	}
 
-	g.dropTokens(ctx, tokensToDrop)
+	g.dropTokens(ctx, tokensToDrop...)
 	return nil
 }
 
