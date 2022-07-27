@@ -2328,7 +2328,29 @@ func (g *KVGraveler) LoadBranches(ctx context.Context, repositoryID RepositoryID
 }
 
 func (g *KVGraveler) LoadTags(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error {
-	return g.db.LoadTags(ctx, repositoryID, metaRangeID)
+	repo, err := g.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	iter, err := g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
+	if err != nil {
+		return err
+	}
+	defer iter.Close()
+	for iter.Next() {
+		rawValue := iter.Value()
+		tag := &TagData{}
+		err := proto.Unmarshal(rawValue.Data, tag)
+		if err != nil {
+			return err
+		}
+		tagID := TagID(tag.Id)
+		err = g.RefManager.CreateTag(ctx, repositoryID, tagID, CommitID(tag.CommitId))
+		if err != nil {
+			return err
+		}
+	}
+	return iter.Err()
 }
 
 func (g *KVGraveler) GetMetaRange(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) (MetaRangeAddress, error) {
