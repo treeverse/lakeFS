@@ -193,9 +193,6 @@ func TestResetObject(t *testing.T) {
 }
 
 func TestRevert(t *testing.T) {
-	if viper.GetBool("database_kv_enabled") {
-		t.Skip("Finish implementing Graveler.Commit, Graveler.List, ...")
-	}
 	ctx, _, repo := setupTest(t)
 	objPath1 := "1.txt"
 	objPath2 := "2.txt"

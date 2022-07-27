@@ -1927,7 +1927,74 @@ type CommitIDAndSummary struct {
 // That is, try to apply the diff from C2 to C1 on the tip of the branch.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the revert is done.
 func (g *KVGraveler) Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, error) {
-	return g.db.Revert(ctx, repositoryID, branchID, ref, parentNumber, commitParams)
+	commitRecord, err := g.dereferenceCommit(ctx, repositoryID, ref)
+	if err != nil {
+		return "", fmt.Errorf("get commit from ref %s: %w", ref, err)
+	}
+	if len(commitRecord.Parents) > 1 && parentNumber <= 0 {
+		// if commit has more than one parent, must explicitly specify parent number
+		return "", ErrRevertMergeNoParent
+	}
+	if parentNumber > 0 {
+		// validate parent is in range:
+		if parentNumber > len(commitRecord.Parents) { // parent number is 1-based
+			return "", fmt.Errorf("%w: parent %d", ErrRevertParentOutOfRange, parentNumber)
+		}
+		parentNumber--
+	}
+
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return "", fmt.Errorf("get repo %s: %w", repositoryID, err)
+	}
+
+	var commitID CommitID
+	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
+		if empty, err := g.stagingEmpty(ctx, repositoryID, repo, branch); err != nil {
+			return nil, err
+		} else if !empty {
+			return nil, fmt.Errorf("%s: %w", branchID, ErrDirtyBranch)
+		}
+		var parentMetaRangeID MetaRangeID
+		if len(commitRecord.Parents) > 0 {
+			parentCommit, err := g.dereferenceCommit(ctx, repositoryID, commitRecord.Parents[parentNumber].Ref())
+			if err != nil {
+				return nil, fmt.Errorf("get commit from ref %s: %w", commitRecord.Parents[parentNumber], err)
+			}
+			parentMetaRangeID = parentCommit.MetaRangeID
+		}
+		branchCommit, err := g.dereferenceCommit(ctx, repositoryID, branch.CommitID.Ref())
+		if err != nil {
+			return nil, fmt.Errorf("get commit from ref %s: %w", branch.CommitID, err)
+		}
+		// merge from the parent to the top of the branch, with the given ref as the merge base:
+		metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID, MergeStrategyNone)
+		if err != nil {
+			if !errors.Is(err, ErrUserVisible) {
+				err = fmt.Errorf("merge: %w", err)
+			}
+			return nil, err
+		}
+		commit := NewCommit()
+		commit.Committer = commitParams.Committer
+		commit.Message = commitParams.Message
+		commit.MetaRangeID = metaRangeID
+		commit.Parents = []CommitID{branch.CommitID}
+		commit.Metadata = commitParams.Metadata
+		commit.Generation = branchCommit.Generation + 1
+		commitID, err = g.RefManager.AddCommit(ctx, repositoryID, commit)
+		if err != nil {
+			return nil, fmt.Errorf("add commit: %w", err)
+		}
+
+		branch.CommitID = commitID
+		return branch, nil
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("update branch: %w", err)
+	}
+	return commitID, nil
 }
 
 func (g *KVGraveler) Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error) {
