@@ -1332,17 +1332,20 @@ func (g *KVGraveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref
 	if err != nil {
 		return nil, err
 	}
+
 	if reference.StagingToken != "" {
 		// try to get from staging, if not found proceed to committed
 		value, err := g.getFromStagingArea(ctx, reference.Branch, key)
 		if err != nil && !errors.Is(err, ErrNotFound) {
 			return nil, err
 		}
-		if value == nil {
-			// tombstone - the entry was deleted on the branch => doesn't exist
-			return nil, ErrNotFound
+		if err == nil {
+			if value == nil {
+				// tombstone - the entry was deleted on the branch => doesn't exist
+				return nil, ErrNotFound
+			}
+			return value, nil
 		}
-		return value, nil
 	}
 
 	// If key is not found in staging area (or reference is not a branch), return the key from committed
