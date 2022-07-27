@@ -150,7 +150,9 @@ lazy val assemblySettings = Seq(
       .inProject,
     ShadeRule.rename("scala.collection.compat.**" -> "shadecompat.@1").inAll,
     ShadeRule.rename("okio.**" -> "okio.shaded.@0").inAll,
-    ShadeRule.rename("okhttp3.**" -> "okhttp3.shaded.@0").inAll
+    ShadeRule.rename("okhttp3.**" -> "okhttp3.shaded.@0").inAll,
+    ShadeRule.rename("reactor.netty.**" -> "shadereactor.netty.@1").inAll,
+    ShadeRule.rename("reactor.util.**" -> "shadereactor.util.@1").inAll
   )
 )
 
