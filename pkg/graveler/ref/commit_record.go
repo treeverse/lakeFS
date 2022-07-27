@@ -3,9 +3,8 @@ package ref
 import (
 	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type commitRecord struct {
