@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/google/uuid"
@@ -1923,16 +1922,14 @@ func (g *KVGraveler) resetKey(ctx context.Context, repositoryID RepositoryID, br
 	}
 
 	if isCommitted { // entry committed and changed in staging area => override with entry from commit
-		if reflect.DeepEqual(committed, stagedValue) {
+		if bytes.Equal(committed.Identity, stagedValue.Identity) {
 			return nil // No change
 		}
-		if err = g.StagingManager.Set(ctx, st, key, committed, true); err != nil {
-			return err
-		}
-	} else if !isCommitted && stagedValue != nil { // entry not committed and changed in staging area => override with tombstone
-		if err = g.StagingManager.Set(ctx, st, key, nil, true); err != nil {
-			return err
-		} // If not committed and staging == tombstone => ignore
+		return g.StagingManager.Set(ctx, st, key, committed, true)
+		// entry not committed and changed in staging area => override with tombstone
+		// If not committed and staging == tombstone => ignore
+	} else if !isCommitted && stagedValue != nil {
+		return g.StagingManager.Set(ctx, st, key, nil, true)
 	}
 	return nil
 }
@@ -1973,7 +1970,6 @@ func (g *KVGraveler) ResetKey(ctx context.Context, repositoryID RepositoryID, br
 		branch.SealedTokens = newSealedTokens
 		return branch, nil
 	})
-
 	if err != nil { // Cleanup of new staging token in case of error
 		g.dropTokens(ctx, newStagingToken)
 	}
@@ -2012,9 +2008,7 @@ func (g *KVGraveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID,
 			wg.Go(func() error {
 				err = g.resetKey(ctx, repositoryID, branch, value.Key, value.Value, newStagingToken)
 				if err != nil {
-					if !errors.Is(err, ErrNotFound) { // Not found in staging => ignore
-						return err
-					}
+					return err
 				}
 				return nil
 			})
@@ -2029,7 +2023,6 @@ func (g *KVGraveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID,
 		branch.SealedTokens = newSealedTokens
 		return branch, nil
 	})
-
 	if err != nil { // Cleanup of new staging token in case of error
 		g.dropTokens(ctx, newStagingToken)
 	}
