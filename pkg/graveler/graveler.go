@@ -2350,10 +2350,7 @@ func (g *KVGraveler) LoadTags(ctx context.Context, repositoryID RepositoryID, me
 			return err
 		}
 	}
-	if iter.Err() != nil {
-		return iter.Err()
-	}
-	return nil
+	return iter.Err()
 }
 
 func (g *KVGraveler) GetMetaRange(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) (MetaRangeAddress, error) {
