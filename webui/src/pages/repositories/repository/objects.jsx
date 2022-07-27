@@ -296,7 +296,7 @@ const TreeContainer = ({
     );
 }
 
-const READMEContainer = ({repo, reference}) => {
+const ReadmeContainer = ({repo, reference}) => {
     const {response, error, loading} = useAPI(async () => {
         return await objects.get(repo.id, reference.id, 'README.md');
     });
@@ -411,7 +411,7 @@ const ObjectsBrowser = ({config, configError}) => {
                     }}
                     onRefresh={refresh}/>
 
-                <READMEContainer reference={reference} repo={repo} />
+                <ReadmeContainer reference={reference} repo={repo} />
             </Box>
         </>
     );
