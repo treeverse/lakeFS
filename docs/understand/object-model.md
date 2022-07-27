@@ -147,16 +147,16 @@ As a format-agnostic system, lakeFS currently merges by complete files. Format-s
 other user-defined merge strategies for handling conflicts are on the roadmap.
 
 ## Concepts unique to lakeFS
-
-_Underlying storage_ is the area on some other object store that lakeFS uses to store object
-contents and some of its metadata. We sometimes refer to underlying storage as _physical_.
-The path used to store the contents of an object is then termed a _physical path_. The object
-itself on underlying storage is never modified, except to remove it entirely during some
-cleanups.
+The _underlying storage_ is a location in an object store where lakeFS keeps your objects and some immutable metadata.
 
 When creating a lakeFS repository, you assign it with a _storage namespace_. The repository's
-storage namespace is the prefix in the underlying storage where data for this repository
+storage namespace is a location in the underlying storage where data for this repository
 will be stored.
+
+We sometimes refer to underlying storage as _physical_. The path used to store the contents of an object is then termed a _physical path_.
+Once lakeFS saves an object in the underlying storage it is never modified, except to remove it
+entirely during some cleanups.
+
 
 A lot of what lakeFS does is to manage how lakeFS paths translate to _physical paths_ on the
 object store. This mapping is generally **not** straightforward. Importantly (and contrary to
