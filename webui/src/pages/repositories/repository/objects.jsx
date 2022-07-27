@@ -302,7 +302,7 @@ const ReadmeContainer = ({repo, reference}) => {
     });
 
     if (loading || error) {
-        return <></>
+        return <></>;
     }
 
     return (
