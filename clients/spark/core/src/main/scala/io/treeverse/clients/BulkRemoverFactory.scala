@@ -187,9 +187,6 @@ object BulkRemoverFactory {
       region: String
   ): BulkRemover = {
     if (storageType == StorageTypeS3) {
-      if (region.isEmpty) {
-        throw new IllegalArgumentException("expected non-empty region argument")
-      }
       new S3BulkRemover(hc, storageNamespace, region)
     } else if (storageType == StorageTypeAzure) {
       new AzureBlobBulkRemover(hc, storageNamespace)
