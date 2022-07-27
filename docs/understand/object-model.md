@@ -147,7 +147,7 @@ As a format-agnostic system, lakeFS currently merges by complete files. Format-s
 other user-defined merge strategies for handling conflicts are on the roadmap.
 
 ## Concepts unique to lakeFS
-The _underlying storage_ is a location in an object store where lakeFS keeps your objects and some metadata.
+The _underlying storage_ is a location in an object store where lakeFS keeps your objects and some immutable metadata.
 
 When creating a lakeFS repository, you assign it with a _storage namespace_. The repository's
 storage namespace is a location in the underlying storage where data for this repository
