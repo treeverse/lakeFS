@@ -3,7 +3,10 @@ package io.treeverse.clients
 import com.google.common.cache.CacheBuilder
 import io.lakefs.clients.api
 import io.lakefs.clients.api.{ApiException, ConfigApi, RetentionApi}
-import io.lakefs.clients.api.model.{GarbageCollectionPrepareRequest, GarbageCollectionPrepareResponse}
+import io.lakefs.clients.api.model.{
+  GarbageCollectionPrepareRequest,
+  GarbageCollectionPrepareResponse
+}
 import io.treeverse.clients.StorageClientType.StorageClientType
 import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
 
