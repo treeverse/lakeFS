@@ -11,3 +11,7 @@ blockstore:
   type: local
   local:
     path: /tmp/lakefs
+
+logging:
+  format: text
+  level: trace
