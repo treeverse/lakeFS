@@ -1305,6 +1305,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        409:
+          $ref: "#/components/responses/Conflict"
         401:
           $ref: "#/components/responses/Unauthorized"
         default:
@@ -1474,10 +1476,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Policy"
-        401:
-          $ref: "#/components/responses/Unauthorized"
         400:
           $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 

@@ -548,8 +548,9 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | policy |  -  |
-**401** | Unauthorized |  -  |
 **400** | Validation Error |  -  |
+**401** | Unauthorized |  -  |
+**409** | Resource Conflicts With Target |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="createUser"></a>
@@ -634,6 +635,7 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **201** | user |  -  |
 **400** | validation error |  -  |
+**409** | Resource Conflicts With Target |  -  |
 **401** | Unauthorized |  -  |
 **0** | Internal Server Error |  -  |
 

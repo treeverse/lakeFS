@@ -300,6 +300,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: validation error
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Conflicts With Target
         "401":
           content:
             application/json:
@@ -627,18 +633,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/Policy'
           description: policy
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
         "400":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Conflicts With Target
         default:
           content:
             application/json:

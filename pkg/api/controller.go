@@ -839,18 +839,21 @@ func (c *Controller) generateResetPasswordToken(email string, duration time.Dura
 }
 
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
+	ctx := r.Context()
+	c.LogAction(ctx, "create_user")
+
 	invite := swag.BoolValue(body.InviteUser)
 	username := body.Id
-	var parsedEmail *string
+	var userEmail string
 	if invite {
 		addr, err := mail.ParseAddress(username)
 		if err != nil {
-			c.Logger.WithError(err).WithField("user_id", username).Warn("failed parsing email")
+			c.Logger.WithError(err).WithField("user_id", body.Id).Warn("failed parsing email")
 			writeError(w, http.StatusBadRequest, "Invalid email format")
 			return
 		}
-		username = strings.ToLower(addr.Address)
-		parsedEmail = &addr.Address
+		userEmail = addr.Address
+		username = strings.ToLower(userEmail)
 	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -860,26 +863,27 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	}) {
 		return
 	}
-	ctx := r.Context()
-	c.LogAction(ctx, "create_user")
+
+	// invite user if needed and return
 	if invite {
-		err := c.Auth.InviteUser(ctx, *parsedEmail)
+		err := c.Auth.InviteUser(ctx, userEmail)
 		if handleAPIError(w, err) {
-			c.Logger.WithError(err).WithField("email", *parsedEmail).Warn("failed creating user")
+			c.Logger.WithError(err).WithField("email", userEmail).Warn("failed invite user")
 			return
 		}
-		writeResponse(w, http.StatusCreated, User{Id: *parsedEmail})
+		writeResponse(w, http.StatusCreated, User{Id: userEmail})
 		return
 	}
+
+	// create user
 	u := &model.User{
 		CreatedAt:    time.Now().UTC(),
 		Username:     username,
 		FriendlyName: nil,
 		Source:       "internal",
-		Email:        parsedEmail,
+		Email:        StringPtr(userEmail),
 	}
 	_, err := c.Auth.CreateUser(ctx, u)
-
 	if handleAPIError(w, err) {
 		c.Logger.WithError(err).WithField("username", u.Username).Warn("failed creating user")
 		return
@@ -1738,7 +1742,7 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 		writeError(w, http.StatusGone, "No data")
 
 	case errors.Is(err, db.ErrAlreadyExists):
-		writeError(w, http.StatusBadRequest, "Already exists")
+		writeError(w, http.StatusConflict, "Already exists")
 
 	case err != nil:
 		writeError(w, http.StatusInternalServerError, err)
@@ -3273,7 +3277,6 @@ func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, temp
 		}
 	}
 	err := c.Templater.Expand(r.Context(), w, u, templateLocation, p.Params.AdditionalProperties)
-
 	if err != nil {
 		c.Logger.WithError(err).WithField("location", templateLocation).Error("Template expansion failed")
 	}
