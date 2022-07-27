@@ -647,6 +647,18 @@ jobs:
         working-directory: test/spark
         run: ./run-gc-test.sh
 
+      - name: Spark executor logs on failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=50000 spark-worker
+
+      - name: Spark driver logs on failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=50000 spark ; docker ps
+
       - name: lakeFS Logs on Spark with gateway failure
         if: ${{ failure() }}
         continue-on-error: true
