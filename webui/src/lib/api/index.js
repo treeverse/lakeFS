@@ -71,9 +71,9 @@ const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
         const errorMessage = await extractError(response);
         if (errorMessage === authenticationError) {
             cache.delete('user');
-            throw new AuthenticationError('Authentication Error');
+            throw new AuthenticationError('Authentication Error', response.status);
         }
-        throw new AuthorizationError(errorMessage);
+        throw new AuthorizationError(errorMessage, response.status);
     }
 
     return response;
@@ -102,8 +102,9 @@ export class AuthorizationError extends Error {
 }
 
 export class AuthenticationError extends Error {
-    constructor(message) {
+    constructor(message, status) {
         super(message);
+        this.status = status;
         this.name = "AuthenticationError"
     }
 }
@@ -169,10 +170,10 @@ class Auth {
         });
 
         if (response.status === 401) {
-            throw new AuthenticationError('invalid credentials');
+            throw new AuthenticationError('invalid credentials', response.status);
         }
         if (response.status !== 200) {
-            throw new AuthenticationError('unknown authentication error');
+            throw new AuthenticationError('Unknown authentication error', response.status);
         }
 
         const user = await this.getCurrentUser();
