@@ -113,12 +113,12 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
 }
 
 async function uploadAndCommitREADME(repoId, branchName, importLocation) {
-    const SPARK_SUBMIT_TEMPLATE_NAME = 'spark.metastore.readme.tt';
+    const README_TEMPLATE_NAME = 'spark.metastore.readme.tt';
     const readmeProp = {repo: repoId, branch: branchName};
     if (importLocation) {
         readmeProp['import_location'] = importLocation;
     }
-    const sparkSubmitConfig = await templates.expandTemplate(SPARK_SUBMIT_TEMPLATE_NAME, readmeProp);
+    const sparkSubmitConfig = await templates.expandTemplate(README_TEMPLATE_NAME, readmeProp);
     const readmeFile = new File([sparkSubmitConfig], 'README.md', {type: 'text/markdown',});
     await objects.upload(repoId, branchName, 'README.md', readmeFile);
     await commits.commit(repoId, branchName, 'add Spark quickstart README', {user: 'Spark quickstart'},);
