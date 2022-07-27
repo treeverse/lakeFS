@@ -388,7 +388,7 @@ const ObjectsBrowser = ({config, configError}) => {
                 </ActionGroup>
             </ActionsBar>
 
-            <Box sx={{display: 'flex', flexDirection: 'column', gap:'10px'}}>
+            <Box sx={{display: 'flex', flexDirection: 'column', gap: '10px', mb: '30px'}}>
                 <TreeContainer
                     config={config}
                     reference={reference}
