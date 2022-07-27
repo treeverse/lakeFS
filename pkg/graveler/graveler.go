@@ -1868,9 +1868,7 @@ func (g *KVGraveler) stagingEmpty(ctx context.Context, repositoryID RepositoryID
 
 // dropStaging deletes all staging area entries of a given branch from store
 // We do not wait for result as this is an asynchronous operation
-func (g *KVGraveler) dropStaging(ctx context.Context, branch *Branch) {
-	tokens := branch.SealedTokens
-	tokens = append(tokens, branch.StagingToken)
+func (g *KVGraveler) dropTokens(ctx context.Context, tokens []StagingToken) {
 	for _, st := range tokens {
 		token := st // pinning
 		go func() {
@@ -1890,26 +1888,22 @@ func (g *KVGraveler) Reset(ctx context.Context, repositoryID RepositoryID, branc
 	if isProtected {
 		return ErrWriteToProtectedBranch
 	}
-	currBranch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
-	if err != nil {
-		return err
-	}
-
+	tokensToDrop := make([]StagingToken, 0)
 	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
-		if currBranch.StagingToken != branch.StagingToken { // Check staging token hasn't changed after get with predicate
-			return nil, ErrConflictFound
-		}
+		// Save current branch tokens for drop
+		tokensToDrop = append(tokensToDrop, branch.StagingToken)
+		tokensToDrop = append(tokensToDrop, branch.SealedTokens...)
+
 		// Zero tokens and try to set branch
 		branch.StagingToken = generateStagingToken(repositoryID, branchID)
 		branch.SealedTokens = make([]StagingToken, 0)
 		return branch, nil
 	})
-
 	if err != nil { // Branch update failed, don't drop staging tokens
 		return err
 	}
 
-	g.dropStaging(ctx, currBranch)
+	g.dropTokens(ctx, tokensToDrop)
 	return nil
 }
 
