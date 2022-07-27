@@ -666,8 +666,8 @@ jobs:
         working-directory: test/spark
         run: docker-compose logs --tail=1000 lakefs
 
-  metadata-client-gc-spark3-on-azure:
-    name: Test lakeFS metadata client GC with Spark 3.x on Azure
+  metadata-client-gc-spark3-hadoop3-on-azure:
+    name: Test lakeFS metadata client GC with Spark 3.x and Hadoop 3 on Azure
     needs: [deploy-image, build-spark3-metadata-client]
     runs-on: ubuntu-20.04
     strategy:
