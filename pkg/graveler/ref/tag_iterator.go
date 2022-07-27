@@ -50,10 +50,7 @@ func (i *KVTagIterator) Next() bool {
 		i.err = graveler.ErrReadingFromStore
 		return false
 	}
-	i.value = &graveler.TagRecord{
-		TagID:    graveler.TagID(tag.Id),
-		CommitID: graveler.CommitID(tag.CommitId),
-	}
+	i.value = graveler.TagFromProto(tag)
 	return true
 }
 
