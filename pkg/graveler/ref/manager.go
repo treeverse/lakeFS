@@ -366,6 +366,16 @@ func (m *KVManager) AddCommit(ctx context.Context, repositoryID graveler.Reposit
 	return graveler.CommitID(commitID), nil
 }
 
+func (m *KVManager) RemoveCommit(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) error {
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+
+	commitKey := graveler.CommitPath(commitID)
+	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repo), []byte(commitKey))
+}
+
 func (m *KVManager) FindMergeBase(ctx context.Context, repositoryID graveler.RepositoryID, commitIDs ...graveler.CommitID) (*graveler.Commit, error) {
 	const allowedCommitsToCompare = 2
 	if len(commitIDs) != allowedCommitsToCompare {
