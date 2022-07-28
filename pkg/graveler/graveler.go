@@ -1524,6 +1524,29 @@ func (g *KVGraveler) listStagingArea(ctx context.Context, b *Branch) (ValueItera
 	return NewCombinedIterator(itrs...), nil
 }
 
+func (g *KVGraveler) listSealedTokens(ctx context.Context, b *Branch) (ValueIterator, error) {
+	var itrs []ValueIterator
+
+	for _, st := range b.SealedTokens {
+		it, err := g.StagingManager.List(ctx, st, 1)
+		if err != nil {
+			for _, it = range itrs {
+				it.Close()
+			}
+			return nil, err
+		}
+		itrs = append(itrs, it)
+	}
+
+	if len(itrs) == 0 {
+		return nil, nil
+	}
+	if len(itrs) == 1 {
+		return itrs[0], nil
+	}
+	return NewCombinedIterator(itrs...), nil
+}
+
 func (g *KVGraveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref) (ValueIterator, error) {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
@@ -1559,29 +1582,50 @@ func (g *KVGraveler) List(ctx context.Context, repositoryID RepositoryID, ref Re
 }
 
 func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, params CommitParams) (CommitID, error) {
-	// TODO(issue 3569) - kv implementation optimistic lock commit
 	var preRunID string
 	var commit Commit
+	var newCommitID CommitID
 	var storageNamespace StorageNamespace
-	res, err := g.db.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_COMMIT)
-		if err != nil {
-			return nil, err
-		}
-		if isProtected {
-			return nil, ErrCommitToProtectedBranch
-		}
-		repo, err := g.GetRepository(ctx, repositoryID)
-		if err != nil {
-			return "", fmt.Errorf("get repository: %w", err)
-		}
-		storageNamespace = repo.StorageNamespace
 
-		branch, err := g.db.GetBranch(ctx, repositoryID, branchID)
-		if err != nil {
-			return "", fmt.Errorf("get branch: %w", err)
-		}
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_COMMIT)
+	if err != nil {
+		return "", err
+	}
+	if isProtected {
+		return "", ErrCommitToProtectedBranch
+	}
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return "", fmt.Errorf("get repository: %w", err)
+	}
+	storageNamespace = repo.StorageNamespace
 
+	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return "", fmt.Errorf("get branch: %w", err)
+	}
+
+	if params.SourceMetaRange != nil {
+		empty, err := g.stagingEmpty(ctx, repositoryID, repo, branch)
+		if err != nil {
+			return "", fmt.Errorf("checking empty branch: %w", err)
+		}
+		if !empty {
+			return "", ErrCommitMetaRangeDirtyBranch
+		}
+	}
+
+	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
+		tokens := make([]StagingToken, len(branch.SealedTokens)+1)
+		copy(tokens, branch.SealedTokens)
+		tokens[len(tokens)-1] = branch.StagingToken
+
+		branch.StagingToken = generateStagingToken(repositoryID, branchID)
+		branch.SealedTokens = tokens
+		return branch, nil
+	})
+
+	err = g.retryBranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
 		// fill commit information - use for pre-commit and after adding the commit information used by commit
 		commit = NewCommit()
 
@@ -1595,16 +1639,6 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 			commit.Parents = CommitParents{branch.CommitID}
 		}
 
-		if params.SourceMetaRange != nil {
-			empty, err := g.stagingEmpty(ctx, repositoryID, repo, branch)
-			if err != nil {
-				return nil, fmt.Errorf("checking empty branch: %w", err)
-			}
-			if !empty {
-				return nil, ErrCommitMetaRangeDirtyBranch
-			}
-		}
-
 		preRunID = g.hooks.NewRunID()
 		err = g.hooks.PreCommitHook(ctx, HookRecord{
 			RunID:            preRunID,
@@ -1616,7 +1650,7 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 			Commit:           commit,
 		})
 		if err != nil {
-			return "", &HookAbortError{
+			return nil, &HookAbortError{
 				EventType: EventTypePreCommit,
 				RunID:     preRunID,
 				Err:       err,
@@ -1628,7 +1662,7 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		if branch.CommitID != "" {
 			branchCommit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
 			if err != nil {
-				return "", fmt.Errorf("get commit: %w", err)
+				return nil, fmt.Errorf("get commit: %w", err)
 			}
 			branchMetaRangeID = branchCommit.MetaRangeID
 			parentGeneration = branchCommit.Generation
@@ -1637,53 +1671,53 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		if params.SourceMetaRange != nil {
 			commit.MetaRangeID = *params.SourceMetaRange
 		} else {
-			changes, err := g.StagingManager.List(ctx, branch.StagingToken, ListingMaxBatchSize)
+			changes, err := g.listSealedTokens(ctx, branch)
 			if err != nil {
-				return "", fmt.Errorf("staging list: %w", err)
+				return nil, err
 			}
+
 			defer changes.Close()
 
 			commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes)
 			if err != nil {
-				return "", fmt.Errorf("commit: %w", err)
+				return nil, fmt.Errorf("commit: %w", err)
 			}
 		}
 
 		// add commit
 		newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 		if err != nil {
-			return "", fmt.Errorf("add commit: %w", err)
+			return nil, fmt.Errorf("add commit: %w", err)
 		}
-		err = g.RefManager.SetBranch(ctx, repositoryID, branchID, Branch{
-			CommitID:     newCommit,
-			StagingToken: newStagingToken(repositoryID, branchID),
-		})
-		if err != nil {
-			return "", fmt.Errorf("set branch commit %s: %w", newCommit, err)
+
+		for _, st := range branch.SealedTokens {
+			err = g.StagingManager.Drop(ctx, st)
+			if err != nil {
+				g.log.WithContext(ctx).WithFields(logging.Fields{
+					"repository_id": repositoryID,
+					"branch_id":     branchID,
+					"commit_id":     branch.CommitID,
+					"message":       params.Message,
+					"staging_token": branch.StagingToken,
+				}).Error("Failed to drop staging data")
+			}
 		}
-		err = g.StagingManager.Drop(ctx, branch.StagingToken)
-		if err != nil {
-			g.log.WithContext(ctx).WithFields(logging.Fields{
-				"repository_id": repositoryID,
-				"branch_id":     branchID,
-				"commit_id":     branch.CommitID,
-				"message":       params.Message,
-				"staging_token": branch.StagingToken,
-			}).Error("Failed to drop staging data")
-		}
-		return newCommit, nil
+
+		newCommitID = newCommit
+		branch.CommitID = newCommit
+		return branch, nil
 	})
 	if err != nil {
 		return "", err
 	}
-	newCommitID := res.(CommitID)
+
 	postRunID := g.hooks.NewRunID()
 	err = g.hooks.PostCommitHook(ctx, HookRecord{
 		EventType:        EventTypePostCommit,
 		RunID:            postRunID,
 		RepositoryID:     repositoryID,
 		StorageNamespace: storageNamespace,
-		SourceRef:        res.(CommitID).Ref(),
+		SourceRef:        newCommitID.Ref(),
 		BranchID:         branchID,
 		Commit:           commit,
 		CommitID:         newCommitID,
@@ -1696,6 +1730,24 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 			Error("Post-commit hook failed")
 	}
 	return newCommitID, nil
+}
+
+func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repositoryID RepositoryID, branchID BranchID, f BranchUpdateFunc) error {
+	const setTries = 3
+
+	var try int
+	for try = 0; try < setTries; try++ {
+		// TODO - if the branch commit id hasn't clenched, update the fields instead of fail
+		err := g.RefManager.BranchUpdate(ctx, repositoryID, branchID, f)
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			continue
+		}
+		return err
+	}
+	if try == setTries {
+		return ErrTooManyStagingWriteTries
+	}
+	return nil
 }
 
 func newStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken {
@@ -1791,7 +1843,6 @@ func (g *KVGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID Rep
 }
 
 func (g *KVGraveler) AddCommit(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
-	// TODO(issue 3569) - kv implementation optimistic lock commit
 	// at least a single parent must exists
 	if len(commit.Parents) == 0 {
 		return "", ErrAddCommitNoParent
@@ -1819,7 +1870,6 @@ func (g *KVGraveler) AddCommit(ctx context.Context, repositoryID RepositoryID, c
 
 // addCommitNoLock lower API used to add commit into a repository. It will verify that the commit meta-range is accessible but will not lock any metadata update.
 func (g *KVGraveler) addCommitNoLock(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
-	// TODO(issue 3569) - kv implementation optimistic lock commit
 	repo, err := g.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return "", fmt.Errorf("get repository %s: %w", repositoryID, err)
