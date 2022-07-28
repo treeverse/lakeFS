@@ -1,6 +1,7 @@
 package graveler
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -1868,7 +1869,7 @@ func (g *KVGraveler) stagingEmpty(ctx context.Context, repositoryID RepositoryID
 
 // dropStaging deletes all staging area entries of a given branch from store
 // We do not wait for result as this is an asynchronous operation
-func (g *KVGraveler) dropTokens(ctx context.Context, tokens []StagingToken) {
+func (g *KVGraveler) dropTokens(ctx context.Context, tokens ...StagingToken) {
 	for _, st := range tokens {
 		token := st // pinning
 		go func() {
@@ -1903,16 +1904,130 @@ func (g *KVGraveler) Reset(ctx context.Context, repositoryID RepositoryID, branc
 		return err
 	}
 
-	g.dropTokens(ctx, tokensToDrop)
+	g.dropTokens(ctx, tokensToDrop...)
+	return nil
+}
+
+// resetKey resets given key on branch
+// Since we cannot (will not) modify sealed tokens data, we overwrite changes done on entry on a new staging token, effectively reverting it
+// to the current state in the branch committed data. If entry is not committed return an error
+func (g *KVGraveler) resetKey(ctx context.Context, repositoryID RepositoryID, branch *Branch, key Key, stagedValue *Value, st StagingToken) error {
+	isCommitted := true
+	committed, err := g.Get(ctx, repositoryID, branch.CommitID.Ref(), key)
+	if err != nil {
+		if !errors.Is(err, ErrNotFound) {
+			return err
+		}
+		isCommitted = false
+	}
+
+	if isCommitted { // entry committed and changed in staging area => override with entry from commit
+		if stagedValue != nil && bytes.Equal(committed.Identity, stagedValue.Identity) {
+			return nil // No change
+		}
+		return g.StagingManager.Set(ctx, st, key, committed, true)
+		// entry not committed and changed in staging area => override with tombstone
+		// If not committed and staging == tombstone => ignore
+	} else if !isCommitted && stagedValue != nil {
+		return g.StagingManager.Set(ctx, st, key, nil, true)
+	}
+
 	return nil
 }
 
 func (g *KVGraveler) ResetKey(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
-	return g.db.ResetKey(ctx, repositoryID, branchID, key)
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrWriteToProtectedBranch
+	}
+	// New sealed tokens list after change includes current staging token
+	newSealedTokens := make([]StagingToken, 0)
+	newStagingToken := generateStagingToken(repositoryID, branchID)
+
+	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
+		newSealedTokens = []StagingToken{branch.StagingToken}
+		newSealedTokens = append(newSealedTokens, branch.SealedTokens...)
+
+		// Reset the key on the new staging token
+		staged, err := g.getFromStagingArea(ctx, branch, key)
+		if err != nil {
+			if errors.Is(err, ErrNotFound) { // If key is not in staging => nothing to do
+				return nil, nil
+			}
+			return nil, err
+		}
+		err = g.resetKey(ctx, repositoryID, branch, key, staged, newStagingToken)
+		if err != nil {
+			if !errors.Is(err, ErrNotFound) { // Not found in staging => ignore
+				return nil, err
+			}
+		}
+
+		// replace branch tokens with new staging/sealed tokens
+		branch.StagingToken = newStagingToken
+		branch.SealedTokens = newSealedTokens
+		return branch, nil
+	})
+	if err != nil { // Cleanup of new staging token in case of error
+		g.dropTokens(ctx, newStagingToken)
+	}
+	return err
 }
 
 func (g *KVGraveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
-	return g.db.ResetPrefix(ctx, repositoryID, branchID, key)
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrWriteToProtectedBranch
+	}
+	// New sealed tokens list after change includes current staging token
+	newSealedTokens := make([]StagingToken, 0)
+	newStagingToken := generateStagingToken(repositoryID, branchID)
+
+	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
+		newSealedTokens = []StagingToken{branch.StagingToken}
+		newSealedTokens = append(newSealedTokens, branch.SealedTokens...)
+
+		// Reset keys by prefix on the new staging token
+		itr, err := g.listStagingArea(ctx, branch)
+		if err != nil {
+			return nil, err
+		}
+		defer itr.Close()
+		itr.SeekGE(key)
+		var wg multierror.Group
+		for itr.Next() {
+			value := itr.Value()
+			if !bytes.HasPrefix(value.Key, key) { // We passed the prefix - exit the loop
+				break
+			}
+			wg.Go(func() error {
+				err = g.resetKey(ctx, repositoryID, branch, value.Key, value.Value, newStagingToken)
+				if err != nil {
+					return err
+				}
+				return nil
+			})
+		}
+		err = wg.Wait().ErrorOrNil()
+		if err != nil {
+			return nil, err
+		}
+
+		// replace branch tokens with new staging/sealed tokens
+		branch.StagingToken = newStagingToken
+		branch.SealedTokens = newSealedTokens
+		return branch, nil
+	})
+	if err != nil { // Cleanup of new staging token in case of error
+		g.dropTokens(ctx, newStagingToken)
+	}
+	return err
 }
 
 type CommitIDAndSummary struct {

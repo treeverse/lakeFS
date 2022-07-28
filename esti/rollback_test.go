@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
 )
@@ -56,9 +55,6 @@ func TestResetAll(t *testing.T) {
 }
 
 func TestResetPath(t *testing.T) {
-	if viper.GetBool("database_kv_enabled") {
-		t.Skip("Finish implementing Graveler.Commit, Graveler.List, ...")
-	}
 	ctx, _, repo := setupTest(t)
 	objPath1 := "prefix/1.txt"
 	objPath2 := "2.txt"
@@ -125,9 +121,6 @@ func TestResetPath(t *testing.T) {
 }
 
 func TestResetObject(t *testing.T) {
-	if viper.GetBool("database_kv_enabled") {
-		t.Skip("Finish implementing Graveler.Commit, Graveler.List, ...")
-	}
 	ctx, _, repo := setupTest(t)
 	objPath1 := "1.txt"
 	objPath2 := "2.txt"
