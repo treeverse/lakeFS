@@ -25,7 +25,6 @@ import {Route, Switch} from "react-router-dom";
 import RepositoryPage from './repository';
 import Alert from "react-bootstrap/Alert";
 import Dropdown from "react-bootstrap/Dropdown";
-import Button from "react-bootstrap/Button";
 
 import {SparkQuickstart} from "./wizard/spark_quickstart_wizard";
 
@@ -143,8 +142,6 @@ const RepositoriesPage = () => {
     const [createRepoError, setCreateRepoError] = useState(null);
     const [refresh, setRefresh] = useState(false);
 
-    const enableRepoTemplates = localStorage.getItem(`enable_repo_templates`)
-
     const routerPfx = (router.query.prefix) ? router.query.prefix : "";
     const [prefix, setPrefix] = useDebouncedState(
         routerPfx,
@@ -190,29 +187,21 @@ const RepositoriesPage = () => {
                         </Form.Row>
                     </Form>
                     <ButtonToolbar className="justify-content-end mb-2">
-                        {enableRepoTemplates ?
-                            <Dropdown>
-                                <Dropdown.Toggle variant="success" id="template-picker-dropdown">
-                                    <RepoIcon/> Create Repository
-                                </Dropdown.Toggle>
-                                <Dropdown.Menu>
-                                    <Dropdown.Item onClick={() => {
-                                        setShowCreateRepositoryModal(true);
-                                        setCreateRepoError(null);
-                                    }}>Blank Repository</Dropdown.Item>
-                                    <Dropdown.Item onClick={() => {
-                                        setShowRepositoryTemplatesModal(true);
-                                        setCreateRepoError(null);
-                                    }}>Spark Quickstart</Dropdown.Item>
-                                </Dropdown.Menu>
-                            </Dropdown> :
-                            <Button variant="success" onClick={() => {
-                                setShowCreateRepositoryModal(true);
-                                setCreateRepoError(null);
-                            }}>
+                        <Dropdown>
+                            <Dropdown.Toggle variant="success" id="template-picker-dropdown">
                                 <RepoIcon/> Create Repository
-                            </Button>
-                        }
+                            </Dropdown.Toggle>
+                            <Dropdown.Menu>
+                                <Dropdown.Item onClick={() => {
+                                    setShowCreateRepositoryModal(true);
+                                    setCreateRepoError(null);
+                                }}>Blank Repository</Dropdown.Item>
+                                <Dropdown.Item onClick={() => {
+                                    setShowRepositoryTemplatesModal(true);
+                                    setCreateRepoError(null);
+                                }}>Spark Quickstart</Dropdown.Item>
+                            </Dropdown.Menu>
+                        </Dropdown>
                     </ButtonToolbar>
                 </ActionsBar>
 
