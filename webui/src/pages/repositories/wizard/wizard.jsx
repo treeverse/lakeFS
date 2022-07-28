@@ -3,7 +3,7 @@ import {Box, Button, Step, StepLabel, Stepper, Typography} from "@mui/material";
 
 const defaultSteps = [{label: '', component: <></>, optional: false}];
 
-export const Wizard = ({steps = defaultSteps, isShowBack= true, completed= {}, onDone = () => {}}) => {
+export const Wizard = ({steps = defaultSteps, isShowBack= true, completed= {}, onDone = () => {}, isStepInProgress}) => {
     const [activeStep, setActiveStep] = useState(0);
     const [skipped, setSkipped] = useState(new Set());
 
@@ -89,7 +89,7 @@ export const Wizard = ({steps = defaultSteps, isShowBack= true, completed= {}, o
                     }
                     <Box sx={{ flex: '1 1 auto' }} />
                     {isStepOptional(activeStep) && (
-                        <Button color="inherit" onClick={handleSkip} sx={{ mr: 1 }}>
+                        <Button color="inherit" onClick={handleSkip} sx={{ mr: 1 }} disabled={isStepInProgress || isStepCompleted(activeStep)}>
                             Skip
                         </Button>
                     )}
