@@ -36,7 +36,7 @@ func ServePPROF(pprofPrefix string) http.Handler {
 			http.HandlerFunc(pprof.Symbol).ServeHTTP(writer, request)
 		case "trace":
 			http.HandlerFunc(pprof.Trace).ServeHTTP(writer, request)
-		case "block", "goroutine", "heap", "threadcreate":
+		case "allocs", "block", "goroutine", "heap", "mutex", "threadcreate":
 			pprof.Handler(endpoint).ServeHTTP(writer, request)
 		default:
 			writer.WriteHeader(http.StatusNotFound)
