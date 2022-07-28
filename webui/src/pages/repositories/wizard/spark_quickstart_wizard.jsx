@@ -70,7 +70,7 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
     }
     const onComplete = async () => {
         setShowLoading(true);
-        await uploadAndCommitREADME(state.repoId, state.branch, state.importLocation);
+        await uploadAndCommitReadme(state.repoId, state.branch, state.importLocation);
         setShowLoading(false)
         router.push({pathname: `/repositories/:repoId/objects`, params: {repoId: state.repoId}});
         onExit();
@@ -112,7 +112,7 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
     );
 }
 
-async function uploadAndCommitREADME(repoId, branchName, importLocation) {
+async function uploadAndCommitReadme(repoId, branchName, importLocation) {
     const README_TEMPLATE_NAME = 'spark.metastore.readme.tt';
     const readmeProp = {repo: repoId, branch: branchName};
     if (importLocation) {
