@@ -125,7 +125,7 @@ var abuseRandomWritesCmd = &cobra.Command{
 		repo := resp.JSON200
 		storagePrefix := repo.StorageNamespace
 		var size int64
-		var checksum = "00695c7307b0480c7b6bdc873cf05c15"
+		checksum := "00695c7307b0480c7b6bdc873cf05c15"
 		addr := storagePrefix + "/random-write"
 		creationInfo := api.ObjectStageCreation{
 			Checksum:        checksum,
@@ -294,6 +294,49 @@ var abuseCreateBranchesCmd = &cobra.Command{
 	},
 }
 
+var abuseListCmd = &cobra.Command{
+	Use:    "list <source ref uri>",
+	Short:  "List from the source ref",
+	Hidden: false,
+	Args:   cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		u := MustParseRefURI("source ref", args[0])
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
+		prefix := MustString(cmd.Flags().GetString("prefix"))
+
+		generator := stress.NewGenerator(parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
+
+		// generate randomly selected keys as input
+		rand.Seed(time.Now().Unix())
+		generator.Setup(func(add stress.GeneratorAddFn) {
+			for i := 0; i < amount; i++ {
+				add(strconv.Itoa(i + 1))
+			}
+		})
+
+		listPrefix := api.PaginationPrefix(prefix)
+		// execute the things!
+		generator.Run(func(input chan string, output chan stress.Result) {
+			ctx := cmd.Context()
+			client := getClient()
+			for range input {
+				start := time.Now()
+				resp, err := client.ListObjectsWithResponse(ctx, u.Repository, u.Ref, &api.ListObjectsParams{
+					Prefix: &listPrefix,
+				})
+				if err == nil && resp.StatusCode() != http.StatusOK {
+					err = helpers.ResponseAsError(resp)
+				}
+				output <- stress.Result{
+					Error: err,
+					Took:  time.Since(start),
+				}
+			}
+		})
+	},
+}
+
 //nolint:gochecknoinits,gomnd
 func init() {
 	rootCmd.AddCommand(abuseCmd)
@@ -317,4 +360,9 @@ func init() {
 	abuseCmd.AddCommand(abuseCommitCmd)
 	abuseCommitCmd.Flags().Int("amount", 100, "amount of commits to do")
 	abuseCommitCmd.Flags().Duration("gap", 2*time.Second, "duration to wait between commits")
+
+	abuseCmd.AddCommand(abuseListCmd)
+	abuseListCmd.Flags().String("prefix", "abuse/", "prefix to list under")
+	abuseListCmd.Flags().Int("amount", 1000000, "amount of lists to do")
+	abuseListCmd.Flags().Int("parallelism", 100, "amount of lists to do in parallel")
 }
