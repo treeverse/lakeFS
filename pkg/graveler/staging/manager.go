@@ -70,12 +70,6 @@ func (m *Manager) Update(ctx context.Context, st graveler.StagingToken, key grav
 }
 
 func (m *Manager) DropKey(ctx context.Context, st graveler.StagingToken, key graveler.Key) error {
-	// Simulate DB behavior - fail if key doesn't exist. See: https://github.com/treeverse/lakeFS/issues/3640
-	data := &graveler.StagedEntryData{}
-	_, err := m.store.GetMsg(ctx, graveler.StagingTokenPartition(st), key, data)
-	if err != nil {
-		return err
-	}
 	return m.store.DeleteMsg(ctx, graveler.StagingTokenPartition(st), key)
 }
 
