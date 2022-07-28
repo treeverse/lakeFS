@@ -392,8 +392,8 @@ func (m *RefsFake) AddCommit(_ context.Context, _ graveler.RepositoryID, commit 
 	return m.CommitID, nil
 }
 
-func (m *RefsFake) RemoveCommit(_ context.Context, _ graveler.RepositoryID, CommitID graveler.CommitID) error {
-	delete(m.Commits, CommitID)
+func (m *RefsFake) RemoveCommit(_ context.Context, _ graveler.RepositoryID, commitID graveler.CommitID) error {
+	delete(m.Commits, commitID)
 	return nil
 }
 
