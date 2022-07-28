@@ -75,6 +75,13 @@ A repository is a collection of objects with common history tracking. lakeFS man
 ### Rollback
 A rollback is an atomic operation reversing the effects of a previous commit. If a developer introduces a new code version to production and discovers that it has a critical bug, they can simply roll back to the previous version. In lakeFS, a rollback is an atomic action that prevents the data consumers from receiving low-quality data until the issue is resolved. Learn more about how lakeFS supports the [rollback](/use_cases/rollback.md) operation.
 
+### Storage Namespace
+The storage namespace is a location in the underlying storage dedicated to a specific repository.
+lakeFS uses it to store the repository's objects and some of its metadata.
+
+### Underlying Storage
+The underlying storage is a location in some object store where lakeFS keeps your objects and some metadata.
+
 ### Tag
 A tag is an immutable pointer to a single commit. Tags have readable names. Because tags are commits, a repository can be read from any tag. Example tags:
 

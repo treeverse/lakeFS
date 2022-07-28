@@ -5,6 +5,7 @@ import {Box, Tab} from "@mui/material";
 import React, {useState} from "react";
 import {TabsWrapper} from "../../../lib/components/nav";
 import {CodeTabPanel} from "../../../lib/components/code_tabs";
+import Alert from "react-bootstrap/Alert";
 
 const SPARK_SUBMIT_TEMPLATE_NAME = 'spark.submit.conf.tt';
 const SPARK_CORE_SITE_TEMPLATE_NAME = 'spark.core.site.conf.tt';
@@ -44,6 +45,9 @@ export const SparkConfigStep = ({onComplete=()=>{}}) => {
     }
     return (
         <Box sx={{display: 'flex', flexDirection: 'column', justifyContent: 'space-between'}}>
+            <Box sx={{width: '100%'}}>
+                <Alert variant="warning" className="mt-3">Copy the credentials and store them somewhere safe. You will not be able to access them again.</Alert>
+            </Box>
             <Box sx={{width: '100%'}}>
                 <TabsWrapper defaultTabIndex={selectedIndex} handleTabChange={handleChange}
                              ariaLabel='spark-configurations'>

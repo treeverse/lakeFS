@@ -1646,8 +1646,6 @@ func TestGraveler_Delete(t *testing.T) {
 		testGravelerDelete(t, false)
 	})
 	t.Run("TestKVGraveler_Delete", func(t *testing.T) {
-		// TODO (niro): Implement Delete
-		t.Skip("Need to implement delete")
 		testGravelerDelete(t, true)
 	})
 }
@@ -1697,21 +1695,33 @@ func testGravelerDelete(t *testing.T, kvEnabled bool) {
 			name: "exists in committed and in staging",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{
-					ValuesByKey: map[string]*graveler.Value{"key": {}},
+					ValuesByKey: map[string]*graveler.Value{"key1": {}},
 				},
 				StagingManager: &testutil.StagingFake{
+					Values: map[string]map[string]*graveler.Value{
+						"token": {
+							"key2": &graveler.Value{
+								Identity: []byte("BAD"),
+								Data:     []byte("BEEF"),
+							}},
+						"token2": {
+							"key1": &graveler.Value{
+								Identity: []byte("test"),
+								Data:     []byte("test"),
+							},
+						}},
 					Value: &graveler.Value{},
 				},
 				RefManager: &testutil.RefsFake{
-					Branch:  &graveler.Branch{CommitID: "c1"},
+					Branch:  &graveler.Branch{CommitID: "c1", StagingToken: "token", SealedTokens: []graveler.StagingToken{"token", "token2"}},
 					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {}},
 				},
 			},
 			args: args{
-				key: []byte("key"),
+				key: []byte("key1"),
 			},
 			expectedSetValue: &graveler.ValueRecord{
-				Key:   []byte("key"),
+				Key:   []byte("key1"),
 				Value: nil,
 			},
 			expectedErr: nil,
@@ -1720,17 +1730,27 @@ func testGravelerDelete(t *testing.T, kvEnabled bool) {
 			name: "exists in committed tombstone in staging",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{
-					ValuesByKey: map[string]*graveler.Value{"key": {}},
+					ValuesByKey: map[string]*graveler.Value{"key1": {}},
 				},
 				StagingManager: &testutil.StagingFake{
+					Values: map[string]map[string]*graveler.Value{
+						"token": {
+							"key1": nil,
+						},
+						"token2": {
+							"key1": &graveler.Value{
+								Identity: []byte("BAD"),
+								Data:     []byte("BEEF"),
+							},
+						}},
 					Value: nil,
 				},
 				RefManager: &testutil.RefsFake{
-					Branch:  &graveler.Branch{CommitID: "c1"},
+					Branch:  &graveler.Branch{CommitID: "c1", StagingToken: "token", SealedTokens: []graveler.StagingToken{"token", "token2"}},
 					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {}},
 				},
 			},
-			args:        args{key: []byte("key")},
+			args:        args{key: []byte("key1")},
 			expectedErr: graveler.ErrNotFound,
 		},
 		{
@@ -1740,35 +1760,21 @@ func testGravelerDelete(t *testing.T, kvEnabled bool) {
 					Err: graveler.ErrNotFound,
 				},
 				StagingManager: &testutil.StagingFake{
-					Value: &graveler.Value{},
+					Values: map[string]map[string]*graveler.Value{"token": {"key1": &graveler.Value{
+						Identity: []byte("test"),
+						Data:     []byte("test"),
+					}}},
+					Value: nil,
 				},
 				RefManager: &testutil.RefsFake{
-					Branch:  &graveler.Branch{CommitID: "c1"},
+					Branch:  &graveler.Branch{CommitID: "c1", StagingToken: "token"},
 					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {}},
 				},
 			},
 			args: args{
-				key: []byte("key"),
+				key: []byte("key1"),
 			},
-			expectedRemovedKey: []byte("key"),
-			expectedErr:        nil,
-		},
-		{
-			name: "exists only in staging - no commits",
-			fields: fields{
-				CommittedManager: &testutil.CommittedFake{},
-				StagingManager: &testutil.StagingFake{
-					Value: &graveler.Value{},
-				},
-				RefManager: &testutil.RefsFake{
-					Branch:  &graveler.Branch{},
-					Commits: map[graveler.CommitID]*graveler.Commit{},
-				},
-			},
-			args: args{
-				key: []byte("key"),
-			},
-			expectedRemovedKey: []byte("key"),
+			expectedRemovedKey: []byte("key1"),
 			expectedErr:        nil,
 		},
 		{
@@ -1796,13 +1802,23 @@ func testGravelerDelete(t *testing.T, kvEnabled bool) {
 			if err := g.Delete(ctx, tt.args.repositoryID, tt.args.branchID, tt.args.key); !errors.Is(err, tt.expectedErr) {
 				t.Errorf("Delete() returned unexpected error. got = %v, expected %v", err, tt.expectedErr)
 			}
-			// validate set on staging
-			if diff := deep.Equal(tt.fields.StagingManager.LastSetValueRecord, tt.expectedSetValue); diff != nil {
-				t.Errorf("unexpected set value %s", diff)
-			}
-			// validate removed from staging
-			if !bytes.Equal(tt.fields.StagingManager.LastRemovedKey, tt.expectedRemovedKey) {
-				t.Errorf("unexpected removed key got = %s, expected = %s ", tt.fields.StagingManager.LastRemovedKey, tt.expectedRemovedKey)
+
+			if kvEnabled {
+				if tt.expectedRemovedKey != nil {
+					// validate set on staging
+					if diff := deep.Equal(tt.fields.StagingManager.LastSetValueRecord, &graveler.ValueRecord{Key: tt.expectedRemovedKey, Value: nil}); diff != nil {
+						t.Errorf("unexpected set value %s", diff)
+					}
+				}
+			} else {
+				// validate set on staging
+				if diff := deep.Equal(tt.fields.StagingManager.LastSetValueRecord, tt.expectedSetValue); diff != nil {
+					t.Errorf("unexpected set value %s", diff)
+				}
+				// validate removed from staging
+				if !bytes.Equal(tt.fields.StagingManager.LastRemovedKey, tt.expectedRemovedKey) {
+					t.Errorf("unexpected removed key got = %s, expected = %s ", tt.fields.StagingManager.LastRemovedKey, tt.expectedRemovedKey)
+				}
 			}
 		})
 	}

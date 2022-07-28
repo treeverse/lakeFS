@@ -33,15 +33,16 @@ const ImportDataStep = ({repoId, branchName, onComplete, prependPath = ''}) => {
             setNumberOfImportedObjects(numObj)
         }
         try {
+            const source = sourceRef.current.value;
             await runImport(
                 updateStateFromImport,
                 prependPath,
                 commitMsgRef.current.value,
-                sourceRef.current.value,
+                source,
                 branchName,
                 repoId
             );
-            onComplete();
+            onComplete({importLocation: source});
         } catch (error) {
             setImportError(error);
             setImportPhase(ImportPhase.Failed);

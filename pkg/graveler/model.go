@@ -46,7 +46,7 @@ func CommitPath(commitID CommitID) string {
 }
 
 func CommitFromProto(pb *CommitData) *Commit {
-	var parents []CommitID
+	parents := make([]CommitID, 0)
 	for _, parent := range pb.Parents {
 		parents = append(parents, CommitID(parent))
 	}
@@ -65,7 +65,7 @@ func CommitFromProto(pb *CommitData) *Commit {
 
 func ProtoFromCommit(commitID CommitID, c *Commit) *CommitData {
 	// convert parents to slice of strings
-	var parents []string
+	parents := make([]string, 0)
 	for _, parent := range c.Parents {
 		parents = append(parents, string(parent))
 	}
@@ -115,5 +115,19 @@ func ProtoFromStagedEntry(key []byte, v *Value) *StagedEntryData {
 		Key:      key,
 		Identity: v.Identity,
 		Data:     v.Data,
+	}
+}
+
+func TagFromProto(pb *TagData) *TagRecord {
+	return &TagRecord{
+		TagID:    TagID(pb.Id),
+		CommitID: CommitID(pb.CommitId),
+	}
+}
+
+func ProtoFromTag(t *TagRecord) *TagData {
+	return &TagData{
+		Id:       string(t.TagID),
+		CommitId: string(t.CommitID),
 	}
 }

@@ -335,7 +335,6 @@
 }
 
 .tree-container {
-  margin-bottom: 30px;
   font-size: .9rem;
 }
 
@@ -553,4 +552,12 @@ td .form-group {
   border-radius: 10px;
   border: 1px solid #dadada;
   background-color: #FBFBFB;
+}
+
+.readme-card {
+  margin-top: 0;
+}
+
+.readme-heading {
+  background-color: inherit;
 }

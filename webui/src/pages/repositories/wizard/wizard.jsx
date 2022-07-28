@@ -52,7 +52,7 @@ export const Wizard = ({steps = defaultSteps, isShowBack= true, completed= {}, o
     };
 
     return (
-        <Box className={'jumbotron'}>
+        <Box className={'jumbotron'} sx={{mb: 0, pb: 3, pt: 5}}>
             <Stepper activeStep={activeStep} alternativeLabel>
                 {steps.map((step, index) => {
                     const stepProps = {};

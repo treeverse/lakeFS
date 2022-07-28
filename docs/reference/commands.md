@@ -155,6 +155,26 @@ lakectl abuse help [command] [flags]
 
 
 
+### lakectl abuse list
+
+List from the source ref
+
+```
+lakectl abuse list <source ref uri> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int        amount of lists to do (default 1000000)
+  -h, --help              help for list
+      --parallelism int   amount of lists to do in parallel (default 100)
+      --prefix string     prefix to list under (default "abuse/")
+```
+
+
+
 ### lakectl abuse random-read
 
 Read keys from a file and generate random reads from the source ref for those keys.

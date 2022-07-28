@@ -753,7 +753,7 @@ func (g *DBGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		}
 		err = g.RefManager.SetBranch(ctx, repositoryID, branchID, Branch{
 			CommitID:     newCommit,
-			StagingToken: newStagingToken(repositoryID, branchID),
+			StagingToken: generateStagingToken(repositoryID, branchID),
 		})
 		if err != nil {
 			return "", fmt.Errorf("set branch commit %s: %w", newCommit, err)
