@@ -301,20 +301,31 @@ object GarbageCollector {
   }
 
   def main(args: Array[String]) {
-    if (args.length != 2) {
+
+    val spark = SparkSession.builder().appName("GarbageCollector").getOrCreate()
+    val hc = spark.sparkContext.hadoopConfiguration
+
+    val apiURL = hc.get(LAKEFS_CONF_API_URL_KEY)
+    val accessKey = hc.get(LAKEFS_CONF_API_ACCESS_KEY_KEY)
+    val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
+    val apiClient = new ApiClient(apiURL, accessKey, secretKey)
+    val storageType = apiClient.getBlockstoreType()
+
+    if (storageType == StorageUtils.StorageTypeS3 && args.length != 2) {
       Console.err.println(
         "Usage: ... <repo_name> <region>"
       )
       System.exit(1)
+    } else if (storageType == StorageUtils.StorageTypeAzure && args.length != 1) {
+      Console.err.println(
+        "Usage: ... <repo_name>"
+      )
     }
 
-    val spark = SparkSession.builder().appName("GarbageCollector").getOrCreate()
-
     val repo = args(0)
-    val region = args(1)
+    val region = if (args.length == 2) args(1) else null
     val previousRunID =
       "" //args(2) // TODO(Guys): get previous runID from arguments or from storage
-    val hc = spark.sparkContext.hadoopConfiguration
 
     // Spark operators will need to generate configured FileSystems to read
     // ranges and metaranges.  They will not have a JobContext to let them
@@ -323,18 +334,12 @@ object GarbageCollector {
     // needed FileSystems.
     val hcValues = spark.sparkContext.broadcast(getHadoopConfigurationValues(hc, "fs."))
 
-    val apiURL = hc.get(LAKEFS_CONF_API_URL_KEY)
-    val accessKey = hc.get(LAKEFS_CONF_API_ACCESS_KEY_KEY)
-    val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
-    val apiClient = new ApiClient(apiURL, accessKey, secretKey)
-
     val gcRules = apiClient.getGarbageCollectionRules(repo)
 
     val res = apiClient.prepareGarbageCollectionCommits(repo, previousRunID)
     val runID = res.getRunId
     println("apiURL: " + apiURL)
 
-    val storageType = apiClient.getBlockstoreType()
     val gcCommitsLocation =
       ApiClient.translateURI(new URI(res.getGcCommitsLocation), storageType).toString
     println("gcCommitsLocation: " + gcCommitsLocation)
