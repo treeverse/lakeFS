@@ -1,14 +1,14 @@
 ---
 layout: default
-title: Object Model 
+title: Model 
 description: The lakeFS object model blends the object models of Git and of object stores such as S3. Read this page to learn more.
 parent: Understanding lakeFS
 nav_order: 20
 has_children: false
-redirect_from: ["../reference/object-model.html","../understand/branching-model.html"]
+redirect_from: ["../reference/object-model.html","../understand/branching-model.html","../understand/object-model.html"]
 ---
 
-# Object Model
+# Model
 {: .no_toc }
 
 {% include toc.html %}
