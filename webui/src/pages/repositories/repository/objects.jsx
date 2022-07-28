@@ -25,6 +25,11 @@ import {
     ImportProgress,
     runImport
 } from "../services/import_data";
+import ReactMarkdown from 'react-markdown';
+import Card from "react-bootstrap/Card";
+import remarkGfm from 'remark-gfm'
+import remarkHtml from 'remark-html'
+import {Box, Typography} from "@mui/material";
 
 const ImportButton = ({variant = "success", enabled = false, onClick}) => {
     return (
@@ -291,6 +296,31 @@ const TreeContainer = ({
     );
 }
 
+const ReadmeContainer = ({repo, reference}) => {
+    const {response, error, loading} = useAPI(async () => {
+        return await objects.get(repo.id, reference.id, 'README.md');
+    });
+
+    if (loading || error) {
+        return <></>;
+    }
+
+    return (
+            <Card className={'readme-card'}>
+                <Card.Header className={'readme-heading'}>
+                    <Typography variant={'subtitle2'}>README.md</Typography>
+                </Card.Header>
+                <Card.Body>
+                    <Box sx={{mx: 1}}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkHtml]}>
+                            {response}
+                        </ReactMarkdown>
+                    </Box>
+                </Card.Body>
+            </Card>
+    );
+}
+
 const ObjectsBrowser = ({config, configError}) => {
     const router = useRouter();
     const {path, after} = router.query;
@@ -358,27 +388,31 @@ const ObjectsBrowser = ({config, configError}) => {
                 </ActionGroup>
             </ActionsBar>
 
-            <TreeContainer
-                config={config}
-                reference={reference}
-                repo={repo}
-                path={(path) ? path : ""}
-                after={(after) ? after : ""}
-                onPaginate={after => {
-                    const query = {after}
-                    if (path) query.path = path
-                    if (reference) query.ref = reference.id
-                    const url = {pathname: `/repositories/:repoId/objects`, query, params: {repoId: repo.id}}
-                    router.push(url)
-                }}
-                refreshToken={refreshToken}
-                onUpload={() => {
-                    setShowUpload(true);
-                }}
-                onImport={() => {
-                    setShowImport(true);
-                }}
-                onRefresh={refresh}/>
+            <Box sx={{display: 'flex', flexDirection: 'column', gap: '10px', mb: '30px'}}>
+                <TreeContainer
+                    config={config}
+                    reference={reference}
+                    repo={repo}
+                    path={(path) ? path : ""}
+                    after={(after) ? after : ""}
+                    onPaginate={after => {
+                        const query = {after}
+                        if (path) query.path = path
+                        if (reference) query.ref = reference.id
+                        const url = {pathname: `/repositories/:repoId/objects`, query, params: {repoId: repo.id}}
+                        router.push(url)
+                    }}
+                    refreshToken={refreshToken}
+                    onUpload={() => {
+                        setShowUpload(true);
+                    }}
+                    onImport={() => {
+                        setShowImport(true);
+                    }}
+                    onRefresh={refresh}/>
+
+                <ReadmeContainer reference={reference} repo={repo} />
+            </Box>
         </>
     );
 };
