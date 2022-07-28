@@ -166,7 +166,7 @@ func (s *StagingFake) Set(_ context.Context, _ graveler.StagingToken, key gravel
 	return nil
 }
 
-func (s *StagingFake) Update(ctx context.Context, st graveler.StagingToken, key graveler.Key, updateFunc graveler.ValueUpdateFunc) error {
+func (s *StagingFake) Update(_ context.Context, st graveler.StagingToken, key graveler.Key, updateFunc graveler.ValueUpdateFunc) error {
 	if s.UpdateErr != nil {
 		return s.UpdateErr
 	}
@@ -390,6 +390,11 @@ func (m *RefsFake) AddCommit(_ context.Context, _ graveler.RepositoryID, commit 
 		Metadata:    commit.Metadata,
 	}
 	return m.CommitID, nil
+}
+
+func (m *RefsFake) RemoveCommit(_ context.Context, _ graveler.RepositoryID, commitID graveler.CommitID) error {
+	delete(m.Commits, commitID)
+	return nil
 }
 
 func (m *RefsFake) FindMergeBase(context.Context, graveler.RepositoryID, ...graveler.CommitID) (*graveler.Commit, error) {

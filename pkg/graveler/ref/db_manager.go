@@ -418,6 +418,10 @@ func (m *DBManager) addCommit(tx db.Tx, repositoryID graveler.RepositoryID, comm
 	return err
 }
 
+func (m *DBManager) RemoveCommit(_ context.Context, _ graveler.RepositoryID, _ graveler.CommitID) error {
+	panic("Not implemented")
+}
+
 func (m *DBManager) updateCommitGeneration(tx db.Tx, repositoryID graveler.RepositoryID, nodes map[graveler.CommitID]*CommitNode) error {
 	for len(nodes) != 0 {
 		command := `WITH updated(id, generation) AS (VALUES `
