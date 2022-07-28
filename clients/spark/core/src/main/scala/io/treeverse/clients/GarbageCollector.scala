@@ -341,7 +341,8 @@ object GarbageCollector {
       case e: Throwable =>
         e.printStackTrace()
         println("No GC rules found for repository: " + repo)
-        System.exit(0)
+        // Exiting with a failure status code because users should not really run gc on repos without GC rules.
+        System.exit(2)
     }
 
     val res = apiClient.prepareGarbageCollectionCommits(repo, previousRunID)

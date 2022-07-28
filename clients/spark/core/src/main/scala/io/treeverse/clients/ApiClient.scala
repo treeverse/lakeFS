@@ -2,7 +2,7 @@ package io.treeverse.clients
 
 import com.google.common.cache.CacheBuilder
 import io.lakefs.clients.api
-import io.lakefs.clients.api.{ApiException, ConfigApi, RetentionApi}
+import io.lakefs.clients.api.{ConfigApi, RetentionApi}
 import io.lakefs.clients.api.model.{
   GarbageCollectionPrepareRequest,
   GarbageCollectionPrepareResponse
@@ -102,7 +102,6 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
     )
   }
 
-  @throws(classOf[ApiException])
   def getGarbageCollectionRules(repoName: String): String = {
     val gcRules = retentionApi.getGarbageCollectionRules(repoName)
     gcRules.toString()
