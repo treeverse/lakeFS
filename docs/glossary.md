@@ -30,9 +30,11 @@ A collection, roughly speaking, is a set of data. Collections may be structured 
 A commit is a point-in-time immutable snapshot of a branch. It's a collection of object metadata and data, including paths and the object contents and metadata. Commits have their own commit metadata. Every repository has one initial commit with no parent commits. If a commit has more than one parent, it is a merge commit. lakeFS supports only merge commits with two parents.
 
 ### Cross-collection Consistency
-In lakeFS, a repository (and thus a branch) can span multiple collections. By providing branch, commit, merge and revert operations atomically on a branch, lakeFS achieves consistency guarantees across different logical collections. That is, data versioning is consistent across collections within a repository.
+It is unfortunate that the word 'consistency' has multiple meanings, at least four of them according to Martin Kleppmann. Consistency in the context of lakeFS and data versioning is, the guarantee that operations in a transaction are performed accurately, correctly and most important, atomically. 
 
-It is sometimes referred as multi-table transactions, i.e., lakeFS offers transactional guarantees across multiple tables.
+A repository (and thus a branch) in lakeFS, can span multiple tables or collections. By providing branch, commit, merge and revert operations atomically on a branch, lakeFS achieves consistency guarantees across different logical collections. That is, data versioning is consistent across multiple collections within a repository.
+
+It is sometimes referred as multi-table transactions. That is, lakeFS offers transactional guarantees across multiple tables.
 
 <!---Learn more about cross-collection consistency here (link to CCC blog) -->
 
