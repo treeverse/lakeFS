@@ -17,7 +17,7 @@ Each reviewer can set approved/reject (or clear his response) on the PR and add 
 New comments are appended to the end of the discussion and will include a time stamp, commenter and the text with the comment.
 PR can be merge operation is enabled when at least one reviewer approves or when no reviewers are assigned.
 PR can be closed at any time.
-PR will not be updated when new commits into the source branch.
+PR will not be updated with changes to the source or destination branches, like updates to objects, commits, merges, etc. 
 Merge PR will perform a merge operation and merge the PR as merged. If a conflict or an error occurs while merging, it will be returned as a response to the request.
 When a repository is deleted, all pull-requests will be deleted with it.
 
