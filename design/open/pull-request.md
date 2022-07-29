@@ -21,9 +21,15 @@ PR will not be updated with changes to the source or destination branches, like 
 Merge PR will perform a merge operation and merge the PR as merged. If a conflict or an error occurs while merging, it will be returned as a response to the request.
 When a repository is deleted, all pull-requests will be deleted with it.
 
+Actions - no change in current support with pre/post merge. These actions will be triggered when the PR is merged.
+A new event called 'pull-request' will be triggered when is created (or by request). These action will be triggered if no conflict found on an internal commit that will be visible to the action in order to verify the PR data.
+
+
 ### Other features to consider
 
 - PR auto-update with latest branch commits. PR will include the base commit and all the changes until the latest commit on branch.
 - Multiple reviews with text from each reviewer. Can be even per level of commit the current PR addresses.
 - New hook can be trigger when PR is updated. Action triggered by PR will be considered as reviewers and the status is approved/rejects based on a successful run.
+- Do we need to support merge dry run to enable UI indication for conflicts?
+- Does a PR represent the merge itself or the request? If we have a pending request to merge a commit or a branch, any future request to merge this PR should point to the same PR? Can we have multiple PRs requesting the same merge open in parallel? Any request to merge the same branch should point to the current open PR or the same old one and open it? The PR identifier is the source commit + branch + target branch?
 
