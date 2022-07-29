@@ -6,14 +6,15 @@ The pull-request captures the merge operation we request to apply.
 ### Goals
 
 - Capture request to merge a branch or specific reference
-- Mechanism to review, discuss and approve changes before applying to a branch
+- Mechanism to review, discuss and merge changes before applying to a branch
 - Automation using actions can verify / provide feedback on pull-request
 
 ### How it will work
 
 Introduce a new resource called pull-request at the repository level.
-The pull-request will hold owner (the user who created the PR), assignee, reviewers the source branch/reference and the target branch.
-Each reviewer can set approved/reject (or clear his response) on the PR.
+The pull-request will hold owner (the user who created the PR), description, assignee, reviewers the source branch/reference and the target branch.
+Each reviewer can set approved/reject (or clear his response) on the PR and add comments to the PR discussion. Comments associated to a PR will a flat ordered list of posted comments on the PR level.
+New comments are appended to the end of the discussion and will include a time stamp, commenter and the text with the comment.
 PR can be merge operation is enabled when at least one reviewer approves or when no reviewers are assigned.
 PR can be closed at any time.
 PR will not be updated when new commits into the source branch.
