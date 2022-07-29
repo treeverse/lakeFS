@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -1723,7 +1722,6 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 			if err != nil {
 				return nil, err
 			}
-
 			defer changes.Close()
 
 			commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes)
@@ -1785,7 +1783,7 @@ func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repositoryID Reposit
 
 	var try int
 	for try = 0; try < setTries; try++ {
-		// TODO - if the branch commit id hasn't clenched, update the fields instead of fail
+		// TODO - if the branch commit id hasn't changed, update the fields instead of fail
 		err := g.RefManager.BranchUpdate(ctx, repositoryID, branchID, f)
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			continue
@@ -1793,14 +1791,9 @@ func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repositoryID Reposit
 		return err
 	}
 	if try == setTries {
-		return ErrTooManyStagingWriteTries
+		return ErrTooManyBranchUpdateTries
 	}
 	return nil
-}
-
-func newStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken {
-	v := strings.Join([]string{repositoryID.String(), branchID.String(), uuid.New().String()}, "-")
-	return StagingToken(v)
 }
 
 func validateCommitParent(ctx context.Context, repositoryID RepositoryID, commit Commit, manager RefManager) (CommitID, error) {
