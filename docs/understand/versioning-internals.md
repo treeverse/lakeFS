@@ -3,7 +3,7 @@ layout: default
 title: Versioning Internals
 parent: Understanding lakeFS
 description: This section explains how versioning works in lakeFS.
-nav_order: 20
+nav_order: 22
 has_children: false
 redirect_from: ["../architecture/data-model.html","../understand/data-model.html"]
 --- 
