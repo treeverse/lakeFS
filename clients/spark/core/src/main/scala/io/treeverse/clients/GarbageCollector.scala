@@ -334,7 +334,16 @@ object GarbageCollector {
     // needed FileSystems.
     val hcValues = spark.sparkContext.broadcast(getHadoopConfigurationValues(hc, "fs."))
 
-    val gcRules = apiClient.getGarbageCollectionRules(repo)
+    var gcRules: String = ""
+    try {
+      gcRules = apiClient.getGarbageCollectionRules(repo)
+    } catch {
+      case e: Throwable =>
+        e.printStackTrace()
+        println("No GC rules found for repository: " + repo)
+        // Exiting with a failure status code because users should not really run gc on repos without GC rules.
+        System.exit(2)
+    }
 
     val res = apiClient.prepareGarbageCollectionCommits(repo, previousRunID)
     val runID = res.getRunId
