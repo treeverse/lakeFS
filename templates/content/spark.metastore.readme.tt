@@ -73,7 +73,7 @@ To solve this, use the [lakectl metastore commands](https://docs.lakefs.io/integ
          secret_access_key: <AWS secret access key>
    ```
 
-1. Use the `lakectl metastore copy` command to create a table for the branch:
+1. Use the `lakectl metastore copy` command to create a table pointing to the same path under the new branch:
 
    ```
    lakectl metastore copy --from-schema default --from-table sensor_data --to-schema default --to-table sensor_new_feature --to-branch new_feature
