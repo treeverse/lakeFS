@@ -1,6 +1,6 @@
 import {useAPI} from "../../../lib/hooks/api";
 import {commits, objects, templates} from "../../../lib/api";
-import {Error, Loading} from "../../../lib/components/controls";
+import {Error, Loading, ProgressSpinner} from "../../../lib/components/controls";
 import {Box, Tab} from "@mui/material";
 import React, {useState} from "react";
 import {TabsWrapper} from "../../../lib/components/nav";
@@ -44,7 +44,7 @@ export const SparkConfigStep = ({onComplete=()=>{}, repoId, branchName, importLo
         return <Error error={error}/>;
     }
     if (loading) {
-        return <Loading/>;
+        return <ProgressSpinner />;
     }
 
     const tabs = response.map((confObj, tabIndex) => {

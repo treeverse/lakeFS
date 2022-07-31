@@ -2,7 +2,7 @@ import {Wizard} from "./wizard";
 import React, {useState} from "react";
 import {useAPI} from "../../../lib/hooks/api";
 import {config} from "../../../lib/api";
-import {Loading, ProgressSpinner} from "../../../lib/components/controls";
+import {ProgressSpinner} from "../../../lib/components/controls";
 import Alert from "react-bootstrap/Alert";
 import RepositoryCreateForm from "../../../lib/components/repositoryCreateForm";
 import ImportDataStep from "./import_data_wizard_step";
@@ -36,7 +36,7 @@ const RepositoryCreationStep = ({repoCreationError, createRepo, onCancel, onComp
     const showError = repoCreationError ? repoCreationError : err;
     let content;
     if (loading) {
-        content = <Loading/>;
+        content = <ProgressSpinner />;
     } else if (repoCreationPhase === RepositoryCreationPhase.InProgress) {
         content = <ProgressSpinner text={'Creating repository...'} />;
     } else if (repoCreationPhase === RepositoryCreationPhase.Completed) {
