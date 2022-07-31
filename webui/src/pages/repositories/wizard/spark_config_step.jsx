@@ -34,9 +34,9 @@ export const SparkConfigStep = ({onComplete=()=>{}, repoId, branchName, importLo
         await Promise.all([sparkSubmitConfig, sparkCoreSiteConfig, sparkDBConfig, readmeGeneration]);
         onComplete();
         return [
-            {conf: await sparkSubmitConfig, title: 'spark-submit'},
-            {conf: await sparkCoreSiteConfig, title: 'core-site.xml'},
-            {conf: await sparkDBConfig, title: 'Databricks'}
+            {conf: await sparkSubmitConfig, title: 'spark-submit', language: 'bash'},
+            {conf: await sparkCoreSiteConfig, title: 'core-site.xml', language: 'xml'},
+            {conf: await sparkDBConfig, title: 'Databricks', language: 'plaintext'}
         ]
     });
 
@@ -50,7 +50,7 @@ export const SparkConfigStep = ({onComplete=()=>{}, repoId, branchName, importLo
     const tabs = response.map((confObj, tabIndex) => {
         return {
             tab: <Tab key={tabIndex} label={confObj.title}/>,
-            tabPanel: <CodeTabPanel key={tabIndex} isSelected={selectedIndex===tabIndex} index={tabIndex}>{confObj.conf}</CodeTabPanel>
+            tabPanel: <CodeTabPanel key={tabIndex} isSelected={selectedIndex===tabIndex} index={tabIndex} language={confObj.language}>{confObj.conf}</CodeTabPanel>
         }
     });
     const handleChange = (_, newConf) => {

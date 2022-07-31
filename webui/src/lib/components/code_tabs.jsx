@@ -5,7 +5,7 @@ import React from "react";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import {a11yLight} from "react-syntax-highlighter/src/styles/hljs";
 
-export function CodeTabPanel({children, isSelected, index, ...other}) {
+export function CodeTabPanel({children, isSelected, language=null, index, ...other}) {
     const [openSnackbar, setOpenSnackbar] = React.useState(false);
 
     const copyCode = async (text) => {
@@ -32,7 +32,7 @@ export function CodeTabPanel({children, isSelected, index, ...other}) {
                      className={'code-container text-secondary'}
                      onClick={() => copyCode(children)}>
                     <Box sx={{ml: 2}}>
-                        <SyntaxHighlighter style={a11yLight} wrapLongLines customStyle={{margin: 0, padding: 0, backgroundColor: 'inherit'}}>
+                        <SyntaxHighlighter language={language} style={a11yLight} wrapLongLines customStyle={{margin: 0, padding: 0, backgroundColor: 'inherit'}}>
                             {children}
                         </SyntaxHighlighter>
                     </Box>
