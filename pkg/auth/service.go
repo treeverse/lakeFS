@@ -1,6 +1,7 @@
 package auth
 
 //go:generate oapi-codegen -package auth -generate "types,client"  -o client.gen.go ../../api/authorization.yml
+//go:generate mockgen -package=mock -destination=mock/mock_auth_client.go github.com/treeverse/lakefs/pkg/auth ClientWithResponsesInterface
 
 import (
 	"context"
@@ -290,7 +291,7 @@ func (s *KVAuthService) DeleteUser(ctx context.Context, username string) error {
 
 type UserPredicate func(u *model.UserData) bool
 
-func (s *KVAuthService) getUserByPredicate(ctx context.Context, key *userKey, predicate UserPredicate) (*model.User, error) {
+func (s *KVAuthService) getUserByPredicate(ctx context.Context, key userKey, predicate UserPredicate) (*model.User, error) {
 	return s.cache.GetUser(key, func() (*model.User, error) {
 		m := &model.UserData{}
 		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), []byte(""))
@@ -321,7 +322,7 @@ func (s *KVAuthService) GetUserByID(ctx context.Context, userID string) (*model.
 }
 
 func (s *KVAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
-	return s.cache.GetUser(&userKey{username: username}, func() (*model.User, error) {
+	return s.cache.GetUser(userKey{username: username}, func() (*model.User, error) {
 		userKey := model.UserPath(username)
 		m := model.UserData{}
 		_, err := s.store.GetMsg(ctx, model.PartitionKey, userKey, &m)
@@ -336,13 +337,13 @@ func (s *KVAuthService) GetUser(ctx context.Context, username string) (*model.Us
 }
 
 func (s *KVAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return s.getUserByPredicate(ctx, &userKey{email: email}, func(value *model.UserData) bool {
+	return s.getUserByPredicate(ctx, userKey{email: email}, func(value *model.UserData) bool {
 		return value.Email == email
 	})
 }
 
 func (s *KVAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
-	return s.getUserByPredicate(ctx, &userKey{externalID: externalID}, func(value *model.UserData) bool {
+	return s.getUserByPredicate(ctx, userKey{externalID: externalID}, func(value *model.UserData) bool {
 		return value.ExternalId == externalID
 	})
 }
@@ -1185,7 +1186,7 @@ func userIDToInt(userID string) (int64, error) {
 	return strconv.ParseInt(userID, base, bitSize)
 }
 
-func (a *APIAuthService) getFirstUser(ctx context.Context, userKey *userKey, params *ListUsersParams) (*model.User, error) {
+func (a *APIAuthService) getFirstUser(ctx context.Context, userKey userKey, params *ListUsersParams) (*model.User, error) {
 	return a.cache.GetUser(userKey, func() (*model.User, error) {
 		resp, err := a.apiClient.ListUsersWithResponse(ctx, params)
 		if err != nil {
@@ -1199,7 +1200,7 @@ func (a *APIAuthService) getFirstUser(ctx context.Context, userKey *userKey, par
 			return nil, ErrNotFound
 		}
 		if len(results) > 1 {
-			// a.log.WithField("userID", userID).Error("GetUserByID - more than one user for userID")
+			// make sure we work with just one user based on email
 			return nil, ErrNonUnique
 		}
 		u := results[0]
@@ -1223,11 +1224,11 @@ func (a *APIAuthService) GetUserByID(ctx context.Context, userID string) (*model
 	if err != nil {
 		return nil, fmt.Errorf("userID as int64: %w", err)
 	}
-	return a.getFirstUser(ctx, &userKey{id: userID}, &ListUsersParams{Id: &intID})
+	return a.getFirstUser(ctx, userKey{id: userID}, &ListUsersParams{Id: &intID})
 }
 
 func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
-	return a.cache.GetUser(&userKey{username: username}, func() (*model.User, error) {
+	return a.cache.GetUser(userKey{username: username}, func() (*model.User, error) {
 		resp, err := a.apiClient.GetUserWithResponse(ctx, username)
 		if err != nil {
 			return nil, err
@@ -1252,11 +1253,11 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 }
 
 func (a *APIAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return a.getFirstUser(ctx, &userKey{email: email}, &ListUsersParams{Email: swag.String(email)})
+	return a.getFirstUser(ctx, userKey{email: email}, &ListUsersParams{Email: swag.String(email)})
 }
 
 func (a *APIAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
-	return a.getFirstUser(ctx, &userKey{externalID: externalID}, &ListUsersParams{ExternalId: swag.String(externalID)})
+	return a.getFirstUser(ctx, userKey{externalID: externalID}, &ListUsersParams{ExternalId: swag.String(externalID)})
 }
 
 func toPagination(paginator Pagination) *model.Paginator {

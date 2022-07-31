@@ -13,10 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-openapi/swag"
-
 	sq "github.com/Masterminds/squirrel"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"

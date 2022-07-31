@@ -1,6 +1,5 @@
 GOCMD=$(or $(shell which go), $(error "Missing dependency - no go in PATH"))
 DOCKER=$(or $(shell which docker), $(error "Missing dependency - no docker in PATH"))
-MOCKGEN=$(or $(shell which mockgen), $(error "Missing dependency - no mockgen in PATH"))
 GOBINPATH=$(shell $(GOCMD) env GOPATH)/bin
 NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 
@@ -142,16 +141,16 @@ gen-api: go-install ## Run the swagger code generator
 	$(GOGENERATE) ./pkg/api
 	$(GOGENERATE) ./pkg/auth
 
-.PHONY: gen-mockgen
-gen-mockgen: go-install ## Run the generator for inline commands
-	$(GOGENERATE) ./pkg/graveler/sstable
-	$(GOGENERATE) ./pkg/graveler/committed
-	$(GOGENERATE) ./pkg/graveler
-	$(GOGENERATE) ./pkg/pyramid
-	$(GOGENERATE) ./pkg/onboard
-	$(GOGENERATE) ./pkg/actions
-	## create mock for generated auth client
-	$(MOCKGEN) -package=mock -destination=pkg/auth/mock/mock_auth_client.go github.com/treeverse/lakefs/pkg/auth ClientWithResponsesInterface
+.PHONY: gen-code
+gen-code: go-install ## Run the generator for inline commands
+	$(GOGENERATE) \
+		./pkg/graveler/sstable \
+		./pkg/graveler/committed \
+		./pkg/graveler \
+		./pkg/pyramid \
+		./pkg/onboard \
+		./pkg/actions \
+		./pkg/auth
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
 build: gen docs ## Download dependencies and build the default binary
@@ -254,4 +253,4 @@ help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # helpers
-gen: gen-api gen-ui gen-mockgen clients gen-docs
+gen: gen-api gen-ui gen-code clients gen-docs
