@@ -2309,6 +2309,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			creationTime := time.Unix(123456789, 0)
 			response := &auth.CreatePolicyResponse{
 				HTTPResponse: &http.Response{
 					StatusCode: tt.responseStatusCode,
@@ -2317,15 +2318,20 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 					Name: tt.responseName,
 				},
 			}
-			mockClient.EXPECT().CreatePolicyWithResponse(gomock.Any(), MockPolicy{
-				Name:     tt.policyName,
-				Action:   tt.firstStatementAction,
-				Effect:   tt.firstStatementEffect,
-				Resource: tt.firstStatementResource,
-			}).MaxTimes(1).Return(response, nil)
+			mockClient.EXPECT().CreatePolicyWithResponse(gomock.Any(), gomock.Eq(auth.CreatePolicyJSONRequestBody{
+				CreationDate: swag.Int64(creationTime.Unix()),
+				Name:         tt.policyName,
+				Statement: []auth.Statement{{
+					Action:   tt.firstStatementAction,
+					Effect:   tt.firstStatementEffect,
+					Resource: tt.firstStatementResource,
+				},
+				},
+			})).MaxTimes(1).Return(response, nil)
 			ctx := context.Background()
 			err := s.WritePolicy(ctx, &model.Policy{
 				DisplayName: tt.policyName,
+				CreatedAt:   creationTime,
 				Statement: []model.Statement{{
 					Action:   tt.firstStatementAction,
 					Effect:   tt.firstStatementEffect,
@@ -2782,28 +2788,6 @@ func TestAPIAuthService_DeleteCredentials(t *testing.T) {
 			}
 		})
 	}
-}
-
-type MockPolicy struct {
-	Name     string
-	Resource string
-	Effect   string
-	Action   []string
-}
-
-func (m MockPolicy) Matches(x interface{}) bool {
-	if policy, ok := x.(auth.CreatePolicyJSONRequestBody); ok {
-		if len(policy.Statement) == 0 {
-			return false
-		}
-		statement := policy.Statement[0]
-		return policy.Name == m.Name && statement.Resource == m.Resource && statement.Effect == m.Effect && len(statement.Action) == 1 && statement.Action[0] == m.Action[0]
-	}
-	return false
-}
-
-func (m MockPolicy) String() string {
-	return fmt.Sprintf("%s-%s-%s", m.Action, m.Effect, m.Resource)
 }
 
 func TestAPIAuthService_CreateGroup(t *testing.T) {
