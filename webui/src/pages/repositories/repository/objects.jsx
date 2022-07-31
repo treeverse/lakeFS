@@ -312,7 +312,7 @@ const ReadmeContainer = ({repo, reference}) => {
                 </Card.Header>
                 <Card.Body>
                     <Box sx={{mx: 1}}>
-                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkHtml]}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkHtml]} linkTarget={"_blank"}>
                             {response}
                         </ReactMarkdown>
                     </Box>

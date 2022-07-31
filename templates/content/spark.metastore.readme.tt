@@ -1,53 +1,96 @@
 {{contenttype "text/markdown" -}}
-# Spark Quickstart - {{ .Query.repo }}
+## {{ .Query.repo }}
 
-Congratulations on creating your Spark repository. The "{{ .Query.repo }}" repository was created with the branch "{{ .Query.branch }}".
-You can now start using it with your Spark code.
+This repository was created with the Spark Quickstart wizard.
 
-## Completed steps
+### What we did
 
-1. Created repository {{ .Query.repo }} and branch {{ .Query.branch }}.
+1. Created the repository `{{ .Query.repo }}` and the branch `{{ .Query.branch }}`.
 {{if .Query.import_location -}}
-1. Imported data from {{ .Query.import_location }}.
+1. Imported your data from `{{ .Query.import_location }}`.
 {{- end}}
-1. Generated Spark configuration.
+1. Generated configuration snippets to get started with Spark and lakeFS.
 
-## Getting started
+### How to use Spark with lakeFS
 
-As lakeFS is S3 compatible, all you need to do is to configure your Spark application's S3A Hadoop filesystem with your lakeFS endpoint and credentials provided by the Spark Quickstart wizard.
+Use the configuration we generated to point your cluster to lakeFS.
+Now your Spark code can interact with lakeFS:
 
-## Metastore Configuration
+1. Read a dataframe from lakeFS:
 
-The [`lakectl metastore` commands](https://docs.lakefs.io/integrations/glue_hive_metastore.html#commands) can run on Glue or Hive metastore.
-To use `lakectl`, you will need to download the binary. [Learn more](https://www.youtube.com/watch?v=8nO7RT411nA).
+   ```
+   val df = spark.read.parquet("s3a://{{ .Query.repo }}/{{ .Query.branch }}/sensor_data")
+   ```
 
-Add the following to the lakectl configuration file (by default ~/.lakectl.yaml):
+1. Write a dataframe to lakeFS:
 
-### Hive
+   ```
+   df.write.partitionBy("example-column").parquet(s"s3a://{{ .Query.repo }}/{{ .Query.branch }}/output_table/")
+   ```
 
-```conf
-metastore:
-  type: hive
-  hive:
-    uri: <hive-metastore-uri>:<hive-metastore-port>
+### Working with Hive Metastore
+
+In Hive Metastore (or AWS Glue), a table location can only be under a single lakeFS branch.
+For example, consider a table pointing to the `{{ .Query.branch }}` branch:
+
+```
+CREATE EXTERNAL TABLE `sensor_data` (
+  `ts` timestamp,
+  `value` double
+  PARTITIONED BY (`dt` string)
+  LOCATION 's3a://{{ .Query.repo }}/{{ .Query.branch }}/sensor_data';
 ```
 
-### Glue
+Suppose you create a new branch, `new_feature`. You will not be able to access the table from the new branch,
+since your catalog doesn't point to a location in this branch.
 
-```conf
-metastore:
-  type: glue
-  glue:
-    catalog-id: <catalog id>
-    region: <AWS region>
-    profile: default # optional, implies using a credentials file
-    credentials:
-      access_key_id: <AWS access key id>
-      secret_access_key: <AWS secret access key>
+To solve this, use the [lakectl metastore commands](https://docs.lakefs.io/integrations/glue_hive_metastore.html#commands):
+
+1. [Download and configure lakectl](https://www.youtube.com/watch?v=8nO7RT411nA).
+
+1. Add the following to the lakectl configuration file (by default ~/.lakectl.yaml`):
+
+   #### Hive
+
+   ```conf
+   metastore:
+     type: hive
+     hive:
+       uri: <hive-metastore-uri>:<hive-metastore-port>
+   ```
+
+   #### Glue
+
+   ```conf
+   metastore:
+     type: glue
+     glue:
+       catalog-id: <catalog id>
+       region: <AWS region>
+       profile: default # optional, implies using a credentials file
+       credentials:
+         access_key_id: <AWS access key id>
+         secret_access_key: <AWS secret access key>
+   ```
+
+1. Use the `lakectl metastore copy` command to create a table pointing to the same path under the new branch:
+
+   ```
+   lakectl metastore copy --from-schema default --from-table sensor_data --to-schema default --to-table sensor_new_feature --to-branch new_feature
+   ```
+
+1. You can now query the data from the new branch:
+
+    ```
+    SELECT * FROM sensor_new_feature;
+    ```
+
+1. Read the [docs](https://docs.lakefs.io/integrations/glue_hive_metastore.html#commands) to learn more about the `lakectl metastore` commands.
+
+### Suggested model
+
+For simplicity, we recommend creating a schema for each branch. That way, you can use the same table name across different schemas:
+
 ```
-
-## Suggested model
-
-For simplicity, we recommend creating a schema for each branch. That way, you can use the same table name across different schemas.
-For example, using Trino:
-`CREATE SCHEMA {{ .Query.branch }}_schema with (location = 's3://{{ .Query.repo }}/{{ .Query.branch }}/');`
+CREATE SCHEMA {{ .Query.branch }}_schema with (location = 's3://{{ .Query.repo }}/{{ .Query.branch }}/');
+```
