@@ -119,7 +119,7 @@ export const ActionsBar = ({ children }) => {
     );
 };
 
-const copyTextToClipboard = (text, onSuccess, onError) => {
+export const copyTextToClipboard = async (text, onSuccess, onError) => {
     const textArea = document.createElement('textarea');
 
     //
@@ -168,7 +168,11 @@ const copyTextToClipboard = (text, onSuccess, onError) => {
 
     let err = null;
     try {
-        document.execCommand('copy');
+        if ('clipboard' in navigator) {
+            await navigator.clipboard.writeText(text);
+        } else {
+            document.execCommand('copy', true, text);
+        }
     } catch (e) {
         err = e;
     }
