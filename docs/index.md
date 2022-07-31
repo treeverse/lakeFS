@@ -78,7 +78,7 @@ Through its versioning engine, lakeFS enables the following built-in operations 
 * **revert:** return a repo to the exact state of a previous commit.
 * **tag:** a pointer to a single immutable commit with a readable, meaningful name.
 
-*See the [object model](./understand/object-model.md) for an in-depth
+*See the [object model](./understand/model.md) for an in-depth
 definition of these,and the [CLI reference](./reference/commands.md) for the
 full list of commands.*
 

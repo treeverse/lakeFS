@@ -63,12 +63,15 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
     const router = useRouter();
     const [completedSteps, setCompletedSteps] = useState(new Set());
     const [showLoading, setShowLoading] = useState(false);
+    const [isStepInProgress, setIsStepInProgress] = useState(false);
 
     const completedStep = (vals = {}, stepNum) => {
         setState({...state, ...vals});
         setCompletedSteps(currentCompleted => new Set(currentCompleted).add(stepNum));
+        setIsStepInProgress(false);
     }
     const onComplete = async () => {
+        setIsStepInProgress(false);
         setShowLoading(true);
         await uploadAndCommitReadme(state.repoId, state.branch, state.importLocation);
         setShowLoading(false)
@@ -95,6 +98,7 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
                 onComplete={(values) => {
                     completedStep(values, 1);
                 }}
+                updateImportInProgress={setIsStepInProgress}
                 branchName={state.branch} />,
         },
         {
@@ -106,7 +110,7 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
         <>
             {showLoading
                 ? <Loading/>
-                : <Wizard steps={steps} isShowBack={false} completed={completedSteps} onDone={onComplete}/>
+                : <Wizard steps={steps} isShowBack={false} completed={completedSteps} onDone={onComplete} isStepInProgress={isStepInProgress}/>
             }
         </>
     );
