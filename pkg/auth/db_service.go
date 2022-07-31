@@ -221,7 +221,7 @@ func (s *DBAuthService) DeleteUser(ctx context.Context, username string) error {
 }
 
 func (s *DBAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
-	return s.cache.GetUser(&userKey{username: username}, func() (*model.User, error) {
+	return s.cache.GetUser(userKey{username: username}, func() (*model.User, error) {
 		res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			return getDBUser(tx, username)
 		}, db.ReadOnly())
@@ -247,7 +247,7 @@ func (s *DBAuthService) GetUserByEmail(ctx context.Context, email string) (*mode
 }
 
 func (s *DBAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
-	return s.cache.GetUser(&userKey{externalID: externalID}, func() (*model.User, error) {
+	return s.cache.GetUser(userKey{externalID: externalID}, func() (*model.User, error) {
 		res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			return getDBUserByExternalID(tx, externalID)
 		}, db.ReadOnly())
@@ -260,7 +260,7 @@ func (s *DBAuthService) GetUserByExternalID(ctx context.Context, externalID stri
 }
 
 func (s *DBAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
-	return s.cache.GetUser(&userKey{id: userID}, func() (*model.User, error) {
+	return s.cache.GetUser(userKey{id: userID}, func() (*model.User, error) {
 		res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			user := &model.DBUser{}
 			err := tx.Get(user, `SELECT * FROM auth_users WHERE id = $1`, userID)
