@@ -9,7 +9,7 @@ import {
 } from "../services/import_data";
 import {Error, Loading} from "../../../lib/components/controls";
 import {useAPI} from "../../../lib/hooks/api";
-import {config} from "../../../lib/api";
+import {config, NotFoundError} from "../../../lib/api";
 
 const ImportDataStep = ({repoId, branchName, onComplete, prependPath = '', updateImportInProgress=(inProgress) => inProgress}) => {
     const [importPhase, setImportPhase] = useState(ImportPhase.NotStarted);
@@ -27,6 +27,7 @@ const ImportDataStep = ({repoId, branchName, onComplete, prependPath = '', updat
     const showError = importError ? importError : error;
 
     const doImport = async () => {
+        setImportError(null);
         updateImportInProgress(true);
         setImportPhase(ImportPhase.InProgress);
         const updateStateFromImport = ({importPhase, numObj}) => {
