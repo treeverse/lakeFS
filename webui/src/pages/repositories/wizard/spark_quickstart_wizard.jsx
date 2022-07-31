@@ -1,7 +1,7 @@
 import {Wizard} from "./wizard";
 import React, {useState} from "react";
 import {useAPI} from "../../../lib/hooks/api";
-import {commits, config, objects, templates} from "../../../lib/api";
+import {config} from "../../../lib/api";
 import {Loading, ProgressSpinner} from "../../../lib/components/controls";
 import Alert from "react-bootstrap/Alert";
 import RepositoryCreateForm from "../../../lib/components/repositoryCreateForm";
@@ -62,7 +62,6 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
     });
     const router = useRouter();
     const [completedSteps, setCompletedSteps] = useState(new Set());
-    const [showLoading, setShowLoading] = useState(false);
     const [isStepInProgress, setIsStepInProgress] = useState(false);
 
     const completedStep = (vals = {}, stepNum) => {
@@ -72,9 +71,6 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
     }
     const onComplete = async () => {
         setIsStepInProgress(false);
-        setShowLoading(true);
-        await uploadAndCommitReadme(state.repoId, state.branch, state.importLocation);
-        setShowLoading(false)
         router.push({pathname: `/repositories/:repoId/objects`, params: {repoId: state.repoId}});
         onExit();
     }
@@ -103,27 +99,16 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
         },
         {
             label: 'Spark Configurations',
-            component: <SparkConfigStep repoId={state.repoId} branchName={state.branch} importLocation={state.importLocation} onComplete={(values) => { completedStep(values, 2); }}/>
+            component: <SparkConfigStep
+                repoId={state.repoId}
+                branchName={state.branch}
+                importLocation={state.importLocation}
+                onComplete={(values) => { completedStep(values, 2); }}
+            />
         },
     ];
     return (
-        <>
-            {showLoading
-                ? <Loading/>
-                : <Wizard steps={steps} isShowBack={false} completed={completedSteps} onDone={onComplete} isStepInProgress={isStepInProgress}/>
-            }
-        </>
+        <Wizard steps={steps} isShowBack={false} completed={completedSteps} onDone={onComplete} isStepInProgress={isStepInProgress}/>
     );
 }
 
-async function uploadAndCommitReadme(repoId, branchName, importLocation) {
-    const README_TEMPLATE_NAME = 'spark.metastore.readme.tt';
-    const readmeProp = {repo: repoId, branch: branchName};
-    if (importLocation) {
-        readmeProp['import_location'] = importLocation;
-    }
-    const sparkSubmitConfig = await templates.expandTemplate(README_TEMPLATE_NAME, readmeProp);
-    const readmeFile = new File([sparkSubmitConfig], 'README.md', {type: 'text/markdown',});
-    await objects.upload(repoId, branchName, 'README.md', readmeFile);
-    await commits.commit(repoId, branchName, 'add Spark quickstart README', {user: 'Spark quickstart'},);
-}

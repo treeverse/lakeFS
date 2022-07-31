@@ -1,5 +1,5 @@
 import {useAPI} from "../../../lib/hooks/api";
-import {templates} from "../../../lib/api";
+import {commits, objects, templates} from "../../../lib/api";
 import {Error, Loading} from "../../../lib/components/controls";
 import {Box, Tab} from "@mui/material";
 import React, {useState} from "react";
@@ -12,13 +12,26 @@ const SPARK_CORE_SITE_TEMPLATE_NAME = 'spark.core.site.conf.tt';
 const SPARK_DATABRICKS_TEMPLATE_NAME = 'spark.databricks.conf.tt';
 const lakeFSURLProp = {lakefs_url: window.location.origin};
 
-export const SparkConfigStep = ({onComplete=()=>{}}) => {
+async function uploadAndCommitReadme(repoId, branchName, importLocation) {
+    const README_TEMPLATE_NAME = 'spark.metastore.readme.tt';
+    const readmeProp = {repo: repoId, branch: branchName};
+    if (importLocation) {
+        readmeProp['import_location'] = importLocation;
+    }
+    const sparkSubmitConfig = await templates.expandTemplate(README_TEMPLATE_NAME, readmeProp);
+    const readmeFile = new File([sparkSubmitConfig], 'README.md', {type: 'text/markdown',});
+    await objects.upload(repoId, branchName, 'README.md', readmeFile);
+    await commits.commit(repoId, branchName, 'add Spark quickstart README', {user: 'Spark quickstart'},);
+}
+
+export const SparkConfigStep = ({onComplete=()=>{}, repoId, branchName, importLocation }) => {
     const [selectedIndex, setSelectedIndex] = useState(0);
     const {loading, error, response} = useAPI(async () => {
         const sparkSubmitConfig = templates.expandTemplate(SPARK_SUBMIT_TEMPLATE_NAME, lakeFSURLProp);
         const sparkCoreSiteConfig = templates.expandTemplate(SPARK_CORE_SITE_TEMPLATE_NAME, lakeFSURLProp);
         const sparkDBConfig = templates.expandTemplate(SPARK_DATABRICKS_TEMPLATE_NAME, lakeFSURLProp);
-        await Promise.all([sparkSubmitConfig, sparkCoreSiteConfig, sparkDBConfig]);
+        const readmeGeneration = uploadAndCommitReadme(repoId, branchName, importLocation);
+        await Promise.all([sparkSubmitConfig, sparkCoreSiteConfig, sparkDBConfig, readmeGeneration]);
         onComplete();
         return [
             {conf: await sparkSubmitConfig, title: 'spark-submit'},
