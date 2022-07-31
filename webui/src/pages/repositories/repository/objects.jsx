@@ -298,7 +298,11 @@ const TreeContainer = ({
 
 const ReadmeContainer = ({repo, reference, path='', refreshDep=''}) => {
     const {response, error, loading} = useAPI(async () => {
-        path = path ? `${path}/README.md` : 'README.md';
+        if (path) {
+            path = path.endsWith('/') ? `${path}README.md` : `${path}/README.md`;
+        } else {
+            path = 'README.md';
+        }
         return await objects.get(repo.id, reference.id, path);
     }, [path, refreshDep]);
 
