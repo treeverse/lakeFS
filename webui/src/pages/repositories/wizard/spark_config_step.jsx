@@ -1,6 +1,6 @@
 import {useAPI} from "../../../lib/hooks/api";
 import {commits, objects, templates} from "../../../lib/api";
-import {Error, Loading, ProgressSpinner} from "../../../lib/components/controls";
+import {Error, ProgressSpinner} from "../../../lib/components/controls";
 import {Box, Tab} from "@mui/material";
 import React, {useState} from "react";
 import {TabsWrapper} from "../../../lib/components/nav";
