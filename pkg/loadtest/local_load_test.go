@@ -92,10 +92,10 @@ func GetDBMetadataManager(t *testing.T, installationID string) auth.MetadataMana
 	return auth.NewDBMetadataManager("local_load_test", installationID, conn)
 }
 
-func GetKVMetadataManager(t *testing.T, ctx context.Context, installationID string) auth.MetadataManager {
+func GetKVMetadataManager(t *testing.T, ctx context.Context, installationID, kvType string) auth.MetadataManager {
 	t.Helper()
 	kvStore := kvtest.GetStore(ctx, t)
-	return auth.NewKVMetadataManager("local_load_test", installationID, kvStore)
+	return auth.NewKVMetadataManager("local_load_test", installationID, kvType, kvStore)
 }
 
 func TestLocalLoad(t *testing.T) {
@@ -130,7 +130,7 @@ func TestLocalLoad(t *testing.T) {
 			name:           "KV service test",
 			actionsService: GetKVActionsService,
 			authService:    GetKVAuthService(t, ctx),
-			meta:           GetKVMetadataManager(t, ctx, conf.GetFixedInstallationID()),
+			meta:           GetKVMetadataManager(t, ctx, conf.GetFixedInstallationID(), conf.GetDatabaseParams().Type),
 			kvEnabled:      true,
 		},
 	}

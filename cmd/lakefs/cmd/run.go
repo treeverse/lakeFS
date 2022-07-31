@@ -179,7 +179,7 @@ var runCmd = &cobra.Command{
 					cfg.GetAuthCacheConfig(),
 					logger.WithField("service", "auth_service"))
 			}
-			authMetadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), kvStore)
+			authMetadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
 		} else {
 			multipartsTracker = multiparts.NewDBTracker(dbPool)
 			actionsStore = actions.NewActionsDBStore(dbPool)
