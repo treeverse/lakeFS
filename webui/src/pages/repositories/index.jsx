@@ -12,7 +12,7 @@ import {RepoIcon, SearchIcon} from "@primer/octicons-react";
 import moment from "moment";
 
 import Layout from "../../lib/components/layout";
-import {ActionsBar, Error, Loading, useDebouncedState} from "../../lib/components/controls";
+import {ActionsBar, Error, ExitConfirmationDialog, Loading, useDebouncedState} from "../../lib/components/controls";
 import {config, repositories} from '../../lib/api';
 import {RepositoryCreateForm} from "../../lib/components/repositoryCreateForm";
 import {useAPI, useAPIWithPagination} from "../../lib/hooks/api";
@@ -59,19 +59,35 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 };
 
 const RepositoryTemplatesModal = ({show, onExit, createRepo, repoCreationError}) => {
+    const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
+    const onHide = () => {
+        setIsExitDialogOpen(true);
+    }
     return (
-        <Modal show={show} onHide={onExit} size="lg">
-            <Modal.Header closeButton>
-                <TemplatesModalTitleContainer/>
-            </Modal.Header>
-            <Modal.Body>
-                <SparkQuickstart
-                    onExit={onExit}
-                    createRepo={createRepo}
-                    repoCreationError={repoCreationError}
-                />
-            </Modal.Body>
-        </Modal>
+        <>
+            <ExitConfirmationDialog
+                dialogAlert={'Are you sure you want to exit?'}
+                dialogDescription={'If you stop the Spark quickstart wizard in the middle of the process, you might get partial results.'}
+                onExit={() => {
+                    setIsExitDialogOpen(false);
+                    onExit();
+                }}
+                onContinue={() => setIsExitDialogOpen(false)}
+                isOpen={isExitDialogOpen}
+            />
+            <Modal show={show} onHide={onHide} size="lg">
+                <Modal.Header closeButton>
+                    <TemplatesModalTitleContainer/>
+                </Modal.Header>
+                <Modal.Body>
+                    <SparkQuickstart
+                        onExit={onExit}
+                        createRepo={createRepo}
+                        repoCreationError={repoCreationError}
+                    />
+                </Modal.Body>
+            </Modal>
+        </>
     );
 };
 

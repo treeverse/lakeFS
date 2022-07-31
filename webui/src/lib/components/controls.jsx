@@ -10,7 +10,17 @@ import Table from "react-bootstrap/Table";
 import {OverlayTrigger} from "react-bootstrap";
 import {CheckIcon, ClippyIcon, SyncIcon} from "@primer/octicons-react";
 import {Link} from "./nav";
-import {Box, CircularProgress, Typography} from "@mui/material";
+import {
+    Box,
+    Button as MuiButton,
+    CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    Typography
+} from "@mui/material";
 
 
 const defaultDebounceMs = 300;
@@ -363,4 +373,29 @@ export const ProgressSpinner = ({text, changingElement =''}) => {
             </Box>
         </Box>
     );
+}
+
+export const ExitConfirmationDialog = ({dialogAlert, dialogDescription, onExit, onContinue, isOpen=false}) => {
+    return (
+        <Dialog
+            open={isOpen}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+        >
+            <DialogTitle id="alert-dialog-title">
+                {dialogAlert}
+            </DialogTitle>
+            <DialogContent>
+                <DialogContentText id="alert-dialog-description">
+                    {dialogDescription}
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+                <MuiButton onClick={onContinue} autoFocus>Cancel</MuiButton>
+                <MuiButton onClick={onExit}>
+                    Exit
+                </MuiButton>
+            </DialogActions>
+        </Dialog>
+    )
 }
