@@ -1114,6 +1114,9 @@ func (s *KVAuthService) markTokenSingleUse(ctx context.Context, tokenID string, 
 	m := model.TokenData{TokenId: tokenID, ExpiredAt: timestamppb.New(tokenExpiresAt)}
 	err := s.store.SetMsgIf(ctx, model.PartitionKey, tokenPath, &m, nil)
 	if err != nil {
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			return false, nil
+		}
 		return false, err
 	}
 	// TODO(issue 3500) - delete expired reset password tokens
