@@ -9,7 +9,7 @@ This repository was created with the Spark Quickstart wizard.
 {{if .Query.import_location -}}
 1. Imported your data from `{{ .Query.import_location }}`.
 {{- end}}
-1. Generated a configuration snippet to get started with Spark and lakeFS.
+1. Generated configuration snippets to get started with Spark and lakeFS.
 
 ### How to use Spark with lakeFS
 
