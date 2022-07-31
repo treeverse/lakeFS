@@ -85,6 +85,7 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
                 onComplete={(values) => {
                     completedStep(values, 0);
                 }} />,
+            hideNextUntilCompletion: true,
         },
         {
             label: 'Import Data',
