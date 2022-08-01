@@ -27,6 +27,7 @@ const ImportDataStep = ({repoId, branchName, onComplete, prependPath = '', updat
     const showError = importError ? importError : error;
 
     const doImport = async () => {
+        setImportError(null);
         updateImportInProgress(true);
         setImportPhase(ImportPhase.InProgress);
         const updateStateFromImport = ({importPhase, numObj}) => {

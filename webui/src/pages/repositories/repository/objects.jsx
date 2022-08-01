@@ -296,10 +296,15 @@ const TreeContainer = ({
     );
 }
 
-const ReadmeContainer = ({repo, reference}) => {
+const ReadmeContainer = ({repo, reference, path='', refreshDep=''}) => {
     const {response, error, loading} = useAPI(async () => {
-        return await objects.get(repo.id, reference.id, 'README.md');
-    });
+        if (path) {
+            path = path.endsWith('/') ? `${path}README.md` : `${path}/README.md`;
+        } else {
+            path = 'README.md';
+        }
+        return await objects.get(repo.id, reference.id, path);
+    }, [path, refreshDep]);
 
     if (loading || error) {
         return <></>;
@@ -411,7 +416,7 @@ const ObjectsBrowser = ({config, configError}) => {
                     }}
                     onRefresh={refresh}/>
 
-                <ReadmeContainer reference={reference} repo={repo} />
+                <ReadmeContainer reference={reference} repo={repo} path={path} refreshDep={refreshToken}/>
             </Box>
         </>
     );
