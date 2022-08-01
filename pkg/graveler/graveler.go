@@ -1989,38 +1989,32 @@ func (g *KVGraveler) ResetKey(ctx context.Context, repositoryID RepositoryID, br
 	if isProtected {
 		return ErrWriteToProtectedBranch
 	}
-	// New sealed tokens list after change includes current staging token
-	newSealedTokens := make([]StagingToken, 0)
-	newStagingToken := generateStagingToken(repositoryID, branchID)
 
-	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
-		newSealedTokens = []StagingToken{branch.StagingToken}
-		newSealedTokens = append(newSealedTokens, branch.SealedTokens...)
-
-		// Reset the key on the new staging token
-		staged, err := g.getFromStagingArea(ctx, branch, key)
-		if err != nil {
-			if errors.Is(err, ErrNotFound) { // If key is not in staging => nothing to do
-				return nil, nil
-			}
-			return nil, err
-		}
-		err = g.resetKey(ctx, repositoryID, branch, key, staged, newStagingToken)
-		if err != nil {
-			if !errors.Is(err, ErrNotFound) { // Not found in staging => ignore
-				return nil, err
-			}
-		}
-
-		// replace branch tokens with new staging/sealed tokens
-		branch.StagingToken = newStagingToken
-		branch.SealedTokens = newSealedTokens
-		return branch, nil
-	})
-	if err != nil { // Cleanup of new staging token in case of error
-		g.dropTokens(ctx, newStagingToken)
+	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return fmt.Errorf("getting branch: %w", err)
 	}
-	return err
+
+	staged, err := g.getFromStagingArea(ctx, branch, key)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) { // If key is not in staging => nothing to do
+			return nil
+		}
+		return err
+	}
+
+	err = g.resetKey(ctx, repositoryID, branch, key, staged, branch.StagingToken)
+	if err != nil {
+		if !errors.Is(err, ErrNotFound) { // Not found in staging => ignore
+			return err
+		}
+	}
+
+	// The branch staging-token might have changed since we read it, and that's fine.
+	// If a commit started, we may or may not include it in the commit.
+	// We don't need to repeat the reset action for the new staging-token, since
+	// every write to it started after the reset, hench it's ok to ignore it.
+	return nil
 }
 
 func (g *KVGraveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
