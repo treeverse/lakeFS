@@ -897,7 +897,7 @@ func (s *DBAuthService) markTokenSingleUse(ctx context.Context, tokenID string, 
 	// cleanup old tokens
 	_, err = s.db.Exec(ctx, `DELETE FROM auth_expired_tokens WHERE token_expires_at < $1`, time.Now())
 	if err != nil {
-		s.log.WithError(err).Error("delete expired tokens")
+		s.log.WithError(err).Error("Delete expired tokens")
 	}
 	return canUseToken, nil
 }
@@ -1230,6 +1230,10 @@ func exportExpiredTokens(ctx context.Context, d *pgxpool.Pool, je *json.Encoder)
 		err := scanner.Scan(&token)
 		if err != nil {
 			return err
+		}
+		if token.TokenExpiration.Before(time.Now()) {
+			// token expired - no need to export it
+			continue
 		}
 		kvToken := &model.TokenData{
 			TokenId:   token.TokenID,
