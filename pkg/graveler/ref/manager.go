@@ -3,6 +3,7 @@ package ref
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -71,9 +72,27 @@ func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, addressPro
 	}
 }
 
+func (m *KVManager) updateRepoState(ctx context.Context, repo *graveler.RepositoryRecord, state graveler.RepositoryState) error {
+	repo.State = state
+	return m.kvStore.SetMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repo.RepositoryID)), graveler.ProtoFromRepo(repo))
+}
+
+func (m *KVManager) getRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, error) {
+	data := graveler.RepositoryData{}
+	_, err := m.kvStore.GetMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID)), &data)
+	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			err = graveler.ErrRepositoryNotFound
+		}
+		return nil, err
+	}
+
+	return graveler.RepoFromProto(&data).Repository, nil
+}
+
 // getRepositoryRec returns RepositoryRecord
 func (m *KVManager) getRepositoryRec(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
-	repo, err := m.GetRepository(ctx, repositoryID)
+	repo, err := m.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -84,15 +103,19 @@ func (m *KVManager) getRepositoryRec(ctx context.Context, repositoryID graveler.
 }
 
 func (m *KVManager) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, error) {
-	repo := graveler.RepositoryData{}
-	_, err := m.kvStore.GetMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID)), &repo)
+	repo, err := m.getRepository(ctx, repositoryID)
 	if err != nil {
-		if errors.Is(err, kv.ErrNotFound) {
-			err = graveler.ErrRepositoryNotFound
-		}
 		return nil, err
 	}
-	return graveler.RepoFromProto(&repo).Repository, nil
+
+	switch repo.State {
+	case graveler.RepositoryStateActive:
+		return repo, nil
+	case graveler.RepositoryStateDeleted:
+		return nil, graveler.ErrRepositoryInDeletion
+	default:
+		return nil, fmt.Errorf("invalid repository state %v: %w", repo.State, graveler.ErrInvalid)
+	}
 }
 
 func (m *KVManager) createBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
@@ -101,6 +124,7 @@ func (m *KVManager) createBareRepository(ctx context.Context, repositoryID grave
 		Repository:   &repository,
 	}
 	repo := graveler.ProtoFromRepo(repoRecord)
+
 	err := m.kvStore.SetMsgIf(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID)), repo, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
@@ -111,7 +135,7 @@ func (m *KVManager) createBareRepository(ctx context.Context, repositoryID grave
 	return nil
 }
 
-func (m *KVManager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository, token graveler.StagingToken) error {
+func (m *KVManager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
 	firstCommit := graveler.NewCommit()
 	firstCommit.Message = graveler.FirstCommitMsg
 	firstCommit.Generation = 1
@@ -126,7 +150,17 @@ func (m *KVManager) CreateRepository(ctx context.Context, repositoryID graveler.
 		return err
 	}
 
-	return m.CreateBranch(ctx, repositoryID, repository.DefaultBranchID, graveler.Branch{CommitID: commitID, StagingToken: token})
+	branch := graveler.Branch{
+		CommitID:     commitID,
+		StagingToken: graveler.GenerateStagingToken(repositoryID, repository.DefaultBranchID),
+		SealedTokens: nil,
+	}
+	err = m.CreateBranch(ctx, repositoryID, repository.DefaultBranchID, branch)
+	if err != nil {
+		return err
+	}
+
+	return m.updateRepoState(ctx, &graveler.RepositoryRecord{RepositoryID: repositoryID, Repository: &repository}, graveler.RepositoryStateActive)
 }
 
 func (m *KVManager) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
@@ -140,10 +174,7 @@ func (m *KVManager) ListRepositories(ctx context.Context) (graveler.RepositoryIt
 func (m *KVManager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
 	// TODO: delete me
 	// temp code to align with DB manager. Delete once https://github.com/treeverse/lakeFS/issues/3640 is done
-	_, err := m.GetRepository(ctx, repositoryID)
-	if errors.Is(err, kv.ErrNotFound) {
-		return graveler.ErrRepositoryNotFound
-	}
+	_, err := m.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}

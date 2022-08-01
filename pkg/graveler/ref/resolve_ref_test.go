@@ -21,7 +21,7 @@ func TestResolveRawRef(t *testing.T) {
 			StorageNamespace: "s3://",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",
-		}, "token"))
+		}))
 
 		mainBranch, err := tt.refManager.GetBranch(ctx, "repo1", "main")
 		if err != nil {
@@ -258,7 +258,7 @@ func TestResolveRef_SameDate(t *testing.T) {
 			StorageNamespace: "s3://",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",
-		}, ""))
+		}))
 
 		ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
 		addCommit := func(message string, parents ...graveler.CommitID) graveler.CommitID {
@@ -330,7 +330,7 @@ func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 			StorageNamespace: "s3://",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",
-		}, ""))
+		}))
 
 		ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
 		addCommit := func(parents ...graveler.CommitID) graveler.CommitID {

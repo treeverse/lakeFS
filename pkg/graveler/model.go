@@ -1,6 +1,8 @@
 package graveler
 
 import (
+	"fmt"
+
 	"github.com/treeverse/lakefs/pkg/kv"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -11,6 +13,14 @@ const (
 	tagsPrefix        = "tags"
 	branchesPrefix    = "branches"
 	commitsPrefix     = "commits"
+)
+
+type RepositoryState uint8
+
+const (
+	RepositoryStateInit RepositoryState = iota
+	RepositoryStateActive
+	RepositoryStateDeleted
 )
 
 func RepoPath(repoID RepositoryID) string {
@@ -26,7 +36,7 @@ func RepositoriesPartition() string {
 // The Repository object itself is found under the common RepositoriesPartition, as it is needed to
 // generate this partition
 func RepoPartition(repo *RepositoryRecord) string {
-	return repo.RepositoryID.String()
+	return fmt.Sprintf("%s-%s", repo.RepositoryID.String(), repo.InstanceUID)
 }
 
 func StagingTokenPartition(token StagingToken) string {
@@ -90,6 +100,8 @@ func RepoFromProto(pb *RepositoryData) *RepositoryRecord {
 			StorageNamespace: StorageNamespace(pb.StorageNamespace),
 			DefaultBranchID:  BranchID(pb.DefaultBranchId),
 			CreationDate:     pb.CreationDate.AsTime(),
+			InstanceUID:      pb.InstanceUid,
+			State:            RepositoryState(pb.State),
 		},
 	}
 }
@@ -100,6 +112,8 @@ func ProtoFromRepo(repo *RepositoryRecord) *RepositoryData {
 		StorageNamespace: repo.Repository.StorageNamespace.String(),
 		DefaultBranchId:  repo.Repository.DefaultBranchID.String(),
 		CreationDate:     timestamppb.New(repo.Repository.CreationDate),
+		State:            uint32(repo.State),
+		InstanceUid:      repo.InstanceUID,
 	}
 }
 

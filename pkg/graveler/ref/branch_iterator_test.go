@@ -21,7 +21,7 @@ func TestDBBranchIterator(t *testing.T) {
 		StorageNamespace: "s3://foo",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, ""))
+	}))
 
 	// prepare data
 	for _, b := range branches {
@@ -91,7 +91,7 @@ func TestBranchSimpleIterator(t *testing.T) {
 			DefaultBranchID:  "main",
 		},
 	}
-	testutil.Must(t, r.CreateRepository(ctx, repo.RepositoryID, *repo.Repository, ""))
+	testutil.Must(t, r.CreateRepository(ctx, repo.RepositoryID, *repo.Repository))
 
 	// prepare data
 	for _, b := range branches {
@@ -167,7 +167,7 @@ func TestBranchByCommitIterator(t *testing.T) {
 			DefaultBranchID:  "main",
 		},
 	}
-	testutil.Must(t, r.CreateRepository(ctx, repo.RepositoryID, *repo.Repository, ""))
+	testutil.Must(t, r.CreateRepository(ctx, repo.RepositoryID, *repo.Repository))
 
 	// prepare data
 	for i, b := range branches {

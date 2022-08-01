@@ -10,6 +10,8 @@ message RepositoryData {
   string storage_namespace = 2;
   string default_branch_id = 3;
   google.protobuf.Timestamp creation_date = 4;
+  uint32 state = 5;
+  string instance_uid = 6;
 }
 
 message BranchData {

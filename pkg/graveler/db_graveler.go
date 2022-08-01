@@ -45,8 +45,7 @@ func (g *DBGraveler) CreateRepository(ctx context.Context, repositoryID Reposito
 		CreationDate:     time.Now(),
 		DefaultBranchID:  branchID,
 	}
-	stagingToken := generateStagingToken(repositoryID, branchID)
-	err := g.RefManager.CreateRepository(ctx, repositoryID, repo, stagingToken)
+	err := g.RefManager.CreateRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +126,7 @@ func (g *DBGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 	}
 	newBranch := Branch{
 		CommitID:     reference.CommitID,
-		StagingToken: generateStagingToken(repositoryID, branchID),
+		StagingToken: GenerateStagingToken(repositoryID, branchID),
 	}
 
 	preRunID := g.hooks.NewRunID()
@@ -753,7 +752,7 @@ func (g *DBGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		}
 		err = g.RefManager.SetBranch(ctx, repositoryID, branchID, Branch{
 			CommitID:     newCommit,
-			StagingToken: generateStagingToken(repositoryID, branchID),
+			StagingToken: GenerateStagingToken(repositoryID, branchID),
 		})
 		if err != nil {
 			return "", fmt.Errorf("set branch commit %s: %w", newCommit, err)
@@ -1347,7 +1346,7 @@ func (g *DBGraveler) LoadBranches(ctx context.Context, repositoryID RepositoryID
 		branchID := BranchID(branch.Id)
 		err = g.RefManager.SetBranch(ctx, repositoryID, branchID, Branch{
 			CommitID:     CommitID(branch.CommitId),
-			StagingToken: generateStagingToken(repositoryID, branchID),
+			StagingToken: GenerateStagingToken(repositoryID, branchID),
 		})
 		if err != nil {
 			return err

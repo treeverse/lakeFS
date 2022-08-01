@@ -23,7 +23,7 @@ func TestDBTagIterator(t *testing.T) {
 			DefaultBranchID:  "main",
 		},
 	}
-	testutil.Must(t, r.CreateRepository(ctx, repo.RepositoryID, *repo.Repository, ""))
+	testutil.Must(t, r.CreateRepository(ctx, repo.RepositoryID, *repo.Repository))
 
 	// prepare data
 	for _, b := range tags {
@@ -125,7 +125,7 @@ func TestKVTagIterator(t *testing.T) {
 			DefaultBranchID:  "main",
 		},
 	}
-	testutil.Must(t, r.CreateRepository(ctx, repo.RepositoryID, *repo.Repository, ""))
+	testutil.Must(t, r.CreateRepository(ctx, repo.RepositoryID, *repo.Repository))
 
 	// prepare data
 	for _, b := range tags {
