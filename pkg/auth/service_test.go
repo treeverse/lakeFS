@@ -1324,6 +1324,7 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 		name               string
 		responseStatusCode int
 		userID             string
+		userIntID          int64
 		users              []string
 		expectedUserName   string
 		expectedErr        error
@@ -1332,6 +1333,7 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 			name:               "one_user",
 			responseStatusCode: http.StatusOK,
 			userID:             "1",
+			userIntID:          1,
 			users:              []string{"one"},
 			expectedUserName:   "one",
 			expectedErr:        nil,
@@ -1339,6 +1341,7 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 			name:               "no_users",
 			responseStatusCode: http.StatusOK,
 			userID:             "2",
+			userIntID:          2,
 			users:              []string{},
 			expectedUserName:   "",
 			expectedErr:        db.ErrNotFound,
@@ -1347,6 +1350,7 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 			name:               "two_responses",
 			responseStatusCode: http.StatusOK,
 			userID:             "3",
+			userIntID:          3,
 			users:              []string{"one", "two"},
 			expectedUserName:   "",
 			expectedErr:        auth.ErrNonUnique,
@@ -1364,9 +1368,8 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 				Pagination: auth.Pagination{},
 				Results:    returnedUsers,
 			}
-			uid, err := auth.UserIDToInt(tt.userID)
-			testutil.Must(t, err)
-			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Eq(&auth.ListUsersParams{Id: &uid})).Return(&auth.ListUsersResponse{
+
+			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Eq(&auth.ListUsersParams{Id: &tt.userIntID})).Return(&auth.ListUsersResponse{
 				HTTPResponse: &http.Response{
 					StatusCode: tt.responseStatusCode,
 				},

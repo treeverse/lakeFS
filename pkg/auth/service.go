@@ -1181,7 +1181,7 @@ func (a *APIAuthService) DeleteUser(ctx context.Context, username string) error 
 	return a.validateResponse(resp, http.StatusNoContent)
 }
 
-func UserIDToInt(userID string) (int64, error) {
+func userIDToInt(userID string) (int64, error) {
 	const base, bitSize = 10, 64
 	return strconv.ParseInt(userID, base, bitSize)
 }
@@ -1220,7 +1220,7 @@ func (a *APIAuthService) getFirstUser(ctx context.Context, userKey userKey, para
 }
 
 func (a *APIAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
-	intID, err := UserIDToInt(userID)
+	intID, err := userIDToInt(userID)
 	if err != nil {
 		return nil, fmt.Errorf("userID as int64: %w", err)
 	}
