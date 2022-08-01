@@ -1423,7 +1423,7 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 			source:             "internal",
 			responseStatusCode: http.StatusBadRequest,
 			expectedResponseID: auth.InvalidUserID,
-			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
+			expectedErr:        auth.ErrInvalidRequest,
 		},
 		{
 			name:               "user_exists",
@@ -1638,7 +1638,7 @@ func TestAPIAuthService_GetUser(t *testing.T) {
 			friendlyName:       "",
 			source:             "",
 			responseStatusCode: http.StatusBadRequest,
-			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
+			expectedErr:        auth.ErrInvalidRequest,
 		},
 		{
 			name:               "internal_error",
@@ -1712,7 +1712,7 @@ func TestAPIAuthService_GetGroup(t *testing.T) {
 			name:               "invalid_group",
 			groupName:          "",
 			responseStatusCode: http.StatusBadRequest,
-			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
+			expectedErr:        auth.ErrInvalidRequest,
 		},
 		{
 			name:        "internal_error",
@@ -1770,7 +1770,7 @@ func TestAPIAuthService_GetCredentials(t *testing.T) {
 			name:               "invalid_credentials",
 			reqAccessKey:       "AKIA",
 			responseStatusCode: http.StatusBadRequest,
-			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
+			expectedErr:        auth.ErrInvalidRequest,
 		},
 		{
 			name:         "internal_error",
@@ -1846,7 +1846,7 @@ func TestAPIAuthService_GetCredentialsForUser(t *testing.T) {
 			name:               "invalid_credentials",
 			reqAccessKey:       "AKIA",
 			responseStatusCode: http.StatusBadRequest,
-			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
+			expectedErr:        auth.ErrInvalidRequest,
 		},
 		{
 			name:         "internal_error",
@@ -2306,7 +2306,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 			firstStatementAction:   []string{"action"},
 			firstStatementEffect:   "effect",
 			firstStatementResource: "resource",
-			responseStatusCode:     http.StatusBadRequest, // TODO(Guys): should be 409
+			responseStatusCode:     http.StatusConflict,
 			expectedErr:            auth.ErrAlreadyExists,
 		},
 		{
@@ -2383,7 +2383,7 @@ func TestAPIAuthService_GetPolicy(t *testing.T) {
 			name:               "invalid_policy",
 			policyName:         "",
 			responseStatusCode: http.StatusBadRequest,
-			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
+			expectedErr:        auth.ErrInvalidRequest,
 		},
 		{
 			name:        "internal_error",
@@ -2822,7 +2822,7 @@ func TestAPIAuthService_CreateGroup(t *testing.T) {
 			name:               "invalid_group",
 			groupName:          "",
 			responseStatusCode: http.StatusBadRequest,
-			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
+			expectedErr:        auth.ErrInvalidRequest,
 		},
 		{
 			name:               "group_exists",
@@ -2897,7 +2897,7 @@ func TestAPIAuthService_CreateCredentials(t *testing.T) {
 			friendlyName:       "friendly foo",
 			source:             "internal",
 			responseStatusCode: http.StatusBadRequest,
-			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
+			expectedErr:        auth.ErrInvalidRequest,
 		},
 		{
 			name:               "internal_error",
@@ -2982,7 +2982,7 @@ func TestAPIAuthService_AddCredentials(t *testing.T) {
 			friendlyName:       "friendly foo",
 			source:             "internal",
 			responseStatusCode: http.StatusBadRequest,
-			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
+			expectedErr:        auth.ErrInvalidRequest,
 		},
 		{
 			name:               "credentials_exists",
