@@ -148,7 +148,7 @@ func newGraveler(t *testing.T, kvEnabled bool, committedManager graveler.Committ
 	branchLocker := ref.NewBranchLocker(conn)
 
 	if kvEnabled {
-		return graveler.NewKVGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
+		return graveler.NewKVGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 	}
 
 	return graveler.NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
@@ -1277,10 +1277,11 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 			if tt.args.sourceMetarange != nil {
 				expectedAppliedData = testutil.AppliedData{}
 			}
-			if kvEnabled || tt.name != "valid commit with staging and sealed" { // TODO - delete when removing the DB
-				if diff := deep.Equal(tt.fields.CommittedManager.AppliedData, expectedAppliedData); diff != nil {
-					t.Errorf("unexpected apply data %s", diff)
-				}
+			if !kvEnabled && tt.values != values {
+				t.Skip("no sealed tokens on db")
+			}
+			if diff := deep.Equal(tt.fields.CommittedManager.AppliedData, expectedAppliedData); diff != nil {
+				t.Errorf("unexpected apply data %s", diff)
 			}
 
 			if diff := deep.Equal(tt.fields.RefManager.AddedCommit, testutil.AddedCommitData{
