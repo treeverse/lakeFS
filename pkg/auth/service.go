@@ -1,6 +1,7 @@
 package auth
 
 //go:generate oapi-codegen -package auth -generate "types,client"  -o client.gen.go ../../api/authorization.yml
+//go:generate mockgen -package=mock -destination=mock/mock_auth_client.go github.com/treeverse/lakefs/pkg/auth ClientWithResponsesInterface
 
 import (
 	"context"
@@ -290,7 +291,7 @@ func (s *KVAuthService) DeleteUser(ctx context.Context, username string) error {
 
 type UserPredicate func(u *model.UserData) bool
 
-func (s *KVAuthService) getUserByPredicate(ctx context.Context, key *userKey, predicate UserPredicate) (*model.User, error) {
+func (s *KVAuthService) getUserByPredicate(ctx context.Context, key userKey, predicate UserPredicate) (*model.User, error) {
 	return s.cache.GetUser(key, func() (*model.User, error) {
 		m := &model.UserData{}
 		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), []byte(""))
@@ -321,7 +322,7 @@ func (s *KVAuthService) GetUserByID(ctx context.Context, userID string) (*model.
 }
 
 func (s *KVAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
-	return s.cache.GetUser(&userKey{username: username}, func() (*model.User, error) {
+	return s.cache.GetUser(userKey{username: username}, func() (*model.User, error) {
 		userKey := model.UserPath(username)
 		m := model.UserData{}
 		_, err := s.store.GetMsg(ctx, model.PartitionKey, userKey, &m)
@@ -336,13 +337,13 @@ func (s *KVAuthService) GetUser(ctx context.Context, username string) (*model.Us
 }
 
 func (s *KVAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return s.getUserByPredicate(ctx, &userKey{email: email}, func(value *model.UserData) bool {
+	return s.getUserByPredicate(ctx, userKey{email: email}, func(value *model.UserData) bool {
 		return value.Email == email
 	})
 }
 
 func (s *KVAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
-	return s.getUserByPredicate(ctx, &userKey{externalID: externalID}, func(value *model.UserData) bool {
+	return s.getUserByPredicate(ctx, userKey{externalID: externalID}, func(value *model.UserData) bool {
 		return value.ExternalId == externalID
 	})
 }
@@ -1124,7 +1125,7 @@ func (s *KVAuthService) markTokenSingleUse(ctx context.Context, tokenID string, 
 }
 
 type APIAuthService struct {
-	apiClient              *ClientWithResponses
+	apiClient              ClientWithResponsesInterface
 	secretStore            crypt.SecretStore
 	cache                  Cache
 	delegatedInviteHandler *EmailInviteHandler
@@ -1188,7 +1189,7 @@ func userIDToInt(userID string) (int64, error) {
 	return strconv.ParseInt(userID, base, bitSize)
 }
 
-func (a *APIAuthService) getFirstUser(ctx context.Context, userKey *userKey, params *ListUsersParams) (*model.User, error) {
+func (a *APIAuthService) getFirstUser(ctx context.Context, userKey userKey, params *ListUsersParams) (*model.User, error) {
 	return a.cache.GetUser(userKey, func() (*model.User, error) {
 		resp, err := a.apiClient.ListUsersWithResponse(ctx, params)
 		if err != nil {
@@ -1200,6 +1201,10 @@ func (a *APIAuthService) getFirstUser(ctx context.Context, userKey *userKey, par
 		results := resp.JSON200.Results
 		if len(results) == 0 {
 			return nil, ErrNotFound
+		}
+		if len(results) > 1 {
+			// make sure we work with just one user based on email
+			return nil, ErrNonUnique
 		}
 		u := results[0]
 		username := u.Username
@@ -1222,11 +1227,11 @@ func (a *APIAuthService) GetUserByID(ctx context.Context, userID string) (*model
 	if err != nil {
 		return nil, fmt.Errorf("userID as int64: %w", err)
 	}
-	return a.getFirstUser(ctx, &userKey{id: userID}, &ListUsersParams{Id: &intID})
+	return a.getFirstUser(ctx, userKey{id: userID}, &ListUsersParams{Id: &intID})
 }
 
 func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
-	return a.cache.GetUser(&userKey{username: username}, func() (*model.User, error) {
+	return a.cache.GetUser(userKey{username: username}, func() (*model.User, error) {
 		resp, err := a.apiClient.GetUserWithResponse(ctx, username)
 		if err != nil {
 			return nil, err
@@ -1251,11 +1256,11 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 }
 
 func (a *APIAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return a.getFirstUser(ctx, &userKey{email: email}, &ListUsersParams{Email: swag.String(email)})
+	return a.getFirstUser(ctx, userKey{email: email}, &ListUsersParams{Email: swag.String(email)})
 }
 
 func (a *APIAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
-	return a.getFirstUser(ctx, &userKey{externalID: externalID}, &ListUsersParams{ExternalId: swag.String(externalID)})
+	return a.getFirstUser(ctx, userKey{externalID: externalID}, &ListUsersParams{ExternalId: swag.String(externalID)})
 }
 
 func toPagination(paginator Pagination) *model.Paginator {
@@ -1618,7 +1623,7 @@ func (a *APIAuthService) GetCredentialsForUser(ctx context.Context, username, ac
 			AccessKeyID: credentials.AccessKeyId,
 			IssuedDate:  time.Unix(credentials.CreationDate, 0),
 		},
-		Username: strconv.Itoa(0),
+		Username: username,
 	}, nil
 }
 
@@ -1632,6 +1637,7 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 			return nil, err
 		}
 		credentials := resp.JSON200
+		// TODO(Guys): return username instead of this call
 		user, err := a.GetUserByID(ctx, model.ConvertDBID(credentials.UserId))
 		if err != nil {
 			return nil, err
@@ -1856,4 +1862,18 @@ func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore,
 		res.delegatedInviteHandler = NewEmailInviteHandler(res, logging.Default(), emailer)
 	}
 	return res, nil
+}
+
+func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, secretStore crypt.SecretStore, cacheConf params.ServiceCache) (*APIAuthService, error) {
+	var cache Cache
+	if cacheConf.Enabled {
+		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.EvictionJitter)
+	} else {
+		cache = &DummyCache{}
+	}
+	return &APIAuthService{
+		apiClient:   client,
+		secretStore: secretStore,
+		cache:       cache,
+	}, nil
 }
