@@ -21,7 +21,7 @@ async function uploadAndCommitReadme(repoId, branchName, importLocation) {
     const sparkSubmitConfig = await templates.expandTemplate(README_TEMPLATE_NAME, readmeProp);
     const readmeFile = new File([sparkSubmitConfig], 'README.md', {type: 'text/markdown',});
     await objects.upload(repoId, branchName, 'README.md', readmeFile);
-    await commits.commit(repoId, branchName, 'add Spark quickstart README', {user: 'Spark quickstart'},);
+    await commits.commit(repoId, branchName, 'Add Spark quickstart README', {user: 'Spark quickstart'},);
 }
 
 export const SparkConfigStep = ({onComplete=()=>{}, repoId, branchName, importLocation }) => {
