@@ -5,30 +5,27 @@ The pull-request captures the merge operation we request to apply.
 
 ### Goals
 
-- Capture request to merge a branch or specific reference
+- Capture request to merge a branch to a target branch
 - Mechanism to review, discuss and merge changes before applying to a branch
 - Automation using actions can verify / provide feedback on pull-request
 
 ### How it will work
 
 Introduce a new resource called pull-request at the repository level.
-The pull-request will hold owner (the user who created the PR), description, assignee, reviewers the source branch/reference and the target branch.
-Each reviewer can set approved/reject (or clear his response) on the PR and add comments to the PR discussion. Comments associated to a PR will a flat ordered list of posted comments on the PR level.
+The pull-request will hold owner (the user who created the PR), description, assignee, reviewers the source and target branches.
+Each reviewer can set approved/reject/clear response on the PR and add comments to the discussion. Comments associated to a PR will be rendered as a list ordered by time.
 New comments are appended to the end of the discussion and will include a time stamp, commenter and the text with the comment.
-PR can be merge operation is enabled when at least one reviewer approves or when no reviewers are assigned.
-PR can be closed at any time.
-PR will not be updated with changes to the source or destination branches, like updates to objects, commits, merges, etc. 
-Merge PR will perform a merge operation and merge the PR as merged. If a conflict or an error occurs while merging, it will be returned as a response to the request.
-When a repository is deleted, all pull-requests will be deleted with it.
+PR will enable a merge operation when at least one reviewer approves or when no reviewers are assigned.
+PR will enable request to close PR at any time.
+A source branch can only have one open PR at a time, previous pull-requests will be merged or closed. An open pull-request will include all the committed changes in the source branch automatically.
+Merging the PR will perform a merge request between the source/target branch. Merge failure will keep the PR open and a successful one will close the PR as merged.
+When a repository is deleted, all pull-requests will be deleted. When a source or destination branches are deleted - the associated pull-requests are closed.
 
-Actions - no change in current support with pre/post merge. These actions will be triggered when the PR is merged.
-A new event called 'pull-request' will be triggered when is created (or by request). These action will be triggered if no conflict found on an internal commit that will be visible to the action in order to verify the PR data.
+##### Actions
 
-
-### Other features to consider
-
-- PR auto-update with latest branch commits. PR will include the base commit and all the changes until the latest commit on branch.
-- Multiple reviews with text from each reviewer. Can be even per level of commit the current PR addresses.
-- New hook can be trigger when PR is updated. Action triggered by PR will be considered as reviewers and the status is approved/rejects based on a successful run.
-- Does a PR represent the merge itself or the request? If we have a pending request to merge a commit or a branch, any future request to merge this PR should point to the same PR? Can we have multiple PRs requesting the same merge open in parallel? Any request to merge the same branch should point to the current open PR or the same old one and open it? The PR identifier is the source commit + branch + target branch?
+No change in current support with pre/post merge. These actions will be triggered when the PR is merged.
+A new event called 'pull-request' will be triggered when a pull-request and invoke all the associated actions related to the PR.
+Actions will be queued or at least run on the latest commit in the source branch.
+The event will be triggered on PR creation and every push of new commit to the source branch will trigger the event.
+The action will have access to source branch data for verification after verification there are no conflict between the source and the target branch.
 
