@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/ident"
@@ -1796,18 +1795,17 @@ func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repositoryID Reposit
 	err := backoff.Retry(func() error {
 		// TODO(3586) - if the branch commit id hasn't changed, update the fields instead of fail
 		err := g.RefManager.BranchUpdate(ctx, repositoryID, branchID, f)
-		try += 1
-		if err == nil {
-			return nil
-		}
-		if !errors.Is(err, kv.ErrPredicateFailed) {
-			return backoff.Permanent(err)
-		}
-		if try < setTries {
-			g.log.WithField("try", try+1).
-				WithField("branchID", branchID).
-				Info("Retrying update branch")
-			return err
+		if err != nil {
+			if !errors.Is(err, kv.ErrPredicateFailed) {
+				return backoff.Permanent(err)
+			}
+			if try < setTries {
+				g.log.WithField("try", try+1).
+					WithField("branchID", branchID).
+					Info("Retrying update branch")
+				try += 1
+				return err
+			}
 		}
 		return nil
 	}, bo)
