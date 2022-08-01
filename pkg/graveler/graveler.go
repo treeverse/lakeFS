@@ -196,6 +196,16 @@ type Repository struct {
 	InstanceUID      string
 }
 
+func NewRepository(storageNamespace StorageNamespace, defaultBranchID BranchID) Repository {
+	return Repository{
+		StorageNamespace: storageNamespace,
+		CreationDate:     time.Now().UTC(),
+		DefaultBranchID:  defaultBranchID,
+		State:            RepositoryState_ACTIVE,
+		InstanceUID:      NewRepoInstanceID(),
+	}
+}
+
 type RepositoryRecord struct {
 	RepositoryID RepositoryID `db:"id"`
 	*Repository
@@ -850,13 +860,7 @@ func (g *KVGraveler) CreateRepository(ctx context.Context, repositoryID Reposito
 		return nil, err
 	}
 
-	repo := Repository{
-		StorageNamespace: storageNamespace,
-		CreationDate:     time.Now(),
-		DefaultBranchID:  branchID,
-		InstanceUID:      NewRepoID(),
-		State:            RepositoryStateInit,
-	}
+	repo := NewRepository(storageNamespace, branchID)
 	err = g.RefManager.CreateRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
@@ -870,11 +874,7 @@ func (g *KVGraveler) CreateBareRepository(ctx context.Context, repositoryID Repo
 		return nil, err
 	}
 
-	repo := Repository{
-		StorageNamespace: storageNamespace,
-		CreationDate:     time.Now(),
-		DefaultBranchID:  defaultBranchID,
-	}
+	repo := NewRepository(storageNamespace, defaultBranchID)
 	err = g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
@@ -2830,7 +2830,8 @@ type ProtectedBranchesManager interface {
 	IsBlocked(ctx context.Context, repositoryID RepositoryID, branchID BranchID, action BranchProtectionBlockedAction) (bool, error)
 }
 
-func NewRepoID() string {
+// NewRepoInstanceID Returns a new unique identifier for the repository instance
+func NewRepoInstanceID() string {
 	tm := time.Now().UTC()
 	return xid.NewWithTime(tm).String()
 }

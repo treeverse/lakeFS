@@ -707,8 +707,8 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 			}
 
 			// Create unique identifier and set repo state to active
-			r.InstanceUID = graveler.NewRepoID()
-			r.State = graveler.RepositoryStateActive
+			r.InstanceUID = graveler.NewRepoInstanceID()
+			r.State = graveler.RepositoryState_ACTIVE
 			rChan <- r
 		}
 	}

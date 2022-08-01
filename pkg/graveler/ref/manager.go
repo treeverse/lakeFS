@@ -72,11 +72,6 @@ func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, addressPro
 	}
 }
 
-func (m *KVManager) updateRepoState(ctx context.Context, repo *graveler.RepositoryRecord, state graveler.RepositoryState) error {
-	repo.State = state
-	return m.kvStore.SetMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repo.RepositoryID)), graveler.ProtoFromRepo(repo))
-}
-
 func (m *KVManager) getRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, error) {
 	data := graveler.RepositoryData{}
 	_, err := m.kvStore.GetMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID)), &data)
@@ -109,9 +104,9 @@ func (m *KVManager) GetRepository(ctx context.Context, repositoryID graveler.Rep
 	}
 
 	switch repo.State {
-	case graveler.RepositoryStateActive:
+	case graveler.RepositoryState_ACTIVE:
 		return repo, nil
-	case graveler.RepositoryStateDeleted:
+	case graveler.RepositoryState_IN_DELETION:
 		return nil, graveler.ErrRepositoryInDeletion
 	default:
 		return nil, fmt.Errorf("invalid repository state %v: %w", repo.State, graveler.ErrInvalid)
@@ -140,12 +135,9 @@ func (m *KVManager) CreateRepository(ctx context.Context, repositoryID graveler.
 	firstCommit.Message = graveler.FirstCommitMsg
 	firstCommit.Generation = 1
 
-	err := m.createBareRepository(ctx, repositoryID, repository)
-	if err != nil {
-		return err
-	}
-
-	commitID, err := m.AddCommit(ctx, repositoryID, firstCommit)
+	repo := &graveler.RepositoryRecord{RepositoryID: repositoryID, Repository: &repository}
+	// If branch creation fails - this commit will become dangling. This is a known issue that can be resolved via garbage collection
+	commitID, err := m.addCommit(ctx, graveler.RepoPartition(repo), firstCommit)
 	if err != nil {
 		return err
 	}
@@ -155,12 +147,12 @@ func (m *KVManager) CreateRepository(ctx context.Context, repositoryID graveler.
 		StagingToken: graveler.GenerateStagingToken(repositoryID, repository.DefaultBranchID),
 		SealedTokens: nil,
 	}
-	err = m.CreateBranch(ctx, repositoryID, repository.DefaultBranchID, branch)
+	err = m.createBranch(ctx, graveler.RepoPartition(repo), repository.DefaultBranchID, branch)
 	if err != nil {
 		return err
 	}
 
-	return m.updateRepoState(ctx, &graveler.RepositoryRecord{RepositoryID: repositoryID, Repository: &repository}, graveler.RepositoryStateActive)
+	return m.createBareRepository(ctx, repositoryID, repository)
 }
 
 func (m *KVManager) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
@@ -213,16 +205,21 @@ func (m *KVManager) GetBranch(ctx context.Context, repositoryID graveler.Reposit
 	return branch, err
 }
 
+func (m *KVManager) createBranch(ctx context.Context, repositoryPartition string, branchID graveler.BranchID, branch graveler.Branch) error {
+	err := m.kvStore.SetMsgIf(ctx, repositoryPartition, []byte(graveler.BranchPath(branchID)), protoFromBranch(branchID, &branch), nil)
+	if errors.Is(err, kv.ErrPredicateFailed) {
+		err = graveler.ErrBranchExists
+	}
+	return err
+}
+
 func (m *KVManager) CreateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, branch graveler.Branch) error {
 	repo, err := m.getRepositoryRec(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
-	err = m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(repo), []byte(graveler.BranchPath(branchID)), protoFromBranch(branchID, &branch), nil)
-	if errors.Is(err, kv.ErrPredicateFailed) {
-		err = graveler.ErrBranchExists
-	}
-	return err
+
+	return m.createBranch(ctx, graveler.RepoPartition(repo), branchID, branch)
 }
 
 func (m *KVManager) SetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, branch graveler.Branch) error {
@@ -380,21 +377,26 @@ func (m *KVManager) GetCommit(ctx context.Context, repositoryID graveler.Reposit
 	return graveler.CommitFromProto(&c), nil
 }
 
-func (m *KVManager) AddCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {
-	repo, err := m.getRepositoryRec(ctx, repositoryID)
-	if err != nil {
-		return "", err
-	}
+func (m *KVManager) addCommit(ctx context.Context, repoPartition string, commit graveler.Commit) (graveler.CommitID, error) {
 	commitID := m.addressProvider.ContentAddress(commit)
 	c := graveler.ProtoFromCommit(graveler.CommitID(commitID), &commit)
 	commitKey := graveler.CommitPath(graveler.CommitID(commitID))
-	err = m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(repo), []byte(commitKey), c, nil)
+	err := m.kvStore.SetMsgIf(ctx, repoPartition, []byte(commitKey), c, nil)
 	// commits are written based on their content hash, if we insert the same ID again,
 	// it will necessarily have the same attributes as the existing one, so if a commit already exists doesn't return an error
 	if err != nil && !errors.Is(err, kv.ErrPredicateFailed) {
 		return "", err
 	}
 	return graveler.CommitID(commitID), nil
+}
+
+func (m *KVManager) AddCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
+	if err != nil {
+		return "", err
+	}
+
+	return m.addCommit(ctx, graveler.RepoPartition(repo), commit)
 }
 
 func (m *KVManager) RemoveCommit(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) error {

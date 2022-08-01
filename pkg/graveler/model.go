@@ -15,14 +15,6 @@ const (
 	commitsPrefix     = "commits"
 )
 
-type RepositoryState uint8
-
-const (
-	RepositoryStateInit RepositoryState = iota
-	RepositoryStateActive
-	RepositoryStateDeleted
-)
-
 func RepoPath(repoID RepositoryID) string {
 	return kv.FormatPath(reposPrefix, repoID.String())
 }
@@ -101,7 +93,7 @@ func RepoFromProto(pb *RepositoryData) *RepositoryRecord {
 			DefaultBranchID:  BranchID(pb.DefaultBranchId),
 			CreationDate:     pb.CreationDate.AsTime(),
 			InstanceUID:      pb.InstanceUid,
-			State:            RepositoryState(pb.State),
+			State:            pb.State,
 		},
 	}
 }
@@ -112,7 +104,7 @@ func ProtoFromRepo(repo *RepositoryRecord) *RepositoryData {
 		StorageNamespace: repo.Repository.StorageNamespace.String(),
 		DefaultBranchId:  repo.Repository.DefaultBranchID.String(),
 		CreationDate:     timestamppb.New(repo.Repository.CreationDate),
-		State:            uint32(repo.State),
+		State:            repo.State,
 		InstanceUid:      repo.InstanceUID,
 	}
 }
