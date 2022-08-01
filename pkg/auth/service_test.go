@@ -815,13 +815,13 @@ func TestDbAuthService_AddCredentials(t *testing.T) {
 				ExpectErr: true,
 			},
 			{
-				Name:      "invalid key",
+				Name:      "invalid_key",
 				Key:       "i",
 				Secret:    "secret",
 				ExpectErr: true,
 			},
 			{
-				Name:      "invalid secret",
+				Name:      "invalid_secret",
 				Key:       validKeyID,
 				Secret:    "",
 				ExpectErr: true,
@@ -1329,14 +1329,14 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 		expectedErr        error
 	}{
 		{
-			name:               "one user",
+			name:               "one_user",
 			responseStatusCode: http.StatusOK,
 			userID:             "1",
 			users:              []string{"one"},
 			expectedUserName:   "one",
 			expectedErr:        nil,
 		}, {
-			name:               "no users",
+			name:               "no_users",
 			responseStatusCode: http.StatusOK,
 			userID:             "2",
 			users:              []string{},
@@ -1344,7 +1344,7 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 			expectedErr:        db.ErrNotFound,
 		},
 		{
-			name:               "two responses",
+			name:               "two_responses",
 			responseStatusCode: http.StatusOK,
 			userID:             "3",
 			users:              []string{"one", "two"},
@@ -1364,7 +1364,9 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 				Pagination: auth.Pagination{},
 				Results:    returnedUsers,
 			}
-			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Any()).Return(&auth.ListUsersResponse{
+			uid, err := auth.UserIDToInt(tt.userID)
+			testutil.Must(t, err)
+			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Eq(&auth.ListUsersParams{Id: &uid})).Return(&auth.ListUsersResponse{
 				HTTPResponse: &http.Response{
 					StatusCode: tt.responseStatusCode,
 				},
@@ -1414,7 +1416,7 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 			expectedErr:        nil,
 		},
 		{
-			name:               "Invalid user",
+			name:               "invalid_user",
 			userName:           "",
 			email:              "foo@gmail.com",
 			friendlyName:       "friendly foo",
@@ -1424,7 +1426,7 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
 		},
 		{
-			name:               "user exists",
+			name:               "user_exists",
 			userName:           "existingUser",
 			email:              "foo@gmail.com",
 			friendlyName:       "friendly foo",
@@ -1434,7 +1436,7 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 			expectedErr:        auth.ErrAlreadyExists,
 		},
 		{
-			name:               "Internal error",
+			name:               "internal_error",
 			userName:           "user",
 			email:              "foo@gmail.com",
 			source:             "internal",
@@ -1491,7 +1493,7 @@ func TestAPIAuthService_DeleteUser(t *testing.T) {
 			expectedErr:        nil,
 		},
 		{
-			name:               "non existing user",
+			name:               "non_existing_user",
 			userName:           "nobody",
 			responseStatusCode: http.StatusNotFound,
 			expectedErr:        auth.ErrNotFound, // TODO(Guys): change this once we change this to the right error
@@ -1525,20 +1527,20 @@ func TestAPIAuthService_GetUserByEmail(t *testing.T) {
 		expectedErr        error
 	}{
 		{
-			name:               "one user",
+			name:               "one_user",
 			responseStatusCode: http.StatusOK,
 			users:              []string{"one"},
 			expectedUserName:   "one",
 			expectedErr:        nil,
 		}, {
-			name:               "no users",
+			name:               "no_users",
 			responseStatusCode: http.StatusOK,
 			users:              []string{},
 			expectedUserName:   "",
 			expectedErr:        db.ErrNotFound,
 		},
 		{
-			name:               "two responses",
+			name:               "two_responses",
 			responseStatusCode: http.StatusOK,
 			users:              []string{"one", "two"},
 			expectedUserName:   "",
@@ -1626,7 +1628,7 @@ func TestAPIAuthService_GetUser(t *testing.T) {
 			expectedErr:        nil,
 		},
 		{
-			name:               "Invalid user",
+			name:               "invalid_user",
 			userName:           "",
 			email:              "",
 			encryptedPassword:  nil,
@@ -1636,7 +1638,7 @@ func TestAPIAuthService_GetUser(t *testing.T) {
 			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
 		},
 		{
-			name:               "Internal error",
+			name:               "internal_error",
 			userName:           "user",
 			email:              "",
 			encryptedPassword:  nil,
@@ -1704,13 +1706,13 @@ func TestAPIAuthService_GetGroup(t *testing.T) {
 			expectedErr:        nil,
 		},
 		{
-			name:               "Invalid group",
+			name:               "invalid_group",
 			groupName:          "",
 			responseStatusCode: http.StatusBadRequest,
 			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
 		},
 		{
-			name:        "Internal error",
+			name:        "internal_error",
 			groupName:   "group",
 			expectedErr: auth.ErrUnexpectedStatusCode,
 		},
@@ -1762,13 +1764,13 @@ func TestAPIAuthService_GetCredentials(t *testing.T) {
 			expectedErr:        nil,
 		},
 		{
-			name:               "Invalid credentials",
+			name:               "invalid_credentials",
 			reqAccessKey:       "AKIA",
 			responseStatusCode: http.StatusBadRequest,
 			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
 		},
 		{
-			name:         "Internal error",
+			name:         "internal_error",
 			reqAccessKey: "AKIA",
 			expectedErr:  auth.ErrUnexpectedStatusCode,
 		},
@@ -1838,13 +1840,13 @@ func TestAPIAuthService_GetCredentialsForUser(t *testing.T) {
 			expectedErr:        nil,
 		},
 		{
-			name:               "Invalid credentials",
+			name:               "invalid_credentials",
 			reqAccessKey:       "AKIA",
 			responseStatusCode: http.StatusBadRequest,
 			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
 		},
 		{
-			name:         "Internal error",
+			name:         "internal_error",
 			reqAccessKey: "AKIA",
 			expectedErr:  auth.ErrUnexpectedStatusCode,
 		},
@@ -2025,7 +2027,7 @@ func TestAPIAuthService_AddUserToGroup(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			name:        "no error",
+			name:        "no_error",
 			groupName:   "group_name",
 			username:    "user_ame",
 			mockErr:     nil,
@@ -2033,7 +2035,7 @@ func TestAPIAuthService_AddUserToGroup(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name:        "api internal error ",
+			name:        "api_internal_error",
 			groupName:   "gname",
 			username:    "uname",
 			mockErr:     mockErr,
@@ -2041,7 +2043,7 @@ func TestAPIAuthService_AddUserToGroup(t *testing.T) {
 			expectedErr: mockErr,
 		},
 		{
-			name:        "not found",
+			name:        "not_found",
 			groupName:   "no_group",
 			username:    "username",
 			mockErr:     nil,
@@ -2077,21 +2079,21 @@ func TestAPIAuthService_DeleteGroup(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			name:        "no error",
+			name:        "no_error",
 			groupName:   "group_name",
 			mockErr:     nil,
 			statusCode:  http.StatusNoContent,
 			expectedErr: nil,
 		},
 		{
-			name:        "api error ",
+			name:        "api_error",
 			groupName:   "group_name",
 			mockErr:     mockErr,
 			statusCode:  http.StatusInternalServerError,
 			expectedErr: mockErr,
 		},
 		{
-			name:        "not found",
+			name:        "not_found",
 			groupName:   "no_group",
 			mockErr:     nil,
 			statusCode:  http.StatusNotFound,
@@ -2127,7 +2129,7 @@ func TestAPIAuthService_RemoveUserFromGroup(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			name:        "no error",
+			name:        "no_error",
 			groupName:   "group_name",
 			username:    "user_name",
 			mockErr:     nil,
@@ -2135,7 +2137,7 @@ func TestAPIAuthService_RemoveUserFromGroup(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name:        "api error ",
+			name:        "api_error",
 			groupName:   "group_name",
 			username:    "user_name",
 			mockErr:     mockErr,
@@ -2143,7 +2145,7 @@ func TestAPIAuthService_RemoveUserFromGroup(t *testing.T) {
 			expectedErr: mockErr,
 		},
 		{
-			name:        "not found",
+			name:        "not_found",
 			groupName:   "group_name",
 			username:    "user_name",
 			mockErr:     nil,
@@ -2279,7 +2281,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 			expectedErr:            nil,
 		},
 		{
-			name:                   "Invalid policy",
+			name:                   "invalid_policy",
 			firstStatementAction:   []string{"action"},
 			firstStatementEffect:   "effect",
 			firstStatementResource: "resource",
@@ -2288,7 +2290,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 			expectedErr:            model.ErrValidationError, // TODO(Guys): change this once we change this to the right error
 		},
 		{
-			name:                   "policy exists",
+			name:                   "policy_exists",
 			policyName:             "existingPolicy",
 			firstStatementAction:   []string{"action"},
 			firstStatementEffect:   "effect",
@@ -2297,7 +2299,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 			expectedErr:            auth.ErrAlreadyExists,
 		},
 		{
-			name:                   "Internal error",
+			name:                   "internal_error",
 			firstStatementAction:   []string{"action"},
 			firstStatementEffect:   "effect",
 			firstStatementResource: "resource",
@@ -2367,13 +2369,13 @@ func TestAPIAuthService_GetPolicy(t *testing.T) {
 			expectedErr:            nil,
 		},
 		{
-			name:               "Invalid policy",
+			name:               "invalid_policy",
 			policyName:         "",
 			responseStatusCode: http.StatusBadRequest,
 			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
 		},
 		{
-			name:        "Internal error",
+			name:        "internal_error",
 			policyName:  "policy",
 			expectedErr: auth.ErrUnexpectedStatusCode,
 		},
@@ -2558,21 +2560,21 @@ func TestAPIAuthService_DeletePolicy(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			name:        "no error",
+			name:        "no_error",
 			policyName:  "policy_name",
 			mockErr:     nil,
 			statusCode:  http.StatusNoContent,
 			expectedErr: nil,
 		},
 		{
-			name:        "api error ",
+			name:        "api_error",
 			policyName:  "policy_name",
 			mockErr:     mockErr,
 			statusCode:  http.StatusInternalServerError,
 			expectedErr: mockErr,
 		},
 		{
-			name:        "not found",
+			name:        "not_found",
 			policyName:  "no_policy",
 			mockErr:     nil,
 			statusCode:  http.StatusNotFound,
@@ -2608,7 +2610,7 @@ func TestAPIAuthService_DetachPolicyFrom(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			name:        "no error",
+			name:        "no_error",
 			fromName:    "from_name",
 			username:    "username",
 			mockErr:     nil,
@@ -2616,7 +2618,7 @@ func TestAPIAuthService_DetachPolicyFrom(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name:        "api error ",
+			name:        "api_error",
 			fromName:    "from_name",
 			username:    "username",
 			mockErr:     mockErr,
@@ -2624,7 +2626,7 @@ func TestAPIAuthService_DetachPolicyFrom(t *testing.T) {
 			expectedErr: mockErr,
 		},
 		{
-			name:        "not found",
+			name:        "not_found",
 			fromName:    "no_from",
 			username:    "userName",
 			mockErr:     nil,
@@ -2674,7 +2676,7 @@ func TestAPIAuthService_AttachPolicyTo(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			name:        "no error",
+			name:        "no_error",
 			fromName:    "from_name",
 			username:    "username",
 			mockErr:     nil,
@@ -2682,7 +2684,7 @@ func TestAPIAuthService_AttachPolicyTo(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name:        "api error ",
+			name:        "api_error",
 			fromName:    "from_name",
 			username:    "username",
 			mockErr:     mockErr,
@@ -2690,7 +2692,7 @@ func TestAPIAuthService_AttachPolicyTo(t *testing.T) {
 			expectedErr: mockErr,
 		},
 		{
-			name:        "not found",
+			name:        "not_found",
 			fromName:    "no_from",
 			username:    "userName",
 			mockErr:     nil,
@@ -2740,7 +2742,7 @@ func TestAPIAuthService_DeleteCredentials(t *testing.T) {
 		expectedErr     error
 	}{
 		{
-			name:            "no error",
+			name:            "no_error",
 			username:        "username",
 			credentialsName: "credentials_name",
 			mockErr:         nil,
@@ -2748,7 +2750,7 @@ func TestAPIAuthService_DeleteCredentials(t *testing.T) {
 			expectedErr:     nil,
 		},
 		{
-			name:            "invalid user",
+			name:            "invalid_user",
 			username:        "",
 			credentialsName: "credentials_name",
 			mockErr:         mockErr,
@@ -2756,7 +2758,7 @@ func TestAPIAuthService_DeleteCredentials(t *testing.T) {
 			expectedErr:     mockErr,
 		},
 		{
-			name:            "api error ",
+			name:            "api_error",
 			username:        "username",
 			credentialsName: "credentials_name",
 			mockErr:         mockErr,
@@ -2764,7 +2766,7 @@ func TestAPIAuthService_DeleteCredentials(t *testing.T) {
 			expectedErr:     mockErr,
 		},
 		{
-			name:            "not found",
+			name:            "not_found",
 			username:        "username",
 			credentialsName: "no_credentials",
 			mockErr:         nil,
@@ -2806,19 +2808,19 @@ func TestAPIAuthService_CreateGroup(t *testing.T) {
 			expectedErr:        nil,
 		},
 		{
-			name:               "Invalid group",
+			name:               "invalid_group",
 			groupName:          "",
 			responseStatusCode: http.StatusBadRequest,
 			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
 		},
 		{
-			name:               "group exists",
+			name:               "group_exists",
 			groupName:          "existingGroup",
 			responseStatusCode: http.StatusConflict,
 			expectedErr:        auth.ErrAlreadyExists,
 		},
 		{
-			name:               "Internal error",
+			name:               "internal_error",
 			groupName:          "group",
 			responseStatusCode: http.StatusInternalServerError,
 			expectedErr:        auth.ErrUnexpectedStatusCode,
@@ -2876,7 +2878,7 @@ func TestAPIAuthService_CreateCredentials(t *testing.T) {
 			expectedErr:        nil,
 		},
 		{
-			name:               "Invalid username",
+			name:               "invalid_username",
 			username:           "",
 			returnedAccessKey:  "AKIA",
 			returnedSecretKey:  "AKIASECRET",
@@ -2887,7 +2889,7 @@ func TestAPIAuthService_CreateCredentials(t *testing.T) {
 			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
 		},
 		{
-			name:               "Internal error",
+			name:               "internal_error",
 			username:           "credentials",
 			returnedAccessKey:  "AKIA",
 			returnedSecretKey:  "AKIASECRET",
@@ -2959,7 +2961,7 @@ func TestAPIAuthService_AddCredentials(t *testing.T) {
 			expectedErr:        nil,
 		},
 		{
-			name:               "Invalid username",
+			name:               "invalid_username",
 			username:           "",
 			returnedAccessKey:  "AKIA",
 			returnedSecretKey:  "AKIASECRET",
@@ -2972,7 +2974,7 @@ func TestAPIAuthService_AddCredentials(t *testing.T) {
 			expectedErr:        auth.ErrAlreadyExists, // TODO(Guys): change this once we change this to the right error
 		},
 		{
-			name:               "credentials exists",
+			name:               "credentials_exists",
 			username:           "existingCredentials",
 			returnedAccessKey:  "",
 			returnedSecretKey:  "",
@@ -2985,7 +2987,7 @@ func TestAPIAuthService_AddCredentials(t *testing.T) {
 			expectedErr:        auth.ErrAlreadyExists,
 		},
 		{
-			name:               "Internal error",
+			name:               "internal_error",
 			username:           "credentials",
 			returnedAccessKey:  "",
 			returnedSecretKey:  "",
