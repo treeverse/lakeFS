@@ -813,7 +813,6 @@ func (id MetaRangeID) String() string {
 }
 
 type KVGraveler struct {
-	db                       *DBGraveler
 	hooks                    HooksHandler
 	CommittedManager         CommittedManager
 	RefManager               RefManager
@@ -823,9 +822,8 @@ type KVGraveler struct {
 	log                      logging.Logger
 }
 
-func NewKVGraveler(branchLocker BranchLocker, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager) *KVGraveler {
+func NewKVGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager) *KVGraveler {
 	return &KVGraveler{
-		db:                       NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager),
 		hooks:                    &HooksNoOp{},
 		CommittedManager:         committedManager,
 		RefManager:               refManager,
@@ -1482,7 +1480,7 @@ func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, re
 		}
 	}
 	if try == setTries {
-		return ErrTooManyStagingWriteTries
+		return fmt.Errorf("set staging area: %w", ErrTooManyTries)
 	}
 	return nil
 }
@@ -1647,22 +1645,17 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 	}
 	storageNamespace = repo.StorageNamespace
 
-	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
-	if err != nil {
-		return "", fmt.Errorf("get branch: %w", err)
-	}
-
-	if params.SourceMetaRange != nil {
-		empty, err := g.stagingEmpty(ctx, repositoryID, repo, branch)
-		if err != nil {
-			return "", fmt.Errorf("checking empty branch: %w", err)
-		}
-		if !empty {
-			return "", ErrCommitMetaRangeDirtyBranch
-		}
-	}
-
 	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
+		if params.SourceMetaRange != nil {
+			empty, err := g.stagingEmpty(ctx, repositoryID, repo, branch)
+			if err != nil {
+				return nil, fmt.Errorf("checking empty branch: %w", err)
+			}
+			if !empty {
+				return nil, ErrCommitMetaRangeDirtyBranch
+			}
+		}
+
 		tokens := make([]StagingToken, len(branch.SealedTokens)+1)
 		copy(tokens, branch.SealedTokens)
 		tokens[len(tokens)-1] = branch.StagingToken
@@ -1671,6 +1664,9 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		branch.SealedTokens = tokens
 		return branch, nil
 	})
+	if err != nil {
+		return "", err
+	}
 
 	err = g.retryBranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
 		// fill commit information - use for pre-commit and after adding the commit information used by commit
@@ -1783,17 +1779,16 @@ func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repositoryID Reposit
 
 	var try int
 	for try = 0; try < setTries; try++ {
-		// TODO - if the branch commit id hasn't changed, update the fields instead of fail
+		// TODO(3586) - if the branch commit id hasn't changed, update the fields instead of fail
 		err := g.RefManager.BranchUpdate(ctx, repositoryID, branchID, f)
-		if errors.Is(err, kv.ErrPredicateFailed) {
-			continue
+		if err == nil {
+			return nil
 		}
-		return err
+		if !errors.Is(err, kv.ErrPredicateFailed) {
+			return err
+		}
 	}
-	if try == setTries {
-		return ErrTooManyBranchUpdateTries
-	}
-	return nil
+	return fmt.Errorf("update branch: %w", ErrTooManyTries)
 }
 
 func validateCommitParent(ctx context.Context, repositoryID RepositoryID, commit Commit, manager RefManager) (CommitID, error) {
@@ -2448,7 +2443,6 @@ func (g *KVGraveler) Compare(ctx context.Context, repositoryID RepositoryID, lef
 }
 
 func (g *KVGraveler) SetHooksHandler(handler HooksHandler) {
-	g.db.SetHooksHandler(handler) // TODO (niro): Remove this line when all logic moved to KV
 	if handler == nil {
 		g.hooks = &HooksNoOp{}
 	} else {
