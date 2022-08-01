@@ -19,6 +19,11 @@ export const Wizard = ({steps = defaultSteps, isShowBack= true, completed= {}, o
         return completed.has(stepIndex);
     }
 
+    const shouldShowNextBeforeCompletion = (stepIndex) => {
+        const shouldHide = steps[stepIndex].hideNextUntilCompletion;
+        return !shouldHide || (shouldHide && isStepCompleted(stepIndex));
+    }
+
     const handleNext = () => {
         if (activeStep === steps.length - 1) {
             onDone();
@@ -93,9 +98,11 @@ export const Wizard = ({steps = defaultSteps, isShowBack= true, completed= {}, o
                             Skip
                         </Button>
                     )}
-                    <Button onClick={handleNext} disabled={!isStepCompleted(activeStep)}>
-                        {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
-                    </Button>
+                    {shouldShowNextBeforeCompletion(activeStep) &&
+                        <Button onClick={handleNext} disabled={!isStepCompleted(activeStep)}>
+                            {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
+                        </Button>
+                    }
                 </Box>
             </>
         </Box>
