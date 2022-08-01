@@ -40,15 +40,6 @@ lakeFS already supports injecting custom behavior using hooks. Ideally, we can s
 
 Once this is done, one may implement:
 
-### Hadoop 3 support in all lakeFS clients <span>High Priority</span>{: .label .label-blue }
-
-We intend to test, verify and document the version support matrix for our Hadoop-based clients: 
-1. [lakeFS Hadoop Filesystem](https://github.com/treeverse/lakeFS/tree/master/clients/hadoopfs)
-2. The [metadata client](https://github.com/treeverse/lakeFS/tree/master/clients/spark)
-3. [RouterFS](https://github.com/treeverse/hadoop-router-fs)
-
-In particular, all features will be made to work on Hadoop 3.X versions.
-
 #### Delta Lake merges and diffs across branches
 
 Delta lake stores metadata files that represent a [logical transaction log that relies on numerical ordering](https://github.com/delta-io/delta/blob/master/PROTOCOL.md#delta-log-entries).
@@ -71,6 +62,16 @@ Users would then have to forgo one of the change sets by either retaining the de
 A much better user experience would be to allow merging snapshots into a new unified set of changes, representing changes made in both refs as a new snapshot.
 
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3381){: target="_blank" class="btn" }
+
+### Hadoop 3 support in all lakeFS clients <span>High Priority</span>{: .label .label-blue }
+
+We intend to test, verify and document the version support matrix for our Hadoop-based clients:
+1. [lakeFS Hadoop Filesystem](https://github.com/treeverse/lakeFS/tree/master/clients/hadoopfs)
+2. The [metadata client](https://github.com/treeverse/lakeFS/tree/master/clients/spark)
+3. [RouterFS](https://github.com/treeverse/hadoop-router-fs)
+
+In particular, all features will be made to work on Hadoop 3.X versions.
+
 
 ### Native Spark OutputCommitter
 
