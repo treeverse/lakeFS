@@ -65,16 +65,16 @@ export const Na = () => {
 };
 
 export const Error = ({error, onDismiss = null, className = null}) => {
-    let msg = error.toString();
+    let content = React.isValidElement(error) ? error : error.toString();
     // handle wrapped errors
     let err = error;
     while (err.error) err = err.error;
-    if (err.message) msg = err.message;
+    if (err.message) content = err.message;
     if (onDismiss !== null) {
-        return <Alert className={className} variant="danger" dismissible onClose={onDismiss}>{msg}</Alert>;
+        return <Alert className={className} variant="danger" dismissible onClose={onDismiss}>{content}</Alert>;
     }
     return (
-        <Alert className={className} variant="danger">{msg}</Alert>
+        <Alert className={className} variant="danger">{content}</Alert>
     );
 }
 
