@@ -1319,7 +1319,7 @@ func benchmarkKVListEffectivePolicies(b *testing.B, s *auth.KVAuthService, userN
 }
 
 func TestAPIAuthService_GetUserById(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	tests := []struct {
 		name               string
 		responseStatusCode int
@@ -1378,7 +1378,7 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 			ctx := context.Background()
 			gotUser, err := s.GetUserByID(ctx, tt.userID)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("GetUserById(%s): expected err: %s got: %s", tt.userID, tt.expectedErr, err)
+				t.Fatalf("GetUserById(%s): expected err: %v got: %v", tt.userID, tt.expectedErr, err)
 			}
 			if err != nil {
 				return
@@ -1392,7 +1392,7 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 }
 
 func TestAPIAuthService_CreateUser(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	tests := []struct {
 		name               string
 		userName           string
@@ -1469,7 +1469,7 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 				Source:       tt.source,
 			})
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("CreateUser: expected err: %s got: %s", tt.expectedErr, err)
+				t.Fatalf("CreateUser: expected err: %v got: %v", tt.expectedErr, err)
 			}
 			if res != tt.expectedResponseID {
 				t.Fatalf("CreateUser: expected user.id: %s got: %s", tt.expectedResponseID, res)
@@ -1479,7 +1479,7 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 }
 
 func TestAPIAuthService_DeleteUser(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	tests := []struct {
 		name               string
 		userName           string
@@ -1510,19 +1510,20 @@ func TestAPIAuthService_DeleteUser(t *testing.T) {
 			mockClient.EXPECT().DeleteUserWithResponse(ctx, tt.userName).Return(response, nil)
 			err := s.DeleteUser(ctx, tt.userName)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("CreateUser: expected err: %s got: %s", tt.expectedErr, err)
+				t.Fatalf("DeleteUser: expected err: %v got: %v", tt.expectedErr, err)
 			}
 		})
 	}
 }
 
 func TestAPIAuthService_GetUserByEmail(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 
 	tests := []struct {
 		name               string
 		responseStatusCode int
 		users              []string
+		email              string
 		expectedUserName   string
 		expectedErr        error
 	}{
@@ -1530,18 +1531,21 @@ func TestAPIAuthService_GetUserByEmail(t *testing.T) {
 			name:               "one_user",
 			responseStatusCode: http.StatusOK,
 			users:              []string{"one"},
+			email:              "one@test.com",
 			expectedUserName:   "one",
 			expectedErr:        nil,
 		}, {
 			name:               "no_users",
 			responseStatusCode: http.StatusOK,
 			users:              []string{},
+			email:              "noone@test.com",
 			expectedUserName:   "",
 			expectedErr:        db.ErrNotFound,
 		},
 		{
 			name:               "two_responses",
 			responseStatusCode: http.StatusOK,
+			email:              "both@test.com",
 			users:              []string{"one", "two"},
 			expectedUserName:   "",
 			expectedErr:        auth.ErrNonUnique,
@@ -1552,15 +1556,15 @@ func TestAPIAuthService_GetUserByEmail(t *testing.T) {
 			returnedUsers := make([]auth.User, len(tt.users))
 			for i, u := range tt.users {
 				returnedUsers[i] = auth.User{
-					Id:   0,
-					Name: u,
+					Name:  u,
+					Email: &tt.email,
 				}
 			}
 			returnedUserList := &auth.UserList{
 				Pagination: auth.Pagination{},
 				Results:    returnedUsers,
 			}
-			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Any()).Return(&auth.ListUsersResponse{
+			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Eq(&auth.ListUsersParams{Email: swag.String(tt.email)})).Return(&auth.ListUsersResponse{
 				Body: nil,
 				HTTPResponse: &http.Response{
 					StatusCode: tt.responseStatusCode,
@@ -1571,10 +1575,9 @@ func TestAPIAuthService_GetUserByEmail(t *testing.T) {
 			}, nil)
 
 			ctx := context.Background()
-			ID := int64(12)
-			gotUser, err := s.GetUserByEmail(ctx, "mail@test.com")
+			gotUser, err := s.GetUserByEmail(ctx, tt.email)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("GetUserById(%d): expected err: %s got: %s", ID, tt.expectedErr, err)
+				t.Fatalf("GetUserByEmail(%s): expected err: %v got: %v", tt.email, tt.expectedErr, err)
 			}
 			if err != nil {
 				return
@@ -1588,7 +1591,7 @@ func TestAPIAuthService_GetUserByEmail(t *testing.T) {
 
 }
 
-func GetApiService(t *testing.T) (*mock.MockClientWithResponsesInterface, *auth.APIAuthService) {
+func NewTestApiService(t *testing.T) (*mock.MockClientWithResponsesInterface, *auth.APIAuthService) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	mockClient := mock.NewMockClientWithResponsesInterface(ctrl)
@@ -1603,7 +1606,7 @@ func GetApiService(t *testing.T) (*mock.MockClientWithResponsesInterface, *auth.
 }
 
 func TestAPIAuthService_GetUser(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	tests := []struct {
 		name               string
 		userName           string
@@ -1665,7 +1668,7 @@ func TestAPIAuthService_GetUser(t *testing.T) {
 			ctx := context.Background()
 			user, err := s.GetUser(ctx, tt.userName)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("GetUser: expected err: %s got: %s", tt.expectedErr, err)
+				t.Fatalf("GetUser: expected err: %v got: %v", tt.expectedErr, err)
 			}
 			if err != nil {
 				return
@@ -1690,7 +1693,7 @@ func TestAPIAuthService_GetUser(t *testing.T) {
 }
 
 func TestAPIAuthService_GetGroup(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	tests := []struct {
 		name               string
 		groupName          string
@@ -1731,7 +1734,7 @@ func TestAPIAuthService_GetGroup(t *testing.T) {
 			ctx := context.Background()
 			group, err := s.GetGroup(ctx, tt.groupName)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("GetGroup: expected err: %s got: %s", tt.expectedErr, err)
+				t.Fatalf("GetGroup: expected err: %v got: %v", tt.expectedErr, err)
 			}
 			if err != nil {
 				return
@@ -1744,7 +1747,7 @@ func TestAPIAuthService_GetGroup(t *testing.T) {
 }
 
 func TestAPIAuthService_GetCredentials(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	tests := []struct {
 		name               string
 		responseStatusCode int
@@ -1801,16 +1804,16 @@ func TestAPIAuthService_GetCredentials(t *testing.T) {
 			ctx := context.Background()
 			credentials, err := s.GetCredentials(ctx, tt.accessKey)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("GetCredentials: expected err: %s got: %s", tt.expectedErr, err)
+				t.Fatalf("GetCredentials: expected err: %v got: %v", tt.expectedErr, err)
 			}
 			if err != nil {
 				return
 			}
 			if credentials.AccessKeyID != tt.accessKey {
-				t.Errorf("expected response accessKey:%s, got:%s", tt.accessKey, credentials.AccessKeyID)
+				t.Errorf("expected response accessKeyID:%s, got:%s", tt.accessKey, credentials.AccessKeyID)
 			}
 			if credentials.SecretAccessKey != tt.secretKey {
-				t.Errorf("expected response secretKey:%s, got:%s", tt.accessKey, credentials.SecretAccessKey)
+				t.Errorf("expected response SecretAccessKey:%s, got:%s", tt.accessKey, credentials.SecretAccessKey)
 			}
 			if credentials.Username != tt.username {
 				t.Errorf("expected response username:%s, got:%s", tt.username, credentials.Username)
@@ -1820,7 +1823,7 @@ func TestAPIAuthService_GetCredentials(t *testing.T) {
 }
 
 func TestAPIAuthService_GetCredentialsForUser(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	tests := []struct {
 		name               string
 		responseStatusCode int
@@ -1865,13 +1868,13 @@ func TestAPIAuthService_GetCredentialsForUser(t *testing.T) {
 			ctx := context.Background()
 			credentials, err := s.GetCredentialsForUser(ctx, tt.username, tt.accessKey)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("GetCredentials: expected err: %s got: %s", tt.expectedErr, err)
+				t.Fatalf("GetCredentialsForUser: expected err: %v got: %v", tt.expectedErr, err)
 			}
 			if err != nil {
 				return
 			}
 			if credentials.AccessKeyID != tt.accessKey {
-				t.Errorf("expected response accessKey:%s, got:%s", tt.accessKey, credentials.AccessKeyID)
+				t.Errorf("expected response accessKeyID:%s, got:%s", tt.accessKey, credentials.AccessKeyID)
 			}
 			if credentials.Username != tt.username {
 				t.Errorf("expected response username:%s, got:%s", tt.username, credentials.Username)
@@ -1881,12 +1884,12 @@ func TestAPIAuthService_GetCredentialsForUser(t *testing.T) {
 }
 
 func TestAPIAuthService_ListGroups(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	const groupNamePrefix = "groupNamePrefix"
 	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
 	for _, amount := range amounts {
-		t.Run(fmt.Sprintf("amount=%d", amount), func(t *testing.T) {
+		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
 			groups := make([]auth.Group, amount)
 			for i := 0; i < amount; i++ {
 				groups[i] = auth.Group{
@@ -1902,10 +1905,18 @@ func TestAPIAuthService_ListGroups(t *testing.T) {
 				HTTPResponse: &http.Response{StatusCode: http.StatusOK},
 			}
 			response.JSON200 = &groupList
-			mockClient.EXPECT().ListGroupsWithResponse(gomock.Any(), gomock.Any()).Return(response, nil)
-			group, _, err := s.ListGroups(context.Background(), &model.PaginationParams{})
+			paginationParams := model.PaginationParams{}
+			paginationPrefix := auth.PaginationPrefix(paginationParams.Prefix)
+			paginationAfter := auth.PaginationAfter(paginationParams.After)
+			paginationAmount := auth.PaginationAmount(paginationParams.Amount)
+			mockClient.EXPECT().ListGroupsWithResponse(gomock.Any(), gomock.Eq(&auth.ListGroupsParams{
+				Prefix: &paginationPrefix,
+				After:  &paginationAfter,
+				Amount: &paginationAmount,
+			})).Return(response, nil)
+			group, _, err := s.ListGroups(context.Background(), &paginationParams)
 			if err != nil {
-				t.Errorf("failed with error - %s", err)
+				t.Fatalf("failed with error - %s", err)
 			}
 
 			creationTime := time.Unix(creationDate, 0)
@@ -1915,10 +1926,10 @@ func TestAPIAuthService_ListGroups(t *testing.T) {
 				}
 				expected := fmt.Sprintf("%s-%d", groupNamePrefix, i)
 				if g.DisplayName != expected {
-					t.Errorf("expected displayName:%s got:%s", g.DisplayName, expected)
+					t.Errorf("ListGroups item %d, expected displayName:%s got:%s", i, g.DisplayName, expected)
 				}
 				if !g.CreatedAt.Equal(creationTime) {
-					t.Errorf("ecpected created date: %s got:%s for %s", g.CreatedAt, creationTime, expected)
+					t.Errorf("eListGroups item %d, expected created date:%s got:%s for %s", i, g.CreatedAt, creationTime, expected)
 				}
 			}
 		})
@@ -1926,12 +1937,12 @@ func TestAPIAuthService_ListGroups(t *testing.T) {
 }
 
 func TestAPIAuthService_ListUsers(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	const userNamePrefix = "userNamePrefix"
 	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
 	for _, amount := range amounts {
-		t.Run(fmt.Sprintf("amount=%d", amount), func(t *testing.T) {
+		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
 			users := make([]auth.User, amount)
 			for i := 0; i < amount; i++ {
 				users[i] = auth.User{
@@ -1950,7 +1961,7 @@ func TestAPIAuthService_ListUsers(t *testing.T) {
 			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Any()).Return(response, nil)
 			user, _, err := s.ListUsers(context.Background(), &model.PaginationParams{})
 			if err != nil {
-				t.Errorf("failed with error - %s", err)
+				t.Fatalf("failed with error - %s", err)
 			}
 
 			creationTime := time.Unix(creationDate, 0)
@@ -1963,7 +1974,7 @@ func TestAPIAuthService_ListUsers(t *testing.T) {
 					t.Errorf("expected displayName:%s got:%s", g.Username, expected)
 				}
 				if !g.CreatedAt.Equal(creationTime) {
-					t.Errorf("ecpected created date: %s got:%s for %s", g.CreatedAt, creationTime, expected)
+					t.Errorf("expected created date:%s got:%s for %s", g.CreatedAt, creationTime, expected)
 				}
 			}
 		})
@@ -1971,12 +1982,12 @@ func TestAPIAuthService_ListUsers(t *testing.T) {
 }
 
 func TestAPIAuthService_ListGroupUsers(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	const userNamePrefix = "userNamePrefix"
 	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
 	for _, amount := range amounts {
-		t.Run(fmt.Sprintf("amount=%d", amount), func(t *testing.T) {
+		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
 			users := make([]auth.User, amount)
 			for i := 0; i < amount; i++ {
 				users[i] = auth.User{
@@ -1996,7 +2007,7 @@ func TestAPIAuthService_ListGroupUsers(t *testing.T) {
 			mockClient.EXPECT().ListGroupMembersWithResponse(gomock.Any(), groupDisplayName, gomock.Any()).Return(response, nil)
 			user, _, err := s.ListGroupUsers(context.Background(), groupDisplayName, &model.PaginationParams{})
 			if err != nil {
-				t.Errorf("failed with error - %s", err)
+				t.Fatalf("failed with error - %s", err)
 			}
 			creationTime := time.Unix(creationDate, 0)
 			for i, g := range user {
@@ -2008,7 +2019,7 @@ func TestAPIAuthService_ListGroupUsers(t *testing.T) {
 					t.Errorf("expected displayName:%s got:%s", g.Username, expected)
 				}
 				if !g.CreatedAt.Equal(creationTime) {
-					t.Errorf("ecpected created date: %s got:%s for %s", g.CreatedAt, creationTime, expected)
+					t.Errorf("expected created date:%s got:%s for %s", g.CreatedAt, creationTime, expected)
 				}
 			}
 		})
@@ -2016,7 +2027,7 @@ func TestAPIAuthService_ListGroupUsers(t *testing.T) {
 }
 
 func TestAPIAuthService_AddUserToGroup(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
 		name        string
@@ -2062,14 +2073,14 @@ func TestAPIAuthService_AddUserToGroup(t *testing.T) {
 			mockClient.EXPECT().AddGroupMembershipWithResponse(gomock.Any(), tt.groupName, tt.username).Return(response, tt.mockErr)
 			err := s.AddUserToGroup(context.Background(), tt.username, tt.groupName)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+				t.Fatalf("returned different error as api got:%v, expected:%v", err, mockErr)
 			}
 		})
 	}
 }
 
 func TestAPIAuthService_DeleteGroup(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
 		name        string
@@ -2111,14 +2122,14 @@ func TestAPIAuthService_DeleteGroup(t *testing.T) {
 			mockClient.EXPECT().DeleteGroupWithResponse(gomock.Any(), tt.groupName).Return(response, tt.mockErr)
 			err := s.DeleteGroup(context.Background(), tt.groupName)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+				t.Fatalf("returned different error as api got:%v, expected:%v", err, mockErr)
 			}
 		})
 	}
 }
 
 func TestAPIAuthService_RemoveUserFromGroup(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
 		name        string
@@ -2164,19 +2175,19 @@ func TestAPIAuthService_RemoveUserFromGroup(t *testing.T) {
 			mockClient.EXPECT().DeleteGroupMembershipWithResponse(gomock.Any(), tt.groupName, tt.username).Return(response, tt.mockErr)
 			err := s.RemoveUserFromGroup(context.Background(), tt.username, tt.groupName)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+				t.Fatalf("returned different error as api got:%v, expected:%v", err, mockErr)
 			}
 		})
 	}
 }
 
 func TestAPIAuthService_ListUserGroups(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	const groupNamePrefix = "groupNamePrefix"
 	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
 	for _, amount := range amounts {
-		t.Run(fmt.Sprintf("amount=%d", amount), func(t *testing.T) {
+		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
 			groups := make([]auth.Group, amount)
 			for i := 0; i < amount; i++ {
 				groups[i] = auth.Group{
@@ -2196,20 +2207,20 @@ func TestAPIAuthService_ListUserGroups(t *testing.T) {
 			mockClient.EXPECT().ListUserGroupsWithResponse(gomock.Any(), username, gomock.Any()).Return(response, nil)
 			group, _, err := s.ListUserGroups(context.Background(), username, &model.PaginationParams{})
 			if err != nil {
-				t.Errorf("failed with error - %s", err)
+				t.Fatalf("failed with error - %s", err)
 			}
 
 			creationTime := time.Unix(creationDate, 0)
 			for i, g := range group {
 				if g == nil {
-					t.Fatalf("got nil group")
+					t.Fatalf("item %d - got nil group", i)
 				}
 				expected := fmt.Sprintf("%s-%d", groupNamePrefix, i)
 				if g.DisplayName != expected {
 					t.Errorf("expected displayName:%s got:%s", g.DisplayName, expected)
 				}
 				if !g.CreatedAt.Equal(creationTime) {
-					t.Errorf("ecpected created date: %s got:%s for %s", g.CreatedAt, creationTime, expected)
+					t.Errorf("expected created date:%s got:%s for %s", g.CreatedAt, creationTime, expected)
 				}
 			}
 		})
@@ -2217,12 +2228,12 @@ func TestAPIAuthService_ListUserGroups(t *testing.T) {
 }
 
 func TestAPIAuthService_ListUserCredentials(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	const accessKeyPrefix = "AKIA"
 	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
 	for _, amount := range amounts {
-		t.Run(fmt.Sprintf("amount=%d", amount), func(t *testing.T) {
+		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
 			credentials := make([]auth.Credentials, amount)
 			for i := 0; i < amount; i++ {
 				credentials[i] = auth.Credentials{
@@ -2242,16 +2253,16 @@ func TestAPIAuthService_ListUserCredentials(t *testing.T) {
 			mockClient.EXPECT().ListUserCredentialsWithResponse(gomock.Any(), username, gomock.Any()).Return(response, nil)
 			resCredentials, _, err := s.ListUserCredentials(context.Background(), username, &model.PaginationParams{})
 			if err != nil {
-				t.Errorf("failed with error - %s", err)
+				t.Fatalf("failed with error - %s", err)
 			}
 
 			for i, g := range resCredentials {
 				if g == nil {
-					t.Fatalf("got nil credentials")
+					t.Fatalf("item %d - got nil credentials", i)
 				}
 				expected := fmt.Sprintf("%s-%d", accessKeyPrefix, i)
 				if g.AccessKeyID != expected {
-					t.Errorf("expected displayName:%s got:%s", g.AccessKeyID, expected)
+					t.Errorf("expected AccessKeyID:%s got:%s", expected, g.AccessKeyID)
 				}
 			}
 		})
@@ -2259,7 +2270,7 @@ func TestAPIAuthService_ListUserCredentials(t *testing.T) {
 }
 
 func TestAPIAuthService_WritePolicy(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	tests := []struct {
 		name                   string
 		policyName             string
@@ -2340,14 +2351,14 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 				}},
 			})
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("CreatePolicy: expected err: %s got: %s", tt.expectedErr, err)
+				t.Fatalf("CreatePolicy: expected err: %v got: %v", tt.expectedErr, err)
 			}
 		})
 	}
 }
 
 func TestAPIAuthService_GetPolicy(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	tests := []struct {
 		name                   string
 		policyName             string
@@ -2401,7 +2412,7 @@ func TestAPIAuthService_GetPolicy(t *testing.T) {
 			ctx := context.Background()
 			policy, err := s.GetPolicy(ctx, tt.policyName)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("GetPolicy: expected err: %s got: %s", tt.expectedErr, err)
+				t.Fatalf("GetPolicy: expected err: %v got: %v", tt.expectedErr, err)
 			}
 			if err != nil {
 				return
@@ -2475,7 +2486,7 @@ func policyListsEquals(t *testing.T, authPolicies []auth.Policy, modelPolicies [
 }
 
 func TestAPIAuthService_ListUserPolicies(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	resPolicies := authPoliciesForTesting
 	policyList := auth.PolicyList{
 		Pagination: auth.Pagination{},
@@ -2490,7 +2501,7 @@ func TestAPIAuthService_ListUserPolicies(t *testing.T) {
 		mockClient.EXPECT().ListPoliciesWithResponse(gomock.Any(), gomock.Any()).Return(response, nil)
 		policies, _, err := s.ListPolicies(context.Background(), &model.PaginationParams{})
 		if err != nil {
-			t.Errorf("failed with error - %s", err)
+			t.Fatalf("failed with error - %s", err)
 		}
 		policyListsEquals(t, resPolicies, policies)
 	})
@@ -2504,7 +2515,7 @@ func TestAPIAuthService_ListUserPolicies(t *testing.T) {
 		mockClient.EXPECT().ListUserPoliciesWithResponse(gomock.Any(), username, gomock.Any()).Return(response, nil)
 		policies, _, err := s.ListUserPolicies(context.Background(), username, &model.PaginationParams{})
 		if err != nil {
-			t.Errorf("failed with error - %s", err)
+			t.Fatalf("failed with error - %s", err)
 		}
 		policyListsEquals(t, resPolicies, policies)
 	})
@@ -2517,7 +2528,7 @@ func TestAPIAuthService_ListUserPolicies(t *testing.T) {
 		mockClient.EXPECT().ListGroupPoliciesWithResponse(gomock.Any(), groupName, gomock.Any()).Return(response, nil)
 		policies, _, err := s.ListGroupPolicies(context.Background(), groupName, &model.PaginationParams{})
 		if err != nil {
-			t.Errorf("failed with error - %s", err)
+			t.Fatalf("failed with error - %s", err)
 		}
 		policyListsEquals(t, resPolicies, policies)
 	})
@@ -2530,7 +2541,7 @@ func TestAPIAuthService_ListUserPolicies(t *testing.T) {
 		mockClient.EXPECT().ListUserPoliciesWithResponse(gomock.Any(), username, gomock.Any()).Return(response, nil)
 		policies, _, err := s.ListEffectivePolicies(context.Background(), username, &model.PaginationParams{})
 		if err != nil {
-			t.Errorf("failed with error - %s", err)
+			t.Fatalf("failed with error - %s", err)
 		}
 		policyListsEquals(t, resPolicies, policies)
 	})
@@ -2543,14 +2554,14 @@ func TestAPIAuthService_ListUserPolicies(t *testing.T) {
 		mockClient.EXPECT().ListUserPoliciesWithResponse(gomock.Any(), username, gomock.Any()).Return(response, nil)
 		policies, _, err := s.ListEffectivePolicies(context.Background(), username, &model.PaginationParams{Amount: -1})
 		if err != nil {
-			t.Errorf("failed with error - %s", err)
+			t.Fatalf("failed with error - %s", err)
 		}
 		policyListsEquals(t, resPolicies, policies)
 	})
 }
 
 func TestAPIAuthService_DeletePolicy(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
 		name        string
@@ -2592,14 +2603,14 @@ func TestAPIAuthService_DeletePolicy(t *testing.T) {
 			mockClient.EXPECT().DeletePolicyWithResponse(gomock.Any(), tt.policyName).Return(response, tt.mockErr)
 			err := s.DeletePolicy(context.Background(), tt.policyName)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+				t.Fatalf("returned different error as api got:%v, expected:%v", err, mockErr)
 			}
 		})
 	}
 }
 
 func TestAPIAuthService_DetachPolicyFrom(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
 		name        string
@@ -2635,7 +2646,7 @@ func TestAPIAuthService_DetachPolicyFrom(t *testing.T) {
 		},
 	}
 	for _, tt := range testTable {
-		t.Run("from user"+tt.name, func(t *testing.T) {
+		t.Run("from user "+tt.name, func(t *testing.T) {
 			response := &auth.DetachPolicyFromUserResponse{
 				Body: nil,
 				HTTPResponse: &http.Response{
@@ -2645,7 +2656,7 @@ func TestAPIAuthService_DetachPolicyFrom(t *testing.T) {
 			mockClient.EXPECT().DetachPolicyFromUserWithResponse(gomock.Any(), tt.username, tt.fromName).Return(response, tt.mockErr)
 			err := s.DetachPolicyFromUser(context.Background(), tt.fromName, tt.username)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+				t.Fatalf("returned different error as api got:%v, expected:%v", err, mockErr)
 			}
 		})
 		t.Run("from group "+tt.name, func(t *testing.T) {
@@ -2658,14 +2669,14 @@ func TestAPIAuthService_DetachPolicyFrom(t *testing.T) {
 			mockClient.EXPECT().DetachPolicyFromGroupWithResponse(gomock.Any(), tt.username, tt.fromName).Return(response, tt.mockErr)
 			err := s.DetachPolicyFromGroup(context.Background(), tt.fromName, tt.username)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+				t.Fatalf("returned different error as api got:%v, expected:%v", err, mockErr)
 			}
 		})
 	}
 }
 
 func TestAPIAuthService_AttachPolicyTo(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
 		name        string
@@ -2711,7 +2722,7 @@ func TestAPIAuthService_AttachPolicyTo(t *testing.T) {
 			mockClient.EXPECT().AttachPolicyToUserWithResponse(gomock.Any(), tt.username, tt.fromName).Return(response, tt.mockErr)
 			err := s.AttachPolicyToUser(context.Background(), tt.fromName, tt.username)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+				t.Fatalf("returned different error as api got:%v, expected:%v", err, mockErr)
 			}
 		})
 		t.Run("to group "+tt.name, func(t *testing.T) {
@@ -2724,14 +2735,14 @@ func TestAPIAuthService_AttachPolicyTo(t *testing.T) {
 			mockClient.EXPECT().AttachPolicyToGroupWithResponse(gomock.Any(), tt.username, tt.fromName).Return(response, tt.mockErr)
 			err := s.AttachPolicyToGroup(context.Background(), tt.fromName, tt.username)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+				t.Fatalf("returned different error as api got:%v, expected:%v", err, mockErr)
 			}
 		})
 	}
 }
 
 func TestAPIAuthService_DeleteCredentials(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
 		name            string
@@ -2785,14 +2796,14 @@ func TestAPIAuthService_DeleteCredentials(t *testing.T) {
 			mockClient.EXPECT().DeleteCredentialsWithResponse(gomock.Any(), tt.username, tt.credentialsName).Return(response, tt.mockErr)
 			err := s.DeleteCredentials(context.Background(), tt.username, tt.credentialsName)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+				t.Fatalf("returned different error as api got:%v, expected:%v", err, mockErr)
 			}
 		})
 	}
 }
 
 func TestAPIAuthService_CreateGroup(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	tests := []struct {
 		name               string
 		groupName          string
@@ -2844,14 +2855,14 @@ func TestAPIAuthService_CreateGroup(t *testing.T) {
 				DisplayName: tt.groupName,
 			})
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("CreateGroup: expected err: %s got: %s", tt.expectedErr, err)
+				t.Fatalf("CreateGroup: expected err: %v got: %v", tt.expectedErr, err)
 			}
 		})
 	}
 }
 
 func TestAPIAuthService_CreateCredentials(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	tests := []struct {
 		name               string
 		username           string
@@ -2914,7 +2925,7 @@ func TestAPIAuthService_CreateCredentials(t *testing.T) {
 			ctx := context.Background()
 			resCredentials, err := s.CreateCredentials(ctx, tt.username)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("CreateCredentials: expected err: %s got: %s", tt.expectedErr, err)
+				t.Fatalf("CreateCredentials: expected err: %v got: %v", tt.expectedErr, err)
 			}
 			if err != nil {
 				return
@@ -2930,7 +2941,7 @@ func TestAPIAuthService_CreateCredentials(t *testing.T) {
 }
 
 func TestAPIAuthService_AddCredentials(t *testing.T) {
-	mockClient, s := GetApiService(t)
+	mockClient, s := NewTestApiService(t)
 	tests := []struct {
 		name               string
 		username           string
@@ -3017,7 +3028,7 @@ func TestAPIAuthService_AddCredentials(t *testing.T) {
 			ctx := context.Background()
 			resCredentials, err := s.AddCredentials(ctx, tt.username, tt.accessKey, tt.secretKey)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("CreateCredentials: expected err: %s got: %s", tt.expectedErr, err)
+				t.Fatalf("CreateCredentials: expected err: %v got: %v", tt.expectedErr, err)
 			}
 			if err != nil {
 				return
