@@ -160,8 +160,6 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   </div>
 
   <div markdown="1" id="azure-option">
-The relevant Spark client for running GC on Azure is `lakefs-spark-client-312-hadoop3` only. This client is compiled for Spark 3.1.2 with Hadoop 3.2.1, but can work for other Spark versions and higher Hadoop versions.
-
 You should run the following command to make the garbage collector start running:
 
   ```bash
@@ -170,14 +168,18 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
-  s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.1.8/lakefs-spark-client-312-hadoop3-assembly-0.1.8.jar \
+  s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.2.0/lakefs-spark-client-312-hadoop3-assembly-0.2.0.jar \
   example-repo
   ```
-In case you don't have `hadoop-azure` package as park of your environment, you should add the package to your spark-submit with `--packages org.apache.hadoop:hadoop-azure:3.2.1`
 
-To GC to work on Azure blob, soft delete should be disabled.
-{: .note}
-  </div>
+**Notes:**
+* To run GC on Azure, use `lakefs-spark-client-312-hadoop3` only. This client is compiled for Spark 3.1.2 with Hadoop 3.2.1, but may work with other Spark versions and higher Hadoop versions. Specifically, this client was tested on Databricks runtime DBR 11.0 (Spark 3.3.0, 3.3.2).
+* GC on Azure is supported from Spark client version >= v0.2.0.
+* In case you don't have `hadoop-azure` package as part of your environment, you should add the package to your spark-submit with `--packages org.apache.hadoop:hadoop-azure:3.2.1`
+* For GC to work on Azure blob, [soft delete](https://docs.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview) should be disabled.
+  
+  
+</div>
 
 ## Considerations
 1. In order for an object to be hard-deleted, it must be deleted from all branches.
