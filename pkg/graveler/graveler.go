@@ -1560,7 +1560,7 @@ func (g *KVGraveler) listStagingArea(ctx context.Context, b *Branch) (ValueItera
 	if err != nil {
 		return nil, err
 	}
-	itrs = append(itrs, it)
+	itrs = append([]ValueIterator{it}, itrs...)
 	return NewCombinedIterator(itrs...), nil
 }
 
@@ -1658,7 +1658,7 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 				return nil, ErrCommitMetaRangeDirtyBranch
 			}
 		}
-		branch.SealedTokens = append(branch.SealedTokens, branch.StagingToken)
+		branch.SealedTokens = append([]StagingToken{branch.StagingToken}, branch.SealedTokens...)
 		branch.StagingToken = generateStagingToken(repositoryID, branchID)
 		return branch, nil
 	})
@@ -1784,12 +1784,10 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repositoryID RepositoryID, branchID BranchID, f BranchUpdateFunc) error {
 	const (
 		maxInterval = 5
-		maxElapsed  = 30
 		setTries    = 3
 	)
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxInterval = maxInterval * time.Second
-	bo.MaxElapsedTime = maxElapsed * time.Second
 
 	var try int
 	err := backoff.Retry(func() error {
@@ -1799,7 +1797,7 @@ func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repositoryID Reposit
 			if !errors.Is(err, kv.ErrPredicateFailed) {
 				return backoff.Permanent(err)
 			}
-			if try < setTries {
+			if try < setTries-1 {
 				g.log.WithField("try", try+1).
 					WithField("branchID", branchID).
 					Info("Retrying update branch")
