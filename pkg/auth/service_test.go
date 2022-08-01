@@ -1319,7 +1319,7 @@ func benchmarkKVListEffectivePolicies(b *testing.B, s *auth.KVAuthService, userN
 }
 
 func TestAPIAuthService_GetUserById(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
 		responseStatusCode int
@@ -1391,8 +1391,156 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 	}
 }
 
+func TestAuthAPIUserPoliciesCache(t *testing.T) {
+	resPolicies := authPoliciesForTesting
+	policyList := auth.PolicyList{
+		Pagination: auth.Pagination{},
+		Results:    resPolicies,
+	}
+	mockClient, s := NewTestApiService(t, true)
+	response := &auth.ListUserPoliciesResponse{
+		HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+		JSON200:      &policyList,
+	}
+	const username = "username"
+	mockClient.EXPECT().ListUserPoliciesWithResponse(gomock.Any(), username, gomock.Any()).Return(response, nil)
+	res1, _, err := s.ListEffectivePolicies(context.Background(), username, &model.PaginationParams{Amount: -1})
+	testutil.Must(t, err)
+	res2, _, err := s.ListEffectivePolicies(context.Background(), username, &model.PaginationParams{Amount: -1})
+	testutil.Must(t, err)
+	if diff := deep.Equal(res1, res2); diff != nil {
+		t.Error("cache returned different result than api", diff)
+	}
+}
+
+func TestAuthApiGetCredentialsCache(t *testing.T) {
+	ctx := context.Background()
+	mockClient, s := NewTestApiService(t, true)
+	const username = "foo"
+	accessKey := "ACCESS"
+	secretKey := "SECRET"
+	response := &auth.GetCredentialsResponse{
+		HTTPResponse: &http.Response{
+			StatusCode: http.StatusOK,
+		},
+		JSON200: &auth.CredentialsWithSecret{
+			AccessKeyId:     accessKey,
+			SecretAccessKey: secretKey,
+		},
+	}
+	mockClient.EXPECT().GetCredentialsWithResponse(gomock.Any(), gomock.Any()).Return(response, nil)
+	mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Any(), gomock.Any()).Return(&auth.ListUsersResponse{
+		HTTPResponse: &http.Response{
+			StatusCode: http.StatusOK,
+		},
+		JSON200: &auth.UserList{
+			Pagination: auth.Pagination{},
+			Results: []auth.User{{
+				Name: username,
+			}},
+		},
+	}, nil)
+
+	res1, err := s.GetCredentials(ctx, accessKey)
+	testutil.Must(t, err)
+	res2, err := s.GetCredentials(ctx, accessKey)
+	testutil.Must(t, err)
+	if diff := deep.Equal(res1, res2); diff != nil {
+		t.Error("cache returned different result than api", diff)
+	}
+}
+
+func TestAuthApiGetUserCache(t *testing.T) {
+	ctx := context.Background()
+	mockClient, s := NewTestApiService(t, true)
+	const userID = "123"
+	const uid = int64(123)
+
+	const username = "foo"
+	userMail := "foo@test.com"
+	externalId := "1234"
+	userResult := auth.User{
+		Name:       username,
+		Id:         uid,
+		Email:      &userMail,
+		ExternalId: &externalId,
+	}
+
+	returnedUserList := &auth.UserList{
+		Pagination: auth.Pagination{},
+		Results: []auth.User{
+			userResult,
+		},
+	}
+	t.Run("get_user_by_id", func(t *testing.T) {
+		mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Any()).Return(&auth.ListUsersResponse{
+			HTTPResponse: &http.Response{
+				StatusCode: http.StatusOK,
+			},
+			JSON200: returnedUserList,
+		}, nil)
+
+		res1, err := s.GetUserByID(ctx, userID)
+		testutil.Must(t, err)
+		// call again and check
+		res2, err := s.GetUserByID(ctx, userID)
+		testutil.Must(t, err)
+		if diff := deep.Equal(res1, res2); diff != nil {
+			t.Error("cache returned different result than api", diff)
+		}
+	})
+	t.Run("get_user_by_email", func(t *testing.T) {
+		mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Any()).Return(&auth.ListUsersResponse{
+			HTTPResponse: &http.Response{
+				StatusCode: http.StatusOK,
+			},
+			JSON200: returnedUserList,
+		}, nil)
+		res1, err := s.GetUserByEmail(ctx, userMail)
+		testutil.Must(t, err)
+		// call again and check
+		res2, err := s.GetUserByEmail(ctx, userMail)
+		testutil.Must(t, err)
+		if diff := deep.Equal(res1, res2); diff != nil {
+			t.Error("cache returned different result than api", diff)
+		}
+	})
+	t.Run("get_user", func(t *testing.T) {
+		mockClient.EXPECT().GetUserWithResponse(gomock.Any(), gomock.Any()).Return(&auth.GetUserResponse{
+			HTTPResponse: &http.Response{
+				StatusCode: http.StatusOK,
+			},
+			JSON200: &userResult,
+		}, nil)
+		res1, err := s.GetUser(ctx, username)
+		testutil.Must(t, err)
+		// call again and check
+		res2, err := s.GetUser(ctx, username)
+		testutil.Must(t, err)
+		if diff := deep.Equal(res1, res2); diff != nil {
+			t.Error("cache returned different result than api", diff)
+		}
+	})
+	t.Run("get_user", func(t *testing.T) {
+		mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Any()).Return(&auth.ListUsersResponse{
+			HTTPResponse: &http.Response{
+				StatusCode: http.StatusOK,
+			},
+			JSON200: returnedUserList,
+		}, nil)
+		res1, err := s.GetUserByExternalID(ctx, externalId)
+		testutil.Must(t, err)
+		// call again and check
+		res2, err := s.GetUserByExternalID(ctx, externalId)
+		testutil.Must(t, err)
+		if diff := deep.Equal(res1, res2); diff != nil {
+			t.Error("cache returned different result than api", diff)
+		}
+	})
+}
+
 func TestAPIAuthService_CreateUser(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
 		userName           string
@@ -1479,7 +1627,7 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 }
 
 func TestAPIAuthService_DeleteUser(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
 		userName           string
@@ -1517,7 +1665,7 @@ func TestAPIAuthService_DeleteUser(t *testing.T) {
 }
 
 func TestAPIAuthService_GetUserByEmail(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 
 	tests := []struct {
 		name               string
@@ -1591,14 +1739,19 @@ func TestAPIAuthService_GetUserByEmail(t *testing.T) {
 
 }
 
-func NewTestApiService(t *testing.T) (*mock.MockClientWithResponsesInterface, *auth.APIAuthService) {
+func NewTestApiService(t *testing.T, withCache bool) (*mock.MockClientWithResponsesInterface, *auth.APIAuthService) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	mockClient := mock.NewMockClientWithResponsesInterface(ctrl)
 	secretStore := crypt.NewSecretStore([]byte("secret"))
-	s, err := auth.NewAPIAuthServiceWithClient(mockClient, secretStore, authparams.ServiceCache{
-		Enabled: false,
-	})
+	cacheParams := authparams.ServiceCache{}
+	if withCache {
+		cacheParams.Enabled = true
+		cacheParams.Size = 100
+		cacheParams.TTL = time.Minute
+		cacheParams.EvictionJitter = time.Minute
+	}
+	s, err := auth.NewAPIAuthServiceWithClient(mockClient, secretStore, cacheParams)
 	if err != nil {
 		t.Fatalf("failed initiating API service with mock")
 	}
@@ -1606,7 +1759,7 @@ func NewTestApiService(t *testing.T) (*mock.MockClientWithResponsesInterface, *a
 }
 
 func TestAPIAuthService_GetUser(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
 		userName           string
@@ -1693,7 +1846,7 @@ func TestAPIAuthService_GetUser(t *testing.T) {
 }
 
 func TestAPIAuthService_GetGroup(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
 		groupName          string
@@ -1747,7 +1900,7 @@ func TestAPIAuthService_GetGroup(t *testing.T) {
 }
 
 func TestAPIAuthService_GetCredentials(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
 		responseStatusCode int
@@ -1823,7 +1976,7 @@ func TestAPIAuthService_GetCredentials(t *testing.T) {
 }
 
 func TestAPIAuthService_GetCredentialsForUser(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
 		responseStatusCode int
@@ -1884,7 +2037,7 @@ func TestAPIAuthService_GetCredentialsForUser(t *testing.T) {
 }
 
 func TestAPIAuthService_ListGroups(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	const groupNamePrefix = "groupNamePrefix"
 	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
@@ -1937,7 +2090,7 @@ func TestAPIAuthService_ListGroups(t *testing.T) {
 }
 
 func TestAPIAuthService_ListUsers(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	const userNamePrefix = "userNamePrefix"
 	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
@@ -1982,7 +2135,7 @@ func TestAPIAuthService_ListUsers(t *testing.T) {
 }
 
 func TestAPIAuthService_ListGroupUsers(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	const userNamePrefix = "userNamePrefix"
 	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
@@ -2027,7 +2180,7 @@ func TestAPIAuthService_ListGroupUsers(t *testing.T) {
 }
 
 func TestAPIAuthService_AddUserToGroup(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
 		name        string
@@ -2080,7 +2233,7 @@ func TestAPIAuthService_AddUserToGroup(t *testing.T) {
 }
 
 func TestAPIAuthService_DeleteGroup(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
 		name        string
@@ -2129,7 +2282,7 @@ func TestAPIAuthService_DeleteGroup(t *testing.T) {
 }
 
 func TestAPIAuthService_RemoveUserFromGroup(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
 		name        string
@@ -2182,7 +2335,7 @@ func TestAPIAuthService_RemoveUserFromGroup(t *testing.T) {
 }
 
 func TestAPIAuthService_ListUserGroups(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	const groupNamePrefix = "groupNamePrefix"
 	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
@@ -2228,7 +2381,7 @@ func TestAPIAuthService_ListUserGroups(t *testing.T) {
 }
 
 func TestAPIAuthService_ListUserCredentials(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	const accessKeyPrefix = "AKIA"
 	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
@@ -2270,7 +2423,7 @@ func TestAPIAuthService_ListUserCredentials(t *testing.T) {
 }
 
 func TestAPIAuthService_WritePolicy(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name                   string
 		policyName             string
@@ -2358,7 +2511,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 }
 
 func TestAPIAuthService_GetPolicy(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name                   string
 		policyName             string
@@ -2486,7 +2639,7 @@ func policyListsEquals(t *testing.T, authPolicies []auth.Policy, modelPolicies [
 }
 
 func TestAPIAuthService_ListUserPolicies(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	resPolicies := authPoliciesForTesting
 	policyList := auth.PolicyList{
 		Pagination: auth.Pagination{},
@@ -2561,7 +2714,7 @@ func TestAPIAuthService_ListUserPolicies(t *testing.T) {
 }
 
 func TestAPIAuthService_DeletePolicy(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
 		name        string
@@ -2610,7 +2763,7 @@ func TestAPIAuthService_DeletePolicy(t *testing.T) {
 }
 
 func TestAPIAuthService_DetachPolicyFrom(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
 		name        string
@@ -2676,7 +2829,7 @@ func TestAPIAuthService_DetachPolicyFrom(t *testing.T) {
 }
 
 func TestAPIAuthService_AttachPolicyTo(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
 		name        string
@@ -2742,7 +2895,7 @@ func TestAPIAuthService_AttachPolicyTo(t *testing.T) {
 }
 
 func TestAPIAuthService_DeleteCredentials(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
 		name            string
@@ -2803,7 +2956,7 @@ func TestAPIAuthService_DeleteCredentials(t *testing.T) {
 }
 
 func TestAPIAuthService_CreateGroup(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
 		groupName          string
@@ -2862,7 +3015,7 @@ func TestAPIAuthService_CreateGroup(t *testing.T) {
 }
 
 func TestAPIAuthService_CreateCredentials(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
 		username           string
@@ -2941,7 +3094,7 @@ func TestAPIAuthService_CreateCredentials(t *testing.T) {
 }
 
 func TestAPIAuthService_AddCredentials(t *testing.T) {
-	mockClient, s := NewTestApiService(t)
+	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
 		username           string
