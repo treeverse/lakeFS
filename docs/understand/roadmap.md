@@ -70,7 +70,7 @@ We intend to test, verify and document the version support matrix for our Hadoop
 2. The [metadata client](https://github.com/treeverse/lakeFS/tree/master/clients/spark)
 3. [RouterFS](https://github.com/treeverse/hadoop-router-fs)
 
-In particular, all features will be made to work on Hadoop 3.X versions.
+In particular, all features will support Hadoop versions 3.x.
 
 
 ### Native Spark OutputCommitter
