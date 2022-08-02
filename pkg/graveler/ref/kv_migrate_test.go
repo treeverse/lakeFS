@@ -69,8 +69,7 @@ func createMigrateTestData(t *testing.T, ctx context.Context, mgr graveler.RefMa
 	for i := 0; i < NumRepositories; i++ {
 		repoId := graveler.RepositoryID("repo_" + strconv.Itoa(i))
 		if err := mgr.CreateRepository(ctx, repoId,
-			graveler.Repository{StorageNamespace: graveler.StorageNamespace(strconv.Itoa(i)), CreationDate: time.Now(), DefaultBranchID: "main"},
-			graveler.StagingToken("test_token_"+strconv.Itoa(i))); err != nil {
+			graveler.Repository{StorageNamespace: graveler.StorageNamespace(strconv.Itoa(i)), CreationDate: time.Now(), DefaultBranchID: "main"}); err != nil {
 			t.Fatalf("Create Repository: %s", err)
 		}
 		createTagInitialCommit(t, ctx, mgr, repoId)
@@ -168,6 +167,11 @@ func verifyMigrationResults(t *testing.T, ctx context.Context, kvMgr, dbMgr grav
 		dbr, err := dbMgr.GetRepository(ctx, repo.RepositoryID)
 		require.NoError(t, err)
 		dbr.CreationDate = dbr.CreationDate.UTC()
+		require.Equal(t, graveler.RepositoryState_ACTIVE, kvr.State)
+		require.True(t, len(kvr.InstanceUID) == 20) // valid xid length
+		// Fill DB missing fields
+		dbr.State = graveler.RepositoryState_ACTIVE
+		dbr.InstanceUID = kvr.InstanceUID
 		require.Equal(t, kvr, dbr)
 		repoNum += 1
 

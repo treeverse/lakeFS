@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
+	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -191,6 +192,23 @@ type Repository struct {
 	StorageNamespace StorageNamespace `db:"storage_namespace"`
 	CreationDate     time.Time        `db:"creation_date"`
 	DefaultBranchID  BranchID         `db:"default_branch"`
+	// RepositoryState represents the state of the repository, only ACTIVE repository is considered a valid one.
+	// other states represent in invalid temporary or terminal state
+	State RepositoryState
+	// InstanceUID identifies repository in a unique way. Since repositories with same name can be deleted and recreated
+	// this field identifies the specific instance, and used in the KV store key path to store all the entities belonging
+	// to this specific instantiation of repo with the given ID
+	InstanceUID string
+}
+
+func NewRepository(storageNamespace StorageNamespace, defaultBranchID BranchID) Repository {
+	return Repository{
+		StorageNamespace: storageNamespace,
+		CreationDate:     time.Now().UTC(),
+		DefaultBranchID:  defaultBranchID,
+		State:            RepositoryState_ACTIVE,
+		InstanceUID:      NewRepoInstanceID(),
+	}
 }
 
 type RepositoryRecord struct {
@@ -604,7 +622,7 @@ type RefManager interface {
 	GetRepository(ctx context.Context, repositoryID RepositoryID) (*Repository, error)
 
 	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
-	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository, token StagingToken) error
+	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository) error
 
 	// CreateBareRepository stores a new repository under RepositoryID without creating an initial commit and branch
 	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, repository Repository) error
@@ -842,13 +860,13 @@ func (g *KVGraveler) GetRepository(ctx context.Context, repositoryID RepositoryI
 }
 
 func (g *KVGraveler) CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error) {
-	repo := Repository{
-		StorageNamespace: storageNamespace,
-		CreationDate:     time.Now(),
-		DefaultBranchID:  branchID,
+	_, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil && !errors.Is(err, ErrRepositoryNotFound) {
+		return nil, err
 	}
-	stagingToken := generateStagingToken(repositoryID, branchID)
-	err := g.RefManager.CreateRepository(ctx, repositoryID, repo, stagingToken)
+
+	repo := NewRepository(storageNamespace, branchID)
+	err = g.RefManager.CreateRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
 	}
@@ -856,12 +874,13 @@ func (g *KVGraveler) CreateRepository(ctx context.Context, repositoryID Reposito
 }
 
 func (g *KVGraveler) CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID) (*Repository, error) {
-	repo := Repository{
-		StorageNamespace: storageNamespace,
-		CreationDate:     time.Now(),
-		DefaultBranchID:  defaultBranchID,
+	_, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil && !errors.Is(err, ErrRepositoryNotFound) {
+		return nil, err
 	}
-	err := g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
+
+	repo := NewRepository(storageNamespace, defaultBranchID)
+	err = g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
 	}
@@ -968,7 +987,7 @@ func (g *KVGraveler) GetCommit(ctx context.Context, repositoryID RepositoryID, c
 	return g.RefManager.GetCommit(ctx, repositoryID, commitID)
 }
 
-func generateStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken {
+func GenerateStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken {
 	uid := uuid.New().String()
 	return StagingToken(fmt.Sprintf("%s-%s:%s", repositoryID, branchID, uid))
 }
@@ -997,7 +1016,7 @@ func (g *KVGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 
 	newBranch := Branch{
 		CommitID:     reference.CommitID,
-		StagingToken: generateStagingToken(repositoryID, branchID),
+		StagingToken: GenerateStagingToken(repositoryID, branchID),
 		SealedTokens: make([]StagingToken, 0),
 	}
 	storageNamespace := repo.StorageNamespace
@@ -1703,7 +1722,7 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		}
 		err = g.RefManager.SetBranch(ctx, repositoryID, branchID, Branch{
 			CommitID:     newCommit,
-			StagingToken: generateStagingToken(repositoryID, branchID),
+			StagingToken: GenerateStagingToken(repositoryID, branchID),
 		})
 		if err != nil {
 			return "", fmt.Errorf("set branch commit %s: %w", newCommit, err)
@@ -1942,7 +1961,7 @@ func (g *KVGraveler) Reset(ctx context.Context, repositoryID RepositoryID, branc
 		tokensToDrop = append(tokensToDrop, branch.SealedTokens...)
 
 		// Zero tokens and try to set branch
-		branch.StagingToken = generateStagingToken(repositoryID, branchID)
+		branch.StagingToken = GenerateStagingToken(repositoryID, branchID)
 		branch.SealedTokens = make([]StagingToken, 0)
 		return branch, nil
 	})
@@ -2027,7 +2046,7 @@ func (g *KVGraveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID,
 	}
 	// New sealed tokens list after change includes current staging token
 	newSealedTokens := make([]StagingToken, 0)
-	newStagingToken := generateStagingToken(repositoryID, branchID)
+	newStagingToken := GenerateStagingToken(repositoryID, branchID)
 
 	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
 		newSealedTokens = []StagingToken{branch.StagingToken}
@@ -2469,7 +2488,7 @@ func (g *KVGraveler) LoadBranches(ctx context.Context, repositoryID RepositoryID
 		branchID := BranchID(branch.Id)
 		err = g.RefManager.SetBranch(ctx, repositoryID, branchID, Branch{
 			CommitID:     CommitID(branch.CommitId),
-			StagingToken: generateStagingToken(repositoryID, branchID),
+			StagingToken: GenerateStagingToken(repositoryID, branchID),
 			SealedTokens: make([]StagingToken, 0),
 		})
 		if err != nil {
@@ -2814,4 +2833,10 @@ type ProtectedBranchesManager interface {
 	GetRules(ctx context.Context, repositoryID RepositoryID) (*BranchProtectionRules, error)
 	// IsBlocked returns whether the action is blocked by any branch protection rule matching the given branch.
 	IsBlocked(ctx context.Context, repositoryID RepositoryID, branchID BranchID, action BranchProtectionBlockedAction) (bool, error)
+}
+
+// NewRepoInstanceID Returns a new unique identifier for the repository instance
+func NewRepoInstanceID() string {
+	tm := time.Now().UTC()
+	return xid.NewWithTime(tm).String()
 }

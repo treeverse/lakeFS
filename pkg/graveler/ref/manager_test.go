@@ -37,7 +37,7 @@ func TestManager_GetRepository(t *testing.T) {
 				StorageNamespace: "s3://foo",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  branchID,
-			}, ""))
+			}))
 
 			repo, err := tt.refManager.GetRepository(context.Background(), repoID)
 			if err != nil {
@@ -78,7 +78,7 @@ func TestManager_ListRepositories(t *testing.T) {
 				StorageNamespace: "s3://foo",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "main",
-			}, ""))
+			}))
 		}
 
 		t.Run("listing all repos "+tt.name, func(t *testing.T) {
@@ -134,7 +134,7 @@ func TestManager_DeleteRepository(t *testing.T) {
 				StorageNamespace: "s3://foo",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "weird-branch",
-			}, ""))
+			}))
 
 			_, err := tt.refManager.GetRepository(context.Background(), "example-repo")
 			if err != nil {
@@ -169,7 +169,7 @@ func TestManager_GetBranch(t *testing.T) {
 				StorageNamespace: "s3://",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "main",
-			}, ""))
+			}))
 
 			branch, err := tt.refManager.GetBranch(context.Background(), "repo1", "main")
 			if err != nil {
@@ -198,7 +198,7 @@ func TestManager_CreateBranch(t *testing.T) {
 				StorageNamespace: "s3://",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "main",
-			}, ""))
+			}))
 
 			err := tt.refManager.CreateBranch(ctx, "repo1", "f1", graveler.Branch{CommitID: "c1", StagingToken: "s1"})
 			testutil.MustDo(t, "create branch f1", err)
@@ -245,7 +245,7 @@ func TestManager_SetBranch(t *testing.T) {
 				StorageNamespace: "s3://",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "main",
-			}, ""))
+			}))
 
 			testutil.Must(t, tt.refManager.SetBranch(context.Background(), "repo1", "branch2", graveler.Branch{
 				CommitID: "c2",
@@ -290,7 +290,7 @@ func TestManager_BranchUpdate(t *testing.T) {
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, ""))
+	}))
 	tests := []struct {
 		name           string
 		f              graveler.BranchUpdateFunc
@@ -355,7 +355,7 @@ func TestManager_DeleteBranch(t *testing.T) {
 				StorageNamespace: "s3://",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "main",
-			}, ""))
+			}))
 
 			testutil.Must(t, tt.refManager.SetBranch(ctx, "repo1", "branch2", graveler.Branch{
 				CommitID: "c2",
@@ -379,7 +379,7 @@ func TestManager_ListBranches(t *testing.T) {
 				StorageNamespace: "s3://",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "main",
-			}, ""))
+			}))
 
 			for _, b := range []graveler.BranchID{"a", "aa", "c", "b", "z", "f"} {
 				testutil.Must(t, tt.refManager.SetBranch(context.Background(), "repo1", b, graveler.Branch{
@@ -416,7 +416,7 @@ func TestManager_GetTag(t *testing.T) {
 				StorageNamespace: "s3://",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "main",
-			}, "")
+			})
 			testutil.MustDo(t, "create repo", err)
 			err = tt.refManager.CreateTag(ctx, "repo1", "v1.0", "c1")
 			testutil.MustDo(t, "set tag", err)
@@ -451,7 +451,7 @@ func TestManager_CreateTag(t *testing.T) {
 				StorageNamespace: "s3://",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "main",
-			}, ""))
+			}))
 
 			err := tt.refManager.CreateTag(ctx, "repo1", "v2", "c2")
 			testutil.MustDo(t, "create tag v2", err)
@@ -498,7 +498,7 @@ func TestManager_DeleteTag(t *testing.T) {
 				StorageNamespace: "s3://",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "main",
-			}, ""))
+			}))
 
 			testutil.Must(t, tt.refManager.CreateTag(ctx, "repo1", "v1", "c2"))
 
@@ -524,7 +524,7 @@ func TestManager_ListTags(t *testing.T) {
 				StorageNamespace: "s3://",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "main",
-			}, ""))
+			}))
 
 			var commitsTagged []graveler.CommitID
 			tags := []string{"tag-a", "tag-b", "the-end", "v1", "v1.1"}
@@ -562,7 +562,7 @@ func TestManager_AddCommit(t *testing.T) {
 				StorageNamespace: "s3://",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "main",
-			}, ""))
+			}))
 
 			ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z00:00")
 			c := graveler.Commit{
@@ -608,7 +608,7 @@ func TestManager_Log(t *testing.T) {
 				StorageNamespace: "s3://",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "main",
-			}, ""))
+			}))
 
 			ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
 			var previous graveler.CommitID
@@ -684,7 +684,7 @@ func TestManager_LogGraph(t *testing.T) {
 				StorageNamespace: "s3://",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "main",
-			}, "")
+			})
 			testutil.MustDo(t, "Create repository", err)
 
 			/*
@@ -805,7 +805,7 @@ func TestManager_GetCommitByPrefix(t *testing.T) {
 			StorageNamespace: "s3://",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",
-		}, "")
+		})
 		testutil.MustDo(t, "Create repository", err)
 		for _, commitID := range commitIDs {
 			c := graveler.Commit{Committer: "user1",
@@ -870,7 +870,7 @@ func TestManager_ListCommits(t *testing.T) {
 				StorageNamespace: "s3://",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "main",
-			}, ""))
+			}))
 			nextCommitNumber := 0
 			addNextCommit := func(parents ...graveler.CommitID) graveler.CommitID {
 				nextCommitNumber++
