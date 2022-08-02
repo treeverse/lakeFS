@@ -192,8 +192,13 @@ type Repository struct {
 	StorageNamespace StorageNamespace `db:"storage_namespace"`
 	CreationDate     time.Time        `db:"creation_date"`
 	DefaultBranchID  BranchID         `db:"default_branch"`
-	State            RepositoryState
-	InstanceUID      string
+	// RepositoryState represents the state of the repository, only ACTIVE repository is considered a valid one.
+	// other states represent in invalid temporary or terminal state
+	State RepositoryState
+	// InstanceUID identifies repository in a unique way. Since repositories with same name can be deleted and recreated
+	// this field identifies the specific instance, and used in the KV store key path to store all the entities belonging
+	// to this specific instantiation of repo with the given ID
+	InstanceUID string
 }
 
 func NewRepository(storageNamespace StorageNamespace, defaultBranchID BranchID) Repository {

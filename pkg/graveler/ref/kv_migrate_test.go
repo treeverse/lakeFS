@@ -167,6 +167,8 @@ func verifyMigrationResults(t *testing.T, ctx context.Context, kvMgr, dbMgr grav
 		dbr, err := dbMgr.GetRepository(ctx, repo.RepositoryID)
 		require.NoError(t, err)
 		dbr.CreationDate = dbr.CreationDate.UTC()
+		require.Equal(t, graveler.RepositoryState_ACTIVE, kvr.State)
+		require.True(t, len(kvr.InstanceUID) == 20) // valid xid length
 		// Fill DB missing fields
 		dbr.State = graveler.RepositoryState_ACTIVE
 		dbr.InstanceUID = kvr.InstanceUID
