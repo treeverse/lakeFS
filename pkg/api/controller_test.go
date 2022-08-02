@@ -617,6 +617,24 @@ func testController_CommitHandler(t *testing.T, kvEnabled bool) {
 		require.Contains(t, resp.JSON400.Message, graveler.ErrCommitMetaRangeDirtyBranch.Error())
 	})
 
+	t.Run("commit failure empty branch", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
+
+		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
+		testutil.Must(t, err)
+
+		resp, err := clt.CommitWithResponse(ctx, repo, "foo-branch", &api.CommitParams{}, api.CommitJSONRequestBody{
+			Message: "some message",
+		})
+
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
+		require.NotNil(t, resp.JSON400)
+		require.Contains(t, resp.JSON400.Message, graveler.ErrNoChanges.Error())
+	})
+
 	t.Run("commit success - with creation date", func(t *testing.T) {
 		repo := testUniqueRepoName()
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")

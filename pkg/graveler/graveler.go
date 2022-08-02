@@ -1641,7 +1641,7 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 	if params.SourceMetaRange != nil {
 		empty, err := g.stagingEmpty(ctx, repositoryID, repo, branch)
 		if err != nil {
-			return "", fmt.Errorf("checking empty branch: %w", err)
+			return "", fmt.Errorf("checking empty  branch: %w", err)
 		}
 		if !empty {
 			return "", ErrCommitMetaRangeDirtyBranch
@@ -1716,14 +1716,12 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 			if err != nil {
 				return nil, err
 			}
-			if len(itrs) == 0 { // staging empty
-				return nil, ErrNotFound
-			}
 			if len(itrs) == 1 {
 				commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, itrs[0])
 			} else {
 				changes := NewCombinedIterator(itrs...)
 				defer changes.Close()
+				// returns err if the commit is empty (no changes)
 				commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes)
 			}
 
