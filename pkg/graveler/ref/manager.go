@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/logging"
+
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/ident"
@@ -163,16 +165,65 @@ func (m *KVManager) ListRepositories(ctx context.Context) (graveler.RepositoryIt
 	return NewKVRepositoryIterator(ctx, &m.kvStore)
 }
 
+func (m *KVManager) updateRepoState(ctx context.Context, repo *graveler.RepositoryRecord, state graveler.RepositoryState) error {
+	repo.State = state
+	return m.kvStore.SetMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repo.RepositoryID)), graveler.ProtoFromRepo(repo))
+}
+
+func (m *KVManager) deleteRepository(ctx context.Context, repo *graveler.RepositoryRecord) {
+	logger := logging.FromContext(ctx)
+	// Scan through repository partition and delete entities
+	partition := graveler.RepoPartition(repo)
+	it, err := kv.NewPartitionIterator(ctx, m.kvStore.Store, (&kv.SecondaryIndex{}).ProtoReflect().Type(), partition)
+	if err != nil {
+		if err != nil {
+			logger.WithField("repository", repo.RepositoryID).
+				WithError(err).
+				Error("Error during iteration")
+		}
+	}
+	defer it.Close()
+	for it.Next() {
+		v := it.Entry()
+		err = m.kvStore.DeleteMsg(ctx, partition, v.Key)
+		if err != nil {
+			logger.WithField("repository", repo.RepositoryID).
+				WithField("key", string(v.Key)).
+				Error("Failed to delete repository entity")
+		}
+	}
+	if it.Err() != nil {
+		if err != nil {
+			logger.WithField("repository", repo.RepositoryID).
+				WithError(it.Err()).
+				Error("Error during iteration")
+		}
+	}
+
+	// Finally delete the repository record itself
+	err = m.kvStore.DeleteMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repo.RepositoryID)))
+	if err != nil {
+		logger.WithField("repository", repo.RepositoryID).Error("Failed to delete repository entry")
+	}
+}
+
 func (m *KVManager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
-	// TODO: delete me
-	// temp code to align with DB manager. Delete once https://github.com/treeverse/lakeFS/issues/3640 is done
-	_, err := m.getRepository(ctx, repositoryID)
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
-	// END TODO: delete me
 
-	return m.kvStore.DeleteMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID)))
+	// Set repository state to deleted and then perform background delete
+	if repo.State != graveler.RepositoryState_IN_DELETION {
+		err = m.updateRepoState(ctx, repo, graveler.RepositoryState_IN_DELETION)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Background delete of repository, return success immediately
+	go m.deleteRepository(ctx, repo)
+	return nil
 }
 
 func (m *KVManager) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {

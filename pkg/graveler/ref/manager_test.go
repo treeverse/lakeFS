@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
+
 	"github.com/go-test/deep"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -146,10 +148,25 @@ func TestManager_DeleteRepository(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			_, err = tt.refManager.GetRepository(context.Background(), "example-repo")
-			if !errors.Is(err, graveler.ErrRepositoryNotFound) {
-				t.Fatalf("expected ErrRepositoryNotFound, got: %v", err)
-			}
+			bo := backoff.NewExponentialBackOff()
+			const (
+				maxInterval = 1
+				maxElapsed  = 5
+			)
+			bo.MaxInterval = maxInterval * time.Second
+			bo.MaxElapsedTime = maxElapsed * time.Second
+			err = backoff.Retry(func() error {
+				_, err = tt.refManager.GetRepository(context.Background(), "example-repo")
+				switch {
+				case errors.Is(err, graveler.ErrRepositoryNotFound):
+					return nil
+				case errors.Is(err, graveler.ErrRepositoryInDeletion):
+					return err
+				default: // failure
+					return backoff.Permanent(err)
+				}
+			}, bo)
+			require.NoError(t, err)
 		})
 
 		t.Run("repo_does_not_exist_"+tt.name, func(t *testing.T) {
