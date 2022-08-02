@@ -67,7 +67,7 @@ A much better user experience would be to allow merging snapshots into a new uni
 
 We intend to test, verify and document the version support matrix for our Hadoop-based clients:
 1. [lakeFS Hadoop Filesystem](https://github.com/treeverse/lakeFS/tree/master/clients/hadoopfs)
-2. The [metadata client](https://github.com/treeverse/lakeFS/tree/master/clients/spark)
+2. [Spark metadata client](https://github.com/treeverse/lakeFS/tree/master/clients/spark)
 3. [RouterFS](https://github.com/treeverse/hadoop-router-fs)
 
 In particular, all features will support Hadoop versions 3.x.
