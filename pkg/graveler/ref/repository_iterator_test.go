@@ -22,7 +22,7 @@ func TestDBRepositoryIterator(t *testing.T) {
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",
-		}, ""))
+		}))
 	}
 
 	t.Run("listing all repos", func(t *testing.T) {
@@ -105,7 +105,7 @@ func TestKVRepositoryIterator(t *testing.T) {
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",
-		}, ""))
+		}))
 	}
 
 	t.Run("listing all repos", func(t *testing.T) {

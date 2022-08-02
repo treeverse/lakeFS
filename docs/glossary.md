@@ -21,7 +21,7 @@ When creating a new branch, we are actually creating a consistent snapshot of th
 
 A branch is a mutable pointer to a commit and uncommitted changes in its staging area (i.e., mutable storage where users can create, update, and delete objects). When a user creates a commit from a branch, all the files from the staging area will be merged into the contents of the current branch, generating a new set of objects. The pointer is updated to reference the new set of objects. The new branch tip is set to the latest commit and the previous branch tip serves as the commit's parent. 
 
-Just like in git, a branch spans a repository. Learn more about the [lakeFS branching model](/understand/branching-model.md).
+Just like in git, a branch spans a repository. Learn more about the [lakeFS branching model](./understand/model.md).
 
 ### Collection
 Collection, roughly speaking, is a set of data. A set of structured data is often referred to as a table. Whereas collection could comprise a data set that can be either structured or unstructured.

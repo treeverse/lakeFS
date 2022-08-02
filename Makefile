@@ -141,14 +141,16 @@ gen-api: go-install ## Run the swagger code generator
 	$(GOGENERATE) ./pkg/api
 	$(GOGENERATE) ./pkg/auth
 
-.PHONY: gen-mockgen
-gen-mockgen: go-install ## Run the generator for inline commands
-	$(GOGENERATE) ./pkg/graveler/sstable
-	$(GOGENERATE) ./pkg/graveler/committed
-	$(GOGENERATE) ./pkg/graveler
-	$(GOGENERATE) ./pkg/pyramid
-	$(GOGENERATE) ./pkg/onboard
-	$(GOGENERATE) ./pkg/actions
+.PHONY: gen-code
+gen-code: go-install ## Run the generator for inline commands
+	$(GOGENERATE) \
+		./pkg/graveler/sstable \
+		./pkg/graveler/committed \
+		./pkg/graveler \
+		./pkg/pyramid \
+		./pkg/onboard \
+		./pkg/actions \
+		./pkg/auth
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
 build: gen docs ## Download dependencies and build the default binary
@@ -251,4 +253,4 @@ help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # helpers
-gen: gen-api gen-ui gen-mockgen clients gen-docs
+gen: gen-api gen-ui gen-code clients gen-docs

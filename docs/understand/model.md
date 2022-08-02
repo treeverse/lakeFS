@@ -1,25 +1,22 @@
 ---
 layout: default
-title: Object Model 
+title: Model 
 description: The lakeFS object model blends the object models of Git and of object stores such as S3. Read this page to learn more.
 parent: Understanding lakeFS
-nav_order: 22
+nav_order: 20
 has_children: false
-redirect_from: ../reference/object-model.html
+redirect_from: ["../reference/object-model.html","../understand/branching-model.html","../understand/object-model.html"]
 ---
 
-# Object Model
+# Model
 {: .no_toc }
 
 {% include toc.html %}
 
-## Introduction
-
 lakeFS blends concepts from object stores such as S3 with concepts from Git. This reference
-defines the common concepts of lakeFS. Every concept appearing in _italic text_ is its
-definition.
+defines the common concepts of lakeFS.
 
-## lakeFS the object store
+## Objects
 
 lakeFS is an object store and borrows concepts from S3.
 
@@ -35,39 +32,56 @@ An _object store_ links objects to paths. An _object_ holds:
 Similarly to many object stores, lakeFS objects are immutable and never rewritten. They can
 be entirely replaced or deleted, but not modified.
 
-A _path_ is a readable string, typically decoded as UTF-8. lakeFS maps paths to their objects
-according to specific rules. lakeFS paths use the `lakefs` protocol, described below.
+The actual data itself is not stored inside lakeFS directly but in an [underlying object store](#concepts-unique-to-lakefs).
+lakeFS will manage these writes and store a pointer to the object in its metadata database.
+{: .note }
 
-## lakeFS the version control system
+## Version Control
 
 lakeFS borrows its concepts for version control from Git.
 
 ### Repository
 
-A _repository_ is a collection of objects with common history tracking. lakeFS manages
-versions of the repository, identified by their commits. A _commit_ is a collection of object
-metadata and data, including especially all paths and the object contents and metadata at that
-commit. Commits have their own _commit metadata_, which includes a textual comment and
-additional user metadata.
+In lakeFS, a _repository_ is a logical namespace used to group together objects, branches, and commits.
+It can be considered the lakeFS analog of a bucket in an object store. Since it has version control qualities, it's also analogous to a repository in Git.
 
 ### Commits
+Commits are immutable "checkpoints" containing an entire snapshot of a repository at a given point in time.
+This is very similar to commits in Git. Each commit contains metadata - the committer, timestamp, a commit message, as well as arbitrary key/value pairs you can choose to add.
+Using commits, you can view your Data Lake at a certain point in its history and you're guaranteed that the data you see is exactly is it was at the point of committing it.
 
-Commits are organized into a _history_ using their parent commits. Every repository has
-exactly one _initial commit_ with no parents. <span style="font-size: smaller">Note that a
-Git repository may have multiple initial commits.</span> A commit with more than one parent is
-a _merge commit_. <span style="font-size: smaller"> Currently lakeFS only supports merge
-commits with two parents.</span>
+Every repository has exactly one _initial commit_ with no parents. A commit with more than one parent is
+a _merge commit_. Currently lakeFS only supports merge commits with two parents.
 
-### Identifying commits
+#### Identifying commits
+{: .no_toc }
 
-A commit is identified by its _commit ID_, a digest of all contents of the commit. Commit IDs
-are by nature long, so you may use a unique prefix to abbreviate them (but note that short
-prefixes can become non-unique as the repository grows, so prefer to avoid abbreviating when
-storing commits for the long term). A commit may also be identified by using a textual
-definition, called a _ref_. Examples of refs include tags, branches, and expressions. The
-state of the repository at any commit is always readable.
+A commit is identified by its _commit ID_, a digest of all contents of the commit. Commit IDs are by nature long,
+so you may use a unique prefix to abbreviate them. A commit may also be identified by using a textual definition,
+called a _ref_. Examples of refs include tags, branch names, and expressions.
 
-#### Tags
+### Branches
+_Branches_ are similar in concept to [Git branches](https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging){:target="_blank"}.
+It is a mutable pointer to a commit and its staging area (see [below](#staging-area)). A branch in lakeFS is a consistent snapshot of the entire repository,
+which is isolated from other branches and their changes.
+
+Example branches:
+
+* `main`, the trunk.
+* `staging`, maybe ahead of `main`.
+* `dev:joe-bugfix-1234` for Joe to fix issue 1234.
+
+### Staging Area
+
+The _staging area_ is where your changes appear before they are committed.
+Unlike Git, every branch in lakeFS has its own staging area.
+Uncommitted changes are visible to all users with read permissions, for example using the _Uncommitted Changes_ tab in the UI.
+
+When you commit these changes, a new commit is added to the commit history, and the changes disappear from the staging area.
+This operation is atomic: readers will either see all your committed changes or none at all.
+
+
+### Tags
 
 A _tag_ is an immutable pointer to a single commit. Tags have readable names. Since tags
 are commits, a repository can be read from any tag. Example tags:
@@ -75,21 +89,8 @@ are commits, a repository can be read from any tag. Example tags:
 * `v2.3` to mark a release.
 * `dev:jane-before-v2.3-merge` to mark Jane's private temporary point.
 
-#### Branches
 
-A _branch_ is a mutable pointer to a commit and its staging area. Repositories are readable
-from any branch, but they are also **writable** to a branch. The _staging area_ associated
-with a branch is mutable storage where objects can be created, updated, or deleted. These
-objects are readable when reading from the branch. To **create** a commit from a branch, all
-files from the staging area are merged into the contents of the current branch, creating the
-new set of objects. The parent of the commit is the previous branch tip, and the new branch
-tip is set to this new commit. Example branches:
-
-* `main`, the trunk.
-* `staging`, maybe ahead of `main`.
-* `dev:joe-bugfix-1234` for Joe to fix issue 1234.
-
-#### Ref expressions
+### Ref expressions
 
 lakeFS also supports _expressions_ for creating a ref. These are similar to [revisions in
 Git](https://git-scm.com/docs/gitrevisions#_specifying_revisions); indeed all `~` and `^`
@@ -110,18 +111,21 @@ examples at the end of that section will work unchanged in lakeFS.
 The _history_ of the branch is the list of commits from the branch tip through the first
 parent of each commit. Histories go back in time.
 
-The other way to create a commit is to merge an existing commit onto a branch. To _merge_ a
-source commit into a branch, lakeFS finds the _best_ common ancestor of that source commit and
-the branch tip, called the "base". Then it performs a [3-way merge](#three-way-merge). The
-"best" ancestor is exactly that defined in the documentation for
-[git-merge-base](https://git-scm.com/docs/git-merge-base#_description). The result of a merge
-is a new commit, with the destination as the first parent and the source as the second. The previous tip of the merge destination is part of the history of the merged object.
+### Merge
 
-### Three way merge
+_Merging_ is the way to integrate changes from a branch into another branch.
+The result of a merge is a new commit, with the destination as the first parent and the source as the second.
+
+Unlike Git, lakeFS doesn't apply a diff algorithm while merging.
+This is because lakeFS is used for unstructured data, where it makes little sense to merge multiple changes into a single object.
+{: .note }
+
+#### How it works
+{: .no_toc }
 
 To merge a _merge source_ (a commit) into a _merge destination_ (another commit), lakeFS first
-finds the _merge base_, the nearest common parent of the two commits. It can now perform a
-three-way merge, by examining the presence and identity of files in each commit. In the table
+finds the [merge base]((https://git-scm.com/docs/git-merge-base#_description)) the nearest common parent of the two commits.
+It can now perform a _three-way merge_, by examining the presence and identity of files in each commit. In the table
 below, "A", "B" and "C" are possible file contents, "X" is a missing file, and "conflict"
 (which only appears as a result) is a merge failure.
 
@@ -156,7 +160,6 @@ will be stored.
 We sometimes refer to underlying storage as _physical_. The path used to store the contents of an object is then termed a _physical path_.
 Once lakeFS saves an object in the underlying storage it is never modified, except to remove it
 entirely during some cleanups.
-
 
 A lot of what lakeFS does is to manage how lakeFS paths translate to _physical paths_ on the
 object store. This mapping is generally **not** straightforward. Importantly (and contrary to

@@ -80,6 +80,7 @@ terraform.rc
 /pkg/pyramid/mock/
 /pkg/onboard/mock/
 /pkg/actions/mock/
+/pkg/auth/mock/
 
 .eslintcache
 /clients/java/.openapi-generator/FILES

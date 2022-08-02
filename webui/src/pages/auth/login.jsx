@@ -5,7 +5,7 @@ import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
-import {auth, setup, SETUP_STATE_INITIALIZED} from "../../lib/api";
+import {auth, AuthenticationError, setup, SETUP_STATE_INITIALIZED} from "../../lib/api";
 import {Error} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
@@ -38,7 +38,13 @@ const LoginForm = ({oidcEnabled}) => {
                                 setLoginError(null);
                                 router.push(next ? next : '/');
                             } catch(err) {
-                                setLoginError(err);
+                                if (err instanceof AuthenticationError && err.status === 401) {
+                                    setLoginError("The credentials don't match.");
+                                    if (oidcEnabled) {
+                                        setLoginError(<>The credentials don&apos;t match. You may be registered through our <a href={"/oidc/login?prompt=login"}>SSO Provider.</a></>)
+                                    }
+                                }
+
                             }
                         }}>
                             <Form.Group controlId="username">
