@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	DefaultMaxIdleConnsPerHost = 1000
+	DefaultMaxIdleConnsPerHost = 100
 )
 
 var (
@@ -98,6 +98,10 @@ func getClient() *api.ClientWithResponses {
 	// see: https://stackoverflow.com/a/39834253
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
+	httpClient := &http.Client{
+		Transport: transport,
+	}
+
 	accessKeyID := cfg.Values.Credentials.AccessKeyID
 	secretAccessKey := cfg.Values.Credentials.SecretAccessKey
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
@@ -118,6 +122,7 @@ func getClient() *api.ClientWithResponses {
 	client, err := api.NewClientWithResponses(
 		serverEndpoint,
 		api.WithRequestEditorFn(basicAuthProvider.Intercept),
+		api.WithHTTPClient(httpClient),
 	)
 	if err != nil {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)
