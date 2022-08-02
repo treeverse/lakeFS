@@ -1074,7 +1074,7 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 				metadata:     graveler.Metadata{},
 			},
 			want:        expectedCommitID,
-			values:      values,
+			values:      graveler.NewCombinedIterator(multipleValues...),
 			expectedErr: nil,
 		},
 		{
@@ -1203,7 +1203,7 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 				metadata:     graveler.Metadata{},
 			},
 			want:        expectedCommitID,
-			values:      values,
+			values:      graveler.NewCombinedIterator(multipleValues...),
 			expectedErr: nil,
 		},
 		{

@@ -1481,7 +1481,7 @@ func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, re
 		}
 	}
 	if try == setTries {
-		return fmt.Errorf("set staging area: %w", ErrTooManyTries)
+		return fmt.Errorf("safe branch write: %w", ErrTooManyTries)
 	}
 	return nil
 }
@@ -1558,6 +1558,7 @@ func (g *KVGraveler) listStagingArea(ctx context.Context, b *Branch) (ValueItera
 
 	itrs, err := g.listSealedTokens(ctx, b)
 	if err != nil {
+		it.Close()
 		return nil, err
 	}
 	itrs = append([]ValueIterator{it}, itrs...)
@@ -1565,7 +1566,7 @@ func (g *KVGraveler) listStagingArea(ctx context.Context, b *Branch) (ValueItera
 }
 
 func (g *KVGraveler) listSealedTokens(ctx context.Context, b *Branch) ([]ValueIterator, error) {
-	var itrs []ValueIterator
+	itrs := make([]ValueIterator, 0, len(b.SealedTokens))
 	for _, st := range b.SealedTokens {
 		it, err := g.StagingManager.List(ctx, st, 1)
 		if err != nil {
@@ -1638,16 +1639,6 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		return "", fmt.Errorf("get branch: %w", err)
 	}
 
-	if params.SourceMetaRange != nil {
-		empty, err := g.stagingEmpty(ctx, repositoryID, repo, branch)
-		if err != nil {
-			return "", fmt.Errorf("checking empty  branch: %w", err)
-		}
-		if !empty {
-			return "", ErrCommitMetaRangeDirtyBranch
-		}
-	}
-
 	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
 		if params.SourceMetaRange != nil {
 			empty, err := g.stagingEmpty(ctx, repositoryID, repo, branch)
@@ -1710,21 +1701,24 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		}
 		commit.Generation = parentGeneration + 1
 		if params.SourceMetaRange != nil {
+			empty, err := g.sealedEmpty(ctx, repositoryID, repo, branch)
+			if err != nil {
+				return nil, fmt.Errorf("checking empty sealed: %w", err)
+			}
+			if !empty {
+				return nil, ErrCommitMetaRangeDirtyBranch
+			}
 			commit.MetaRangeID = *params.SourceMetaRange
 		} else {
 			itrs, err := g.listSealedTokens(ctx, branch)
 			if err != nil {
 				return nil, err
 			}
-			if len(itrs) == 1 {
-				commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, itrs[0])
-			} else {
-				changes := NewCombinedIterator(itrs...)
-				defer changes.Close()
-				// returns err if the commit is empty (no changes)
-				commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes)
-			}
 
+			changes := NewCombinedIterator(itrs...)
+			defer changes.Close()
+			// returns err if the commit is empty (no changes)
+			commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes)
 			if err != nil {
 				return nil, fmt.Errorf("commit: %w", err)
 			}
@@ -1787,21 +1781,19 @@ func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repositoryID Reposit
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxInterval = maxInterval * time.Second
 
-	var try int
+	try := 1
 	err := backoff.Retry(func() error {
-		// TODO(3586) - if the branch commit id hasn't changed, update the fields instead of fail
+		// TODO(eden) issue 3586 - if the branch commit id hasn't changed, update the fields instead of fail
 		err := g.RefManager.BranchUpdate(ctx, repositoryID, branchID, f)
-		if err != nil {
-			if !errors.Is(err, kv.ErrPredicateFailed) {
-				return backoff.Permanent(err)
-			}
-			if try < setTries-1 {
-				g.log.WithField("try", try+1).
-					WithField("branchID", branchID).
-					Info("Retrying update branch")
-				try += 1
-				return err
-			}
+		if err != nil && !errors.Is(err, kv.ErrPredicateFailed) {
+			return backoff.Permanent(err)
+		}
+		if err != nil && try < setTries {
+			g.log.WithField("try", try).
+				WithField("branchID", branchID).
+				Info("Retrying update branch")
+			try += 1
+			return err
 		}
 		return nil
 	}, bo)
@@ -1956,8 +1948,12 @@ func (g *KVGraveler) stagingEmpty(ctx context.Context, repositoryID RepositoryID
 	defer itr.Close()
 
 	// Iterating over staging area (staging + sealed) of the branch and check for entries
-	// staging is not considered empty IFF it contains any non-tombstone entry or a tombstone entry exists for a key which
-	// is already committed
+	return g.checkEmpty(ctx, repositoryID, repo, branch, itr)
+}
+
+// checkEmpty - staging iterator is not considered empty IFF it contains any non-tombstone entry
+// or a tombstone entry exists for a key which is already committed
+func (g *KVGraveler) checkEmpty(ctx context.Context, repositoryID RepositoryID, repo *Repository, branch *Branch, itr ValueIterator) (bool, error) {
 	commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
 	if err != nil {
 		return false, err
@@ -1975,6 +1971,16 @@ func (g *KVGraveler) stagingEmpty(ctx context.Context, repositoryID RepositoryID
 		}
 	}
 	return true, nil
+}
+
+func (g *KVGraveler) sealedEmpty(ctx context.Context, repositoryID RepositoryID, repo *Repository, branch *Branch) (bool, error) {
+	itrs, err := g.listSealedTokens(ctx, branch)
+	if err != nil {
+		return false, err
+	}
+	it := NewCombinedIterator(itrs...)
+	defer it.Close()
+	return g.checkEmpty(ctx, repositoryID, repo, branch, it)
 }
 
 // dropStaging deletes all staging area entries of a given branch from store
