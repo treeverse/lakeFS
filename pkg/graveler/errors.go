@@ -34,6 +34,7 @@ var (
 	ErrCommitNotFound               = fmt.Errorf("commit %w", ErrNotFound)
 	ErrCreateBranchNoCommit         = fmt.Errorf("can't create a branch without commit")
 	ErrRepositoryNotFound           = fmt.Errorf("repository %w", ErrNotFound)
+	ErrRepositoryInDeletion         = errors.New("repository in deletion")
 	ErrBranchNotFound               = fmt.Errorf("branch %w", ErrNotFound)
 	ErrTagNotFound                  = fmt.Errorf("tag %w", ErrNotFound)
 	ErrRefAmbiguous                 = fmt.Errorf("reference is ambiguous: %w", ErrNotFound)

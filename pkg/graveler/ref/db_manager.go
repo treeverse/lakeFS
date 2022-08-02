@@ -87,7 +87,7 @@ func (m *DBManager) createBareRepository(tx db.Tx, repositoryID graveler.Reposit
 	return nil
 }
 
-func (m *DBManager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository, token graveler.StagingToken) error {
+func (m *DBManager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
 	firstCommit := graveler.NewCommit()
 	firstCommit.Message = graveler.FirstCommitMsg
 	firstCommit.Generation = 1
@@ -104,7 +104,7 @@ func (m *DBManager) CreateRepository(ctx context.Context, repositoryID graveler.
 		_, err = tx.Exec(`
 				INSERT INTO graveler_branches (repository_id, id, staging_token, commit_id)
 				VALUES ($1, $2, $3, $4)`,
-			repositoryID, repository.DefaultBranchID, token, commitID)
+			repositoryID, repository.DefaultBranchID, graveler.GenerateStagingToken(repositoryID, repository.DefaultBranchID), commitID)
 
 		if err != nil {
 			if errors.Is(err, db.ErrAlreadyExists) {
@@ -706,6 +706,9 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 				break
 			}
 
+			// Create unique identifier and set repo state to active
+			r.InstanceUID = graveler.NewRepoInstanceID()
+			r.State = graveler.RepositoryState_ACTIVE
 			rChan <- r
 		}
 	}
