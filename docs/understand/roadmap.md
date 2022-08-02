@@ -16,11 +16,12 @@ redirect_from: ../roadmap.html
 ---
 ## Ecosystem
 
-### Snowflake Support: External tables on lakeFS <span>Requires Discussion</span>{: .label .label-yellow }
+### Repository Templates: Easily use lakeFS with your data stack <span>High Priority</span>{: .label .label-blue }
 
-Since Snowflake supports reading external tables from an object store, we'd like to extend this support to work with lakeFS repositories hosted on top of the [supported object stores](https://docs.snowflake.com/en/user-guide/data-load-snowpipe-intro.html#supported-cloud-storage-services){: target="_blank" }.
-This could be done by utilizing Snowflake's support for `SymlinkInputFormat` similarly to how [Delta Lake support is implemented](https://docs.databricks.com/delta/snowflake-integration.html){: target="_blank" } and later on by having a native integration with Snowflake itself. If you'd like to hear more, [contact us, we'd love to talk about it some more!](mailto:hello@treeverse.io?subject=using+lakeFS+with+Snowflake){: target="_blank" class="btn" }
+A wizard will walk you through launching a repository tailored for your use case.
+Integrate with Spark, Hive Metastore and your other tools.
 
+[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3411){: target="_blank" class="btn" }
 
 ### Pluggable diff/merge operators
 
@@ -37,7 +38,7 @@ simply looking at object names to determine whether or not a conflict occured mi
 With that in mind, we plan to make the diff and merge operations pluggable. 
 lakeFS already supports injecting custom behavior using hooks. Ideally, we can support this by introducing `on-diff` and `on-merge` hooks that allow implementing hooks in different languages, possibly utilizing existing code and libraries to aid with understanding these formats.
 
-Once implemented, we could support:
+Once this is done, one may implement:
 
 #### Delta Lake merges and diffs across branches
 
@@ -62,6 +63,14 @@ A much better user experience would be to allow merging snapshots into a new uni
 
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3381){: target="_blank" class="btn" }
 
+### Hadoop 3 support in all lakeFS clients <span>High Priority</span>{: .label .label-blue }
+
+We intend to test, verify and document the version support matrix for our Hadoop-based clients:
+1. [lakeFS Hadoop Filesystem](https://github.com/treeverse/lakeFS/tree/master/clients/hadoopfs)
+2. [Spark metadata client](https://github.com/treeverse/lakeFS/tree/master/clients/spark)
+3. [RouterFS](https://github.com/treeverse/hadoop-router-fs)
+
+In particular, all features will support Hadoop versions 3.x.
 
 
 ### Native Spark OutputCommitter
@@ -89,7 +98,6 @@ This would be done in a similar way to the [Native Spark integration](../integra
 
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/2357){: target="_blank" class="btn" }
 
-
 ### Improved streaming support for Apache Kafka
 
 Committing (along with attaching useful information to the commit) makes a lot of sense for batch workloads: 
@@ -112,38 +120,22 @@ Ideally, lakeFS should provide tools to automate this, with native support for [
 
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/2358){: target="_blank" class="btn" }
 
+### User management using OIDC providers <span>High Priority</span>{: .label .label-blue }
+
+Allow admins to manage their users externally using any OIDC-compatible provider.
+
+### Reproducible data images
+
 
 ## Versioning Capabilities
 
-### Git-lakeFS integration
-The ability to connect Git commits with lakeFS commits.
-Especially useful for reproducibility: By looking at a set of changes to the **data**, be able to reference (or ever run) the job that produced it. 
-
-[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/2073){: target="_blank" class="btn" }
-
-
-### Support asyncronous hooks <span>High Priority</span>{: .label .label-blue }
+### Support asynchronous hooks <span>High Priority</span>{: .label .label-blue }
 
 Support running hooks that might possibly take many minutes to complete. 
 This is useful for things such as data quality checks - where we might want to do big queries or scans to ensure the data being merged adheres to certain business rules.
 
 Currently, `pre-commit` and `pre-merge` hooks in lakeFS are tied to the lifecycle of the API request that triggers the said commit or merge operation.
 In order to support long running hooks, there are enhancements to make to lakeFS APIs in order to support an asynchronous commit and merge operations that are no longer tied to the HTTP request that triggered them.
-
-
-### Partial Commits
-
-In some cases, lakeFS users might want to commit only a set of staged objects instead of all modifications made to a branch.
-This is especially useful when experimenting with multiple data sources, but we only care about an output as opposed to intermediate state.
-
-[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2512){: target="_blank" class="btn" }
-
-
-### Rebase
-
-Since some users are interested in achieving parity between their Git workflow and their lakeFS workflow, they would like to extend the merge behavior to support history rewriting in which the changes that occured in the source branch are then reapplied to the HEAD of the destination branch (aka "rebase").
-
-[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/2739){: target="_blank" class="btn" }
 
 ### Support Garbage Collection on Azure <span>High Priority</span>{: .label .label-blue }
 
@@ -152,9 +144,18 @@ comply with data privacy policies. Currently, lakeFS only supports Garbage Colle
 
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3271){: target="_blank" class="btn" }
 
+### Garbage Collection on Google Cloud Platform
+
+Same as above, but for GCP.
+
+### Collaborate on your data
+
+Use lakeFS to comment, review and request changes before your data reaches consumers.
+
+[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/pull/3741){: target="_blank" class="btn" }
+
 
 ## Architecture
-
 
 ### Decouple ref-store from PostgreSQL <span>High Priority</span>{: .label .label-blue }
 
@@ -170,7 +171,7 @@ This release will mark the completion of project **["lakeFS on the Rocks"](https
 
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/blob/master/design/open/metadata_kv/index.md){: target="_blank" class="btn" }
 
-### Ref-store implementation for DynamoDB
+### Ref-store implementation for DynamoDB <span>High Priority</span>{: .label .label-blue }
 
 Once we've decoupled the ref-store from PostgreSQL, we'd like to create a ref-store implementation that supports DynamoDB.
 This has several advantages for users looking to run lakeFS on AWS:
@@ -180,7 +181,6 @@ This has several advantages for users looking to run lakeFS on AWS:
 1. Scaling according to usage is much more fine grained, which eliminates a lot of the cost for smaller installations (as opposed to RDS).
 
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/blob/master/design/open/metadata_kv/index.md#databases-that-meet-these-requirements-examples){: target="_blank" class="btn" }
-
 
 ### Ref-store implementation for RocksDB (for testing and experimentation)
 
