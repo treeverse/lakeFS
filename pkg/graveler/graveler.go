@@ -26,6 +26,9 @@ const (
 
 	MergeStrategySrcWins  = "source-wins"
 	MergeStrategyDestWins = "dest-wins"
+
+	SettingsRelativeKey = "%s/settings/%s.json" // where the settings are saved relative to the storage namespace
+
 )
 
 // Basic Types

@@ -52,7 +52,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 		}
 		return buildS3Adapter(statsCollector, p)
 	case block.BlockstoreTypeMem, "memory":
-		return mem.New(), nil
+		return mem.FetchStore(), nil // Returns existing store or creates a new one
 	case block.BlockstoreTypeTransient:
 		return transient.New(), nil
 	case block.BlockstoreTypeGS:
@@ -134,11 +134,11 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 }
 
 func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
-	pipeline, err := BuildAzureClient(params)
+	p, err := BuildAzureClient(params)
 	if err != nil {
 		return nil, err
 	}
-	return azure.NewAdapter(pipeline), nil
+	return azure.NewAdapter(p), nil
 }
 
 func BuildAzureClient(params params.Azure) (pipeline.Pipeline, error) {

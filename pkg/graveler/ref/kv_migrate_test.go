@@ -3,19 +3,27 @@ package ref_test
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/batch"
+	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/factory"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/branch"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
+	"github.com/treeverse/lakefs/pkg/graveler/settings"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -27,6 +35,8 @@ const (
 func TestMigrate(t *testing.T) {
 	ctx := context.Background()
 	conn, _ := testutil.GetDB(t, databaseURI)
+	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
+
 	store, err := kv.Open(context.Background(), kvpg.DriverName, kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})
 	testutil.MustDo(t, "Open KV Store", err)
 	kvStore := kv.StoreMessage{Store: store}
@@ -38,7 +48,6 @@ func TestMigrate(t *testing.T) {
 		store.Close()
 	})
 	dbMgr := ref.NewPGRefManager(batch.NopExecutor(), conn, ident.NewHexAddressProvider())
-
 	createMigrateTestData(t, ctx, dbMgr)
 
 	buf := bytes.Buffer{}
@@ -47,7 +56,8 @@ func TestMigrate(t *testing.T) {
 
 	testutil.MustDo(t, "Import file", kv.Import(ctx, &buf, kvStore.Store))
 	kvMgr := ref.NewKVRefManager(batch.NopExecutor(), kvStore, ident.NewHexAddressProvider())
-	verifyMigrationResults(t, ctx, kvMgr, dbMgr)
+	settingsMgr := settings.NewManager(kvMgr, kv.StoreMessage{Store: kvStore.Store})
+	verifyMigrationResults(t, ctx, kvMgr, dbMgr, settingsMgr)
 }
 
 func createTagInitialCommit(t *testing.T, ctx context.Context, mgr graveler.RefManager, repoID graveler.RepositoryID) {
@@ -66,16 +76,39 @@ func createTagInitialCommit(t *testing.T, ctx context.Context, mgr graveler.RefM
 }
 
 func createMigrateTestData(t *testing.T, ctx context.Context, mgr graveler.RefManager) {
+	cfg, err := config.NewConfig()
+	testutil.Must(t, err)
+	blockstorePrefix := cfg.GetCommittedBlockStoragePrefix()
+	blockstore, err := factory.BuildBlockAdapter(ctx, nil, cfg)
+	testutil.Must(t, err)
+
 	for i := 0; i < NumRepositories; i++ {
-		repoId := graveler.RepositoryID("repo_" + strconv.Itoa(i))
-		if err := mgr.CreateRepository(ctx, repoId,
-			graveler.Repository{StorageNamespace: graveler.StorageNamespace(strconv.Itoa(i)), CreationDate: time.Now(), DefaultBranchID: "main"}); err != nil {
+		repoID := graveler.RepositoryID("repo_" + strconv.Itoa(i))
+		repo := graveler.Repository{StorageNamespace: graveler.StorageNamespace(strconv.Itoa(i)), CreationDate: time.Now(), DefaultBranchID: "main"}
+		if err := mgr.CreateRepository(ctx, repoID, repo); err != nil {
 			t.Fatalf("Create Repository: %s", err)
 		}
-		createTagInitialCommit(t, ctx, mgr, repoId)
+		// Add repo settings for every second repo
+		if i%2 == 0 {
+			s := settings.ExampleSettings{
+				ExampleInt: int32(i),
+				ExampleStr: repoID.String(),
+			}
+			data, err := proto.Marshal(&s)
+			testutil.Must(t, err)
+
+			objectPointer := block.ObjectPointer{
+				StorageNamespace: string(repo.StorageNamespace),
+				Identifier:       fmt.Sprintf(graveler.SettingsRelativeKey, blockstorePrefix, branch.ProtectionSettingKey),
+				IdentifierType:   block.IdentifierTypeRelative,
+			}
+			testutil.Must(t, blockstore.Put(ctx, objectPointer, int64(len(data)), bytes.NewReader(data), block.PutOpts{}))
+		}
+
+		createTagInitialCommit(t, ctx, mgr, repoID)
 
 		for b := 0; b < numBranches; b++ {
-			if err := mgr.CreateBranch(ctx, repoId, graveler.BranchID("branch_"+strconv.Itoa(b)),
+			if err := mgr.CreateBranch(ctx, repoID, graveler.BranchID("branch_"+strconv.Itoa(b)),
 				graveler.Branch{CommitID: graveler.CommitID(strconv.Itoa(b)),
 					StagingToken: graveler.StagingToken("test_token_" + strconv.Itoa(b)),
 					SealedTokens: []graveler.StagingToken{"token"},
@@ -84,7 +117,7 @@ func createMigrateTestData(t *testing.T, ctx context.Context, mgr graveler.RefMa
 			}
 		}
 		for c := 0; c < numCommits; c++ {
-			commitID, err := mgr.AddCommit(ctx, repoId,
+			commitID, err := mgr.AddCommit(ctx, repoID,
 				graveler.Commit{Version: graveler.CurrentCommitVersion,
 					Committer:    "tester",
 					Message:      strconv.Itoa(c),
@@ -143,11 +176,11 @@ func verifyBranchResults(t *testing.T, ctx context.Context, kvMgr, dbMgr gravele
 	defer branches.Close()
 	branchesNum := 0
 	for branches.Next() {
-		branch := branches.Value()
-		bkv, err := kvMgr.GetBranch(ctx, repoID, branch.BranchID)
+		b := branches.Value()
+		bkv, err := kvMgr.GetBranch(ctx, repoID, b.BranchID)
 		require.NoError(t, err)
 
-		bdb, err := dbMgr.GetBranch(ctx, repoID, branch.BranchID)
+		bdb, err := dbMgr.GetBranch(ctx, repoID, b.BranchID)
 		require.NoError(t, err)
 		require.Equal(t, bkv, bdb)
 		branchesNum += 1
@@ -155,7 +188,7 @@ func verifyBranchResults(t *testing.T, ctx context.Context, kvMgr, dbMgr gravele
 	require.Equal(t, branchesNum, numBranches+1)
 }
 
-func verifyMigrationResults(t *testing.T, ctx context.Context, kvMgr, dbMgr graveler.RefManager) {
+func verifyMigrationResults(t *testing.T, ctx context.Context, kvMgr, dbMgr graveler.RefManager, settingsMgr settings.Manager) {
 	repos, err := kvMgr.ListRepositories(ctx)
 	require.NoError(t, err)
 	defer repos.Close()
@@ -173,11 +206,21 @@ func verifyMigrationResults(t *testing.T, ctx context.Context, kvMgr, dbMgr grav
 		dbr.State = graveler.RepositoryState_ACTIVE
 		dbr.InstanceUID = kvr.InstanceUID
 		require.Equal(t, kvr, dbr)
-		repoNum += 1
+
+		// verify settings
+		testSettings := settings.ExampleSettings{}
+		data, err := settingsMgr.Get(ctx, repo.RepositoryID, graveler.SettingsPath(branch.ProtectionSettingKey), &testSettings)
+		if repoNum%2 == 0 {
+			require.Equal(t, data.(*settings.ExampleSettings).ExampleStr, repo.RepositoryID)
+			require.Equal(t, data.(*settings.ExampleSettings).ExampleInt, repoNum)
+		} else {
+			require.ErrorIs(t, err, graveler.ErrNotFound)
+		}
 
 		// verify repository entities
 		verifyCommitTagResults(t, ctx, kvMgr, dbMgr, repo.RepositoryID)
 		verifyBranchResults(t, ctx, kvMgr, dbMgr, repo.RepositoryID)
+		repoNum += 1
 	}
 	require.Equal(t, repoNum, NumRepositories)
 }

@@ -26,6 +26,8 @@ var (
 	ErrInventoryNotImplemented = errors.New("inventory feature not implemented for memory storage adapter")
 )
 
+var memStore *Adapter
+
 type mpu struct {
 	id    string
 	parts map[int][]byte
@@ -60,8 +62,16 @@ type Adapter struct {
 	uploadIDTranslator block.UploadIDTranslator
 }
 
+// FetchStore Returns mem store if already initialized, otherwise creates one
+func FetchStore(opts ...func(a *Adapter)) *Adapter {
+	if memStore != nil {
+		return memStore
+	}
+	return New(opts...)
+}
+
 func New(opts ...func(a *Adapter)) *Adapter {
-	a := &Adapter{
+	memStore = &Adapter{
 		uploadIDTranslator: &block.NoOpTranslator{},
 		data:               make(map[string][]byte),
 		mpu:                make(map[string]*mpu),
@@ -69,9 +79,9 @@ func New(opts ...func(a *Adapter)) *Adapter {
 		mutex:              &sync.RWMutex{},
 	}
 	for _, opt := range opts {
-		opt(a)
+		opt(memStore)
 	}
-	return a
+	return memStore
 }
 
 func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
@@ -104,7 +114,8 @@ func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, sizeBytes int6
 func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
-	data, ok := a.data[getKey(obj)]
+	key := getKey(obj)
+	data, ok := a.data[key]
 	if !ok {
 		return nil, ErrNoDataForKey
 	}
