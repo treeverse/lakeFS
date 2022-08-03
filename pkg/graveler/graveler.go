@@ -1599,6 +1599,20 @@ func (g *KVGraveler) listSealedTokens(ctx context.Context, b *Branch) ([]ValueIt
 	return itrs, nil
 }
 
+func (g *KVGraveler) sealedTokensIterator(ctx context.Context, b *Branch) (ValueIterator, error) {
+	itrs, err := g.listSealedTokens(ctx, b)
+	if err != nil {
+		return nil, err
+	}
+	if len(itrs) == 0 {
+		return nil, ErrNoChanges
+	}
+
+	changes := NewCombinedIterator(itrs...)
+	defer changes.Close()
+	return changes, nil
+}
+
 func (g *KVGraveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref) (ValueIterator, error) {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
@@ -1729,16 +1743,10 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 			}
 			commit.MetaRangeID = *params.SourceMetaRange
 		} else {
-			itrs, err := g.listSealedTokens(ctx, branch)
+			changes, err := g.sealedTokensIterator(ctx, branch)
 			if err != nil {
 				return nil, err
 			}
-			if len(itrs) == 0 {
-				return nil, ErrNoChanges
-			}
-
-			changes := NewCombinedIterator(itrs...)
-			defer changes.Close()
 			// returns err if the commit is empty (no changes)
 			commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes)
 			if err != nil {
@@ -1996,13 +2004,11 @@ func (g *KVGraveler) checkEmpty(ctx context.Context, repositoryID RepositoryID, 
 }
 
 func (g *KVGraveler) sealedEmpty(ctx context.Context, repositoryID RepositoryID, repo *Repository, branch *Branch) (bool, error) {
-	itrs, err := g.listSealedTokens(ctx, branch)
+	itrs, err := g.sealedTokensIterator(ctx, branch)
 	if err != nil {
 		return false, err
 	}
-	it := NewCombinedIterator(itrs...)
-	defer it.Close()
-	return g.checkEmpty(ctx, repositoryID, repo, branch, it)
+	return g.checkEmpty(ctx, repositoryID, repo, branch, itrs)
 }
 
 // dropStaging deletes all staging area entries of a given branch from store
