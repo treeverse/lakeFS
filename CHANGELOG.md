@@ -7,7 +7,8 @@ What's new:
 - [GC] Respect Hadoop AWS access key configuration in S3Client (#3762)
 - Make GC read the expired addresses csv from Azure blob (#3654)
 - Display readme file if available(#3761)
-- Bug fixes:
+
+Bug fixes:
 - Fixed diff-viewer version by using a known fork (#3680)
 - Fix cache in auth service api (#3354) 
 
