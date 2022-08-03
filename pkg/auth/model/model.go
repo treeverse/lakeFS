@@ -65,6 +65,10 @@ func ExpiredTokenPath(tokenID string) []byte {
 	return []byte(kv.FormatPath(expiredTokensPrefix, tokenID))
 }
 
+func ExpiredTokensPath() []byte {
+	return ExpiredTokenPath("")
+}
+
 func MetadataKeyPath(key string) string {
 	return kv.FormatPath(metadataPrefix, key)
 }
