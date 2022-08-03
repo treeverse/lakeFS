@@ -1733,6 +1733,9 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 			if err != nil {
 				return nil, err
 			}
+			if len(itrs) == 0 {
+				return nil, ErrNoChanges
+			}
 
 			changes := NewCombinedIterator(itrs...)
 			defer changes.Close()
