@@ -1,4 +1,17 @@
 # Changelog
+## v0.70.0 - 2022-08-03
+
+What's new:
+- Allow OIDC as default login (#3617)
+- Launch a repository with Spark capabilities (#3792)
+- [GC] Respect Hadoop AWS access key configuration in S3Client (#3762)
+- Make GC read the expired addresses csv from Azure blob (#3654)
+- Display README file if available (#3761)
+
+Bug fixes:
+- Fixed diff-viewer version by using a known fork (#3680)
+- Fix cache in auth service api (#3354) 
+
 ## v0.69.1 - 2022-07-14
 
 Bug fixes: 
