@@ -6,7 +6,7 @@ What's new:
 - Launch a repository with Spark capabilities (#3792)
 - [GC] Respect Hadoop AWS access key configuration in S3Client (#3762)
 - Make GC read the expired addresses csv from Azure blob (#3654)
-- Display readme file if available(#3761)
+- Display README file if available (#3761)
 
 Bug fixes:
 - Fixed diff-viewer version by using a known fork (#3680)
