@@ -8,7 +8,6 @@ import (
 // in case of duplication (in values or in errors) returns value in iterA.
 // CombinedIterator can be constructed from other CombinedIterator to allow
 // chaining of multiple ValueIterators.
-// CombinedIterator with only one iterator will use only iterA
 type CombinedIterator struct {
 	iterA ValueIterator
 	iterB ValueIterator
@@ -17,12 +16,12 @@ type CombinedIterator struct {
 
 // NewCombinedIterator combines multiple ValueIterators into a single CombinedIterator.
 // The returned iterator precedence order is first-to-last in case of matching keys in 2 or more iterators.
-func NewCombinedIterator(iters ...ValueIterator) *CombinedIterator {
+func NewCombinedIterator(iters ...ValueIterator) ValueIterator {
 	if len(iters) == 0 {
 		panic("at least one iterator is required")
 	}
 	if len(iters) == 1 {
-		return newCombinedIterator(iters[0], nil)
+		return iters[0]
 	}
 	iter := newCombinedIterator(iters[0], iters[1])
 	for i := 2; i < len(iters); i++ {
@@ -85,14 +84,6 @@ func (c *CombinedIterator) advanceInnerIterators() bool {
 }
 
 func (c *CombinedIterator) Next() bool {
-	if c.iterB == nil { // only one iterator
-		nextA := c.iterA.Next()
-		c.p = c.iterA
-		if c.iterA.Err() != nil {
-			return false
-		}
-		return nextA
-	}
 	if !c.advanceInnerIterators() {
 		return false
 	}
@@ -118,9 +109,7 @@ func (c *CombinedIterator) Next() bool {
 func (c *CombinedIterator) SeekGE(id Key) {
 	c.p = nil
 	c.iterA.SeekGE(id)
-	if c.iterB != nil {
-		c.iterB.SeekGE(id)
-	}
+	c.iterB.SeekGE(id)
 }
 
 func (c *CombinedIterator) Value() *ValueRecord {
@@ -139,9 +128,7 @@ func (c *CombinedIterator) Err() error {
 
 func (c *CombinedIterator) Close() {
 	c.iterA.Close()
-	if c.iterB != nil {
-		c.iterB.Close()
-	}
+	c.iterB.Close()
 }
 
 // FilterTombstoneIterator wraps a value iterator and filters out tombstones.
