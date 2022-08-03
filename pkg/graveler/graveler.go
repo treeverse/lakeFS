@@ -1609,7 +1609,6 @@ func (g *KVGraveler) sealedTokensIterator(ctx context.Context, b *Branch) (Value
 	}
 
 	changes := NewCombinedIterator(itrs...)
-	defer changes.Close()
 	return changes, nil
 }
 
@@ -1747,6 +1746,7 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 			if err != nil {
 				return nil, err
 			}
+			defer changes.Close()
 			// returns err if the commit is empty (no changes)
 			commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes)
 			if err != nil {
@@ -2008,6 +2008,7 @@ func (g *KVGraveler) sealedEmpty(ctx context.Context, repositoryID RepositoryID,
 	if err != nil {
 		return false, err
 	}
+	defer itrs.Close()
 	return g.checkEmpty(ctx, repositoryID, repo, branch, itrs)
 }
 
