@@ -173,7 +173,7 @@ var runCmd = &cobra.Command{
 			// init authentication
 			if !cfg.IsAuthTypeAPI() {
 				authService = auth.NewKVAuthService(
-					*storeMessage,
+					storeMessage,
 					crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 					emailer,
 					cfg.GetAuthCacheConfig(),

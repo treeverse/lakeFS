@@ -82,7 +82,7 @@ func GetDBAuthService(t *testing.T) auth.Service {
 func GetKVAuthService(t *testing.T, ctx context.Context) auth.Service {
 	t.Helper()
 	kvStore := kvtest.GetStore(ctx, t)
-	storeMessage := kv.StoreMessage{Store: kvStore}
+	storeMessage := &kv.StoreMessage{Store: kvStore}
 	return auth.NewKVAuthService(storeMessage, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
 }
 

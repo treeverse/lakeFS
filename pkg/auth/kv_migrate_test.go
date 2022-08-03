@@ -45,7 +45,7 @@ func TestMigrate(t *testing.T) {
 	require.NoError(t, auth.Migrate(ctx, database.Pool(), &buf))
 
 	testutil.MustDo(t, "Import migrated auth data", kv.Import(ctx, &buf, kvStore))
-	kvAuthService := auth.NewKVAuthService(kv.StoreMessage{Store: kvStore}, crypt.NewSecretStore([]byte("someSecret")), nil, authparams.ServiceCache{
+	kvAuthService := auth.NewKVAuthService(&kv.StoreMessage{Store: kvStore}, crypt.NewSecretStore([]byte("someSecret")), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
 	kvMetadataManager := auth.NewKVMetadataManager("ver_kv_migrate_test", "id-kv-migrate-test", kvStore)

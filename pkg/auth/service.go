@@ -190,14 +190,14 @@ func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.
 }
 
 type KVAuthService struct {
-	store       kv.StoreMessage
+	store       *kv.StoreMessage
 	secretStore crypt.SecretStore
 	cache       Cache
 	log         logging.Logger
 	*EmailInviteHandler
 }
 
-func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, emailer *email.Emailer, cacheConf params.ServiceCache, logger logging.Logger) *KVAuthService {
+func NewKVAuthService(store *kv.StoreMessage, secretStore crypt.SecretStore, emailer *email.Emailer, cacheConf params.ServiceCache, logger logging.Logger) *KVAuthService {
 	logger.Info("initialized Auth service")
 	var cache Cache
 	if cacheConf.Enabled {
@@ -1120,8 +1120,44 @@ func (s *KVAuthService) markTokenSingleUse(ctx context.Context, tokenID string, 
 		}
 		return false, err
 	}
-	// TODO(issue 3500) - delete expired reset password tokens
+
+	if err := s.deleteTokens(ctx); err != nil {
+		s.log.WithError(err).Error("Failed to delete expired tokens")
+	}
 	return true, nil
+}
+
+func (s *KVAuthService) deleteTokens(ctx context.Context) error {
+	it, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.TokenData{}).ProtoReflect().Type(), model.PartitionKey, model.ExpiredTokensPath(), kv.IteratorOptionsFrom([]byte("")))
+	if err != nil {
+		return err
+	}
+	defer it.Close()
+
+	deletionCutoff := time.Now()
+	for it.Next() {
+		msg := it.Entry()
+		if msg == nil {
+			return fmt.Errorf("nil token: %w", ErrInvalidToken)
+		}
+		token, ok := msg.Value.(*model.TokenData)
+		if token == nil || !ok {
+			return fmt.Errorf("wrong token type: %w", ErrInvalidToken)
+		}
+
+		if token.ExpiredAt.AsTime().After(deletionCutoff) {
+			// reached a token with expiry greater than the cutoff,
+			// tokens are k-ordered (xid) hence we'll not find more expired tokens
+			return nil
+		}
+
+		tokenPath := model.ExpiredTokenPath(token.TokenId)
+		if err := s.store.Delete(ctx, []byte(model.PartitionKey), tokenPath); err != nil {
+			return fmt.Errorf("deleting token: %w", err)
+		}
+	}
+
+	return it.Err()
 }
 
 type APIAuthService struct {

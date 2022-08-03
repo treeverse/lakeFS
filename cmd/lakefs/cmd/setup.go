@@ -63,7 +63,7 @@ var setupCmd = &cobra.Command{
 				fmt.Printf("failed to open KV store: %s\n", err)
 				os.Exit(1)
 			}
-			storeMessage := kv.StoreMessage{Store: kvStore}
+			storeMessage := &kv.StoreMessage{Store: kvStore}
 			authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), authLogger)
 			metadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), kvStore)
 		} else {
