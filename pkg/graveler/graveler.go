@@ -807,6 +807,7 @@ func (id Key) Copy() Key {
 	copy(keyCopy, id)
 	return keyCopy
 }
+
 func (id Key) String() string {
 	return string(id)
 }
@@ -2014,15 +2015,14 @@ func (g *KVGraveler) sealedEmpty(ctx context.Context, repositoryID RepositoryID,
 
 // dropStaging deletes all staging area entries of a given branch from store
 // We do not wait for result as this is an asynchronous operation
-func (g *KVGraveler) dropTokens(ctx context.Context, tokens ...StagingToken) {
+func (g *KVGraveler) dropTokens(_ context.Context, tokens ...StagingToken) {
 	for _, st := range tokens {
-		token := st // pinning
-		go func() {
-			err := g.StagingManager.Drop(ctx, token)
+		go func(token StagingToken) {
+			err := g.StagingManager.Drop(context.Background(), token)
 			if err != nil {
 				logging.Default().WithError(err).WithField("staging_token", token).Error("failed to drop staging token")
 			}
-		}()
+		}(st)
 	}
 }
 
