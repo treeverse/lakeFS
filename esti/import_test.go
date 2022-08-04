@@ -20,9 +20,6 @@ const (
 )
 
 func TestImport(t *testing.T) {
-	if viper.GetBool("database_kv_enabled") {
-		t.Skip("Finish implementing Graveler.Commit, Graveler.List, ...")
-	}
 	importPath := ""
 	switch viper.GetViper().GetString("blockstore_type") {
 	case block.BlockstoreTypeS3:

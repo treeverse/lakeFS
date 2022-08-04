@@ -24,7 +24,6 @@ type gravelerTest struct {
 
 func initGravelerTest(t *testing.T) *gravelerTest {
 	ctrl := gomock.NewController(t)
-	branchLocker := mock.NewMockBranchLocker(ctrl)
 
 	test := &gravelerTest{
 		committedManager:         mock.NewMockCommittedManager(ctrl),
@@ -34,7 +33,7 @@ func initGravelerTest(t *testing.T) *gravelerTest {
 		protectedBranchesManager: mock.NewMockProtectedBranchesManager(ctrl),
 	}
 
-	test.sut = graveler.NewKVGraveler(branchLocker, test.committedManager, test.stagingManager, test.refManager, test.garbageCollectionManager, test.protectedBranchesManager)
+	test.sut = graveler.NewKVGraveler(test.committedManager, test.stagingManager, test.refManager, test.garbageCollectionManager, test.protectedBranchesManager)
 
 	return test
 }

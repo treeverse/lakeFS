@@ -53,7 +53,7 @@ var (
 	ErrDereferenceCommitWithStaging = wrapError(ErrUserVisible, "reference to staging area with $ is not a commit")
 	ErrDeleteDefaultBranch          = wrapError(ErrUserVisible, "cannot delete repository default branch")
 	ErrCommitMetaRangeDirtyBranch   = wrapError(ErrUserVisible, "cannot use source MetaRange on a branch with uncommitted changes")
-	ErrTooManyStagingWriteTries     = errors.New("too many tries to set to staging area")
+	ErrTooManyTries                 = errors.New("too many tries")
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.
