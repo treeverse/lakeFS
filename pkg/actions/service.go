@@ -205,8 +205,10 @@ func (s *StoreService) asyncRun(record graveler.HookRecord) {
 		defer s.wg.Done()
 
 		// passing the global context for cancelling all runs when lakeFS shuts down
-		if err := s.Run(s.ctx, record); err != nil {
-			logging.Default().WithError(err).WithField("record", record).
+		if err := s.Run(context.Background(), record); err != nil {
+			logging.Default().
+				WithError(err).
+				WithField("record", record).
 				Info("Async run of hook failed")
 		}
 	}()
