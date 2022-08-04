@@ -134,15 +134,14 @@ func TestNewPartIteratorSuccess(t *testing.T) {
 	ns := "some-ns"
 	sstableID := committed.ID("some-id")
 
-	iter, err := sut.NewRangeIterator(ctx, committed.Namespace(ns), committed.ID(sstableID))
-
+	iter, err := sut.NewRangeIterator(ctx, committed.Namespace(ns), sstableID)
 	require.NoError(t, err)
 	require.NotNil(t, iter)
+	defer iter.Close()
 
 	iter.SeekGE(committed.Key(keys[len(keys)/3]))
 	require.NoError(t, iter.Err())
 
-	iter.Close()
 	require.NoError(t, iter.Err())
 
 	require.Equal(t, 1, reader.GetNumClosed())

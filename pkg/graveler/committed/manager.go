@@ -266,6 +266,7 @@ func (c *committedManager) Compare(ctx context.Context, ns graveler.StorageNames
 	}
 	baseIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, base)
 	if err != nil {
+		diffIt.Close()
 		return nil, fmt.Errorf("get base iterator: %w", err)
 	}
 	return NewCompareValueIterator(ctx, NewDiffIteratorWrapper(diffIt), baseIt), nil
