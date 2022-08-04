@@ -341,19 +341,21 @@ func init() {
 	rootCmd.AddCommand(abuseCmd)
 
 	abuseCmd.AddCommand(abuseCreateBranchesCmd)
+
+	const defaultAmount = 1000000
 	abuseCreateBranchesCmd.Flags().String("branch-prefix", "abuse-", "prefix to create branches under")
 	abuseCreateBranchesCmd.Flags().Bool("clean-only", false, "only clean up past runs")
-	abuseCreateBranchesCmd.Flags().Int("amount", 100000, "amount of things to do")
+	abuseCreateBranchesCmd.Flags().Int("amount", defaultAmount, "amount of things to do")
 	abuseCreateBranchesCmd.Flags().Int("parallelism", 100, "amount of things to do in parallel")
 
 	abuseCmd.AddCommand(abuseRandomReadsCmd)
 	abuseRandomReadsCmd.Flags().String("from-file", "", "read keys from this file (\"-\" for stdin)")
-	abuseRandomReadsCmd.Flags().Int("amount", 1000000, "amount of reads to do")
+	abuseRandomReadsCmd.Flags().Int("amount", defaultAmount, "amount of reads to do")
 	abuseRandomReadsCmd.Flags().Int("parallelism", 100, "amount of reads to do in parallel")
 
 	abuseCmd.AddCommand(abuseRandomWritesCmd)
 	abuseRandomWritesCmd.Flags().String("prefix", "abuse/", "prefix to create paths under")
-	abuseRandomWritesCmd.Flags().Int("amount", 1000000, "amount of writes to do")
+	abuseRandomWritesCmd.Flags().Int("amount", defaultAmount, "amount of writes to do")
 	abuseRandomWritesCmd.Flags().Int("parallelism", 100, "amount of writes to do in parallel")
 
 	abuseCmd.AddCommand(abuseCommitCmd)
@@ -362,6 +364,6 @@ func init() {
 
 	abuseCmd.AddCommand(abuseListCmd)
 	abuseListCmd.Flags().String("prefix", "abuse/", "prefix to list under")
-	abuseListCmd.Flags().Int("amount", 1000000, "amount of lists to do")
+	abuseListCmd.Flags().Int("amount", defaultAmount, "amount of lists to do")
 	abuseListCmd.Flags().Int("parallelism", 100, "amount of lists to do in parallel")
 }
