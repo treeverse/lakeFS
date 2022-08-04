@@ -71,8 +71,7 @@ def generateCoreProject(buildType: BuildType) =
         "org.xerial.snappy" % "snappy-java" % "1.1.8.4",
         "org.scalactic" %% "scalactic" % "3.2.9",
         "org.scalatest" %% "scalatest" % "3.2.9" % "test",
-        "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.39.11" % "test",
-        "com.dimafeng" %% "testcontainers-scala-munit" % "0.39.11" % "test",
+        "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.10" % "test",
         "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
         "com.lihaoyi" %% "os-lib" % "0.7.8" % "test"
       ),
