@@ -57,6 +57,7 @@ func (p *WorkerPool) Done() chan struct{} {
 
 // Generator sets up a pool and a result collector
 type Generator struct {
+	name          string
 	pool          *WorkerPool
 	collector     *ResultCollector
 	handleSignals []os.Signal
@@ -70,10 +71,11 @@ func WithSignalHandlersFor(sigs ...os.Signal) GeneratorOption {
 	}
 }
 
-func NewGenerator(parallelism int, opts ...GeneratorOption) *Generator {
+func NewGenerator(name string, parallelism int, opts ...GeneratorOption) *Generator {
 	pool := NewWorkerPool(parallelism)
 	collector := NewResultCollector(pool.Output)
 	g := &Generator{
+		name:          name,
 		pool:          pool,
 		collector:     collector,
 		handleSignals: []os.Signal{},
@@ -111,7 +113,7 @@ func (g *Generator) Run(fn WorkFn) {
 	for collecting {
 		select {
 		case <-ticker.C:
-			fmt.Printf("%s\n", g.collector.Stats())
+			fmt.Printf("%s - %s\n", g.name, g.collector.Stats())
 		case <-g.pool.Done():
 			collecting = false
 		case <-termSignal:

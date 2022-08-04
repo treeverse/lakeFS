@@ -64,7 +64,7 @@ var abuseRandomReadsCmd = &cobra.Command{
 		}
 		Fmt("read a total of %d keys from key file\n", len(keys))
 
-		generator := stress.NewGenerator(parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
+		generator := stress.NewGenerator("read", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
 		// generate randomly selected keys as input
 		rand.Seed(time.Now().Unix())
@@ -108,7 +108,7 @@ var abuseRandomWritesCmd = &cobra.Command{
 		prefix := MustString(cmd.Flags().GetString("prefix"))
 
 		Fmt("Source branch: %s\n", u.String())
-		generator := stress.NewGenerator(parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
+		generator := stress.NewGenerator("stage object", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
 		// generate randomly selected keys as input
 		rand.Seed(time.Now().Unix())
@@ -164,7 +164,7 @@ var abuseCommitCmd = &cobra.Command{
 		gapDuration := MustDuration(cmd.Flags().GetDuration("gap"))
 
 		Fmt("Source branch: %s\n", u.String())
-		generator := stress.NewGenerator(1, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
+		generator := stress.NewGenerator("commit", 1, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
 		// generate randomly selected keys as input
 		rand.Seed(time.Now().Unix())
@@ -216,12 +216,13 @@ var abuseCreateBranchesCmd = &cobra.Command{
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
 
+		client := getClient()
+
 		Fmt("Source ref: %s\n", u.String())
-		deleteGen := stress.NewGenerator(parallelism)
+		deleteGen := stress.NewGenerator("delete branch", parallelism)
 
 		const paginationAmount = 1000
 		deleteGen.Setup(func(add stress.GeneratorAddFn) {
-			client := getClient()
 			currentOffset := api.PaginationAfter(branchPrefix)
 			amount := api.PaginationAmount(paginationAmount)
 			for {
@@ -247,7 +248,6 @@ var abuseCreateBranchesCmd = &cobra.Command{
 
 		// wait for deletes to end
 		deleteGen.Run(func(input chan string, output chan stress.Result) {
-			client := getClient()
 			for branch := range input {
 				start := time.Now()
 				_, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, branch)
@@ -263,7 +263,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 		}
 
 		// start creating branches
-		generator := stress.NewGenerator(parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
+		generator := stress.NewGenerator("create branch", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
 		// generate create branch requests
 		generator.Setup(func(add stress.GeneratorAddFn) {
@@ -273,7 +273,6 @@ var abuseCreateBranchesCmd = &cobra.Command{
 		})
 
 		generator.Run(func(input chan string, output chan stress.Result) {
-			client := getClient()
 			ctx := cmd.Context()
 			for branch := range input {
 				start := time.Now()
@@ -305,7 +304,7 @@ var abuseListCmd = &cobra.Command{
 		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
 		prefix := MustString(cmd.Flags().GetString("prefix"))
 
-		generator := stress.NewGenerator(parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
+		generator := stress.NewGenerator("list", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
 		// generate randomly selected keys as input
 		rand.Seed(time.Now().Unix())
@@ -342,19 +341,21 @@ func init() {
 	rootCmd.AddCommand(abuseCmd)
 
 	abuseCmd.AddCommand(abuseCreateBranchesCmd)
+
+	const defaultAmount = 1000000
 	abuseCreateBranchesCmd.Flags().String("branch-prefix", "abuse-", "prefix to create branches under")
 	abuseCreateBranchesCmd.Flags().Bool("clean-only", false, "only clean up past runs")
-	abuseCreateBranchesCmd.Flags().Int("amount", 1000000, "amount of things to do")
+	abuseCreateBranchesCmd.Flags().Int("amount", defaultAmount, "amount of things to do")
 	abuseCreateBranchesCmd.Flags().Int("parallelism", 100, "amount of things to do in parallel")
 
 	abuseCmd.AddCommand(abuseRandomReadsCmd)
 	abuseRandomReadsCmd.Flags().String("from-file", "", "read keys from this file (\"-\" for stdin)")
-	abuseRandomReadsCmd.Flags().Int("amount", 1000000, "amount of reads to do")
+	abuseRandomReadsCmd.Flags().Int("amount", defaultAmount, "amount of reads to do")
 	abuseRandomReadsCmd.Flags().Int("parallelism", 100, "amount of reads to do in parallel")
 
 	abuseCmd.AddCommand(abuseRandomWritesCmd)
 	abuseRandomWritesCmd.Flags().String("prefix", "abuse/", "prefix to create paths under")
-	abuseRandomWritesCmd.Flags().Int("amount", 1000000, "amount of writes to do")
+	abuseRandomWritesCmd.Flags().Int("amount", defaultAmount, "amount of writes to do")
 	abuseRandomWritesCmd.Flags().Int("parallelism", 100, "amount of writes to do in parallel")
 
 	abuseCmd.AddCommand(abuseCommitCmd)
@@ -363,6 +364,6 @@ func init() {
 
 	abuseCmd.AddCommand(abuseListCmd)
 	abuseListCmd.Flags().String("prefix", "abuse/", "prefix to list under")
-	abuseListCmd.Flags().Int("amount", 1000000, "amount of lists to do")
+	abuseListCmd.Flags().Int("amount", defaultAmount, "amount of lists to do")
 	abuseListCmd.Flags().Int("parallelism", 100, "amount of lists to do in parallel")
 }
