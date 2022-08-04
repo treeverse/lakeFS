@@ -97,7 +97,7 @@ func (m *KVManager) Save(ctx context.Context, repositoryID graveler.RepositoryID
 	}
 
 	data := Settings{
-		Identifier: fmt.Sprintf(settingsUniqueRelativeKey, m.committedBlockStoragePrefix, key, xid.NewWithTime(time.Now())),
+		Identifier: fmt.Sprintf(settingsUniqueRelativeKey, m.committedBlockStoragePrefix, key, xid.New()),
 	}
 	obj := block.ObjectPointer{
 		StorageNamespace: string(repo.StorageNamespace),
