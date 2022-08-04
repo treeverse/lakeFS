@@ -106,7 +106,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 		authService = auth.NewKVAuthService(kvStoreMessage, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
 			Enabled: false,
 		}, logging.Default())
-		meta = auth.NewKVMetadataManager("serve_test", cfg.GetFixedInstallationID(), kvStore)
+		meta = auth.NewKVMetadataManager("serve_test", cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
 		viper.Set("database.kv_enabled", true)
 	} else {
 		actionsStore = actions.NewActionsDBStore(conn)
