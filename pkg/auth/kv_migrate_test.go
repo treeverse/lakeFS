@@ -48,7 +48,7 @@ func TestMigrate(t *testing.T) {
 	kvAuthService := auth.NewKVAuthService(&kv.StoreMessage{Store: kvStore}, crypt.NewSecretStore([]byte("someSecret")), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
-	kvMetadataManager := auth.NewKVMetadataManager("ver_kv_migrate_test", "id-kv-migrate-test", kvStore)
+	kvMetadataManager := auth.NewKVMetadataManager("ver_kv_migrate_test", "id-kv-migrate-test", "kv-type", kvStore)
 	verifyMigrationResults(t, ctx, dbAuthService, kvAuthService)
 	verifyMetadata(t, ctx, kvMetadataManager, kvStore, vals, getExcludeVals(t, ctx, database), isInit)
 }
