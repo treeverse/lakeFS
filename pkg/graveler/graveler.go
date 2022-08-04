@@ -2018,7 +2018,7 @@ func (g *KVGraveler) dropTokens(ctx context.Context, tokens ...StagingToken) {
 	for _, st := range tokens {
 		token := st // pinning
 		go func() {
-			err := g.StagingManager.Drop(ctx, token)
+			err := g.StagingManager.Drop(context.Background(), token)
 			if err != nil {
 				logging.Default().WithError(err).WithField("staging_token", token).Error("failed to drop staging token")
 			}
