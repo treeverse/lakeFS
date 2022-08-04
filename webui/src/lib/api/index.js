@@ -117,6 +117,13 @@ export class MergeError extends Error {
     }
 }
 
+export class RepositoryDeletionError extends Error {
+    constructor(message, repoId) {
+        super(message);
+        this.name = "RepositoryDeletionError";
+        this.repoId = repoId;
+    }
+}
 
 // actual actions:
 class Auth {
@@ -435,6 +442,8 @@ class Repositories {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}`);
         if (response.status === 404) {
             throw new NotFoundError(`could not find repository ${repoId}`);
+        } else if (response.status === 410) {
+            throw new RepositoryDeletionError(`Repository in deletion`, repoId);
         } else if (response.status !== 200) {
             throw new Error(`could not get repository: ${await extractError(response)}`);
         }

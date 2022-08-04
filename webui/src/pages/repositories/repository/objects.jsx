@@ -30,6 +30,7 @@ import Card from "react-bootstrap/Card";
 import remarkGfm from 'remark-gfm'
 import remarkHtml from 'remark-html'
 import {Box, Typography} from "@mui/material";
+import {RepoError} from "./error";
 
 const ImportButton = ({variant = "success", enabled = false, onClick}) => {
     return (
@@ -336,7 +337,7 @@ const ObjectsBrowser = ({config, configError}) => {
     const refresh = () => setRefreshToken(!refreshToken);
 
     if (loading) return <Loading/>;
-    if (!!error || configError) return <Error error={error || configError}/>;
+    if (!!error || configError) return <RepoError error={error || configError}/>;
 
     return (
         <>

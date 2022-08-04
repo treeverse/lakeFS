@@ -11,8 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
-
 	"github.com/go-test/deep"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -130,9 +128,12 @@ func TestManager_ListRepositories(t *testing.T) {
 
 func TestManager_DeleteRepository(t *testing.T) {
 	r := testRefManager(t)
+	ctx := context.Background()
+	repoID := graveler.RepositoryID("example-repo")
+
 	for _, tt := range r {
 		t.Run("repo_exists_"+tt.name, func(t *testing.T) {
-			testutil.Must(t, tt.refManager.CreateRepository(context.Background(), "example-repo", graveler.Repository{
+			testutil.Must(t, tt.refManager.CreateRepository(ctx, repoID, graveler.Repository{
 				StorageNamespace: "s3://foo",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "weird-branch",
@@ -143,30 +144,42 @@ func TestManager_DeleteRepository(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
+			// Create repository entities and ensure their deletion afterwards
+			if tt.name == typeKV {
+				testutil.Must(t, tt.refManager.CreateTag(ctx, repoID, "v1.0", "c1"))
+				testutil.Must(t, tt.refManager.CreateBranch(ctx, repoID, "f1", graveler.Branch{CommitID: "c1", StagingToken: "s1"}))
+				c := graveler.Commit{
+					Committer:    "user1",
+					Message:      "message1",
+					MetaRangeID:  "deadbeef123",
+					CreationDate: time.Now(),
+					Parents:      graveler.CommitParents{"deadbeef1", "deadbeef12"},
+					Metadata:     graveler.Metadata{"foo": "bar"},
+				}
+				_, err = tt.refManager.AddCommit(ctx, repoID, c)
+				testutil.Must(t, err)
+			}
+
 			err = tt.refManager.DeleteRepository(context.Background(), "example-repo")
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			bo := backoff.NewExponentialBackOff()
-			const (
-				maxInterval = 1
-				maxElapsed  = 5
-			)
-			bo.MaxInterval = maxInterval * time.Second
-			bo.MaxElapsedTime = maxElapsed * time.Second
-			err = backoff.Retry(func() error {
-				_, err = tt.refManager.GetRepository(context.Background(), "example-repo")
-				switch {
-				case errors.Is(err, graveler.ErrRepositoryNotFound):
-					return nil
-				case errors.Is(err, graveler.ErrRepositoryInDeletion):
-					return err
-				default: // failure
-					return backoff.Permanent(err)
-				}
-			}, bo)
-			require.NoError(t, err)
+			_, err = tt.refManager.GetRepository(context.Background(), "example-repo")
+			if !errors.Is(err, graveler.ErrRepositoryNotFound) {
+				t.Fatalf("expected ErrRepositoryNotFound, got: %v", err)
+			}
+
+			// Create after delete
+			testutil.Must(t, tt.refManager.CreateRepository(ctx, repoID, graveler.Repository{
+				StorageNamespace: "s3://foo",
+				CreationDate:     time.Now(),
+				DefaultBranchID:  "weird-branch",
+			}))
+			_, err = tt.refManager.GetRepository(context.Background(), "example-repo")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 		})
 
 		t.Run("repo_does_not_exist_"+tt.name, func(t *testing.T) {

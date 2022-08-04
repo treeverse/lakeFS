@@ -28,6 +28,11 @@ type DBType struct {
 	refManager graveler.RefManager
 }
 
+const (
+	typeDB = "DB"
+	typeKV = "KV"
+)
+
 func testRefManagerWithDB(t testing.TB) (graveler.RefManager, db.Database) {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
@@ -49,11 +54,11 @@ func testRefManager(t *testing.T) []DBType {
 
 	tests := []DBType{
 		{
-			name:       "DB",
+			name:       typeDB,
 			refManager: dbRefManager,
 		},
 		{
-			name:       "KV",
+			name:       typeKV,
 			refManager: kvRefManager,
 		},
 	}

@@ -1374,22 +1374,25 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 	ctx := r.Context()
 	c.LogAction(ctx, "get_repo")
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if errors.Is(err, catalog.ErrNotFound) {
-		writeError(w, http.StatusNotFound, "repository not found")
-		return
-	}
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, fmt.Sprintf("error fetching repository: %s", err))
-		return
-	}
+	switch {
+	case err == nil:
+		response := Repository{
+			CreationDate:     repo.CreationDate.Unix(),
+			DefaultBranch:    repo.DefaultBranch,
+			Id:               repo.Name,
+			StorageNamespace: repo.StorageNamespace,
+		}
+		writeResponse(w, http.StatusOK, response)
 
-	response := Repository{
-		CreationDate:     repo.CreationDate.Unix(),
-		DefaultBranch:    repo.DefaultBranch,
-		Id:               repo.Name,
-		StorageNamespace: repo.StorageNamespace,
+	case errors.Is(err, catalog.ErrNotFound):
+		writeError(w, http.StatusNotFound, "repository not found")
+
+	case errors.Is(err, graveler.ErrRepositoryInDeletion):
+		writeError(w, http.StatusGone, err)
+
+	default:
+		writeError(w, http.StatusInternalServerError, err)
 	}
-	writeResponse(w, http.StatusOK, response)
 }
 
 func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, repository string, params ListRepositoryRunsParams) {

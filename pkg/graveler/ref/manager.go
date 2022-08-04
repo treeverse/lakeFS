@@ -170,23 +170,23 @@ func (m *KVManager) updateRepoState(ctx context.Context, repo *graveler.Reposito
 	return m.kvStore.SetMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repo.RepositoryID)), graveler.ProtoFromRepo(repo))
 }
 
-func (m *KVManager) deleteRepository(ctx context.Context, repo *graveler.RepositoryRecord) {
+func (m *KVManager) deleteRepository(ctx context.Context, repo *graveler.RepositoryRecord) error {
+	// ctx := context.Background() TODO (niro): When running this async create a new context and remove ctx from signature
 	logger := logging.FromContext(ctx)
-	// Scan through repository partition and delete entities
+	// Scan through repository partition and delete entities, using SecondaryIndex struct since we don't really need the data, just the key
+	// Failures on deleting repository entities don't constitute as repository deletion failure
 	partition := graveler.RepoPartition(repo)
 	it, err := kv.NewPartitionIterator(ctx, m.kvStore.Store, (&kv.SecondaryIndex{}).ProtoReflect().Type(), partition)
 	if err != nil {
-		if err != nil {
-			logger.WithField("repository", repo.RepositoryID).
-				WithError(err).
-				Error("Error during iteration")
-		}
+		logger.WithField("repository", repo.RepositoryID).
+			WithError(err).
+			Error("Error scanning repository partition")
 	}
 	defer it.Close()
 	for it.Next() {
 		v := it.Entry()
 		err = m.kvStore.DeleteMsg(ctx, partition, v.Key)
-		if err != nil {
+		if err != nil && !errors.Is(err, kv.ErrNotFound) {
 			logger.WithField("repository", repo.RepositoryID).
 				WithField("key", string(v.Key)).
 				Error("Failed to delete repository entity")
@@ -201,10 +201,7 @@ func (m *KVManager) deleteRepository(ctx context.Context, repo *graveler.Reposit
 	}
 
 	// Finally delete the repository record itself
-	err = m.kvStore.DeleteMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repo.RepositoryID)))
-	if err != nil {
-		logger.WithField("repository", repo.RepositoryID).Error("Failed to delete repository entry")
-	}
+	return m.kvStore.DeleteMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repo.RepositoryID)))
 }
 
 func (m *KVManager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
@@ -213,7 +210,7 @@ func (m *KVManager) DeleteRepository(ctx context.Context, repositoryID graveler.
 		return err
 	}
 
-	// Set repository state to deleted and then perform background delete
+	// Set repository state to deleted and then perform background delete.
 	if repo.State != graveler.RepositoryState_IN_DELETION {
 		err = m.updateRepoState(ctx, repo, graveler.RepositoryState_IN_DELETION)
 		if err != nil {
@@ -221,9 +218,8 @@ func (m *KVManager) DeleteRepository(ctx context.Context, repositoryID graveler.
 		}
 	}
 
-	// Background delete of repository, return success immediately
-	go m.deleteRepository(ctx, repo)
-	return nil
+	// TODO (niro): This should be a background delete process
+	return m.deleteRepository(ctx, repo)
 }
 
 func (m *KVManager) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
