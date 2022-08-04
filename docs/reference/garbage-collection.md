@@ -96,7 +96,7 @@ From the above definition of what gets collected, some objects will _not_ be
 collected regardless of configured GC rules:
 
 * Any object that was _uploaded but never committed_ cannot be collected.  See
-  #1933 for more details.
+  [#1933](https://github.com/treeverse/lakeFS/issues/1933) for more details.
 * Any object that is a branch HEAD is visible on that branch, and will not
   be collected.
 
