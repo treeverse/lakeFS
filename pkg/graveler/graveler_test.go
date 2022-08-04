@@ -1502,7 +1502,7 @@ func testGravelerAddCommitToBranchHead(t *testing.T, kvEnabled bool) {
 			}); diff != nil {
 				t.Errorf("unexpected added commit %s", diff)
 			}
-			if tt.fields.StagingManager.DropCalled {
+			if !kvEnabled && tt.fields.StagingManager.DropCalled {
 				t.Error("Staging manager drop shouldn't be called")
 			}
 

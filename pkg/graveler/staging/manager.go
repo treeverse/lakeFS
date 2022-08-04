@@ -3,22 +3,29 @@ package staging
 import (
 	"context"
 	"errors"
-
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type Manager struct {
-	store kv.StoreMessage
-	log   logging.Logger
+	store  kv.StoreMessage
+	log    logging.Logger
+	wakeup chan bool
+
+	// notifiers are being called with every successful cleanup cycle
+	notifiers []chan bool
 }
 
-func NewManager(store kv.StoreMessage) *Manager {
-	return &Manager{
-		store: store,
-		log:   logging.Default().WithField("service_name", "staging_manager"),
+func NewManager(ctx context.Context, store kv.StoreMessage, notifiers ...chan bool) *Manager {
+	m := &Manager{
+		store:     store,
+		log:       logging.Default().WithField("service_name", "staging_manager"),
+		wakeup:    make(chan bool, 100),
+		notifiers: notifiers,
 	}
+	go m.cleanupLoop(ctx)
+	return m
 }
 
 func (m *Manager) Get(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.Value, error) {
@@ -80,9 +87,13 @@ func (m *Manager) List(ctx context.Context, st graveler.StagingToken, _ int) (gr
 }
 
 func (m *Manager) Drop(ctx context.Context, st graveler.StagingToken) error {
-	// Wish we had 'drop partition'... https://github.com/treeverse/lakeFS/issues/3628
-	// Simple implementation
 	return m.DropByPrefix(ctx, st, []byte(""))
+}
+
+func (m *Manager) DropAsync(ctx context.Context, st graveler.StagingToken) error {
+	err := m.store.Store.Set(ctx, []byte(graveler.CleanupTokensPartition()), []byte(st), []byte("stub-value"))
+	m.wakeup <- true
+	return err
 }
 
 func (m *Manager) DropByPrefix(ctx context.Context, st graveler.StagingToken, prefix graveler.Key) error {
@@ -99,4 +110,40 @@ func (m *Manager) DropByPrefix(ctx context.Context, st graveler.StagingToken, pr
 	}
 
 	return nil
+}
+
+func (m *Manager) cleanupLoop(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-m.wakeup:
+			err := m.findAndDrop(ctx)
+			if err != nil {
+				m.log.WithError(err).Error("Dropping tokens failed")
+			} else {
+				for _, n := range m.notifiers {
+					n <- true
+				}
+			}
+
+		}
+	}
+}
+
+func (m *Manager) findAndDrop(ctx context.Context) error {
+	it, err := m.store.Store.Scan(ctx, []byte(graveler.CleanupTokensPartition()), []byte{})
+	if err != nil {
+		return err
+	}
+	defer it.Close()
+	for it.Next() {
+		if err := m.DropByPrefix(ctx, graveler.StagingToken(it.Entry().Key), []byte("")); err != nil {
+			return err
+		}
+		if err := m.store.Store.Delete(ctx, []byte(graveler.CleanupTokensPartition()), it.Entry().Key); err != nil {
+			return err
+		}
+	}
+	return it.Err()
 }

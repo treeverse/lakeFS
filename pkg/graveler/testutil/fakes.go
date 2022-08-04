@@ -130,6 +130,10 @@ type StagingFake struct {
 	UpdateErr          error
 }
 
+func (s *StagingFake) DropAsync(ctx context.Context, st graveler.StagingToken) error {
+	return s.Drop(ctx, st)
+}
+
 func (s *StagingFake) DropByPrefix(context.Context, graveler.StagingToken, graveler.Key) error {
 	return nil
 }
