@@ -148,7 +148,7 @@ func newGraveler(t *testing.T, kvEnabled bool, committedManager graveler.Committ
 	branchLocker := ref.NewBranchLocker(conn)
 
 	if kvEnabled {
-		return graveler.NewKVGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
+		return graveler.NewKVGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 	}
 
 	return graveler.NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
@@ -1030,6 +1030,9 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 	expectedCommitID := graveler.CommitID("expectedCommitId")
 	expectedRangeID := graveler.MetaRangeID("expectedRangeID")
 	values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
+	multipleValues := []graveler.ValueIterator{
+		testutil.NewValueIteratorFake([]graveler.ValueRecord{}),
+		testutil.NewValueIteratorFake([]graveler.ValueRecord{})}
 	type fields struct {
 		CommittedManager         *testutil.CommittedFake
 		StagingManager           *testutil.StagingFake
@@ -1050,6 +1053,7 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 		fields      fields
 		args        args
 		want        graveler.CommitID
+		values      graveler.ValueIterator
 		expectedErr error
 	}{
 		{
@@ -1070,6 +1074,7 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 				metadata:     graveler.Metadata{},
 			},
 			want:        expectedCommitID,
+			values:      values,
 			expectedErr: nil,
 		},
 		{
@@ -1092,6 +1097,7 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 				sourceMetarange: &expectedRangeID,
 			},
 			want:        expectedCommitID,
+			values:      values,
 			expectedErr: nil,
 		},
 		{
@@ -1112,6 +1118,7 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 				metadata:        graveler.Metadata{},
 				sourceMetarange: &expectedRangeID,
 			},
+			values:      values,
 			expectedErr: graveler.ErrCommitMetaRangeDirtyBranch,
 		},
 		{
@@ -1132,6 +1139,7 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 				metadata:     nil,
 			},
 			want:        expectedCommitID,
+			values:      values,
 			expectedErr: graveler.ErrNotFound,
 		},
 		{
@@ -1152,6 +1160,7 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 				metadata:     nil,
 			},
 			want:        expectedCommitID,
+			values:      values,
 			expectedErr: graveler.ErrConflictFound,
 		},
 		{
@@ -1173,6 +1182,7 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 				metadata:     nil,
 			},
 			want:        expectedCommitID,
+			values:      values,
 			expectedErr: graveler.ErrConflictFound,
 		},
 		{
@@ -1193,6 +1203,7 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 				metadata:     graveler.Metadata{},
 			},
 			want:        expectedCommitID,
+			values:      values,
 			expectedErr: nil,
 		},
 		{
@@ -1213,14 +1224,35 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 				message:      "a message",
 				metadata:     graveler.Metadata{},
 			},
+			values:      values,
 			expectedErr: graveler.ErrCommitToProtectedBranch,
+		},
+		{
+			name: "valid commit with staging and sealed",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
+				StagingManager:   &testutil.StagingFake{ValueIterator: values},
+				RefManager: &testutil.RefsFake{CommitID: expectedCommitID,
+					Branch:  &graveler.Branch{CommitID: expectedCommitID, StagingToken: "token", SealedTokens: []graveler.StagingToken{"token", "token2"}},
+					Commits: map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}}},
+			},
+			args: args{
+				ctx:          nil,
+				repositoryID: "repo",
+				branchID:     "branch",
+				committer:    "committer",
+				message:      "a message",
+				metadata:     graveler.Metadata{},
+			},
+			want:        expectedCommitID,
+			values:      graveler.NewCombinedIterator(multipleValues...),
+			expectedErr: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expectedCommitID = "expectedCommitId"
 			expectedRangeID = "expectedRangeID"
-			values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
 			if tt.fields.ProtectedBranchesManager == nil {
 				tt.fields.ProtectedBranchesManager = testutil.NewProtectedBranchesManagerFake()
 			}
@@ -1239,11 +1271,14 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 				return
 			}
 			expectedAppliedData := testutil.AppliedData{
-				Values:      values,
+				Values:      tt.values,
 				MetaRangeID: expectedRangeID,
 			}
 			if tt.args.sourceMetarange != nil {
 				expectedAppliedData = testutil.AppliedData{}
+			}
+			if !kvEnabled && tt.values != values {
+				t.Skip("no sealed tokens on db")
 			}
 			if diff := deep.Equal(tt.fields.CommittedManager.AppliedData, expectedAppliedData); diff != nil {
 				t.Errorf("unexpected apply data %s", diff)
