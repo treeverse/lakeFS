@@ -96,14 +96,17 @@ func (m *KVManager) Save(ctx context.Context, repositoryID graveler.RepositoryID
 		return err
 	}
 
-	data := Settings{
-		Identifier: fmt.Sprintf(settingsUniqueRelativeKey, m.committedBlockStoragePrefix, key, xid.New()),
-	}
+	// Get old settings file from objectStore. In case of error oldIdentifier will be ""
+	data := Settings{}
+	_, _ = m.getWithPredicate(ctx, &graveler.RepositoryRecord{RepositoryID: repositoryID, Repository: repo}, key, &data)
+	oldIdentifier := data.Identifier
+	data.Identifier = newIdentifierName(m.committedBlockStoragePrefix, key)
 	obj := block.ObjectPointer{
 		StorageNamespace: string(repo.StorageNamespace),
 		Identifier:       data.Identifier,
 		IdentifierType:   block.IdentifierTypeRelative,
 	}
+
 	// Save to  block store
 	err = m.blockAdapter.Put(ctx, obj, int64(len(messageBytes)), bytes.NewReader(messageBytes), block.PutOpts{})
 	if err != nil {
@@ -118,6 +121,12 @@ func (m *KVManager) Save(ctx context.Context, repositoryID graveler.RepositoryID
 		return err
 	}
 	logSetting(logging.FromContext(ctx), repositoryID, key, setting, "saving repository-level setting")
+
+	// Delete old settings file
+	if len(oldIdentifier) > 0 {
+		obj.Identifier = oldIdentifier
+		m.deleteFromStore(ctx, repo.StorageNamespace, obj)
+	}
 	return nil
 }
 
@@ -220,7 +229,7 @@ func (m *KVManager) Update(ctx context.Context, repositoryID graveler.Repository
 		return err
 	}
 	oldIdentifier := data.Identifier // Save old identifier for deletion
-	data.Identifier = fmt.Sprintf(settingsUniqueRelativeKey, m.committedBlockStoragePrefix, key, xid.NewWithTime(time.Now()))
+	data.Identifier = newIdentifierName(m.committedBlockStoragePrefix, key)
 	obj := block.ObjectPointer{
 		StorageNamespace: string(repo.StorageNamespace),
 		Identifier:       data.Identifier,
@@ -245,14 +254,22 @@ func (m *KVManager) Update(ctx context.Context, repositoryID graveler.Repository
 
 	// Remove old file
 	obj.Identifier = oldIdentifier
-	err = m.blockAdapter.Remove(ctx, obj)
+	m.deleteFromStore(ctx, repo.StorageNamespace, obj)
+	return nil
+}
+
+func (m *KVManager) deleteFromStore(ctx context.Context, namespace graveler.StorageNamespace, obj block.ObjectPointer) {
+	err := m.blockAdapter.Remove(ctx, obj)
 	if err != nil {
 		logging.FromContext(ctx).WithFields(map[string]interface{}{
-			"StorageNS":  repo.StorageNamespace,
-			"Identifier": oldIdentifier,
-		}).Warn("Failed to delete old settings file from block store.", repo.StorageNamespace, oldIdentifier)
+			"StorageNS":  namespace,
+			"Identifier": obj.Identifier,
+		}).Warn("Failed to delete old settings file from block store.")
 	}
-	return nil
+}
+
+func newIdentifierName(prefix, key string) string {
+	return fmt.Sprintf(settingsUniqueRelativeKey, prefix, key, xid.New())
 }
 
 func logSetting(logger logging.Logger, repositoryID graveler.RepositoryID, key string, setting proto.Message, logMsg string) {
