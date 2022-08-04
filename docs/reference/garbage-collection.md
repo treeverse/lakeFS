@@ -90,6 +90,16 @@ The garbage collection process proceeds in two main phases:
   about the object, but attempting to read it via the lakeFS API or the S3
   gateway will return HTTP status 410 ("Gone").
 
+### What does _not_ get collected
+
+From the above definition of what gets collected, some objects will _not_ be
+collected regardless of configured GC rules:
+
+* Any object that was _uploaded but never committed_ cannot be collected.  See
+  #1933 for more details.
+* Any object that is a branch HEAD is visible on that branch, and will not
+  be collected.
+
 ## Configuring GC rules
 
 ### Using lakectl
