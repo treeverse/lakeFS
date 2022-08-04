@@ -121,5 +121,5 @@ func (g *Generator) Run(fn WorkFn) {
 		}
 	}
 	fmt.Printf("%s\n\n", g.collector.Stats())
-	fmt.Printf("Historgram (ms):\n%s\n", g.collector.Histogram())
+	fmt.Printf("Histogram (ms):\n%s\n", g.collector.Histogram())
 }
