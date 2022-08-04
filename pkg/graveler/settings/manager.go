@@ -45,7 +45,7 @@ type Manager interface {
 	GetLatest(context.Context, graveler.RepositoryID, string, proto.Message) (proto.Message, error)
 	Get(context.Context, graveler.RepositoryID, string, proto.Message) (proto.Message, error)
 	Update(context.Context, graveler.RepositoryID, string, proto.Message, updateFunc) error
-	WithCache(ache cache.Cache)
+	WithCache(cache cache.Cache)
 }
 
 // KVManager is a key-value store for Graveler repository-level settings.
