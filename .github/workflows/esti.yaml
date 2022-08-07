@@ -828,6 +828,8 @@ jobs:
           ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           ESTI_VERSION: ${{ steps.version.outputs.tag }}
+          ESTI_POST_MIGRATE: false
+          ESTI_GOTEST_FLAGS: "-run TestMigrate"
           ESTI_FLAGS: "--use-local-credentials"
 
       - name: Switch to KV and migrate lakeFS
