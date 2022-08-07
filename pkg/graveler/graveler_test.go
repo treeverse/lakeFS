@@ -753,7 +753,6 @@ func testGravelerDiffUncommitted(t *testing.T, kvEnabled bool) {
 	tests := []struct {
 		name            string
 		r               catalog.Store
-		amount          int
 		expectedErr     error
 		expectedHasMore bool
 		expectedDiff    graveler.DiffIterator
@@ -772,7 +771,6 @@ func testGravelerDiffUncommitted(t *testing.T, kvEnabled bool) {
 					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}},
 				}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
-			amount:       10,
 			expectedDiff: testutil.NewDiffIter([]graveler.Diff{}),
 		},
 		{
@@ -785,7 +783,6 @@ func testGravelerDiffUncommitted(t *testing.T, kvEnabled bool) {
 					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}},
 				}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
-			amount: 10,
 			expectedDiff: testutil.NewDiffIter([]graveler.Diff{{
 				Key:   graveler.Key("foo/one"),
 				Type:  graveler.DiffTypeAdded,
@@ -812,7 +809,6 @@ func testGravelerDiffUncommitted(t *testing.T, kvEnabled bool) {
 					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}},
 				}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
-			amount: 10,
 			expectedDiff: testutil.NewDiffIter([]graveler.Diff{{
 				Key:   graveler.Key("foo/one"),
 				Type:  graveler.DiffTypeChanged,
@@ -821,11 +817,10 @@ func testGravelerDiffUncommitted(t *testing.T, kvEnabled bool) {
 		},
 		{
 			name: "removed one",
-			r: newGraveler(t, kvEnabled, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: nil}})},
+			r: newGraveler(t, kvEnabled, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{Identity: []byte("not-nil")}}})},
+				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: nil}, {Key: graveler.Key("foo/two"), Value: nil}})},
 				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1", StagingToken: "token"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
-			amount: 10,
 			expectedDiff: testutil.NewDiffIter([]graveler.Diff{{
 				Key:  graveler.Key("foo/one"),
 				Type: graveler.DiffTypeRemoved,

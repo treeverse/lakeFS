@@ -957,6 +957,10 @@ func testController_BranchesDiffBranchHandler(t *testing.T, kvEnabled bool) {
 	}
 
 	t.Run("diff branch no changes", func(t *testing.T) {
+		// create an entry and remove it
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b/c"}))
+		testutil.Must(t, deps.catalog.DeleteEntry(ctx, "repo1", testBranch, "a/b/c"))
+
 		resp, err := clt.DiffBranchWithResponse(ctx, "repo1", testBranch, &api.DiffBranchParams{})
 		verifyResponseOK(t, resp, err)
 		changes := len(resp.JSON200.Results)
@@ -967,6 +971,8 @@ func testController_BranchesDiffBranchHandler(t *testing.T, kvEnabled bool) {
 
 	t.Run("diff branch with writes", func(t *testing.T) {
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b"}))
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b/c"}))
+		testutil.Must(t, deps.catalog.DeleteEntry(ctx, "repo1", testBranch, "a/b/c"))
 		resp, err := clt.DiffBranchWithResponse(ctx, "repo1", testBranch, &api.DiffBranchParams{})
 		verifyResponseOK(t, resp, err)
 		results := resp.JSON200.Results
