@@ -695,10 +695,10 @@ func rWorker(ctx context.Context, d *pgxpool.Pool, rChan <-chan *graveler.Reposi
 			return err
 		}
 		buff, err := io.ReadAll(reader)
+		reader.Close()
 		if err != nil {
 			return err
 		}
-		reader.Close()
 
 		if err = encoder.Encode(kv.Entry{
 			PartitionKey: []byte(graveler.RepoPartition(r)),

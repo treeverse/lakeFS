@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	NumRepositories = 10
+	NumRepositories = 1
 	numCommits      = 100
 	numBranches     = 100
 )
@@ -209,10 +209,10 @@ func verifyMigrationResults(t *testing.T, ctx context.Context, kvMgr, dbMgr grav
 
 		// verify settings
 		testSettings := settings.ExampleSettings{}
-		data, err := settingsMgr.Get(ctx, repo.RepositoryID, graveler.SettingsPath(branch.ProtectionSettingKey), &testSettings)
+		data, err := settingsMgr.Get(ctx, repo.RepositoryID, branch.ProtectionSettingKey, &testSettings)
 		if repoNum%2 == 0 {
-			require.Equal(t, data.(*settings.ExampleSettings).ExampleStr, repo.RepositoryID)
-			require.Equal(t, data.(*settings.ExampleSettings).ExampleInt, repoNum)
+			require.Equal(t, data.(*settings.ExampleSettings).ExampleStr, repo.RepositoryID.String())
+			require.Equal(t, data.(*settings.ExampleSettings).ExampleInt, int32(repoNum))
 		} else {
 			require.ErrorIs(t, err, graveler.ErrNotFound)
 		}

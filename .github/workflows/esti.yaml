@@ -834,6 +834,7 @@ jobs:
         env:
           LAKEFS_DATABASE_KV_ENABLED: true
           LAKEFS_DATABASE_TYPE: postgres
+          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/migrate/${{ steps.unique.outputs.value }}
         run: docker-compose -f ./esti/ops/docker-compose.yaml ps -aq lakefs && docker-compose -f ./esti/ops/docker-compose.yaml run -T --entrypoint "lakefs migrate up" lakefs
 
       - name: Start lakeFS with KV DB

@@ -132,12 +132,12 @@ func (m *KVManager) Get(ctx context.Context, repositoryID graveler.RepositoryID,
 // The settingTemplate parameter is used to determine the type passed to the update function.
 func (m *KVManager) Update(ctx context.Context, repositoryID graveler.RepositoryID, key string, settingTemplate proto.Message, update updateFunc) error {
 	const (
-		maxInterval = 2
-		maxElapsed  = 5
+		maxIntervalSec = 2
+		maxElapsedSec  = 5
 	)
 	bo := backoff.NewExponentialBackOff()
-	bo.MaxInterval = maxInterval * time.Second
-	bo.MaxElapsedTime = maxElapsed * time.Second
+	bo.MaxInterval = maxIntervalSec * time.Second
+	bo.MaxElapsedTime = maxElapsedSec * time.Second
 
 	err := backoff.Retry(func() error {
 		repo, err := m.refManager.GetRepository(ctx, repositoryID)
@@ -160,6 +160,7 @@ func (m *KVManager) Update(ctx context.Context, repositoryID graveler.Repository
 		}
 		err = m.store.SetMsgIf(ctx, graveler.RepoPartition(&graveler.RepositoryRecord{RepositoryID: repositoryID, Repository: repo}), []byte(graveler.SettingsPath(key)), data, pred)
 		if errors.Is(err, kv.ErrPredicateFailed) {
+			logging.Default().WithError(err).Warn("Predicate failed on settings update. Retrying")
 			err = graveler.ErrPreconditionFailed
 		} else if err != nil {
 			return backoff.Permanent(err)
