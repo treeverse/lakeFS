@@ -7,12 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/logging"
-
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 // IteratorPrefetchSize is the amount of records to maybeFetch from PG
@@ -172,32 +171,24 @@ func (m *KVManager) updateRepoState(ctx context.Context, repo *graveler.Reposito
 
 func (m *KVManager) deleteRepository(ctx context.Context, repo *graveler.RepositoryRecord) error {
 	// ctx := context.Background() TODO (niro): When running this async create a new context and remove ctx from signature
-	logger := logging.FromContext(ctx)
+	logger := logging.FromContext(ctx).WithField("repository", repo.RepositoryID)
 	// Scan through repository partition and delete entities, using SecondaryIndex struct since we don't really need the data, just the key
 	// Failures on deleting repository entities don't constitute as repository deletion failure
 	partition := graveler.RepoPartition(repo)
 	it, err := kv.NewPartitionIterator(ctx, m.kvStore.Store, (&kv.SecondaryIndex{}).ProtoReflect().Type(), partition)
 	if err != nil {
-		logger.WithField("repository", repo.RepositoryID).
-			WithError(err).
-			Error("Error scanning repository partition")
+		logger.WithError(err).Error("Error scanning repository partition")
 	}
 	defer it.Close()
 	for it.Next() {
 		v := it.Entry()
 		err = m.kvStore.DeleteMsg(ctx, partition, v.Key)
 		if err != nil && !errors.Is(err, kv.ErrNotFound) {
-			logger.WithField("repository", repo.RepositoryID).
-				WithField("key", string(v.Key)).
-				Error("Failed to delete repository entity")
+			logger.WithField("key", string(v.Key)).Error("Failed to delete repository entity")
 		}
 	}
 	if it.Err() != nil {
-		if err != nil {
-			logger.WithField("repository", repo.RepositoryID).
-				WithError(it.Err()).
-				Error("Error during iteration")
-		}
+		logger.WithError(it.Err()).Error("Error during iteration")
 	}
 
 	// Finally delete the repository record itself
