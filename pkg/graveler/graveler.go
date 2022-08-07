@@ -1592,28 +1592,6 @@ func (g *KVGraveler) sealedTokensIterator(ctx context.Context, b *Branch) (Value
 	return changes, nil
 }
 
-func (g *KVGraveler) listSealedArea(ctx context.Context, b *Branch) (ValueIterator, error) {
-	if len(b.SealedTokens) == 0 {
-		return nil, nil
-	}
-
-	var itrs []ValueIterator
-	for _, st := range b.SealedTokens {
-		it, err := g.StagingManager.List(ctx, st, 1)
-		if err != nil {
-			for _, it = range itrs {
-				it.Close()
-			}
-			return nil, err
-		}
-		itrs = append(itrs, it)
-	}
-	if len(itrs) == 1 {
-		return itrs[0], nil
-	}
-	return NewCombinedIterator(itrs...), nil
-}
-
 func (g *KVGraveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref) (ValueIterator, error) {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
