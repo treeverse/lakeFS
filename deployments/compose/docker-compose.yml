@@ -97,12 +97,14 @@ services:
       - DB_URI=mariadb:3306
     volumes:
       - ./etc/hive-site.xml:/opt/apache-hive-bin/conf/hive-site.xml
-    entrypoint: ["hive", "--service", "hiveserver2", "--hiveconf", "hive.root.logger=INFO,console"]
     ulimits:
       nofile:
         soft: 65536
         hard: 65536
-  
+    entrypoint: [
+      "wait-for-it", "-t", "60", "hive:9083", "--",
+      "hive", "--service", "hiveserver2", "--hiveconf", "hive.root.logger=INFO,console"]
+
   hive-client:
     build: hive
     profiles: ["client"]
