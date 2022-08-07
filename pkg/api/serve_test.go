@@ -82,8 +82,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	ctx := context.Background()
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
-	// Disable KV by default (used for determining KV state by certain packages such as catalog)
-	viper.Set("database.kv_enabled", false)
+	viper.Set("database.kv_enabled", kvEnabled)
 
 	collector := &nullCollector{}
 
