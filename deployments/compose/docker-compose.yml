@@ -190,6 +190,7 @@ services:
 
   spark-thrift:
     image: docker.io/bitnami/spark:3
+    container_name: spark-thrift
     command: ["bash","-c", "/opt/bitnami/entrypoint.sh"]
     depends_on:
       - spark
