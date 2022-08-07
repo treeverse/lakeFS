@@ -29,6 +29,14 @@
         <value>false</value>
     </property>
     <property>
+        <name>datanucleus.autoCreateSchema</name>
+        <value>true</value>
+    </property>
+    <property>
+        <name>datanucleus.fixedDatastore</name>
+        <value>false</value>
+    </property>
+    <property>
         <name>fs.s3a.path.style.access</name>
         <value>true</value>
     </property>
