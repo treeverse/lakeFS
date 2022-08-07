@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/stats"
+
 	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 
@@ -29,7 +31,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/version"
@@ -44,22 +45,8 @@ type dependencies struct {
 	blocks      block.Adapter
 	catalog     catalog.Interface
 	authService *auth.Service
-	collector   *nullCollector
+	collector   stats.Collector
 }
-
-type nullCollector struct {
-	metadata []*stats.Metadata
-}
-
-func (m *nullCollector) CollectMetadata(metadata *stats.Metadata) {
-	m.metadata = append(m.metadata, metadata)
-}
-
-func (m *nullCollector) CollectEvent(_, _ string) {}
-
-func (m *nullCollector) SetInstallationID(_ string) {}
-
-func (m *nullCollector) Close() {}
 
 func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.BaseCredential {
 	t.Helper()
@@ -84,7 +71,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 	viper.Set("database.kv_enabled", kvEnabled)
 
-	collector := &nullCollector{}
+	collector := &stats.NullCollector{}
 
 	// wire actions
 	var (

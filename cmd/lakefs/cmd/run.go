@@ -171,26 +171,28 @@ var runCmd = &cobra.Command{
 			idGen = &actions.DecreasingIDGenerator{}
 
 			// init authentication
-			if !cfg.IsAuthTypeAPI() {
+			if authService == nil {
 				authService = auth.NewKVAuthService(
 					storeMessage,
 					crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 					emailer,
 					cfg.GetAuthCacheConfig(),
-					logger.WithField("service", "auth_service"))
+					logger.WithField("service", "auth_service"),
+				)
 			}
 			authMetadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
 		} else {
 			multipartsTracker = multiparts.NewDBTracker(dbPool)
 			actionsStore = actions.NewActionsDBStore(dbPool)
 			idGen = &actions.IncreasingIDGenerator{}
-			if !cfg.IsAuthTypeAPI() {
+			if authService == nil {
 				authService = auth.NewDBAuthService(
 					dbPool,
 					crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 					emailer,
 					cfg.GetAuthCacheConfig(),
-					logger.WithField("service", "auth_service"))
+					logger.WithField("service", "auth_service"),
+				)
 			}
 			authMetadataManager = auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		}

@@ -80,7 +80,8 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI str
 	_, err = c.CreateRepository(ctx, repoName, storageNamespace, "main")
 	testutil.Must(t, err)
 
-	handler := gateway.NewHandler(authService.Region, c, multipartsTracker, blockAdapter, authService, []string{authService.BareDomain}, &mockCollector{}, nil, config.DefaultAuditLogLevel, true)
+	handler := gateway.NewHandler(authService.Region, c, multipartsTracker, blockAdapter, authService, []string{authService.BareDomain},
+		&stats.NullCollector{}, nil, config.DefaultAuditLogLevel, true)
 
 	return handler, &Dependencies{
 		blocks:  blockAdapter,
@@ -117,13 +118,3 @@ func (m *FakeAuthService) GetUser(_ context.Context, _ string) (*model.User, err
 func (m *FakeAuthService) Authorize(_ context.Context, _ *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {
 	return &auth.AuthorizationResponse{Allowed: true}, nil
 }
-
-type mockCollector struct{}
-
-func (m *mockCollector) CollectMetadata(*stats.Metadata) {}
-
-func (m *mockCollector) CollectEvent(string, string) {}
-
-func (m *mockCollector) SetInstallationID(string) {}
-
-func (m *mockCollector) Close() {}
