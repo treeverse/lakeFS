@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
+	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -63,11 +64,11 @@ type Adapter struct {
 }
 
 // FetchStore Returns mem store if already initialized, otherwise creates one
-func FetchStore(opts ...func(a *Adapter)) *Adapter {
-	if memStore != nil {
+func FetchStore(params params.Mem) *Adapter {
+	if memStore != nil && params.ReuseStore {
 		return memStore
 	}
-	return New(opts...)
+	return New()
 }
 
 func New(opts ...func(a *Adapter)) *Adapter {

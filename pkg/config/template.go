@@ -138,6 +138,9 @@ type configuration struct {
 		Local                  *struct {
 			Path string
 		}
+		Mem *struct {
+			ReuseStore bool `mapstructure:"reuse_store"`
+		}
 		S3 *struct {
 			S3AuthInfo            `mapstructure:",squash"`
 			Region                string

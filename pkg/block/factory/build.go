@@ -52,7 +52,11 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 		}
 		return buildS3Adapter(statsCollector, p)
 	case block.BlockstoreTypeMem, "memory":
-		return mem.FetchStore(), nil // Returns existing store or creates a new one
+		p, err := c.GetBlockAdapterMemParams()
+		if err != nil {
+			return nil, err
+		}
+		return mem.FetchStore(p), nil // Returns existing store or creates a new one
 	case block.BlockstoreTypeTransient:
 		return transient.New(), nil
 	case block.BlockstoreTypeGS:
