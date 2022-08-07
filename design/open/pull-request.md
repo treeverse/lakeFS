@@ -30,7 +30,10 @@ Actions will be queued or at least run on the latest commit in the source branch
 The event will be triggered on PR creation and every push of new commit to the source branch will trigger the event.
 The action will have access to source branch data for verification after verification there are no conflict between the source and the target branch.
 
+
 ### Mockup Screens
+
+#### Create Pull Request
 
 Create pull-request can be done through the 'Compare' or 'Pull requests' tabs.
 The following is a mock of the Compare tab, while clicking the 'Pull Request' button.
@@ -39,6 +42,7 @@ Clicking 'Create' will switch to the pull-request view in the 'Pull requests' ta
 
 ![Create Pull Request](diagrams/pull-request-dialog.png)
 
+#### Pull request list
 
 Pull request list shown by clicking the 'Pull requests' tab.
 The list can be filtered by 'All' for all pull-requests, 'My' created by me or 'Reviews' show the assigned pull-requests.
@@ -47,6 +51,7 @@ This view will enable creating additional pull requests if needed.
 
 ![List Pull Requests](diagrams/pull-request-list.png)
 
+#### Pull request edit/view
 
 Pull request information view will enable editing of all the pull-request information, adding comments, close, close or merge the pull-request - depends on the pull-request status.
 
