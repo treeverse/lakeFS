@@ -22,8 +22,7 @@ func makeNewReader(r fakeReader) func(context.Context, committed.Namespace, comm
 	}
 }
 
-type NoCache struct {
-}
+type NoCache struct{}
 
 func (n *NoCache) Unref() {}
 
@@ -134,8 +133,7 @@ func TestNewPartIteratorSuccess(t *testing.T) {
 	ns := "some-ns"
 	sstableID := committed.ID("some-id")
 
-	iter, err := sut.NewRangeIterator(ctx, committed.Namespace(ns), committed.ID(sstableID))
-
+	iter, err := sut.NewRangeIterator(ctx, committed.Namespace(ns), sstableID)
 	require.NoError(t, err)
 	require.NotNil(t, iter)
 

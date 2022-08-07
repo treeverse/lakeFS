@@ -128,8 +128,11 @@ func TestCompare(t *testing.T) {
 			diffIt := testutil.NewDiffIter(tst.diffs)
 			defer diffIt.Close()
 			base := makeBaseIterator(tst.baseKeys)
+
 			ctx := context.Background()
 			it := committed.NewCompareValueIterator(ctx, committed.NewDiffIteratorWrapper(diffIt), base)
+			defer it.Close()
+
 			var gotValues, gotKeys []string
 			var gotDiffTypes []graveler.DiffType
 			idx := 0
@@ -138,7 +141,6 @@ func TestCompare(t *testing.T) {
 				gotKeys = append(gotKeys, string(it.Value().Key))
 				gotValues = append(gotValues, string(it.Value().Value.Identity))
 				gotDiffTypes = append(gotDiffTypes, it.Value().Type)
-
 			}
 			if it.Err() != nil {
 				t.Fatalf("got unexpected error: %v", it.Err())
