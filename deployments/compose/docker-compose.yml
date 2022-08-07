@@ -125,6 +125,7 @@ services:
 
   spark:
     image: docker.io/bitnami/spark:3
+    container_name: spark
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_HOST=spark
@@ -223,6 +224,7 @@ services:
 
   notebook:
     build: jupyter
+    container_name: notebook
     ports:
       - 8888:8888
     volumes:
