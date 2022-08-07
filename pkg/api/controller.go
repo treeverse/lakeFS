@@ -3258,8 +3258,9 @@ func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, temp
 	}) {
 		return
 	}
+	ctx := r.Context()
 
-	u, ok := r.Context().Value(UserContextKey).(*model.User)
+	u, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok {
 		writeError(w, http.StatusInternalServerError, "request performed with no user")
 	}
@@ -3272,7 +3273,9 @@ func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, temp
 			p.Params.AdditionalProperties[k] = v[0]
 		}
 	}
-	err := c.Templater.Expand(r.Context(), w, u, templateLocation, p.Params.AdditionalProperties)
+
+	c.LogAction(ctx, "expand_template")
+	err := c.Templater.Expand(ctx, w, u, templateLocation, p.Params.AdditionalProperties)
 
 	if err != nil {
 		c.Logger.WithError(err).WithField("location", templateLocation).Error("Template expansion failed")
