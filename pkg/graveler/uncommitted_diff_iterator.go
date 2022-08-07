@@ -3,8 +3,6 @@ package graveler
 import (
 	"bytes"
 	"context"
-
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type uncommittedDiffIterator struct {
@@ -57,9 +55,9 @@ func (d *uncommittedDiffIterator) getDiffType(val ValueRecord) (diffType DiffTyp
 	if val.Value == nil {
 		// tombstone
 		if !existsInCommitted {
-			logging.Default().
-				WithFields(logging.Fields{"meta_range_id": d.metaRangeID, "storage_namespace": d.storageNamespace, "key": val.Key}).
-				Warn("tombstone for a file that does not exist")
+			// this might happen in the kv-staging area since it consist of
+			// multiple staging layers.
+			return DiffTypeRemoved, true, nil
 		}
 		return DiffTypeRemoved, false, nil
 	}
