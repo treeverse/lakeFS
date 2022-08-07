@@ -51,3 +51,7 @@ func (d *DiffIteratorWrapper) Err() error {
 	}
 	return d.DiffIterator.Err()
 }
+
+func (d *DiffIteratorWrapper) Close() {
+	d.DiffIterator.Close()
+}
