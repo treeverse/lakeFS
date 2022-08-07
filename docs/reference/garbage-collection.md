@@ -97,7 +97,8 @@ collected regardless of configured GC rules:
 
 * Any object that was _uploaded but never committed_ cannot be collected.  See
   [#1933](https://github.com/treeverse/lakeFS/issues/1933) for more details.
-* Any object that is a branch HEAD is visible on that branch, and will not
+* Any object that is present on a branch HEAD is visible on that branch.
+  Commits at the HEAD of a branch are retained, so such an object will not
   be collected.
 
 ## Configuring GC rules
