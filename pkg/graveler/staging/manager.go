@@ -126,7 +126,7 @@ func (m *Manager) cleanupLoop(ctx context.Context) {
 			err := m.findAndDrop(ctx)
 			if err != nil {
 				m.log.WithError(err).Error("Dropping tokens failed")
-			} else {
+			} else if m.cleanupCallback != nil {
 				m.cleanupCallback()
 			}
 		}
