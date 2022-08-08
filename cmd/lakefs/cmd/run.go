@@ -130,9 +130,7 @@ var runCmd = &cobra.Command{
 
 		var (
 			multipartsTracker   multiparts.Tracker
-			idGen               actions.IDGenerator
 			actionsStore        actions.Store
-			authService         auth.Service
 			authMetadataManager auth.MetadataManager
 			storeMessage        *kv.StoreMessage
 		)
@@ -141,7 +139,29 @@ var runCmd = &cobra.Command{
 		if err != nil {
 			logger.WithError(err).Fatal("Emailer has not been properly configured, check the values in sender field")
 		}
-		if cfg.IsAuthTypeAPI() {
+
+		idGen := &actions.DecreasingIDGenerator{}
+		if dbParams.KVEnabled {
+			kvParams := cfg.GetKVParams()
+			kvStore, err := kv.Open(ctx, dbParams.Type, kvParams)
+			if err != nil {
+				logger.WithError(err).Fatal("failed to open KV store")
+			}
+			defer kvStore.Close()
+			storeMessage = &kv.StoreMessage{Store: kvStore}
+			multipartsTracker = multiparts.NewTracker(*storeMessage)
+			actionsStore = actions.NewActionsKVStore(*storeMessage)
+			authMetadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
+		} else {
+			multipartsTracker = multiparts.NewDBTracker(dbPool)
+			actionsStore = actions.NewActionsDBStore(dbPool)
+			authMetadataManager = auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
+		}
+
+		// initialize auth service
+		var authService auth.Service
+		switch {
+		case cfg.IsAuthTypeAPI():
 			var apiEmailer *email.Emailer
 			if !cfg.GetAuthAPISupportsInvites() {
 				// invites not supported by API - delegate it to emailer
@@ -155,46 +175,22 @@ var runCmd = &cobra.Command{
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create authentication service")
 			}
-		}
-
-		if dbParams.KVEnabled {
-			kvParams := cfg.GetKVParams()
-			kvStore, err := kv.Open(ctx, dbParams.Type, kvParams)
-			if err != nil {
-				logger.WithError(err).Fatal("failed to open KV store")
-			}
-			defer kvStore.Close()
-			storeMessage = &kv.StoreMessage{Store: kvStore}
-
-			multipartsTracker = multiparts.NewTracker(*storeMessage)
-			actionsStore = actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore})
-			idGen = &actions.DecreasingIDGenerator{}
-
-			// init authentication
-			if authService == nil {
-				authService = auth.NewKVAuthService(
-					storeMessage,
-					crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-					emailer,
-					cfg.GetAuthCacheConfig(),
-					logger.WithField("service", "auth_service"),
-				)
-			}
-			authMetadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
-		} else {
-			multipartsTracker = multiparts.NewDBTracker(dbPool)
-			actionsStore = actions.NewActionsDBStore(dbPool)
-			idGen = &actions.IncreasingIDGenerator{}
-			if authService == nil {
-				authService = auth.NewDBAuthService(
-					dbPool,
-					crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-					emailer,
-					cfg.GetAuthCacheConfig(),
-					logger.WithField("service", "auth_service"),
-				)
-			}
-			authMetadataManager = auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
+		case dbParams.KVEnabled:
+			authService = auth.NewKVAuthService(
+				storeMessage,
+				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+				emailer,
+				cfg.GetAuthCacheConfig(),
+				logger.WithField("service", "auth_service"),
+			)
+		default:
+			authService = auth.NewDBAuthService(
+				dbPool,
+				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+				emailer,
+				cfg.GetAuthCacheConfig(),
+				logger.WithField("service", "auth_service"),
+			)
 		}
 
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
@@ -450,7 +446,7 @@ func checkMetadataPrefix(ctx context.Context, repo *catalog.Repository, logger l
 
 // checkForeignRepo checks whether a repo storage namespace matches the block adapter.
 // A foreign repo is a repository which namespace doesn't match the current block adapter.
-// A foreign repo might exists if the lakeFS instance configuration changed after a repository was
+// A foreign repo might exist if the lakeFS instance configuration changed after a repository was
 // already created. The behaviour of lakeFS for foreign repos is undefined and should be blocked.
 func checkForeignRepo(repoStorageType block.StorageType, logger logging.Logger, adapterStorageType, repoName string) {
 	if adapterStorageType != repoStorageType.BlockstoreType() {
