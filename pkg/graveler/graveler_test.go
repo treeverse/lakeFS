@@ -1006,7 +1006,7 @@ func testGravelerUpdateBranch(t *testing.T, kvEnabled bool) {
 	_, err := gravel.UpdateBranch(context.Background(), "", "", "")
 	require.ErrorIs(t, err, graveler.ErrConflictFound)
 
-	gravel = newGraveler(t, kvEnabled, nil, &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
+	gravel = newGraveler(t, kvEnabled, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})}, &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
 		&testutil.RefsFake{Branch: &graveler.Branch{StagingToken: "st1", CommitID: "commit1"}, Commits: map[graveler.CommitID]*graveler.Commit{"commit1": {}}}, nil, nil)
 	_, err = gravel.UpdateBranch(context.Background(), "", "", "")
 	require.NoError(t, err)

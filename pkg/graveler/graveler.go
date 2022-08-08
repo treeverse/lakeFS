@@ -1981,10 +1981,10 @@ func (g *KVGraveler) checkEmpty(ctx context.Context, repositoryID RepositoryID, 
 		return false, err
 	}
 
-	diffIt := NewUncommittedDiffIterator(ctx, changesIt, committedList)
+	diffIt := NewUncommittedDiffIterator(ctx, committedList, changesIt)
 	defer diffIt.Close()
 
-	return diffIt.Next(), nil
+	return !diffIt.Next(), nil
 }
 
 func (g *KVGraveler) isSealedEmpty(ctx context.Context, repositoryID RepositoryID, repo *Repository, branch *Branch) (bool, error) {
