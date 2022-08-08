@@ -28,11 +28,11 @@ var (
 )
 
 type ProtectionManager struct {
-	settingManager *settings.Manager
+	settingManager settings.Manager
 	matchers       cache.Cache
 }
 
-func NewProtectionManager(settingManager *settings.Manager) *ProtectionManager {
+func NewProtectionManager(settingManager settings.Manager) *ProtectionManager {
 	return &ProtectionManager{settingManager: settingManager, matchers: cache.NewCache(matcherCacheSize, matcherCacheExpiry, cache.NewJitterFn(matcherCacheJitter))}
 }
 
@@ -41,7 +41,7 @@ func (m *ProtectionManager) Add(ctx context.Context, repositoryID graveler.Repos
 	if err != nil {
 		return fmt.Errorf("invalid branch pattern syntax: %w", err)
 	}
-	return m.settingManager.UpdateWithLock(ctx, repositoryID, ProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) error {
+	return m.settingManager.Update(ctx, repositoryID, ProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) error {
 		rules := message.(*graveler.BranchProtectionRules)
 		if rules.BranchPatternToBlockedActions == nil {
 			rules.BranchPatternToBlockedActions = make(map[string]*graveler.BranchProtectionBlockedActions)
@@ -55,7 +55,7 @@ func (m *ProtectionManager) Add(ctx context.Context, repositoryID graveler.Repos
 }
 
 func (m *ProtectionManager) Delete(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string) error {
-	return m.settingManager.UpdateWithLock(ctx, repositoryID, ProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) error {
+	return m.settingManager.Update(ctx, repositoryID, ProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) error {
 		rules := message.(*graveler.BranchProtectionRules)
 		if rules.BranchPatternToBlockedActions == nil {
 			rules.BranchPatternToBlockedActions = make(map[string]*graveler.BranchProtectionBlockedActions)

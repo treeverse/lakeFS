@@ -14,8 +14,13 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/lib/pq"
 	"github.com/treeverse/lakefs/pkg/batch"
+	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/adapter"
+	"github.com/treeverse/lakefs/pkg/block/factory"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/branch"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
@@ -170,7 +175,7 @@ func (m *DBManager) ResolveRawRef(ctx context.Context, repositoryID graveler.Rep
 
 func (m *DBManager) GetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (*graveler.Branch, error) {
 	key := fmt.Sprintf("GetBranch:%s:%s", repositoryID, branchID)
-	branch, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
+	b, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
 		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			var rec branchRecord
 			err := tx.Get(&rec, `SELECT commit_id, staging_token FROM graveler_branches WHERE repository_id = $1 AND id = $2`,
@@ -190,7 +195,7 @@ func (m *DBManager) GetBranch(ctx context.Context, repositoryID graveler.Reposit
 	if err != nil {
 		return nil, err
 	}
-	return branch.(*graveler.Branch), nil
+	return b.(*graveler.Branch), nil
 }
 
 func (m *DBManager) CreateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, branch graveler.Branch) error {
@@ -552,6 +557,13 @@ func (m *DBManager) addGenerationToNodes(nodes map[graveler.CommitID]*CommitNode
 	}
 }
 
+// Migration Code
+
+var (
+	blockstore       block.Adapter
+	blockstorePrefix string
+)
+
 func cWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.RepositoryRecord) error {
 	commits, err := d.Query(ctx, "SELECT id,committer,message,creation_date,meta_range_id,metadata,parents,version,generation FROM graveler_commits WHERE repository_id=$1", repository.RepositoryID)
 	if err != nil {
@@ -668,15 +680,60 @@ func rWorker(ctx context.Context, d *pgxpool.Pool, rChan <-chan *graveler.Reposi
 		if err != nil {
 			return err
 		}
+
+		// Migrate Settings
+		objectPointer := block.ObjectPointer{
+			StorageNamespace: string(r.StorageNamespace),
+			Identifier:       fmt.Sprintf(graveler.SettingsRelativeKey, blockstorePrefix, branch.ProtectionSettingKey),
+			IdentifierType:   block.IdentifierTypeRelative,
+		}
+		reader, err := blockstore.Get(ctx, objectPointer, -1)
+		if err != nil {
+			if errors.Is(err, adapter.ErrDataNotFound) { // skip settings migration
+				return nil
+			}
+			return err
+		}
+		buff, err := io.ReadAll(reader)
+		reader.Close()
+		if err != nil {
+			return err
+		}
+
+		if err = encoder.Encode(kv.Entry{
+			PartitionKey: []byte(graveler.RepoPartition(r)),
+			Key:          []byte(graveler.SettingsPath(branch.ProtectionSettingKey)),
+			Value:        buff,
+		}); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
+	cfg, err := config.NewConfig()
+	if err != nil {
+		return err
+	}
+
+	blockstorePrefix = cfg.GetCommittedBlockStoragePrefix()
+	bs, err := factory.BuildBlockAdapter(ctx, nil, cfg)
+	if err != nil {
+		return err
+	}
+
+	return MigrateWithBlockstore(ctx, d, writer, bs, blockstorePrefix)
+}
+
+func MigrateWithBlockstore(ctx context.Context, d *pgxpool.Pool, writer io.Writer, bs block.Adapter, bsPrefix string) error {
+	blockstore = bs
+	blockstorePrefix = bsPrefix
 	encoder = kv.SafeEncoder{
 		Je: json.NewEncoder(writer),
 		Mu: sync.Mutex{},
 	}
+
 	// Create header
 	if err := encoder.Encode(kv.Header{
 		LakeFSVersion:   version.Version,
