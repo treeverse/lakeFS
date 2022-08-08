@@ -215,6 +215,26 @@ lakectl abuse random-write <source branch uri> [flags]
 
 
 
+### lakectl abuse read-key
+
+Read the same key from a file and generate random reads from the source ref for those keys.
+
+```
+lakectl abuse read-key <source ref uri> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int        amount of lists to do (default 1000000)
+  -h, --help              help for read-key
+      --key string        key used for the test (default "abuse-read-key")
+      --parallelism int   amount of lists to do in parallel (default 100)
+```
+
+
+
 ### lakectl actions
 
 Manage Actions commands
