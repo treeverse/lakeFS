@@ -18,17 +18,17 @@ has_children: false
 
 Access to resources is managed very much like [AWS IAM](https://docs.aws.amazon.com/IAM/latest/UserGuide/intro-structure.html){:target="_blank"}.
 
-There are four basic components to the system:
+There are five basic components to the system:
 
-**Users** - Representing entities that access and use the system. A user is given one or more **Access Credentials** for authentication.
+1. **Users** - Representing entities that access and use the system. A user is given one or more **Access Credentials** for authentication.
 
-**Actions** - Representing a logical action within the system - reading a file, creating a repository, etc.
+2. **Actions** - Representing a logical action within the system - reading a file, creating a repository, etc.
 
-**Resources** - A unique identifier representing a specific resource in the system - a repository, an object, a user, etc.
+3. **Resources** - A unique identifier representing a specific resource in the system - a repository, an object, a user, etc.
 
-**Policies** - Representing a set of **Actions**, a **Resource** and an effect: whether or not these actions are `allowed` or `denied` for the given resource(s).
+4. **Policies** - Representing a set of **Actions**, a **Resource** and an effect: whether or not these actions are `allowed` or `denied` for the given resource(s).
 
-**Groups** - A named collection of users. Users can belong to multiple groups.
+5. **Groups** - A named collection of users. Users can belong to multiple groups.
 
 
 Controlling access is done by attaching **Policies**, either directly to **Users**, or to **Groups** they belong to.
