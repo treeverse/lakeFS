@@ -96,6 +96,67 @@ var abuseRandomReadsCmd = &cobra.Command{
 	},
 }
 
+var abuseReadKeyCmd = &cobra.Command{
+	Use:    "read-key <source ref uri>",
+	Short:  "Read the same key from a file and generate random reads from the source ref for those keys.",
+	Hidden: false,
+	Args:   cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		u := MustParseRefURI("source ref", args[0])
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
+		key := MustString(cmd.Flags().GetString("key"))
+
+		Fmt("Source ref: %s\n", u.String())
+		Fmt("Key: %s\n", key)
+
+		generator := stress.NewGenerator("read", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
+
+		// write the key once
+		ctx := cmd.Context()
+		client := getClient()
+		repoResponse, err := client.GetRepositoryWithResponse(cmd.Context(), u.Repository)
+		DieOnErrorOrUnexpectedStatusCode(repoResponse, err, http.StatusOK)
+
+		repo := repoResponse.JSON200
+		storagePrefix := repo.StorageNamespace
+		checksum := "00695c7307b0480c7b6bdc873cf05c15"
+		creationInfo := api.ObjectStageCreation{
+			Checksum:        checksum,
+			PhysicalAddress: storagePrefix + "/read-key",
+		}
+		writeResponse, err := client.StageObjectWithResponse(ctx, u.Repository, u.Ref, &api.StageObjectParams{Path: key},
+			api.StageObjectJSONRequestBody(creationInfo))
+		DieOnErrorOrUnexpectedStatusCode(writeResponse, err, http.StatusCreated)
+
+		// setup generator to use the key
+		generator.Setup(func(add stress.GeneratorAddFn) {
+			for i := 0; i < amount; i++ {
+				add(key)
+			}
+		})
+
+		// execute the things!
+		generator.Run(func(input chan string, output chan stress.Result) {
+			ctx := cmd.Context()
+			client := getClient()
+			for work := range input {
+				start := time.Now()
+				resp, err := client.StatObjectWithResponse(ctx, u.Repository, u.Ref, &api.StatObjectParams{
+					Path: work,
+				})
+				if err == nil && resp.StatusCode() != http.StatusOK {
+					err = helpers.ResponseAsError(resp)
+				}
+				output <- stress.Result{
+					Error: err,
+					Took:  time.Since(start),
+				}
+			}
+		})
+	},
+}
+
 var abuseRandomWritesCmd = &cobra.Command{
 	Use:    "random-write <source branch uri>",
 	Short:  "Generate random writes to the source branch",
@@ -342,28 +403,37 @@ func init() {
 
 	abuseCmd.AddCommand(abuseCreateBranchesCmd)
 
-	const defaultAmount = 1000000
+	const (
+		defaultAmount      = 1000000
+		defaultParallelism = 100
+	)
+
 	abuseCreateBranchesCmd.Flags().String("branch-prefix", "abuse-", "prefix to create branches under")
 	abuseCreateBranchesCmd.Flags().Bool("clean-only", false, "only clean up past runs")
 	abuseCreateBranchesCmd.Flags().Int("amount", defaultAmount, "amount of things to do")
-	abuseCreateBranchesCmd.Flags().Int("parallelism", 100, "amount of things to do in parallel")
+	abuseCreateBranchesCmd.Flags().Int("parallelism", defaultParallelism, "amount of things to do in parallel")
 
 	abuseCmd.AddCommand(abuseRandomReadsCmd)
 	abuseRandomReadsCmd.Flags().String("from-file", "", "read keys from this file (\"-\" for stdin)")
 	abuseRandomReadsCmd.Flags().Int("amount", defaultAmount, "amount of reads to do")
-	abuseRandomReadsCmd.Flags().Int("parallelism", 100, "amount of reads to do in parallel")
+	abuseRandomReadsCmd.Flags().Int("parallelism", defaultParallelism, "amount of reads to do in parallel")
 
 	abuseCmd.AddCommand(abuseRandomWritesCmd)
 	abuseRandomWritesCmd.Flags().String("prefix", "abuse/", "prefix to create paths under")
 	abuseRandomWritesCmd.Flags().Int("amount", defaultAmount, "amount of writes to do")
-	abuseRandomWritesCmd.Flags().Int("parallelism", 100, "amount of writes to do in parallel")
+	abuseRandomWritesCmd.Flags().Int("parallelism", defaultParallelism, "amount of writes to do in parallel")
 
 	abuseCmd.AddCommand(abuseCommitCmd)
-	abuseCommitCmd.Flags().Int("amount", 100, "amount of commits to do")
+	abuseCommitCmd.Flags().Int("amount", defaultParallelism, "amount of commits to do")
 	abuseCommitCmd.Flags().Duration("gap", 2*time.Second, "duration to wait between commits")
 
 	abuseCmd.AddCommand(abuseListCmd)
 	abuseListCmd.Flags().String("prefix", "abuse/", "prefix to list under")
 	abuseListCmd.Flags().Int("amount", defaultAmount, "amount of lists to do")
-	abuseListCmd.Flags().Int("parallelism", 100, "amount of lists to do in parallel")
+	abuseListCmd.Flags().Int("parallelism", defaultParallelism, "amount of lists to do in parallel")
+
+	abuseCmd.AddCommand(abuseReadKeyCmd)
+	abuseReadKeyCmd.Flags().Int("amount", defaultAmount, "amount of lists to do")
+	abuseReadKeyCmd.Flags().Int("parallelism", defaultParallelism, "amount of lists to do in parallel")
+	abuseReadKeyCmd.Flags().String("key", "abuse-read-key", "key used for the test")
 }
