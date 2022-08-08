@@ -1,2 +1,2 @@
-dbt-trino==0.21.0
-dbt-spark[PyHive]==1.0.0
+dbt-trino==1.2.0
+dbt-spark[PyHive]==1.2.0
