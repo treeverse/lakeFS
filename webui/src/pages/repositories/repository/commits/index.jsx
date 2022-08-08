@@ -25,6 +25,7 @@ import {Link} from "../../../../lib/components/nav";
 import {useRouter} from "../../../../lib/hooks/router";
 import {Route, Switch} from "react-router-dom";
 import RepositoryCommitPage from "./commit";
+import {RepoError} from "../error";
 
 
 const CommitWidget = ({ repo, commit }) => {
@@ -138,7 +139,7 @@ const CommitsContainer = () => {
     const { repo, reference, loading ,error } = useRefs();
 
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>;
+    if (error) return <RepoError error={error}/>;
 
     const params = {repoId: repo.id};
 

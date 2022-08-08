@@ -27,6 +27,7 @@ import {formatAlertText} from "../../../lib/components/repository/errors";
 import {TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
+import {RepoError} from "./error";
 
 
 const CommitButton = ({repo, onCommit, enabled = false}) => {
@@ -305,7 +306,7 @@ const ChangesContainer = () => {
     const {prefix} = router.query
 
     if (loading) return <Loading/>
-    if (error) return <Error error={error}/>
+    if (error) return <RepoError error={error}/>
 
     return (
         <ChangesBrowser

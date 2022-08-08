@@ -918,71 +918,7 @@ func (g *KVGraveler) WriteMetaRangeByIterator(ctx context.Context, repositoryID 
 	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repo.StorageNamespace, it, nil)
 }
 
-func (g *KVGraveler) deleteRepositoryBranches(ctx context.Context, repositoryID RepositoryID) error {
-	itr, err := g.ListBranches(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	defer itr.Close()
-	var wg multierror.Group
-	for itr.Next() {
-		b := itr.Value()
-		wg.Go(func() error {
-			return g.RefManager.DeleteBranch(ctx, repositoryID, b.BranchID)
-		})
-	}
-	return wg.Wait().ErrorOrNil()
-}
-
-func (g *KVGraveler) deleteRepositoryTags(ctx context.Context, repositoryID RepositoryID) error {
-	itr, err := g.ListTags(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	defer itr.Close()
-	var wg multierror.Group
-	for itr.Next() {
-		tag := itr.Value()
-		wg.Go(func() error {
-			return g.DeleteTag(ctx, repositoryID, tag.TagID)
-		})
-	}
-	return wg.Wait().ErrorOrNil()
-}
-
-func (g *KVGraveler) deleteRepositoryCommits(ctx context.Context, repositoryID RepositoryID) error {
-	itr, err := g.RefManager.ListCommits(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	defer itr.Close()
-	var wg multierror.Group
-	for itr.Next() {
-		commit := itr.Value()
-		wg.Go(func() error {
-			return g.RefManager.RemoveCommit(ctx, repositoryID, commit.CommitID)
-		})
-	}
-	return wg.Wait().ErrorOrNil()
-}
-
 func (g *KVGraveler) DeleteRepository(ctx context.Context, repositoryID RepositoryID) error {
-	// A very simplistic and initial implementation, it currently ignores any errors during the deletion of entities
-	err := g.deleteRepositoryBranches(ctx, repositoryID)
-	if err != nil {
-		logging.Default().WithField("repository", repositoryID).WithError(err).Error("Failed on delete repository branches")
-	}
-
-	err = g.deleteRepositoryTags(ctx, repositoryID)
-	if err != nil {
-		logging.Default().WithField("repository", repositoryID).WithError(err).Error("Failed on delete repository tags")
-	}
-
-	err = g.deleteRepositoryCommits(ctx, repositoryID)
-	if err != nil {
-		logging.Default().WithField("repository", repositoryID).WithError(err).Error("Failed on delete repository commits")
-	}
-
 	return g.RefManager.DeleteRepository(ctx, repositoryID)
 }
 

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/ident"
@@ -169,16 +170,96 @@ func (m *KVManager) ListRepositories(ctx context.Context) (graveler.RepositoryIt
 	return NewKVRepositoryIterator(ctx, &m.kvStore)
 }
 
-func (m *KVManager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
-	// TODO: delete me
-	// temp code to align with DB manager. Delete once https://github.com/treeverse/lakeFS/issues/3640 is done
-	_, err := m.getRepository(ctx, repositoryID)
+func (m *KVManager) updateRepoState(ctx context.Context, repo *graveler.RepositoryRecord, state graveler.RepositoryState) error {
+	repo.State = state
+	return m.kvStore.SetMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repo.RepositoryID)), graveler.ProtoFromRepo(repo))
+}
+
+func (m *KVManager) deleteRepositoryBranches(ctx context.Context, repositoryID graveler.RepositoryID) error {
+	itr, err := m.ListBranches(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
-	// END TODO: delete me
+	defer itr.Close()
+	var wg multierror.Group
+	for itr.Next() {
+		b := itr.Value()
+		wg.Go(func() error {
+			return m.DeleteBranch(ctx, repositoryID, b.BranchID)
+		})
+	}
+	return wg.Wait().ErrorOrNil()
+}
 
-	return m.kvStore.DeleteMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID)))
+func (m *KVManager) deleteRepositoryTags(ctx context.Context, repositoryID graveler.RepositoryID) error {
+	itr, err := m.ListTags(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	defer itr.Close()
+	var wg multierror.Group
+	for itr.Next() {
+		tag := itr.Value()
+		wg.Go(func() error {
+			return m.DeleteTag(ctx, repositoryID, tag.TagID)
+		})
+	}
+	return wg.Wait().ErrorOrNil()
+}
+
+func (m *KVManager) deleteRepositoryCommits(ctx context.Context, repositoryID graveler.RepositoryID) error {
+	itr, err := m.ListCommits(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	defer itr.Close()
+	var wg multierror.Group
+	for itr.Next() {
+		commit := itr.Value()
+		wg.Go(func() error {
+			return m.RemoveCommit(ctx, repositoryID, commit.CommitID)
+		})
+	}
+	return wg.Wait().ErrorOrNil()
+}
+
+func (m *KVManager) deleteRepository(ctx context.Context, repo *graveler.RepositoryRecord) error {
+	// ctx := context.Background() TODO (niro): When running this async create a new context and remove ctx from signature
+	var wg multierror.Group
+	wg.Go(func() error {
+		return m.deleteRepositoryBranches(ctx, repo.RepositoryID)
+	})
+	wg.Go(func() error {
+		return m.deleteRepositoryTags(ctx, repo.RepositoryID)
+	})
+	wg.Go(func() error {
+		return m.deleteRepositoryCommits(ctx, repo.RepositoryID)
+	})
+
+	if err := wg.Wait().ErrorOrNil(); err != nil {
+		return err
+	}
+
+	// Finally delete the repository record itself
+	return m.kvStore.DeleteMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repo.RepositoryID)))
+}
+
+func (m *KVManager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+
+	// Set repository state to deleted and then perform background delete.
+	if repo.State != graveler.RepositoryState_IN_DELETION {
+		err = m.updateRepoState(ctx, repo, graveler.RepositoryState_IN_DELETION)
+		if err != nil {
+			return err
+		}
+	}
+
+	// TODO (niro): This should be a background delete process
+	return m.deleteRepository(ctx, repo)
 }
 
 func (m *KVManager) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
