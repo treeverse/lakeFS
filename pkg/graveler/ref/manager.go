@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 // IteratorPrefetchSize is the amount of records to maybeFetch from PG
@@ -169,26 +169,69 @@ func (m *KVManager) updateRepoState(ctx context.Context, repo *graveler.Reposito
 	return m.kvStore.SetMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repo.RepositoryID)), graveler.ProtoFromRepo(repo))
 }
 
+func (m *KVManager) deleteRepositoryBranches(ctx context.Context, repositoryID graveler.RepositoryID) error {
+	itr, err := m.ListBranches(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	defer itr.Close()
+	var wg multierror.Group
+	for itr.Next() {
+		b := itr.Value()
+		wg.Go(func() error {
+			return m.DeleteBranch(ctx, repositoryID, b.BranchID)
+		})
+	}
+	return wg.Wait().ErrorOrNil()
+}
+
+func (m *KVManager) deleteRepositoryTags(ctx context.Context, repositoryID graveler.RepositoryID) error {
+	itr, err := m.ListTags(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	defer itr.Close()
+	var wg multierror.Group
+	for itr.Next() {
+		tag := itr.Value()
+		wg.Go(func() error {
+			return m.DeleteTag(ctx, repositoryID, tag.TagID)
+		})
+	}
+	return wg.Wait().ErrorOrNil()
+}
+
+func (m *KVManager) deleteRepositoryCommits(ctx context.Context, repositoryID graveler.RepositoryID) error {
+	itr, err := m.ListCommits(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	defer itr.Close()
+	var wg multierror.Group
+	for itr.Next() {
+		commit := itr.Value()
+		wg.Go(func() error {
+			return m.RemoveCommit(ctx, repositoryID, commit.CommitID)
+		})
+	}
+	return wg.Wait().ErrorOrNil()
+}
+
 func (m *KVManager) deleteRepository(ctx context.Context, repo *graveler.RepositoryRecord) error {
 	// ctx := context.Background() TODO (niro): When running this async create a new context and remove ctx from signature
-	logger := logging.FromContext(ctx).WithField("repository", repo.RepositoryID)
-	// Scan through repository partition and delete entities, using SecondaryIndex struct since we don't really need the data, just the key
-	// Failures on deleting repository entities don't constitute as repository deletion failure
-	partition := graveler.RepoPartition(repo)
-	it, err := kv.NewPartitionIterator(ctx, m.kvStore.Store, (&kv.SecondaryIndex{}).ProtoReflect().Type(), partition)
-	if err != nil {
-		logger.WithError(err).Error("Error scanning repository partition")
-	}
-	defer it.Close()
-	for it.Next() {
-		v := it.Entry()
-		err = m.kvStore.DeleteMsg(ctx, partition, v.Key)
-		if err != nil && !errors.Is(err, kv.ErrNotFound) {
-			logger.WithField("key", string(v.Key)).Error("Failed to delete repository entity")
-		}
-	}
-	if it.Err() != nil {
-		logger.WithError(it.Err()).Error("Error during iteration")
+	var wg multierror.Group
+	wg.Go(func() error {
+		return m.deleteRepositoryBranches(ctx, repo.RepositoryID)
+	})
+	wg.Go(func() error {
+		return m.deleteRepositoryTags(ctx, repo.RepositoryID)
+	})
+	wg.Go(func() error {
+		return m.deleteRepositoryCommits(ctx, repo.RepositoryID)
+	})
+
+	if err := wg.Wait().ErrorOrNil(); err != nil {
+		return err
 	}
 
 	// Finally delete the repository record itself
