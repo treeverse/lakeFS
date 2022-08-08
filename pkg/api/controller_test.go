@@ -2079,28 +2079,28 @@ func testController_SetupLakeFSHandler(t *testing.T, kvEnabled bool) {
 			if foundCreds.AccessKeyId != creds.AccessKeyId {
 				t.Fatalf("Access key ID '%s', expected '%s'", foundCreds.AccessKeyId, creds.AccessKeyId)
 			}
-			if len(deps.collector.metadata) != 1 {
+			if len(deps.collector.Metadata) != 1 {
 				t.Fatal("Failed to collect metadata")
 			}
-			if deps.collector.metadata[0].InstallationID == "" {
+			if deps.collector.Metadata[0].InstallationID == "" {
 				t.Fatal("Empty installationID")
 			}
-			if len(deps.collector.metadata[0].Entries) < 5 {
-				t.Fatalf("There should be at least 5 metadata entries: %s", deps.collector.metadata[0].Entries)
+			if len(deps.collector.Metadata[0].Entries) < 5 {
+				t.Fatalf("There should be at least 5 metadata entries: %s", deps.collector.Metadata[0].Entries)
 			}
 
 			hasBlockStoreType := false
-			for _, ent := range deps.collector.metadata[0].Entries {
+			for _, ent := range deps.collector.Metadata[0].Entries {
 				if ent.Name == stats.BlockstoreTypeKey {
 					hasBlockStoreType = true
 					if ent.Value == "" {
-						t.Fatalf("Blockstorage key exists but with empty value: %s", deps.collector.metadata[0].Entries)
+						t.Fatalf("Blockstorage key exists but with empty value: %s", deps.collector.Metadata[0].Entries)
 					}
 					break
 				}
 			}
 			if !hasBlockStoreType {
-				t.Fatalf("missing blockstorage key: %s", deps.collector.metadata[0].Entries)
+				t.Fatalf("missing blockstorage key: %s", deps.collector.Metadata[0].Entries)
 			}
 
 			// on successful setup - make sure we can't re-setup

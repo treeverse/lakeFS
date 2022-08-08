@@ -45,8 +45,29 @@ type dependencies struct {
 	blocks      block.Adapter
 	catalog     catalog.Interface
 	authService *auth.Service
-	collector   stats.Collector
+	collector   *memCollector
 }
+
+// memCollector in-memory collector stores events and metadata sent
+type memCollector struct {
+	Events         []*stats.MetadataEntry
+	Metadata       []*stats.Metadata
+	InstallationID string
+}
+
+func (m *memCollector) CollectEvent(class, action string) {
+	m.Events = append(m.Events, &stats.MetadataEntry{Name: class, Value: action})
+}
+
+func (m *memCollector) CollectMetadata(metadata *stats.Metadata) {
+	m.Metadata = append(m.Metadata, metadata)
+}
+
+func (m *memCollector) SetInstallationID(installationID string) {
+	m.InstallationID = installationID
+}
+
+func (m *memCollector) Close() {}
 
 func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.BaseCredential {
 	t.Helper()
@@ -71,7 +92,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 	viper.Set("database.kv_enabled", kvEnabled)
 
-	collector := &stats.NullCollector{}
+	collector := &memCollector{}
 
 	// wire actions
 	var (
