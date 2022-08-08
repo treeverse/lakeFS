@@ -206,7 +206,9 @@ func TestDropAsync(t *testing.T) {
 	store := kvtest.GetStore(ctx, t)
 	ch := make(chan bool)
 	s := staging.NewManager(ctx, kv.StoreMessage{Store: store})
-	s.AddNotifier(ch)
+	s.AddCallback(func() {
+		close(ch)
+	})
 
 	numOfValues := 1400
 	setupDrop(ctx, t, numOfValues, s)

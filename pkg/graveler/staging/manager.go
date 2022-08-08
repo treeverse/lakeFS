@@ -14,8 +14,8 @@ type Manager struct {
 	log    logging.Logger
 	wakeup chan bool
 
-	// notifiers are being called with every successful cleanup cycle
-	notifiers []chan bool
+	// cleanupCallback is being called with every successful cleanup cycle
+	cleanupCallback func()
 }
 
 func NewManager(ctx context.Context, store kv.StoreMessage) *Manager {
@@ -29,8 +29,8 @@ func NewManager(ctx context.Context, store kv.StoreMessage) *Manager {
 	return m
 }
 
-func (m *Manager) AddNotifier(notifier chan bool) {
-	m.notifiers = append(m.notifiers, notifier)
+func (m *Manager) AddCallback(cleanupCallback func()) {
+	m.cleanupCallback = cleanupCallback
 }
 
 func (m *Manager) Get(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.Value, error) {
@@ -127,9 +127,7 @@ func (m *Manager) cleanupLoop(ctx context.Context) {
 			if err != nil {
 				m.log.WithError(err).Error("Dropping tokens failed")
 			} else {
-				for _, n := range m.notifiers {
-					n <- true
-				}
+				m.cleanupCallback()
 			}
 		}
 	}
