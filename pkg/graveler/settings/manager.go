@@ -1,26 +1,23 @@
 package settings
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/block/adapter"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
 const (
-	settingsRelativeKey = "%s/settings/%s.json" // where the settings are saved relative to the storage namespace
-	cacheSize           = 100_000
-	defaultCacheExpiry  = 1 * time.Second
+	cacheSize          = 100_000
+	defaultCacheExpiry = 1 * time.Second
 )
 
 type cacheKey struct {
@@ -28,32 +25,44 @@ type cacheKey struct {
 	Key          string
 }
 
-// Manager is a key-value store for Graveler repository-level settings.
-// Each setting is stored under a key, and can be any proto.Message.
-// Fetched settings are cached using cache.Cache with a default expiry time of 1 second. Hence, the store is eventually consistent.
-type Manager struct {
-	refManager                  graveler.RefManager
-	branchLock                  graveler.BranchLocker
-	blockAdapter                block.Adapter
-	committedBlockStoragePrefix string
-	cache                       cache.Cache
+type updateFunc func(proto.Message) error
+
+// TODO (niro): Remove interface once DB implementation is deleted
+type Manager interface {
+	// TODO (niro): Delete Save (unused)
+	Save(context.Context, graveler.RepositoryID, string, proto.Message) error
+	GetLatest(context.Context, graveler.RepositoryID, string, proto.Message) (proto.Message, error)
+	Get(context.Context, graveler.RepositoryID, string, proto.Message) (proto.Message, error)
+	Update(context.Context, graveler.RepositoryID, string, proto.Message, updateFunc) error
+	WithCache(cache cache.Cache)
 }
 
-type ManagerOption func(m *Manager)
+// KVManager is a key-value store for Graveler repository-level settings.
+// Each setting is stored under a key, and can be any proto.Message.
+// Fetched settings are cached using cache.Cache with a default expiry time of 1 second. Hence, the store is eventually consistent.
+type KVManager struct {
+	store      kv.StoreMessage
+	refManager graveler.RefManager
+	cache      cache.Cache
+}
+
+type ManagerOption func(m Manager)
 
 func WithCache(cache cache.Cache) ManagerOption {
-	return func(m *Manager) {
-		m.cache = cache
+	return func(m Manager) {
+		m.WithCache(cache)
 	}
 }
 
-func NewManager(refManager graveler.RefManager, branchLock graveler.BranchLocker, blockAdapter block.Adapter, committedBlockStoragePrefix string, options ...ManagerOption) *Manager {
-	m := &Manager{
-		refManager:                  refManager,
-		branchLock:                  branchLock,
-		blockAdapter:                blockAdapter,
-		committedBlockStoragePrefix: committedBlockStoragePrefix,
-		cache:                       cache.NewCache(cacheSize, defaultCacheExpiry, cache.NewJitterFn(defaultCacheExpiry)),
+func (m *KVManager) WithCache(cache cache.Cache) {
+	m.cache = cache
+}
+
+func NewManager(refManager graveler.RefManager, store kv.StoreMessage, options ...ManagerOption) *KVManager {
+	m := &KVManager{
+		refManager: refManager,
+		store:      store,
+		cache:      cache.NewCache(cacheSize, defaultCacheExpiry, cache.NewJitterFn(defaultCacheExpiry)),
 	}
 	for _, o := range options {
 		o(m)
@@ -61,45 +70,51 @@ func NewManager(refManager graveler.RefManager, branchLock graveler.BranchLocker
 	return m
 }
 
-// Save persists the given setting under the given repository and key.
-func (m *Manager) Save(ctx context.Context, repositoryID graveler.RepositoryID, key string, setting proto.Message) error {
+// Save persists the given setting under the given repository and key. Overrides settings key in KV Store
+func (m *KVManager) Save(ctx context.Context, repositoryID graveler.RepositoryID, key string, setting proto.Message) error {
 	repo, err := m.refManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
-	messageBytes, err := proto.Marshal(setting)
-	if err != nil {
-		return err
-	}
-	err = m.blockAdapter.Put(ctx, block.ObjectPointer{
-		StorageNamespace: string(repo.StorageNamespace),
-		Identifier:       fmt.Sprintf(settingsRelativeKey, m.committedBlockStoragePrefix, key),
-		IdentifierType:   block.IdentifierTypeRelative,
-	}, int64(len(messageBytes)), bytes.NewReader(messageBytes), block.PutOpts{})
-	if err != nil {
-		return err
-	}
+
 	logSetting(logging.FromContext(ctx), repositoryID, key, setting, "saving repository-level setting")
-	return nil
+	// Write key in KV Store
+	return m.store.SetMsg(ctx, graveler.RepoPartition(&graveler.RepositoryRecord{RepositoryID: repositoryID, Repository: repo}), []byte(graveler.SettingsPath(key)), setting)
 }
 
-func (m *Manager) GetLatest(ctx context.Context, repositoryID graveler.RepositoryID, key string, settingTemplate proto.Message) (proto.Message, error) {
-	messageBytes, err := m.getFromStore(ctx, repositoryID, key)
+func (m *KVManager) getWithPredicate(ctx context.Context, repo *graveler.RepositoryRecord, key string, data proto.Message) (kv.Predicate, error) {
+	pred, err := m.store.GetMsg(ctx, graveler.RepoPartition(repo), []byte(graveler.SettingsPath(key)), data)
+	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			err = graveler.ErrNotFound
+		}
+		return nil, err
+	}
+	return pred, nil
+}
+
+func (m *KVManager) GetLatest(ctx context.Context, repositoryID graveler.RepositoryID, key string, settingTemplate proto.Message) (proto.Message, error) {
+	repo, err := m.refManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
-	setting := proto.Clone(settingTemplate)
-	err = proto.Unmarshal(messageBytes, setting)
+
+	data := settingTemplate.ProtoReflect().Interface()
+	_, err = m.getWithPredicate(ctx, &graveler.RepositoryRecord{RepositoryID: repositoryID, Repository: repo}, key, data)
 	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			err = graveler.ErrNotFound
+		}
 		return nil, err
 	}
-	return setting, nil
+	logSetting(logging.FromContext(ctx), repositoryID, key, data, "got repository-level setting")
+	return data, nil
 }
 
 // Get fetches the setting under the given repository and key, and returns the result.
 // The result is eventually consistent: it is not guaranteed to be the most up-to-date setting. The cache expiry period is 1 second.
 // The settingTemplate parameter is used to determine the returned type.
-func (m *Manager) Get(ctx context.Context, repositoryID graveler.RepositoryID, key string, settingTemplate proto.Message) (proto.Message, error) {
+func (m *KVManager) Get(ctx context.Context, repositoryID graveler.RepositoryID, key string, settingTemplate proto.Message) (proto.Message, error) {
 	k := cacheKey{
 		RepositoryID: repositoryID,
 		Key:          key,
@@ -110,54 +125,52 @@ func (m *Manager) Get(ctx context.Context, repositoryID graveler.RepositoryID, k
 	if err != nil {
 		return nil, err
 	}
-	logSetting(logging.FromContext(ctx), repositoryID, key, setting.(proto.Message), "got repository-level setting")
 	return setting.(proto.Message), nil
 }
 
-func (m *Manager) getFromStore(ctx context.Context, repositoryID graveler.RepositoryID, key string) ([]byte, error) {
-	repo, err := m.refManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	objectPointer := block.ObjectPointer{
-		StorageNamespace: string(repo.StorageNamespace),
-		Identifier:       fmt.Sprintf(settingsRelativeKey, m.committedBlockStoragePrefix, key),
-		IdentifierType:   block.IdentifierTypeRelative,
-	}
-	reader, err := m.blockAdapter.Get(ctx, objectPointer, -1)
-	if errors.Is(err, adapter.ErrDataNotFound) {
-		return nil, graveler.ErrNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		_ = reader.Close()
-	}()
-	return io.ReadAll(reader)
-}
-
-// UpdateWithLock atomically gets a setting, performs the update function, and persists the setting to the store.
+// Update atomically gets a setting, performs the update function, and persists the setting to the store.
 // The settingTemplate parameter is used to determine the type passed to the update function.
-func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.RepositoryID, key string, settingTemplate proto.Message, update func(proto.Message) error) error {
-	repo, err := m.refManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	_, err = m.branchLock.MetadataUpdater(ctx, repositoryID, repo.DefaultBranchID, func() (interface{}, error) {
-		setting, err := m.GetLatest(ctx, repositoryID, key, settingTemplate)
-		if errors.Is(err, graveler.ErrNotFound) {
-			setting = proto.Clone(settingTemplate)
-		} else if err != nil {
-			return nil, err
-		}
-		logSetting(logging.FromContext(ctx), repositoryID, key, setting, "got repository-level setting")
-		err = update(setting)
+func (m *KVManager) Update(ctx context.Context, repositoryID graveler.RepositoryID, key string, settingTemplate proto.Message, update updateFunc) error {
+	const (
+		maxIntervalSec = 2
+		maxElapsedSec  = 5
+	)
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxInterval = maxIntervalSec * time.Second
+	bo.MaxElapsedTime = maxElapsedSec * time.Second
+
+	err := backoff.Retry(func() error {
+		repo, err := m.refManager.GetRepository(ctx, repositoryID)
 		if err != nil {
-			return nil, err
+			return backoff.Permanent(err)
 		}
-		return nil, m.Save(ctx, repositoryID, key, setting)
-	})
+
+		data := settingTemplate.ProtoReflect().Interface()
+		pred, err := m.getWithPredicate(ctx, &graveler.RepositoryRecord{RepositoryID: repositoryID, Repository: repo}, key, data)
+		if errors.Is(err, graveler.ErrNotFound) {
+			data = proto.Clone(settingTemplate)
+		} else if err != nil {
+			return backoff.Permanent(err)
+		}
+
+		logSetting(logging.FromContext(ctx), repositoryID, key, data, "update repository-level setting")
+		err = update(data)
+		if err != nil {
+			return backoff.Permanent(err)
+		}
+		err = m.store.SetMsgIf(ctx, graveler.RepoPartition(&graveler.RepositoryRecord{RepositoryID: repositoryID, Repository: repo}), []byte(graveler.SettingsPath(key)), data, pred)
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			logging.Default().WithError(err).Warn("Predicate failed on settings update. Retrying")
+			err = graveler.ErrPreconditionFailed
+		} else if err != nil {
+			return backoff.Permanent(err)
+		}
+		return err
+	}, bo)
+	if bo.NextBackOff() == bo.Stop {
+		return fmt.Errorf("update settings: %w", graveler.ErrTooManyTries)
+	}
+
 	return err
 }
 

@@ -134,11 +134,11 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 }
 
 func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
-	pipeline, err := BuildAzureClient(params)
+	p, err := BuildAzureClient(params)
 	if err != nil {
 		return nil, err
 	}
-	return azure.NewAdapter(pipeline), nil
+	return azure.NewAdapter(p), nil
 }
 
 func BuildAzureClient(params params.Azure) (pipeline.Pipeline, error) {
