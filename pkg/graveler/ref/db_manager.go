@@ -712,18 +712,26 @@ func rWorker(ctx context.Context, d *pgxpool.Pool, rChan <-chan *graveler.Reposi
 }
 
 func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
-	encoder = kv.SafeEncoder{
-		Je: json.NewEncoder(writer),
-		Mu: sync.Mutex{},
-	}
 	cfg, err := config.NewConfig()
 	if err != nil {
 		return err
 	}
+
 	blockstorePrefix = cfg.GetCommittedBlockStoragePrefix()
-	blockstore, err = factory.BuildBlockAdapter(ctx, nil, cfg)
+	bs, err := factory.BuildBlockAdapter(ctx, nil, cfg)
 	if err != nil {
 		return err
+	}
+
+	return MigrateWithBlockstore(ctx, d, writer, bs, blockstorePrefix)
+}
+
+func MigrateWithBlockstore(ctx context.Context, d *pgxpool.Pool, writer io.Writer, bs block.Adapter, bsPrefix string) error {
+	blockstore = bs
+	blockstorePrefix = bsPrefix
+	encoder = kv.SafeEncoder{
+		Je: json.NewEncoder(writer),
+		Mu: sync.Mutex{},
 	}
 
 	// Create header

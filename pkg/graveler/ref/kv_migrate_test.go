@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/block/factory"
+	"github.com/treeverse/lakefs/pkg/block/mem"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/branch"
@@ -30,13 +30,15 @@ const (
 	NumRepositories = 1
 	numCommits      = 100
 	numBranches     = 100
+
+	blockstoreCommittedPrefix = "migrate_test"
 )
 
 func TestMigrate(t *testing.T) {
 	ctx := context.Background()
 	conn, _ := testutil.GetDB(t, databaseURI)
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
-	viper.Set(config.BlockstoreMemReuseStoreKey, true)
+	blockstore := mem.New()
 
 	store, err := kv.Open(context.Background(), kvpg.DriverName, kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})
 	testutil.MustDo(t, "Open KV Store", err)
@@ -49,10 +51,10 @@ func TestMigrate(t *testing.T) {
 		store.Close()
 	})
 	dbMgr := ref.NewPGRefManager(batch.NopExecutor(), conn, ident.NewHexAddressProvider())
-	createMigrateTestData(t, ctx, dbMgr)
+	createMigrateTestData(t, ctx, dbMgr, blockstore)
 
 	buf := bytes.Buffer{}
-	err = ref.Migrate(ctx, conn.Pool(), &buf)
+	err = ref.MigrateWithBlockstore(ctx, conn.Pool(), &buf, blockstore, blockstoreCommittedPrefix)
 	require.NoError(t, err)
 
 	testutil.MustDo(t, "Import file", kv.Import(ctx, &buf, kvStore.Store))
@@ -76,13 +78,7 @@ func createTagInitialCommit(t *testing.T, ctx context.Context, mgr graveler.RefM
 	}
 }
 
-func createMigrateTestData(t *testing.T, ctx context.Context, mgr graveler.RefManager) {
-	cfg, err := config.NewConfig()
-	testutil.Must(t, err)
-	blockstorePrefix := cfg.GetCommittedBlockStoragePrefix()
-	blockstore, err := factory.BuildBlockAdapter(ctx, nil, cfg)
-	testutil.Must(t, err)
-
+func createMigrateTestData(t *testing.T, ctx context.Context, mgr graveler.RefManager, blockstore block.Adapter) {
 	for i := 0; i < NumRepositories; i++ {
 		repoID := graveler.RepositoryID("repo_" + strconv.Itoa(i))
 		repo := graveler.Repository{StorageNamespace: graveler.StorageNamespace(strconv.Itoa(i)), CreationDate: time.Now(), DefaultBranchID: "main"}
@@ -100,7 +96,7 @@ func createMigrateTestData(t *testing.T, ctx context.Context, mgr graveler.RefMa
 
 			objectPointer := block.ObjectPointer{
 				StorageNamespace: string(repo.StorageNamespace),
-				Identifier:       fmt.Sprintf(graveler.SettingsRelativeKey, blockstorePrefix, branch.ProtectionSettingKey),
+				Identifier:       fmt.Sprintf(graveler.SettingsRelativeKey, blockstoreCommittedPrefix, branch.ProtectionSettingKey),
 				IdentifierType:   block.IdentifierTypeRelative,
 			}
 			testutil.Must(t, blockstore.Put(ctx, objectPointer, int64(len(data)), bytes.NewReader(data), block.PutOpts{}))

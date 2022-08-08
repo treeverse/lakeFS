@@ -29,7 +29,6 @@ import (
 
 const (
 	DefaultBlockStoreLocalPath               = "~/data/lakefs/block"
-	DefaultBlockStoreMemReuseStore           = false
 	DefaultBlockStoreS3Region                = "us-east-1"
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
@@ -143,7 +142,6 @@ const (
 
 	BlockstoreTypeKey                    = "blockstore.type"
 	BlockstoreLocalPathKey               = "blockstore.local.path"
-	BlockstoreMemReuseStoreKey           = "blockstore.mem.reuse_store"
 	BlockstoreDefaultNamespacePrefixKey  = "blockstore.default_namespace_prefix"
 	BlockstoreS3RegionKey                = "blockstore.s3.region"
 	BlockstoreS3StreamingChunkSizeKey    = "blockstore.s3.streaming_chunk_size"
@@ -211,7 +209,6 @@ func setDefaults() {
 	viper.SetDefault(AuthLogoutRedirectURL, DefaultAuthLogoutRedirectURL)
 
 	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockStoreLocalPath)
-	viper.SetDefault(BlockstoreMemReuseStoreKey, DefaultBlockStoreMemReuseStore)
 	viper.SetDefault(BlockstoreS3RegionKey, DefaultBlockStoreS3Region)
 	viper.SetDefault(BlockstoreS3StreamingChunkSizeKey, DefaultBlockStoreS3StreamingChunkSize)
 	viper.SetDefault(BlockstoreS3StreamingChunkTimeoutKey, DefaultBlockStoreS3StreamingChunkTimeout)
@@ -393,10 +390,6 @@ func (c *Config) GetBlockAdapterLocalParams() (blockparams.Local, error) {
 	}
 
 	return blockparams.Local{Path: path}, nil
-}
-
-func (c *Config) GetBlockAdapterMemParams() (blockparams.Mem, error) {
-	return blockparams.Mem{ReuseStore: c.values.Blockstore.Mem.ReuseStore}, nil
 }
 
 func (c *Config) GetBlockAdapterGSParams() (blockparams.GS, error) {

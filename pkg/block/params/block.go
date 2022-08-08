@@ -10,15 +10,12 @@ import (
 type AdapterConfig interface {
 	GetBlockstoreType() string
 	GetBlockAdapterLocalParams() (Local, error)
-	GetBlockAdapterMemParams() (Mem, error)
 	GetBlockAdapterS3Params() (S3, error)
 	GetBlockAdapterGSParams() (GS, error)
 	GetBlockAdapterAzureParams() (Azure, error)
 }
 
-type Mem struct {
-	ReuseStore bool
-}
+type Mem struct{}
 
 type Local struct {
 	Path string

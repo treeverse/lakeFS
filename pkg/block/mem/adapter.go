@@ -16,7 +16,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
-	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -26,8 +25,6 @@ var (
 	ErrNoPropertiesForKey      = fmt.Errorf("no properties for key")
 	ErrInventoryNotImplemented = errors.New("inventory feature not implemented for memory storage adapter")
 )
-
-var memStore *Adapter
 
 type mpu struct {
 	id    string
@@ -63,16 +60,8 @@ type Adapter struct {
 	uploadIDTranslator block.UploadIDTranslator
 }
 
-// FetchStore Returns mem store if already initialized, otherwise creates one
-func FetchStore(params params.Mem) *Adapter {
-	if memStore != nil && params.ReuseStore {
-		return memStore
-	}
-	return New()
-}
-
 func New(opts ...func(a *Adapter)) *Adapter {
-	memStore = &Adapter{
+	a := &Adapter{
 		uploadIDTranslator: &block.NoOpTranslator{},
 		data:               make(map[string][]byte),
 		mpu:                make(map[string]*mpu),
@@ -80,9 +69,9 @@ func New(opts ...func(a *Adapter)) *Adapter {
 		mutex:              &sync.RWMutex{},
 	}
 	for _, opt := range opts {
-		opt(memStore)
+		opt(a)
 	}
-	return memStore
+	return a
 }
 
 func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
@@ -99,7 +88,7 @@ func getPrefix(lsOpts block.WalkOpts) string {
 	return fmt.Sprintf("%s:%s", lsOpts.StorageNamespace, lsOpts.Prefix)
 }
 
-func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {
+func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	data, err := io.ReadAll(reader)
@@ -112,11 +101,10 @@ func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reade
 	return nil
 }
 
-func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
+func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
-	key := getKey(obj)
-	data, ok := a.data[key]
+	data, ok := a.data[getKey(obj)]
 	if !ok {
 		return nil, ErrNoDataForKey
 	}
