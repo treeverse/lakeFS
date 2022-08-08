@@ -31,7 +31,7 @@ The event will be triggered on PR creation and every push of new commit to the s
 The action will have access to source branch data for verification after verification there are no conflict between the source and the target branch.
 
 
-### Mockup Screens
+### Mock-ups
 
 #### Create Pull Request
 
@@ -54,8 +54,10 @@ This view will enable creating additional pull requests if needed.
 #### Pull request edit/view
 
 Pull request information view will enable editing of all the pull-request information, adding comments, close, close or merge the pull-request - depends on the pull-request status.
+Each reviewer's last review status will be reflected by clear, approved or rejected.
+The view will include the current diff output of changes reflected by the current branches.
+The status of the latest actions run based on the branch update will be reflected on the branch.
 
 ![Pull Request Edit](diagrams/pull-request-edit.png)
-
 
 
