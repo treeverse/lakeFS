@@ -30,6 +30,7 @@ import { Link } from "../../../lib/components/nav";
 import { useRouter } from "../../../lib/hooks/router";
 import {ConfirmationButton} from "../../../lib/components/modals";
 import Alert from "react-bootstrap/Alert";
+import {RepoError} from "./error";
 
 
 const TagWidget = ({ repo, tag, onDelete }) => {
@@ -228,7 +229,7 @@ const TagsContainer = () => {
     const routerPfx = (router.query.prefix) ? router.query.prefix : "";
 
     if (loading) return <Loading />;
-    if (error) return <Error error={error} />;
+    if (error) return <RepoError error={error} />;
 
     return (
         <TagList

@@ -31,6 +31,7 @@ import {ConfirmationButton} from "../../../lib/components/modals";
 import Alert from "react-bootstrap/Alert";
 import {Link} from "../../../lib/components/nav";
 import {useRouter} from "../../../lib/hooks/router";
+import {RepoError} from "./error";
 
 const ImportBranchName = 'import-from-inventory';
 
@@ -243,7 +244,6 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
     );
 };
 
-
 const BranchesContainer = () => {
     const router = useRouter()
     const { repo, loading, error } = useRefs();
@@ -251,7 +251,7 @@ const BranchesContainer = () => {
     const routerPfx = (router.query.prefix) ? router.query.prefix : "";
 
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>;
+    if (error) return <RepoError error={error}/>;
 
     return (
         <BranchList
