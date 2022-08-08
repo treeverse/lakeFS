@@ -302,6 +302,7 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 
 func (c *Config) GetKVParams() kvparams.KV {
 	return kvparams.KV{
+		Type: c.values.Database.Type,
 		Postgres: &kvparams.Postgres{
 			ConnectionString: c.values.Database.ConnectionString.SecureValue(),
 		},

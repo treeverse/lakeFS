@@ -40,7 +40,7 @@ func TestMigrate(t *testing.T) {
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 	blockstore := mem.New()
 
-	store, err := kv.Open(context.Background(), kvpg.DriverName, kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})
+	store, err := kv.Open(context.Background(), kvparams.KV{Type: kvpg.DriverName, Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})
 	testutil.MustDo(t, "Open KV Store", err)
 	kvStore := kv.StoreMessage{Store: store}
 	t.Cleanup(func() {

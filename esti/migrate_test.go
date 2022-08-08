@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	nanoid "github.com/matoous/go-nanoid/v2"
@@ -143,6 +145,10 @@ var (
 )
 
 func TestMigrate(t *testing.T) {
+	// skip test if not on postgres
+	if viper.GetString("database_type") != kvpg.DriverName {
+		t.Skip("PG KV not enabled")
+	}
 	postMigrate := viper.GetViper().GetBool("post_migrate")
 
 	if postMigrate {

@@ -51,8 +51,8 @@ var superuserCmd = &cobra.Command{
 			authMetadataManager auth.MetadataManager
 		)
 		if dbParams.KVEnabled {
-			kvparams := cfg.GetKVParams()
-			kvStore, err := kv.Open(ctx, dbParams.Type, kvparams)
+			kvParams := cfg.GetKVParams()
+			kvStore, err := kv.Open(ctx, kvParams)
 			if err != nil {
 				fmt.Printf("failed to open KV store: %s\n", err)
 				os.Exit(1)

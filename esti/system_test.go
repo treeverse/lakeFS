@@ -20,6 +20,7 @@ import (
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -225,14 +226,15 @@ func listRepositories(t *testing.T, ctx context.Context) []api.Repository {
 // TestKVEnabled tests that lakefs database contains kv table in case feature is enabled
 func TestKVEnabled(t *testing.T) {
 	// skip test if not kv enabled on postgres
-	if !viper.GetBool("database_kv_enabled") {
-		t.Skip("KV not enabled")
+	if !viper.GetBool("database_kv_enabled") ||
+		viper.GetString("database_type") != kvpg.DriverName {
+		t.Skip("PG KV not enabled")
 	}
 
 	// connect to database and verify that kv table exists
 	dbURI := viper.GetString("database_connection_string")
 	if dbURI == "" {
-		t.Fatal("lakefs database connection string environment variable is missing")
+		t.Skip("lakefs database connection string environment variable is missing")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.Connect(ctx, dbURI)
