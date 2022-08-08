@@ -3,6 +3,7 @@ package staging
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -12,20 +13,26 @@ import (
 type Manager struct {
 	store  kv.StoreMessage
 	log    logging.Logger
-	wakeup chan bool
+	wakeup chan asyncEvent
 
 	// cleanupCallback is being called with every successful cleanup cycle
 	cleanupCallback func()
 }
+
+// asyncEvent is a type of event to be handled in the async loop
+type asyncEvent string
+
+// cleanTokens is async cleaning of deleted staging tokens
+const cleanTokens = asyncEvent("clean_tokens")
 
 func NewManager(ctx context.Context, store kv.StoreMessage) *Manager {
 	const wakeupChanCapacity = 100
 	m := &Manager{
 		store:  store,
 		log:    logging.Default().WithField("service_name", "staging_manager"),
-		wakeup: make(chan bool, wakeupChanCapacity),
+		wakeup: make(chan asyncEvent, wakeupChanCapacity),
 	}
-	go m.cleanupLoop(ctx)
+	go m.asyncLoop(ctx)
 	return m
 }
 
@@ -97,7 +104,7 @@ func (m *Manager) Drop(ctx context.Context, st graveler.StagingToken) error {
 
 func (m *Manager) DropAsync(ctx context.Context, st graveler.StagingToken) error {
 	err := m.store.Store.Set(ctx, []byte(graveler.CleanupTokensPartition()), []byte(st), []byte("stub-value"))
-	m.wakeup <- true
+	m.wakeup <- cleanTokens
 	return err
 }
 
@@ -117,17 +124,22 @@ func (m *Manager) DropByPrefix(ctx context.Context, st graveler.StagingToken, pr
 	return nil
 }
 
-func (m *Manager) cleanupLoop(ctx context.Context) {
+func (m *Manager) asyncLoop(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-m.wakeup:
-			err := m.findAndDrop(ctx)
-			if err != nil {
-				m.log.WithError(err).Error("Dropping tokens failed")
-			} else if m.cleanupCallback != nil {
-				m.cleanupCallback()
+		case event := <-m.wakeup:
+			switch event {
+			case cleanTokens:
+				err := m.findAndDrop(ctx)
+				if err != nil {
+					m.log.WithError(err).Error("Dropping tokens failed")
+				} else if m.cleanupCallback != nil {
+					m.cleanupCallback()
+				}
+			default:
+				panic(fmt.Sprintf("unknown event: %s", event))
 			}
 		}
 	}
