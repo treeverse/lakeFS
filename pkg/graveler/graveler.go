@@ -1646,11 +1646,6 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 	}
 	storageNamespace = repo.StorageNamespace
 
-	branch, err := g.GetBranch(ctx, repositoryID, branchID)
-	if err != nil {
-		return "", fmt.Errorf("get branch: %w", err)
-	}
-
 	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
 		if params.SourceMetaRange != nil {
 			empty, err := g.isStagingEmpty(ctx, repositoryID, repo, branch)
@@ -1755,9 +1750,8 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 			g.log.WithContext(ctx).WithFields(logging.Fields{
 				"repository_id": repositoryID,
 				"branch_id":     branchID,
-				"commit_id":     branch.CommitID,
 				"message":       params.Message,
-				"staging_token": branch.StagingToken,
+				"staging_token": st,
 			}).Error("Failed to drop staging data")
 		}
 	}

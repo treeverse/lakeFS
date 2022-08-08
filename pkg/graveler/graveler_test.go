@@ -10,6 +10,7 @@ import (
 	"github.com/go-test/deep"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/catalog/testutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/graveler/testutil"
@@ -1099,7 +1100,9 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 			name: "commit with source metarange an non-empty staging",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
-				StagingManager:   &testutil.StagingFake{ValueIterator: values},
+				StagingManager: &testutil.StagingFake{ValueIterator: testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
+					Key: []byte("key1"), Value: &graveler.Value{Identity: []byte("id1"), Data: []byte("data1")},
+				}})},
 				RefManager: &testutil.RefsFake{CommitID: expectedCommitID,
 					Branch:  &graveler.Branch{CommitID: expectedCommitID, StagingToken: "token1"},
 					Commits: map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}}},
