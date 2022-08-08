@@ -1177,7 +1177,7 @@ func (g *DBGraveler) DiffUncommitted(ctx context.Context, repositoryID Repositor
 			return nil, err
 		}
 	}
-	return NewUncommittedDiffIterator(ctx, committedValueIterator, valueIterator, repo.StorageNamespace, metaRangeID), nil
+	return NewUncommittedDiffIterator(ctx, committedValueIterator, valueIterator), nil
 }
 
 // dereferenceCommit will dereference and load the commit record based on 'ref'.

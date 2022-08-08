@@ -18,16 +18,19 @@ type Manager struct {
 	notifiers []chan bool
 }
 
-func NewManager(ctx context.Context, store kv.StoreMessage, notifiers ...chan bool) *Manager {
-	const wakupChanCapacity = 100
+func NewManager(ctx context.Context, store kv.StoreMessage) *Manager {
+	const wakeupChanCapacity = 100
 	m := &Manager{
-		store:     store,
-		log:       logging.Default().WithField("service_name", "staging_manager"),
-		wakeup:    make(chan bool, wakupChanCapacity),
-		notifiers: notifiers,
+		store:  store,
+		log:    logging.Default().WithField("service_name", "staging_manager"),
+		wakeup: make(chan bool, wakeupChanCapacity),
 	}
 	go m.cleanupLoop(ctx)
 	return m
+}
+
+func (m *Manager) AddNotifier(notifier chan bool) {
+	m.notifiers = append(m.notifiers, notifier)
 }
 
 func (m *Manager) Get(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.Value, error) {
