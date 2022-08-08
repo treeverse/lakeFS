@@ -1744,17 +1744,7 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		return "", err
 	}
 
-	for _, st := range sealedToDrop {
-		err = g.StagingManager.Drop(ctx, st)
-		if err != nil {
-			g.log.WithContext(ctx).WithFields(logging.Fields{
-				"repository_id": repositoryID,
-				"branch_id":     branchID,
-				"message":       params.Message,
-				"staging_token": st,
-			}).Error("Failed to drop staging data")
-		}
-	}
+	g.dropTokens(ctx, sealedToDrop...)
 
 	postRunID := g.hooks.NewRunID()
 	err = g.hooks.PostCommitHook(ctx, HookRecord{
