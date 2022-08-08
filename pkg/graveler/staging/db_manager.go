@@ -11,6 +11,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/hashicorp/go-multierror"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -92,7 +93,7 @@ func (p *DBManager) Set(ctx context.Context, st graveler.StagingToken, key grave
 									SET (staging_token, key, identity, data) =
 											(excluded.staging_token, excluded.key, excluded.identity, excluded.data)`,
 			st, key, value.Identity, value.Data)
-	}, p.txOpts()...)
+	}, p.txOpts(db.WithIsolationLevel(pgx.ReadCommitted))...)
 	return err
 }
 
