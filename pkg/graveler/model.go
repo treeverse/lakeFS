@@ -14,7 +14,7 @@ const (
 	tagsPrefix             = "tags"
 	branchesPrefix         = "branches"
 	commitsPrefix          = "commits"
-	SettingsPrefix         = "settings"
+	settingsPrefix         = "settings"
 )
 
 func RepoPath(repoID RepositoryID) string {
@@ -54,7 +54,7 @@ func CommitPath(commitID CommitID) string {
 }
 
 func SettingsPath(key string) string {
-	return kv.FormatPath(SettingsPrefix, key)
+	return kv.FormatPath(settingsPrefix, key)
 }
 
 func CommitFromProto(pb *CommitData) *Commit {
