@@ -97,7 +97,7 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
         <>
             <Modal show={show} onHide={hide} size="lg">
                 <Modal.Header closeButton>
-                    <Modal.Title>Import data from {config.blockstore_type} </Modal.Title>
+                    <Modal.Title>Import data from {config.blockstore_type}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     {
