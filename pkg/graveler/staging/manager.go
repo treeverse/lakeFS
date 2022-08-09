@@ -36,7 +36,7 @@ func NewManager(ctx context.Context, store kv.StoreMessage) *Manager {
 	return m
 }
 
-func (m *Manager) AddCallback(cleanupCallback func()) {
+func (m *Manager) OnCleanup(cleanupCallback func()) {
 	m.cleanupCallback = cleanupCallback
 }
 
