@@ -49,30 +49,36 @@ we recommend allocating at least 10 GiB - since it's a caching layer over a rela
 see [Important metrics](#important-metrics) below to understand how to size this: it should be big enough to hold all commit metadata for actively referenced commits.
 
 
-### PostgreSQL database
+### Metadata Store
 
-lakeFS uses a PostgreSQL instance to manage branch references, authentication and authorization information 
+lakeFS maintains a key-value metadata store to manage branch references, authentication and authorization information 
 and to keep track of currently uncommitted data across branches.
 
 #### Storage
-The dataset stored in PostgreSQL is relatively modest 
-as most metadata is pushed down into the object store. 
+The dataset stored in the metadata store is relatively modest as most metadata is pushed down into the object store. 
 Required storage is mostly a factor of the amount of uncommitted writes across all branches at any given point in time: 
 in the range of 150 MiB per every 100,000 uncommitted writes. 
 
 We recommend starting at 10 GiB for a production deployment, as it will likely be more than enough.
 
-#### RAM and `shared_buffers`
-Since the data size is small, it's recommended to provide enough memory to hold the vast majority of that data in RAM:
+#### RAM
+Since the data size is small, it's recommended to provide enough memory to hold the vast majority of that data in RAM.
+Cloud providers will save you the need to tune this parameter - it will be set to a fixed percentage the chosen instance's available RAM (25% on AWS RDS, 30% on Google Cloud SQL).
+
+For self-managed database instances follow these best practices 
+
+###### PostgreSQL
 Ideally, configure the [shared_buffers](https://www.postgresql.org/docs/current/runtime-config-resource.html#GUC-SHARED-BUFFERS){: target="_blank" } 
 of your PostgreSQL instances to be large enough to contain the currently active dataset. 
 Pick a database instance with enough RAM to accommodate this buffer size at roughly x4 the size given for `shared_buffers`. For example, if an installation has ~500,000 uncommitted writes at any given time, it would require about 750 MiB of `shared_buffers` 
-that would require about 3 GiB of RAM. 
+that would require about 3 GiB of RAM.
 
-Cloud providers will save you the need to tune this parameter - it will be set to a fixed percentage the chosen instance's available RAM (25% on AWS RDS, 30% on Google Cloud SQL).
+###### DynamoDB
+TBD
 
 #### CPU
 
+###### PostgreSQL
 PostgreSQL CPU cores help scale concurrent requests. 1 CPU core for every 5,000 requests/second is ideal.
 
 
@@ -279,7 +285,7 @@ Here are a few notable metrics to keep track of when sizing lakeFS:
 
 `gateway_request_duration_seconds` - Histogram of latency per [S3 Gateway](architecture.md#s3-gateway) operation.
 
-`go_sql_stats_*` - Important client-side metrics collected from the PostgreSQL driver. 
+`go_sql_stats_*` - Important client-side metrics collected from the PostgreSQL driver.
 See [The full reference here](https://github.com/dlmiddlecote/sqlstats#exposed-metrics){: target="_blank" }.
 
 ## Reference architectures
