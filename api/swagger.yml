@@ -549,6 +549,7 @@ components:
       properties:
         id:
           type: string
+          description: a unique identifier for the user. In password-based authentication, this is the email.
         creation_date:
           type: integer
           format: int64
@@ -579,6 +580,7 @@ components:
       properties:
         id:
           type: string
+          description: a unique identifier for the user. In password-based authentication, this is the email.
         invite_user:
           type: boolean
       required:
@@ -590,6 +592,8 @@ components:
           type: string
           enum: [initialized, not_initialized]
         oidc_enabled:
+          type: boolean
+        oidc_default_login:
           type: boolean
     AccessKeyCredentials:
       type: object
@@ -621,7 +625,7 @@ components:
       required:
         - username
 
-      
+
     UpdatePasswordByToken:
       type: object
       properties:
@@ -1214,7 +1218,7 @@ paths:
             $ref: "#/components/responses/Unauthorized"
           default:
             $ref: "#/components/responses/ServerError"
- 
+
   /auth/password/forgot:
       post:
         tags:
@@ -2702,7 +2706,7 @@ paths:
           $ref: "#/components/responses/ServerError"
 
     put:
-      tags: 
+      tags:
        - staging
       operationId: linkPhysicalAddress
       summary: associate staging on this physical address with a path
@@ -2982,7 +2986,7 @@ paths:
       - in: query
         name: user_metadata
         required: false
-        schema: 
+        schema:
           type: boolean
           default: true
     get:
@@ -3060,7 +3064,7 @@ paths:
       - in: query
         name: user_metadata
         required: false
-        schema: 
+        schema:
           type: boolean
           default: true
       - $ref: "#/components/parameters/PaginationAfter"
@@ -3516,3 +3520,40 @@ paths:
                 $ref: "#/components/schemas/StorageConfig"
         401:
           $ref: "#/components/responses/Unauthorized"
+  /templates/{template_location}:
+    get:
+      tags:
+        - templates
+      operationId: expandTemplate
+      description: fetch and expand template
+      parameters:
+        - in: path
+          name: template_location
+          required: true
+          schema:
+            type: string
+          description: URL of the template; must be relative (to a URL configured on the server).
+          example: spark.submit.conf.tt
+        - in: query
+          name: params
+          schema:
+            type: object
+            additionalProperties:
+              type: string
+            example:
+              lakefs_url: https://lakefs.example.com
+          style: form
+          explode: true
+      responses:
+        200:
+          description: expanded template
+          content:
+            "*/*":
+              schema:
+                format: binary
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"

@@ -159,7 +159,7 @@ func deleteOrNotFoundDB(tx db.Tx, stmt string, args ...interface{}) error {
 }
 
 type DBAuthService struct {
-	*InviteHandler
+	*EmailInviteHandler
 	db          db.Database
 	secretStore crypt.SecretStore
 	cache       Cache
@@ -179,13 +179,8 @@ func NewDBAuthService(db db.Database, secretStore crypt.SecretStore, emailer *em
 		secretStore: secretStore,
 		cache:       cache,
 		log:         logger,
-		InviteHandler: &InviteHandler{
-			secretStore: secretStore,
-			log:         logger,
-			emailer:     emailer,
-		},
 	}
-	d.InviteHandler.svc = d
+	d.EmailInviteHandler = NewEmailInviteHandler(d, logger, emailer)
 	return d
 }
 
@@ -226,7 +221,7 @@ func (s *DBAuthService) DeleteUser(ctx context.Context, username string) error {
 }
 
 func (s *DBAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
-	return s.cache.GetUser(&userKey{username: username}, func() (*model.User, error) {
+	return s.cache.GetUser(userKey{username: username}, func() (*model.User, error) {
 		res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			return getDBUser(tx, username)
 		}, db.ReadOnly())
@@ -252,7 +247,7 @@ func (s *DBAuthService) GetUserByEmail(ctx context.Context, email string) (*mode
 }
 
 func (s *DBAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
-	return s.cache.GetUser(&userKey{externalID: externalID}, func() (*model.User, error) {
+	return s.cache.GetUser(userKey{externalID: externalID}, func() (*model.User, error) {
 		res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			return getDBUserByExternalID(tx, externalID)
 		}, db.ReadOnly())
@@ -265,7 +260,7 @@ func (s *DBAuthService) GetUserByExternalID(ctx context.Context, externalID stri
 }
 
 func (s *DBAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
-	return s.cache.GetUser(&userKey{id: userID}, func() (*model.User, error) {
+	return s.cache.GetUser(userKey{id: userID}, func() (*model.User, error) {
 		res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			user := &model.DBUser{}
 			err := tx.Get(user, `SELECT * FROM auth_users WHERE id = $1`, userID)
@@ -902,7 +897,7 @@ func (s *DBAuthService) markTokenSingleUse(ctx context.Context, tokenID string, 
 	// cleanup old tokens
 	_, err = s.db.Exec(ctx, `DELETE FROM auth_expired_tokens WHERE token_expires_at < $1`, time.Now())
 	if err != nil {
-		s.log.WithError(err).Error("delete expired tokens")
+		s.log.WithError(err).Error("Delete expired tokens")
 	}
 	return canUseToken, nil
 }
@@ -983,7 +978,7 @@ func exportUsers(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (UserID
 
 		if err = je.Encode(kv.Entry{
 			PartitionKey: []byte(model.PartitionKey),
-			Key:          []byte(key),
+			Key:          key,
 			Value:        value,
 		}); err != nil {
 			return nil, err
@@ -1015,7 +1010,7 @@ func exportGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDToN
 		}
 		if err = je.Encode(kv.Entry{
 			PartitionKey: []byte(model.PartitionKey),
-			Key:          []byte(key),
+			Key:          key,
 			Value:        value,
 		}); err != nil {
 			return nil, err
@@ -1046,7 +1041,7 @@ func exportPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDT
 		}
 		if err = je.Encode(kv.Entry{
 			PartitionKey: []byte(model.PartitionKey),
-			Key:          []byte(key),
+			Key:          key,
 			Value:        value,
 		}); err != nil {
 			return nil, err
@@ -1082,14 +1077,14 @@ func exportUserGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, us
 			return fmt.Errorf("group ID %d: %w", ug.GroupID, ErrExportedEntNotFound)
 		}
 		key := model.GroupUserPath(groupName, username)
-		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.UserPath(username))}
+		secIndex := kv.SecondaryIndex{PrimaryKey: model.UserPath(username)}
 		value, err := proto.Marshal(&secIndex)
 		if err != nil {
 			return err
 		}
 		if err = je.Encode(kv.Entry{
 			PartitionKey: []byte(model.PartitionKey),
-			Key:          []byte(key),
+			Key:          key,
 			Value:        value,
 		}); err != nil {
 			return err
@@ -1124,14 +1119,14 @@ func exportUserPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, 
 			return fmt.Errorf("user ID %d: %w", up.UserID, ErrExportedEntNotFound)
 		}
 		key := model.UserPolicyPath(username, policyName)
-		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.PolicyPath(policyName))}
+		secIndex := kv.SecondaryIndex{PrimaryKey: model.PolicyPath(policyName)}
 		value, err := proto.Marshal(&secIndex)
 		if err != nil {
 			return err
 		}
 		if err = je.Encode(kv.Entry{
 			PartitionKey: []byte(model.PartitionKey),
-			Key:          []byte(key),
+			Key:          key,
 			Value:        value,
 		}); err != nil {
 			return err
@@ -1166,14 +1161,14 @@ func exportGroupPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder,
 			return fmt.Errorf("group ID %d: %w", gp.GroupID, ErrExportedEntNotFound)
 		}
 		key := model.GroupPolicyPath(groupName, policyName)
-		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.PolicyPath(policyName))}
+		secIndex := kv.SecondaryIndex{PrimaryKey: model.PolicyPath(policyName)}
 		value, err := proto.Marshal(&secIndex)
 		if err != nil {
 			return err
 		}
 		if err = je.Encode(kv.Entry{
 			PartitionKey: []byte(model.PartitionKey),
-			Key:          []byte(key),
+			Key:          key,
 			Value:        value,
 		}); err != nil {
 			return err
@@ -1210,7 +1205,7 @@ func exportCredentials(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, u
 		}
 		if err = je.Encode(kv.Entry{
 			PartitionKey: []byte(model.PartitionKey),
-			Key:          []byte(key),
+			Key:          key,
 			Value:        value,
 		}); err != nil {
 			return err
@@ -1236,6 +1231,10 @@ func exportExpiredTokens(ctx context.Context, d *pgxpool.Pool, je *json.Encoder)
 		if err != nil {
 			return err
 		}
+		if token.TokenExpiration.Before(time.Now()) {
+			// token expired - no need to export it
+			continue
+		}
 		kvToken := &model.TokenData{
 			TokenId:   token.TokenID,
 			ExpiredAt: timestamppb.New(token.TokenExpiration),
@@ -1247,7 +1246,7 @@ func exportExpiredTokens(ctx context.Context, d *pgxpool.Pool, je *json.Encoder)
 		}
 		if err = je.Encode(kv.Entry{
 			PartitionKey: []byte(model.PartitionKey),
-			Key:          []byte(key),
+			Key:          key,
 			Value:        value,
 		}); err != nil {
 			return err

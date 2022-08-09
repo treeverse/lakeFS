@@ -41,7 +41,9 @@ import (
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/version"
+	"github.com/treeverse/lakefs/templates"
 	"golang.org/x/oauth2"
 )
 
@@ -128,9 +130,7 @@ var runCmd = &cobra.Command{
 
 		var (
 			multipartsTracker   multiparts.Tracker
-			idGen               actions.IDGenerator
 			actionsStore        actions.Store
-			authService         auth.Service
 			authMetadataManager auth.MetadataManager
 			storeMessage        *kv.StoreMessage
 		)
@@ -139,17 +139,8 @@ var runCmd = &cobra.Command{
 		if err != nil {
 			logger.WithError(err).Fatal("Emailer has not been properly configured, check the values in sender field")
 		}
-		if cfg.IsAuthTypeAPI() {
-			authService, err = auth.NewAPIAuthService(
-				cfg.GetAuthAPIEndpoint(),
-				cfg.GetAuthAPIToken(),
-				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-				cfg.GetAuthCacheConfig(), nil)
-			if err != nil {
-				logger.WithError(err).Fatal("failed to create authentication service")
-			}
-		}
 
+		var idGen actions.IDGenerator
 		if dbParams.KVEnabled {
 			kvParams := cfg.GetKVParams()
 			kvStore, err := kv.Open(ctx, dbParams.Type, kvParams)
@@ -158,33 +149,50 @@ var runCmd = &cobra.Command{
 			}
 			defer kvStore.Close()
 			storeMessage = &kv.StoreMessage{Store: kvStore}
-
 			multipartsTracker = multiparts.NewTracker(*storeMessage)
-			actionsStore = actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore})
+			actionsStore = actions.NewActionsKVStore(*storeMessage)
+			authMetadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
 			idGen = &actions.DecreasingIDGenerator{}
-
-			// init authentication
-			if !cfg.IsAuthTypeAPI() {
-				authService = auth.NewKVAuthService(
-					*storeMessage,
-					crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-					cfg.GetAuthCacheConfig(),
-					logger.WithField("service", "auth_service"))
-			}
-			authMetadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), kvStore)
 		} else {
 			multipartsTracker = multiparts.NewDBTracker(dbPool)
 			actionsStore = actions.NewActionsDBStore(dbPool)
-			idGen = &actions.IncreasingIDGenerator{}
-			if !cfg.IsAuthTypeAPI() {
-				authService = auth.NewDBAuthService(
-					dbPool,
-					crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-					emailer,
-					cfg.GetAuthCacheConfig(),
-					logger.WithField("service", "auth_service"))
-			}
 			authMetadataManager = auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
+			idGen = &actions.IncreasingIDGenerator{}
+		}
+
+		// initialize auth service
+		var authService auth.Service
+		switch {
+		case cfg.IsAuthTypeAPI():
+			var apiEmailer *email.Emailer
+			if !cfg.GetAuthAPISupportsInvites() {
+				// invites not supported by API - delegate it to emailer
+				apiEmailer = emailer
+			}
+			authService, err = auth.NewAPIAuthService(
+				cfg.GetAuthAPIEndpoint(),
+				cfg.GetAuthAPIToken(),
+				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+				cfg.GetAuthCacheConfig(), nil, apiEmailer)
+			if err != nil {
+				logger.WithError(err).Fatal("failed to create authentication service")
+			}
+		case dbParams.KVEnabled:
+			authService = auth.NewKVAuthService(
+				storeMessage,
+				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+				emailer,
+				cfg.GetAuthCacheConfig(),
+				logger.WithField("service", "auth_service"),
+			)
+		default:
+			authService = auth.NewDBAuthService(
+				dbPool,
+				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+				emailer,
+				cfg.GetAuthCacheConfig(),
+				logger.WithField("service", "auth_service"),
+			)
 		}
 
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
@@ -215,6 +223,8 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("failed to create catalog")
 		}
 		defer func() { _ = c.Close() }()
+
+		templater := templater.NewService(templates.Content, cfg, authService)
 
 		actionsService := actions.NewService(
 			ctx,
@@ -299,6 +309,7 @@ var runCmd = &cobra.Command{
 			auditChecker,
 			logger.WithField("service", "api_gateway"),
 			emailer,
+			templater,
 			cfg.GetS3GatewayDomainNames(),
 			cfg.GetUISnippets(),
 			oidcProvider,
@@ -437,7 +448,7 @@ func checkMetadataPrefix(ctx context.Context, repo *catalog.Repository, logger l
 
 // checkForeignRepo checks whether a repo storage namespace matches the block adapter.
 // A foreign repo is a repository which namespace doesn't match the current block adapter.
-// A foreign repo might exists if the lakeFS instance configuration changed after a repository was
+// A foreign repo might exist if the lakeFS instance configuration changed after a repository was
 // already created. The behaviour of lakeFS for foreign repos is undefined and should be blocked.
 func checkForeignRepo(repoStorageType block.StorageType, logger logging.Logger, adapterStorageType, repoName string) {
 	if adapterStorageType != repoStorageType.BlockstoreType() {

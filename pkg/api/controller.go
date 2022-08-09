@@ -39,6 +39,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
 )
@@ -85,6 +86,7 @@ type Controller struct {
 	AuditChecker          AuditChecker
 	Logger                logging.Logger
 	Emailer               *email.Emailer
+	Templater             templater.Service
 	sessionStore          sessions.Store
 	oidcAuthenticator     *oidc.Authenticator
 }
@@ -838,22 +840,22 @@ func (c *Controller) generateResetPasswordToken(email string, duration time.Dura
 
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
 	invite := swag.BoolValue(body.InviteUser)
-	id := body.Id
+	username := body.Id
 	var parsedEmail *string
 	if invite {
-		addr, err := mail.ParseAddress(body.Id)
+		addr, err := mail.ParseAddress(username)
 		if err != nil {
-			c.Logger.WithError(err).WithField("user_id", id).Warn("failed parsing email")
+			c.Logger.WithError(err).WithField("user_id", username).Warn("failed parsing email")
 			writeError(w, http.StatusBadRequest, "Invalid email format")
 			return
 		}
-		id = strings.ToLower(addr.Address)
+		username = strings.ToLower(addr.Address)
 		parsedEmail = &addr.Address
 	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateUserAction,
-			Resource: permissions.UserArn(id),
+			Resource: permissions.UserArn(username),
 		},
 	}) {
 		return
@@ -871,7 +873,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	}
 	u := &model.User{
 		CreatedAt:    time.Now().UTC(),
-		Username:     id,
+		Username:     username,
 		FriendlyName: nil,
 		Source:       "internal",
 		Email:        parsedEmail,
@@ -1372,22 +1374,25 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 	ctx := r.Context()
 	c.LogAction(ctx, "get_repo")
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if errors.Is(err, catalog.ErrNotFound) {
-		writeError(w, http.StatusNotFound, "repository not found")
-		return
-	}
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, fmt.Sprintf("error fetching repository: %s", err))
-		return
-	}
+	switch {
+	case err == nil:
+		response := Repository{
+			CreationDate:     repo.CreationDate.Unix(),
+			DefaultBranch:    repo.DefaultBranch,
+			Id:               repo.Name,
+			StorageNamespace: repo.StorageNamespace,
+		}
+		writeResponse(w, http.StatusOK, response)
 
-	response := Repository{
-		CreationDate:     repo.CreationDate.Unix(),
-		DefaultBranch:    repo.DefaultBranch,
-		Id:               repo.Name,
-		StorageNamespace: repo.StorageNamespace,
+	case errors.Is(err, catalog.ErrNotFound):
+		writeError(w, http.StatusNotFound, "repository not found")
+
+	case errors.Is(err, graveler.ErrRepositoryInDeletion):
+		writeError(w, http.StatusGone, err)
+
+	default:
+		writeError(w, http.StatusInternalServerError, err)
 	}
-	writeResponse(w, http.StatusOK, response)
 }
 
 func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, repository string, params ListRepositoryRunsParams) {
@@ -3103,7 +3108,12 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	if initialized || c.Config.IsAuthTypeAPI() {
 		state = setupStateInitialized
 	}
-	response := SetupState{State: swag.String(state), OidcEnabled: swag.Bool(c.Config.GetAuthOIDCConfiguration().Enabled)}
+	oidcConfig := c.Config.GetAuthOIDCConfiguration()
+	response := SetupState{
+		State:            swag.String(state),
+		OidcEnabled:      swag.Bool(oidcConfig.Enabled),
+		OidcDefaultLogin: swag.Bool(oidcConfig.IsDefaultLogin),
+	}
 	writeResponse(w, http.StatusOK, response)
 }
 
@@ -3240,6 +3250,53 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, templateLocation string, p ExpandTemplateParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadObjectAction,
+			Resource: permissions.TemplateArn(templateLocation),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+
+	u, ok := ctx.Value(UserContextKey).(*model.User)
+	if !ok {
+		writeError(w, http.StatusInternalServerError, "request performed with no user")
+	}
+
+	// Override bug in OpenAPI generated code: parameters do not show up
+	// in p.Params.AdditionalProperties, so force them in there.
+	if len(p.Params.AdditionalProperties) == 0 && len(r.URL.Query()) > 0 {
+		p.Params.AdditionalProperties = make(map[string]string, len(r.Header))
+		for k, v := range r.URL.Query() {
+			p.Params.AdditionalProperties[k] = v[0]
+		}
+	}
+
+	c.LogAction(ctx, "expand_template")
+	err := c.Templater.Expand(ctx, w, u, templateLocation, p.Params.AdditionalProperties)
+
+	if err != nil {
+		c.Logger.WithError(err).WithField("location", templateLocation).Error("Template expansion failed")
+	}
+
+	if errors.Is(err, templater.ErrNotAuthorized) {
+		writeError(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+		return
+	}
+	if errors.Is(err, templater.ErrNotFound) {
+		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "expansion failed")
+		return
+	}
+	// Response already written during expansion.
 }
 
 func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
@@ -3405,6 +3462,7 @@ func NewController(
 	auditChecker AuditChecker,
 	logger logging.Logger,
 	emailer *email.Emailer,
+	templater templater.Service,
 	oidcAuthenticator *oidc.Authenticator,
 	sessionStore sessions.Store,
 ) *Controller {
@@ -3423,6 +3481,7 @@ func NewController(
 		AuditChecker:          auditChecker,
 		Logger:                logger,
 		Emailer:               emailer,
+		Templater:             templater,
 		sessionStore:          sessionStore,
 		oidcAuthenticator:     oidcAuthenticator,
 	}

@@ -26,6 +26,52 @@ const (
 // of the legacy proto package is being used.
 const _ = proto.ProtoPackageIsVersion4
 
+type RepositoryState int32
+
+const (
+	RepositoryState_ACTIVE      RepositoryState = 0
+	RepositoryState_IN_DELETION RepositoryState = 1
+)
+
+// Enum value maps for RepositoryState.
+var (
+	RepositoryState_name = map[int32]string{
+		0: "ACTIVE",
+		1: "IN_DELETION",
+	}
+	RepositoryState_value = map[string]int32{
+		"ACTIVE":      0,
+		"IN_DELETION": 1,
+	}
+)
+
+func (x RepositoryState) Enum() *RepositoryState {
+	p := new(RepositoryState)
+	*p = x
+	return p
+}
+
+func (x RepositoryState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RepositoryState) Descriptor() protoreflect.EnumDescriptor {
+	return file_graveler_proto_enumTypes[0].Descriptor()
+}
+
+func (RepositoryState) Type() protoreflect.EnumType {
+	return &file_graveler_proto_enumTypes[0]
+}
+
+func (x RepositoryState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RepositoryState.Descriptor instead.
+func (RepositoryState) EnumDescriptor() ([]byte, []int) {
+	return file_graveler_proto_rawDescGZIP(), []int{0}
+}
+
 type BranchProtectionBlockedAction int32
 
 const (
@@ -56,11 +102,11 @@ func (x BranchProtectionBlockedAction) String() string {
 }
 
 func (BranchProtectionBlockedAction) Descriptor() protoreflect.EnumDescriptor {
-	return file_graveler_proto_enumTypes[0].Descriptor()
+	return file_graveler_proto_enumTypes[1].Descriptor()
 }
 
 func (BranchProtectionBlockedAction) Type() protoreflect.EnumType {
-	return &file_graveler_proto_enumTypes[0]
+	return &file_graveler_proto_enumTypes[1]
 }
 
 func (x BranchProtectionBlockedAction) Number() protoreflect.EnumNumber {
@@ -69,7 +115,94 @@ func (x BranchProtectionBlockedAction) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use BranchProtectionBlockedAction.Descriptor instead.
 func (BranchProtectionBlockedAction) EnumDescriptor() ([]byte, []int) {
+	return file_graveler_proto_rawDescGZIP(), []int{1}
+}
+
+type RepositoryData struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	StorageNamespace string                 `protobuf:"bytes,2,opt,name=storage_namespace,json=storageNamespace,proto3" json:"storage_namespace,omitempty"`
+	DefaultBranchId  string                 `protobuf:"bytes,3,opt,name=default_branch_id,json=defaultBranchId,proto3" json:"default_branch_id,omitempty"`
+	CreationDate     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=creation_date,json=creationDate,proto3" json:"creation_date,omitempty"`
+	State            RepositoryState        `protobuf:"varint,5,opt,name=state,proto3,enum=io.treeverse.lakefs.graveler.RepositoryState" json:"state,omitempty"`
+	InstanceUid      string                 `protobuf:"bytes,6,opt,name=instance_uid,json=instanceUid,proto3" json:"instance_uid,omitempty"`
+}
+
+func (x *RepositoryData) Reset() {
+	*x = RepositoryData{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_graveler_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RepositoryData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RepositoryData) ProtoMessage() {}
+
+func (x *RepositoryData) ProtoReflect() protoreflect.Message {
+	mi := &file_graveler_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RepositoryData.ProtoReflect.Descriptor instead.
+func (*RepositoryData) Descriptor() ([]byte, []int) {
 	return file_graveler_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *RepositoryData) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *RepositoryData) GetStorageNamespace() string {
+	if x != nil {
+		return x.StorageNamespace
+	}
+	return ""
+}
+
+func (x *RepositoryData) GetDefaultBranchId() string {
+	if x != nil {
+		return x.DefaultBranchId
+	}
+	return ""
+}
+
+func (x *RepositoryData) GetCreationDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreationDate
+	}
+	return nil
+}
+
+func (x *RepositoryData) GetState() RepositoryState {
+	if x != nil {
+		return x.State
+	}
+	return RepositoryState_ACTIVE
+}
+
+func (x *RepositoryData) GetInstanceUid() string {
+	if x != nil {
+		return x.InstanceUid
+	}
+	return ""
 }
 
 type BranchData struct {
@@ -77,14 +210,16 @@ type BranchData struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id       string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	CommitId string `protobuf:"bytes,2,opt,name=commit_id,json=commitId,proto3" json:"commit_id,omitempty"`
+	Id           string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	CommitId     string   `protobuf:"bytes,2,opt,name=commit_id,json=commitId,proto3" json:"commit_id,omitempty"`
+	StagingToken string   `protobuf:"bytes,3,opt,name=staging_token,json=stagingToken,proto3" json:"staging_token,omitempty"`
+	SealedTokens []string `protobuf:"bytes,4,rep,name=sealed_tokens,json=sealedTokens,proto3" json:"sealed_tokens,omitempty"`
 }
 
 func (x *BranchData) Reset() {
 	*x = BranchData{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_graveler_proto_msgTypes[0]
+		mi := &file_graveler_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -97,7 +232,7 @@ func (x *BranchData) String() string {
 func (*BranchData) ProtoMessage() {}
 
 func (x *BranchData) ProtoReflect() protoreflect.Message {
-	mi := &file_graveler_proto_msgTypes[0]
+	mi := &file_graveler_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -110,7 +245,7 @@ func (x *BranchData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BranchData.ProtoReflect.Descriptor instead.
 func (*BranchData) Descriptor() ([]byte, []int) {
-	return file_graveler_proto_rawDescGZIP(), []int{0}
+	return file_graveler_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *BranchData) GetId() string {
@@ -127,6 +262,20 @@ func (x *BranchData) GetCommitId() string {
 	return ""
 }
 
+func (x *BranchData) GetStagingToken() string {
+	if x != nil {
+		return x.StagingToken
+	}
+	return ""
+}
+
+func (x *BranchData) GetSealedTokens() []string {
+	if x != nil {
+		return x.SealedTokens
+	}
+	return nil
+}
+
 type TagData struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -139,7 +288,7 @@ type TagData struct {
 func (x *TagData) Reset() {
 	*x = TagData{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_graveler_proto_msgTypes[1]
+		mi := &file_graveler_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -152,7 +301,7 @@ func (x *TagData) String() string {
 func (*TagData) ProtoMessage() {}
 
 func (x *TagData) ProtoReflect() protoreflect.Message {
-	mi := &file_graveler_proto_msgTypes[1]
+	mi := &file_graveler_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -165,7 +314,7 @@ func (x *TagData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TagData.ProtoReflect.Descriptor instead.
 func (*TagData) Descriptor() ([]byte, []int) {
-	return file_graveler_proto_rawDescGZIP(), []int{1}
+	return file_graveler_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *TagData) GetId() string {
@@ -201,7 +350,7 @@ type CommitData struct {
 func (x *CommitData) Reset() {
 	*x = CommitData{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_graveler_proto_msgTypes[2]
+		mi := &file_graveler_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -214,7 +363,7 @@ func (x *CommitData) String() string {
 func (*CommitData) ProtoMessage() {}
 
 func (x *CommitData) ProtoReflect() protoreflect.Message {
-	mi := &file_graveler_proto_msgTypes[2]
+	mi := &file_graveler_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -227,7 +376,7 @@ func (x *CommitData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitData.ProtoReflect.Descriptor instead.
 func (*CommitData) Descriptor() ([]byte, []int) {
-	return file_graveler_proto_rawDescGZIP(), []int{2}
+	return file_graveler_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CommitData) GetId() string {
@@ -305,7 +454,7 @@ type GarbageCollectionRules struct {
 func (x *GarbageCollectionRules) Reset() {
 	*x = GarbageCollectionRules{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_graveler_proto_msgTypes[3]
+		mi := &file_graveler_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -318,7 +467,7 @@ func (x *GarbageCollectionRules) String() string {
 func (*GarbageCollectionRules) ProtoMessage() {}
 
 func (x *GarbageCollectionRules) ProtoReflect() protoreflect.Message {
-	mi := &file_graveler_proto_msgTypes[3]
+	mi := &file_graveler_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -331,7 +480,7 @@ func (x *GarbageCollectionRules) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GarbageCollectionRules.ProtoReflect.Descriptor instead.
 func (*GarbageCollectionRules) Descriptor() ([]byte, []int) {
-	return file_graveler_proto_rawDescGZIP(), []int{3}
+	return file_graveler_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GarbageCollectionRules) GetDefaultRetentionDays() int32 {
@@ -361,7 +510,7 @@ type GarbageCollectionRunMetadata struct {
 func (x *GarbageCollectionRunMetadata) Reset() {
 	*x = GarbageCollectionRunMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_graveler_proto_msgTypes[4]
+		mi := &file_graveler_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -374,7 +523,7 @@ func (x *GarbageCollectionRunMetadata) String() string {
 func (*GarbageCollectionRunMetadata) ProtoMessage() {}
 
 func (x *GarbageCollectionRunMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_graveler_proto_msgTypes[4]
+	mi := &file_graveler_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -387,7 +536,7 @@ func (x *GarbageCollectionRunMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GarbageCollectionRunMetadata.ProtoReflect.Descriptor instead.
 func (*GarbageCollectionRunMetadata) Descriptor() ([]byte, []int) {
-	return file_graveler_proto_rawDescGZIP(), []int{4}
+	return file_graveler_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GarbageCollectionRunMetadata) GetRunId() string {
@@ -422,7 +571,7 @@ type BranchProtectionBlockedActions struct {
 func (x *BranchProtectionBlockedActions) Reset() {
 	*x = BranchProtectionBlockedActions{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_graveler_proto_msgTypes[5]
+		mi := &file_graveler_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -435,7 +584,7 @@ func (x *BranchProtectionBlockedActions) String() string {
 func (*BranchProtectionBlockedActions) ProtoMessage() {}
 
 func (x *BranchProtectionBlockedActions) ProtoReflect() protoreflect.Message {
-	mi := &file_graveler_proto_msgTypes[5]
+	mi := &file_graveler_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -448,7 +597,7 @@ func (x *BranchProtectionBlockedActions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BranchProtectionBlockedActions.ProtoReflect.Descriptor instead.
 func (*BranchProtectionBlockedActions) Descriptor() ([]byte, []int) {
-	return file_graveler_proto_rawDescGZIP(), []int{5}
+	return file_graveler_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *BranchProtectionBlockedActions) GetValue() []BranchProtectionBlockedAction {
@@ -469,7 +618,7 @@ type BranchProtectionRules struct {
 func (x *BranchProtectionRules) Reset() {
 	*x = BranchProtectionRules{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_graveler_proto_msgTypes[6]
+		mi := &file_graveler_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -482,7 +631,7 @@ func (x *BranchProtectionRules) String() string {
 func (*BranchProtectionRules) ProtoMessage() {}
 
 func (x *BranchProtectionRules) ProtoReflect() protoreflect.Message {
-	mi := &file_graveler_proto_msgTypes[6]
+	mi := &file_graveler_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -495,12 +644,75 @@ func (x *BranchProtectionRules) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BranchProtectionRules.ProtoReflect.Descriptor instead.
 func (*BranchProtectionRules) Descriptor() ([]byte, []int) {
-	return file_graveler_proto_rawDescGZIP(), []int{6}
+	return file_graveler_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *BranchProtectionRules) GetBranchPatternToBlockedActions() map[string]*BranchProtectionBlockedActions {
 	if x != nil {
 		return x.BranchPatternToBlockedActions
+	}
+	return nil
+}
+
+type StagedEntryData struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Key      []byte `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Identity []byte `protobuf:"bytes,2,opt,name=identity,proto3" json:"identity,omitempty"`
+	Data     []byte `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
+}
+
+func (x *StagedEntryData) Reset() {
+	*x = StagedEntryData{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_graveler_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StagedEntryData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StagedEntryData) ProtoMessage() {}
+
+func (x *StagedEntryData) ProtoReflect() protoreflect.Message {
+	mi := &file_graveler_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StagedEntryData.ProtoReflect.Descriptor instead.
+func (*StagedEntryData) Descriptor() ([]byte, []int) {
+	return file_graveler_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *StagedEntryData) GetKey() []byte {
+	if x != nil {
+		return x.Key
+	}
+	return nil
+}
+
+func (x *StagedEntryData) GetIdentity() []byte {
+	if x != nil {
+		return x.Identity
+	}
+	return nil
+}
+
+func (x *StagedEntryData) GetData() []byte {
+	if x != nil {
+		return x.Data
 	}
 	return nil
 }
@@ -513,10 +725,33 @@ var file_graveler_proto_rawDesc = []byte{
 	0x61, 0x6b, 0x65, 0x66, 0x73, 0x2e, 0x67, 0x72, 0x61, 0x76, 0x65, 0x6c, 0x65, 0x72, 0x1a, 0x1f,
 	0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f,
 	0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22,
-	0x39, 0x0a, 0x0a, 0x42, 0x72, 0x61, 0x6e, 0x63, 0x68, 0x44, 0x61, 0x74, 0x61, 0x12, 0x0e, 0x0a,
-	0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x1b, 0x0a,
-	0x09, 0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x08, 0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x49, 0x64, 0x22, 0x36, 0x0a, 0x07, 0x54, 0x61,
+	0xa2, 0x02, 0x0a, 0x0e, 0x52, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x6f, 0x72, 0x79, 0x44, 0x61,
+	0x74, 0x61, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02,
+	0x69, 0x64, 0x12, 0x2b, 0x0a, 0x11, 0x73, 0x74, 0x6f, 0x72, 0x61, 0x67, 0x65, 0x5f, 0x6e, 0x61,
+	0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x10, 0x73,
+	0x74, 0x6f, 0x72, 0x61, 0x67, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x12,
+	0x2a, 0x0a, 0x11, 0x64, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x5f, 0x62, 0x72, 0x61, 0x6e, 0x63,
+	0x68, 0x5f, 0x69, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0f, 0x64, 0x65, 0x66, 0x61,
+	0x75, 0x6c, 0x74, 0x42, 0x72, 0x61, 0x6e, 0x63, 0x68, 0x49, 0x64, 0x12, 0x3f, 0x0a, 0x0d, 0x63,
+	0x72, 0x65, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x64, 0x61, 0x74, 0x65, 0x18, 0x04, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x0c,
+	0x63, 0x72, 0x65, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x44, 0x61, 0x74, 0x65, 0x12, 0x43, 0x0a, 0x05,
+	0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x2d, 0x2e, 0x69, 0x6f,
+	0x2e, 0x74, 0x72, 0x65, 0x65, 0x76, 0x65, 0x72, 0x73, 0x65, 0x2e, 0x6c, 0x61, 0x6b, 0x65, 0x66,
+	0x73, 0x2e, 0x67, 0x72, 0x61, 0x76, 0x65, 0x6c, 0x65, 0x72, 0x2e, 0x52, 0x65, 0x70, 0x6f, 0x73,
+	0x69, 0x74, 0x6f, 0x72, 0x79, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74,
+	0x65, 0x12, 0x21, 0x0a, 0x0c, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x75, 0x69,
+	0x64, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63,
+	0x65, 0x55, 0x69, 0x64, 0x22, 0x83, 0x01, 0x0a, 0x0a, 0x42, 0x72, 0x61, 0x6e, 0x63, 0x68, 0x44,
+	0x61, 0x74, 0x61, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x02, 0x69, 0x64, 0x12, 0x1b, 0x0a, 0x09, 0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x5f, 0x69, 0x64,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x49, 0x64,
+	0x12, 0x23, 0x0a, 0x0d, 0x73, 0x74, 0x61, 0x67, 0x69, 0x6e, 0x67, 0x5f, 0x74, 0x6f, 0x6b, 0x65,
+	0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x73, 0x74, 0x61, 0x67, 0x69, 0x6e, 0x67,
+	0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x12, 0x23, 0x0a, 0x0d, 0x73, 0x65, 0x61, 0x6c, 0x65, 0x64, 0x5f,
+	0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0c, 0x73, 0x65,
+	0x61, 0x6c, 0x65, 0x64, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x73, 0x22, 0x36, 0x0a, 0x07, 0x54, 0x61,
 	0x67, 0x44, 0x61, 0x74, 0x61, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
 	0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x1b, 0x0a, 0x09, 0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x5f,
 	0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74,
@@ -601,14 +836,22 @@ var file_graveler_proto_rawDesc = []byte{
 	0x61, 0x6b, 0x65, 0x66, 0x73, 0x2e, 0x67, 0x72, 0x61, 0x76, 0x65, 0x6c, 0x65, 0x72, 0x2e, 0x42,
 	0x72, 0x61, 0x6e, 0x63, 0x68, 0x50, 0x72, 0x6f, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x42,
 	0x6c, 0x6f, 0x63, 0x6b, 0x65, 0x64, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x05, 0x76,
-	0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x2a, 0x3e, 0x0a, 0x1d, 0x42, 0x72, 0x61, 0x6e,
-	0x63, 0x68, 0x50, 0x72, 0x6f, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x42, 0x6c, 0x6f, 0x63,
-	0x6b, 0x65, 0x64, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x11, 0x0a, 0x0d, 0x53, 0x54, 0x41,
-	0x47, 0x49, 0x4e, 0x47, 0x5f, 0x57, 0x52, 0x49, 0x54, 0x45, 0x10, 0x00, 0x12, 0x0a, 0x0a, 0x06,
-	0x43, 0x4f, 0x4d, 0x4d, 0x49, 0x54, 0x10, 0x01, 0x42, 0x26, 0x5a, 0x24, 0x67, 0x69, 0x74, 0x68,
-	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x74, 0x72, 0x65, 0x65, 0x76, 0x65, 0x72, 0x73, 0x65,
-	0x2f, 0x6c, 0x61, 0x6b, 0x65, 0x66, 0x73, 0x2f, 0x67, 0x72, 0x61, 0x76, 0x65, 0x6c, 0x65, 0x72,
-	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x53, 0x0a, 0x0f, 0x53, 0x74, 0x61, 0x67,
+	0x65, 0x64, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x44, 0x61, 0x74, 0x61, 0x12, 0x10, 0x0a, 0x03, 0x6b,
+	0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x1a, 0x0a,
+	0x08, 0x69, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52,
+	0x08, 0x69, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x61, 0x74,
+	0x61, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x2a, 0x2e, 0x0a,
+	0x0f, 0x52, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x6f, 0x72, 0x79, 0x53, 0x74, 0x61, 0x74, 0x65,
+	0x12, 0x0a, 0x0a, 0x06, 0x41, 0x43, 0x54, 0x49, 0x56, 0x45, 0x10, 0x00, 0x12, 0x0f, 0x0a, 0x0b,
+	0x49, 0x4e, 0x5f, 0x44, 0x45, 0x4c, 0x45, 0x54, 0x49, 0x4f, 0x4e, 0x10, 0x01, 0x2a, 0x3e, 0x0a,
+	0x1d, 0x42, 0x72, 0x61, 0x6e, 0x63, 0x68, 0x50, 0x72, 0x6f, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f,
+	0x6e, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x65, 0x64, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x11,
+	0x0a, 0x0d, 0x53, 0x54, 0x41, 0x47, 0x49, 0x4e, 0x47, 0x5f, 0x57, 0x52, 0x49, 0x54, 0x45, 0x10,
+	0x00, 0x12, 0x0a, 0x0a, 0x06, 0x43, 0x4f, 0x4d, 0x4d, 0x49, 0x54, 0x10, 0x01, 0x42, 0x26, 0x5a,
+	0x24, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x74, 0x72, 0x65, 0x65,
+	0x76, 0x65, 0x72, 0x73, 0x65, 0x2f, 0x6c, 0x61, 0x6b, 0x65, 0x66, 0x73, 0x2f, 0x67, 0x72, 0x61,
+	0x76, 0x65, 0x6c, 0x65, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -623,34 +866,39 @@ func file_graveler_proto_rawDescGZIP() []byte {
 	return file_graveler_proto_rawDescData
 }
 
-var file_graveler_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_graveler_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_graveler_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_graveler_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_graveler_proto_goTypes = []interface{}{
-	(BranchProtectionBlockedAction)(0),     // 0: io.treeverse.lakefs.graveler.BranchProtectionBlockedAction
-	(*BranchData)(nil),                     // 1: io.treeverse.lakefs.graveler.BranchData
-	(*TagData)(nil),                        // 2: io.treeverse.lakefs.graveler.TagData
-	(*CommitData)(nil),                     // 3: io.treeverse.lakefs.graveler.CommitData
-	(*GarbageCollectionRules)(nil),         // 4: io.treeverse.lakefs.graveler.GarbageCollectionRules
-	(*GarbageCollectionRunMetadata)(nil),   // 5: io.treeverse.lakefs.graveler.GarbageCollectionRunMetadata
-	(*BranchProtectionBlockedActions)(nil), // 6: io.treeverse.lakefs.graveler.BranchProtectionBlockedActions
-	(*BranchProtectionRules)(nil),          // 7: io.treeverse.lakefs.graveler.BranchProtectionRules
-	nil,                                    // 8: io.treeverse.lakefs.graveler.CommitData.MetadataEntry
-	nil,                                    // 9: io.treeverse.lakefs.graveler.GarbageCollectionRules.BranchRetentionDaysEntry
-	nil,                                    // 10: io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry
-	(*timestamppb.Timestamp)(nil),          // 11: google.protobuf.Timestamp
+	(RepositoryState)(0),                   // 0: io.treeverse.lakefs.graveler.RepositoryState
+	(BranchProtectionBlockedAction)(0),     // 1: io.treeverse.lakefs.graveler.BranchProtectionBlockedAction
+	(*RepositoryData)(nil),                 // 2: io.treeverse.lakefs.graveler.RepositoryData
+	(*BranchData)(nil),                     // 3: io.treeverse.lakefs.graveler.BranchData
+	(*TagData)(nil),                        // 4: io.treeverse.lakefs.graveler.TagData
+	(*CommitData)(nil),                     // 5: io.treeverse.lakefs.graveler.CommitData
+	(*GarbageCollectionRules)(nil),         // 6: io.treeverse.lakefs.graveler.GarbageCollectionRules
+	(*GarbageCollectionRunMetadata)(nil),   // 7: io.treeverse.lakefs.graveler.GarbageCollectionRunMetadata
+	(*BranchProtectionBlockedActions)(nil), // 8: io.treeverse.lakefs.graveler.BranchProtectionBlockedActions
+	(*BranchProtectionRules)(nil),          // 9: io.treeverse.lakefs.graveler.BranchProtectionRules
+	(*StagedEntryData)(nil),                // 10: io.treeverse.lakefs.graveler.StagedEntryData
+	nil,                                    // 11: io.treeverse.lakefs.graveler.CommitData.MetadataEntry
+	nil,                                    // 12: io.treeverse.lakefs.graveler.GarbageCollectionRules.BranchRetentionDaysEntry
+	nil,                                    // 13: io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry
+	(*timestamppb.Timestamp)(nil),          // 14: google.protobuf.Timestamp
 }
 var file_graveler_proto_depIdxs = []int32{
-	11, // 0: io.treeverse.lakefs.graveler.CommitData.creation_date:type_name -> google.protobuf.Timestamp
-	8,  // 1: io.treeverse.lakefs.graveler.CommitData.metadata:type_name -> io.treeverse.lakefs.graveler.CommitData.MetadataEntry
-	9,  // 2: io.treeverse.lakefs.graveler.GarbageCollectionRules.branch_retention_days:type_name -> io.treeverse.lakefs.graveler.GarbageCollectionRules.BranchRetentionDaysEntry
-	0,  // 3: io.treeverse.lakefs.graveler.BranchProtectionBlockedActions.value:type_name -> io.treeverse.lakefs.graveler.BranchProtectionBlockedAction
-	10, // 4: io.treeverse.lakefs.graveler.BranchProtectionRules.branch_pattern_to_blocked_actions:type_name -> io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry
-	6,  // 5: io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry.value:type_name -> io.treeverse.lakefs.graveler.BranchProtectionBlockedActions
-	6,  // [6:6] is the sub-list for method output_type
-	6,  // [6:6] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	14, // 0: io.treeverse.lakefs.graveler.RepositoryData.creation_date:type_name -> google.protobuf.Timestamp
+	0,  // 1: io.treeverse.lakefs.graveler.RepositoryData.state:type_name -> io.treeverse.lakefs.graveler.RepositoryState
+	14, // 2: io.treeverse.lakefs.graveler.CommitData.creation_date:type_name -> google.protobuf.Timestamp
+	11, // 3: io.treeverse.lakefs.graveler.CommitData.metadata:type_name -> io.treeverse.lakefs.graveler.CommitData.MetadataEntry
+	12, // 4: io.treeverse.lakefs.graveler.GarbageCollectionRules.branch_retention_days:type_name -> io.treeverse.lakefs.graveler.GarbageCollectionRules.BranchRetentionDaysEntry
+	1,  // 5: io.treeverse.lakefs.graveler.BranchProtectionBlockedActions.value:type_name -> io.treeverse.lakefs.graveler.BranchProtectionBlockedAction
+	13, // 6: io.treeverse.lakefs.graveler.BranchProtectionRules.branch_pattern_to_blocked_actions:type_name -> io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry
+	8,  // 7: io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry.value:type_name -> io.treeverse.lakefs.graveler.BranchProtectionBlockedActions
+	8,  // [8:8] is the sub-list for method output_type
+	8,  // [8:8] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_graveler_proto_init() }
@@ -660,7 +908,7 @@ func file_graveler_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_graveler_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BranchData); i {
+			switch v := v.(*RepositoryData); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -672,7 +920,7 @@ func file_graveler_proto_init() {
 			}
 		}
 		file_graveler_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TagData); i {
+			switch v := v.(*BranchData); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -684,7 +932,7 @@ func file_graveler_proto_init() {
 			}
 		}
 		file_graveler_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CommitData); i {
+			switch v := v.(*TagData); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -696,7 +944,7 @@ func file_graveler_proto_init() {
 			}
 		}
 		file_graveler_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GarbageCollectionRules); i {
+			switch v := v.(*CommitData); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -708,7 +956,7 @@ func file_graveler_proto_init() {
 			}
 		}
 		file_graveler_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GarbageCollectionRunMetadata); i {
+			switch v := v.(*GarbageCollectionRules); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -720,7 +968,7 @@ func file_graveler_proto_init() {
 			}
 		}
 		file_graveler_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BranchProtectionBlockedActions); i {
+			switch v := v.(*GarbageCollectionRunMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -732,7 +980,31 @@ func file_graveler_proto_init() {
 			}
 		}
 		file_graveler_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*BranchProtectionBlockedActions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_graveler_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*BranchProtectionRules); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_graveler_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*StagedEntryData); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -749,8 +1021,8 @@ func file_graveler_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_graveler_proto_rawDesc,
-			NumEnums:      1,
-			NumMessages:   10,
+			NumEnums:      2,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

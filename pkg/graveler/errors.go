@@ -17,9 +17,11 @@ var (
 	ErrNotUnique                    = wrapError(ErrUserVisible, "not unique")
 	ErrPreconditionFailed           = errors.New("precondition failed")
 	ErrWriteToProtectedBranch       = wrapError(ErrUserVisible, "cannot write to protected branch")
+	ErrReadingFromStore             = errors.New("cannot read from store")
 	ErrCommitToProtectedBranch      = wrapError(ErrUserVisible, "cannot commit to protected branch")
 	ErrInvalidValue                 = fmt.Errorf("invalid value: %w", ErrInvalid)
 	ErrInvalidMergeBase             = fmt.Errorf("only 2 commits allowed in FindMergeBase: %w", ErrInvalidValue)
+	ErrNoCommitGeneration           = errors.New("no commit generation")
 	ErrNoMergeBase                  = errors.New("no merge base")
 	ErrInvalidRef                   = fmt.Errorf("ref: %w", ErrInvalidValue)
 	ErrInvalidCommitID              = fmt.Errorf("commit id: %w", ErrInvalidValue)
@@ -32,6 +34,7 @@ var (
 	ErrCommitNotFound               = fmt.Errorf("commit %w", ErrNotFound)
 	ErrCreateBranchNoCommit         = fmt.Errorf("can't create a branch without commit")
 	ErrRepositoryNotFound           = fmt.Errorf("repository %w", ErrNotFound)
+	ErrRepositoryInDeletion         = errors.New("repository in deletion")
 	ErrBranchNotFound               = fmt.Errorf("branch %w", ErrNotFound)
 	ErrTagNotFound                  = fmt.Errorf("tag %w", ErrNotFound)
 	ErrRefAmbiguous                 = fmt.Errorf("reference is ambiguous: %w", ErrNotFound)
@@ -50,6 +53,7 @@ var (
 	ErrDereferenceCommitWithStaging = wrapError(ErrUserVisible, "reference to staging area with $ is not a commit")
 	ErrDeleteDefaultBranch          = wrapError(ErrUserVisible, "cannot delete repository default branch")
 	ErrCommitMetaRangeDirtyBranch   = wrapError(ErrUserVisible, "cannot use source MetaRange on a branch with uncommitted changes")
+	ErrTooManyTries                 = errors.New("too many tries")
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.

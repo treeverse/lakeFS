@@ -15,7 +15,7 @@ import (
 func TestTaskResultsIterator(t *testing.T) {
 	ctx := context.Background()
 	kvStore := kv.StoreMessage{Store: kvtest.GetStore(ctx, t)}
-	createTestData(t, ctx, kvStore)
+	_, keyList := createTestData(t, ctx, kvStore)
 
 	tests := []struct {
 		name  string
@@ -25,13 +25,13 @@ func TestTaskResultsIterator(t *testing.T) {
 	}{
 		{
 			name:  "basic",
-			runID: rand.Intn(100),
+			runID: len(keyList) - actionsWithHooks/4,
 			after: -1,
 			count: 100,
 		},
 		{
 			name:  "after key",
-			runID: rand.Intn(100),
+			runID: len(keyList) - actionsWithHooks/3,
 			after: 19,
 			count: 80,
 		},
@@ -42,7 +42,7 @@ func TestTaskResultsIterator(t *testing.T) {
 			count: 0,
 		},
 		{
-			name:  "Run no tasks",
+			name:  "run no tasks",
 			runID: 100,
 			after: 0,
 			count: 0,
@@ -53,8 +53,9 @@ func TestTaskResultsIterator(t *testing.T) {
 			runID := keyList[tt.runID]
 			taskID := 0
 			after := ""
+			idx := len(keyList) - 1 - tt.runID
 			if tt.after >= 0 {
-				after = actions.NewHookRunID(tt.runID, tt.after)
+				after = actions.NewHookRunID(idx, tt.after)
 				taskID = tt.after + 1
 			}
 			itr, err := actions.NewKVTaskResultIterator(ctx, kvStore, iteratorTestRepoID, runID, after)
@@ -65,7 +66,7 @@ func TestTaskResultsIterator(t *testing.T) {
 			for itr.Next() {
 				task := itr.Value()
 				require.Equal(t, runID, task.RunID)
-				require.Equal(t, actions.NewHookRunID(tt.runID, taskID), task.HookRunID)
+				require.Equal(t, actions.NewHookRunID(idx, taskID), task.HookRunID)
 				require.Equal(t, strconv.Itoa(taskID), task.HookID)
 				taskID++
 				numRead++

@@ -4376,6 +4376,60 @@ paths:
       tags:
       - config
       x-accepts: application/json
+  /templates/{template_location}:
+    get:
+      description: fetch and expand template
+      operationId: expandTemplate
+      parameters:
+      - description: URL of the template; must be relative (to a URL configured on
+          the server).
+        example: spark.submit.conf.tt
+        explode: false
+        in: path
+        name: template_location
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: params
+        required: false
+        schema:
+          additionalProperties:
+            type: string
+          example:
+            lakefs_url: https://lakefs.example.com
+          type: object
+        style: form
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                format: binary
+          description: expanded template
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - templates
+      x-accepts: application/json
 components:
   parameters:
     PaginationPrefix:
@@ -5095,6 +5149,8 @@ components:
         email: email
       properties:
         id:
+          description: a unique identifier for the user. In password-based authentication,
+            this is the email.
           type: string
         creation_date:
           description: Unix Epoch in seconds
@@ -5136,6 +5192,8 @@ components:
         id: id
       properties:
         id:
+          description: a unique identifier for the user. In password-based authentication,
+            this is the email.
           type: string
         invite_user:
           type: boolean
@@ -5145,6 +5203,7 @@ components:
     SetupState:
       example:
         oidc_enabled: true
+        oidc_default_login: true
         state: initialized
       properties:
         state:
@@ -5153,6 +5212,8 @@ components:
           - not_initialized
           type: string
         oidc_enabled:
+          type: boolean
+        oidc_default_login:
           type: boolean
       type: object
     AccessKeyCredentials:

@@ -56,4 +56,12 @@ public class SetupStateTest {
         // TODO: test oidcEnabled
     }
 
+    /**
+     * Test the property 'oidcDefaultLogin'
+     */
+    @Test
+    public void oidcDefaultLoginTest() {
+        // TODO: test oidcDefaultLogin
+    }
+
 }

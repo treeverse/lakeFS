@@ -49,16 +49,6 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-type nullCollector struct{}
-
-func (m *nullCollector) CollectMetadata(_ *stats.Metadata) {}
-
-func (m *nullCollector) CollectEvent(_, _ string) {}
-
-func (m *nullCollector) SetInstallationID(_ string) {}
-
-func (m *nullCollector) Close() {}
-
 type getActionsService func(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service
 
 func GetDBActionsService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
@@ -82,8 +72,8 @@ func GetDBAuthService(t *testing.T) auth.Service {
 func GetKVAuthService(t *testing.T, ctx context.Context) auth.Service {
 	t.Helper()
 	kvStore := kvtest.GetStore(ctx, t)
-	storeMessage := kv.StoreMessage{Store: kvStore}
-	return auth.NewKVAuthService(storeMessage, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
+	storeMessage := &kv.StoreMessage{Store: kvStore}
+	return auth.NewKVAuthService(storeMessage, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
 }
 
 func GetDBMetadataManager(t *testing.T, installationID string) auth.MetadataManager {
@@ -92,10 +82,10 @@ func GetDBMetadataManager(t *testing.T, installationID string) auth.MetadataMana
 	return auth.NewDBMetadataManager("local_load_test", installationID, conn)
 }
 
-func GetKVMetadataManager(t *testing.T, ctx context.Context, installationID string) auth.MetadataManager {
+func GetKVMetadataManager(t *testing.T, ctx context.Context, installationID, kvType string) auth.MetadataManager {
 	t.Helper()
 	kvStore := kvtest.GetStore(ctx, t)
-	return auth.NewKVMetadataManager("local_load_test", installationID, kvStore)
+	return auth.NewKVMetadataManager("local_load_test", installationID, kvType, kvStore)
 }
 
 func TestLocalLoad(t *testing.T) {
@@ -130,7 +120,7 @@ func TestLocalLoad(t *testing.T) {
 			name:           "KV service test",
 			actionsService: GetKVActionsService,
 			authService:    GetKVAuthService(t, ctx),
-			meta:           GetKVMetadataManager(t, ctx, conf.GetFixedInstallationID()),
+			meta:           GetKVMetadataManager(t, ctx, conf.GetFixedInstallationID(), conf.GetDatabaseParams().Type),
 			kvEnabled:      true,
 		},
 	}
@@ -167,7 +157,7 @@ func TestLocalLoad(t *testing.T) {
 			outputWriter := catalog.NewActionsOutputWriter(c.BlockAdapter)
 
 			// wire actions
-			actionsService := tt.actionsService(t, ctx, source, outputWriter, &nullCollector{}, true)
+			actionsService := tt.actionsService(t, ctx, source, outputWriter, &stats.NullCollector{}, true)
 			c.SetHooksHandler(actionsService)
 
 			credentials, err := auth.SetupAdminUser(ctx, tt.authService, superuser)
@@ -191,12 +181,13 @@ func TestLocalLoad(t *testing.T) {
 				blockAdapter,
 				tt.meta,
 				migrator,
-				&nullCollector{},
+				&stats.NullCollector{},
 				nil,
 				actionsService,
 				auditChecker,
 				logging.Default(),
 				emailer,
+				nil,
 				nil,
 				nil,
 				nil,

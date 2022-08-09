@@ -5,7 +5,8 @@ import (
 )
 
 type OIDC struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enabled        bool `mapstructure:"enabled"`
+	IsDefaultLogin bool `mapstructure:"is_default_login"`
 
 	// provider details:
 	URL          string `mapstructure:"url"`
@@ -93,11 +94,11 @@ type configuration struct {
 			WriteCapacityUnits int64 `mapstructure:"write_capacity_units"`
 
 			// Maximal number of items per page during scan operation
-			ScanLimit int64
+			ScanLimit int64 `mapstructure:"scan_limit"`
 
 			// The endpoint URL of the DynamoDB endpoint
 			// Can be used to redirect to DynamoDB on AWS, local docker etc.
-			Endpoint string
+			Endpoint string `mapstructure:"endpoint"`
 
 			// AWS connection details - region and credentials
 			// This will override any such details that are already exist in the system
@@ -106,9 +107,9 @@ type configuration struct {
 			// in case there are no credentials configured in the system
 			// This is a client requirement as described in section 4 in
 			// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
-			AwsRegion          string
-			AwsAccessKeyID     string
-			AwsSecretAccessKey string
+			AwsRegion          string       `mapstructure:"aws_region"`
+			AwsAccessKeyID     SecureString `mapstructure:"aws_access_key_id"`
+			AwsSecretAccessKey SecureString `mapstructure:"aws_secret_access_key"`
 		} `mapstructure:"beta_dynamodb"`
 	}
 
@@ -123,8 +124,9 @@ type configuration struct {
 			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
 		}
 		API struct {
-			Endpoint string
-			Token    string
+			Endpoint        string
+			Token           string
+			SupportsInvites bool `mapstructure:"supports_invites"`
 		}
 		LDAP              *LDAP
 		OIDC              OIDC

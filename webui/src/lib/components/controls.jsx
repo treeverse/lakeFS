@@ -10,6 +10,17 @@ import Table from "react-bootstrap/Table";
 import {OverlayTrigger} from "react-bootstrap";
 import {CheckIcon, ClippyIcon, SyncIcon} from "@primer/octicons-react";
 import {Link} from "./nav";
+import {
+    Box,
+    Button as MuiButton,
+    CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    Typography
+} from "@mui/material";
 
 
 const defaultDebounceMs = 300;
@@ -64,16 +75,16 @@ export const Na = () => {
 };
 
 export const Error = ({error, onDismiss = null, className = null}) => {
-    let msg = error.toString();
+    let content = React.isValidElement(error) ? error : error.toString();
     // handle wrapped errors
     let err = error;
     while (err.error) err = err.error;
-    if (err.message) msg = err.message;
+    if (err.message) content = err.message;
     if (onDismiss !== null) {
-        return <Alert className={className} variant="danger" dismissible onClose={onDismiss}>{msg}</Alert>;
+        return <Alert className={className} variant="danger" dismissible onClose={onDismiss}>{content}</Alert>;
     }
     return (
-        <Alert className={className} variant="danger">{msg}</Alert>
+        <Alert className={className} variant="danger">{content}</Alert>
     );
 }
 
@@ -108,7 +119,7 @@ export const ActionsBar = ({ children }) => {
     );
 };
 
-const copyTextToClipboard = (text, onSuccess, onError) => {
+export const copyTextToClipboard = async (text, onSuccess, onError) => {
     const textArea = document.createElement('textarea');
 
     //
@@ -157,7 +168,11 @@ const copyTextToClipboard = (text, onSuccess, onError) => {
 
     let err = null;
     try {
-        document.execCommand('copy');
+        if ('clipboard' in navigator) {
+            await navigator.clipboard.writeText(text);
+        } else {
+            document.execCommand('copy', true, text);
+        }
     } catch (e) {
         err = e;
     }
@@ -350,3 +365,41 @@ export const Warnings = ({ warnings = [] }) => {
            )}
        </ul>;
 };
+
+export const ProgressSpinner = ({text, changingElement =''}) => {
+    return (
+        <Box sx={{display: 'flex', alignItems: 'center'}}>
+            <Box>
+                <CircularProgress size={50}/>
+            </Box>
+            <Box sx={{p: 4}}>
+                <Typography>{text}{changingElement}</Typography>
+            </Box>
+        </Box>
+    );
+}
+
+export const ExitConfirmationDialog = ({dialogAlert, dialogDescription, onExit, onContinue, isOpen=false}) => {
+    return (
+        <Dialog
+            open={isOpen}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+        >
+            <DialogTitle id="alert-dialog-title">
+                {dialogAlert}
+            </DialogTitle>
+            <DialogContent>
+                <DialogContentText id="alert-dialog-description">
+                    {dialogDescription}
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+                <MuiButton onClick={onContinue} autoFocus>Cancel</MuiButton>
+                <MuiButton onClick={onExit}>
+                    Exit
+                </MuiButton>
+            </DialogActions>
+        </Dialog>
+    )
+}

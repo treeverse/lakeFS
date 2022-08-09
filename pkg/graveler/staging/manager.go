@@ -3,113 +3,161 @@ package staging
 import (
 	"context"
 	"errors"
+	"fmt"
 
-	sq "github.com/Masterminds/squirrel"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type Manager struct {
-	db  db.Database
-	log logging.Logger
+	store  kv.StoreMessage
+	log    logging.Logger
+	wakeup chan asyncEvent
+
+	// cleanupCallback is being called with every successful cleanup cycle
+	cleanupCallback func()
 }
 
-func NewManager(db db.Database) *Manager {
-	return &Manager{
-		db:  db,
-		log: logging.Default().WithField("service_name", "postgres_staging_manager"),
+// asyncEvent is a type of event to be handled in the async loop
+type asyncEvent string
+
+// cleanTokens is async cleaning of deleted staging tokens
+const cleanTokens = asyncEvent("clean_tokens")
+
+func NewManager(ctx context.Context, store kv.StoreMessage) *Manager {
+	const wakeupChanCapacity = 100
+	m := &Manager{
+		store:  store,
+		log:    logging.Default().WithField("service_name", "staging_manager"),
+		wakeup: make(chan asyncEvent, wakeupChanCapacity),
 	}
+	go m.asyncLoop(ctx)
+	return m
 }
 
-func (p *Manager) Get(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.Value, error) {
-	res, err := p.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		value := &graveler.Value{}
-		err := tx.Get(value, "SELECT identity, data FROM graveler_staging_kv WHERE staging_token=$1 AND key=$2", st, key)
-		return value, err
-	}, p.txOpts(db.ReadOnly())...)
-	if errors.Is(err, db.ErrNotFound) {
-		return nil, graveler.ErrNotFound
-	}
+func (m *Manager) OnCleanup(cleanupCallback func()) {
+	m.cleanupCallback = cleanupCallback
+}
+
+func (m *Manager) Get(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.Value, error) {
+	data := &graveler.StagedEntryData{}
+	_, err := m.store.GetMsg(ctx, graveler.StagingTokenPartition(st), key, data)
 	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			err = graveler.ErrNotFound
+		}
 		return nil, err
 	}
-	value := res.(*graveler.Value)
-	if value.Identity == nil {
+	// Tombstone handling
+	if data.Identity == nil {
 		return nil, nil
 	}
-	return value, nil
+	return graveler.StagedEntryFromProto(data), nil
 }
 
-func (p *Manager) Set(ctx context.Context, st graveler.StagingToken, key graveler.Key, value *graveler.Value, overwrite bool) error {
+func (m *Manager) Set(ctx context.Context, st graveler.StagingToken, key graveler.Key, value *graveler.Value, _ bool) error {
+	// Tombstone handling
 	if value == nil {
 		value = new(graveler.Value)
 	} else if value.Identity == nil {
 		return graveler.ErrInvalidValue
 	}
-	_, err := p.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if !overwrite {
-			res, err := tx.Exec(
-				`INSERT INTO graveler_staging_kv (staging_token, key, identity, data)
-						VALUES ($1, $2, $3, $4)
-						ON CONFLICT (staging_token, key) DO NOTHING`,
-				st, key, value.Identity, value.Data)
-			if err != nil {
-				return nil, err
-			}
-			if res.RowsAffected() == 0 {
-				return nil, graveler.ErrPreconditionFailed
-			}
-			return res, err
+
+	pb := graveler.ProtoFromStagedEntry(key, value)
+	return m.store.SetMsg(ctx, graveler.StagingTokenPartition(st), key, pb)
+}
+
+func (m *Manager) Update(ctx context.Context, st graveler.StagingToken, key graveler.Key, updateFunc graveler.ValueUpdateFunc) error {
+	oldValueProto := &graveler.StagedEntryData{}
+	var oldValue *graveler.Value
+	pred, err := m.store.GetMsg(ctx, graveler.StagingTokenPartition(st), key, oldValueProto)
+	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			oldValue = nil
+		} else {
+			return err
 		}
-		return tx.Exec(`INSERT INTO graveler_staging_kv (staging_token, key, identity, data)
-								VALUES ($1, $2, $3, $4)
-								ON CONFLICT (staging_token, key) DO UPDATE
-									SET (staging_token, key, identity, data) =
-											(excluded.staging_token, excluded.key, excluded.identity, excluded.data)`,
-			st, key, value.Identity, value.Data)
-	}, p.txOpts()...)
-	return err
-}
-
-func (p *Manager) DropKey(ctx context.Context, st graveler.StagingToken, key graveler.Key) error {
-	_, err := p.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return tx.Exec("DELETE FROM graveler_staging_kv WHERE staging_token=$1 AND key=$2", st, key)
-	}, p.txOpts()...)
-	return err
-}
-
-// List returns an iterator of staged values on the staging token st
-func (p *Manager) List(ctx context.Context, st graveler.StagingToken, batchSize int) (graveler.ValueIterator, error) {
-	return NewStagingIterator(ctx, p.db, p.log, st, batchSize), nil
-}
-
-func (p *Manager) Drop(ctx context.Context, st graveler.StagingToken) error {
-	_, err := p.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return tx.Exec("DELETE FROM graveler_staging_kv WHERE staging_token=$1", st)
-	}, p.txOpts()...)
-	return err
-}
-
-func (p *Manager) DropByPrefix(ctx context.Context, st graveler.StagingToken, prefix graveler.Key) error {
-	upperBound := graveler.UpperBoundForPrefix(prefix)
-	builder := sq.Delete("graveler_staging_kv").Where(sq.Eq{"staging_token": st}).Where("key >= ?::bytea", prefix)
-	_, err := p.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if upperBound != nil {
-			builder = builder.Where("key < ?::bytea", upperBound)
-		}
-		query, args, err := builder.PlaceholderFormat(sq.Dollar).ToSql()
-		if err != nil {
-			return nil, err
-		}
-		return tx.Exec(query, args...)
-	}, p.txOpts()...)
-	return err
-}
-
-func (p *Manager) txOpts(opts ...db.TxOpt) []db.TxOpt {
-	o := []db.TxOpt{
-		db.WithLogger(p.log),
+	} else {
+		oldValue = graveler.StagedEntryFromProto(oldValueProto)
 	}
-	return append(o, opts...)
+	updatedValue, err := updateFunc(oldValue)
+	if err != nil {
+		return err
+	}
+	return m.store.SetMsgIf(ctx, graveler.StagingTokenPartition(st), key, graveler.ProtoFromStagedEntry(key, updatedValue), pred)
+}
+
+func (m *Manager) DropKey(ctx context.Context, st graveler.StagingToken, key graveler.Key) error {
+	return m.store.DeleteMsg(ctx, graveler.StagingTokenPartition(st), key)
+}
+
+// List TODO niro: Remove batchSize parameter post KV
+// List returns an iterator of staged values on the staging token st
+func (m *Manager) List(ctx context.Context, st graveler.StagingToken, _ int) (graveler.ValueIterator, error) {
+	return NewStagingIterator(ctx, m.store, st)
+}
+
+func (m *Manager) Drop(ctx context.Context, st graveler.StagingToken) error {
+	return m.DropByPrefix(ctx, st, []byte(""))
+}
+
+func (m *Manager) DropAsync(ctx context.Context, st graveler.StagingToken) error {
+	err := m.store.Store.Set(ctx, []byte(graveler.CleanupTokensPartition()), []byte(st), []byte("stub-value"))
+	m.wakeup <- cleanTokens
+	return err
+}
+
+func (m *Manager) DropByPrefix(ctx context.Context, st graveler.StagingToken, prefix graveler.Key) error {
+	itr, err := kv.ScanPrefix(ctx, m.store.Store, []byte(graveler.StagingTokenPartition(st)), prefix, []byte(""))
+	if err != nil {
+		return err
+	}
+	defer itr.Close()
+	for itr.Next() {
+		err = m.store.Delete(ctx, []byte(graveler.StagingTokenPartition(st)), itr.Entry().Key)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (m *Manager) asyncLoop(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case event := <-m.wakeup:
+			switch event {
+			case cleanTokens:
+				err := m.findAndDrop(ctx)
+				if err != nil {
+					m.log.WithError(err).Error("Dropping tokens failed")
+				} else if m.cleanupCallback != nil {
+					m.cleanupCallback()
+				}
+			default:
+				panic(fmt.Sprintf("unknown event: %s", event))
+			}
+		}
+	}
+}
+
+func (m *Manager) findAndDrop(ctx context.Context) error {
+	it, err := m.store.Store.Scan(ctx, []byte(graveler.CleanupTokensPartition()), []byte{})
+	if err != nil {
+		return err
+	}
+	defer it.Close()
+	for it.Next() {
+		if err := m.DropByPrefix(ctx, graveler.StagingToken(it.Entry().Key), []byte("")); err != nil {
+			return err
+		}
+		if err := m.store.Store.Delete(ctx, []byte(graveler.CleanupTokensPartition()), it.Entry().Key); err != nil {
+			return err
+		}
+	}
+	return it.Err()
 }

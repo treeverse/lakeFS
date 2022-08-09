@@ -60,7 +60,7 @@ func benchmarkMigrate(runCount int, b *testing.B) {
 }
 
 func TestMigrate(t *testing.T) {
-	var testData = make([][]actions.RunManifest, actionsSampleSize)
+	testData := make([][]actions.RunManifest, actionsSampleSize)
 	ctx := context.Background()
 	database, _ := testutil.GetDB(t, databaseURI)
 
@@ -96,6 +96,7 @@ func validateTestData(t *testing.T, ctx context.Context, service actions.Service
 		runCount++
 		run := runs.Value()
 		runIdx, err := strconv.Atoi(run.SourceRef)
+		require.NoError(t, err)
 
 		// Check for secondary keys
 		if run.BranchID != "" {
@@ -104,7 +105,7 @@ func validateTestData(t *testing.T, ctx context.Context, service actions.Service
 			_, err = store.GetMsg(ctx, actions.PartitionKey, rk, &secondary)
 			require.NoError(t, err)
 			r := actions.RunResultData{}
-			_, err = store.GetMsg(ctx, actions.PartitionKey, string(secondary.PrimaryKey), &r)
+			_, err = store.GetMsg(ctx, actions.PartitionKey, secondary.PrimaryKey, &r)
 			require.NoError(t, err)
 			require.Equal(t, run, actions.RunResultFromProto(&r))
 		}
@@ -114,7 +115,8 @@ func validateTestData(t *testing.T, ctx context.Context, service actions.Service
 			_, err = store.GetMsg(ctx, actions.PartitionKey, rk, &secondary)
 			require.NoError(t, err)
 			r := actions.RunResultData{}
-			_, err = store.GetMsg(ctx, actions.PartitionKey, string(secondary.PrimaryKey), &r)
+			_, err = store.GetMsg(ctx, actions.PartitionKey, secondary.PrimaryKey, &r)
+			require.NoError(t, err)
 			require.Equal(t, run, actions.RunResultFromProto(&r))
 		}
 

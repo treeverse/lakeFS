@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Import data into lakeFS 
-description: In order to import existing data to lakeFS, you may choose to copy it using S3 CLI or using tools like Apache DistCp.
-parent: Setup lakeFS
+description: To import existing data to lakeFS, you may choose to copy it using S3 CLI or using tools like Apache DistCp.
+parent: Set up lakeFS
 nav_order: 20
 has_children: false
 redirect_from: ../reference/import.html
@@ -14,18 +14,18 @@ redirect_from: ../reference/import.html
 
 ## Use external tools
 
-In order to import existing data to lakeFS, you may choose to copy it using [S3 CLI](../integrations/aws_cli.md#copy-from-a-local-path-to-lakefs) 
-or using tools like [Apache DistCp](../integrations/distcp.md#from-s3-to-lakefs). This is the most straightforward way, and we recommend it if it’s applicable for you.
+To import existing data to lakeFS, you may choose to copy it using [S3 CLI](../integrations/aws_cli.md#copy-from-a-local-path-to-lakefs) 
+or tools like [Apache DistCp](../integrations/distcp.md#from-s3-to-lakefs). This is the most straightforward way, and we recommend it if it’s applicable to you.
 
 ## Zero-copy import
 
-lakeFS supports 3 ways to ingest objects from the object store without copying the data.
-They differ by the outcome, scale and ease of use:
+lakeFS supports three ways to ingest objects from the object store without copying the data.
+They differ by the outcome, scale, and ease of use:
 
 1. Import from the UI - A UI dialog to trigger an import to a designated import branch. It creates a commit from all imported objects. Easy to use and scales well.
-1. `lakectl ingest` - Use a simple CLI command to create uncommitted objects in a branch. It will make sequential calls between the CLI and the server, which make scaling difficult.
-1. `lakefs import` - Use the lakeFS binary to create a commit from an S3 inventory file. Supported only with lakeFS with S3 storage adapters.
-   Requires the most setup - lakeFS binary with DB access and an S3 inventory file. The most scalable option.
+1. `lakectl ingest` - You can use a simple CLI command to create uncommitted objects in a branch. It will make sequential calls between the CLI and the server, which makes scaling difficult.
+1. `lakefs import` - You can use the lakeFS binary to create a commit from an S3 inventory file. Supported only with lakeFS with S3 storage adapters.
+   Requires the greatest setup effort - lakeFS binary with DB access and an S3 inventory file. The most scalable option.
 
 
 ### UI Import
@@ -48,12 +48,11 @@ Once the import is completed, you can merge the changes from the import branch t
 #### Prerequisite
 
 lakeFS must have permissions to list the objects at the source object store,
-and on the same region of your destination bucket.
+and in the same region of your destination bucket.
 
 #### Limitations
 
-Import is feasible only from source object storage that matches the storage namespace of the
-current repository.  lakeFS S3 installation cannot import from Azure bucket.
+Importing is only possible from the object storage service in which your installation stores its data. For example, if lakeFS is configured on top of S3, you cannot import data from Azure.
 
 Although created by lakeFS, import branches are just like any other branch.
 Authorization policies, CI/CD triggering, branch protection rules and all other lakeFS concepts apply to them
@@ -66,13 +65,13 @@ as they apply to any other branch.
 For cases where copying data is not feasible, the `lakectl` command supports ingesting objects from a source object store without actually copying the data itself.
 This is done by listing the source bucket (and optional prefix), and creating pointers to the returned objects in lakeFS.
 
-By doing this, it's possible to take even large sets of objects, and have them appear as objects in a lakeFS branch, as if they were written directly to it.
+By doing this, you can take even large sets of objects and have them appear as objects in a lakeFS branch, as if they were written directly to it.
 
 For this to work, make sure that:
 
-1. The user calling `lakectl ingest` must have permissions to list the objects at the source object store
+1. The user calling `lakectl ingest` has permissions to list the objects at the source object store.
 2. The lakeFS installation has read permissions to the objects being ingested.
-3. The source path is **not** a storage namespace used by lakeFS. e.g. if `lakefs://my-repo` created with storage namespace `s3://my-bucket`, then `s3://my-bucket/*` cannot be an ingestion source.
+3. The source path is **not** a storage namespace used by lakeFS. For example, if `lakefs://my-repo` created with storage namespace `s3://my-bucket`, then `s3://my-bucket/*` cannot be an ingestion source.
 
 <div class="tabs">
 <ul>
@@ -87,9 +86,9 @@ lakectl ingest \
   --to lakefs://my-repo/ingest-branch/optional/path/
 ```
 
-The `lakectl ingest` command will attempt to use the current user's existing credentials and will respect instance profiles,
-environment variables and credential files [in the same way that the AWS cli does](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html){: target="_blank" }
-Specify an endpoint to ingest from other S3 compatible storage solutions, e.g. add `--s3-endpoint-url https://play.min.io`.
+The `lakectl ingest` command will attempt to use the current user's existing credentials and respect instance profiles,
+environment variables, and credential files ([similarly to AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html){: target="_blank" })
+Specify an endpoint to ingest from other S3 compatible storage solutions, e.g., add `--s3-endpoint-url https://play.min.io`.
 </div>
 <div markdown="1" id="ingest-tabs-2">
 ```shell
@@ -102,7 +101,7 @@ lakectl ingest \
 
 The `lakectl ingest` command currently supports storage accounts configured through environment variables as shown above.
 
-**Note:** Currently `lakectl import` supports the `http://` and `https://` schemes for Azure storage URIs. `wasb`, `abfs` or `adls` are currently not supported.
+**Note:** Currently, `lakectl import` supports the `http://` and `https://` schemes for Azure storage URIs. `wasb`, `abfs` or `adls` are currently not supported.
 {: .note }
 </div>
 <div markdown="1" id="ingest-tabs-3">
@@ -123,7 +122,7 @@ The `lakectl ingest` command currently supports the standard `GOOGLE_APPLICATION
 Importing a very large amount of objects (> ~250M) might take some time using `lakectl ingest` as described above,
 since it has to paginate through all the objects in the source using API calls.
 
-For S3, we provide a utility as part of the `lakefs` binary, called `lakefs import`.
+For S3, we provide a utility as part of the `lakefs` binary called `lakefs import`.
 
 The lakeFS import tool will use the [S3 Inventory](https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-inventory.html) feature to create lakeFS metadata.
 The imported metadata will be committed to a special branch, called `import-from-inventory`.
@@ -162,13 +161,13 @@ For a step-by-step walkthrough of this process, see the post [3 Ways to Add Data
 
 Import is performed by the `lakefs import` command.
 
-Assuming your manifest.json is at `s3://example-bucket/path/to/inventory/YYYY-MM-DDT00-00Z/manifest.json`, and your lakeFS configuration yaml is at `config.yaml` (see notes below), run the following command to start the import:
+Assuming your manifest.json is at `s3://example-bucket/path/to/inventory/YYYY-MM-DDT00-00Z/manifest.json`, and your lakeFS configuration YAML is at `config.yaml` (see notes below), run the following command to start the import:
 
 ```bash
 lakefs import lakefs://example-repo -m s3://example-bucket/path/to/inventory/YYYY-MM-DDT00-00Z/manifest.json --config config.yaml
 ```
 
-You will see the progress of your import as it is performed.
+You will see the progress of your import as it's performed.
 After the import is finished, a summary will be printed along with suggestions for commands to access your data.
 
 ```
@@ -211,6 +210,7 @@ lakefs import --with-merge lakefs://example-repo -m s3://example-bucket/path/to/
 Once you switch to using the lakeFS S3-compatible endpoint in all places, you can stop making changes to your original bucket.
 However, if your operation still requires that you work on the original bucket,
 you can repeat using the import API with up-to-date inventories every day, until you complete the onboarding process.
+
 You can specify only the prefixes that require import. lakeFS will merge those prefixes with the previous imported inventory.
 For example, a prefixes-file that contains only the prefix `new/data/`. The new commit to `import-from-inventory` branch will include all objects from the HEAD of that branch, except for objects with prefix `new/data/` that is imported from the inventory. 
 
@@ -229,10 +229,9 @@ The following table describes the results of making changes in the original buck
 
 ## Importing from public buckets
 
-lakeFS needs access to the imported location to first list the files to import and later
-to read the files upon users request. 
+lakeFS needs access to the imported location to first list the files to import and later read the files upon users request. 
 
-There are some use-cases where the user would like to import from a destination which isn't owned by the account running lakeFS.
+There are some use cases where the user would like to import from a destination which isn't owned by the account running lakeFS.
 For example, importing public datasets to experiment with lakeFS and Spark.
 
 lakeFS will require additional permissions to read from public buckets. For example, for S3 public buckets,

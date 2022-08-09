@@ -90,7 +90,7 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
                 <Form.Label column sm={fieldNameOffset}>
                     Storage Namespace&nbsp;
                     <OverlayTrigger placement="bottom" overlay={<Tooltip style={{"font-size": "s"}}>What should I type here?</Tooltip>}>
-                        <a href="https://docs.lakefs.io/understand/object-model.html#concepts-unique-to-lakefs" target={"_blank"} tabIndex="-1" rel="noopener noreferrer">
+                        <a href="https://docs.lakefs.io/understand/model.html#concepts-unique-to-lakefs" target={"_blank"} tabIndex="-1" rel="noopener noreferrer">
                             <InfoIcon />
                         </a>
                     </OverlayTrigger>

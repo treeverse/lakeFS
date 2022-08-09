@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Python
-description: The lakeFS API is OpenAPI 3.0 compliant, allowing the generation of clients from Python and multiple other languages
+description: The lakeFS API is OpenAPI 3.0-compliant, allowing the generation of clients from Python and many other languages.
 parent: Integrations
 nav_order: 30
 has_children: false
@@ -11,7 +11,7 @@ redirect_from: ../using/python.html
 # Calling the lakeFS API from Python
 {: .no_toc }
 
-The [lakeFS API](../reference/api.md){: target="_blank" } is OpenAPI 3.0 compliant, allowing the generation of clients from multiple languages or directly accessed by any HTTP client.
+The [lakeFS API](../reference/api.md){: target="_blank" } is OpenAPI 3.0-compliant, allowing the generation of clients from multiple languages or directly accessed by any HTTP client.
 
 For Python, this example uses [lakeFS's python package](https://pypi.org/project/lakefs-client/){: target="_blank" }.
 The lakefs-client pacakge was created by [OpenAPI Generator](https://openapi-generator.tech){: target="_blank" } using our OpenAPI definition served by a lakeFS server.
@@ -32,7 +32,7 @@ The package is available from version >= 0.34.0.
 
 ## Working with the Client API
 
-How to instantiate a client:
+Here's how to instantiate a client:
 
 ```python
 import lakefs_client
@@ -50,7 +50,7 @@ client = LakeFSClient(configuration)
 
 ## Using the generated client
 
-Now that we have a client object, we can use it to interact with the API.
+Now that you have a client object, you can use it to interact with the API.
 
 ### Creating a repository
 
@@ -66,7 +66,7 @@ client.repositories.create_repository(repo)
 
 ### Creating a branch, uploading files, committing changes
 
-List repository branches:
+List the repository branches:
 
 ```python
 client.branches.list_branches('example-repo')
@@ -82,7 +82,7 @@ client.branches.create_branch(repository='example-repo', branch_creation=models.
 # 'cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656'
 ```
 
-Let's list again, to see our newly created branch:
+List again to see your newly created branch:
 
 ```python
 client.branches.list_branches('example-repo').results
@@ -90,7 +90,7 @@ client.branches.list_branches('example-repo').results
 # [{'commit_id': 'cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656', 'id': 'experiment-aggregations1'}, {'commit_id': 'cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656', 'id': 'main'}]
 ```
 
-Great. Now, let's upload a file into our new branch:
+Great. Now, let's upload a file into your new branch:
 
 ```python
 with open('file.csv', 'rb') as f:
@@ -104,7 +104,7 @@ with open('file.csv', 'rb') as f:
 #  'size_bytes': 18}
 ```
 
-Diffing a single branch will show all uncommitted changes on that branch:
+Diffing a single branch will show all the uncommitted changes on that branch:
 
 ```python
 client.branches.diff_branch(repository='example-repo', branch='experiment-aggregations1').results
@@ -112,7 +112,7 @@ client.branches.diff_branch(repository='example-repo', branch='experiment-aggreg
 # [{'path': 'path/to/file.csv', 'path_type': 'object', 'type': 'added'}]
 ```
 
-As expected, our change appears here. Let's commit it, and attach some arbitrary metadata:
+As expected, our change appears here. Let's commit it and attach some arbitrary metadata:
 
 ```python
 client.commits.commit(
@@ -139,7 +139,7 @@ client.branches.diff_branch(repository='example-repo', branch='experiment-aggreg
 
 ### Merging changes from a branch into main 
 
-Let's diff between our branch and the main branch:
+Let's diff between your branch and the main branch:
 
 ```python
 client.refs.diff_refs(repository='example-repo', left_ref='main', right_ref='experiment-aggregations1').results
@@ -148,7 +148,7 @@ client.refs.diff_refs(repository='example-repo', left_ref='main', right_ref='exp
 
 ```
 
-Looks like we have a change. Let's merge it:
+Looks like you have a change. Let's merge it:
 
 ```python
 client.refs.merge_into_branch(repository='example-repo', source_ref='experiment-aggregations1', destination_branch='main')
@@ -165,9 +165,9 @@ client.refs.diff_refs(repository='example-repo', left_ref='main', right_ref='exp
 # []
 ```
 
-## Python client documentation
+## Python Client documentation
 
-For the documentation of lakeFS’s python package, see [https://pydocs.lakefs.io](https://pydocs.lakefs.io)
+For the documentation of lakeFS’s Python package, see [https://pydocs.lakefs.io](https://pydocs.lakefs.io)
 
 
 ## Full API reference

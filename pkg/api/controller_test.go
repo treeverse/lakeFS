@@ -3,6 +3,7 @@ package api_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -101,6 +103,7 @@ var tests = map[string]func(*testing.T, bool){
 	"CreateTag":                        testController_CreateTag,
 	"Revert":                           testController_Revert,
 	"RevertConflict":                   testController_RevertConflict,
+	"ExpandTemplate":                   testController_ExpandTemplate,
 }
 
 func TestKVEnabled(t *testing.T) {
@@ -614,6 +617,24 @@ func testController_CommitHandler(t *testing.T, kvEnabled bool) {
 		require.Contains(t, resp.JSON400.Message, graveler.ErrCommitMetaRangeDirtyBranch.Error())
 	})
 
+	t.Run("commit failure empty branch", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
+
+		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
+		testutil.Must(t, err)
+
+		resp, err := clt.CommitWithResponse(ctx, repo, "foo-branch", &api.CommitParams{}, api.CommitJSONRequestBody{
+			Message: "some message",
+		})
+
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
+		require.NotNil(t, resp.JSON400)
+		require.Contains(t, resp.JSON400.Message, graveler.ErrNoChanges.Error())
+	})
+
 	t.Run("commit success - with creation date", func(t *testing.T) {
 		repo := testUniqueRepoName()
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
@@ -936,6 +957,10 @@ func testController_BranchesDiffBranchHandler(t *testing.T, kvEnabled bool) {
 	}
 
 	t.Run("diff branch no changes", func(t *testing.T) {
+		// create an entry and remove it
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b/c"}))
+		testutil.Must(t, deps.catalog.DeleteEntry(ctx, "repo1", testBranch, "a/b/c"))
+
 		resp, err := clt.DiffBranchWithResponse(ctx, "repo1", testBranch, &api.DiffBranchParams{})
 		verifyResponseOK(t, resp, err)
 		changes := len(resp.JSON200.Results)
@@ -946,6 +971,8 @@ func testController_BranchesDiffBranchHandler(t *testing.T, kvEnabled bool) {
 
 	t.Run("diff branch with writes", func(t *testing.T) {
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b"}))
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b/c"}))
+		testutil.Must(t, deps.catalog.DeleteEntry(ctx, "repo1", testBranch, "a/b/c"))
 		resp, err := clt.DiffBranchWithResponse(ctx, "repo1", testBranch, &api.DiffBranchParams{})
 		verifyResponseOK(t, resp, err)
 		results := resp.JSON200.Results
@@ -2052,28 +2079,28 @@ func testController_SetupLakeFSHandler(t *testing.T, kvEnabled bool) {
 			if foundCreds.AccessKeyId != creds.AccessKeyId {
 				t.Fatalf("Access key ID '%s', expected '%s'", foundCreds.AccessKeyId, creds.AccessKeyId)
 			}
-			if len(deps.collector.metadata) != 1 {
+			if len(deps.collector.Metadata) != 1 {
 				t.Fatal("Failed to collect metadata")
 			}
-			if deps.collector.metadata[0].InstallationID == "" {
+			if deps.collector.Metadata[0].InstallationID == "" {
 				t.Fatal("Empty installationID")
 			}
-			if len(deps.collector.metadata[0].Entries) < 5 {
-				t.Fatalf("There should be at least 5 metadata entries: %s", deps.collector.metadata[0].Entries)
+			if len(deps.collector.Metadata[0].Entries) < 5 {
+				t.Fatalf("There should be at least 5 metadata entries: %s", deps.collector.Metadata[0].Entries)
 			}
 
 			hasBlockStoreType := false
-			for _, ent := range deps.collector.metadata[0].Entries {
+			for _, ent := range deps.collector.Metadata[0].Entries {
 				if ent.Name == stats.BlockstoreTypeKey {
 					hasBlockStoreType = true
 					if ent.Value == "" {
-						t.Fatalf("Blockstorage key exists but with empty value: %s", deps.collector.metadata[0].Entries)
+						t.Fatalf("Blockstorage key exists but with empty value: %s", deps.collector.Metadata[0].Entries)
 					}
 					break
 				}
 			}
 			if !hasBlockStoreType {
-				t.Fatalf("missing blockstorage key: %s", deps.collector.metadata[0].Entries)
+				t.Fatalf("missing blockstorage key: %s", deps.collector.Metadata[0].Entries)
 			}
 
 			// on successful setup - make sure we can't re-setup
@@ -2402,4 +2429,77 @@ func testController_RevertConflict(t *testing.T, kvEnabled bool) {
 	if resp.HTTPResponse.StatusCode != http.StatusConflict {
 		t.Errorf("Revert with a conflict should fail with status %d got %d", http.StatusConflict, resp.HTTPResponse.StatusCode)
 	}
+}
+
+func testController_ExpandTemplate(t *testing.T, kvEnabled bool) {
+	clt, _ := setupClientWithAdmin(t, kvEnabled)
+	ctx := context.Background()
+
+	t.Run("not-found", func(t *testing.T) {
+		resp, err := clt.ExpandTemplateWithResponse(ctx, "no/template/here", &api.ExpandTemplateParams{})
+		testutil.Must(t, err)
+		if resp.HTTPResponse.StatusCode != http.StatusNotFound {
+			t.Errorf("Expanding a nonexistent template should fail with status %d got %d\n\t%s\n\t%+v", http.StatusNotFound, resp.HTTPResponse.StatusCode, string(resp.Body), resp)
+		}
+	})
+
+	t.Run("spark.conf", func(t *testing.T) {
+		const lfsURL = "https://lakefs.example.test"
+		expected := []struct {
+			name    string
+			pattern string
+		}{
+			{"impl", `spark\.hadoop\.fs\.s3a\.impl=org\.apache\.hadoop\.fs\.s3a\.S3AFileSystem`},
+			{"access_key", `spark\.hadoop\.fs\.s3a\.access_key=AKIA.*`},
+			{"secret_key", `spark\.hadoop\.fs\.s3a\.secret_key=`},
+			{"s3a_endpoint", `spark\.hadoop\.fs\.s3a\.endpoint=` + lfsURL},
+		}
+
+		// OpenAPI places additional query params in the wrong
+		// place.  Use a request editor to place them directly as a
+		// query string.
+		resp, err := clt.ExpandTemplateWithResponse(ctx, "spark.submit.conf.tt", &api.ExpandTemplateParams{},
+			api.RequestEditorFn(func(_ context.Context, req *http.Request) error {
+				values := req.URL.Query()
+				values.Add("lakefs_url", lfsURL)
+				req.URL.RawQuery = values.Encode()
+				return nil
+			}))
+		testutil.Must(t, err)
+		if resp.HTTPResponse.StatusCode != http.StatusOK {
+			t.Errorf("Expansion failed with status %d\n\t%s\n\t%+v", resp.HTTPResponse.StatusCode, string(resp.Body), resp)
+		}
+
+		contentType := resp.HTTPResponse.Header.Values("Content-Type")
+		if len(contentType) != 1 {
+			t.Errorf("Expansion returned %d content types: %v", len(contentType), contentType)
+		}
+		if contentType[0] != "application/x-conf" {
+			t.Errorf("Expansion returned content type %s not application/x-conf", contentType[0])
+		}
+
+		for _, e := range expected {
+			re := regexp.MustCompile(e.pattern)
+			if !re.Match(resp.Body) {
+				t.Errorf("Expansion result has no %s: /%s/\n\t%s", e.name, e.pattern, string(resp.Body))
+			}
+		}
+	})
+
+	t.Run("fail", func(t *testing.T) {
+		resp, err := clt.ExpandTemplateWithResponse(ctx, "fail.tt", &api.ExpandTemplateParams{})
+		testutil.Must(t, err)
+		if resp.HTTPResponse.StatusCode != http.StatusInternalServerError {
+			t.Errorf("Expansion should fail with status %d got %d\n\t%s\n\t%+v", http.StatusInternalServerError, resp.HTTPResponse.StatusCode, string(resp.Body), resp)
+		}
+
+		parsed := make(map[string]string, 0)
+		err = json.Unmarshal(resp.Body, &parsed)
+		if err != nil {
+			t.Errorf("Unmarshal body: %s", err)
+		}
+		if parsed["message"] != "expansion failed" {
+			t.Errorf("Expected \"expansion failed\" message, got %+v", parsed)
+		}
+	})
 }

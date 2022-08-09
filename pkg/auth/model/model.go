@@ -33,36 +33,40 @@ const (
 	metadataPrefix         = "installation_metadata"
 )
 
-func UserPath(userName string) string {
-	return kv.FormatPath(usersPrefix, userName)
+func UserPath(userName string) []byte {
+	return []byte(kv.FormatPath(usersPrefix, userName))
 }
 
-func PolicyPath(displayName string) string {
-	return kv.FormatPath(policiesPrefix, displayName)
+func PolicyPath(displayName string) []byte {
+	return []byte(kv.FormatPath(policiesPrefix, displayName))
 }
 
-func GroupPath(displayName string) string {
-	return kv.FormatPath(groupsPrefix, displayName)
+func GroupPath(displayName string) []byte {
+	return []byte(kv.FormatPath(groupsPrefix, displayName))
 }
 
-func CredentialPath(userName string, accessKeyID string) string {
-	return kv.FormatPath(usersCredentialsPrefix, userName, credentialsPrefix, accessKeyID)
+func CredentialPath(userName string, accessKeyID string) []byte {
+	return []byte(kv.FormatPath(usersCredentialsPrefix, userName, credentialsPrefix, accessKeyID))
 }
 
-func GroupUserPath(groupDisplayName string, userName string) string {
-	return kv.FormatPath(groupsUsersPrefix, groupDisplayName, usersPrefix, userName)
+func GroupUserPath(groupDisplayName string, userName string) []byte {
+	return []byte(kv.FormatPath(groupsUsersPrefix, groupDisplayName, usersPrefix, userName))
 }
 
-func UserPolicyPath(userName string, policyDisplayName string) string {
-	return kv.FormatPath(usersPoliciesPrefix, userName, policiesPrefix, policyDisplayName)
+func UserPolicyPath(userName string, policyDisplayName string) []byte {
+	return []byte(kv.FormatPath(usersPoliciesPrefix, userName, policiesPrefix, policyDisplayName))
 }
 
-func GroupPolicyPath(groupDisplayName string, policyDisplayName string) string {
-	return kv.FormatPath(groupsPoliciesPrefix, groupDisplayName, policiesPrefix, policyDisplayName)
+func GroupPolicyPath(groupDisplayName string, policyDisplayName string) []byte {
+	return []byte(kv.FormatPath(groupsPoliciesPrefix, groupDisplayName, policiesPrefix, policyDisplayName))
 }
 
-func ExpiredTokenPath(tokenID string) string {
-	return kv.FormatPath(expiredTokensPrefix, tokenID)
+func ExpiredTokenPath(tokenID string) []byte {
+	return []byte(kv.FormatPath(expiredTokensPrefix, tokenID))
+}
+
+func ExpiredTokensPath() []byte {
+	return ExpiredTokenPath("")
 }
 
 func MetadataKeyPath(key string) string {
@@ -94,7 +98,8 @@ type SuperuserConfiguration struct {
 
 type User struct {
 	CreatedAt time.Time `db:"created_at"`
-	Username  string    `db:"display_name" json:"display_name"`
+	// Username is a unique identifier for the user. In password-based authentication, it is the email.
+	Username string `db:"display_name" json:"display_name"`
 	// FriendlyName, if set, is a shorter name for the user than
 	// Username.  Unlike Username it does not identify the user (it
 	// might not be unique); use it in the user's GUI rather than in

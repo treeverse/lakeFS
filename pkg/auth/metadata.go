@@ -24,13 +24,15 @@ type MetadataManager interface {
 
 type KVMetadataManager struct {
 	version        string
+	kvType         string
 	installationID string
 	store          kv.Store
 }
 
-func NewKVMetadataManager(version string, fixedInstallationID string, store kv.Store) *KVMetadataManager {
+func NewKVMetadataManager(version, fixedInstallationID, kvType string, store kv.Store) *KVMetadataManager {
 	return &KVMetadataManager{
 		version:        version,
+		kvType:         kvType,
 		installationID: generateInstallationID(fixedInstallationID),
 		store:          store,
 	}
@@ -97,6 +99,7 @@ func (m *KVMetadataManager) IsInitialized(ctx context.Context) (bool, error) {
 func (m *KVMetadataManager) Write(ctx context.Context) (map[string]string, error) {
 	metadata := make(map[string]string)
 	metadata["lakefs_version"] = m.version
+	metadata["lakefs_kv_type"] = m.kvType
 	metadata["golang_version"] = runtime.Version()
 	metadata["architecture"] = runtime.GOARCH
 	metadata["os"] = runtime.GOOS

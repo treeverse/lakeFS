@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Spark Client
-description: lakeFS spark client performs operations on lakeFS committed metadata stored in the object store. 
+description: The lakeFS Spark client performs operations on lakeFS committed metadata stored in the object store. 
 parent: Reference
 has_children: false
 ---
@@ -9,12 +9,12 @@ has_children: false
 
 # lakeFS Spark Client
 
-Utilize the power of Spark to interact with the metadata on lakeFS. Possible use-cases include:
+Utilize the power of Spark to interact with the metadata on lakeFS. Possible use cases include:
 
-* Create a DataFrame for listing the objects in a specific commit or branch.
-* Compute changes between two commits.
-* Export your data for consumption outside lakeFS.
-* Bulk operations on underlying storage.
+* Creating a DataFrame for listing the objects in a specific commit or branch.
+* Computing changes between two commits.
+* Exporting your data for consumption outside lakeFS.
+* Bulk operations on the underlying storage.
 
 ## Getting Started
 
@@ -30,11 +30,11 @@ Start Spark Shell / PySpark with the `--packages` flag:
   This client is compiled for Spark 2.4.7 and tested with it, but can work for higher versions.
 
   ```bash
-  spark-shell --packages io.lakefs:lakefs-spark-client-247_2.11:0.1.8
+  spark-shell --packages io.lakefs:lakefs-spark-client-247_2.11:0.2.0
   ```
   
   Alternatively an assembled jar is available on S3, at
-  `s3://treeverse-clients-us-east/lakefs-spark-client-247/0.1.8/lakefs-spark-client-247-assembly-0.1.8.jar`
+  `s3://treeverse-clients-us-east/lakefs-spark-client-247/0.2.0/lakefs-spark-client-247-assembly-0.2.0.jar`
   </div>
 
   <div markdown="1" id="packages-3-hadoop2">
@@ -42,11 +42,11 @@ Start Spark Shell / PySpark with the `--packages` flag:
   higher versions.
 
   ```bash
-  spark-shell --packages io.lakefs:lakefs-spark-client-301_2.12:0.1.8
+  spark-shell --packages io.lakefs:lakefs-spark-client-301_2.12:0.2.0
   ```
   
   Alternatively an assembled jar is available on S3, at
-  `s3://treeverse-clients-us-east/lakefs-spark-client-301/0.1.8/lakefs-spark-client-301-assembly-0.1.8.jar`
+  `s3://treeverse-clients-us-east/lakefs-spark-client-301/0.2.0/lakefs-spark-client-301-assembly-0.2.0.jar`
   </div> 
 
   <div markdown="1" id="packages-3-hadoop3">
@@ -54,11 +54,11 @@ Start Spark Shell / PySpark with the `--packages` flag:
   versions and higher Hadoop versions.
   
   ```bash
-  spark-shell --packages io.lakefs:lakefs-spark-client-312-hadoop3-assembly_2.12:0.1.8
+  spark-shell --packages io.lakefs:lakefs-spark-client-312-hadoop3-assembly_2.12:0.2.0
   ```
 
   Alternatively an assembled jar is available on S3, at
-  `s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.1.8/lakefs-spark-client-312-hadoop3-assembly-0.1.8.jar`
+  `s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.2.0/lakefs-spark-client-312-hadoop3-assembly-0.2.0.jar`
   </div>
 
 ## Configuration
@@ -84,10 +84,10 @@ Start Spark Shell / PySpark with the `--packages` flag:
    ### Assuming role on S3 (Hadoop 3 only)
 
    The client includes support for assuming a separate role on S3 when
-   running on Hadoop 3.  It uses the same configuration used by
-   `S3AFileSystem` to assume the role on S3A.  Apache Hadoop AWS
+   running on Hadoop 3. It uses the same configuration used by
+   `S3AFileSystem` to assume the role on S3A. Apache Hadoop AWS
    documentation has details under "[Working with IAM Assumed
-   Roles][s3a-assumed-role]".  You will need to use the following Hadoop
+   Roles][s3a-assumed-role]". You will need to use the following Hadoop
    configurations:
    
    | Configuration                     | Description                                                          |

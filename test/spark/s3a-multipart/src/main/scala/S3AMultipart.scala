@@ -13,8 +13,8 @@ object S3AMultipart extends App {
 
   override def main(args: Array[String]) {
     val partSize = 5 << 20 // Must be >= 5MiB on AWS S3.
-    val fileSize = 4 * partSize
-    val writeSize = 16384
+    val fileSize = 2 * partSize
+    val writeSize = 1 << 18
 
     if (args.length != 1) {
       Console.err.println("Usage: ... s3://bucket/path/to/object")

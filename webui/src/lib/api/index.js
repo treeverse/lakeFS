@@ -71,9 +71,9 @@ const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
         const errorMessage = await extractError(response);
         if (errorMessage === authenticationError) {
             cache.delete('user');
-            throw new AuthenticationError('Authentication Error');
+            throw new AuthenticationError('Authentication Error', response.status);
         }
-        throw new AuthorizationError(errorMessage);
+        throw new AuthorizationError(errorMessage, response.status);
     }
 
     return response;
@@ -102,8 +102,9 @@ export class AuthorizationError extends Error {
 }
 
 export class AuthenticationError extends Error {
-    constructor(message) {
+    constructor(message, status) {
         super(message);
+        this.status = status;
         this.name = "AuthenticationError"
     }
 }
@@ -116,6 +117,13 @@ export class MergeError extends Error {
     }
 }
 
+export class RepositoryDeletionError extends Error {
+    constructor(message, repoId) {
+        super(message);
+        this.name = "RepositoryDeletionError";
+        this.repoId = repoId;
+    }
+}
 
 // actual actions:
 class Auth {
@@ -169,10 +177,10 @@ class Auth {
         });
 
         if (response.status === 401) {
-            throw new AuthenticationError('invalid credentials');
+            throw new AuthenticationError('invalid credentials', response.status);
         }
         if (response.status !== 200) {
-            throw new AuthenticationError('unknown authentication error');
+            throw new AuthenticationError('Unknown authentication error', response.status);
         }
 
         const user = await this.getCurrentUser();
@@ -434,6 +442,8 @@ class Repositories {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}`);
         if (response.status === 404) {
             throw new NotFoundError(`could not find repository ${repoId}`);
+        } else if (response.status === 410) {
+            throw new RepositoryDeletionError(`Repository in deletion`, repoId);
         } else if (response.status !== 200) {
             throw new Error(`could not get repository: ${await extractError(response)}`);
         }
@@ -883,6 +893,23 @@ class MetaRanges {
         return response.json();
     }
 }
+
+class Templates {
+    async expandTemplate(templateLocation, params) {
+        const urlParams = new URLSearchParams();
+        for (const [k, v] of Object.entries(params)) {
+            urlParams.set(k, v);
+        }
+        const response = await apiRequest(
+            `/templates/${encodeURI(templateLocation)}?${urlParams.toString()}`,
+            { method: 'GET' });
+        if (!response.ok) {
+            throw new Error(await extractError(response));
+        }
+        return response.text();
+    }
+}
+
 export const repositories = new Repositories();
 export const branches = new Branches();
 export const tags = new Tags();
@@ -897,3 +924,4 @@ export const config = new Config();
 export const branchProtectionRules = new BranchProtectionRules();
 export const ranges = new Ranges();
 export const metaRanges = new MetaRanges();
+export const templates = new Templates();

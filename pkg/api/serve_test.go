@@ -10,15 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/auth/email"
-	"github.com/treeverse/lakefs/pkg/kv/kvtest"
-
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
+	"github.com/treeverse/lakefs/pkg/auth/email"
 	authmodel "github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -28,10 +26,13 @@ import (
 	dbparams "github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/version"
+	"github.com/treeverse/lakefs/templates"
 )
 
 const (
@@ -42,22 +43,29 @@ type dependencies struct {
 	blocks      block.Adapter
 	catalog     catalog.Interface
 	authService *auth.Service
-	collector   *nullCollector
+	collector   *memCollector
 }
 
-type nullCollector struct {
-	metadata []*stats.Metadata
+// memCollector in-memory collector stores events and metadata sent
+type memCollector struct {
+	Events         []*stats.MetadataEntry
+	Metadata       []*stats.Metadata
+	InstallationID string
 }
 
-func (m *nullCollector) CollectMetadata(metadata *stats.Metadata) {
-	m.metadata = append(m.metadata, metadata)
+func (m *memCollector) CollectEvent(class, action string) {
+	m.Events = append(m.Events, &stats.MetadataEntry{Name: class, Value: action})
 }
 
-func (m *nullCollector) CollectEvent(_, _ string) {}
+func (m *memCollector) CollectMetadata(metadata *stats.Metadata) {
+	m.Metadata = append(m.Metadata, metadata)
+}
 
-func (m *nullCollector) SetInstallationID(_ string) {}
+func (m *memCollector) SetInstallationID(installationID string) {
+	m.InstallationID = installationID
+}
 
-func (m *nullCollector) Close() {}
+func (m *memCollector) Close() {}
 
 func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.BaseCredential {
 	t.Helper()
@@ -80,8 +88,9 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	ctx := context.Background()
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
+	viper.Set("database.kv_enabled", kvEnabled)
 
-	collector := &nullCollector{}
+	collector := &memCollector{}
 
 	// wire actions
 	var (
@@ -99,10 +108,10 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 		kvStoreMessage = &kv.StoreMessage{Store: kvStore}
 		actionsStore = actions.NewActionsKVStore(*kvStoreMessage)
 		idGen = &actions.DecreasingIDGenerator{}
-		authService = auth.NewKVAuthService(*kvStoreMessage, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
+		authService = auth.NewKVAuthService(kvStoreMessage, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
 			Enabled: false,
 		}, logging.Default())
-		meta = auth.NewKVMetadataManager("serve_test", cfg.GetFixedInstallationID(), kvStore)
+		meta = auth.NewKVMetadataManager("serve_test", cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
 		viper.Set("database.kv_enabled", true)
 	} else {
 		actionsStore = actions.NewActionsDBStore(conn)
@@ -117,6 +126,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	c, err := catalog.New(ctx, catalog.Config{
 		Config:        cfg,
 		DB:            conn,
+		KVStore:       kvStoreMessage,
 		WalkerFactory: factory,
 	})
 	testutil.MustDo(t, "build catalog", err)
@@ -144,8 +154,10 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
 	emailParams, _ := cfg.GetEmailParams()
 	emailer, err := email.NewEmailer(emailParams)
+	templater := templater.NewService(templates.Content, cfg, authService)
+
 	testutil.Must(t, err)
-	handler := api.Serve(cfg, c, authenticator, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.Default(), emailer, nil, nil, nil, nil)
+	handler := api.Serve(cfg, c, authenticator, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.Default(), emailer, templater, nil, nil, nil, nil)
 
 	return handler, &dependencies{
 		blocks:      c.BlockAdapter,

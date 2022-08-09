@@ -1,4 +1,35 @@
 # Changelog
+## v0.70.0 - 2022-08-03
+
+What's new:
+- Allow OIDC as default login (#3617)
+- Launch a repository with Spark capabilities (#3792)
+- [GC] Respect Hadoop AWS access key configuration in S3Client (#3762)
+- Make GC read the expired addresses csv from Azure blob (#3654)
+- Display README file if available (#3761)
+
+Bug fixes:
+- Fixed diff-viewer version by using a known fork (#3680)
+- Fix cache in auth service api (#3354) 
+
+## v0.69.1 - 2022-07-14
+
+Bug fixes: 
+- Fix crash on group listing by remote API (#3655)
+
+## v0.69.0 - 2022-07-11
+
+Note: this version contains performance and security improvements to the authentication mechanism.
+After upgrading to this version. all current browser sessions will become invalid and users will have to login again.
+
+What's new:
+- OIDC support: manage lakeFS users externally (#3452)
+- Choose merge strategy in the UI (#3581)
+- Templating capability in the lakeFS web server (#3600)
+- Visibility: show branch creation errors in the UI (#3604)
+
+Bug fixes:
+- When a revert results in a conflict, return code 409 instead of 500 (#3538)
 
 ## v0.68.0 - 2022-06-21
 

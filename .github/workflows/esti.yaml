@@ -641,9 +641,80 @@ jobs:
 
       - name: Test GC with Spark 3.x
         env:
+          LAKEFS_BLOCKSTORE_TYPE: s3
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/garbage/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-gc-${{ matrix.spark.version }}
           CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly${{ matrix.spark.suffix }}.jar
+        working-directory: test/spark
+        run: ./run-gc-test.sh
+
+      - name: Spark executor logs on failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=50000 spark-worker
+
+      - name: Spark driver logs on failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=50000 spark ; docker ps
+
+      - name: lakeFS Logs on Spark with gateway failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=1000 lakefs
+
+  metadata-client-gc-spark3-hadoop3-on-azure:
+    name: Test lakeFS metadata client GC with Spark 3.x and Hadoop 3 on Azure
+    needs: [deploy-image, build-spark3-metadata-client]
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        spark:
+          - version: 3.2.1
+            suffix: "-hadoop3"
+    env:
+      SPARK_TAG: ${{ matrix.spark.version }}
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      - name: Import Metaclient
+        id: import_metaclient
+        uses: actions/download-artifact@v3
+        with:
+          name: metaclient-3x
+          path: test/spark/metaclient
+
+      - name: Generate uniquifying value
+        id: unique
+        run: echo "::set-output name=value::$RANDOM"
+
+      - name: Start lakeFS for Spark tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-directory: test/spark
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_BLOCKSTORE_TYPE: azure
+          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
+          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
+
+      - name: Setup lakeFS for metadata client tests
+        working-directory: test/spark
+        run: ./setup-test.sh
+
+      - name: Test GC with Spark 3.x
+        env:
+          STORAGE_NAMESPACE: https://esti.blob.core.windows.net/esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/garbage/${{ steps.unique.outputs.value }}
+          REPOSITORY: test-data-gc-${{ matrix.spark.version }}
+          CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly${{ matrix.spark.suffix }}.jar
+          LAKEFS_BLOCKSTORE_TYPE: azure
+          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
+          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
         working-directory: test/spark
         run: ./run-gc-test.sh
 
@@ -757,12 +828,17 @@ jobs:
           ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           ESTI_VERSION: ${{ steps.version.outputs.tag }}
+          ESTI_POST_MIGRATE: false
+          ESTI_GOTEST_FLAGS: "-run TestMigrate"
           ESTI_FLAGS: "--use-local-credentials"
 
       - name: Switch to KV and migrate lakeFS
         env:
           LAKEFS_DATABASE_KV_ENABLED: true
           LAKEFS_DATABASE_TYPE: postgres
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
         run: docker-compose -f ./esti/ops/docker-compose.yaml ps -aq lakefs && docker-compose -f ./esti/ops/docker-compose.yaml run -T --entrypoint "lakefs migrate up" lakefs
 
       - name: Start lakeFS with KV DB
@@ -793,8 +869,64 @@ jobs:
         continue-on-error: true
         run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
 
-  run-system-aws-s3-kv:
-    name: Run latest lakeFS app on AWS S3 KV
+  run-system-aws-s3-kv-dynamodb:
+    name: Run latest lakeFS app on AWS S3 DynamoDB KV
+    needs: [gen-code, deploy-image]
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      # Setting Account_ID as a secret as a way to avoid specifying it here
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      - name: Generate uniquifying value
+        id: unique
+        run:  echo "::set-output name=value::$RANDOM"
+
+      - name: Test lakeFS with S3 tests KV
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-file: esti/ops/docker-compose-dynamodb.yaml
+          compose-flags: "--quiet-pull --exit-code-from=esti"
+        env:
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_DATABASE_KV_ENABLED: "true"
+          LAKEFS_DATABASE_TYPE: dynamodb
+          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          ESTI_TEST_DATA_ACCESS: true,false
+          ESTI_BLOCKSTORE_TYPE: s3
+          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
+          ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          ESTI_VERSION: ${{ steps.version.outputs.tag }}
+          ESTI_DATABASE_KV_ENABLED: "true"
+          ESTI_DATABASE_CONNECTION_STRING: "true"
+
+      - name: Check files in S3 bucket KV
+        run: |
+          FILES_COUNT=`aws s3 ls s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }} --recursive | wc -l`
+          [ $FILES_COUNT -gt 5 ]
+      - name: lakeFS Logs on s3 failure KV
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: docker-compose -f esti/ops/docker-compose-dynamodb.yaml logs --tail=1000 lakefs
+      - name: Export DB KV
+        if: ${{ always() }}
+        working-directory: esti/ops
+        run: |
+          if docker-compose ps -q postgres; then
+            docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
+          fi
+
+
+  run-system-aws-s3-kv-postgres:
+    name: Run latest lakeFS app on AWS S3 Postgres KV
     needs: [gen-code, deploy-image]
     runs-on: ubuntu-20.04
     env:

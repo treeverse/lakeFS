@@ -1,6 +1,7 @@
 package auth
 
 //go:generate oapi-codegen -package auth -generate "types,client"  -o client.gen.go ../../api/authorization.yml
+//go:generate mockgen -package=mock -destination=mock/mock_auth_client.go github.com/treeverse/lakefs/pkg/auth ClientWithResponsesInterface
 
 import (
 	"context"
@@ -18,6 +19,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
+	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/params"
@@ -61,15 +63,23 @@ type GatewayService interface {
 	Authorize(_ context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
 }
 
+type Authorizer interface {
+	// authorize user for an action
+	Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
+}
+
+type CredentialsCreator interface {
+	CreateCredentials(ctx context.Context, username string) (*model.Credential, error)
+}
+
 type Service interface {
+	InviteHandler
+
 	SecretStore() crypt.SecretStore
 	Cache() Cache
 
 	// users
 	CreateUser(ctx context.Context, user *model.User) (string, error)
-	InviteUser(ctx context.Context, email string) error
-
-	IsInviteSupported() bool
 	DeleteUser(ctx context.Context, username string) error
 	GetUserByID(ctx context.Context, userID string) (*model.User, error)
 	GetUser(ctx context.Context, username string) (*model.User, error)
@@ -96,7 +106,7 @@ type Service interface {
 	ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	// credentials
-	CreateCredentials(ctx context.Context, username string) (*model.Credential, error)
+	CredentialsCreator
 	AddCredentials(ctx context.Context, username, accessKeyID, secretAccessKey string) (*model.Credential, error)
 	DeleteCredentials(ctx context.Context, username, accessKeyID string) error
 	GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error)
@@ -115,8 +125,7 @@ type Service interface {
 	DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error
 	ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
-	// authorize user for an action
-	Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
+	Authorizer
 
 	ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error
 }
@@ -143,15 +152,15 @@ func fieldByTag(t reflect.Type, key, tag string) string {
 	return ""
 }
 
-func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.MessageType, params *model.PaginationParams, prefix string, secondary bool) ([]proto.Message, *model.Paginator, error) {
+func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.MessageType, params *model.PaginationParams, prefix []byte, secondary bool) ([]proto.Message, *model.Paginator, error) {
 	amount := maxPage
 	var it kv.MessageIterator
 	var err error
 	if params != nil {
 		if secondary {
-			it, err = kv.NewSecondaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, params.After)
+			it, err = kv.NewSecondaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, []byte(params.After))
 		} else {
-			it, err = kv.NewPrimaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, params.After)
+			it, err = kv.NewPrimaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, kv.IteratorOptionsAfter([]byte(params.After)))
 		}
 		defer it.Close()
 		if err != nil {
@@ -169,7 +178,7 @@ func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.
 		value := entry.Value
 		entries = append(entries, value)
 		if len(entries) == amount {
-			p.NextPageToken = entry.Key
+			p.NextPageToken = string(entry.Key)
 			break
 		}
 	}
@@ -181,14 +190,14 @@ func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.
 }
 
 type KVAuthService struct {
-	store       kv.StoreMessage
+	store       *kv.StoreMessage
 	secretStore crypt.SecretStore
 	cache       Cache
 	log         logging.Logger
-	*InviteHandler
+	*EmailInviteHandler
 }
 
-func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) *KVAuthService {
+func NewKVAuthService(store *kv.StoreMessage, secretStore crypt.SecretStore, emailer *email.Emailer, cacheConf params.ServiceCache, logger logging.Logger) *KVAuthService {
 	logger.Info("initialized Auth service")
 	var cache Cache
 	if cacheConf.Enabled {
@@ -196,12 +205,14 @@ func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, cach
 	} else {
 		cache = &DummyCache{}
 	}
-	return &KVAuthService{
+	res := &KVAuthService{
 		store:       store,
 		secretStore: secretStore,
 		cache:       cache,
 		log:         logger,
 	}
+	res.EmailInviteHandler = NewEmailInviteHandler(res, logger, emailer)
+	return res
 }
 
 func (s *KVAuthService) SecretStore() crypt.SecretStore {
@@ -236,7 +247,7 @@ func (s *KVAuthService) DeleteUser(ctx context.Context, username string) error {
 
 	// delete policy attached to user
 	policiesKey := model.UserPolicyPath(username, "")
-	it, err := kv.NewSecondaryIterator(ctx, s.store.Store, (&model.PolicyData{}).ProtoReflect().Type(), model.PartitionKey, policiesKey, "")
+	it, err := kv.NewSecondaryIterator(ctx, s.store.Store, (&model.PolicyData{}).ProtoReflect().Type(), model.PartitionKey, policiesKey, []byte(""))
 	if err != nil {
 		return err
 	}
@@ -254,7 +265,7 @@ func (s *KVAuthService) DeleteUser(ctx context.Context, username string) error {
 
 	// delete user membership of group
 	groupKey := model.GroupPath("")
-	itr, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, "")
+	itr, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, kv.IteratorOptionsAfter([]byte("")))
 	if err != nil {
 		return err
 	}
@@ -280,10 +291,10 @@ func (s *KVAuthService) DeleteUser(ctx context.Context, username string) error {
 
 type UserPredicate func(u *model.UserData) bool
 
-func (s *KVAuthService) getUserByPredicate(ctx context.Context, key *userKey, predicate UserPredicate) (*model.User, error) {
+func (s *KVAuthService) getUserByPredicate(ctx context.Context, key userKey, predicate UserPredicate) (*model.User, error) {
 	return s.cache.GetUser(key, func() (*model.User, error) {
 		m := &model.UserData{}
-		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), "")
+		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), []byte(""))
 		if err != nil {
 			return nil, fmt.Errorf("scan users: %w", err)
 		}
@@ -311,7 +322,7 @@ func (s *KVAuthService) GetUserByID(ctx context.Context, userID string) (*model.
 }
 
 func (s *KVAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
-	return s.cache.GetUser(&userKey{username: username}, func() (*model.User, error) {
+	return s.cache.GetUser(userKey{username: username}, func() (*model.User, error) {
 		userKey := model.UserPath(username)
 		m := model.UserData{}
 		_, err := s.store.GetMsg(ctx, model.PartitionKey, userKey, &m)
@@ -326,13 +337,13 @@ func (s *KVAuthService) GetUser(ctx context.Context, username string) (*model.Us
 }
 
 func (s *KVAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return s.getUserByPredicate(ctx, &userKey{email: email}, func(value *model.UserData) bool {
+	return s.getUserByPredicate(ctx, userKey{email: email}, func(value *model.UserData) bool {
 		return value.Email == email
 	})
 }
 
 func (s *KVAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
-	return s.getUserByPredicate(ctx, &userKey{externalID: externalID}, func(value *model.UserData) bool {
+	return s.getUserByPredicate(ctx, userKey{externalID: externalID}, func(value *model.UserData) bool {
 		return value.ExternalId == externalID
 	})
 }
@@ -370,7 +381,7 @@ func (s *KVAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayNam
 	policyKey := model.PolicyPath(policyDisplayName)
 	pu := model.UserPolicyPath(username, policyDisplayName)
 
-	err := s.store.SetMsgIf(ctx, model.PartitionKey, pu, &kv.SecondaryIndex{PrimaryKey: []byte(policyKey)}, nil)
+	err := s.store.SetMsgIf(ctx, model.PartitionKey, pu, &kv.SecondaryIndex{PrimaryKey: policyKey}, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = ErrAlreadyExists
@@ -550,7 +561,7 @@ func (s *KVAuthService) DeleteGroup(ctx context.Context, groupDisplayName string
 
 	// delete user membership to group
 	usersKey := model.GroupUserPath(groupDisplayName, "")
-	it, err := kv.NewSecondaryIterator(ctx, s.store.Store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, "")
+	it, err := kv.NewSecondaryIterator(ctx, s.store.Store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, []byte(""))
 	if err != nil {
 		return err
 	}
@@ -568,7 +579,7 @@ func (s *KVAuthService) DeleteGroup(ctx context.Context, groupDisplayName string
 
 	// delete policy attachment to group
 	policiesKey := model.GroupPolicyPath(groupDisplayName, "")
-	itr, err := kv.NewSecondaryIterator(ctx, s.store.Store, (&model.PolicyData{}).ProtoReflect().Type(), model.PartitionKey, policiesKey, "")
+	itr, err := kv.NewSecondaryIterator(ctx, s.store.Store, (&model.PolicyData{}).ProtoReflect().Type(), model.PartitionKey, policiesKey, []byte(""))
 	if err != nil {
 		return err
 	}
@@ -627,7 +638,7 @@ func (s *KVAuthService) AddUserToGroup(ctx context.Context, username, groupDispl
 
 	userKey := model.UserPath(username)
 	gu := model.GroupUserPath(groupDisplayName, username)
-	err := s.store.SetMsgIf(ctx, model.PartitionKey, gu, &kv.SecondaryIndex{PrimaryKey: []byte(userKey)}, nil)
+	err := s.store.SetMsgIf(ctx, model.PartitionKey, gu, &kv.SecondaryIndex{PrimaryKey: userKey}, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = ErrAlreadyExists
@@ -768,7 +779,7 @@ func (s *KVAuthService) DeletePolicy(ctx context.Context, policyDisplayName stri
 
 	// delete policy attachment to user
 	usersKey := model.UserPath("")
-	it, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, "")
+	it, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, kv.IteratorOptionsAfter([]byte("")))
 	if err != nil {
 		return err
 	}
@@ -783,7 +794,7 @@ func (s *KVAuthService) DeletePolicy(ctx context.Context, policyDisplayName stri
 
 	// delete policy attachment to group
 	groupKey := model.GroupPath("")
-	it, err = kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, "")
+	it, err = kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, kv.IteratorOptionsAfter([]byte("")))
 	if err != nil {
 		return err
 	}
@@ -891,7 +902,7 @@ func (s *KVAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayNa
 	policyKey := model.PolicyPath(policyDisplayName)
 	pg := model.GroupPolicyPath(groupDisplayName, policyDisplayName)
 
-	err := s.store.SetMsgIf(ctx, model.PartitionKey, pg, &kv.SecondaryIndex{PrimaryKey: []byte(policyKey)}, nil)
+	err := s.store.SetMsgIf(ctx, model.PartitionKey, pg, &kv.SecondaryIndex{PrimaryKey: policyKey}, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = ErrAlreadyExists
@@ -942,7 +953,7 @@ func (s *KVAuthService) GetCredentialsForUser(ctx context.Context, username, acc
 func (s *KVAuthService) GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error) {
 	return s.cache.GetCredential(accessKeyID, func() (*model.Credential, error) {
 		m := &model.UserData{}
-		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), "")
+		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), []byte(""))
 		if err != nil {
 			return nil, fmt.Errorf("scan users: %w", err)
 		}
@@ -986,7 +997,8 @@ func (s *KVAuthService) HashAndUpdatePassword(ctx context.Context, username stri
 		FriendlyName:      user.FriendlyName,
 		Email:             user.Email,
 		EncryptedPassword: pw,
-		Source:            user.Source}
+		Source:            user.Source,
+	}
 	err = s.store.SetMsgIf(ctx, model.PartitionKey, userKey, model.ProtoFromUser(&userUpdatePassword), user)
 	if err != nil {
 		return fmt.Errorf("update user password (userKey %s): %w", userKey, err)
@@ -1064,7 +1076,6 @@ func (s *KVAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 		After:  "", // all
 		Amount: -1, // all
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -1104,22 +1115,66 @@ func (s *KVAuthService) markTokenSingleUse(ctx context.Context, tokenID string, 
 	m := model.TokenData{TokenId: tokenID, ExpiredAt: timestamppb.New(tokenExpiresAt)}
 	err := s.store.SetMsgIf(ctx, model.PartitionKey, tokenPath, &m, nil)
 	if err != nil {
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			return false, nil
+		}
 		return false, err
 	}
-	// TODO(issue 3500) - delete expired reset password tokens
+
+	if err := s.deleteTokens(ctx); err != nil {
+		s.log.WithError(err).Error("Failed to delete expired tokens")
+	}
 	return true, nil
 }
 
+func (s *KVAuthService) deleteTokens(ctx context.Context) error {
+	it, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.TokenData{}).ProtoReflect().Type(), model.PartitionKey, model.ExpiredTokensPath(), kv.IteratorOptionsFrom([]byte("")))
+	if err != nil {
+		return err
+	}
+	defer it.Close()
+
+	deletionCutoff := time.Now()
+	for it.Next() {
+		msg := it.Entry()
+		if msg == nil {
+			return fmt.Errorf("nil token: %w", ErrInvalidToken)
+		}
+		token, ok := msg.Value.(*model.TokenData)
+		if token == nil || !ok {
+			return fmt.Errorf("wrong token type: %w", ErrInvalidToken)
+		}
+
+		if token.ExpiredAt.AsTime().After(deletionCutoff) {
+			// reached a token with expiry greater than the cutoff,
+			// tokens are k-ordered (xid) hence we'll not find more expired tokens
+			return nil
+		}
+
+		tokenPath := model.ExpiredTokenPath(token.TokenId)
+		if err := s.store.Delete(ctx, []byte(model.PartitionKey), tokenPath); err != nil {
+			return fmt.Errorf("deleting token: %w", err)
+		}
+	}
+
+	return it.Err()
+}
+
 type APIAuthService struct {
-	apiClient   *ClientWithResponses
-	secretStore crypt.SecretStore
-	cache       Cache
+	apiClient              ClientWithResponsesInterface
+	secretStore            crypt.SecretStore
+	cache                  Cache
+	delegatedInviteHandler *EmailInviteHandler
 }
 
 func (a *APIAuthService) InviteUser(ctx context.Context, email string) error {
+	if a.delegatedInviteHandler != nil {
+		return a.delegatedInviteHandler.InviteUser(ctx, email)
+	}
 	resp, err := a.apiClient.CreateUserWithResponse(ctx, CreateUserJSONRequestBody{
-		Email:  swag.String(email),
-		Invite: swag.Bool(true),
+		Email:    swag.String(email),
+		Invite:   swag.Bool(true),
+		Username: email,
 	})
 	if err != nil {
 		return err
@@ -1170,7 +1225,7 @@ func userIDToInt(userID string) (int64, error) {
 	return strconv.ParseInt(userID, base, bitSize)
 }
 
-func (a *APIAuthService) getFirstUser(ctx context.Context, userKey *userKey, params *ListUsersParams) (*model.User, error) {
+func (a *APIAuthService) getFirstUser(ctx context.Context, userKey userKey, params *ListUsersParams) (*model.User, error) {
 	return a.cache.GetUser(userKey, func() (*model.User, error) {
 		resp, err := a.apiClient.ListUsersWithResponse(ctx, params)
 		if err != nil {
@@ -1183,10 +1238,18 @@ func (a *APIAuthService) getFirstUser(ctx context.Context, userKey *userKey, par
 		if len(results) == 0 {
 			return nil, ErrNotFound
 		}
+		if len(results) > 1 {
+			// make sure we work with just one user based on email
+			return nil, ErrNonUnique
+		}
 		u := results[0]
+		username := u.Username
+		if username == "" {
+			username = u.Name
+		}
 		return &model.User{
 			CreatedAt:         time.Unix(u.CreationDate, 0),
-			Username:          u.Name,
+			Username:          username,
 			FriendlyName:      u.FriendlyName,
 			Email:             u.Email,
 			EncryptedPassword: u.EncryptedPassword,
@@ -1200,11 +1263,11 @@ func (a *APIAuthService) GetUserByID(ctx context.Context, userID string) (*model
 	if err != nil {
 		return nil, fmt.Errorf("userID as int64: %w", err)
 	}
-	return a.getFirstUser(ctx, &userKey{id: userID}, &ListUsersParams{Id: &intID})
+	return a.getFirstUser(ctx, userKey{id: userID}, &ListUsersParams{Id: &intID})
 }
 
 func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
-	return a.cache.GetUser(&userKey{username: username}, func() (*model.User, error) {
+	return a.cache.GetUser(userKey{username: username}, func() (*model.User, error) {
 		resp, err := a.apiClient.GetUserWithResponse(ctx, username)
 		if err != nil {
 			return nil, err
@@ -1213,9 +1276,13 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 			return nil, err
 		}
 		u := resp.JSON200
+		returnedUsername := u.Username
+		if returnedUsername == "" {
+			returnedUsername = u.Name
+		}
 		return &model.User{
 			CreatedAt:         time.Unix(u.CreationDate, 0),
-			Username:          u.Name,
+			Username:          returnedUsername,
 			FriendlyName:      u.FriendlyName,
 			Email:             u.Email,
 			EncryptedPassword: u.EncryptedPassword,
@@ -1225,11 +1292,11 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 }
 
 func (a *APIAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return a.getFirstUser(ctx, &userKey{email: email}, &ListUsersParams{Email: swag.String(email)})
+	return a.getFirstUser(ctx, userKey{email: email}, &ListUsersParams{Email: swag.String(email)})
 }
 
 func (a *APIAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
-	return a.getFirstUser(ctx, &userKey{externalID: externalID}, &ListUsersParams{ExternalId: swag.String(externalID)})
+	return a.getFirstUser(ctx, userKey{externalID: externalID}, &ListUsersParams{ExternalId: swag.String(externalID)})
 }
 
 func toPagination(paginator Pagination) *model.Paginator {
@@ -1258,9 +1325,13 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 	results := resp.JSON200.Results
 	users := make([]*model.User, len(results))
 	for i, r := range results {
+		username := r.Username
+		if username == "" {
+			username = r.Name
+		}
 		users[i] = &model.User{
 			CreatedAt:         time.Unix(r.CreationDate, 0),
-			Username:          r.Name,
+			Username:          username,
 			FriendlyName:      r.FriendlyName,
 			Email:             r.Email,
 			EncryptedPassword: nil,
@@ -1303,6 +1374,8 @@ func (a *APIAuthService) validateResponse(resp openapi3filter.StatusCoder, expec
 	case http.StatusNotFound:
 		return ErrNotFound
 	case http.StatusBadRequest:
+		return ErrInvalidRequest
+	case http.StatusConflict:
 		return ErrAlreadyExists
 	case http.StatusUnauthorized:
 		return ErrInsufficientPermissions
@@ -1362,6 +1435,12 @@ func (a *APIAuthService) ListGroups(ctx context.Context, params *model.Paginatio
 	}
 	groups := make([]*model.Group, len(resp.JSON200.Results))
 
+	for i, r := range resp.JSON200.Results {
+		groups[i] = &model.Group{
+			CreatedAt:   time.Unix(r.CreationDate, 0),
+			DisplayName: r.Name,
+		}
+	}
 	return groups, toPagination(resp.JSON200.Pagination), nil
 }
 
@@ -1394,7 +1473,12 @@ func (a *APIAuthService) ListUserGroups(ctx context.Context, username string, pa
 		return nil, nil, err
 	}
 	userGroups := make([]*model.Group, len(resp.JSON200.Results))
-
+	for i, r := range resp.JSON200.Results {
+		userGroups[i] = &model.Group{
+			CreatedAt:   time.Unix(r.CreationDate, 0),
+			DisplayName: r.Name,
+		}
+	}
 	return userGroups, toPagination(resp.JSON200.Pagination), nil
 }
 
@@ -1413,9 +1497,13 @@ func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupDisplayName st
 	members := make([]*model.User, len(resp.JSON200.Results))
 
 	for i, r := range resp.JSON200.Results {
+		username := r.Username
+		if username == "" {
+			username = r.Name
+		}
 		members[i] = &model.User{
 			CreatedAt:    time.Unix(r.CreationDate, 0),
-			Username:     r.Name,
+			Username:     username,
 			FriendlyName: r.FriendlyName,
 			Email:        r.Email,
 		}
@@ -1571,7 +1659,7 @@ func (a *APIAuthService) GetCredentialsForUser(ctx context.Context, username, ac
 			AccessKeyID: credentials.AccessKeyId,
 			IssuedDate:  time.Unix(credentials.CreationDate, 0),
 		},
-		Username: strconv.Itoa(0),
+		Username: username,
 	}, nil
 }
 
@@ -1585,6 +1673,7 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 			return nil, err
 		}
 		credentials := resp.JSON200
+		// TODO(Guys): return username instead of this call
 		user, err := a.GetUserByID(ctx, model.ConvertDBID(credentials.UserId))
 		if err != nil {
 			return nil, err
@@ -1775,7 +1864,7 @@ func (a *APIAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, e
 	return a.validateResponse(res, http.StatusCreated)
 }
 
-func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, timeout *time.Duration) (*APIAuthService, error) {
+func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, timeout *time.Duration, emailer *email.Emailer) (*APIAuthService, error) {
 	bearerToken, err := securityprovider.NewSecurityProviderBearerToken(token)
 	if err != nil {
 		return nil, err
@@ -1794,6 +1883,24 @@ func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore,
 		return nil, err
 	}
 	logging.Default().Info("initialized authorization service")
+	var cache Cache
+	if cacheConf.Enabled {
+		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.EvictionJitter)
+	} else {
+		cache = &DummyCache{}
+	}
+	res := &APIAuthService{
+		apiClient:   client,
+		secretStore: secretStore,
+		cache:       cache,
+	}
+	if emailer != nil {
+		res.delegatedInviteHandler = NewEmailInviteHandler(res, logging.Default(), emailer)
+	}
+	return res, nil
+}
+
+func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, secretStore crypt.SecretStore, cacheConf params.ServiceCache) (*APIAuthService, error) {
 	var cache Cache
 	if cacheConf.Enabled {
 		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.EvictionJitter)

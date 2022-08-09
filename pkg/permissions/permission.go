@@ -57,3 +57,7 @@ func GroupArn(groupID string) string {
 func PolicyArn(policyID string) string {
 	return authArnPrefix + "policy/" + policyID
 }
+
+func TemplateArn(templateID string) string {
+	return fsArnPrefix + "template/" + templateID
+}

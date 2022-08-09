@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type commitRecord struct {
@@ -39,5 +40,40 @@ func (c *commitRecord) toGravelerCommitRecord() *graveler.CommitRecord {
 	return &graveler.CommitRecord{
 		CommitID: graveler.CommitID(c.CommitID),
 		Commit:   c.toGravelerCommit(),
+	}
+}
+
+func CommitDataToCommitRecord(c *graveler.CommitData) *graveler.CommitRecord {
+	var parents []graveler.CommitID
+	for _, parent := range c.Parents {
+		parents = append(parents, graveler.CommitID(parent))
+	}
+
+	return &graveler.CommitRecord{
+		CommitID: graveler.CommitID(c.Id),
+		Commit: &graveler.Commit{
+			Committer:    c.Committer,
+			Message:      c.Message,
+			CreationDate: c.CreationDate.AsTime(),
+			MetaRangeID:  graveler.MetaRangeID(c.MetaRangeId),
+			Metadata:     c.Metadata,
+			Parents:      parents,
+			Version:      graveler.CommitVersion(c.Version),
+			Generation:   int(c.Generation),
+		},
+	}
+}
+
+func CommitRecordToCommitData(c *commitRecord) *graveler.CommitData {
+	return &graveler.CommitData{
+		Id:           c.CommitID,
+		Committer:    c.Committer,
+		Message:      c.Message,
+		CreationDate: timestamppb.New(c.CreationDate),
+		MetaRangeId:  c.RangeID,
+		Metadata:     c.Metadata,
+		Parents:      c.Parents,
+		Version:      int32(c.Version),
+		Generation:   int32(c.Generation),
 	}
 }

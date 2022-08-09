@@ -7,8 +7,8 @@ nav_order: 57
 has_children: false
 ---
 
-[Airbyte](https://airbyte.io//) is an open-source platform to sync data from applications, APIs & databases to
-warehouses, lakes and other destinations.  Use Airbyte's connectors to get your data pipelines to consolidate
+[Airbyte](https://airbyte.io//) is an open-source platform for syncing data from applications, APIs, and databases to
+warehouses, lakes, and other destinations. You can use Airbyte's connectors to get your data pipelines to consolidate
 many input sources.
 
 ## Table of contents
@@ -18,21 +18,21 @@ many input sources.
 {:toc .pb-5 }
 
 ## Using lakeFS with Airbyte
-The integration between the two open-source projects brings resilience and manageability when using Airbyte
+The integration between the two open-source projects brings resilience and manageability when you use Airbyte
 connectors to sync data to your S3 buckets by leveraging lakeFS branches and atomic commits and merges.
 
-## Use-cases
-You can leverage lakeFS consistency guarantees and [CI/CD capabilities](../using_lakefs/ci.md) when ingesting data to S3 using lakeFS:
+## Use cases
+You can take advantage of lakeFS consistency guarantees and [CI/CD capabilities](../using_lakefs/ci.md) when ingesting data to S3 using lakeFS:
 
-1. Consolidate many data sources to a single branch and expose them to the consumers simultaneously when merging to the `main` branch.
-1. Test incoming data for breaking schema changes, using [lakeFS hooks](../setup/hooks.md).
+1. Consolidate many data sources to a single branch and expose them to consumers simultaneously when merging to the `main` branch.
+1. Test incoming data for breaking schema changes using [lakeFS hooks](../setup/hooks.md).
 1. Prevent consumers from reading partial data from connectors which failed half-way through sync.
 1. Experiment with ingested data on a branch before exposing it.
 
 ## S3 Connector
 lakeFS exposes an [S3 Gateway](../understand/architecture.md#s3-gateway) that enables applications to communicate
-with lakeFS in the same way they would with Amazon S3.
-You can use Airbyte's [S3 Destination](https://airbyte.io/destinations/s3) for uploading the data to lakeFS.
+with lakeFS the same way they would with Amazon S3.
+You can use Airbyte's [S3 Destination](https://airbyte.io/destinations/s3) to upload data to lakeFS.
 
 ### Configuring lakeFS using the connector
 Set the following parameters when creating a new Destination of type S3:
@@ -47,10 +47,10 @@ Set the following parameters when creating a new Destination of type S3:
 | S3 Access Key    | The lakeFS secret access key used to authenticate to lakeFS. | `abc/lakefs/1234567bPxRfiCYEXAMPLEKEY`                                                                              |
 
 **Note**
-S3 Destination connector supports custom S3 endpoints starting with Airbyte's version
+The S3 Destination connector supports custom S3 endpoints starting with Airbyte's version
 [`v0.26.0-alpha`](https://github.com/airbytehq/airbyte/releases/tag/v0.26.0-alpha) released on Jun 17th 2021
 {: .note}
 
-The UI configuration will look like:
+The UI configuration will look as follows:
 
 ![S3 Destination Connector Configuration]({{ site.baseurl }}/assets/img/airbyte.png)

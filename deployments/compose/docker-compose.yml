@@ -81,6 +81,10 @@ services:
       - DB_URI=mariadb:3306
     volumes:
       - ./etc/hive-site.xml:/opt/apache-hive-bin/conf/hive-site.xml
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
 
   hive-server:
     build: hive
@@ -93,8 +97,14 @@ services:
       - DB_URI=mariadb:3306
     volumes:
       - ./etc/hive-site.xml:/opt/apache-hive-bin/conf/hive-site.xml
-    entrypoint: ["hive", "--service", "hiveserver2", "--hiveconf", "hive.root.logger=INFO,console"]
-  
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    entrypoint: [
+      "wait-for-it", "-t", "60", "hive:9083", "--",
+      "hive", "--service", "hiveserver2", "--hiveconf", "hive.root.logger=INFO,console"]
+
   hive-client:
     build: hive
     profiles: ["client"]
@@ -115,6 +125,7 @@ services:
 
   spark:
     image: docker.io/bitnami/spark:3
+    container_name: spark
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_HOST=spark
@@ -182,6 +193,7 @@ services:
 
   spark-thrift:
     image: docker.io/bitnami/spark:3
+    container_name: spark-thrift
     command: ["bash","-c", "/opt/bitnami/entrypoint.sh"]
     depends_on:
       - spark
@@ -212,6 +224,7 @@ services:
 
   notebook:
     build: jupyter
+    container_name: notebook
     ports:
       - 8888:8888
     volumes:

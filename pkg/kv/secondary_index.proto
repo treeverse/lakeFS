@@ -1,8 +1,6 @@
 syntax = "proto3";
 option go_package = "github.com/treeverse/lakefs/kv";
 
-import "google/protobuf/timestamp.proto";
-
 package io.treeverse.lakefs.kv;
 
 // message data model for secondary index
