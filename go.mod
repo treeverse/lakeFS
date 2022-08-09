@@ -85,6 +85,7 @@ require (
 require (
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
+	k8s.io/apimachinery v0.20.6
 )
 
 require (
@@ -100,6 +101,7 @@ require (
 	github.com/denis-tingaikin/go-header v0.4.3 // indirect
 	github.com/ettle/strcase v0.1.1 // indirect
 	github.com/firefart/nonamedreturns v1.0.1 // indirect
+	github.com/go-logr/logr v0.2.0 // indirect
 	github.com/hashicorp/go-version v1.4.0 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/ldez/gomoddirectives v0.2.3 // indirect
@@ -121,6 +123,7 @@ require (
 	gitlab.com/bosi/decorder v0.2.1 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220218215828-6cf2b201936e // indirect
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
+	k8s.io/klog/v2 v2.4.0 // indirect
 )
 
 require (
