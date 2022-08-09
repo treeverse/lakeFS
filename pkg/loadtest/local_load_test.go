@@ -49,16 +49,6 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-type nullCollector struct{}
-
-func (m *nullCollector) CollectMetadata(_ *stats.Metadata) {}
-
-func (m *nullCollector) CollectEvent(_, _ string) {}
-
-func (m *nullCollector) SetInstallationID(_ string) {}
-
-func (m *nullCollector) Close() {}
-
 type getActionsService func(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service
 
 func GetDBActionsService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
@@ -167,7 +157,7 @@ func TestLocalLoad(t *testing.T) {
 			outputWriter := catalog.NewActionsOutputWriter(c.BlockAdapter)
 
 			// wire actions
-			actionsService := tt.actionsService(t, ctx, source, outputWriter, &nullCollector{}, true)
+			actionsService := tt.actionsService(t, ctx, source, outputWriter, &stats.NullCollector{}, true)
 			c.SetHooksHandler(actionsService)
 
 			credentials, err := auth.SetupAdminUser(ctx, tt.authService, superuser)
@@ -191,7 +181,7 @@ func TestLocalLoad(t *testing.T) {
 				blockAdapter,
 				tt.meta,
 				migrator,
-				&nullCollector{},
+				&stats.NullCollector{},
 				nil,
 				actionsService,
 				auditChecker,
