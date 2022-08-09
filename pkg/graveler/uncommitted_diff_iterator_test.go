@@ -88,11 +88,6 @@ func TestNewUncommittedDiffIterator(t *testing.T) {
 				}
 			}
 			fakeCommittedList := testutils.NewFakeValueIterator(committedRecords)
-			var metarangeID graveler.MetaRangeID
-			if len(tt.CommittedKeys) != 0 {
-				metarangeID = "meta_id"
-			}
-			stagingToken := graveler.StorageNamespace("staging-token")
 
 			// build uncommitted list
 			uncommittedRecords := make([]*graveler.ValueRecord, len(tt.UncommittedKeys))
@@ -111,7 +106,7 @@ func TestNewUncommittedDiffIterator(t *testing.T) {
 				}
 			}
 			fakeList := testutils.NewFakeValueIterator(uncommittedRecords)
-			diffIT := graveler.NewUncommittedDiffIterator(context.Background(), fakeCommittedList, fakeList, stagingToken, metarangeID)
+			diffIT := graveler.NewUncommittedDiffIterator(context.Background(), fakeCommittedList, fakeList)
 
 			// diff results
 			diffRes := make([]graveler.DiffType, 0)

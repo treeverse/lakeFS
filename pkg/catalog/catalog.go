@@ -211,7 +211,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		gcManager = retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
 		settingManager := settings.NewManager(refManager, *cfg.KVStore)
 		protectedBranchesManager = branch.NewProtectionManager(settingManager)
-		stagingManager = staging.NewManager(*cfg.KVStore)
+		stagingManager = staging.NewManager(ctx, *cfg.KVStore)
 		gStore = graveler.NewKVGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 	} else {
 		refManager = ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
