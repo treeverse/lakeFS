@@ -140,7 +140,7 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("Emailer has not been properly configured, check the values in sender field")
 		}
 
-		idGen := &actions.DecreasingIDGenerator{}
+		var idGen actions.IDGenerator
 		if dbParams.KVEnabled {
 			kvParams := cfg.GetKVParams()
 			kvStore, err := kv.Open(ctx, dbParams.Type, kvParams)
@@ -152,10 +152,12 @@ var runCmd = &cobra.Command{
 			multipartsTracker = multiparts.NewTracker(*storeMessage)
 			actionsStore = actions.NewActionsKVStore(*storeMessage)
 			authMetadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
+			idGen = &actions.DecreasingIDGenerator{}
 		} else {
 			multipartsTracker = multiparts.NewDBTracker(dbPool)
 			actionsStore = actions.NewActionsDBStore(dbPool)
 			authMetadataManager = auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
+			idGen = &actions.IncreasingIDGenerator{}
 		}
 
 		// initialize auth service
