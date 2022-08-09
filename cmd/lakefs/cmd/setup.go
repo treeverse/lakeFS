@@ -41,8 +41,8 @@ var setupCmd = &cobra.Command{
 			defer dbPool.Close()
 
 			migrator = db.NewDatabaseMigrator(dbParams)
-
 		}
+
 		err := migrator.Migrate(ctx)
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)

@@ -14,7 +14,6 @@ import (
 const (
 	InitialMigrateVersion = 1
 	PathDelimiter         = "/"
-	dbSchemaVersionKey    = "kv" + PathDelimiter + "schema" + PathDelimiter + "version"
 	MetadataPartitionKey  = "kv-internal-metadata"
 )
 
@@ -171,7 +170,7 @@ func Drivers() []string {
 
 // GetDBSchemaVersion returns the current KV DB schema version
 func GetDBSchemaVersion(ctx context.Context, store Store) (int, error) {
-	res, err := store.Get(ctx, []byte(MetadataPartitionKey), []byte(dbSchemaVersionKey))
+	res, err := store.Get(ctx, []byte(MetadataPartitionKey), dbSchemaPath())
 	if err != nil {
 		return -1, err
 	}
@@ -184,5 +183,9 @@ func GetDBSchemaVersion(ctx context.Context, store Store) (int, error) {
 
 // SetDBSchemaVersion sets KV DB schema version
 func SetDBSchemaVersion(ctx context.Context, store Store, version uint) error {
-	return store.Set(ctx, []byte(MetadataPartitionKey), []byte(dbSchemaVersionKey), []byte(fmt.Sprintf("%d", version)))
+	return store.Set(ctx, []byte(MetadataPartitionKey), dbSchemaPath(), []byte(fmt.Sprintf("%d", version)))
+}
+
+func dbSchemaPath() []byte {
+	return []byte(FormatPath("kv", "schema", "version"))
 }
