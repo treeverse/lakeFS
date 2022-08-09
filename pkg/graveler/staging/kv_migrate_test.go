@@ -45,7 +45,7 @@ func TestMigrate(t *testing.T) {
 	require.NoError(t, err)
 
 	testutil.MustDo(t, "Import file", kv.Import(ctx, &buf, kvStore.Store))
-	kvMgr := staging.NewManager(kvStore)
+	kvMgr := staging.NewManager(ctx, kvStore)
 	for _, entry := range data {
 		for _, record := range entry.records {
 			r, err := kvMgr.Get(ctx, entry.stagingToken, record.Key)

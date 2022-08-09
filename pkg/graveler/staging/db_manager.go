@@ -113,6 +113,10 @@ func (p *DBManager) List(ctx context.Context, st graveler.StagingToken, batchSiz
 	return NewDBStagingIterator(ctx, p.db, p.log, st, batchSize), nil
 }
 
+func (p *DBManager) DropAsync(ctx context.Context, st graveler.StagingToken) error {
+	return p.Drop(ctx, st)
+}
+
 func (p *DBManager) Drop(ctx context.Context, st graveler.StagingToken) error {
 	_, err := p.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return tx.Exec("DELETE FROM graveler_staging_kv WHERE staging_token=$1", st)

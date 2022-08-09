@@ -10,6 +10,7 @@ import (
 	"github.com/go-test/deep"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/catalog/testutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/graveler/testutil"
@@ -1006,7 +1007,7 @@ func testGravelerUpdateBranch(t *testing.T, kvEnabled bool) {
 	_, err := gravel.UpdateBranch(context.Background(), "", "", "")
 	require.ErrorIs(t, err, graveler.ErrConflictFound)
 
-	gravel = newGraveler(t, kvEnabled, nil, &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
+	gravel = newGraveler(t, kvEnabled, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})}, &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
 		&testutil.RefsFake{Branch: &graveler.Branch{StagingToken: "st1", CommitID: "commit1"}, Commits: map[graveler.CommitID]*graveler.Commit{"commit1": {}}}, nil, nil)
 	_, err = gravel.UpdateBranch(context.Background(), "", "", "")
 	require.NoError(t, err)
@@ -1099,7 +1100,9 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 			name: "commit with source metarange an non-empty staging",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
-				StagingManager:   &testutil.StagingFake{ValueIterator: values},
+				StagingManager: &testutil.StagingFake{ValueIterator: testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
+					Key: []byte("key1"), Value: &graveler.Value{Identity: []byte("id1"), Data: []byte("data1")},
+				}})},
 				RefManager: &testutil.RefsFake{CommitID: expectedCommitID,
 					Branch:  &graveler.Branch{CommitID: expectedCommitID, StagingToken: "token1"},
 					Commits: map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}}},
@@ -1502,7 +1505,7 @@ func testGravelerAddCommitToBranchHead(t *testing.T, kvEnabled bool) {
 			}); diff != nil {
 				t.Errorf("unexpected added commit %s", diff)
 			}
-			if tt.fields.StagingManager.DropCalled {
+			if !kvEnabled && tt.fields.StagingManager.DropCalled {
 				t.Error("Staging manager drop shouldn't be called")
 			}
 
