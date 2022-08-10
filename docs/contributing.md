@@ -110,6 +110,13 @@ Documentation of features and changes in behaviour should be included in the pul
 You can create separate pull requests for documentation changes only.
 Documentation site customizations should be performed in accordance with the [Just The Docs Customization](https://just-the-docs.github.io/just-the-docs/docs/customization/) guide, which is applied during the site creation process.
 
+To render the documentation locally and preview changes, use the following command and [browse the documentation locally](http://localhost:4000):
+
+```sh
+cd docs
+docker run --rm -p 4000:4000 --volume="$PWD:/srv/jekyll:Z" -it jekyll/jekyll:3.8 jekyll serve
+```
+
 ### CHANGELOG.md
 
 Any user-facing change should be labeled with `include-changelog`.
