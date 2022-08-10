@@ -15,16 +15,17 @@ type Result struct {
 
 type WorkFn func(input chan string, output chan Result)
 
-type GeneratorAddFn func(string)
-type GenerateFn func(add GeneratorAddFn)
+type (
+	GeneratorAddFn func(string)
+	GenerateFn     func(add GeneratorAddFn)
+)
 
 type WorkerPool struct {
 	parallelism int
 	Input       chan string
 	Output      chan Result
-
-	wg   sync.WaitGroup
-	done chan struct{}
+	wg          sync.WaitGroup
+	done        chan struct{}
 }
 
 func NewWorkerPool(parallelism int) *WorkerPool {
@@ -39,12 +40,23 @@ func NewWorkerPool(parallelism int) *WorkerPool {
 func (p *WorkerPool) Start(workFn WorkFn) {
 	// spawn workers
 	p.wg.Add(p.parallelism)
+
+	// use wait-group and a channel as barrier for calling the worker from all goroutines
+	var startWG sync.WaitGroup
+	startWG.Add(p.parallelism)
+	startCh := make(chan struct{})
+
 	for i := 0; i < p.parallelism; i++ {
 		go func() {
 			defer p.wg.Done()
+			startWG.Done()
+			<-startCh
 			workFn(p.Input, p.Output) // call the worker we were given
 		}()
 	}
+	startWG.Wait()
+	close(startCh)
+
 	go func() {
 		p.wg.Wait()
 		p.done <- struct{}{}
