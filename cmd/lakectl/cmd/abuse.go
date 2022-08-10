@@ -436,7 +436,7 @@ func init() {
 	abuseListCmd.Flags().Int("parallelism", defaultParallelism, "amount of lists to do in parallel")
 
 	abuseCmd.AddCommand(abuseLinkSameObjectCmd)
-	abuseLinkSameObjectCmd.Flags().Int("amount", defaultAmount, "amount of lists to do")
-	abuseLinkSameObjectCmd.Flags().Int("parallelism", defaultParallelism, "amount of link objects to do in parallel")
+	abuseLinkSameObjectCmd.Flags().Int("amount", defaultAmount, "amount of link object to do")
+	abuseLinkSameObjectCmd.Flags().Int("parallelism", defaultParallelism, "amount of link object to do in parallel")
 	abuseLinkSameObjectCmd.Flags().String("key", "abuse-read-key", "key used for the test")
 }
