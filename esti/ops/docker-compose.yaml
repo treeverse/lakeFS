@@ -24,6 +24,7 @@ services:
       - ACTIONS_VAR=this_is_actions_var
       - LAKEFS_DATABASE_TYPE=${LAKEFS_DATABASE_TYPE}
       - LAKEFS_DATABASE_KV_ENABLED=${LAKEFS_DATABASE_KV_ENABLED:-false}
+      - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=${LAKEFS_DATABASE_CONNECTION_STRING}
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   postgres:
     image: "postgres:11"

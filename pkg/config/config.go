@@ -74,7 +74,7 @@ const (
 	DefaultLakefsEmailBaseURL      = "http://localhost:8000"
 
 	DefaultDynamoDBTableName = "kvstore"
-	// TBD: Which values to use for DynamoDB tables?
+	// TODO (niro): Which values to use for DynamoDB tables?
 	DefaultDynamoDBReadCapacityUnits  = 1000
 	DefaultDynamoDBWriteCapacityUnits = 1000
 )
@@ -301,12 +301,20 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 }
 
 func (c *Config) GetKVParams() kvparams.KV {
-	return kvparams.KV{
+	p := kvparams.KV{
 		Type: c.values.Database.Type,
-		Postgres: &kvparams.Postgres{
-			ConnectionString: c.values.Database.ConnectionString.SecureValue(),
-		},
-		DynamoDB: &kvparams.DynamoDB{
+	}
+	switch {
+	case c.values.Database.Postgres != nil:
+		p.Postgres = &kvparams.Postgres{
+			ConnectionString:      c.values.Database.Postgres.ConnectionString.SecureValue(),
+			MaxIdleConnections:    c.values.Database.Postgres.MaxIdleConnections,
+			MaxOpenConnections:    c.values.Database.Postgres.MaxOpenConnections,
+			ConnectionMaxLifetime: c.values.Database.Postgres.ConnectionMaxLifetime,
+		}
+
+	case c.values.Database.BetaDynamoDB != nil:
+		p.DynamoDB = &kvparams.DynamoDB{
 			TableName:          c.values.Database.BetaDynamoDB.TableName,
 			ReadCapacityUnits:  c.values.Database.BetaDynamoDB.ReadCapacityUnits,
 			WriteCapacityUnits: c.values.Database.BetaDynamoDB.WriteCapacityUnits,
@@ -315,8 +323,9 @@ func (c *Config) GetKVParams() kvparams.KV {
 			AwsRegion:          c.values.Database.BetaDynamoDB.AwsRegion,
 			AwsAccessKeyID:     c.values.Database.BetaDynamoDB.AwsAccessKeyID.String(),
 			AwsSecretAccessKey: c.values.Database.BetaDynamoDB.AwsSecretAccessKey.String(),
-		},
+		}
 	}
+	return p
 }
 
 func (c *Config) GetLDAPConfiguration() *LDAP {
