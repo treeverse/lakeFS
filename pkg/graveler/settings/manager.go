@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -167,10 +168,9 @@ func (m *KVManager) Update(ctx context.Context, repositoryID graveler.Repository
 		}
 		return err
 	}, bo)
-	if bo.NextBackOff() == bo.Stop {
+	if errors.Is(err, graveler.ErrPreconditionFailed) {
 		return fmt.Errorf("update settings: %w", graveler.ErrTooManyTries)
 	}
-
 	return err
 }
 
