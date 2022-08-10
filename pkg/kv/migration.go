@@ -29,6 +29,7 @@ func (d *DatabaseMigrator) Migrate(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to open KV store: %w", err)
 	}
+	defer kvStore.Close()
 	err = SetDBSchemaVersion(ctx, kvStore, InitialMigrateVersion)
 	if err != nil {
 		return fmt.Errorf("failed to setup KV store: %w", err)
