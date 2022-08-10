@@ -167,10 +167,10 @@ lakectl abuse link-same-object <source ref uri> [flags]
 {:.no_toc}
 
 ```
-      --amount int        amount of lists to do (default 1000000)
+      --amount int        amount of link object to do (default 1000000)
   -h, --help              help for link-same-object
       --key string        key used for the test (default "abuse-read-key")
-      --parallelism int   amount of lists to do in parallel (default 100)
+      --parallelism int   amount of link object to do in parallel (default 100)
 ```
 
 
