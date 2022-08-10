@@ -71,7 +71,7 @@ func TestMain(m *testing.M) {
 		StorageNS: "esti-system-testing",
 	}
 	if *useLocalCredentials {
-		params.AdminAccessKeyID = "AKIAIOSFDNN7EXAMPLEQ"
+		params.AdminAccessKeyID = "AKIAIOSFODNN7EXAMPLE"
 		params.AdminSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 	}
 
