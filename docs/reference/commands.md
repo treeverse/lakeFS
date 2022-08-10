@@ -169,7 +169,7 @@ lakectl abuse link-same-object <source ref uri> [flags]
 ```
       --amount int        amount of link object to do (default 1000000)
   -h, --help              help for link-same-object
-      --key string        key used for the test (default "abuse-read-key")
+      --key string        key used for the test (default "linked-object")
       --parallelism int   amount of link object to do in parallel (default 100)
 ```
 
