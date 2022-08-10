@@ -110,7 +110,7 @@ Documentation of features and changes in behaviour should be included in the pul
 You can create separate pull requests for documentation changes only.
 Documentation site customizations should be performed in accordance with the [Just The Docs Customization](https://just-the-docs.github.io/just-the-docs/docs/customization/) guide, which is applied during the site creation process.
 
-In order to render the documentation locally and preview changes you can use the following command and [browse the local documentation](http://localhost:4000):
+To render the documentation locally and preview changes, use the following command and [browse the documentation locally](http://localhost:4000):
 
 ```sh
 cd docs
