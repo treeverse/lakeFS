@@ -3,28 +3,22 @@ package graveler
 import (
 	"bytes"
 	"context"
-
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type uncommittedDiffIterator struct {
-	committedList    ValueIterator
-	uncommittedList  ValueIterator
-	storageNamespace StorageNamespace
-	metaRangeID      MetaRangeID
-	value            *Diff
-	err              error
-	ctx              context.Context
+	committedList   ValueIterator
+	uncommittedList ValueIterator
+	value           *Diff
+	err             error
+	ctx             context.Context
 }
 
 // NewUncommittedDiffIterator lists uncommitted changes as a diff. If `metaRangeID` is empty then there is no commit and it returns all objects as added
-func NewUncommittedDiffIterator(ctx context.Context, committedList ValueIterator, uncommittedList ValueIterator, sn StorageNamespace, metaRangeID MetaRangeID) DiffIterator {
+func NewUncommittedDiffIterator(ctx context.Context, committedList ValueIterator, uncommittedList ValueIterator) DiffIterator {
 	return &uncommittedDiffIterator{
-		ctx:              ctx,
-		committedList:    committedList,
-		uncommittedList:  uncommittedList,
-		storageNamespace: sn,
-		metaRangeID:      metaRangeID,
+		ctx:             ctx,
+		committedList:   committedList,
+		uncommittedList: uncommittedList,
 	}
 }
 
@@ -57,9 +51,9 @@ func (d *uncommittedDiffIterator) getDiffType(val ValueRecord) (diffType DiffTyp
 	if val.Value == nil {
 		// tombstone
 		if !existsInCommitted {
-			logging.Default().
-				WithFields(logging.Fields{"meta_range_id": d.metaRangeID, "storage_namespace": d.storageNamespace, "key": val.Key}).
-				Warn("tombstone for a file that does not exist")
+			// this might happen in the kv-staging area since it consist of
+			// multiple staging layers.
+			return DiffTypeRemoved, true, nil
 		}
 		return DiffTypeRemoved, false, nil
 	}

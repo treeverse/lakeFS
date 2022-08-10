@@ -23,6 +23,7 @@ import {Link} from "../../../../lib/components/nav";
 import {useRouter} from "../../../../lib/hooks/router";
 import RepositoryActionPage from "./run";
 import Alert from "react-bootstrap/Alert";
+import {RepoError} from "../error";
 
 
 const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
@@ -180,7 +181,7 @@ const ActionsContainer = () => {
     const { repo, loading, error } = useRefs();
 
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>;
+    if (error) return <RepoError error={error}/>;
 
     const params = {repoId: repo.id};
 

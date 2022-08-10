@@ -128,9 +128,12 @@ func TestManager_ListRepositories(t *testing.T) {
 
 func TestManager_DeleteRepository(t *testing.T) {
 	r := testRefManager(t)
+	ctx := context.Background()
+	repoID := graveler.RepositoryID("example-repo")
+
 	for _, tt := range r {
 		t.Run("repo_exists_"+tt.name, func(t *testing.T) {
-			testutil.Must(t, tt.refManager.CreateRepository(context.Background(), "example-repo", graveler.Repository{
+			testutil.Must(t, tt.refManager.CreateRepository(ctx, repoID, graveler.Repository{
 				StorageNamespace: "s3://foo",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "weird-branch",
@@ -141,6 +144,22 @@ func TestManager_DeleteRepository(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
+			// Create repository entities and ensure their deletion afterwards
+			if tt.name == typeKV {
+				testutil.Must(t, tt.refManager.CreateTag(ctx, repoID, "v1.0", "c1"))
+				testutil.Must(t, tt.refManager.CreateBranch(ctx, repoID, "f1", graveler.Branch{CommitID: "c1", StagingToken: "s1"}))
+				c := graveler.Commit{
+					Committer:    "user1",
+					Message:      "message1",
+					MetaRangeID:  "deadbeef123",
+					CreationDate: time.Now(),
+					Parents:      graveler.CommitParents{"deadbeef1", "deadbeef12"},
+					Metadata:     graveler.Metadata{"foo": "bar"},
+				}
+				_, err = tt.refManager.AddCommit(ctx, repoID, c)
+				testutil.Must(t, err)
+			}
+
 			err = tt.refManager.DeleteRepository(context.Background(), "example-repo")
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -149,6 +168,17 @@ func TestManager_DeleteRepository(t *testing.T) {
 			_, err = tt.refManager.GetRepository(context.Background(), "example-repo")
 			if !errors.Is(err, graveler.ErrRepositoryNotFound) {
 				t.Fatalf("expected ErrRepositoryNotFound, got: %v", err)
+			}
+
+			// Create after delete
+			testutil.Must(t, tt.refManager.CreateRepository(ctx, repoID, graveler.Repository{
+				StorageNamespace: "s3://foo",
+				CreationDate:     time.Now(),
+				DefaultBranchID:  "weird-branch",
+			}))
+			_, err = tt.refManager.GetRepository(context.Background(), "example-repo")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
 			}
 		})
 

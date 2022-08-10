@@ -2,18 +2,20 @@ package io.treeverse.jpebble
 
 import org.scalatest._
 import matchers.should._
+import org.scalatest.matchers.must.Matchers.contain
+import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import funspec._
+
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
+import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
+import org.testcontainers.containers.BindMode
 
 import java.io.File
 import java.nio.charset.StandardCharsets
 import org.apache.commons.io.IOUtils
 
 import scala.io.Source
-import org.testcontainers.containers.BindMode
-import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
-import org.scalatest.matchers.must.Matchers.contain
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
 class BlockReadableSpec extends AnyFunSpec with Matchers {
 
@@ -301,13 +303,12 @@ class CountedIteratorSpec extends AnyFunSpec with Matchers {
 }
 
 class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
-
   override val container: GenericContainer = GenericContainer(
     "golang:1.16.2-alpine",
     classpathResourceMapping = Seq(
-      ("parser-test/sst_files_generator.go", "/local/sst_files_generator.go", BindMode.READ_WRITE),
-      ("parser-test/go.mod", "/local/go.mod", BindMode.READ_WRITE),
-      ("parser-test/go.sum", "/local/go.sum", BindMode.READ_WRITE)
+      FileSystemBind("parser-test/sst_files_generator.go", "/local/sst_files_generator.go", BindMode.READ_WRITE),
+      FileSystemBind("parser-test/go.mod", "/local/go.mod", BindMode.READ_WRITE),
+      FileSystemBind("parser-test/go.sum", "/local/go.sum", BindMode.READ_WRITE)
     ),
     command = Seq("/bin/sh",
                   "-c",

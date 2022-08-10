@@ -16,9 +16,12 @@ type CombinedIterator struct {
 
 // NewCombinedIterator combines multiple ValueIterators into a single CombinedIterator.
 // The returned iterator precedence order is first-to-last in case of matching keys in 2 or more iterators.
-func NewCombinedIterator(iters ...ValueIterator) *CombinedIterator {
-	if len(iters) < 2 { //nolint:gomnd
-		panic("at least two iterators are required")
+func NewCombinedIterator(iters ...ValueIterator) ValueIterator {
+	if len(iters) == 0 {
+		panic("at least one iterator is required")
+	}
+	if len(iters) == 1 {
+		return iters[0]
 	}
 	iter := newCombinedIterator(iters[0], iters[1])
 	for i := 2; i < len(iters); i++ {

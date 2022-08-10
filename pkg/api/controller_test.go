@@ -617,6 +617,24 @@ func testController_CommitHandler(t *testing.T, kvEnabled bool) {
 		require.Contains(t, resp.JSON400.Message, graveler.ErrCommitMetaRangeDirtyBranch.Error())
 	})
 
+	t.Run("commit failure empty branch", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
+
+		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
+		testutil.Must(t, err)
+
+		resp, err := clt.CommitWithResponse(ctx, repo, "foo-branch", &api.CommitParams{}, api.CommitJSONRequestBody{
+			Message: "some message",
+		})
+
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
+		require.NotNil(t, resp.JSON400)
+		require.Contains(t, resp.JSON400.Message, graveler.ErrNoChanges.Error())
+	})
+
 	t.Run("commit success - with creation date", func(t *testing.T) {
 		repo := testUniqueRepoName()
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
@@ -939,6 +957,10 @@ func testController_BranchesDiffBranchHandler(t *testing.T, kvEnabled bool) {
 	}
 
 	t.Run("diff branch no changes", func(t *testing.T) {
+		// create an entry and remove it
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b/c"}))
+		testutil.Must(t, deps.catalog.DeleteEntry(ctx, "repo1", testBranch, "a/b/c"))
+
 		resp, err := clt.DiffBranchWithResponse(ctx, "repo1", testBranch, &api.DiffBranchParams{})
 		verifyResponseOK(t, resp, err)
 		changes := len(resp.JSON200.Results)
@@ -949,6 +971,8 @@ func testController_BranchesDiffBranchHandler(t *testing.T, kvEnabled bool) {
 
 	t.Run("diff branch with writes", func(t *testing.T) {
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b"}))
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b/c"}))
+		testutil.Must(t, deps.catalog.DeleteEntry(ctx, "repo1", testBranch, "a/b/c"))
 		resp, err := clt.DiffBranchWithResponse(ctx, "repo1", testBranch, &api.DiffBranchParams{})
 		verifyResponseOK(t, resp, err)
 		results := resp.JSON200.Results
@@ -2055,28 +2079,28 @@ func testController_SetupLakeFSHandler(t *testing.T, kvEnabled bool) {
 			if foundCreds.AccessKeyId != creds.AccessKeyId {
 				t.Fatalf("Access key ID '%s', expected '%s'", foundCreds.AccessKeyId, creds.AccessKeyId)
 			}
-			if len(deps.collector.metadata) != 1 {
+			if len(deps.collector.Metadata) != 1 {
 				t.Fatal("Failed to collect metadata")
 			}
-			if deps.collector.metadata[0].InstallationID == "" {
+			if deps.collector.Metadata[0].InstallationID == "" {
 				t.Fatal("Empty installationID")
 			}
-			if len(deps.collector.metadata[0].Entries) < 5 {
-				t.Fatalf("There should be at least 5 metadata entries: %s", deps.collector.metadata[0].Entries)
+			if len(deps.collector.Metadata[0].Entries) < 5 {
+				t.Fatalf("There should be at least 5 metadata entries: %s", deps.collector.Metadata[0].Entries)
 			}
 
 			hasBlockStoreType := false
-			for _, ent := range deps.collector.metadata[0].Entries {
+			for _, ent := range deps.collector.Metadata[0].Entries {
 				if ent.Name == stats.BlockstoreTypeKey {
 					hasBlockStoreType = true
 					if ent.Value == "" {
-						t.Fatalf("Blockstorage key exists but with empty value: %s", deps.collector.metadata[0].Entries)
+						t.Fatalf("Blockstorage key exists but with empty value: %s", deps.collector.Metadata[0].Entries)
 					}
 					break
 				}
 			}
 			if !hasBlockStoreType {
-				t.Fatalf("missing blockstorage key: %s", deps.collector.metadata[0].Entries)
+				t.Fatalf("missing blockstorage key: %s", deps.collector.Metadata[0].Entries)
 			}
 
 			// on successful setup - make sure we can't re-setup

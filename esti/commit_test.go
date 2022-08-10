@@ -6,15 +6,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
 func TestCommitSingle(t *testing.T) {
-	if viper.GetBool("database_kv_enabled") {
-		t.Skip("Finish implementing Graveler.Commit, Graveler.List, ...")
-	}
 	for _, direct := range testDirectDataAccess {
 		name := "indirect"
 		if direct {

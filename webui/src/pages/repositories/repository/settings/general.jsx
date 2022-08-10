@@ -98,7 +98,7 @@ const SettingsContainer = () => {
             </Container>
 
             <Button variant="danger" className="mt-3" onClick={() => setShowDeleteModal(!showingDeleteModal)}>
-                <TrashIcon/> Delete this repository
+                <TrashIcon/> Delete Repository
             </Button>
 
             <DeleteRepositoryModal

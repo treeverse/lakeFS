@@ -79,8 +79,9 @@ type userPermissions struct {
 }
 
 type gravelerState struct {
-	Repo     string `json:"repo"`
-	CommitID string `json:"commit_id"`
+	Repo                  string                     `json:"repo"`
+	CommitID              string                     `json:"commit_id"`
+	BranchProtectionRules []api.BranchProtectionRule `json:"branch_protection_rules"`
 }
 
 const (
@@ -351,6 +352,8 @@ func testPostMigrateActions(t *testing.T) {
 	require.Equal(t, len(branchResp.JSON200.Results), 3)
 }
 
+// Auth Tests
+
 func testPreMigrateAuth(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 
@@ -552,6 +555,8 @@ func verifyUserPermissions(t *testing.T, ctx context.Context, repo, userType str
 	}
 }
 
+// Graveler Tests
+
 func testPreMigrateGraveler(t *testing.T) {
 	//create repository
 	ctx, _, repo := setupTest(t)
@@ -584,9 +589,21 @@ func testPreMigrateGraveler(t *testing.T) {
 
 	uploadFiles(t, ctx, repo, "pre_migrate_branch", "b/foo/")
 
+	// Add branch protection rules for migration
+	createBpResp, err := client.CreateBranchProtectionRuleWithResponse(ctx, repo, api.CreateBranchProtectionRuleJSONRequestBody{
+		Pattern: "*SomePattern",
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, createBpResp.StatusCode())
+
+	getBpResp, err := client.GetBranchProtectionRulesWithResponse(ctx, repo)
+	require.NoError(t, err)
+	require.NotNil(t, getBpResp.JSON200)
+
 	// update state
 	state.Graveler.Repo = repo
 	state.Graveler.CommitID = commitResp.JSON201.Id
+	state.Graveler.BranchProtectionRules = *getBpResp.JSON200
 }
 
 func testPostMigrateGraveler(t *testing.T) {
@@ -673,6 +690,12 @@ func verifyGravelerEntities(t *testing.T, ctx context.Context) {
 	unobjResp, err := client.GetObjectWithResponse(ctx, state.Graveler.Repo, "pre_migrate_branch", &api.GetObjectParams{Path: "b/foo/1"})
 	require.NoError(t, err, "failed to get object")
 	require.Equal(t, http.StatusOK, unobjResp.StatusCode())
+
+	// Verify branch protection rules
+	bpResp, err := client.GetBranchProtectionRulesWithResponse(ctx, state.Graveler.Repo)
+	require.NoError(t, err)
+	require.NotNil(t, bpResp.JSON200)
+	require.Equal(t, state.Graveler.BranchProtectionRules, *bpResp.JSON200)
 }
 
 func verifyGravelerList(t *testing.T, ctx context.Context) {

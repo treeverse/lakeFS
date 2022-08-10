@@ -8,11 +8,13 @@ import (
 )
 
 const (
-	gravelerPartition = "graveler"
-	reposPrefix       = "repos"
-	tagsPrefix        = "tags"
-	branchesPrefix    = "branches"
-	commitsPrefix     = "commits"
+	gravelerPartition      = "graveler"
+	cleanupTokensPartition = "cleanup-tokens"
+	reposPrefix            = "repos"
+	tagsPrefix             = "tags"
+	branchesPrefix         = "branches"
+	commitsPrefix          = "commits"
+	settingsPrefix         = "settings"
 )
 
 func RepoPath(repoID RepositoryID) string {
@@ -35,6 +37,10 @@ func StagingTokenPartition(token StagingToken) string {
 	return token.String()
 }
 
+func CleanupTokensPartition() string {
+	return cleanupTokensPartition
+}
+
 func TagPath(tagID TagID) string {
 	return kv.FormatPath(tagsPrefix, tagID.String())
 }
@@ -45,6 +51,10 @@ func BranchPath(branchID BranchID) string {
 
 func CommitPath(commitID CommitID) string {
 	return kv.FormatPath(commitsPrefix, commitID.String())
+}
+
+func SettingsPath(key string) string {
+	return kv.FormatPath(settingsPrefix, key)
 }
 
 func CommitFromProto(pb *CommitData) *Commit {
