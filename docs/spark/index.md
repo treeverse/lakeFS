@@ -22,6 +22,6 @@ Check out [Configuring DeltaLake with lakeFS](../integrations/delta.md).
 Have questions? want to contribute new features? 
 💻 Join the [conversation!](https://lakefs.slack.com/).
 
-
+  
 
 
