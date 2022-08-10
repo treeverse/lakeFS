@@ -32,4 +32,4 @@ The first thing to notice is in this environment, lakeFS comes with a repository
 
 ## Next Steps
 
-[Install it on your computer](installing.html) or [deploy it on your cloud account](../deploy/index.html).
+You can now [install lakeFS on your computer](installing.html) or [deploy it on your cloud account](../deploy/index.html).
