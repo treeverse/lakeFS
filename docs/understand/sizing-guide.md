@@ -49,7 +49,7 @@ we recommend allocating at least 10 GiB - since it's a caching layer over a rela
 see [Important metrics](#important-metrics) below to understand how to size this: it should be big enough to hold all commit metadata for actively referenced commits.
 
 
-### Metadata Store
+### lakeFS KV Store
 
 lakeFS uses a key-value database to manage branch references, authentication and authorization information 
 and to keep track of currently uncommitted data across branches.
@@ -64,6 +64,7 @@ We recommend starting at 10 GiB for a production deployment, as it will likely b
 #### RAM
 Since the data size is small, it's recommended to provide enough memory to hold the vast majority of that data in RAM.
 Cloud providers will save you the need to tune this parameter - it will be set to a fixed percentage the chosen instance's available RAM (25% on AWS RDS, 30% on Google Cloud SQL).
+It is recommended that you check with your selected cloud provider for configuration and provisioning information for you database.
 
 For self-managed database instances follow these best practices 
 

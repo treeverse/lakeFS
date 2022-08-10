@@ -16,7 +16,8 @@ If you're upgrading, check whether the [release](https://github.com/treeverse/la
 
 ## When DB migrations are required
 
-### lakeFS KV Migration
+### lakeFS <TBD.X.X> or greater (KV Migration)
+
 Starting with version <TBD.X.X>, lakeFS has transitioned from using a PostgreSQL based database implementation to a Key-Value datastore interface supporting
 multiple database implementations. More information can be found [here](link-to-lakefs-on-kv-documentation).  
 Users upgrading from a previous version of lakeFS must pass through the KV migration version (<TBD.X.X>) before upgrading to newer versions of lakeFS.
