@@ -11,7 +11,7 @@ redirect_from: ../deploying-aws/upgrade.html
 # Upgrading lakeFS
 {: .no_toc }
 Upgrading lakeFS from a previous version usually just requires re-deploying with the latest image (or downloading the latest version if you're using the binary).
-In some cases, the database may require a migration - check whether the [release](https://github.com/treeverse/lakeFS/releases) you're upgrading to require migration.
+If you're upgrading, check whether the [release](https://github.com/treeverse/lakeFS/releases) requires a migration.
 
 
 ## When DB migrations are required
