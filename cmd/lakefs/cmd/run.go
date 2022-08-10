@@ -38,7 +38,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
-	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
+	"github.com/treeverse/lakefs/pkg/kv/params"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
@@ -112,27 +113,60 @@ var runCmd = &cobra.Command{
 
 		// validate service names and turn on the right flags
 		dbParams := cfg.GetDatabaseParams()
-		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
-		defer dbPool.Close()
-		if err := db.ValidateSchemaUpToDate(ctx, dbPool, dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
-			logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
-		} else if errors.Is(err, migrate.ErrNilVersion) {
-			logger.Debug("No migration, setup required")
-		} else if err != nil {
-			logger.WithError(err).Warn("Failed on schema validation")
+
+		var (
+			kvStore    kv.Store
+			kvParams   params.KV
+			dbPool     db.Database
+			lockDBPool db.Database
+			err        error
+		)
+		if dbParams.KVEnabled {
+			kvParams = cfg.GetKVParams()
+			kvStore, err = kv.Open(ctx, kvParams)
+			if err != nil {
+				logger.WithError(err).Fatal("Failed to open KV store")
+			}
+			defer kvStore.Close()
+
+			// Check if migration required only on postgres
+			migrationRequired := false
+			if dbParams.Type == kvpg.DriverName {
+				dbPool = db.BuildDatabaseConnection(ctx, dbParams)
+				defer dbPool.Close()
+				_, _, err := db.MigrateVersion(ctx, dbPool, dbParams)
+				if err == nil {
+					migrationRequired = true
+				} else if !errors.Is(err, migrate.ErrNilVersion) {
+					logger.WithError(err).Fatal("Failed to get schema version")
+				}
+			}
+			err = kv.ValidateSchemaVersion(ctx, kvStore, migrationRequired)
+			if err != nil {
+				logger.WithError(err).Fatal("Failure on schema validation")
+			}
+		} else {
+			dbPool = db.BuildDatabaseConnection(ctx, dbParams)
+			defer dbPool.Close()
+			lockDBPool = db.BuildDatabaseConnection(ctx, dbParams)
+			defer lockDBPool.Close()
+
+			if err := db.ValidateSchemaUpToDate(ctx, dbPool, dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
+				logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
+			} else if errors.Is(err, migrate.ErrNilVersion) {
+				logger.Debug("No migration, setup required")
+			} else if err != nil {
+				logger.WithError(err).Warn("Failure on schema validation")
+			}
 		}
-
-		lockdbPool := db.BuildDatabaseConnection(ctx, dbParams)
-		defer lockdbPool.Close()
-
 		registerPrometheusCollector(dbPool)
-		migrator := db.NewDatabaseMigrator(dbParams)
 
 		var (
 			multipartsTracker   multiparts.Tracker
 			actionsStore        actions.Store
 			authMetadataManager auth.MetadataManager
 			storeMessage        *kv.StoreMessage
+			migrator            db.Migrator
 		)
 		emailParams, _ := cfg.GetEmailParams()
 		emailer, err := email.NewEmailer(emailParams)
@@ -142,18 +176,14 @@ var runCmd = &cobra.Command{
 
 		var idGen actions.IDGenerator
 		if dbParams.KVEnabled {
-			kvParams := cfg.GetKVParams()
-			kvStore, err := kv.Open(ctx, dbParams.Type, kvParams)
-			if err != nil {
-				logger.WithError(err).Fatal("failed to open KV store")
-			}
-			defer kvStore.Close()
+			migrator = kv.NewDatabaseMigrator(kvParams)
 			storeMessage = &kv.StoreMessage{Store: kvStore}
 			multipartsTracker = multiparts.NewTracker(*storeMessage)
 			actionsStore = actions.NewActionsKVStore(*storeMessage)
 			authMetadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
 			idGen = &actions.DecreasingIDGenerator{}
 		} else {
+			migrator = db.NewDatabaseMigrator(dbParams)
 			multipartsTracker = multiparts.NewDBTracker(dbPool)
 			actionsStore = actions.NewActionsDBStore(dbPool)
 			authMetadataManager = auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
@@ -216,7 +246,7 @@ var runCmd = &cobra.Command{
 		c, err := catalog.New(ctx, catalog.Config{
 			Config:  cfg,
 			DB:      dbPool,
-			LockDB:  lockdbPool,
+			LockDB:  lockDBPool,
 			KVStore: storeMessage,
 		})
 		if err != nil {
@@ -500,6 +530,9 @@ func printLocalWarning(w io.Writer, adapter string) {
 }
 
 func registerPrometheusCollector(db sqlstats.StatsGetter) {
+	if db == nil { // TODO (niro): WA for KV stats collector until https://github.com/treeverse/lakeFS/issues/3869 is resolved
+		return
+	}
 	collector := sqlstats.NewStatsCollector("lakefs", db)
 	err := prometheus.Register(collector)
 	if err != nil {

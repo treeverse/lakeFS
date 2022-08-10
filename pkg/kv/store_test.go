@@ -63,8 +63,8 @@ func TestRegister(t *testing.T) {
 		md := &MockDriver{Name: "md"}
 		kv.Register("md", md)
 		// open registered 'md'
-		params := kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: "dsn1"}}
-		s1, err := kv.Open(ctx, "md", params)
+		params := kvparams.KV{Type: "md", Postgres: &kvparams.Postgres{ConnectionString: "dsn1"}}
+		s1, err := kv.Open(ctx, params)
 		if err != nil {
 			t.Fatal("expected store 'md'", err)
 		}
@@ -76,8 +76,8 @@ func TestRegister(t *testing.T) {
 			t.Fatalf("store open with dsn '%s', expected 'dsn1'", store.Params.Postgres.ConnectionString)
 		}
 		// open missing driver
-		params2 := kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: "dsn2"}}
-		_, err = kv.Open(ctx, "missing", params2)
+		params2 := kvparams.KV{Type: "missing", Postgres: &kvparams.Postgres{ConnectionString: "dsn2"}}
+		_, err = kv.Open(ctx, params2)
 		if !errors.Is(err, kv.ErrUnknownDriver) {
 			t.Fatalf("Open unknown driver err=%v, expected=%s", err, kv.ErrUnknownDriver)
 		}

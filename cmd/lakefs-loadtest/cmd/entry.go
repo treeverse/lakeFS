@@ -69,7 +69,7 @@ var entryCmd = &cobra.Command{
 		dbParams := conf.GetDatabaseParams()
 		if dbParams.KVEnabled {
 			kvParams := conf.GetKVParams()
-			kvStore, err := kv.Open(ctx, dbParams.Type, kvParams)
+			kvStore, err := kv.Open(ctx, kvParams)
 			if err != nil {
 				logging.Default().WithError(err).Fatal("failed to open KV store")
 			}

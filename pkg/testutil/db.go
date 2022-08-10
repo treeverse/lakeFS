@@ -323,7 +323,7 @@ func CleanupKV(ctx context.Context, t *testing.T, store kv.Store) {
 	}
 
 	// Zero KV version
-	MustDo(t, "Reset migration", store.Set(ctx, []byte(kv.MetadataPartitionKey), []byte(kv.DBSchemaVersionKey), []byte("0")))
+	MustDo(t, "Reset migration", kv.SetDBSchemaVersion(ctx, store, 0))
 }
 
 func buildTestData(startIdx, count int, writer io.Writer) {

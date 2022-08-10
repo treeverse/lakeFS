@@ -19,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -144,6 +145,10 @@ var (
 )
 
 func TestMigrate(t *testing.T) {
+	// skip test if not on postgres
+	if viper.GetBool("database_kv_enabled") && viper.GetString("database_type") != kvpg.DriverName {
+		t.Skip("PG KV not enabled")
+	}
 	postMigrate := viper.GetViper().GetBool("post_migrate")
 
 	if postMigrate {
