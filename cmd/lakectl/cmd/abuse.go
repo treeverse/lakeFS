@@ -108,9 +108,9 @@ var abuseLinkSameObjectCmd = &cobra.Command{
 		key := MustString(cmd.Flags().GetString("key"))
 
 		Fmt("Source ref: %s\n", u.String())
-		Fmt("Key: %s\n", key)
+		Fmt("Object key: %s\n", key)
 
-		generator := stress.NewGenerator("read", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
+		generator := stress.NewGenerator("get-and-link", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
 		// setup generator to use the key
 		generator.Setup(func(add stress.GeneratorAddFn) {
@@ -438,5 +438,5 @@ func init() {
 	abuseCmd.AddCommand(abuseLinkSameObjectCmd)
 	abuseLinkSameObjectCmd.Flags().Int("amount", defaultAmount, "amount of link object to do")
 	abuseLinkSameObjectCmd.Flags().Int("parallelism", defaultParallelism, "amount of link object to do in parallel")
-	abuseLinkSameObjectCmd.Flags().String("key", "abuse-read-key", "key used for the test")
+	abuseLinkSameObjectCmd.Flags().String("key", "linked-object", "key used for the test")
 }
