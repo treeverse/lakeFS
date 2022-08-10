@@ -96,9 +96,9 @@ var abuseRandomReadsCmd = &cobra.Command{
 	},
 }
 
-var abuseReadKeyCmd = &cobra.Command{
-	Use:    "read-key <source ref uri>",
-	Short:  "Read the same key from a file and generate random reads from the source ref for those keys.",
+var abuseLinkSameObjectCmd = &cobra.Command{
+	Use:    "link-same-object <source ref uri>",
+	Short:  "Link the same object in parallel.",
 	Hidden: false,
 	Args:   cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -111,23 +111,6 @@ var abuseReadKeyCmd = &cobra.Command{
 		Fmt("Key: %s\n", key)
 
 		generator := stress.NewGenerator("read", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
-
-		// write the key once
-		ctx := cmd.Context()
-		client := getClient()
-		repoResponse, err := client.GetRepositoryWithResponse(cmd.Context(), u.Repository)
-		DieOnErrorOrUnexpectedStatusCode(repoResponse, err, http.StatusOK)
-
-		repo := repoResponse.JSON200
-		storagePrefix := repo.StorageNamespace
-		checksum := "00695c7307b0480c7b6bdc873cf05c15"
-		creationInfo := api.ObjectStageCreation{
-			Checksum:        checksum,
-			PhysicalAddress: storagePrefix + "/read-key",
-		}
-		writeResponse, err := client.StageObjectWithResponse(ctx, u.Repository, u.Ref, &api.StageObjectParams{Path: key},
-			api.StageObjectJSONRequestBody(creationInfo))
-		DieOnErrorOrUnexpectedStatusCode(writeResponse, err, http.StatusCreated)
 
 		// setup generator to use the key
 		generator.Setup(func(add stress.GeneratorAddFn) {
@@ -142,11 +125,31 @@ var abuseReadKeyCmd = &cobra.Command{
 			client := getClient()
 			for work := range input {
 				start := time.Now()
-				resp, err := client.StatObjectWithResponse(ctx, u.Repository, u.Ref, &api.StatObjectParams{
-					Path: work,
-				})
-				if err == nil && resp.StatusCode() != http.StatusOK {
-					err = helpers.ResponseAsError(resp)
+
+				getResponse, err := client.GetPhysicalAddressWithResponse(ctx, u.Repository, u.Ref, &api.GetPhysicalAddressParams{Path: work})
+				stagingLocation := getResponse.JSON200
+				if err != nil || stagingLocation == nil {
+					output <- stress.Result{
+						Error: helpers.ResponseAsError(err),
+						Took:  time.Since(start),
+					}
+					continue
+				}
+
+				linkResponse, err := client.LinkPhysicalAddressWithResponse(ctx, u.Repository, u.Ref,
+					&api.LinkPhysicalAddressParams{
+						Path: work,
+					},
+					api.LinkPhysicalAddressJSONRequestBody{
+						Checksum: "00695c7307b0480c7b6bdc873cf05c15",
+						Staging: api.StagingLocation{
+							PhysicalAddress: stagingLocation.PhysicalAddress,
+							Token:           stagingLocation.Token,
+						},
+						UserMetadata: nil,
+					})
+				if err == nil && linkResponse.JSON200 == nil {
+					err = helpers.ResponseAsError(linkResponse)
 				}
 				output <- stress.Result{
 					Error: err,
@@ -432,8 +435,8 @@ func init() {
 	abuseListCmd.Flags().Int("amount", defaultAmount, "amount of lists to do")
 	abuseListCmd.Flags().Int("parallelism", defaultParallelism, "amount of lists to do in parallel")
 
-	abuseCmd.AddCommand(abuseReadKeyCmd)
-	abuseReadKeyCmd.Flags().Int("amount", defaultAmount, "amount of lists to do")
-	abuseReadKeyCmd.Flags().Int("parallelism", defaultParallelism, "amount of lists to do in parallel")
-	abuseReadKeyCmd.Flags().String("key", "abuse-read-key", "key used for the test")
+	abuseCmd.AddCommand(abuseLinkSameObjectCmd)
+	abuseLinkSameObjectCmd.Flags().Int("amount", defaultAmount, "amount of lists to do")
+	abuseLinkSameObjectCmd.Flags().Int("parallelism", defaultParallelism, "amount of lists to do in parallel")
+	abuseLinkSameObjectCmd.Flags().String("key", "abuse-read-key", "key used for the test")
 }
