@@ -28,15 +28,43 @@ This reference uses `.` to denote the nesting of values.
 
 * `logging.format` `(one of ["json", "text"] : "text")` - Format to output log message in
 * `logging.level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Logging level to output
-* `logging.audit_log_level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Audit logs level to output. **Please notice that in case you configure this field to be lower than the main logger level, you won't be able to get the audit logs**
+* `logging.audit_log_level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Audit logs level to output.
+
+  **Note:** In case you configure this field to be lower than the main logger level, you won't be able to get the audit logs 
+  {: .note }
 * `logging.output` `(string : "-")` - A path or paths to write logs to. A `-` means the standard output, `=` means the standard error.
 * `logging.file_max_size_mb` `(int : 100)` - Output file maximum size in megabytes.
 * `logging.files_keep` `(int : 0)` - Number of log files to keep, default is all.
 * `actions.enabled` `(bool : true)` - Setting this to false will block hooks from being executed
-* `database.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use
-* `database.max_open_connections` `(int : 25)` - Maximum number of open connections to the database
-* `database.max_idle_connections` `(int : 25)` - Sets the maximum number of connections in the idle connection pool
-* `database.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused
+* ~~`database.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use~~
+* ~~`database.max_open_connections` `(int : 25)` - Maximum number of open connections to the database~~
+* ~~`database.max_idle_connections` `(int : 25)` - Sets the maximum number of connections in the idle connection pool~~
+* ~~`database.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused~~
+
+  **Note:** Deprecated - See `database` section 
+  {: .note }
+* `database` - Configuration section for the lakeFS key-value store database
+  + `database.type` `(string : ["postgres"|"dynamodb"])` - lakeFS database type 
+  + `database.postgres` - Configuration section when using `database.type="postgres"`
+    + `database.postgres.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use
+    + `database.postgres.max_open_connections` `(int : 25)` - Maximum number of open connections to the database
+    + `database.postgres.max_idle_connections` `(int : 25)` - Sets the maximum number of connections in the idle connection pool
+    + `database.postgres.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused
+  + `database.beta_dynamodb` - Configuration section when using `database.type="dynamodb"`
+    + `database.beta_dynamodb.table_name` `(string : kvstore)` -
+    + `database.beta_dynamodb.read_capacity_units` `(int : 1000)` - Throughput parameter for read capacity
+    + `database.beta_dynamodb.write_capacity_units` `(int : 1000)` - Throughput parameter for write capacity
+
+       **Note:** Refer to the following [AWS documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html) for further information
+       {: .note }
+    + `database.beta_dynamodb.scan_limit` `(int : 0)` - Maximal number of items per page during scan operation
+    + `database.beta_dynamodb.endpoint` `(string : required)` - Endpoint URL for database instance
+    + `database.beta_dynamodb.aws_region` `(string : )` - AWS Region of database instance
+    + `database.beta_dynamodb.aws_access_key_id` `(string : )` - AWS access key ID
+    + `database.beta_dynamodb.aws_secret_access_key` `(string : )` - AW secret access key
+
+      **Note:** It is best to keep these credentials somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
+      {: .note }
 * `listen_address` `(string : "0.0.0.0:8000")` - A `<host>:<port>` structured string representing the address to listen on
 * `auth.cache.enabled` `(bool : true)` - Whether to cache access credentials and user policies in-memory. Can greatly improve throughput when enabled.
 * `auth.cache.size` `(int : 1024)` - How many items to store in the auth cache. Systems with a very high user count should use a larger value at the expense of ~1kb of memory per cached user.
@@ -145,14 +173,16 @@ To set an environment variable, prepend `LAKEFS_` to its name, convert it to upp
 For example, `logging.format` becomes `LAKEFS_LOGGING_FORMAT`, `blockstore.s3.region` becomes `LAKEFS_BLOCKSTORE_S3_REGION`, etc.
 
 
-## Example: Local Development
+## Example: Local Development with PostgreSQL database
 
 ```yaml
 ---
 listen_address: "0.0.0.0:8000"
 
 database:
-  connection_string: "postgres://localhost:5432/postgres?sslmode=disable"
+  type: "postgres"
+  postgres:
+    connection_string: "postgres://localhost:5432/postgres?sslmode=disable"
 
 logging:
   format: text
@@ -174,7 +204,7 @@ gateways:
 ```
 
 
-## Example: AWS Deployment
+## Example: AWS Deployment with DynamoDB database
 
 ```yaml
 ---
@@ -184,7 +214,12 @@ logging:
   output: "-"
 
 database:
-  connection_string: "postgres://user:pass@lakefs.rds.amazonaws.com:5432/postgres"
+  type: "dynamodb"
+  beta_dynamodb:
+    endpoint: "dynamodb.us-east-1.amazonaws.com"
+    aws_region: "us-east-1"
+    aws_access_key_id: "AKIAIOSFODNN7EXAMPLE"
+    aws_secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 
 auth:
   encrypt:
@@ -212,7 +247,9 @@ logging:
   output: "-"
 
 database:
-  connection_string: "postgres://user:pass@lakefs.rds.amazonaws.com:5432/postgres"
+  type: "postgres"
+  postgres:
+    connection_string: "postgres://user:pass@lakefs.rds.amazonaws.com:5432/postgres"
 
 auth:
   encrypt:
@@ -235,7 +272,9 @@ logging:
   output: "-"
 
 database:
-  connection_string: "postgres://user:pass@lakefs.rds.amazonaws.com:5432/postgres"
+  type: "postgres"
+  postgres:
+    connection_string: "postgres://user:pass@lakefs.rds.amazonaws.com:5432/postgres"
 
 auth:
   encrypt:
@@ -262,7 +301,9 @@ logging:
   output: "-"
 
 database:
-  connection_string: "postgres://user:pass@lakefs.rds.amazonaws.com:5432/postgres"
+  type: "postgres"
+  postgres:
+    connection_string: "postgres://user:pass@lakefs.rds.amazonaws.com:5432/postgres"
 
 auth:
   encrypt:
