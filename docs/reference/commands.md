@@ -155,6 +155,26 @@ lakectl abuse help [command] [flags]
 
 
 
+### lakectl abuse link-same-object
+
+Link the same object in parallel.
+
+```
+lakectl abuse link-same-object <source ref uri> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int        amount of lists to do (default 1000000)
+  -h, --help              help for link-same-object
+      --key string        key used for the test (default "abuse-read-key")
+      --parallelism int   amount of lists to do in parallel (default 100)
+```
+
+
+
 ### lakectl abuse list
 
 List from the source ref
@@ -211,26 +231,6 @@ lakectl abuse random-write <source branch uri> [flags]
   -h, --help              help for random-write
       --parallelism int   amount of writes to do in parallel (default 100)
       --prefix string     prefix to create paths under (default "abuse/")
-```
-
-
-
-### lakectl abuse read-key
-
-Read the same key from a file and generate random reads from the source ref for those keys.
-
-```
-lakectl abuse read-key <source ref uri> [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-      --amount int        amount of lists to do (default 1000000)
-  -h, --help              help for read-key
-      --key string        key used for the test (default "abuse-read-key")
-      --parallelism int   amount of lists to do in parallel (default 100)
 ```
 
 
