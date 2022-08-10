@@ -95,8 +95,11 @@ func generateUniqueRepositoryName() string {
 }
 
 func generateUniqueStorageNamespace(repoName string) string {
-	ns := strings.TrimRight(viper.GetString("storage_namespace"), "/")
-	return fmt.Sprintf("%s/%s/%s", ns, xid.New().String(), repoName)
+	ns := viper.GetString("storage_namespace")
+	if !strings.HasSuffix(ns, "/") {
+		ns += "/"
+	}
+	return ns + xid.New().String() + "/" + repoName
 }
 
 func createRepository(ctx context.Context, t *testing.T, name string, repoStorage string) {
