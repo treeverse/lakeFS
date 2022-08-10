@@ -51,7 +51,7 @@ see [Important metrics](#important-metrics) below to understand how to size this
 
 ### Metadata Store
 
-lakeFS maintains a key-value metadata store to manage branch references, authentication and authorization information 
+lakeFS uses a key-value database to manage branch references, authentication and authorization information 
 and to keep track of currently uncommitted data across branches.
 
 #### Storage
