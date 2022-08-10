@@ -41,7 +41,7 @@ func (p *WorkerPool) Start(workFn WorkFn) {
 	// spawn workers
 	p.wg.Add(p.parallelism)
 
-	// use wait-group and a channel as barrier to start the work after all goroutines start
+	// use wait-group and a channel as barrier for calling the worker from all goroutines
 	var startWG sync.WaitGroup
 	startWG.Add(p.parallelism)
 	startCh := make(chan struct{})
