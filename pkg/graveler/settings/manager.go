@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
+
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
@@ -132,21 +133,17 @@ func (m *KVManager) Get(ctx context.Context, repositoryID graveler.RepositoryID,
 // The settingTemplate parameter is used to determine the type passed to the update function.
 func (m *KVManager) Update(ctx context.Context, repositoryID graveler.RepositoryID, key string, settingTemplate proto.Message, update updateFunc) error {
 	const (
-		initialDurationMS = 100
-		maxDurationSec    = 5
-		maxSteps          = 10
-		factor            = 1.5
+		maxIntervalSec = 2
+		maxElapsedSec  = 5
 	)
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxInterval = maxIntervalSec * time.Second
+	bo.MaxElapsedTime = maxElapsedSec * time.Second
 
-	err := wait.ExponentialBackoffWithContext(ctx, wait.Backoff{
-		Duration: initialDurationMS * time.Millisecond,
-		Factor:   factor,
-		Steps:    maxSteps,
-		Cap:      maxDurationSec * time.Second,
-	}, func() (done bool, err error) {
+	err := backoff.Retry(func() error {
 		repo, err := m.refManager.GetRepository(ctx, repositoryID)
 		if err != nil {
-			return false, err
+			return backoff.Permanent(err)
 		}
 
 		data := settingTemplate.ProtoReflect().Interface()
@@ -154,26 +151,24 @@ func (m *KVManager) Update(ctx context.Context, repositoryID graveler.Repository
 		if errors.Is(err, graveler.ErrNotFound) {
 			data = proto.Clone(settingTemplate)
 		} else if err != nil {
-			return false, err
+			return backoff.Permanent(err)
 		}
 
 		logSetting(logging.FromContext(ctx), repositoryID, key, data, "update repository-level setting")
 		err = update(data)
 		if err != nil {
-			return false, err
+			return backoff.Permanent(err)
 		}
 		err = m.store.SetMsgIf(ctx, graveler.RepoPartition(&graveler.RepositoryRecord{RepositoryID: repositoryID, Repository: repo}), []byte(graveler.SettingsPath(key)), data, pred)
-		if err != nil {
-			if errors.Is(err, kv.ErrPredicateFailed) {
-				logging.Default().WithError(err).Warn("Predicate failed on settings update. Retrying")
-				err = nil // Retry on predicate failed
-			}
-			return false, err
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			logging.Default().WithError(err).Warn("Predicate failed on settings update. Retrying")
+			err = graveler.ErrPreconditionFailed
+		} else if err != nil {
+			return backoff.Permanent(err)
 		}
-		return true, nil
-	})
-
-	if errors.Is(err, wait.ErrWaitTimeout) {
+		return err
+	}, bo)
+	if errors.Is(err, graveler.ErrPreconditionFailed) {
 		return fmt.Errorf("update settings: %w", graveler.ErrTooManyTries)
 	}
 	return err

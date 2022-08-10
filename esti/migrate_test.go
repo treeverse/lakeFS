@@ -593,10 +593,12 @@ func testPreMigrateGraveler(t *testing.T) {
 	createBpResp, err := client.CreateBranchProtectionRuleWithResponse(ctx, repo, api.CreateBranchProtectionRuleJSONRequestBody{
 		Pattern: "*SomePattern",
 	})
+	require.NoError(t, err)
 	require.Equal(t, http.StatusNoContent, createBpResp.StatusCode())
 
 	getBpResp, err := client.GetBranchProtectionRulesWithResponse(ctx, repo)
-	require.Equal(t, http.StatusOK, getBpResp.StatusCode())
+	require.NoError(t, err)
+	require.NotNil(t, getBpResp.JSON200)
 
 	// update state
 	state.Graveler.Repo = repo
@@ -691,7 +693,8 @@ func verifyGravelerEntities(t *testing.T, ctx context.Context) {
 
 	// Verify branch protection rules
 	bpResp, err := client.GetBranchProtectionRulesWithResponse(ctx, state.Graveler.Repo)
-	require.Equal(t, http.StatusOK, unobjResp.StatusCode())
+	require.NoError(t, err)
+	require.NotNil(t, bpResp.JSON200)
 	require.Equal(t, state.Graveler.BranchProtectionRules, *bpResp.JSON200)
 }
 
