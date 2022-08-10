@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -45,10 +44,11 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 		return nil
 	}
 
-	params := kvparams.KV{
+	kvParams := kvparams.KV{
+		Type:     DriverName,
 		Postgres: &kvparams.Postgres{ConnectionString: dbParams.ConnectionString},
 	}
-	store, err := kv.Open(ctx, DriverName, params)
+	store, err := kv.Open(ctx, kvParams)
 	if err != nil {
 		return fmt.Errorf("opening kv store: %w", err)
 	}
@@ -76,7 +76,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 			return err
 		}
 
-		tmpStore, err := kv.Open(ctx, DriverName, params) // Open flow recreates table
+		tmpStore, err := kv.Open(ctx, kvParams) // Open flow recreates table
 		if err != nil {
 			return fmt.Errorf("opening kv store: %w", err)
 		}
@@ -84,7 +84,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 	}
 
 	// Mark KV Migration started
-	err = store.Set(ctx, []byte(kv.MetadataPartitionKey), []byte(kv.DBSchemaVersionKey), []byte("0"))
+	err = kv.SetDBSchemaVersion(ctx, store, 0)
 	if err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 	}
 
 	// Update migrate version
-	err = store.Set(ctx, []byte(kv.MetadataPartitionKey), []byte(kv.DBSchemaVersionKey), []byte(strconv.Itoa(kv.InitialMigrateVersion)))
+	err = kv.SetDBSchemaVersion(ctx, store, kv.InitialMigrateVersion)
 	if err != nil {
 		return fmt.Errorf("failed setting migrate schema version: %w", err)
 	}

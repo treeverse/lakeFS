@@ -26,7 +26,7 @@ var diagnosticsCmd = &cobra.Command{
 		var storeMessage *kv.StoreMessage
 		if dbParams.KVEnabled {
 			kvParams := cfg.GetKVParams()
-			kvStore, err := kv.Open(ctx, dbParams.Type, kvParams)
+			kvStore, err := kv.Open(ctx, kvParams)
 			if err != nil {
 				log.Fatalf("Failed to open KV store: %s", err)
 			}

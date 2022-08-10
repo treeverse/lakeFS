@@ -1,6 +1,7 @@
 package params
 
 type KV struct {
+	Type     string
 	Postgres *Postgres
 	DynamoDB *DynamoDB
 }

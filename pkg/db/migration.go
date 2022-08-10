@@ -31,7 +31,7 @@ type DatabaseMigrator struct {
 	params params.Database
 }
 
-func NewDatabaseMigrator(params params.Database) *DatabaseMigrator {
+func NewDatabaseMigrator(params params.Database) Migrator {
 	return &DatabaseMigrator{
 		params: params,
 	}

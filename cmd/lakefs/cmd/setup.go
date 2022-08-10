@@ -10,6 +10,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/version"
@@ -25,10 +26,23 @@ var setupCmd = &cobra.Command{
 		ctx := cmd.Context()
 
 		dbParams := cfg.GetDatabaseParams()
-		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
-		defer dbPool.Close()
 
-		migrator := db.NewDatabaseMigrator(dbParams)
+		var (
+			dbPool   db.Database
+			kvParams params.KV
+			kvStore  kv.Store
+			migrator db.Migrator
+		)
+		if dbParams.KVEnabled {
+			kvParams = cfg.GetKVParams()
+			migrator = kv.NewDatabaseMigrator(kvParams)
+		} else {
+			dbPool = db.BuildDatabaseConnection(ctx, dbParams)
+			defer dbPool.Close()
+
+			migrator = db.NewDatabaseMigrator(dbParams)
+		}
+
 		err := migrator.Migrate(ctx)
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)
@@ -57,12 +71,6 @@ var setupCmd = &cobra.Command{
 		)
 		authLogger := logging.Default().WithField("service", "auth_service")
 		if dbParams.KVEnabled {
-			kvparams := cfg.GetKVParams()
-			kvStore, err := kv.Open(ctx, dbParams.Type, kvparams)
-			if err != nil {
-				fmt.Printf("failed to open KV store: %s\n", err)
-				os.Exit(1)
-			}
 			storeMessage := &kv.StoreMessage{Store: kvStore}
 			authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), authLogger)
 			metadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)

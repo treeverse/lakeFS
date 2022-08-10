@@ -117,8 +117,8 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		storeMessage *kv.StoreMessage
 	)
 	if dbParams.KVEnabled {
-		kvparams := cfg.GetKVParams()
-		kvStore, err := kv.Open(ctx, dbParams.Type, kvparams)
+		kvParams := cfg.GetKVParams()
+		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to open KV store")
 		}
