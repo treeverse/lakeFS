@@ -234,7 +234,7 @@ func TestKVEnabled(t *testing.T) {
 	// connect to database and verify that kv table exists
 	dbURI := viper.GetString("database_connection_string")
 	if dbURI == "" {
-		t.Skip("lakefs database connection string environment variable is missing")
+		t.Fatal("lakefs database connection string environment variable is missing")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.Connect(ctx, dbURI)

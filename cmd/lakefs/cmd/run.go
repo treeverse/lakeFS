@@ -156,7 +156,7 @@ var runCmd = &cobra.Command{
 			} else if errors.Is(err, migrate.ErrNilVersion) {
 				logger.Debug("No migration, setup required")
 			} else if err != nil {
-				logger.WithError(err).Warn("Failed on schema validation")
+				logger.WithError(err).Warn("Failure on schema validation")
 			}
 		}
 		registerPrometheusCollector(dbPool)
