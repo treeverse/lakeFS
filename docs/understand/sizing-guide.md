@@ -52,7 +52,8 @@ see [Important metrics](#important-metrics) below to understand how to size this
 ### lakeFS KV Store
 
 lakeFS uses a key-value database to manage branch references, authentication and authorization information 
-and to keep track of currently uncommitted data across branches.
+and to keep track of currently uncommitted data across branches.  
+Please refer to the relevant driver tab for best practices, requirements and benchmarks.
 
 #### Storage
 The dataset stored in the metadata store is relatively modest as most metadata is pushed down into the object store. 
@@ -65,23 +66,40 @@ We recommend starting at 10 GiB for a production deployment, as it will likely b
 Since the data size is small, it's recommended to provide enough memory to hold the vast majority of that data in RAM.
 Cloud providers will save you the need to tune this parameter - it will be set to a fixed percentage the chosen instance's available RAM (25% on AWS RDS, 30% on Google Cloud SQL).
 It is recommended that you check with your selected cloud provider for configuration and provisioning information for you database.
+For self-managed database instances follow these best practices
 
-For self-managed database instances follow these best practices 
-
-###### PostgreSQL
-Ideally, configure the [shared_buffers](https://www.postgresql.org/docs/current/runtime-config-resource.html#GUC-SHARED-BUFFERS){: target="_blank" } 
-of your PostgreSQL instances to be large enough to contain the currently active dataset. 
-Pick a database instance with enough RAM to accommodate this buffer size at roughly x4 the size given for `shared_buffers`. For example, if an installation has ~500,000 uncommitted writes at any given time, it would require about 750 MiB of `shared_buffers` 
+<div class="tabs">
+  <ul>
+    <li><a href="#postgres-ram">PostgreSQL</a></li>
+	<li><a href="#dynamodb-ram">DynamoDB</a></li>
+  </ul>
+<div markdown="1" id="postgres-ram">
+Ideally, configure the [shared_buffers](https://www.postgresql.org/docs/current/runtime-config-resource.html#GUC-SHARED-BUFFERS){: target="_blank" }
+of your PostgreSQL instances to be large enough to contain the currently active dataset.
+Pick a database instance with enough RAM to accommodate this buffer size at roughly x4 the size given for `shared_buffers`. For example, if an installation has ~500,000 uncommitted writes at any given time, it would require about 750 MiB of `shared_buffers`
 that would require about 3 GiB of RAM.
+</div>
 
-###### DynamoDB
-TBD
+<div markdown="1" id="dynamodb-ram">
+TBD RAM
+</div>
+</div>
 
 #### CPU
 
-###### PostgreSQL
+<div class="tabs">
+  <ul>
+    <li><a href="#postgres-cpu">PostgreSQL</a></li>
+	<li><a href="#dynamodb-cpu">DynamoDB</a></li>
+  </ul>
+<div markdown="1" id="postgres-cpu">
 PostgreSQL CPU cores help scale concurrent requests. 1 CPU core for every 5,000 requests/second is ideal.
+</div>
 
+<div markdown="1" id="dynamodb-cpu">
+TBD CPU
+</div>
+</div>
 
 ## Scaling factors
 
@@ -89,52 +107,58 @@ Scaling lakeFS, like most data systems, moves across two axes: throughput of req
 
 ### Understanding latency and throughput considerations
 
-Most lakeFS operations are designed to be very low in latency. 
-Assuming a well-tuned local disk cache (see [Storage](#storage) above), 
-most critical path operations 
-(writing objects, requesting objects, deleting objects) are designed to complete in **<25ms at p90**. 
-Listing objects obviously requires accessing more data, but should always be on-par with what the underlying object store can provide, 
-and in most cases, it's actually faster. 
+Most lakeFS operations are designed to be very low in latency.
+Assuming a well-tuned local disk cache (see [Storage](#storage) above),
+most critical path operations
+(writing objects, requesting objects, deleting objects) are designed to complete in **<25ms at p90**.
+Listing objects obviously requires accessing more data, but should always be on-par with what the underlying object store can provide,
+and in most cases, it's actually faster.
 At the worst case, for directory listing with 1,000 common prefixes returned, expect a latency of **75ms at p90**.
 
 Managing branches (creating them, listing them and deleting them) are all constant-time operations, generally taking **<30ms at p90**.
 
-Committing and merging can take longer, as they are proportional to the amount of **changes** introduced. 
-This is what makes lakeFS optimal for large Data Lakes - 
-the amount of changes introduced per commit usually stays relatively stable while the entire data set usually grows over time. 
-This means lakeFS will provide predictable performance: 
+Committing and merging can take longer, as they are proportional to the amount of **changes** introduced.
+This is what makes lakeFS optimal for large Data Lakes -
+the amount of changes introduced per commit usually stays relatively stable while the entire data set usually grows over time.
+This means lakeFS will provide predictable performance:
 committing 100 changes will take roughly the same amount of time whether the resulting commit contains 500 or 500 million objects.
 
 See [Data Model](versioning-internals.md) for more information.
 
-Scaling throughput depends very much on the amount of CPU cores available to lakeFS. 
-In many cases, it's easier to scale lakeFS across a fleet of smaller cloud instances (or containers) 
-than scale up with machines that have many cores. In fact, lakeFS works well in both cases. 
-Most critical path operations scale very well across machines. 
+Scaling throughput depends very much on the amount of CPU cores available to lakeFS.
+In many cases, it's easier to scale lakeFS across a fleet of smaller cloud instances (or containers)
+than scale up with machines that have many cores. In fact, lakeFS works well in both cases.
+Most critical path operations scale very well across machines.
 
 ## Benchmarks
 
-All benchmarks below were measured using 2 x [c5ad.4xlarge](https://aws.amazon.com/ec2/instance-types/c5/){: target="_blank" } instances 
-on [AWS us-east-1](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions). 
+<div class="tabs">
+  <ul>
+    <li><a href="#postgres-bench">PostgreSQL</a></li>
+	<li><a href="#dynamodb-bench">DynamoDB</a></li>
+  </ul>
+<div markdown="1" id="postgres-bench">
+All benchmarks below were measured using 2 x [c5ad.4xlarge](https://aws.amazon.com/ec2/instance-types/c5/){: target="_blank" } instances
+on [AWS us-east-1](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
 Similar results can be achieved on Google Cloud using a `c2-standard-16` machine type, with an attached [local SSD](https://cloud.google.com/compute/docs/disks/local-ssd).
 On Azure, you can use a `Standard_F16s_v2` virtual machine.
 
 The PostgreSQL instance that was used is a [db.m6g.2xlarge](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.DBInstanceClass.html){: target="_blank" }
 (8 vCPUs, 32 GB RAM). Equivalent machines on Google Cloud or Azure should yield similar results.
 
-The example repository we tested against contains the metadata of a large lakeFS installation, 
+The example repository we tested against contains the metadata of a large lakeFS installation,
 where each commit contains **~180,000,000** objects (representing ~7.5 Petabytes of data).
 
-All tests are reproducible using the [lakectl abuse command](../reference/commands.md#lakectl-abuse), 
+All tests are reproducible using the [lakectl abuse command](../reference/commands.md#lakectl-abuse),
 so use it to properly size and tune your setup. All tests are accompanied by the relevant `lakectl abuse` command that generated them.
 
 ### Random reads
 
-This test generates random read requests to lakeFS, 
+This test generates random read requests to lakeFS,
 in a given commit. Paths are requested randomly from a file containing a set of preconfigured (and existing) paths.
 
 
-**command executed:** 
+**command executed:**
 
 ```shell
 lakectl abuse random-read \
@@ -179,10 +203,10 @@ Average throughput during the experiment was **10851.69 requests/second**
 
 ### Random Writes
 
-This test generates random write requests to a given lakeFS branch. 
+This test generates random write requests to a given lakeFS branch.
 All the paths are pre-generated and don't overwrite each other (as overwrites are relatively rare in a Data Lake setup).
 
-**command executed:** 
+**command executed:**
 
 ```shell
 lakectl abuse random-write \
@@ -229,7 +253,7 @@ The average throughput during the experiment was **7595.46 requests/second**.
 
 This test creates branches from a given reference.
 
-**command executed:** 
+**command executed:**
 
 ```shell
 lakectl abuse create-branches \
@@ -271,7 +295,12 @@ So, 50% of all requests took <15ms, while 99.9% of them took <100ms.
 **throughput:**
 
 The average throughput during the experiment was **7069.03 requests/second**.
+</div>
 
+<div markdown="1" id="#dynamodb-bench">
+TBD Bench
+</div>
+</div>
 
 ## Important metrics
 
@@ -291,7 +320,7 @@ See [The full reference here](https://github.com/dlmiddlecote/sqlstats#exposed-m
 
 ## Reference architectures
 
-Below are a few example architectures for lakeFS deployment. 
+Below are a **few example architectures for lakeFS deployment.** 
 
 ### Reference Architecture: Data Science/Research environment
 
