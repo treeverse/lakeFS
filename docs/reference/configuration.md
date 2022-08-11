@@ -51,7 +51,7 @@ This reference uses `.` to denote the nesting of values.
     + `database.postgres.max_idle_connections` `(int : 25)` - Sets the maximum number of connections in the idle connection pool
     + `database.postgres.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused
   + `database.beta_dynamodb` - Configuration section when using `database.type="dynamodb"`
-    + `database.beta_dynamodb.table_name` `(string : kvstore)` -
+    + `database.beta_dynamodb.table_name` `(string : kvstore)` - table used to store the data
     + `database.beta_dynamodb.read_capacity_units` `(int : 1000)` - Throughput parameter for read capacity
     + `database.beta_dynamodb.write_capacity_units` `(int : 1000)` - Throughput parameter for write capacity
 
