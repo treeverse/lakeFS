@@ -21,8 +21,43 @@ If you're upgrading, check whether the [release](https://github.com/treeverse/la
 Starting with version <TBD.X.X>, lakeFS has transitioned from using a PostgreSQL based database implementation to a Key-Value datastore interface supporting
 multiple database implementations. More information can be found [here](link-to-lakefs-on-kv-documentation).  
 Users upgrading from a previous version of lakeFS must pass through the KV migration version (<TBD.X.X>) before upgrading to newer versions of lakeFS.
-The migration process is identical to the process described [here](#lakefs-0300-or-greater) and ensures a clean transition from the old metadata database model to the new one.
 
+#### Migration Steps
+For each lakeFS instance currently running with the database
+1. Modify the `database` section under lakeFS configuration yaml:
+   1. Add `type` field with `"postgres"` as value
+   2. Copy the current configuration parameters to a new section called `postgres`
+   ```yaml
+   ---
+   database:
+    type: "postgres"
+    connection_string: "postgres://localhost:5432/postgres?sslmode=disable"
+    max_open_connections: 20
+   
+    postgres:
+      connection_string: "postgres://localhost:5432/postgres?sslmode=disable"
+      max_open_connections: 20
+   ```
+2. Stop all lakeFS instances
+3. Using the `lakefs` binary for the new version, run the following:
+   ```bash
+   lakefs migrate up
+   ```
+4. lakeFS will run the migration process, which in the end should display the following message with no errors:
+   ```shell
+   time="2022-08-10T14:46:25Z" level=info msg="KV Migration took 717.629563ms" func="pkg/logging.(*logrusEntryWrapper).Infof" file="build/pkg/logging/logger.go:246" TempDir=/tmp/kv_migrate_2913402680
+   ```
+5. It is now possible to remove the old database configuration. The updated configuration should look as such:
+   ```yaml
+   ---
+   database:
+    type: "postgres"
+   
+    postgres:
+      connection_string: "postgres://localhost:5432/postgres?sslmode=disable"
+      max_open_connections: 20
+   ``` 
+5. Deploy (or run) the new version of lakeFS.
 
 ### lakeFS 0.30.0 or greater
 
