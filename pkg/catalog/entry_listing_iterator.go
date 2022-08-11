@@ -15,8 +15,12 @@ type entryListingIterator struct {
 }
 
 func NewEntryListingIterator(it EntryIterator, prefix Path, delimiter Path) EntryListingIterator {
+	if len(prefix) > 0 {
+		it = NewPrefixIterator(it, prefix)
+	}
+
 	eli := &entryListingIterator{
-		it:        NewPrefixIterator(it, prefix),
+		it:        it,
 		prefix:    prefix.String(),
 		delimiter: delimiter.String(),
 	}

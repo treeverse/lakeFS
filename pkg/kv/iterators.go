@@ -252,17 +252,13 @@ type PartitionIterator struct {
 	err          error
 }
 
-func NewPartitionIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, partitionKey string) (*PartitionIterator, error) {
+func NewPartitionIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, partitionKey string) *PartitionIterator {
 	return &PartitionIterator{
 		ctx:          ctx,
 		store:        store,
 		msgType:      msgType,
 		partitionKey: partitionKey,
-	}, nil
-}
-
-func getNewIter(ctx context.Context, store Store, partitionKey string, start []byte) (EntriesIterator, error) {
-	return store.Scan(ctx, []byte(partitionKey), start)
+	}
 }
 
 func (p *PartitionIterator) Next() bool {
@@ -271,7 +267,7 @@ func (p *PartitionIterator) Next() bool {
 	}
 	p.value = nil
 	if p.itr == nil {
-		p.itr, p.err = getNewIter(p.ctx, p.store, p.partitionKey, []byte(""))
+		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), []byte(""))
 		if p.Err() != nil {
 			return false
 		}
@@ -302,7 +298,7 @@ func (p *PartitionIterator) SeekGE(key []byte) {
 		if p.itr != nil {
 			p.itr.Close() // Close previous before creating new iterator
 		}
-		p.itr, p.err = getNewIter(p.ctx, p.store, p.partitionKey, key)
+		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), key)
 	}
 }
 

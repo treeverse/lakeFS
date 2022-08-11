@@ -13,9 +13,7 @@ type prefixIterator struct {
 }
 
 func NewPrefixIterator(it EntryIterator, prefix Path) EntryIterator {
-	if len(prefix) > 0 {
-		it.SeekGE(prefix)
-	}
+	it.SeekGE(prefix)
 	return &prefixIterator{
 		prefix: prefix.String(),
 		it:     it,
