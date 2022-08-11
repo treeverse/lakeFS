@@ -49,22 +49,22 @@ This reference uses `.` to denote the nesting of values.
     + `database.postgres.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use
     + `database.postgres.max_open_connections` `(int : 25)` - Maximum number of open connections to the database
     + `database.postgres.max_idle_connections` `(int : 25)` - Maximum number of connections in the idle connection pool
-    + `database.postgres.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused
+    + `database.postgres.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused `(valid units: ns|us|ms|s|m|h)` 
   + `database.beta_dynamodb` - Configuration section when using `database.type="dynamodb"`
-    + `database.beta_dynamodb.table_name` `(string : kvstore)` - table used to store the data
+    + `database.beta_dynamodb.table_name` `(string : "kvstore")` - Table used to store the data
     + `database.beta_dynamodb.read_capacity_units` `(int : 1000)` - Throughput parameter for read capacity
     + `database.beta_dynamodb.write_capacity_units` `(int : 1000)` - Throughput parameter for write capacity
 
        **Note:** Refer to the following [AWS documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html) for further information
        {: .note }
-    + `database.beta_dynamodb.scan_limit` `(int : 0)` - Maximal number of items per page during scan operation
-    + `database.beta_dynamodb.endpoint` `(string : required)` - Endpoint URL for database instance
+    + `database.beta_dynamodb.scan_limit` `(int : optional)` - Maximal number of items per page during scan operation
+    
+      **Note:** Refer to the following [AWS documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html#Query.Limit) for further information
+      {: .note }
+    + `database.beta_dynamodb.endpoint` `(string : )` - Endpoint URL for database instance
     + `database.beta_dynamodb.aws_region` `(string : )` - AWS Region of database instance
     + `database.beta_dynamodb.aws_access_key_id` `(string : )` - AWS access key ID
     + `database.beta_dynamodb.aws_secret_access_key` `(string : )` - AWS secret access key
-
-      **Note:** It is best to keep these credentials somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
-      {: .note }
 * `listen_address` `(string : "0.0.0.0:8000")` - A `<host>:<port>` structured string representing the address to listen on
 * `auth.cache.enabled` `(bool : true)` - Whether to cache access credentials and user policies in-memory. Can greatly improve throughput when enabled.
 * `auth.cache.size` `(int : 1024)` - How many items to store in the auth cache. Systems with a very high user count should use a larger value at the expense of ~1kb of memory per cached user.
@@ -218,7 +218,7 @@ database:
   beta_dynamodb:
     endpoint: "dynamodb.us-east-1.amazonaws.com"
     aws_region: "us-east-1"
-    aws_access_key_id: "AKIAIOSFODNN7EXAMPLE"
+    aws_access_key_id: "AKIAJOSFODNN7EXAMPLQ"
     aws_secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 
 auth:
