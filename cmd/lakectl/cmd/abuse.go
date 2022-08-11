@@ -96,6 +96,70 @@ var abuseRandomReadsCmd = &cobra.Command{
 	},
 }
 
+var abuseLinkSameObjectCmd = &cobra.Command{
+	Use:    "link-same-object <source ref uri>",
+	Short:  "Link the same object in parallel.",
+	Hidden: false,
+	Args:   cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		u := MustParseRefURI("source ref", args[0])
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
+		key := MustString(cmd.Flags().GetString("key"))
+
+		Fmt("Source ref: %s\n", u.String())
+		Fmt("Object key: %s\n", key)
+
+		generator := stress.NewGenerator("get-and-link", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
+
+		// setup generator to use the key
+		generator.Setup(func(add stress.GeneratorAddFn) {
+			for i := 0; i < amount; i++ {
+				add(key)
+			}
+		})
+
+		// execute the things!
+		generator.Run(func(input chan string, output chan stress.Result) {
+			ctx := cmd.Context()
+			client := getClient()
+			for work := range input {
+				start := time.Now()
+
+				getResponse, err := client.GetPhysicalAddressWithResponse(ctx, u.Repository, u.Ref, &api.GetPhysicalAddressParams{Path: work})
+				stagingLocation := getResponse.JSON200
+				if err != nil || stagingLocation == nil {
+					output <- stress.Result{
+						Error: helpers.ResponseAsError(err),
+						Took:  time.Since(start),
+					}
+					continue
+				}
+
+				linkResponse, err := client.LinkPhysicalAddressWithResponse(ctx, u.Repository, u.Ref,
+					&api.LinkPhysicalAddressParams{
+						Path: work,
+					},
+					api.LinkPhysicalAddressJSONRequestBody{
+						Checksum: "00695c7307b0480c7b6bdc873cf05c15",
+						Staging: api.StagingLocation{
+							PhysicalAddress: stagingLocation.PhysicalAddress,
+							Token:           stagingLocation.Token,
+						},
+						UserMetadata: nil,
+					})
+				if err == nil && linkResponse.JSON200 == nil {
+					err = helpers.ResponseAsError(linkResponse)
+				}
+				output <- stress.Result{
+					Error: err,
+					Took:  time.Since(start),
+				}
+			}
+		})
+	},
+}
+
 var abuseRandomWritesCmd = &cobra.Command{
 	Use:    "random-write <source branch uri>",
 	Short:  "Generate random writes to the source branch",
@@ -342,28 +406,37 @@ func init() {
 
 	abuseCmd.AddCommand(abuseCreateBranchesCmd)
 
-	const defaultAmount = 1000000
+	const (
+		defaultAmount      = 1000000
+		defaultParallelism = 100
+	)
+
 	abuseCreateBranchesCmd.Flags().String("branch-prefix", "abuse-", "prefix to create branches under")
 	abuseCreateBranchesCmd.Flags().Bool("clean-only", false, "only clean up past runs")
 	abuseCreateBranchesCmd.Flags().Int("amount", defaultAmount, "amount of things to do")
-	abuseCreateBranchesCmd.Flags().Int("parallelism", 100, "amount of things to do in parallel")
+	abuseCreateBranchesCmd.Flags().Int("parallelism", defaultParallelism, "amount of things to do in parallel")
 
 	abuseCmd.AddCommand(abuseRandomReadsCmd)
 	abuseRandomReadsCmd.Flags().String("from-file", "", "read keys from this file (\"-\" for stdin)")
 	abuseRandomReadsCmd.Flags().Int("amount", defaultAmount, "amount of reads to do")
-	abuseRandomReadsCmd.Flags().Int("parallelism", 100, "amount of reads to do in parallel")
+	abuseRandomReadsCmd.Flags().Int("parallelism", defaultParallelism, "amount of reads to do in parallel")
 
 	abuseCmd.AddCommand(abuseRandomWritesCmd)
 	abuseRandomWritesCmd.Flags().String("prefix", "abuse/", "prefix to create paths under")
 	abuseRandomWritesCmd.Flags().Int("amount", defaultAmount, "amount of writes to do")
-	abuseRandomWritesCmd.Flags().Int("parallelism", 100, "amount of writes to do in parallel")
+	abuseRandomWritesCmd.Flags().Int("parallelism", defaultParallelism, "amount of writes to do in parallel")
 
 	abuseCmd.AddCommand(abuseCommitCmd)
-	abuseCommitCmd.Flags().Int("amount", 100, "amount of commits to do")
+	abuseCommitCmd.Flags().Int("amount", defaultParallelism, "amount of commits to do")
 	abuseCommitCmd.Flags().Duration("gap", 2*time.Second, "duration to wait between commits")
 
 	abuseCmd.AddCommand(abuseListCmd)
 	abuseListCmd.Flags().String("prefix", "abuse/", "prefix to list under")
 	abuseListCmd.Flags().Int("amount", defaultAmount, "amount of lists to do")
-	abuseListCmd.Flags().Int("parallelism", 100, "amount of lists to do in parallel")
+	abuseListCmd.Flags().Int("parallelism", defaultParallelism, "amount of lists to do in parallel")
+
+	abuseCmd.AddCommand(abuseLinkSameObjectCmd)
+	abuseLinkSameObjectCmd.Flags().Int("amount", defaultAmount, "amount of link object to do")
+	abuseLinkSameObjectCmd.Flags().Int("parallelism", defaultParallelism, "amount of link object to do in parallel")
+	abuseLinkSameObjectCmd.Flags().String("key", "linked-object", "key used for the test")
 }

@@ -102,6 +102,9 @@ func (e UserVisibleAPIError) Unwrap() error {
 // unsuccessful HTTPResponse field and uses its message, along with a Body
 // that it assumes is an api.Error.
 func ResponseAsError(response interface{}) error {
+	if response == nil {
+		return nil
+	}
 	if httpResponse, ok := response.(*http.Response); ok {
 		return HTTPResponseAsError(httpResponse)
 	}

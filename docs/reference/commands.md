@@ -155,6 +155,26 @@ lakectl abuse help [command] [flags]
 
 
 
+### lakectl abuse link-same-object
+
+Link the same object in parallel.
+
+```
+lakectl abuse link-same-object <source ref uri> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int        amount of link object to do (default 1000000)
+  -h, --help              help for link-same-object
+      --key string        key used for the test (default "linked-object")
+      --parallelism int   amount of link object to do in parallel (default 100)
+```
+
+
+
 ### lakectl abuse list
 
 List from the source ref
