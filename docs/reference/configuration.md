@@ -61,7 +61,7 @@ This reference uses `.` to denote the nesting of values.
     + `database.beta_dynamodb.endpoint` `(string : required)` - Endpoint URL for database instance
     + `database.beta_dynamodb.aws_region` `(string : )` - AWS Region of database instance
     + `database.beta_dynamodb.aws_access_key_id` `(string : )` - AWS access key ID
-    + `database.beta_dynamodb.aws_secret_access_key` `(string : )` - AW secret access key
+    + `database.beta_dynamodb.aws_secret_access_key` `(string : )` - AWS secret access key
 
       **Note:** It is best to keep these credentials somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
       {: .note }
