@@ -23,6 +23,11 @@ var superuserCmd = &cobra.Command{
 	Short: "Create additional user with admin credentials",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
+		if cfg.IsAuthTypeAPI() {
+			fmt.Printf("Can't create additional admin while using external auth API - auth.api.endpoint is configured.\n")
+			os.Exit(1)
+		}
+
 		ctx := cmd.Context()
 		dbParams := cfg.GetDatabaseParams()
 		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
@@ -92,7 +97,6 @@ var superuserCmd = &cobra.Command{
 			credentials.AccessKeyID, credentials.SecretAccessKey)
 
 		cancelFn()
-
 	},
 }
 

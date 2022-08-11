@@ -20,11 +20,16 @@ import (
 var setupCmd = &cobra.Command{
 	Use:     "setup",
 	Aliases: []string{"init"},
-	Short:   "Setup a new LakeFS instance with initial credentials",
+	Short:   "Setup a new lakeFS instance with initial credentials",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
-		ctx := cmd.Context()
 
+		if cfg.IsAuthTypeAPI() {
+			fmt.Printf("Can't setup lakeFS while using external auth API - auth.api.endpoint is configured.\n")
+			os.Exit(1)
+		}
+
+		ctx := cmd.Context()
 		dbParams := cfg.GetDatabaseParams()
 
 		var (
