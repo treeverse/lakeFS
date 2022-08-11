@@ -48,7 +48,7 @@ This reference uses `.` to denote the nesting of values.
   + `database.postgres` - Configuration section when using `database.type="postgres"`
     + `database.postgres.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use
     + `database.postgres.max_open_connections` `(int : 25)` - Maximum number of open connections to the database
-    + `database.postgres.max_idle_connections` `(int : 25)` - Sets the maximum number of connections in the idle connection pool
+    + `database.postgres.max_idle_connections` `(int : 25)` - Maximum number of connections in the idle connection pool
     + `database.postgres.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused
   + `database.beta_dynamodb` - Configuration section when using `database.type="dynamodb"`
     + `database.beta_dynamodb.table_name` `(string : kvstore)` - table used to store the data
