@@ -290,10 +290,10 @@ func (c *Config) Validate() error {
 
 func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{
-		ConnectionString:      c.values.Database.ConnectionString.SecureValue(),
-		MaxOpenConnections:    c.values.Database.MaxOpenConnections,
-		MaxIdleConnections:    c.values.Database.MaxIdleConnections,
-		ConnectionMaxLifetime: c.values.Database.ConnectionMaxLifetime,
+		ConnectionString:      c.values.Database.DeprecatedConnectionString.SecureValue(),
+		MaxOpenConnections:    c.values.Database.DeprecatedMaxOpenConnections,
+		MaxIdleConnections:    c.values.Database.DeprecatedMaxIdleConnections,
+		ConnectionMaxLifetime: c.values.Database.DeprecatedConnectionMaxLifetime,
 		Type:                  c.values.Database.Type,
 		KVEnabled:             c.values.Database.KVEnabled,
 		DropTables:            c.values.Database.DropTables,

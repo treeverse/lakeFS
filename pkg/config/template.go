@@ -74,13 +74,13 @@ type configuration struct {
 
 	Database struct {
 		// Deprecated: use Postgres struct
-		ConnectionString SecureString `mapstructure:"connection_string"`
+		DeprecatedConnectionString SecureString `mapstructure:"connection_string"`
 		// Deprecated: use Postgres struct
-		MaxOpenConnections int32 `mapstructure:"max_open_connections"`
+		DeprecatedMaxOpenConnections int32 `mapstructure:"max_open_connections"`
 		// Deprecated: use Postgres struct
-		MaxIdleConnections int32 `mapstructure:"max_idle_connections"`
+		DeprecatedMaxIdleConnections int32 `mapstructure:"max_idle_connections"`
 		// Deprecated: use Postgres struct
-		ConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
+		DeprecatedConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
 
 		// KVEnabled Development flag to switch between postgres DB and KV store implementations
 		KVEnabled bool `mapstructure:"kv_enabled"`
