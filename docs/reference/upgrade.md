@@ -39,7 +39,7 @@ For each lakeFS instance currently running with the database
       max_open_connections: 20
    ```
 2. Stop all lakeFS instances
-3. Using the `lakefs` binary for the new version, run the following:
+3. Using the `lakefs` binary for the new version(<TBD.X.X>), run the following:
    ```bash
    lakefs migrate up
    ```
