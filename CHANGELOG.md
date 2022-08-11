@@ -1,7 +1,7 @@
 # Changelog
 ## v0.70.1 - 2022-08-11
 
-What's new:
+Bug fix:
 - Fix DB serialization error during multiple writes to the same key (#3862)
 
 ## v0.70.0 - 2022-08-03
