@@ -764,7 +764,10 @@ func (c *Catalog) ListEntries(ctx context.Context, repository string, reference 
 	it := NewEntryListingIterator(NewValueToEntryIterator(iter), prefixPath, delimiterPath)
 	defer it.Close()
 
-	it.SeekGE(afterPath)
+	if afterPath != "" {
+		it.SeekGE(afterPath)
+	}
+
 	var entries []*DBEntry
 	for it.Next() {
 		v := it.Value()
