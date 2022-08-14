@@ -65,6 +65,9 @@ This reference uses `.` to denote the nesting of values.
     + `database.beta_dynamodb.aws_region` `(string : )` - AWS Region of database instance
     + `database.beta_dynamodb.aws_access_key_id` `(string : )` - AWS access key ID
     + `database.beta_dynamodb.aws_secret_access_key` `(string : )` - AWS secret access key
+    
+      **Note:** `endpoint` `aw_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials. 
+      {: .note } 
 * `listen_address` `(string : "0.0.0.0:8000")` - A `<host>:<port>` structured string representing the address to listen on
 * `auth.cache.enabled` `(bool : true)` - Whether to cache access credentials and user policies in-memory. Can greatly improve throughput when enabled.
 * `auth.cache.size` `(int : 1024)` - How many items to store in the auth cache. Systems with a very high user count should use a larger value at the expense of ~1kb of memory per cached user.
@@ -216,10 +219,7 @@ logging:
 database:
   type: "dynamodb"
   beta_dynamodb:
-    endpoint: "dynamodb.us-east-1.amazonaws.com"
-    aws_region: "us-east-1"
-    aws_access_key_id: "AKIAJOSFODNN7EXAMPLQ"
-    aws_secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+    table_name: "kvstore"
 
 auth:
   encrypt:
