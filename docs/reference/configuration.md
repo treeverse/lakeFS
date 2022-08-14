@@ -50,21 +50,21 @@ This reference uses `.` to denote the nesting of values.
     + `database.postgres.max_open_connections` `(int : 25)` - Maximum number of open connections to the database
     + `database.postgres.max_idle_connections` `(int : 25)` - Maximum number of connections in the idle connection pool
     + `database.postgres.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused `(valid units: ns|us|ms|s|m|h)` 
-  + `database.beta_dynamodb` - Configuration section when using `database.type="dynamodb"`
-    + `database.beta_dynamodb.table_name` `(string : "kvstore")` - Table used to store the data
-    + `database.beta_dynamodb.read_capacity_units` `(int : 1000)` - Throughput parameter for read capacity
-    + `database.beta_dynamodb.write_capacity_units` `(int : 1000)` - Throughput parameter for write capacity
+  + `database.dynamodb` - Configuration section when using `database.type="dynamodb"`
+    + `database.dynamodb.table_name` `(string : "kvstore")` - Table used to store the data
+    + `database.dynamodb.read_capacity_units` `(int : 1000)` - Throughput parameter for read capacity
+    + `database.dynamodb.write_capacity_units` `(int : 1000)` - Throughput parameter for write capacity
 
        **Note:** Refer to the following [AWS documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html) for further information
        {: .note }
-    + `database.beta_dynamodb.scan_limit` `(int : optional)` - Maximal number of items per page during scan operation
+    + `database.dynamodb.scan_limit` `(int : optional)` - Maximal number of items per page during scan operation
     
       **Note:** Refer to the following [AWS documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html#Query.Limit) for further information
       {: .note }
-    + `database.beta_dynamodb.endpoint` `(string : )` - Endpoint URL for database instance
-    + `database.beta_dynamodb.aws_region` `(string : )` - AWS Region of database instance
-    + `database.beta_dynamodb.aws_access_key_id` `(string : )` - AWS access key ID
-    + `database.beta_dynamodb.aws_secret_access_key` `(string : )` - AWS secret access key
+    + `database.dynamodb.endpoint` `(string : )` - Endpoint URL for database instance
+    + `database.dynamodb.aws_region` `(string : )` - AWS Region of database instance
+    + `database.dynamodb.aws_access_key_id` `(string : )` - AWS access key ID
+    + `database.dynamodb.aws_secret_access_key` `(string : )` - AWS secret access key
     
       **Note:** `endpoint` `aw_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials. 
       {: .note } 
@@ -218,7 +218,7 @@ logging:
 
 database:
   type: "dynamodb"
-  beta_dynamodb:
+  dynamodb:
     table_name: "kvstore"
 
 auth:
