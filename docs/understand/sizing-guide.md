@@ -135,7 +135,7 @@ Most critical path operations scale very well across machines.
 <div class="tabs">
   <ul>
     <li><a href="#postgres-bench">PostgreSQL</a></li>
-	<li><a href="#dynamodb-bench">DynamoDB</a></li>
+    <li><a href="#dynamodb-bench">DynamoDB</a></li>
   </ul>
 <div markdown="1" id="postgres-bench">
 All benchmarks below were measured using 2 x [c5ad.4xlarge](https://aws.amazon.com/ec2/instance-types/c5/){: target="_blank" } instances
