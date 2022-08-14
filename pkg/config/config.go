@@ -313,16 +313,16 @@ func (c *Config) GetKVParams() kvparams.KV {
 			ConnectionMaxLifetime: c.values.Database.Postgres.ConnectionMaxLifetime,
 		}
 
-	case c.values.Database.BetaDynamoDB != nil:
+	case c.values.Database.DynamoDB != nil:
 		p.DynamoDB = &kvparams.DynamoDB{
-			TableName:          c.values.Database.BetaDynamoDB.TableName,
-			ReadCapacityUnits:  c.values.Database.BetaDynamoDB.ReadCapacityUnits,
-			WriteCapacityUnits: c.values.Database.BetaDynamoDB.WriteCapacityUnits,
-			ScanLimit:          c.values.Database.BetaDynamoDB.ScanLimit,
-			Endpoint:           c.values.Database.BetaDynamoDB.Endpoint,
-			AwsRegion:          c.values.Database.BetaDynamoDB.AwsRegion,
-			AwsAccessKeyID:     c.values.Database.BetaDynamoDB.AwsAccessKeyID.SecureString(),
-			AwsSecretAccessKey: c.values.Database.BetaDynamoDB.AwsSecretAccessKey.SecureString(),
+			TableName:          c.values.Database.DynamoDB.TableName,
+			ReadCapacityUnits:  c.values.Database.DynamoDB.ReadCapacityUnits,
+			WriteCapacityUnits: c.values.Database.DynamoDB.WriteCapacityUnits,
+			ScanLimit:          c.values.Database.DynamoDB.ScanLimit,
+			Endpoint:           c.values.Database.DynamoDB.Endpoint,
+			AwsRegion:          c.values.Database.DynamoDB.AwsRegion,
+			AwsAccessKeyID:     c.values.Database.DynamoDB.AwsAccessKeyID.SecureValue(),
+			AwsSecretAccessKey: c.values.Database.DynamoDB.AwsSecretAccessKey.SecureValue(),
 		}
 	}
 	return p
