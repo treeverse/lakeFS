@@ -71,7 +71,7 @@ For self-managed database instances follow these best practices
 <div class="tabs">
   <ul>
     <li><a href="#postgres-ram">PostgreSQL</a></li>
-	<li><a href="#dynamodb-ram">DynamoDB</a></li>
+    <li><a href="#dynamodb-ram">DynamoDB</a></li>
   </ul>
 <div markdown="1" id="postgres-ram">
 Ideally, configure the [shared_buffers](https://www.postgresql.org/docs/current/runtime-config-resource.html#GUC-SHARED-BUFFERS){: target="_blank" }
