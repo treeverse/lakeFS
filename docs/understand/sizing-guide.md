@@ -90,7 +90,7 @@ TBD RAM
 <div class="tabs">
   <ul>
     <li><a href="#postgres-cpu">PostgreSQL</a></li>
-	<li><a href="#dynamodb-cpu">DynamoDB</a></li>
+    <li><a href="#dynamodb-cpu">DynamoDB</a></li>
   </ul>
 <div markdown="1" id="postgres-cpu">
 PostgreSQL CPU cores help scale concurrent requests. 1 CPU core for every 5,000 requests/second is ideal.
