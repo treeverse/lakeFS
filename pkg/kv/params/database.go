@@ -1,5 +1,9 @@
 package params
 
+import (
+	"time"
+)
+
 type KV struct {
 	Type     string
 	Postgres *Postgres
@@ -7,7 +11,10 @@ type KV struct {
 }
 
 type Postgres struct {
-	ConnectionString string
+	ConnectionString      string
+	MaxOpenConnections    int32
+	MaxIdleConnections    int32
+	ConnectionMaxLifetime time.Duration
 }
 
 type DynamoDB struct {
