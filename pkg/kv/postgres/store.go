@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
@@ -36,6 +37,10 @@ const (
 	// DefaultPartitions Changing the below value means repartitioning and probably a migration.
 	// Change it only if you really know what you're doing.
 	DefaultPartitions = 100
+
+	DefaultMaxOpenConnections    = 25
+	DefaultMaxIdleConnections    = 25
+	DefaultConnectionMaxLifetime = 5 * time.Minute
 )
 
 //nolint:gochecknoinits
@@ -43,12 +48,31 @@ func init() {
 	kv.Register(DriverName, &Driver{})
 }
 
+func normalizeDBParams(p *kvparams.Postgres) {
+	if p.MaxOpenConnections == 0 {
+		p.MaxOpenConnections = DefaultMaxOpenConnections
+	}
+
+	if p.MaxIdleConnections == 0 {
+		p.MaxIdleConnections = DefaultMaxIdleConnections
+	}
+
+	if p.ConnectionMaxLifetime == 0 {
+		p.ConnectionMaxLifetime = DefaultConnectionMaxLifetime
+	}
+}
+
 func (d *Driver) Open(ctx context.Context, kvparams kvparams.KV) (kv.Store, error) {
 	// TODO(barak): should we handle Open reuse the same store based on name
+	normalizeDBParams(kvparams.Postgres)
 	config, err := pgxpool.ParseConfig(kvparams.Postgres.ConnectionString)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrDriverConfiguration, err)
 	}
+	config.MaxConns = kvparams.Postgres.MaxOpenConnections
+	config.MinConns = kvparams.Postgres.MaxIdleConnections
+	config.MaxConnLifetime = kvparams.Postgres.ConnectionMaxLifetime
+
 	pool, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrConnectFailed, err)
