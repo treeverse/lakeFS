@@ -32,14 +32,24 @@ var setupCmd = &cobra.Command{
 		ctx := cmd.Context()
 		dbParams := cfg.GetDatabaseParams()
 
+		if len(dbParams.Type) > 0 && len(dbParams.ConnectionString) > 0 { // Conflicting configuration
+			fmt.Printf("Conflicting database parameters, connection_string should be defined for the specific driver. Do you need to go through migration?\n")
+			os.Exit(1)
+		}
 		var (
 			dbPool   db.Database
 			kvParams params.KV
 			kvStore  kv.Store
 			migrator db.Migrator
+			err      error
 		)
 		if dbParams.KVEnabled {
 			kvParams = cfg.GetKVParams()
+			kvStore, err = kv.Open(ctx, kvParams)
+			if err != nil {
+				fmt.Printf("Failed to open KV store: %s\n", err)
+				os.Exit(1)
+			}
 			migrator = kv.NewDatabaseMigrator(kvParams)
 		} else {
 			dbPool = db.BuildDatabaseConnection(ctx, dbParams)
@@ -48,7 +58,7 @@ var setupCmd = &cobra.Command{
 			migrator = db.NewDatabaseMigrator(dbParams)
 		}
 
-		err := migrator.Migrate(ctx)
+		err = migrator.Migrate(ctx)
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)
 			os.Exit(1)
