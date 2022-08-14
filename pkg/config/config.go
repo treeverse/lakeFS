@@ -184,9 +184,9 @@ const (
 	EmailBurstKey              = "email.burst"
 	LakefsEmailBaseURLKey      = "email.lakefs_base_url"
 
-	DynamoDBTableNameKey          = "database.beta_dynamodb.table_name"
-	DynamoDBReadCapacityUnitsKey  = "database.beta_dynamodb.read_capacity_units"
-	DynamoDBWriteCapacityUnitsKey = "database.beta_dynamodb.write_capacity_units"
+	DynamoDBTableNameKey          = "database.dynamodb.table_name"
+	DynamoDBReadCapacityUnitsKey  = "database.dynamodb.read_capacity_units"
+	DynamoDBWriteCapacityUnitsKey = "database.dynamodb.write_capacity_units"
 )
 
 func setDefaults() {
@@ -321,8 +321,8 @@ func (c *Config) GetKVParams() kvparams.KV {
 			ScanLimit:          c.values.Database.BetaDynamoDB.ScanLimit,
 			Endpoint:           c.values.Database.BetaDynamoDB.Endpoint,
 			AwsRegion:          c.values.Database.BetaDynamoDB.AwsRegion,
-			AwsAccessKeyID:     c.values.Database.BetaDynamoDB.AwsAccessKeyID.String(),
-			AwsSecretAccessKey: c.values.Database.BetaDynamoDB.AwsSecretAccessKey.String(),
+			AwsAccessKeyID:     c.values.Database.BetaDynamoDB.AwsAccessKeyID.SecureString(),
+			AwsSecretAccessKey: c.values.Database.BetaDynamoDB.AwsSecretAccessKey.SecureString(),
 		}
 	}
 	return p
