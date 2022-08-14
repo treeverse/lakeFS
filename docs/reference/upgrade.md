@@ -22,11 +22,18 @@ Starting with version <TBD.X.X>, lakeFS has transitioned from using a PostgreSQL
 multiple database implementations. More information can be found [here](link-to-lakefs-on-kv-documentation).  
 Users upgrading from a previous version of lakeFS must pass through the KV migration version (<TBD.X.X>) before upgrading to newer versions of lakeFS.
 
+> **Note:**  
+> **Prior to the migration procedure it is strongly recommended to perform the following steps:**
+> * Commit all uncommitted data on branches
+> * Create a snapshot of your database
+{: .note }
+
 #### Migration Steps
 For each lakeFS instance currently running with the database
 1. Modify the `database` section under lakeFS configuration yaml:
    1. Add `type` field with `"postgres"` as value
-   2. Copy the current configuration parameters to a new section called `postgres`
+   2. Copy the current configuration parameters to a new section called `postgres`  
+
    ```yaml
    ---
    database:
@@ -38,16 +45,21 @@ For each lakeFS instance currently running with the database
       connection_string: "postgres://localhost:5432/postgres?sslmode=disable"
       max_open_connections: 20
    ```
+
 2. Stop all lakeFS instances
 3. Using the `lakefs` binary for the new version(<TBD.X.X>), run the following:
    ```bash
    lakefs migrate up
    ```
+
 4. lakeFS will run the migration process, which in the end should display the following message with no errors:
+
    ```shell
    time="2022-08-10T14:46:25Z" level=info msg="KV Migration took 717.629563ms" func="pkg/logging.(*logrusEntryWrapper).Infof" file="build/pkg/logging/logger.go:246" TempDir=/tmp/kv_migrate_2913402680
    ```
+
 5. It is now possible to remove the old database configuration. The updated configuration should look as such:
+
    ```yaml
    ---
    database:
@@ -56,8 +68,9 @@ For each lakeFS instance currently running with the database
     postgres:
       connection_string: "postgres://localhost:5432/postgres?sslmode=disable"
       max_open_connections: 20
-   ``` 
-5. Deploy (or run) the new version of lakeFS.
+   ```
+ 
+6. Deploy (or run) the new version of lakeFS.
 
 ### lakeFS 0.30.0 or greater
 
