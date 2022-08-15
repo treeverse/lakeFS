@@ -23,7 +23,9 @@ multiple database implementations. More information can be found [here](link-to-
 Users upgrading from a previous version of lakeFS must pass through the KV migration version (<TBD.X.X>) before upgrading to newer versions of lakeFS.
 
 > **Note:**  
-> **Prior to the migration procedure it is strongly recommended to perform the following steps:**
+> **Users using OS environment variables for database configuration must define the `connection_string` explicitly or as environment variable before proceeding with the migration.**  
+> 
+> Prior to the migration procedure it is strongly recommended to perform the following steps:
 > * Commit all uncommitted data on branches
 > * Create a snapshot of your database
 {: .note }
@@ -32,7 +34,7 @@ Users upgrading from a previous version of lakeFS must pass through the KV migra
 For each lakeFS instance currently running with the database
 1. Modify the `database` section under lakeFS configuration yaml:
    1. Add `type` field with `"postgres"` as value
-   2. Copy the current configuration parameters to a new section called `postgres`  
+   2. Copy the current configuration parameters to a new section called `postgres`
 
    ```yaml
    ---
