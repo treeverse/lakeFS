@@ -47,7 +47,7 @@ func ValidateSchemaVersion(ctx context.Context, store Store, migrationRequired b
 		if migrationRequired {
 			return fmt.Errorf("missing KV schema version: %w", err)
 		} else {
-			logging.Default().Debug("No KV Schema version, setup required")
+			logging.Default().Info("No KV Schema version, setup required")
 			return nil
 		}
 
@@ -56,10 +56,11 @@ func ValidateSchemaVersion(ctx context.Context, store Store, migrationRequired b
 
 	case kvVersion < InitialMigrateVersion:
 		if migrationRequired {
-			return fmt.Errorf("migration required, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html: %w", err)
+			return fmt.Errorf("migration required, for more information see https://docs.lakefs.io/reference/upgrade.html : %w", ErrInvalidSchemaVersion)
 		} else {
-			return fmt.Errorf("missing KV schema version (%d): %w", kvVersion, err)
+			return fmt.Errorf("(scehma version %d): %w", kvVersion, ErrInvalidSchemaVersion)
 		}
 	}
+	logging.Default().WithField("version", kvVersion).Info("KV valid")
 	return nil
 }
