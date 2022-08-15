@@ -1,7 +1,8 @@
 ---
 layout: default
 title: lakeFS Glossary
-description: Glossary of all terms related to lakeFS technical internals and the architecture
+description: Glossary of all terms related to lakeFS technical internals and the architecture.
+parent: Reference
 nav_order: 52
 has_children: false
 ---
@@ -15,13 +16,11 @@ This page has definition and explanations of all terms related to lakeFS technic
 Data auditing is data assessment to ensure its accuracy, security, and efficacy for specific usage. It also involves assessing data quality through its lifecycle and understanding the impact of poor quality data on the organization's performance and revenue. Ensuring data reproducibility, auditability, and governance is one of the key concerns of data engineers today. lakeFS commit history helps the data teams to keep track of all changes to the data, supporting data auditing.
 
 ### Branch
-
-Branches are similar in concept to Git branches.
-When creating a new branch, we are actually creating a consistent snapshot of the entire repository, which is isolated from other branches and their changes.
+Branches are similar in concept to Git branches. When creating a new branch, we are actually creating a consistent snapshot of the entire repository, which is isolated from other branches and their changes.
 
 A branch is a mutable pointer to a commit and uncommitted changes in its staging area (i.e., mutable storage where users can create, update, and delete objects). When a user creates a commit from a branch, all the files from the staging area will be merged into the contents of the current branch, generating a new set of objects. The pointer is updated to reference the new set of objects. The new branch tip is set to the latest commit and the previous branch tip serves as the commit's parent. 
 
-Just like in git, a branch spans a repository. Learn more about the [lakeFS branching model](./understand/branching-model.md).
+Just like in Git, a branch spans a repository. Learn more about the [lakeFS branching model](./understand/branching-model.md).
 
 ### Collection
 A collection, roughly speaking, is a set of data. Collections may be structured or unstructured; a structured collection is often referred to as a table.
@@ -29,7 +28,7 @@ A collection, roughly speaking, is a set of data. Collections may be structured 
 ### Commit
 A commit is a point-in-time immutable snapshot of a branch. It's a collection of object metadata and data, including paths and the object contents and metadata. Commits have their own commit metadata. Every repository has one initial commit with no parent commits. If a commit has more than one parent, it is a merge commit. lakeFS supports only merge commits with two parents.
 
-### Cross-collection Consistency
+### Cross-Collection Consistency
 It is unfortunate that the word 'consistency' has multiple meanings, at least four of them according to Martin Kleppmann. Consistency in the context of lakeFS and data versioning is, the guarantee that operations in a transaction are performed accurately, correctly and most important, atomically. 
 
 A repository (and thus a branch) in lakeFS, can span multiple tables or collections. By providing branch, commit, merge and revert operations atomically on a branch, lakeFS achieves consistency guarantees across different logical collections. That is, data versioning is consistent across multiple collections within a repository.
