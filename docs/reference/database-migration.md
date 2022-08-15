@@ -13,5 +13,5 @@ has_children: false
 **Note:** Feature in development
 {: .note }
 
-lakeFS database migration allows users to easily transition from one database implementation to another.
+The lakeFS database migration tool simplifies switching from one database implementation to another.
 More information can be found [here](https://github.com/treeverse/lakeFS/issues/3899)
