@@ -23,7 +23,7 @@ Expected deployment time: 25 min
 lakeFS requires a PostgreSQL database to synchronize actions on your repositories.
 We will show you how to create a database on AWS RDS but you can use any PostgreSQL database as long as it's accessible by your lakeFS installation.
 
-If you already have a database, take note of the connection string and skip to the [next step](#install-lakefs-on-ec2)
+If you already have a database, take note of the connection string and skip to the [next step](#installation-options)
 
 1. Follow the official [AWS documentation](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_GettingStarted.CreatingConnecting.PostgreSQL.html){: target="_blank" } on how to create a PostgreSQL instance and connect to it.
    You may use the default PostgreSQL engine, or [Aurora PostgreSQL](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.AuroraPostgreSQL.html){: target="_blank" }. Make sure that you're using PostgreSQL version >= 11.
