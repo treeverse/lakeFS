@@ -116,7 +116,11 @@ func Serve(
 		r.Mount("/oidc/login", NewOIDCLoginPageHandler(oidcConfig, sessionStore, oauthConfig, logger))
 	}
 	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.GetAuthLogoutRedirectURL()))
-	r.Mount("/", NewUIHandler(gatewayDomains, snippets))
+
+	// Disable serving of embedded static assets when using an external client
+	if cfg.GetUIEnabled() {
+		r.Mount("/", NewUIHandler(gatewayDomains, snippets))
+	}
 	return r
 }
 
