@@ -55,12 +55,14 @@ func init() {
 // Open - opens and returns a KV store over DynamoDB. This function creates the DB session
 // and sets up the KV table. dsn is a string with the DynamoDB endpoint
 func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, error) {
-	// TODO: Get table name from env
 	params := kvParams.DynamoDB
 
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
+	sess, err := session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
-	}))
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	cfg := aws.NewConfig()
 	if params.Endpoint != "" {
@@ -69,7 +71,6 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 	if params.AwsRegion != "" {
 		cfg = cfg.WithRegion(params.AwsRegion)
 	}
-
 	if params.AwsAccessKeyID != "" {
 		cfg = cfg.WithCredentials(credentials.NewCredentials(
 			&credentials.StaticProvider{
@@ -78,10 +79,9 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 					SecretAccessKey: params.AwsSecretAccessKey,
 				}}))
 	}
-
 	// Create DynamoDB client
 	svc := dynamodb.New(sess, cfg)
-	err := setupKeyValueDatabase(ctx, svc, params)
+	err = setupKeyValueDatabase(ctx, svc, params)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
 	}

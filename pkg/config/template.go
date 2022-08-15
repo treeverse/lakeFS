@@ -96,7 +96,7 @@ type configuration struct {
 			ConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
 		}
 
-		BetaDynamoDB *struct {
+		DynamoDB *struct {
 			// The name of the DynamoDB table to be used as KV
 			TableName string `mapstructure:"table_name"`
 
@@ -122,7 +122,7 @@ type configuration struct {
 			AwsRegion          string       `mapstructure:"aws_region"`
 			AwsAccessKeyID     SecureString `mapstructure:"aws_access_key_id"`
 			AwsSecretAccessKey SecureString `mapstructure:"aws_secret_access_key"`
-		} `mapstructure:"beta_dynamodb"`
+		} `mapstructure:"dynamodb"`
 	}
 
 	Auth struct {
