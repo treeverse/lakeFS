@@ -26,7 +26,7 @@ type stagingTestRecord struct {
 func TestMigrate(t *testing.T) {
 	ctx := context.Background()
 	conn, _ := testutil.GetDB(t, databaseURI)
-	store, err := kv.Open(context.Background(), kvpg.DriverName, kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})
+	store, err := kv.Open(context.Background(), kvparams.KV{Type: kvpg.DriverName, Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})
 	testutil.MustDo(t, "Open KV Store", err)
 	kvStore := kv.StoreMessage{Store: store}
 	t.Cleanup(func() {
@@ -45,7 +45,7 @@ func TestMigrate(t *testing.T) {
 	require.NoError(t, err)
 
 	testutil.MustDo(t, "Import file", kv.Import(ctx, &buf, kvStore.Store))
-	kvMgr := staging.NewManager(kvStore)
+	kvMgr := staging.NewManager(ctx, kvStore)
 	for _, entry := range data {
 		for _, record := range entry.records {
 			r, err := kvMgr.Get(ctx, entry.stagingToken, record.Key)

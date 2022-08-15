@@ -2,18 +2,22 @@ package settings_test
 
 import (
 	"context"
+	"errors"
 	"io"
 	"sync"
 	"testing"
 
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/mem"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/mock"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"google.golang.org/protobuf/proto"
 )
@@ -36,45 +40,139 @@ func (m *mockCache) GetOrSet(k interface{}, setFn cache.SetFn) (v interface{}, e
 
 func TestSaveAndGet(t *testing.T) {
 	ctx := context.Background()
-	mockCache := &mockCache{
-		c: make(map[interface{}]interface{}),
+	tests := []struct {
+		kvEnabled bool
+	}{
+		{
+			kvEnabled: false,
+		},
+		{
+			kvEnabled: true,
+		},
 	}
-	m, _ := prepareTest(t, ctx, mockCache, nil)
+
+	for _, tt := range tests {
+		kvSuffix := ""
+		if tt.kvEnabled {
+			kvSuffix = "_KV"
+		}
+		t.Run("TestSaveAndGet"+kvSuffix, func(t *testing.T) {
+			mc := &mockCache{
+				c: make(map[interface{}]interface{}),
+			}
+			m, _ := prepareTest(t, ctx, tt.kvEnabled, mc, nil)
+			emptySettings := &settings.ExampleSettings{}
+			firstSettings := &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
+			err := m.Save(ctx, "example-repo", "settingKey", firstSettings)
+			testutil.Must(t, err)
+			gotSettings, err := m.Get(ctx, "example-repo", "settingKey", emptySettings)
+			testutil.Must(t, err)
+			if diff := deep.Equal(firstSettings, gotSettings); diff != nil {
+				t.Fatal("got unexpected settings:", diff)
+			}
+			secondSettings := &settings.ExampleSettings{ExampleInt: 15, ExampleStr: "hi", ExampleMap: map[string]int32{"boo": 16}}
+			err = m.Save(ctx, "example-repo", "settingKey", secondSettings)
+			testutil.Must(t, err)
+			// the result should be cached, and we should get the first settings:
+			gotSettings, err = m.Get(ctx, "example-repo", "settingKey", emptySettings)
+			testutil.Must(t, err)
+			if diff := deep.Equal(firstSettings, gotSettings); diff != nil {
+				t.Fatal("got unexpected settings:", diff)
+			}
+			// after clearing the mc, we should get the new settings:
+			mc.c = make(map[interface{}]interface{})
+			gotSettings, err = m.Get(ctx, "example-repo", "settingKey", emptySettings)
+			testutil.Must(t, err)
+			if diff := deep.Equal(secondSettings, gotSettings); diff != nil {
+				t.Fatal("got unexpected settings:", diff)
+			}
+		})
+	}
+}
+
+func TestUpdate(t *testing.T) {
+	ctx := context.Background()
+	m, _ := prepareTest(t, ctx, true, nil, nil)
+	initialData := &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
+	testutil.Must(t, m.Save(ctx, "example-repo", "settingKey", initialData))
+
+	validationData := &settings.ExampleSettings{
+		ExampleInt: initialData.ExampleInt + 1,
+		ExampleStr: "goodbye",
+		ExampleMap: map[string]int32{"boo": initialData.ExampleMap["boo"] + 1},
+	}
+	update := func(settingsToEdit proto.Message) error {
+		settingsToEdit.(*settings.ExampleSettings).ExampleStr = validationData.ExampleStr
+		settingsToEdit.(*settings.ExampleSettings).ExampleInt = validationData.ExampleInt
+		settingsToEdit.(*settings.ExampleSettings).ExampleMap["boo"] = validationData.ExampleMap["boo"]
+		return nil
+	}
 	emptySettings := &settings.ExampleSettings{}
-	firstSettings := &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
-	err := m.Save(ctx, "example-repo", "settingKey", firstSettings)
-	testutil.Must(t, err)
+	require.NoError(t, m.Update(ctx, "example-repo", "settingKey", emptySettings, update))
 	gotSettings, err := m.Get(ctx, "example-repo", "settingKey", emptySettings)
-	testutil.Must(t, err)
-	if diff := deep.Equal(firstSettings, gotSettings); diff != nil {
+	require.NoError(t, err)
+	if diff := deep.Equal(validationData, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
 	}
-	secondSettings := &settings.ExampleSettings{ExampleInt: 15, ExampleStr: "hi", ExampleMap: map[string]int32{"boo": 16}}
-	err = m.Save(ctx, "example-repo", "settingKey", secondSettings)
-	testutil.Must(t, err)
-	// the result should be cached and we should get the first settings:
+
+	badData := &settings.ExampleSettings{
+		ExampleInt: initialData.ExampleInt + 1,
+		ExampleStr: "bad",
+		ExampleMap: map[string]int32{"boo": -1},
+	}
+
+	// Failed update attempt with retry
+	update = func(settingsToEdit proto.Message) error {
+		settingsToEdit.(*settings.ExampleSettings).ExampleStr = initialData.ExampleStr
+		settingsToEdit.(*settings.ExampleSettings).ExampleInt = initialData.ExampleInt
+		settingsToEdit.(*settings.ExampleSettings).ExampleMap["boo"] = initialData.ExampleMap["boo"]
+		require.NoError(t, m.Save(ctx, "example-repo", "settingKey", badData))
+		return nil
+	}
+	require.NoError(t, m.Update(ctx, "example-repo", "settingKey", emptySettings, update))
 	gotSettings, err = m.Get(ctx, "example-repo", "settingKey", emptySettings)
-	testutil.Must(t, err)
-	if diff := deep.Equal(firstSettings, gotSettings); diff != nil {
+	require.NoError(t, err)
+	if diff := deep.Equal(initialData, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
 	}
-	// after clearing the cache, we should get the new settings:
-	mockCache.c = make(map[interface{}]interface{})
-	gotSettings, err = m.Get(ctx, "example-repo", "settingKey", emptySettings)
-	testutil.Must(t, err)
-	if diff := deep.Equal(secondSettings, gotSettings); diff != nil {
+
+	// Failed update attempt with retry exhausted
+	update = func(settingsToEdit proto.Message) error {
+		settingsToEdit.(*settings.ExampleSettings).ExampleStr = badData.ExampleStr
+		settingsToEdit.(*settings.ExampleSettings).ExampleInt = badData.ExampleInt
+		settingsToEdit.(*settings.ExampleSettings).ExampleMap["boo"] = badData.ExampleMap["boo"]
+		validationData.ExampleInt = validationData.ExampleInt + 1
+		require.NoError(t, m.Save(ctx, "example-repo", "settingKey", validationData))
+		return nil
+	}
+	require.ErrorIs(t, m.Update(ctx, "example-repo", "settingKey", emptySettings, update), graveler.ErrTooManyTries)
+	gotSettings, err = m.GetLatest(ctx, "example-repo", "settingKey", emptySettings)
+	if diff := deep.Equal(validationData, gotSettings); diff != nil {
+		t.Fatal("got unexpected settings:", diff)
+	}
+
+	// Failed update attempt with unknown error
+	testErr := errors.New("test error")
+	update = func(settingsToEdit proto.Message) error {
+		return testErr
+	}
+	require.ErrorIs(t, m.Update(ctx, "example-repo", "settingKey", emptySettings, update), testErr)
+	gotSettings, err = m.GetLatest(ctx, "example-repo", "settingKey", emptySettings)
+	if diff := deep.Equal(validationData, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
 	}
 }
 
+// TODO: locking is irrelevant for KV, create a new test for it
+// Relevant only to DB implementation since KV is lockless
 func TestUpdateWithLock(t *testing.T) {
 	ctx := context.Background()
+	const IncrementCount = 20
 	var lockStartWaitGroup sync.WaitGroup
 	var lock sync.Mutex
-	const IncrementCount = 20
 	lockStartWaitGroup.Add(IncrementCount)
 
-	m, _ := prepareTest(t, ctx, nil, func(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, f func() (interface{}, error)) (interface{}, error) {
+	m, _ := prepareTest(t, ctx, false, nil, func(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, f func() (interface{}, error)) (interface{}, error) {
 		lockStartWaitGroup.Done()
 		lockStartWaitGroup.Wait() // wait until all goroutines ask for the lock
 		lock.Lock()
@@ -95,7 +193,7 @@ func TestUpdateWithLock(t *testing.T) {
 	wg.Add(IncrementCount)
 	for i := 0; i < IncrementCount; i++ {
 		go func() {
-			testutil.Must(t, m.UpdateWithLock(ctx, "example-repo", "settingKey", emptySettings, update))
+			testutil.Must(t, m.Update(ctx, "example-repo", "settingKey", emptySettings, update))
 			wg.Done()
 		}()
 	}
@@ -110,9 +208,10 @@ func TestUpdateWithLock(t *testing.T) {
 	}
 }
 
+// Relevant only for DB implementation since we rely on key-identifier that is store on KV
 func TestStoredSettings(t *testing.T) {
 	ctx := context.Background()
-	m, blockAdapter := prepareTest(t, ctx, nil, nil)
+	m, blockAdapter := prepareTest(t, ctx, false, nil, nil)
 	expectedSettings := &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
 	err := m.Save(ctx, "example-repo", "settingKey", expectedSettings)
 	testutil.Must(t, err)
@@ -134,39 +233,59 @@ func TestStoredSettings(t *testing.T) {
 // TestEmpty tests the setting store for keys which have not been set.
 func TestEmpty(t *testing.T) {
 	ctx := context.Background()
-	m, _ := prepareTest(t, ctx, nil, nil)
-	emptySettings := &settings.ExampleSettings{}
-	_, err := m.Get(ctx, "example-repo", "settingKey", emptySettings)
-	// the key was not set, an error should be returned
-	if err != graveler.ErrNotFound {
-		t.Fatalf("expected error %v, got %v", graveler.ErrNotFound, err)
+
+	tests := []struct {
+		kvEnabled bool
+	}{
+		{
+			kvEnabled: false,
+		},
+		{
+			kvEnabled: true,
+		},
 	}
-	// when using UpdateWithLock on an unset key, the update function gets an empty setting object to operate on
-	err = m.UpdateWithLock(ctx, "example-repo", "settingKey", emptySettings, func(setting proto.Message) error {
-		s := setting.(*settings.ExampleSettings)
-		if s.ExampleMap == nil {
-			s.ExampleMap = make(map[string]int32)
+	for _, tt := range tests {
+		kvSuffix := ""
+		if tt.kvEnabled {
+			kvSuffix = "_KV"
 		}
-		s.ExampleInt++
-		s.ExampleMap["boo"]++
-		return nil
-	})
-	testutil.Must(t, err)
-	gotSettings, err := m.Get(ctx, "example-repo", "settingKey", emptySettings)
-	testutil.Must(t, err)
-	expectedSettings := &settings.ExampleSettings{ExampleInt: 1, ExampleMap: map[string]int32{"boo": 1}}
-	if diff := deep.Equal(expectedSettings, gotSettings); diff != nil {
-		t.Fatal("got unexpected settings:", diff)
+		t.Run("TestEmpty"+kvSuffix, func(t *testing.T) {
+			m, _ := prepareTest(t, ctx, tt.kvEnabled, nil, nil)
+			emptySettings := &settings.ExampleSettings{}
+			_, err := m.Get(ctx, "example-repo", "settingKey", emptySettings)
+			// the key was not set, an error should be returned
+			if err != graveler.ErrNotFound {
+				t.Fatalf("expected error %v, got %v", graveler.ErrNotFound, err)
+			}
+			// when using Update on an unset key, the update function gets an empty setting object to operate on
+			err = m.Update(ctx, "example-repo", "settingKey", emptySettings, func(setting proto.Message) error {
+				s := setting.(*settings.ExampleSettings)
+				if s.ExampleMap == nil {
+					s.ExampleMap = make(map[string]int32)
+				}
+				s.ExampleInt++
+				s.ExampleMap["boo"]++
+				return nil
+			})
+			testutil.Must(t, err)
+			gotSettings, err := m.Get(ctx, "example-repo", "settingKey", emptySettings)
+			testutil.Must(t, err)
+			expectedSettings := &settings.ExampleSettings{ExampleInt: 1, ExampleMap: map[string]int32{"boo": 1}}
+			if diff := deep.Equal(expectedSettings, gotSettings); diff != nil {
+				t.Fatal("got unexpected settings:", diff)
+			}
+		})
 	}
 }
 
-func prepareTest(t *testing.T, ctx context.Context, cache cache.Cache, branchLockCallback func(context.Context, graveler.RepositoryID, graveler.BranchID, func() (interface{}, error)) (interface{}, error)) (*settings.Manager, block.Adapter) {
+func prepareTest(t *testing.T, ctx context.Context, kvEnabled bool, cache cache.Cache, branchLockCallback func(context.Context, graveler.RepositoryID, graveler.BranchID, func() (interface{}, error)) (interface{}, error)) (settings.Manager, block.Adapter) {
 	ctrl := gomock.NewController(t)
 	refManager := mock.NewMockRefManager(ctrl)
 	repo := &graveler.Repository{
 		StorageNamespace: "mem://my-storage",
 		DefaultBranchID:  "main",
 	}
+
 	blockAdapter := mem.New()
 	branchLock := mock.NewMockBranchLocker(ctrl)
 	cb := func(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, f func() (interface{}, error)) (interface{}, error) {
@@ -180,7 +299,14 @@ func prepareTest(t *testing.T, ctx context.Context, cache cache.Cache, branchLoc
 		opts = append(opts, settings.WithCache(cache))
 	}
 	branchLock.EXPECT().MetadataUpdater(ctx, gomock.Eq(graveler.RepositoryID("example-repo")), graveler.BranchID("main"), gomock.Any()).DoAndReturn(cb).AnyTimes()
-	m := settings.NewManager(refManager, branchLock, blockAdapter, "_lakefs", opts...)
+	var m settings.Manager
+	if kvEnabled {
+		kvStore := kvtest.GetStore(ctx, t)
+		m = settings.NewManager(refManager, kv.StoreMessage{Store: kvStore}, opts...)
+	} else {
+		m = settings.NewDBManager(refManager, branchLock, blockAdapter, "_lakefs", opts...)
+	}
+
 	refManager.EXPECT().GetRepository(ctx, gomock.Eq(graveler.RepositoryID("example-repo"))).AnyTimes().Return(repo, nil)
 	return m, blockAdapter
 }

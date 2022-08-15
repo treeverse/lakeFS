@@ -21,7 +21,7 @@ func newTestStagingManager(t *testing.T, kvEnabled bool) (context.Context, grave
 	conn, _ := testutil.GetDB(t, databaseURI)
 	if kvEnabled {
 		store := kvtest.GetStore(ctx, t)
-		return ctx, staging.NewManager(kv.StoreMessage{Store: store})
+		return ctx, staging.NewManager(ctx, kv.StoreMessage{Store: store})
 	}
 	return ctx, staging.NewDBManager(conn)
 }
@@ -63,7 +63,50 @@ func TestStagingManager(t *testing.T) {
 		t.Run(fmt.Sprintf("Test%sDeleteAndTombstone", dbStr), func(t *testing.T) {
 			testDeleteAndTombstone(t, kvEnabled)
 		})
+		if kvEnabled {
+			t.Run("TestUpdateKV", func(t *testing.T) {
+				testUpdate(t)
+			})
+		}
 	}
+}
+
+func testUpdate(t *testing.T) {
+	ctx, s := newTestStagingManager(t, true)
+
+	key := "a/b/c/my-key-1234"
+	testVal := newTestValue("identity1", "value1")
+	testVal2 := newTestValue("identity2", "value2")
+	// update missing key
+	err := s.Update(ctx, "t1", []byte(key), func(value *graveler.Value) (*graveler.Value, error) {
+		require.Nil(t, value)
+		return testVal, nil
+	})
+	require.NoError(t, err)
+
+	// update existing key
+	err = s.Update(ctx, "t1", []byte(key), func(value *graveler.Value) (*graveler.Value, error) {
+		require.Equal(t, testVal, value)
+		return testVal2, nil
+	})
+	require.NoError(t, err)
+
+	// get value
+	val, err := s.Get(ctx, "t1", []byte(key))
+	require.NoError(t, err)
+	require.Equal(t, testVal2, val)
+
+	// update with error
+	err = s.Update(ctx, "t1", []byte(key), func(value *graveler.Value) (*graveler.Value, error) {
+		require.Equal(t, testVal2, value)
+		return testVal, graveler.ErrNotUnique
+	})
+	require.ErrorIs(t, err, graveler.ErrNotUnique)
+
+	// get value - see it didn't update after an error
+	val, err = s.Get(ctx, "t1", []byte(key))
+	require.NoError(t, err)
+	require.Equal(t, testVal2, val)
 }
 
 func testSetGet(t *testing.T, kvEnabled bool) {
@@ -81,13 +124,15 @@ func testSetGet(t *testing.T, kvEnabled bool) {
 		t.Errorf("got wrong value. expected=%s, got=%s", "identity1", string(e.Identity))
 	}
 
-	t.Run("test overwrites", func(t *testing.T) {
-		err = s.Set(ctx, "t2", []byte("a/b/c/d"), value, false)
-		testutil.Must(t, err)
+	if !kvEnabled {
+		t.Run("test overwrites", func(t *testing.T) {
+			err = s.Set(ctx, "t2", []byte("a/b/c/d"), value, false)
+			testutil.Must(t, err)
 
-		err = s.Set(ctx, "t2", []byte("a/b/c/d"), value, false)
-		require.ErrorIs(t, graveler.ErrPreconditionFailed, err)
-	})
+			err = s.Set(ctx, "t2", []byte("a/b/c/d"), value, false)
+			require.ErrorIs(t, graveler.ErrPreconditionFailed, err)
+		})
+	}
 }
 
 func testMultiToken(t *testing.T, kvEnabled bool) {
@@ -121,12 +166,7 @@ func testMultiToken(t *testing.T, kvEnabled bool) {
 func testDrop(t *testing.T, kvEnabled bool) {
 	ctx, s := newTestStagingManager(t, kvEnabled)
 	numOfValues := 1400
-	for i := 0; i < numOfValues; i++ {
-		err := s.Set(ctx, "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), true)
-		testutil.Must(t, err)
-		err = s.Set(ctx, "t2", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), true)
-		testutil.Must(t, err)
-	}
+	setupDrop(ctx, t, numOfValues, s)
 	err := s.Drop(ctx, "t1")
 	testutil.Must(t, err)
 	v, err := s.Get(ctx, "t1", []byte("key0000"))
@@ -152,15 +192,44 @@ func testDrop(t *testing.T, kvEnabled bool) {
 	}
 }
 
-func testDropByPrefix(t *testing.T, kvEnabled bool) {
-	ctx, s := newTestStagingManager(t, kvEnabled)
-	numOfValues := 2400
+func setupDrop(ctx context.Context, t *testing.T, numOfValues int, s graveler.StagingManager) {
 	for i := 0; i < numOfValues; i++ {
 		err := s.Set(ctx, "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), true)
 		testutil.Must(t, err)
 		err = s.Set(ctx, "t2", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), true)
 		testutil.Must(t, err)
 	}
+}
+
+func TestDropAsync(t *testing.T) {
+	ctx := context.Background()
+	store := kvtest.GetStore(ctx, t)
+	ch := make(chan bool)
+	s := staging.NewManager(ctx, kv.StoreMessage{Store: store})
+	s.OnCleanup(func() {
+		close(ch)
+	})
+
+	numOfValues := 1400
+	setupDrop(ctx, t, numOfValues, s)
+
+	err := s.DropAsync(ctx, "t1")
+	require.NoError(t, err)
+
+	// wait for async cleanup to end
+	<-ch
+	it, _ := s.List(ctx, "t1", 0)
+	if it.Next() {
+		t.Fatal("expected staging area with token t1 to be empty, got non-empty iterator")
+	}
+	it.Close()
+}
+
+func testDropByPrefix(t *testing.T, kvEnabled bool) {
+	ctx, s := newTestStagingManager(t, kvEnabled)
+	numOfValues := 2400
+	setupDrop(ctx, t, numOfValues, s)
+
 	err := s.DropByPrefix(ctx, "t1", []byte("key1"))
 	testutil.Must(t, err)
 	v, err := s.Get(ctx, "t1", []byte("key1000"))

@@ -5,11 +5,18 @@ import "google/protobuf/timestamp.proto";
 
 package io.treeverse.lakefs.graveler;
 
+enum RepositoryState {
+  ACTIVE = 0;
+  IN_DELETION = 1;
+}
+
 message RepositoryData {
   string id = 1;
   string storage_namespace = 2;
   string default_branch_id = 3;
   google.protobuf.Timestamp creation_date = 4;
+  RepositoryState state = 5;
+  string instance_uid = 6;
 }
 
 message BranchData {

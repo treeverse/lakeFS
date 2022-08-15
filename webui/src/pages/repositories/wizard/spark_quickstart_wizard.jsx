@@ -2,14 +2,12 @@ import {Wizard} from "./wizard";
 import React, {useState} from "react";
 import {useAPI} from "../../../lib/hooks/api";
 import {config} from "../../../lib/api";
-import {Loading} from "../../../lib/components/controls";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import {Spinner} from "react-bootstrap";
+import {ProgressSpinner} from "../../../lib/components/controls";
 import Alert from "react-bootstrap/Alert";
 import RepositoryCreateForm from "../../../lib/components/repositoryCreateForm";
 import ImportDataStep from "./import_data_wizard_step";
+import {SparkConfigStep} from "./spark_config_step";
+import {useRouter} from "../../../lib/hooks/router";
 
 const RepositoryCreationPhase = {
     NotStarted: 0,
@@ -38,7 +36,7 @@ const RepositoryCreationStep = ({repoCreationError, createRepo, onCancel, onComp
     const showError = repoCreationError ? repoCreationError : err;
     let content;
     if (loading) {
-        content = <Loading/>;
+        content = <ProgressSpinner />;
     } else if (repoCreationPhase === RepositoryCreationPhase.InProgress) {
         content = <ProgressSpinner text={'Creating repository...'} />;
     } else if (repoCreationPhase === RepositoryCreationPhase.Completed) {
@@ -60,13 +58,20 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
         branch: '',
         namespace: '',
         repoId: '',
+        importLocation: '',
     });
-    const [completed, setCompleted] = useState(new Set());
+    const router = useRouter();
+    const [completedSteps, setCompletedSteps] = useState(new Set());
+    const [isStepInProgress, setIsStepInProgress] = useState(false);
+
     const completedStep = (vals = {}, stepNum) => {
         setState({...state, ...vals});
-        setCompleted(currentCompleted => new Set(currentCompleted).add(stepNum));
+        setCompletedSteps(currentCompleted => new Set(currentCompleted).add(stepNum));
+        setIsStepInProgress(false);
     }
     const onComplete = async () => {
+        setIsStepInProgress(false);
+        router.push({pathname: `/repositories/:repoId/objects`, params: {repoId: state.repoId}});
         onExit();
     }
     const steps = [
@@ -80,6 +85,7 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
                 onComplete={(values) => {
                     completedStep(values, 0);
                 }} />,
+            hideNextUntilCompletion: true,
         },
         {
             label: 'Import Data',
@@ -89,27 +95,21 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
                 onComplete={(values) => {
                     completedStep(values, 1);
                 }}
+                updateImportInProgress={setIsStepInProgress}
                 branchName={state.branch} />,
+        },
+        {
+            label: 'Spark Configurations',
+            component: <SparkConfigStep
+                repoId={state.repoId}
+                branchName={state.branch}
+                importLocation={state.importLocation}
+                onComplete={(values) => { completedStep(values, 2); }}
+            />
         },
     ];
     return (
-        <>
-            <Wizard steps={steps} isShowBack={false} completed={completed} onDone={onComplete}/>
-        </>
+        <Wizard steps={steps} isShowBack={false} completed={completedSteps} onDone={onComplete} isStepInProgress={isStepInProgress}/>
     );
 }
 
-const ProgressSpinner = ({text, changingElement =''}) => {
-    return (
-        <Container>
-            <Row className={'justify-content-left'}>
-                <Col className={"col-1 mb-2 mt-2"}>
-                    <Spinner animation="border" variant="primary" size="xl" role="status" />
-                </Col>
-                <Col className={"col-3 mb-2 mt-2"}>
-                    <span>{text}{changingElement}</span>
-                </Col>
-            </Row>
-        </Container>
-    );
-}

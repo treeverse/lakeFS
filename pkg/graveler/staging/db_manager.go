@@ -11,6 +11,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/hashicorp/go-multierror"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -92,8 +93,12 @@ func (p *DBManager) Set(ctx context.Context, st graveler.StagingToken, key grave
 									SET (staging_token, key, identity, data) =
 											(excluded.staging_token, excluded.key, excluded.identity, excluded.data)`,
 			st, key, value.Identity, value.Data)
-	}, p.txOpts()...)
+	}, p.txOpts(db.WithIsolationLevel(pgx.ReadCommitted))...)
 	return err
+}
+
+func (p *DBManager) Update(_ context.Context, _ graveler.StagingToken, _ graveler.Key, _ graveler.ValueUpdateFunc) error {
+	panic("not implemented")
 }
 
 func (p *DBManager) DropKey(ctx context.Context, st graveler.StagingToken, key graveler.Key) error {
@@ -106,6 +111,10 @@ func (p *DBManager) DropKey(ctx context.Context, st graveler.StagingToken, key g
 // List returns an iterator of staged values on the staging token st
 func (p *DBManager) List(ctx context.Context, st graveler.StagingToken, batchSize int) (graveler.ValueIterator, error) {
 	return NewDBStagingIterator(ctx, p.db, p.log, st, batchSize), nil
+}
+
+func (p *DBManager) DropAsync(ctx context.Context, st graveler.StagingToken) error {
+	return p.Drop(ctx, st)
 }
 
 func (p *DBManager) Drop(ctx context.Context, st graveler.StagingToken) error {

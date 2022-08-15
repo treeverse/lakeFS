@@ -72,7 +72,7 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 				}},
 		},
 		{
-			name: "only first iterator",
+			name: "only one iterator",
 			fields: fields{
 				iters: []graveler.ValueIterator{
 					testutil.NewValueIteratorFake([]graveler.ValueRecord{
@@ -91,7 +91,6 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 							},
 						},
 					}),
-					testutil.NewValueIteratorFake([]graveler.ValueRecord{}),
 				},
 				p: nil,
 			},

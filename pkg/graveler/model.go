@@ -1,16 +1,20 @@
 package graveler
 
 import (
+	"fmt"
+
 	"github.com/treeverse/lakefs/pkg/kv"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
-	gravelerPartition = "graveler"
-	reposPrefix       = "repos"
-	tagsPrefix        = "tags"
-	branchesPrefix    = "branches"
-	commitsPrefix     = "commits"
+	gravelerPartition      = "graveler"
+	cleanupTokensPartition = "cleanup-tokens"
+	reposPrefix            = "repos"
+	tagsPrefix             = "tags"
+	branchesPrefix         = "branches"
+	commitsPrefix          = "commits"
+	settingsPrefix         = "settings"
 )
 
 func RepoPath(repoID RepositoryID) string {
@@ -26,7 +30,15 @@ func RepositoriesPartition() string {
 // The Repository object itself is found under the common RepositoriesPartition, as it is needed to
 // generate this partition
 func RepoPartition(repo *RepositoryRecord) string {
-	return repo.RepositoryID.String()
+	return fmt.Sprintf("%s-%s", repo.RepositoryID.String(), repo.InstanceUID)
+}
+
+func StagingTokenPartition(token StagingToken) string {
+	return token.String()
+}
+
+func CleanupTokensPartition() string {
+	return cleanupTokensPartition
 }
 
 func TagPath(tagID TagID) string {
@@ -41,8 +53,12 @@ func CommitPath(commitID CommitID) string {
 	return kv.FormatPath(commitsPrefix, commitID.String())
 }
 
+func SettingsPath(key string) string {
+	return kv.FormatPath(settingsPrefix, key)
+}
+
 func CommitFromProto(pb *CommitData) *Commit {
-	var parents []CommitID
+	parents := make([]CommitID, 0)
 	for _, parent := range pb.Parents {
 		parents = append(parents, CommitID(parent))
 	}
@@ -61,7 +77,7 @@ func CommitFromProto(pb *CommitData) *Commit {
 
 func ProtoFromCommit(commitID CommitID, c *Commit) *CommitData {
 	// convert parents to slice of strings
-	var parents []string
+	parents := make([]string, 0)
 	for _, parent := range c.Parents {
 		parents = append(parents, string(parent))
 	}
@@ -86,6 +102,8 @@ func RepoFromProto(pb *RepositoryData) *RepositoryRecord {
 			StorageNamespace: StorageNamespace(pb.StorageNamespace),
 			DefaultBranchID:  BranchID(pb.DefaultBranchId),
 			CreationDate:     pb.CreationDate.AsTime(),
+			InstanceUID:      pb.InstanceUid,
+			State:            pb.State,
 		},
 	}
 }
@@ -96,6 +114,8 @@ func ProtoFromRepo(repo *RepositoryRecord) *RepositoryData {
 		StorageNamespace: repo.Repository.StorageNamespace.String(),
 		DefaultBranchId:  repo.Repository.DefaultBranchID.String(),
 		CreationDate:     timestamppb.New(repo.Repository.CreationDate),
+		State:            repo.State,
+		InstanceUid:      repo.InstanceUID,
 	}
 }
 
@@ -111,5 +131,19 @@ func ProtoFromStagedEntry(key []byte, v *Value) *StagedEntryData {
 		Key:      key,
 		Identity: v.Identity,
 		Data:     v.Data,
+	}
+}
+
+func TagFromProto(pb *TagData) *TagRecord {
+	return &TagRecord{
+		TagID:    TagID(pb.Id),
+		CommitID: CommitID(pb.CommitId),
+	}
+}
+
+func ProtoFromTag(t *TagRecord) *TagData {
+	return &TagData{
+		Id:       string(t.TagID),
+		CommitId: string(t.CommitID),
 	}
 }

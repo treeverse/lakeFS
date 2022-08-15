@@ -78,10 +78,17 @@ spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v
 ```
 
 ## Publishing a new version
+
+### Update version
+First, we need to update the version of the client in `build.sbt`. Follow [semVer](https://semver.org/), and update the value of `projectVersion`.
+
+### Publishing
+
 We publish the client to Sonatype, and an Uber-Jar of the client to S3.
+
 To do it, you should trigger the [GitHub Action](https://github.com/treeverse/lakeFS/actions/workflows/publish-spark-metadata-client.yaml).
 
-### Manual publish
+#### Manual publish
 
 1. Have the following files ready:
 

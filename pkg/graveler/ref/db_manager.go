@@ -14,8 +14,13 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/lib/pq"
 	"github.com/treeverse/lakefs/pkg/batch"
+	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/adapter"
+	"github.com/treeverse/lakefs/pkg/block/factory"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/branch"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
@@ -31,7 +36,11 @@ const (
 
 //nolint:gochecknoinits
 func init() {
-	kvpg.RegisterMigrate(packageName, Migrate, []string{"graveler_repositories"})
+	kvpg.RegisterMigrate(packageName, Migrate, []string{
+		"graveler_repositories",
+		"graveler_commits",
+		"graveler_tags",
+		"graveler_branches"})
 }
 
 var encoder kv.SafeEncoder
@@ -83,7 +92,7 @@ func (m *DBManager) createBareRepository(tx db.Tx, repositoryID graveler.Reposit
 	return nil
 }
 
-func (m *DBManager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository, token graveler.StagingToken) error {
+func (m *DBManager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
 	firstCommit := graveler.NewCommit()
 	firstCommit.Message = graveler.FirstCommitMsg
 	firstCommit.Generation = 1
@@ -100,7 +109,7 @@ func (m *DBManager) CreateRepository(ctx context.Context, repositoryID graveler.
 		_, err = tx.Exec(`
 				INSERT INTO graveler_branches (repository_id, id, staging_token, commit_id)
 				VALUES ($1, $2, $3, $4)`,
-			repositoryID, repository.DefaultBranchID, token, commitID)
+			repositoryID, repository.DefaultBranchID, graveler.GenerateStagingToken(repositoryID, repository.DefaultBranchID), commitID)
 
 		if err != nil {
 			if errors.Is(err, db.ErrAlreadyExists) {
@@ -166,7 +175,7 @@ func (m *DBManager) ResolveRawRef(ctx context.Context, repositoryID graveler.Rep
 
 func (m *DBManager) GetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (*graveler.Branch, error) {
 	key := fmt.Sprintf("GetBranch:%s:%s", repositoryID, branchID)
-	branch, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
+	b, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
 		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			var rec branchRecord
 			err := tx.Get(&rec, `SELECT commit_id, staging_token FROM graveler_branches WHERE repository_id = $1 AND id = $2`,
@@ -186,7 +195,7 @@ func (m *DBManager) GetBranch(ctx context.Context, repositoryID graveler.Reposit
 	if err != nil {
 		return nil, err
 	}
-	return branch.(*graveler.Branch), nil
+	return b.(*graveler.Branch), nil
 }
 
 func (m *DBManager) CreateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, branch graveler.Branch) error {
@@ -218,7 +227,7 @@ func (m *DBManager) SetBranch(ctx context.Context, repositoryID graveler.Reposit
 
 // BranchUpdate Implement refManager interface - in DB implementation simply panics
 func (m *DBManager) BranchUpdate(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, _ graveler.BranchUpdateFunc) error {
-	panic("Unimplemented")
+	panic("not implemented")
 }
 
 func (m *DBManager) DeleteBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) error {
@@ -414,6 +423,10 @@ func (m *DBManager) addCommit(tx db.Tx, repositoryID graveler.RepositoryID, comm
 	return err
 }
 
+func (m *DBManager) RemoveCommit(_ context.Context, _ graveler.RepositoryID, _ graveler.CommitID) error {
+	panic("Not implemented")
+}
+
 func (m *DBManager) updateCommitGeneration(tx db.Tx, repositoryID graveler.RepositoryID, nodes map[graveler.CommitID]*CommitNode) error {
 	for len(nodes) != 0 {
 		command := `WITH updated(id, generation) AS (VALUES `
@@ -544,8 +557,102 @@ func (m *DBManager) addGenerationToNodes(nodes map[graveler.CommitID]*CommitNode
 	}
 }
 
+// Migration Code
+
+var (
+	blockstore       block.Adapter
+	blockstorePrefix string
+)
+
+func cWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.RepositoryRecord) error {
+	commits, err := d.Query(ctx, "SELECT id,committer,message,creation_date,meta_range_id,metadata,parents,version,generation FROM graveler_commits WHERE repository_id=$1", repository.RepositoryID)
+	if err != nil {
+		return err
+	}
+	defer commits.Close()
+	commitScanner := pgxscan.NewRowScanner(commits)
+	for commits.Next() {
+		c := new(commitRecord)
+		err = commitScanner.Scan(c)
+		if err != nil {
+			return err
+		}
+		pb := CommitRecordToCommitData(c)
+		data, err := proto.Marshal(pb)
+		if err != nil {
+			return err
+		}
+		if err = encoder.Encode(kv.Entry{
+			PartitionKey: []byte(graveler.RepoPartition(repository)),
+			Key:          []byte(graveler.CommitPath(graveler.CommitID(c.CommitID))),
+			Value:        data,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func bWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.RepositoryRecord) error {
+	branches, err := d.Query(ctx, "SELECT id,staging_token,commit_id FROM graveler_branches WHERE repository_id=$1", repository.RepositoryID)
+	if err != nil {
+		return err
+	}
+	defer branches.Close()
+	branchesScanner := pgxscan.NewRowScanner(branches)
+	for branches.Next() {
+		b := new(graveler.BranchRecord)
+		err = branchesScanner.Scan(b)
+		if err != nil {
+			return err
+		}
+		pb := protoFromBranch(b.BranchID, b.Branch)
+		data, err := proto.Marshal(pb)
+		if err != nil {
+			return err
+		}
+		if err = encoder.Encode(kv.Entry{
+			PartitionKey: []byte(graveler.RepoPartition(repository)),
+			Key:          []byte(graveler.BranchPath(b.BranchID)),
+			Value:        data,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func tWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.RepositoryRecord) error {
+	tags, err := d.Query(ctx, "SELECT id,commit_id FROM graveler_tags WHERE repository_id=$1", repository.RepositoryID)
+	if err != nil {
+		return err
+	}
+	defer tags.Close()
+	tagScanner := pgxscan.NewRowScanner(tags)
+	for tags.Next() {
+		t := new(graveler.TagRecord)
+		err = tagScanner.Scan(t)
+		if err != nil {
+			return err
+		}
+		pb := graveler.ProtoFromTag(&graveler.TagRecord{TagID: t.TagID, CommitID: t.CommitID})
+		data, err := proto.Marshal(pb)
+		if err != nil {
+			return err
+		}
+		if err = encoder.Encode(kv.Entry{
+			PartitionKey: []byte(graveler.RepoPartition(repository)),
+			Key:          []byte(graveler.TagPath(t.TagID)),
+			Value:        data,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // rWorker writes a repository, and all repository related entities, to fd
-func rWorker(rChan <-chan *graveler.RepositoryRecord) error {
+func rWorker(ctx context.Context, d *pgxpool.Pool, rChan <-chan *graveler.RepositoryRecord) error {
 	for r := range rChan {
 		pb := graveler.ProtoFromRepo(r)
 		data, err := proto.Marshal(pb)
@@ -559,15 +666,74 @@ func rWorker(rChan <-chan *graveler.RepositoryRecord) error {
 		}); err != nil {
 			return err
 		}
+
+		// migrate repository entities
+		err = cWorker(ctx, d, r)
+		if err != nil {
+			return err
+		}
+		err = bWorker(ctx, d, r)
+		if err != nil {
+			return err
+		}
+		err = tWorker(ctx, d, r)
+		if err != nil {
+			return err
+		}
+
+		// Migrate Settings
+		objectPointer := block.ObjectPointer{
+			StorageNamespace: string(r.StorageNamespace),
+			Identifier:       fmt.Sprintf(graveler.SettingsRelativeKey, blockstorePrefix, branch.ProtectionSettingKey),
+			IdentifierType:   block.IdentifierTypeRelative,
+		}
+		reader, err := blockstore.Get(ctx, objectPointer, -1)
+		if err != nil {
+			if errors.Is(err, adapter.ErrDataNotFound) { // skip settings migration
+				return nil
+			}
+			return err
+		}
+		buff, err := io.ReadAll(reader)
+		reader.Close()
+		if err != nil {
+			return err
+		}
+
+		if err = encoder.Encode(kv.Entry{
+			PartitionKey: []byte(graveler.RepoPartition(r)),
+			Key:          []byte(graveler.SettingsPath(branch.ProtectionSettingKey)),
+			Value:        buff,
+		}); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
+	cfg, err := config.NewConfig()
+	if err != nil {
+		return err
+	}
+
+	blockstorePrefix = cfg.GetCommittedBlockStoragePrefix()
+	bs, err := factory.BuildBlockAdapter(ctx, nil, cfg)
+	if err != nil {
+		return err
+	}
+
+	return MigrateWithBlockstore(ctx, d, writer, bs, blockstorePrefix)
+}
+
+func MigrateWithBlockstore(ctx context.Context, d *pgxpool.Pool, writer io.Writer, bs block.Adapter, bsPrefix string) error {
+	blockstore = bs
+	blockstorePrefix = bsPrefix
 	encoder = kv.SafeEncoder{
 		Je: json.NewEncoder(writer),
 		Mu: sync.Mutex{},
 	}
+
 	// Create header
 	if err := encoder.Encode(kv.Header{
 		LakeFSVersion:   version.Version,
@@ -582,7 +748,7 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 	var g multierror.Group
 	for i := 0; i < jobWorkers; i++ {
 		g.Go(func() error {
-			return rWorker(rChan)
+			return rWorker(ctx, d, rChan)
 		})
 	}
 
@@ -597,6 +763,9 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 				break
 			}
 
+			// Create unique identifier and set repo state to active
+			r.InstanceUID = graveler.NewRepoInstanceID()
+			r.State = graveler.RepositoryState_ACTIVE
 			rChan <- r
 		}
 	}

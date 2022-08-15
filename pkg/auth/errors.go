@@ -18,4 +18,5 @@ var (
 	ErrUnexpectedStatusCode    = errors.New("unexpected status code")
 	ErrUnexpectedSigningMethod = errors.New("unexpected signing method")
 	ErrInvalidToken            = errors.New("invalid token")
+	ErrInvalidRequest          = errors.New("invalid request")
 )

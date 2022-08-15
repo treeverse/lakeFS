@@ -11,7 +11,7 @@ import {Error, Loading} from "../../../lib/components/controls";
 import {useAPI} from "../../../lib/hooks/api";
 import {config} from "../../../lib/api";
 
-const ImportDataStep = ({repoId, branchName, onComplete, prependPath = ''}) => {
+const ImportDataStep = ({repoId, branchName, onComplete, prependPath = '', updateImportInProgress=(inProgress) => inProgress}) => {
     const [importPhase, setImportPhase] = useState(ImportPhase.NotStarted);
     const [numberOfImportedObjects, setNumberOfImportedObjects] = useState(0);
     const [isImportEnabled, setIsImportEnabled] = useState(false);
@@ -27,22 +27,26 @@ const ImportDataStep = ({repoId, branchName, onComplete, prependPath = ''}) => {
     const showError = importError ? importError : error;
 
     const doImport = async () => {
+        setImportError(null);
+        updateImportInProgress(true);
         setImportPhase(ImportPhase.InProgress);
         const updateStateFromImport = ({importPhase, numObj}) => {
             setImportPhase(importPhase);
             setNumberOfImportedObjects(numObj)
         }
         try {
+            const source = sourceRef.current.value;
             await runImport(
                 updateStateFromImport,
                 prependPath,
                 commitMsgRef.current.value,
-                sourceRef.current.value,
+                source,
                 branchName,
                 repoId
             );
-            onComplete();
+            onComplete({importLocation: source});
         } catch (error) {
+            updateImportInProgress(false);
             setImportError(error);
             setImportPhase(ImportPhase.Failed);
             setIsImportEnabled(false);

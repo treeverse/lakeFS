@@ -28,6 +28,11 @@ type DBType struct {
 	refManager graveler.RefManager
 }
 
+const (
+	typeDB = "DB"
+	typeKV = "KV"
+)
+
 func testRefManagerWithDB(t testing.TB) (graveler.RefManager, db.Database) {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
@@ -39,8 +44,7 @@ func testRefManagerWithKV(t testing.TB) (graveler.RefManager, kv.StoreMessage) {
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
 	storeMessage := kv.StoreMessage{Store: kvStore}
-	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
-	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, conn, ident.NewHexAddressProvider()), storeMessage
+	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, ident.NewHexAddressProvider()), storeMessage
 }
 
 func testRefManager(t *testing.T) []DBType {
@@ -50,11 +54,11 @@ func testRefManager(t *testing.T) []DBType {
 
 	tests := []DBType{
 		{
-			name:       "DB",
+			name:       typeDB,
 			refManager: dbRefManager,
 		},
 		{
-			name:       "KV",
+			name:       typeKV,
 			refManager: kvRefManager,
 		},
 	}
@@ -72,8 +76,7 @@ func testRefManagerWithKVAndAddressProvider(t testing.TB, addressProvider ident.
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
 	storeMessage := kv.StoreMessage{Store: kvStore}
-	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
-	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, conn, addressProvider), storeMessage
+	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, addressProvider), storeMessage
 }
 
 func testRefManagerWithAddressProvider(t testing.TB, addressProvider ident.AddressProvider) []DBType {

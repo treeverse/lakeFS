@@ -840,22 +840,22 @@ func (c *Controller) generateResetPasswordToken(email string, duration time.Dura
 
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
 	invite := swag.BoolValue(body.InviteUser)
-	id := body.Id
+	username := body.Id
 	var parsedEmail *string
 	if invite {
-		addr, err := mail.ParseAddress(body.Id)
+		addr, err := mail.ParseAddress(username)
 		if err != nil {
-			c.Logger.WithError(err).WithField("user_id", id).Warn("failed parsing email")
+			c.Logger.WithError(err).WithField("user_id", username).Warn("failed parsing email")
 			writeError(w, http.StatusBadRequest, "Invalid email format")
 			return
 		}
-		id = strings.ToLower(addr.Address)
+		username = strings.ToLower(addr.Address)
 		parsedEmail = &addr.Address
 	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateUserAction,
-			Resource: permissions.UserArn(id),
+			Resource: permissions.UserArn(username),
 		},
 	}) {
 		return
@@ -873,7 +873,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	}
 	u := &model.User{
 		CreatedAt:    time.Now().UTC(),
-		Username:     id,
+		Username:     username,
 		FriendlyName: nil,
 		Source:       "internal",
 		Email:        parsedEmail,
@@ -1374,22 +1374,25 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 	ctx := r.Context()
 	c.LogAction(ctx, "get_repo")
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if errors.Is(err, catalog.ErrNotFound) {
-		writeError(w, http.StatusNotFound, "repository not found")
-		return
-	}
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, fmt.Sprintf("error fetching repository: %s", err))
-		return
-	}
+	switch {
+	case err == nil:
+		response := Repository{
+			CreationDate:     repo.CreationDate.Unix(),
+			DefaultBranch:    repo.DefaultBranch,
+			Id:               repo.Name,
+			StorageNamespace: repo.StorageNamespace,
+		}
+		writeResponse(w, http.StatusOK, response)
 
-	response := Repository{
-		CreationDate:     repo.CreationDate.Unix(),
-		DefaultBranch:    repo.DefaultBranch,
-		Id:               repo.Name,
-		StorageNamespace: repo.StorageNamespace,
+	case errors.Is(err, catalog.ErrNotFound):
+		writeError(w, http.StatusNotFound, "repository not found")
+
+	case errors.Is(err, graveler.ErrRepositoryInDeletion):
+		writeError(w, http.StatusGone, err)
+
+	default:
+		writeError(w, http.StatusInternalServerError, err)
 	}
-	writeResponse(w, http.StatusOK, response)
 }
 
 func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, repository string, params ListRepositoryRunsParams) {
@@ -3258,8 +3261,9 @@ func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, temp
 	}) {
 		return
 	}
+	ctx := r.Context()
 
-	u, ok := r.Context().Value(UserContextKey).(*model.User)
+	u, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok {
 		writeError(w, http.StatusInternalServerError, "request performed with no user")
 	}
@@ -3272,7 +3276,9 @@ func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, temp
 			p.Params.AdditionalProperties[k] = v[0]
 		}
 	}
-	err := c.Templater.Expand(r.Context(), w, u, templateLocation, p.Params.AdditionalProperties)
+
+	c.LogAction(ctx, "expand_template")
+	err := c.Templater.Expand(ctx, w, u, templateLocation, p.Params.AdditionalProperties)
 
 	if err != nil {
 		c.Logger.WithError(err).WithField("location", templateLocation).Error("Template expansion failed")

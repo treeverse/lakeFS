@@ -268,7 +268,7 @@ const GetStarted = ({ config, onUpload, onImport }) => {
 
             <Row className="pt-2 ml-2">
                 <DotIcon className="mr-1 mt-1"/>
-                &nbsp;<Button variant="link" disabled={(config.config.blockstore_type === 'local' || config.config.blockstore_type === 'mem')} onClick={onImport}>Import</Button>&nbsp;data from {config.config.blockstore_type}. Or, see the&nbsp;<a href="https://docs.lakefs.io/setup/import.html" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.
+                <Button variant="link" disabled={(config.config.blockstore_type === 'local' || config.config.blockstore_type === 'mem')} onClick={onImport}>Import</Button>&nbsp;data from {config.config.blockstore_type}. Or, see the&nbsp;<a href="https://docs.lakefs.io/setup/import.html" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.
             </Row>
 
             <Row className="pt-2 ml-2">

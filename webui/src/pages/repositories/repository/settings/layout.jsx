@@ -7,13 +7,14 @@ import Nav from "react-bootstrap/Nav";
 import Card from "react-bootstrap/Card";
 import {Link} from "../../../../lib/components/nav";
 import {useRefs} from "../../../../lib/hooks/repo";
-import {Error, Loading} from "../../../../lib/components/controls";
+import {Loading} from "../../../../lib/components/controls";
+import {RepoError} from "../error";
 
 
 export const SettingsLayout = ({ children, activeTab }) => {
     const { repo, loading, error} = useRefs();
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>;
+    if (error) return <RepoError error={error}/>;
     const repoId = repo.id
     return (
             <Container fluid="xl">

@@ -207,16 +207,16 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	branchLocker := ref.NewBranchLocker(cfg.LockDB) // TODO (niro): Will not be needed in KV implementation
 
 	if cfg.Config.GetDatabaseParams().KVEnabled { // TODO (niro): Each module should be replaced by an appropriate KV implementation
-		refManager = ref.NewKVRefManager(executor, *cfg.KVStore, cfg.DB, ident.NewHexAddressProvider())
-		gcManager = retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
-		settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
+		refManager = ref.NewKVRefManager(executor, *cfg.KVStore, ident.NewHexAddressProvider())
+		gcManager = retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
+		settingManager := settings.NewManager(refManager, *cfg.KVStore)
 		protectedBranchesManager = branch.NewProtectionManager(settingManager)
-		stagingManager = staging.NewManager(*cfg.KVStore)
-		gStore = graveler.NewKVGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
+		stagingManager = staging.NewManager(ctx, *cfg.KVStore)
+		gStore = graveler.NewKVGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 	} else {
 		refManager = ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
-		gcManager = retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
-		settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
+		gcManager = retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
+		settingManager := settings.NewDBManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
 		protectedBranchesManager = branch.NewProtectionManager(settingManager)
 		stagingManager = staging.NewDBManager(cfg.DB)
 		gStore = graveler.NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
@@ -764,7 +764,10 @@ func (c *Catalog) ListEntries(ctx context.Context, repository string, reference 
 	it := NewEntryListingIterator(NewValueToEntryIterator(iter), prefixPath, delimiterPath)
 	defer it.Close()
 
-	it.SeekGE(afterPath)
+	if afterPath != "" {
+		it.SeekGE(afterPath)
+	}
+
 	var entries []*DBEntry
 	for it.Next() {
 		v := it.Value()

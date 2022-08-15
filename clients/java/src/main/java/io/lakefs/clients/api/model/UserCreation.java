@@ -45,11 +45,11 @@ public class UserCreation {
   }
 
    /**
-   * Get id
+   * a unique identifier for the user. In password-based authentication, this is the email.
    * @return id
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @ApiModelProperty(required = true, value = "a unique identifier for the user. In password-based authentication, this is the email.")
 
   public String getId() {
     return id;

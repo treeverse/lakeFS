@@ -1,6 +1,7 @@
 package auth
 
 //go:generate oapi-codegen -package auth -generate "types,client"  -o client.gen.go ../../api/authorization.yml
+//go:generate mockgen -package=mock -destination=mock/mock_auth_client.go github.com/treeverse/lakefs/pkg/auth ClientWithResponsesInterface
 
 import (
 	"context"
@@ -189,14 +190,14 @@ func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.
 }
 
 type KVAuthService struct {
-	store       kv.StoreMessage
+	store       *kv.StoreMessage
 	secretStore crypt.SecretStore
 	cache       Cache
 	log         logging.Logger
 	*EmailInviteHandler
 }
 
-func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, emailer *email.Emailer, cacheConf params.ServiceCache, logger logging.Logger) *KVAuthService {
+func NewKVAuthService(store *kv.StoreMessage, secretStore crypt.SecretStore, emailer *email.Emailer, cacheConf params.ServiceCache, logger logging.Logger) *KVAuthService {
 	logger.Info("initialized Auth service")
 	var cache Cache
 	if cacheConf.Enabled {
@@ -290,7 +291,7 @@ func (s *KVAuthService) DeleteUser(ctx context.Context, username string) error {
 
 type UserPredicate func(u *model.UserData) bool
 
-func (s *KVAuthService) getUserByPredicate(ctx context.Context, key *userKey, predicate UserPredicate) (*model.User, error) {
+func (s *KVAuthService) getUserByPredicate(ctx context.Context, key userKey, predicate UserPredicate) (*model.User, error) {
 	return s.cache.GetUser(key, func() (*model.User, error) {
 		m := &model.UserData{}
 		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), []byte(""))
@@ -321,7 +322,7 @@ func (s *KVAuthService) GetUserByID(ctx context.Context, userID string) (*model.
 }
 
 func (s *KVAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
-	return s.cache.GetUser(&userKey{username: username}, func() (*model.User, error) {
+	return s.cache.GetUser(userKey{username: username}, func() (*model.User, error) {
 		userKey := model.UserPath(username)
 		m := model.UserData{}
 		_, err := s.store.GetMsg(ctx, model.PartitionKey, userKey, &m)
@@ -336,13 +337,13 @@ func (s *KVAuthService) GetUser(ctx context.Context, username string) (*model.Us
 }
 
 func (s *KVAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return s.getUserByPredicate(ctx, &userKey{email: email}, func(value *model.UserData) bool {
+	return s.getUserByPredicate(ctx, userKey{email: email}, func(value *model.UserData) bool {
 		return value.Email == email
 	})
 }
 
 func (s *KVAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
-	return s.getUserByPredicate(ctx, &userKey{externalID: externalID}, func(value *model.UserData) bool {
+	return s.getUserByPredicate(ctx, userKey{externalID: externalID}, func(value *model.UserData) bool {
 		return value.ExternalId == externalID
 	})
 }
@@ -1114,14 +1115,53 @@ func (s *KVAuthService) markTokenSingleUse(ctx context.Context, tokenID string, 
 	m := model.TokenData{TokenId: tokenID, ExpiredAt: timestamppb.New(tokenExpiresAt)}
 	err := s.store.SetMsgIf(ctx, model.PartitionKey, tokenPath, &m, nil)
 	if err != nil {
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			return false, nil
+		}
 		return false, err
 	}
-	// TODO(issue 3500) - delete expired reset password tokens
+
+	if err := s.deleteTokens(ctx); err != nil {
+		s.log.WithError(err).Error("Failed to delete expired tokens")
+	}
 	return true, nil
 }
 
+func (s *KVAuthService) deleteTokens(ctx context.Context) error {
+	it, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.TokenData{}).ProtoReflect().Type(), model.PartitionKey, model.ExpiredTokensPath(), kv.IteratorOptionsFrom([]byte("")))
+	if err != nil {
+		return err
+	}
+	defer it.Close()
+
+	deletionCutoff := time.Now()
+	for it.Next() {
+		msg := it.Entry()
+		if msg == nil {
+			return fmt.Errorf("nil token: %w", ErrInvalidToken)
+		}
+		token, ok := msg.Value.(*model.TokenData)
+		if token == nil || !ok {
+			return fmt.Errorf("wrong token type: %w", ErrInvalidToken)
+		}
+
+		if token.ExpiredAt.AsTime().After(deletionCutoff) {
+			// reached a token with expiry greater than the cutoff,
+			// tokens are k-ordered (xid) hence we'll not find more expired tokens
+			return nil
+		}
+
+		tokenPath := model.ExpiredTokenPath(token.TokenId)
+		if err := s.store.Delete(ctx, []byte(model.PartitionKey), tokenPath); err != nil {
+			return fmt.Errorf("deleting token: %w", err)
+		}
+	}
+
+	return it.Err()
+}
+
 type APIAuthService struct {
-	apiClient              *ClientWithResponses
+	apiClient              ClientWithResponsesInterface
 	secretStore            crypt.SecretStore
 	cache                  Cache
 	delegatedInviteHandler *EmailInviteHandler
@@ -1185,7 +1225,7 @@ func userIDToInt(userID string) (int64, error) {
 	return strconv.ParseInt(userID, base, bitSize)
 }
 
-func (a *APIAuthService) getFirstUser(ctx context.Context, userKey *userKey, params *ListUsersParams) (*model.User, error) {
+func (a *APIAuthService) getFirstUser(ctx context.Context, userKey userKey, params *ListUsersParams) (*model.User, error) {
 	return a.cache.GetUser(userKey, func() (*model.User, error) {
 		resp, err := a.apiClient.ListUsersWithResponse(ctx, params)
 		if err != nil {
@@ -1198,10 +1238,18 @@ func (a *APIAuthService) getFirstUser(ctx context.Context, userKey *userKey, par
 		if len(results) == 0 {
 			return nil, ErrNotFound
 		}
+		if len(results) > 1 {
+			// make sure we work with just one user based on email
+			return nil, ErrNonUnique
+		}
 		u := results[0]
+		username := u.Username
+		if username == "" {
+			username = u.Name
+		}
 		return &model.User{
 			CreatedAt:         time.Unix(u.CreationDate, 0),
-			Username:          u.Name,
+			Username:          username,
 			FriendlyName:      u.FriendlyName,
 			Email:             u.Email,
 			EncryptedPassword: u.EncryptedPassword,
@@ -1215,11 +1263,11 @@ func (a *APIAuthService) GetUserByID(ctx context.Context, userID string) (*model
 	if err != nil {
 		return nil, fmt.Errorf("userID as int64: %w", err)
 	}
-	return a.getFirstUser(ctx, &userKey{id: userID}, &ListUsersParams{Id: &intID})
+	return a.getFirstUser(ctx, userKey{id: userID}, &ListUsersParams{Id: &intID})
 }
 
 func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
-	return a.cache.GetUser(&userKey{username: username}, func() (*model.User, error) {
+	return a.cache.GetUser(userKey{username: username}, func() (*model.User, error) {
 		resp, err := a.apiClient.GetUserWithResponse(ctx, username)
 		if err != nil {
 			return nil, err
@@ -1228,9 +1276,13 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 			return nil, err
 		}
 		u := resp.JSON200
+		returnedUsername := u.Username
+		if returnedUsername == "" {
+			returnedUsername = u.Name
+		}
 		return &model.User{
 			CreatedAt:         time.Unix(u.CreationDate, 0),
-			Username:          u.Name,
+			Username:          returnedUsername,
 			FriendlyName:      u.FriendlyName,
 			Email:             u.Email,
 			EncryptedPassword: u.EncryptedPassword,
@@ -1240,11 +1292,11 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 }
 
 func (a *APIAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return a.getFirstUser(ctx, &userKey{email: email}, &ListUsersParams{Email: swag.String(email)})
+	return a.getFirstUser(ctx, userKey{email: email}, &ListUsersParams{Email: swag.String(email)})
 }
 
 func (a *APIAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
-	return a.getFirstUser(ctx, &userKey{externalID: externalID}, &ListUsersParams{ExternalId: swag.String(externalID)})
+	return a.getFirstUser(ctx, userKey{externalID: externalID}, &ListUsersParams{ExternalId: swag.String(externalID)})
 }
 
 func toPagination(paginator Pagination) *model.Paginator {
@@ -1273,9 +1325,13 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 	results := resp.JSON200.Results
 	users := make([]*model.User, len(results))
 	for i, r := range results {
+		username := r.Username
+		if username == "" {
+			username = r.Name
+		}
 		users[i] = &model.User{
 			CreatedAt:         time.Unix(r.CreationDate, 0),
-			Username:          r.Name,
+			Username:          username,
 			FriendlyName:      r.FriendlyName,
 			Email:             r.Email,
 			EncryptedPassword: nil,
@@ -1318,6 +1374,8 @@ func (a *APIAuthService) validateResponse(resp openapi3filter.StatusCoder, expec
 	case http.StatusNotFound:
 		return ErrNotFound
 	case http.StatusBadRequest:
+		return ErrInvalidRequest
+	case http.StatusConflict:
 		return ErrAlreadyExists
 	case http.StatusUnauthorized:
 		return ErrInsufficientPermissions
@@ -1439,9 +1497,13 @@ func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupDisplayName st
 	members := make([]*model.User, len(resp.JSON200.Results))
 
 	for i, r := range resp.JSON200.Results {
+		username := r.Username
+		if username == "" {
+			username = r.Name
+		}
 		members[i] = &model.User{
 			CreatedAt:    time.Unix(r.CreationDate, 0),
-			Username:     r.Name,
+			Username:     username,
 			FriendlyName: r.FriendlyName,
 			Email:        r.Email,
 		}
@@ -1597,7 +1659,7 @@ func (a *APIAuthService) GetCredentialsForUser(ctx context.Context, username, ac
 			AccessKeyID: credentials.AccessKeyId,
 			IssuedDate:  time.Unix(credentials.CreationDate, 0),
 		},
-		Username: strconv.Itoa(0),
+		Username: username,
 	}, nil
 }
 
@@ -1611,6 +1673,7 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 			return nil, err
 		}
 		credentials := resp.JSON200
+		// TODO(Guys): return username instead of this call
 		user, err := a.GetUserByID(ctx, model.ConvertDBID(credentials.UserId))
 		if err != nil {
 			return nil, err
@@ -1835,4 +1898,18 @@ func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore,
 		res.delegatedInviteHandler = NewEmailInviteHandler(res, logging.Default(), emailer)
 	}
 	return res, nil
+}
+
+func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, secretStore crypt.SecretStore, cacheConf params.ServiceCache) (*APIAuthService, error) {
+	var cache Cache
+	if cacheConf.Enabled {
+		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.EvictionJitter)
+	} else {
+		cache = &DummyCache{}
+	}
+	return &APIAuthService{
+		apiClient:   client,
+		secretStore: secretStore,
+		cache:       cache,
+	}, nil
 }

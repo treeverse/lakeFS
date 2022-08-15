@@ -45,8 +45,7 @@ func (g *DBGraveler) CreateRepository(ctx context.Context, repositoryID Reposito
 		CreationDate:     time.Now(),
 		DefaultBranchID:  branchID,
 	}
-	stagingToken := generateStagingToken(repositoryID, branchID)
-	err := g.RefManager.CreateRepository(ctx, repositoryID, repo, stagingToken)
+	err := g.RefManager.CreateRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +126,7 @@ func (g *DBGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 	}
 	newBranch := Branch{
 		CommitID:     reference.CommitID,
-		StagingToken: generateStagingToken(repositoryID, branchID),
+		StagingToken: GenerateStagingToken(repositoryID, branchID),
 	}
 
 	preRunID := g.hooks.NewRunID()
@@ -560,6 +559,16 @@ func (g *DBGraveler) Set(ctx context.Context, repositoryID RepositoryID, branchI
 	return err
 }
 
+// isStagedTombstone returns true if key is staged as tombstone on manager at token.  It treats staging manager
+// errors by returning "not a tombstone", and is unsafe to use if that matters!
+func (g *DBGraveler) isStagedTombstone(ctx context.Context, token StagingToken, key Key) bool {
+	e, err := g.StagingManager.Get(ctx, token, key)
+	if err != nil {
+		return false
+	}
+	return e == nil
+}
+
 func (g *DBGraveler) Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
 	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
 		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
@@ -605,7 +614,7 @@ func (g *DBGraveler) Delete(ctx context.Context, repositoryID RepositoryID, bran
 		// Safe to ignore errors when checking staging (if all delete actions worked):
 		// we only give a possible incorrect error message if a tombstone was already
 		// staged.
-		if isStagedTombstone(ctx, g.StagingManager, branch.StagingToken, key) {
+		if g.isStagedTombstone(ctx, branch.StagingToken, key) {
 			return nil, ErrNotFound
 		}
 
@@ -743,7 +752,7 @@ func (g *DBGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		}
 		err = g.RefManager.SetBranch(ctx, repositoryID, branchID, Branch{
 			CommitID:     newCommit,
-			StagingToken: newStagingToken(repositoryID, branchID),
+			StagingToken: GenerateStagingToken(repositoryID, branchID),
 		})
 		if err != nil {
 			return "", fmt.Errorf("set branch commit %s: %w", newCommit, err)
@@ -1168,7 +1177,7 @@ func (g *DBGraveler) DiffUncommitted(ctx context.Context, repositoryID Repositor
 			return nil, err
 		}
 	}
-	return NewUncommittedDiffIterator(ctx, committedValueIterator, valueIterator, repo.StorageNamespace, metaRangeID), nil
+	return NewUncommittedDiffIterator(ctx, committedValueIterator, valueIterator), nil
 }
 
 // dereferenceCommit will dereference and load the commit record based on 'ref'.
@@ -1337,7 +1346,7 @@ func (g *DBGraveler) LoadBranches(ctx context.Context, repositoryID RepositoryID
 		branchID := BranchID(branch.Id)
 		err = g.RefManager.SetBranch(ctx, repositoryID, branchID, Branch{
 			CommitID:     CommitID(branch.CommitId),
-			StagingToken: generateStagingToken(repositoryID, branchID),
+			StagingToken: GenerateStagingToken(repositoryID, branchID),
 		})
 		if err != nil {
 			return err
