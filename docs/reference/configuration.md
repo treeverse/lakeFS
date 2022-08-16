@@ -52,10 +52,10 @@ This reference uses `.` to denote the nesting of values.
     + `database.postgres.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused `(valid units: ns|us|ms|s|m|h)` 
   + `database.dynamodb` - Configuration section when using `database.type="dynamodb"`
     + `database.dynamodb.table_name` `(string : "kvstore")` - Table used to store the data
-    + `database.dynamodb.read_capacity_units` `(int : 1000)` - Throughput parameter for read capacity
-    + `database.dynamodb.write_capacity_units` `(int : 1000)` - Throughput parameter for write capacity
+    + `database.dynamodb.read_capacity_units` `(int : optional)` - Throughput parameter for read capacity
+    + `database.dynamodb.write_capacity_units` `(int : optional)` - Throughput parameter for write capacity
 
-       **Note:** Refer to the following [AWS documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html) for further information
+       **Note:** Default quota configuration is taken automatically from the AWS account. Use these parameters to override default account configuration or for local experimentation. Refer to the following [AWS documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html) for further information
        {: .note }
     + `database.dynamodb.scan_limit` `(int : optional)` - Maximal number of items per page during scan operation
     

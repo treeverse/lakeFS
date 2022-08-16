@@ -22,12 +22,14 @@ Starting with version <TBD.X.X>, lakeFS has transitioned from using a PostgreSQL
 multiple database implementations. More information can be found [here](link-to-lakefs-on-kv-documentation).  
 Users upgrading from a previous version of lakeFS must pass through the KV migration version (<TBD.X.X>) before upgrading to newer versions of lakeFS.
 
-> **Note:**  
-> **Users using OS environment variables for database configuration must define the `connection_string` explicitly or as environment variable before proceeding with the migration.**  
-> 
-> Prior to the migration procedure it is strongly recommended to perform the following steps:
-> * Commit all uncommitted data on branches
-> * Create a snapshot of your database
+> **IMPORTANT: Pre Migrate Requirements**  
+> * **Users using OS environment variables for database configuration must define the `connection_string` explicitly or as environment variable before proceeding with the migration.**  
+> * **Database storage free capacity of at least twice the amount of the currently used capacity**
+> * It is strongly recommended to perform these additional steps:
+>   * Commit all uncommitted data on branches
+>   * Create a snapshot of your database
+> * By default old database tables are not being deleted by the migration process, and should be removed manually after a successful migration.
+> To enable table drop as part of the migration, set the `database.drop_tables` configuration param to `true`
 {: .note }
 
 #### Migration Steps
@@ -50,6 +52,7 @@ For each lakeFS instance currently running with the database
 
 2. Stop all lakeFS instances
 3. Using the `lakefs` binary for the new version(<TBD.X.X>), run the following:
+
    ```bash
    lakefs migrate up
    ```
