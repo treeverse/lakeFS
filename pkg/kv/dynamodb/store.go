@@ -72,7 +72,7 @@ func normalizeDBParams(p *kvparams.DynamoDB) {
 }
 
 // Open - opens and returns a KV store over DynamoDB. This function creates the DB session
-// and sets up the KV table. dsn is a string with the DynamoDB endpoint
+// and sets up the KV table.
 func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, error) {
 	params := kvParams.DynamoDB
 	if params == nil {
