@@ -5,10 +5,10 @@ spark-submit --class <main-class> \
     --deploy-mode <deploy-mode> \
     -c spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem \
 {{- with $creds := new_credentials "spark"}}
-    -c spark.hadoop.fs.s3a.access_key={{$creds.Key}} \
-    -c spark.hadoop.fs.s3a.secret_key={{$creds.Secret}} \
+    -c spark.hadoop.fs.s3a.access.key={{$creds.Key}} \
+    -c spark.hadoop.fs.s3a.secret.key={{$creds.Secret}} \
 {{- end}}
-    -c spark.hadoop.fs.s3a.endpoint={{ .Query.lakefs_url }}
+    -c spark.hadoop.fs.s3a.endpoint={{ .Query.lakefs_url }} \
     -c spark.hadoop.fs.s3a.path.style.access=true \
     <application-jar> \
     [application-arguments]
