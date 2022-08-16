@@ -98,7 +98,7 @@ func testAuthMiddleware(t *testing.T, kvEnabled bool) {
 			t.Fatal("ListRepositories() should return unauthorized response, got nil")
 		}
 	})
-	
+
 	t.Run("valid gorilla session", func(t *testing.T) {
 		ctx := context.Background()
 		apiToken := testGenerateApiToken(ctx, t, clt, cred)
