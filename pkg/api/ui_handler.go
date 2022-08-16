@@ -47,7 +47,6 @@ func NewS3GatewayEndpointErrorHandler(gatewayDomains []string) http.Handler {
 
 		// For other requests, return generic not found error
 		w.WriteHeader(http.StatusNotFound)
-		return
 	})
 }
 
