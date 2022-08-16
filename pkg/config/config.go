@@ -190,7 +190,7 @@ const (
 	DynamoDBReadCapacityUnitsKey  = "database.dynamodb.read_capacity_units"
 	DynamoDBWriteCapacityUnitsKey = "database.dynamodb.write_capacity_units"
 
-	UIEnabled = "ui.enabled"
+	UIEnabledKey = "ui.enabled"
 )
 
 func setDefaults() {
@@ -254,7 +254,7 @@ func setDefaults() {
 	viper.SetDefault(DynamoDBReadCapacityUnitsKey, DefaultDynamoDBReadCapacityUnits)
 	viper.SetDefault(DynamoDBWriteCapacityUnitsKey, DefaultDynamoDBWriteCapacityUnits)
 
-	viper.SetDefault(UIEnabled, DefaultUIEnabled)
+	viper.SetDefault(UIEnabledKey, DefaultUIEnabled)
 }
 
 func reverse(s string) string {
