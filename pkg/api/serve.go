@@ -117,12 +117,12 @@ func Serve(
 	}
 	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.GetAuthLogoutRedirectURL()))
 
-	// Disable serving of embedded static assets when using an external client
-	// Use handler only for S3 gateway compatible error responses
+	// Disable serving of embedded static assets
 	var rootHandler http.Handler
 	if cfg.GetUIEnabled() {
 		rootHandler = NewUIHandler(gatewayDomains, snippets)
 	} else {
+		// Use handler only for S3 gateway compatible error responses
 		rootHandler = NewS3GatewayEndpointErrorHandler(gatewayDomains)
 	}
 	r.Mount("/", rootHandler)
