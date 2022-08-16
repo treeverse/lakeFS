@@ -64,7 +64,7 @@ func normalizeDBParams(p *kvparams.Postgres) {
 
 func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, error) {
 	// TODO(barak): should we handle Open reuse the same store based on name
-	if kvparams.Postgres == nil {
+	if kvParams.Postgres == nil {
 		return nil, fmt.Errorf("%w: missing %s settings", kv.ErrDriverConfiguration, DriverName)
 	}
 
