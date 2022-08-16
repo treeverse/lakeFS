@@ -77,6 +77,8 @@ const (
 	// TODO (niro): Which values to use for DynamoDB tables?
 	DefaultDynamoDBReadCapacityUnits  = 1000
 	DefaultDynamoDBWriteCapacityUnits = 1000
+
+	DefaultUIEnabled = true
 )
 
 var (
@@ -187,6 +189,8 @@ const (
 	DynamoDBTableNameKey          = "database.dynamodb.table_name"
 	DynamoDBReadCapacityUnitsKey  = "database.dynamodb.read_capacity_units"
 	DynamoDBWriteCapacityUnitsKey = "database.dynamodb.write_capacity_units"
+
+	UIEnabledKey = "ui.enabled"
 )
 
 func setDefaults() {
@@ -249,6 +253,8 @@ func setDefaults() {
 	viper.SetDefault(DynamoDBTableNameKey, DefaultDynamoDBTableName)
 	viper.SetDefault(DynamoDBReadCapacityUnitsKey, DefaultDynamoDBReadCapacityUnits)
 	viper.SetDefault(DynamoDBWriteCapacityUnitsKey, DefaultDynamoDBWriteCapacityUnits)
+
+	viper.SetDefault(UIEnabledKey, DefaultUIEnabled)
 }
 
 func reverse(s string) string {
@@ -586,4 +592,8 @@ func (c *Config) GetAuthOIDCConfiguration() OIDC {
 
 func (c *Config) GetAuthLogoutRedirectURL() string {
 	return c.values.Auth.LogoutRedirectURL
+}
+
+func (c *Config) GetUIEnabled() bool {
+	return c.values.UI.Enabled
 }

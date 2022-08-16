@@ -38,14 +38,22 @@ func NewUIHandler(gatewayDomains []string, snippets []params.CodeSnippet) http.H
 	return NewHandlerWithDefault(fileSystem, nocacheContent, gatewayDomains)
 }
 
+func NewS3GatewayEndpointErrorHandler(gatewayDomains []string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if isGatewayRequest(r) {
+			handleGatewayRequest(w, r, gatewayDomains)
+			return
+		}
+
+		// For other requests, return generic not found error
+		w.WriteHeader(http.StatusNotFound)
+	})
+}
+
 func NewHandlerWithDefault(fileSystem http.FileSystem, handler http.Handler, gatewayDomains []string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if isGatewayRequest(r) {
-			// s3 signed request reaching the ui handler, return an error response instead of the default path
-			err := gwerrors.Codes[gwerrors.ERRLakeFSWrongEndpoint]
-			err.Description = fmt.Sprintf("%s (%v)", err.Description, gatewayDomains)
-			o := operations.Operation{}
-			o.EncodeError(w, r, err)
+			handleGatewayRequest(w, r, gatewayDomains)
 			return
 		}
 
@@ -65,6 +73,14 @@ func NewHandlerWithDefault(fileSystem http.FileSystem, handler http.Handler, gat
 		// handle request, capture page not found for redirect later
 		handler.ServeHTTP(w, r)
 	})
+}
+
+func handleGatewayRequest(w http.ResponseWriter, r *http.Request, gatewayDomains []string) {
+	// s3 signed request reaching the ui handler, return an error response instead of the default path
+	err := gwerrors.Codes[gwerrors.ERRLakeFSWrongEndpoint]
+	err.Description = fmt.Sprintf("%s (%v)", err.Description, gatewayDomains)
+	o := operations.Operation{}
+	o.EncodeError(w, r, err)
 }
 
 func isGatewayRequest(r *http.Request) bool {
