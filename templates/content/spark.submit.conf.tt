@@ -8,7 +8,7 @@ spark-submit --class <main-class> \
     -c spark.hadoop.fs.s3a.access_key={{$creds.Key}} \
     -c spark.hadoop.fs.s3a.secret_key={{$creds.Secret}} \
 {{- end}}
-    -c spark.hadoop.fs.s3a.endpoint={{ .Query.lakefs_url }}
+    -c spark.hadoop.fs.s3a.endpoint={{ .Query.lakefs_url }} \
     -c spark.hadoop.fs.s3a.path.style.access=true \
     <application-jar> \
     [application-arguments]
