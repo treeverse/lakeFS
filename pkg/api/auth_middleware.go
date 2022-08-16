@@ -46,7 +46,7 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 				writeError(w, http.StatusBadRequest, err)
 				return
 			}
-			user, err := checkSecurityRequirements(r, w, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig)
+			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig)
 			if err != nil {
 				writeError(w, http.StatusUnauthorized, err)
 				return
@@ -61,7 +61,7 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 
 // checkSecurityRequirements goes over the security requirements and check the authentication. returns the user information and error if the security check was required.
 // it will return nil user and error in case of no security checks to match.
-func checkSecurityRequirements(r *http.Request, w http.ResponseWriter,
+func checkSecurityRequirements(r *http.Request,
 	securityRequirements openapi3.SecurityRequirements,
 	logger logging.Logger,
 	authenticator auth.Authenticator,
