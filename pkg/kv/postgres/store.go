@@ -23,9 +23,12 @@ type Store struct {
 }
 
 type EntriesIterator struct {
+	ctx   context.Context
 	rows  pgx.Rows
+	prev  *kv.Entry
 	entry *kv.Entry
 	err   error
+	store *Store
 }
 
 const (
@@ -41,6 +44,7 @@ const (
 	DefaultMaxOpenConnections    = 25
 	DefaultMaxIdleConnections    = 25
 	DefaultConnectionMaxLifetime = 5 * time.Minute
+	DefaultScanPageSize          = 1000
 )
 
 //nolint:gochecknoinits
@@ -59,6 +63,10 @@ func normalizeDBParams(p *kvparams.Postgres) {
 
 	if p.ConnectionMaxLifetime == 0 {
 		p.ConnectionMaxLifetime = DefaultConnectionMaxLifetime
+	}
+
+	if p.ScanPageSize == 0 {
+		p.ScanPageSize = DefaultScanPageSize
 	}
 }
 
@@ -95,7 +103,7 @@ func (d *Driver) Open(ctx context.Context, kvparams kvparams.KV) (kv.Store, erro
 		return nil, fmt.Errorf("%w: %s", kv.ErrConnectFailed, err)
 	}
 
-	params := parseStoreConfig(config.ConnConfig.RuntimeParams)
+	params := parseStoreConfig(config.ConnConfig.RuntimeParams, kvparams.Postgres)
 	err = setupKeyValueDatabase(ctx, conn, params)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
@@ -113,17 +121,20 @@ type Params struct {
 	TableName          string
 	SanitizedTableName string
 	PartitionsAmount   int
+	ScanPageSize       int
 }
 
-func parseStoreConfig(runtimeParams map[string]string) *Params {
+func parseStoreConfig(runtimeParams map[string]string, pgParams *kvparams.Postgres) *Params {
 	p := &Params{
 		TableName:        DefaultTableName,
 		PartitionsAmount: DefaultPartitions,
+		ScanPageSize:     DefaultScanPageSize,
 	}
 	if tableName, ok := runtimeParams[paramTableName]; ok {
 		p.TableName = tableName
 	}
 	p.SanitizedTableName = pgx.Identifier{p.TableName}.Sanitize()
+	p.ScanPageSize = int(pgParams.ScanPageSize)
 	return p
 }
 
@@ -256,22 +267,32 @@ func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.Entrie
 		return nil, kv.ErrMissingPartitionKey
 	}
 
+	return s.scanInternal(ctx, partitionKey, start, true)
+}
+
+func (s *Store) scanInternal(ctx context.Context, partitionKey, start []byte, includeStart bool) (*EntriesIterator, error) {
 	var (
 		rows pgx.Rows
 		err  error
 	)
 
 	if start == nil {
-		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 ORDER BY key`, partitionKey)
+		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 ORDER BY key LIMIT $2`, partitionKey, s.Params.ScanPageSize)
 	} else {
-		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key >= $2 ORDER BY key`, partitionKey, start)
+		compareOp := ">="
+		if !includeStart {
+			compareOp = ">"
+		}
+		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key `+compareOp+` $2 ORDER BY key LIMIT $3`, partitionKey, start, s.Params.ScanPageSize)
 	}
 
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w (start=%v)", err, kv.ErrOperationFailed, start)
 	}
 	return &EntriesIterator{
-		rows: rows,
+		ctx:   ctx,
+		rows:  rows,
+		store: s,
 	}, nil
 }
 
@@ -284,9 +305,26 @@ func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false
 	}
+	e.prev = e.entry
 	e.entry = nil
 	if !e.rows.Next() {
-		return false
+		if e.prev == nil {
+			return false
+		}
+		// A previous row was read successfully, and no next row is found - this could
+		// be the end of a page, so trying to get the next page (another call to scanInternal)
+		// If there will still be no next row, it is the end of the scan
+		tmpIter, err := e.store.scanInternal(e.ctx, e.prev.PartitionKey, e.prev.Key, false)
+		if err != nil {
+			e.err = fmt.Errorf("scan paging: %w", err)
+			return false
+		}
+		e.rows = tmpIter.rows
+
+		// if there is still no next row, the end of the scan is reached
+		if !e.rows.Next() {
+			return false
+		}
 	}
 	var ent kv.Entry
 	if err := e.rows.Scan(&ent.PartitionKey, &ent.Key, &ent.Value); err != nil {
