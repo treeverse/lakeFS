@@ -115,7 +115,7 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 		DBSchemaVersion: kv.InitialMigrateVersion,
 		CreatedAt:       time.Now().UTC(),
 	}); err != nil {
-		return err
+		return kvpg.MigrateErr(err, packageName)
 	}
 
 	rows, err := d.Query(ctx, "SELECT * FROM gateway_multiparts")
@@ -128,12 +128,12 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 		m := MultipartUpload{}
 		err = rowScanner.Scan(&m)
 		if err != nil {
-			return err
+			return kvpg.MigrateErr(err, packageName)
 		}
 		pr := protoFromMultipart(&m)
 		value, err := proto.Marshal(pr)
 		if err != nil {
-			return err
+			return kvpg.MigrateErr(err, packageName)
 		}
 		key := []byte(m.UploadID)
 		if err = je.Encode(kv.Entry{
@@ -141,7 +141,7 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 			Key:          key,
 			Value:        value,
 		}); err != nil {
-			return err
+			return kvpg.MigrateErr(err, packageName)
 		}
 	}
 

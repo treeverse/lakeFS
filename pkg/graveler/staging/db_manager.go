@@ -16,7 +16,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
-	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
 	"google.golang.org/protobuf/proto"
@@ -28,9 +27,10 @@ const (
 	migrateQueueSize = 100
 )
 
+// TODO: Remove
 //nolint:gochecknoinits
 func init() {
-	kvpg.RegisterMigrate(packageName, Migrate, []string{"graveler_staging_kv"})
+	// kvpg.RegisterMigrate(packageName, Migrate, []string{"graveler_staging_kv"})
 }
 
 var encoder kv.SafeEncoder

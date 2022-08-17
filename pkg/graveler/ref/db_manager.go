@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/auth/model"
+
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/hashicorp/go-multierror"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -29,7 +31,7 @@ import (
 )
 
 const (
-	packageName      = "ref"
+	packageName      = "graveler"
 	jobWorkers       = 10
 	migrateQueueSize = 100
 )
@@ -564,6 +566,36 @@ var (
 	blockstorePrefix string
 )
 
+// sWorker writes staging token data of a branch
+func sWorker(ctx context.Context, d *pgxpool.Pool, stagingToken graveler.StagingToken) error {
+	record := &graveler.ValueRecord{}
+	rows, err := d.Query(ctx, "SELECT key, identity, data FROM graveler_staging_kv where staging_token=$1", stagingToken)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	scanner := pgxscan.NewRowScanner(rows)
+	for rows.Next() {
+		err = scanner.Scan(record)
+		if err != nil {
+			return err
+		}
+		pb := graveler.ProtoFromStagedEntry(record.Key, record.Value)
+		data, err := proto.Marshal(pb)
+		if err != nil {
+			return err
+		}
+		if err = encoder.Encode(kv.Entry{
+			PartitionKey: []byte(stagingToken),
+			Key:          record.Key,
+			Value:        data,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func cWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.RepositoryRecord) error {
 	commits, err := d.Query(ctx, "SELECT id,committer,message,creation_date,meta_range_id,metadata,parents,version,generation FROM graveler_commits WHERE repository_id=$1", repository.RepositoryID)
 	if err != nil {
@@ -603,6 +635,10 @@ func bWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.Reposito
 	for branches.Next() {
 		b := new(graveler.BranchRecord)
 		err = branchesScanner.Scan(b)
+		if err != nil {
+			return err
+		}
+		err = sWorker(ctx, d, b.StagingToken)
 		if err != nil {
 			return err
 		}
@@ -668,18 +704,16 @@ func rWorker(ctx context.Context, d *pgxpool.Pool, rChan <-chan *graveler.Reposi
 		}
 
 		// migrate repository entities
-		err = cWorker(ctx, d, r)
-		if err != nil {
-			return err
-		}
-		err = bWorker(ctx, d, r)
-		if err != nil {
-			return err
-		}
-		err = tWorker(ctx, d, r)
-		if err != nil {
-			return err
-		}
+		var wg multierror.Group
+		wg.Go(func() error {
+			return cWorker(ctx, d, r)
+		})
+		wg.Go(func() error {
+			return bWorker(ctx, d, r)
+		})
+		wg.Go(func() error {
+			return tWorker(ctx, d, r)
+		})
 
 		// Migrate Settings
 		objectPointer := block.ObjectPointer{
@@ -705,6 +739,10 @@ func rWorker(ctx context.Context, d *pgxpool.Pool, rChan <-chan *graveler.Reposi
 			Key:          []byte(graveler.SettingsPath(branch.ProtectionSettingKey)),
 			Value:        buff,
 		}); err != nil {
+			return err
+		}
+		err = wg.Wait().ErrorOrNil()
+		if err != nil {
 			return err
 		}
 	}
@@ -741,7 +779,7 @@ func MigrateWithBlockstore(ctx context.Context, d *pgxpool.Pool, writer io.Write
 		DBSchemaVersion: kv.InitialMigrateVersion,
 		CreatedAt:       time.Now().UTC(),
 	}); err != nil {
-		return err
+		return kvpg.MigrateErr(err, model.PackageName)
 	}
 
 	rChan := make(chan *graveler.RepositoryRecord, migrateQueueSize)
@@ -770,12 +808,12 @@ func MigrateWithBlockstore(ctx context.Context, d *pgxpool.Pool, writer io.Write
 		}
 	}
 	close(rChan)
-	workersErr := g.Wait().ErrorOrNil()
 	if err != nil {
-		return err
+		return kvpg.MigrateErr(err, model.PackageName)
 	}
-	if workersErr != nil {
-		return workersErr
+	err = g.Wait().ErrorOrNil()
+	if err != nil {
+		return kvpg.MigrateErr(err, model.PackageName)
 	}
 	return nil
 }

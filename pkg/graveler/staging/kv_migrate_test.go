@@ -24,6 +24,7 @@ type stagingTestRecord struct {
 }
 
 func TestMigrate(t *testing.T) {
+	t.Skip("reimplement in ref")
 	ctx := context.Background()
 	conn, _ := testutil.GetDB(t, databaseURI)
 	store, err := kv.Open(context.Background(), kvparams.KV{Type: kvpg.DriverName, Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})

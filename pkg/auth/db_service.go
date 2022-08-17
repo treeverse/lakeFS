@@ -916,41 +916,41 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 
 	userIDToDetails, err := exportUsers(ctx, d, je)
 	if err != nil {
-		return err
+		return kvpg.MigrateErr(err, model.PackageName)
 	}
 
 	groupIDToName, err := exportGroups(ctx, d, je)
 	if err != nil {
-		return err
+		return kvpg.MigrateErr(err, model.PackageName)
 	}
 
 	policyIDToName, err := exportPolicies(ctx, d, je)
 	if err != nil {
-		return err
+		return kvpg.MigrateErr(err, model.PackageName)
 	}
 
 	if err = exportUserGroups(ctx, d, je, userIDToDetails, groupIDToName); err != nil {
-		return err
+		return kvpg.MigrateErr(err, model.PackageName)
 	}
 
 	if err = exportUserPolicies(ctx, d, je, userIDToDetails, policyIDToName); err != nil {
-		return err
+		return kvpg.MigrateErr(err, model.PackageName)
 	}
 
 	if err = exportGroupPolicies(ctx, d, je, groupIDToName, policyIDToName); err != nil {
-		return err
+		return kvpg.MigrateErr(err, model.PackageName)
 	}
 
 	if err = exportCredentials(ctx, d, je, userIDToDetails); err != nil {
-		return err
+		return kvpg.MigrateErr(err, model.PackageName)
 	}
 
 	if err = exportExpiredTokens(ctx, d, je); err != nil {
-		return err
+		return kvpg.MigrateErr(err, model.PackageName)
 	}
 
 	if err = exportMetadata(ctx, d, je); err != nil {
-		return err
+		return kvpg.MigrateErr(err, model.PackageName)
 	}
 
 	return nil
