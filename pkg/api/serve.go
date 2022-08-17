@@ -116,7 +116,22 @@ func Serve(
 		r.Mount("/oidc/login", NewOIDCLoginPageHandler(oidcConfig, sessionStore, oauthConfig, logger))
 	}
 	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.GetAuthLogoutRedirectURL()))
-	r.Mount("/", NewUIHandler(gatewayDomains, snippets))
+
+	// Configuration flag to control if the embedded UI is served
+	// or not and assign the correct handler for each case.
+	var rootHandler http.Handler
+	if cfg.GetUIEnabled() {
+		// Handler which serves the embedded UI
+		// as well as handles erroneous S3 gateway requests
+		// and returns a compatible response
+		rootHandler = NewUIHandler(gatewayDomains, snippets)
+	} else {
+		// Handler which only handles erroneous S3 gateway requests
+		// and returns a compatible response
+		rootHandler = NewS3GatewayEndpointErrorHandler(gatewayDomains)
+	}
+	r.Mount("/", rootHandler)
+
 	return r
 }
 

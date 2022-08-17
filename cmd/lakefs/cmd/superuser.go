@@ -28,12 +28,6 @@ var superuserCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		ctx := cmd.Context()
-		dbParams := cfg.GetDatabaseParams()
-		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
-
-		defer dbPool.Close()
-
 		userName, err := cmd.Flags().GetString("user-name")
 		if err != nil {
 			fmt.Printf("user-name: %s\n", err)
@@ -51,7 +45,10 @@ var superuserCmd = &cobra.Command{
 		}
 
 		logger := logging.Default()
+		ctx := cmd.Context()
+		dbParams := cfg.GetDatabaseParams()
 		var (
+			dbPool              db.Database
 			authService         auth.Service
 			authMetadataManager auth.MetadataManager
 		)
@@ -66,6 +63,8 @@ var superuserCmd = &cobra.Command{
 			authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), logger.WithField("service", "auth_service"))
 			authMetadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
 		} else {
+			dbPool = db.BuildDatabaseConnection(ctx, dbParams)
+			defer dbPool.Close()
 			authService = auth.NewDBAuthService(dbPool, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), logger.WithField("service", "auth_service"))
 			authMetadataManager = auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		}

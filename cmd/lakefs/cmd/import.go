@@ -70,20 +70,41 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 
 	cfg := loadConfig()
 	ctx := cmd.Context()
-	dbParams := cfg.GetDatabaseParams()
-	dbPool := db.BuildDatabaseConnection(ctx, dbParams)
-	defer dbPool.Close()
-
-	err := db.ValidateSchemaUpToDate(ctx, dbPool, dbParams)
-	if errors.Is(err, db.ErrSchemaNotCompatible) {
-		fmt.Println("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
-		return 1
-	}
-	if err != nil {
-		fmt.Printf("%s\n", err)
-		return 1
-	}
 	logger := logging.FromContext(ctx)
+	dbParams := cfg.GetDatabaseParams()
+	var (
+		idGen        actions.IDGenerator
+		actionsStore actions.Store
+		storeMessage *kv.StoreMessage
+		dbPool       db.Database
+	)
+	if dbParams.KVEnabled {
+		kvParams := cfg.GetKVParams()
+		kvStore, err := kv.Open(ctx, kvParams)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to open KV store")
+		}
+		defer kvStore.Close()
+		storeMessage = &kv.StoreMessage{Store: kvStore}
+
+		actionsStore = actions.NewActionsKVStore(*storeMessage)
+		idGen = &actions.DecreasingIDGenerator{}
+	} else {
+		dbPool = db.BuildDatabaseConnection(ctx, dbParams)
+		defer dbPool.Close()
+		err := db.ValidateSchemaUpToDate(ctx, dbPool, dbParams)
+		if errors.Is(err, db.ErrSchemaNotCompatible) {
+			fmt.Println("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
+			return 1
+		}
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return 1
+		}
+
+		actionsStore = actions.NewActionsDBStore(dbPool)
+		idGen = &actions.IncreasingIDGenerator{}
+	}
 
 	u := uri.Must(uri.Parse(args[0]))
 	if !u.IsRepository() {
@@ -110,27 +131,6 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	bufferedCollector := stats.NewBufferedCollector(cfg.GetFixedInstallationID(), cfg)
 	defer bufferedCollector.Close()
 	bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
-
-	var (
-		idGen        actions.IDGenerator
-		actionsStore actions.Store
-		storeMessage *kv.StoreMessage
-	)
-	if dbParams.KVEnabled {
-		kvParams := cfg.GetKVParams()
-		kvStore, err := kv.Open(ctx, kvParams)
-		if err != nil {
-			logger.WithError(err).Fatal("failed to open KV store")
-		}
-		defer kvStore.Close()
-		storeMessage = &kv.StoreMessage{Store: kvStore}
-
-		actionsStore = actions.NewActionsKVStore(*storeMessage)
-		idGen = &actions.DecreasingIDGenerator{}
-	} else {
-		actionsStore = actions.NewActionsDBStore(dbPool)
-		idGen = &actions.IncreasingIDGenerator{}
-	}
 
 	c, err := catalog.New(ctx, catalog.Config{
 		Config:  cfg,

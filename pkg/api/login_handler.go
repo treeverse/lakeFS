@@ -21,11 +21,9 @@ type LoginResponseData struct {
 const (
 	DefaultLoginExpiration         = 7 * 24 * time.Hour
 	DefaultResetPasswordExpiration = 20 * time.Minute
-	// Deprecated: use gorilla managed session
-	JWTCookieName           = "access_token"
-	InternalAuthSessionName = "internal_auth_session"
-	TokenSessionKeyName     = "token"
-	OIDCAuthSessionName     = "oidc_auth_session"
+	InternalAuthSessionName        = "internal_auth_session"
+	TokenSessionKeyName            = "token"
+	OIDCAuthSessionName            = "oidc_auth_session"
 
 	LoginAudience = "login"
 )

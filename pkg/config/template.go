@@ -225,6 +225,8 @@ type configuration struct {
 		LakefsBaseURL      string        `mapstructure:"lakefs_base_url"`
 	}
 	UI struct {
+		// Enabled - control serving of embedded UI
+		Enabled  bool `mapstructure:"enabled"`
 		Snippets []struct {
 			ID   string `mapstructure:"id"`
 			Code string `mapstructure:"code"`

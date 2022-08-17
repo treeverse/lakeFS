@@ -2450,8 +2450,8 @@ func testController_ExpandTemplate(t *testing.T, kvEnabled bool) {
 			pattern string
 		}{
 			{"impl", `spark\.hadoop\.fs\.s3a\.impl=org\.apache\.hadoop\.fs\.s3a\.S3AFileSystem`},
-			{"access_key", `spark\.hadoop\.fs\.s3a\.access_key=AKIA.*`},
-			{"secret_key", `spark\.hadoop\.fs\.s3a\.secret_key=`},
+			{"access.key", `spark\.hadoop\.fs\.s3a\.access.key=AKIA.*`},
+			{"secret.key", `spark\.hadoop\.fs\.s3a\.secret.key=`},
 			{"s3a_endpoint", `spark\.hadoop\.fs\.s3a\.endpoint=` + lfsURL},
 		}
 

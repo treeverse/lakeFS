@@ -928,10 +928,30 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 	}
 
 	// collect commits
-	var commits []*CommitLog
+	var (
+		commits     []*CommitLog
+		commitCache = make(map[string]*graveler.Value)
+	)
 
 	for it.Next() {
 		v := it.Value()
+
+		if len(params.PathList) > 0 {
+			// verify that commit includes a change with object/prefix from PathList
+			if len(v.Parents) != NumberOfParentsOfNonMergeCommit {
+				// skip merge commits
+				continue
+			}
+			pathInCommit, err := c.checkPathListInCommit(ctx, repositoryID, v, params.PathList, commitCache)
+			if err != nil {
+				return nil, false, err
+			}
+			if !pathInCommit {
+				// no object or prefix found skip commit
+				continue
+			}
+		}
+
 		commit := &CommitLog{
 			Reference:    v.CommitID.String(),
 			Committer:    v.Committer,
@@ -944,21 +964,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 		for _, parent := range v.Parents {
 			commit.Parents = append(commit.Parents, parent.String())
 		}
-
-		if len(params.PathList) != 0 && len(v.Parents) == NumberOfParentsOfNonMergeCommit {
-			// if path list isn't empty, and also the current commit isn't a merge commit -
-			// we check if the current commit contains changes to the paths
-			pathInCommit, err := c.pathInCommit(ctx, repositoryID, v, params)
-			if err != nil {
-				return nil, false, err
-			}
-			if pathInCommit {
-				commits = append(commits, commit)
-			}
-		} else if len(params.PathList) == 0 {
-			// if there is no specification of path - we will output all commits
-			commits = append(commits, commit)
-		}
+		commits = append(commits, commit)
 		if len(commits) >= params.Limit+1 {
 			break
 		}
@@ -974,38 +980,75 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 	return commits, hasMore, nil
 }
 
-func (c *Catalog) pathInCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit *graveler.CommitRecord, params LogParams) (bool, error) {
-	// this function checks whether the given commmit contains changes to a list of paths.
-	// it searches the path in the diff between the commit and it's parent, but do so only to commits
-	// that have single parent (not merge commits)
+// checkPathListInCommit checks whether the given commit contains changes to a list of paths.
+// it searches the path in the diff between the commit, and it's parent, but do so only to commits
+// that have single parent (not merge commits)
+func (c *Catalog) checkPathListInCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit *graveler.CommitRecord, pathList []PathRecord, commitCache map[string]*graveler.Value) (bool, error) {
 	left := graveler.Ref(commit.Parents[0])
 	right := graveler.Ref(commit.CommitID)
-	diffIter, err := c.Store.Diff(ctx, repositoryID, left, right)
-	if err != nil {
-		return false, err
-	}
-	defer diffIter.Close()
 
-	for _, path := range params.PathList {
+	// diff iterator - open lazy, just in case we have a prefix to match
+	var diffIter graveler.DiffIterator
+	defer func() {
+		if diffIter != nil {
+			diffIter.Close()
+		}
+	}()
+
+	// check each path
+	for _, path := range pathList {
 		key := graveler.Key(path.Path)
-		diffIter.SeekGE(key)
-		if diffIter.Next() {
-			diffKey := diffIter.Value().Key
-			var result bool
-			if path.IsPrefix {
-				result = bytes.HasPrefix(diffKey, key)
-			} else {
-				result = bytes.Equal(diffKey, key)
+		if path.IsPrefix {
+			// get diff iterator if needed for prefix lookup
+			if diffIter == nil {
+				var err error
+				diffIter, err = c.Store.Diff(ctx, repositoryID, left, right)
+				if err != nil {
+					return false, err
+				}
 			}
-			if result {
+			diffIter.SeekGE(key)
+			if diffIter.Next() {
+				diffKey := diffIter.Value().Key
+				if bytes.HasPrefix(diffKey, key) {
+					return true, nil
+				}
+			}
+			if err := diffIter.Err(); err != nil {
+				return false, err
+			}
+		} else {
+			leftObject, err := storeGetCache(ctx, c.Store, repositoryID, left, key, commitCache)
+			if err != nil {
+				return false, err
+			}
+			rightObject, err := storeGetCache(ctx, c.Store, repositoryID, right, key, commitCache)
+			if err != nil {
+				return false, err
+			}
+			// if left or right are missing or doesn't hold the same identify
+			// we want the commit log
+			if leftObject == nil && rightObject != nil ||
+				leftObject != nil && rightObject == nil ||
+				(leftObject != nil && rightObject != nil && !bytes.Equal(leftObject.Identity, rightObject.Identity)) {
 				return true, nil
 			}
 		}
-		if err := diffIter.Err(); err != nil {
-			return false, err
-		}
 	}
 	return false, nil
+}
+
+func storeGetCache(ctx context.Context, store graveler.KeyValueStore, repositoryID graveler.RepositoryID, ref graveler.Ref, key graveler.Key, commitCache map[string]*graveler.Value) (*graveler.Value, error) {
+	cacheKey := fmt.Sprintf("%s/%s", ref, key)
+	if o, found := commitCache[cacheKey]; found {
+		return o, nil
+	}
+	o, err := store.Get(ctx, repositoryID, ref, key)
+	if err != nil && !errors.Is(err, graveler.ErrNotFound) {
+		return nil, err
+	}
+	commitCache[cacheKey] = o
+	return o, nil
 }
 
 func (c *Catalog) Revert(ctx context.Context, repository string, branch string, params RevertParams) error {
@@ -1090,7 +1133,7 @@ func (c *Catalog) DiffUncommitted(ctx context.Context, repository, branch, prefi
 }
 
 // GetStartPos returns a key that SeekGE will transform to a place start iterating on all elements in
-//    the keys that start with `prefix' after `after' and taking `delimiter' into account
+//    the keys that start with 'prefix' after 'after' and taking 'delimiter' into account
 func GetStartPos(prefix, after, delimiter string) string {
 	if after == "" {
 		// whether we have a delimiter or not, if after is not set, start at prefix

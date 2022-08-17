@@ -99,49 +99,6 @@ func testAuthMiddleware(t *testing.T, kvEnabled bool) {
 		}
 	})
 
-	t.Run("valid jwt cookie", func(t *testing.T) {
-		ctx := context.Background()
-		apiToken := testGenerateApiToken(ctx, t, clt, cred)
-		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", api.JWTCookieName, apiToken)
-		if err != nil {
-			t.Fatal("basic auth security provider", err)
-		}
-		authClient, err := api.NewClientWithResponses(apiEndpoint, api.WithRequestEditorFn(authProvider.Intercept))
-		if err != nil {
-			t.Fatal("failed to create lakefs api client:", err)
-		}
-		resp, err := authClient.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
-		if err != nil {
-			t.Fatal("ListRepositories() should return without error:", err)
-		}
-		if resp.StatusCode() != http.StatusOK {
-			t.Fatalf("unexpected status code %d, expected %d", resp.StatusCode(), http.StatusOK)
-		}
-	})
-
-	t.Run("invalid jwt cookie", func(t *testing.T) {
-		ctx := context.Background()
-		apiToken := testGenerateBadAPIToken(t, *deps.authService)
-		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", api.JWTCookieName, apiToken)
-		if err != nil {
-			t.Fatal("basic auth security provider", err)
-		}
-		authClient, err := api.NewClientWithResponses(apiEndpoint, api.WithRequestEditorFn(authProvider.Intercept))
-		if err != nil {
-			t.Fatal("failed to create lakefs api client:", err)
-		}
-		resp, err := authClient.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
-		if err != nil {
-			t.Fatal("ListRepositories() should return without error:", err)
-		}
-		if resp.StatusCode() != http.StatusUnauthorized {
-			t.Fatal("ListRepositories() should return unauthorized status code, got", resp.StatusCode())
-		}
-		if resp.JSON401 == nil {
-			t.Fatal("ListRepositories() should return unauthorized response, got nil")
-		}
-	})
-
 	t.Run("valid gorilla session", func(t *testing.T) {
 		ctx := context.Background()
 		apiToken := testGenerateApiToken(ctx, t, clt, cred)

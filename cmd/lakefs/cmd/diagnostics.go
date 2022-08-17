@@ -23,7 +23,10 @@ var diagnosticsCmd = &cobra.Command{
 		output, _ := cmd.Flags().GetString("output")
 
 		dbParams := cfg.GetDatabaseParams()
-		var storeMessage *kv.StoreMessage
+		var (
+			dbPool       db.Database
+			storeMessage *kv.StoreMessage
+		)
 		if dbParams.KVEnabled {
 			kvParams := cfg.GetKVParams()
 			kvStore, err := kv.Open(ctx, kvParams)
@@ -34,10 +37,11 @@ var diagnosticsCmd = &cobra.Command{
 			storeMessage = &kv.StoreMessage{
 				Store: kvStore,
 			}
+		} else {
+			dbPool = db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
+			defer dbPool.Close()
 		}
 
-		dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
-		defer dbPool.Close()
 		adapter, err := factory.BuildBlockAdapter(ctx, &stats.NullCollector{}, cfg)
 		if err != nil {
 			log.Printf("Failed to create block adapter: %s", err)

@@ -879,6 +879,7 @@ jobs:
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      LAKEFS_DATABASE_CONNECTION_STRING: "" # Override lakeFS docker compose settings
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
@@ -935,6 +936,7 @@ jobs:
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      LAKEFS_DATABASE_CONNECTION_STRING: "" # Override lakeFS docker compose settings
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
