@@ -107,7 +107,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 		return nil, fmt.Errorf("%w: %s", kv.ErrConnectFailed, err)
 	}
 
-	params := parseStoreConfig(config.ConnConfig.RuntimeParams, kvparams.Postgres)
+	params := parseStoreConfig(config.ConnConfig.RuntimeParams, kvParams.Postgres)
 	err = setupKeyValueDatabase(ctx, conn, params)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
