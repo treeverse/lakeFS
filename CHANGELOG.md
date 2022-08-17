@@ -1,4 +1,10 @@
 # Changelog
+
+## v0.70.2 - 2022-08-11
+
+What's new:
+- Improve 'commit log by objects' performance (#3920)
+
 ## v0.70.1 - 2022-08-11
 
 Bug fix:
