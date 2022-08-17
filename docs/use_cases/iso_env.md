@@ -1,7 +1,7 @@
 ---
 layout: default 
 title: Isolated Environment
-description: In this tutorial, we will explore how to use lakeFS for isolated dev environments.
+description: In this tutorial, we will explore how to use lakeFS for isolated test environments.
 parent: Use Cases
 nav_order: 10
 has_children: false
@@ -11,15 +11,15 @@ has_children: false
 
 ## Why do I need multiple environments?
 
-When developing over a data lake, it's useful to have replicas of your production environment. These replicas allow you to test and understand changes to your data without impacting the consumers of the production data.
+When working with a data lake, it's useful to have replicas of your production environment. These replicas allow you to test and understand changes to your data without impacting the consumers of the production data.
 
-Running ETL and transformation jobs directly in production is a guaranteed way to have data issues flow into dashboards, ML models, and other consumers sooner or later. The most common approach to avoid making changes directly in production is to create and maintain a second data environment called development (or dev) where updates are implemented first. 
+Running ETL and transformation jobs directly in production is a guaranteed way to have data issues flow into dashboards, ML models, and other consumers sooner or later. The most common approach to avoid making changes directly in production is to create and maintain a second data environment (test environment) where updates are implemented first. 
 
-The issue with this approach is that it's time-consuming and costly to maintain this separate dev environment. And for larger teams it forces multiple people to share a single environment, requiring significant co-ordination.
+The issue with this approach is that it's time-consuming and costly to maintain this separate test environment. And for larger teams it forces multiple people to share a single environment, requiring significant co-ordination.
 
 ## How do I create isolated environments with lakeFS?
 
-lakeFS makes creating isolated development environments instantaneous. This frees you from spending time on environment maintenance and makes it possible to create as many environments as needed.
+lakeFS makes creating isolated test environments instantaneous. This frees you from spending time on environment maintenance and makes it possible to create as many environments as needed.
 
 In a lakeFS repository, data is always located on a `branch`. You can think of each `branch` in lakeFS as its own environment. This is because branches are isolated, meaning changes on one branch have no effect other branches.
 
@@ -33,7 +33,7 @@ Let’s see an example of using multiple lakeFS branches for isolation.
 
 The key difference when using lakeFS for isolated data environments is that you can create them immediately before testing a change. And once new data is merged into production, you can delete the branch - effectively deleting the old environment.
 
-This is different from creating a long-living dev environment used as a staging area to test all the updates. With lakeFS, **we create a new branch for each change to production** that we want to make. One benefit of this is the ability to test multiple changes at one time.
+This is different from creating a long-living test environment used as a staging area to test all the updates. With lakeFS, **we create a new branch for each change to production** that we want to make. One benefit of this is the ability to test multiple changes at one time.
 
 
 ### Prerequisites
