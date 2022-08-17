@@ -63,7 +63,7 @@ class ApiClient(
   client.setUsername(accessKey)
   client.setPassword(secretKey)
   client.setBasePath(apiUrl.stripSuffix("/"))
-  if (!("".equals(connectionTimeout))) {
+  if ((connectionTimeout != null) && (!connectionTimeout.isEmpty)) {
     client.setConnectTimeout(connectionTimeout.toInt)
   }
   private val repositoriesApi = new api.RepositoriesApi(client)
