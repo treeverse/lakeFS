@@ -46,7 +46,7 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 				writeError(w, http.StatusBadRequest, err)
 				return
 			}
-			user, err := checkSecurityRequirements(r, w, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig)
+			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig)
 			if err != nil {
 				writeError(w, http.StatusUnauthorized, err)
 				return
@@ -59,38 +59,9 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 	}
 }
 
-// Deprecated: migrateFromLegacyCookie takes the token from the legacy cookie and saves it on the gorilla session.
-// TODO(johnnyaug) remove this a week after released
-func migrateFromLegacyCookie(r *http.Request, w http.ResponseWriter, logger logging.Logger, sessionStore sessions.Store) string {
-	jwtCookie, _ := r.Cookie(JWTCookieName)
-	if jwtCookie == nil {
-		return ""
-	}
-	http.SetCookie(w, &http.Cookie{
-		Name:     JWTCookieName,
-		Value:    "",
-		Domain:   jwtCookie.Domain,
-		Path:     "/",
-		HttpOnly: true,
-		Expires:  time.Unix(0, 0),
-		SameSite: http.SameSiteStrictMode,
-	})
-	if jwtCookie.Value == "" {
-		return ""
-	}
-	internalAuthSession, _ := sessionStore.Get(r, InternalAuthSessionName)
-	internalAuthSession.Values[TokenSessionKeyName] = jwtCookie.Value
-	err := sessionStore.Save(r, w, internalAuthSession)
-	if err != nil {
-		logger.WithError(err).Error("Failed to save internal auth session")
-		return ""
-	}
-	return jwtCookie.Value
-}
-
 // checkSecurityRequirements goes over the security requirements and check the authentication. returns the user information and error if the security check was required.
 // it will return nil user and error in case of no security checks to match.
-func checkSecurityRequirements(r *http.Request, w http.ResponseWriter,
+func checkSecurityRequirements(r *http.Request,
 	securityRequirements openapi3.SecurityRequirements,
 	logger logging.Logger,
 	authenticator auth.Authenticator,
@@ -131,9 +102,6 @@ func checkSecurityRequirements(r *http.Request, w http.ResponseWriter,
 				token := ""
 				if internalAuthSession != nil {
 					token, _ = internalAuthSession.Values[TokenSessionKeyName].(string)
-				}
-				if token == "" {
-					token = migrateFromLegacyCookie(r, w, logger, sessionStore)
 				}
 				if token == "" {
 					continue
