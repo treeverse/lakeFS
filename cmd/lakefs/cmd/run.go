@@ -131,7 +131,7 @@ var runCmd = &cobra.Command{
 
 			// Check if migration required only on postgres
 			migrationRequired := false
-			if dbParams.Type == kvpg.DriverName {
+			if dbParams.Type == kvpg.DriverName && len(dbParams.ConnectionString) > 0 {
 				dbPool = db.BuildDatabaseConnection(ctx, dbParams)
 				defer dbPool.Close()
 				_, _, err := db.MigrateVersion(ctx, dbPool, dbParams)
