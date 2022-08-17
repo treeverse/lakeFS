@@ -53,13 +53,19 @@ private object ApiClient {
   }
 }
 
-class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
+class ApiClient(
+    apiUrl: String,
+    accessKey: String,
+    secretKey: String,
+    connectionTimeout: String = ""
+) {
   private val client = new api.ApiClient
   client.setUsername(accessKey)
   client.setPassword(secretKey)
   client.setBasePath(apiUrl.stripSuffix("/"))
-  client.setConnectTimeout(20000);
-//  client.setReadTimeout(30, TimeUnit.SECONDS);    // socket timeout
+  if (!("".equals(connectionTimeout))) {
+    client.setConnectTimeout(connectionTimeout.toInt)
+  }
   private val repositoriesApi = new api.RepositoriesApi(client)
   private val commitsApi = new api.CommitsApi(client)
   private val metadataApi = new api.MetadataApi(client)
