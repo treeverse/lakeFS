@@ -45,11 +45,6 @@ const (
 	PartitionKey = "PartitionKey"
 	ItemKey      = "ItemKey"
 	ItemValue    = "ItemValue"
-
-	DefaultDynamoDBTableName = "kvstore"
-	// TODO (niro): Which values to use for DynamoDB tables?
-	DefaultDynamoDBReadCapacityUnits  = 1000
-	DefaultDynamoDBWriteCapacityUnits = 1000
 )
 
 //nolint:gochecknoinits
@@ -57,28 +52,17 @@ func init() {
 	kv.Register(DriverName, &Driver{})
 }
 
-func normalizeDBParams(p *kvparams.DynamoDB) {
-	if len(p.TableName) == 0 {
-		p.TableName = DefaultDynamoDBTableName
-	}
-
-	if p.ReadCapacityUnits == 0 {
-		p.ReadCapacityUnits = DefaultDynamoDBReadCapacityUnits
-	}
-
-	if p.WriteCapacityUnits == 0 {
-		p.WriteCapacityUnits = DefaultDynamoDBWriteCapacityUnits
-	}
-}
-
 // Open - opens and returns a KV store over DynamoDB. This function creates the DB session
 // and sets up the KV table.
 func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, error) {
+	if kvParams.DynamoDB == nil {
+		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
+	}
+
 	params := kvParams.DynamoDB
 	if params == nil {
 		return nil, kv.ErrDriverConfiguration
 	}
-	normalizeDBParams(params)
 
 	sess, err := session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
@@ -100,7 +84,8 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 				Value: credentials.Value{
 					AccessKeyID:     params.AwsAccessKeyID,
 					SecretAccessKey: params.AwsSecretAccessKey,
-				}}))
+				},
+			}))
 	}
 	// Create DynamoDB client
 	svc := dynamodb.New(sess, cfg)

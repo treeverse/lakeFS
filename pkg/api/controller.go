@@ -3279,7 +3279,6 @@ func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, temp
 
 	c.LogAction(ctx, "expand_template")
 	err := c.Templater.Expand(ctx, w, u, templateLocation, p.Params.AdditionalProperties)
-
 	if err != nil {
 		c.Logger.WithError(err).WithField("location", templateLocation).Error("Template expansion failed")
 	}

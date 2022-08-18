@@ -29,6 +29,7 @@ var versionCmd = &cobra.Command{
 				fmt.Printf("Failed to open KV store: %s\n", err)
 				return
 			}
+			defer kvStore.Close()
 			if kv.ValidateSchemaVersion(ctx, kvStore, false) == nil {
 				// Migration already occurred in KV or setup is required
 				return
