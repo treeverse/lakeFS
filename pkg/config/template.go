@@ -94,7 +94,6 @@ type configuration struct {
 			MaxOpenConnections    int32         `mapstructure:"max_open_connections"`
 			MaxIdleConnections    int32         `mapstructure:"max_idle_connections"`
 			ConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
-			ScanPageSize          int32         `mapstructure:"scan_page_size"`
 		}
 
 		DynamoDB *struct {
