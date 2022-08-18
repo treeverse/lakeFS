@@ -121,10 +121,6 @@ components:
         id:
           type: integer
           format: int64
-        name:
-          type: string
-          description: replaced by username
-          deprecated: true
         username:
           type: string
           description: a unique identifier for the user. In password-based authentication, this is the email.
