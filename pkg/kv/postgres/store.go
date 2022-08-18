@@ -63,11 +63,11 @@ func normalizeDBParams(p *kvparams.Postgres) {
 }
 
 func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, error) {
-	if kvparams.Postgres == nil {
+	if kvParams.Postgres == nil {
 		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
 	}
-	normalizeDBParams(kvparams.Postgres)
-	config, err := pgxpool.ParseConfig(kvparams.Postgres.ConnectionString)
+	normalizeDBParams(kvParams.Postgres)
+	config, err := pgxpool.ParseConfig(kvParams.Postgres.ConnectionString)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrDriverConfiguration, err)
 	}

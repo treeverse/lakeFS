@@ -44,11 +44,6 @@ var setupCmd = &cobra.Command{
 		)
 		if dbParams.KVEnabled {
 			kvParams = cfg.GetKVParams()
-			kvStore, err = kv.Open(ctx, kvParams)
-			if err != nil {
-				fmt.Printf("Failed to open KV store: %s\n", err)
-				os.Exit(1)
-			}
 			migrator = kv.NewDatabaseMigrator(kvParams)
 		} else {
 			dbPool = db.BuildDatabaseConnection(ctx, dbParams)
