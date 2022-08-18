@@ -1361,7 +1361,7 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 			returnedUsers := make([]auth.User, len(tt.users))
 			for i, u := range tt.users {
 				returnedUsers[i] = auth.User{
-					Name: u,
+					Username: u,
 				}
 			}
 			returnedUserList := &auth.UserList{
@@ -1439,7 +1439,7 @@ func TestAuthApiGetCredentialsCache(t *testing.T) {
 		JSON200: &auth.UserList{
 			Pagination: auth.Pagination{},
 			Results: []auth.User{{
-				Name: username,
+				Username: username,
 			}},
 		},
 	}, nil)
@@ -1463,7 +1463,7 @@ func TestAuthApiGetUserCache(t *testing.T) {
 	userMail := "foo@test.com"
 	externalId := "1234"
 	userResult := auth.User{
-		Name:       username,
+		Username:   username,
 		Id:         uid,
 		Email:      &userMail,
 		ExternalId: &externalId,
@@ -1707,8 +1707,8 @@ func TestAPIAuthService_GetUserByEmail(t *testing.T) {
 			returnedUsers := make([]auth.User, len(tt.users))
 			for i, u := range tt.users {
 				returnedUsers[i] = auth.User{
-					Name:  u,
-					Email: &tt.email,
+					Username: u,
+					Email:    &tt.email,
 				}
 			}
 			returnedUserList := &auth.UserList{
@@ -1813,7 +1813,7 @@ func TestAPIAuthService_GetUser(t *testing.T) {
 					StatusCode: tt.responseStatusCode,
 				},
 				JSON200: &auth.User{
-					Name:              tt.responseName,
+					Username:          tt.responseName,
 					Email:             &tt.email,
 					FriendlyName:      &tt.friendlyName,
 					Source:            &tt.source,
@@ -1953,7 +1953,7 @@ func TestAPIAuthService_GetCredentials(t *testing.T) {
 				JSON200: &auth.UserList{
 					Pagination: auth.Pagination{},
 					Results: []auth.User{{
-						Name: tt.username,
+						Username: tt.username,
 					}},
 				},
 			}, nil)
@@ -2103,7 +2103,7 @@ func TestAPIAuthService_ListUsers(t *testing.T) {
 			for i := 0; i < amount; i++ {
 				users[i] = auth.User{
 					CreationDate: creationDate,
-					Name:         fmt.Sprintf("%s-%d", userNamePrefix, i),
+					Username:     fmt.Sprintf("%s-%d", userNamePrefix, i),
 				}
 			}
 			userList := auth.UserList{
@@ -2148,7 +2148,7 @@ func TestAPIAuthService_ListGroupUsers(t *testing.T) {
 			for i := 0; i < amount; i++ {
 				users[i] = auth.User{
 					CreationDate: creationDate,
-					Name:         fmt.Sprintf("%s-%d", userNamePrefix, i),
+					Username:     fmt.Sprintf("%s-%d", userNamePrefix, i),
 				}
 			}
 			userList := auth.UserList{
