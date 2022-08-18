@@ -188,6 +188,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
 * GC on Azure is supported from Spark client version >= v0.2.0.
 * In case you don't have `hadoop-azure` package as part of your environment, you should add the package to your spark-submit with `--packages org.apache.hadoop:hadoop-azure:3.2.1`
 * For GC to work on Azure blob, [soft delete](https://docs.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview) should be disabled.
+* If you're running into timeout error calling to lakeFS client in GC, consider adding to the sark-submit command the configuration: `-c spark.hadoop.lakefs.api.connection.timeout=TIMEOUT_IN_SECONDS`, in order to increase the timeout (the default is 10 seconds).
   
   
 </div>

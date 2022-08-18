@@ -4,7 +4,8 @@ import com.google.protobuf.timestamp.Timestamp
 import io.treeverse.clients.LakeFSContext.{
   LAKEFS_CONF_API_ACCESS_KEY_KEY,
   LAKEFS_CONF_API_SECRET_KEY_KEY,
-  LAKEFS_CONF_API_URL_KEY
+  LAKEFS_CONF_API_URL_KEY,
+  LAKEFS_CONF_API_CONNECTION_TIMEOUT
 }
 import org.apache.hadoop.fs._
 import org.apache.hadoop.conf.Configuration
@@ -308,7 +309,8 @@ object GarbageCollector {
     val apiURL = hc.get(LAKEFS_CONF_API_URL_KEY)
     val accessKey = hc.get(LAKEFS_CONF_API_ACCESS_KEY_KEY)
     val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
-    val apiClient = new ApiClient(apiURL, accessKey, secretKey)
+    val connectionTimeout = hc.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT)
+    val apiClient = new ApiClient(apiURL, accessKey, secretKey, connectionTimeout)
     val storageType = apiClient.getBlockstoreType()
 
     if (storageType == StorageUtils.StorageTypeS3 && args.length != 2) {
