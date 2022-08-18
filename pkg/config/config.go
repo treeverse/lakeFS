@@ -73,8 +73,11 @@ const (
 	DefaultEmailBurst              = 10
 	DefaultLakefsEmailBaseURL      = "http://localhost:8000"
 
-	DefaultDynamoDBTableName = "kvstore"
-	DefaultUIEnabled         = true
+	DefaultDynamoDBTableName          = "kvstore"
+	DefaultDynamoDBReadCapacityUnits  = 1000
+	DefaultDynamoDBWriteCapacityUnits = 1000
+
+	DefaultUIEnabled = true
 )
 
 var (
@@ -247,6 +250,9 @@ func setDefaults() {
 	viper.SetDefault(LakefsEmailBaseURLKey, DefaultLakefsEmailBaseURL)
 
 	viper.SetDefault(DynamoDBTableNameKey, DefaultDynamoDBTableName)
+	viper.SetDefault(DynamoDBReadCapacityUnitsKey, DefaultDynamoDBReadCapacityUnits)
+	viper.SetDefault(DynamoDBWriteCapacityUnitsKey, DefaultDynamoDBWriteCapacityUnits)
+
 	viper.SetDefault(UIEnabledKey, DefaultUIEnabled)
 }
 

@@ -45,11 +45,6 @@ const (
 	PartitionKey = "PartitionKey"
 	ItemKey      = "ItemKey"
 	ItemValue    = "ItemValue"
-
-	DefaultDynamoDBTableName = "kvstore"
-	// TODO (niro): Which values to use for DynamoDB tables?
-	DefaultDynamoDBReadCapacityUnits  = 1000
-	DefaultDynamoDBWriteCapacityUnits = 1000
 )
 
 //nolint:gochecknoinits
@@ -107,21 +102,6 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 
 // setupKeyValueDatabase setup everything required to enable kv over postgres
 func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *kvparams.DynamoDB) error {
-	// set rcu and wcu - if not set (zero) we use the account configured table max capacity
-	rcu := params.ReadCapacityUnits
-	wcu := params.WriteCapacityUnits
-	if rcu == 0 || wcu == 0 {
-		limitsOutput, err := svc.DescribeLimitsWithContext(ctx, &dynamodb.DescribeLimitsInput{})
-		if err != nil {
-			return err
-		}
-		if rcu == 0 {
-			rcu = aws.Int64Value(limitsOutput.TableMaxReadCapacityUnits)
-		}
-		if wcu == 0 {
-			wcu = aws.Int64Value(limitsOutput.TableMaxWriteCapacityUnits)
-		}
-	}
 	// main kv table
 	table, err := svc.CreateTableWithContext(ctx, &dynamodb.CreateTableInput{
 		TableName: aws.String(params.TableName),
@@ -146,8 +126,8 @@ func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *
 			},
 		},
 		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
-			ReadCapacityUnits:  aws.Int64(rcu),
-			WriteCapacityUnits: aws.Int64(wcu),
+			ReadCapacityUnits:  aws.Int64(params.ReadCapacityUnits),
+			WriteCapacityUnits: aws.Int64(params.WriteCapacityUnits),
 		},
 	})
 	if err != nil {
