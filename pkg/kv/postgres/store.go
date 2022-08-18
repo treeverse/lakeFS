@@ -44,7 +44,7 @@ const (
 	DefaultMaxOpenConnections    = 25
 	DefaultMaxIdleConnections    = 25
 	DefaultConnectionMaxLifetime = 5 * time.Minute
-	DefaultScanPageSize          = 300
+	DefaultScanPageSize          = 1000
 )
 
 //nolint:gochecknoinits
