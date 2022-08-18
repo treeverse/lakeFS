@@ -73,8 +73,7 @@ const (
 	DefaultEmailBurst              = 10
 	DefaultLakefsEmailBaseURL      = "http://localhost:8000"
 
-	DefaultDynamoDBTableName = "kvstore"
-	// TODO (niro): Which values to use for DynamoDB tables?
+	DefaultDynamoDBTableName          = "kvstore"
 	DefaultDynamoDBReadCapacityUnits  = 1000
 	DefaultDynamoDBWriteCapacityUnits = 1000
 
@@ -310,16 +309,16 @@ func (c *Config) GetKVParams() kvparams.KV {
 	p := kvparams.KV{
 		Type: c.values.Database.Type,
 	}
-	switch {
-	case c.values.Database.Postgres != nil:
+	if c.values.Database.Postgres != nil {
 		p.Postgres = &kvparams.Postgres{
 			ConnectionString:      c.values.Database.Postgres.ConnectionString.SecureValue(),
 			MaxIdleConnections:    c.values.Database.Postgres.MaxIdleConnections,
 			MaxOpenConnections:    c.values.Database.Postgres.MaxOpenConnections,
 			ConnectionMaxLifetime: c.values.Database.Postgres.ConnectionMaxLifetime,
 		}
+	}
 
-	case c.values.Database.DynamoDB != nil:
+	if c.values.Database.DynamoDB != nil {
 		p.DynamoDB = &kvparams.DynamoDB{
 			TableName:          c.values.Database.DynamoDB.TableName,
 			ReadCapacityUnits:  c.values.Database.DynamoDB.ReadCapacityUnits,
