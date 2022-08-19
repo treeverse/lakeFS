@@ -1,20 +1,20 @@
 ---
 layout: default
-title: In Development
+title: In Test
 parent: Using lakeFS
-description: lakeFS enables a safe development environment on your data lake without the need to copy or mock data
+description: lakeFS enables a safe test environment on your data lake without the need to copy or mock data
 nav_order: 25
 ---
 
 
-## In Development
+## In Test
 
-As part of our routine work with data we develop new code, improve and upgrade old code, upgrade infrastructures, and test new technologies. lakeFS enables a safe development environment on your data lake without the need to copy or mock data, work on the pipelines or involve DevOps.
+As part of our routine work with data we develop new code, improve and upgrade old code, upgrade infrastructures, and test new technologies. lakeFS enables a safe test environment on your data lake without the need to copy or mock data, work on the pipelines or involve DevOps.
 
 Creating a branch provides you an isolated environment with a snapshot of your repository (any part of your data lake you chose to manage on lakeFS). While working on your own branch in isolation, all other data users will be looking at the repository’s main branch. They can't see your changes, and you don’t see changes to main done after you created the branch. 
 
 No worries, no data duplication is done, it’s all metadata management behind the scenes.
-Let’s look at 3 examples of a development environment and their branching models.
+Let’s look at 3 examples of a test environment and their branching models.
 
 ### Example 1: Upgrading Spark and using Reset action
 
