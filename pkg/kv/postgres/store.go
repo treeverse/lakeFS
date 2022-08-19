@@ -297,7 +297,7 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, start []byte, in
 	var entries []kv.Entry
 	err = pgxscan.ScanAll(&entries, rows)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
+		return nil, fmt.Errorf("scanning all entries: %w", err)
 	}
 
 	return &EntriesIterator{
