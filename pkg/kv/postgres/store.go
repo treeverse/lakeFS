@@ -339,6 +339,9 @@ func (e *EntriesIterator) Next() bool {
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {
+	if e.entries == nil {
+		return nil
+	}
 	return &e.entries[e.currEntryIdx]
 }
 
