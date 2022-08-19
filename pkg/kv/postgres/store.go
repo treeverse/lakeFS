@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -23,12 +24,11 @@ type Store struct {
 }
 
 type EntriesIterator struct {
-	ctx   context.Context
-	rows  pgx.Rows
-	prev  *kv.Entry
-	entry *kv.Entry
-	err   error
-	store *Store
+	ctx          context.Context
+	entries      []kv.Entry
+	currEntryIdx int
+	err          error
+	store        *Store
 }
 
 const (
@@ -289,14 +289,22 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, start []byte, in
 		}
 		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key `+compareOp+` $2 ORDER BY key LIMIT $3`, partitionKey, start, s.Params.ScanPageSize)
 	}
-
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w (start=%v)", err, kv.ErrOperationFailed, start)
 	}
+	defer rows.Close()
+
+	var entries []kv.Entry
+	err = pgxscan.ScanAll(&entries, rows)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
+	}
+
 	return &EntriesIterator{
-		ctx:   ctx,
-		rows:  rows,
-		store: s,
+		ctx:          ctx,
+		entries:      entries,
+		currEntryIdx: -1,
+		store:        s,
 	}, nil
 }
 
@@ -309,54 +317,38 @@ func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false
 	}
-	e.prev = e.entry
-	e.entry = nil
-	if !e.rows.Next() {
-		if e.prev == nil {
+	e.currEntryIdx++
+
+	if e.currEntryIdx == len(e.entries) {
+		if e.currEntryIdx == 0 {
 			return false
 		}
-		// A previous row was read successfully, and no next row is found - this could
-		// be the end of a page, so trying to get the next page (another call to scanInternal)
-		// If there will still be no next row, it is the end of the scan
-		tmpIter, err := e.store.scanInternal(e.ctx, e.prev.PartitionKey, e.prev.Key, false)
+		tmpIter, err := e.store.scanInternal(e.ctx, e.entries[e.currEntryIdx-1].PartitionKey, e.entries[e.currEntryIdx-1].Key, false)
 		if err != nil {
 			e.err = fmt.Errorf("scan paging: %w", err)
 			return false
 		}
-		e.rows = tmpIter.rows
-
-		// if there is still no next row, the end of the scan is reached
-		if !e.rows.Next() {
+		if len(tmpIter.entries) == 0 {
 			return false
 		}
+		e.entries = tmpIter.entries
+		e.currEntryIdx = 0
 	}
-	var ent kv.Entry
-	if err := e.rows.Scan(&ent.PartitionKey, &ent.Key, &ent.Value); err != nil {
-		e.err = fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
-		return false
-	}
-	e.entry = &ent
+
 	return true
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {
-	return e.entry
+	return &e.entries[e.currEntryIdx]
 }
 
 // Err return the last scan error or the cursor error
 func (e *EntriesIterator) Err() error {
-	if e.err != nil {
-		return e.err
-	}
-	if err := e.rows.Err(); err != nil {
-		e.err = fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
-		return err
-	}
-	return nil
+	return e.err
 }
 
 func (e *EntriesIterator) Close() {
-	e.rows.Close()
-	e.entry = nil
+	e.entries = nil
+	e.currEntryIdx = -1
 	e.err = kv.ErrClosedEntries
 }
