@@ -61,7 +61,7 @@ func NewPGRefManager(executor batch.Batcher, db db.Database, addressProvider ide
 
 func (m *DBManager) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
 	key := fmt.Sprintf("GetRepository:%s", repositoryID)
-	repository, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
+	repository, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
 		repo := &graveler.Repository{}
 		err := m.db.Get(ctx, repo, `SELECT storage_namespace, creation_date, default_branch FROM graveler_repositories WHERE id = $1`, repositoryID)
 		if err != nil {
@@ -176,7 +176,7 @@ func (m *DBManager) ResolveRawRef(ctx context.Context, repository *graveler.Repo
 
 func (m *DBManager) GetBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) (*graveler.Branch, error) {
 	key := fmt.Sprintf("GetBranch:%s:%s", repository.RepositoryID, branchID)
-	b, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
+	b, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
 		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			var rec branchRecord
 			err := tx.Get(&rec, `SELECT commit_id, staging_token FROM graveler_branches WHERE repository_id = $1 AND id = $2`,
@@ -260,7 +260,7 @@ func (m *DBManager) GCBranchIterator(ctx context.Context, repository *graveler.R
 
 func (m *DBManager) GetTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID) (*graveler.CommitID, error) {
 	key := fmt.Sprintf("GetTag:%s:%s", repository.RepositoryID, tagID)
-	commitID, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
+	commitID, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
 		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			var commitID graveler.CommitID
 			err := tx.Get(&commitID, `SELECT commit_id FROM graveler_tags WHERE repository_id = $1 AND id = $2`,
@@ -322,7 +322,7 @@ func (m *DBManager) ListTags(ctx context.Context, repository *graveler.Repositor
 func (m *DBManager) GetCommitByPrefix(ctx context.Context, repository *graveler.RepositoryRecord, prefix graveler.CommitID) (*graveler.Commit, error) {
 	key := fmt.Sprintf("GetCommitByPrefix:%s:%s", repository.RepositoryID, prefix)
 
-	commit, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
+	commit, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
 		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			records := make([]*commitRecord, 0)
 			// LIMIT 2 is used to test if a truncated commit ID resolves to *one* commit.
@@ -359,7 +359,7 @@ func (m *DBManager) GetCommitByPrefix(ctx context.Context, repository *graveler.
 
 func (m *DBManager) GetCommit(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) (*graveler.Commit, error) {
 	key := fmt.Sprintf("GetCommit:%s:%s", repository.RepositoryID, commitID)
-	commit, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
+	commit, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
 		var rec commitRecord
 		err := m.db.Get(ctx, &rec, `SELECT committer, message, creation_date, parents, meta_range_id, metadata, version, generation
 					FROM graveler_commits WHERE repository_id = $1 AND id = $2`,
