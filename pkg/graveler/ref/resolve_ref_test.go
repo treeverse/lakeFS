@@ -363,7 +363,7 @@ func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 		resolve := func(base graveler.CommitID, mod string, expected graveler.CommitID) {
 			t.Helper()
 			reference := string(base) + mod
-			resolved, err := resolveRef(context.Background(), tt.refManager, ident.NewHexAddressProvider(), graveler.Ref(reference))
+			resolved, err := resolveRef(context.Background(), tt.refManager, ident.NewHexAddressProvider(), repository, graveler.Ref(reference))
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -403,7 +403,7 @@ func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 	}
 }
 
-func resolveRef(ctx context.Context, store ref.Store, addressProvider ident.AddressProvider, reference graveler.Ref) (*graveler.ResolvedRef, error) {
+func resolveRef(ctx context.Context, store ref.Store, addressProvider ident.AddressProvider, repository *graveler.RepositoryRecord, reference graveler.Ref) (*graveler.ResolvedRef, error) {
 	rawRef, err := ref.ParseRef(reference)
 	if err != nil {
 		return nil, err
