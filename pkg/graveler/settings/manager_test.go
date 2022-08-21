@@ -180,7 +180,7 @@ func TestUpdateWithLock(t *testing.T) {
 	var lock sync.Mutex
 	lockStartWaitGroup.Add(IncrementCount)
 
-	m, _ := prepareTest(t, ctx, false, nil, func(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, f func() (interface{}, error)) (interface{}, error) {
+	m, _ := prepareTest(t, ctx, false, nil, func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f func() (interface{}, error)) (interface{}, error) {
 		lockStartWaitGroup.Done()
 		lockStartWaitGroup.Wait() // wait until all goroutines ask for the lock
 		lock.Lock()
@@ -286,13 +286,13 @@ func TestEmpty(t *testing.T) {
 	}
 }
 
-func prepareTest(t *testing.T, ctx context.Context, kvEnabled bool, cache cache.Cache, branchLockCallback func(context.Context, graveler.RepositoryID, graveler.BranchID, func() (interface{}, error)) (interface{}, error)) (settings.Manager, block.Adapter) {
+func prepareTest(t *testing.T, ctx context.Context, kvEnabled bool, cache cache.Cache, branchLockCallback func(context.Context, *graveler.RepositoryRecord, graveler.BranchID, func() (interface{}, error)) (interface{}, error)) (settings.Manager, block.Adapter) {
 	ctrl := gomock.NewController(t)
 	refManager := mock.NewMockRefManager(ctrl)
 
 	blockAdapter := mem.New()
 	branchLock := mock.NewMockBranchLocker(ctrl)
-	cb := func(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, f func() (interface{}, error)) (interface{}, error) {
+	cb := func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f func() (interface{}, error)) (interface{}, error) {
 		return f()
 	}
 	if branchLockCallback != nil {
@@ -302,7 +302,7 @@ func prepareTest(t *testing.T, ctx context.Context, kvEnabled bool, cache cache.
 	if cache != nil {
 		opts = append(opts, settings.WithCache(cache))
 	}
-	branchLock.EXPECT().MetadataUpdater(ctx, gomock.Eq(repository.RepositoryID), graveler.BranchID("main"), gomock.Any()).DoAndReturn(cb).AnyTimes()
+	branchLock.EXPECT().MetadataUpdater(ctx, gomock.Eq(repository), graveler.BranchID("main"), gomock.Any()).DoAndReturn(cb).AnyTimes()
 	var m settings.Manager
 	if kvEnabled {
 		kvStore := kvtest.GetStore(ctx, t)
