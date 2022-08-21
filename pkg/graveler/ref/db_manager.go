@@ -9,12 +9,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/auth/model"
-
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/hashicorp/go-multierror"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/lib/pq"
+	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"

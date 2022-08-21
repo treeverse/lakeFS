@@ -7,12 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/auth/model"
-
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/hashicorp/go-multierror"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/rs/xid"
+	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"

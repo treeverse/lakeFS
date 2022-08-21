@@ -9,19 +9,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/db"
-	"github.com/treeverse/lakefs/pkg/graveler/staging"
-
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/mem"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/branch"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
+	"github.com/treeverse/lakefs/pkg/graveler/staging"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
@@ -34,7 +33,7 @@ const (
 	NumRepositories = 1
 	numCommits      = 100
 	numBranches     = 50
-	numStaging      = 10
+	numStaging      = 100
 
 	blockstoreCommittedPrefix = "migrate_test"
 )
