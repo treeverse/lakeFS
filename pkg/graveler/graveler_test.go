@@ -1968,7 +1968,6 @@ func testGravelerPreMergeHook(t *testing.T, kvEnabled bool) {
 	}
 	// tests
 	errSomethingBad := errors.New("first error")
-	const mergeRepositoryID = "repoID"
 	const commitCommitter = "committer"
 	const mergeMessage = "message"
 	mergeMetadata := graveler.Metadata{"key1": "val1"}
@@ -2033,8 +2032,8 @@ func testGravelerPreMergeHook(t *testing.T, kvEnabled bool) {
 			if !h.Called {
 				return
 			}
-			if h.RepositoryID != mergeRepositoryID {
-				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, mergeRepositoryID)
+			if h.RepositoryID != repository.RepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repository.RepositoryID)
 			}
 			if h.BranchID != mergeDestination {
 				t.Errorf("Hook branch (destination) '%s', expected '%s'", h.BranchID, mergeDestination)
@@ -2119,7 +2118,6 @@ func TestGraveler_PreCreateTagHook(t *testing.T) {
 
 func testGravelerPreCreateTagHook(t *testing.T, kvEnabled bool) {
 	// prepare graveler
-	const repositoryID = "repoID"
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const expectedCommitID = graveler.CommitID("expectedCommitID")
 	const expectedTagID = graveler.TagID("expectedTagID")
@@ -2184,8 +2182,8 @@ func testGravelerPreCreateTagHook(t *testing.T, kvEnabled bool) {
 			if !h.Called {
 				return
 			}
-			if h.RepositoryID != repositoryID {
-				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repositoryID)
+			if h.RepositoryID != repository.RepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repository.RepositoryID)
 			}
 			if h.CommitID != expectedCommitID {
 				t.Errorf("Hook commit ID '%s', expected '%s'", h.BranchID, expectedCommitID)
@@ -2208,7 +2206,6 @@ func TestGraveler_PreDeleteTagHook(t *testing.T) {
 
 func testGravelerPreDeleteTagHook(t *testing.T, kvEnabled bool) {
 	// prepare graveler
-	const repositoryID = "repoID"
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const expectedCommitID = graveler.CommitID("expectedCommitID")
 	const expectedTagID = graveler.TagID("expectedTagID")
@@ -2274,8 +2271,8 @@ func testGravelerPreDeleteTagHook(t *testing.T, kvEnabled bool) {
 			if !h.Called {
 				return
 			}
-			if h.RepositoryID != repositoryID {
-				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repositoryID)
+			if h.RepositoryID != repository.RepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repository.RepositoryID)
 			}
 			if h.TagID != expectedTagID {
 				t.Errorf("Hook tag ID '%s', expected '%s'", h.TagID, expectedTagID)
@@ -2294,7 +2291,6 @@ func TestGraveler_PreCreateBranchHook(t *testing.T) {
 }
 
 func testGravelerPreCreateBranchHook(t *testing.T, kvEnabled bool) {
-	const repositoryID = "repoID"
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const sourceCommitID = graveler.CommitID("sourceCommitID")
 	const sourceBranchID = graveler.CommitID("sourceBranchID")
@@ -2368,8 +2364,8 @@ func testGravelerPreCreateBranchHook(t *testing.T, kvEnabled bool) {
 			if !h.Called {
 				return
 			}
-			if h.RepositoryID != repositoryID {
-				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repositoryID)
+			if h.RepositoryID != repository.RepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repository.RepositoryID)
 			}
 			if h.CommitID != sourceCommitID {
 				t.Errorf("Hook commit ID '%s', expected '%s'", h.BranchID, sourceCommitID)
@@ -2392,7 +2388,6 @@ func TestGraveler_PreDeleteBranchHook(t *testing.T) {
 
 func testGravelerPreDeleteBranchHook(t *testing.T, kvEnabled bool) {
 	// prepare graveler
-	const repositoryID = "repoID"
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const sourceCommitID = graveler.CommitID("sourceCommitID")
 	const sourceBranchID = graveler.CommitID("sourceBranchID")
@@ -2464,8 +2459,8 @@ func testGravelerPreDeleteBranchHook(t *testing.T, kvEnabled bool) {
 			if !h.Called {
 				return
 			}
-			if h.RepositoryID != repositoryID {
-				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repositoryID)
+			if h.RepositoryID != repository.RepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repository.RepositoryID)
 			}
 			if h.BranchID != graveler.BranchID(sourceBranchID) {
 				t.Errorf("Hook branch ID '%s', expected '%s'", h.BranchID, sourceBranchID)

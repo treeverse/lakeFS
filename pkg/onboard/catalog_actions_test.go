@@ -23,22 +23,29 @@ const (
 	msg         = "awesome-import-commit"
 )
 
+var repository = &graveler.RepositoryRecord{RepositoryID: repoID}
+
 func TestFullCyclePorcelainImportBranchExists(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	rangeManager := mock.NewMockEntryCatalog(ctrl)
 
+	rangeManager.EXPECT().
+		GetRepository(gomock.Any(), gomock.Eq(repoID)).
+		Times(1).
+		Return(repository, nil)
+
 	mri := metaRangeID
 	prevCommitID := graveler.CommitID("somePrevCommitID")
 	rangeManager.EXPECT().
-		GetBranch(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.BranchID(onboard.DefaultImportBranchName))).
+		GetBranch(gomock.Any(), gomock.Eq(repository), gomock.Eq(graveler.BranchID(onboard.DefaultImportBranchName))).
 		Times(1).
 		Return(&graveler.Branch{
 			CommitID: prevCommitID,
 		}, nil)
 
 	rangeManager.EXPECT().
-		List(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(onboard.DefaultImportBranchName))).
+		List(gomock.Any(), gomock.Eq(repository), gomock.Eq(graveler.Ref(onboard.DefaultImportBranchName))).
 		Times(1).
 		Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{
 			{
@@ -46,9 +53,9 @@ func TestFullCyclePorcelainImportBranchExists(t *testing.T) {
 				Value: nil,
 			},
 		}), nil)
-	rangeManager.EXPECT().WriteMetaRangeByIterator(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(&mri, nil)
-	rangeManager.EXPECT().GetCommit(gomock.Any(), gomock.Eq(repoID), gomock.Eq(prevCommitID)).Return(&graveler.Commit{}, nil)
-	rangeManager.EXPECT().AddCommitToBranchHead(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.BranchID(onboard.DefaultImportBranchName)), gomock.Any()).
+	rangeManager.EXPECT().WriteMetaRangeByIterator(gomock.Any(), gomock.Eq(repository), gomock.Any()).Times(1).Return(&mri, nil)
+	rangeManager.EXPECT().GetCommit(gomock.Any(), gomock.Eq(repository), gomock.Eq(prevCommitID)).Return(&graveler.Commit{}, nil)
+	rangeManager.EXPECT().AddCommitToBranchHead(gomock.Any(), gomock.Eq(repository), gomock.Eq(graveler.BranchID(onboard.DefaultImportBranchName)), gomock.Any()).
 		Times(1).Return(commitID, nil)
 
 	rocks := onboard.NewCatalogRepoActions(&onboard.Config{
@@ -75,22 +82,27 @@ func TestFullCyclePorcelainImportBranchMissing(t *testing.T) {
 	defer ctrl.Finish()
 	rangeManager := mock.NewMockEntryCatalog(ctrl)
 
+	rangeManager.EXPECT().
+		GetRepository(gomock.Any(), gomock.Eq(repoID)).
+		Times(1).
+		Return(repository, nil)
+
 	mri := metaRangeID
 	prevCommitID := graveler.CommitID("somePrevCommitID")
 	rangeManager.EXPECT().
-		GetBranch(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.BranchID(onboard.DefaultImportBranchName))).
+		GetBranch(gomock.Any(), gomock.Eq(repository), gomock.Eq(graveler.BranchID(onboard.DefaultImportBranchName))).
 		Times(1).
 		Return(nil, graveler.ErrBranchNotFound)
 
 	rangeManager.EXPECT().
-		CreateBranch(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.BranchID(onboard.DefaultImportBranchName)), gomock.Eq(graveler.Ref("main"))).
+		CreateBranch(gomock.Any(), gomock.Eq(repository), gomock.Eq(graveler.BranchID(onboard.DefaultImportBranchName)), gomock.Eq(graveler.Ref("main"))).
 		Times(1).
 		Return(&graveler.Branch{
 			CommitID: prevCommitID,
 		}, nil)
 
 	rangeManager.EXPECT().
-		List(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(onboard.DefaultImportBranchName))).
+		List(gomock.Any(), gomock.Eq(repository), gomock.Eq(graveler.Ref(onboard.DefaultImportBranchName))).
 		Times(1).
 		Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{
 			{
@@ -98,9 +110,9 @@ func TestFullCyclePorcelainImportBranchMissing(t *testing.T) {
 				Value: nil,
 			},
 		}), nil)
-	rangeManager.EXPECT().WriteMetaRangeByIterator(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(&mri, nil)
-	rangeManager.EXPECT().GetCommit(gomock.Any(), gomock.Eq(repoID), gomock.Eq(prevCommitID)).Return(&graveler.Commit{}, nil)
-	rangeManager.EXPECT().AddCommitToBranchHead(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.BranchID(onboard.DefaultImportBranchName)), gomock.Any()).
+	rangeManager.EXPECT().WriteMetaRangeByIterator(gomock.Any(), gomock.Eq(repository), gomock.Any()).Times(1).Return(&mri, nil)
+	rangeManager.EXPECT().GetCommit(gomock.Any(), gomock.Eq(repository), gomock.Eq(prevCommitID)).Return(&graveler.Commit{}, nil)
+	rangeManager.EXPECT().AddCommitToBranchHead(gomock.Any(), gomock.Eq(repository), gomock.Eq(graveler.BranchID(onboard.DefaultImportBranchName)), gomock.Any()).
 		Times(1).Return(commitID, nil)
 
 	rocks := onboard.NewCatalogRepoActions(&onboard.Config{
@@ -127,11 +139,16 @@ func TestFullCyclePlumbing(t *testing.T) {
 	defer ctrl.Finish()
 	rangeManager := mock.NewMockEntryCatalog(ctrl)
 
+	rangeManager.EXPECT().
+		GetRepository(gomock.Any(), gomock.Eq(repoID)).
+		Times(1).
+		Return(repository, nil)
+
 	mri := metaRangeID
 	prevCommitID := graveler.CommitID("somePrevCommitID")
 
 	rangeManager.EXPECT().
-		List(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(prevCommitID))).
+		List(gomock.Any(), gomock.Eq(repository), gomock.Eq(graveler.Ref(prevCommitID))).
 		Times(1).
 		Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{
 			{
@@ -139,9 +156,9 @@ func TestFullCyclePlumbing(t *testing.T) {
 				Value: nil,
 			},
 		}), nil)
-	rangeManager.EXPECT().WriteMetaRangeByIterator(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(&mri, nil)
-	rangeManager.EXPECT().GetCommit(gomock.Any(), gomock.Eq(repoID), gomock.Eq(prevCommitID)).Return(&graveler.Commit{}, nil)
-	rangeManager.EXPECT().AddCommit(gomock.Any(), gomock.Eq(repoID), gomock.Any()).
+	rangeManager.EXPECT().WriteMetaRangeByIterator(gomock.Any(), gomock.Eq(repository), gomock.Any()).Times(1).Return(&mri, nil)
+	rangeManager.EXPECT().GetCommit(gomock.Any(), gomock.Eq(repository), gomock.Eq(prevCommitID)).Return(&graveler.Commit{}, nil)
+	rangeManager.EXPECT().AddCommit(gomock.Any(), gomock.Eq(repository), gomock.Any()).
 		Times(1).Return(commitID, nil)
 
 	rocks := onboard.NewCatalogRepoActions(&onboard.Config{
@@ -168,16 +185,21 @@ func TestApplyImportWriteFailure(t *testing.T) {
 	defer ctrl.Finish()
 	rangeManager := mock.NewMockEntryCatalog(ctrl)
 
+	rangeManager.EXPECT().
+		GetRepository(gomock.Any(), gomock.Eq(repoID)).
+		Times(1).
+		Return(repository, nil)
+
 	prevCommitID := graveler.CommitID("somePrevCommitID")
 	rangeManager.EXPECT().
-		GetBranch(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.BranchID(onboard.DefaultImportBranchName))).
+		GetBranch(gomock.Any(), gomock.Eq(repository), gomock.Eq(graveler.BranchID(onboard.DefaultImportBranchName))).
 		Times(1).
 		Return(&graveler.Branch{
 			CommitID: prevCommitID,
 		}, nil)
 
 	rangeManager.EXPECT().
-		List(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(onboard.DefaultImportBranchName))).
+		List(gomock.Any(), gomock.Eq(repository), gomock.Eq(graveler.Ref(onboard.DefaultImportBranchName))).
 		Times(1).
 		Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{
 			{
@@ -185,7 +207,7 @@ func TestApplyImportWriteFailure(t *testing.T) {
 				Value: nil,
 			},
 		}), nil)
-	rangeManager.EXPECT().WriteMetaRangeByIterator(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(nil, errors.New("some failure"))
+	rangeManager.EXPECT().WriteMetaRangeByIterator(gomock.Any(), gomock.Eq(repository), gomock.Any()).Times(1).Return(nil, errors.New("some failure"))
 
 	rocks := onboard.NewCatalogRepoActions(&onboard.Config{
 		CommitUsername:  committer,
@@ -224,17 +246,22 @@ func TestCommitFailed(t *testing.T) {
 	defer ctrl.Finish()
 	rangeManager := mock.NewMockEntryCatalog(ctrl)
 
+	rangeManager.EXPECT().
+		GetRepository(gomock.Any(), gomock.Eq(repoID)).
+		Times(1).
+		Return(repository, nil)
+
 	mri := metaRangeID
 	prevCommitID := graveler.CommitID("somePrevCommitID")
 	rangeManager.EXPECT().
-		GetBranch(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.BranchID(onboard.DefaultImportBranchName))).
+		GetBranch(gomock.Any(), gomock.Eq(repository), gomock.Eq(graveler.BranchID(onboard.DefaultImportBranchName))).
 		Times(1).
 		Return(&graveler.Branch{
 			CommitID: prevCommitID,
 		}, nil)
 
 	rangeManager.EXPECT().
-		List(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(onboard.DefaultImportBranchName))).
+		List(gomock.Any(), gomock.Eq(repository), gomock.Eq(graveler.Ref(onboard.DefaultImportBranchName))).
 		Times(1).
 		Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{
 			{
@@ -242,9 +269,9 @@ func TestCommitFailed(t *testing.T) {
 				Value: nil,
 			},
 		}), nil)
-	rangeManager.EXPECT().WriteMetaRangeByIterator(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(&mri, nil)
-	rangeManager.EXPECT().GetCommit(gomock.Any(), gomock.Eq(repoID), gomock.Eq(prevCommitID)).Return(&graveler.Commit{}, nil)
-	rangeManager.EXPECT().AddCommitToBranchHead(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.BranchID(onboard.DefaultImportBranchName)), gomock.Any()).
+	rangeManager.EXPECT().WriteMetaRangeByIterator(gomock.Any(), gomock.Eq(repository), gomock.Any()).Times(1).Return(&mri, nil)
+	rangeManager.EXPECT().GetCommit(gomock.Any(), gomock.Eq(repository), gomock.Eq(prevCommitID)).Return(&graveler.Commit{}, nil)
+	rangeManager.EXPECT().AddCommitToBranchHead(gomock.Any(), gomock.Eq(repository), gomock.Eq(graveler.BranchID(onboard.DefaultImportBranchName)), gomock.Any()).
 		Times(1).Return(graveler.CommitID(""), errors.New("some-failure"))
 
 	rocks := onboard.NewCatalogRepoActions(&onboard.Config{

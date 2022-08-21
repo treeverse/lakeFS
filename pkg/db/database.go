@@ -95,6 +95,9 @@ func (d *PgxDatabase) Get(ctx context.Context, dest interface{}, query string, a
 	}, func() (interface{}, error) {
 		return nil, pgxscan.Get(ctx, d.db, dest, query, args...)
 	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrNotFound
+	}
 	return err
 }
 

@@ -108,7 +108,7 @@ func (m *KVManager) GetRepository(ctx context.Context, repositoryID graveler.Rep
 	}
 }
 
-func (m *KVManager) createBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
+func (m *KVManager) createBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) (*graveler.RepositoryRecord, error) {
 	repoRecord := &graveler.RepositoryRecord{
 		RepositoryID: repositoryID,
 		Repository:   &repository,
@@ -120,12 +120,12 @@ func (m *KVManager) createBareRepository(ctx context.Context, repositoryID grave
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = graveler.ErrNotUnique
 		}
-		return err
+		return nil, err
 	}
-	return nil
+	return repoRecord, nil
 }
 
-func (m *KVManager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
+func (m *KVManager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) (*graveler.RepositoryRecord, error) {
 	firstCommit := graveler.NewCommit()
 	firstCommit.Message = graveler.FirstCommitMsg
 	firstCommit.Generation = 1
@@ -137,7 +137,7 @@ func (m *KVManager) CreateRepository(ctx context.Context, repositoryID graveler.
 	// If branch creation fails - this commit will become dangling. This is a known issue that can be resolved via garbage collection
 	commitID, err := m.addCommit(ctx, graveler.RepoPartition(repo), firstCommit)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	branch := graveler.Branch{
@@ -147,13 +147,16 @@ func (m *KVManager) CreateRepository(ctx context.Context, repositoryID graveler.
 	}
 	err = m.createBranch(ctx, graveler.RepoPartition(repo), repository.DefaultBranchID, branch)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	return m.createBareRepository(ctx, repositoryID, repository)
+	_, err = m.createBareRepository(ctx, repositoryID, repository)
+	if err != nil {
+		return nil, err
+	}
+	return repo, nil
 }
 
-func (m *KVManager) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
+func (m *KVManager) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) (*graveler.RepositoryRecord, error) {
 	return m.createBareRepository(ctx, repositoryID, repository)
 }
 

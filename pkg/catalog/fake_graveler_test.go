@@ -40,7 +40,7 @@ func (g *FakeGraveler) SetGarbageCollectionRules(ctx context.Context, repository
 	panic("implement me")
 }
 
-func (g *FakeGraveler) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID) (*graveler.Repository, error) {
+func (g *FakeGraveler) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID) (*graveler.RepositoryRecord, error) {
 	panic("implement me")
 }
 
@@ -92,6 +92,10 @@ func (g *FakeGraveler) Get(_ context.Context, repository *graveler.RepositoryRec
 	return v, nil
 }
 
+func (g *FakeGraveler) GetByCommitID(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, key graveler.Key) (*graveler.Value, error) {
+	return g.Get(ctx, repository, graveler.Ref(commitID), key)
+}
+
 func (g *FakeGraveler) Set(_ context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, value graveler.Value, _ ...graveler.WriteConditionOption) error {
 	if g.Err != nil {
 		return g.Err
@@ -105,18 +109,18 @@ func (g *FakeGraveler) Delete(ctx context.Context, repository *graveler.Reposito
 	panic("implement me")
 }
 
-func (g *FakeGraveler) List(_ context.Context, _ graveler.RepositoryID, _ graveler.Ref) (graveler.ValueIterator, error) {
+func (g *FakeGraveler) List(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.Ref) (graveler.ValueIterator, error) {
 	if g.Err != nil {
 		return nil, g.Err
 	}
 	return g.ListIteratorFactory(), nil
 }
 
-func (g *FakeGraveler) GetRepository(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.Repository, error) {
-	panic("implement me")
+func (g *FakeGraveler) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
+	return &graveler.RepositoryRecord{RepositoryID: repositoryID}, nil
 }
 
-func (g *FakeGraveler) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID) (*graveler.Repository, error) {
+func (g *FakeGraveler) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID) (*graveler.RepositoryRecord, error) {
 	panic("implement me")
 }
 
@@ -127,7 +131,7 @@ func (g *FakeGraveler) ListRepositories(ctx context.Context) (graveler.Repositor
 	return g.RepositoryIteratorFactory(), nil
 }
 
-func (g *FakeGraveler) DeleteRepository(ctx context.Context, repository *graveler.RepositoryRecord) error {
+func (g *FakeGraveler) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
 	panic("implement me")
 }
 
@@ -182,7 +186,7 @@ func (g *FakeGraveler) Log(ctx context.Context, repository *graveler.RepositoryR
 	panic("implement me")
 }
 
-func (g *FakeGraveler) ListBranches(_ context.Context, _ graveler.RepositoryID) (graveler.BranchIterator, error) {
+func (g *FakeGraveler) ListBranches(_ context.Context, _ *graveler.RepositoryRecord) (graveler.BranchIterator, error) {
 	if g.Err != nil {
 		return nil, g.Err
 	}
@@ -225,7 +229,7 @@ func (g *FakeGraveler) ResetPrefix(ctx context.Context, repository *graveler.Rep
 	panic("implement me")
 }
 
-func (g *FakeGraveler) Revert(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, _ graveler.Ref, _ int, _ graveler.CommitParams) (graveler.CommitID, error) {
+func (g *FakeGraveler) Revert(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, _ graveler.Ref, _ int, _ graveler.CommitParams) (graveler.CommitID, error) {
 	panic("implement me")
 }
 
@@ -240,14 +244,14 @@ func (g *FakeGraveler) DiffUncommitted(ctx context.Context, repository *graveler
 	return g.DiffIteratorFactory(), nil
 }
 
-func (g *FakeGraveler) Diff(_ context.Context, _ graveler.RepositoryID, _, _ graveler.Ref) (graveler.DiffIterator, error) {
+func (g *FakeGraveler) Diff(_ context.Context, _ *graveler.RepositoryRecord, _, _ graveler.Ref) (graveler.DiffIterator, error) {
 	if g.Err != nil {
 		return nil, g.Err
 	}
 	return g.DiffIteratorFactory(), nil
 }
 
-func (g *FakeGraveler) Compare(_ context.Context, _ graveler.RepositoryID, _, _ graveler.Ref) (graveler.DiffIterator, error) {
+func (g *FakeGraveler) Compare(_ context.Context, _ *graveler.RepositoryRecord, _, _ graveler.Ref) (graveler.DiffIterator, error) {
 	if g.Err != nil {
 		return nil, g.Err
 	}
@@ -266,15 +270,15 @@ func (g *FakeGraveler) AddCommit(ctx context.Context, repository *graveler.Repos
 	panic("implement me")
 }
 
-func (g *FakeGraveler) AddCommitNoLock(_ context.Context, _ graveler.RepositoryID, _ graveler.Commit) (graveler.CommitID, error) {
+func (g *FakeGraveler) AddCommitNoLock(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.Commit) (graveler.CommitID, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) WriteMetaRangeByIterator(_ context.Context, _ graveler.RepositoryID, _ graveler.ValueIterator) (*graveler.MetaRangeID, error) {
+func (g *FakeGraveler) WriteMetaRangeByIterator(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.ValueIterator) (*graveler.MetaRangeID, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) GetStagingToken(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID) (*graveler.StagingToken, error) {
+func (g *FakeGraveler) GetStagingToken(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID) (*graveler.StagingToken, error) {
 	panic("implement me")
 }
 

@@ -259,7 +259,7 @@ func (m *RefsFake) FillGenerations(_ context.Context, _ *graveler.RepositoryReco
 	panic("implement me")
 }
 
-func (m *RefsFake) CreateBareRepository(_ context.Context, _ graveler.RepositoryID, _ graveler.Repository) error {
+func (m *RefsFake) CreateBareRepository(_ context.Context, _ graveler.RepositoryID, _ graveler.Repository) (*graveler.RepositoryRecord, error) {
 	panic("implement me")
 }
 
@@ -316,8 +316,11 @@ func (m *RefsFake) GetRepository(_ context.Context, repositoryID graveler.Reposi
 	}, nil
 }
 
-func (m *RefsFake) CreateRepository(context.Context, graveler.RepositoryID, graveler.Repository) error {
-	return nil
+func (m *RefsFake) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) (*graveler.RepositoryRecord, error) {
+	return &graveler.RepositoryRecord{
+		RepositoryID: repositoryID,
+		Repository:   &repository,
+	}, nil
 }
 
 func (m *RefsFake) ListRepositories(context.Context) (graveler.RepositoryIterator, error) {

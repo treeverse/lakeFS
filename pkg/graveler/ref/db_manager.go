@@ -81,25 +81,32 @@ func (m *DBManager) GetRepository(ctx context.Context, repositoryID graveler.Rep
 	}, nil
 }
 
-func (m *DBManager) createBareRepository(tx db.Tx, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
+func (m *DBManager) createBareRepository(tx db.Tx, repositoryID graveler.RepositoryID, repository graveler.Repository) (*graveler.RepositoryRecord, error) {
 	_, err := tx.Exec(
 		`INSERT INTO graveler_repositories (id, storage_namespace, creation_date, default_branch) VALUES ($1, $2, $3, $4)`,
 		repositoryID, repository.StorageNamespace, repository.CreationDate, repository.DefaultBranchID)
 	if errors.Is(err, db.ErrAlreadyExists) {
-		return graveler.ErrNotUnique
+		return nil, graveler.ErrNotUnique
 	}
-	return nil
+	if err != nil {
+		return nil, err
+	}
+
+	return &graveler.RepositoryRecord{
+		RepositoryID: repositoryID,
+		Repository:   &repository,
+	}, nil
 }
 
-func (m *DBManager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
+func (m *DBManager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) (*graveler.RepositoryRecord, error) {
 	firstCommit := graveler.NewCommit()
 	firstCommit.Message = graveler.FirstCommitMsg
 	firstCommit.Generation = 1
 	commitID := m.addressProvider.ContentAddress(firstCommit)
 
-	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+	result, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		// create a bare repository first
-		err := m.createBareRepository(tx, repositoryID, repository)
+		repo, err := m.createBareRepository(tx, repositoryID, repository)
 		if err != nil {
 			return nil, err
 		}
@@ -116,20 +123,26 @@ func (m *DBManager) CreateRepository(ctx context.Context, repositoryID graveler.
 		}
 
 		// Add a first empty commit to allow branching off the default branch immediately after repository creation
-		repo := &graveler.RepositoryRecord{
-			RepositoryID: repositoryID,
-			Repository:   &repository,
+		err = m.addCommit(tx, repo, commitID, firstCommit)
+		if err != nil {
+			return nil, err
 		}
-		return nil, m.addCommit(tx, repo, commitID, firstCommit)
+		return repo, nil
 	})
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return result.(*graveler.RepositoryRecord), nil
 }
 
-func (m *DBManager) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
-	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return nil, m.createBareRepository(tx, repositoryID, repository)
+func (m *DBManager) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) (*graveler.RepositoryRecord, error) {
+	result, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+		return m.createBareRepository(tx, repositoryID, repository)
 	})
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return result.(*graveler.RepositoryRecord), nil
 }
 
 func (m *DBManager) ListRepositories(ctx context.Context) (graveler.RepositoryIterator, error) {
@@ -177,18 +190,16 @@ func (m *DBManager) ResolveRawRef(ctx context.Context, repository *graveler.Repo
 func (m *DBManager) GetBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) (*graveler.Branch, error) {
 	key := fmt.Sprintf("GetBranch:%s:%s", repository.RepositoryID, branchID)
 	b, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
-		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-			var rec branchRecord
-			err := tx.Get(&rec, `SELECT commit_id, staging_token FROM graveler_branches WHERE repository_id = $1 AND id = $2`,
-				repository.RepositoryID, branchID)
-			if err != nil {
-				return nil, err
-			}
-			return &graveler.Branch{
-				CommitID:     rec.CommitID,
-				StagingToken: rec.StagingToken,
-			}, nil
-		}, db.ReadOnly())
+		var rec branchRecord
+		err := m.db.Get(ctx, &rec, `SELECT commit_id, staging_token FROM graveler_branches WHERE repository_id = $1 AND id = $2`,
+			repository.RepositoryID, branchID)
+		if err != nil {
+			return nil, err
+		}
+		return &graveler.Branch{
+			CommitID:     rec.CommitID,
+			StagingToken: rec.StagingToken,
+		}, nil
 	}))
 	if errors.Is(err, db.ErrNotFound) {
 		return nil, graveler.ErrBranchNotFound
@@ -261,15 +272,13 @@ func (m *DBManager) GCBranchIterator(ctx context.Context, repository *graveler.R
 func (m *DBManager) GetTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID) (*graveler.CommitID, error) {
 	key := fmt.Sprintf("GetTag:%s:%s", repository.RepositoryID, tagID)
 	commitID, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
-		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-			var commitID graveler.CommitID
-			err := tx.Get(&commitID, `SELECT commit_id FROM graveler_tags WHERE repository_id = $1 AND id = $2`,
-				repository.RepositoryID, tagID)
-			if err != nil {
-				return nil, err
-			}
-			return &commitID, nil
-		}, db.ReadOnly())
+		var commitID graveler.CommitID
+		err := m.db.Get(ctx, &commitID, `SELECT commit_id FROM graveler_tags WHERE repository_id = $1 AND id = $2`,
+			repository.RepositoryID, tagID)
+		if err != nil {
+			return nil, err
+		}
+		return &commitID, nil
 	}))
 	if errors.Is(err, db.ErrNotFound) {
 		return nil, graveler.ErrTagNotFound
@@ -321,7 +330,6 @@ func (m *DBManager) ListTags(ctx context.Context, repository *graveler.Repositor
 
 func (m *DBManager) GetCommitByPrefix(ctx context.Context, repository *graveler.RepositoryRecord, prefix graveler.CommitID) (*graveler.Commit, error) {
 	key := fmt.Sprintf("GetCommitByPrefix:%s:%s", repository.RepositoryID, prefix)
-
 	commit, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
 		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			records := make([]*commitRecord, 0)

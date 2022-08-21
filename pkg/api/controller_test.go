@@ -70,56 +70,48 @@ func onBlock(deps *dependencies, path string) string {
 	return fmt.Sprintf("%s://%s", deps.blocks.BlockstoreType(), path)
 }
 
-var tests = map[string]func(*testing.T, bool){
-	"ListRepositoriesHandler":          testController_ListRepositoriesHandler,
-	"GetRepoHandler":                   testController_GetRepoHandler,
-	"CommitsGetBranchCommitLogHandler": testController_CommitsGetBranchCommitLogHandler,
-	"CommitsGetBranchCommitLogByPath":  testController_CommitsGetBranchCommitLogByPath,
-	"GetCommitHandler":                 testController_GetCommitHandler,
-	"CommitHandler":                    testController_CommitHandler,
-	"CreateRepositoryHandler":          testController_CreateRepositoryHandler,
-	"DeleteRepositoryHandler":          testController_DeleteRepositoryHandler,
-	"ListBranchesHandler":              testController_ListBranchesHandler,
-	"ListTagsHandler":                  testController_ListTagsHandler,
-	"GetBranchHandler":                 testController_GetBranchHandler,
-	"BranchesDiffBranchHandler":        testController_BranchesDiffBranchHandler,
-	"CreateBranchHandler":              testController_CreateBranchHandler,
-	"UploadObject":                     testController_UploadObject,
-	"DeleteBranchHandler":              testController_DeleteBranchHandler,
-	"IngestRangeHandler":               testController_IngestRangeHandler,
-	"WriteMetaRangeHandler":            testController_WriteMetaRangeHandler,
-	"ObjectsStatObjectHandler":         testController_ObjectsStatObjectHandler,
-	"ObjectsListObjectsHandler":        testController_ObjectsListObjectsHandler,
-	"ObjectsGetObjectHandler":          testController_ObjectsGetObjectHandler,
-	"ObjectsUploadObjectHandler":       testController_ObjectsUploadObjectHandler,
-	"ObjectsStageObjectHandler":        testController_ObjectsStageObjectHandler,
-	"ObjectsDeleteObjectHandler":       testController_ObjectsDeleteObjectHandler,
-	"CreatePolicyHandler":              testController_CreatePolicyHandler,
-	"ConfigHandlers":                   testController_ConfigHandlers,
-	"SetupLakeFSHandler":               testController_SetupLakeFSHandler,
-	"ListRepositoryRuns":               testController_ListRepositoryRuns,
-	"MergeDiffWithParent":              testController_MergeDiffWithParent,
-	"MergeIntoExplicitBranch":          testController_MergeIntoExplicitBranch,
-	"CreateTag":                        testController_CreateTag,
-	"Revert":                           testController_Revert,
-	"RevertConflict":                   testController_RevertConflict,
-	"ExpandTemplate":                   testController_ExpandTemplate,
+func testControllerWithKV(t *testing.T, kvEnabled bool) {
+	testController_ListRepositoriesHandler(t, kvEnabled)
+	testController_GetRepoHandler(t, kvEnabled)
+	testController_CommitsGetBranchCommitLogHandler(t, kvEnabled)
+	testController_CommitsGetBranchCommitLogByPath(t, kvEnabled)
+	testController_GetCommitHandler(t, kvEnabled)
+	testController_CommitHandler(t, kvEnabled)
+	testController_CreateRepositoryHandler(t, kvEnabled)
+	testController_DeleteRepositoryHandler(t, kvEnabled)
+	testController_ListBranchesHandler(t, kvEnabled)
+	testController_ListTagsHandler(t, kvEnabled)
+	testController_GetBranchHandler(t, kvEnabled)
+	testController_BranchesDiffBranchHandler(t, kvEnabled)
+	testController_CreateBranchHandler(t, kvEnabled)
+	testController_UploadObject(t, kvEnabled)
+	testController_DeleteBranchHandler(t, kvEnabled)
+	testController_IngestRangeHandler(t, kvEnabled)
+	testController_WriteMetaRangeHandler(t, kvEnabled)
+	testController_ObjectsStatObjectHandler(t, kvEnabled)
+	testController_ObjectsListObjectsHandler(t, kvEnabled)
+	testController_ObjectsGetObjectHandler(t, kvEnabled)
+	testController_ObjectsUploadObjectHandler(t, kvEnabled)
+	testController_ObjectsStageObjectHandler(t, kvEnabled)
+	testController_ObjectsDeleteObjectHandler(t, kvEnabled)
+	testController_CreatePolicyHandler(t, kvEnabled)
+	testController_ConfigHandlers(t, kvEnabled)
+	testController_SetupLakeFSHandler(t, kvEnabled)
+	testController_ListRepositoryRuns(t, kvEnabled)
+	testController_MergeDiffWithParent(t, kvEnabled)
+	testController_MergeIntoExplicitBranch(t, kvEnabled)
+	testController_CreateTag(t, kvEnabled)
+	testController_Revert(t, kvEnabled)
+	testController_RevertConflict(t, kvEnabled)
+	testController_ExpandTemplate(t, kvEnabled)
 }
 
 func TestKVEnabled(t *testing.T) {
-	for name, test := range tests {
-		t.Run(name, runWithKVFlag(test, true))
-	}
+	testControllerWithKV(t, true)
 }
 
 func TestKVDisabled(t *testing.T) {
-	for name, test := range tests {
-		t.Run(name, runWithKVFlag(test, false))
-	}
-}
-
-func runWithKVFlag(f func(t *testing.T, kvEnabled bool), kvEnabled bool) func(t *testing.T) {
-	return func(t *testing.T) { f(t, kvEnabled) }
+	testControllerWithKV(t, false)
 }
 
 func testController_ListRepositoriesHandler(t *testing.T, kvEnabled bool) {
@@ -2037,7 +2029,7 @@ func testController_SetupLakeFSHandler(t *testing.T, kvEnabled bool) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			handler, deps := setupHandler(t, true)
+			handler, deps := setupHandler(t, kvEnabled)
 			server := setupServer(t, handler)
 			clt := setupClientByEndpoint(t, server.URL, "", "")
 

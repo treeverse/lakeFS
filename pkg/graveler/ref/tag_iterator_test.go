@@ -15,24 +15,22 @@ func TestDBTagIterator(t *testing.T) {
 	r, db := testRefManagerWithDB(t)
 	tags := []graveler.TagID{"a", "aa", "b", "c", "e", "d", "f", "g"}
 	ctx := context.Background()
-	repo := &graveler.RepositoryRecord{
-		RepositoryID: "repo1",
-		Repository: &graveler.Repository{
-			StorageNamespace: "s3://foo",
-			CreationDate:     time.Now(),
-			DefaultBranchID:  "main",
-		},
-	}
-	testutil.Must(t, r.CreateRepository(ctx, repo.RepositoryID, *repo.Repository))
+
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://foo",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
 
 	// prepare data
 	for _, b := range tags {
-		err := r.CreateTag(ctx, repo.RepositoryID, b, "c1")
+		err := r.CreateTag(ctx, repository, b, "c1")
 		testutil.Must(t, err)
 	}
 
 	t.Run("listing all tags", func(t *testing.T) {
-		iter, err := ref.NewDBTagIterator(ctx, db, repo.RepositoryID, 3)
+		iter, err := ref.NewDBTagIterator(ctx, db, repository.RepositoryID, 3)
 		testutil.Must(t, err)
 		ids := make([]graveler.TagID, 0)
 		for iter.Next() {
@@ -50,7 +48,7 @@ func TestDBTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags using prefix", func(t *testing.T) {
-		iter, err := ref.NewDBTagIterator(ctx, db, repo.RepositoryID, 3)
+		iter, err := ref.NewDBTagIterator(ctx, db, repository.RepositoryID, 3)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
@@ -69,7 +67,7 @@ func TestDBTagIterator(t *testing.T) {
 	})
 
 	t.Run("empty value SeekGE", func(t *testing.T) {
-		iter, err := ref.NewDBTagIterator(ctx, db, repo.RepositoryID, 3)
+		iter, err := ref.NewDBTagIterator(ctx, db, repository.RepositoryID, 3)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 
@@ -79,7 +77,7 @@ func TestDBTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags SeekGE", func(t *testing.T) {
-		iter, err := ref.NewDBTagIterator(ctx, db, repo.RepositoryID, 3)
+		iter, err := ref.NewDBTagIterator(ctx, db, repository.RepositoryID, 3)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
@@ -117,24 +115,21 @@ func TestKVTagIterator(t *testing.T) {
 	r, kvstore := testRefManagerWithKV(t)
 	tags := []graveler.TagID{"a", "aa", "b", "c", "e", "d", "f", "g"}
 	ctx := context.Background()
-	repo := &graveler.RepositoryRecord{
-		RepositoryID: "repo1",
-		Repository: &graveler.Repository{
-			StorageNamespace: "s3://foo",
-			CreationDate:     time.Now(),
-			DefaultBranchID:  "main",
-		},
-	}
-	testutil.Must(t, r.CreateRepository(ctx, repo.RepositoryID, *repo.Repository))
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://foo",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
 
 	// prepare data
 	for _, b := range tags {
-		err := r.CreateTag(ctx, repo.RepositoryID, b, "c1")
+		err := r.CreateTag(ctx, repository, b, "c1")
 		testutil.Must(t, err)
 	}
 
 	t.Run("listing all tags", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, &kvstore, repo)
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, repository)
 		testutil.Must(t, err)
 		ids := make([]graveler.TagID, 0)
 		for iter.Next() {
@@ -152,7 +147,7 @@ func TestKVTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags using prefix", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, &kvstore, repo)
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, repository)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
@@ -171,7 +166,7 @@ func TestKVTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags SeekGE", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, &kvstore, repo)
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, repository)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
@@ -205,7 +200,7 @@ func TestKVTagIterator(t *testing.T) {
 	})
 
 	t.Run("empty value SeekGE", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, &kvstore, repo)
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, repository)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 
