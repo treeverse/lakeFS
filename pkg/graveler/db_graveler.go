@@ -45,14 +45,11 @@ func (g *DBGraveler) CreateRepository(ctx context.Context, repositoryID Reposito
 		StorageNamespace: storageNamespace,
 		DefaultBranchID:  branchID,
 	}
-	err := g.RefManager.CreateRepository(ctx, repositoryID, repo)
+	repository, err := g.RefManager.CreateRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
 	}
-	return &RepositoryRecord{
-		RepositoryID: repositoryID,
-		Repository:   &repo,
-	}, nil
+	return repository, nil
 }
 
 func (g *DBGraveler) CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID) (*RepositoryRecord, error) {
@@ -61,14 +58,11 @@ func (g *DBGraveler) CreateBareRepository(ctx context.Context, repositoryID Repo
 		CreationDate:     time.Now(),
 		DefaultBranchID:  defaultBranchID,
 	}
-	err := g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
+	repository, err := g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
 	}
-	return &RepositoryRecord{
-		RepositoryID: repositoryID,
-		Repository:   &repo,
-	}, nil
+	return repository, nil
 }
 
 func (g *DBGraveler) ListRepositories(ctx context.Context) (RepositoryIterator, error) {

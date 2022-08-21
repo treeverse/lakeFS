@@ -629,10 +629,10 @@ type RefManager interface {
 	GetRepository(ctx context.Context, repositoryID RepositoryID) (*RepositoryRecord, error)
 
 	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
-	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository) error
+	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository) (*RepositoryRecord, error)
 
 	// CreateBareRepository stores a new repository under RepositoryID without creating an initial commit and branch
-	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, repository Repository) error
+	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, repository Repository) (*RepositoryRecord, error)
 
 	// ListRepositories lists repositories
 	ListRepositories(ctx context.Context) (RepositoryIterator, error)
@@ -876,14 +876,11 @@ func (g *KVGraveler) CreateRepository(ctx context.Context, repositoryID Reposito
 	}
 
 	repo := NewRepository(storageNamespace, branchID)
-	err = g.RefManager.CreateRepository(ctx, repositoryID, repo)
+	repository, err := g.RefManager.CreateRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
 	}
-	return &RepositoryRecord{
-		RepositoryID: repositoryID,
-		Repository:   &repo,
-	}, nil
+	return repository, nil
 }
 
 func (g *KVGraveler) CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID) (*RepositoryRecord, error) {
@@ -893,14 +890,11 @@ func (g *KVGraveler) CreateBareRepository(ctx context.Context, repositoryID Repo
 	}
 
 	repo := NewRepository(storageNamespace, defaultBranchID)
-	err = g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
+	repository, err := g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
 	}
-	return &RepositoryRecord{
-		RepositoryID: repositoryID,
-		Repository:   &repo,
-	}, nil
+	return repository, nil
 }
 
 func (g *KVGraveler) ListRepositories(ctx context.Context) (RepositoryIterator, error) {
