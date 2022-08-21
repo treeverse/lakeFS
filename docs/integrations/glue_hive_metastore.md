@@ -95,7 +95,7 @@ create-symlink works only on Glue.
 **Note:** If `to-schema` or `to-table` are not specified, the destination branch and source table names will be used as per the [suggested model](#suggested-model).
 {: .note .pb-3 }
 
-**Notr:** Metastore commands can only run on tables located in lakeFS. You should not use tables that aren't located in lakeFS.
+**Note:** Metastore commands can only run on tables located in lakeFS. You should not use tables that aren't located in lakeFS.
 {: .note .pb-3 }
 
 ### Copy
