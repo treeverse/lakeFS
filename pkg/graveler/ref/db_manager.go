@@ -573,26 +573,40 @@ func sWorker(ctx context.Context, d *pgxpool.Pool, stagingToken graveler.Staging
 		return err
 	}
 	defer rows.Close()
+
+	sChan := make(chan *graveler.ValueRecord, migrateQueueSize)
+	var wg multierror.Group
+	for i := 0; i < jobWorkers; i++ {
+		wg.Go(func() error {
+			for s := range sChan {
+				pb := graveler.ProtoFromStagedEntry(s.Key, s.Value)
+				data, err := proto.Marshal(pb)
+				if err != nil {
+					return err
+				}
+				if err = encoder.Encode(kv.Entry{
+					PartitionKey: []byte(stagingToken),
+					Key:          s.Key,
+					Value:        data,
+				}); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+	}
+
 	scanner := pgxscan.NewRowScanner(rows)
 	for rows.Next() {
 		err = scanner.Scan(record)
 		if err != nil {
+			close(sChan)
 			return err
 		}
-		pb := graveler.ProtoFromStagedEntry(record.Key, record.Value)
-		data, err := proto.Marshal(pb)
-		if err != nil {
-			return err
-		}
-		if err = encoder.Encode(kv.Entry{
-			PartitionKey: []byte(stagingToken),
-			Key:          record.Key,
-			Value:        data,
-		}); err != nil {
-			return err
-		}
+		sChan <- record
 	}
-	return nil
+	close(sChan)
+	return wg.Wait().ErrorOrNil()
 }
 
 func cWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.RepositoryRecord) error {
