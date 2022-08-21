@@ -999,7 +999,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	var commits []*CommitLog
 
 	// commit/key to value cache - helps when fetching the same commit/key while processing parent commits
-	const commitLogCacheSize = 1024
+	const commitLogCacheSize = 1024 * 5
 	commitCache, err := simplelru.NewLRU(commitLogCacheSize, nil)
 	if err != nil {
 		return nil, false, err
