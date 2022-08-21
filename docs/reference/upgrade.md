@@ -28,7 +28,7 @@ Users upgrading from a previous version of lakeFS must pass through the KV migra
 > * It is strongly recommended to perform these additional steps:
 >   * Commit all uncommitted data on branches
 >   * Create a snapshot of your database
-> * By default old database tables are not being deleted by the migration process, and should be removed manually after a successful migration.
+> * By default, old database tables are not being deleted by the migration process, and should be removed manually after a successful migration.
 > To enable table drop as part of the migration, set the `database.drop_tables` configuration param to `true`
 {: .note }
 
