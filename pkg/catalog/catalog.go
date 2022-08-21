@@ -10,10 +10,9 @@ import (
 	"io"
 	"strings"
 
-	"github.com/hnlq715/golang-lru/simplelru"
-
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
+	"github.com/hnlq715/golang-lru/simplelru"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
@@ -1311,7 +1310,8 @@ func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, a
 }
 
 func (c *Catalog) Merge(ctx context.Context, repositoryID string, destinationBranch string, sourceRef string,
-	committer string, message string, metadata Metadata, strategy string) (string, error) {
+	committer string, message string, metadata Metadata, strategy string,
+) (string, error) {
 	destination := graveler.BranchID(destinationBranch)
 	source := graveler.Ref(sourceRef)
 	meta := graveler.Metadata(metadata)
