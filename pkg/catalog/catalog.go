@@ -198,9 +198,8 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManager, sstableManager, committedParams)
 
-	// executor := batch.NewExecutor(logging.Default())
-	// go executor.Run(ctx)
-	executor := batch.NopExecutor()
+	executor := batch.NewConditionalExecutor(logging.Default())
+	go executor.Run(ctx)
 
 	var gStore Store
 	var stagingManager graveler.StagingManager
@@ -963,6 +962,9 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	}); err != nil {
 		return nil, false, err
 	}
+
+	// disabling batching for this flow. See #3935 for more details
+	ctx = context.WithValue(ctx, batch.SkipBatchContextKey, struct{}{})
 	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
 	if err != nil {
 		return nil, false, err
