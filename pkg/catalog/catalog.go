@@ -7,10 +7,9 @@ import (
 	_ "crypto/sha256"
 	"errors"
 	"fmt"
+	"github.com/hnlq715/golang-lru/simplelru"
 	"io"
 	"strings"
-
-	"github.com/hnlq715/golang-lru/simplelru"
 
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
@@ -1005,51 +1004,134 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 		return nil, false, err
 	}
 
-	for it.Next() {
-		v := it.Value()
-
-		if len(params.PathList) > 0 {
-			// verify that commit includes a change with object/prefix from PathList
-			if len(v.Parents) != NumberOfParentsOfNonMergeCommit {
-				// skip merge commits
-				continue
-			}
-			pathInCommit, err := c.checkPathListInCommit(ctx, repository, v, params.PathList, commitCache)
-			if err != nil {
-				return nil, false, err
-			}
-			if !pathInCommit {
-				// no object or prefix found skip commit
-				continue
-			}
-		}
-
-		commit := &CommitLog{
-			Reference:    v.CommitID.String(),
-			Committer:    v.Committer,
-			Message:      v.Message,
-			CreationDate: v.CreationDate,
-			Metadata:     map[string]string(v.Metadata),
-			MetaRangeID:  string(v.MetaRangeID),
-			Parents:      make([]string, 0, len(v.Parents)),
-		}
-		for _, parent := range v.Parents {
-			commit.Parents = append(commit.Parents, parent.String())
-		}
-		commits = append(commits, commit)
-		if len(commits) >= params.Limit+1 {
-			break
-		}
+	childCtx, cancel := context.WithCancel(ctx)
+	compareJobs := make(chan compareJob, 50)
+	compareJobResults := make(chan compareJobResult, 10)
+	var g multierror.Group
+	for i := 0; i < 50; i++ {
+		g.Go(func() error {
+			return c.listCommitWorker(childCtx, repository, params.PathList, commitCache, compareJobs, compareJobResults)
+		})
 	}
-	if err := it.Err(); err != nil {
+	g.Go(func() error {
+		for num := 0; it.Next(); num++ {
+			if childCtx.Err() != nil {
+				break
+			}
+			compareJobs <- compareJob{num: num, commitRecord: it.Value()}
+		}
+		close(compareJobs)
+		return it.Err()
+	})
+
+	results := map[int]*CommitLog{}
+
+	g.Go(func() error {
+		for {
+			select {
+			case <-childCtx.Done():
+				return nil
+			case res := <-compareJobResults:
+				if res.err != nil {
+					return res.err
+				}
+				results[res.num] = res.log
+
+				if res.log == nil {
+					// no result
+					continue
+				}
+
+				// scan the results array to see if we got the number of results needed
+				commits = []*CommitLog{}
+				for i := 0; i < len(results); i++ {
+					log, ok := results[i]
+					if !ok {
+						// we're missing a result - not done yet
+						break
+					}
+					if log != nil {
+						commits = append(commits, log)
+					}
+					if len(commits) >= params.Limit+1 {
+						// All results returned until the last commit found,
+						// and the number of commits found is as expected.
+						// we have what we need.
+						cancel()
+
+						// TODO(itaiad200): drain the compareJobResults channel to unblock the workers and exit
+						return nil
+					}
+				}
+			}
+		}
+	})
+
+	err = g.Wait().ErrorOrNil()
+	if err != nil {
 		return nil, false, err
 	}
+
 	hasMore := false
 	if len(commits) > params.Limit {
 		hasMore = true
 		commits = commits[:params.Limit]
 	}
 	return commits, hasMore, nil
+}
+
+type compareJob struct {
+	commitRecord *graveler.CommitRecord
+	num          int
+}
+
+type compareJobResult struct {
+	log *CommitLog
+	num int
+	err error
+}
+
+func (c *Catalog) listCommitWorker(ctx context.Context, repository *graveler.RepositoryRecord, paths []PathRecord, commitCache *simplelru.LRU, in <-chan compareJob, out chan<- compareJobResult) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case job := <-in:
+			v := job.commitRecord
+			if len(paths) > 0 {
+				// verify that commit includes a change with object/prefix from PathList
+				if len(v.Parents) != NumberOfParentsOfNonMergeCommit {
+					// skip merge commits
+					out <- compareJobResult{num: job.num}
+					continue
+				}
+				pathInCommit, err := c.checkPathListInCommit(ctx, repository, v, paths, commitCache)
+				if err != nil {
+					out <- compareJobResult{num: job.num, err: err}
+					break
+				}
+				if !pathInCommit {
+					// no object or prefix found skip commit
+					out <- compareJobResult{num: job.num}
+					continue
+				}
+			}
+
+			commit := &CommitLog{
+				Reference:    v.CommitID.String(),
+				Committer:    v.Committer,
+				Message:      v.Message,
+				CreationDate: v.CreationDate,
+				Metadata:     map[string]string(v.Metadata),
+				MetaRangeID:  string(v.MetaRangeID),
+				Parents:      make([]string, 0, len(v.Parents)),
+			}
+			for _, parent := range v.Parents {
+				commit.Parents = append(commit.Parents, parent.String())
+			}
+			out <- compareJobResult{num: job.num, log: commit}
+		}
+	}
 }
 
 // checkPathListInCommit checks whether the given commit contains changes to a list of paths.
