@@ -244,7 +244,7 @@ type RefsFake struct {
 	SealedTokens        []graveler.StagingToken
 }
 
-func (m *RefsFake) CreateBranch(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, branch graveler.Branch) error {
+func (m *RefsFake) CreateBranch(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, branch graveler.Branch) error {
 	if m.Branch != nil {
 		return graveler.ErrBranchExists
 	}
@@ -255,19 +255,19 @@ func (m *RefsFake) CreateBranch(_ context.Context, _ graveler.RepositoryID, _ gr
 	return nil
 }
 
-func (m *RefsFake) FillGenerations(_ context.Context, _ graveler.RepositoryID) error {
+func (m *RefsFake) FillGenerations(_ context.Context, _ *graveler.RepositoryRecord) error {
 	panic("implement me")
 }
 
-func (m *RefsFake) CreateBareRepository(_ context.Context, _ graveler.RepositoryID, _ graveler.Repository) error {
+func (m *RefsFake) CreateBareRepository(_ context.Context, _ graveler.RepositoryID, _ graveler.Repository) (*graveler.RepositoryRecord, error) {
 	panic("implement me")
 }
 
-func (m *RefsFake) ListCommits(_ context.Context, _ graveler.RepositoryID) (graveler.CommitIterator, error) {
+func (m *RefsFake) ListCommits(_ context.Context, _ *graveler.RepositoryRecord) (graveler.CommitIterator, error) {
 	return nil, nil
 }
 
-func (m *RefsFake) GCCommitIterator(_ context.Context, _ graveler.RepositoryID) (graveler.CommitIterator, error) {
+func (m *RefsFake) GCCommitIterator(_ context.Context, _ *graveler.RepositoryRecord) (graveler.CommitIterator, error) {
 	return nil, nil
 }
 
@@ -278,7 +278,7 @@ func (m *RefsFake) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
 	}, nil
 }
 
-func (m *RefsFake) ResolveRawRef(_ context.Context, _ graveler.RepositoryID, rawRef graveler.RawRef) (*graveler.ResolvedRef, error) {
+func (m *RefsFake) ResolveRawRef(_ context.Context, _ *graveler.RepositoryRecord, rawRef graveler.RawRef) (*graveler.ResolvedRef, error) {
 	if m.Refs != nil {
 		ref := graveler.Ref(rawRef.BaseRef)
 		if res, ok := m.Refs[ref]; ok {
@@ -310,12 +310,17 @@ func (m *RefsFake) ResolveRawRef(_ context.Context, _ graveler.RepositoryID, raw
 	}, nil
 }
 
-func (m *RefsFake) GetRepository(context.Context, graveler.RepositoryID) (*graveler.Repository, error) {
-	return &graveler.Repository{}, nil
+func (m *RefsFake) GetRepository(_ context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
+	return &graveler.RepositoryRecord{
+		RepositoryID: repositoryID,
+	}, nil
 }
 
-func (m *RefsFake) CreateRepository(context.Context, graveler.RepositoryID, graveler.Repository) error {
-	return nil
+func (m *RefsFake) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) (*graveler.RepositoryRecord, error) {
+	return &graveler.RepositoryRecord{
+		RepositoryID: repositoryID,
+		Repository:   &repository,
+	}, nil
 }
 
 func (m *RefsFake) ListRepositories(context.Context) (graveler.RepositoryIterator, error) {
@@ -326,15 +331,15 @@ func (m *RefsFake) DeleteRepository(context.Context, graveler.RepositoryID) erro
 	return nil
 }
 
-func (m *RefsFake) GetBranch(context.Context, graveler.RepositoryID, graveler.BranchID) (*graveler.Branch, error) {
+func (m *RefsFake) GetBranch(context.Context, *graveler.RepositoryRecord, graveler.BranchID) (*graveler.Branch, error) {
 	return m.Branch, m.Err
 }
 
-func (m *RefsFake) SetBranch(context.Context, graveler.RepositoryID, graveler.BranchID, graveler.Branch) error {
+func (m *RefsFake) SetBranch(context.Context, *graveler.RepositoryRecord, graveler.BranchID, graveler.Branch) error {
 	return nil
 }
 
-func (m *RefsFake) BranchUpdate(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, update graveler.BranchUpdateFunc) error {
+func (m *RefsFake) BranchUpdate(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, update graveler.BranchUpdateFunc) error {
 	_, err := update(m.Branch)
 	if m.UpdateErr != nil {
 		return m.UpdateErr
@@ -342,35 +347,35 @@ func (m *RefsFake) BranchUpdate(_ context.Context, _ graveler.RepositoryID, _ gr
 	return err
 }
 
-func (m *RefsFake) DeleteBranch(context.Context, graveler.RepositoryID, graveler.BranchID) error {
+func (m *RefsFake) DeleteBranch(context.Context, *graveler.RepositoryRecord, graveler.BranchID) error {
 	return nil
 }
 
-func (m *RefsFake) ListBranches(context.Context, graveler.RepositoryID) (graveler.BranchIterator, error) {
+func (m *RefsFake) ListBranches(context.Context, *graveler.RepositoryRecord) (graveler.BranchIterator, error) {
 	return m.ListBranchesRes, nil
 }
 
-func (m *RefsFake) GCBranchIterator(context.Context, graveler.RepositoryID) (graveler.BranchIterator, error) {
+func (m *RefsFake) GCBranchIterator(context.Context, *graveler.RepositoryRecord) (graveler.BranchIterator, error) {
 	return m.ListBranchesRes, nil
 }
 
-func (m *RefsFake) GetTag(context.Context, graveler.RepositoryID, graveler.TagID) (*graveler.CommitID, error) {
+func (m *RefsFake) GetTag(context.Context, *graveler.RepositoryRecord, graveler.TagID) (*graveler.CommitID, error) {
 	return m.TagCommitID, m.Err
 }
 
-func (m *RefsFake) CreateTag(context.Context, graveler.RepositoryID, graveler.TagID, graveler.CommitID) error {
+func (m *RefsFake) CreateTag(context.Context, *graveler.RepositoryRecord, graveler.TagID, graveler.CommitID) error {
 	return nil
 }
 
-func (m *RefsFake) DeleteTag(context.Context, graveler.RepositoryID, graveler.TagID) error {
+func (m *RefsFake) DeleteTag(context.Context, *graveler.RepositoryRecord, graveler.TagID) error {
 	return nil
 }
 
-func (m *RefsFake) ListTags(context.Context, graveler.RepositoryID) (graveler.TagIterator, error) {
+func (m *RefsFake) ListTags(context.Context, *graveler.RepositoryRecord) (graveler.TagIterator, error) {
 	return m.ListTagsRes, nil
 }
 
-func (m *RefsFake) GetCommit(_ context.Context, _ graveler.RepositoryID, id graveler.CommitID) (*graveler.Commit, error) {
+func (m *RefsFake) GetCommit(_ context.Context, _ *graveler.RepositoryRecord, id graveler.CommitID) (*graveler.Commit, error) {
 	if val, ok := m.Commits[id]; ok {
 		return val, nil
 	}
@@ -378,11 +383,11 @@ func (m *RefsFake) GetCommit(_ context.Context, _ graveler.RepositoryID, id grav
 	return nil, graveler.ErrCommitNotFound
 }
 
-func (m *RefsFake) GetCommitByPrefix(_ context.Context, _ graveler.RepositoryID, _ graveler.CommitID) (*graveler.Commit, error) {
+func (m *RefsFake) GetCommitByPrefix(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.CommitID) (*graveler.Commit, error) {
 	return &graveler.Commit{}, nil
 }
 
-func (m *RefsFake) AddCommit(_ context.Context, _ graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {
+func (m *RefsFake) AddCommit(_ context.Context, _ *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
 	if m.CommitErr != nil {
 		return "", m.CommitErr
 	}
@@ -396,16 +401,16 @@ func (m *RefsFake) AddCommit(_ context.Context, _ graveler.RepositoryID, commit 
 	return m.CommitID, nil
 }
 
-func (m *RefsFake) RemoveCommit(_ context.Context, _ graveler.RepositoryID, commitID graveler.CommitID) error {
+func (m *RefsFake) RemoveCommit(_ context.Context, _ *graveler.RepositoryRecord, commitID graveler.CommitID) error {
 	delete(m.Commits, commitID)
 	return nil
 }
 
-func (m *RefsFake) FindMergeBase(context.Context, graveler.RepositoryID, ...graveler.CommitID) (*graveler.Commit, error) {
+func (m *RefsFake) FindMergeBase(context.Context, *graveler.RepositoryRecord, ...graveler.CommitID) (*graveler.Commit, error) {
 	return &graveler.Commit{}, nil
 }
 
-func (m *RefsFake) Log(context.Context, graveler.RepositoryID, graveler.CommitID) (graveler.CommitIterator, error) {
+func (m *RefsFake) Log(context.Context, *graveler.RepositoryRecord, graveler.CommitID) (graveler.CommitIterator, error) {
 	return m.CommitIter, nil
 }
 
@@ -833,7 +838,7 @@ func NewProtectedBranchesManagerFake(protectedBranches ...string) *ProtectedBran
 	return &ProtectedBranchesManagerFake{protectedBranches: protectedBranches}
 }
 
-func (p ProtectedBranchesManagerFake) IsBlocked(_ context.Context, _ graveler.RepositoryID, branchID graveler.BranchID, _ graveler.BranchProtectionBlockedAction) (bool, error) {
+func (p ProtectedBranchesManagerFake) IsBlocked(_ context.Context, _ *graveler.RepositoryRecord, branchID graveler.BranchID, _ graveler.BranchProtectionBlockedAction) (bool, error) {
 	for _, branch := range p.protectedBranches {
 		if branch == string(branchID) {
 			return true, nil

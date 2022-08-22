@@ -157,17 +157,18 @@ func TestDBOrderedCommitIterator(t *testing.T) {
 			}
 			r, db := testRefManagerWithDBAndAddressProvider(t, newFakeAddressProvider(commits))
 			repoID := graveler.RepositoryID(tst.Name)
-			testutil.Must(t, r.CreateBareRepository(ctx, repoID, graveler.Repository{
+			repository, err := r.CreateBareRepository(ctx, repoID, graveler.Repository{
 				StorageNamespace: "s3://foo",
 				CreationDate:     time.Now(),
 				DefaultBranchID:  "main",
-			}))
+			})
+			testutil.Must(t, err)
 			for _, c := range commits {
-				_, err := r.AddCommit(ctx, repoID, *c)
+				_, err := r.AddCommit(ctx, repository, *c)
 				testutil.Must(t, err)
 			}
 
-			iterator, err := ref.NewDBOrderedCommitIterator(ctx, db, repoID, 1000)
+			iterator, err := ref.NewDBOrderedCommitIterator(ctx, db, repository, 1000)
 			if err != nil {
 				t.Fatal("create db ordered commit iterator", err)
 			}
@@ -184,7 +185,7 @@ func TestDBOrderedCommitIterator(t *testing.T) {
 				t.Errorf("Unexpected ordered commits from iterator. diff=%s", diff)
 			}
 			iterator.Close()
-			iterator, err = ref.NewDBOrderedCommitIterator(ctx, db, repoID, 1000, ref.WithOnlyAncestryLeaves())
+			iterator, err = ref.NewDBOrderedCommitIterator(ctx, db, repository, 1000, ref.WithOnlyAncestryLeaves())
 			if err != nil {
 				t.Fatal("create db ordered commit iterator", err)
 			}
@@ -247,16 +248,17 @@ func TestDBOrderedCommitIteratorGrid(t *testing.T) {
 	sort.Strings(expectedCommitIDS)
 	r, db := testRefManagerWithDBAndAddressProvider(t, newFakeAddressProvider(commits))
 	ctx := context.Background()
-	testutil.Must(t, r.CreateBareRepository(ctx, "repo", graveler.Repository{
+	repository, err := r.CreateBareRepository(ctx, "repo", graveler.Repository{
 		StorageNamespace: "s3://foo",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}))
+	})
+	testutil.Must(t, err)
 	for _, c := range commits {
-		_, err := r.AddCommit(ctx, "repo", *c)
+		_, err := r.AddCommit(ctx, repository, *c)
 		testutil.Must(t, err)
 	}
-	iterator, err := ref.NewDBOrderedCommitIterator(ctx, db, "repo", 10)
+	iterator, err := ref.NewDBOrderedCommitIterator(ctx, db, repository, 10)
 	if err != nil {
 		t.Fatal("create db ordered commit iterator", err)
 	}
@@ -273,7 +275,7 @@ func TestDBOrderedCommitIteratorGrid(t *testing.T) {
 		t.Errorf("Unexpected ordered commits from iterator. diff=%s", diff)
 	}
 	iterator.Close()
-	iterator, err = ref.NewDBOrderedCommitIterator(ctx, db, "repo", 10, ref.WithOnlyAncestryLeaves())
+	iterator, err = ref.NewDBOrderedCommitIterator(ctx, db, repository, 10, ref.WithOnlyAncestryLeaves())
 	if err != nil {
 		t.Fatal("create db ordered commit iterator", err)
 	}
@@ -420,21 +422,18 @@ func TestKVOrderedCommitIterator(t *testing.T) {
 				})
 			}
 			r, store := testRefManagerWithKVAndAddressProvider(t, newFakeAddressProvider(commits))
-			repo := graveler.RepositoryRecord{
-				RepositoryID: graveler.RepositoryID(tst.Name),
-				Repository: &graveler.Repository{
-					StorageNamespace: "s3://foo",
-					CreationDate:     time.Now(),
-					DefaultBranchID:  "main",
-				},
-			}
-			testutil.Must(t, r.CreateBareRepository(ctx, repo.RepositoryID, *repo.Repository))
+			repository, err := r.CreateBareRepository(ctx, graveler.RepositoryID(tst.Name), graveler.Repository{
+				StorageNamespace: "s3://foo",
+				CreationDate:     time.Now(),
+				DefaultBranchID:  "main",
+			})
+			testutil.Must(t, err)
 			for _, c := range commits {
-				_, err := r.AddCommit(ctx, repo.RepositoryID, *c)
+				_, err := r.AddCommit(ctx, repository, *c)
 				testutil.Must(t, err)
 			}
 
-			iterator, err := ref.NewKVOrderedCommitIterator(ctx, &store, &repo, false)
+			iterator, err := ref.NewKVOrderedCommitIterator(ctx, &store, repository, false)
 			if err != nil {
 				t.Fatal("create kv ordered commit iterator", err)
 			}
@@ -451,7 +450,7 @@ func TestKVOrderedCommitIterator(t *testing.T) {
 				t.Errorf("Unexpected ordered commits from iterator. diff=%s", diff)
 			}
 			iterator.Close()
-			iterator, err = ref.NewKVOrderedCommitIterator(ctx, &store, &repo, true)
+			iterator, err = ref.NewKVOrderedCommitIterator(ctx, &store, repository, true)
 			if err != nil {
 				t.Fatal("create kv ordered commit iterator", err)
 			}
@@ -522,9 +521,10 @@ func TestKVOrderedCommitIteratorGrid(t *testing.T) {
 			DefaultBranchID:  "main",
 		},
 	}
-	testutil.Must(t, r.CreateBareRepository(ctx, repo.RepositoryID, *repo.Repository))
+	repository, err := r.CreateBareRepository(ctx, repo.RepositoryID, *repo.Repository)
+	testutil.Must(t, err)
 	for _, c := range commits {
-		_, err := r.AddCommit(ctx, "repo", *c)
+		_, err := r.AddCommit(ctx, repository, *c)
 		testutil.Must(t, err)
 	}
 	iterator, err := ref.NewKVOrderedCommitIterator(ctx, &store, &repo, false)

@@ -47,12 +47,12 @@ func (m *GarbageCollectionManager) GetAddressesLocation(sn graveler.StorageNames
 }
 
 type RepositoryCommitGetter struct {
-	refManager   graveler.RefManager
-	repositoryID graveler.RepositoryID
+	refManager graveler.RefManager
+	repository *graveler.RepositoryRecord
 }
 
 func (r *RepositoryCommitGetter) GetCommit(ctx context.Context, commitID graveler.CommitID) (*graveler.Commit, error) {
-	return r.refManager.GetCommit(ctx, r.repositoryID, commitID)
+	return r.refManager.GetCommit(ctx, r.repository, commitID)
 }
 
 func NewGarbageCollectionManager(blockAdapter block.Adapter, refManager graveler.RefManager, committedBlockStoragePrefix string) *GarbageCollectionManager {
@@ -136,17 +136,17 @@ func (m *GarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, sto
 	return res, nil
 }
 
-func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, storageNamespace graveler.StorageNamespace, repositoryID graveler.RepositoryID, rules *graveler.GarbageCollectionRules, previouslyExpiredCommits []graveler.CommitID) (string, error) {
+func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.GarbageCollectionRules, previouslyExpiredCommits []graveler.CommitID) (string, error) {
 	commitGetter := &RepositoryCommitGetter{
-		refManager:   m.refManager,
-		repositoryID: repositoryID,
+		refManager: m.refManager,
+		repository: repository,
 	}
-	branchIterator, err := m.refManager.GCBranchIterator(ctx, repositoryID)
+	branchIterator, err := m.refManager.GCBranchIterator(ctx, repository)
 	if err != nil {
 		return "", err
 	}
 	// get all commits that are not the first parent of any commit:
-	commitIterator, err := m.refManager.GCCommitIterator(ctx, repositoryID)
+	commitIterator, err := m.refManager.GCCommitIterator(ctx, repository)
 	if err != nil {
 		return "", fmt.Errorf("create kv orderd commit iterator commits: %w", err)
 	}
@@ -180,7 +180,7 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	}
 	commitsStr := b.String()
 	runID := uuid.New().String()
-	csvLocation, err := m.GetCommitsCSVLocation(runID, storageNamespace)
+	csvLocation, err := m.GetCommitsCSVLocation(runID, repository.StorageNamespace)
 	if err != nil {
 		return "", err
 	}
