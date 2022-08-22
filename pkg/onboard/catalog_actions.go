@@ -109,33 +109,27 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, _ boo
 }
 
 func (c *CatalogRepoActions) Init(ctx context.Context, baseCommit graveler.CommitID) error {
-	if baseCommit == "" {
-		return c.initBranch(ctx)
-	}
 	repository, err := c.entryCatalog.GetRepository(ctx, c.repositoryID)
 	if err != nil {
 		return err
 	}
 	c.repository = repository
-
 	c.previousCommitID = baseCommit
+	if baseCommit == "" {
+		return c.initBranch(ctx)
+	}
 	return nil
 }
 
 func (c *CatalogRepoActions) initBranch(ctx context.Context) error {
-	repository, err := c.entryCatalog.GetRepository(ctx, c.repositoryID)
-	if err != nil {
-		return err
-	}
-
 	c.branchID = DefaultImportBranchName
-	branch, err := c.entryCatalog.GetBranch(ctx, repository, DefaultImportBranchName)
+	branch, err := c.entryCatalog.GetBranch(ctx, c.repository, DefaultImportBranchName)
 	if err != nil {
 		if !errors.Is(err, graveler.ErrBranchNotFound) {
 			return err
 		}
 		// first import, let's create the branch
-		branch, err = c.entryCatalog.CreateBranch(ctx, repository, DefaultImportBranchName, graveler.Ref(c.defaultBranchID))
+		branch, err = c.entryCatalog.CreateBranch(ctx, c.repository, DefaultImportBranchName, graveler.Ref(c.defaultBranchID))
 		if err != nil {
 			return fmt.Errorf("creating default branch %s: %w", DefaultImportBranchName, err)
 		}
