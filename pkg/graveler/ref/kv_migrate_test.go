@@ -55,9 +55,11 @@ func TestMigrate(t *testing.T) {
 		store.Close()
 	})
 	dbMgr := ref.NewPGRefManager(batch.NopExecutor(), conn, ident.NewHexAddressProvider())
+	t.Log("Create tests data")
 	createMigrateTestData(t, ctx, dbMgr, conn, blockstore)
 
 	buf := bytes.Buffer{}
+	t.Log("Run Migrate")
 	err = ref.MigrateWithBlockstore(ctx, conn.Pool(), &buf, blockstore, blockstoreCommittedPrefix)
 	require.NoError(t, err)
 
@@ -65,6 +67,7 @@ func TestMigrate(t *testing.T) {
 	kvMgr := ref.NewKVRefManager(batch.NopExecutor(), kvStore, ident.NewHexAddressProvider())
 	settingsMgr := settings.NewManager(kvMgr, kvStore)
 	stagingMgr := staging.NewManager(ctx, kvStore)
+	t.Log("Verify results")
 	verifyMigrationResults(t, ctx, kvMgr, dbMgr, stagingMgr, settingsMgr)
 }
 
@@ -112,7 +115,7 @@ func createMigrateTestData(t *testing.T, ctx context.Context, mgr graveler.RefMa
 
 		for b := 0; b < numBranches; b++ {
 			name := "branch_" + strconv.Itoa(b)
-			stagingToken := graveler.StagingToken("test_token_" + strconv.Itoa(b))
+			stagingToken := graveler.StagingToken(name + "_test_token_" + strconv.Itoa(b))
 			if err := mgr.CreateBranch(ctx, repoID, graveler.BranchID(name),
 				graveler.Branch{CommitID: graveler.CommitID(strconv.Itoa(b)),
 					StagingToken: stagingToken,
