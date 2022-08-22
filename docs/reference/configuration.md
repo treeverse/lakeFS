@@ -54,7 +54,7 @@ This reference uses `.` to denote the nesting of values.
     + `database.dynamodb.table_name` `(string : "kvstore")` - Table used to store the data
     + `database.dynamodb.read_capacity_units` `(int : 1000)` - Read capacity units, measured in requests per second 
     + `database.dynamodb.write_capacity_units` `(int : 1000)` - Write capacity units, measured in requests per second
-    + `database.dynamodb.scan_limit` `(int : optional)` - Maximal number of items per page during scan operation
+    + `database.dynamodb.scan_limit` `(int : )` - Maximal number of items per page during scan operation
     
       **Note:** Refer to the following [AWS documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html#Query.Limit) for further information
       {: .note }
