@@ -1,4 +1,4 @@
-name: verify an issue link to pull request
+name: Enforce issue link to pull request
 
 on:
   pull_request:
