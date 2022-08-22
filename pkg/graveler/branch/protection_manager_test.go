@@ -17,6 +17,14 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
+var repository = &graveler.RepositoryRecord{
+	RepositoryID: "example-repo",
+	Repository: &graveler.Repository{
+		StorageNamespace: "mem://my-storage",
+		DefaultBranchID:  "main",
+	},
+}
+
 func TestGet(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
@@ -36,18 +44,18 @@ func TestGet(t *testing.T) {
 		}
 		t.Run("TestGet"+kvSuffix, func(t *testing.T) {
 			bpm := prepareTest(t, ctx, tt.kvEnabled)
-			rule, err := bpm.Get(ctx, "example-repo", "main*")
+			rule, err := bpm.Get(ctx, repository, "main*")
 			testutil.Must(t, err)
 			if rule != nil {
 				t.Fatalf("expected nil rule, got %v", rule)
 			}
-			testutil.Must(t, bpm.Add(ctx, "example-repo", "main*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE}))
-			rule, err = bpm.Get(ctx, "example-repo", "main*")
+			testutil.Must(t, bpm.Add(ctx, repository, "main*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE}))
+			rule, err = bpm.Get(ctx, repository, "main*")
 			testutil.Must(t, err)
 			if diff := deep.Equal([]graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE}, rule); diff != nil {
 				t.Fatalf("got unexpected blocked actions. diff=%s", diff)
 			}
-			rule, err = bpm.Get(ctx, "example-repo", "otherpattern")
+			rule, err = bpm.Get(ctx, repository, "otherpattern")
 			testutil.Must(t, err)
 			if rule != nil {
 				t.Fatalf("expected nil rule, got %v", rule)
@@ -75,8 +83,8 @@ func TestAddAlreadyExists(t *testing.T) {
 		}
 		t.Run("TestAddAlreadyExists"+kvSuffix, func(t *testing.T) {
 			bpm := prepareTest(t, ctx, tt.kvEnabled)
-			testutil.Must(t, bpm.Add(ctx, "example-repo", "main*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE}))
-			err := bpm.Add(ctx, "example-repo", "main*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_COMMIT})
+			testutil.Must(t, bpm.Add(ctx, repository, "main*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE}))
+			err := bpm.Add(ctx, repository, "main*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_COMMIT})
 			if !errors.Is(err, branch.ErrRuleAlreadyExists) {
 				t.Fatalf("expected ErrRuleAlreadyExists, got %v", err)
 			}
@@ -103,19 +111,19 @@ func TestDelete(t *testing.T) {
 		}
 		t.Run("TestDelete"+kvSuffix, func(t *testing.T) {
 			bpm := prepareTest(t, ctx, tt.kvEnabled)
-			err := bpm.Delete(ctx, "example-repo", "main*")
+			err := bpm.Delete(ctx, repository, "main*")
 			if !errors.Is(err, branch.ErrRuleNotExists) {
 				t.Fatalf("expected ErrRuleNotExists, got %v", err)
 			}
-			testutil.Must(t, bpm.Add(ctx, "example-repo", "main*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE}))
-			rule, err := bpm.Get(ctx, "example-repo", "main*")
+			testutil.Must(t, bpm.Add(ctx, repository, "main*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE}))
+			rule, err := bpm.Get(ctx, repository, "main*")
 			testutil.Must(t, err)
 			if diff := deep.Equal([]graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE}, rule); diff != nil {
 				t.Fatalf("got unexpected blocked actions. diff=%s", diff)
 			}
-			testutil.Must(t, bpm.Delete(ctx, "example-repo", "main*"))
+			testutil.Must(t, bpm.Delete(ctx, repository, "main*"))
 
-			rule, err = bpm.Get(ctx, "example-repo", "main*")
+			rule, err = bpm.Get(ctx, repository, "main*")
 			testutil.Must(t, err)
 			if rule != nil {
 				t.Fatalf("expected nil rule after delete, got %v", rule)
@@ -182,11 +190,11 @@ func testIsBlocked(t *testing.T, kvEnabled bool) {
 		t.Run(name, func(t *testing.T) {
 			bpm := prepareTest(t, ctx, kvEnabled)
 			for pattern, blockedActions := range tst.patternToBlockedActions {
-				testutil.Must(t, bpm.Add(ctx, "example-repo", pattern, blockedActions))
+				testutil.Must(t, bpm.Add(ctx, repository, pattern, blockedActions))
 			}
 			for branchID, expectedBlockedActions := range tst.expectedBlockedActions {
 				for _, action := range expectedBlockedActions {
-					res, err := bpm.IsBlocked(ctx, "example-repo", graveler.BranchID(branchID), action)
+					res, err := bpm.IsBlocked(ctx, repository, graveler.BranchID(branchID), action)
 					testutil.Must(t, err)
 					if !res {
 						t.Fatalf("branch %s action %s expected to be blocked, but was allowed", branchID, action)
@@ -195,7 +203,7 @@ func testIsBlocked(t *testing.T, kvEnabled bool) {
 			}
 			for branchID, expectedAllowedActions := range tst.expectedAllowedActions {
 				for _, action := range expectedAllowedActions {
-					res, err := bpm.IsBlocked(ctx, "example-repo", graveler.BranchID(branchID), action)
+					res, err := bpm.IsBlocked(ctx, repository, graveler.BranchID(branchID), action)
 					testutil.Must(t, err)
 					if res {
 						t.Fatalf("branch %s action %s expected to be allowed, but was blocked", branchID, action)
@@ -210,21 +218,18 @@ func testIsBlocked(t *testing.T, kvEnabled bool) {
 func prepareTest(t *testing.T, ctx context.Context, kvEnabled bool) *branch.ProtectionManager {
 	ctrl := gomock.NewController(t)
 	refManager := mock.NewMockRefManager(ctrl)
-	blockAdapter := mem.New()
 	branchLock := mock.NewMockBranchLocker(ctrl)
-	cb := func(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, f func() (interface{}, error)) (interface{}, error) {
+	cb := func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f func() (interface{}, error)) (interface{}, error) {
 		return f()
 	}
 	branchLock.EXPECT().MetadataUpdater(ctx, gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(cb).AnyTimes()
-	refManager.EXPECT().GetRepository(ctx, gomock.Any()).AnyTimes().Return(&graveler.Repository{
-		StorageNamespace: "mem://my-storage",
-		DefaultBranchID:  "main",
-	}, nil)
+	refManager.EXPECT().GetRepository(ctx, gomock.Any()).AnyTimes().Return(repository, nil)
 	var m settings.Manager
 	if kvEnabled {
 		kvStore := kvtest.GetStore(ctx, t)
 		m = settings.NewManager(refManager, kv.StoreMessage{Store: kvStore})
 	} else {
+		blockAdapter := mem.New()
 		m = settings.NewDBManager(refManager, branchLock, blockAdapter, "_lakefs")
 	}
 	return branch.NewProtectionManager(m)

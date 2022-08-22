@@ -15,7 +15,9 @@ type MockCommitGetter struct {
 	visited    map[graveler.CommitID]int
 }
 
-func (g *MockCommitGetter) GetCommit(_ context.Context, _ graveler.RepositoryID, commitID graveler.CommitID) (*graveler.Commit, error) {
+var repository = &graveler.RepositoryRecord{RepositoryID: "ref-test-repo"}
+
+func (g *MockCommitGetter) GetCommit(_ context.Context, _ *graveler.RepositoryRecord, commitID graveler.CommitID) (*graveler.Commit, error) {
 	if commit, ok := g.byCommitID[commitID]; ok {
 		g.visited[commitID] += 1
 		return commit, nil
@@ -322,7 +324,7 @@ func TestFindMergeBase(t *testing.T) {
 	for _, cas := range cases {
 		t.Run(cas.Name, func(t *testing.T) {
 			getter := cas.Getter()
-			base, err := ref.FindMergeBase(context.Background(), getter, "", cas.Left, cas.Right)
+			base, err := ref.FindMergeBase(context.Background(), getter, repository, cas.Left, cas.Right)
 			if err != nil {
 				t.Fatalf("unexpected error %v", err)
 			}
@@ -331,7 +333,7 @@ func TestFindMergeBase(t *testing.T) {
 			// flip right and left and expect the same result, reset visited to keep track of the second round visits
 			getter.visited = map[graveler.CommitID]int{}
 			base, err = ref.FindMergeBase(
-				context.Background(), getter, "", cas.Right, cas.Left)
+				context.Background(), getter, repository, cas.Right, cas.Left)
 			if err != nil {
 				t.Fatalf("unexpected error %v", err)
 			}
@@ -372,22 +374,22 @@ func TestGrid(t *testing.T) {
 		}
 	}
 	getter := newReader(kv)
-	c, err := ref.FindMergeBase(context.Background(), getter, "", "7-4", "5-6")
+	c, err := ref.FindMergeBase(context.Background(), getter, repository, "7-4", "5-6")
 	testutil.Must(t, err)
 	verifyResult(t, c, []string{"5-4"}, getter.visited)
 
 	getter.visited = map[graveler.CommitID]int{}
-	c, err = ref.FindMergeBase(context.Background(), getter, "", "1-2", "2-1")
+	c, err = ref.FindMergeBase(context.Background(), getter, repository, "1-2", "2-1")
 	testutil.Must(t, err)
 	verifyResult(t, c, []string{"1-1"}, getter.visited)
 
 	getter.visited = map[graveler.CommitID]int{}
-	c, err = ref.FindMergeBase(context.Background(), getter, "", "0-9", "9-0")
+	c, err = ref.FindMergeBase(context.Background(), getter, repository, "0-9", "9-0")
 	testutil.Must(t, err)
 	verifyResult(t, c, []string{"0-0"}, getter.visited)
 
 	getter.visited = map[graveler.CommitID]int{}
-	c, err = ref.FindMergeBase(context.Background(), getter, "", "6-9", "9-6")
+	c, err = ref.FindMergeBase(context.Background(), getter, repository, "6-9", "9-6")
 	testutil.Must(t, err)
 	verifyResult(t, c, []string{"6-6"}, getter.visited)
 }

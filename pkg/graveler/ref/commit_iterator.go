@@ -8,15 +8,15 @@ import (
 )
 
 type CommitIterator struct {
-	manager      graveler.RefManager
-	ctx          context.Context
-	repositoryID graveler.RepositoryID
-	start        graveler.CommitID
-	value        *graveler.CommitRecord
-	queue        commitsPriorityQueue
-	visit        map[graveler.CommitID]struct{}
-	state        commitIteratorState
-	err          error
+	manager    graveler.RefManager
+	ctx        context.Context
+	repository *graveler.RepositoryRecord
+	start      graveler.CommitID
+	value      *graveler.CommitRecord
+	queue      commitsPriorityQueue
+	visit      map[graveler.CommitID]struct{}
+	state      commitIteratorState
+	err        error
 }
 
 type commitIteratorState int
@@ -29,19 +29,21 @@ const (
 
 type commitsPriorityQueue []*graveler.CommitRecord
 
-func (c commitsPriorityQueue) Len() int {
-	return len(c)
+func (c *commitsPriorityQueue) Len() int {
+	return len(*c)
 }
 
-func (c commitsPriorityQueue) Less(i, j int) bool {
-	if c[i].Commit.CreationDate.Equal(c[j].Commit.CreationDate) {
-		return c[i].CommitID > c[j].CommitID
+func (c *commitsPriorityQueue) Less(i, j int) bool {
+	pq := *c
+	if pq[i].Commit.CreationDate.Equal(pq[j].Commit.CreationDate) {
+		return pq[i].CommitID > pq[j].CommitID
 	}
-	return c[i].Commit.CreationDate.After(c[j].Commit.CreationDate)
+	return pq[i].Commit.CreationDate.After(pq[j].Commit.CreationDate)
 }
 
-func (c commitsPriorityQueue) Swap(i, j int) {
-	c[i], c[j] = c[j], c[i]
+func (c *commitsPriorityQueue) Swap(i, j int) {
+	pq := *c
+	pq[i], pq[j] = pq[j], pq[i]
 }
 
 func (c *commitsPriorityQueue) Push(x interface{}) {
@@ -59,19 +61,19 @@ func (c *commitsPriorityQueue) Pop() interface{} {
 
 // NewCommitIterator returns an iterator over all commits in the given repository.
 // Ordering is based on the Commit Creation Date.
-func NewCommitIterator(ctx context.Context, repositoryID graveler.RepositoryID, start graveler.CommitID, manager graveler.RefManager) *CommitIterator {
+func NewCommitIterator(ctx context.Context, repository *graveler.RepositoryRecord, start graveler.CommitID, manager graveler.RefManager) *CommitIterator {
 	return &CommitIterator{
-		ctx:          ctx,
-		repositoryID: repositoryID,
-		start:        start,
-		queue:        make(commitsPriorityQueue, 0),
-		visit:        make(map[graveler.CommitID]struct{}),
-		manager:      manager,
+		ctx:        ctx,
+		repository: repository,
+		start:      start,
+		queue:      make(commitsPriorityQueue, 0),
+		visit:      make(map[graveler.CommitID]struct{}),
+		manager:    manager,
 	}
 }
 
 func (ci *CommitIterator) getCommitRecord(commitID graveler.CommitID) (*graveler.CommitRecord, error) {
-	commit, err := ci.manager.GetCommit(ci.ctx, ci.repositoryID, commitID)
+	commit, err := ci.manager.GetCommit(ci.ctx, ci.repository, commitID)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +89,7 @@ func (ci *CommitIterator) Next() bool {
 	}
 
 	if ci.state == commitIteratorStateInit {
-		// first time we lookup the 'start' commit and push it into the queue
+		// first time we look up the 'start' commit and push it into the queue
 		ci.state = commitIteratorStateQuery
 		rec, err := ci.getCommitRecord(ci.start)
 		if err != nil {
@@ -106,7 +108,7 @@ func (ci *CommitIterator) Next() bool {
 	}
 
 	// as long as we have something in the queue we will
-	// set it as the current value and push the current commit's parents to the queue
+	// set it as the current value and push the current commits parents to the queue
 	ci.value = heap.Pop(&ci.queue).(*graveler.CommitRecord)
 	for _, p := range ci.value.Parents {
 		rec, err := ci.getCommitRecord(p)
@@ -125,7 +127,7 @@ func (ci *CommitIterator) Next() bool {
 	return true
 }
 
-// SeekGE skip under the point of 'id' commit ID based on a a new
+// SeekGE skip under the point of 'id' commit ID based on a new
 //   The list of commit
 func (ci *CommitIterator) SeekGE(id graveler.CommitID) {
 	ci.err = nil

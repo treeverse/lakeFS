@@ -35,85 +35,69 @@ func NewDBGraveler(branchLocker BranchLocker, committedManager CommittedManager,
 	}
 }
 
-func (g *DBGraveler) GetRepository(ctx context.Context, repositoryID RepositoryID) (*Repository, error) {
+func (g *DBGraveler) GetRepository(ctx context.Context, repositoryID RepositoryID) (*RepositoryRecord, error) {
 	return g.RefManager.GetRepository(ctx, repositoryID)
 }
 
-func (g *DBGraveler) CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error) {
+func (g *DBGraveler) CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*RepositoryRecord, error) {
 	repo := Repository{
-		StorageNamespace: storageNamespace,
 		CreationDate:     time.Now(),
+		StorageNamespace: storageNamespace,
 		DefaultBranchID:  branchID,
 	}
-	err := g.RefManager.CreateRepository(ctx, repositoryID, repo)
+	repository, err := g.RefManager.CreateRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
 	}
-	return &repo, nil
+	return repository, nil
 }
 
-func (g *DBGraveler) CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID) (*Repository, error) {
+func (g *DBGraveler) CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID) (*RepositoryRecord, error) {
 	repo := Repository{
 		StorageNamespace: storageNamespace,
 		CreationDate:     time.Now(),
 		DefaultBranchID:  defaultBranchID,
 	}
-	err := g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
+	repository, err := g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
 	}
-	return &repo, nil
+	return repository, nil
 }
 
 func (g *DBGraveler) ListRepositories(ctx context.Context) (RepositoryIterator, error) {
 	return g.RefManager.ListRepositories(ctx)
 }
 
-func (g *DBGraveler) WriteRange(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*RangeInfo, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	return g.CommittedManager.WriteRange(ctx, repo.StorageNamespace, it)
+func (g *DBGraveler) WriteRange(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*RangeInfo, error) {
+	return g.CommittedManager.WriteRange(ctx, repository.StorageNamespace, it)
 }
 
-func (g *DBGraveler) WriteMetaRange(ctx context.Context, repositoryID RepositoryID, ranges []*RangeInfo) (*MetaRangeInfo, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	return g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace, ranges)
+func (g *DBGraveler) WriteMetaRange(ctx context.Context, repository *RepositoryRecord, ranges []*RangeInfo) (*MetaRangeInfo, error) {
+	return g.CommittedManager.WriteMetaRange(ctx, repository.StorageNamespace, ranges)
 }
 
-func (g *DBGraveler) WriteMetaRangeByIterator(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*MetaRangeID, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repo.StorageNamespace, it, nil)
+func (g *DBGraveler) WriteMetaRangeByIterator(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*MetaRangeID, error) {
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageNamespace, it, nil)
 }
 
 func (g *DBGraveler) DeleteRepository(ctx context.Context, repositoryID RepositoryID) error {
 	return g.RefManager.DeleteRepository(ctx, repositoryID)
 }
 
-func (g *DBGraveler) GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error) {
-	return g.RefManager.GetCommit(ctx, repositoryID, commitID)
+func (g *DBGraveler) GetCommit(ctx context.Context, repository *RepositoryRecord, commitID CommitID) (*Commit, error) {
+	return g.RefManager.GetCommit(ctx, repository, commitID)
 }
 
-func (g *DBGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, fmt.Errorf("get repository: %w", err)
-	}
-	storageNamespace := repo.StorageNamespace
+func (g *DBGraveler) CreateBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref) (*Branch, error) {
+	storageNamespace := repository.StorageNamespace
 
-	reference, err := g.Dereference(ctx, repositoryID, ref)
+	reference, err := g.Dereference(ctx, repository, ref)
 	if err != nil {
 		return nil, fmt.Errorf("source reference '%s': %w", ref, err)
 	}
 
-	_, err = g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	_, err = g.RefManager.GetBranch(ctx, repository, branchID)
 	if err == nil {
 		return nil, ErrBranchExists
 	}
@@ -126,7 +110,7 @@ func (g *DBGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 	}
 	newBranch := Branch{
 		CommitID:     reference.CommitID,
-		StagingToken: GenerateStagingToken(repositoryID, branchID),
+		StagingToken: GenerateStagingToken(repository.RepositoryID, branchID),
 	}
 
 	preRunID := g.hooks.NewRunID()
@@ -135,7 +119,7 @@ func (g *DBGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePreCreateBranch,
 		SourceRef:        ref,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		BranchID:         branchID,
 		CommitID:         reference.CommitID,
 	})
@@ -147,7 +131,7 @@ func (g *DBGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 		}
 	}
 
-	err = g.RefManager.CreateBranch(ctx, repositoryID, branchID, newBranch)
+	err = g.RefManager.CreateBranch(ctx, repository, branchID, newBranch)
 	if err != nil {
 		return nil, fmt.Errorf("set branch '%s' to '%v': %w", branchID, newBranch, err)
 	}
@@ -158,7 +142,7 @@ func (g *DBGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePostCreateBranch,
 		SourceRef:        ref,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		BranchID:         branchID,
 		CommitID:         reference.CommitID,
 		PreRunID:         preRunID,
@@ -167,9 +151,9 @@ func (g *DBGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 	return &newBranch, nil
 }
 
-func (g *DBGraveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
-	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
-		return g.updateBranchNoLock(ctx, repositoryID, branchID, ref)
+func (g *DBGraveler) UpdateBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref) (*Branch, error) {
+	res, err := g.branchLocker.MetadataUpdater(ctx, repository, branchID, func() (interface{}, error) {
+		return g.updateBranchNoLock(ctx, repository, branchID, ref)
 	})
 	if err != nil {
 		return nil, err
@@ -177,8 +161,8 @@ func (g *DBGraveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID
 	return res.(*Branch), nil
 }
 
-func (g *DBGraveler) updateBranchNoLock(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
-	reference, err := g.Dereference(ctx, repositoryID, ref)
+func (g *DBGraveler) updateBranchNoLock(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref) (*Branch, error) {
+	reference, err := g.Dereference(ctx, repository, ref)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +170,7 @@ func (g *DBGraveler) updateBranchNoLock(ctx context.Context, repositoryID Reposi
 		return nil, fmt.Errorf("reference '%s': %w", ref, ErrDereferenceCommitWithStaging)
 	}
 
-	curBranch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	curBranch, err := g.RefManager.GetBranch(ctx, repository, branchID)
 	if err != nil {
 		return nil, err
 	}
@@ -205,30 +189,26 @@ func (g *DBGraveler) updateBranchNoLock(ctx context.Context, repositoryID Reposi
 		CommitID:     reference.CommitID,
 		StagingToken: curBranch.StagingToken,
 	}
-	err = g.RefManager.SetBranch(ctx, repositoryID, branchID, newBranch)
+	err = g.RefManager.SetBranch(ctx, repository, branchID, newBranch)
 	if err != nil {
 		return nil, err
 	}
 	return &newBranch, nil
 }
 
-func (g *DBGraveler) GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*Branch, error) {
-	return g.RefManager.GetBranch(ctx, repositoryID, branchID)
+func (g *DBGraveler) GetBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (*Branch, error) {
+	return g.RefManager.GetBranch(ctx, repository, branchID)
 }
 
-func (g *DBGraveler) GetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) (*CommitID, error) {
-	return g.RefManager.GetTag(ctx, repositoryID, tagID)
+func (g *DBGraveler) GetTag(ctx context.Context, repository *RepositoryRecord, tagID TagID) (*CommitID, error) {
+	return g.RefManager.GetTag(ctx, repository, tagID)
 }
 
-func (g *DBGraveler) CreateTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return fmt.Errorf("get repository: %w", err)
-	}
-	storageNamespace := repo.StorageNamespace
+func (g *DBGraveler) CreateTag(ctx context.Context, repository *RepositoryRecord, tagID TagID, commitID CommitID) error {
+	storageNamespace := repository.StorageNamespace
 
 	// Check that Tag doesn't exist before running hook
-	_, err = g.RefManager.GetTag(ctx, repositoryID, tagID)
+	_, err := g.RefManager.GetTag(ctx, repository, tagID)
 	if err == nil {
 		return ErrTagAlreadyExists
 	}
@@ -241,7 +221,7 @@ func (g *DBGraveler) CreateTag(ctx context.Context, repositoryID RepositoryID, t
 		RunID:            preRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePreCreateTag,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		CommitID:         commitID,
 		SourceRef:        commitID.Ref(),
 		TagID:            tagID,
@@ -254,7 +234,7 @@ func (g *DBGraveler) CreateTag(ctx context.Context, repositoryID RepositoryID, t
 		}
 	}
 
-	err = g.RefManager.CreateTag(ctx, repositoryID, tagID, commitID)
+	err = g.RefManager.CreateTag(ctx, repository, tagID, commitID)
 	if err != nil {
 		return err
 	}
@@ -264,7 +244,7 @@ func (g *DBGraveler) CreateTag(ctx context.Context, repositoryID RepositoryID, t
 		RunID:            postRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePostCreateTag,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		CommitID:         commitID,
 		SourceRef:        commitID.Ref(),
 		TagID:            tagID,
@@ -274,15 +254,11 @@ func (g *DBGraveler) CreateTag(ctx context.Context, repositoryID RepositoryID, t
 	return nil
 }
 
-func (g *DBGraveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) error {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return fmt.Errorf("get repository: %w", err)
-	}
-	storageNamespace := repo.StorageNamespace
+func (g *DBGraveler) DeleteTag(ctx context.Context, repository *RepositoryRecord, tagID TagID) error {
+	storageNamespace := repository.StorageNamespace
 
 	// Sanity check that Tag exists before running hook.
-	commitID, err := g.RefManager.GetTag(ctx, repositoryID, tagID)
+	commitID, err := g.RefManager.GetTag(ctx, repository, tagID)
 	if err != nil {
 		return err
 	}
@@ -292,7 +268,7 @@ func (g *DBGraveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, t
 		RunID:            preRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePreDeleteTag,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		SourceRef:        commitID.Ref(),
 		CommitID:         *commitID,
 		TagID:            tagID,
@@ -305,7 +281,7 @@ func (g *DBGraveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, t
 		}
 	}
 
-	err = g.RefManager.DeleteTag(ctx, repositoryID, tagID)
+	err = g.RefManager.DeleteTag(ctx, repository, tagID)
 	if err != nil {
 		return err
 	}
@@ -315,7 +291,7 @@ func (g *DBGraveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, t
 		RunID:            postRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePostDeleteTag,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		SourceRef:        commitID.Ref(),
 		CommitID:         *commitID,
 		TagID:            tagID,
@@ -324,53 +300,45 @@ func (g *DBGraveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, t
 	return nil
 }
 
-func (g *DBGraveler) ListTags(ctx context.Context, repositoryID RepositoryID) (TagIterator, error) {
-	return g.RefManager.ListTags(ctx, repositoryID)
+func (g *DBGraveler) ListTags(ctx context.Context, repository *RepositoryRecord) (TagIterator, error) {
+	return g.RefManager.ListTags(ctx, repository)
 }
 
-func (g *DBGraveler) Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (*ResolvedRef, error) {
+func (g *DBGraveler) Dereference(ctx context.Context, repository *RepositoryRecord, ref Ref) (*ResolvedRef, error) {
 	rawRef, err := g.ParseRef(ref)
 	if err != nil {
 		return nil, err
 	}
-	return g.ResolveRawRef(ctx, repositoryID, rawRef)
+	return g.ResolveRawRef(ctx, repository, rawRef)
 }
 
 func (g *DBGraveler) ParseRef(ref Ref) (RawRef, error) {
 	return g.RefManager.ParseRef(ref)
 }
 
-func (g *DBGraveler) ResolveRawRef(ctx context.Context, repositoryID RepositoryID, rawRef RawRef) (*ResolvedRef, error) {
-	return g.RefManager.ResolveRawRef(ctx, repositoryID, rawRef)
+func (g *DBGraveler) ResolveRawRef(ctx context.Context, repository *RepositoryRecord, rawRef RawRef) (*ResolvedRef, error) {
+	return g.RefManager.ResolveRawRef(ctx, repository, rawRef)
 }
 
-func (g *DBGraveler) Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error) {
-	return g.RefManager.Log(ctx, repositoryID, commitID)
+func (g *DBGraveler) Log(ctx context.Context, repository *RepositoryRecord, commitID CommitID) (CommitIterator, error) {
+	return g.RefManager.Log(ctx, repository, commitID)
 }
 
-func (g *DBGraveler) ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error) {
-	_, err := g.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	return g.RefManager.ListBranches(ctx, repositoryID)
+func (g *DBGraveler) ListBranches(ctx context.Context, repository *RepositoryRecord) (BranchIterator, error) {
+	return g.RefManager.ListBranches(ctx, repository)
 }
 
-func (g *DBGraveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
+func (g *DBGraveler) DeleteBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID) error {
 	var (
 		preRunID         string
 		storageNamespace StorageNamespace
 		commitID         CommitID
 	)
-	_, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
-		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-		if err != nil {
-			return nil, err
-		}
-		if repo.DefaultBranchID == branchID {
+	_, err := g.branchLocker.MetadataUpdater(ctx, repository, branchID, func() (interface{}, error) {
+		if repository.DefaultBranchID == branchID {
 			return nil, ErrDeleteDefaultBranch
 		}
-		branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+		branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return nil, err
 		}
@@ -380,13 +348,13 @@ func (g *DBGraveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID
 			return nil, err
 		}
 
-		storageNamespace = repo.StorageNamespace
+		storageNamespace = repository.StorageNamespace
 		preRunID = g.hooks.NewRunID()
 		preHookRecord := HookRecord{
 			RunID:            preRunID,
 			StorageNamespace: storageNamespace,
 			EventType:        EventTypePreDeleteBranch,
-			RepositoryID:     repositoryID,
+			RepositoryID:     repository.RepositoryID,
 			SourceRef:        commitID.Ref(),
 			BranchID:         branchID,
 		}
@@ -399,7 +367,7 @@ func (g *DBGraveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID
 			}
 		}
 
-		return nil, g.RefManager.DeleteBranch(ctx, repositoryID, branchID)
+		return nil, g.RefManager.DeleteBranch(ctx, repository, branchID)
 	})
 
 	if err != nil { // Don't perform post action hook if operation finished with error
@@ -411,7 +379,7 @@ func (g *DBGraveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID
 		RunID:            postRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePostDeleteBranch,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		SourceRef:        commitID.Ref(),
 		BranchID:         branchID,
 		PreRunID:         preRunID,
@@ -420,53 +388,41 @@ func (g *DBGraveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID
 	return nil
 }
 
-func (g *DBGraveler) GetStagingToken(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*StagingToken, error) {
-	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+func (g *DBGraveler) GetStagingToken(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (*StagingToken, error) {
+	branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
 	if err != nil {
 		return nil, err
 	}
 	return &branch.StagingToken, nil
 }
 
-func (g *DBGraveler) GetGarbageCollectionRules(ctx context.Context, repositoryID RepositoryID) (*GarbageCollectionRules, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	return g.garbageCollectionManager.GetRules(ctx, repo.StorageNamespace)
+func (g *DBGraveler) GetGarbageCollectionRules(ctx context.Context, repository *RepositoryRecord) (*GarbageCollectionRules, error) {
+	return g.garbageCollectionManager.GetRules(ctx, repository.StorageNamespace)
 }
 
-func (g *DBGraveler) SetGarbageCollectionRules(ctx context.Context, repositoryID RepositoryID, rules *GarbageCollectionRules) error {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	return g.garbageCollectionManager.SaveRules(ctx, repo.StorageNamespace, rules)
+func (g *DBGraveler) SetGarbageCollectionRules(ctx context.Context, repository *RepositoryRecord, rules *GarbageCollectionRules) error {
+	return g.garbageCollectionManager.SaveRules(ctx, repository.StorageNamespace, rules)
 }
 
-func (g *DBGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositoryID RepositoryID, previousRunID string) (*GarbageCollectionRunMetadata, error) {
-	rules, err := g.GetGarbageCollectionRules(ctx, repositoryID)
+func (g *DBGraveler) SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, previousRunID string) (*GarbageCollectionRunMetadata, error) {
+	rules, err := g.GetGarbageCollectionRules(ctx, repository)
 	if err != nil {
 		return nil, fmt.Errorf("get gc rules: %w", err)
 	}
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, fmt.Errorf("get repository: %w", err)
-	}
-	previouslyExpiredCommits, err := g.garbageCollectionManager.GetRunExpiredCommits(ctx, repo.StorageNamespace, previousRunID)
+	previouslyExpiredCommits, err := g.garbageCollectionManager.GetRunExpiredCommits(ctx, repository.StorageNamespace, previousRunID)
 	if err != nil {
 		return nil, fmt.Errorf("get expired commits from previous run: %w", err)
 	}
 
-	runID, err := g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, repo.StorageNamespace, repositoryID, rules, previouslyExpiredCommits)
+	runID, err := g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, repository, rules, previouslyExpiredCommits)
 	if err != nil {
 		return nil, fmt.Errorf("save garbage collection commits: %w", err)
 	}
-	commitsLocation, err := g.garbageCollectionManager.GetCommitsCSVLocation(runID, repo.StorageNamespace)
+	commitsLocation, err := g.garbageCollectionManager.GetCommitsCSVLocation(runID, repository.StorageNamespace)
 	if err != nil {
 		return nil, err
 	}
-	addressLocation, err := g.garbageCollectionManager.GetAddressesLocation(repo.StorageNamespace)
+	addressLocation, err := g.garbageCollectionManager.GetAddressesLocation(repository.StorageNamespace)
 	if err != nil {
 		return nil, err
 	}
@@ -478,24 +434,20 @@ func (g *DBGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositor
 	}, err
 }
 
-func (g *DBGraveler) GetBranchProtectionRules(ctx context.Context, repositoryID RepositoryID) (*BranchProtectionRules, error) {
-	return g.protectedBranchesManager.GetRules(ctx, repositoryID)
+func (g *DBGraveler) GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error) {
+	return g.protectedBranchesManager.GetRules(ctx, repository)
 }
 
-func (g *DBGraveler) DeleteBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string) error {
-	return g.protectedBranchesManager.Delete(ctx, repositoryID, pattern)
+func (g *DBGraveler) DeleteBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string) error {
+	return g.protectedBranchesManager.Delete(ctx, repository, pattern)
 }
 
-func (g *DBGraveler) CreateBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string, blockedActions []BranchProtectionBlockedAction) error {
-	return g.protectedBranchesManager.Add(ctx, repositoryID, pattern, blockedActions)
+func (g *DBGraveler) CreateBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string, blockedActions []BranchProtectionBlockedAction) error {
+	return g.protectedBranchesManager.Add(ctx, repository, pattern, blockedActions)
 }
 
-func (g *DBGraveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, key Key) (*Value, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	reference, err := g.Dereference(ctx, repositoryID, ref)
+func (g *DBGraveler) Get(ctx context.Context, repository *RepositoryRecord, ref Ref, key Key) (*Value, error) {
+	reference, err := g.Dereference(ctx, repository, ref)
 	if err != nil {
 		return nil, err
 	}
@@ -513,24 +465,27 @@ func (g *DBGraveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref
 			return value, nil
 		}
 	}
-	commitID := reference.CommitID
-	commit, err := g.RefManager.GetCommit(ctx, repositoryID, commitID)
+	return g.GetByCommitID(ctx, repository, reference.CommitID, key)
+}
+
+func (g *DBGraveler) GetByCommitID(ctx context.Context, repository *RepositoryRecord, commitID CommitID, key Key) (*Value, error) {
+	commit, err := g.RefManager.GetCommit(ctx, repository, commitID)
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.MetaRangeID, key)
+	return g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
 }
 
-func (g *DBGraveler) Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error {
-	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+func (g *DBGraveler) Set(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error {
+	_, err := g.branchLocker.Writer(ctx, repository, branchID, func() (interface{}, error) {
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 		if err != nil {
 			return nil, err
 		}
 		if isProtected {
 			return nil, ErrWriteToProtectedBranch
 		}
-		branch, err := g.GetBranch(ctx, repositoryID, branchID)
+		branch, err := g.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return nil, err
 		}
@@ -543,7 +498,7 @@ func (g *DBGraveler) Set(ctx context.Context, repositoryID RepositoryID, branchI
 			// Ensure the given key doesn't exist in the underlying commit first
 			// Since we're being protected by the branch locker, we're guaranteed the commit
 			// won't change before we finish the operation
-			_, err := g.Get(ctx, repositoryID, Ref(branch.CommitID), key)
+			_, err := g.Get(ctx, repository, Ref(branch.CommitID), key)
 			if err == nil {
 				// we got a key here already!
 				return nil, ErrPreconditionFailed
@@ -569,20 +524,16 @@ func (g *DBGraveler) isStagedTombstone(ctx context.Context, token StagingToken, 
 	return e == nil
 }
 
-func (g *DBGraveler) Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
-	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+func (g *DBGraveler) Delete(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key) error {
+	_, err := g.branchLocker.Writer(ctx, repository, branchID, func() (interface{}, error) {
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 		if err != nil {
 			return nil, err
 		}
 		if isProtected {
 			return nil, ErrWriteToProtectedBranch
 		}
-		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-		if err != nil {
-			return nil, err
-		}
-		branch, err := g.GetBranch(ctx, repositoryID, branchID)
+		branch, err := g.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return nil, err
 		}
@@ -591,12 +542,12 @@ func (g *DBGraveler) Delete(ctx context.Context, repositoryID RepositoryID, bran
 		err = ErrNotFound
 		if branch.CommitID != "" {
 			var commit *Commit
-			commit, err = g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+			commit, err = g.RefManager.GetCommit(ctx, repository, branch.CommitID)
 			if err != nil {
 				return nil, err
 			}
 			// check key in committed - do we need tombstone?
-			_, err = g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.MetaRangeID, key)
+			_, err = g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
 		}
 
 		if errors.Is(err, ErrNotFound) {
@@ -607,7 +558,7 @@ func (g *DBGraveler) Delete(ctx context.Context, repositoryID RepositoryID, bran
 			return nil, err
 		}
 
-		// key is in committed, stage its tombstone -- regardless of whether or not it
+		// key is in committed, stage its tombstone -- regardless of whether it
 		// is also in staging.  But... if it already has a tombstone staged, return
 		// ErrNotFound.
 
@@ -623,25 +574,21 @@ func (g *DBGraveler) Delete(ctx context.Context, repositoryID RepositoryID, bran
 	return err
 }
 
-func (g *DBGraveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref) (ValueIterator, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	reference, err := g.Dereference(ctx, repositoryID, ref)
+func (g *DBGraveler) List(ctx context.Context, repository *RepositoryRecord, ref Ref) (ValueIterator, error) {
+	reference, err := g.Dereference(ctx, repository, ref)
 	if err != nil {
 		return nil, err
 	}
 	var metaRangeID MetaRangeID
 	if reference.CommitID != "" {
-		commit, err := g.RefManager.GetCommit(ctx, repositoryID, reference.CommitID)
+		commit, err := g.RefManager.GetCommit(ctx, repository, reference.CommitID)
 		if err != nil {
 			return nil, err
 		}
 		metaRangeID = commit.MetaRangeID
 	}
 
-	listing, err := g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
+	listing, err := g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)
 	if err != nil {
 		return nil, err
 	}
@@ -655,25 +602,21 @@ func (g *DBGraveler) List(ctx context.Context, repositoryID RepositoryID, ref Re
 	return listing, nil
 }
 
-func (g *DBGraveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, params CommitParams) (CommitID, error) {
+func (g *DBGraveler) Commit(ctx context.Context, repository *RepositoryRecord, branchID BranchID, params CommitParams) (CommitID, error) {
 	var preRunID string
 	var commit Commit
 	var storageNamespace StorageNamespace
-	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_COMMIT)
+	res, err := g.branchLocker.MetadataUpdater(ctx, repository, branchID, func() (interface{}, error) {
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_COMMIT)
 		if err != nil {
 			return nil, err
 		}
 		if isProtected {
 			return nil, ErrCommitToProtectedBranch
 		}
-		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-		if err != nil {
-			return "", fmt.Errorf("get repository: %w", err)
-		}
-		storageNamespace = repo.StorageNamespace
+		storageNamespace = repository.StorageNamespace
 
-		branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+		branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return "", fmt.Errorf("get branch: %w", err)
 		}
@@ -706,7 +649,7 @@ func (g *DBGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 			RunID:            preRunID,
 			EventType:        EventTypePreCommit,
 			SourceRef:        branchID.Ref(),
-			RepositoryID:     repositoryID,
+			RepositoryID:     repository.RepositoryID,
 			StorageNamespace: storageNamespace,
 			BranchID:         branchID,
 			Commit:           commit,
@@ -722,7 +665,7 @@ func (g *DBGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		var branchMetaRangeID MetaRangeID
 		var parentGeneration int
 		if branch.CommitID != "" {
-			branchCommit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+			branchCommit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
 			if err != nil {
 				return "", fmt.Errorf("get commit: %w", err)
 			}
@@ -746,13 +689,13 @@ func (g *DBGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		}
 
 		// add commit
-		newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
+		newCommit, err := g.RefManager.AddCommit(ctx, repository, commit)
 		if err != nil {
 			return "", fmt.Errorf("add commit: %w", err)
 		}
-		err = g.RefManager.SetBranch(ctx, repositoryID, branchID, Branch{
+		err = g.RefManager.SetBranch(ctx, repository, branchID, Branch{
 			CommitID:     newCommit,
-			StagingToken: GenerateStagingToken(repositoryID, branchID),
+			StagingToken: GenerateStagingToken(repository.RepositoryID, branchID),
 		})
 		if err != nil {
 			return "", fmt.Errorf("set branch commit %s: %w", newCommit, err)
@@ -760,7 +703,7 @@ func (g *DBGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		err = g.StagingManager.Drop(ctx, branch.StagingToken)
 		if err != nil {
 			g.log.WithContext(ctx).WithFields(logging.Fields{
-				"repository_id": repositoryID,
+				"repository_id": repository.RepositoryID,
 				"branch_id":     branchID,
 				"commit_id":     branch.CommitID,
 				"message":       params.Message,
@@ -777,7 +720,7 @@ func (g *DBGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 	err = g.hooks.PostCommitHook(ctx, HookRecord{
 		EventType:        EventTypePostCommit,
 		RunID:            postRunID,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		StorageNamespace: storageNamespace,
 		SourceRef:        res.(CommitID).Ref(),
 		BranchID:         branchID,
@@ -794,16 +737,16 @@ func (g *DBGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 	return newCommitID, nil
 }
 
-func (g *DBGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) (CommitID, error) {
-	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
+func (g *DBGraveler) AddCommitToBranchHead(ctx context.Context, repository *RepositoryRecord, branchID BranchID, commit Commit) (CommitID, error) {
+	res, err := g.branchLocker.MetadataUpdater(ctx, repository, branchID, func() (interface{}, error) {
 		// parentCommitID should always match the HEAD of the branch.
 		// Empty parentCommitID matches first commit of the branch.
-		parentCommitID, err := validateCommitParent(ctx, repositoryID, commit, g.RefManager)
+		parentCommitID, err := validateCommitParent(ctx, repository, commit, g.RefManager)
 		if err != nil {
 			return nil, err
 		}
 
-		branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+		branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return nil, err
 		}
@@ -813,17 +756,17 @@ func (g *DBGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID Rep
 
 		// check if commit already exists.
 		commitID := CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
-		if exists, err := CommitExists(ctx, repositoryID, commitID, g.RefManager); err != nil {
+		if exists, err := CommitExists(ctx, repository, commitID, g.RefManager); err != nil {
 			return nil, err
 		} else if exists {
 			return commitID, nil
 		}
 
-		commitID, err = g.addCommitNoLock(ctx, repositoryID, commit)
+		commitID, err = g.addCommitNoLock(ctx, repository, commit)
 		if err != nil {
 			return nil, fmt.Errorf("adding commit: %w", err)
 		}
-		_, err = g.updateBranchNoLock(ctx, repositoryID, branchID, Ref(commitID))
+		_, err = g.updateBranchNoLock(ctx, repository, branchID, Ref(commitID))
 		if err != nil {
 			return nil, err
 		}
@@ -835,25 +778,25 @@ func (g *DBGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID Rep
 	return res.(CommitID), nil
 }
 
-func (g *DBGraveler) AddCommit(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
+func (g *DBGraveler) AddCommit(ctx context.Context, repository *RepositoryRecord, commit Commit) (CommitID, error) {
 	// at least a single parent must exists
 	if len(commit.Parents) == 0 {
 		return "", ErrAddCommitNoParent
 	}
-	_, err := validateCommitParent(ctx, repositoryID, commit, g.RefManager)
+	_, err := validateCommitParent(ctx, repository, commit, g.RefManager)
 	if err != nil {
 		return "", err
 	}
 
 	// check if commit already exists.
 	commitID := CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
-	if exists, err := CommitExists(ctx, repositoryID, commitID, g.RefManager); err != nil {
+	if exists, err := CommitExists(ctx, repository, commitID, g.RefManager); err != nil {
 		return "", err
 	} else if exists {
 		return commitID, nil
 	}
 
-	commitID, err = g.addCommitNoLock(ctx, repositoryID, commit)
+	commitID, err = g.addCommitNoLock(ctx, repository, commit)
 	if err != nil {
 		return "", fmt.Errorf("adding commit: %w", err)
 	}
@@ -862,14 +805,9 @@ func (g *DBGraveler) AddCommit(ctx context.Context, repositoryID RepositoryID, c
 }
 
 // addCommitNoLock lower API used to add commit into a repository. It will verify that the commit meta-range is accessible but will not lock any metadata update.
-func (g *DBGraveler) addCommitNoLock(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return "", fmt.Errorf("get repository %s: %w", repositoryID, err)
-	}
-
+func (g *DBGraveler) addCommitNoLock(ctx context.Context, repository *RepositoryRecord, commit Commit) (CommitID, error) {
 	// verify access to meta range
-	ok, err := g.CommittedManager.Exists(ctx, repo.StorageNamespace, commit.MetaRangeID)
+	ok, err := g.CommittedManager.Exists(ctx, repository.StorageNamespace, commit.MetaRangeID)
 	if err != nil {
 		return "", fmt.Errorf("checking for meta range %s: %w", commit.MetaRangeID, err)
 	}
@@ -878,7 +816,7 @@ func (g *DBGraveler) addCommitNoLock(ctx context.Context, repositoryID Repositor
 	}
 
 	// add commit
-	commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
+	commitID, err := g.RefManager.AddCommit(ctx, repository, commit)
 	if err != nil {
 		return "", fmt.Errorf("add commit: %w", err)
 	}
@@ -900,16 +838,16 @@ func (g *DBGraveler) stagingEmpty(ctx context.Context, branch *Branch) (bool, er
 	return true, nil
 }
 
-func (g *DBGraveler) Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
-	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+func (g *DBGraveler) Reset(ctx context.Context, repository *RepositoryRecord, branchID BranchID) error {
+	_, err := g.branchLocker.Writer(ctx, repository, branchID, func() (interface{}, error) {
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 		if err != nil {
 			return nil, err
 		}
 		if isProtected {
 			return nil, ErrWriteToProtectedBranch
 		}
-		branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+		branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return nil, err
 		}
@@ -918,16 +856,16 @@ func (g *DBGraveler) Reset(ctx context.Context, repositoryID RepositoryID, branc
 	return err
 }
 
-func (g *DBGraveler) ResetKey(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
-	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+func (g *DBGraveler) ResetKey(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key) error {
+	_, err := g.branchLocker.Writer(ctx, repository, branchID, func() (interface{}, error) {
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 		if err != nil {
 			return nil, err
 		}
 		if isProtected {
 			return nil, ErrWriteToProtectedBranch
 		}
-		branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+		branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return nil, err
 		}
@@ -936,16 +874,16 @@ func (g *DBGraveler) ResetKey(ctx context.Context, repositoryID RepositoryID, br
 	return err
 }
 
-func (g *DBGraveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
-	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+func (g *DBGraveler) ResetPrefix(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key) error {
+	_, err := g.branchLocker.Writer(ctx, repository, branchID, func() (interface{}, error) {
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 		if err != nil {
 			return nil, err
 		}
 		if isProtected {
 			return nil, ErrWriteToProtectedBranch
 		}
-		branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+		branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return nil, err
 		}
@@ -960,8 +898,8 @@ func (g *DBGraveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID,
 // To revert C2, we merge C1 into the branch, with C2 as the merge base.
 // That is, try to apply the diff from C2 to C1 on the tip of the branch.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the revert is done.
-func (g *DBGraveler) Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, error) {
-	commitRecord, err := g.dereferenceCommit(ctx, repositoryID, ref)
+func (g *DBGraveler) Revert(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, error) {
+	commitRecord, err := g.dereferenceCommit(ctx, repository, ref)
 	if err != nil {
 		return "", fmt.Errorf("get commit from ref %s: %w", ref, err)
 	}
@@ -976,12 +914,8 @@ func (g *DBGraveler) Revert(ctx context.Context, repositoryID RepositoryID, bran
 		}
 		parentNumber--
 	}
-	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
-		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-		if err != nil {
-			return nil, fmt.Errorf("get repo %s: %w", repositoryID, err)
-		}
-		branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	res, err := g.branchLocker.MetadataUpdater(ctx, repository, branchID, func() (interface{}, error) {
+		branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return "", fmt.Errorf("get branch %s: %w", branchID, err)
 		}
@@ -992,18 +926,18 @@ func (g *DBGraveler) Revert(ctx context.Context, repositoryID RepositoryID, bran
 		}
 		var parentMetaRangeID MetaRangeID
 		if len(commitRecord.Parents) > 0 {
-			parentCommit, err := g.dereferenceCommit(ctx, repositoryID, commitRecord.Parents[parentNumber].Ref())
+			parentCommit, err := g.dereferenceCommit(ctx, repository, commitRecord.Parents[parentNumber].Ref())
 			if err != nil {
 				return "", fmt.Errorf("get commit from ref %s: %w", commitRecord.Parents[parentNumber], err)
 			}
 			parentMetaRangeID = parentCommit.MetaRangeID
 		}
-		branchCommit, err := g.dereferenceCommit(ctx, repositoryID, branch.CommitID.Ref())
+		branchCommit, err := g.dereferenceCommit(ctx, repository, branch.CommitID.Ref())
 		if err != nil {
 			return "", fmt.Errorf("get commit from ref %s: %w", branch.CommitID, err)
 		}
 		// merge from the parent to the top of the branch, with the given ref as the merge base:
-		metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID, MergeStrategyNone)
+		metaRangeID, err := g.CommittedManager.Merge(ctx, repository.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID, MergeStrategyNone)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge: %w", err)
@@ -1017,11 +951,11 @@ func (g *DBGraveler) Revert(ctx context.Context, repositoryID RepositoryID, bran
 		commit.Parents = []CommitID{branch.CommitID}
 		commit.Metadata = commitParams.Metadata
 		commit.Generation = branchCommit.Generation + 1
-		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
+		commitID, err := g.RefManager.AddCommit(ctx, repository, commit)
 		if err != nil {
 			return "", fmt.Errorf("add commit: %w", err)
 		}
-		err = g.RefManager.SetBranch(ctx, repositoryID, branchID, Branch{
+		err = g.RefManager.SetBranch(ctx, repository, branchID, Branch{
 			CommitID:     commitID,
 			StagingToken: branch.StagingToken,
 		})
@@ -1036,18 +970,14 @@ func (g *DBGraveler) Revert(ctx context.Context, repositoryID RepositoryID, bran
 	return res.(CommitID), nil
 }
 
-func (g *DBGraveler) Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error) {
+func (g *DBGraveler) Merge(ctx context.Context, repository *RepositoryRecord, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error) {
 	var preRunID string
 	var storageNamespace StorageNamespace
 	var commit Commit
-	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, destination, func() (interface{}, error) {
-		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-		if err != nil {
-			return nil, err
-		}
-		storageNamespace = repo.StorageNamespace
+	res, err := g.branchLocker.MetadataUpdater(ctx, repository, destination, func() (interface{}, error) {
+		storageNamespace = repository.StorageNamespace
 
-		branch, err := g.GetBranch(ctx, repositoryID, destination)
+		branch, err := g.GetBranch(ctx, repository, destination)
 		if err != nil {
 			return nil, fmt.Errorf("get branch: %w", err)
 		}
@@ -1058,7 +988,7 @@ func (g *DBGraveler) Merge(ctx context.Context, repositoryID RepositoryID, desti
 		if !empty {
 			return nil, fmt.Errorf("%s: %w", destination, ErrDirtyBranch)
 		}
-		fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, source, Ref(destination))
+		fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repository, source, Ref(destination))
 		if err != nil {
 			return nil, err
 		}
@@ -1099,7 +1029,7 @@ func (g *DBGraveler) Merge(ctx context.Context, repositoryID RepositoryID, desti
 		err = g.hooks.PreMergeHook(ctx, HookRecord{
 			EventType:        EventTypePreMerge,
 			RunID:            preRunID,
-			RepositoryID:     repositoryID,
+			RepositoryID:     repository.RepositoryID,
 			StorageNamespace: storageNamespace,
 			BranchID:         destination,
 			SourceRef:        fromCommit.CommitID.Ref(),
@@ -1112,12 +1042,12 @@ func (g *DBGraveler) Merge(ctx context.Context, repositoryID RepositoryID, desti
 				Err:       err,
 			}
 		}
-		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
+		commitID, err := g.RefManager.AddCommit(ctx, repository, commit)
 		if err != nil {
 			return nil, fmt.Errorf("add commit: %w", err)
 		}
 		branch.CommitID = commitID
-		err = g.RefManager.SetBranch(ctx, repositoryID, destination, *branch)
+		err = g.RefManager.SetBranch(ctx, repository, destination, *branch)
 		if err != nil {
 			return commitID, fmt.Errorf("update branch %s: %w", destination, err)
 		}
@@ -1130,7 +1060,7 @@ func (g *DBGraveler) Merge(ctx context.Context, repositoryID RepositoryID, desti
 	err = g.hooks.PostMergeHook(ctx, HookRecord{
 		EventType:        EventTypePostMerge,
 		RunID:            postRunID,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		StorageNamespace: storageNamespace,
 		BranchID:         destination,
 		SourceRef:        res.(CommitID).Ref(),
@@ -1148,18 +1078,14 @@ func (g *DBGraveler) Merge(ctx context.Context, repositoryID RepositoryID, desti
 	return res.(CommitID), nil
 }
 
-func (g *DBGraveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+func (g *DBGraveler) DiffUncommitted(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (DiffIterator, error) {
+	branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
 	if err != nil {
 		return nil, err
 	}
 	var metaRangeID MetaRangeID
 	if branch.CommitID != "" {
-		commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+		commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
 		if err != nil {
 			return nil, err
 		}
@@ -1172,7 +1098,7 @@ func (g *DBGraveler) DiffUncommitted(ctx context.Context, repositoryID Repositor
 	}
 	var committedValueIterator ValueIterator
 	if metaRangeID != "" {
-		committedValueIterator, err = g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
+		committedValueIterator, err = g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)
 		if err != nil {
 			return nil, err
 		}
@@ -1182,15 +1108,15 @@ func (g *DBGraveler) DiffUncommitted(ctx context.Context, repositoryID Repositor
 
 // dereferenceCommit will dereference and load the commit record based on 'ref'.
 //   will return an error if 'ref' points to an explicit staging area
-func (g *DBGraveler) dereferenceCommit(ctx context.Context, repositoryID RepositoryID, ref Ref) (*CommitRecord, error) {
-	reference, err := g.Dereference(ctx, repositoryID, ref)
+func (g *DBGraveler) dereferenceCommit(ctx context.Context, repository *RepositoryRecord, ref Ref) (*CommitRecord, error) {
+	reference, err := g.Dereference(ctx, repository, ref)
 	if err != nil {
 		return nil, err
 	}
 	if reference.ResolvedBranchModifier == ResolvedBranchModifierStaging {
 		return nil, fmt.Errorf("reference '%s': %w", ref, ErrDereferenceCommitWithStaging)
 	}
-	commit, err := g.RefManager.GetCommit(ctx, repositoryID, reference.CommitID)
+	commit, err := g.RefManager.GetCommit(ctx, repository, reference.CommitID)
 	if err != nil {
 		return nil, err
 	}
@@ -1200,35 +1126,31 @@ func (g *DBGraveler) dereferenceCommit(ctx context.Context, repositoryID Reposit
 	}, nil
 }
 
-func (g *DBGraveler) Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+func (g *DBGraveler) Diff(ctx context.Context, repository *RepositoryRecord, left, right Ref) (DiffIterator, error) {
+	leftCommit, err := g.dereferenceCommit(ctx, repository, left)
 	if err != nil {
 		return nil, err
 	}
-	leftCommit, err := g.dereferenceCommit(ctx, repositoryID, left)
+	rightRawRef, err := g.Dereference(ctx, repository, right)
 	if err != nil {
 		return nil, err
 	}
-	rightRawRef, err := g.Dereference(ctx, repositoryID, right)
+	rightCommit, err := g.RefManager.GetCommit(ctx, repository, rightRawRef.CommitID)
 	if err != nil {
 		return nil, err
 	}
-	rightCommit, err := g.RefManager.GetCommit(ctx, repositoryID, rightRawRef.CommitID)
-	if err != nil {
-		return nil, err
-	}
-	diff, err := g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.MetaRangeID, rightCommit.MetaRangeID)
+	diff, err := g.CommittedManager.Diff(ctx, repository.StorageNamespace, leftCommit.MetaRangeID, rightCommit.MetaRangeID)
 	if err != nil {
 		return nil, err
 	}
 	if rightRawRef.ResolvedBranchModifier != ResolvedBranchModifierStaging {
 		return diff, nil
 	}
-	leftValueIterator, err := g.CommittedManager.List(ctx, repo.StorageNamespace, leftCommit.MetaRangeID)
+	leftValueIterator, err := g.CommittedManager.List(ctx, repository.StorageNamespace, leftCommit.MetaRangeID)
 	if err != nil {
 		return nil, err
 	}
-	rightBranch, err := g.RefManager.GetBranch(ctx, repositoryID, rightRawRef.BranchID)
+	rightBranch, err := g.RefManager.GetBranch(ctx, repository, rightRawRef.BranchID)
 	if err != nil {
 		return nil, err
 	}
@@ -1239,16 +1161,12 @@ func (g *DBGraveler) Diff(ctx context.Context, repositoryID RepositoryID, left, 
 	return NewCombinedDiffIterator(diff, leftValueIterator, stagingIterator), nil
 }
 
-func (g *DBGraveler) Compare(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+func (g *DBGraveler) Compare(ctx context.Context, repository *RepositoryRecord, left, right Ref) (DiffIterator, error) {
+	fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repository, right, left)
 	if err != nil {
 		return nil, err
 	}
-	fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, right, left)
-	if err != nil {
-		return nil, err
-	}
-	return g.CommittedManager.Compare(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
+	return g.CommittedManager.Compare(ctx, repository.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
 }
 
 func (g *DBGraveler) SetHooksHandler(handler HooksHandler) {
@@ -1259,16 +1177,16 @@ func (g *DBGraveler) SetHooksHandler(handler HooksHandler) {
 	}
 }
 
-func (g *DBGraveler) getCommitsForMerge(ctx context.Context, repositoryID RepositoryID, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
-	fromCommit, err := g.dereferenceCommit(ctx, repositoryID, from)
+func (g *DBGraveler) getCommitsForMerge(ctx context.Context, repository *RepositoryRecord, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
+	fromCommit, err := g.dereferenceCommit(ctx, repository, from)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("get commit by ref %s: %w", from, err)
 	}
-	toCommit, err := g.dereferenceCommit(ctx, repositoryID, to)
+	toCommit, err := g.dereferenceCommit(ctx, repository, to)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("get commit by branch %s: %w", to, err)
 	}
-	baseCommit, err := g.RefManager.FindMergeBase(ctx, repositoryID, fromCommit.CommitID, toCommit.CommitID)
+	baseCommit, err := g.RefManager.FindMergeBase(ctx, repository, fromCommit.CommitID, toCommit.CommitID)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("find merge base: %w", err)
 	}
@@ -1278,12 +1196,8 @@ func (g *DBGraveler) getCommitsForMerge(ctx context.Context, repositoryID Reposi
 	return fromCommit, toCommit, baseCommit, nil
 }
 
-func (g *DBGraveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error {
-	repo, err := g.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	iter, err := g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
+func (g *DBGraveler) LoadCommits(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) error {
+	iter, err := g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)
 	if err != nil {
 		return err
 	}
@@ -1302,7 +1216,7 @@ func (g *DBGraveler) LoadCommits(ctx context.Context, repositoryID RepositoryID,
 		if commit.GetGeneration() == 0 {
 			return fmt.Errorf("dumps created by lakeFS versions before v0.61.0 are no longer supported: %w", ErrNoCommitGeneration)
 		}
-		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
+		commitID, err := g.RefManager.AddCommit(ctx, repository, Commit{
 			Version:      CommitVersion(commit.Version),
 			Committer:    commit.GetCommitter(),
 			Message:      commit.GetMessage(),
@@ -1326,12 +1240,8 @@ func (g *DBGraveler) LoadCommits(ctx context.Context, repositoryID RepositoryID,
 	return nil
 }
 
-func (g *DBGraveler) LoadBranches(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error {
-	repo, err := g.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	iter, err := g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
+func (g *DBGraveler) LoadBranches(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) error {
+	iter, err := g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)
 	if err != nil {
 		return err
 	}
@@ -1344,9 +1254,9 @@ func (g *DBGraveler) LoadBranches(ctx context.Context, repositoryID RepositoryID
 			return err
 		}
 		branchID := BranchID(branch.Id)
-		err = g.RefManager.SetBranch(ctx, repositoryID, branchID, Branch{
+		err = g.RefManager.SetBranch(ctx, repository, branchID, Branch{
 			CommitID:     CommitID(branch.CommitId),
-			StagingToken: GenerateStagingToken(repositoryID, branchID),
+			StagingToken: GenerateStagingToken(repository.RepositoryID, branchID),
 		})
 		if err != nil {
 			return err
@@ -1358,12 +1268,8 @@ func (g *DBGraveler) LoadBranches(ctx context.Context, repositoryID RepositoryID
 	return nil
 }
 
-func (g *DBGraveler) LoadTags(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error {
-	repo, err := g.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	iter, err := g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
+func (g *DBGraveler) LoadTags(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) error {
+	iter, err := g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)
 	if err != nil {
 		return err
 	}
@@ -1376,7 +1282,7 @@ func (g *DBGraveler) LoadTags(ctx context.Context, repositoryID RepositoryID, me
 			return err
 		}
 		tagID := TagID(tag.Id)
-		err = g.RefManager.CreateTag(ctx, repositoryID, tagID, CommitID(tag.CommitId))
+		err = g.RefManager.CreateTag(ctx, repository, tagID, CommitID(tag.CommitId))
 		if err != nil {
 			return err
 		}
@@ -1387,28 +1293,16 @@ func (g *DBGraveler) LoadTags(ctx context.Context, repositoryID RepositoryID, me
 	return nil
 }
 
-func (g *DBGraveler) GetMetaRange(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) (MetaRangeAddress, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return "", nil
-	}
-	return g.CommittedManager.GetMetaRange(ctx, repo.StorageNamespace, metaRangeID)
+func (g *DBGraveler) GetMetaRange(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) (MetaRangeAddress, error) {
+	return g.CommittedManager.GetMetaRange(ctx, repository.StorageNamespace, metaRangeID)
 }
 
-func (g *DBGraveler) GetRange(ctx context.Context, repositoryID RepositoryID, rangeID RangeID) (RangeAddress, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return "", nil
-	}
-	return g.CommittedManager.GetRange(ctx, repo.StorageNamespace, rangeID)
+func (g *DBGraveler) GetRange(ctx context.Context, repository *RepositoryRecord, rangeID RangeID) (RangeAddress, error) {
+	return g.CommittedManager.GetRange(ctx, repository.StorageNamespace, rangeID)
 }
 
-func (g *DBGraveler) DumpCommits(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error) {
-	repo, err := g.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	iter, err := g.RefManager.ListCommits(ctx, repositoryID)
+func (g *DBGraveler) DumpCommits(ctx context.Context, repository *RepositoryRecord) (*MetaRangeID, error) {
+	iter, err := g.RefManager.ListCommits(ctx, repository)
 	if err != nil {
 		return nil, err
 	}
@@ -1417,7 +1311,7 @@ func (g *DBGraveler) DumpCommits(ctx context.Context, repositoryID RepositoryID)
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repo.StorageNamespace,
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageNamespace,
 		commitsToValueIterator(iter),
 		Metadata{
 			EntityTypeKey:             EntityTypeCommit,
@@ -1427,12 +1321,8 @@ func (g *DBGraveler) DumpCommits(ctx context.Context, repositoryID RepositoryID)
 	)
 }
 
-func (g *DBGraveler) DumpBranches(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error) {
-	repo, err := g.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	iter, err := g.RefManager.ListBranches(ctx, repositoryID)
+func (g *DBGraveler) DumpBranches(ctx context.Context, repository *RepositoryRecord) (*MetaRangeID, error) {
+	iter, err := g.RefManager.ListBranches(ctx, repository)
 	if err != nil {
 		return nil, err
 	}
@@ -1441,7 +1331,7 @@ func (g *DBGraveler) DumpBranches(ctx context.Context, repositoryID RepositoryID
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repo.StorageNamespace,
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageNamespace,
 		branchesToValueIterator(iter),
 		Metadata{
 			EntityTypeKey:             EntityTypeBranch,
@@ -1451,12 +1341,8 @@ func (g *DBGraveler) DumpBranches(ctx context.Context, repositoryID RepositoryID
 	)
 }
 
-func (g *DBGraveler) DumpTags(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error) {
-	repo, err := g.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	iter, err := g.RefManager.ListTags(ctx, repositoryID)
+func (g *DBGraveler) DumpTags(ctx context.Context, repository *RepositoryRecord) (*MetaRangeID, error) {
+	iter, err := g.RefManager.ListTags(ctx, repository)
 	if err != nil {
 		return nil, err
 	}
@@ -1465,7 +1351,7 @@ func (g *DBGraveler) DumpTags(ctx context.Context, repositoryID RepositoryID) (*
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repo.StorageNamespace,
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageNamespace,
 		tagsToValueIterator(iter),
 		Metadata{
 			EntityTypeKey:             EntityTypeTag,
