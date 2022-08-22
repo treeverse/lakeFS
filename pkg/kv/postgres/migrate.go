@@ -202,7 +202,3 @@ func dropTables(ctx context.Context, dbPool *pgxpool.Pool, tables []string) erro
 	}
 	return nil
 }
-
-func MigrateErr(err error, packageName string) error {
-	return fmt.Errorf("failed migration for package %s: %w", packageName, err)
-}

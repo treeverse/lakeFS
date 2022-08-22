@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/lib/pq"
-	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
@@ -672,10 +671,10 @@ func bWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.Reposito
 	close(sChan)
 	workersErr := wg.Wait().ErrorOrNil()
 	if err != nil {
-		return kvpg.MigrateErr(err, model.PackageName)
+		return err
 	}
 	if workersErr != nil {
-		return kvpg.MigrateErr(workersErr, model.PackageName)
+		return workersErr
 	}
 	return nil
 }
@@ -737,36 +736,40 @@ func rWorker(ctx context.Context, d *pgxpool.Pool, rChan <-chan *graveler.Reposi
 			return tWorker(ctx, d, r)
 		})
 
-		// Migrate Settings
-		objectPointer := block.ObjectPointer{
-			StorageNamespace: string(r.StorageNamespace),
-			Identifier:       fmt.Sprintf(graveler.SettingsRelativeKey, blockstorePrefix, branch.ProtectionSettingKey),
-			IdentifierType:   block.IdentifierTypeRelative,
-		}
-		reader, err := blockstore.Get(ctx, objectPointer, -1)
-		if err != nil && !errors.Is(err, adapter.ErrDataNotFound) { // skip settings migration if not found
-			return err
-		} else {
-			buff, err := io.ReadAll(reader)
-			reader.Close()
-			if err != nil {
-				break
+		wg.Go(func() error {
+			// Migrate Settings
+			objectPointer := block.ObjectPointer{
+				StorageNamespace: string(r.StorageNamespace),
+				Identifier:       fmt.Sprintf(graveler.SettingsRelativeKey, blockstorePrefix, branch.ProtectionSettingKey),
+				IdentifierType:   block.IdentifierTypeRelative,
 			}
+			reader, err := blockstore.Get(ctx, objectPointer, -1)
+			if err != nil && !errors.Is(err, adapter.ErrDataNotFound) { // skip settings migration if not found
+				return fmt.Errorf("failed to get from blockstore: %w", err)
+			} else if err == nil {
+				buff, err := io.ReadAll(reader)
+				reader.Close()
+				if err != nil {
+					return fmt.Errorf("failed to read object: %w", err)
+				}
 
-			if err = encoder.Encode(kv.Entry{
-				PartitionKey: []byte(graveler.RepoPartition(r)),
-				Key:          []byte(graveler.SettingsPath(branch.ProtectionSettingKey)),
-				Value:        buff,
-			}); err != nil {
-				break
+				if err = encoder.Encode(kv.Entry{
+					PartitionKey: []byte(graveler.RepoPartition(r)),
+					Key:          []byte(graveler.SettingsPath(branch.ProtectionSettingKey)),
+					Value:        buff,
+				}); err != nil {
+					return err
+				}
 			}
-		}
+			return nil
+		})
+
 		workersErr := wg.Wait().ErrorOrNil()
 		if err != nil {
-			return kvpg.MigrateErr(err, model.PackageName)
+			return err
 		}
 		if workersErr != nil {
-			return kvpg.MigrateErr(workersErr, model.PackageName)
+			return workersErr
 		}
 	}
 	return nil
@@ -802,7 +805,7 @@ func MigrateWithBlockstore(ctx context.Context, d *pgxpool.Pool, writer io.Write
 		DBSchemaVersion: kv.InitialMigrateVersion,
 		CreatedAt:       time.Now().UTC(),
 	}); err != nil {
-		return kvpg.MigrateErr(err, model.PackageName)
+		return err
 	}
 
 	rChan := make(chan *graveler.RepositoryRecord, migrateQueueSize)
@@ -833,10 +836,10 @@ func MigrateWithBlockstore(ctx context.Context, d *pgxpool.Pool, writer io.Write
 	close(rChan)
 	workersErr := g.Wait().ErrorOrNil()
 	if err != nil {
-		return kvpg.MigrateErr(err, model.PackageName)
+		return err
 	}
 	if workersErr != nil {
-		return kvpg.MigrateErr(workersErr, model.PackageName)
+		return workersErr
 	}
 	return nil
 }

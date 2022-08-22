@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/rs/xid"
-	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
@@ -166,7 +165,7 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 		DBSchemaVersion: kv.InitialMigrateVersion,
 		CreatedAt:       time.Now().UTC(),
 	}); err != nil {
-		return kvpg.MigrateErr(err, model.PackageName)
+		return err
 	}
 
 	runChan := make(chan *runResultMigrate, migrateQueueSize)
@@ -185,7 +184,7 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 
 	rows, err := d.Query(ctx, "SELECT * FROM actions_runs ORDER BY run_id DESC")
 	if err != nil {
-		return kvpg.MigrateErr(err, model.PackageName)
+		return err
 	}
 	defer rows.Close()
 	rowScanner := pgxscan.NewRowScanner(rows)
@@ -195,13 +194,13 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 		if err != nil {
 			close(tasksChan)
 			close(runChan)
-			return kvpg.MigrateErr(err, model.PackageName)
+			return err
 		}
 		runTime, err := time.Parse(graveler.RunIDTimeLayout, m.RunResult.RunID[:len(graveler.RunIDTimeLayout)])
 		if err != nil {
 			close(tasksChan)
 			close(runChan)
-			return kvpg.MigrateErr(err, model.PackageName)
+			return err
 		}
 		newRunID := newRunIDFromTime(runTime)
 		oldRunID := m.RunResult.RunID
@@ -217,7 +216,7 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 	close(runChan)
 	err = g.Wait().ErrorOrNil()
 	if err != nil {
-		return kvpg.MigrateErr(err, model.PackageName)
+		return err
 	}
 	return nil
 }

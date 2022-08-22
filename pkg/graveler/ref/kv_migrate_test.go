@@ -151,9 +151,13 @@ func createMigrateTestData(t *testing.T, ctx context.Context, mgr graveler.RefMa
 func createStagingData(t *testing.T, ctx context.Context, dbPool db.Database, branch string, stagingToken graveler.StagingToken) {
 	mgr := staging.NewDBManager(dbPool)
 	for i := 0; i < numStaging; i++ {
-		err := mgr.Set(ctx, stagingToken, graveler.Key(strconv.Itoa(i)), &graveler.Value{
-			Identity: []byte(fmt.Sprintf("%s_%s", branch, stagingToken)),
-			Data:     []byte(fmt.Sprintf("%s_%s", branch, stagingToken))}, false)
+		var data *graveler.Value
+		if i%2 == 0 { // every second element is a tombstone
+			data = &graveler.Value{
+				Identity: []byte(fmt.Sprintf("%s_%s", branch, stagingToken)),
+				Data:     []byte(fmt.Sprintf("%s_%s", branch, stagingToken))}
+		}
+		err := mgr.Set(ctx, stagingToken, graveler.Key(strconv.Itoa(i)), data, false)
 		testutil.MustDo(t, "Create staging data", err)
 	}
 
@@ -234,8 +238,12 @@ func verifyBranchResults(t *testing.T, ctx context.Context, kvMgr, dbMgr gravele
 
 		for i, v := range data {
 			require.Equal(t, graveler.Key(strconv.Itoa(i)), v.Key)
-			require.Equal(t, string(v.Value.Data), fmt.Sprintf("%s_%s", b.BranchID, b.StagingToken))
-			require.Equal(t, string(v.Value.Identity), fmt.Sprintf("%s_%s", b.BranchID, b.StagingToken))
+			if i%2 == 0 {
+				require.Equal(t, string(v.Value.Data), fmt.Sprintf("%s_%s", b.BranchID, b.StagingToken))
+				require.Equal(t, string(v.Value.Identity), fmt.Sprintf("%s_%s", b.BranchID, b.StagingToken))
+			} else { // verify tombstone
+				require.Nil(t, v.Value)
+			}
 		}
 
 		// Verify bad token doesn't exist
