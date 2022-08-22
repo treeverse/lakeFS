@@ -1,6 +1,12 @@
 # Changelog
 
-## v0.70.2 - 2022-08-11
+## v0.70.3 - 2022-08-22
+
+What's new:
+- [GC] Fixed timeout in get request to lakeFS client when running GC on Azure (#3905)
+- Improve commit log performance (#3936)
+
+## v0.70.2 - 2022-08-17
 
 What's new:
 - Improve 'commit log by objects' performance (#3920)
