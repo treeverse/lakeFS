@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	packageName      = "ref"
+	packageName      = "graveler"
 	jobWorkers       = 10
 	migrateQueueSize = 100
 )
@@ -99,7 +99,7 @@ func (m *DBManager) CreateRepository(ctx context.Context, repositoryID graveler.
 	commitID := m.addressProvider.ContentAddress(firstCommit)
 
 	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		// create an bare repository first
+		// create a bare repository first
 		err := m.createBareRepository(tx, repositoryID, repository)
 		if err != nil {
 			return nil, err
@@ -564,6 +564,11 @@ var (
 	blockstorePrefix string
 )
 
+type stagedEntry struct {
+	Token graveler.StagingToken
+	Entry *graveler.ValueRecord
+}
+
 func cWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.RepositoryRecord) error {
 	commits, err := d.Query(ctx, "SELECT id,committer,message,creation_date,meta_range_id,metadata,parents,version,generation FROM graveler_commits WHERE repository_id=$1", repository.RepositoryID)
 	if err != nil {
@@ -593,19 +598,63 @@ func cWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.Reposito
 	return nil
 }
 
+// sWorker writes staging token data of a branch
+func sWorker(sChan <-chan *stagedEntry) error {
+	for s := range sChan {
+		pb := graveler.ProtoFromStagedEntry(s.Entry.Key, s.Entry.Value)
+		data, err := proto.Marshal(pb)
+		if err != nil {
+			return err
+		}
+		if err = encoder.Encode(kv.Entry{
+			PartitionKey: []byte(s.Token),
+			Key:          s.Entry.Key,
+			Value:        data,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func bWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.RepositoryRecord) error {
 	branches, err := d.Query(ctx, "SELECT id,staging_token,commit_id FROM graveler_branches WHERE repository_id=$1", repository.RepositoryID)
 	if err != nil {
 		return err
 	}
 	defer branches.Close()
+	sChan := make(chan *stagedEntry, migrateQueueSize)
+	var wg multierror.Group
+	for i := 0; i < jobWorkers; i++ {
+		wg.Go(func() error {
+			return sWorker(sChan)
+		})
+	}
 	branchesScanner := pgxscan.NewRowScanner(branches)
 	for branches.Next() {
 		b := new(graveler.BranchRecord)
 		err = branchesScanner.Scan(b)
 		if err != nil {
+			break
+		}
+		rows, err := d.Query(ctx, "SELECT key, identity, data FROM graveler_staging_kv where staging_token=$1", b.StagingToken)
+		if err != nil {
 			return err
 		}
+		scanner := pgxscan.NewRowScanner(rows)
+		for rows.Next() {
+			record := &graveler.ValueRecord{}
+			err = scanner.Scan(record)
+			if err != nil {
+				break
+			}
+			sChan <- &stagedEntry{
+				Token: b.StagingToken,
+				Entry: record,
+			}
+		}
+		rows.Close()
+
 		pb := protoFromBranch(b.BranchID, b.Branch)
 		data, err := proto.Marshal(pb)
 		if err != nil {
@@ -616,8 +665,16 @@ func bWorker(ctx context.Context, d *pgxpool.Pool, repository *graveler.Reposito
 			Key:          []byte(graveler.BranchPath(b.BranchID)),
 			Value:        data,
 		}); err != nil {
-			return err
+			break
 		}
+	}
+	close(sChan)
+	workersErr := wg.Wait().ErrorOrNil()
+	if err != nil {
+		return err
+	}
+	if workersErr != nil {
+		return workersErr
 	}
 	return nil
 }
@@ -668,44 +725,51 @@ func rWorker(ctx context.Context, d *pgxpool.Pool, rChan <-chan *graveler.Reposi
 		}
 
 		// migrate repository entities
-		err = cWorker(ctx, d, r)
-		if err != nil {
-			return err
-		}
-		err = bWorker(ctx, d, r)
-		if err != nil {
-			return err
-		}
-		err = tWorker(ctx, d, r)
-		if err != nil {
-			return err
-		}
+		var wg multierror.Group
+		wg.Go(func() error {
+			return cWorker(ctx, d, r)
+		})
+		wg.Go(func() error {
+			return bWorker(ctx, d, r)
+		})
+		wg.Go(func() error {
+			return tWorker(ctx, d, r)
+		})
 
-		// Migrate Settings
-		objectPointer := block.ObjectPointer{
-			StorageNamespace: string(r.StorageNamespace),
-			Identifier:       fmt.Sprintf(graveler.SettingsRelativeKey, blockstorePrefix, branch.ProtectionSettingKey),
-			IdentifierType:   block.IdentifierTypeRelative,
-		}
-		reader, err := blockstore.Get(ctx, objectPointer, -1)
-		if err != nil {
-			if errors.Is(err, adapter.ErrDataNotFound) { // skip settings migration
-				return nil
+		wg.Go(func() error {
+			// Migrate Settings
+			objectPointer := block.ObjectPointer{
+				StorageNamespace: string(r.StorageNamespace),
+				Identifier:       fmt.Sprintf(graveler.SettingsRelativeKey, blockstorePrefix, branch.ProtectionSettingKey),
+				IdentifierType:   block.IdentifierTypeRelative,
 			}
-			return err
-		}
-		buff, err := io.ReadAll(reader)
-		reader.Close()
+			reader, err := blockstore.Get(ctx, objectPointer, -1)
+			if err != nil && !errors.Is(err, adapter.ErrDataNotFound) { // skip settings migration if not found
+				return fmt.Errorf("failed to get from blockstore: %w", err)
+			} else if err == nil {
+				buff, err := io.ReadAll(reader)
+				reader.Close()
+				if err != nil {
+					return fmt.Errorf("failed to read object: %w", err)
+				}
+
+				if err = encoder.Encode(kv.Entry{
+					PartitionKey: []byte(graveler.RepoPartition(r)),
+					Key:          []byte(graveler.SettingsPath(branch.ProtectionSettingKey)),
+					Value:        buff,
+				}); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+
+		workersErr := wg.Wait().ErrorOrNil()
 		if err != nil {
 			return err
 		}
-
-		if err = encoder.Encode(kv.Entry{
-			PartitionKey: []byte(graveler.RepoPartition(r)),
-			Key:          []byte(graveler.SettingsPath(branch.ProtectionSettingKey)),
-			Value:        buff,
-		}); err != nil {
-			return err
+		if workersErr != nil {
+			return workersErr
 		}
 	}
 	return nil
@@ -754,7 +818,6 @@ func MigrateWithBlockstore(ctx context.Context, d *pgxpool.Pool, writer io.Write
 
 	rows, err := d.Query(ctx, "SELECT * FROM graveler_repositories")
 	if err == nil {
-		defer rows.Close()
 		rowScanner := pgxscan.NewRowScanner(rows)
 		for rows.Next() {
 			r := new(graveler.RepositoryRecord)
@@ -769,6 +832,7 @@ func MigrateWithBlockstore(ctx context.Context, d *pgxpool.Pool, writer io.Write
 			rChan <- r
 		}
 	}
+	rows.Close() // We don't want to deffer - free connections in the DB pool
 	close(rChan)
 	workersErr := g.Wait().ErrorOrNil()
 	if err != nil {

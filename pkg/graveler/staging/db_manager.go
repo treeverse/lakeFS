@@ -2,38 +2,14 @@ package staging
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"io"
-	"sync"
-	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/georgysavva/scany/pgxscan"
-	"github.com/hashicorp/go-multierror"
 	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/kv"
-	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"github.com/treeverse/lakefs/pkg/version"
-	"google.golang.org/protobuf/proto"
 )
-
-const (
-	packageName      = "staging"
-	jobWorkers       = 10
-	migrateQueueSize = 100
-)
-
-//nolint:gochecknoinits
-func init() {
-	kvpg.RegisterMigrate(packageName, Migrate, []string{"graveler_staging_kv"})
-}
-
-var encoder kv.SafeEncoder
 
 type DBManager struct {
 	db  db.Database
@@ -145,82 +121,4 @@ func (p *DBManager) txOpts(opts ...db.TxOpt) []db.TxOpt {
 		db.WithLogger(p.log),
 	}
 	return append(o, opts...)
-}
-
-// runWorker writing staging token data to fd
-func runWorker(ctx context.Context, d *pgxpool.Pool, jobChan <-chan string) error {
-	record := &graveler.ValueRecord{}
-	for t := range jobChan {
-		stagingToken := t
-		rows, err := d.Query(ctx, "SELECT key, identity, data FROM graveler_staging_kv where staging_token=$1", stagingToken)
-		if err != nil {
-			return err
-		}
-		scanner := pgxscan.NewRowScanner(rows)
-		for rows.Next() {
-			err = scanner.Scan(record)
-			if err != nil {
-				return err
-			}
-			pb := graveler.ProtoFromStagedEntry(record.Key, record.Value)
-			data, err := proto.Marshal(pb)
-			if err != nil {
-				return err
-			}
-			if err = encoder.Encode(kv.Entry{
-				PartitionKey: []byte(stagingToken),
-				Key:          record.Key,
-				Value:        data,
-			}); err != nil {
-				return err
-			}
-		}
-		rows.Close()
-	}
-	return nil
-}
-
-func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
-	encoder = kv.SafeEncoder{
-		Je: json.NewEncoder(writer),
-		Mu: sync.Mutex{},
-	}
-	// Create header
-	if err := encoder.Encode(kv.Header{
-		LakeFSVersion:   version.Version,
-		PackageName:     packageName,
-		DBSchemaVersion: kv.InitialMigrateVersion,
-		CreatedAt:       time.Now().UTC(),
-	}); err != nil {
-		return err
-	}
-
-	jobChan := make(chan string, migrateQueueSize)
-	var g multierror.Group
-	for i := 0; i < jobWorkers; i++ {
-		// Run worker reads runs from DB per staging token and writes respected entries to fd
-		g.Go(func() error {
-			return runWorker(ctx, d, jobChan)
-		})
-	}
-
-	rows, err := d.Query(ctx, "SELECT DISTINCT staging_token FROM graveler_staging_kv")
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	rowScanner := pgxscan.NewRowScanner(rows)
-	for rows.Next() {
-		m := &struct {
-			StagingToken string `db:"staging_token"`
-		}{}
-		err = rowScanner.Scan(m)
-		if err != nil {
-			return err
-		}
-
-		jobChan <- m.StagingToken
-	}
-	close(jobChan)
-	return g.Wait().ErrorOrNil()
 }

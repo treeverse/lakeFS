@@ -192,10 +192,14 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 		m := new(runResultMigrate)
 		err = rowScanner.Scan(m)
 		if err != nil {
+			close(tasksChan)
+			close(runChan)
 			return err
 		}
 		runTime, err := time.Parse(graveler.RunIDTimeLayout, m.RunResult.RunID[:len(graveler.RunIDTimeLayout)])
 		if err != nil {
+			close(tasksChan)
+			close(runChan)
 			return err
 		}
 		newRunID := newRunIDFromTime(runTime)
@@ -210,7 +214,11 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 	}
 	close(tasksChan)
 	close(runChan)
-	return g.Wait().ErrorOrNil()
+	err = g.Wait().ErrorOrNil()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func newRunIDFromTime(t time.Time) string {
