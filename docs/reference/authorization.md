@@ -392,7 +392,7 @@ It is best practice to periodically rotate programmatic access credentials. This
 The steps to rotate credentials in the UI are:
 
 1. Go to the Administation tab and click "Create Access Key" to generate a new key.
+1. Copy and save the new Access Key and Secret for future login and the `lakectl.yaml` file or all the places the credentials are used.
 1. Next to the old Access Key, click "Revoke".
-1. Copy and save the new Access Key and Secret in the `lakectl.yaml` file.
 
 ![Revoke Creds](../assets/img/revoke_creds.png)
