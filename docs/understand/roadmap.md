@@ -23,7 +23,7 @@ Integrate with Spark, Hive Metastore and your other tools.
 
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3411){: target="_blank" class="btn" }
 
-### Pluggable diff/merge operators
+### Table format support
 
 Currently, lakeFS supports merging and comparing references by doing an object-wise comparison. 
 For unstructured data and some forms of tabluar data (namely, Hive structured tables), this works fine. 
@@ -52,14 +52,13 @@ A much better user experience would be to allow merging this log into a new unif
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3380){: target="_blank" class="btn" }
 
 
-#### Iceberg merges and diffs across branches <span>High Priority</span>{: .label .label-blue }
+#### Iceberg support <span>High Priority</span>{: .label .label-blue }
 
-Iceberg stores metadata files ("manifests") that represent a [snapshot of a given Iceberg table](https://iceberg.apache.org/spec/#manifests).
+A table in Iceberg points to a single metadata file, containing a "location" property. Iceberg uses this location to store:
+1. Manifests describing where the data is stored.
+2. The actual data.
 
-Currently, when trying to modify an Iceberg table from two different branches, lakeFS would not be able to create a logical snapshot that consists of the changes applied in both references.
-Users would then have to forgo one of the change sets by either retaining the destination's branch set of changes or the source's branch.
-
-A much better user experience would be to allow merging snapshots into a new unified set of changes, representing changes made in both refs as a new snapshot.
+Once a table is created, the location property doesn't change. Therefore, a branch creation in lakeFS in meaningless, since new data added to this branch will be added to the main branch. There are some workarounds for this, but it is our priority to create an excellent integration with Iceberg.
 
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3381){: target="_blank" class="btn" }
 
@@ -125,7 +124,9 @@ Ideally, lakeFS should provide tools to automate this, with native support for [
 Allow admins to manage their users externally using any OIDC-compatible provider.
 
 ### Reproducible data images
+Make it easy for users to compose data coming from different sources (lakeFS repositories & references, external object store locations) as input for processing jobs and data science experiments.
 
+[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/pull/3657){: target="_blank" class="btn" }
 
 ## Versioning Capabilities
 
@@ -146,7 +147,10 @@ comply with data privacy policies. Currently, lakeFS only supports Garbage Colle
 
 ### Garbage Collection on Google Cloud Platform
 
-Same as above, but for GCP.
+The lakeFS [Garbage Collection](https://docs.lakefs.io/reference/garbage-collection.html) capability hard-deletes objects deleted from branches, helping users reduce costs and 
+comply with data privacy policies. Currently, lakeFS only supports Garbage Collection of S3/Azure objects managed by lakeFS. Extending the support to GCP will allow lakeFS users that use GCP as their underlying storage to use this feature.
+
+[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3626){: target="_blank" class="btn" }
 
 ### Collaborate on your data
 
