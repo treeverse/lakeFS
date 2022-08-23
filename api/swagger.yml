@@ -2238,6 +2238,11 @@ paths:
             type: array
             items:
               type: string
+        - in: query
+          name: limit
+          description: limit the number of items in return to 'amount'. Without further indication on actual number of items.
+          schema:
+            type: boolean
       responses:
         200:
           description: commit log

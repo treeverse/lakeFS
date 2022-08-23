@@ -1036,7 +1036,10 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 			commit.Parents = append(commit.Parents, parent.String())
 		}
 		commits = append(commits, commit)
-		if len(commits) >= params.Limit+1 {
+		if params.Limit && len(commits) >= params.Amount {
+			break
+		}
+		if len(commits) >= params.Amount+1 {
 			break
 		}
 	}
@@ -1044,9 +1047,9 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 		return nil, false, err
 	}
 	hasMore := false
-	if len(commits) > params.Limit {
+	if len(commits) > params.Amount {
 		hasMore = true
-		commits = commits[:params.Limit]
+		commits = commits[:params.Amount]
 	}
 	return commits, hasMore, nil
 }
