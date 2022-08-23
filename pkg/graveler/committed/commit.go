@@ -177,7 +177,9 @@ func (a *committer) applyNextKey(baseValue *graveler.ValueRecord, changeValue *g
 		case c > 0:
 			// internal error but no data lost: deletion requested of a
 			// file that was not there.
-			a.logger.WithField("id", string(changeValue.Identity)).Warn("[I] unmatched delete")
+			if changeValue != nil {
+				a.logger.WithField("key", string(changeValue.Key)).Warn("[I] unmatched delete")
+			}
 		default:
 			// Delete: simply don't copy to output.
 			a.incrementDiffSummary(graveler.DiffTypeRemoved)
