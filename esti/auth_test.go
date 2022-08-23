@@ -104,7 +104,7 @@ func TestSuperUserPolicies(t *testing.T) {
 	// deleting the repository should succeed and result in no content response
 	resDeleteRepo, err := superUserClient.DeleteRepositoryWithResponse(ctx, repo)
 	require.NoError(t, err, "SuperUser failed while testing delete repository")
-	require.Equal(t, http.StatusNoContent, resDeleteRepo.StatusCode(), "SuperUser unexpectedly did not receive no content response while deleting repo")
+	require.Equal(t, http.StatusNoContent, resDeleteRepo.StatusCode(), "SuperUser unexpectedly did not receive \"no content\" response while deleting repo")
 
 	// attempting to list the users should be unauthorized
 	resListUsers, err := superUserClient.ListUsersWithResponse(ctx, &api.ListUsersParams{})

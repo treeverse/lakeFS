@@ -74,9 +74,8 @@ const (
 	DefaultLakefsEmailBaseURL      = "http://localhost:8000"
 
 	DefaultDynamoDBTableName = "kvstore"
-	// TBD: Which values to use for DynamoDB tables?
-	DefaultDynamoDBReadCapacityUnits  = 1000
-	DefaultDynamoDBWriteCapacityUnits = 1000
+
+	DefaultUIEnabled = true
 )
 
 var (
@@ -184,9 +183,9 @@ const (
 	EmailBurstKey              = "email.burst"
 	LakefsEmailBaseURLKey      = "email.lakefs_base_url"
 
-	DynamoDBTableNameKey          = "database.beta_dynamodb.table_name"
-	DynamoDBReadCapacityUnitsKey  = "database.beta_dynamodb.read_capacity_units"
-	DynamoDBWriteCapacityUnitsKey = "database.beta_dynamodb.write_capacity_units"
+	DynamoDBTableNameKey = "database.dynamodb.table_name"
+
+	UIEnabledKey = "ui.enabled"
 )
 
 func setDefaults() {
@@ -247,8 +246,8 @@ func setDefaults() {
 	viper.SetDefault(LakefsEmailBaseURLKey, DefaultLakefsEmailBaseURL)
 
 	viper.SetDefault(DynamoDBTableNameKey, DefaultDynamoDBTableName)
-	viper.SetDefault(DynamoDBReadCapacityUnitsKey, DefaultDynamoDBReadCapacityUnits)
-	viper.SetDefault(DynamoDBWriteCapacityUnitsKey, DefaultDynamoDBWriteCapacityUnits)
+
+	viper.SetDefault(UIEnabledKey, DefaultUIEnabled)
 }
 
 func reverse(s string) string {
@@ -290,10 +289,10 @@ func (c *Config) Validate() error {
 
 func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{
-		ConnectionString:      c.values.Database.ConnectionString.SecureValue(),
-		MaxOpenConnections:    c.values.Database.MaxOpenConnections,
-		MaxIdleConnections:    c.values.Database.MaxIdleConnections,
-		ConnectionMaxLifetime: c.values.Database.ConnectionMaxLifetime,
+		ConnectionString:      c.values.Database.DeprecatedConnectionString.SecureValue(),
+		MaxOpenConnections:    c.values.Database.DeprecatedMaxOpenConnections,
+		MaxIdleConnections:    c.values.Database.DeprecatedMaxIdleConnections,
+		ConnectionMaxLifetime: c.values.Database.DeprecatedConnectionMaxLifetime,
 		Type:                  c.values.Database.Type,
 		KVEnabled:             c.values.Database.KVEnabled,
 		DropTables:            c.values.Database.DropTables,
@@ -301,21 +300,31 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 }
 
 func (c *Config) GetKVParams() kvparams.KV {
-	return kvparams.KV{
-		Postgres: &kvparams.Postgres{
-			ConnectionString: c.values.Database.ConnectionString.SecureValue(),
-		},
-		DynamoDB: &kvparams.DynamoDB{
-			TableName:          c.values.Database.BetaDynamoDB.TableName,
-			ReadCapacityUnits:  c.values.Database.BetaDynamoDB.ReadCapacityUnits,
-			WriteCapacityUnits: c.values.Database.BetaDynamoDB.WriteCapacityUnits,
-			ScanLimit:          c.values.Database.BetaDynamoDB.ScanLimit,
-			Endpoint:           c.values.Database.BetaDynamoDB.Endpoint,
-			AwsRegion:          c.values.Database.BetaDynamoDB.AwsRegion,
-			AwsAccessKeyID:     c.values.Database.BetaDynamoDB.AwsAccessKeyID.String(),
-			AwsSecretAccessKey: c.values.Database.BetaDynamoDB.AwsSecretAccessKey.String(),
-		},
+	p := kvparams.KV{
+		Type: c.values.Database.Type,
 	}
+	if c.values.Database.Postgres != nil {
+		p.Postgres = &kvparams.Postgres{
+			ConnectionString:      c.values.Database.Postgres.ConnectionString.SecureValue(),
+			MaxIdleConnections:    c.values.Database.Postgres.MaxIdleConnections,
+			MaxOpenConnections:    c.values.Database.Postgres.MaxOpenConnections,
+			ConnectionMaxLifetime: c.values.Database.Postgres.ConnectionMaxLifetime,
+		}
+	}
+
+	if c.values.Database.DynamoDB != nil {
+		p.DynamoDB = &kvparams.DynamoDB{
+			TableName:          c.values.Database.DynamoDB.TableName,
+			ReadCapacityUnits:  c.values.Database.DynamoDB.ReadCapacityUnits,
+			WriteCapacityUnits: c.values.Database.DynamoDB.WriteCapacityUnits,
+			ScanLimit:          c.values.Database.DynamoDB.ScanLimit,
+			Endpoint:           c.values.Database.DynamoDB.Endpoint,
+			AwsRegion:          c.values.Database.DynamoDB.AwsRegion,
+			AwsAccessKeyID:     c.values.Database.DynamoDB.AwsAccessKeyID.SecureValue(),
+			AwsSecretAccessKey: c.values.Database.DynamoDB.AwsSecretAccessKey.SecureValue(),
+		}
+	}
+	return p
 }
 
 func (c *Config) GetLDAPConfiguration() *LDAP {
@@ -576,4 +585,8 @@ func (c *Config) GetAuthOIDCConfiguration() OIDC {
 
 func (c *Config) GetAuthLogoutRedirectURL() string {
 	return c.values.Auth.LogoutRedirectURL
+}
+
+func (c *Config) GetUIEnabled() bool {
+	return c.values.UI.Enabled
 }

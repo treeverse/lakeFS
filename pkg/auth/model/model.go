@@ -65,6 +65,10 @@ func ExpiredTokenPath(tokenID string) []byte {
 	return []byte(kv.FormatPath(expiredTokensPrefix, tokenID))
 }
 
+func ExpiredTokensPath() []byte {
+	return ExpiredTokenPath("")
+}
+
 func MetadataKeyPath(key string) string {
 	return kv.FormatPath(metadataPrefix, key)
 }
@@ -94,7 +98,8 @@ type SuperuserConfiguration struct {
 
 type User struct {
 	CreatedAt time.Time `db:"created_at"`
-	Username  string    `db:"display_name" json:"display_name"`
+	// Username is a unique identifier for the user. In password-based authentication, it is the email.
+	Username string `db:"display_name" json:"display_name"`
 	// FriendlyName, if set, is a shorter name for the user than
 	// Username.  Unlike Username it does not identify the user (it
 	// might not be unique); use it in the user's GUI rather than in

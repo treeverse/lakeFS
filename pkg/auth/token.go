@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/google/uuid"
+	"github.com/rs/xid"
 )
 
 const (
@@ -20,7 +20,9 @@ func generateJWT(claims *jwt.StandardClaims, secret []byte) (string, error) {
 // GenerateJWTResetPassword creates a jwt token with the field subject set the email passed.
 func GenerateJWTResetPassword(secret []byte, email string, issuedAt, expiresAt time.Time) (string, error) {
 	claims := &jwt.StandardClaims{
-		Id:        uuid.NewString(),
+		// xid is k-sorted which is important functionality to ensure
+		// easy deletion of tokens from the kv-store.
+		Id:        xid.New().String(),
 		Audience:  ResetPasswordAudience,
 		Subject:   email,
 		IssuedAt:  issuedAt.Unix(),

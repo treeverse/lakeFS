@@ -6,9 +6,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/treeverse/lakefs/pkg/api"
-
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/api"
 )
 
 func TestCommitSingle(t *testing.T) {

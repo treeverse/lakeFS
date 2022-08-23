@@ -94,7 +94,7 @@ func testReadAfterWrite(t *testing.T) {
 
 	// reader1 starts
 	go func() {
-		r1, _ := exec.BatchFor("k", time.Millisecond*50, batch.BatchFn(func() (interface{}, error) {
+		r1, _ := exec.BatchFor(context.Background(), "k", time.Millisecond*50, batch.BatchFn(func() (interface{}, error) {
 			version, _ := db.Get("v")
 			return version, nil
 		}))
@@ -118,7 +118,7 @@ func testReadAfterWrite(t *testing.T) {
 	go func() {
 		<-write1Done // ensure we start AFTER write1 has completed
 		te := trackableExecuter{batchTracker: read2Batched, execTracker: make(chan struct{})}
-		r2, _ := exec.BatchFor("k", 50*time.Millisecond, &te)
+		r2, _ := exec.BatchFor(context.Background(), "k", 50*time.Millisecond, &te)
 		r2v := r2.(string)
 		if r2v != "v1" {
 			t.Errorf("expected r2 to get v1, got %s instead", r2v)
@@ -157,7 +157,7 @@ func testBatchExpiration(t *testing.T) {
 
 	// reader1 starts
 	go func() {
-		r1, _ := exec.BatchFor("k", time.Millisecond*50, batch.BatchFn(func() (interface{}, error) {
+		r1, _ := exec.BatchFor(context.Background(), "k", time.Millisecond*50, batch.BatchFn(func() (interface{}, error) {
 			return "v1", nil
 		}))
 		if r1 != "v1" {
@@ -168,7 +168,7 @@ func testBatchExpiration(t *testing.T) {
 
 	go func() {
 		<-read1Done // ensure r2 starts after r1 has returned
-		r2, _ := exec.BatchFor("k", time.Millisecond*50, batch.BatchFn(func() (interface{}, error) {
+		r2, _ := exec.BatchFor(context.Background(), "k", time.Millisecond*50, batch.BatchFn(func() (interface{}, error) {
 			return "v2", nil
 		}))
 		if r2 != "v2" {
@@ -213,14 +213,14 @@ func testBatchByKey(t *testing.T) {
 
 	// reader1 starts
 	go func(te *trackableExecuter) {
-		_, _ = exec.BatchFor("k1", 50*time.Millisecond, te)
+		_, _ = exec.BatchFor(context.Background(), "k1", 50*time.Millisecond, te)
 		close(read1Done)
 	}(&te1)
 
 	// reader2 starts
 	go func(te *trackableExecuter) {
 		<-waitRead2 // ensure we start AFTER r1 started a new batch
-		_, err := exec.BatchFor("k2", 0, te)
+		_, err := exec.BatchFor(context.Background(), "k2", 0, te)
 		if err != nil {
 			t.Errorf("BatchFor error: %s", err)
 		}

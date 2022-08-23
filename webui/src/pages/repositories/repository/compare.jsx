@@ -23,6 +23,7 @@ import {
     Select
 } from "@mui/material";
 import Modal from "react-bootstrap/Modal";
+import {RepoError} from "./error";
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
@@ -263,7 +264,7 @@ const CompareContainer = () => {
     const { prefix } = router.query;
 
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>;
+    if (error) return <RepoError error={error}/>;
 
     const route = query => router.push({pathname: `/repositories/:repoId/compare`, params: {repoId: repo.id}, query: {
         ...query,

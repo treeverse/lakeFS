@@ -221,7 +221,7 @@ func (s *DBAuthService) DeleteUser(ctx context.Context, username string) error {
 }
 
 func (s *DBAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
-	return s.cache.GetUser(&userKey{username: username}, func() (*model.User, error) {
+	return s.cache.GetUser(userKey{username: username}, func() (*model.User, error) {
 		res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			return getDBUser(tx, username)
 		}, db.ReadOnly())
@@ -247,7 +247,7 @@ func (s *DBAuthService) GetUserByEmail(ctx context.Context, email string) (*mode
 }
 
 func (s *DBAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
-	return s.cache.GetUser(&userKey{externalID: externalID}, func() (*model.User, error) {
+	return s.cache.GetUser(userKey{externalID: externalID}, func() (*model.User, error) {
 		res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			return getDBUserByExternalID(tx, externalID)
 		}, db.ReadOnly())
@@ -260,7 +260,7 @@ func (s *DBAuthService) GetUserByExternalID(ctx context.Context, externalID stri
 }
 
 func (s *DBAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
-	return s.cache.GetUser(&userKey{id: userID}, func() (*model.User, error) {
+	return s.cache.GetUser(userKey{id: userID}, func() (*model.User, error) {
 		res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			user := &model.DBUser{}
 			err := tx.Get(user, `SELECT * FROM auth_users WHERE id = $1`, userID)
@@ -897,7 +897,7 @@ func (s *DBAuthService) markTokenSingleUse(ctx context.Context, tokenID string, 
 	// cleanup old tokens
 	_, err = s.db.Exec(ctx, `DELETE FROM auth_expired_tokens WHERE token_expires_at < $1`, time.Now())
 	if err != nil {
-		s.log.WithError(err).Error("delete expired tokens")
+		s.log.WithError(err).Error("Delete expired tokens")
 	}
 	return canUseToken, nil
 }
@@ -1230,6 +1230,10 @@ func exportExpiredTokens(ctx context.Context, d *pgxpool.Pool, je *json.Encoder)
 		err := scanner.Scan(&token)
 		if err != nil {
 			return err
+		}
+		if token.TokenExpiration.Before(time.Now()) {
+			// token expired - no need to export it
+			continue
 		}
 		kvToken := &model.TokenData{
 			TokenId:   token.TokenID,

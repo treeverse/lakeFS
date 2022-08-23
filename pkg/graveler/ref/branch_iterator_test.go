@@ -2,7 +2,6 @@ package ref_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -17,19 +16,20 @@ func TestDBBranchIterator(t *testing.T) {
 	r, db := testRefManagerWithDB(t)
 	branches := []graveler.BranchID{"a", "aa", "b", "c", "e", "d"}
 	ctx := context.Background()
-	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://foo",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, ""))
+	})
+	testutil.Must(t, err)
 
 	// prepare data
 	for _, b := range branches {
-		testutil.Must(t, r.SetBranch(ctx, "repo1", b, graveler.Branch{CommitID: "c1"}))
+		testutil.Must(t, r.SetBranch(ctx, repository, b, graveler.Branch{CommitID: "c1"}))
 	}
 
 	t.Run("listing all branches", func(t *testing.T) {
-		iter := ref.NewDBBranchIterator(ctx, db, "repo1", 3)
+		iter := ref.NewDBBranchIterator(ctx, db, repository.RepositoryID, 3)
 		ids := make([]graveler.BranchID, 0)
 		for iter.Next() {
 			b := iter.Value()
@@ -46,7 +46,7 @@ func TestDBBranchIterator(t *testing.T) {
 	})
 
 	t.Run("listing branches SeekGE", func(t *testing.T) {
-		iter := ref.NewDBBranchIterator(ctx, db, "repo1", 3)
+		iter := ref.NewDBBranchIterator(ctx, db, repository.RepositoryID, 3)
 		iter.SeekGE("b")
 		ids := make([]graveler.BranchID, 0)
 		for iter.Next() {
@@ -91,11 +91,12 @@ func TestBranchSimpleIterator(t *testing.T) {
 			DefaultBranchID:  "main",
 		},
 	}
-	testutil.Must(t, r.CreateRepository(ctx, repo.RepositoryID, *repo.Repository, ""))
+	repository, err := r.CreateRepository(ctx, repo.RepositoryID, *repo.Repository)
+	testutil.Must(t, err)
 
 	// prepare data
 	for _, b := range branches {
-		testutil.Must(t, r.SetBranch(ctx, "repo1", b, graveler.Branch{CommitID: "c1"}))
+		testutil.Must(t, r.SetBranch(ctx, repository, b, graveler.Branch{CommitID: "c1"}))
 	}
 
 	t.Run("listing all branches", func(t *testing.T) {
@@ -157,8 +158,7 @@ func TestBranchSimpleIterator(t *testing.T) {
 
 func TestBranchByCommitIterator(t *testing.T) {
 	r, kvStore := testRefManagerWithKV(t)
-	// TODO niro: Need commits PR (remove 'main' from list when done)
-	branches := []graveler.BranchID{"a", "aa", "b", "c", "e", "d", "main"}
+	branches := []graveler.BranchID{"a", "aa", "b", "c", "e", "d"}
 	ctx := context.Background()
 	repo := &graveler.RepositoryRecord{
 		RepositoryID: "repo1",
@@ -168,28 +168,33 @@ func TestBranchByCommitIterator(t *testing.T) {
 			DefaultBranchID:  "main",
 		},
 	}
-	testutil.Must(t, r.CreateRepository(ctx, repo.RepositoryID, *repo.Repository, ""))
+	repository, err := r.CreateRepository(ctx, repo.RepositoryID, *repo.Repository)
+	testutil.Must(t, err)
 
 	// prepare data
 	for i, b := range branches {
-		testutil.Must(t, r.SetBranch(ctx, repo.RepositoryID, b, graveler.Branch{CommitID: graveler.CommitID(branches[len(branches)-i-1])}))
+		testutil.Must(t, r.SetBranch(ctx, repository, b, graveler.Branch{CommitID: graveler.CommitID(branches[len(branches)-i-1])}))
 	}
 
 	t.Run("listing all branches", func(t *testing.T) {
 		iter, err := ref.NewBranchByCommitIterator(ctx, &kvStore, repo)
 		require.NoError(t, err)
-		ids := make([]graveler.CommitID, 0)
+		ids := []graveler.CommitID{"mainCommitNotFound"}
 		for iter.Next() {
 			b := iter.Value()
-			ids = append(ids, b.CommitID)
+			// save default branch commit ID since its created randomly as the first element of ids
+			if b.BranchID.String() == "main" {
+				ids[0] = b.CommitID
+			} else {
+				ids = append(ids, b.CommitID)
+			}
 		}
-		fmt.Println(ids)
 		if iter.Err() != nil {
 			t.Fatalf("unexpected error: %v", iter.Err())
 		}
 		iter.Close()
 
-		if diffs := deep.Equal(ids, []graveler.CommitID{"a", "aa", "b", "c", "d", "e", "main"}); diffs != nil {
+		if diffs := deep.Equal(ids, []graveler.CommitID{ids[0], "a", "aa", "b", "c", "d", "e"}); diffs != nil {
 			t.Fatalf("got wrong list of IDs: %v", diffs)
 		}
 	})

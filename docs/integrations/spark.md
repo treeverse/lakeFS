@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Spark
-description: Accessing data in lakeFS from Apache Spark is the same as accessing S3 data from Apache Spark
+description: Accessing data in lakeFS from Apache Spark works the same as accessing S3 data from Apache Spark.
 parent: Integrations
 nav_order: 20
 has_children: false
@@ -10,13 +10,13 @@ redirect_from: ../using/spark.html
 
 # Using lakeFS with Spark
 {: .no_toc }
-[Apache Spark](https://spark.apache.org/) is a unified analytics engine for big data processing, with built-in modules for streaming, SQL, machine learning and graph processing.
+[Apache Spark](https://spark.apache.org/) is a multi-language engine for executing data engineering, data science, and machine learning on single-node machines or clusters
 
 {: .pb-5 }
 
 {% include toc.html %}
 
-**Note** In all following examples we set AWS and lakeFS credentials at runtime, for
+**Note** In all of the following examples, we set AWS and lakeFS credentials at runtime for
 clarity. In production, properties defining AWS credentials should be set using one of
 Hadoop's standard ways of [authenticating with
 S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}.
@@ -33,23 +33,23 @@ lakeFS support in Spark has two tiers:
   FileSystem](#access-lakefs-using-the-lakefs-specific-hadoop-filesystem).
 
 Using the S3A gateway is easier to configure and may be more suitable for legacy or
-small-scale applications.  Using the lakeFS FileSystem requires somewhat more complex
+small-scale applications. Using the lakeFS FileSystem requires a somewhat more complex
 configuration, but offers greatly increased performance.
 
 ## Access lakeFS using the S3A gateway
 
 To use this mode you configure the Spark application to use S3A using the S3-compatible
-endpoint which the lakeFS server provides.  Accordingly all data flows through the lakeFS
+endpoint that the lakeFS server provides. Accordingly, all data flows through the lakeFS
 server.
 
-Accessing data in lakeFS from Spark is the same as accessing S3 data from Spark.  The only
-changes we need to consider are:
-1. Setting the configurations to access lakeFS.
+Accessing data in lakeFS from Spark is the same as accessing S3 data from Spark. The only
+changes you need to consider are:
+1. Setting the configurations to access lakeFS,
 1. Accessing objects using the lakeFS S3 path convention.
 
 ### Configuration
 
-In order to configure Spark to work with lakeFS, we set S3 Hadoop configuration to the lakeFS endpoint and credentials:
+To configure Spark to work with lakeFS, we set S3 Hadoop configuration to the lakeFS endpoint and credentials:
 
 | Hadoop Configuration          | Value                                        |
 |-------------------------------|----------------------------------------------|
@@ -160,10 +160,10 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
   </div>
 </div>
 
-With this configuration set , reading s3a paths with `example-repo` as the bucket will use lakeFS, while all other buckets will use AWS S3.
+With this configuration set, you read S3A paths with `example-repo` as the bucket will use lakeFS, while all other buckets will use AWS S3.
 
 ### Reading Data
-In order for us to access objects in lakeFS we will need to use the lakeFS S3 gateway path
+To access objects in lakeFS, you need to use the lakeFS S3 gateway path
 conventions:
 
 ```
@@ -180,7 +180,7 @@ val dataPath = s"s3a://${repo}/${branch}/example-path/example-file.parquet"
 val df = spark.read.parquet(dataPath)
 ```
 
-You can now use this DataFrame like you would normally do.
+You can now use this DataFrame like you'd normally do.
 
 ### Writing Data
 
@@ -189,28 +189,28 @@ Now simply write your results back to a lakeFS path:
 df.write.partitionBy("example-column").parquet(s"s3a://${repo}/${branch}/output-path/")
 ```
 
-The data is now created in lakeFS as new changes in your branch. You can now commit these changes, or revert them.
+The data is now created in lakeFS as new changes in your branch. You can now commit these changes or revert them.
 
 ## Access lakeFS using the lakeFS-specific Hadoop FileSystem
 
-To use this mode you configure the Spark application to perform metadata operations on the
-lakeFS server, and all data operations directly through the same underlying object store that
-lakeFS uses.  The lakeFS FileSystem currently supports Spark with Hadoop Apache 2.7 using only the S3A Hadoop FileSystem
-for data access.  In this mode the Spark application will directly read and write from the
+To use this mode, you configure the Spark application to perform metadata operations on the
+lakeFS server and all data operations directly through the same underlying object store that
+lakeFS uses. The lakeFS FileSystem currently supports Spark with Hadoop Apache 2.7 using only the S3A Hadoop FileSystem
+for data access. In this mode, the Spark application will read and write directly from the
 underlying object store, significantly increasing application scalability and performance by
 reducing the load on the lakeFS server.
 
-Accessing data in lakeFS from Spark is the same as accessing S3 data from Spark.  The only
-changes we need to perform are:
+Accessing data in lakeFS from Spark is the same as accessing S3 data from Spark. The only
+changes you need to make are:
 
 1. Configure Spark to access lakeFS for metadata and S3 or a compatible underlying object
-   store to access data.
-1. Use `lakefs://repo/ref/path/to/data` URIs to read and write data on lakeFS, rather than
+   store to access data,
+1. Use `lakefs://repo/ref/path/to/data` URIs to read and write data on lakeFS rather than
    `s3a://...` URIs.
 
 ### Configuration
 
-In order to configure Spark to work using the lakeFS Hadoop FileSystem, you will need to load
+To configure Spark to work using the lakeFS Hadoop FileSystem, you will need to load
 the filesystem JARs and then configure both that FileSystem and the underlying data access
 FileSystem.
 
@@ -227,7 +227,7 @@ The jar is also available on a public S3 location: `s3://treeverse-clients-us-ea
 #### Configure the lakeFS FileSystem and the underlying S3A FileSystem
 
 Add Hadoop configuration to the underlying storage and additionally to lakeFS credentials.
-When using this mode, do **not** set the S3A endpoint URL to point at lakeFS -- it should
+When using this mode, do **not** set the S3A endpoint URL to point at lakeFS - it should
 point at the underlying storage.
 
 | Hadoop Configuration   | Value                                 |
@@ -241,13 +241,11 @@ point at the underlying storage.
 | `fs.lakefs.endpoint`   | Set to the lakeFS API URL             |
 
 When using AWS S3 itself, the default configuration works with us-east-1, so you may still
-need to configure `fs.s3a.endpoint`.  Amazon provides these [S3
+need to configure `fs.s3a.endpoint`. Amazon provides [S3
 endpoints](https://docs.aws.amazon.com/general/latest/gr/s3.html) you can use.
 
-**Note:** If not running on AWS, all s3a configuration properties are required!  Unlike when
-using the S3 gateway, when using the lakeFS-specific Hadoop FileSystem you configure `s3a` to
-access the S3 underlying object storage, and `lakefs` to access the lakeFS server.  When
-running on AWS you do not need to configure credentials if the instance profile has sufficient
+**Note:** The lakeFS Hadoop FileSystem uses the `fs.s3a.*` properties to directly
+access S3. If your cluster already has access to your buckets (for example, if you're using an AWS instance profile), then you don't need to configure these properties.
 permissions.
 
 Here is how to do it:
@@ -287,8 +285,8 @@ spark.sparkContext.hadoopConfiguration.set("fs.lakefs.endpoint", "https://lakefs
   </div>
   <div markdown="1" id="lakefs-config-tabs-xml">
 
-Ensure you load the lakeFS FileSystem into Spark by running it with `--packages` or `--jars`,
-and then add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
+Make sure that you load the lakeFS FileSystem into Spark by running it with `--packages` or `--jars`,
+and then add these into a configuration file, e.g., `$SPARK_HOME/conf/hdfs-site.xml`:
 
 ```xml
 <?xml version="1.0"?>
@@ -328,29 +326,29 @@ and then add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.x
 
 #### Per-bucket and per-repo configuration
 
-As above, S3 allows for per-bucket configuration.  You can use this if:
+As demonstrated above, S3 allows for per-bucket configuration. You can use this if:
 
 1. You need to use S3A directly to access data in an S3 outside of lakeFS, _and_
 1. different credentials are required to access data inside that bucket.
 
-Refer to the Hadoop AWS guide on [Configuring different S3 buckets with Per-Bucket
+Refer to the Hadoop AWS guide [Configuring different S3 buckets with Per-Bucket
 Configuration](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Configuring_different_S3_buckets_with_Per-Bucket_Configuration).
 
-There is no need for per-repo configurations in lakeFS when all repositories are on the same
-lakeFS server.  If you need to access repositories that are on *multiple* lakeFS servers,
-configure multiple prefixes.  For instance, you might configure both `fs.lakefs.impl` and
+There's no need for per-repo configurations in lakeFS when all repositories are on the same
+lakeFS server. If you need to access repositories located on *multiple* lakeFS servers,
+configure multiple prefixes. For instance, you might configure both `fs.lakefs.impl` and
 `fs.lakefs2.impl` to be `io.lakefs.LakeFSFileSystem`, place separate endpoints and credentials
 under `fs.lakefs.*` and `fs.lakefs2.*`, and access the two servers using `lakefs://...` and
 `lakefs2://...` URLs.
 
 ### Reading Data
-In order for us to access objects in lakeFS we will need to use the lakeFS path conventions:
+To access objects in lakeFS, you need to use the lakeFS path conventions:
 
 ```
 lakefs://[REPOSITORY]/[BRANCH]/PATH/TO/OBJECT
 ```
 
-Here is an example for reading a parquet file from lakeFS to a Spark DataFrame:
+Here's an example for reading a parquet file from lakeFS to a Spark DataFrame:
 
 ```scala
 val repo = "example-repo"
@@ -369,7 +367,7 @@ Now simply write your results back to a lakeFS path:
 df.write.partitionBy("example-column").parquet(s"lakefs://${repo}/${branch}/output-path/")
 ```
 
-The data is now created in lakeFS as new changes in your branch. You can now commit these changes, or revert them.
+The data is now created in lakeFS as new changes in your branch. You can now commit these changes or revert them.
 
 ## Case Study: SimilarWeb
 

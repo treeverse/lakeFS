@@ -25,7 +25,8 @@ type CatalogRepoActions struct {
 	committer string
 
 	defaultBranchID graveler.BranchID
-	repoID          graveler.RepositoryID
+	repositoryID    graveler.RepositoryID
+	repository      *graveler.RepositoryRecord
 	logger          logging.Logger
 	entryCatalog    EntryCatalog
 	prefixes        []string
@@ -44,20 +45,21 @@ func (c *CatalogRepoActions) Progress() []*cmdutils.Progress {
 
 // EntryCatalog is a facet for a catalog.Store
 type EntryCatalog interface {
-	WriteMetaRangeByIterator(ctx context.Context, repositoryID graveler.RepositoryID, it graveler.ValueIterator) (*graveler.MetaRangeID, error)
-	AddCommitToBranchHead(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) (graveler.CommitID, error)
-	List(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref) (graveler.ValueIterator, error)
-	AddCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error)
-	UpdateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error)
-	GetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (*graveler.Branch, error)
-	CreateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error)
-	GetCommit(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (*graveler.Commit, error)
+	GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error)
+	WriteMetaRangeByIterator(ctx context.Context, repository *graveler.RepositoryRecord, it graveler.ValueIterator) (*graveler.MetaRangeID, error)
+	AddCommitToBranchHead(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, commit graveler.Commit) (graveler.CommitID, error)
+	List(ctx context.Context, repository *graveler.RepositoryRecord, ref graveler.Ref) (graveler.ValueIterator, error)
+	AddCommit(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error)
+	UpdateBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error)
+	GetBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) (*graveler.Branch, error)
+	CreateBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error)
+	GetCommit(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) (*graveler.Commit, error)
 }
 
 func NewCatalogRepoActions(config *Config, logger logging.Logger) *CatalogRepoActions {
 	return &CatalogRepoActions{
 		entryCatalog:    config.Store,
-		repoID:          config.RepositoryID,
+		repositoryID:    config.RepositoryID,
 		defaultBranchID: config.DefaultBranchID,
 		committer:       config.CommitUsername,
 		logger:          logger,
@@ -86,15 +88,14 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, _ boo
 	if importBase == "" {
 		importBase = graveler.Ref(c.previousCommitID)
 	}
-
-	listIt, err := c.entryCatalog.List(ctx, c.repoID, importBase)
+	listIt, err := c.entryCatalog.List(ctx, c.repository, importBase)
 	if err != nil {
 		return nil, fmt.Errorf("listing commit: %w", err)
 	}
 	defer listIt.Close()
 
 	listingIterator := catalog.NewEntryListingIterator(catalog.NewValueToEntryIterator(listIt), "", "")
-	c.createdMetaRangeID, err = c.entryCatalog.WriteMetaRangeByIterator(ctx, c.repoID,
+	c.createdMetaRangeID, err = c.entryCatalog.WriteMetaRangeByIterator(ctx, c.repository,
 		catalog.NewEntryToValueIterator(newPrefixMergeIterator(
 			NewValueToEntryIterator(invIt, c.progress), listingIterator, c.prefixes)))
 	if err != nil {
@@ -108,23 +109,27 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, _ boo
 }
 
 func (c *CatalogRepoActions) Init(ctx context.Context, baseCommit graveler.CommitID) error {
+	repository, err := c.entryCatalog.GetRepository(ctx, c.repositoryID)
+	if err != nil {
+		return err
+	}
+	c.repository = repository
+	c.previousCommitID = baseCommit
 	if baseCommit == "" {
 		return c.initBranch(ctx)
 	}
-
-	c.previousCommitID = baseCommit
 	return nil
 }
 
 func (c *CatalogRepoActions) initBranch(ctx context.Context) error {
 	c.branchID = DefaultImportBranchName
-	branch, err := c.entryCatalog.GetBranch(ctx, c.repoID, DefaultImportBranchName)
+	branch, err := c.entryCatalog.GetBranch(ctx, c.repository, DefaultImportBranchName)
 	if err != nil {
 		if !errors.Is(err, graveler.ErrBranchNotFound) {
 			return err
 		}
 		// first import, let's create the branch
-		branch, err = c.entryCatalog.CreateBranch(ctx, c.repoID, DefaultImportBranchName, graveler.Ref(c.defaultBranchID))
+		branch, err = c.entryCatalog.CreateBranch(ctx, c.repository, DefaultImportBranchName, graveler.Ref(c.defaultBranchID))
 		if err != nil {
 			return fmt.Errorf("creating default branch %s: %w", DefaultImportBranchName, err)
 		}
@@ -151,7 +156,7 @@ func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metad
 	commit.MetaRangeID = *c.createdMetaRangeID
 	commit.Metadata = graveler.Metadata(metadata)
 	if c.previousCommitID != "" {
-		previousCommit, err := c.entryCatalog.GetCommit(ctx, c.repoID, c.previousCommitID)
+		previousCommit, err := c.entryCatalog.GetCommit(ctx, c.repository, c.previousCommitID)
 		if err != nil {
 			return "", fmt.Errorf("getting previous commit %s: %w", c.previousCommitID, err)
 		}
@@ -161,12 +166,12 @@ func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metad
 	var commitID graveler.CommitID
 	var err error
 	if c.branchID != "" {
-		commitID, err = c.entryCatalog.AddCommitToBranchHead(ctx, c.repoID, c.branchID, commit)
+		commitID, err = c.entryCatalog.AddCommitToBranchHead(ctx, c.repository, c.branchID, commit)
 		if err != nil {
 			return "", fmt.Errorf("creating commit from existing metarange %s: %w", *c.createdMetaRangeID, err)
 		}
 	} else {
-		commitID, err = c.entryCatalog.AddCommit(ctx, c.repoID, commit)
+		commitID, err = c.entryCatalog.AddCommit(ctx, c.repository, commit)
 		if err != nil {
 			return "", fmt.Errorf("adding commit %s: %w", *c.createdMetaRangeID, err)
 		}

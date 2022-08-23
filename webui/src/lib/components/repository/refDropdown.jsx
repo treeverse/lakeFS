@@ -15,7 +15,6 @@ import {RefTypeBranch, RefTypeCommit, RefTypeTag} from "../../../constants";
 
 const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
     // used for ref pagination
-    console.log(JSON.stringify(selected))
     const [pagination, setPagination] = useState({after: "", prefix: "", amount});
     const [refList, setRefs] = useState({loading: true, payload: null, error: null});
     const [refType, setRefType] = useState(selected && selected.type || RefTypeBranch)

@@ -23,11 +23,10 @@ var superuserCmd = &cobra.Command{
 	Short: "Create additional user with admin credentials",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
-		ctx := cmd.Context()
-		dbParams := cfg.GetDatabaseParams()
-		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
-
-		defer dbPool.Close()
+		if cfg.IsAuthTypeAPI() {
+			fmt.Printf("Can't create additional admin while using external auth API - auth.api.endpoint is configured.\n")
+			os.Exit(1)
+		}
 
 		userName, err := cmd.Flags().GetString("user-name")
 		if err != nil {
@@ -46,21 +45,26 @@ var superuserCmd = &cobra.Command{
 		}
 
 		logger := logging.Default()
+		ctx := cmd.Context()
+		dbParams := cfg.GetDatabaseParams()
 		var (
+			dbPool              db.Database
 			authService         auth.Service
 			authMetadataManager auth.MetadataManager
 		)
 		if dbParams.KVEnabled {
-			kvparams := cfg.GetKVParams()
-			kvStore, err := kv.Open(ctx, dbParams.Type, kvparams)
+			kvParams := cfg.GetKVParams()
+			kvStore, err := kv.Open(ctx, kvParams)
 			if err != nil {
 				fmt.Printf("failed to open KV store: %s\n", err)
 				os.Exit(1)
 			}
-			storeMessage := kv.StoreMessage{Store: kvStore}
+			storeMessage := &kv.StoreMessage{Store: kvStore}
 			authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), logger.WithField("service", "auth_service"))
-			authMetadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), kvStore)
+			authMetadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
 		} else {
+			dbPool = db.BuildDatabaseConnection(ctx, dbParams)
+			defer dbPool.Close()
 			authService = auth.NewDBAuthService(dbPool, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), logger.WithField("service", "auth_service"))
 			authMetadataManager = auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		}
@@ -92,7 +96,6 @@ var superuserCmd = &cobra.Command{
 			credentials.AccessKeyID, credentials.SecretAccessKey)
 
 		cancelFn()
-
 	},
 }
 

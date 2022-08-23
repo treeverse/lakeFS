@@ -20,7 +20,7 @@ The GC job does not remove any commits: you will still be able to use commits co
 but trying to read these objects from lakeFS will result in a `410 Gone` HTTP status.
 
 **Note**
-At this point, lakeFS supports Garbage Collection only on S3, but we have [concrete plans](https://github.com/treeverse/lakeFS/issues/3271) to extend the support to Azure.     
+At this point, lakeFS supports Garbage Collection only on S3 and Azure.  We have [concrete plans](https://github.com/treeverse/lakeFS/issues/3626) to extend the support to GCP.     
 {: .note}
 
 1. TOC
@@ -90,6 +90,17 @@ The garbage collection process proceeds in two main phases:
   about the object, but attempting to read it via the lakeFS API or the S3
   gateway will return HTTP status 410 ("Gone").
 
+### What does _not_ get collected
+
+From the above definition of what gets collected, some objects will _not_ be
+collected regardless of configured GC rules:
+
+* Any object that was _uploaded but never committed_ cannot be collected.  See
+  [#1933](https://github.com/treeverse/lakeFS/issues/1933) for more details.
+* Any object that is present on a branch HEAD is visible on that branch.
+  Commits at the HEAD of a branch are retained, so such an object will not
+  be collected.
+
 ## Configuring GC rules
 
 ### Using lakectl
@@ -137,9 +148,17 @@ http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark
 
 `CLIENT_VERSION`s for Spark 2.4.7 can be found [here](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-247), and for Spark 3.0.1 they can be found [here](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-301).
 
+Running options:
 
-Second, you should specify the Uber-jar path instead of `<APPLICATION-JAR-PATH>` and run the following command to make the garbage collector start running:
-```bash
+<div class="tabs">
+  <ul>
+    <li><a href="#aws-option">On AWS</a></li>
+	<li><a href="#azure-option">On Azure</a></li>
+  </ul>
+  <div markdown="1" id="aws-option">
+You should specify the Uber-jar path instead of `<APPLICATION-JAR-PATH>` and run the following command to make the garbage collector start running:
+
+  ```bash
 spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
@@ -148,7 +167,32 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
   <APPLICATION-JAR-PATH> \
   example-repo us-east-1
-```
+  ```
+  </div>
+
+  <div markdown="1" id="azure-option">
+You should run the following command to make the garbage collector start running:
+
+  ```bash
+spark-submit --class io.treeverse.clients.GarbageCollector \
+  -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
+  -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
+  -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
+  -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
+  s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.2.1/lakefs-spark-client-312-hadoop3-assembly-0.2.1.jar \
+  example-repo
+  ```
+
+**Notes:**
+* To run GC on Azure, use `lakefs-spark-client-312-hadoop3` only. This client is compiled for Spark 3.1.2 with Hadoop 3.2.1, but may work with other Spark versions and higher Hadoop versions. Specifically, this client was tested on Databricks runtime DBR 11.0 (Spark 3.3.0, 3.3.2).
+* GC on Azure is supported from Spark client version >= v0.2.0.
+* In case you don't have `hadoop-azure` package as part of your environment, you should add the package to your spark-submit with `--packages org.apache.hadoop:hadoop-azure:3.2.1`
+* For GC to work on Azure blob, [soft delete](https://docs.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview) should be disabled.
+* If you're running into timeout error calling to lakeFS client in GC, consider adding to the sark-submit command the configuration: `-c spark.hadoop.lakefs.api.connection.timeout=TIMEOUT_IN_SECONDS`, in order to increase the timeout (the default is 10 seconds).
+  
+  
+</div>
+
 ## Considerations
 1. In order for an object to be hard-deleted, it must be deleted from all branches.
    You should remove stale branches to prevent them from retaining old objects.

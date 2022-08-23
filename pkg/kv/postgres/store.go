@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -22,9 +24,11 @@ type Store struct {
 }
 
 type EntriesIterator struct {
-	rows  pgx.Rows
-	entry *kv.Entry
-	err   error
+	ctx          context.Context
+	entries      []kv.Entry
+	currEntryIdx int
+	err          error
+	store        *Store
 }
 
 const (
@@ -36,6 +40,11 @@ const (
 	// DefaultPartitions Changing the below value means repartitioning and probably a migration.
 	// Change it only if you really know what you're doing.
 	DefaultPartitions = 100
+
+	DefaultMaxOpenConnections    = 25
+	DefaultMaxIdleConnections    = 25
+	DefaultConnectionMaxLifetime = 5 * time.Minute
+	DefaultScanPageSize          = 1000
 )
 
 //nolint:gochecknoinits
@@ -43,12 +52,37 @@ func init() {
 	kv.Register(DriverName, &Driver{})
 }
 
-func (d *Driver) Open(ctx context.Context, kvparams kvparams.KV) (kv.Store, error) {
-	// TODO(barak): should we handle Open reuse the same store based on name
-	config, err := pgxpool.ParseConfig(kvparams.Postgres.ConnectionString)
+func normalizeDBParams(p *kvparams.Postgres) {
+	if p.MaxOpenConnections == 0 {
+		p.MaxOpenConnections = DefaultMaxOpenConnections
+	}
+
+	if p.MaxIdleConnections == 0 {
+		p.MaxIdleConnections = DefaultMaxIdleConnections
+	}
+
+	if p.ConnectionMaxLifetime == 0 {
+		p.ConnectionMaxLifetime = DefaultConnectionMaxLifetime
+	}
+
+	if p.ScanPageSize == 0 {
+		p.ScanPageSize = DefaultScanPageSize
+	}
+}
+
+func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, error) {
+	if kvParams.Postgres == nil {
+		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
+	}
+	normalizeDBParams(kvParams.Postgres)
+	config, err := pgxpool.ParseConfig(kvParams.Postgres.ConnectionString)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrDriverConfiguration, err)
 	}
+	config.MaxConns = kvParams.Postgres.MaxOpenConnections
+	config.MinConns = kvParams.Postgres.MaxIdleConnections
+	config.MaxConnLifetime = kvParams.Postgres.ConnectionMaxLifetime
+
 	pool, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrConnectFailed, err)
@@ -71,7 +105,7 @@ func (d *Driver) Open(ctx context.Context, kvparams kvparams.KV) (kv.Store, erro
 		return nil, fmt.Errorf("%w: %s", kv.ErrConnectFailed, err)
 	}
 
-	params := parseStoreConfig(config.ConnConfig.RuntimeParams)
+	params := parseStoreConfig(config.ConnConfig.RuntimeParams, kvParams.Postgres)
 	err = setupKeyValueDatabase(ctx, conn, params)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
@@ -89,17 +123,20 @@ type Params struct {
 	TableName          string
 	SanitizedTableName string
 	PartitionsAmount   int
+	ScanPageSize       int
 }
 
-func parseStoreConfig(runtimeParams map[string]string) *Params {
+func parseStoreConfig(runtimeParams map[string]string, pgParams *kvparams.Postgres) *Params {
 	p := &Params{
 		TableName:        DefaultTableName,
 		PartitionsAmount: DefaultPartitions,
+		ScanPageSize:     DefaultScanPageSize,
 	}
 	if tableName, ok := runtimeParams[paramTableName]; ok {
 		p.TableName = tableName
 	}
 	p.SanitizedTableName = pgx.Identifier{p.TableName}.Sanitize()
+	p.ScanPageSize = int(pgParams.ScanPageSize)
 	return p
 }
 
@@ -110,7 +147,7 @@ func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, params *Para
 		partition_key BYTEA NOT NULL,
 		key BYTEA NOT NULL,
 		value BYTEA NOT NULL,
-		UNIQUE (partition_key, key))
+		PRIMARY KEY (partition_key, key))
 	PARTITION BY HASH (partition_key);
 	`)
 	if err != nil {
@@ -232,22 +269,40 @@ func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.Entrie
 		return nil, kv.ErrMissingPartitionKey
 	}
 
+	return s.scanInternal(ctx, partitionKey, start, true)
+}
+
+func (s *Store) scanInternal(ctx context.Context, partitionKey, start []byte, includeStart bool) (*EntriesIterator, error) {
 	var (
 		rows pgx.Rows
 		err  error
 	)
 
 	if start == nil {
-		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 ORDER BY key`, partitionKey)
+		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 ORDER BY key LIMIT $2`, partitionKey, s.Params.ScanPageSize)
 	} else {
-		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key >= $2 ORDER BY key`, partitionKey, start)
+		compareOp := ">="
+		if !includeStart {
+			compareOp = ">"
+		}
+		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key `+compareOp+` $2 ORDER BY key LIMIT $3`, partitionKey, start, s.Params.ScanPageSize)
 	}
-
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w (start=%v)", err, kv.ErrOperationFailed, start)
 	}
+	defer rows.Close()
+
+	var entries []kv.Entry
+	err = pgxscan.ScanAll(&entries, rows)
+	if err != nil {
+		return nil, fmt.Errorf("scanning all entries: %w", err)
+	}
+
 	return &EntriesIterator{
-		rows: rows,
+		ctx:          ctx,
+		entries:      entries,
+		currEntryIdx: -1,
+		store:        s,
 	}, nil
 }
 
@@ -260,37 +315,41 @@ func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false
 	}
-	e.entry = nil
-	if !e.rows.Next() {
-		return false
+	e.currEntryIdx++
+
+	if e.currEntryIdx == len(e.entries) {
+		if e.currEntryIdx == 0 {
+			return false
+		}
+		tmpIter, err := e.store.scanInternal(e.ctx, e.entries[e.currEntryIdx-1].PartitionKey, e.entries[e.currEntryIdx-1].Key, false)
+		if err != nil {
+			e.err = fmt.Errorf("scan paging: %w", err)
+			return false
+		}
+		if len(tmpIter.entries) == 0 {
+			return false
+		}
+		e.entries = tmpIter.entries
+		e.currEntryIdx = 0
 	}
-	var ent kv.Entry
-	if err := e.rows.Scan(&ent.PartitionKey, &ent.Key, &ent.Value); err != nil {
-		e.err = fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
-		return false
-	}
-	e.entry = &ent
+
 	return true
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {
-	return e.entry
+	if e.entries == nil {
+		return nil
+	}
+	return &e.entries[e.currEntryIdx]
 }
 
 // Err return the last scan error or the cursor error
 func (e *EntriesIterator) Err() error {
-	if e.err != nil {
-		return e.err
-	}
-	if err := e.rows.Err(); err != nil {
-		e.err = fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
-		return err
-	}
-	return nil
+	return e.err
 }
 
 func (e *EntriesIterator) Close() {
-	e.rows.Close()
-	e.entry = nil
+	e.entries = nil
+	e.currEntryIdx = -1
 	e.err = kv.ErrClosedEntries
 }

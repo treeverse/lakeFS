@@ -16,7 +16,7 @@ import (
 func TestKVMigration(t *testing.T) {
 	ctx := context.Background()
 	dbParams := params.Database{Driver: "pgx", ConnectionString: databaseURI, KVEnabled: true, DropTables: true}
-	kvStore, err := kv.Open(ctx, kvpg.DriverName, kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: dbParams.ConnectionString}})
+	kvStore, err := kv.Open(ctx, kvparams.KV{Type: kvpg.DriverName, Postgres: &kvparams.Postgres{ConnectionString: dbParams.ConnectionString}})
 	require.NoError(t, err)
 	defer kvStore.Close()
 

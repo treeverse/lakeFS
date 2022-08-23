@@ -14,23 +14,23 @@ import (
 const (
 	InitialMigrateVersion = 1
 	PathDelimiter         = "/"
-	DBSchemaVersionKey    = "kv" + PathDelimiter + "schema" + PathDelimiter + "version"
 	MetadataPartitionKey  = "kv-internal-metadata"
 )
 
 var (
-	ErrClosedEntries       = errors.New("closed entries")
-	ErrConnectFailed       = errors.New("connect failed")
-	ErrDriverConfiguration = errors.New("driver configuration")
-	ErrMissingPartitionKey = errors.New("missing partition key")
-	ErrMissingKey          = errors.New("missing key")
-	ErrMissingValue        = errors.New("missing value")
-	ErrNotFound            = errors.New("not found")
-	ErrOperationFailed     = errors.New("operation failed")
-	ErrPredicateFailed     = errors.New("predicate failed")
-	ErrSetupFailed         = errors.New("setup failed")
-	ErrUnknownDriver       = errors.New("unknown driver")
-	ErrTableNotActive      = errors.New("table not active")
+	ErrClosedEntries        = errors.New("closed entries")
+	ErrConnectFailed        = errors.New("connect failed")
+	ErrDriverConfiguration  = errors.New("driver configuration")
+	ErrMissingPartitionKey  = errors.New("missing partition key")
+	ErrMissingKey           = errors.New("missing key")
+	ErrMissingValue         = errors.New("missing value")
+	ErrNotFound             = errors.New("not found")
+	ErrOperationFailed      = errors.New("operation failed")
+	ErrPredicateFailed      = errors.New("predicate failed")
+	ErrSetupFailed          = errors.New("setup failed")
+	ErrUnknownDriver        = errors.New("unknown driver")
+	ErrTableNotActive       = errors.New("table not active")
+	ErrInvalidSchemaVersion = errors.New("invalid database schema version")
 )
 
 func FormatPath(p ...string) string {
@@ -148,12 +148,12 @@ func UnregisterAllDrivers() {
 
 // Open lookup driver with 'name' and return Store based on 'dsn' (data source name).
 // Failed with ErrUnknownDriver in case 'name' is not registered
-func Open(ctx context.Context, name string, params kvparams.KV) (Store, error) {
+func Open(ctx context.Context, params kvparams.KV) (Store, error) {
 	driversMu.RLock()
-	d, ok := drivers[name]
+	d, ok := drivers[params.Type]
 	driversMu.RUnlock()
 	if !ok {
-		return nil, fmt.Errorf("%w: %s", ErrUnknownDriver, name)
+		return nil, fmt.Errorf("%w: %s", ErrUnknownDriver, params.Type)
 	}
 	return d.Open(ctx, params)
 }
@@ -171,7 +171,7 @@ func Drivers() []string {
 
 // GetDBSchemaVersion returns the current KV DB schema version
 func GetDBSchemaVersion(ctx context.Context, store Store) (int, error) {
-	res, err := store.Get(ctx, []byte(MetadataPartitionKey), []byte(DBSchemaVersionKey))
+	res, err := store.Get(ctx, []byte(MetadataPartitionKey), dbSchemaPath())
 	if err != nil {
 		return -1, err
 	}
@@ -180,4 +180,13 @@ func GetDBSchemaVersion(ctx context.Context, store Store) (int, error) {
 		return -1, err
 	}
 	return version, nil
+}
+
+// SetDBSchemaVersion sets KV DB schema version
+func SetDBSchemaVersion(ctx context.Context, store Store, version uint) error {
+	return store.Set(ctx, []byte(MetadataPartitionKey), dbSchemaPath(), []byte(fmt.Sprintf("%d", version)))
+}
+
+func dbSchemaPath() []byte {
+	return []byte(FormatPath("kv", "schema", "version"))
 }

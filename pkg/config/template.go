@@ -73,10 +73,15 @@ type configuration struct {
 	}
 
 	Database struct {
-		ConnectionString      SecureString  `mapstructure:"connection_string"`
-		MaxOpenConnections    int32         `mapstructure:"max_open_connections"`
-		MaxIdleConnections    int32         `mapstructure:"max_idle_connections"`
-		ConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
+		// Deprecated: use Postgres struct
+		DeprecatedConnectionString SecureString `mapstructure:"connection_string"`
+		// Deprecated: use Postgres struct
+		DeprecatedMaxOpenConnections int32 `mapstructure:"max_open_connections"`
+		// Deprecated: use Postgres struct
+		DeprecatedMaxIdleConnections int32 `mapstructure:"max_idle_connections"`
+		// Deprecated: use Postgres struct
+		DeprecatedConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
+
 		// KVEnabled Development flag to switch between postgres DB and KV store implementations
 		KVEnabled bool `mapstructure:"kv_enabled"`
 		// DropTables Development flag to delete tables after successful migration to KV
@@ -84,7 +89,14 @@ type configuration struct {
 		// Type  Name of the KV Store driver DB implementation which is available according to the kv package Drivers function
 		Type string `mapstructure:"type"`
 
-		BetaDynamoDB *struct {
+		Postgres *struct {
+			ConnectionString      SecureString  `mapstructure:"connection_string"`
+			MaxOpenConnections    int32         `mapstructure:"max_open_connections"`
+			MaxIdleConnections    int32         `mapstructure:"max_idle_connections"`
+			ConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
+		}
+
+		DynamoDB *struct {
 			// The name of the DynamoDB table to be used as KV
 			TableName string `mapstructure:"table_name"`
 
@@ -110,7 +122,7 @@ type configuration struct {
 			AwsRegion          string       `mapstructure:"aws_region"`
 			AwsAccessKeyID     SecureString `mapstructure:"aws_access_key_id"`
 			AwsSecretAccessKey SecureString `mapstructure:"aws_secret_access_key"`
-		} `mapstructure:"beta_dynamodb"`
+		} `mapstructure:"dynamodb"`
 	}
 
 	Auth struct {
@@ -212,6 +224,8 @@ type configuration struct {
 		LakefsBaseURL      string        `mapstructure:"lakefs_base_url"`
 	}
 	UI struct {
+		// Enabled - control serving of embedded UI
+		Enabled  bool `mapstructure:"enabled"`
 		Snippets []struct {
 			ID   string `mapstructure:"id"`
 			Code string `mapstructure:"code"`

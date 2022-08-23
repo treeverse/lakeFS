@@ -21,11 +21,11 @@ func WithOnlyAncestryLeaves() OrderedCommitIteratorOption {
 
 // NewDBOrderedCommitIterator returns an iterator over all commits in the given repository.
 // Ordering is based on the Commit ID value.
-func NewDBOrderedCommitIterator(ctx context.Context, database db.Database, repositoryID graveler.RepositoryID, prefetchSize int, opts ...OrderedCommitIteratorOption) (*DBOrderedCommitIterator, error) {
+func NewDBOrderedCommitIterator(ctx context.Context, database db.Database, repository *graveler.RepositoryRecord, prefetchSize int, opts ...OrderedCommitIteratorOption) (*DBOrderedCommitIterator, error) {
 	res := &DBOrderedCommitIterator{
 		ctx:          ctx,
 		db:           database,
-		repositoryID: repositoryID,
+		repository:   repository,
 		prefetchSize: prefetchSize,
 		buf:          make([]*graveler.CommitRecord, 0, prefetchSize),
 	}
@@ -38,7 +38,7 @@ func NewDBOrderedCommitIterator(ctx context.Context, database db.Database, repos
 type DBOrderedCommitIterator struct {
 	ctx                context.Context
 	db                 db.Database
-	repositoryID       graveler.RepositoryID
+	repository         *graveler.RepositoryRecord
 	prefetchSize       int
 	buf                []*graveler.CommitRecord
 	err                error
@@ -74,7 +74,7 @@ func (iter *DBOrderedCommitIterator) maybeFetch() {
 	psql := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 	q := psql.Select("id", "committer", "message", "creation_date", "meta_range_id", "parents", "metadata", "version", "generation").
 		From("graveler_commits").
-		Where(sq.Eq{"repository_id": iter.repositoryID})
+		Where(sq.Eq{"repository_id": iter.repository.RepositoryID})
 
 	if iter.state == iteratorStateInit {
 		iter.state = iteratorStateQuerying

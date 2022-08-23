@@ -107,7 +107,7 @@ class UserCreation(ModelNormal):
         """UserCreation - a model defined in OpenAPI
 
         Args:
-            id (str):
+            id (str): a unique identifier for the user. In password-based authentication, this is the email.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -193,7 +193,7 @@ class UserCreation(ModelNormal):
         """UserCreation - a model defined in OpenAPI
 
         Args:
-            id (str):
+            id (str): a unique identifier for the user. In password-based authentication, this is the email.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

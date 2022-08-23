@@ -70,56 +70,48 @@ func onBlock(deps *dependencies, path string) string {
 	return fmt.Sprintf("%s://%s", deps.blocks.BlockstoreType(), path)
 }
 
-var tests = map[string]func(*testing.T, bool){
-	"ListRepositoriesHandler":          testController_ListRepositoriesHandler,
-	"GetRepoHandler":                   testController_GetRepoHandler,
-	"CommitsGetBranchCommitLogHandler": testController_CommitsGetBranchCommitLogHandler,
-	"CommitsGetBranchCommitLogByPath":  testController_CommitsGetBranchCommitLogByPath,
-	"GetCommitHandler":                 testController_GetCommitHandler,
-	"CommitHandler":                    testController_CommitHandler,
-	"CreateRepositoryHandler":          testController_CreateRepositoryHandler,
-	"DeleteRepositoryHandler":          testController_DeleteRepositoryHandler,
-	"ListBranchesHandler":              testController_ListBranchesHandler,
-	"ListTagsHandler":                  testController_ListTagsHandler,
-	"GetBranchHandler":                 testController_GetBranchHandler,
-	"BranchesDiffBranchHandler":        testController_BranchesDiffBranchHandler,
-	"CreateBranchHandler":              testController_CreateBranchHandler,
-	"UploadObject":                     testController_UploadObject,
-	"DeleteBranchHandler":              testController_DeleteBranchHandler,
-	"IngestRangeHandler":               testController_IngestRangeHandler,
-	"WriteMetaRangeHandler":            testController_WriteMetaRangeHandler,
-	"ObjectsStatObjectHandler":         testController_ObjectsStatObjectHandler,
-	"ObjectsListObjectsHandler":        testController_ObjectsListObjectsHandler,
-	"ObjectsGetObjectHandler":          testController_ObjectsGetObjectHandler,
-	"ObjectsUploadObjectHandler":       testController_ObjectsUploadObjectHandler,
-	"ObjectsStageObjectHandler":        testController_ObjectsStageObjectHandler,
-	"ObjectsDeleteObjectHandler":       testController_ObjectsDeleteObjectHandler,
-	"CreatePolicyHandler":              testController_CreatePolicyHandler,
-	"ConfigHandlers":                   testController_ConfigHandlers,
-	"SetupLakeFSHandler":               testController_SetupLakeFSHandler,
-	"ListRepositoryRuns":               testController_ListRepositoryRuns,
-	"MergeDiffWithParent":              testController_MergeDiffWithParent,
-	"MergeIntoExplicitBranch":          testController_MergeIntoExplicitBranch,
-	"CreateTag":                        testController_CreateTag,
-	"Revert":                           testController_Revert,
-	"RevertConflict":                   testController_RevertConflict,
-	"ExpandTemplate":                   testController_ExpandTemplate,
+func testControllerWithKV(t *testing.T, kvEnabled bool) {
+	testController_ListRepositoriesHandler(t, kvEnabled)
+	testController_GetRepoHandler(t, kvEnabled)
+	testController_CommitsGetBranchCommitLogHandler(t, kvEnabled)
+	testController_CommitsGetBranchCommitLogByPath(t, kvEnabled)
+	testController_GetCommitHandler(t, kvEnabled)
+	testController_CommitHandler(t, kvEnabled)
+	testController_CreateRepositoryHandler(t, kvEnabled)
+	testController_DeleteRepositoryHandler(t, kvEnabled)
+	testController_ListBranchesHandler(t, kvEnabled)
+	testController_ListTagsHandler(t, kvEnabled)
+	testController_GetBranchHandler(t, kvEnabled)
+	testController_BranchesDiffBranchHandler(t, kvEnabled)
+	testController_CreateBranchHandler(t, kvEnabled)
+	testController_UploadObject(t, kvEnabled)
+	testController_DeleteBranchHandler(t, kvEnabled)
+	testController_IngestRangeHandler(t, kvEnabled)
+	testController_WriteMetaRangeHandler(t, kvEnabled)
+	testController_ObjectsStatObjectHandler(t, kvEnabled)
+	testController_ObjectsListObjectsHandler(t, kvEnabled)
+	testController_ObjectsGetObjectHandler(t, kvEnabled)
+	testController_ObjectsUploadObjectHandler(t, kvEnabled)
+	testController_ObjectsStageObjectHandler(t, kvEnabled)
+	testController_ObjectsDeleteObjectHandler(t, kvEnabled)
+	testController_CreatePolicyHandler(t, kvEnabled)
+	testController_ConfigHandlers(t, kvEnabled)
+	testController_SetupLakeFSHandler(t, kvEnabled)
+	testController_ListRepositoryRuns(t, kvEnabled)
+	testController_MergeDiffWithParent(t, kvEnabled)
+	testController_MergeIntoExplicitBranch(t, kvEnabled)
+	testController_CreateTag(t, kvEnabled)
+	testController_Revert(t, kvEnabled)
+	testController_RevertConflict(t, kvEnabled)
+	testController_ExpandTemplate(t, kvEnabled)
 }
 
 func TestKVEnabled(t *testing.T) {
-	for name, test := range tests {
-		t.Run(name, runWithKVFlag(test, true))
-	}
+	testControllerWithKV(t, true)
 }
 
 func TestKVDisabled(t *testing.T) {
-	for name, test := range tests {
-		t.Run(name, runWithKVFlag(test, false))
-	}
-}
-
-func runWithKVFlag(f func(t *testing.T, kvEnabled bool), kvEnabled bool) func(t *testing.T) {
-	return func(t *testing.T) { f(t, kvEnabled) }
+	testControllerWithKV(t, false)
 }
 
 func testController_ListRepositoriesHandler(t *testing.T, kvEnabled bool) {
@@ -617,6 +609,24 @@ func testController_CommitHandler(t *testing.T, kvEnabled bool) {
 		require.Contains(t, resp.JSON400.Message, graveler.ErrCommitMetaRangeDirtyBranch.Error())
 	})
 
+	t.Run("commit failure empty branch", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
+
+		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
+		testutil.Must(t, err)
+
+		resp, err := clt.CommitWithResponse(ctx, repo, "foo-branch", &api.CommitParams{}, api.CommitJSONRequestBody{
+			Message: "some message",
+		})
+
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
+		require.NotNil(t, resp.JSON400)
+		require.Contains(t, resp.JSON400.Message, graveler.ErrNoChanges.Error())
+	})
+
 	t.Run("commit success - with creation date", func(t *testing.T) {
 		repo := testUniqueRepoName()
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
@@ -939,6 +949,10 @@ func testController_BranchesDiffBranchHandler(t *testing.T, kvEnabled bool) {
 	}
 
 	t.Run("diff branch no changes", func(t *testing.T) {
+		// create an entry and remove it
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b/c"}))
+		testutil.Must(t, deps.catalog.DeleteEntry(ctx, "repo1", testBranch, "a/b/c"))
+
 		resp, err := clt.DiffBranchWithResponse(ctx, "repo1", testBranch, &api.DiffBranchParams{})
 		verifyResponseOK(t, resp, err)
 		changes := len(resp.JSON200.Results)
@@ -949,6 +963,8 @@ func testController_BranchesDiffBranchHandler(t *testing.T, kvEnabled bool) {
 
 	t.Run("diff branch with writes", func(t *testing.T) {
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b"}))
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b/c"}))
+		testutil.Must(t, deps.catalog.DeleteEntry(ctx, "repo1", testBranch, "a/b/c"))
 		resp, err := clt.DiffBranchWithResponse(ctx, "repo1", testBranch, &api.DiffBranchParams{})
 		verifyResponseOK(t, resp, err)
 		results := resp.JSON200.Results
@@ -2013,7 +2029,7 @@ func testController_SetupLakeFSHandler(t *testing.T, kvEnabled bool) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			handler, deps := setupHandler(t, true)
+			handler, deps := setupHandler(t, kvEnabled)
 			server := setupServer(t, handler)
 			clt := setupClientByEndpoint(t, server.URL, "", "")
 
@@ -2055,28 +2071,28 @@ func testController_SetupLakeFSHandler(t *testing.T, kvEnabled bool) {
 			if foundCreds.AccessKeyId != creds.AccessKeyId {
 				t.Fatalf("Access key ID '%s', expected '%s'", foundCreds.AccessKeyId, creds.AccessKeyId)
 			}
-			if len(deps.collector.metadata) != 1 {
+			if len(deps.collector.Metadata) != 1 {
 				t.Fatal("Failed to collect metadata")
 			}
-			if deps.collector.metadata[0].InstallationID == "" {
+			if deps.collector.Metadata[0].InstallationID == "" {
 				t.Fatal("Empty installationID")
 			}
-			if len(deps.collector.metadata[0].Entries) < 5 {
-				t.Fatalf("There should be at least 5 metadata entries: %s", deps.collector.metadata[0].Entries)
+			if len(deps.collector.Metadata[0].Entries) < 5 {
+				t.Fatalf("There should be at least 5 metadata entries: %s", deps.collector.Metadata[0].Entries)
 			}
 
 			hasBlockStoreType := false
-			for _, ent := range deps.collector.metadata[0].Entries {
+			for _, ent := range deps.collector.Metadata[0].Entries {
 				if ent.Name == stats.BlockstoreTypeKey {
 					hasBlockStoreType = true
 					if ent.Value == "" {
-						t.Fatalf("Blockstorage key exists but with empty value: %s", deps.collector.metadata[0].Entries)
+						t.Fatalf("Blockstorage key exists but with empty value: %s", deps.collector.Metadata[0].Entries)
 					}
 					break
 				}
 			}
 			if !hasBlockStoreType {
-				t.Fatalf("missing blockstorage key: %s", deps.collector.metadata[0].Entries)
+				t.Fatalf("missing blockstorage key: %s", deps.collector.Metadata[0].Entries)
 			}
 
 			// on successful setup - make sure we can't re-setup
@@ -2426,15 +2442,15 @@ func testController_ExpandTemplate(t *testing.T, kvEnabled bool) {
 			pattern string
 		}{
 			{"impl", `spark\.hadoop\.fs\.s3a\.impl=org\.apache\.hadoop\.fs\.s3a\.S3AFileSystem`},
-			{"access_key", `spark\.hadoop\.fs\.s3a\.access_key=AKIA.*`},
-			{"secret_key", `spark\.hadoop\.fs\.s3a\.secret_key=`},
+			{"access.key", `spark\.hadoop\.fs\.s3a\.access.key=AKIA.*`},
+			{"secret.key", `spark\.hadoop\.fs\.s3a\.secret.key=`},
 			{"s3a_endpoint", `spark\.hadoop\.fs\.s3a\.endpoint=` + lfsURL},
 		}
 
 		// OpenAPI places additional query params in the wrong
 		// place.  Use a request editor to place them directly as a
 		// query string.
-		resp, err := clt.ExpandTemplateWithResponse(ctx, "spark.conf.tt", &api.ExpandTemplateParams{},
+		resp, err := clt.ExpandTemplateWithResponse(ctx, "spark.submit.conf.tt", &api.ExpandTemplateParams{},
 			api.RequestEditorFn(func(_ context.Context, req *http.Request) error {
 				values := req.URL.Query()
 				values.Add("lakefs_url", lfsURL)

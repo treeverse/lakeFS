@@ -135,6 +135,7 @@ This reference uses `.` to denote the nesting of values.
 * `gateways.s3.fallback_url` `(string)` - If specified, requests with a non-existing repository will be forwarded to this URL. This can be useful for using lakeFS side-by-side with S3, with the URL pointing at an [S3Proxy](https://github.com/gaul/s3proxy) instance.
 * `stats.enabled` `(boolean : true)` - Whether to periodically collect anonymous usage statistics
 * `security.audit_check_interval` `(duration : 12h)` - Duration in which we check for security audit.
+* `ui.enable` `(boolean: true)` - Whether to server the embedded UI from the binary  
 {: .ref-list }
 
 ## Using Environment Variables

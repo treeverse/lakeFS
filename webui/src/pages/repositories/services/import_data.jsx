@@ -186,7 +186,7 @@ const ImportForm = ({
             }
             <Form.Group className='form-group'>
                 <Form.Label><strong>Commit Message:</strong></Form.Label>
-                <Form.Control sm={8} type="text" ref={commitMsgRef} name="text" autoFocus/>
+                <Form.Control sm={8} type="text" ref={commitMsgRef} name="text" autoFocus defaultValue={`Imported data from ${config.blockstore_type}`}/>
             </Form.Group>
             {err &&
                 <Alert variant={"danger"}>{err.message}</Alert>}

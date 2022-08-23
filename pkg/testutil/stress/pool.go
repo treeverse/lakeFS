@@ -15,16 +15,17 @@ type Result struct {
 
 type WorkFn func(input chan string, output chan Result)
 
-type GeneratorAddFn func(string)
-type GenerateFn func(add GeneratorAddFn)
+type (
+	GeneratorAddFn func(string)
+	GenerateFn     func(add GeneratorAddFn)
+)
 
 type WorkerPool struct {
 	parallelism int
 	Input       chan string
 	Output      chan Result
-
-	wg   sync.WaitGroup
-	done chan struct{}
+	wg          sync.WaitGroup
+	done        chan struct{}
 }
 
 func NewWorkerPool(parallelism int) *WorkerPool {
@@ -39,12 +40,23 @@ func NewWorkerPool(parallelism int) *WorkerPool {
 func (p *WorkerPool) Start(workFn WorkFn) {
 	// spawn workers
 	p.wg.Add(p.parallelism)
+
+	// use wait-group and a channel as barrier for calling the worker from all goroutines
+	var startWG sync.WaitGroup
+	startWG.Add(p.parallelism)
+	startCh := make(chan struct{})
+
 	for i := 0; i < p.parallelism; i++ {
 		go func() {
 			defer p.wg.Done()
+			startWG.Done()
+			<-startCh
 			workFn(p.Input, p.Output) // call the worker we were given
 		}()
 	}
+	startWG.Wait()
+	close(startCh)
+
 	go func() {
 		p.wg.Wait()
 		p.done <- struct{}{}
@@ -57,6 +69,7 @@ func (p *WorkerPool) Done() chan struct{} {
 
 // Generator sets up a pool and a result collector
 type Generator struct {
+	name          string
 	pool          *WorkerPool
 	collector     *ResultCollector
 	handleSignals []os.Signal
@@ -70,10 +83,11 @@ func WithSignalHandlersFor(sigs ...os.Signal) GeneratorOption {
 	}
 }
 
-func NewGenerator(parallelism int, opts ...GeneratorOption) *Generator {
+func NewGenerator(name string, parallelism int, opts ...GeneratorOption) *Generator {
 	pool := NewWorkerPool(parallelism)
 	collector := NewResultCollector(pool.Output)
 	g := &Generator{
+		name:          name,
 		pool:          pool,
 		collector:     collector,
 		handleSignals: []os.Signal{},
@@ -111,7 +125,7 @@ func (g *Generator) Run(fn WorkFn) {
 	for collecting {
 		select {
 		case <-ticker.C:
-			fmt.Printf("%s\n", g.collector.Stats())
+			fmt.Printf("%s - %s\n", g.name, g.collector.Stats())
 		case <-g.pool.Done():
 			collecting = false
 		case <-termSignal:
@@ -119,5 +133,5 @@ func (g *Generator) Run(fn WorkFn) {
 		}
 	}
 	fmt.Printf("%s\n\n", g.collector.Stats())
-	fmt.Printf("Historgram (ms):\n%s\n", g.collector.Histogram())
+	fmt.Printf("Histogram (ms):\n%s\n", g.collector.Histogram())
 }

@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Presto/Trino
-description: This section covers how you can start using lakeFS with Presto/Trino, an open source distributed SQL query engine
+description: This section explains how you can start using lakeFS with Presto/Trino, an open-source distributed SQL query engine.
 parent: Integrations
 nav_order: 40
 has_children: false
@@ -13,7 +13,7 @@ redirect_from:
 # Using lakeFS with Presto/Trino
 
 {: .no_toc }
-[Presto](https://prestodb.io){:target="_blank"} and [Trino](https://trinodb.io){:target="_blank"} are a distributed SQL query engine designed to query large data sets distributed over one or more heterogeneous data sources.
+[Presto](https://prestodb.io){:target="_blank"} and [Trino](https://trinodb.io){:target="_blank"} are a distributed SQL query engines designed to query large data sets distributed over one or more heterogeneous data sources.
 {: .pb-5 }
 
 ## Table of contents
@@ -23,23 +23,23 @@ redirect_from:
 1. TOC
 {:toc .pb-5 }
 
-Querying data in lakeFS from Presto/Trino is the same as querying data in S3 from Presto/Trino. It is done using the [Presto Hive connector](https://prestodb.io/docs/current/connector/hive.html){:target="_blank"} or [Trino Hive connector](https://trino.io/docs/current/connector/hive.html){:target="_blank"}.
+Querying data in lakeFS from Presto/Trino is similar to querying data in S3 from Presto/Trino. It is done using the [Presto Hive connector](https://prestodb.io/docs/current/connector/hive.html){:target="_blank"} or [Trino Hive connector](https://trino.io/docs/current/connector/hive.html){:target="_blank"}.
 
  **Note** 
- In the following examples we set AWS credentials at runtime, for clarity. In production, these properties should be set using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}. 
+In the following examples, we set AWS credentials at runtime for clarity. In production, these properties should be set using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}. 
  {: .note}
 
 ## Configuration
 
-### Configure Hive connector
+### Configure the Hive connector
 
-Create `/etc/catalog/hive.properties` with the following contents to mount the `hive-hadoop2` connector as the `hive` catalog, replacing `example.net:9083` with the correct host and port for your Hive metastore Thrift service:
+Create `/etc/catalog/hive.properties` with the following contents to mount the `hive-hadoop2` connector as the `hive` catalog, replacing `example.net:9083` with the correct host and port for your Hive Metastore Thrift service:
 ```properties
 connector.name=hive-hadoop2
 hive.metastore.uri=thrift://example.net:9083
 ```
 
-Add to `/etc/catalog/hive.properties` the lakeFS configurations in the corresponding S3 configuration properties:
+Add the lakeFS configurations to `/etc/catalog/hive.properties` in the corresponding S3 configuration properties:
 ```properties
 hive.s3.aws-access-key=AKIAIOSFODNN7EXAMPLE
 hive.s3.aws-secret-key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
@@ -49,8 +49,9 @@ hive.s3.path-style-access=true
 
 ### Configure Hive
 
-Presto/Trino uses Hive metastore service (HMS), or a compatible implementation of the Hive metastore, such as AWS Glue Data Catalog to write data to S3.
-In case you are using Hive metastore, you will need to configure Hive as well.
+Presto/Trino uses Hive Metastore Service (HMS) or a compatible implementation of the Hive Metastore such as AWS Glue Data Catalog to write data to S3.
+In case you are using Hive Metastore, you will need to configure Hive as well.
+
 In file `hive-site.xml` add to the configuration:
 ```xml
 <configuration>
@@ -86,7 +87,7 @@ CREATE SCHEMA main
 WITH (location = 's3a://example/main')
 ```
 
-Create a new Hive table named `page_views` in the `web` schema that is stored using the ORC file format,
+Create a new Hive table named `page_views` in the `web` schema stored using the ORC file format,
  partitioned by date and country, and bucketed by user into `50` buckets (note that Hive requires the partition columns to be the last columns in the table):
 ```sql
 CREATE TABLE main.page_views (

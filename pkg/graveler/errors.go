@@ -34,6 +34,7 @@ var (
 	ErrCommitNotFound               = fmt.Errorf("commit %w", ErrNotFound)
 	ErrCreateBranchNoCommit         = fmt.Errorf("can't create a branch without commit")
 	ErrRepositoryNotFound           = fmt.Errorf("repository %w", ErrNotFound)
+	ErrRepositoryInDeletion         = errors.New("repository in deletion")
 	ErrBranchNotFound               = fmt.Errorf("branch %w", ErrNotFound)
 	ErrTagNotFound                  = fmt.Errorf("tag %w", ErrNotFound)
 	ErrRefAmbiguous                 = fmt.Errorf("reference is ambiguous: %w", ErrNotFound)
@@ -52,6 +53,7 @@ var (
 	ErrDereferenceCommitWithStaging = wrapError(ErrUserVisible, "reference to staging area with $ is not a commit")
 	ErrDeleteDefaultBranch          = wrapError(ErrUserVisible, "cannot delete repository default branch")
 	ErrCommitMetaRangeDirtyBranch   = wrapError(ErrUserVisible, "cannot use source MetaRange on a branch with uncommitted changes")
+	ErrTooManyTries                 = errors.New("too many tries")
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.

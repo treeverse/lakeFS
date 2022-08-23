@@ -20,6 +20,7 @@ import (
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -94,8 +95,11 @@ func generateUniqueRepositoryName() string {
 }
 
 func generateUniqueStorageNamespace(repoName string) string {
-	ns := strings.TrimRight(viper.GetString("storage_namespace"), "/")
-	return fmt.Sprintf("%s/%s/%s", ns, xid.New().String(), repoName)
+	ns := viper.GetString("storage_namespace")
+	if !strings.HasSuffix(ns, "/") {
+		ns += "/"
+	}
+	return ns + xid.New().String() + "/" + repoName
 }
 
 func createRepository(ctx context.Context, t *testing.T, name string, repoStorage string) {
@@ -225,8 +229,9 @@ func listRepositories(t *testing.T, ctx context.Context) []api.Repository {
 // TestKVEnabled tests that lakefs database contains kv table in case feature is enabled
 func TestKVEnabled(t *testing.T) {
 	// skip test if not kv enabled on postgres
-	if !viper.GetBool("database_kv_enabled") {
-		t.Skip("KV not enabled")
+	if !viper.GetBool("database_kv_enabled") ||
+		viper.GetString("database_type") != kvpg.DriverName {
+		t.Skip("PG KV not enabled")
 	}
 
 	// connect to database and verify that kv table exists

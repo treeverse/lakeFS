@@ -38,7 +38,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
-	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
+	"github.com/treeverse/lakefs/pkg/kv/params"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
@@ -112,36 +113,87 @@ var runCmd = &cobra.Command{
 
 		// validate service names and turn on the right flags
 		dbParams := cfg.GetDatabaseParams()
-		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
-		defer dbPool.Close()
-		if err := db.ValidateSchemaUpToDate(ctx, dbPool, dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
-			logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
-		} else if errors.Is(err, migrate.ErrNilVersion) {
-			logger.Debug("No migration, setup required")
-		} else if err != nil {
-			logger.WithError(err).Warn("Failed on schema validation")
+
+		var (
+			kvStore    kv.Store
+			kvParams   params.KV
+			dbPool     db.Database
+			lockDBPool db.Database
+			err        error
+		)
+		if dbParams.KVEnabled {
+			kvParams = cfg.GetKVParams()
+			kvStore, err = kv.Open(ctx, kvParams)
+			if err != nil {
+				logger.WithError(err).Fatal("Failed to open KV store")
+			}
+			defer kvStore.Close()
+
+			// Check if migration required only on postgres
+			migrationRequired := false
+			if dbParams.Type == kvpg.DriverName && len(dbParams.ConnectionString) > 0 {
+				dbPool = db.BuildDatabaseConnection(ctx, dbParams)
+				defer dbPool.Close()
+				_, _, err := db.MigrateVersion(ctx, dbPool, dbParams)
+				if err == nil {
+					migrationRequired = true
+				} else if !errors.Is(err, migrate.ErrNilVersion) {
+					logger.WithError(err).Fatal("Failed to get schema version")
+				}
+			}
+			err = kv.ValidateSchemaVersion(ctx, kvStore, migrationRequired)
+			if err != nil {
+				logger.WithError(err).Fatal("Failure on schema validation")
+			}
+		} else {
+			dbPool = db.BuildDatabaseConnection(ctx, dbParams)
+			defer dbPool.Close()
+			lockDBPool = db.BuildDatabaseConnection(ctx, dbParams)
+			defer lockDBPool.Close()
+
+			if err := db.ValidateSchemaUpToDate(ctx, dbPool, dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
+				logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
+			} else if errors.Is(err, migrate.ErrNilVersion) {
+				logger.Debug("No migration, setup required")
+			} else if err != nil {
+				logger.WithError(err).Warn("Failure on schema validation")
+			}
 		}
-
-		lockdbPool := db.BuildDatabaseConnection(ctx, dbParams)
-		defer lockdbPool.Close()
-
 		registerPrometheusCollector(dbPool)
-		migrator := db.NewDatabaseMigrator(dbParams)
 
 		var (
 			multipartsTracker   multiparts.Tracker
-			idGen               actions.IDGenerator
 			actionsStore        actions.Store
-			authService         auth.Service
 			authMetadataManager auth.MetadataManager
 			storeMessage        *kv.StoreMessage
+			migrator            db.Migrator
 		)
 		emailParams, _ := cfg.GetEmailParams()
 		emailer, err := email.NewEmailer(emailParams)
 		if err != nil {
 			logger.WithError(err).Fatal("Emailer has not been properly configured, check the values in sender field")
 		}
-		if cfg.IsAuthTypeAPI() {
+
+		var idGen actions.IDGenerator
+		if dbParams.KVEnabled {
+			migrator = kv.NewDatabaseMigrator(kvParams)
+			storeMessage = &kv.StoreMessage{Store: kvStore}
+			multipartsTracker = multiparts.NewTracker(*storeMessage)
+			actionsStore = actions.NewActionsKVStore(*storeMessage)
+			authMetadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
+			idGen = &actions.DecreasingIDGenerator{}
+		} else {
+			migrator = db.NewDatabaseMigrator(dbParams)
+			multipartsTracker = multiparts.NewDBTracker(dbPool)
+			actionsStore = actions.NewActionsDBStore(dbPool)
+			authMetadataManager = auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
+			idGen = &actions.IncreasingIDGenerator{}
+		}
+
+		// initialize auth service
+		var authService auth.Service
+		switch {
+		case cfg.IsAuthTypeAPI():
 			var apiEmailer *email.Emailer
 			if !cfg.GetAuthAPISupportsInvites() {
 				// invites not supported by API - delegate it to emailer
@@ -155,44 +207,22 @@ var runCmd = &cobra.Command{
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create authentication service")
 			}
-		}
-
-		if dbParams.KVEnabled {
-			kvParams := cfg.GetKVParams()
-			kvStore, err := kv.Open(ctx, dbParams.Type, kvParams)
-			if err != nil {
-				logger.WithError(err).Fatal("failed to open KV store")
-			}
-			defer kvStore.Close()
-			storeMessage = &kv.StoreMessage{Store: kvStore}
-
-			multipartsTracker = multiparts.NewTracker(*storeMessage)
-			actionsStore = actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore})
-			idGen = &actions.DecreasingIDGenerator{}
-
-			// init authentication
-			if !cfg.IsAuthTypeAPI() {
-				authService = auth.NewKVAuthService(
-					*storeMessage,
-					crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-					emailer,
-					cfg.GetAuthCacheConfig(),
-					logger.WithField("service", "auth_service"))
-			}
-			authMetadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), kvStore)
-		} else {
-			multipartsTracker = multiparts.NewDBTracker(dbPool)
-			actionsStore = actions.NewActionsDBStore(dbPool)
-			idGen = &actions.IncreasingIDGenerator{}
-			if !cfg.IsAuthTypeAPI() {
-				authService = auth.NewDBAuthService(
-					dbPool,
-					crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-					emailer,
-					cfg.GetAuthCacheConfig(),
-					logger.WithField("service", "auth_service"))
-			}
-			authMetadataManager = auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
+		case dbParams.KVEnabled:
+			authService = auth.NewKVAuthService(
+				storeMessage,
+				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+				emailer,
+				cfg.GetAuthCacheConfig(),
+				logger.WithField("service", "auth_service"),
+			)
+		default:
+			authService = auth.NewDBAuthService(
+				dbPool,
+				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+				emailer,
+				cfg.GetAuthCacheConfig(),
+				logger.WithField("service", "auth_service"),
+			)
 		}
 
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
@@ -216,7 +246,7 @@ var runCmd = &cobra.Command{
 		c, err := catalog.New(ctx, catalog.Config{
 			Config:  cfg,
 			DB:      dbPool,
-			LockDB:  lockdbPool,
+			LockDB:  lockDBPool,
 			KVStore: storeMessage,
 		})
 		if err != nil {
@@ -448,7 +478,7 @@ func checkMetadataPrefix(ctx context.Context, repo *catalog.Repository, logger l
 
 // checkForeignRepo checks whether a repo storage namespace matches the block adapter.
 // A foreign repo is a repository which namespace doesn't match the current block adapter.
-// A foreign repo might exists if the lakeFS instance configuration changed after a repository was
+// A foreign repo might exist if the lakeFS instance configuration changed after a repository was
 // already created. The behaviour of lakeFS for foreign repos is undefined and should be blocked.
 func checkForeignRepo(repoStorageType block.StorageType, logger logging.Logger, adapterStorageType, repoName string) {
 	if adapterStorageType != repoStorageType.BlockstoreType() {
@@ -488,11 +518,10 @@ func printWelcome(w io.Writer) {
 	_, _ = fmt.Fprintf(w, "Version %s\n\n", version.Version)
 }
 
-var localWarningBanner = `
+const localWarningBanner = `
 WARNING!
 
-Using the "%s" block adapter.  This is suitable only for testing, but not
-for production.
+Using the "%s" block adapter.  This is suitable only for testing, but not for production.
 `
 
 func printLocalWarning(w io.Writer, adapter string) {
@@ -500,6 +529,9 @@ func printLocalWarning(w io.Writer, adapter string) {
 }
 
 func registerPrometheusCollector(db sqlstats.StatsGetter) {
+	if db == nil { // TODO (niro): WA for KV stats collector until https://github.com/treeverse/lakeFS/issues/3869 is resolved
+		return
+	}
 	collector := sqlstats.NewStatsCollector("lakefs", db)
 	err := prometheus.Register(collector)
 	if err != nil {

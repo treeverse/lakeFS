@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/kv"
 )
 
 // migrateCmd represents the migrate command
@@ -21,6 +22,18 @@ var versionCmd = &cobra.Command{
 		cfg := loadConfig()
 		ctx := cmd.Context()
 		dbParams := cfg.GetDatabaseParams()
+		if dbParams.KVEnabled {
+			kvStore, err := kv.Open(ctx, cfg.GetKVParams())
+			if err != nil {
+				fmt.Printf("Failed to open KV store: %s\n", err)
+				return
+			}
+			defer kvStore.Close()
+			if kv.ValidateSchemaVersion(ctx, kvStore, false) == nil {
+				// Migration already occurred in KV or setup is required
+				return
+			}
+		}
 		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
 		defer dbPool.Close()
 		version, _, err := db.MigrateVersion(ctx, dbPool, dbParams)
@@ -56,14 +69,18 @@ var gotoCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
 		ctx := cmd.Context()
+		dbParams := cfg.GetDatabaseParams()
+		if dbParams.KVEnabled {
+			fmt.Printf("Unsupported command for KV migration version\n")
+			os.Exit(1)
+		}
 		version, err := cmd.Flags().GetUint("version")
 		if err != nil {
 			fmt.Printf("Failed to get value for 'version': %s\n", err)
 			os.Exit(1)
 		}
 		force, _ := cmd.Flags().GetBool("force")
-		uri := cfg.GetDatabaseParams()
-		err = db.MigrateTo(ctx, uri, version, force)
+		err = db.MigrateTo(ctx, dbParams, version, force)
 		if err != nil {
 			fmt.Printf("Failed to migrate to version %d.\n%s\n", version, err)
 			os.Exit(1)

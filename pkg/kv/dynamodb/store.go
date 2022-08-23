@@ -45,6 +45,11 @@ const (
 	PartitionKey = "PartitionKey"
 	ItemKey      = "ItemKey"
 	ItemValue    = "ItemValue"
+
+	DefaultDynamoDBTableName = "kvstore"
+	// TODO (niro): Which values to use for DynamoDB tables?
+	DefaultDynamoDBReadCapacityUnits  = 1000
+	DefaultDynamoDBWriteCapacityUnits = 1000
 )
 
 //nolint:gochecknoinits
@@ -52,15 +57,35 @@ func init() {
 	kv.Register(DriverName, &Driver{})
 }
 
-// Open - opens and returns a KV store over DynamoDB. This function creates the DB session
-// and sets up the KV table. dsn is a string with the DynamoDB endpoint
-func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, error) {
-	// TODO: Get table name from env
-	params := kvParams.DynamoDB
+func normalizeDBParams(p *kvparams.DynamoDB) {
+	if len(p.TableName) == 0 {
+		p.TableName = DefaultDynamoDBTableName
+	}
 
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
+	if p.ReadCapacityUnits == 0 {
+		p.ReadCapacityUnits = DefaultDynamoDBReadCapacityUnits
+	}
+
+	if p.WriteCapacityUnits == 0 {
+		p.WriteCapacityUnits = DefaultDynamoDBWriteCapacityUnits
+	}
+}
+
+// Open - opens and returns a KV store over DynamoDB. This function creates the DB session
+// and sets up the KV table.
+func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, error) {
+	params := kvParams.DynamoDB
+	if params == nil {
+		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
+	}
+
+	normalizeDBParams(params)
+	sess, err := session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
-	}))
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	cfg := aws.NewConfig()
 	if params.Endpoint != "" {
@@ -69,19 +94,18 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 	if params.AwsRegion != "" {
 		cfg = cfg.WithRegion(params.AwsRegion)
 	}
-
 	if params.AwsAccessKeyID != "" {
 		cfg = cfg.WithCredentials(credentials.NewCredentials(
 			&credentials.StaticProvider{
 				Value: credentials.Value{
 					AccessKeyID:     params.AwsAccessKeyID,
 					SecretAccessKey: params.AwsSecretAccessKey,
-				}}))
+				},
+			}))
 	}
-
 	// Create DynamoDB client
 	svc := dynamodb.New(sess, cfg)
-	err := setupKeyValueDatabase(ctx, svc, params)
+	err = setupKeyValueDatabase(ctx, svc, params)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
 	}

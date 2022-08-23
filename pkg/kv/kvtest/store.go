@@ -366,7 +366,8 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 func MakeStoreByName(name string, kvParams kvparams.KV) MakeStore {
 	return func(t testing.TB, ctx context.Context) kv.Store {
 		t.Helper()
-		store, err := kv.Open(ctx, name, kvParams)
+		kvParams.Type = name
+		store, err := kv.Open(ctx, kvParams)
 		if err != nil {
 			t.Fatalf("failed to open kv '%s' store: %s", name, err)
 		}
@@ -861,7 +862,7 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 func GetStore(ctx context.Context, t testing.TB) kv.Store {
 	t.Helper()
 	const storeType = "mem"
-	store, err := kv.Open(ctx, storeType, kvparams.KV{})
+	store, err := kv.Open(ctx, kvparams.KV{Type: storeType})
 	if err != nil {
 		t.Fatalf("failed to open kv (%s) store: %s", storeType, err)
 	}
