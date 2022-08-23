@@ -21,8 +21,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/go-openapi/swag"
-
 	"github.com/go-test/deep"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/require"
@@ -323,9 +321,10 @@ func testController_LogCommitsHandler(t *testing.T, kvEnabled bool) {
 			_, err = deps.catalog.Commit(ctx, repoID, "main", "commit"+n, "some_user", nil, nil, nil)
 			testutil.MustDo(t, "commit "+p, err)
 		}
+		limit := true
 		resp, err := clt.LogCommitsWithResponse(ctx, repoID, "main", &api.LogCommitsParams{
 			Amount: api.PaginationAmountPtr(commitsLen - 1),
-			Limit:  swag.Bool(true),
+			Limit:  &limit,
 		})
 		verifyResponseOK(t, resp, err)
 
