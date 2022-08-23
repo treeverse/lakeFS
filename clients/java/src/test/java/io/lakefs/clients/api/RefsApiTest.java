@@ -91,7 +91,8 @@ public class RefsApiTest {
         Integer amount = null;
         List<String> objects = null;
         List<String> prefixes = null;
-                CommitList response = api.logCommits(repository, ref, after, amount, objects, prefixes);
+        Boolean limit = null;
+                CommitList response = api.logCommits(repository, ref, after, amount, objects, prefixes, limit);
         // TODO: test validations
     }
     

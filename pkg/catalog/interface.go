@@ -33,7 +33,8 @@ type PathRecord struct {
 type LogParams struct {
 	PathList      []PathRecord
 	FromReference string
-	Limit         int
+	Amount        int
+	Limit         bool
 }
 
 type ExpireResult struct {

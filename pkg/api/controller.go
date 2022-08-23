@@ -2526,7 +2526,7 @@ func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body Re
 	_, _, err = c.Catalog.ListCommits(ctx, repo.Name, repo.DefaultBranch, catalog.LogParams{
 		PathList:      make([]catalog.PathRecord, 0),
 		FromReference: "",
-		Limit:         1,
+		Amount:        1,
 	})
 	if !errors.Is(err, graveler.ErrNotFound) {
 		writeError(w, http.StatusBadRequest, "can only restore into a bare repository")
@@ -2715,7 +2715,8 @@ func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, re
 	commitLog, hasMore, err := c.Catalog.ListCommits(ctx, repository, ref, catalog.LogParams{
 		PathList:      resolvePathList(params.Objects, params.Prefixes),
 		FromReference: paginationAfter(params.After),
-		Limit:         paginationAmount(params.Amount),
+		Amount:        paginationAmount(params.Amount),
+		Limit:         swag.BoolValue(params.Limit),
 	})
 	if handleAPIError(w, err) {
 		return
