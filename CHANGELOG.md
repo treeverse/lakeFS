@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.70.4 - 2022-08-23
+
+What's new:
+- Improve commit log performance for single match by stop at limit (#3970)
+
 ## v0.70.3 - 2022-08-22
 
 What's new:
