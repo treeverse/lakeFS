@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.70.4 - 2022-08-23
+
+What's new:
+- Improve commit log performance for single match by adding limit flag (#3970)
+- Change Histogram buckets to better fit lakeFS commands (#3902)
+
 ## v0.70.3 - 2022-08-22
 
 What's new:
