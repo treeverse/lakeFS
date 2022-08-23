@@ -2168,8 +2168,8 @@ paths:
             type: string
           type: array
         style: form
-      - description: limit the number of items in return to amount. no more indication
-          to search if number of items reach the mount.
+      - description: limit the number of items in return to 'amount'. Without further
+          indication on actual number of items.
         explode: true
         in: query
         name: limit

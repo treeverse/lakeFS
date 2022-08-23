@@ -247,7 +247,7 @@ public class Example {
     Integer amount = 100; // Integer | how many items to return
     List<String> objects = Arrays.asList(); // List<String> | list of paths, each element is a path of a specific object
     List<String> prefixes = Arrays.asList(); // List<String> | list of paths, each element is a path of a prefix
-    Boolean limit = true; // Boolean | limit the number of items in return to amount. no more indication to search if number of items reach the mount.
+    Boolean limit = true; // Boolean | limit the number of items in return to 'amount'. Without further indication on actual number of items.
     try {
       CommitList result = apiInstance.logCommits(repository, ref, after, amount, objects, prefixes, limit);
       System.out.println(result);
@@ -272,7 +272,7 @@ Name | Type | Description  | Notes
  **amount** | **Integer**| how many items to return | [optional] [default to 100]
  **objects** | [**List&lt;String&gt;**](String.md)| list of paths, each element is a path of a specific object | [optional]
  **prefixes** | [**List&lt;String&gt;**](String.md)| list of paths, each element is a path of a prefix | [optional]
- **limit** | **Boolean**| limit the number of items in return to amount. no more indication to search if number of items reach the mount. | [optional]
+ **limit** | **Boolean**| limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. | [optional]
 
 ### Return type
 

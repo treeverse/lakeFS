@@ -304,7 +304,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     prefixes = [
         "prefixes_example",
     ] # [str] | list of paths, each element is a path of a prefix (optional)
-    limit = True # bool | limit the number of items in return to amount. no more indication to search if number of items reach the mount. (optional)
+    limit = True # bool | limit the number of items in return to 'amount'. Without further indication on actual number of items. (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -335,7 +335,7 @@ Name | Type | Description  | Notes
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
  **objects** | **[str]**| list of paths, each element is a path of a specific object | [optional]
  **prefixes** | **[str]**| list of paths, each element is a path of a prefix | [optional]
- **limit** | **bool**| limit the number of items in return to amount. no more indication to search if number of items reach the mount. | [optional]
+ **limit** | **bool**| limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. | [optional]
 
 ### Return type
 
