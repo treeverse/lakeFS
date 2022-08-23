@@ -225,6 +225,7 @@ class RefsApi(object):
                     'amount',
                     'objects',
                     'prefixes',
+                    'limit',
                 ],
                 'required': [
                     'repository',
@@ -261,6 +262,8 @@ class RefsApi(object):
                         ([str],),
                     'prefixes':
                         ([str],),
+                    'limit':
+                        (bool,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
@@ -269,6 +272,7 @@ class RefsApi(object):
                     'amount': 'amount',
                     'objects': 'objects',
                     'prefixes': 'prefixes',
+                    'limit': 'limit',
                 },
                 'location_map': {
                     'repository': 'path',
@@ -277,6 +281,7 @@ class RefsApi(object):
                     'amount': 'query',
                     'objects': 'query',
                     'prefixes': 'query',
+                    'limit': 'query',
                 },
                 'collection_format_map': {
                     'objects': 'multi',
@@ -592,6 +597,7 @@ class RefsApi(object):
             amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
             objects ([str]): list of paths, each element is a path of a specific object. [optional]
             prefixes ([str]): list of paths, each element is a path of a prefix. [optional]
+            limit (bool): limit the number of items in return to 'amount'. Without further indication on actual number of items.. [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
