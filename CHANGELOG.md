@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.70.5 - 2022-08-23
+
+Bug fix:
+- Fix panic in commit under KV, with nil tombstone (#3976)
+
 ## v0.70.4 - 2022-08-23
 
 What's new:
