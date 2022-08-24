@@ -57,7 +57,8 @@ class ApiClient(
     apiUrl: String,
     accessKey: String,
     secretKey: String,
-    connectionTimeout: String = ""
+    connectionTimeout: String = "",
+    readTimeout: String = "",
 ) {
   val FROM_SEC_TO_MILLISEC = 1000
 
@@ -66,10 +67,15 @@ class ApiClient(
   client.setPassword(secretKey)
   client.setBasePath(apiUrl.stripSuffix("/"))
   if (connectionTimeout != null && !connectionTimeout.isEmpty) {
-    // converting the connection timeout from seconds to milliseconds
     val connectionTimeoutMillisec = connectionTimeout.toInt * FROM_SEC_TO_MILLISEC
     client.setConnectTimeout(connectionTimeoutMillisec)
   }
+
+  if (readTimeout != null && !readTimeout.isEmpty) {
+    val readTimeoutMillisec = readTimeout.toInt * FROM_SEC_TO_MILLISEC
+    client.setReadTimeout(readTimeoutMillisec)
+  }
+
   private val repositoriesApi = new api.RepositoriesApi(client)
   private val commitsApi = new api.CommitsApi(client)
   private val metadataApi = new api.MetadataApi(client)
