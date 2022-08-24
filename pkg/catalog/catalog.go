@@ -955,19 +955,19 @@ func (c *Catalog) GetCommit(ctx context.Context, repositoryID string, reference 
 }
 
 type safeCache struct {
-	sync.RWMutex
+	sync.Mutex
 	cache *simplelru.LRU
 }
 
 func (sc *safeCache) Add(key, value interface{}) bool {
-	sc.RWMutex.Lock()
-	defer sc.RWMutex.Unlock()
+	sc.Mutex.Lock()
+	defer sc.Mutex.Unlock()
 	return sc.cache.Add(key, value)
 }
 
 func (sc *safeCache) Get(key interface{}) (value interface{}, ok bool) {
-	sc.RWMutex.RLock()
-	defer sc.RWMutex.RUnlock()
+	sc.Mutex.Lock()
+	defer sc.Mutex.Unlock()
 	return sc.cache.Get(key)
 }
 
