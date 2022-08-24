@@ -21,12 +21,7 @@ Expected deployment time: 25 min
 
 ## Preparing the Database for the Key Value Store
 lakeFS uses a key-value store to synchronize actions on your repositories. Out of the box, this key-value store can rely on DynamoDB or a PostgreSQL DB. As lakeFS open source, you can also write your own implementation and use any other DB
-The following two sections explain how to setup either DynamoDB or PostgreSQL as key-value backing DB
-
-### DynamoDB on AWS
-DynamoDB on AWS does not require any specific preparation, other than properly configuring lakeFS to use it and valid AWS credentials. Please refer to `database.dynamodb ` section in the [configuration reference](../reference/configuration.md#reference) for complete configuration options.
-AWS credentials, for DynamoDB, can also be provided via environment variables, as described in the [configuration reference](../reference/configuration.md#using-environment-variables)
-Please refer to [AWS documentation](https://aws.amazon.com/dynamodb/getting-started/) for further information on DynamoDB
+The following two sections explain how to setup either PostgreSQL or DynamoDB as key-value backing DB
 
 ### Creating PostgreSQL Database on AWS RDS
 We will show you how to create a database on AWS RDS but you can use any PostgreSQL database as long as it's accessible by your lakeFS installation.
@@ -41,29 +36,14 @@ If you already have a database, take note of the connection string and skip to t
 
 3. Make sure your security group rules allow you to connect to the database instance.
 
+### DynamoDB on AWS
+DynamoDB on AWS does not require any specific preparation, other than properly configuring lakeFS to use it and valid AWS credentials. Please refer to `database.dynamodb ` section in the [configuration reference](../reference/configuration.md#reference) for complete configuration options.
+AWS credentials, for DynamoDB, can also be provided via environment variables, as described in the [configuration reference](../reference/configuration.md#using-environment-variables)
+Please refer to [AWS documentation](https://aws.amazon.com/dynamodb/getting-started/) for further information on DynamoDB
+
 ## Installation Options
 
 ### On EC2
-#### With DynamoDB
-1. Save the following configuration file as `config.yaml`:
-
-   ```yaml
-   ---
-   database:
-     type: "dynamodb"
-     dynamodb: 
-       table_name: "[DYNAMODB_TABLE_NAME]"
-       aws_region: "[DYNAMODB_AWS_REGION]"
-       aws_access_key_id: "[AWS_ACCESS_KEY_ID]"
-       aws_secret_access_key: "[AWS_SECRET_ACCESS_KEY]"
-   auth:
-     encrypt:
-       # replace this with a randomly-generated string:
-       secret_key: "[ENCRYPTION_SECRET_KEY]"
-   blockstore:
-     type: s3
-     s3:
-       region: us-east-1 # optional, fallback in case discover from bucket is not supported
 
 #### With PostgreSQL
 1. Save the following configuration file as `config.yaml`:
@@ -84,6 +64,24 @@ If you already have a database, take note of the connection string and skip to t
        region: us-east-1 # optional, fallback in case discover from bucket is not supported
    ```
 
+#### With DynamoDB
+1. Save the following configuration file as `config.yaml`:
+
+   ```yaml
+   ---
+   database:
+     type: "dynamodb"
+     dynamodb: 
+       table_name: "[DYNAMODB_TABLE_NAME]"
+   auth:
+     encrypt:
+       # replace this with a randomly-generated string:
+       secret_key: "[ENCRYPTION_SECRET_KEY]"
+   blockstore:
+     type: s3
+     s3:
+       region: us-east-1 # optional, fallback in case discover from bucket is not supported
+
 1. [Download the binary](../index.md#downloads) to the EC2 instance.
 1. Run the `lakefs` binary on the EC2 instance:
    ```bash
@@ -99,23 +97,20 @@ commands to demonstrate starting lakeFS using Docker:
 docker run \
   --name lakefs \
   -p 8000:8000 \
-  -e LAKEFS_DATABASE_KV_ENABLED="true"
-  -e LAKEFS_DATABASE_TYPE: "dynamodb" \
-  -e LAKEFS_DATABASE_DYNAMODB_AWS_ACCESS_KEY_ID="[AWS_ACCESS_KEY_ID]" \
-  -e LAKEFS_DATABASE_DYNAMODB_AWS_SECRET_ACCESS_KEY="[AWS_SECRET_ACCESS_KEY]" \
-  -e LAKEFS_DATABASE_DYNAMODB_AWS_REGION="[DYNAMODB_AWS_REGION]" \
+  -e LAKEFS_DATABASE_TYPE="postgres" \
+  -e LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \
   -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="[ENCRYPTION_SECRET_KEY]" \
   -e LAKEFS_BLOCKSTORE_TYPE="s3" \
   treeverse/lakefs:latest run
 ```
+
 #### With PostgreSQL
 ```sh
 docker run \
   --name lakefs \
   -p 8000:8000 \
-  -e LAKEFS_DATABASE_KV_ENABLED="true"
-  -e LAKEFS_DATABASE_TYPE="postgres" \
-  -e LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \
+  -e LAKEFS_DATABASE_TYPE: "dynamodb" \
+  -e LAKEFS_DATABASE_DYNAMODB_TABLE_NAME="[DYNAMODB_TABLE_NAME]" \
   -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="[ENCRYPTION_SECRET_KEY]" \
   -e LAKEFS_BLOCKSTORE_TYPE="s3" \
   treeverse/lakefs:latest run
