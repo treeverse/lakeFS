@@ -393,6 +393,7 @@ object GarbageCollector {
                                                runID,
                                                storageNSForHadoopFS,
                                                gcCommitsLocation,
+                                               rangesDFLocation,
                                                spark,
                                                APIConfigurations(apiURL, accessKey, secretKey),
                                                hcValues
