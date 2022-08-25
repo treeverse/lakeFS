@@ -58,7 +58,7 @@ class ApiClient(
     accessKey: String,
     secretKey: String,
     connectionTimeout: String = "",
-    readTimeout: String = "",
+    readTimeout: String = ""
 ) {
   val FROM_SEC_TO_MILLISEC = 1000
 
