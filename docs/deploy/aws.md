@@ -78,7 +78,7 @@ Please refer to [AWS documentation](https://aws.amazon.com/dynamodb/getting-star
 
 1. [Download the binary](../index.md#downloads) to the EC2 instance.
 1. Run the `lakefs` binary on the EC2 instance:
-   ```bash
+   ```sh
    lakefs --config config.yaml run
    ```
    **Note:** It's preferable to run the binary as a service using systemd or your operating system's facilities.
@@ -90,7 +90,7 @@ commands to demonstrate starting lakeFS using Docker:
 
 #### With PostgreSQL
 
-```bash
+```sh
 docker run \
   --name lakefs \
   -p 8000:8000 \
