@@ -101,7 +101,7 @@ docker run \
   treeverse/lakefs:latest run
 ```
 
-#### With PostgreSQL
+#### With DynamoDB
 
 ```sh
 docker run \
