@@ -304,10 +304,10 @@ object GarbageCollector {
       .mode(SaveMode.Overwrite)
       .parquet(rangesDFLocation + "/run_id=" + runID)
     rangesDF = spark.read.parquet(rangesDFLocation + "/run_id=" + runID).cache()
-    val expired = getExpiredEntriesFromRanges(rangesDF, apiConf, repo, hcValues)
+    val expired = getExpiredEntriesFromRanges(rangesDF, apiConf, repo, hcValues).cache()
 
     val activeRangesDF = rangesDF.where("!expired")
-    subtractDeduplications(expired, activeRangesDF, apiConf, repo, spark, hcValues)
+    subtractDeduplications(expired, activeRangesDF, apiConf, repo, spark, hcValues).cache()
   }
 
   private def subtractDeduplications(
