@@ -40,7 +40,8 @@ func init() {
 		"graveler_repositories",
 		"graveler_commits",
 		"graveler_tags",
-		"graveler_branches"})
+		"graveler_branches",
+	})
 }
 
 var encoder kv.SafeEncoder
@@ -211,13 +212,8 @@ func (m *DBManager) GetBranch(ctx context.Context, repository *graveler.Reposito
 }
 
 func (m *DBManager) CreateBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, branch graveler.Branch) error {
-	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		_, err := tx.Exec(`
-			INSERT INTO graveler_branches (repository_id, id, staging_token, commit_id)
-			VALUES ($1, $2, $3, $4)`,
-			repository.RepositoryID, branchID, branch.StagingToken, branch.CommitID)
-		return nil, err
-	})
+	_, err := m.db.Exec(ctx, `INSERT INTO graveler_branches (repository_id, id, staging_token, commit_id) VALUES ($1, $2, $3, $4)`,
+		repository.RepositoryID, branchID, branch.StagingToken, branch.CommitID)
 	if errors.Is(err, db.ErrAlreadyExists) {
 		return graveler.ErrBranchExists
 	}
@@ -225,15 +221,12 @@ func (m *DBManager) CreateBranch(ctx context.Context, repository *graveler.Repos
 }
 
 func (m *DBManager) SetBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, branch graveler.Branch) error {
-	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		_, err := tx.Exec(`
-			INSERT INTO graveler_branches (repository_id, id, staging_token, commit_id)
-			VALUES ($1, $2, $3, $4)
-				ON CONFLICT (repository_id, id)
-				DO UPDATE SET staging_token = $3, commit_id = $4`,
-			repository.RepositoryID, branchID, branch.StagingToken, branch.CommitID)
-		return nil, err
-	})
+	_, err := m.db.Exec(ctx, `
+		INSERT INTO graveler_branches (repository_id, id, staging_token, commit_id)
+		VALUES ($1, $2, $3, $4)
+			ON CONFLICT (repository_id, id)
+			DO UPDATE SET staging_token = $3, commit_id = $4`,
+		repository.RepositoryID, branchID, branch.StagingToken, branch.CommitID)
 	return err
 }
 
@@ -243,22 +236,17 @@ func (m *DBManager) BranchUpdate(_ context.Context, _ *graveler.RepositoryRecord
 }
 
 func (m *DBManager) DeleteBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) error {
-	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		r, err := tx.Exec(
-			`DELETE FROM graveler_branches WHERE repository_id = $1 AND id = $2`,
-			repository.RepositoryID, branchID)
-		if err != nil {
-			return nil, err
-		}
-		if r.RowsAffected() == 0 {
-			return nil, graveler.ErrNotFound
-		}
-		return nil, nil
-	})
+	r, err := m.db.Exec(ctx, `DELETE FROM graveler_branches WHERE repository_id = $1 AND id = $2`, repository.RepositoryID, branchID)
 	if errors.Is(err, db.ErrNotFound) {
 		return graveler.ErrBranchNotFound
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	if r.RowsAffected() == 0 {
+		return graveler.ErrNotFound
+	}
+	return nil
 }
 
 func (m *DBManager) ListBranches(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.BranchIterator, error) {
@@ -290,38 +278,30 @@ func (m *DBManager) GetTag(ctx context.Context, repository *graveler.RepositoryR
 }
 
 func (m *DBManager) CreateTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID, commitID graveler.CommitID) error {
-	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		res, err := tx.Exec(`INSERT INTO graveler_tags (repository_id, id, commit_id) VALUES ($1, $2, $3)
-			ON CONFLICT DO NOTHING`,
-			repository.RepositoryID, tagID, commitID)
-		if err != nil {
-			return nil, err
-		}
-		if res.RowsAffected() == 0 {
-			return nil, graveler.ErrTagAlreadyExists
-		}
-		return nil, nil
-	})
-	return err
+	res, err := m.db.Exec(ctx, `INSERT INTO graveler_tags (repository_id, id, commit_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+		repository.RepositoryID, tagID, commitID)
+	if err != nil {
+		return err
+	}
+	if res.RowsAffected() == 0 {
+		return graveler.ErrTagAlreadyExists
+	}
+	return nil
 }
 
 func (m *DBManager) DeleteTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID) error {
-	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		r, err := tx.Exec(
-			`DELETE FROM graveler_tags WHERE repository_id = $1 AND id = $2`,
-			repository.RepositoryID, tagID)
-		if err != nil {
-			return nil, err
-		}
-		if r.RowsAffected() == 0 {
-			return nil, graveler.ErrNotFound
-		}
-		return nil, nil
-	})
+	r, err := m.db.Exec(ctx, `DELETE FROM graveler_tags WHERE repository_id = $1 AND id = $2`,
+		repository.RepositoryID, tagID)
 	if errors.Is(err, db.ErrNotFound) {
 		return graveler.ErrTagNotFound
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	if r.RowsAffected() == 0 {
+		return graveler.ErrNotFound
+	}
+	return nil
 }
 
 func (m *DBManager) ListTags(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.TagIterator, error) {
@@ -331,34 +311,28 @@ func (m *DBManager) ListTags(ctx context.Context, repository *graveler.Repositor
 func (m *DBManager) GetCommitByPrefix(ctx context.Context, repository *graveler.RepositoryRecord, prefix graveler.CommitID) (*graveler.Commit, error) {
 	key := fmt.Sprintf("GetCommitByPrefix:%s:%s", repository.RepositoryID, prefix)
 	commit, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
-		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-			records := make([]*commitRecord, 0)
-			// LIMIT 2 is used to test if a truncated commit ID resolves to *one* commit.
-			// if we get 2 results that start with the truncated ID, that's enough to determine this prefix is not unique
-			err := tx.Select(&records, `
-					SELECT id, committer, message, creation_date, parents, meta_range_id, metadata, version, generation
-					FROM graveler_commits
-					WHERE repository_id = $1 AND id LIKE $2 || '%'
-					LIMIT 2`,
-				repository.RepositoryID, prefix)
-			if errors.Is(err, db.ErrNotFound) {
-				return nil, graveler.ErrNotFound
-			}
-			if err != nil {
-				return nil, err
-			}
-			if len(records) == 0 {
-				return "", graveler.ErrNotFound
-			}
-			if len(records) > 1 {
-				return "", graveler.ErrRefAmbiguous // more than 1 commit starts with the ID prefix
-			}
-			return records[0].toGravelerCommit(), nil
-		}, db.ReadOnly())
+		records := make([]*commitRecord, 0)
+		// LIMIT 2 is used to test if a truncated commit ID resolves to *one* commit.
+		// if we get 2 results that start with the truncated ID, that's enough to determine this prefix is not unique
+		err := m.db.Select(ctx, &records, `SELECT id, committer, message, creation_date, parents, meta_range_id, metadata, version, generation
+				FROM graveler_commits
+				WHERE repository_id = $1 AND id LIKE $2 || '%'
+				LIMIT 2`,
+			repository.RepositoryID, prefix)
+		if errors.Is(err, db.ErrNotFound) {
+			return nil, graveler.ErrCommitNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		if len(records) == 0 {
+			return "", graveler.ErrNotFound
+		}
+		if len(records) > 1 {
+			return "", graveler.ErrRefAmbiguous // more than 1 commit starts with the ID prefix
+		}
+		return records[0].toGravelerCommit(), nil
 	}))
-	if errors.Is(err, db.ErrNotFound) {
-		return nil, graveler.ErrCommitNotFound
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -485,7 +459,6 @@ func (m *DBManager) FillGenerations(ctx context.Context, repository *graveler.Re
 
 func (m *DBManager) createCommitIDsMap(ctx context.Context, repository *graveler.RepositoryRecord) (map[graveler.CommitID]*CommitNode, error) {
 	iter, err := m.ListCommits(ctx, repository)
-
 	if err != nil {
 		return nil, err
 	}

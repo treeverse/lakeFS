@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx/v4"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -24,18 +23,14 @@ func NewDBManager(db db.Database) *DBManager {
 }
 
 func (p *DBManager) Get(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.Value, error) {
-	res, err := p.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		value := &graveler.Value{}
-		err := tx.Get(value, "SELECT identity, data FROM graveler_staging_kv WHERE staging_token=$1 AND key=$2", st, key)
-		return value, err
-	}, p.txOpts(db.ReadOnly())...)
+	value := &graveler.Value{}
+	err := p.db.Get(ctx, value, "SELECT identity, data FROM graveler_staging_kv WHERE staging_token=$1 AND key=$2", st, key)
 	if errors.Is(err, db.ErrNotFound) {
 		return nil, graveler.ErrNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	value := res.(*graveler.Value)
 	if value.Identity == nil {
 		return nil, nil
 	}
@@ -48,28 +43,25 @@ func (p *DBManager) Set(ctx context.Context, st graveler.StagingToken, key grave
 	} else if value.Identity == nil {
 		return graveler.ErrInvalidValue
 	}
-	_, err := p.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if !overwrite {
-			res, err := tx.Exec(
-				`INSERT INTO graveler_staging_kv (staging_token, key, identity, data)
-						VALUES ($1, $2, $3, $4)
-						ON CONFLICT (staging_token, key) DO NOTHING`,
-				st, key, value.Identity, value.Data)
-			if err != nil {
-				return nil, err
-			}
-			if res.RowsAffected() == 0 {
-				return nil, graveler.ErrPreconditionFailed
-			}
-			return res, err
-		}
-		return tx.Exec(`INSERT INTO graveler_staging_kv (staging_token, key, identity, data)
-								VALUES ($1, $2, $3, $4)
-								ON CONFLICT (staging_token, key) DO UPDATE
-									SET (staging_token, key, identity, data) =
-											(excluded.staging_token, excluded.key, excluded.identity, excluded.data)`,
+	if !overwrite {
+		res, err := p.db.Exec(ctx, `INSERT INTO graveler_staging_kv (staging_token, key, identity, data)
+			VALUES ($1, $2, $3, $4)
+			ON CONFLICT (staging_token, key) DO NOTHING`,
 			st, key, value.Identity, value.Data)
-	}, p.txOpts(db.WithIsolationLevel(pgx.ReadCommitted))...)
+		if err != nil {
+			return err
+		}
+		if res.RowsAffected() == 0 {
+			return graveler.ErrPreconditionFailed
+		}
+		return err
+	}
+	_, err := p.db.Exec(ctx, `INSERT INTO graveler_staging_kv (staging_token, key, identity, data)
+			VALUES ($1, $2, $3, $4)
+			ON CONFLICT (staging_token, key) DO UPDATE
+			SET (staging_token, key, identity, data) =
+			(excluded.staging_token, excluded.key, excluded.identity, excluded.data)`,
+		st, key, value.Identity, value.Data)
 	return err
 }
 
@@ -78,9 +70,7 @@ func (p *DBManager) Update(_ context.Context, _ graveler.StagingToken, _ gravele
 }
 
 func (p *DBManager) DropKey(ctx context.Context, st graveler.StagingToken, key graveler.Key) error {
-	_, err := p.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return tx.Exec("DELETE FROM graveler_staging_kv WHERE staging_token=$1 AND key=$2", st, key)
-	}, p.txOpts()...)
+	_, err := p.db.Exec(ctx, "DELETE FROM graveler_staging_kv WHERE staging_token=$1 AND key=$2", st, key)
 	return err
 }
 
@@ -94,31 +84,20 @@ func (p *DBManager) DropAsync(ctx context.Context, st graveler.StagingToken) err
 }
 
 func (p *DBManager) Drop(ctx context.Context, st graveler.StagingToken) error {
-	_, err := p.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return tx.Exec("DELETE FROM graveler_staging_kv WHERE staging_token=$1", st)
-	}, p.txOpts()...)
+	_, err := p.db.Exec(ctx, "DELETE FROM graveler_staging_kv WHERE staging_token=$1", st)
 	return err
 }
 
 func (p *DBManager) DropByPrefix(ctx context.Context, st graveler.StagingToken, prefix graveler.Key) error {
 	upperBound := graveler.UpperBoundForPrefix(prefix)
 	builder := sq.Delete("graveler_staging_kv").Where(sq.Eq{"staging_token": st}).Where("key >= ?::bytea", prefix)
-	_, err := p.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if upperBound != nil {
-			builder = builder.Where("key < ?::bytea", upperBound)
-		}
-		query, args, err := builder.PlaceholderFormat(sq.Dollar).ToSql()
-		if err != nil {
-			return nil, err
-		}
-		return tx.Exec(query, args...)
-	}, p.txOpts()...)
-	return err
-}
-
-func (p *DBManager) txOpts(opts ...db.TxOpt) []db.TxOpt {
-	o := []db.TxOpt{
-		db.WithLogger(p.log),
+	if upperBound != nil {
+		builder = builder.Where("key < ?::bytea", upperBound)
 	}
-	return append(o, opts...)
+	query, args, err := builder.PlaceholderFormat(sq.Dollar).ToSql()
+	if err != nil {
+		return err
+	}
+	_, err = p.db.Exec(ctx, query, args...)
+	return err
 }
