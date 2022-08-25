@@ -62,7 +62,6 @@ Please refer to [AWS documentation](https://aws.amazon.com/dynamodb/getting-star
        aws_region: "[DYNAMODB_REGION]"
 
      # when using postgres
-     type: "postgres"
      postgres:
        connection_string: "[DATABASE_CONNECTION_STRING]"
 
