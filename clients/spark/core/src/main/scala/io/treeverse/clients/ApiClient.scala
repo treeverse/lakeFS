@@ -57,8 +57,8 @@ class ApiClient(
     apiUrl: String,
     accessKey: String,
     secretKey: String,
-    connectionTimeout: String = "",
-    readTimeout: String = ""
+    connectionTimeoutSec: String = "",
+    readTimeoutSec: String = ""
 ) {
   val FROM_SEC_TO_MILLISEC = 1000
 
@@ -66,13 +66,13 @@ class ApiClient(
   client.setUsername(accessKey)
   client.setPassword(secretKey)
   client.setBasePath(apiUrl.stripSuffix("/"))
-  if (connectionTimeout != null && !connectionTimeout.isEmpty) {
-    val connectionTimeoutMillisec = connectionTimeout.toInt * FROM_SEC_TO_MILLISEC
+  if (connectionTimeoutSec != null && !connectionTimeoutSec.isEmpty) {
+    val connectionTimeoutMillisec = connectionTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
     client.setConnectTimeout(connectionTimeoutMillisec)
   }
 
-  if (readTimeout != null && !readTimeout.isEmpty) {
-    val readTimeoutMillisec = readTimeout.toInt * FROM_SEC_TO_MILLISEC
+  if (readTimeoutSec != null && !readTimeoutSec.isEmpty) {
+    val readTimeoutMillisec = readTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
     client.setReadTimeout(readTimeoutMillisec)
   }
 
