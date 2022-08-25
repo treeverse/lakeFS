@@ -3,6 +3,7 @@ package esti
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sync"
 	"testing"
 
@@ -134,6 +135,47 @@ func TestCommitInMixedOrder(t *testing.T) {
 			require.NoError(t, err, "failed to commit second set of changes")
 			require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
 				"failed to commit second set of changes repo %s branch %s", repo, mainBranch)
+		})
+	}
+}
+
+// Verify panic fix when committing with nil tombstone over KV
+func TestCommitWithTombstone(t *testing.T) {
+	for _, direct := range testDirectDataAccess {
+		name := "indirect"
+		if direct {
+			name = "direct"
+		}
+		t.Run(name, func(t *testing.T) {
+			ctx, _, repo := setupTest(t)
+
+			origObjPathLow := "objb.txt"
+			origObjPathHigh := "objc.txt"
+			uploadFileRandomData(ctx, t, repo, mainBranch, origObjPathLow, direct)
+			uploadFileRandomData(ctx, t, repo, mainBranch, origObjPathHigh, direct)
+			commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
+				Message: "First commit",
+			})
+			require.NoError(t, err, "failed to commit changes")
+			require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
+				"failed to commit changes repo %s branch %s", repo, mainBranch)
+
+			tombstoneObjPath := "obja.txt"
+			newObjPath := "objd.txt"
+			uploadFileRandomData(ctx, t, repo, mainBranch, tombstoneObjPath, direct)
+			uploadFileRandomData(ctx, t, repo, mainBranch, newObjPath, direct)
+
+			// Turning tombstoneObjPath to tombstone
+			resp, err := client.DeleteObjectWithResponse(ctx, repo, mainBranch, &api.DeleteObjectParams{Path: tombstoneObjPath})
+			require.NoError(t, err, "failed to delete object")
+			require.Equal(t, http.StatusNoContent, resp.StatusCode())
+
+			commitResp, err = client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
+				Message: "Commit with tombstone",
+			})
+			require.NoError(t, err, "failed to commit changes")
+			require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
+				"failed to commit changes repo %s branch %s", repo, mainBranch)
 		})
 	}
 }
