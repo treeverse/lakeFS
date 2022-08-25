@@ -1,6 +1,22 @@
 # Changelog
 
-## v0.70.2 - 2022-08-11
+## v0.70.5 - 2022-08-23
+
+Bug fix:
+- Fix panic in commit under KV, with nil tombstone (#3976)
+
+## v0.70.4 - 2022-08-23
+
+What's new:
+- Improve commit log performance for single match by adding limit flag (#3970)
+- Change Histogram buckets to better fit lakeFS commands (#3902)
+
+## v0.70.3 - 2022-08-22
+
+What's new:
+- Improve commit log performance (#3936)
+
+## v0.70.2 - 2022-08-17
 
 What's new:
 - Improve 'commit log by objects' performance (#3920)

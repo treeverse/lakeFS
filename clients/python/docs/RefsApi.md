@@ -304,6 +304,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     prefixes = [
         "prefixes_example",
     ] # [str] | list of paths, each element is a path of a prefix (optional)
+    limit = True # bool | limit the number of items in return to 'amount'. Without further indication on actual number of items. (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -317,7 +318,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # get commit log from ref. If both objects and prefixes are empty, return all commits.
-        api_response = api_instance.log_commits(repository, ref, after=after, amount=amount, objects=objects, prefixes=prefixes)
+        api_response = api_instance.log_commits(repository, ref, after=after, amount=amount, objects=objects, prefixes=prefixes, limit=limit)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling RefsApi->log_commits: %s\n" % e)
@@ -334,6 +335,7 @@ Name | Type | Description  | Notes
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
  **objects** | **[str]**| list of paths, each element is a path of a specific object | [optional]
  **prefixes** | **[str]**| list of paths, each element is a path of a prefix | [optional]
+ **limit** | **bool**| limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. | [optional]
 
 ### Return type
 

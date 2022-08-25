@@ -17,13 +17,14 @@ func TestResolveRawRef(t *testing.T) {
 	r := testRefManager(t)
 	for _, tt := range r {
 		ctx := context.Background()
-		testutil.Must(t, tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
+		repository, err := tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",
-		}))
+		})
+		testutil.Must(t, err)
 
-		mainBranch, err := tt.refManager.GetBranch(ctx, "repo1", "main")
+		mainBranch, err := tt.refManager.GetBranch(ctx, repository, "main")
 		if err != nil {
 			t.Fatalf("Failed to get main branch information: %s", err)
 		}
@@ -42,7 +43,7 @@ func TestResolveRawRef(t *testing.T) {
 			if previous != "" {
 				c.Parents = append(c.Parents, previous)
 			}
-			cid, err := tt.refManager.AddCommit(ctx, "repo1", c)
+			cid, err := tt.refManager.AddCommit(ctx, repository, c)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -50,7 +51,7 @@ func TestResolveRawRef(t *testing.T) {
 			ts.Add(time.Minute)
 		}
 
-		iter, err := tt.refManager.Log(ctx, "repo1", previous)
+		iter, err := tt.refManager.Log(ctx, repository, previous)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -95,19 +96,19 @@ func TestResolveRawRef(t *testing.T) {
 		}
 
 		branch1CommitID := commitLog[3]
-		testutil.Must(t, tt.refManager.SetBranch(ctx, "repo1", "branch1", graveler.Branch{
+		testutil.Must(t, tt.refManager.SetBranch(ctx, repository, "branch1", graveler.Branch{
 			CommitID:     branch1CommitID,
 			StagingToken: "token1",
 		}))
 
 		branch2CommitID := commitLog[16]
-		testutil.Must(t, tt.refManager.SetBranch(ctx, "repo1", "branch2", graveler.Branch{
+		testutil.Must(t, tt.refManager.SetBranch(ctx, repository, "branch2", graveler.Branch{
 			CommitID:     branch2CommitID,
 			StagingToken: "token2",
 		}))
 
 		tagCommitID := commitLog[9]
-		testutil.Must(t, tt.refManager.CreateTag(ctx, "repo1", "v1.0", tagCommitID))
+		testutil.Must(t, tt.refManager.CreateTag(ctx, repository, "v1.0", tagCommitID))
 
 		commitCommitID := commitLog[11]
 
@@ -226,7 +227,7 @@ func TestResolveRawRef(t *testing.T) {
 					}
 					return
 				}
-				resolvedRef, err := tt.refManager.ResolveRawRef(ctx, "repo1", rawRef)
+				resolvedRef, err := tt.refManager.ResolveRawRef(ctx, repository, rawRef)
 				if err != nil {
 					if cas.ExpectedErr == nil || !errors.Is(err, cas.ExpectedErr) {
 						t.Fatalf("unexpected error while resolve '%s': %v, expected: %s", cas.Ref, err, cas.ExpectedErr)
@@ -254,11 +255,12 @@ func TestResolveRef_SameDate(t *testing.T) {
 	r := testRefManager(t)
 	for _, tt := range r {
 		ctx := context.Background()
-		testutil.Must(t, tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
+		repository, err := tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",
-		}))
+		})
+		testutil.Must(t, err)
 
 		ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
 		addCommit := func(message string, parents ...graveler.CommitID) graveler.CommitID {
@@ -272,7 +274,7 @@ func TestResolveRef_SameDate(t *testing.T) {
 			for _, p := range parents {
 				c.Parents = append(c.Parents, p)
 			}
-			cid, err := tt.refManager.AddCommit(ctx, "repo1", c)
+			cid, err := tt.refManager.AddCommit(ctx, repository, c)
 			testutil.MustDo(t, "add commit", err)
 			return cid
 		}
@@ -282,7 +284,7 @@ func TestResolveRef_SameDate(t *testing.T) {
 		c4 := addCommit("c4", c3)
 		c5 := addCommit("c5", c4, c2)
 
-		it, err := tt.refManager.Log(ctx, "repo1", c5)
+		it, err := tt.refManager.Log(ctx, repository, c5)
 		testutil.MustDo(t, "Log request", err)
 		var commitIDs []graveler.CommitID
 		for it.Next() {
@@ -326,11 +328,12 @@ func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 	*/
 	r := testRefManager(t)
 	for _, tt := range r {
-		testutil.Must(t, tt.refManager.CreateRepository(context.Background(), "repo1", graveler.Repository{
+		repository, err := tt.refManager.CreateRepository(context.Background(), "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",
-		}))
+		})
+		testutil.Must(t, err)
 
 		ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
 		addCommit := func(parents ...graveler.CommitID) graveler.CommitID {
@@ -340,7 +343,7 @@ func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 			for _, p := range parents {
 				commit.Parents = append(commit.Parents, p)
 			}
-			cid, err := tt.refManager.AddCommit(context.Background(), "repo1", commit)
+			cid, err := tt.refManager.AddCommit(context.Background(), repository, commit)
 			testutil.MustDo(t, "add commit", err)
 			ts = ts.Add(time.Second)
 			return cid
@@ -360,7 +363,7 @@ func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 		resolve := func(base graveler.CommitID, mod string, expected graveler.CommitID) {
 			t.Helper()
 			reference := string(base) + mod
-			resolved, err := resolveRef(context.Background(), tt.refManager, ident.NewHexAddressProvider(), "repo1", graveler.Ref(reference))
+			resolved, err := resolveRef(context.Background(), tt.refManager, ident.NewHexAddressProvider(), repository, graveler.Ref(reference))
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -400,10 +403,10 @@ func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 	}
 }
 
-func resolveRef(ctx context.Context, store ref.Store, addressProvider ident.AddressProvider, repositoryID graveler.RepositoryID, reference graveler.Ref) (*graveler.ResolvedRef, error) {
+func resolveRef(ctx context.Context, store ref.Store, addressProvider ident.AddressProvider, repository *graveler.RepositoryRecord, reference graveler.Ref) (*graveler.ResolvedRef, error) {
 	rawRef, err := ref.ParseRef(reference)
 	if err != nil {
 		return nil, err
 	}
-	return ref.ResolveRawRef(ctx, store, addressProvider, repositoryID, rawRef)
+	return ref.ResolveRawRef(ctx, store, addressProvider, repository, rawRef)
 }

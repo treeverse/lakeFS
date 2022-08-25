@@ -22,6 +22,10 @@ func TestBranchLock(t *testing.T) {
 	bl := ref.NewBranchLocker(conn)
 
 	t.Run("multiple_writers", func(t *testing.T) {
+		repository := &graveler.RepositoryRecord{
+			RepositoryID: "repo-writers",
+			Repository:   nil,
+		}
 		const rounds = 10
 		for round := 0; round < rounds; round++ {
 			const writers = 5
@@ -32,7 +36,7 @@ func TestBranchLock(t *testing.T) {
 				go func() {
 					defer wgDone.Done()
 					ctx := context.Background()
-					_, err := bl.Writer(ctx, "repo-writers", testutil.DefaultBranchID, func() (interface{}, error) {
+					_, err := bl.Writer(ctx, repository, testutil.DefaultBranchID, func() (interface{}, error) {
 						runtime.Gosched()
 						atomic.AddInt64(&writerCounter, 1)
 						return nil, nil
@@ -52,13 +56,17 @@ func TestBranchLock(t *testing.T) {
 	})
 
 	t.Run("committer_blocks_writer", func(t *testing.T) {
+		repository := &graveler.RepositoryRecord{
+			RepositoryID: "committer_blocks_writer",
+			Repository:   nil,
+		}
 		chReleaseAcquired := make(chan struct{})
 		chAcquired := make(chan struct{})
 		defer close(chReleaseAcquired)
 		// call writer and wait on channel
 		ctx := context.Background()
 		go func() {
-			_, err := bl.MetadataUpdater(ctx, "committer_blocks_writer", testutil.DefaultBranchID, func() (interface{}, error) {
+			_, err := bl.MetadataUpdater(ctx, repository, testutil.DefaultBranchID, func() (interface{}, error) {
 				close(chAcquired)
 				<-chReleaseAcquired
 				return nil, nil
@@ -72,7 +80,7 @@ func TestBranchLock(t *testing.T) {
 		timeToDeadline := time.Now().Add(time.Second)
 		ctxWithDeadline, cancel := context.WithDeadline(ctx, timeToDeadline)
 		defer cancel()
-		_, err := bl.Writer(ctxWithDeadline, "committer_blocks_writer", testutil.DefaultBranchID, func() (interface{}, error) {
+		_, err := bl.Writer(ctxWithDeadline, repository, testutil.DefaultBranchID, func() (interface{}, error) {
 			return nil, errUnexpectedCall
 		})
 		if !errors.Is(err, graveler.ErrLockNotAcquired) {
@@ -80,14 +88,18 @@ func TestBranchLock(t *testing.T) {
 		}
 	})
 
-	t.Run("writer_blocks_commiter", func(t *testing.T) {
+	t.Run("writer_blocks_committer", func(t *testing.T) {
+		repository := &graveler.RepositoryRecord{
+			RepositoryID: "writer_blocks_committer",
+			Repository:   nil,
+		}
 		chReleaseAcquired := make(chan struct{})
 		defer close(chReleaseAcquired)
 		chAcquired := make(chan struct{})
 		// call writer and wait on channel
 		ctx := context.Background()
 		go func() {
-			_, err := bl.Writer(ctx, "writer_blocks_commiter", testutil.DefaultBranchID, func() (interface{}, error) {
+			_, err := bl.Writer(ctx, repository, testutil.DefaultBranchID, func() (interface{}, error) {
 				close(chAcquired)
 				<-chReleaseAcquired
 				return nil, nil
@@ -102,7 +114,7 @@ func TestBranchLock(t *testing.T) {
 		ctxWithDeadline, cancel := context.WithDeadline(ctx, timeToDeadline)
 		defer cancel()
 
-		_, err := bl.MetadataUpdater(ctxWithDeadline, "writer_blocks_commiter", testutil.DefaultBranchID, func() (interface{}, error) {
+		_, err := bl.MetadataUpdater(ctxWithDeadline, repository, testutil.DefaultBranchID, func() (interface{}, error) {
 			return nil, errUnexpectedCall
 		})
 		if !errors.Is(err, graveler.ErrLockNotAcquired) {
@@ -112,7 +124,7 @@ func TestBranchLock(t *testing.T) {
 }
 
 // TestBranchLockPanic panic during metadata updater, checks that MetadataUpdater releases the lock
-// calling the method twice will locked in case of an error
+// calling the method twice will lock in case of an error
 func TestBranchLockPanic(t *testing.T) {
 	conn, _ := tu.GetDB(t, databaseURI)
 	bl := ref.NewBranchLocker(conn)
@@ -121,6 +133,10 @@ func TestBranchLockPanic(t *testing.T) {
 }
 
 func panicOnMetadataUpdate(bl *ref.BranchLocker) {
+	repository := &graveler.RepositoryRecord{
+		RepositoryID: "branch-locker",
+		Repository:   nil,
+	}
 	chDone := make(chan struct{})
 	go func() {
 		// ignore panics and release the function call
@@ -129,7 +145,7 @@ func panicOnMetadataUpdate(bl *ref.BranchLocker) {
 			close(chDone)
 		}()
 		ctx := context.Background()
-		_, _ = bl.MetadataUpdater(ctx, "branch-locker", testutil.DefaultBranchID, func() (interface{}, error) {
+		_, _ = bl.MetadataUpdater(ctx, repository, testutil.DefaultBranchID, func() (interface{}, error) {
 			panic("metadata updater")
 		})
 	}()
