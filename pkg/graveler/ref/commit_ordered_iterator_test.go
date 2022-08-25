@@ -140,6 +140,7 @@ func TestDBOrderedCommitIterator(t *testing.T) {
 	for _, tst := range cases {
 		t.Run(tst.Name, func(t *testing.T) {
 			var commits []*graveler.Commit
+			commitMap := make(map[graveler.CommitID]*graveler.Commit)
 			for _, tstCommit := range tst.Commits {
 				parents := make([]graveler.CommitID, 0, len(tstCommit.parents))
 				for _, parent := range tstCommit.parents {
@@ -149,11 +150,16 @@ func TestDBOrderedCommitIterator(t *testing.T) {
 				if tstCommit.version != nil {
 					version = graveler.CommitVersion(*tstCommit.version)
 				}
-				commits = append(commits, &graveler.Commit{
+				c := &graveler.Commit{
 					Message: tstCommit.id,
 					Parents: parents,
 					Version: version,
-				})
+				}
+				commits = append(commits, c)
+				commitMap[graveler.CommitID(tstCommit.id)] = c
+			}
+			for _, c := range commits {
+				computeGeneration(commitMap, c)
 			}
 			r, db := testRefManagerWithDBAndAddressProvider(t, newFakeAddressProvider(commits))
 			repoID := graveler.RepositoryID(tst.Name)

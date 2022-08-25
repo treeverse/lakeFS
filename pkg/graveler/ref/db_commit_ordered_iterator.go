@@ -90,6 +90,7 @@ func (iter *DBOrderedCommitIterator) maybeFetch() {
 			Prefix("NOT EXISTS (").Suffix(")").
 			From("graveler_commits c2").
 			Where("c2.repository_id=graveler_commits.repository_id").
+			Where("c2.generation > graveler_commits.generation").
 			Where("first_parent(c2.parents, c2.version)=graveler_commits.id")
 		q = q.Where(notExistsCondition)
 	}
