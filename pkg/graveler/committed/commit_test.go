@@ -248,6 +248,31 @@ func TestCommitDeleteNonExistingRecord(t *testing.T) {
 	}, summary)
 }
 
+func TestCommitTombstonesBeforeRange(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	base := testutil.NewFakeIterator().
+		AddRange(&committed.Range{ID: "base:range", MinKey: committed.Key("b"), MaxKey: committed.Key("c"), Count: 2}).
+		AddValueRecords(makeV("b", "base:b"), makeV("c", "base:c"))
+
+	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{*makeTombstoneV("a"),
+		*makeV("d", "changes:d")})
+
+	writer := mock.NewMockMetaRangeWriter(ctrl)
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("b", "base:b")))
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "base:c")))
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("d", "changes:d")))
+
+	summary, err := committed.Commit(context.Background(), writer, base, changes, &committed.CommitOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, graveler.DiffSummary{
+		Count: map[graveler.DiffType]int{
+			graveler.DiffTypeAdded: 1,
+		},
+	}, summary)
+}
+
 func TestCommitCopiesLeftoverBase(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
