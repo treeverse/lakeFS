@@ -91,6 +91,7 @@ class ApiClient(
     readTimeoutSec: String = ""
 ) {
   val client = ApiClient.getApiClient(apiUrl, accessKey, secretKey, connectionTimeoutSec, readTimeoutSec)
+
   private val repositoriesApi = new api.RepositoriesApi(client)
   private val commitsApi = new api.CommitsApi(client)
   private val metadataApi = new api.MetadataApi(client)

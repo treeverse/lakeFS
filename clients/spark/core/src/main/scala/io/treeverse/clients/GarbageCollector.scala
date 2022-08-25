@@ -76,7 +76,7 @@ object GarbageCollector {
       commitID: String,
       repo: String,
       apiConf: APIConfigurations,
-      hcValues: Broadcast[ConfMap],
+      hcValues: Broadcast[ConfMap]
   ): Set[(String, Array[Byte], Array[Byte])] = {
     val location = new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey)
       .getMetaRangeURL(repo, commitID)
@@ -96,7 +96,7 @@ object GarbageCollector {
       commits: Dataset[Row],
       repo: String,
       apiConf: APIConfigurations,
-      hcValues: Broadcast[ConfMap],
+      hcValues: Broadcast[ConfMap]
   ): Dataset[Row] = {
     val get_range_tuples = udf((commitID: String) => {
       getRangeTuples(commitID, repo, apiConf, hcValues).toSeq
@@ -117,7 +117,7 @@ object GarbageCollector {
       rangeID: String,
       repo: String,
       apiConf: APIConfigurations,
-      hcValues: Broadcast[ConfMap],
+      hcValues: Broadcast[ConfMap]
   ): Seq[String] = {
     val location = new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey)
       .getRangeURL(repo, rangeID)
@@ -132,7 +132,7 @@ object GarbageCollector {
       rangeID: String,
       repo: String,
       apiConf: APIConfigurations,
-      hcValues: Broadcast[ConfMap],
+      hcValues: Broadcast[ConfMap]
   ): Set[(String, String, Boolean, Long)] = {
     def getSeconds(ts: Option[Timestamp]): Long = {
       ts.getOrElse(0).asInstanceOf[Timestamp].seconds
@@ -164,7 +164,7 @@ object GarbageCollector {
       rightRangeIDs: Set[String],
       repo: String,
       apiConf: APIConfigurations,
-      hcValues: Broadcast[ConfMap],
+      hcValues: Broadcast[ConfMap]
   ): Set[(String, String, Boolean, Long)] = {
     distinctEntryTuples(leftRangeIDs, repo, apiConf, hcValues)
 
@@ -177,7 +177,7 @@ object GarbageCollector {
       rangeIDs: Set[String],
       repo: String,
       apiConf: APIConfigurations,
-      hcValues: Broadcast[ConfMap],
+      hcValues: Broadcast[ConfMap]
   ) = {
     val tuples =
       rangeIDs.map((rangeID: String) => getEntryTuples(rangeID, repo, apiConf, hcValues))
@@ -361,12 +361,12 @@ object GarbageCollector {
     println("gcAddressesLocation: " + gcAddressesLocation)
     val expiredAddresses =
       getExpiredAddresses(repo,
-        runID,
-        gcCommitsLocation,
-        spark,
-        APIConfigurations(apiURL, accessKey, secretKey),
-        hcValues).withColumn("run_id", lit(runID)
-      )
+                          runID,
+                          gcCommitsLocation,
+                          spark,
+                          APIConfigurations(apiURL, accessKey, secretKey),
+                          hcValues
+                         ).withColumn("run_id", lit(runID))
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
     expiredAddresses.write
       .partitionBy("run_id")
