@@ -22,6 +22,33 @@ object StorageClientType extends Enumeration {
 
 private object ApiClient {
 
+  val clients = collection.immutable.Map[String, ApiClient]()
+
+  /**
+   * @return an ApiClient, reusing an existing one for this URL if possible.
+   */
+  def getApiClient(apiUrl: String, accessKey: String, secretKey: String, connectionTimeoutSec: String = "", readTimeoutSec: String = ""): ApiClient = this.synchronized {
+    clients.getOrElse(apiUrl, () => {
+
+      val FROM_SEC_TO_MILLISEC = 1000
+
+      val client = new api.ApiClient
+      client.setUsername(accessKey)
+      client.setPassword(secretKey)
+      client.setBasePath(apiUrl.stripSuffix("/"))
+      if (connectionTimeoutSec != null && !connectionTimeoutSec.isEmpty) {
+        val connectionTimeoutMillisec = connectionTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
+        client.setConnectTimeout(connectionTimeoutMillisec)
+      }
+
+      if (readTimeoutSec != null && !readTimeoutSec.isEmpty) {
+        val readTimeoutMillisec = readTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
+        client.setReadTimeout(readTimeoutMillisec)
+      }
+      client
+    })
+  }
+
   /** Translate uri according to two cases:
    *  If the storage type is s3 then translate the protocol of uri from "standard"-ish "s3" to "s3a", to
    *  trigger processing by S3AFileSystem.
@@ -60,21 +87,6 @@ class ApiClient(
     connectionTimeoutSec: String = "",
     readTimeoutSec: String = ""
 ) {
-  val FROM_SEC_TO_MILLISEC = 1000
-
-  private val client = new api.ApiClient
-  client.setUsername(accessKey)
-  client.setPassword(secretKey)
-  client.setBasePath(apiUrl.stripSuffix("/"))
-  if (connectionTimeoutSec != null && !connectionTimeoutSec.isEmpty) {
-    val connectionTimeoutMillisec = connectionTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
-    client.setConnectTimeout(connectionTimeoutMillisec)
-  }
-
-  if (readTimeoutSec != null && !readTimeoutSec.isEmpty) {
-    val readTimeoutMillisec = readTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
-    client.setReadTimeout(readTimeoutMillisec)
-  }
 
   private val repositoriesApi = new api.RepositoriesApi(client)
   private val commitsApi = new api.CommitsApi(client)
