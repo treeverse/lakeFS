@@ -93,7 +93,8 @@ object GarbageCollector {
         .toString
     }
     // continue on empty location, empty location is a result of a commit with no metaRangeID (e.g 'Repository created' commit)
-    if (location == "") Set()
+    if (StringUtils.isBlank(metaRangeLocation))
+      Set()
     else
       SSTableReader
         .forMetaRange(configurationFromValues(hcValues), metaRangeLocation)
