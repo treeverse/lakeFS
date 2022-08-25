@@ -22,6 +22,7 @@ import java.time.format.DateTimeFormatter
 import org.json4s.native.JsonMethods._
 import org.json4s._
 import org.json4s.JsonDSL._
+import org.apache.commons.lang3.StringUtils
 
 /** Interface to build an S3 client.  The object
  *  io.treeverse.clients.conditional.S3ClientBuilder -- conditionally
@@ -72,19 +73,30 @@ object GarbageCollector {
   }
 
   private def getRangeTuples(
+      storageNSForHadoopFS: String,
       commitID: String,
+      metaRangeRelativePath: String,
       repo: String,
       apiConf: APIConfigurations,
       hcValues: Broadcast[ConfMap]
   ): Set[(String, Array[Byte], Array[Byte])] = {
-    val location =
-      new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey)
+    var metaRangeLocation = metaRangeRelativePath
+    if (StringUtils.isBlank(metaRangeRelativePath)) {
+      // try to get location
+      metaRangeLocation = new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey)
         .getMetaRangeURL(repo, commitID)
+    } else {
+      metaRangeLocation = URI
+        .create(storageNSForHadoopFS + "/")
+        .resolve(metaRangeRelativePath)
+        .normalize()
+        .toString
+    }
     // continue on empty location, empty location is a result of a commit with no metaRangeID (e.g 'Repository created' commit)
     if (location == "") Set()
     else
       SSTableReader
-        .forMetaRange(configurationFromValues(hcValues), location)
+        .forMetaRange(configurationFromValues(hcValues), metaRangeLocation)
         .newIterator()
         .map(range =>
           (new String(range.id), range.message.minKey.toByteArray, range.message.maxKey.toByteArray)
@@ -93,24 +105,26 @@ object GarbageCollector {
   }
 
   def getRangesDFFromCommits(
+      storageNSForHadoopFS: String,
       commits: Dataset[Row],
       repo: String,
       apiConf: APIConfigurations,
       hcValues: Broadcast[ConfMap]
   ): Dataset[Row] = {
-    val get_range_tuples = udf((commitID: String) => {
-      getRangeTuples(commitID, repo, apiConf, hcValues).toSeq
+    val get_range_tuples = udf((commitID: String, metaRangeRelativePath: String) => {
+      getRangeTuples(storageNSForHadoopFS, commitID, metaRangeRelativePath, repo, apiConf, hcValues).toSeq
     })
-
-    commits.distinct
-      .select(col("expired"), explode(get_range_tuples(col("commit_id"))).as("range_data"))
+    val metaRangeRelativePathColumn = if (commits.columns.contains("meta_range_relative_path")) col("meta_range_relative_path") else lit("")
+    val tuples = get_range_tuples(col("commit_id"), metaRangeRelativePathColumn)
+    commits
+      .select(col("commit_id"), metaRangeRelativePathColumn).distinct
+      .select(col("commit_id"), explode(tuples).as("range_data"))
       .select(
-        col("expired"),
+        col("commit_id"),
         col("range_data._1").as("range_id"),
         col("range_data._2").as("min_key"),
         col("range_data._3").as("max_key")
       )
-      .distinct
   }
 
   def getRangeAddresses(
@@ -166,8 +180,6 @@ object GarbageCollector {
       repo: String,
       hcValues: Broadcast[ConfMap]
   ): Set[(String, String, Boolean, Long)] = {
-    distinctEntryTuples(leftRangeIDs, apiConf, repo, hcValues)
-
     val leftTuples = distinctEntryTuples(leftRangeIDs, apiConf, repo, hcValues)
     val rightTuples = distinctEntryTuples(rightRangeIDs, apiConf, repo, hcValues)
     leftTuples -- rightTuples
@@ -262,13 +274,26 @@ object GarbageCollector {
   def getExpiredAddresses(
       repo: String,
       runID: String,
+      storageNSForHadoopFS: String,
       commitDFLocation: String,
+      rangesDFLocation: String,
       spark: SparkSession,
       apiConf: APIConfigurations,
       hcValues: Broadcast[ConfMap]
   ): Dataset[Row] = {
     val commitsDF = getCommitsDF(runID, commitDFLocation, spark)
-    val rangesDF = getRangesDFFromCommits(commitsDF, repo, apiConf, hcValues)
+
+    var rangesDF =
+      getRangesDFFromCommits(storageNSForHadoopFS, commitsDF, repo, apiConf, hcValues)
+    rangesDF = rangesDF
+      .join(commitsDF, commitsDF("commit_id") === rangesDF("commit_id"))
+      .select("expired", "range_id", "min_key", "max_key")
+    rangesDF
+      .withColumn("run_id", lit(runID))
+      .write
+      .mode(SaveMode.Overwrite)
+      .parquet(rangesDFLocation + "/run_id=" + runID)
+    rangesDF = spark.read.parquet(rangesDFLocation + "/run_id=" + runID)
     val expired = getExpiredEntriesFromRanges(rangesDF, apiConf, repo, hcValues)
 
     val activeRangesDF = rangesDF.where("!expired")
@@ -357,8 +382,15 @@ object GarbageCollector {
     val gcAddressesLocation =
       ApiClient.translateURI(new URI(res.getGcAddressesLocation), storageType).toString
     println("gcAddressesLocation: " + gcAddressesLocation)
-    val expiredAddresses = getExpiredAddresses(repo,
+    var storageNSForHadoopFS = new ApiClient(apiURL, accessKey, secretKey)
+      .getStorageNamespace(repo, StorageClientType.HadoopFS)
+    if (!storageNSForHadoopFS.endsWith("/")) {
+      storageNSForHadoopFS += "/"
+    }
+    val rangesDFLocation = concatToGCLogsPrefix(storageNSForHadoopFS, "ranges")
+    var expiredAddresses = getExpiredAddresses(repo,
                                                runID,
+                                               storageNSForHadoopFS,
                                                gcCommitsLocation,
                                                spark,
                                                APIConfigurations(apiURL, accessKey, secretKey),
@@ -366,11 +398,12 @@ object GarbageCollector {
                                               ).withColumn("run_id", lit(runID))
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
     expiredAddresses.write
-      .partitionBy("run_id")
       .mode(SaveMode.Overwrite)
-      .parquet(gcAddressesLocation)
+      .parquet(gcAddressesLocation + "/run_id=" + runID)
 
     println("Expired addresses:")
+    expiredAddresses = spark.read.parquet(gcAddressesLocation + "/run_id=" + runID)
+
     expiredAddresses.show()
 
     // The remove operation uses an SDK client to directly access the underlying storage, and therefore does not need
@@ -390,12 +423,6 @@ object GarbageCollector {
              hcValues,
              storageType
             )
-
-    var storageNSForHadoopFS = new ApiClient(apiURL, accessKey, secretKey)
-      .getStorageNamespace(repo, StorageClientType.HadoopFS)
-    if (!storageNSForHadoopFS.endsWith("/")) {
-      storageNSForHadoopFS += "/"
-    }
 
     val commitsDF = getCommitsDF(runID, gcCommitsLocation, spark)
     val reportLogsDst = concatToGCLogsPrefix(storageNSForHadoopFS, "summary")

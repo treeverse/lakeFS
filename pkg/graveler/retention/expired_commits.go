@@ -7,9 +7,14 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
+type GarbageCollectionCommit struct {
+	ID          graveler.CommitID
+	MetaRangeID graveler.MetaRangeID
+}
+
 type GarbageCollectionCommits struct {
-	expired []graveler.CommitID
-	active  []graveler.CommitID
+	expired []*GarbageCollectionCommit
+	active  []*GarbageCollectionCommit
 }
 
 // GetGarbageCollectionCommits returns the sets of expired and active commits, according to the repository's garbage collection rules.
@@ -25,8 +30,8 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	for _, commitID := range previouslyExpired {
 		previouslyExpiredMap[commitID] = true
 	}
-	activeMap := make(map[graveler.CommitID]struct{})
-	expiredMap := make(map[graveler.CommitID]struct{})
+	activeMap := make(map[graveler.CommitID]*GarbageCollectionCommit)
+	expiredMap := make(map[graveler.CommitID]*GarbageCollectionCommit)
 	defer startingPointIterator.Close()
 	for startingPointIterator.Next() {
 		startingPoint := startingPointIterator.Value()
@@ -45,7 +50,10 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 			if branchRetentionDays, ok := rules.BranchRetentionDays[string(startingPoint.BranchID)]; ok {
 				retentionDays = int(branchRetentionDays)
 			}
-			activeMap[startingPoint.CommitID] = struct{}{}
+			activeMap[startingPoint.CommitID] = &GarbageCollectionCommit{
+				ID:          startingPoint.CommitID,
+				MetaRangeID: commit.MetaRangeID,
+			}
 			delete(expiredMap, startingPoint.CommitID)
 		}
 		branchExpirationThreshold := now.AddDate(0, 0, -retentionDays)
@@ -66,13 +74,19 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 				// was already here with earlier expiration date
 				break
 			}
+			commit, err = commitGetter.GetCommit(ctx, nextCommitID)
 			if commit.CreationDate.After(branchExpirationThreshold) {
-				activeMap[nextCommitID] = struct{}{}
+				activeMap[nextCommitID] = &GarbageCollectionCommit{
+					ID:          nextCommitID,
+					MetaRangeID: commit.MetaRangeID,
+				}
 				delete(expiredMap, nextCommitID)
 			} else if _, ok := activeMap[nextCommitID]; !ok {
-				expiredMap[nextCommitID] = struct{}{}
+				expiredMap[nextCommitID] = &GarbageCollectionCommit{
+					ID:          nextCommitID,
+					MetaRangeID: commit.MetaRangeID,
+				}
 			}
-			commit, err = commitGetter.GetCommit(ctx, nextCommitID)
 			if err != nil {
 				return nil, err
 			}
@@ -85,10 +99,10 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	return &GarbageCollectionCommits{active: commitSetToSlice(activeMap), expired: commitSetToSlice(expiredMap)}, nil
 }
 
-func commitSetToSlice(commitMap map[graveler.CommitID]struct{}) []graveler.CommitID {
-	res := make([]graveler.CommitID, 0, len(commitMap))
-	for commitID := range commitMap {
-		res = append(res, commitID)
+func commitSetToSlice(commitMap map[graveler.CommitID]*GarbageCollectionCommit) []*GarbageCollectionCommit {
+	res := make([]*GarbageCollectionCommit, 0, len(commitMap))
+	for _, commit := range commitMap {
+		res = append(res, commit)
 	}
 	return res
 }

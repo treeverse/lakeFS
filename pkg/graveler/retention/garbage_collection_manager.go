@@ -13,6 +13,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -25,6 +26,7 @@ const (
 type GarbageCollectionManager struct {
 	blockAdapter                block.Adapter
 	refManager                  graveler.RefManager
+	metaRangeManager            committed.MetaRangeManager
 	committedBlockStoragePrefix string
 }
 
@@ -55,11 +57,12 @@ func (r *RepositoryCommitGetter) GetCommit(ctx context.Context, commitID gravele
 	return r.refManager.GetCommit(ctx, r.repositoryID, commitID)
 }
 
-func NewGarbageCollectionManager(blockAdapter block.Adapter, refManager graveler.RefManager, committedBlockStoragePrefix string) *GarbageCollectionManager {
+func NewGarbageCollectionManager(blockAdapter block.Adapter, refManager graveler.RefManager, committedBlockStoragePrefix string, metaRangeManager committed.MetaRangeManager) *GarbageCollectionManager {
 	return &GarbageCollectionManager{
 		blockAdapter:                blockAdapter,
 		refManager:                  refManager,
 		committedBlockStoragePrefix: committedBlockStoragePrefix,
+		metaRangeManager:            metaRangeManager,
 	}
 }
 
@@ -157,18 +160,27 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	}
 	b := &strings.Builder{}
 	csvWriter := csv.NewWriter(b)
-	err = csvWriter.Write([]string{"commit_id", "expired"}) // write headers
+	err = csvWriter.Write([]string{"commit_id", "expired", "meta_range_relative_path"}) // write headers
 	if err != nil {
 		return "", err
 	}
-	for _, commitID := range gcCommits.expired {
-		err := csvWriter.Write([]string{string(commitID), "true"})
+
+	for _, commit := range gcCommits.expired {
+		metaRangeLocation := ""
+		if commit.MetaRangeID != "" {
+			metaRangeLocation, _ = m.metaRangeManager.GetMetaRangeURI(ctx, storageNamespace, commit.MetaRangeID)
+		}
+		err := csvWriter.Write([]string{string(commit.ID), "true", metaRangeLocation})
 		if err != nil {
 			return "", err
 		}
 	}
-	for _, commitID := range gcCommits.active {
-		err := csvWriter.Write([]string{string(commitID), "false"})
+	for _, commit := range gcCommits.active {
+		metaRangeLocation := ""
+		if commit.MetaRangeID != "" {
+			metaRangeLocation, _ = m.metaRangeManager.GetMetaRangeURI(ctx, storageNamespace, commit.MetaRangeID)
+		}
+		err := csvWriter.Write([]string{string(commit.ID), "false", metaRangeLocation})
 		if err != nil {
 			return "", err
 		}
