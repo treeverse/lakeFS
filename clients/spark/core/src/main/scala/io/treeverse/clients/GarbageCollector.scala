@@ -115,8 +115,8 @@ object GarbageCollector {
 
   def getRangeAddresses(
       rangeID: String,
-      repo: String,
       apiConf: APIConfigurations,
+      repo: String,
       hcValues: Broadcast[ConfMap]
   ): Seq[String] = {
     val location = new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey)
@@ -130,8 +130,8 @@ object GarbageCollector {
 
   def getEntryTuples(
       rangeID: String,
-      repo: String,
       apiConf: APIConfigurations,
+      repo: String,
       hcValues: Broadcast[ConfMap]
   ): Set[(String, String, Boolean, Long)] = {
     def getSeconds(ts: Option[Timestamp]): Long = {
@@ -162,25 +162,25 @@ object GarbageCollector {
   def leftAntiJoinAddresses(
       leftRangeIDs: Set[String],
       rightRangeIDs: Set[String],
-      repo: String,
       apiConf: APIConfigurations,
+      repo: String,
       hcValues: Broadcast[ConfMap]
   ): Set[(String, String, Boolean, Long)] = {
-    distinctEntryTuples(leftRangeIDs, repo, apiConf, hcValues)
+    distinctEntryTuples(leftRangeIDs, apiConf, repo, hcValues)
 
-    val leftTuples = distinctEntryTuples(leftRangeIDs, repo, apiConf, hcValues)
-    val rightTuples = distinctEntryTuples(rightRangeIDs, repo, apiConf, hcValues)
+    val leftTuples = distinctEntryTuples(leftRangeIDs, apiConf, repo, hcValues)
+    val rightTuples = distinctEntryTuples(rightRangeIDs, apiConf, repo, hcValues)
     leftTuples -- rightTuples
   }
 
   private def distinctEntryTuples(
       rangeIDs: Set[String],
-      repo: String,
       apiConf: APIConfigurations,
+      repo: String,
       hcValues: Broadcast[ConfMap]
   ) = {
     val tuples =
-      rangeIDs.map((rangeID: String) => getEntryTuples(rangeID, repo, apiConf, hcValues))
+      rangeIDs.map((rangeID: String) => getEntryTuples(rangeID, apiConf, repo, hcValues))
     if (tuples.isEmpty) Set[(String, String, Boolean, Long)]() else tuples.reduce(_.union(_))
   }
 
@@ -191,12 +191,12 @@ object GarbageCollector {
    */
   def getExpiredEntriesFromRanges(
       ranges: Dataset[Row],
-      repo: String,
       apiConf: APIConfigurations,
+      repo: String,
       hcValues: Broadcast[ConfMap]
   ): Dataset[Row] = {
     val left_anti_join_addresses = udf((x: Seq[String], y: Seq[String]) => {
-      leftAntiJoinAddresses(x.toSet, y.toSet, repo, apiConf, hcValues).toSeq
+      leftAntiJoinAddresses(x.toSet, y.toSet, apiConf, repo, hcValues).toSeq
     })
     val expiredRangesDF = ranges.where("expired")
     val activeRangesDF = ranges.where("!expired")
@@ -270,25 +270,25 @@ object GarbageCollector {
   ): Dataset[Row] = {
     val commitsDF = getCommitsDF(runID, commitDFLocation, spark)
     val rangesDF = getRangesDFFromCommits(commitsDF, repo, apiConf, hcValues)
-    val expired = getExpiredEntriesFromRanges(rangesDF, repo, apiConf, hcValues)
+    val expired = getExpiredEntriesFromRanges(rangesDF, apiConf, repo, hcValues)
 
     val activeRangesDF = rangesDF.where("!expired")
-    subtractDeduplications(expired, activeRangesDF, repo, spark, apiConf, hcValues)
+    subtractDeduplications(expired, activeRangesDF, apiConf, repo, spark, hcValues)
   }
 
   private def subtractDeduplications(
       expired: Dataset[Row],
       activeRangesDF: Dataset[Row],
+      apiConf: APIConfigurations,
       repo: String,
       spark: SparkSession,
-      apiConf: APIConfigurations,
       hcValues: Broadcast[ConfMap]
   ): Dataset[Row] = {
     val activeRangesRDD: RDD[String] =
       activeRangesDF.select("range_id").rdd.distinct().map(x => x.getString(0))
     val activeAddresses: RDD[String] = activeRangesRDD
       .flatMap(range => {
-        getRangeAddresses(range, repo, apiConf, hcValues)
+        getRangeAddresses(range, apiConf, repo, hcValues)
       })
       .distinct()
     val activeAddressesRows: RDD[Row] = activeAddresses.map(x => Row(x))
