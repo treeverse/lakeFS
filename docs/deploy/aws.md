@@ -49,7 +49,7 @@ Please refer to [AWS documentation](https://aws.amazon.com/dynamodb/getting-star
 
 ### On EC2
 
-1. Edit and same the following configuration file as `config.yaml`:
+1. Edit and save the following configuration file as `config.yaml`:
 
    ```yaml
    ---
