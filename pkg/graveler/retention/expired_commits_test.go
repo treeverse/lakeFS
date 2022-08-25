@@ -302,7 +302,7 @@ func TestExpiredCommits(t *testing.T) {
 			}
 			sort.Strings(tst.expectedActiveIDs)
 			sort.Slice(gcCommits.active, func(i, j int) bool {
-				return gcCommits.active[i].Ref() < gcCommits.active[j].Ref()
+				return gcCommits.active[i].ID.Ref() < gcCommits.active[j].ID.Ref()
 			})
 			if diff := deep.Equal(tst.expectedActiveIDs, testToStringArray(gcCommits.active)); diff != nil {
 				t.Errorf("active commits ids diff=%s", diff)
@@ -310,7 +310,7 @@ func TestExpiredCommits(t *testing.T) {
 
 			sort.Strings(tst.expectedExpiredIDs)
 			sort.Slice(gcCommits.expired, func(i, j int) bool {
-				return gcCommits.expired[i].Ref() < gcCommits.expired[j].Ref()
+				return gcCommits.expired[i].ID.Ref() < gcCommits.expired[j].ID.Ref()
 			})
 			if diff := deep.Equal(tst.expectedExpiredIDs, testToStringArray(gcCommits.expired)); diff != nil {
 				t.Errorf("expired commits ids diff=%s", diff)
@@ -319,10 +319,10 @@ func TestExpiredCommits(t *testing.T) {
 	}
 }
 
-func testToStringArray(commitIDs []graveler.CommitID) []string {
-	res := make([]string, len(commitIDs))
-	for i := range commitIDs {
-		res[i] = string(commitIDs[i])
+func testToStringArray(commits []*GarbageCollectionCommit) []string {
+	res := make([]string, len(commits))
+	for i := range commits {
+		res[i] = string(commits[i].ID)
 	}
 	return res
 }

@@ -74,22 +74,23 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 				// was already here with earlier expiration date
 				break
 			}
-			commit, err = commitGetter.GetCommit(ctx, nextCommitID)
+			nextCommit, err := commitGetter.GetCommit(ctx, nextCommitID)
+			if err != nil {
+				return nil, err
+			}
 			if commit.CreationDate.After(branchExpirationThreshold) {
 				activeMap[nextCommitID] = &GarbageCollectionCommit{
 					ID:          nextCommitID,
-					MetaRangeID: commit.MetaRangeID,
+					MetaRangeID: nextCommit.MetaRangeID,
 				}
 				delete(expiredMap, nextCommitID)
 			} else if _, ok := activeMap[nextCommitID]; !ok {
 				expiredMap[nextCommitID] = &GarbageCollectionCommit{
 					ID:          nextCommitID,
-					MetaRangeID: commit.MetaRangeID,
+					MetaRangeID: nextCommit.MetaRangeID,
 				}
 			}
-			if err != nil {
-				return nil, err
-			}
+			commit = nextCommit
 			processed[nextCommitID] = branchExpirationThreshold
 		}
 	}
