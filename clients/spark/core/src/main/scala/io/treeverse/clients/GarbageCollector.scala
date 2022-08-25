@@ -75,12 +75,10 @@ object GarbageCollector {
   private def getRangeTuples(
       commitID: String,
       repo: String,
-      apiConf: APIConfigurations,
-      hcValues: Broadcast[ConfMap]
+      hcValues: Broadcast[ConfMap],
+      apiClient: ApiClient
   ): Set[(String, Array[Byte], Array[Byte])] = {
-    val location =
-      new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey)
-        .getMetaRangeURL(repo, commitID)
+    val location = apiClient.getMetaRangeURL(repo, commitID)
     // continue on empty location, empty location is a result of a commit with no metaRangeID (e.g 'Repository created' commit)
     if (location == "") Set()
     else
@@ -96,11 +94,11 @@ object GarbageCollector {
   def getRangesDFFromCommits(
       commits: Dataset[Row],
       repo: String,
-      apiConf: APIConfigurations,
-      hcValues: Broadcast[ConfMap]
+      hcValues: Broadcast[ConfMap],
+      apiClient: ApiClient
   ): Dataset[Row] = {
     val get_range_tuples = udf((commitID: String) => {
-      getRangeTuples(commitID, repo, apiConf, hcValues).toSeq
+      getRangeTuples(commitID, repo, hcValues, apiClient).toSeq
     })
 
     commits.distinct
@@ -116,12 +114,12 @@ object GarbageCollector {
 
   def getRangeAddresses(
       rangeID: String,
-      apiConf: APIConfigurations,
       repo: String,
-      hcValues: Broadcast[ConfMap]
+      hcValues: Broadcast[ConfMap],
+      apiClient: ApiClient
   ): Seq[String] = {
     val location =
-      new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey).getRangeURL(repo, rangeID)
+      apiClient.getRangeURL(repo, rangeID)
     SSTableReader
       .forRange(configurationFromValues(hcValues), location)
       .newIterator()
@@ -131,16 +129,15 @@ object GarbageCollector {
 
   def getEntryTuples(
       rangeID: String,
-      apiConf: APIConfigurations,
       repo: String,
-      hcValues: Broadcast[ConfMap]
+      hcValues: Broadcast[ConfMap],
+      apiClient: ApiClient
   ): Set[(String, String, Boolean, Long)] = {
     def getSeconds(ts: Option[Timestamp]): Long = {
       ts.getOrElse(0).asInstanceOf[Timestamp].seconds
     }
 
-    val location =
-      new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey).getRangeURL(repo, rangeID)
+    val location = apiClient.getRangeURL(repo, rangeID)
     SSTableReader
       .forRange(configurationFromValues(hcValues), location)
       .newIterator()
@@ -163,24 +160,25 @@ object GarbageCollector {
   def leftAntiJoinAddresses(
       leftRangeIDs: Set[String],
       rightRangeIDs: Set[String],
-      apiConf: APIConfigurations,
       repo: String,
-      hcValues: Broadcast[ConfMap]
+      hcValues: Broadcast[ConfMap],
+      apiClient: ApiClient
   ): Set[(String, String, Boolean, Long)] = {
-    distinctEntryTuples(leftRangeIDs, apiConf, repo, hcValues)
+    distinctEntryTuples(leftRangeIDs, repo, hcValues, apiClient)
 
-    val leftTuples = distinctEntryTuples(leftRangeIDs, apiConf, repo, hcValues)
-    val rightTuples = distinctEntryTuples(rightRangeIDs, apiConf, repo, hcValues)
+    val leftTuples = distinctEntryTuples(leftRangeIDs, repo, hcValues, apiClient)
+    val rightTuples = distinctEntryTuples(rightRangeIDs, repo, hcValues, apiClient)
     leftTuples -- rightTuples
   }
 
   private def distinctEntryTuples(
       rangeIDs: Set[String],
-      apiConf: APIConfigurations,
       repo: String,
-      hcValues: Broadcast[ConfMap]
+      hcValues: Broadcast[ConfMap],
+      apiClient: ApiClient
   ) = {
-    val tuples = rangeIDs.map((rangeID: String) => getEntryTuples(rangeID, apiConf, repo, hcValues))
+    val tuples =
+      rangeIDs.map((rangeID: String) => getEntryTuples(rangeID, repo, hcValues, apiClient))
     if (tuples.isEmpty) Set[(String, String, Boolean, Long)]() else tuples.reduce(_.union(_))
   }
 
@@ -191,12 +189,12 @@ object GarbageCollector {
    */
   def getExpiredEntriesFromRanges(
       ranges: Dataset[Row],
-      apiConf: APIConfigurations,
       repo: String,
-      hcValues: Broadcast[ConfMap]
+      hcValues: Broadcast[ConfMap],
+      apiClient: ApiClient
   ): Dataset[Row] = {
     val left_anti_join_addresses = udf((x: Seq[String], y: Seq[String]) => {
-      leftAntiJoinAddresses(x.toSet, y.toSet, apiConf, repo, hcValues).toSeq
+      leftAntiJoinAddresses(x.toSet, y.toSet, repo, hcValues, apiClient).toSeq
     })
     val expiredRangesDF = ranges.where("expired")
     val activeRangesDF = ranges.where("!expired")
@@ -265,30 +263,30 @@ object GarbageCollector {
       runID: String,
       commitDFLocation: String,
       spark: SparkSession,
-      apiConf: APIConfigurations,
-      hcValues: Broadcast[ConfMap]
+      hcValues: Broadcast[ConfMap],
+      apiClient: ApiClient
   ): Dataset[Row] = {
     val commitsDF = getCommitsDF(runID, commitDFLocation, spark)
-    val rangesDF = getRangesDFFromCommits(commitsDF, repo, apiConf, hcValues)
-    val expired = getExpiredEntriesFromRanges(rangesDF, apiConf, repo, hcValues)
+    val rangesDF = getRangesDFFromCommits(commitsDF, repo, hcValues, apiClient)
+    val expired = getExpiredEntriesFromRanges(rangesDF, repo, hcValues, apiClient)
 
     val activeRangesDF = rangesDF.where("!expired")
-    subtractDeduplications(expired, activeRangesDF, apiConf, repo, spark, hcValues)
+    subtractDeduplications(expired, activeRangesDF, repo, spark, hcValues, apiClient)
   }
 
   private def subtractDeduplications(
       expired: Dataset[Row],
       activeRangesDF: Dataset[Row],
-      apiConf: APIConfigurations,
       repo: String,
       spark: SparkSession,
-      hcValues: Broadcast[ConfMap]
+      hcValues: Broadcast[ConfMap],
+      apiClient: ApiClient
   ): Dataset[Row] = {
     val activeRangesRDD: RDD[String] =
       activeRangesDF.select("range_id").rdd.distinct().map(x => x.getString(0))
     val activeAddresses: RDD[String] = activeRangesRDD
       .flatMap(range => {
-        getRangeAddresses(range, apiConf, repo, hcValues)
+        getRangeAddresses(range, repo, hcValues, apiClient)
       })
       .distinct()
     val activeAddressesRows: RDD[Row] = activeAddresses.map(x => Row(x))
@@ -363,8 +361,8 @@ object GarbageCollector {
                                                runID,
                                                gcCommitsLocation,
                                                spark,
-                                               APIConfigurations(apiURL, accessKey, secretKey),
-                                               hcValues
+                                               hcValues,
+                                               apiClient
                                               ).withColumn("run_id", lit(runID))
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
     expiredAddresses.write
@@ -377,8 +375,7 @@ object GarbageCollector {
 
     // The remove operation uses an SDK client to directly access the underlying storage, and therefore does not need
     // a translated storage namespace that triggers processing by Hadoop FileSystems.
-    var storageNSForSdkClient = new ApiClient(apiURL, accessKey, secretKey)
-      .getStorageNamespace(repo, StorageClientType.SDKClient)
+    var storageNSForSdkClient = apiClient.getStorageNamespace(repo, StorageClientType.SDKClient)
     if (!storageNSForSdkClient.endsWith("/")) {
       storageNSForSdkClient += "/"
     }
@@ -393,8 +390,7 @@ object GarbageCollector {
              storageType
             )
 
-    var storageNSForHadoopFS = new ApiClient(apiURL, accessKey, secretKey)
-      .getStorageNamespace(repo, StorageClientType.HadoopFS)
+    var storageNSForHadoopFS = apiClient.getStorageNamespace(repo, StorageClientType.HadoopFS)
     if (!storageNSForHadoopFS.endsWith("/")) {
       storageNSForHadoopFS += "/"
     }
