@@ -291,7 +291,7 @@ object GarbageCollector {
       apiConf: APIConfigurations,
       hcValues: Broadcast[ConfMap]
   ): Dataset[Row] = {
-    val commitsDF = getCommitsDF(runID, commitDFLocation, spark)
+    val commitsDF = getCommitsDF(runID, commitDFLocation, spark).cache()
 
     var rangesDF =
       getRangesDFFromCommits(storageNSForHadoopFS, commitsDF, repo, apiConf, hcValues)
