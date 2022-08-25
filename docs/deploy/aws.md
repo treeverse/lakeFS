@@ -12,6 +12,7 @@ redirect_from:
 ---
 
 # Deploy lakeFS on AWS
+
 {: .no_toc }
 Expected deployment time: 25 min
 
@@ -20,10 +21,12 @@ Expected deployment time: 25 min
 {% include_relative includes/prerequisites.md %}
 
 ## Preparing the Database for the Key Value Store
+
 lakeFS uses a key-value store to synchronize actions on your repositories. Out of the box, this key-value store can rely on DynamoDB or a PostgreSQL DB. As lakeFS open source, you can also write your own implementation and use any other DB
 The following two sections explain how to setup either PostgreSQL or DynamoDB as key-value backing DB
 
 ### Creating PostgreSQL Database on AWS RDS
+
 We will show you how to create a database on AWS RDS but you can use any PostgreSQL database as long as it's accessible by your lakeFS installation.
 
 If you already have a database, take note of the connection string and skip to the [next step](#installation-options)
@@ -37,7 +40,8 @@ If you already have a database, take note of the connection string and skip to t
 3. Make sure your security group rules allow you to connect to the database instance.
 
 ### DynamoDB on AWS
-DynamoDB on AWS does not require any specific preparation, other than properly configuring lakeFS to use it and valid AWS credentials. Please refer to `database.dynamodb ` section in the [configuration reference](../reference/configuration.md#reference) for complete configuration options.
+
+DynamoDB on AWS does not require any specific preparation, other than properly configuring lakeFS to use it and valid AWS credentials. Please refer to `database.dynamodb` section in the [configuration reference](../reference/configuration.md#reference) for complete configuration options.
 AWS credentials, for DynamoDB, can also be provided via environment variables, as described in the [configuration reference](../reference/configuration.md#using-environment-variables)
 Please refer to [AWS documentation](https://aws.amazon.com/dynamodb/getting-started/) for further information on DynamoDB
 
@@ -45,42 +49,33 @@ Please refer to [AWS documentation](https://aws.amazon.com/dynamodb/getting-star
 
 ### On EC2
 
-#### With PostgreSQL
-1. Save the following configuration file as `config.yaml`:
+1. Edit and same the following configuration file as `config.yaml`:
 
    ```yaml
    ---
    database:
+     type: "postgres" OR "dynamodb"
+
+     # when using dynamodb
+     dynamodb: 
+       table_name: "[DYNAMODB_TABLE_NAME]"
+       aws_region: "[DYNAMODB_REGION]"
+
+     # when using postgres
      type: "postgres"
      postgres:
        connection_string: "[DATABASE_CONNECTION_STRING]"
+
    auth:
      encrypt:
        # replace this with a randomly-generated string:
        secret_key: "[ENCRYPTION_SECRET_KEY]"
+
    blockstore:
      type: s3
      s3:
        region: us-east-1 # optional, fallback in case discover from bucket is not supported
    ```
-
-#### With DynamoDB
-1. Save the following configuration file as `config.yaml`:
-
-   ```yaml
-   ---
-   database:
-     type: "dynamodb"
-     dynamodb: 
-       table_name: "[DYNAMODB_TABLE_NAME]"
-   auth:
-     encrypt:
-       # replace this with a randomly-generated string:
-       secret_key: "[ENCRYPTION_SECRET_KEY]"
-   blockstore:
-     type: s3
-     s3:
-       region: us-east-1 # optional, fallback in case discover from bucket is not supported
 
 1. [Download the binary](../index.md#downloads) to the EC2 instance.
 1. Run the `lakefs` binary on the EC2 instance:
@@ -90,10 +85,13 @@ Please refer to [AWS documentation](https://aws.amazon.com/dynamodb/getting-star
    **Note:** It's preferable to run the binary as a service using systemd or your operating system's facilities.
 
 ### On ECS
+
 To support container-based environments like AWS ECS, lakeFS can be configured using environment variables. Here are a couple of `docker run` 
 commands to demonstrate starting lakeFS using Docker:
+
 #### With PostgreSQL
-```sh
+
+```bash
 docker run \
   --name lakefs \
   -p 8000:8000 \
@@ -105,6 +103,7 @@ docker run \
 ```
 
 #### With PostgreSQL
+
 ```sh
 docker run \
   --name lakefs \
@@ -119,9 +118,11 @@ docker run \
 See the [reference](../reference/configuration.md#using-environment-variables) for a complete list of environment variables.
 
 ### On EKS
+
 See [Kubernetes Deployment](./k8s.md).
 
 ## Load balancing
+
 Depending on how you chose to install lakeFS, you should have a load balancer direct requests to the lakeFS server.  
 By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint which you can use for health checks.
 
@@ -134,4 +135,5 @@ By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint whic
 1. Configure the health-check to use the exposed `/_health` URL
 
 ## Next Steps
+
 Your next step is to [prepare your storage](../setup/storage/index.md). If you already have a storage bucket/container, you're ready to [create your first lakeFS repository](../setup/create-repo.md).
