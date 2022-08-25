@@ -113,12 +113,21 @@ object GarbageCollector {
       hcValues: Broadcast[ConfMap]
   ): Dataset[Row] = {
     val get_range_tuples = udf((commitID: String, metaRangeRelativePath: String) => {
-      getRangeTuples(storageNSForHadoopFS, commitID, metaRangeRelativePath, repo, apiConf, hcValues).toSeq
+      getRangeTuples(storageNSForHadoopFS,
+                     commitID,
+                     metaRangeRelativePath,
+                     repo,
+                     apiConf,
+                     hcValues
+                    ).toSeq
     })
-    val metaRangeRelativePathColumn = if (commits.columns.contains("meta_range_relative_path")) col("meta_range_relative_path") else lit("")
+    val metaRangeRelativePathColumn =
+      if (commits.columns.contains("meta_range_relative_path")) col("meta_range_relative_path")
+      else lit("")
     val tuples = get_range_tuples(col("commit_id"), metaRangeRelativePathColumn)
     commits
-      .select(col("commit_id"), metaRangeRelativePathColumn).distinct
+      .select(col("commit_id"), metaRangeRelativePathColumn)
+      .distinct
       .select(col("commit_id"), explode(tuples).as("range_data"))
       .select(
         col("commit_id"),
@@ -294,7 +303,7 @@ object GarbageCollector {
       .write
       .mode(SaveMode.Overwrite)
       .parquet(rangesDFLocation + "/run_id=" + runID)
-    rangesDF = spark.read.parquet(rangesDFLocation + "/run_id=" + runID)
+    rangesDF = spark.read.parquet(rangesDFLocation + "/run_id=" + runID).cache()
     val expired = getExpiredEntriesFromRanges(rangesDF, apiConf, repo, hcValues)
 
     val activeRangesDF = rangesDF.where("!expired")
