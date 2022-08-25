@@ -168,7 +168,7 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	for _, commit := range gcCommits.expired {
 		metaRangeLocation := ""
 		if commit.MetaRangeID != "" {
-			metaRangeLocation, _ = m.metaRangeManager.GetMetaRangeURI(ctx, storageNamespace, commit.MetaRangeID)
+			metaRangeLocation, _ = m.metaRangeManager.GetMetaRangeURI(ctx, repository.StorageNamespace, commit.MetaRangeID)
 		}
 		err := csvWriter.Write([]string{string(commit.ID), "true", metaRangeLocation})
 		if err != nil {
@@ -178,7 +178,7 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	for _, commit := range gcCommits.active {
 		metaRangeLocation := ""
 		if commit.MetaRangeID != "" {
-			metaRangeLocation, _ = m.metaRangeManager.GetMetaRangeURI(ctx, storageNamespace, commit.MetaRangeID)
+			metaRangeLocation, _ = m.metaRangeManager.GetMetaRangeURI(ctx, repository.StorageNamespace, commit.MetaRangeID)
 		}
 		err := csvWriter.Write([]string{string(commit.ID), "false", metaRangeLocation})
 		if err != nil {
