@@ -357,13 +357,11 @@ object GarbageCollector {
     val gcAddressesLocation =
       ApiClient.translateURI(new URI(res.getGcAddressesLocation), storageType).toString
     println("gcAddressesLocation: " + gcAddressesLocation)
-    val expiredAddresses = getExpiredAddresses(repo,
-                                               runID,
-                                               gcCommitsLocation,
-                                               spark,
-                                               hcValues,
-                                               apiClient
-                                              ).withColumn("run_id", lit(runID))
+    val expiredAddresses =
+      getExpiredAddresses(repo, runID, gcCommitsLocation, spark, hcValues, apiClient).withColumn(
+        "run_id",
+        lit(runID)
+      )
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
     expiredAddresses.write
       .partitionBy("run_id")
