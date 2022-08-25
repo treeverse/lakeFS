@@ -28,25 +28,27 @@ private object ApiClient {
    * @return an ApiClient, reusing an existing one for this URL if possible.
    */
   def getApiClient(apiUrl: String, accessKey: String, secretKey: String, connectionTimeoutSec: String = "", readTimeoutSec: String = ""): ApiClient = this.synchronized {
-    clients.getOrElse(apiUrl, () => {
+    clients.get(apiUrl) match {
+      case Some(client) => client
+      case None => {
+        val FROM_SEC_TO_MILLISEC = 1000
 
-      val FROM_SEC_TO_MILLISEC = 1000
+        val client = new api.ApiClient
+        client.setUsername(accessKey)
+        client.setPassword(secretKey)
+        client.setBasePath(apiUrl.stripSuffix("/"))
+        if (connectionTimeoutSec != null && !connectionTimeoutSec.isEmpty) {
+          val connectionTimeoutMillisec = connectionTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
+          client.setConnectTimeout(connectionTimeoutMillisec)
+        }
 
-      val client = new api.ApiClient
-      client.setUsername(accessKey)
-      client.setPassword(secretKey)
-      client.setBasePath(apiUrl.stripSuffix("/"))
-      if (connectionTimeoutSec != null && !connectionTimeoutSec.isEmpty) {
-        val connectionTimeoutMillisec = connectionTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
-        client.setConnectTimeout(connectionTimeoutMillisec)
+        if (readTimeoutSec != null && !readTimeoutSec.isEmpty) {
+          val readTimeoutMillisec = readTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
+          client.setReadTimeout(readTimeoutMillisec)
+        }
+        client
       }
-
-      if (readTimeoutSec != null && !readTimeoutSec.isEmpty) {
-        val readTimeoutMillisec = readTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
-        client.setReadTimeout(readTimeoutMillisec)
-      }
-      client
-    })
+    }
   }
 
   /** Translate uri according to two cases:
