@@ -22,12 +22,12 @@ object StorageClientType extends Enumeration {
 
 private object ApiClient {
 
-  val clients = collection.immutable.Map[String, ApiClient]()
+  val clients = collection.mutable.Map[String, api.ApiClient]()
 
   /**
    * @return an ApiClient, reusing an existing one for this URL if possible.
    */
-  def getApiClient(apiUrl: String, accessKey: String, secretKey: String, connectionTimeoutSec: String = "", readTimeoutSec: String = ""): ApiClient = this.synchronized {
+  def getApiClient(apiUrl: String, accessKey: String, secretKey: String, connectionTimeoutSec: String = "", readTimeoutSec: String = ""): api.ApiClient = this.synchronized {
     clients.get(apiUrl) match {
       case Some(client) => client
       case None => {
@@ -46,6 +46,7 @@ private object ApiClient {
           val readTimeoutMillisec = readTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
           client.setReadTimeout(readTimeoutMillisec)
         }
+        clients += (apiUrl -> client)
         client
       }
     }
@@ -89,7 +90,7 @@ class ApiClient(
     connectionTimeoutSec: String = "",
     readTimeoutSec: String = ""
 ) {
-
+  val client = ApiClient.getApiClient(apiUrl, accessKey, secretKey, connectionTimeoutSec, readTimeoutSec)
   private val repositoriesApi = new api.RepositoriesApi(client)
   private val commitsApi = new api.CommitsApi(client)
   private val metadataApi = new api.MetadataApi(client)
