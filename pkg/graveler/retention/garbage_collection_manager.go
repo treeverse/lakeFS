@@ -118,6 +118,7 @@ func (m *GarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, sto
 	if err != nil {
 		return nil, err
 	}
+	defer previousRunReader.Close()
 	csvReader := csv.NewReader(previousRunReader)
 	csvReader.ReuseRecord = true
 	var res []graveler.CommitID
@@ -145,12 +146,15 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	if err != nil {
 		return "", err
 	}
+	defer branchIterator.Close()
 	// get all commits that are not the first parent of any commit:
 	commitIterator, err := m.refManager.GCCommitIterator(ctx, repository)
 	if err != nil {
 		return "", fmt.Errorf("create kv orderd commit iterator commits: %w", err)
 	}
+	defer commitIterator.Close()
 	startingPointIterator := NewGCStartingPointIterator(commitIterator, branchIterator)
+	defer startingPointIterator.Close()
 	gcCommits, err := GetGarbageCollectionCommits(ctx, startingPointIterator, commitGetter, rules, previouslyExpiredCommits)
 	if err != nil {
 		return "", fmt.Errorf("find expired commits: %w", err)
