@@ -45,7 +45,9 @@ func ValidateSchemaVersion(ctx context.Context, store Store, migrationRequired b
 	switch {
 	case errors.Is(err, ErrNotFound):
 		if migrationRequired {
-			return fmt.Errorf("missing KV schema version: %w", err)
+			// TODO: We can update this message to point straight to the KV migration section, once the TBD is removed.
+			// The following message is still usable
+			return fmt.Errorf("migration to KV required, for more information see https://docs.lakefs.io/reference/upgrade.html#when-db-migrations-are-required : %w", err)
 		} else {
 			logging.Default().Info("No KV Schema version, setup required")
 			return nil
