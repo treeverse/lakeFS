@@ -24,10 +24,15 @@ private object ApiClient {
 
   val clients = collection.mutable.Map[String, api.ApiClient]()
 
-  /**
-   * @return an ApiClient, reusing an existing one for this URL if possible.
+  /** @return an ApiClient, reusing an existing one for this URL if possible.
    */
-  def getApiClient(apiUrl: String, accessKey: String, secretKey: String, connectionTimeoutSec: String = "", readTimeoutSec: String = ""): api.ApiClient = this.synchronized {
+  def getApiClient(
+      apiUrl: String,
+      accessKey: String,
+      secretKey: String,
+      connectionTimeoutSec: String = "",
+      readTimeoutSec: String = ""
+  ): api.ApiClient = this.synchronized {
     clients.get(apiUrl) match {
       case Some(client) => client
       case None => {
@@ -90,7 +95,8 @@ class ApiClient(
     connectionTimeoutSec: String = "",
     readTimeoutSec: String = ""
 ) {
-  val client = ApiClient.getApiClient(apiUrl, accessKey, secretKey, connectionTimeoutSec, readTimeoutSec)
+  val client =
+    ApiClient.getApiClient(apiUrl, accessKey, secretKey, connectionTimeoutSec, readTimeoutSec)
 
   private val repositoriesApi = new api.RepositoriesApi(client)
   private val commitsApi = new api.CommitsApi(client)
@@ -100,19 +106,22 @@ class ApiClient(
   private val configApi = new ConfigApi(client)
 
   private val storageNamespaceCache =
-    CacheBuilder.newBuilder().expireAfterWrite(2, TimeUnit.MINUTES).build[String, String]()
+    CacheBuilder
+      .newBuilder()
+      .expireAfterWrite(2, TimeUnit.MINUTES)
+      .build[StorageNamespaceCacheKey, String]()
 
   private class CallableFn(val fn: () => String) extends Callable[String] {
     def call(): String = fn()
   }
 
-  def getStorageNamespace(repoName: String, accessType: StorageClientType): String = {
+  def getStorageNamespace(repoName: String, storageClientType: StorageClientType): String = {
     storageNamespaceCache.get(
-      repoName,
+      StorageNamespaceCacheKey(repoName, storageClientType),
       new CallableFn(() => {
         val repo = repositoriesApi.getRepository(repoName)
 
-        val storageNamespace = accessType match {
+        val storageNamespace = storageClientType match {
           case StorageClientType.HadoopFS =>
             ApiClient
               .translateURI(URI.create(repo.getStorageNamespace), getBlockstoreType())
@@ -177,4 +186,10 @@ class ApiClient(
 
   def getBranchHEADCommit(repoName: String, branch: String): String =
     branchesApi.getBranch(repoName, branch).getCommitId
+
+  // Instances of case classes are compared by structure and not by reference https://docs.scala-lang.org/tour/case-classes.html.
+  case class StorageNamespaceCacheKey(
+      val repoName: String,
+      val storageClientType: StorageClientType
+  )
 }
