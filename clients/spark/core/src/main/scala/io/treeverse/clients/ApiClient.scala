@@ -1,6 +1,6 @@
 package io.treeverse.clients
 
-import com.google.common.cache.CacheBuilder
+import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import io.lakefs.clients.api
 import io.lakefs.clients.api.{ConfigApi, RetentionApi}
 import io.lakefs.clients.api.model.{
@@ -105,34 +105,33 @@ class ApiClient(
   private val retentionApi = new RetentionApi(client)
   private val configApi = new ConfigApi(client)
 
-  private val storageNamespaceCache =
+  private val storageNamespaceCache: LoadingCache[StorageNamespaceCacheKey, String] =
     CacheBuilder
       .newBuilder()
       .expireAfterWrite(2, TimeUnit.MINUTES)
-      .build[StorageNamespaceCacheKey, String]()
+      .build(new CacheLoader[StorageNamespaceCacheKey, String]() {
+        def load(key: StorageNamespaceCacheKey): String = {
+          keyToStorageNamespace(key)
+        }
+      })
 
-  private class CallableFn(val fn: () => String) extends Callable[String] {
-    def call(): String = fn()
+  def keyToStorageNamespace(key: StorageNamespaceCacheKey): String = {
+    val repo = repositoriesApi.getRepository(key.repoName)
+
+    val storageNamespace = key.storageClientType match {
+      case StorageClientType.HadoopFS =>
+        ApiClient
+          .translateURI(URI.create(repo.getStorageNamespace), getBlockstoreType())
+          .normalize()
+          .toString
+      case StorageClientType.SDKClient => repo.getStorageNamespace
+      case _                           => throw new IllegalArgumentException
+    }
+    storageNamespace
   }
 
   def getStorageNamespace(repoName: String, storageClientType: StorageClientType): String = {
-    storageNamespaceCache.get(
-      StorageNamespaceCacheKey(repoName, storageClientType),
-      new CallableFn(() => {
-        val repo = repositoriesApi.getRepository(repoName)
-
-        val storageNamespace = storageClientType match {
-          case StorageClientType.HadoopFS =>
-            ApiClient
-              .translateURI(URI.create(repo.getStorageNamespace), getBlockstoreType())
-              .normalize()
-              .toString
-          case StorageClientType.SDKClient => repo.getStorageNamespace
-          case _                           => throw new IllegalArgumentException
-        }
-        storageNamespace
-      })
-    )
+    storageNamespaceCache.get(StorageNamespaceCacheKey(repoName, storageClientType))
   }
 
   def prepareGarbageCollectionCommits(
@@ -189,7 +188,7 @@ class ApiClient(
 
   // Instances of case classes are compared by structure and not by reference https://docs.scala-lang.org/tour/case-classes.html.
   case class StorageNamespaceCacheKey(
-      val repoName: String,
-      val storageClientType: StorageClientType
+      repoName: String,
+      storageClientType: StorageClientType
   )
 }
