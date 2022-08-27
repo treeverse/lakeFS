@@ -195,12 +195,15 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 		return nil, kv.ErrMissingKey
 	}
 
+	start := time.Now()
 	result, err := s.svc.GetItemWithContext(ctx, &dynamodb.GetItemInput{
 		TableName:      aws.String(s.params.TableName),
 		Key:            s.bytesKeyToDynamoKey(partitionKey, key),
 		ConsistentRead: aws.Bool(true),
 	})
+	dynamoRequestDuration.WithLabelValues("GetItem").Observe(time.Since(start).Seconds())
 	if err != nil {
+		dynamoFailures.WithLabelValues("GetItem").Inc()
 		return nil, fmt.Errorf("get item: %s (key=%v): %w", err, string(key), kv.ErrOperationFailed)
 	}
 
@@ -251,8 +254,9 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 	}
 
 	input := &dynamodb.PutItemInput{
-		Item:      marshaledItem,
-		TableName: &s.params.TableName,
+		Item:                   marshaledItem,
+		TableName:              &s.params.TableName,
+		ReturnConsumedCapacity: aws.String(dynamodb.ReturnConsumedCapacityTotal),
 	}
 	if usePredicate {
 		if valuePredicate != nil {
@@ -265,12 +269,18 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		}
 	}
 
-	_, err = s.svc.PutItemWithContext(ctx, input)
+	start := time.Now()
+	resp, err := s.svc.PutItemWithContext(ctx, input)
+	dynamoRequestDuration.WithLabelValues("PutItem").Observe(time.Since(start).Seconds())
 	if err != nil {
 		if _, ok := err.(*dynamodb.ConditionalCheckFailedException); ok && usePredicate {
 			return kv.ErrPredicateFailed
 		}
+		dynamoFailures.WithLabelValues("PutItem").Inc()
 		return fmt.Errorf("put item: %s (key=%v): %w", err, string(key), kv.ErrOperationFailed)
+	}
+	if resp.ConsumedCapacity != nil {
+		dynamoConsumedCapacity.WithLabelValues("PutItem").Add(*resp.ConsumedCapacity.CapacityUnits)
 	}
 	return nil
 }
@@ -283,12 +293,19 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 		return kv.ErrMissingKey
 	}
 
-	_, err := s.svc.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
-		TableName: aws.String(s.params.TableName),
-		Key:       s.bytesKeyToDynamoKey(partitionKey, key),
+	start := time.Now()
+	resp, err := s.svc.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
+		TableName:              aws.String(s.params.TableName),
+		Key:                    s.bytesKeyToDynamoKey(partitionKey, key),
+		ReturnConsumedCapacity: aws.String(dynamodb.ReturnConsumedCapacityTotal),
 	})
+	dynamoRequestDuration.WithLabelValues("DeleteItem").Observe(time.Since(start).Seconds())
 	if err != nil {
+		dynamoFailures.WithLabelValues("DeleteItem").Inc()
 		return fmt.Errorf("delete item: %s (key=%v): %w", err, string(key), kv.ErrOperationFailed)
+	}
+	if resp.ConsumedCapacity != nil {
+		dynamoConsumedCapacity.WithLabelValues("DeleteItem").Add(*resp.ConsumedCapacity.CapacityUnits)
 	}
 	return nil
 }
@@ -324,14 +341,20 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, 
 		ConsistentRead:            aws.Bool(true),
 		ScanIndexForward:          aws.Bool(true),
 		ExclusiveStartKey:         exclusiveStartKey,
+		ReturnConsumedCapacity:    aws.String(dynamodb.ReturnConsumedCapacityTotal),
 	}
 	if s.params.ScanLimit != 0 {
 		queryInput.SetLimit(s.params.ScanLimit)
 	}
+
+	start := time.Now()
 	queryOutput, err := s.svc.QueryWithContext(ctx, queryInput)
+	dynamoRequestDuration.WithLabelValues("Query").Observe(time.Since(start).Seconds())
 	if err != nil {
+		dynamoFailures.WithLabelValues("Query").Inc()
 		return nil, fmt.Errorf("query: %s (start=%v): %w ", err, string(scanKey), kv.ErrOperationFailed)
 	}
+	dynamoConsumedCapacity.WithLabelValues("Query").Add(*queryOutput.ConsumedCapacity.CapacityUnits)
 
 	return &EntriesIterator{
 		scanCtx:      ctx,
@@ -351,6 +374,9 @@ func (s *Store) DropTable() error {
 	_, err := s.svc.DeleteTable(&dynamodb.DeleteTableInput{
 		TableName: &s.params.TableName,
 	})
+	if err != nil {
+		dynamoFailures.WithLabelValues("DeleteTable").Inc()
+	}
 	return err
 }
 
