@@ -127,15 +127,18 @@ var abuseLinkSameObjectCmd = &cobra.Command{
 				start := time.Now()
 
 				getResponse, err := client.GetPhysicalAddressWithResponse(ctx, u.Repository, u.Ref, &api.GetPhysicalAddressParams{Path: work})
-				stagingLocation := getResponse.JSON200
-				if err != nil || stagingLocation == nil {
+				if err == nil && getResponse.JSON200 == nil {
+					err = helpers.ResponseAsError(getResponse)
+				}
+				if err != nil {
 					output <- stress.Result{
-						Error: helpers.ResponseAsError(err),
+						Error: err,
 						Took:  time.Since(start),
 					}
 					continue
 				}
 
+				stagingLocation := getResponse.JSON200
 				linkResponse, err := client.LinkPhysicalAddressWithResponse(ctx, u.Repository, u.Ref,
 					&api.LinkPhysicalAddressParams{
 						Path: work,
