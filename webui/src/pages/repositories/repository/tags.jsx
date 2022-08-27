@@ -127,7 +127,7 @@ const CreateTagButton = ({ repo, variant = "success", onCreate = null, children 
 
     return (
         <>
-            <Modal show={show} onHide={hide}>
+            <Modal show={show} onHide={hide} enforceFocus={false}>
                 <Modal.Header closeButton>
                     Create Tag
                 </Modal.Header>
