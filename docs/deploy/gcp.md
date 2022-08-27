@@ -37,7 +37,9 @@ For example, if you install lakeFS on GKE, you need to deploy the SQL Auth Proxy
    ```yaml
    ---
    database:
-     connection_string: "[DATABASE_CONNECTION_STRING]"
+     type: "postgres"
+     postgres:
+       connection_string: "[DATABASE_CONNECTION_STRING]"
    auth:
      encrypt:
        # replace this with a randomly-generated string:
@@ -64,7 +66,8 @@ command to demonstrate starting lakeFS using Docker:
 docker run \
   --name lakefs \
   -p 8000:8000 \
-  -e LAKEFS_DATABASE_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \
+  -e LAKEFS_DATABASE_TYPE="postgres" \
+  -e LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \
   -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="[ENCRYPTION_SECRET_KEY]" \
   -e LAKEFS_BLOCKSTORE_TYPE="gs" \
   treeverse/lakefs:latest run
