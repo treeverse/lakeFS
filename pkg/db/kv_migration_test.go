@@ -72,6 +72,7 @@ func TestKVMigration(t *testing.T) {
 
 			testutil.ValidateKV(ctx, t, kvStore, tt.entries)
 			testutil.CleanupKV(ctx, t, kvStore)
+			kvpg.UnregisterAll()
 		})
 	}
 }

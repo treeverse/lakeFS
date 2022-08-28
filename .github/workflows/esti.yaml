@@ -230,6 +230,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: minio
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: minio123
@@ -267,6 +268,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
@@ -327,6 +329,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
@@ -405,6 +408,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
@@ -470,6 +474,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
@@ -521,6 +526,7 @@ jobs:
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-metaclient/${{ steps.unique.outputs.value }}
           LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_DATABASE_TYPE: postgres
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
@@ -631,6 +637,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
@@ -642,6 +649,7 @@ jobs:
       - name: Test GC with Spark 3.x
         env:
           LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_DATABASE_TYPE: postgres
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/garbage/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-gc-${{ matrix.spark.version }}
           CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly${{ matrix.spark.suffix }}.jar
@@ -699,6 +707,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_TYPE: azure
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
@@ -713,6 +722,7 @@ jobs:
           REPOSITORY: test-data-gc-${{ matrix.spark.version }}
           CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly${{ matrix.spark.suffix }}.jar
           LAKEFS_BLOCKSTORE_TYPE: azure
+          LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
         working-directory: test/spark
@@ -761,6 +771,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
@@ -835,6 +846,7 @@ jobs:
 
       - name: Switch to KV and migrate lakeFS
         env:
+          TAG: ${{ needs.deploy-image.outputs.tag }} #switch versions
           LAKEFS_DATABASE_KV_ENABLED: true
           LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_TYPE: s3
@@ -926,76 +938,6 @@ jobs:
             docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
           fi
 
-
-  run-system-aws-s3-kv-postgres:
-    name: Run latest lakeFS app on AWS S3 Postgres KV
-    needs: [gen-code, deploy-image]
-    runs-on: ubuntu-20.04
-    env:
-      TAG: ${{ needs.deploy-image.outputs.tag }}
-      # Setting Account_ID as a secret as a way to avoid specifying it here
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      LAKEFS_DATABASE_CONNECTION_STRING: "" # Override lakeFS docker compose settings
-    steps:
-      - name: Check-out code
-        uses: actions/checkout@v2
-
-      - name: Generate uniquifying value
-        id: unique
-        run:  echo "::set-output name=value::$RANDOM"
-
-      - name: Test lakeFS with S3 tests KV
-        uses: ./.github/actions/bootstrap-test-lakefs
-        with:
-          compose-file: esti/ops/docker-compose.yaml
-          compose-flags: "--quiet-pull --exit-code-from=esti"
-        env:
-          LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          LAKEFS_DATABASE_KV_ENABLED: "true"
-          LAKEFS_DATABASE_TYPE: postgres
-          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
-          ESTI_TEST_DATA_ACCESS: true,false
-          ESTI_BLOCKSTORE_TYPE: s3
-          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
-          ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          ESTI_VERSION: ${{ steps.version.outputs.tag }}
-          ESTI_DATABASE_KV_ENABLED: "true"
-          ESTI_DATABASE_CONNECTION_STRING: "true"
-
-      - name: Check files in S3 bucket KV
-        run: |
-          FILES_COUNT=`aws s3 ls s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }} --recursive | wc -l`
-          [ $FILES_COUNT -gt 5 ]
-      - name: lakeFS Logs on s3 failure KV
-        if: ${{ failure() }}
-        continue-on-error: true
-        run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
-      - name: Export DB KV
-        if: ${{ always() }}
-        working-directory: esti/ops
-        run: |
-          if docker-compose ps -q postgres; then
-            docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
-          fi
-
-      - name: Run lakeFS S3 to use with local API key KV
-        env:
-          LAKEFS_STATS_ENABLED: "false"
-          LAKEFS_BLOCKSTORE_TYPE: s3
-          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
-          ESTI_TEST_DATA_ACCESS: true,false
-          ESTI_BLOCKSTORE_TYPE: s3
-          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-local-api-key/${{ steps.unique.outputs.value }}
-        run: |
-          docker-compose -f esti/ops/docker-compose.yaml down -v
-          docker-compose -f esti/ops/docker-compose.yaml up --quiet-pull --exit-code-from=esti
-
-
   run-system-aws-s3:
     name: Run latest lakeFS app on AWS S3
     needs: [gen-code, deploy-image]
@@ -1023,6 +965,7 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_DATABASE_TYPE: postgres
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           ESTI_TEST_DATA_ACCESS: true,false
           ESTI_BLOCKSTORE_TYPE: s3
@@ -1050,6 +993,7 @@ jobs:
         env:
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_DATABASE_TYPE: postgres
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           ESTI_TEST_DATA_ACCESS: true,false
           ESTI_BLOCKSTORE_TYPE: s3
@@ -1057,7 +1001,6 @@ jobs:
         run: |
           docker-compose -f esti/ops/docker-compose.yaml down -v
           docker-compose -f esti/ops/docker-compose.yaml up --quiet-pull --exit-code-from=esti
-
 
   run-system-gcp-gs:
     name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
@@ -1085,6 +1028,7 @@ jobs:
         env:
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           LAKEFS_BLOCKSTORE_TYPE: gs
+          LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
           ESTI_BLOCKSTORE_TYPE: gs
           ESTI_STORAGE_NAMESPACE: gs://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
@@ -1118,6 +1062,7 @@ jobs:
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_TYPE: azure
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}

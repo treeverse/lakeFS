@@ -1332,9 +1332,6 @@ func testGravelerMergeInvalidRef(t *testing.T, kvEnabled bool) {
 }
 
 func TestGraveler_AddCommitToBranchHead(t *testing.T) {
-	t.Run("TestDBGraveler_AddCommitToBranchHead", func(t *testing.T) {
-		testGravelerAddCommitToBranchHead(t, false)
-	})
 	t.Run("TestKVGraveler_AddCommitToBranchHead", func(t *testing.T) {
 		testGravelerAddCommitToBranchHead(t, true)
 	})
@@ -1643,9 +1640,6 @@ func testGravelerAddCommit(t *testing.T, kvEnabled bool) {
 }
 
 func TestGraveler_Delete(t *testing.T) {
-	t.Run("TestDBGraveler_Delete", func(t *testing.T) {
-		testGravelerDelete(t, false)
-	})
 	t.Run("TestKVGraveler_Delete", func(t *testing.T) {
 		testGravelerDelete(t, true)
 	})

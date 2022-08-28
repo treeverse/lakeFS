@@ -13,9 +13,13 @@ import (
 
 func TestMigrations(t *testing.T) {
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
+	cfg, err := config.NewConfig()
+	if err != nil {
+		t.Fatal("creating config:", err)
+	}
 	databaseURI, closer := testutil.GetDBInstance(pool)
 	defer closer()
-	err := db.MigrateUp(params.Database{ConnectionString: databaseURI}, nil)
+	err = db.MigrateUp(params.Database{ConnectionString: databaseURI}, cfg)
 	if err != nil {
 		t.Fatal("failed running migrate up:", err)
 	}
