@@ -1,7 +1,14 @@
 package io.treeverse.clients.examples
 
-import io.treeverse.clients.{ApiClient, Exporter}
+import io.treeverse.clients.{APIConfigurations, ApiClient, Exporter}
 import org.apache.spark.sql.SparkSession
+import io.treeverse.clients.LakeFSContext.{
+  LAKEFS_CONF_API_ACCESS_KEY_KEY,
+  LAKEFS_CONF_API_CONNECTION_TIMEOUT_KEY,
+  LAKEFS_CONF_API_READ_TIMEOUT_KEY,
+  LAKEFS_CONF_API_SECRET_KEY_KEY,
+  LAKEFS_CONF_API_URL_KEY
+}
 
 // This example Export program copies all files from a lakeFS branch in a lakeFS repository
 // to the specified s3 bucket. When the export ends, file structure under the bucket will match
@@ -29,11 +36,15 @@ object Export extends App {
     val spark = SparkSession.builder().appName("I can list").master("local").getOrCreate()
 
     val sc = spark.sparkContext
-    sc.hadoopConfiguration.set("lakefs.api.url", endpoint)
-    sc.hadoopConfiguration.set("lakefs.api.access_key", accessKey)
-    sc.hadoopConfiguration.set("lakefs.api.secret_key", secretKey)
+    val endpoint = sc.hadoopConfiguration.get(LAKEFS_CONF_API_URL_KEY)
+    val accessKey = sc.hadoopConfiguration.get(LAKEFS_CONF_API_ACCESS_KEY_KEY)
+    val secretKey = sc.hadoopConfiguration.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
+    val connectionTimeout = sc.hadoopConfiguration.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_KEY)
+    val readTimeout = sc.hadoopConfiguration.get(LAKEFS_CONF_API_READ_TIMEOUT_KEY)
 
-    val apiClient = ApiClient.get(endpoint, accessKey, secretKey)
+    val apiClient = ApiClient.get(
+      APIConfigurations(endpoint, accessKey, secretKey, connectionTimeout, readTimeout) /**/
+    )
     val exporter = new Exporter(spark, apiClient, repo, rootLocation)
 
     exporter.exportAllFromBranch(branch)
