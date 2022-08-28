@@ -11,7 +11,7 @@ import io.treeverse.clients.StorageClientType.StorageClientType
 import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
 
 import java.net.URI
-import java.util.concurrent.{Callable, TimeUnit}
+import java.util.concurrent.{TimeUnit}
 
 // The different types of storage clients the metadata client uses to access the object store.
 object StorageClientType extends Enumeration {
@@ -22,6 +22,7 @@ object StorageClientType extends Enumeration {
 
 private object ApiClient {
 
+  // TODO(ariels): Replace with LoadingCache.
   val clients = collection.mutable.Map[String, api.ApiClient]()
 
   /** @return an ApiClient, reusing an existing one for this URL if possible.
