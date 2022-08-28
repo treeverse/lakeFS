@@ -22,8 +22,13 @@ object StorageClientType extends Enumeration {
 
 private object ApiClient {
 
-  // TODO(ariels): Replace with LoadingCache.
-  val clients = collection.mutable.Map[String, api.ApiClient]()
+  case class ClientKey(apiUrl: String, accessKey: String)
+
+  // Not a LoadingCache because the client key does not include the secret.
+  // Instead, use a callable get().
+  val clients = CacheBuilder[ClientKey, api.ApiClient]
+    .newBuilder()
+    .build()
 
   /** @return an ApiClient, reusing an existing one for this URL if possible.
    */
@@ -33,10 +38,7 @@ private object ApiClient {
       secretKey: String,
       connectionTimeoutSec: String = "",
       readTimeoutSec: String = ""
-  ): api.ApiClient = this.synchronized {
-    clients.get(apiUrl) match {
-      case Some(client) => client
-      case None => {
+  ): api.ApiClient = clients.get(ClientKey(apiUrl, accessKey), () => {
         val FROM_SEC_TO_MILLISEC = 1000
 
         val client = new api.ApiClient
@@ -52,11 +54,8 @@ private object ApiClient {
           val readTimeoutMillisec = readTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
           client.setReadTimeout(readTimeoutMillisec)
         }
-        clients += (apiUrl -> client)
         client
-      }
-    }
-  }
+      })
 
   /** Translate uri according to two cases:
    *  If the storage type is s3 then translate the protocol of uri from "standard"-ish "s3" to "s3a", to
@@ -113,6 +112,7 @@ class ApiClient(
       .build(new CacheLoader[StorageNamespaceCacheKey, String]() {
         def load(key: StorageNamespaceCacheKey): String = {
           keyToStorageNamespace(key)
+
         }
       })
 
