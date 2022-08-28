@@ -954,6 +954,7 @@ func (c *Catalog) GetCommit(ctx context.Context, repositoryID string, reference 
 	return catalogCommitLog, nil
 }
 
+// wrapper for simplelru.LRU that is safe to access from multiple go routines
 type safeCache struct {
 	sync.Mutex
 	cache *simplelru.LRU
@@ -1037,17 +1038,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 			return c.listCommitWorker(childCtx, repository, params.PathList, safeCache, compareJobs, compareJobResults)
 		})
 	}
-	g.Go(func() error {
-		for num := 0; it.Next(); num++ {
-			if childCtx.Err() != nil {
-				break
-			}
-			n := num
-			compareJobs <- compareJob{num: n, commitRecord: it.Value()}
-		}
-		close(compareJobs)
-		return it.Err()
-	})
+	g.Go(createJobsForWorkers(it, childCtx, compareJobs))
 
 	g.Go(func() error {
 		// wait for all workers to exit
@@ -1056,16 +1047,6 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 		close(compareJobResults)
 		return nil
 	})
-
-	drainAndWaitForWorkers := func() {
-		cancel()
-
-		drained := false
-		for !drained {
-			_, ok := <-compareJobResults
-			drained = !ok
-		}
-	}
 
 	results := map[int]*CommitLog{}
 	g.Go(func() error {
@@ -1079,7 +1060,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 					return nil
 				}
 				if res.err != nil {
-					drainAndWaitForWorkers()
+					drainAndWaitForWorkers(cancel, compareJobResults)
 					return res.err
 				}
 				results[res.num] = res.log
@@ -1092,7 +1073,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 				// scan the results array to see if we got the number of results needed
 				_, done := findAllCommits(results, params)
 				if done {
-					drainAndWaitForWorkers()
+					drainAndWaitForWorkers(cancel, compareJobResults)
 					return nil
 				}
 			}
@@ -1111,6 +1092,32 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 		commits = commits[:params.Amount]
 	}
 	return commits, hasMore, nil
+}
+
+func drainAndWaitForWorkers(cancel context.CancelFunc, compareJobResults chan compareJobResult) func() {
+	return func() {
+		cancel()
+
+		drained := false
+		for !drained {
+			_, ok := <-compareJobResults
+			drained = !ok
+		}
+	}
+}
+
+func createJobsForWorkers(it graveler.CommitIterator, childCtx context.Context, compareJobs chan compareJob) func() error {
+	return func() error {
+		for num := 0; it.Next(); num++ {
+			if childCtx.Err() != nil {
+				break
+			}
+			n := num
+			compareJobs <- compareJob{num: n, commitRecord: it.Value()}
+		}
+		close(compareJobs)
+		return it.Err()
+	}
 }
 
 func findAllCommits(results map[int]*CommitLog, params LogParams) ([]*CommitLog, bool) {

@@ -3,6 +3,11 @@ package pyramid
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/cache"
+	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/pyramid/params"
 	"io"
 	"net/url"
 	"os"
@@ -10,13 +15,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync"
-
-	"github.com/google/uuid"
-	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/cache"
-	"github.com/treeverse/lakefs/pkg/logging"
-	"github.com/treeverse/lakefs/pkg/pyramid/params"
 )
 
 // TierFS is a filesystem where written files are never edited.
@@ -26,11 +24,10 @@ type TierFS struct {
 	logger  logging.Logger
 	adapter block.Adapter
 
-	eviction params.Eviction
-	keyLock  cache.OnlyOne
-	syncDir  *directory
-
-	wgMap *sync.Map
+	eviction   params.Eviction
+	keyLock    cache.OnlyOne
+	syncDir    *directory
+	fileLocker *fileLocker
 
 	fsName string
 
@@ -58,7 +55,7 @@ func NewFS(c *params.InstanceParams) (FS, error) {
 		syncDir:        &directory{ceilingDir: fsLocalBaseDir},
 		keyLock:        cache.NewChanOnlyOne(),
 		remotePrefix:   c.BlockStoragePrefix,
-		wgMap:          &sync.Map{},
+		fileLocker:     newFileLocker(),
 	}
 	if c.Eviction == nil {
 		var err error
@@ -121,11 +118,8 @@ func (tfs *TierFS) removeFromLocal(rPath params.RelativePath, filesize int64) {
 }
 
 func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
-	rawWG, ok := tfs.wgMap.Load(rPath)
-	if ok {
-		wg := rawWG.(*sync.WaitGroup)
-		wg.Wait()
-	}
+	// we must wait until the file is not being written to
+	tfs.fileLocker.waitUntilUnlock(rPath)
 
 	p := path.Join(tfs.fsLocalBaseDir, string(rPath))
 	if tfs.logger.IsTracing() {
@@ -292,17 +286,8 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 		}).Trace("try to lock for open")
 	}
 
-	fileWG := &sync.WaitGroup{}
-	fileWG.Add(1)
-	defer fileWG.Done()
-	rawWG, loaded := tfs.wgMap.LoadOrStore(fileRef.fsRelativePath, fileWG)
-	if loaded {
-		wg := rawWG.(*sync.WaitGroup)
-		wg.Add(1)
-		defer wg.Done()
-	}
-
-	filepath, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
+	tfs.fileLocker.lock(fileRef.fsRelativePath)
+	fileFullPath, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
 		// check again file existence, now that we have the lock
 		_, err := os.Stat(fileRef.fullPath)
 		if err == nil {
@@ -369,7 +354,7 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 	if err != nil {
 		return nil, err
 	}
-	fh, err := os.Open(filepath.(string))
+	fh, err := os.Open(fileFullPath.(string))
 	if err != nil {
 		return nil, fmt.Errorf("open file: %w", err)
 	}
