@@ -1094,15 +1094,13 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	return commits, hasMore, nil
 }
 
-func drainAndWaitForWorkers(cancel context.CancelFunc, compareJobResults chan compareJobResult) func() {
-	return func() {
-		cancel()
+func drainAndWaitForWorkers(cancel context.CancelFunc, compareJobResults chan compareJobResult) {
+	cancel()
 
-		drained := false
-		for !drained {
-			_, ok := <-compareJobResults
-			drained = !ok
-		}
+	drained := false
+	for !drained {
+		_, ok := <-compareJobResults
+		drained = !ok
 	}
 }
 

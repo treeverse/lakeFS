@@ -1,8 +1,9 @@
 package pyramid
 
 import (
-	"github.com/treeverse/lakefs/pkg/pyramid/params"
 	"sync"
+
+	"github.com/treeverse/lakefs/pkg/pyramid/params"
 )
 
 // fileLocker allows file locking to avoid race conditions between cache rejection/eviction
