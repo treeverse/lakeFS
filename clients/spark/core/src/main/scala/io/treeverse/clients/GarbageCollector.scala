@@ -5,8 +5,8 @@ import io.treeverse.clients.LakeFSContext.{
   LAKEFS_CONF_API_ACCESS_KEY_KEY,
   LAKEFS_CONF_API_SECRET_KEY_KEY,
   LAKEFS_CONF_API_URL_KEY,
-  LAKEFS_CONF_API_CONNECTION_TIMEOUT,
-  LAKEFS_CONF_API_READ_TIMEOUT
+  LAKEFS_CONF_API_CONNECTION_TIMEOUT_KEY,
+  LAKEFS_CONF_API_READ_TIMEOUT_KEY
 }
 import org.apache.hadoop.fs._
 import org.apache.hadoop.conf.Configuration
@@ -311,8 +311,8 @@ object GarbageCollector {
     val apiURL = hc.get(LAKEFS_CONF_API_URL_KEY)
     val accessKey = hc.get(LAKEFS_CONF_API_ACCESS_KEY_KEY)
     val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
-    val connectionTimeout = hc.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT)
-    val readTimeout = hc.get(LAKEFS_CONF_API_READ_TIMEOUT)
+    val connectionTimeout = hc.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_KEY)
+    val readTimeout = hc.get(LAKEFS_CONF_API_READ_TIMEOUT_KEY)
     val apiClient = ApiClient.get(
       new APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout)
     )
