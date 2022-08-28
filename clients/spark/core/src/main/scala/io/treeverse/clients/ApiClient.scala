@@ -38,24 +38,27 @@ private object ApiClient {
       secretKey: String,
       connectionTimeoutSec: String = "",
       readTimeoutSec: String = ""
-  ): api.ApiClient = clients.get(ClientKey(apiUrl, accessKey), () => {
-        val FROM_SEC_TO_MILLISEC = 1000
+  ): api.ApiClient = clients.get(
+    ClientKey(apiUrl, accessKey),
+    () => {
+      val FROM_SEC_TO_MILLISEC = 1000
 
-        val client = new api.ApiClient
-        client.setUsername(accessKey)
-        client.setPassword(secretKey)
-        client.setBasePath(apiUrl.stripSuffix("/"))
-        if (connectionTimeoutSec != null && !connectionTimeoutSec.isEmpty) {
-          val connectionTimeoutMillisec = connectionTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
-          client.setConnectTimeout(connectionTimeoutMillisec)
-        }
+      val client = new api.ApiClient
+      client.setUsername(accessKey)
+      client.setPassword(secretKey)
+      client.setBasePath(apiUrl.stripSuffix("/"))
+      if (connectionTimeoutSec != null && !connectionTimeoutSec.isEmpty) {
+        val connectionTimeoutMillisec = connectionTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
+        client.setConnectTimeout(connectionTimeoutMillisec)
+      }
 
-        if (readTimeoutSec != null && !readTimeoutSec.isEmpty) {
-          val readTimeoutMillisec = readTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
-          client.setReadTimeout(readTimeoutMillisec)
-        }
-        client
-      })
+      if (readTimeoutSec != null && !readTimeoutSec.isEmpty) {
+        val readTimeoutMillisec = readTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
+        client.setReadTimeout(readTimeoutMillisec)
+      }
+      client
+    }
+  )
 
   /** Translate uri according to two cases:
    *  If the storage type is s3 then translate the protocol of uri from "standard"-ish "s3" to "s3a", to
