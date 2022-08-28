@@ -78,7 +78,8 @@ object GarbageCollector {
       apiConf: APIConfigurations,
       hcValues: Broadcast[ConfMap]
   ): Set[(String, Array[Byte], Array[Byte])] = {
-    val location = new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey)
+    val location = ApiClient
+      .get(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey)
       .getMetaRangeURL(repo, commitID)
     // continue on empty location, empty location is a result of a commit with no metaRangeID (e.g 'Repository created' commit)
     if (location == "") Set()
@@ -119,7 +120,8 @@ object GarbageCollector {
       repo: String,
       hcValues: Broadcast[ConfMap]
   ): Seq[String] = {
-    val location = new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey)
+    val location = ApiClient
+      .get(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey)
       .getRangeURL(repo, rangeID)
     SSTableReader
       .forRange(configurationFromValues(hcValues), location)
@@ -138,7 +140,8 @@ object GarbageCollector {
       ts.getOrElse(0).asInstanceOf[Timestamp].seconds
     }
 
-    val location = new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey)
+    val location = ApiClient
+      .get(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey)
       .getRangeURL(repo, rangeID)
     SSTableReader
       .forRange(configurationFromValues(hcValues), location)
@@ -312,7 +315,7 @@ object GarbageCollector {
     val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
     val connectionTimeout = hc.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT)
     val readTimeout = hc.get(LAKEFS_CONF_API_READ_TIMEOUT)
-    val apiClient = new ApiClient(apiURL, accessKey, secretKey, connectionTimeout, readTimeout)
+    val apiClient = ApiClient.get(apiURL, accessKey, secretKey, connectionTimeout, readTimeout)
     val storageType = apiClient.getBlockstoreType()
 
     if (storageType == StorageUtils.StorageTypeS3 && args.length != 2) {

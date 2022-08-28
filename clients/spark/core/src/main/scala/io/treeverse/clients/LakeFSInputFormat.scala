@@ -100,7 +100,7 @@ class LakeFSInputFormat extends InputFormat[Array[Byte], WithIdentifier[Entry]] 
     val conf = job.getConfiguration
     val repoName = conf.get(LAKEFS_CONF_JOB_REPO_NAME_KEY)
     val commitID = conf.get(LAKEFS_CONF_JOB_COMMIT_ID_KEY)
-    val apiClient = new ApiClient(
+    val apiClient = ApiClient.get(
       conf.get(LAKEFS_CONF_API_URL_KEY),
       conf.get(LAKEFS_CONF_API_ACCESS_KEY_KEY),
       conf.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
