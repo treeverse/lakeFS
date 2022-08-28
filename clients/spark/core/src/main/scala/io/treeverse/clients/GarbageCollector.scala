@@ -314,7 +314,7 @@ object GarbageCollector {
     val connectionTimeout = hc.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_KEY)
     val readTimeout = hc.get(LAKEFS_CONF_API_READ_TIMEOUT_KEY)
     val apiClient = ApiClient.get(
-      new APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout)
+      APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout)
     )
     val storageType = apiClient.getBlockstoreType()
 
@@ -368,7 +368,7 @@ object GarbageCollector {
         runID,
         gcCommitsLocation,
         spark,
-        new APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout),
+        APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout),
         hcValues
       ).withColumn("run_id", lit(runID))
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")

@@ -81,10 +81,10 @@ private object ApiClient {
   }
 }
 
-class APIConfigurations(
-    var apiUrl: String,
-    var accessKey: String,
-    var secretKey: String,
+case class APIConfigurations(
+    val apiUrl: String,
+    val accessKey: String,
+    val secretKey: String,
     val connectionTimeoutSec: String = "",
     val readTimeoutSec: String = ""
 ) {
