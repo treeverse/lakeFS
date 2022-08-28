@@ -33,7 +33,7 @@ object Export extends App {
     sc.hadoopConfiguration.set("lakefs.api.access_key", accessKey)
     sc.hadoopConfiguration.set("lakefs.api.secret_key", secretKey)
 
-    val apiClient = new ApiClient(endpoint, accessKey, secretKey)
+    val apiClient = ApiClient.get(endpoint, accessKey, secretKey)
     val exporter = new Exporter(spark, apiClient, repo, rootLocation)
 
     exporter.exportAllFromBranch(branch)
