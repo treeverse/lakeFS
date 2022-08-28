@@ -78,7 +78,9 @@ private object ApiClient {
   }
 }
 
-private class ApiClient(
+// Only cached instances of ApiClient can be constructed.  The actual
+// constructor is private.
+class ApiClient private (
     apiUrl: String,
     accessKey: String,
     secretKey: String,

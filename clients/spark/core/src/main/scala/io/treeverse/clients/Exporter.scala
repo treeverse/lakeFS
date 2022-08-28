@@ -185,7 +185,7 @@ object Main {
     val rootLocation =
       if (rawLocation.startsWith(s3Prefix)) "s3a://" + rawLocation.substring(s3Prefix.length)
       else rawLocation
-    val apiClient = new ApiClient(endpoint, accessKey, secretKey)
+    val apiClient = ApiClient.get(endpoint, accessKey, secretKey)
     val exporter = new Exporter(spark, apiClient, conf.repo(), rootLocation)
 
     if (conf.commit_id.isSupplied) {
