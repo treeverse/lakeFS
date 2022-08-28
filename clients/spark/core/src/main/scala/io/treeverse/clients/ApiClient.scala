@@ -1,6 +1,6 @@
 package io.treeverse.clients
 
-import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
+import com.google.common.cache.{CacheBuilder, CacheLoader, Cache, LoadingCache}
 import io.lakefs.clients.api
 import io.lakefs.clients.api.{ConfigApi, RetentionApi}
 import io.lakefs.clients.api.model.{
@@ -11,7 +11,7 @@ import io.treeverse.clients.StorageClientType.StorageClientType
 import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
 
 import java.net.URI
-import java.util.concurrent.{TimeUnit}
+import java.util.concurrent.{Callable, TimeUnit}
 
 // The different types of storage clients the metadata client uses to access the object store.
 object StorageClientType extends Enumeration {
@@ -22,12 +22,15 @@ object StorageClientType extends Enumeration {
 
 private object ApiClient {
 
+  val NUM_CACHED_API_CLIENTS = 30
+
   case class ClientKey(apiUrl: String, accessKey: String)
 
   // Not a LoadingCache because the client key does not include the secret.
   // Instead, use a callable get().
-  val clients = CacheBuilder[ClientKey, api.ApiClient]
+  val clients: Cache[ClientKey, api.ApiClient] = CacheBuilder
     .newBuilder()
+    .maximumSize(NUM_CACHED_API_CLIENTS)
     .build()
 
   /** @return an ApiClient, reusing an existing one for this URL if possible.
@@ -40,23 +43,25 @@ private object ApiClient {
       readTimeoutSec: String = ""
   ): api.ApiClient = clients.get(
     ClientKey(apiUrl, accessKey),
-    () => {
-      val FROM_SEC_TO_MILLISEC = 1000
+    new Callable[api.ApiClient] {
+      def call() = {
+        val FROM_SEC_TO_MILLISEC = 1000
 
-      val client = new api.ApiClient
-      client.setUsername(accessKey)
-      client.setPassword(secretKey)
-      client.setBasePath(apiUrl.stripSuffix("/"))
-      if (connectionTimeoutSec != null && !connectionTimeoutSec.isEmpty) {
-        val connectionTimeoutMillisec = connectionTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
-        client.setConnectTimeout(connectionTimeoutMillisec)
-      }
+        val client = new api.ApiClient
+        client.setUsername(accessKey)
+        client.setPassword(secretKey)
+        client.setBasePath(apiUrl.stripSuffix("/"))
+        if (connectionTimeoutSec != null && !connectionTimeoutSec.isEmpty) {
+          val connectionTimeoutMillisec = connectionTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
+          client.setConnectTimeout(connectionTimeoutMillisec)
+        }
 
-      if (readTimeoutSec != null && !readTimeoutSec.isEmpty) {
-        val readTimeoutMillisec = readTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
-        client.setReadTimeout(readTimeoutMillisec)
+        if (readTimeoutSec != null && !readTimeoutSec.isEmpty) {
+          val readTimeoutMillisec = readTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
+          client.setReadTimeout(readTimeoutMillisec)
+        }
+        client
       }
-      client
     }
   )
 
