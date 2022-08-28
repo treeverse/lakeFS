@@ -54,7 +54,6 @@ var (
 func TestMain(m *testing.M) {
 	systemTests := flag.Bool("system-tests", false, "Run system tests")
 	useLocalCredentials := flag.Bool("use-local-credentials", false, "Generate local API key during `lakefs setup'")
-
 	if directs, ok := os.LookupEnv("ESTI_TEST_DATA_ACCESS"); ok {
 		if err := testDirectDataAccess.Parse(directs); err != nil {
 			logger.Fatalf("ESTI_TEST_DATA_ACCESS=\"%s\": %s", directs, err)
@@ -70,11 +69,19 @@ func TestMain(m *testing.M) {
 		Name:      "esti",
 		StorageNS: "esti-system-testing",
 	}
-	if *useLocalCredentials {
-		params.AdminAccessKeyID = "AKIAIOSFDNN7EXAMPLEQ"
-		params.AdminSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-	}
 
+	if *useLocalCredentials {
+		if adminAccessKeyID, ok := os.LookupEnv("ESTI_ADMIN_ACCESS_KEY_ID"); ok {
+			params.AdminAccessKeyID = adminAccessKeyID
+		} else {
+			params.AdminAccessKeyID = "AKIAIOSFDNN7EXAMPLEQ"
+		}
+		if adminSecretAccessKey, ok := os.LookupEnv("ESTI_ADMIN_SECRET_ACCESS_KEY"); ok {
+			params.AdminSecretAccessKey = adminSecretAccessKey
+		} else {
+			params.AdminSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+		}
+	}
 	viper.SetDefault("post_migrate", false)
 
 	logger, client, svc = testutil.SetupTestingEnv(&params)
