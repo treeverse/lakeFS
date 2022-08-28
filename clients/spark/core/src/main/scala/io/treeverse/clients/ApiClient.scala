@@ -1,6 +1,5 @@
 package io.treeverse.clients
 
-import com.google.common.cache.{CacheBuilder, CacheLoader, Cache, LoadingCache}
 import io.lakefs.clients.api
 import io.lakefs.clients.api.{ConfigApi, RetentionApi}
 import io.lakefs.clients.api.model.{
@@ -9,6 +8,8 @@ import io.lakefs.clients.api.model.{
 }
 import io.treeverse.clients.StorageClientType.StorageClientType
 import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
+
+import com.google.common.cache.{Cache, CacheBuilder, CacheLoader, LoadingCache}
 
 import java.net.URI
 import java.util.concurrent.{Callable, TimeUnit}
@@ -21,49 +22,30 @@ object StorageClientType extends Enumeration {
 }
 
 private object ApiClient {
-
   val NUM_CACHED_API_CLIENTS = 30
 
   case class ClientKey(apiUrl: String, accessKey: String)
 
   // Not a LoadingCache because the client key does not include the secret.
   // Instead, use a callable get().
-  val clients: Cache[ClientKey, api.ApiClient] = CacheBuilder
+  val clients: Cache[ClientKey, ApiClient] = CacheBuilder
     .newBuilder()
     .maximumSize(NUM_CACHED_API_CLIENTS)
     .build()
 
   /** @return an ApiClient, reusing an existing one for this URL if possible.
    */
-  def getApiClient(
+  def get(
       apiUrl: String,
       accessKey: String,
       secretKey: String,
       connectionTimeoutSec: String = "",
       readTimeoutSec: String = ""
-  ): api.ApiClient = clients.get(
+  ): ApiClient = clients.get(
     ClientKey(apiUrl, accessKey),
-    new Callable[api.ApiClient] {
-      def call() = {
-        val FROM_SEC_TO_MILLISEC = 1000
-
-        val client = new api.ApiClient
-        client.setUsername(accessKey)
-        client.setPassword(secretKey)
-        client.setBasePath(apiUrl.stripSuffix("/"))
-        if (connectionTimeoutSec != null && !connectionTimeoutSec.isEmpty) {
-          val connectionTimeoutMillisec = connectionTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
-          client.setConnectTimeout(connectionTimeoutMillisec)
-        }
-
-        if (readTimeoutSec != null && !readTimeoutSec.isEmpty) {
-          val readTimeoutMillisec = readTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
-          client.setReadTimeout(readTimeoutMillisec)
-        }
-        client
-      }
-    }
-  )
+    new Callable[ApiClient] {
+      def call() = new ApiClient(apiUrl, accessKey, secretKey, connectionTimeoutSec, readTimeoutSec)
+    })
 
   /** Translate uri according to two cases:
    *  If the storage type is s3 then translate the protocol of uri from "standard"-ish "s3" to "s3a", to
@@ -96,15 +78,28 @@ private object ApiClient {
   }
 }
 
-class ApiClient(
+private class ApiClient(
     apiUrl: String,
     accessKey: String,
     secretKey: String,
     connectionTimeoutSec: String = "",
     readTimeoutSec: String = ""
 ) {
-  val client =
-    ApiClient.getApiClient(apiUrl, accessKey, secretKey, connectionTimeoutSec, readTimeoutSec)
+  val FROM_SEC_TO_MILLISEC = 1000
+
+  val client = new api.ApiClient
+  client.setUsername(accessKey)
+  client.setPassword(secretKey)
+  client.setBasePath(apiUrl.stripSuffix("/"))
+  if (connectionTimeoutSec != null && !connectionTimeoutSec.isEmpty) {
+    val connectionTimeoutMillisec = connectionTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
+    client.setConnectTimeout(connectionTimeoutMillisec)
+  }
+
+  if (readTimeoutSec != null && !readTimeoutSec.isEmpty) {
+    val readTimeoutMillisec = readTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
+    client.setReadTimeout(readTimeoutMillisec)
+  }
 
   private val repositoriesApi = new api.RepositoriesApi(client)
   private val commitsApi = new api.CommitsApi(client)
@@ -118,10 +113,7 @@ class ApiClient(
       .newBuilder()
       .expireAfterWrite(2, TimeUnit.MINUTES)
       .build(new CacheLoader[StorageNamespaceCacheKey, String]() {
-        def load(key: StorageNamespaceCacheKey): String = {
-          keyToStorageNamespace(key)
-
-        }
+        def load(key: StorageNamespaceCacheKey): String = keyToStorageNamespace(key)
       })
 
   def keyToStorageNamespace(key: StorageNamespaceCacheKey): String = {
