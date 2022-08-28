@@ -1,6 +1,6 @@
 package io.treeverse.clients
 
-import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
+import com.google.common.cache.{CacheBuilder, CacheLoader, Cache, LoadingCache}
 import io.lakefs.clients.api
 import io.lakefs.clients.api.{ConfigApi, RetentionApi}
 import io.lakefs.clients.api.model.{
@@ -11,7 +11,7 @@ import io.treeverse.clients.StorageClientType.StorageClientType
 import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
 
 import java.net.URI
-import java.util.concurrent.{TimeUnit}
+import java.util.concurrent.{Callable, TimeUnit}
 
 // The different types of storage clients the metadata client uses to access the object store.
 object StorageClientType extends Enumeration {
@@ -22,8 +22,16 @@ object StorageClientType extends Enumeration {
 
 private object ApiClient {
 
-  // TODO(ariels): Replace with LoadingCache.
-  val clients = collection.mutable.Map[String, api.ApiClient]()
+  val NUM_CACHED_API_CLIENTS = 30
+
+  case class ClientKey(apiUrl: String, accessKey: String)
+
+  // Not a LoadingCache because the client key does not include the secret.
+  // Instead, use a callable get().
+  val clients: Cache[ClientKey, api.ApiClient] = CacheBuilder
+    .newBuilder()
+    .maximumSize(NUM_CACHED_API_CLIENTS)
+    .build()
 
   /** @return an ApiClient, reusing an existing one for this URL if possible.
    */
@@ -33,10 +41,10 @@ private object ApiClient {
       secretKey: String,
       connectionTimeoutSec: String = "",
       readTimeoutSec: String = ""
-  ): api.ApiClient = this.synchronized {
-    clients.get(apiUrl) match {
-      case Some(client) => client
-      case None => {
+  ): api.ApiClient = clients.get(
+    ClientKey(apiUrl, accessKey),
+    new Callable[api.ApiClient] {
+      def call() = {
         val FROM_SEC_TO_MILLISEC = 1000
 
         val client = new api.ApiClient
@@ -52,11 +60,10 @@ private object ApiClient {
           val readTimeoutMillisec = readTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
           client.setReadTimeout(readTimeoutMillisec)
         }
-        clients += (apiUrl -> client)
         client
       }
     }
-  }
+  )
 
   /** Translate uri according to two cases:
    *  If the storage type is s3 then translate the protocol of uri from "standard"-ish "s3" to "s3a", to
@@ -113,6 +120,7 @@ class ApiClient(
       .build(new CacheLoader[StorageNamespaceCacheKey, String]() {
         def load(key: StorageNamespaceCacheKey): String = {
           keyToStorageNamespace(key)
+
         }
       })
 
