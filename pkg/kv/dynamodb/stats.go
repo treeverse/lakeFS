@@ -5,11 +5,17 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+const (
+	dynamoRequestDurationStart  = 0.001
+	dynamoRequestDurationFactor = 4
+	dynamoRequestDurationCount  = 9 // use 9 buckets from 1ms to just over 1 minute (65s).
+)
+
 var (
 	dynamoRequestDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "dynamo_request_duration_seconds",
 		Help:    "Time spent doing DynamoDB requests.",
-		Buckets: prometheus.ExponentialBuckets(0.001, 4, 9), // use 9 buckets from 1ms to just over 1 minute (65s).
+		Buckets: prometheus.ExponentialBuckets(dynamoRequestDurationStart, dynamoRequestDurationFactor, dynamoRequestDurationCount),
 	}, []string{"operation"})
 
 	dynamoConsumedCapacity = promauto.NewCounterVec(prometheus.CounterOpts{
