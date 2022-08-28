@@ -146,7 +146,7 @@ var (
 
 func TestMigrate(t *testing.T) {
 	// skip test if not on postgres
-	if viper.GetBool("database_kv_enabled") && viper.GetString("database_type") != kvpg.DriverName {
+	if viper.GetString("database_type") != kvpg.DriverName {
 		t.Skip("PG KV not enabled")
 	}
 	postMigrate := viper.GetViper().GetBool("post_migrate")

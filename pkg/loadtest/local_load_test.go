@@ -51,22 +51,10 @@ func TestMain(m *testing.M) {
 
 type getActionsService func(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service
 
-func GetDBActionsService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
-	t.Helper()
-	conn, _ := testutil.GetDB(t, databaseURI)
-	return actions.NewService(ctx, actions.NewActionsDBStore(conn), source, writer, &actions.IncreasingIDGenerator{}, stats, runHooks)
-}
-
 func GetKVActionsService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
 	t.Helper()
 	kvStore := kvtest.GetStore(ctx, t)
 	return actions.NewService(ctx, actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore}), source, writer, &actions.DecreasingIDGenerator{}, stats, runHooks)
-}
-
-func GetDBAuthService(t *testing.T) auth.Service {
-	t.Helper()
-	conn, _ := testutil.GetDB(t, databaseURI)
-	return auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
 }
 
 func GetKVAuthService(t *testing.T, ctx context.Context) auth.Service {
@@ -74,12 +62,6 @@ func GetKVAuthService(t *testing.T, ctx context.Context) auth.Service {
 	kvStore := kvtest.GetStore(ctx, t)
 	storeMessage := &kv.StoreMessage{Store: kvStore}
 	return auth.NewKVAuthService(storeMessage, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
-}
-
-func GetDBMetadataManager(t *testing.T, installationID string) auth.MetadataManager {
-	t.Helper()
-	conn, _ := testutil.GetDB(t, databaseURI)
-	return auth.NewDBMetadataManager("local_load_test", installationID, conn)
 }
 
 func GetKVMetadataManager(t *testing.T, ctx context.Context, installationID, kvType string) auth.MetadataManager {
@@ -110,12 +92,6 @@ func TestLocalLoad(t *testing.T) {
 		meta           auth.MetadataManager
 		kvEnabled      bool
 	}{
-		{
-			name:           "DB service test",
-			actionsService: GetDBActionsService,
-			authService:    GetDBAuthService(t),
-			meta:           GetDBMetadataManager(t, conf.GetFixedInstallationID()),
-		},
 		{
 			name:           "KV service test",
 			actionsService: GetKVActionsService,

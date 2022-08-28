@@ -13,6 +13,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
+	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/ddl"
 	_ "github.com/treeverse/lakefs/pkg/kv/dynamodb"
@@ -43,7 +44,7 @@ func (d *DatabaseMigrator) Migrate(ctx context.Context) error {
 	lg := log.WithFields(logging.Fields{
 		"direction": "up",
 	})
-	err := MigrateUp(d.params)
+	err := MigrateUp(d.params, nil)
 	if err != nil {
 		lg.WithError(err).Error("Failed to migrate")
 		return err
@@ -160,8 +161,8 @@ func closeMigrate(m *migrate.Migrate) {
 	}
 }
 
-func MigrateUp(p params.Database) error {
-	m, err := getMigrate(p)
+func MigrateUp(dbParams params.Database, blockParams blockparams.AdapterConfig) error {
+	m, err := getMigrate(dbParams)
 	if err != nil {
 		return err
 	}
@@ -171,9 +172,9 @@ func MigrateUp(p params.Database) error {
 		return err
 	}
 	ctx := context.Background()
-	d := BuildDatabaseConnection(ctx, p)
+	d := BuildDatabaseConnection(ctx, dbParams)
 	defer d.Close()
-	return kvpg.Migrate(ctx, d.Pool(), p)
+	return kvpg.Migrate(ctx, d.Pool(), dbParams, blockParams)
 }
 
 func MigrateDown(params params.Database) error {

@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/rs/xid"
+	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
@@ -153,7 +154,7 @@ func taskWorker(jobChan <-chan *taskResultMigrate) error {
 	return nil
 }
 
-func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
+func Migrate(ctx context.Context, d *pgxpool.Pool, _ blockparams.AdapterConfig, writer io.Writer) error {
 	encoder = kv.SafeEncoder{
 		Je: json.NewEncoder(writer),
 		Mu: sync.Mutex{},

@@ -42,7 +42,7 @@ const (
 type dependencies struct {
 	blocks      block.Adapter
 	catalog     catalog.Interface
-	authService *auth.Service
+	authService auth.Service
 	collector   *memCollector
 }
 
@@ -83,44 +83,26 @@ func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) 
 	}
 }
 
-func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, kvEnabled bool, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
+func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	t.Helper()
 	ctx := context.Background()
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
-	viper.Set("database.kv_enabled", kvEnabled)
 
 	collector := &memCollector{}
 
 	// wire actions
-	var (
-		actionsStore   actions.Store
-		idGen          actions.IDGenerator
-		authService    auth.Service
-		meta           auth.MetadataManager
-		kvStoreMessage *kv.StoreMessage
-	)
 
 	cfg, err := config.NewConfig()
 	testutil.MustDo(t, "config", err)
-	if kvEnabled {
-		kvStore := kvtest.GetStore(ctx, t)
-		kvStoreMessage = &kv.StoreMessage{Store: kvStore}
-		actionsStore = actions.NewActionsKVStore(*kvStoreMessage)
-		idGen = &actions.DecreasingIDGenerator{}
-		authService = auth.NewKVAuthService(kvStoreMessage, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
-			Enabled: false,
-		}, logging.Default())
-		meta = auth.NewKVMetadataManager("serve_test", cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
-		viper.Set("database.kv_enabled", true)
-	} else {
-		actionsStore = actions.NewActionsDBStore(conn)
-		idGen = &actions.IncreasingIDGenerator{}
-		authService = auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
-			Enabled: false,
-		}, logging.Default())
-		meta = auth.NewDBMetadataManager("serve_test", cfg.GetFixedInstallationID(), conn)
-	}
+	kvStore := kvtest.GetStore(ctx, t)
+	kvStoreMessage := &kv.StoreMessage{Store: kvStore}
+	actionsStore := actions.NewActionsKVStore(*kvStoreMessage)
+	idGen := &actions.DecreasingIDGenerator{}
+	authService := auth.NewKVAuthService(kvStoreMessage, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
+		Enabled: false,
+	}, logging.Default())
+	meta := auth.NewKVMetadataManager("serve_test", cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
 
 	// Do not validate invalid config (missing required fields).
 	c, err := catalog.New(ctx, catalog.Config{
@@ -161,14 +143,14 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 
 	return handler, &dependencies{
 		blocks:      c.BlockAdapter,
-		authService: &authService,
+		authService: authService,
 		catalog:     c,
 		collector:   collector,
 	}
 }
 
-func setupHandler(t testing.TB, kvEnabled bool, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
-	return setupHandlerWithWalkerFactory(t, store.NewFactory(nil), kvEnabled, opts...)
+func setupHandler(t testing.TB, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
+	return setupHandlerWithWalkerFactory(t, store.NewFactory(nil), opts...)
 }
 
 func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secretAccessKey string) api.ClientWithResponsesInterface {
@@ -211,14 +193,14 @@ func shouldUseServerTimeout() bool {
 	return withServerTimeout
 }
 
-func setupClientWithAdmin(t testing.TB, kvEnabled bool, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
+func setupClientWithAdmin(t testing.TB, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
 	t.Helper()
-	return setupClientWithAdminAndWalkerFactory(t, store.NewFactory(nil), kvEnabled, opts...)
+	return setupClientWithAdminAndWalkerFactory(t, store.NewFactory(nil), opts...)
 }
 
-func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFactory, kvEnabled bool, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
+func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFactory, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
 	t.Helper()
-	handler, deps := setupHandlerWithWalkerFactory(t, factory, kvEnabled, opts...)
+	handler, deps := setupHandlerWithWalkerFactory(t, factory, opts...)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	cred := createDefaultAdminUser(t, clt)
@@ -227,7 +209,7 @@ func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFa
 }
 
 func TestInvalidRoute(t *testing.T) {
-	handler, _ := setupHandler(t, false)
+	handler, _ := setupHandler(t)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	cred := createDefaultAdminUser(t, clt)

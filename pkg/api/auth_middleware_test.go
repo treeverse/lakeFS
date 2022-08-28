@@ -14,16 +14,12 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 )
 
-func TestDBAuthMiddleware(t *testing.T) {
-	testAuthMiddleware(t, false)
-}
-
 func TestKVAuthMiddleware(t *testing.T) {
 	testAuthMiddleware(t, true)
 }
 
 func testAuthMiddleware(t *testing.T, kvEnabled bool) {
-	handler, deps := setupHandler(t, kvEnabled)
+	handler, deps := setupHandler(t)
 	server := setupServer(t, handler)
 	apiEndpoint := server.URL + api.BaseURL
 	clt := setupClientByEndpoint(t, server.URL, "", "")
@@ -78,7 +74,7 @@ func testAuthMiddleware(t *testing.T, kvEnabled bool) {
 
 	t.Run("invalid jwt header", func(t *testing.T) {
 		ctx := context.Background()
-		apiToken := testGenerateBadAPIToken(t, *deps.authService)
+		apiToken := testGenerateBadAPIToken(t, deps.authService)
 		authProvider, err := securityprovider.NewSecurityProviderApiKey("header", "Authorization", "Bearer "+apiToken)
 		if err != nil {
 			t.Fatal("basic auth security provider", err)
@@ -127,7 +123,7 @@ func testAuthMiddleware(t *testing.T, kvEnabled bool) {
 
 	t.Run("invalid gorilla cookie", func(t *testing.T) {
 		ctx := context.Background()
-		apiToken := testGenerateBadAPIToken(t, *deps.authService)
+		apiToken := testGenerateBadAPIToken(t, deps.authService)
 		values := map[interface{}]interface{}{api.TokenSessionKeyName: apiToken}
 		store := sessions.NewCookieStore([]byte("some secret"))
 		encoded, err := securecookie.EncodeMulti(api.InternalAuthSessionName, values, store.Codecs...)

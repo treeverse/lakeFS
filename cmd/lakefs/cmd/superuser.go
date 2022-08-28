@@ -10,7 +10,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -46,28 +45,15 @@ var superuserCmd = &cobra.Command{
 
 		logger := logging.Default()
 		ctx := cmd.Context()
-		dbParams := cfg.GetDatabaseParams()
-		var (
-			dbPool              db.Database
-			authService         auth.Service
-			authMetadataManager auth.MetadataManager
-		)
-		if dbParams.KVEnabled {
-			kvParams := cfg.GetKVParams()
-			kvStore, err := kv.Open(ctx, kvParams)
-			if err != nil {
-				fmt.Printf("failed to open KV store: %s\n", err)
-				os.Exit(1)
-			}
-			storeMessage := &kv.StoreMessage{Store: kvStore}
-			authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), logger.WithField("service", "auth_service"))
-			authMetadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
-		} else {
-			dbPool = db.BuildDatabaseConnection(ctx, dbParams)
-			defer dbPool.Close()
-			authService = auth.NewDBAuthService(dbPool, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), logger.WithField("service", "auth_service"))
-			authMetadataManager = auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
+		kvParams := cfg.GetKVParams()
+		kvStore, err := kv.Open(ctx, kvParams)
+		if err != nil {
+			fmt.Printf("failed to open KV store: %s\n", err)
+			os.Exit(1)
 		}
+		storeMessage := &kv.StoreMessage{Store: kvStore}
+		authService := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), logger.WithField("service", "auth_service"))
+		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
 
 		metadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		metadata := stats.NewMetadata(ctx, logger, cfg.GetBlockstoreType(), authMetadataManager, metadataProvider)

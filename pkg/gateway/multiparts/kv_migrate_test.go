@@ -27,7 +27,7 @@ func TestMigrate(t *testing.T) {
 	data := createMigrateTestData(t, ctx, dbTracker, 300)
 
 	buf := bytes.Buffer{}
-	err := multiparts.Migrate(ctx, database.Pool(), &buf)
+	err := multiparts.Migrate(ctx, database.Pool(), nil, &buf)
 	require.NoError(t, err)
 
 	testutil.MustDo(t, "Import file", kv.Import(ctx, &buf, kvStore))

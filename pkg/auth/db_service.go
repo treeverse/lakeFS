@@ -19,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/params"
+	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
@@ -902,7 +903,7 @@ func (s *DBAuthService) markTokenSingleUse(ctx context.Context, tokenID string, 
 	return canUseToken, nil
 }
 
-func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
+func Migrate(ctx context.Context, d *pgxpool.Pool, _ blockparams.AdapterConfig, writer io.Writer) error {
 	je := json.NewEncoder(writer)
 	// Create header
 	if err := je.Encode(kv.Header{

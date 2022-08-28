@@ -36,11 +36,6 @@ func TestPathWithTrailingSlash(t *testing.T) {
 	testPathWithTrailingSlash(t, result)
 }
 
-func TestPathWithTrailingSlashDB(t *testing.T) {
-	result := setupTest(t, http.MethodHead, "/example/", nil, false)
-	testPathWithTrailingSlash(t, result)
-}
-
 func testPathWithTrailingSlash(t *testing.T, result *http.Response) {
 	assert.Equal(t, 200, result.StatusCode)
 	bytes, err := io.ReadAll(result.Body)
