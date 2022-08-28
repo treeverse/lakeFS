@@ -54,8 +54,8 @@ var (
 func TestMain(m *testing.M) {
 	systemTests := flag.Bool("system-tests", false, "Run system tests")
 	useLocalCredentials := flag.Bool("use-local-credentials", false, "Generate local API key during `lakefs setup'")
-	adminAccessKeyID := *flag.String("admin-access-key-id", "AKIAIOSFDNN7EXAMPLEQ", "lakeFS Admin access key ID")
-	adminSecretAccessKey := *flag.String("admin-secret-access-key", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", "lakeFS Admin secret access key")
+	adminAccessKeyID := flag.String("admin-access-key-id", "AKIAIOSFDNN7EXAMPLEQ", "lakeFS Admin access key ID")
+	adminSecretAccessKey := flag.String("admin-secret-access-key", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", "lakeFS Admin secret access key")
 	if directs, ok := os.LookupEnv("ESTI_TEST_DATA_ACCESS"); ok {
 		if err := testDirectDataAccess.Parse(directs); err != nil {
 			logger.Fatalf("ESTI_TEST_DATA_ACCESS=\"%s\": %s", directs, err)
@@ -69,12 +69,12 @@ func TestMain(m *testing.M) {
 
 	params := testutil.SetupTestingEnvParams{
 		Name:      "esti",
-		StorageNS: "esti-system-testing",
+		StorageNS: "treeverse-ort-simulation-bucket",
 	}
 
 	if *useLocalCredentials {
-		params.AdminAccessKeyID = adminAccessKeyID
-		params.AdminSecretAccessKey = adminSecretAccessKey
+		params.AdminAccessKeyID = *adminAccessKeyID
+		params.AdminSecretAccessKey = *adminSecretAccessKey
 	}
 	viper.SetDefault("post_migrate", false)
 
