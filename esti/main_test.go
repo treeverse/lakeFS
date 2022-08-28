@@ -71,16 +71,8 @@ func TestMain(m *testing.M) {
 	}
 
 	if *useLocalCredentials {
-		if adminAccessKeyID, ok := os.LookupEnv("ESTI_ADMIN_ACCESS_KEY_ID"); ok {
-			params.AdminAccessKeyID = adminAccessKeyID
-		} else {
-			params.AdminAccessKeyID = "AKIAIOSFDNN7EXAMPLEQ"
-		}
-		if adminSecretAccessKey, ok := os.LookupEnv("ESTI_ADMIN_SECRET_ACCESS_KEY"); ok {
-			params.AdminSecretAccessKey = adminSecretAccessKey
-		} else {
-			params.AdminSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-		}
+		params.AdminAccessKeyID = *flag.String("admin-access-key-id", "AKIAIOSFDNN7EXAMPLEQ", "lakeFS Admin access key ID")
+		params.AdminSecretAccessKey = *flag.String("admin-secret-access-key", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", "lakeFS Admin secret access key")
 	}
 	viper.SetDefault("post_migrate", false)
 
