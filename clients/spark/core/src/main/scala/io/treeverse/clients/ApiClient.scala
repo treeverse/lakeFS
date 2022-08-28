@@ -45,7 +45,8 @@ private object ApiClient {
     ClientKey(apiUrl, accessKey),
     new Callable[ApiClient] {
       def call() = new ApiClient(apiUrl, accessKey, secretKey, connectionTimeoutSec, readTimeoutSec)
-    })
+    }
+  )
 
   /** Translate uri according to two cases:
    *  If the storage type is s3 then translate the protocol of uri from "standard"-ish "s3" to "s3a", to
