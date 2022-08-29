@@ -73,6 +73,14 @@ func setupTest(t *testing.T) (context.Context, logging.Logger, string) {
 	return ctx, logger, repo
 }
 
+func tearDownTest(t *testing.T, repoName string) {
+	ctx := context.Background()
+	name := makeRepositoryName(t.Name())
+	logger := logger.WithField("testName", name)
+	deleteRepository(ctx, t, repoName)
+	logger.WithField("repo", repoName).Info("Deleted repository")
+}
+
 func createRepositoryForTest(ctx context.Context, t *testing.T) string {
 	name := strings.ToLower(t.Name())
 	return createRepositoryByName(ctx, t, name)
@@ -116,6 +124,13 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, repoStorage)
 	require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
 		"create repository '%s', storage '%s'", name, repoStorage)
+}
+
+func deleteRepository(ctx context.Context, t *testing.T, repositoryName string) {
+	resp, err := client.DeleteRepositoryWithResponse(ctx, repositoryName)
+	require.NoErrorf(t, err, "failed to delete repository '%s'", repositoryName)
+	require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+		"delete repository '%s', storage '%s'", repositoryName)
 }
 
 const randomDataContentLength = 16
