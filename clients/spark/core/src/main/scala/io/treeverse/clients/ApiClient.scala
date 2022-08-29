@@ -40,12 +40,12 @@ private object ApiClient {
     ClientKey(conf.apiUrl, conf.accessKey),
     new Callable[ApiClient] {
       def call() = new ApiClient(
-        new APIConfigurations(conf.apiUrl,
-                              conf.accessKey,
-                              conf.secretKey,
-                              conf.connectionTimeoutSec,
-                              conf.readTimeoutSec
-                             )
+        APIConfigurations(conf.apiUrl,
+                          conf.accessKey,
+                          conf.secretKey,
+                          conf.connectionTimeoutSec,
+                          conf.readTimeoutSec
+                         )
       )
     }
   )

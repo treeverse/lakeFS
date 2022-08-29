@@ -4,8 +4,8 @@ import io.treeverse.clients.{APIConfigurations, ApiClient, Exporter}
 import org.apache.spark.sql.SparkSession
 import io.treeverse.clients.LakeFSContext.{
   LAKEFS_CONF_API_ACCESS_KEY_KEY,
-  LAKEFS_CONF_API_CONNECTION_TIMEOUT_KEY,
-  LAKEFS_CONF_API_READ_TIMEOUT_KEY,
+  LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY,
+  LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY,
   LAKEFS_CONF_API_SECRET_KEY_KEY,
   LAKEFS_CONF_API_URL_KEY
 }
