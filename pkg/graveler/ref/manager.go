@@ -407,6 +407,9 @@ func (m *KVManager) GetCommitByPrefix(ctx context.Context, repository *graveler.
 				break
 			}
 		}
+		if it.Err() != nil {
+			return nil, fmt.Errorf("get commit by prefix: %w", err)
+		}
 		if commit == nil {
 			return nil, graveler.ErrCommitNotFound
 		}

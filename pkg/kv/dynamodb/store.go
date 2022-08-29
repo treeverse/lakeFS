@@ -394,7 +394,7 @@ func (e *EntriesIterator) Next() bool {
 	}
 
 	for e.currEntryIdx == int(*e.queryResult.Count) {
-		if e.queryResult.LastEvaluatedKey == nil {
+		if len(e.queryResult.LastEvaluatedKey) == 0 {
 			return false
 		}
 		tmpEntriesIter, err := e.store.scanInternal(e.scanCtx, e.partKey, e.startKey, e.queryResult.LastEvaluatedKey)

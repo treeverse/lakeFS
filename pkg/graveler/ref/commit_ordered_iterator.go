@@ -97,11 +97,10 @@ func (i *KVOrderedCommitIterator) Next() bool {
 func (i *KVOrderedCommitIterator) SeekGE(id graveler.CommitID) {
 	if i.Err() == nil {
 		i.it.Close()
-		it, err := kv.NewPrimaryIterator(i.ctx, i.store, (&graveler.CommitData{}).ProtoReflect().Type(), i.repositoryPath,
-			[]byte(graveler.CommitPath("")), kv.IteratorOptionsFrom([]byte(graveler.CommitPath(id))))
-		i.it = it
 		i.value = nil
-		i.err = err
+
+		i.it, i.err = kv.NewPrimaryIterator(i.ctx, i.store, (&graveler.CommitData{}).ProtoReflect().Type(), i.repositoryPath,
+			[]byte(graveler.CommitPath("")), kv.IteratorOptionsFrom([]byte(graveler.CommitPath(id))))
 	}
 }
 
@@ -120,5 +119,7 @@ func (i *KVOrderedCommitIterator) Err() error {
 }
 
 func (i *KVOrderedCommitIterator) Close() {
-	i.it.Close()
+	if i.it != nil {
+		i.it.Close()
+	}
 }
