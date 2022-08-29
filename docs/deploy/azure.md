@@ -34,7 +34,9 @@ If you already have a database, take note of the connection string and skip to t
    ```yaml
    ---
    database:
-     connection_string: "[DATABASE_CONNECTION_STRING]"
+     type: "postgres"
+     postgres:
+       connection_string: "[DATABASE_CONNECTION_STRING]"
    auth:
      encrypt:
        # replace this with a randomly-generated string:
@@ -64,7 +66,8 @@ command to demonstrate starting lakeFS using Docker:
 docker run \
   --name lakefs \
   -p 8000:8000 \
-  -e LAKEFS_DATABASE_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \
+  -e LAKEFS_DATABASE_TYPE="postgres" \
+  -e LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \
   -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="[ENCRYPTION_SECRET_KEY]" \
   -e LAKEFS_BLOCKSTORE_TYPE="azure" \
   -e LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT="[YOUR_STORAGE_ACCOUNT]" \
