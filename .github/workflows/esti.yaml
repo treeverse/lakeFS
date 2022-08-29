@@ -245,6 +245,11 @@ jobs:
       - name: Build and test hadoopfs
         working-directory: clients/hadoopfs
         run: mvn --quiet --batch-mode --update-snapshots -P'!treeverse-signing',contract-tests verify
+      - name: logs on failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/lakefsfs_contract
+        run: docker-compose logs --tail=1000
 
   hadoopfs-s3a-mpu:
     name: Test lakeFS multipart upload with Hadoop S3A
@@ -497,6 +502,12 @@ jobs:
         working-directory: test/rclone_export
         run: ./run-test.sh
 
+      - name: logs on failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/bootstrap-test-lakefs
+        run: docker-compose logs --tail=1000
+
   metastore-client-with-trino:
     name: Test metastore client commands using trino and dbt
     needs: [gen-code, deploy-image]
@@ -615,6 +626,8 @@ jobs:
             suffix: ""
     env:
       SPARK_TAG: ${{ matrix.spark.version }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      TAG: ${{ needs.deploy-image.outputs.tag }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
@@ -685,6 +698,8 @@ jobs:
             suffix: "-hadoop3"
     env:
       SPARK_TAG: ${{ matrix.spark.version }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      TAG: ${{ needs.deploy-image.outputs.tag }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
@@ -749,6 +764,8 @@ jobs:
             suffix: ""
     env:
       SPARK_TAG: ${{ matrix.spark.version }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      TAG: ${{ needs.deploy-image.outputs.tag }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
