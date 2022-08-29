@@ -11,7 +11,6 @@ import (
 
 func TestSanityAPI(t *testing.T) {
 	ctx, log, repo := setupTest(t)
-	defer tearDownTest(t, repo)
 
 	log.Debug("list entries")
 	entries := listRepositoryObjects(ctx, t, repo, mainBranch)

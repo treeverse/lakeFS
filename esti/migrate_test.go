@@ -169,6 +169,8 @@ func preMigrateTests(t *testing.T) {
 }
 
 func postMigrateTests(t *testing.T) {
+	defer deleteRepository(context.Background(), t, migrateStateRepoName)
+
 	readStateFromLakeFS(t)
 
 	// all post tests execution
@@ -177,7 +179,6 @@ func postMigrateTests(t *testing.T) {
 	t.Run("TestPostMigrateAuth", testPostMigrateAuth)
 	t.Run("TestPostMigrateGraveler", testPostMigrateGraveler)
 
-	deleteRepository(context.Background(), t, migrateStateRepoName)
 }
 
 func saveStateInLakeFS(t *testing.T) {
