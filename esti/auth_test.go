@@ -69,7 +69,6 @@ func TestAdminPolicies(t *testing.T) {
 // Test Super User Policies: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestSuperUserPolicies(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
-	defer tearDownTest(t, repo)
 	gid := "SuperUsers"
 
 	// generate the SuperUser client
@@ -120,7 +119,6 @@ func TestSuperUserPolicies(t *testing.T) {
 // Test Developer Policies: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestDeveloperPolicies(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
-	defer tearDownTest(t, repo)
 	gid := "Developers"
 
 	// generate the Developer client
@@ -166,7 +164,6 @@ func TestDeveloperPolicies(t *testing.T) {
 // Test Viewer Policies: AuthManageOwnCredentials, FSReadAll
 func TestViewerPolicies(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
-	defer tearDownTest(t, repo)
 	gid := "Viewers"
 
 	// generate the viewer client
