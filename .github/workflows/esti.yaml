@@ -505,7 +505,7 @@ jobs:
       - name: logs on failure
         if: ${{ failure() }}
         continue-on-error: true
-        working-directory: test/bootstrap-test-lakefs
+        working-directory: test/rclone_export
         run: docker-compose logs --tail=1000
 
   metastore-client-with-trino:
