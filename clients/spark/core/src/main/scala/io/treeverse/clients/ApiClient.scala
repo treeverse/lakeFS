@@ -8,8 +8,8 @@ import io.lakefs.clients.api.model.{
 }
 import io.treeverse.clients.StorageClientType.StorageClientType
 import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
-
 import com.google.common.cache.{Cache, CacheBuilder, CacheLoader, LoadingCache}
+import io.treeverse.clients.ApiClient.TIMEOUT_NOT_SET
 
 import java.net.URI
 import java.util.concurrent.{Callable, TimeUnit}
@@ -23,6 +23,7 @@ object StorageClientType extends Enumeration {
 
 private object ApiClient {
   val NUM_CACHED_API_CLIENTS = 30
+  val TIMEOUT_NOT_SET = -1
 
   case class ClientKey(apiUrl: String, accessKey: String)
 
@@ -35,16 +36,17 @@ private object ApiClient {
 
   /** @return an ApiClient, reusing an existing one for this URL if possible.
    */
-  def get(
-      apiUrl: String,
-      accessKey: String,
-      secretKey: String,
-      connectionTimeoutSec: String = "",
-      readTimeoutSec: String = ""
-  ): ApiClient = clients.get(
-    ClientKey(apiUrl, accessKey),
+  def get(conf: APIConfigurations): ApiClient = clients.get(
+    ClientKey(conf.apiUrl, conf.accessKey),
     new Callable[ApiClient] {
-      def call() = new ApiClient(apiUrl, accessKey, secretKey, connectionTimeoutSec, readTimeoutSec)
+      def call() = new ApiClient(
+        APIConfigurations(conf.apiUrl,
+                          conf.accessKey,
+                          conf.secretKey,
+                          conf.connectionTimeoutSec,
+                          conf.readTimeoutSec
+                         )
+      )
     }
   )
 
@@ -79,9 +81,7 @@ private object ApiClient {
   }
 }
 
-// Only cached instances of ApiClient can be constructed.  The actual
-// constructor is private.
-class ApiClient private (
+case class APIConfigurations(
     apiUrl: String,
     accessKey: String,
     secretKey: String,
@@ -90,18 +90,30 @@ class ApiClient private (
 ) {
   val FROM_SEC_TO_MILLISEC = 1000
 
-  val client = new api.ApiClient
-  client.setUsername(accessKey)
-  client.setPassword(secretKey)
-  client.setBasePath(apiUrl.stripSuffix("/"))
-  if (connectionTimeoutSec != null && !connectionTimeoutSec.isEmpty) {
-    val connectionTimeoutMillisec = connectionTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
-    client.setConnectTimeout(connectionTimeoutMillisec)
-  }
+  val connectionTimeoutMillisec: Int = stringAsMillisec(connectionTimeoutSec)
+  val readTimeoutMillisec: Int = stringAsMillisec(readTimeoutSec)
 
-  if (readTimeoutSec != null && !readTimeoutSec.isEmpty) {
-    val readTimeoutMillisec = readTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
-    client.setReadTimeout(readTimeoutMillisec)
+  def stringAsMillisec(s: String): Int = {
+    if (s != null && !s.isEmpty)
+      s.toInt * FROM_SEC_TO_MILLISEC
+    else
+      TIMEOUT_NOT_SET
+  }
+}
+
+// Only cached instances of ApiClient can be constructed.  The actual
+// constructor is private.
+class ApiClient private (conf: APIConfigurations) {
+
+  val client = new api.ApiClient
+  client.setUsername(conf.accessKey)
+  client.setPassword(conf.secretKey)
+  client.setBasePath(conf.apiUrl.stripSuffix("/"))
+  if (TIMEOUT_NOT_SET != conf.connectionTimeoutMillisec) {
+    client.setConnectTimeout(conf.connectionTimeoutMillisec)
+  }
+  if (TIMEOUT_NOT_SET != conf.readTimeoutMillisec) {
+    client.setReadTimeout(conf.readTimeoutMillisec)
   }
 
   private val repositoriesApi = new api.RepositoriesApi(client)
