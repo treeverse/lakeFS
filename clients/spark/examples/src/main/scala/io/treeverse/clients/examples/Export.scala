@@ -23,11 +23,7 @@ object Export extends App {
       )
       System.exit(1)
     }
-
-    val endpoint = "http://<LAKEFS_ENDPOINT>/api/v1"
-    val accessKey = "<LAKEFS_ACCESS_KEY_ID>"
-    val secretKey = "<LAKEFS_SECRET_ACCESS_KEY>"
-
+    
     val repo = args(0)
     val branch = args(1)
     val prevCommitID = args(2)

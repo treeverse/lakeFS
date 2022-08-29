@@ -105,8 +105,8 @@ class LakeFSInputFormat extends InputFormat[Array[Byte], WithIdentifier[Entry]] 
         conf.get(LAKEFS_CONF_API_URL_KEY),
         conf.get(LAKEFS_CONF_API_ACCESS_KEY_KEY),
         conf.get(LAKEFS_CONF_API_SECRET_KEY_KEY),
-        conf.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_KEY),
-        conf.get(LAKEFS_CONF_API_READ_TIMEOUT_KEY)
+        conf.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY),
+        conf.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY)
       )
     )
     val metaRangeURL = apiClient.getMetaRangeURL(repoName, commitID)

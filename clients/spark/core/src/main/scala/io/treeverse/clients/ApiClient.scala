@@ -82,23 +82,22 @@ private object ApiClient {
 }
 
 case class APIConfigurations(
-    val apiUrl: String,
-    val accessKey: String,
-    val secretKey: String,
-    val connectionTimeoutSec: String = "",
-    val readTimeoutSec: String = ""
+    apiUrl: String,
+    accessKey: String,
+    secretKey: String,
+    connectionTimeoutSec: String = "",
+    readTimeoutSec: String = ""
 ) {
   val FROM_SEC_TO_MILLISEC = 1000
 
-  var connectionTimeoutMillisec: Int = TIMEOUT_NOT_SET
-  var readTimeoutMillisec: Int = TIMEOUT_NOT_SET
+  val connectionTimeoutMillisec: Int = stringAsMillisec(connectionTimeoutSec)
+  val readTimeoutMillisec: Int = stringAsMillisec(readTimeoutSec)
 
-  if (connectionTimeoutSec != null && !connectionTimeoutSec.isEmpty) {
-    this.connectionTimeoutMillisec = connectionTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
-  }
-
-  if (readTimeoutSec != null && !readTimeoutSec.isEmpty) {
-    this.readTimeoutMillisec = readTimeoutSec.toInt * FROM_SEC_TO_MILLISEC
+  def stringAsMillisec(s: String): Int = {
+    if (s != null && !s.isEmpty)
+      s.toInt * FROM_SEC_TO_MILLISEC
+    else
+      TIMEOUT_NOT_SET
   }
 }
 
