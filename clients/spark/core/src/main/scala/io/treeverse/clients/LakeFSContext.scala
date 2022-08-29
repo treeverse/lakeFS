@@ -15,8 +15,8 @@ object LakeFSContext {
   val LAKEFS_CONF_API_URL_KEY = "lakefs.api.url"
   val LAKEFS_CONF_API_ACCESS_KEY_KEY = "lakefs.api.access_key"
   val LAKEFS_CONF_API_SECRET_KEY_KEY = "lakefs.api.secret_key"
-  val LAKEFS_CONF_API_CONNECTION_TIMEOUT = "lakefs.api.connection.timeout"
-  val LAKEFS_CONF_API_READ_TIMEOUT = "lakefs.api.read.timeout"
+  val LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY = "lakefs.api.connection.timeout_seconds"
+  val LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY = "lakefs.api.read.timeout_seconds"
   val LAKEFS_CONF_JOB_REPO_NAME_KEY = "lakefs.job.repo_name"
   val LAKEFS_CONF_JOB_COMMIT_ID_KEY = "lakefs.job.commit_id"
 

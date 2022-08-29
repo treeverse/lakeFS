@@ -5,8 +5,8 @@ import io.treeverse.clients.LakeFSContext.{
   LAKEFS_CONF_API_ACCESS_KEY_KEY,
   LAKEFS_CONF_API_SECRET_KEY_KEY,
   LAKEFS_CONF_API_URL_KEY,
-  LAKEFS_CONF_API_CONNECTION_TIMEOUT,
-  LAKEFS_CONF_API_READ_TIMEOUT
+  LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY,
+  LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY
 }
 import org.apache.hadoop.fs._
 import org.apache.hadoop.conf.Configuration
@@ -48,8 +48,6 @@ object GarbageCollector {
 
   type ConfMap = List[(String, String)]
 
-  case class APIConfigurations(apiURL: String, accessKey: String, secretKey: String)
-
   /** @return a serializable summary of values in hc starting with prefix.
    */
   def getHadoopConfigurationValues(hc: Configuration, prefix: String): ConfMap =
@@ -79,7 +77,7 @@ object GarbageCollector {
       hcValues: Broadcast[ConfMap]
   ): Set[(String, Array[Byte], Array[Byte])] = {
     val location = ApiClient
-      .get(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey)
+      .get(apiConf)
       .getMetaRangeURL(repo, commitID)
     // continue on empty location, empty location is a result of a commit with no metaRangeID (e.g 'Repository created' commit)
     if (location == "") Set()
@@ -121,7 +119,7 @@ object GarbageCollector {
       hcValues: Broadcast[ConfMap]
   ): Seq[String] = {
     val location = ApiClient
-      .get(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey)
+      .get(apiConf)
       .getRangeURL(repo, rangeID)
     SSTableReader
       .forRange(configurationFromValues(hcValues), location)
@@ -141,7 +139,7 @@ object GarbageCollector {
     }
 
     val location = ApiClient
-      .get(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey)
+      .get(apiConf)
       .getRangeURL(repo, rangeID)
     SSTableReader
       .forRange(configurationFromValues(hcValues), location)
@@ -313,9 +311,11 @@ object GarbageCollector {
     val apiURL = hc.get(LAKEFS_CONF_API_URL_KEY)
     val accessKey = hc.get(LAKEFS_CONF_API_ACCESS_KEY_KEY)
     val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
-    val connectionTimeout = hc.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT)
-    val readTimeout = hc.get(LAKEFS_CONF_API_READ_TIMEOUT)
-    val apiClient = ApiClient.get(apiURL, accessKey, secretKey, connectionTimeout, readTimeout)
+    val connectionTimeout = hc.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY)
+    val readTimeout = hc.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY)
+    val apiClient = ApiClient.get(
+      APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout)
+    )
     val storageType = apiClient.getBlockstoreType()
 
     if (storageType == StorageUtils.StorageTypeS3 && args.length != 2) {
@@ -363,13 +363,14 @@ object GarbageCollector {
       ApiClient.translateURI(new URI(res.getGcAddressesLocation), storageType).toString
     println("gcAddressesLocation: " + gcAddressesLocation)
     val expiredAddresses =
-      getExpiredAddresses(repo,
-                          runID,
-                          gcCommitsLocation,
-                          spark,
-                          APIConfigurations(apiURL, accessKey, secretKey),
-                          hcValues
-                         ).withColumn("run_id", lit(runID))
+      getExpiredAddresses(
+        repo,
+        runID,
+        gcCommitsLocation,
+        spark,
+        APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout),
+        hcValues
+      ).withColumn("run_id", lit(runID))
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
     expiredAddresses.write
       .partitionBy("run_id")
