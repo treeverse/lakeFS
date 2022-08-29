@@ -23,7 +23,13 @@ object Export extends App {
       )
       System.exit(1)
     }
-    
+
+    val endpoint = "http://<LAKEFS_ENDPOINT>/api/v1"
+    val accessKey = "<LAKEFS_ACCESS_KEY_ID>"
+    val secretKey = "<LAKEFS_SECRET_ACCESS_KEY>"
+    val connectionTimeoutSec = "10"
+    val readTimeoutSec = "10"
+
     val repo = args(0)
     val branch = args(1)
     val prevCommitID = args(2)
@@ -32,14 +38,14 @@ object Export extends App {
     val spark = SparkSession.builder().appName("I can list").master("local").getOrCreate()
 
     val sc = spark.sparkContext
-    val endpoint = sc.hadoopConfiguration.get(LAKEFS_CONF_API_URL_KEY)
-    val accessKey = sc.hadoopConfiguration.get(LAKEFS_CONF_API_ACCESS_KEY_KEY)
-    val secretKey = sc.hadoopConfiguration.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
-    val connectionTimeout = sc.hadoopConfiguration.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_KEY)
-    val readTimeout = sc.hadoopConfiguration.get(LAKEFS_CONF_API_READ_TIMEOUT_KEY)
+    sc.hadoopConfiguration.set(LAKEFS_CONF_API_URL_KEY, endpoint)
+    sc.hadoopConfiguration.set(LAKEFS_CONF_API_ACCESS_KEY_KEY, accessKey)
+    sc.hadoopConfiguration.set(LAKEFS_CONF_API_SECRET_KEY_KEY, secretKey)
+    sc.hadoopConfiguration.set(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY, connectionTimeoutSec)
+    sc.hadoopConfiguration.set(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY, readTimeoutSec)
 
     val apiClient = ApiClient.get(
-      APIConfigurations(endpoint, accessKey, secretKey, connectionTimeout, readTimeout) /**/
+      APIConfigurations(endpoint, accessKey, secretKey, connectionTimeoutSec, readTimeoutSec) /**/
     )
     val exporter = new Exporter(spark, apiClient, repo, rootLocation)
 
