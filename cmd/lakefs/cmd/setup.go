@@ -63,7 +63,6 @@ var setupCmd = &cobra.Command{
 			authService     auth.Service
 			metadataManager auth.MetadataManager
 		)
-		authLogger := logging.Default().WithField("service", "auth_service")
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
 			fmt.Printf("Failed to connect to DB: %s", err)
@@ -71,6 +70,7 @@ var setupCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 		storeMessage := &kv.StoreMessage{Store: kvStore}
+		authLogger := logging.Default().WithField("service", "auth_service")
 		authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), authLogger)
 		metadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
 

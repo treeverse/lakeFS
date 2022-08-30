@@ -1,11 +1,11 @@
 package db_test
 
 import (
+	"testing"
+
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
-	"testing"
-
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/testutil"

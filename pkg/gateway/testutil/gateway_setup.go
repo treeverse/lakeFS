@@ -30,7 +30,7 @@ type Dependencies struct {
 	catalog *catalog.Catalog
 }
 
-func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI string, repoName string, kvEnabled bool) (http.Handler, *Dependencies) {
+func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI string, repoName string) (http.Handler, *Dependencies) {
 	ctx := context.Background()
 	conn, _ := testutil.GetDB(t, databaseURI)
 	idTranslator := &testutil.UploadIDTranslator{
@@ -40,18 +40,10 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI str
 	}
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 
-	var (
-		multipartsTracker multiparts.Tracker
-		storeMessage      *kv.StoreMessage
-	)
-	if kvEnabled {
-		store := kvtest.MakeStoreByName("mem", kvparams.KV{})(t, context.Background())
-		defer store.Close()
-		storeMessage = &kv.StoreMessage{Store: store}
-		multipartsTracker = multiparts.NewTracker(*storeMessage)
-	} else {
-		multipartsTracker = multiparts.NewDBTracker(conn)
-	}
+	store := kvtest.MakeStoreByName("mem", kvparams.KV{})(t, context.Background())
+	defer store.Close()
+	storeMessage := &kv.StoreMessage{Store: store}
+	multipartsTracker := multiparts.NewTracker(*storeMessage)
 
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	blockAdapter := testutil.NewBlockAdapterByType(t, idTranslator, blockstoreType)

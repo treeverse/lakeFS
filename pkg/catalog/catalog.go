@@ -17,7 +17,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/config"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/branch"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
@@ -105,8 +104,6 @@ const (
 
 type Config struct {
 	Config        *config.Config
-	DB            db.Database
-	LockDB        db.Database
 	KVStore       *kv.StoreMessage
 	WalkerFactory WalkerFactory
 }
@@ -139,10 +136,6 @@ func (c *ctxCloser) Close() error {
 }
 
 func New(ctx context.Context, cfg Config) (*Catalog, error) {
-	if cfg.LockDB == nil {
-		cfg.LockDB = cfg.DB
-	}
-
 	ctx, cancelFn := context.WithCancel(ctx)
 	adapter, err := factory.BuildBlockAdapter(ctx, nil, cfg.Config)
 	if err != nil {

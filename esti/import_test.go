@@ -5,11 +5,9 @@ import (
 	"testing"
 
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/block"
-
 	"github.com/stretchr/testify/require"
-
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/block"
 )
 
 const (
