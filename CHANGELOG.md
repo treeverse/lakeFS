@@ -3,9 +3,6 @@
 ## v0.70.6 - 2022-08-30
 - UI: fix focus on branch lookup while creating tag (#4005)
 
-Bug fix:
-- Fix panic in commit under KV, with nil tombstone (#3976)
-
 ## v0.70.5 - 2022-08-23
 
 Bug fix:
