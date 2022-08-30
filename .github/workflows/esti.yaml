@@ -842,10 +842,10 @@ jobs:
       - name: Start lakeFS with Postgres DB
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose.yaml
+          compose-file: esti/ops/docker-compose-migrate.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
-          TAG: 0.70.5 #last lakeFS version with the option to disable kv
+          TAG: 0.70.6 #last lakeFS version with the option to disable kv
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
@@ -859,6 +859,7 @@ jobs:
           ESTI_POST_MIGRATE: false
           ESTI_GOTEST_FLAGS: "-run TestMigrate"
           ESTI_FLAGS: "--use-local-credentials"
+          POST_COMMAND: "echo 'nothing to do for post migrate'"
 
       - name: Switch to KV and migrate lakeFS
         env:
@@ -867,12 +868,13 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-        run: docker-compose -f ./esti/ops/docker-compose.yaml ps -aq lakefs && docker-compose -f ./esti/ops/docker-compose.yaml run -T --entrypoint "lakefs migrate up" lakefs
+          PRE_COMMAND: "echo 'nothing to do for pre migrate'"
+        run: docker-compose -f ./esti/ops/docker-compose-migrate.yaml ps -aq lakefs-post-migrate && docker-compose -f ./esti/ops/docker-compose-migrate.yaml run -T --entrypoint "lakefs migrate up" lakefs-post-migrate
 
       - name: Start lakeFS with KV DB
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose.yaml
+          compose-file: esti/ops/docker-compose-migrate.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -891,6 +893,7 @@ jobs:
           ESTI_POST_MIGRATE: true
           ESTI_GOTEST_FLAGS: "-run TestMigrate"
           ESTI_FLAGS: "--use-local-credentials"
+          PRE_COMMAND: "echo 'nothing to do for pre migrate'"
 
       - name: lakeFS Logs on s3 failure
         if: ${{ failure() }}
