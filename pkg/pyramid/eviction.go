@@ -30,7 +30,7 @@ func newRistrettoEviction(capacity int64, evict func(rPath params.RelativePath, 
 		MaxCost:     capacity,
 		BufferItems: bufferItems,
 		OnEvict:     re.onEvict,
-		OnReject:    re.onReject,
+		OnReject:    re.onEvict,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("creating ristretto cache: %w", err)
@@ -52,12 +52,6 @@ func (re *ristrettoEviction) Store(rPath params.RelativePath, filesize int64) bo
 }
 
 func (re *ristrettoEviction) onEvict(item *ristretto.Item) {
-	if item.Value != nil {
-		re.evictCallback(item.Value.(params.RelativePath), item.Cost)
-	}
-}
-
-func (re *ristrettoEviction) onReject(item *ristretto.Item) {
 	if item.Value != nil {
 		re.evictCallback(item.Value.(params.RelativePath), item.Cost)
 	}
