@@ -9,7 +9,7 @@ import (
 
 type KVOrderedCommitIterator struct {
 	ctx                context.Context
-	it                 kv.MessageIterator
+	it                 *kv.PrimaryIterator
 	store              kv.Store
 	err                error
 	value              *graveler.CommitRecord
@@ -57,6 +57,7 @@ func NewKVOrderedCommitIterator(ctx context.Context, store *kv.StoreMessage, rep
 	if onlyAncestryLeaves {
 		parents, err = getAllFirstParents(ctx, store, repo)
 		if err != nil {
+			it.Close()
 			return nil, err
 		}
 	}
@@ -95,14 +96,13 @@ func (i *KVOrderedCommitIterator) Next() bool {
 }
 
 func (i *KVOrderedCommitIterator) SeekGE(id graveler.CommitID) {
-	if i.Err() == nil {
-		i.it.Close()
-		it, err := kv.NewPrimaryIterator(i.ctx, i.store, (&graveler.CommitData{}).ProtoReflect().Type(), i.repositoryPath,
-			[]byte(graveler.CommitPath("")), kv.IteratorOptionsFrom([]byte(graveler.CommitPath(id))))
-		i.it = it
-		i.value = nil
-		i.err = err
+	if i.err != nil {
+		return
 	}
+	i.it.Close()
+	i.value = nil
+	i.it, i.err = kv.NewPrimaryIterator(i.ctx, i.store, (&graveler.CommitData{}).ProtoReflect().Type(), i.repositoryPath,
+		[]byte(graveler.CommitPath("")), kv.IteratorOptionsFrom([]byte(graveler.CommitPath(id))))
 }
 
 func (i *KVOrderedCommitIterator) Value() *graveler.CommitRecord {
@@ -120,5 +120,7 @@ func (i *KVOrderedCommitIterator) Err() error {
 }
 
 func (i *KVOrderedCommitIterator) Close() {
-	i.it.Close()
+	if i.it != nil {
+		i.it.Close()
+	}
 }
