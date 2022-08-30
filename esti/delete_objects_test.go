@@ -11,6 +11,7 @@ import (
 
 func TestDeleteObjects(t *testing.T) {
 	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
 	const numOfObjects = 10
 
 	identifiers := make([]*s3.ObjectIdentifier, 0, numOfObjects)

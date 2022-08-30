@@ -15,6 +15,7 @@ func TestIdentity(t *testing.T) {
 		}
 		t.Run(name, func(t *testing.T) {
 			ctx, _, repo := setupTest(t)
+			defer tearDownTest(repo)
 			objPath := "1.txt"
 			branch1 := "feature-1"
 			branch2 := "feature-2"

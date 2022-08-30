@@ -15,8 +15,8 @@ import (
 
 // Test Admin Policies: AuthFullAccess, ExportSetConfiguration, FSFullAccess, RepoManagementFullAccess
 func TestAdminPolicies(t *testing.T) {
-	ctx, _, _ := setupTest(t)
-
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
 	adminClient := client
 
 	// creating new group should succeed
@@ -69,7 +69,6 @@ func TestAdminPolicies(t *testing.T) {
 // Test Super User Policies: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestSuperUserPolicies(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
-
 	gid := "SuperUsers"
 
 	// generate the SuperUser client
@@ -120,7 +119,6 @@ func TestSuperUserPolicies(t *testing.T) {
 // Test Developer Policies: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestDeveloperPolicies(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
-
 	gid := "Developers"
 
 	// generate the Developer client
@@ -166,7 +164,6 @@ func TestDeveloperPolicies(t *testing.T) {
 // Test Viewer Policies: AuthManageOwnCredentials, FSReadAll
 func TestViewerPolicies(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
-
 	gid := "Viewers"
 
 	// generate the viewer client

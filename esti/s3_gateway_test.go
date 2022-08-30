@@ -2,6 +2,7 @@ package esti
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"math/rand"
 	"net/http"
@@ -37,6 +38,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 	const parallelism = 10
 
 	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
 
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
@@ -112,7 +114,11 @@ func TestS3UploadAndDownload(t *testing.T) {
 
 func TestS3CopyObject(t *testing.T) {
 	ctx, _, repo := setupTest(t)
-	destRepo := createRepositoryByName(ctx, t, "tests3copyobjectdest")
+	defer tearDownTest(repo)
+
+	destRepoName := "tests3copyobjectdest"
+	destRepo := createRepositoryByName(ctx, t, destRepoName)
+	defer deleteRepositoryIfAskedTo(context.Background(), destRepoName)
 
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")

@@ -19,6 +19,7 @@ func TestCommitSingle(t *testing.T) {
 		}
 		t.Run(name, func(t *testing.T) {
 			ctx, _, repo := setupTest(t)
+			defer tearDownTest(repo)
 			objPath := "1.txt"
 
 			_, objContent := uploadFileRandomData(ctx, t, repo, mainBranch, objPath, direct)
@@ -77,7 +78,7 @@ func TestCommitInMixedOrder(t *testing.T) {
 		}
 		t.Run(name, func(t *testing.T) {
 			ctx, _, repo := setupTest(t)
-
+			defer tearDownTest(repo)
 			names1 := genNames(size, "run2/foo")
 			uploads := make(chan Upload, size)
 			wg := sync.WaitGroup{}
@@ -148,7 +149,7 @@ func TestCommitWithTombstone(t *testing.T) {
 		}
 		t.Run(name, func(t *testing.T) {
 			ctx, _, repo := setupTest(t)
-
+			defer tearDownTest(repo)
 			origObjPathLow := "objb.txt"
 			origObjPathHigh := "objc.txt"
 			uploadFileRandomData(ctx, t, repo, mainBranch, origObjPathLow, direct)
