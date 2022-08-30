@@ -114,9 +114,8 @@ var runCmd = &cobra.Command{
 		dbParams := cfg.GetDatabaseParams()
 
 		var (
-			dbPool     db.Database
-			lockDBPool db.Database
-			err        error
+			dbPool db.Database
+			err    error
 		)
 		kvParams := cfg.GetKVParams()
 		kvStore, err := kv.Open(ctx, kvParams)
@@ -205,8 +204,6 @@ var runCmd = &cobra.Command{
 
 		c, err := catalog.New(ctx, catalog.Config{
 			Config:  cfg,
-			DB:      dbPool,
-			LockDB:  lockDBPool,
 			KVStore: storeMessage,
 		})
 		if err != nil {

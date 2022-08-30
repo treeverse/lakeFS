@@ -32,7 +32,6 @@ type Dependencies struct {
 
 func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI string, repoName string) (http.Handler, *Dependencies) {
 	ctx := context.Background()
-	conn, _ := testutil.GetDB(t, databaseURI)
 	idTranslator := &testutil.UploadIDTranslator{
 		TransMap:   make(map[string]string),
 		ExpectedID: "",
@@ -53,7 +52,6 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI str
 
 	c, err := catalog.New(ctx, catalog.Config{
 		Config:  conf,
-		DB:      conn,
 		KVStore: storeMessage,
 	})
 	testutil.MustDo(t, "build catalog", err)
