@@ -16,7 +16,7 @@ import (
 // Test Admin Policies: AuthFullAccess, ExportSetConfiguration, FSFullAccess, RepoManagementFullAccess
 func TestAdminPolicies(t *testing.T) {
 	ctx, _, repo := setupTest(t)
-	defer tearDownTest(t, repo)
+	defer tearDownTest(repo)
 	adminClient := client
 
 	// creating new group should succeed

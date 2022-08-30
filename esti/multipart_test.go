@@ -22,7 +22,7 @@ const (
 
 func TestMultipartUpload(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
-	defer tearDownTest(t, repo)
+	defer tearDownTest(repo)
 	file := "multipart_file"
 	path := mainBranch + "/" + file
 	input := &s3.CreateMultipartUploadInput{

@@ -10,7 +10,7 @@ import (
 
 func TestResetAll(t *testing.T) {
 	ctx, _, repo := setupTest(t)
-	defer tearDownTest(t, repo)
+	defer tearDownTest(repo)
 	objPath := "1.txt"
 
 	// upload file
@@ -57,7 +57,7 @@ func TestResetAll(t *testing.T) {
 
 func TestResetPath(t *testing.T) {
 	ctx, _, repo := setupTest(t)
-	defer tearDownTest(t, repo)
+	defer tearDownTest(repo)
 	objPath1 := "prefix/1.txt"
 	objPath2 := "2.txt"
 
@@ -124,7 +124,7 @@ func TestResetPath(t *testing.T) {
 
 func TestResetObject(t *testing.T) {
 	ctx, _, repo := setupTest(t)
-	defer tearDownTest(t, repo)
+	defer tearDownTest(repo)
 	objPath1 := "1.txt"
 	objPath2 := "2.txt"
 
@@ -190,7 +190,7 @@ func TestResetObject(t *testing.T) {
 
 func TestRevert(t *testing.T) {
 	ctx, _, repo := setupTest(t)
-	defer tearDownTest(t, repo)
+	defer tearDownTest(repo)
 	objPath1 := "1.txt"
 	objPath2 := "2.txt"
 

@@ -169,7 +169,7 @@ func preMigrateTests(t *testing.T) {
 }
 
 func postMigrateTests(t *testing.T) {
-	defer deleteRepository(context.Background(), t, migrateStateRepoName)
+	defer deleteRepositoryIfAskedTo(context.Background(), migrateStateRepoName)
 
 	readStateFromLakeFS(t)
 
@@ -228,7 +228,7 @@ func readStateFromLakeFS(t *testing.T) {
 
 func testPreMigrateMultipart(t *testing.T) {
 	_, logger, repo := setupTest(t)
-	defer tearDownTest(t, repo)
+	defer tearDownTest(repo)
 
 	input := &s3.CreateMultipartUploadInput{
 		Bucket: aws.String(repo),
@@ -285,7 +285,7 @@ func testPostMigrateMultipart(t *testing.T) {
 func testPreMigrateActions(t *testing.T) {
 	// Create action data before migration
 	ctx, _, repo := setupTest(t)
-	defer tearDownTest(t, repo)
+	defer tearDownTest(repo)
 	state.Actions.Repo = repo
 	parseAndUploadActions(t, ctx, repo, mainBranch)
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
@@ -322,7 +322,7 @@ func testPreMigrateActions(t *testing.T) {
 func testPostMigrateActions(t *testing.T) {
 	// Validate info using storage logs
 	ctx, _, repo := setupTest(t)
-	defer tearDownTest(t, repo)
+	defer tearDownTest(repo)
 	// Create new event and make sure it's listed before the migrated events
 	resp, err := client.GetBranchWithResponse(ctx, state.Actions.Repo, mainBranch)
 	require.NoError(t, err)
@@ -367,7 +367,7 @@ func testPostMigrateActions(t *testing.T) {
 
 func testPreMigrateAuth(t *testing.T) {
 	ctx, _, repo := setupTest(t)
-	defer tearDownTest(t, repo)
+	defer tearDownTest(repo)
 
 	// creating a viewer, developer, superuser and admin and verifying their roles and permissions
 	viewerCreds := createUserWithCredentialsInGroup(t, ctx, "testViewer", auth.ViewersGroup)
@@ -439,7 +439,7 @@ func testPreMigrateAuth(t *testing.T) {
 
 func testPostMigrateAuth(t *testing.T) {
 	ctx, _, repo := setupTest(t)
-	defer tearDownTest(t, repo)
+	defer tearDownTest(repo)
 
 	// verifying all previous permissions are preserved through the migration process
 	verifyUserPermissions(t, ctx, state.Auth.Repo, "viewer", &api.CredentialsWithSecret{
@@ -573,7 +573,7 @@ func verifyUserPermissions(t *testing.T, ctx context.Context, repo, userType str
 func testPreMigrateGraveler(t *testing.T) {
 	//create repository
 	ctx, _, repo := setupTest(t)
-	defer tearDownTest(t, repo)
+	defer tearDownTest(repo)
 
 	// upload files to main branch
 	uploadFiles(t, ctx, repo, mainBranch, "a/foo/")
@@ -622,7 +622,7 @@ func testPreMigrateGraveler(t *testing.T) {
 
 func testPostMigrateGraveler(t *testing.T) {
 	ctx, _, repo := setupTest(t)
-	defer tearDownTest(t, repo)
+	defer tearDownTest(repo)
 
 	// verifying all previous resources are preserved through the migration process
 	verifyGravelerEntities(t, ctx)

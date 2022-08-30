@@ -25,7 +25,7 @@ func found(ctx context.Context, repo, ref, path string) (bool, error) {
 
 func TestDeleteStaging(t *testing.T) {
 	ctx, _, repo := setupTest(t)
-	defer tearDownTest(t, repo)
+	defer tearDownTest(repo)
 	objPath := "1.txt"
 
 	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath, false)
@@ -45,7 +45,7 @@ func TestDeleteStaging(t *testing.T) {
 
 func TestDeleteCommitted(t *testing.T) {
 	ctx, _, repo := setupTest(t)
-	defer tearDownTest(t, repo)
+	defer tearDownTest(repo)
 	objPath := "1.txt"
 
 	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath, false)
@@ -69,7 +69,7 @@ func TestDeleteCommitted(t *testing.T) {
 
 func TestCommitDeleteCommitted(t *testing.T) {
 	ctx, _, repo := setupTest(t)
-	defer tearDownTest(t, repo)
+	defer tearDownTest(repo)
 	objPath := "1.txt"
 
 	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath, false)
