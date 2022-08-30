@@ -76,7 +76,6 @@ func setupTest(t *testing.T) (context.Context, logging.Logger, string) {
 func tearDownTest(repoName string) {
 	ctx := context.Background()
 	deleteRepositoryIfAskedTo(ctx, repoName)
-	logger.WithField("repo", repoName).Info("Deleted repository")
 }
 
 func createRepositoryForTest(ctx context.Context, t *testing.T) string {
@@ -128,6 +127,7 @@ func deleteRepositoryIfAskedTo(ctx context.Context, repositoryName string) {
 	deleteRepositories := viper.GetBool("delete_repositories")
 	if deleteRepositories {
 		client.DeleteRepositoryWithResponse(ctx, repositoryName)
+		logger.WithField("repo", repositoryName).Info("Deleted repository")
 	}
 }
 
