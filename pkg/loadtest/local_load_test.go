@@ -80,7 +80,6 @@ func TestLocalLoad(t *testing.T) {
 	// Only once
 	ctx := context.Background()
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeLocal)
-	conn, _ := testutil.GetDB(t, databaseURI)
 
 	conf, err := config.NewConfig()
 	testutil.MustDo(t, "config", err)
@@ -124,7 +123,6 @@ func TestLocalLoad(t *testing.T) {
 			blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
 			c, err := catalog.New(ctx, catalog.Config{
 				Config:  conf,
-				DB:      conn,
 				KVStore: storeMessage,
 			})
 			testutil.MustDo(t, "build catalog", err)
