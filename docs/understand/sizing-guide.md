@@ -62,43 +62,29 @@ in the range of 150 MiB per every 100,000 uncommitted writes.
 
 We recommend starting at 10 GiB for a production deployment, as it will likely be more than enough.
 
-#### RAM
-Since the data size is small, it's recommended to provide enough memory to hold the vast majority of that data in RAM.
-Cloud providers will save you the need to tune this parameter - it will be set to a fixed percentage the chosen instance's available RAM (25% on AWS RDS, 30% on Google Cloud SQL).
-It is recommended that you check with your selected cloud provider for configuration and provisioning information for you database.
-For self-managed database instances follow these best practices
-
 <div class="tabs">
   <ul>
     <li><a href="#postgres-ram">PostgreSQL</a></li>
     <li><a href="#dynamodb-ram">DynamoDB</a></li>
   </ul>
 <div markdown="1" id="postgres-ram">
+#### RAM
+Since the data size is small, it's recommended to provide enough memory to hold the vast majority of that data in RAM.
+Cloud providers will save you the need to tune this parameter - it will be set to a fixed percentage the chosen instance's available RAM (25% on AWS RDS, 30% on Google Cloud SQL).
+It is recommended that you check with your selected cloud provider for configuration and provisioning information for you database.
+For self-managed database instances follow these best practices
+
 Ideally, configure the [shared_buffers](https://www.postgresql.org/docs/current/runtime-config-resource.html#GUC-SHARED-BUFFERS){: target="_blank" }
 of your PostgreSQL instances to be large enough to contain the currently active dataset.
 Pick a database instance with enough RAM to accommodate this buffer size at roughly x4 the size given for `shared_buffers`. For example, if an installation has ~500,000 uncommitted writes at any given time, it would require about 750 MiB of `shared_buffers`
 that would require about 3 GiB of RAM.
-</div>
-
-<div markdown="1" id="dynamodb-ram">
-TBD RAM
-</div>
-</div>
-
 #### CPU
-
-<div class="tabs">
-  <ul>
-    <li><a href="#postgres-cpu">PostgreSQL</a></li>
-    <li><a href="#dynamodb-cpu">DynamoDB</a></li>
-  </ul>
-<div markdown="1" id="postgres-cpu">
 PostgreSQL CPU cores help scale concurrent requests. 1 CPU core for every 5,000 requests/second is ideal.
 </div>
+<div markdown="1" id="dynamodb-ram">
+lakeFS will create a table on the DB, with the default on-demand setting. No need to specify how much read and write throughput you expect your application to perform, as DynamoDB instantly accommodates your workloads as they ramp up or down.
 
-<div markdown="1" id="dynamodb-cpu">
-TBD CPU
-</div>
+You can customize the table settings to provisioned capacity which allows you to manage and optimize your costs by allocating read/write capacity in advance (see [Benchmarks](https://docs.lakefs.io/understand/sizing-guide.html#benchmarks))
 </div>
 
 ## Scaling factors
@@ -298,8 +284,75 @@ The average throughput during the experiment was **7069.03 requests/second**.
 </div>
 
 <div markdown="1" id="#dynamodb-bench">
-TBD Bench
-</div>
+All benchmarks below were measured using m5.xlarge instance on AWS us-east-1.
+
+### Random Writes
+
+This test generates random write requests to a given lakeFS branch.
+All the paths are pre-generated and don't overwrite each other (as overwrites are relatively rare in a Data Lake setup).
+
+**command executed:**
+
+```shell
+lakectl abuse random-write \
+    --amount 500000 \
+    --parallelism 64 \
+    lakefs://example-repo/main
+```
+
+**Note** lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and branch.
+
+**Result Histogram (raw): Provisioned read capacity units - 1000
+Provisioned write capacity units - 1000**
+
+```
+Histogram (ms):
+1	0
+2	0
+5	0
+7	0
+10	0
+15	0
+25	24
+50	239852
+75	458504
+100	485225
+250	493687
+350	493872
+500	493960
+750	496239
+1000	499194
+5000	500000
+min	23
+max	4437
+total	500000
+```
+**Result Histogram (raw): Provisioned read capacity units - 500
+Provisioned write capacity units - 500**
+
+```
+Histogram (ms):
+1	0
+2	0
+5	0
+7	0
+10	0
+15	0
+25	46
+50	244800
+75	458098
+100	486082
+250	493376
+350	493647
+500	493773
+750	496227
+1000	499268
+5000	500000
+min	21
+max	4588
+total	500000
+```
+
 </div>
 
 ## Important metrics
