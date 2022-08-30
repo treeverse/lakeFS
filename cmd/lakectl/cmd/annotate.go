@@ -57,7 +57,7 @@ var annotateCmd = &cobra.Command{
 					logCommitsParams.Prefixes = &[]string{obj.Path}
 				}
 				logCommitsResp, err := client.LogCommitsWithResponse(context, pathURI.Repository, pathURI.Ref, logCommitsParams)
-				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+				DieOnErrorOrUnexpectedStatusCode(logCommitsResp, err, http.StatusOK)
 				data := objectCommitData{
 					Object: obj.Path,
 				}
