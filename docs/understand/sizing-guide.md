@@ -86,6 +86,7 @@ lakeFS will create a table on the DB, with the default on-demand setting. No nee
 
 You can customize the table settings to provisioned capacity which allows you to manage and optimize your costs by allocating read/write capacity in advance (see [Benchmarks](https://docs.lakefs.io/understand/sizing-guide.html#benchmarks))
 </div>
+</div>
 
 ## Scaling factors
 
@@ -353,6 +354,7 @@ max	4588
 total	500000
 ```
 
+</div>
 </div>
 
 ## Important metrics
