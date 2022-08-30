@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/rs/xid"
@@ -61,7 +62,7 @@ func verifyResponse(resp *http.Response, body []byte) error {
 // makeRepositoryName changes name to make it an acceptable repository name by replacing all
 // non-alphanumeric characters with a `-`.
 func makeRepositoryName(name string) string {
-	return nonAlphanumericSequence.ReplaceAllString(name, "-")
+	return nonAlphanumericSequence.ReplaceAllString(name, "-") + "-" + fmt.Sprint(time.Now().UnixNano())
 }
 
 func setupTest(t *testing.T) (context.Context, logging.Logger, string) {
@@ -124,10 +125,34 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 }
 
 func deleteRepositoryIfAskedTo(ctx context.Context, repositoryName string) {
-	deleteRepositories := viper.GetBool("delete_repositories")
-	if deleteRepositories {
+	deleteRepository := viper.GetBool("delete_created_objects")
+	if deleteRepository {
 		client.DeleteRepositoryWithResponse(ctx, repositoryName)
 		logger.WithField("repo", repositoryName).Info("Deleted repository")
+	}
+}
+
+func deleteUserIfAskedTo(ctx context.Context, userName string) {
+	deleteUser := viper.GetBool("delete_created_objects")
+	if deleteUser {
+		client.DeleteUserWithResponse(ctx, userName)
+		logger.WithField("user", userName).Info("Deleted user")
+	}
+}
+
+func deleteGroupIfAskedTo(ctx context.Context, groupName string) {
+	deleteGroup := viper.GetBool("delete_created_objects")
+	if deleteGroup {
+		client.DeleteGroupWithResponse(ctx, groupName)
+		logger.WithField("group", groupName).Info("Deleted group")
+	}
+}
+
+func deletePolicyIfAskedTo(ctx context.Context, policyName string) {
+	deletePolicy := viper.GetBool("delete_created_objects")
+	if deletePolicy {
+		client.DeleteGroupWithResponse(ctx, policyName)
+		logger.WithField("policy", policyName).Info("Deleted policy")
 	}
 }
 

@@ -18,6 +18,12 @@ func TestRepositoryBasicOps(t *testing.T) {
 		repos[i] = createRepositoryUnique(ctx, t)
 	}
 
+	defer func() {
+		for i := range repos {
+			deleteRepositoryIfAskedTo(ctx, repos[i])
+		}
+	}()
+
 	// list repositories - make sure we have the ones we created
 	listedRepos := listRepositoriesIDs(t, ctx)
 	for _, repo := range repos {

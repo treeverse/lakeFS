@@ -2,6 +2,7 @@ package esti
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -20,15 +21,17 @@ func TestAdminPolicies(t *testing.T) {
 	adminClient := client
 
 	// creating new group should succeed
-	gid := "TestGroup"
+	gid := "TestGroup-" + fmt.Sprint(time.Now().UnixNano())
 	resCreateGroup, err := adminClient.CreateGroupWithResponse(ctx, api.CreateGroupJSONRequestBody{
 		Id: gid,
 	})
 	require.NoError(t, err, "Admin failed while creating group")
 	require.Equal(t, http.StatusCreated, resCreateGroup.StatusCode(), "Admin unexpectedly failed to create group")
 
+	defer deleteGroupIfAskedTo(ctx, gid)
+
 	// adding policies to the group should succeed
-	pid := "TestPolicy"
+	pid := "TestPolicy" + "-" + fmt.Sprint(time.Now().UnixNano())
 	resCreatePolicy, err := adminClient.CreatePolicyWithResponse(ctx, api.CreatePolicyJSONRequestBody{
 		CreationDate: api.Int64Ptr(time.Now().Unix()),
 		Id:           pid,
@@ -43,17 +46,21 @@ func TestAdminPolicies(t *testing.T) {
 	require.NoError(t, err, "Admin failed while creating policy")
 	require.Equal(t, http.StatusCreated, resCreatePolicy.StatusCode(), "Admin unexpectedly failed to create policy")
 
+	defer deletePolicyIfAskedTo(ctx, pid)
+
 	resAddPolicy, err := adminClient.AttachPolicyToGroupWithResponse(ctx, gid, pid)
 	require.NoError(t, err, "Admin failed while adding policy to group")
 	require.Equal(t, http.StatusCreated, resAddPolicy.StatusCode(), "Admin unexpectedly failed to add policy to group")
 
 	// creating a new user should succeed
-	uid := "test-user"
+	uid := "test-user-" + fmt.Sprint(time.Now().UnixNano())
 	resCreateUser, err := adminClient.CreateUserWithResponse(ctx, api.CreateUserJSONRequestBody{
 		Id: uid,
 	})
 	require.NoError(t, err, "Admin failed while creating user")
 	require.Equal(t, http.StatusCreated, resCreateUser.StatusCode(), "Admin unexpectedly failed to create user")
+
+	defer deleteUserIfAskedTo(ctx, uid)
 
 	// adding group to user should succeed
 	resAddGroup, err := adminClient.AddGroupMembershipWithResponse(ctx, gid, uid)

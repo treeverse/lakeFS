@@ -515,6 +515,9 @@ func verifyUserPermissions(t *testing.T, ctx context.Context, repo, userType str
 	createUserResp, err := userClient.CreateUserWithResponse(ctx, api.CreateUserJSONRequestBody{
 		Id: userName,
 	})
+
+	defer deleteUserIfAskedTo(ctx, userName)
+
 	require.NoError(t, err, "%s failed to send CreaterUser request", userType)
 	if userPerms.canCreateUser {
 		require.Equal(t, http.StatusCreated, createUserResp.StatusCode(), "unexpected failure for %s - CreateUser", userType)
