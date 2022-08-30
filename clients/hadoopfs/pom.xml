@@ -103,58 +103,24 @@ To export to S3:
             </build>
         </profile>
         <profile>
-            <id>assembly</id>
+            <id>assembly-h2</id>
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-shade-plugin</artifactId>
-                        <version>3.2.4</version>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.3.0</version>
                         <executions>
                             <execution>
-                                <phase>package</phase>
+                                <id>add-source</id>
+                                <phase>generate-sources</phase>
                                 <goals>
-                                    <goal>shade</goal>
+                                    <goal>add-source</goal>
                                 </goals>
                                 <configuration>
-                                    <filters>
-                                        <filter>
-                                            <artifact>*:*</artifact>
-                                            <excludes>
-                                                <exclude>module-info.class</exclude>
-                                                <exclude>META-INF/maven/**</exclude>
-                                                <exclude>META-INF/*.SF</exclude>
-                                                <exclude>META-INF/*.DSA</exclude>
-                                                <exclude>META-INF/*.RSA</exclude>
-                                            </excludes>
-                                        </filter>
-                                    </filters>
-                                    <relocations>
-                                        <relocation>
-                                            <pattern>org.apache.httpcomponents</pattern>
-                                            <shadedPattern>io.lakefs.shaded.apache.httpcomponents</shadedPattern>
-                                        </relocation>
-                                        <relocation>
-                                            <pattern>okio</pattern>
-                                            <shadedPattern>io.lakefs.shaded.okio</shadedPattern>
-                                        </relocation>
-                                        <relocation>
-                                            <pattern>okhttp3</pattern>
-                                            <shadedPattern>io.lakefs.shaded.okhttp3</shadedPattern>
-                                        </relocation>
-                                        <relocation>
-                                            <pattern>com.google.gson</pattern>
-                                            <shadedPattern>io.lakefs.shaded.gson</shadedPattern>
-                                        </relocation>
-                                        <relocation>
-                                            <pattern>io.gsonfire</pattern>
-                                            <shadedPattern>io.lakefs.shaded.gsonfire</shadedPattern>
-                                        </relocation>
-                                        <relocation>
-                                            <pattern>io.lakefs.clients.api</pattern>
-                                            <shadedPattern>io.lakefs.shaded.api</shadedPattern>
-                                        </relocation>
-                                    </relocations>
+                                    <sources>
+                                        <source>src/hadoop2/io/lakefs</source>
+                                    </sources>
                                 </configuration>
                             </execution>
                         </executions>
@@ -162,8 +128,85 @@ To export to S3:
                 </plugins>
             </build>
             <properties>
-                <name-suffix>-assembly</name-suffix>
+                <name-suffix>-assembly-h2</name-suffix>
+                <hadoop2.version>2.7.7</hadoop2.version>
             </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-common</artifactId>
+                    <version>${hadoop2.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-common</artifactId>
+                    <scope>test</scope>
+                    <type>test-jar</type>
+                    <version>${hadoop2.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-aws</artifactId>
+                    <version>${hadoop2.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>assembly-h3</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.3.0</version>
+                        <executions>
+                            <execution>
+                                <id>add-source</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>add-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>src/hadoop3/io/lakefs</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+            <properties>
+                <name-suffix>-assembly-h3</name-suffix>
+                <hadoop3.version>3.3.2</hadoop3.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-common</artifactId>
+                    <version>${hadoop3.version}</version> <!-- Useful for Spark-on-Hadoop3 (which is Spark3) -->
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-common</artifactId>
+                    <scope>test</scope>
+                    <type>test-jar</type>
+                    <version>${hadoop3.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-aws</artifactId>
+                    <version>${hadoop3.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>commons-lang</groupId>
+                    <artifactId>commons-lang</artifactId>
+                    <version>2.6</version>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 
@@ -174,6 +217,59 @@ To export to S3:
     </properties>
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.4</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>module-info.class</exclude>
+                                        <exclude>META-INF/maven/**</exclude>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <relocations>
+                                <relocation>
+                                    <pattern>org.apache.httpcomponents</pattern>
+                                    <shadedPattern>io.lakefs.shaded.apache.httpcomponents</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>okio</pattern>
+                                    <shadedPattern>io.lakefs.shaded.okio</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>okhttp3</pattern>
+                                    <shadedPattern>io.lakefs.shaded.okhttp3</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.google.gson</pattern>
+                                    <shadedPattern>io.lakefs.shaded.gson</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>io.gsonfire</pattern>
+                                    <shadedPattern>io.lakefs.shaded.gsonfire</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>io.lakefs.clients.api</pattern>
+                                    <shadedPattern>io.lakefs.shaded.api</shadedPattern>
+                                </relocation>
+                            </relocations>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -221,30 +317,6 @@ To export to S3:
             <groupId>io.lakefs</groupId>
             <artifactId>api-client</artifactId>
             <version>0.56.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-common</artifactId>
-            <version>3.2.1</version> <!-- Useful for Spark-on-Hadoop3 (which is Spark3) -->
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-common</artifactId>
-            <scope>test</scope>
-            <type>test-jar</type>
-            <version>3.2.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-aws</artifactId>
-            <version>3.2.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>2.6</version>
         </dependency>
 
         <dependency>        <!-- needed for aws-java-sdk in tests(!) -->
