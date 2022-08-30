@@ -829,6 +829,7 @@ jobs:
     env:
       # Setting Account_ID as a secret as a way to avoid specifying it here
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      TAG: ${{ needs.deploy-image.outputs.tag }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
@@ -845,7 +846,6 @@ jobs:
           compose-file: esti/ops/docker-compose-migrate.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
-          TAG: 0.70.6 #last lakeFS version with the option to disable kv
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
@@ -854,7 +854,7 @@ jobs:
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/migrate/${{ steps.unique.outputs.value }}
           ESTI_ENDPOINT_URL: "http://lakefs-pre-migrate:8000"
-          ESTI_S3_ENDPOINT_URL: "s3.local.lakefs-pre.io:8000"
+          ESTI_S3_ENDPOINT: "s3.local.lakefs-pre.io:8000"
           ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           ESTI_VERSION: ${{ steps.version.outputs.tag }}
@@ -864,7 +864,6 @@ jobs:
 
       - name: Switch to KV and migrate lakeFS
         env:
-          TAG: ${{ needs.deploy-image.outputs.tag }} #switch versions
           LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
@@ -877,7 +876,6 @@ jobs:
           compose-file: esti/ops/docker-compose-migrate.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
-          TAG: ${{ needs.deploy-image.outputs.tag }}
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
@@ -888,7 +886,7 @@ jobs:
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/migrate/${{ steps.unique.outputs.value }}
           ESTI_ENDPOINT_URL: "http://lakefs-post-migrate:8001"
-          ESTI_S3_ENDPOINT_URL: "s3.local.lakefs-post.io:8001"
+          ESTI_S3_ENDPOINT: "s3.local.lakefs-post.io:8001"
           ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           ESTI_VERSION: ${{ steps.version.outputs.tag }}
