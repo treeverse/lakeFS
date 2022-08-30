@@ -92,7 +92,7 @@ services:
         go test -v $ESTI_GOTEST_FLAGS ./esti --system-tests $ESTI_FLAGS
     volumes:
       - lakefs-code:/lakefs
-      - lakefs-app:/app:ro 
+      - lakefs-app:/app:ro
 
 volumes:
   lakefs-code:

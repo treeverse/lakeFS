@@ -853,7 +853,7 @@ jobs:
           ESTI_TEST_DATA_ACCESS: true,false
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/migrate/${{ steps.unique.outputs.value }}
-          ESTI_ENDPOINT_URL: "http://localhost:8000"
+          ESTI_ENDPOINT_URL: "http://lakefs-pre-migrate:8000"
           ESTI_S3_ENDPOINT_URL: "s3.local.lakefs-pre.io:8000"
           ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
@@ -887,7 +887,7 @@ jobs:
           ESTI_TEST_DATA_ACCESS: true,false
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/migrate/${{ steps.unique.outputs.value }}
-          ESTI_ENDPOINT_URL: "http://localhost:8001"
+          ESTI_ENDPOINT_URL: "http://lakefs-post-migrate:8001"
           ESTI_S3_ENDPOINT_URL: "s3.local.lakefs-post.io:8001"
           ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
