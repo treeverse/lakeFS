@@ -39,6 +39,7 @@ func appendRes(info webhookEventInfo) {
 
 func TestHooksSuccess(t *testing.T) {
 	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
 	parseAndUploadActions(t, ctx, repo, mainBranch)
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
 		Message: "Initial content",
