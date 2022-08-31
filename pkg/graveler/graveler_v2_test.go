@@ -390,11 +390,10 @@ func TestGravelerCommit(t *testing.T) {
 	t.Run("commit with sealed tokens", func(t *testing.T) {
 		test := initGravelerTest(t)
 		var updatedSealedBranch graveler.Branch
-		test.refManager.EXPECT().GetRepository(ctx, repoID).Times(1).Return(&repo, nil)
-		test.protectedBranchesManager.EXPECT().IsBlocked(ctx, repoID, branch1ID, graveler.BranchProtectionBlockedAction_COMMIT).Return(false, nil)
+		test.protectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_COMMIT).Return(false, nil)
 
-		test.refManager.EXPECT().BranchUpdate(ctx, repoID, branch1ID, gomock.Any()).
-			Do(func(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
+		test.refManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
+			Do(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
 				branchTest := branch1
 				updatedBranch, err := f(&branchTest)
 				updatedSealedBranch = *updatedBranch
@@ -405,8 +404,8 @@ func TestGravelerCommit(t *testing.T) {
 				return nil
 			}).Times(1)
 
-		test.refManager.EXPECT().BranchUpdate(ctx, repoID, branch1ID, gomock.Any()).
-			Do(func(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
+		test.refManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
+			Do(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
 				updatedBranch, err := f(&updatedSealedBranch)
 				require.NoError(t, err)
 				require.Equal(t, []graveler.StagingToken{}, updatedBranch.SealedTokens)
@@ -414,17 +413,17 @@ func TestGravelerCommit(t *testing.T) {
 				return nil
 			}).Times(1)
 
-		test.refManager.EXPECT().GetCommit(ctx, repoID, commit1ID).Times(1).Return(&commit1, nil)
+		test.refManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
 		test.stagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
 		test.stagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
 		test.stagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
-		test.committedManager.EXPECT().Commit(ctx, repo.StorageNamespace, mr1ID, gomock.Any()).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, nil)
-		test.refManager.EXPECT().AddCommit(ctx, repoID, gomock.Any()).Return(graveler.CommitID(""), nil)
+		test.committedManager.EXPECT().Commit(ctx, repository.StorageNamespace, mr1ID, gomock.Any()).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, nil)
+		test.refManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).Return(graveler.CommitID(""), nil)
 		test.stagingManager.EXPECT().DropAsync(ctx, stagingToken1).Return(nil)
 		test.stagingManager.EXPECT().DropAsync(ctx, stagingToken2).Return(nil)
 		test.stagingManager.EXPECT().DropAsync(ctx, stagingToken3).Return(nil)
 
-		val, err := test.sut.Commit(ctx, repoID, branch1ID, graveler.CommitParams{})
+		val, err := test.sut.Commit(ctx, repository, branch1ID, graveler.CommitParams{})
 
 		require.NoError(t, err)
 		require.NotNil(t, val)
@@ -433,11 +432,10 @@ func TestGravelerCommit(t *testing.T) {
 	t.Run("commit no changes", func(t *testing.T) {
 		test := initGravelerTest(t)
 		var updatedSealedBranch graveler.Branch
-		test.refManager.EXPECT().GetRepository(ctx, repoID).Times(1).Return(&repo, nil)
-		test.protectedBranchesManager.EXPECT().IsBlocked(ctx, repoID, branch1ID, graveler.BranchProtectionBlockedAction_COMMIT).Return(false, nil)
+		test.protectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_COMMIT).Return(false, nil)
 
-		test.refManager.EXPECT().BranchUpdate(ctx, repoID, branch1ID, gomock.Any()).
-			Do(func(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
+		test.refManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
+			Do(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
 				branchTest := branch1
 				updatedBranch, err := f(&branchTest)
 				updatedSealedBranch = *updatedBranch
@@ -448,8 +446,8 @@ func TestGravelerCommit(t *testing.T) {
 				return nil
 			}).Times(1)
 
-		test.refManager.EXPECT().BranchUpdate(ctx, repoID, branch1ID, gomock.Any()).
-			Do(func(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
+		test.refManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
+			Do(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
 				updatedBranch, err := f(&updatedSealedBranch)
 				require.Error(t, err)
 				require.True(t, errors.Is(err, graveler.ErrNoChanges))
@@ -457,26 +455,25 @@ func TestGravelerCommit(t *testing.T) {
 				return err
 			}).Times(1).Return(graveler.ErrNoChanges)
 
-		test.refManager.EXPECT().GetCommit(ctx, repoID, commit1ID).Times(1).Return(&commit1, nil)
+		test.refManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
 		test.stagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
 		test.stagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
 		test.stagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
-		test.committedManager.EXPECT().Commit(ctx, repo.StorageNamespace, mr1ID, gomock.Any()).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, graveler.ErrNoChanges)
+		test.committedManager.EXPECT().Commit(ctx, repository.StorageNamespace, mr1ID, gomock.Any()).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, graveler.ErrNoChanges)
 
-		val, err := test.sut.Commit(ctx, repoID, branch1ID, graveler.CommitParams{})
+		val, err := test.sut.Commit(ctx, repository, branch1ID, graveler.CommitParams{})
 
 		require.Error(t, err)
 		require.True(t, errors.Is(err, graveler.ErrNoChanges))
 		require.Equal(t, val, graveler.CommitID(""))
 	})
 
-	t.Run("fail retry commit", func(t *testing.T) {
+	t.Run("commit failed retryUpdateBranch", func(t *testing.T) {
 		test := initGravelerTest(t)
-		test.refManager.EXPECT().GetRepository(ctx, repoID).Times(1).Return(&repo, nil)
-		test.protectedBranchesManager.EXPECT().IsBlocked(ctx, repoID, branch1ID, graveler.BranchProtectionBlockedAction_COMMIT).Return(false, nil)
+		test.protectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_COMMIT).Return(false, nil)
 
-		test.refManager.EXPECT().BranchUpdate(ctx, repoID, branch1ID, gomock.Any()).
-			Do(func(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
+		test.refManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
+			Do(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
 				branchTest := branch1
 				updatedBranch, err := f(&branchTest)
 				require.NoError(t, err)
@@ -486,11 +483,9 @@ func TestGravelerCommit(t *testing.T) {
 				return nil
 			}).Times(1)
 
-		test.refManager.EXPECT().BranchUpdate(ctx, repoID, branch1ID, gomock.Any()).Times(1).Return(kv.ErrPredicateFailed)
-		test.refManager.EXPECT().BranchUpdate(ctx, repoID, branch1ID, gomock.Any()).Times(1).Return(kv.ErrPredicateFailed)
-		test.refManager.EXPECT().BranchUpdate(ctx, repoID, branch1ID, gomock.Any()).Times(1).Return(kv.ErrPredicateFailed)
+		test.refManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).Times(3).Return(kv.ErrPredicateFailed)
 
-		val, err := test.sut.Commit(ctx, repoID, branch1ID, graveler.CommitParams{})
+		val, err := test.sut.Commit(ctx, repository, branch1ID, graveler.CommitParams{})
 
 		require.Error(t, err)
 		require.True(t, errors.Is(err, graveler.ErrTooManyTries))
