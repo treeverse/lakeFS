@@ -61,7 +61,7 @@ func NewDiskWriter(ctx context.Context, tierFS pyramid.FS, ns committed.Namespac
 	}, nil
 }
 
-// AddMetadata associates metadata value (which will be stringified) with key.
+// SetMetadata associates metadata value (which will be stringified) with key.
 // Keys and values are also calculated as part of the resulting range ID
 func (dw *DiskWriter) SetMetadata(key, value string) {
 	dw.props[key] = value
@@ -162,7 +162,7 @@ func (dw *DiskWriter) Close() (*committed.WriteResult, error) {
 	}, nil
 }
 
-// shouldBreakAtKey returns true if should break range after the given key
+// ShouldBreakAtKey returns true if should break range after the given key
 func (dw *DiskWriter) ShouldBreakAtKey(key graveler.Key, params *committed.Params) bool {
 	approximateSize := dw.GetApproximateSize()
 	if approximateSize < params.MinRangeSizeBytes {
