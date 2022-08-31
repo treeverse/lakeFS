@@ -5,6 +5,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"mime/multipart"
+	"net/http"
+	"net/url"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"testing"
+
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
@@ -14,13 +22,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"mime/multipart"
-	"net/http"
-	"net/url"
-	"path/filepath"
-	"regexp"
-	"strings"
-	"testing"
 )
 
 const mainBranch = "main"
@@ -65,7 +66,7 @@ func makeRepositoryName(name string) string {
 
 func setupTest(t *testing.T) (context.Context, logging.Logger, string) {
 	ctx := context.Background()
-	name := makeRepositoryName(t.Name())
+	name := t.Name()
 	logger := logger.WithField("testName", name)
 	repo := createRepositoryForTest(ctx, t)
 	logger.WithField("repo", repo).Info("Created repository")
@@ -78,7 +79,7 @@ func tearDownTest(repoName string) {
 }
 
 func createRepositoryForTest(ctx context.Context, t *testing.T) string {
-	name := strings.ToLower(t.Name()) + "-" + xid.New().String()
+	name := makeRepositoryName(strings.ToLower(t.Name()) + "-" + xid.New().String())
 	return createRepositoryByName(ctx, t, name)
 }
 

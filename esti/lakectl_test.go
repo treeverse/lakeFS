@@ -1,6 +1,7 @@
 package esti
 
 import (
+	"context"
 	"testing"
 	"time"
 )
@@ -35,6 +36,7 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 		"BRANCH":  mainBranch,
 	}
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+	defer deleteRepositoryIfAskedTo(context.Background(), repoName)
 
 	// lakectl repo list is expected to show the created repo
 
@@ -55,6 +57,7 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 	// Trying to create the same repo again fails and does not change the list
 	newStorage := storage + "/new-storage/"
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+newStorage, false, "lakectl_repo_create_not_unique", vars)
+	defer deleteRepositoryIfAskedTo(context.Background(), repoName)
 
 	// Fails due to the usage of repos for isolation - esti creates repos in parallel and
 	// the output of 'repo list' command cannot be well defined
@@ -68,6 +71,7 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 	vars["STORAGE"] = storage2
 	vars["BRANCH"] = notDefaultBranchName
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName2+" "+storage2+" -d "+notDefaultBranchName, true, "lakectl_repo_create", vars)
+	defer deleteRepositoryIfAskedTo(context.Background(), repoName2)
 
 	// The generated names are also added to the verification vars map
 
@@ -105,6 +109,8 @@ func TestLakectlCommit(t *testing.T) {
 	}
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_404", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+	defer deleteRepositoryIfAskedTo(context.Background(), repoName)
+
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_initial", vars)
 
 	filePath := "ro_1k.1"
@@ -147,6 +153,8 @@ func TestLakectlBranchAndTagValidation(t *testing.T) {
 	}
 	invalidBranchName := "my.invalid.branch"
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+	defer deleteRepositoryIfAskedTo(context.Background(), repoName)
+
 	vars["BRANCH"] = mainBranch
 	vars["FILE_PATH"] = "a/b/c"
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/a/b/c", false, "lakectl_fs_upload", vars)
@@ -193,6 +201,7 @@ func TestLakectlMergeAndStrategies(t *testing.T) {
 
 	// create repo with 'main' branch
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+	defer deleteRepositoryIfAskedTo(context.Background(), repoName)
 
 	// upload 'file1' and commit
 	vars["FILE_PATH"] = filePath1
@@ -263,6 +272,7 @@ func TestLakectlAnnotate(t *testing.T) {
 
 	// create fresh repo with 'main' branch
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+	defer deleteRepositoryIfAskedTo(context.Background(), repoName)
 
 	path := "aaa/bbb/ccc"
 	vars["FILE_PATH"] = path
@@ -357,6 +367,8 @@ func TestLakectlIngestS3(t *testing.T) {
 	)
 
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+	defer deleteRepositoryIfAskedTo(context.Background(), repoName)
+
 	RunCmdAndVerifyContainsText(t, Lakectl()+" ingest --from s3://"+lakectlIngestBucket+" --to lakefs://"+repoName+"/"+mainBranch+"/", false, expectedIngestOutput, vars)
 	RunCmdAndVerifyContainsText(t, Lakectl()+" ingest --from s3://"+lakectlIngestBucket+" --to lakefs://"+repoName+"/"+mainBranch+"/to-pref/", false, expectedIngestOutput, vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_fs_ls_after_ingest", vars)
