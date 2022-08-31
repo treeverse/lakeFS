@@ -187,8 +187,17 @@ the same paths but keeping things safe regardless.
 [^2]: 	Whenever there is a conflict, we want the task branch (which will become
     the "latest writer" after a successful HOC commit) to win.
 
+# Potential wins
+
+* Explicit requests _not_ to write 3 times and give better behaviour than
+  the default FileOutputCommitter from Spark have appeared on our Slack
+  [#data-architecture-discussion][slack-dont-write-thrice].
+* Multiple users have requested "overwrite" save mode.
+* Multiple users have requested multi-writer support.
+* Note by a developer that Spark performs many lakeFS API operations when
+  writing.
 
 [magic]:  https://hadoop.apache.org/docs/stable/hadoop-aws/tools/hadoop-aws/committers.html#The_Magic_Committer
 [staging]:  https://hadoop.apache.org/docs/stable/hadoop-aws/tools/hadoop-aws/committers.html#The_Staging_Committer
 [lakefs-commit]:  https://docs.lakefs.io/understand/object-model.html#commits
-
+[slack-dont-write-thrice]:  https://app.slack.com/client/T013V60QY06/C020N7X2Y0H/thread/C020N7X2Y0H-1660298516.202499
