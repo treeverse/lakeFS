@@ -5,15 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"mime/multipart"
-	"net/http"
-	"net/url"
-	"path/filepath"
-	"regexp"
-	"strings"
-	"testing"
-	"time"
-
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
@@ -23,6 +14,13 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"mime/multipart"
+	"net/http"
+	"net/url"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"testing"
 )
 
 const mainBranch = "main"
@@ -62,12 +60,12 @@ func verifyResponse(resp *http.Response, body []byte) error {
 // makeRepositoryName changes name to make it an acceptable repository name by replacing all
 // non-alphanumeric characters with a `-`.
 func makeRepositoryName(name string) string {
-	return nonAlphanumericSequence.ReplaceAllString(name, "-") + "-" + fmt.Sprint(time.Now().UnixNano())
+	return nonAlphanumericSequence.ReplaceAllString(name, "-")
 }
 
 func setupTest(t *testing.T) (context.Context, logging.Logger, string) {
 	ctx := context.Background()
-	name := makeRepositoryName(t.Name())
+	name := makeRepositoryName(t.Name() + "-" + xid.New().String())
 	logger := logger.WithField("testName", name)
 	repo := createRepositoryForTest(ctx, t)
 	logger.WithField("repo", repo).Info("Created repository")
