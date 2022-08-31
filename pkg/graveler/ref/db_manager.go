@@ -767,6 +767,7 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, cfg blockparams.AdapterConfig
 	if err != nil {
 		return err
 	}
+	blockstorePrefix = cfg.GetCommittedBlockStoragePrefix()
 
 	return MigrateWithBlockstore(ctx, d, writer, bs, blockstorePrefix)
 }
