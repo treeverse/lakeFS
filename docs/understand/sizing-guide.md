@@ -121,10 +121,10 @@ Most critical path operations scale very well across machines.
 
 <div class="tabs">
   <ul>
-    <li><a href="#postgres-bench">PostgreSQL</a></li>
-    <li><a href="#dynamodb-bench">DynamoDB</a></li>
+    <li><a href="#postgres-ram">PostgreSQL</a></li>
+    <li><a href="#dynamodb-ram">DynamoDB</a></li>
   </ul>
-<div markdown="1" id="postgres-bench">
+<div markdown="1" id="postgres-ram">
 All benchmarks below were measured using 2 x [c5ad.4xlarge](https://aws.amazon.com/ec2/instance-types/c5/){: target="_blank" } instances
 on [AWS us-east-1](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
 Similar results can be achieved on Google Cloud using a `c2-standard-16` machine type, with an attached [local SSD](https://cloud.google.com/compute/docs/disks/local-ssd).
@@ -283,8 +283,7 @@ So, 50% of all requests took <15ms, while 99.9% of them took <100ms.
 
 The average throughput during the experiment was **7069.03 requests/second**.
 </div>
-
-<div markdown="1" id="#dynamodb-bench">
+<div markdown="1" id="dynamodb-ram">
 All benchmarks below were measured using m5.xlarge instance on AWS us-east-1.
 
 ### Random Writes
@@ -353,7 +352,6 @@ min	21
 max	4588
 total	500000
 ```
-
 </div>
 </div>
 
