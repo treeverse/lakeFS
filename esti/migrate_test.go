@@ -86,15 +86,21 @@ type gravelerState struct {
 }
 
 const (
-	migrateMultipartsFile     = "multipart_file"
-	migrateMultipartsFilepath = mainBranch + "/" + migrateMultipartsFile
-	migrateStateRepoName      = "migrate"
-	migrateStateBranch        = "main"
-	migrateStateObjectPath    = "state.json"
-	migratePrePartsCount      = 3
-	migratePostPartsCount     = 2
-	authCustomGroupName       = "user-defined-group"
-	migrateFileSize           = 5
+	migrateMultipartsFile      = "multipart_file"
+	migrateMultipartsFilepath  = mainBranch + "/" + migrateMultipartsFile
+	migrateStateRepoNamePrefix = "migrate"
+	migrateStateBranch         = "main"
+	migrateStateObjectPath     = "state.json"
+	migratePrePartsCount       = 3
+	migratePostPartsCount      = 2
+	authCustomGroupNamePrefix  = "user-defined-group-"
+	migrateFileSize            = 5
+	viewerUserNamePrefix       = "testViewer-"
+	developerUserNamePrefix    = "testDeveloper-"
+	superUserNamePrefix        = "testSuperUser-"
+	adminUserNamePrefix        = "testAdmin-"
+	testUserNamePrefix         = "test-user-"
+	listReposPolicyNamePrefix  = "ListReposPolicy-"
 )
 
 var (
@@ -142,6 +148,15 @@ var (
 		canCreateBranch: false,
 		canDeleteBranch: false,
 	}
+
+	migrateStateRepoName string
+	authCustomGroupName  = authCustomGroupNamePrefix + fmt.Sprint(time.Now().UnixNano())
+	viewerUserName       = viewerUserNamePrefix + fmt.Sprint(time.Now().UnixNano())
+	developerUserName    = developerUserNamePrefix + fmt.Sprint(time.Now().UnixNano())
+	superUserName        = superUserNamePrefix + fmt.Sprint(time.Now().UnixNano())
+	adminUserName        = adminUserNamePrefix + fmt.Sprint(time.Now().UnixNano())
+	listReposPolicyName  = listReposPolicyNamePrefix + fmt.Sprint(time.Now().UnixNano())
+	testUserName         = testUserNamePrefix + fmt.Sprint(time.Now().UnixNano())
 )
 
 func TestMigrate(t *testing.T) {
@@ -151,13 +166,30 @@ func TestMigrate(t *testing.T) {
 	}
 	postMigrate := viper.GetViper().GetBool("post_migrate")
 
+	defer migrateTestsCleanup()
+
 	if postMigrate {
 		postMigrateTests(t)
 	} else {
 		preMigrateTests(t)
 	}
+
 }
 
+func migrateTestsCleanup() {
+	ctx := context.Background()
+	defer deleteUserIfAskedTo(ctx, viewerUserName)
+	defer deleteUserIfAskedTo(ctx, developerUserName)
+	defer deleteUserIfAskedTo(ctx, superUserName)
+	defer deleteUserIfAskedTo(ctx, adminUserName)
+	defer deleteUserIfAskedTo(ctx, testUserName)
+	defer deleteGroupIfAskedTo(ctx, authCustomGroupName)
+	defer deletePolicyIfAskedTo(ctx, listReposPolicyName)
+	defer deleteRepositoryIfAskedTo(ctx, state.Auth.Repo)
+	defer deleteRepositoryIfAskedTo(ctx, state.Graveler.Repo)
+	defer deleteRepositoryIfAskedTo(ctx, migrateStateRepoName)
+	defer deleteRepositoryIfAskedTo(ctx, state.Actions.Repo)
+}
 func preMigrateTests(t *testing.T) {
 	// all pre tests execution
 	t.Run("TestPreMigrateMultipart", testPreMigrateMultipart)
@@ -169,16 +201,12 @@ func preMigrateTests(t *testing.T) {
 }
 
 func postMigrateTests(t *testing.T) {
-	defer deleteRepositoryIfAskedTo(context.Background(), migrateStateRepoName)
-
 	readStateFromLakeFS(t)
-
 	// all post tests execution
 	t.Run("TestPostMigrateMultipart", testPostMigrateMultipart)
 	t.Run("TestPostMigrateActions", testPostMigrateActions)
 	t.Run("TestPostMigrateAuth", testPostMigrateAuth)
 	t.Run("TestPostMigrateGraveler", testPostMigrateGraveler)
-
 }
 
 func saveStateInLakeFS(t *testing.T) {
@@ -187,11 +215,11 @@ func saveStateInLakeFS(t *testing.T) {
 	require.NoError(t, err, "marshal state")
 
 	ctx := context.Background()
-	_ = createRepositoryByName(ctx, t, migrateStateRepoName)
+	migrateStateRepoName = createRepositoryByName(ctx, t, migrateStateRepoNamePrefix)
 
 	// file is big - so we better use multipart writing here.
 	resp, err := svc.CreateMultipartUpload(&s3.CreateMultipartUploadInput{
-		Bucket: aws.String(migrateStateRepoName),
+		Bucket: aws.String(migrateStateRepoNamePrefix),
 		Key:    aws.String(migrateStateBranch + "/" + migrateStateObjectPath),
 	})
 	require.NoError(t, err, "failed to create multipart upload for state.json")
@@ -228,7 +256,6 @@ func readStateFromLakeFS(t *testing.T) {
 
 func testPreMigrateMultipart(t *testing.T) {
 	_, logger, repo := setupTest(t)
-	defer tearDownTest(repo)
 
 	input := &s3.CreateMultipartUploadInput{
 		Bucket: aws.String(repo),
@@ -261,7 +288,7 @@ func createAndUploadParts(t *testing.T, logger logging.Logger, resp *s3.CreateMu
 
 func testPostMigrateMultipart(t *testing.T) {
 	ctx := context.Background()
-
+	defer deleteRepositoryIfAskedTo(ctx, state.Multiparts.Repo)
 	partsConcat, completedParts := createAndUploadParts(t, logger, &state.Multiparts.Info, migratePostPartsCount, migratePrePartsCount)
 
 	completeResponse, err := uploadMultipartComplete(svc, &state.Multiparts.Info, append(state.Multiparts.CompletedParts, completedParts...))
@@ -285,7 +312,6 @@ func testPostMigrateMultipart(t *testing.T) {
 func testPreMigrateActions(t *testing.T) {
 	// Create action data before migration
 	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
 	state.Actions.Repo = repo
 	parseAndUploadActions(t, ctx, repo, mainBranch)
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
@@ -367,13 +393,12 @@ func testPostMigrateActions(t *testing.T) {
 
 func testPreMigrateAuth(t *testing.T) {
 	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
 
 	// creating a viewer, developer, superuser and admin and verifying their roles and permissions
-	viewerCreds := createUserWithCredentialsInGroup(t, ctx, "testViewer", auth.ViewersGroup)
-	developerCreds := createUserWithCredentialsInGroup(t, ctx, "testDeveloper", auth.DevelopersGroup)
-	superUserCreds := createUserWithCredentialsInGroup(t, ctx, "testSuperUser", auth.SuperUsersGroup)
-	adminCreds := createUserWithCredentialsInGroup(t, ctx, "testAdmin", auth.AdminsGroup)
+	viewerCreds := createUserWithCredentialsInGroup(t, ctx, viewerUserName, auth.ViewersGroup)
+	developerCreds := createUserWithCredentialsInGroup(t, ctx, developerUserName, auth.DevelopersGroup)
+	superUserCreds := createUserWithCredentialsInGroup(t, ctx, superUserName, auth.SuperUsersGroup)
+	adminCreds := createUserWithCredentialsInGroup(t, ctx, adminUserName, auth.AdminsGroup)
 
 	verifyUserPermissions(t, ctx, repo, "viewer", viewerCreds, viewerPermissions)
 	verifyUserPermissions(t, ctx, repo, "developer", developerCreds, developerPermissions)
@@ -390,10 +415,9 @@ func testPreMigrateAuth(t *testing.T) {
 	require.NoError(t, err, "Admin failed while creating group")
 	require.Equal(t, http.StatusCreated, respCreateGroup.StatusCode(), "Admin unexpectedly failed to create group")
 
-	pid := "ListReposPolicy"
 	respCreatePolicy, err := client.CreatePolicyWithResponse(ctx, api.CreatePolicyJSONRequestBody{
 		CreationDate: api.Int64Ptr(time.Now().Unix()),
-		Id:           pid,
+		Id:           listReposPolicyName,
 		Statement: []api.Statement{
 			{
 				Action:   []string{"fs:ListRepositories"},
@@ -405,12 +429,11 @@ func testPreMigrateAuth(t *testing.T) {
 	require.NoError(t, err, "Admin failed while creating policy")
 	require.Equal(t, http.StatusCreated, respCreatePolicy.StatusCode(), "Admin unexpectedly failed to create policy")
 
-	respAddPolicy, err := client.AttachPolicyToGroupWithResponse(ctx, authCustomGroupName, pid)
+	respAddPolicy, err := client.AttachPolicyToGroupWithResponse(ctx, authCustomGroupName, listReposPolicyName)
 	require.NoError(t, err, "Admin failed while adding policy to group")
 	require.Equal(t, http.StatusCreated, respAddPolicy.StatusCode(), "Admin unexpectedly failed to add policy to group")
 
-	uid := "test-user"
-	customCreds := createUserWithCredentialsInGroup(t, ctx, uid, authCustomGroupName)
+	customCreds := createUserWithCredentialsInGroup(t, ctx, testUserName, authCustomGroupName)
 	verifyUserPermissions(t, ctx, repo, "customUser", customCreds, customPermissions)
 
 	// Hardening relevant test data for post-migrate
@@ -576,7 +599,6 @@ func verifyUserPermissions(t *testing.T, ctx context.Context, repo, userType str
 func testPreMigrateGraveler(t *testing.T) {
 	//create repository
 	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
 
 	// upload files to main branch
 	uploadFiles(t, ctx, repo, mainBranch, "a/foo/")

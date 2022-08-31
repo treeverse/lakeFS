@@ -79,9 +79,10 @@ func TestSuperUserPolicies(t *testing.T) {
 	gid := "SuperUsers"
 
 	// generate the SuperUser client
-	superUserClient := newClientFromGroup(t, ctx, logger, gid)
+	superUserClient, uid := newClientFromGroup(t, ctx, logger, gid)
+	defer deleteUserIfAskedTo(ctx, uid)
 
-	// listing the available braches should succeed
+	// listing the available branches should succeed
 	resListBranches, err := superUserClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
 	require.NoError(t, err, "SuperUser unexpectedly failed while listing branches of repository")
 	require.Equal(t, http.StatusOK, resListBranches.StatusCode(), "SuperUser unexpectedly failed to list branches of repository")
@@ -129,7 +130,8 @@ func TestDeveloperPolicies(t *testing.T) {
 	gid := "Developers"
 
 	// generate the Developer client
-	developerClient := newClientFromGroup(t, ctx, logger, gid)
+	developerClient, uid := newClientFromGroup(t, ctx, logger, gid)
+	defer deleteUserIfAskedTo(ctx, uid)
 
 	// listing the available braches should succeed
 	resListBranches, err := developerClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
@@ -173,8 +175,11 @@ func TestViewerPolicies(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 	gid := "Viewers"
 
+	defer deletePolicyIfAskedTo(ctx, repo)
+
 	// generate the viewer client
-	viewerClient := newClientFromGroup(t, ctx, logger, gid)
+	viewerClient, uid := newClientFromGroup(t, ctx, logger, gid)
+	defer deleteUserIfAskedTo(ctx, uid)
 
 	// listing the available branches should succeed
 	resListBranches, err := viewerClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
@@ -204,8 +209,8 @@ func TestViewerPolicies(t *testing.T) {
 }
 
 // Creates a client with a user of the given group
-func newClientFromGroup(t *testing.T, context context.Context, logger logging.Logger, groupId string) *api.ClientWithResponses {
-	userId := "test-user-" + groupId
+func newClientFromGroup(t *testing.T, context context.Context, logger logging.Logger, groupId string) (*api.ClientWithResponses, string) {
+	userId := "test-user-" + groupId + "-" + fmt.Sprint(time.Now().UnixNano())
 	endpointURL := testutil.ParseEndpointURL(logger, viper.GetString("endpoint_url")) // defined in setup.go
 
 	adminClient := client
@@ -228,7 +233,7 @@ func newClientFromGroup(t *testing.T, context context.Context, logger logging.Lo
 	cli, err := testutil.NewClientFromCreds(logger, viewerCredentials.AccessKeyId, viewerCredentials.SecretAccessKey, endpointURL)
 	require.NoError(t, err, "failed to initialize client with group")
 
-	return cli
+	return cli, userId
 }
 
 // Tests merge with different clients

@@ -2,7 +2,6 @@ package esti
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"math/rand"
 	"net/http"
@@ -118,7 +117,7 @@ func TestS3CopyObject(t *testing.T) {
 
 	destRepoName := "tests3copyobjectdest"
 	destRepo := createRepositoryByName(ctx, t, destRepoName)
-	defer deleteRepositoryIfAskedTo(context.Background(), destRepoName)
+	defer deleteRepositoryIfAskedTo(ctx, destRepo)
 
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
