@@ -13,14 +13,13 @@ redirect_from: ../deploying-aws/upgrade.html
 Upgrading lakeFS from a previous version usually just requires re-deploying with the latest image (or downloading the latest version if you're using the binary).
 If you're upgrading, check whether the [release](https://github.com/treeverse/lakeFS/releases) requires a migration.
 
-
 ## When DB migrations are required
 
-### lakeFS <TBD.X.X> or greater (KV Migration)
+### lakeFS 0.80.0 or greater (KV Migration)
 
-Starting with version <TBD.X.X>, lakeFS has transitioned from using a PostgreSQL based database implementation to a Key-Value datastore interface supporting
+Starting with version 0.80.0, lakeFS has transitioned from using a PostgreSQL based database implementation to a Key-Value datastore interface supporting
 multiple database implementations. More information can be found [here](link-to-lakefs-on-kv-documentation).  
-Users upgrading from a previous version of lakeFS must pass through the KV migration version (<TBD.X.X>) before upgrading to newer versions of lakeFS.
+Users upgrading from a previous version of lakeFS must pass through the KV migration version (0.80.0) before upgrading to newer versions of lakeFS.
 
 > **IMPORTANT: Pre Migrate Requirements**  
 > * **Users using OS environment variables for database configuration must define the `connection_string` explicitly or as environment variable before proceeding with the migration.**  
@@ -51,7 +50,7 @@ For each lakeFS instance currently running with the database
    ```
 
 2. Stop all lakeFS instances
-3. Using the `lakefs` binary for the new version(<TBD.X.X>), run the following:
+3. Using the `lakefs` binary for the new version (0.80.0), run the following:
 
    ```bash
    lakefs migrate up
