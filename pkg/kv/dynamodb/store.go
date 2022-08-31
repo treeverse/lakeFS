@@ -382,9 +382,6 @@ func (s *Store) DropTable() error {
 	_, err := s.svc.DeleteTable(&dynamodb.DeleteTableInput{
 		TableName: &s.params.TableName,
 	})
-	if err != nil {
-		dynamoFailures.WithLabelValues("DeleteTable").Inc()
-	}
 	return err
 }
 
