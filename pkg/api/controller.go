@@ -3379,6 +3379,7 @@ func writeResponse(w http.ResponseWriter, code int, response interface{}) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(code)
 	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
