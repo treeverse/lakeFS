@@ -51,7 +51,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 	}
 	defer store.Close()
 
-	shouldDrop, err := getMigrationStatus(ctx, store)
+	shouldTruncate, err := getMigrationStatus(ctx, store)
 	if err != nil {
 		if errors.Is(err, ErrAlreadyMigrated) {
 			logging.Default().Info("KV migration already completed")
@@ -59,7 +59,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 		}
 		return fmt.Errorf("validating version: %w", err)
 	}
-	if shouldDrop {
+	if shouldTruncate {
 		// After unsuccessful migration attempt, clean KV table
 		// Delete store if exists from previous failed KV migration and reopen store
 		logging.Default().Warn("Removing KV table")
@@ -155,7 +155,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 func getMigrationStatus(ctx context.Context, store kv.Store) (bool, error) {
 	version, err := kv.GetDBSchemaVersion(ctx, store)
 	if err != nil && errors.Is(err, kv.ErrNotFound) {
-		return false, nil
+		return true, nil
 	} else if err == nil { // Version exists in DB
 		if version >= kv.InitialMigrateVersion {
 			return false, ErrAlreadyMigrated
