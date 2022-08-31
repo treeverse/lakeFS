@@ -29,14 +29,40 @@ func (b BatchFn) Execute() (interface{}, error) {
 type DelayFn func(dur time.Duration)
 
 type Batcher interface {
-	BatchFor(key string, dur time.Duration, exec Executer) (interface{}, error)
+	BatchFor(ctx context.Context, key string, dur time.Duration, exec Executer) (interface{}, error)
 }
 
-type nonBatchingExecutor struct {
-}
+type nonBatchingExecutor struct{}
 
-func (n *nonBatchingExecutor) BatchFor(_ string, _ time.Duration, exec Executer) (interface{}, error) {
+// contextKey used to keep values on context.Context
+type contextKey string
+
+// SkipBatchContextKey existence on a context will eliminate the request batching
+const SkipBatchContextKey contextKey = "skip_batch"
+
+func (n *nonBatchingExecutor) BatchFor(_ context.Context, _ string, _ time.Duration, exec Executer) (interface{}, error) {
 	return exec.Execute()
+}
+
+// ConditionalExecutor will batch requests only if SkipBatchContextKey is not on the context
+// of the batch request.
+type ConditionalExecutor struct {
+	executor *Executor
+}
+
+func NewConditionalExecutor(logger logging.Logger) *ConditionalExecutor {
+	return &ConditionalExecutor{executor: NewExecutor(logger)}
+}
+
+func (c *ConditionalExecutor) Run(ctx context.Context) {
+	c.executor.Run(ctx)
+}
+
+func (c *ConditionalExecutor) BatchFor(ctx context.Context, key string, timeout time.Duration, exec Executer) (interface{}, error) {
+	if ctx.Value(SkipBatchContextKey) != nil {
+		return exec.Execute()
+	}
+	return c.executor.BatchFor(ctx, key, timeout, exec)
 }
 
 type response struct {
@@ -76,7 +102,7 @@ func NewExecutor(logger logging.Logger) *Executor {
 	}
 }
 
-func (e *Executor) BatchFor(key string, timeout time.Duration, exec Executer) (interface{}, error) {
+func (e *Executor) BatchFor(_ context.Context, key string, timeout time.Duration, exec Executer) (interface{}, error) {
 	cb := make(chan *response)
 	e.requests <- &request{
 		key:        key,

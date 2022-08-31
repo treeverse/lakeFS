@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Exporting Data
-description: Use the lakeFS Spark client to export a lakeFS commit to the object store.
+description: Use the lakeFS Spark client or RClone inside Docker to export a lakeFS commit to the object store.
 parent: Reference
 nav_order: 5
 has_children: false
@@ -65,6 +65,19 @@ spark-submit --conf spark.hadoop.lakefs.api.url=https://<LAKEFS_ENDPOINT>/api/v1
 The command assumes that the Spark cluster has permissions to write to `s3://example-bucket/prefix`.
 Otherwise, add `spark.hadoop.fs.s3a.access.key` and `spark.hadoop.fs.s3a.secret.key` with the proper credentials.
 {: .note}
+
+#### Networking
+
+Spark export communicates with the lakeFS server.  Very large repositories
+may require increasing a read timeout.  If you run into timeout errors
+during communication from the Spark job to lakefs consider increasing these
+timeouts:
+
+* Add `-c spark.hadoop.lakefs.api.read.timeout_seconds=TIMEOUT_IN_SECONDS`
+  (default 10) to allow lakeFS more time to respond to requests.
+* Add `-c
+  spark.hadoop.lakefs.api.connection.timeout_seconds=TIMEOUT_IN_SECONDS`
+  (default 10) to wait longer for lakeFS to accept connections.
 
 ### Using custom code (Notebook/Spark)
 Set up lakeFS Spark metadata client with the endpoint and credentials as instructed in the previous [page](./spark-client.md).

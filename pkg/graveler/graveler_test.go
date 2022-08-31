@@ -199,7 +199,7 @@ func testGravelerList(t *testing.T, kvEnabled bool) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			listing, err := tt.r.List(ctx, "", "")
+			listing, err := tt.r.List(ctx, repository, "")
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("wrong error, expected:%s got:%s", tt.expectedErr, err)
 			}
@@ -292,7 +292,7 @@ func testGravelerGet(t *testing.T, kvEnabled bool) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Value, err := tt.r.Get(context.Background(), "", "", []byte("key"))
+			Value, err := tt.r.Get(context.Background(), repository, "", []byte("key"))
 			if err != tt.expectedErr {
 				t.Fatalf("wrong error, expected:%v got:%v", tt.expectedErr, err)
 			}
@@ -376,7 +376,7 @@ func testGravelerSet(t *testing.T, kvEnabled bool) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			store := newGraveler(t, kvEnabled, tt.committedMgr, tt.stagingMgr, tt.refMgr, nil, testutil.NewProtectedBranchesManagerFake())
-			err := store.Set(context.Background(), "", "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(tt.ifAbsent))
+			err := store.Set(context.Background(), repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(tt.ifAbsent))
 			if err != tt.expectedErr {
 				t.Fatalf("wrong error, expected:%v got:%v", tt.expectedErr, err)
 			}
@@ -497,7 +497,7 @@ func TestGravelerGet_Advanced(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Value, err := tt.r.Get(context.Background(), "", "", []byte("staged"))
+			Value, err := tt.r.Get(context.Background(), repository, "", []byte("staged"))
 			if err != tt.expectedErr {
 				t.Fatalf("wrong error, expected:%v got:%v", tt.expectedErr, err)
 			}
@@ -717,7 +717,7 @@ func TestGraveler_Diff(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			diff, err := tt.r.Diff(ctx, "repo", "ref1", "b1")
+			diff, err := tt.r.Diff(ctx, repository, "ref1", "b1")
 			if err != tt.expectedErr {
 				t.Fatalf("wrong error, expected:%s got:%s", tt.expectedErr, err)
 			}
@@ -832,7 +832,7 @@ func testGravelerDiffUncommitted(t *testing.T, kvEnabled bool) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			diff, err := tt.r.DiffUncommitted(ctx, "repo", "branch")
+			diff, err := tt.r.DiffUncommitted(ctx, repository, "branch")
 			if err != tt.expectedErr {
 				t.Fatalf("wrong error, expected:%s got:%s", tt.expectedErr, err)
 			}
@@ -951,7 +951,7 @@ func TestGravelerDiffUncommitted_Advanced(t *testing.T) {
 	})
 
 	ctx := context.Background()
-	diff, err := r.DiffUncommitted(ctx, "repo", "branch")
+	diff, err := r.DiffUncommitted(ctx, repository, "branch")
 	require.NoError(t, err)
 	// compare iterators
 	for diff.Next() {
@@ -980,13 +980,13 @@ func TestGraveler_CreateBranch(t *testing.T) {
 
 func testGravelerCreateBranch(t *testing.T, kvEnabled bool) {
 	gravel := newGraveler(t, kvEnabled, nil, nil, &testutil.RefsFake{Err: graveler.ErrBranchNotFound, CommitID: "8888888798e3aeface8e62d1c7072a965314b4"}, nil, nil)
-	_, err := gravel.CreateBranch(context.Background(), "", "", "")
+	_, err := gravel.CreateBranch(context.Background(), repository, "", "")
 	if err != nil {
 		t.Fatal("unexpected error on create branch", err)
 	}
 	// test create branch when branch exists
 	gravel = newGraveler(t, kvEnabled, nil, nil, &testutil.RefsFake{Branch: &graveler.Branch{}}, nil, nil)
-	_, err = gravel.CreateBranch(context.Background(), "", "", "")
+	_, err = gravel.CreateBranch(context.Background(), repository, "", "")
 	if !errors.Is(err, graveler.ErrBranchExists) {
 		t.Fatal("did not get expected error, expected ErrBranchExists")
 	}
@@ -1004,12 +1004,12 @@ func TestGraveler_UpdateBranch(t *testing.T) {
 func testGravelerUpdateBranch(t *testing.T, kvEnabled bool) {
 	gravel := newGraveler(t, kvEnabled, nil, &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
 		&testutil.RefsFake{Branch: &graveler.Branch{}, UpdateErr: kv.ErrPredicateFailed}, nil, nil)
-	_, err := gravel.UpdateBranch(context.Background(), "", "", "")
+	_, err := gravel.UpdateBranch(context.Background(), repository, "", "")
 	require.ErrorIs(t, err, graveler.ErrConflictFound)
 
 	gravel = newGraveler(t, kvEnabled, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})}, &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
 		&testutil.RefsFake{Branch: &graveler.Branch{StagingToken: "st1", CommitID: "commit1"}, Commits: map[graveler.CommitID]*graveler.Commit{"commit1": {}}}, nil, nil)
-	_, err = gravel.UpdateBranch(context.Background(), "", "", "")
+	_, err = gravel.UpdateBranch(context.Background(), repository, "", "")
 	require.NoError(t, err)
 }
 
@@ -1037,7 +1037,6 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 	}
 	type args struct {
 		ctx             context.Context
-		repositoryID    graveler.RepositoryID
 		branchID        graveler.BranchID
 		committer       string
 		message         string
@@ -1062,12 +1061,11 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 					Commits: map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}}},
 			},
 			args: args{
-				ctx:          nil,
-				repositoryID: "repo",
-				branchID:     "branch",
-				committer:    "committer",
-				message:      "a message",
-				metadata:     graveler.Metadata{},
+				ctx:       nil,
+				branchID:  "branch",
+				committer: "committer",
+				message:   "a message",
+				metadata:  graveler.Metadata{},
 			},
 			want:        expectedCommitID,
 			values:      values,
@@ -1085,7 +1083,6 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 			},
 			args: args{
 				ctx:             nil,
-				repositoryID:    "repo",
 				branchID:        "branch",
 				committer:       "committer",
 				message:         "a message",
@@ -1109,7 +1106,6 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 			},
 			args: args{
 				ctx:             nil,
-				repositoryID:    "repo",
 				branchID:        "branch",
 				committer:       "committer",
 				message:         "a message",
@@ -1129,12 +1125,11 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 					Commits: map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}}},
 			},
 			args: args{
-				ctx:          nil,
-				repositoryID: "repo",
-				branchID:     "branch",
-				committer:    "committer",
-				message:      "a message",
-				metadata:     nil,
+				ctx:       nil,
+				branchID:  "branch",
+				committer: "committer",
+				message:   "a message",
+				metadata:  nil,
 			},
 			want:        expectedCommitID,
 			values:      values,
@@ -1150,12 +1145,11 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 					Commits: map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}}},
 			},
 			args: args{
-				ctx:          nil,
-				repositoryID: "repo",
-				branchID:     "branch",
-				committer:    "committer",
-				message:      "a message",
-				metadata:     nil,
+				ctx:       nil,
+				branchID:  "branch",
+				committer: "committer",
+				message:   "a message",
+				metadata:  nil,
 			},
 			want:        expectedCommitID,
 			values:      values,
@@ -1172,12 +1166,11 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 					Commits:   map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}}},
 			},
 			args: args{
-				ctx:          nil,
-				repositoryID: "repo",
-				branchID:     "branch",
-				committer:    "committer",
-				message:      "a message",
-				metadata:     nil,
+				ctx:       nil,
+				branchID:  "branch",
+				committer: "committer",
+				message:   "a message",
+				metadata:  nil,
 			},
 			want:        expectedCommitID,
 			values:      values,
@@ -1193,12 +1186,11 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 					Commits: map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}}},
 			},
 			args: args{
-				ctx:          nil,
-				repositoryID: "repo",
-				branchID:     "branch",
-				committer:    "committer",
-				message:      "a message",
-				metadata:     graveler.Metadata{},
+				ctx:       nil,
+				branchID:  "branch",
+				committer: "committer",
+				message:   "a message",
+				metadata:  graveler.Metadata{},
 			},
 			want:        expectedCommitID,
 			values:      values,
@@ -1215,12 +1207,11 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 				ProtectedBranchesManager: testutil.NewProtectedBranchesManagerFake("branch"),
 			},
 			args: args{
-				ctx:          nil,
-				repositoryID: "repo",
-				branchID:     "branch",
-				committer:    "committer",
-				message:      "a message",
-				metadata:     graveler.Metadata{},
+				ctx:       nil,
+				branchID:  "branch",
+				committer: "committer",
+				message:   "a message",
+				metadata:  graveler.Metadata{},
 			},
 			values:      values,
 			expectedErr: graveler.ErrCommitToProtectedBranch,
@@ -1235,12 +1226,11 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 					Commits: map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}}},
 			},
 			args: args{
-				ctx:          nil,
-				repositoryID: "repo",
-				branchID:     "branch",
-				committer:    "committer",
-				message:      "a message",
-				metadata:     graveler.Metadata{},
+				ctx:       nil,
+				branchID:  "branch",
+				committer: "committer",
+				message:   "a message",
+				metadata:  graveler.Metadata{},
 			},
 			want:        expectedCommitID,
 			values:      graveler.NewCombinedIterator(multipleValues...),
@@ -1256,7 +1246,7 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 			}
 			g := newGraveler(t, kvEnabled, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager, nil, tt.fields.ProtectedBranchesManager)
 
-			got, err := g.Commit(context.Background(), tt.args.repositoryID, tt.args.branchID, graveler.CommitParams{
+			got, err := g.Commit(context.Background(), repository, tt.args.branchID, graveler.CommitParams{
 				Committer:       tt.args.committer,
 				Message:         tt.args.message,
 				Metadata:        tt.args.metadata,
@@ -1341,10 +1331,9 @@ func testGravelerMergeInvalidRef(t *testing.T, kvEnabled bool) {
 
 	// test merge invalid ref
 	ctx := context.Background()
-	const mergeRepositoryID = "repoID"
 	const commitCommitter = "committer"
 	const mergeMessage = "message"
-	_, err := g.Merge(ctx, mergeRepositoryID, mergeDestination, "unexpectedRef", graveler.CommitParams{
+	_, err := g.Merge(ctx, repository, mergeDestination, "unexpectedRef", graveler.CommitParams{
 		Committer: commitCommitter,
 		Message:   mergeMessage,
 		Metadata:  graveler.Metadata{"key1": "val1"},
@@ -1369,7 +1358,6 @@ func testGravelerAddCommitToBranchHead(t *testing.T, kvEnabled bool) {
 		expectedParentCommitID   = graveler.CommitID("expectedParentCommitId")
 		unexpectedParentCommitID = graveler.CommitID("unexpectedParentCommitId")
 		expectedRangeID          = graveler.MetaRangeID("expectedRangeID")
-		expectedRepositoryID     = graveler.RepositoryID("expectedRangeID")
 		expectedBranchID         = graveler.BranchID("expectedBranchID")
 	)
 
@@ -1404,12 +1392,11 @@ func testGravelerAddCommitToBranchHead(t *testing.T, kvEnabled bool) {
 					},
 				}},
 			args: args{
-				ctx:          nil,
-				repositoryID: "repo",
-				branchID:     "branch",
-				committer:    "committer",
-				message:      "a message",
-				metadata:     graveler.Metadata{},
+				ctx:       nil,
+				branchID:  "branch",
+				committer: "committer",
+				message:   "a message",
+				metadata:  graveler.Metadata{},
 			},
 			want:        expectedCommitID,
 			expectedErr: nil,
@@ -1426,12 +1413,11 @@ func testGravelerAddCommitToBranchHead(t *testing.T, kvEnabled bool) {
 					},
 				}},
 			args: args{
-				ctx:          nil,
-				repositoryID: "repo",
-				branchID:     "branch",
-				committer:    "committer",
-				message:      "a message",
-				metadata:     graveler.Metadata{},
+				ctx:       nil,
+				branchID:  "branch",
+				committer: "committer",
+				message:   "a message",
+				metadata:  graveler.Metadata{},
 			},
 			want:        graveler.CommitID(""),
 			expectedErr: graveler.ErrCommitNotHeadBranch,
@@ -1446,12 +1432,11 @@ func testGravelerAddCommitToBranchHead(t *testing.T, kvEnabled bool) {
 					Commits: map[graveler.CommitID]*graveler.Commit{expectedParentCommitID: {MetaRangeID: expectedRangeID}}},
 			},
 			args: args{
-				ctx:          nil,
-				repositoryID: "repo",
-				branchID:     "branch",
-				committer:    "committer",
-				message:      "a message",
-				metadata:     nil,
+				ctx:       nil,
+				branchID:  "branch",
+				committer: "committer",
+				message:   "a message",
+				metadata:  nil,
 			},
 			want:        expectedCommitID,
 			expectedErr: graveler.ErrMetaRangeNotFound,
@@ -1467,12 +1452,11 @@ func testGravelerAddCommitToBranchHead(t *testing.T, kvEnabled bool) {
 					Commits:   map[graveler.CommitID]*graveler.Commit{expectedParentCommitID: {MetaRangeID: expectedRangeID}}},
 			},
 			args: args{
-				ctx:          nil,
-				repositoryID: "repo",
-				branchID:     "branch",
-				committer:    "committer",
-				message:      "a message",
-				metadata:     nil,
+				ctx:       nil,
+				branchID:  "branch",
+				committer: "committer",
+				message:   "a message",
+				metadata:  nil,
 			},
 			want:        expectedCommitID,
 			expectedErr: graveler.ErrConflictFound,
@@ -1482,7 +1466,7 @@ func testGravelerAddCommitToBranchHead(t *testing.T, kvEnabled bool) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := newGraveler(t, kvEnabled, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager, nil, testutil.NewProtectedBranchesManagerFake())
-			got, err := g.AddCommitToBranchHead(context.Background(), expectedRepositoryID, expectedBranchID, graveler.Commit{
+			got, err := g.AddCommitToBranchHead(context.Background(), repository, expectedBranchID, graveler.Commit{
 				Committer:   tt.args.committer,
 				Message:     tt.args.message,
 				MetaRangeID: expectedRangeID,
@@ -1530,7 +1514,6 @@ func testGravelerAddCommit(t *testing.T, kvEnabled bool) {
 		expectedCommitID       = graveler.CommitID("expectedCommitId")
 		expectedParentCommitID = graveler.CommitID("expectedParentCommitId")
 		expectedRangeID        = graveler.MetaRangeID("expectedRangeID")
-		expectedRepositoryID   = graveler.RepositoryID("expectedRepoID")
 	)
 
 	type fields struct {
@@ -1564,11 +1547,10 @@ func testGravelerAddCommit(t *testing.T, kvEnabled bool) {
 					},
 				}},
 			args: args{
-				ctx:          nil,
-				repositoryID: "repo",
-				committer:    "committer",
-				message:      "a message",
-				metadata:     graveler.Metadata{},
+				ctx:       nil,
+				committer: "committer",
+				message:   "a message",
+				metadata:  graveler.Metadata{},
 			},
 			want:        expectedCommitID,
 			expectedErr: nil,
@@ -1583,11 +1565,10 @@ func testGravelerAddCommit(t *testing.T, kvEnabled bool) {
 					Commits: map[graveler.CommitID]*graveler.Commit{expectedParentCommitID: {MetaRangeID: expectedRangeID}}},
 			},
 			args: args{
-				ctx:          nil,
-				repositoryID: "repo",
-				committer:    "committer",
-				message:      "a message",
-				metadata:     nil,
+				ctx:       nil,
+				committer: "committer",
+				message:   "a message",
+				metadata:  nil,
 			},
 			want:        expectedCommitID,
 			expectedErr: graveler.ErrMetaRangeNotFound,
@@ -1623,11 +1604,10 @@ func testGravelerAddCommit(t *testing.T, kvEnabled bool) {
 					Commits:   map[graveler.CommitID]*graveler.Commit{expectedParentCommitID: {MetaRangeID: expectedRangeID}}},
 			},
 			args: args{
-				ctx:          nil,
-				repositoryID: "repo",
-				committer:    "committer",
-				message:      "a message",
-				metadata:     nil,
+				ctx:       nil,
+				committer: "committer",
+				message:   "a message",
+				metadata:  nil,
 			},
 			want:        expectedCommitID,
 			expectedErr: graveler.ErrConflictFound,
@@ -1646,7 +1626,7 @@ func testGravelerAddCommit(t *testing.T, kvEnabled bool) {
 			if !tt.args.missingParents {
 				commit.Parents = graveler.CommitParents{expectedParentCommitID}
 			}
-			got, err := g.AddCommit(context.Background(), expectedRepositoryID, commit)
+			got, err := g.AddCommit(context.Background(), repository, commit)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("unexpected err got = %v, wanted = %v", err, tt.expectedErr)
 			}
@@ -1832,7 +1812,7 @@ func testGravelerDelete(t *testing.T, kvEnabled bool) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			g := newGraveler(t, kvEnabled, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager, nil, testutil.NewProtectedBranchesManagerFake())
-			if err := g.Delete(ctx, tt.args.repositoryID, tt.args.branchID, tt.args.key); !errors.Is(err, tt.expectedErr) {
+			if err := g.Delete(ctx, repository, tt.args.branchID, tt.args.key); !errors.Is(err, tt.expectedErr) {
 				t.Errorf("Delete() returned unexpected error. got = %v, expected %v", err, tt.expectedErr)
 			}
 
@@ -1879,7 +1859,6 @@ func testGravelerPreCommitHook(t *testing.T, kvEnabled bool) {
 	}
 	// tests
 	errSomethingBad := errors.New("something bad")
-	const commitRepositoryID = "repoID"
 	const commitBranchID = "branchID"
 	const commitCommitter = "committer"
 	const commitMessage = "message"
@@ -1915,7 +1894,7 @@ func testGravelerPreCommitHook(t *testing.T, kvEnabled bool) {
 				g.SetHooksHandler(h)
 			}
 			// call commit
-			_, err := g.Commit(ctx, commitRepositoryID, commitBranchID, graveler.CommitParams{
+			_, err := g.Commit(ctx, repository, commitBranchID, graveler.CommitParams{
 				Committer: commitCommitter,
 				Message:   commitMessage,
 				Metadata:  commitMetadata,
@@ -1934,8 +1913,8 @@ func testGravelerPreCommitHook(t *testing.T, kvEnabled bool) {
 			if !h.Called {
 				return
 			}
-			if h.RepositoryID != commitRepositoryID {
-				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, commitRepositoryID)
+			if h.RepositoryID != repository.RepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repository.RepositoryID)
 			}
 			if h.BranchID != commitBranchID {
 				t.Errorf("Hook branch '%s', expected '%s'", h.BranchID, commitBranchID)
@@ -1989,7 +1968,6 @@ func testGravelerPreMergeHook(t *testing.T, kvEnabled bool) {
 	}
 	// tests
 	errSomethingBad := errors.New("first error")
-	const mergeRepositoryID = "repoID"
 	const commitCommitter = "committer"
 	const mergeMessage = "message"
 	mergeMetadata := graveler.Metadata{"key1": "val1"}
@@ -2024,7 +2002,7 @@ func testGravelerPreMergeHook(t *testing.T, kvEnabled bool) {
 				g.SetHooksHandler(h)
 			}
 			// call merge
-			_, err := g.Merge(ctx, mergeRepositoryID, mergeDestination, expectedCommitID.Ref(), graveler.CommitParams{
+			_, err := g.Merge(ctx, repository, mergeDestination, expectedCommitID.Ref(), graveler.CommitParams{
 				Committer: commitCommitter,
 				Message:   mergeMessage,
 				Metadata:  mergeMetadata,
@@ -2054,8 +2032,8 @@ func testGravelerPreMergeHook(t *testing.T, kvEnabled bool) {
 			if !h.Called {
 				return
 			}
-			if h.RepositoryID != mergeRepositoryID {
-				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, mergeRepositoryID)
+			if h.RepositoryID != repository.RepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repository.RepositoryID)
 			}
 			if h.BranchID != mergeDestination {
 				t.Errorf("Hook branch (destination) '%s', expected '%s'", h.BranchID, mergeDestination)
@@ -2084,7 +2062,6 @@ func TestGraveler_CreateTag(t *testing.T) {
 
 func testGravelerCreateTag(t *testing.T, kvEnabled bool) {
 	// prepare graveler
-	const repositoryID = "repoID"
 	const commitID = graveler.CommitID("commitID")
 	const tagID = graveler.TagID("tagID")
 	committedManager := &testutil.CommittedFake{}
@@ -2120,7 +2097,7 @@ func testGravelerCreateTag(t *testing.T, kvEnabled bool) {
 				refManager.Err = tt.err
 			}
 			g := newGraveler(t, kvEnabled, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
-			err := g.CreateTag(ctx, repositoryID, tagID, commitID)
+			err := g.CreateTag(ctx, repository, tagID, commitID)
 
 			// verify we got an error
 			if !errors.Is(err, tt.err) {
@@ -2141,7 +2118,6 @@ func TestGraveler_PreCreateTagHook(t *testing.T) {
 
 func testGravelerPreCreateTagHook(t *testing.T, kvEnabled bool) {
 	// prepare graveler
-	const repositoryID = "repoID"
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const expectedCommitID = graveler.CommitID("expectedCommitID")
 	const expectedTagID = graveler.TagID("expectedTagID")
@@ -2188,7 +2164,7 @@ func testGravelerPreCreateTagHook(t *testing.T, kvEnabled bool) {
 				g.SetHooksHandler(h)
 			}
 
-			err := g.CreateTag(ctx, repositoryID, expectedTagID, expectedCommitID)
+			err := g.CreateTag(ctx, repository, expectedTagID, expectedCommitID)
 
 			// verify we got an error
 			if !errors.Is(err, tt.err) {
@@ -2206,8 +2182,8 @@ func testGravelerPreCreateTagHook(t *testing.T, kvEnabled bool) {
 			if !h.Called {
 				return
 			}
-			if h.RepositoryID != repositoryID {
-				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repositoryID)
+			if h.RepositoryID != repository.RepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repository.RepositoryID)
 			}
 			if h.CommitID != expectedCommitID {
 				t.Errorf("Hook commit ID '%s', expected '%s'", h.BranchID, expectedCommitID)
@@ -2230,7 +2206,6 @@ func TestGraveler_PreDeleteTagHook(t *testing.T) {
 
 func testGravelerPreDeleteTagHook(t *testing.T, kvEnabled bool) {
 	// prepare graveler
-	const repositoryID = "repoID"
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const expectedCommitID = graveler.CommitID("expectedCommitID")
 	const expectedTagID = graveler.TagID("expectedTagID")
@@ -2278,7 +2253,7 @@ func testGravelerPreDeleteTagHook(t *testing.T, kvEnabled bool) {
 				g.SetHooksHandler(h)
 			}
 
-			err := g.DeleteTag(ctx, repositoryID, expectedTagID)
+			err := g.DeleteTag(ctx, repository, expectedTagID)
 
 			// verify we got an error
 			if !errors.Is(err, tt.err) {
@@ -2296,8 +2271,8 @@ func testGravelerPreDeleteTagHook(t *testing.T, kvEnabled bool) {
 			if !h.Called {
 				return
 			}
-			if h.RepositoryID != repositoryID {
-				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repositoryID)
+			if h.RepositoryID != repository.RepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repository.RepositoryID)
 			}
 			if h.TagID != expectedTagID {
 				t.Errorf("Hook tag ID '%s', expected '%s'", h.TagID, expectedTagID)
@@ -2316,7 +2291,6 @@ func TestGraveler_PreCreateBranchHook(t *testing.T) {
 }
 
 func testGravelerPreCreateBranchHook(t *testing.T, kvEnabled bool) {
-	const repositoryID = "repoID"
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const sourceCommitID = graveler.CommitID("sourceCommitID")
 	const sourceBranchID = graveler.CommitID("sourceBranchID")
@@ -2372,7 +2346,7 @@ func testGravelerPreCreateBranchHook(t *testing.T, kvEnabled bool) {
 			refManager.Err = graveler.ErrBranchNotFound
 
 			newBranch := newBranchPrefix + strconv.Itoa(i)
-			_, err := g.CreateBranch(ctx, repositoryID, graveler.BranchID(newBranch), graveler.Ref(sourceBranchID))
+			_, err := g.CreateBranch(ctx, repository, graveler.BranchID(newBranch), graveler.Ref(sourceBranchID))
 
 			// verify we got an error
 			if !errors.Is(err, tt.err) {
@@ -2390,8 +2364,8 @@ func testGravelerPreCreateBranchHook(t *testing.T, kvEnabled bool) {
 			if !h.Called {
 				return
 			}
-			if h.RepositoryID != repositoryID {
-				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repositoryID)
+			if h.RepositoryID != repository.RepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repository.RepositoryID)
 			}
 			if h.CommitID != sourceCommitID {
 				t.Errorf("Hook commit ID '%s', expected '%s'", h.BranchID, sourceCommitID)
@@ -2414,7 +2388,6 @@ func TestGraveler_PreDeleteBranchHook(t *testing.T) {
 
 func testGravelerPreDeleteBranchHook(t *testing.T, kvEnabled bool) {
 	// prepare graveler
-	const repositoryID = "repoID"
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const sourceCommitID = graveler.CommitID("sourceCommitID")
 	const sourceBranchID = graveler.CommitID("sourceBranchID")
@@ -2468,7 +2441,7 @@ func testGravelerPreDeleteBranchHook(t *testing.T, kvEnabled bool) {
 				g.SetHooksHandler(h)
 			}
 
-			err := g.DeleteBranch(ctx, repositoryID, graveler.BranchID(sourceBranchID))
+			err := g.DeleteBranch(ctx, repository, graveler.BranchID(sourceBranchID))
 
 			// verify we got an error
 			if !errors.Is(err, tt.err) {
@@ -2486,8 +2459,8 @@ func testGravelerPreDeleteBranchHook(t *testing.T, kvEnabled bool) {
 			if !h.Called {
 				return
 			}
-			if h.RepositoryID != repositoryID {
-				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repositoryID)
+			if h.RepositoryID != repository.RepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repository.RepositoryID)
 			}
 			if h.BranchID != graveler.BranchID(sourceBranchID) {
 				t.Errorf("Hook branch ID '%s', expected '%s'", h.BranchID, sourceBranchID)

@@ -39,6 +39,7 @@ func TestHooksFail(t *testing.T) {
 
 func hookFailToCommit(t *testing.T, path string) {
 	ctx, logger, repo := setupTest(t)
+	defer tearDownTest(repo)
 	const branch = "feature-1"
 
 	logger.WithField("branch", branch).Info("Create branch")

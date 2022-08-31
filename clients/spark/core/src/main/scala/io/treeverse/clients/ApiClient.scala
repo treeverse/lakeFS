@@ -1,6 +1,5 @@
 package io.treeverse.clients
 
-import com.google.common.cache.CacheBuilder
 import io.lakefs.clients.api
 import io.lakefs.clients.api.{ConfigApi, RetentionApi}
 import io.lakefs.clients.api.model.{
@@ -9,6 +8,8 @@ import io.lakefs.clients.api.model.{
 }
 import io.treeverse.clients.StorageClientType.StorageClientType
 import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
+import com.google.common.cache.{Cache, CacheBuilder, CacheLoader, LoadingCache}
+import io.treeverse.clients.ApiClient.TIMEOUT_NOT_SET
 
 import java.net.URI
 import java.util.concurrent.{Callable, TimeUnit}
@@ -21,6 +22,33 @@ object StorageClientType extends Enumeration {
 }
 
 private object ApiClient {
+  val NUM_CACHED_API_CLIENTS = 30
+  val TIMEOUT_NOT_SET = -1
+
+  case class ClientKey(apiUrl: String, accessKey: String)
+
+  // Not a LoadingCache because the client key does not include the secret.
+  // Instead, use a callable get().
+  val clients: Cache[ClientKey, ApiClient] = CacheBuilder
+    .newBuilder()
+    .maximumSize(NUM_CACHED_API_CLIENTS)
+    .build()
+
+  /** @return an ApiClient, reusing an existing one for this URL if possible.
+   */
+  def get(conf: APIConfigurations): ApiClient = clients.get(
+    ClientKey(conf.apiUrl, conf.accessKey),
+    new Callable[ApiClient] {
+      def call() = new ApiClient(
+        APIConfigurations(conf.apiUrl,
+                          conf.accessKey,
+                          conf.secretKey,
+                          conf.connectionTimeoutSec,
+                          conf.readTimeoutSec
+                         )
+      )
+    }
+  )
 
   /** Translate uri according to two cases:
    *  If the storage type is s3 then translate the protocol of uri from "standard"-ish "s3" to "s3a", to
@@ -53,23 +81,41 @@ private object ApiClient {
   }
 }
 
-class ApiClient(
+case class APIConfigurations(
     apiUrl: String,
     accessKey: String,
     secretKey: String,
-    connectionTimeout: String = ""
+    connectionTimeoutSec: String = "",
+    readTimeoutSec: String = ""
 ) {
   val FROM_SEC_TO_MILLISEC = 1000
 
-  private val client = new api.ApiClient
-  client.setUsername(accessKey)
-  client.setPassword(secretKey)
-  client.setBasePath(apiUrl.stripSuffix("/"))
-  if (connectionTimeout != null && !connectionTimeout.isEmpty) {
-    // converting the connection timeout from seconds to milliseconds
-    val connectionTimeoutMillisec = connectionTimeout.toInt * FROM_SEC_TO_MILLISEC
-    client.setConnectTimeout(connectionTimeoutMillisec)
+  val connectionTimeoutMillisec: Int = stringAsMillisec(connectionTimeoutSec)
+  val readTimeoutMillisec: Int = stringAsMillisec(readTimeoutSec)
+
+  def stringAsMillisec(s: String): Int = {
+    if (s != null && !s.isEmpty)
+      s.toInt * FROM_SEC_TO_MILLISEC
+    else
+      TIMEOUT_NOT_SET
   }
+}
+
+// Only cached instances of ApiClient can be constructed.  The actual
+// constructor is private.
+class ApiClient private (conf: APIConfigurations) {
+
+  val client = new api.ApiClient
+  client.setUsername(conf.accessKey)
+  client.setPassword(conf.secretKey)
+  client.setBasePath(conf.apiUrl.stripSuffix("/"))
+  if (TIMEOUT_NOT_SET != conf.connectionTimeoutMillisec) {
+    client.setConnectTimeout(conf.connectionTimeoutMillisec)
+  }
+  if (TIMEOUT_NOT_SET != conf.readTimeoutMillisec) {
+    client.setReadTimeout(conf.readTimeoutMillisec)
+  }
+
   private val repositoriesApi = new api.RepositoriesApi(client)
   private val commitsApi = new api.CommitsApi(client)
   private val metadataApi = new api.MetadataApi(client)
@@ -77,31 +123,31 @@ class ApiClient(
   private val retentionApi = new RetentionApi(client)
   private val configApi = new ConfigApi(client)
 
-  private val storageNamespaceCache =
-    CacheBuilder.newBuilder().expireAfterWrite(2, TimeUnit.MINUTES).build[String, String]()
+  private val storageNamespaceCache: LoadingCache[StorageNamespaceCacheKey, String] =
+    CacheBuilder
+      .newBuilder()
+      .expireAfterWrite(2, TimeUnit.MINUTES)
+      .build(new CacheLoader[StorageNamespaceCacheKey, String]() {
+        def load(key: StorageNamespaceCacheKey): String = keyToStorageNamespace(key)
+      })
 
-  private class CallableFn(val fn: () => String) extends Callable[String] {
-    def call(): String = fn()
+  def keyToStorageNamespace(key: StorageNamespaceCacheKey): String = {
+    val repo = repositoriesApi.getRepository(key.repoName)
+
+    val storageNamespace = key.storageClientType match {
+      case StorageClientType.HadoopFS =>
+        ApiClient
+          .translateURI(URI.create(repo.getStorageNamespace), getBlockstoreType())
+          .normalize()
+          .toString
+      case StorageClientType.SDKClient => repo.getStorageNamespace
+      case _                           => throw new IllegalArgumentException
+    }
+    storageNamespace
   }
 
-  def getStorageNamespace(repoName: String, accessType: StorageClientType): String = {
-    storageNamespaceCache.get(
-      repoName,
-      new CallableFn(() => {
-        val repo = repositoriesApi.getRepository(repoName)
-
-        val storageNamespace = accessType match {
-          case StorageClientType.HadoopFS =>
-            ApiClient
-              .translateURI(URI.create(repo.getStorageNamespace), getBlockstoreType())
-              .normalize()
-              .toString
-          case StorageClientType.SDKClient => repo.getStorageNamespace
-          case _                           => throw new IllegalArgumentException
-        }
-        storageNamespace
-      })
-    )
+  def getStorageNamespace(repoName: String, storageClientType: StorageClientType): String = {
+    storageNamespaceCache.get(StorageNamespaceCacheKey(repoName, storageClientType))
   }
 
   def prepareGarbageCollectionCommits(
@@ -155,4 +201,10 @@ class ApiClient(
 
   def getBranchHEADCommit(repoName: String, branch: String): String =
     branchesApi.getBranch(repoName, branch).getCommitId
+
+  // Instances of case classes are compared by structure and not by reference https://docs.scala-lang.org/tour/case-classes.html.
+  case class StorageNamespaceCacheKey(
+      repoName: String,
+      storageClientType: StorageClientType
+  )
 }

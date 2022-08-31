@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/treeverse/lakefs/pkg/kv"
-
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/kv"
 )
 
 // migrateCmd represents the migrate command

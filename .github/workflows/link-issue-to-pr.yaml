@@ -1,0 +1,16 @@
+name: Enforce issue link to pull request
+
+on:
+  pull_request:
+    types: [labeled, unlabeled, opened, edited, synchronize]
+
+jobs:
+  check_pull_requests:
+    runs-on: ubuntu-latest
+    name: Check linked issues
+    steps:
+      - uses: nearform/github-action-check-linked-issues@v1.2.10
+        id: check-linked-issues
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          exclude-branches: "dependabot/**"

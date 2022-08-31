@@ -13,6 +13,7 @@ import (
 
 func TestMergeAndList(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
+	defer tearDownTest(repo)
 	const branch = "feature-1"
 
 	logger.WithField("branch", mainBranch).Info("Upload initial content")

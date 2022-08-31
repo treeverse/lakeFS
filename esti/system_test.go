@@ -73,6 +73,11 @@ func setupTest(t *testing.T) (context.Context, logging.Logger, string) {
 	return ctx, logger, repo
 }
 
+func tearDownTest(repoName string) {
+	ctx := context.Background()
+	deleteRepositoryIfAskedTo(ctx, repoName)
+}
+
 func createRepositoryForTest(ctx context.Context, t *testing.T) string {
 	name := strings.ToLower(t.Name())
 	return createRepositoryByName(ctx, t, name)
@@ -116,6 +121,14 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, repoStorage)
 	require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
 		"create repository '%s', storage '%s'", name, repoStorage)
+}
+
+func deleteRepositoryIfAskedTo(ctx context.Context, repositoryName string) {
+	deleteRepositories := viper.GetBool("delete_repositories")
+	if deleteRepositories {
+		client.DeleteRepositoryWithResponse(ctx, repositoryName)
+		logger.WithField("repo", repositoryName).Info("Deleted repository")
+	}
 }
 
 const randomDataContentLength = 16

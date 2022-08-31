@@ -33,6 +33,7 @@ var logCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		after := MustString(cmd.Flags().GetString("after"))
+		limit := MustBool(cmd.Flags().GetBool("limit"))
 		objectsList := MustSliceNonEmptyString("objects", MustStringSlice(cmd.Flags().GetStringSlice("objects")))
 		prefixesList := MustSliceNonEmptyString("prefixes", MustStringSlice(cmd.Flags().GetStringSlice("prefixes")))
 
@@ -47,6 +48,7 @@ var logCmd = &cobra.Command{
 		logCommitsParams := &api.LogCommitsParams{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amountForPagination),
+			Limit:  &limit,
 		}
 		if len(objectsList) > 0 {
 			logCommitsParams.Objects = &objectsList
@@ -85,6 +87,7 @@ var logCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(logCmd)
 	logCmd.Flags().Int("amount", 0, "number of results to return. By default, all results are returned")
+	logCmd.Flags().Bool("limit", false, "limit result just to amount. By default, returns whether more items are available.")
 	logCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 	logCmd.Flags().Bool("show-meta-range-id", false, "also show meta range ID")
 	logCmd.Flags().StringSlice("objects", nil, "show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together")

@@ -33,6 +33,7 @@ func TestImport(t *testing.T) {
 	}
 
 	ctx, log, repoName := setupTest(t)
+	defer tearDownTest(repoName)
 	var (
 		after  = ""
 		token  *string

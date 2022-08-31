@@ -18,11 +18,12 @@ func TestDBRepositoryIterator(t *testing.T) {
 
 	// prepare data
 	for _, repoId := range repos {
-		testutil.Must(t, r.CreateRepository(context.Background(), repoId, graveler.Repository{
+		_, err := r.CreateRepository(context.Background(), repoId, graveler.Repository{
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",
-		}))
+		})
+		testutil.Must(t, err)
 	}
 
 	t.Run("listing all repos", func(t *testing.T) {
@@ -101,11 +102,12 @@ func TestKVRepositoryIterator(t *testing.T) {
 
 	// prepare data
 	for _, repoId := range repos {
-		testutil.Must(t, r.CreateRepository(context.Background(), repoId, graveler.Repository{
+		_, err := r.CreateRepository(context.Background(), repoId, graveler.Repository{
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",
-		}))
+		})
+		testutil.Must(t, err)
 	}
 
 	t.Run("listing all repos", func(t *testing.T) {

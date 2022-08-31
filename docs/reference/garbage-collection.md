@@ -179,7 +179,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
-  s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.2.1/lakefs-spark-client-312-hadoop3-assembly-0.2.1.jar \
+  s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.2.2/lakefs-spark-client-312-hadoop3-assembly-0.2.2.jar \
   example-repo
   ```
 
@@ -188,10 +188,19 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
 * GC on Azure is supported from Spark client version >= v0.2.0.
 * In case you don't have `hadoop-azure` package as part of your environment, you should add the package to your spark-submit with `--packages org.apache.hadoop:hadoop-azure:3.2.1`
 * For GC to work on Azure blob, [soft delete](https://docs.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview) should be disabled.
-* If you're running into timeout error calling to lakeFS client in GC, consider adding to the sark-submit command the configuration: `-c spark.hadoop.lakefs.api.connection.timeout=TIMEOUT_IN_SECONDS`, in order to increase the timeout (the default is 10 seconds).
-  
   
 </div>
+
+### Networking
+
+Garbage collection communicates with the lakeFS server.  Very large
+repositories may require increasing a read timeout.  If you run into timeout errors during communication from the Spark job to lakefs consider increasing these timeouts:
+
+* Add `-c spark.hadoop.lakefs.api.read.timeout_seconds=TIMEOUT_IN_SECONDS`
+  (default 10) to allow lakeFS more time to respond to requests.
+* Add `-c
+  spark.hadoop.lakefs.api.connection.timeout_seconds=TIMEOUT_IN_SECONDS`
+  (default 10) to wait longer for lakeFS to accept connections.
 
 ## Considerations
 1. In order for an object to be hard-deleted, it must be deleted from all branches.

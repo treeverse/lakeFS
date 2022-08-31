@@ -91,7 +91,7 @@ const (
 // ResolvedRef include resolved information of Ref/RawRef:
 //   Type: Branch / Tag / Commit
 //   BranchID: for type ReferenceTypeBranch will hold the branch ID
-//   ResolvedBranchModifier: branch indicator if resolved to a branch latest commit, staging or none was specified.
+//   ResolvedBranchModifier: branch indicator if resolved to a branch the latest commit, staging or none was specified.
 //   CommitID: the commit ID of the branch head,  tag or specific hash.
 //   StagingToken: empty if ResolvedBranchModifier is ResolvedBranchModifierCommitted.
 //
@@ -371,27 +371,30 @@ type CommitParams struct {
 type KeyValueStore interface {
 	// Get returns value from repository / reference by key, nil value is a valid value for tombstone
 	// returns error if value does not exist
-	Get(ctx context.Context, repositoryID RepositoryID, ref Ref, key Key) (*Value, error)
+	Get(ctx context.Context, repository *RepositoryRecord, ref Ref, key Key) (*Value, error)
+
+	// GetByCommitID returns value from repository / commit by key and error if value does not exist
+	GetByCommitID(ctx context.Context, repository *RepositoryRecord, commitID CommitID, key Key) (*Value, error)
 
 	// Set stores value on repository / branch by key. nil value is a valid value for tombstone
-	Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error
+	Set(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error
 
 	// Delete value from repository / branch by key
-	Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
+	Delete(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key) error
 
 	// List lists values on repository / ref
-	List(ctx context.Context, repositoryID RepositoryID, ref Ref) (ValueIterator, error)
+	List(ctx context.Context, repository *RepositoryRecord, ref Ref) (ValueIterator, error)
 }
 
 type VersionController interface {
 	// GetRepository returns the Repository metadata object for the given RepositoryID
-	GetRepository(ctx context.Context, repositoryID RepositoryID) (*Repository, error)
+	GetRepository(ctx context.Context, repositoryID RepositoryID) (*RepositoryRecord, error)
 
 	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
-	CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error)
+	CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*RepositoryRecord, error)
 
 	// CreateBareRepository stores a new Repository under RepositoryID with no initial branch or commit
-	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID) (*Repository, error)
+	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID) (*RepositoryRecord, error)
 
 	// ListRepositories returns iterator to scan repositories
 	ListRepositories(ctx context.Context) (RepositoryIterator, error)
@@ -400,100 +403,100 @@ type VersionController interface {
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
 
 	// CreateBranch creates branch on repository pointing to ref
-	CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error)
+	CreateBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref) (*Branch, error)
 
 	// UpdateBranch updates branch on repository pointing to ref
-	UpdateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error)
+	UpdateBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref) (*Branch, error)
 
 	// GetBranch gets branch information by branch / repository id
-	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*Branch, error)
+	GetBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (*Branch, error)
 
 	// GetTag gets tag's commit id
-	GetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) (*CommitID, error)
+	GetTag(ctx context.Context, repository *RepositoryRecord, tagID TagID) (*CommitID, error)
 
 	// CreateTag creates tag on a repository pointing to a commit id
-	CreateTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error
+	CreateTag(ctx context.Context, repository *RepositoryRecord, tagID TagID, commitID CommitID) error
 
 	// DeleteTag remove tag from a repository
-	DeleteTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) error
+	DeleteTag(ctx context.Context, repository *RepositoryRecord, tagID TagID) error
 
 	// ListTags lists tags on a repository
-	ListTags(ctx context.Context, repositoryID RepositoryID) (TagIterator, error)
+	ListTags(ctx context.Context, repository *RepositoryRecord) (TagIterator, error)
 
 	// Log returns an iterator starting at commit ID up to repository root
-	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
+	Log(ctx context.Context, repository *RepositoryRecord, commitID CommitID) (CommitIterator, error)
 
 	// ListBranches lists branches on repositories
-	ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
+	ListBranches(ctx context.Context, repository *RepositoryRecord) (BranchIterator, error)
 
 	// DeleteBranch deletes branch from repository
-	DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
+	DeleteBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID) error
 
 	// Commit the staged data and returns a commit ID that references that change
 	//   ErrNothingToCommit in case there is no data in stage
-	Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commitParams CommitParams) (CommitID, error)
+	Commit(ctx context.Context, repository *RepositoryRecord, branchID BranchID, commitParams CommitParams) (CommitID, error)
 
 	// WriteMetaRangeByIterator accepts a ValueIterator and writes the entire iterator to a new MetaRange
 	// and returns the result ID.
-	WriteMetaRangeByIterator(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*MetaRangeID, error)
+	WriteMetaRangeByIterator(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*MetaRangeID, error)
 
 	// AddCommitToBranchHead creates a commit in the branch from the given pre-existing tree.
 	// Returns ErrMetaRangeNotFound if the referenced metaRangeID doesn't exist.
 	// Returns ErrCommitNotHeadBranch if the branch is no longer referencing to the parentCommit
-	AddCommitToBranchHead(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) (CommitID, error)
+	AddCommitToBranchHead(ctx context.Context, repository *RepositoryRecord, branchID BranchID, commit Commit) (CommitID, error)
 
 	// AddCommit creates a dangling (no referencing branch) commit in the repo from the pre-existing commit.
 	// Returns ErrMetaRangeNotFound if the referenced metaRangeID doesn't exist.
-	AddCommit(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error)
+	AddCommit(ctx context.Context, repository *RepositoryRecord, commit Commit) (CommitID, error)
 
 	// GetCommit returns the Commit metadata object for the given CommitID
-	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
+	GetCommit(ctx context.Context, repository *RepositoryRecord, commitID CommitID) (*Commit, error)
 
 	// Dereference returns the resolved ref information based on 'ref' reference
-	Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (*ResolvedRef, error)
+	Dereference(ctx context.Context, repository *RepositoryRecord, ref Ref) (*ResolvedRef, error)
 
 	// ParseRef returns parsed 'ref' information as raw reference
 	ParseRef(ref Ref) (RawRef, error)
 
 	// ResolveRawRef returns the ResolvedRef matching the given RawRef
-	ResolveRawRef(ctx context.Context, repositoryID RepositoryID, rawRef RawRef) (*ResolvedRef, error)
+	ResolveRawRef(ctx context.Context, repository *RepositoryRecord, rawRef RawRef) (*ResolvedRef, error)
 
 	// Reset throws all staged data on the repository / branch
-	Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
+	Reset(ctx context.Context, repository *RepositoryRecord, branchID BranchID) error
 
 	// ResetKey throws all staged data under the specified key on the repository / branch
-	ResetKey(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
+	ResetKey(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key) error
 
 	// ResetPrefix throws all staged data starting with the given prefix on the repository / branch
-	ResetPrefix(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
+	ResetPrefix(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key) error
 
 	// Revert creates a reverse patch to the commit given as 'ref', and applies it as a new commit on the given branch.
-	Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, error)
+	Revert(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, error)
 
 	// Merge merges 'source' into 'destination' and returns the commit id for the created merge commit.
-	Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error)
+	Merge(ctx context.Context, repository *RepositoryRecord, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
-	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error)
+	DiffUncommitted(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (DiffIterator, error)
 
 	// Diff returns the changes between 'left' and 'right' ref.
 	// This is similar to a two-dot (left..right) diff in git.
-	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error)
+	Diff(ctx context.Context, repository *RepositoryRecord, left, right Ref) (DiffIterator, error)
 
 	// Compare returns the difference between the commit where 'left' was last synced into 'right', and the most recent commit of `right`.
 	// This is similar to a three-dot (from...to) diff in git.
-	Compare(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error)
+	Compare(ctx context.Context, repository *RepositoryRecord, left, right Ref) (DiffIterator, error)
 
 	// SetHooksHandler set handler for all graveler hooks
 	SetHooksHandler(handler HooksHandler)
 
 	// GetStagingToken returns the token identifying current staging for branchID of
 	// repositoryID.
-	GetStagingToken(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*StagingToken, error)
+	GetStagingToken(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (*StagingToken, error)
 
-	GetGarbageCollectionRules(ctx context.Context, repositoryID RepositoryID) (*GarbageCollectionRules, error)
+	GetGarbageCollectionRules(ctx context.Context, repository *RepositoryRecord) (*GarbageCollectionRules, error)
 
-	SetGarbageCollectionRules(ctx context.Context, repositoryID RepositoryID, rules *GarbageCollectionRules) error
+	SetGarbageCollectionRules(ctx context.Context, repository *RepositoryRecord, rules *GarbageCollectionRules) error
 
 	// SaveGarbageCollectionCommits saves the sets of active and expired commits, according to the branch rules for garbage collection.
 	// Returns
@@ -502,54 +505,54 @@ type VersionController interface {
 	//	- location where the information of addresses to be removed should be saved
 	// If a previousRunID is specified, commits that were already expired and their ancestors will not be considered as expired/active.
 	// Note: Ancestors of previously expired commits may still be considered if they can be reached from a non-expired commit.
-	SaveGarbageCollectionCommits(ctx context.Context, repositoryID RepositoryID, previousRunID string) (garbageCollectionRunMetadata *GarbageCollectionRunMetadata, err error)
+	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, previousRunID string) (garbageCollectionRunMetadata *GarbageCollectionRunMetadata, err error)
 
 	// GetBranchProtectionRules return all branch protection rules for the repository
-	GetBranchProtectionRules(ctx context.Context, repositoryID RepositoryID) (*BranchProtectionRules, error)
+	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error)
 
 	// DeleteBranchProtectionRule deletes the branch protection rule for the given pattern,
 	// or return ErrRuleNotExists if no such rule exists.
-	DeleteBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string) error
+	DeleteBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string) error
 
 	// CreateBranchProtectionRule creates a rule for the given name pattern,
 	// or returns ErrRuleAlreadyExists if there is already a rule for the pattern.
-	CreateBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string, blockedActions []BranchProtectionBlockedAction) error
+	CreateBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string, blockedActions []BranchProtectionBlockedAction) error
 }
 
 // Plumbing includes commands for fiddling more directly with graveler implementation
 // internals.
 type Plumbing interface {
 	// GetMetaRange returns information where metarangeID is stored.
-	GetMetaRange(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) (MetaRangeAddress, error)
+	GetMetaRange(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) (MetaRangeAddress, error)
 	// GetRange returns information where rangeID is stored.
-	GetRange(ctx context.Context, repositoryID RepositoryID, rangeID RangeID) (RangeAddress, error)
+	GetRange(ctx context.Context, repository *RepositoryRecord, rangeID RangeID) (RangeAddress, error)
 	// WriteRange creates a new Range from the iterator values.
 	// Keeps Range closing logic, so might not flush all values to the range.
-	WriteRange(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*RangeInfo, error)
+	WriteRange(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*RangeInfo, error)
 	// WriteMetaRange creates a new MetaRange from the given Ranges.
-	WriteMetaRange(ctx context.Context, repositoryID RepositoryID, ranges []*RangeInfo) (*MetaRangeInfo, error)
+	WriteMetaRange(ctx context.Context, repository *RepositoryRecord, ranges []*RangeInfo) (*MetaRangeInfo, error)
 }
 
 type Dumper interface {
 	// DumpCommits iterates through all commits and dumps them in Graveler format
-	DumpCommits(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error)
+	DumpCommits(ctx context.Context, repository *RepositoryRecord) (*MetaRangeID, error)
 
 	// DumpBranches iterates through all branches and dumps them in Graveler format
-	DumpBranches(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error)
+	DumpBranches(ctx context.Context, repository *RepositoryRecord) (*MetaRangeID, error)
 
 	// DumpTags iterates through all tags and dumps them in Graveler format
-	DumpTags(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error)
+	DumpTags(ctx context.Context, repository *RepositoryRecord) (*MetaRangeID, error)
 }
 
 type Loader interface {
 	// LoadCommits iterates through all commits in Graveler format and loads them into repositoryID
-	LoadCommits(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error
+	LoadCommits(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) error
 
 	// LoadBranches iterates through all branches in Graveler format and loads them into repositoryID
-	LoadBranches(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error
+	LoadBranches(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) error
 
 	// LoadTags iterates through all tags in Graveler format and loads them into repositoryID
-	LoadTags(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error
+	LoadTags(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) error
 }
 
 // Internal structures used by Graveler
@@ -623,13 +626,13 @@ type CommitIterator interface {
 // it also handles the structure of the commit graph and its traversal (notably, merge-base and log)
 type RefManager interface {
 	// GetRepository returns the Repository metadata object for the given RepositoryID
-	GetRepository(ctx context.Context, repositoryID RepositoryID) (*Repository, error)
+	GetRepository(ctx context.Context, repositoryID RepositoryID) (*RepositoryRecord, error)
 
 	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
-	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository) error
+	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository) (*RepositoryRecord, error)
 
 	// CreateBareRepository stores a new repository under RepositoryID without creating an initial commit and branch
-	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, repository Repository) error
+	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, repository Repository) (*RepositoryRecord, error)
 
 	// ListRepositories lists repositories
 	ListRepositories(ctx context.Context) (RepositoryIterator, error)
@@ -641,69 +644,69 @@ type RefManager interface {
 	ParseRef(ref Ref) (RawRef, error)
 
 	// ResolveRawRef returns the ResolvedRef matching the given RawRef
-	ResolveRawRef(ctx context.Context, repositoryID RepositoryID, rawRef RawRef) (*ResolvedRef, error)
+	ResolveRawRef(ctx context.Context, repository *RepositoryRecord, rawRef RawRef) (*ResolvedRef, error)
 
 	// GetBranch returns the Branch metadata object for the given BranchID
-	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*Branch, error)
+	GetBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (*Branch, error)
 
 	// CreateBranch creates a branch with the given id and Branch metadata
-	CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, branch Branch) error
+	CreateBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, branch Branch) error
 
 	// SetBranch points the given BranchID at the given Branch metadata
-	SetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, branch Branch) error
+	SetBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, branch Branch) error
 
 	// BranchUpdate Conditional set of branch with validation callback
-	BranchUpdate(ctx context.Context, repositoryID RepositoryID, branchID BranchID, f BranchUpdateFunc) error
+	BranchUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID, f BranchUpdateFunc) error
 
 	// DeleteBranch deletes the branch
-	DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
+	DeleteBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID) error
 
 	// ListBranches lists branches
-	ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
+	ListBranches(ctx context.Context, repository *RepositoryRecord) (BranchIterator, error)
 
 	// GCBranchIterator TODO (niro): Remove when DB implementation is deleted
 	// GCBranchIterator temporary WA to support both DB and KV GC BranchIterator, which iterates over branches by order of commit ID
-	GCBranchIterator(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
+	GCBranchIterator(ctx context.Context, repository *RepositoryRecord) (BranchIterator, error)
 
 	// GetTag returns the Tag metadata object for the given TagID
-	GetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) (*CommitID, error)
+	GetTag(ctx context.Context, repository *RepositoryRecord, tagID TagID) (*CommitID, error)
 
 	// CreateTag create a given tag pointing to a commit
-	CreateTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error
+	CreateTag(ctx context.Context, repository *RepositoryRecord, tagID TagID, commitID CommitID) error
 
 	// DeleteTag deletes the tag
-	DeleteTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) error
+	DeleteTag(ctx context.Context, repository *RepositoryRecord, tagID TagID) error
 
 	// ListTags lists tags
-	ListTags(ctx context.Context, repositoryID RepositoryID) (TagIterator, error)
+	ListTags(ctx context.Context, repository *RepositoryRecord) (TagIterator, error)
 
 	// GetCommit returns the Commit metadata object for the given CommitID.
-	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
+	GetCommit(ctx context.Context, repository *RepositoryRecord, commitID CommitID) (*Commit, error)
 
 	// GetCommitByPrefix returns the Commit metadata object for the given prefix CommitID.
 	// if more than 1 commit starts with the ID prefix returns error
-	GetCommitByPrefix(ctx context.Context, repositoryID RepositoryID, prefix CommitID) (*Commit, error)
+	GetCommitByPrefix(ctx context.Context, repository *RepositoryRecord, prefix CommitID) (*Commit, error)
 
 	// AddCommit stores the Commit object, returning its ID
-	AddCommit(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error)
+	AddCommit(ctx context.Context, repository *RepositoryRecord, commit Commit) (CommitID, error)
 
 	// RemoveCommit deletes commit from store - used for repository cleanup
-	RemoveCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) error
+	RemoveCommit(ctx context.Context, repository *RepositoryRecord, commitID CommitID) error
 
 	// FindMergeBase returns the merge-base for the given CommitIDs
 	// see: https://git-scm.com/docs/git-merge-base
 	// and internally: https://github.com/treeverse/lakeFS/blob/09954804baeb36ada74fa17d8fdc13a38552394e/index/dag/commits.go
-	FindMergeBase(ctx context.Context, repositoryID RepositoryID, commitIDs ...CommitID) (*Commit, error)
+	FindMergeBase(ctx context.Context, repository *RepositoryRecord, commitIDs ...CommitID) (*Commit, error)
 
 	// Log returns an iterator starting at commit ID up to repository root
-	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
+	Log(ctx context.Context, repository *RepositoryRecord, commitID CommitID) (CommitIterator, error)
 
 	// ListCommits returns an iterator over all known commits, ordered by their commit ID
-	ListCommits(ctx context.Context, repositoryID RepositoryID) (CommitIterator, error)
+	ListCommits(ctx context.Context, repository *RepositoryRecord) (CommitIterator, error)
 
 	// GCCommitIterator TODO (niro): Remove when DB implementation is deleted
 	// GCCommitIterator temporary WA to support both DB and KV GC CommitIterator
-	GCCommitIterator(ctx context.Context, repositoryID RepositoryID) (CommitIterator, error)
+	GCCommitIterator(ctx context.Context, repository *RepositoryRecord) (CommitIterator, error)
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -785,8 +788,8 @@ type StagingManager interface {
 type BranchLockerFunc func() (interface{}, error)
 
 type BranchLocker interface {
-	Writer(ctx context.Context, repositoryID RepositoryID, branchID BranchID, lockedFn BranchLockerFunc) (interface{}, error)
-	MetadataUpdater(ctx context.Context, repositoryID RepositoryID, branchID BranchID, lockeFn BranchLockerFunc) (interface{}, error)
+	Writer(ctx context.Context, repository *RepositoryRecord, branchID BranchID, lockedFn BranchLockerFunc) (interface{}, error)
+	MetadataUpdater(ctx context.Context, repository *RepositoryRecord, branchID BranchID, lockeFn BranchLockerFunc) (interface{}, error)
 }
 
 func (id RepositoryID) String() string {
@@ -862,72 +865,60 @@ func NewKVGraveler(committedManager CommittedManager, stagingManager StagingMana
 	}
 }
 
-func (g *KVGraveler) GetRepository(ctx context.Context, repositoryID RepositoryID) (*Repository, error) {
+func (g *KVGraveler) GetRepository(ctx context.Context, repositoryID RepositoryID) (*RepositoryRecord, error) {
 	return g.RefManager.GetRepository(ctx, repositoryID)
 }
 
-func (g *KVGraveler) CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error) {
+func (g *KVGraveler) CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*RepositoryRecord, error) {
 	_, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil && !errors.Is(err, ErrRepositoryNotFound) {
 		return nil, err
 	}
 
 	repo := NewRepository(storageNamespace, branchID)
-	err = g.RefManager.CreateRepository(ctx, repositoryID, repo)
+	repository, err := g.RefManager.CreateRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
 	}
-	return &repo, nil
+	return repository, nil
 }
 
-func (g *KVGraveler) CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID) (*Repository, error) {
+func (g *KVGraveler) CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID) (*RepositoryRecord, error) {
 	_, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil && !errors.Is(err, ErrRepositoryNotFound) {
 		return nil, err
 	}
 
 	repo := NewRepository(storageNamespace, defaultBranchID)
-	err = g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
+	repository, err := g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
 	}
-	return &repo, nil
+	return repository, nil
 }
 
 func (g *KVGraveler) ListRepositories(ctx context.Context) (RepositoryIterator, error) {
 	return g.RefManager.ListRepositories(ctx)
 }
 
-func (g *KVGraveler) WriteRange(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*RangeInfo, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	return g.CommittedManager.WriteRange(ctx, repo.StorageNamespace, it)
+func (g *KVGraveler) WriteRange(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*RangeInfo, error) {
+	return g.CommittedManager.WriteRange(ctx, repository.StorageNamespace, it)
 }
 
-func (g *KVGraveler) WriteMetaRange(ctx context.Context, repositoryID RepositoryID, ranges []*RangeInfo) (*MetaRangeInfo, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	return g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace, ranges)
+func (g *KVGraveler) WriteMetaRange(ctx context.Context, repository *RepositoryRecord, ranges []*RangeInfo) (*MetaRangeInfo, error) {
+	return g.CommittedManager.WriteMetaRange(ctx, repository.StorageNamespace, ranges)
 }
 
-func (g *KVGraveler) WriteMetaRangeByIterator(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*MetaRangeID, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repo.StorageNamespace, it, nil)
+func (g *KVGraveler) WriteMetaRangeByIterator(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*MetaRangeID, error) {
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageNamespace, it, nil)
 }
 
 func (g *KVGraveler) DeleteRepository(ctx context.Context, repositoryID RepositoryID) error {
 	return g.RefManager.DeleteRepository(ctx, repositoryID)
 }
 
-func (g *KVGraveler) GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error) {
-	return g.RefManager.GetCommit(ctx, repositoryID, commitID)
+func (g *KVGraveler) GetCommit(ctx context.Context, repository *RepositoryRecord, commitID CommitID) (*Commit, error) {
+	return g.RefManager.GetCommit(ctx, repository, commitID)
 }
 
 func GenerateStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken {
@@ -935,13 +926,8 @@ func GenerateStagingToken(repositoryID RepositoryID, branchID BranchID) StagingT
 	return StagingToken(fmt.Sprintf("%s-%s:%s", repositoryID, branchID, uid))
 }
 
-func (g *KVGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, fmt.Errorf("get repository: %w", err)
-	}
-
-	reference, err := g.Dereference(ctx, repositoryID, ref)
+func (g *KVGraveler) CreateBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref) (*Branch, error) {
+	reference, err := g.Dereference(ctx, repository, ref)
 	if err != nil {
 		return nil, fmt.Errorf("source reference '%s': %w", ref, err)
 	}
@@ -949,7 +935,7 @@ func (g *KVGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 		return nil, fmt.Errorf("source reference '%s': %w", ref, ErrCreateBranchNoCommit)
 	}
 
-	_, err = g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	_, err = g.RefManager.GetBranch(ctx, repository, branchID)
 	if err == nil {
 		return nil, ErrBranchExists
 	}
@@ -959,17 +945,17 @@ func (g *KVGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 
 	newBranch := Branch{
 		CommitID:     reference.CommitID,
-		StagingToken: GenerateStagingToken(repositoryID, branchID),
+		StagingToken: GenerateStagingToken(repository.RepositoryID, branchID),
 		SealedTokens: make([]StagingToken, 0),
 	}
-	storageNamespace := repo.StorageNamespace
+	storageNamespace := repository.StorageNamespace
 	preRunID := g.hooks.NewRunID()
 	err = g.hooks.PreCreateBranchHook(ctx, HookRecord{
 		RunID:            preRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePreCreateBranch,
 		SourceRef:        ref,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		BranchID:         branchID,
 		CommitID:         reference.CommitID,
 	})
@@ -981,7 +967,7 @@ func (g *KVGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 		}
 	}
 
-	err = g.RefManager.CreateBranch(ctx, repositoryID, branchID, newBranch)
+	err = g.RefManager.CreateBranch(ctx, repository, branchID, newBranch)
 	if err != nil {
 		return nil, fmt.Errorf("set branch '%s' to '%v': %w", branchID, newBranch, err)
 	}
@@ -992,7 +978,7 @@ func (g *KVGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePostCreateBranch,
 		SourceRef:        ref,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		BranchID:         branchID,
 		CommitID:         reference.CommitID,
 		PreRunID:         preRunID,
@@ -1001,12 +987,8 @@ func (g *KVGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 	return &newBranch, nil
 }
 
-func (g *KVGraveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
-	repo, err := g.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	reference, err := g.Dereference(ctx, repositoryID, ref)
+func (g *KVGraveler) UpdateBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref) (*Branch, error) {
+	reference, err := g.Dereference(ctx, repository, ref)
 	if err != nil {
 		return nil, err
 	}
@@ -1014,15 +996,15 @@ func (g *KVGraveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID
 		return nil, fmt.Errorf("reference '%s': %w", ref, ErrDereferenceCommitWithStaging)
 	}
 
-	if err := g.prepareForCommitIDUpdate(ctx, repositoryID, branchID, repo); err != nil {
+	if err := g.prepareForCommitIDUpdate(ctx, repository, branchID); err != nil {
 		return nil, err
 	}
 
 	var tokensToDrop []StagingToken
 	var newBranch *Branch
-	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(currBranch *Branch) (*Branch, error) {
+	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(currBranch *Branch) (*Branch, error) {
 		// TODO(Guys) return error only on conflicts, currently returns error for any changes on staging
-		empty, err := g.isSealedEmpty(ctx, repositoryID, repo, currBranch)
+		empty, err := g.isSealedEmpty(ctx, repository, currBranch)
 		if err != nil {
 			return nil, err
 		}
@@ -1051,9 +1033,9 @@ func (g *KVGraveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID
 // before adding a new staging token. It is best to use it before changing
 // the branch HEAD as a preparation for deleting the staging area.
 // see issue #3771 for more information on the algorithm used.
-func (g *KVGraveler) prepareForCommitIDUpdate(ctx context.Context, repositoryID RepositoryID, branchID BranchID, repo *Repository) error {
-	err := g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(currBranch *Branch) (*Branch, error) {
-		empty, err := g.isStagingEmpty(ctx, repositoryID, repo, currBranch)
+func (g *KVGraveler) prepareForCommitIDUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID) error {
+	err := g.RefManager.BranchUpdate(ctx, repository, branchID, func(currBranch *Branch) (*Branch, error) {
+		empty, err := g.isStagingEmpty(ctx, repository, currBranch)
 		if err != nil {
 			return nil, err
 		}
@@ -1062,7 +1044,7 @@ func (g *KVGraveler) prepareForCommitIDUpdate(ctx context.Context, repositoryID 
 		}
 
 		currBranch.SealedTokens = append([]StagingToken{currBranch.StagingToken}, currBranch.SealedTokens...)
-		currBranch.StagingToken = GenerateStagingToken(repositoryID, branchID)
+		currBranch.StagingToken = GenerateStagingToken(repository.RepositoryID, branchID)
 		return currBranch, nil
 	})
 	if err != nil {
@@ -1074,23 +1056,19 @@ func (g *KVGraveler) prepareForCommitIDUpdate(ctx context.Context, repositoryID 
 	return nil
 }
 
-func (g *KVGraveler) GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*Branch, error) {
-	return g.RefManager.GetBranch(ctx, repositoryID, branchID)
+func (g *KVGraveler) GetBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (*Branch, error) {
+	return g.RefManager.GetBranch(ctx, repository, branchID)
 }
 
-func (g *KVGraveler) GetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) (*CommitID, error) {
-	return g.RefManager.GetTag(ctx, repositoryID, tagID)
+func (g *KVGraveler) GetTag(ctx context.Context, repository *RepositoryRecord, tagID TagID) (*CommitID, error) {
+	return g.RefManager.GetTag(ctx, repository, tagID)
 }
 
-func (g *KVGraveler) CreateTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return fmt.Errorf("get repository: %w", err)
-	}
-	storageNamespace := repo.StorageNamespace
+func (g *KVGraveler) CreateTag(ctx context.Context, repository *RepositoryRecord, tagID TagID, commitID CommitID) error {
+	storageNamespace := repository.StorageNamespace
 
 	// Check that Tag doesn't exist before running hook - Non-Atomic operation
-	_, err = g.RefManager.GetTag(ctx, repositoryID, tagID)
+	_, err := g.RefManager.GetTag(ctx, repository, tagID)
 	if err == nil {
 		return ErrTagAlreadyExists
 	}
@@ -1103,7 +1081,7 @@ func (g *KVGraveler) CreateTag(ctx context.Context, repositoryID RepositoryID, t
 		RunID:            preRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePreCreateTag,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		CommitID:         commitID,
 		SourceRef:        commitID.Ref(),
 		TagID:            tagID,
@@ -1116,7 +1094,7 @@ func (g *KVGraveler) CreateTag(ctx context.Context, repositoryID RepositoryID, t
 		}
 	}
 
-	err = g.RefManager.CreateTag(ctx, repositoryID, tagID, commitID)
+	err = g.RefManager.CreateTag(ctx, repository, tagID, commitID)
 	if err != nil {
 		return err
 	}
@@ -1126,7 +1104,7 @@ func (g *KVGraveler) CreateTag(ctx context.Context, repositoryID RepositoryID, t
 		RunID:            postRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePostCreateTag,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		CommitID:         commitID,
 		SourceRef:        commitID.Ref(),
 		TagID:            tagID,
@@ -1136,15 +1114,11 @@ func (g *KVGraveler) CreateTag(ctx context.Context, repositoryID RepositoryID, t
 	return nil
 }
 
-func (g *KVGraveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) error {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return fmt.Errorf("get repository: %w", err)
-	}
-	storageNamespace := repo.StorageNamespace
+func (g *KVGraveler) DeleteTag(ctx context.Context, repository *RepositoryRecord, tagID TagID) error {
+	storageNamespace := repository.StorageNamespace
 
 	// Sanity check that Tag exists before running hook.
-	commitID, err := g.RefManager.GetTag(ctx, repositoryID, tagID)
+	commitID, err := g.RefManager.GetTag(ctx, repository, tagID)
 	if err != nil {
 		return err
 	}
@@ -1154,7 +1128,7 @@ func (g *KVGraveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, t
 		RunID:            preRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePreDeleteTag,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		SourceRef:        commitID.Ref(),
 		CommitID:         *commitID,
 		TagID:            tagID,
@@ -1167,7 +1141,7 @@ func (g *KVGraveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, t
 		}
 	}
 
-	err = g.RefManager.DeleteTag(ctx, repositoryID, tagID)
+	err = g.RefManager.DeleteTag(ctx, repository, tagID)
 	if err != nil {
 		return err
 	}
@@ -1177,7 +1151,7 @@ func (g *KVGraveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, t
 		RunID:            postRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePostDeleteTag,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		SourceRef:        commitID.Ref(),
 		CommitID:         *commitID,
 		TagID:            tagID,
@@ -1186,55 +1160,51 @@ func (g *KVGraveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, t
 	return nil
 }
 
-func (g *KVGraveler) ListTags(ctx context.Context, repositoryID RepositoryID) (TagIterator, error) {
-	return g.RefManager.ListTags(ctx, repositoryID)
+func (g *KVGraveler) ListTags(ctx context.Context, repository *RepositoryRecord) (TagIterator, error) {
+	return g.RefManager.ListTags(ctx, repository)
 }
 
-func (g *KVGraveler) Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (*ResolvedRef, error) {
+func (g *KVGraveler) Dereference(ctx context.Context, repository *RepositoryRecord, ref Ref) (*ResolvedRef, error) {
 	rawRef, err := g.ParseRef(ref)
 	if err != nil {
 		return nil, err
 	}
-	return g.ResolveRawRef(ctx, repositoryID, rawRef)
+	return g.ResolveRawRef(ctx, repository, rawRef)
 }
 
 func (g *KVGraveler) ParseRef(ref Ref) (RawRef, error) {
 	return g.RefManager.ParseRef(ref)
 }
 
-func (g *KVGraveler) ResolveRawRef(ctx context.Context, repositoryID RepositoryID, rawRef RawRef) (*ResolvedRef, error) {
-	return g.RefManager.ResolveRawRef(ctx, repositoryID, rawRef)
+func (g *KVGraveler) ResolveRawRef(ctx context.Context, repository *RepositoryRecord, rawRef RawRef) (*ResolvedRef, error) {
+	return g.RefManager.ResolveRawRef(ctx, repository, rawRef)
 }
 
-func (g *KVGraveler) Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error) {
-	return g.RefManager.Log(ctx, repositoryID, commitID)
+func (g *KVGraveler) Log(ctx context.Context, repository *RepositoryRecord, commitID CommitID) (CommitIterator, error) {
+	return g.RefManager.Log(ctx, repository, commitID)
 }
 
-func (g *KVGraveler) ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error) {
-	return g.RefManager.ListBranches(ctx, repositoryID)
+func (g *KVGraveler) ListBranches(ctx context.Context, repository *RepositoryRecord) (BranchIterator, error) {
+	return g.RefManager.ListBranches(ctx, repository)
 }
 
-func (g *KVGraveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	if repo.DefaultBranchID == branchID {
+func (g *KVGraveler) DeleteBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID) error {
+	if repository.DefaultBranchID == branchID {
 		return ErrDeleteDefaultBranch
 	}
-	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
 	if err != nil {
 		return err
 	}
 
 	commitID := branch.CommitID
-	storageNamespace := repo.StorageNamespace
+	storageNamespace := repository.StorageNamespace
 	preRunID := g.hooks.NewRunID()
 	preHookRecord := HookRecord{
 		RunID:            preRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePreDeleteBranch,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		SourceRef:        commitID.Ref(),
 		BranchID:         branchID,
 	}
@@ -1248,7 +1218,7 @@ func (g *KVGraveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID
 	}
 
 	// Delete branch first - afterwards remove tokens
-	err = g.RefManager.DeleteBranch(ctx, repositoryID, branchID)
+	err = g.RefManager.DeleteBranch(ctx, repository, branchID)
 	if err != nil { // Don't perform post action hook if operation finished with error
 		return err
 	}
@@ -1262,7 +1232,7 @@ func (g *KVGraveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID
 		RunID:            postRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePostDeleteBranch,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		SourceRef:        commitID.Ref(),
 		BranchID:         branchID,
 		PreRunID:         preRunID,
@@ -1271,58 +1241,45 @@ func (g *KVGraveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID
 	return nil
 }
 
-func (g *KVGraveler) GetStagingToken(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*StagingToken, error) {
-	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+func (g *KVGraveler) GetStagingToken(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (*StagingToken, error) {
+	branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
 	if err != nil {
 		return nil, err
 	}
 	return &branch.StagingToken, nil
 }
 
-func (g *KVGraveler) getGarbageCollectionRules(ctx context.Context, repo *Repository) (*GarbageCollectionRules, error) {
-	return g.garbageCollectionManager.GetRules(ctx, repo.StorageNamespace)
+func (g *KVGraveler) getGarbageCollectionRules(ctx context.Context, repository *RepositoryRecord) (*GarbageCollectionRules, error) {
+	return g.garbageCollectionManager.GetRules(ctx, repository.StorageNamespace)
 }
 
-func (g *KVGraveler) GetGarbageCollectionRules(ctx context.Context, repositoryID RepositoryID) (*GarbageCollectionRules, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	return g.getGarbageCollectionRules(ctx, repo)
+func (g *KVGraveler) GetGarbageCollectionRules(ctx context.Context, repository *RepositoryRecord) (*GarbageCollectionRules, error) {
+	return g.getGarbageCollectionRules(ctx, repository)
 }
 
-func (g *KVGraveler) SetGarbageCollectionRules(ctx context.Context, repositoryID RepositoryID, rules *GarbageCollectionRules) error {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	return g.garbageCollectionManager.SaveRules(ctx, repo.StorageNamespace, rules)
+func (g *KVGraveler) SetGarbageCollectionRules(ctx context.Context, repository *RepositoryRecord, rules *GarbageCollectionRules) error {
+	return g.garbageCollectionManager.SaveRules(ctx, repository.StorageNamespace, rules)
 }
 
-func (g *KVGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositoryID RepositoryID, previousRunID string) (*GarbageCollectionRunMetadata, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, fmt.Errorf("get repository: %w", err)
-	}
-
-	rules, err := g.getGarbageCollectionRules(ctx, repo)
+func (g *KVGraveler) SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, previousRunID string) (*GarbageCollectionRunMetadata, error) {
+	rules, err := g.getGarbageCollectionRules(ctx, repository)
 	if err != nil {
 		return nil, fmt.Errorf("get gc rules: %w", err)
 	}
-	previouslyExpiredCommits, err := g.garbageCollectionManager.GetRunExpiredCommits(ctx, repo.StorageNamespace, previousRunID)
+	previouslyExpiredCommits, err := g.garbageCollectionManager.GetRunExpiredCommits(ctx, repository.StorageNamespace, previousRunID)
 	if err != nil {
 		return nil, fmt.Errorf("get expired commits from previous run: %w", err)
 	}
 
-	runID, err := g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, repo.StorageNamespace, repositoryID, rules, previouslyExpiredCommits)
+	runID, err := g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, repository, rules, previouslyExpiredCommits)
 	if err != nil {
 		return nil, fmt.Errorf("save garbage collection commits: %w", err)
 	}
-	commitsLocation, err := g.garbageCollectionManager.GetCommitsCSVLocation(runID, repo.StorageNamespace)
+	commitsLocation, err := g.garbageCollectionManager.GetCommitsCSVLocation(runID, repository.StorageNamespace)
 	if err != nil {
 		return nil, err
 	}
-	addressLocation, err := g.garbageCollectionManager.GetAddressesLocation(repo.StorageNamespace)
+	addressLocation, err := g.garbageCollectionManager.GetAddressesLocation(repository.StorageNamespace)
 	if err != nil {
 		return nil, err
 	}
@@ -1334,16 +1291,16 @@ func (g *KVGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositor
 	}, err
 }
 
-func (g *KVGraveler) GetBranchProtectionRules(ctx context.Context, repositoryID RepositoryID) (*BranchProtectionRules, error) {
-	return g.protectedBranchesManager.GetRules(ctx, repositoryID)
+func (g *KVGraveler) GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error) {
+	return g.protectedBranchesManager.GetRules(ctx, repository)
 }
 
-func (g *KVGraveler) DeleteBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string) error {
-	return g.protectedBranchesManager.Delete(ctx, repositoryID, pattern)
+func (g *KVGraveler) DeleteBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string) error {
+	return g.protectedBranchesManager.Delete(ctx, repository, pattern)
 }
 
-func (g *KVGraveler) CreateBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string, blockedActions []BranchProtectionBlockedAction) error {
-	return g.protectedBranchesManager.Add(ctx, repositoryID, pattern, blockedActions)
+func (g *KVGraveler) CreateBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string, blockedActions []BranchProtectionBlockedAction) error {
+	return g.protectedBranchesManager.Add(ctx, repository, pattern, blockedActions)
 }
 
 // getFromStagingArea returns the most updated value of a given key in a branch staging area.
@@ -1368,12 +1325,8 @@ func (g *KVGraveler) getFromStagingArea(ctx context.Context, b *Branch, key Key)
 	return nil, ErrNotFound // Key not in staging area
 }
 
-func (g *KVGraveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, key Key) (*Value, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	reference, err := g.Dereference(ctx, repositoryID, ref)
+func (g *KVGraveler) Get(ctx context.Context, repository *RepositoryRecord, ref Ref, key Key) (*Value, error) {
+	reference, err := g.Dereference(ctx, repository, ref)
 	if err != nil {
 		return nil, err
 	}
@@ -1395,15 +1348,24 @@ func (g *KVGraveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref
 
 	// If key is not found in staging area (or reference is not a branch), return the key from committed
 	commitID := reference.CommitID
-	commit, err := g.RefManager.GetCommit(ctx, repositoryID, commitID)
+	commit, err := g.RefManager.GetCommit(ctx, repository, commitID)
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.MetaRangeID, key)
+	return g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
 }
 
-func (g *KVGraveler) Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error {
-	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+func (g *KVGraveler) GetByCommitID(ctx context.Context, repository *RepositoryRecord, commitID CommitID, key Key) (*Value, error) {
+	// If key is not found in staging area (or reference is not a branch), return the key from committed
+	commit, err := g.RefManager.GetCommit(ctx, repository, commitID)
+	if err != nil {
+		return nil, err
+	}
+	return g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
+}
+
+func (g *KVGraveler) Set(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 	if err != nil {
 		return err
 	}
@@ -1422,7 +1384,7 @@ func (g *KVGraveler) Set(ctx context.Context, repositoryID RepositoryID, branchI
 		}
 
 		// check if the given key exist in the branch first
-		_, err := g.Get(ctx, repositoryID, Ref(branchID), key)
+		_, err := g.Get(ctx, repository, Ref(branchID), key)
 		if err == nil {
 			// we got a key here already!
 			return ErrPreconditionFailed
@@ -1441,18 +1403,18 @@ func (g *KVGraveler) Set(ctx context.Context, repositoryID RepositoryID, branchI
 		})
 	}
 
-	return g.safeBranchWrite(ctx, g.log.WithField("key", key).WithField("operation", "set"), repositoryID, branchID, setFunc)
+	return g.safeBranchWrite(ctx, g.log.WithField("key", key).WithField("operation", "set"), repository, branchID, setFunc)
 }
 
 // safeBranchWrite is a helper function that wraps a branch write operation with validation that the staging token
 // didn't change while writing to the branch.
-func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, repositoryID RepositoryID, branchID BranchID, stagingOperation func(branch *Branch) error) error {
+func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, repository *RepositoryRecord, branchID BranchID, stagingOperation func(branch *Branch) error) error {
 	// setTries is the number of times to repeat the set operation if the staging token changed
 	const setTries = 3
 
 	var try int
 	for try = 0; try < setTries; try++ {
-		branch, err := g.GetBranch(ctx, repositoryID, branchID)
+		branch, err := g.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return err
 		}
@@ -1464,7 +1426,7 @@ func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, re
 
 		// Checking if the token has changed.
 		// If it changed, we need to write the changes to the branch's new staging token
-		branch, err = g.GetBranch(ctx, repositoryID, branchID)
+		branch, err = g.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return err
 		}
@@ -1485,28 +1447,24 @@ func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, re
 	return nil
 }
 
-func (g *KVGraveler) Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
-	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+func (g *KVGraveler) Delete(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key) error {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 	if err != nil {
 		return err
 	}
 	if isProtected {
 		return ErrWriteToProtectedBranch
 	}
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
 
 	deleteEntry := func(branch *Branch) error {
-		commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+		commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
 		if err != nil {
 			return err
 		}
 
 		// check key in committed - do we need tombstone?
 		foundInCommitted := false
-		_, err = g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.MetaRangeID, key)
+		_, err = g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
 		if err != nil {
 			if !errors.Is(err, ErrNotFound) {
 				// unknown error
@@ -1537,7 +1495,8 @@ func (g *KVGraveler) Delete(ctx context.Context, repositoryID RepositoryID, bran
 		return ErrNotFound
 	}
 
-	return g.safeBranchWrite(ctx, g.log.WithField("key", key).WithField("operation", "delete"), repositoryID, branchID, deleteEntry)
+	return g.safeBranchWrite(ctx, g.log.WithField("key", key).WithField("operation", "delete"),
+		repository, branchID, deleteEntry)
 }
 
 // listStagingArea Returns an iterator which is an aggregation of all changes on all the branch's staging area (staging + sealed)
@@ -1592,25 +1551,21 @@ func (g *KVGraveler) sealedTokensIterator(ctx context.Context, b *Branch) (Value
 	return changes, nil
 }
 
-func (g *KVGraveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref) (ValueIterator, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	reference, err := g.Dereference(ctx, repositoryID, ref)
+func (g *KVGraveler) List(ctx context.Context, repository *RepositoryRecord, ref Ref) (ValueIterator, error) {
+	reference, err := g.Dereference(ctx, repository, ref)
 	if err != nil {
 		return nil, err
 	}
 	var metaRangeID MetaRangeID
 	if reference.CommitID != "" {
-		commit, err := g.RefManager.GetCommit(ctx, repositoryID, reference.CommitID)
+		commit, err := g.RefManager.GetCommit(ctx, repository, reference.CommitID)
 		if err != nil {
 			return nil, err
 		}
 		metaRangeID = commit.MetaRangeID
 	}
 
-	listing, err := g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
+	listing, err := g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)
 	if err != nil {
 		return nil, err
 	}
@@ -1626,29 +1581,25 @@ func (g *KVGraveler) List(ctx context.Context, repositoryID RepositoryID, ref Re
 	return listing, nil
 }
 
-func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, params CommitParams) (CommitID, error) {
+func (g *KVGraveler) Commit(ctx context.Context, repository *RepositoryRecord, branchID BranchID, params CommitParams) (CommitID, error) {
 	var preRunID string
 	var commit Commit
 	var newCommitID CommitID
 	var storageNamespace StorageNamespace
 	var sealedToDrop []StagingToken
 
-	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_COMMIT)
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_COMMIT)
 	if err != nil {
 		return "", err
 	}
 	if isProtected {
 		return "", ErrCommitToProtectedBranch
 	}
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return "", fmt.Errorf("get repository: %w", err)
-	}
-	storageNamespace = repo.StorageNamespace
+	storageNamespace = repository.StorageNamespace
 
-	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
+	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		if params.SourceMetaRange != nil {
-			empty, err := g.isStagingEmpty(ctx, repositoryID, repo, branch)
+			empty, err := g.isStagingEmpty(ctx, repository, branch)
 			if err != nil {
 				return nil, fmt.Errorf("checking empty branch: %w", err)
 			}
@@ -1657,14 +1608,14 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 			}
 		}
 		branch.SealedTokens = append([]StagingToken{branch.StagingToken}, branch.SealedTokens...)
-		branch.StagingToken = GenerateStagingToken(repositoryID, branchID)
+		branch.StagingToken = GenerateStagingToken(repository.RepositoryID, branchID)
 		return branch, nil
 	})
 	if err != nil {
 		return "", err
 	}
 
-	err = g.retryBranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
+	err = g.retryBranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		// fill commit information - use for pre-commit and after adding the commit information used by commit
 		commit = NewCommit()
 
@@ -1683,7 +1634,7 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 			RunID:            preRunID,
 			EventType:        EventTypePreCommit,
 			SourceRef:        branchID.Ref(),
-			RepositoryID:     repositoryID,
+			RepositoryID:     repository.RepositoryID,
 			StorageNamespace: storageNamespace,
 			BranchID:         branchID,
 			Commit:           commit,
@@ -1699,7 +1650,7 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		var branchMetaRangeID MetaRangeID
 		var parentGeneration int
 		if branch.CommitID != "" {
-			branchCommit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+			branchCommit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
 			if err != nil {
 				return nil, fmt.Errorf("get commit: %w", err)
 			}
@@ -1708,7 +1659,7 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		}
 		commit.Generation = parentGeneration + 1
 		if params.SourceMetaRange != nil {
-			empty, err := g.isSealedEmpty(ctx, repositoryID, repo, branch)
+			empty, err := g.isSealedEmpty(ctx, repository, branch)
 			if err != nil {
 				return nil, fmt.Errorf("checking empty sealed: %w", err)
 			}
@@ -1731,7 +1682,7 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 		sealedToDrop = branch.SealedTokens
 
 		// add commit
-		newCommitID, err = g.RefManager.AddCommit(ctx, repositoryID, commit)
+		newCommitID, err = g.RefManager.AddCommit(ctx, repository, commit)
 		if err != nil {
 			return nil, fmt.Errorf("add commit: %w", err)
 		}
@@ -1750,7 +1701,7 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 	err = g.hooks.PostCommitHook(ctx, HookRecord{
 		EventType:        EventTypePostCommit,
 		RunID:            postRunID,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		StorageNamespace: storageNamespace,
 		SourceRef:        newCommitID.Ref(),
 		BranchID:         branchID,
@@ -1767,7 +1718,7 @@ func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, bran
 	return newCommitID, nil
 }
 
-func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repositoryID RepositoryID, branchID BranchID, f BranchUpdateFunc) error {
+func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID, f BranchUpdateFunc) error {
 	const (
 		maxInterval = 5
 		setTries    = 3
@@ -1778,7 +1729,7 @@ func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repositoryID Reposit
 	try := 1
 	err := backoff.Retry(func() error {
 		// TODO(eden) issue 3586 - if the branch commit id hasn't changed, update the fields instead of fail
-		err := g.RefManager.BranchUpdate(ctx, repositoryID, branchID, f)
+		err := g.RefManager.BranchUpdate(ctx, repository, branchID, f)
 		if err != nil && !errors.Is(err, kv.ErrPredicateFailed) {
 			return backoff.Permanent(err)
 		}
@@ -1797,7 +1748,7 @@ func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repositoryID Reposit
 	return err
 }
 
-func validateCommitParent(ctx context.Context, repositoryID RepositoryID, commit Commit, manager RefManager) (CommitID, error) {
+func validateCommitParent(ctx context.Context, repository *RepositoryRecord, commit Commit, manager RefManager) (CommitID, error) {
 	if len(commit.Parents) > 1 {
 		return "", ErrMultipleParents
 	}
@@ -1806,15 +1757,15 @@ func validateCommitParent(ctx context.Context, repositoryID RepositoryID, commit
 	}
 
 	parentCommitID := commit.Parents[0]
-	_, err := manager.GetCommit(ctx, repositoryID, parentCommitID)
+	_, err := manager.GetCommit(ctx, repository, parentCommitID)
 	if err != nil {
 		return "", fmt.Errorf("get parent commit %s: %w", parentCommitID, err)
 	}
 	return parentCommitID, nil
 }
 
-func CommitExists(ctx context.Context, repositoryID RepositoryID, commitID CommitID, manager RefManager) (bool, error) {
-	_, err := manager.GetCommit(ctx, repositoryID, commitID)
+func CommitExists(ctx context.Context, repository *RepositoryRecord, commitID CommitID, manager RefManager) (bool, error) {
+	_, err := manager.GetCommit(ctx, repository, commitID)
 	if err == nil {
 		// commit already exists
 		return true, nil
@@ -1825,21 +1776,16 @@ func CommitExists(ctx context.Context, repositoryID RepositoryID, commitID Commi
 	return false, nil
 }
 
-func (g *KVGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) (CommitID, error) {
-	repo, err := g.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return "", err
-	}
-
+func (g *KVGraveler) AddCommitToBranchHead(ctx context.Context, repository *RepositoryRecord, branchID BranchID, commit Commit) (CommitID, error) {
 	// parentCommitID should always match the HEAD of the branch.
 	// Empty parentCommitID matches first commit of the branch.
-	parentCommitID, err := validateCommitParent(ctx, repositoryID, commit, g.RefManager)
+	parentCommitID, err := validateCommitParent(ctx, repository, commit, g.RefManager)
 	if err != nil {
 		return "", err
 	}
 
 	// verify access to meta range
-	ok, err := g.CommittedManager.Exists(ctx, repo.StorageNamespace, commit.MetaRangeID)
+	ok, err := g.CommittedManager.Exists(ctx, repository.StorageNamespace, commit.MetaRangeID)
 	if err != nil {
 		return "", fmt.Errorf("commit missing meta range %s: %w", commit.MetaRangeID, err)
 	}
@@ -1848,12 +1794,12 @@ func (g *KVGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID Rep
 	}
 
 	// add commit to our ref manager
-	commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
+	commitID, err := g.RefManager.AddCommit(ctx, repository, commit)
 	if err != nil {
 		return "", fmt.Errorf("adding commit: %w", err)
 	}
 
-	if err := g.prepareForCommitIDUpdate(ctx, repositoryID, branchID, repo); err != nil {
+	if err := g.prepareForCommitIDUpdate(ctx, repository, branchID); err != nil {
 		return "", err
 	}
 
@@ -1861,12 +1807,12 @@ func (g *KVGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID Rep
 	// update branch with commit after verify:
 	// 1. commit parent is the current branch head
 	// 2. branch staging is empty
-	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
+	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		if branch.CommitID != parentCommitID {
 			return nil, ErrCommitNotHeadBranch
 		}
 
-		empty, err := g.isSealedEmpty(ctx, repositoryID, repo, branch)
+		empty, err := g.isSealedEmpty(ctx, repository, branch)
 		if err != nil {
 			return nil, err
 		}
@@ -1892,25 +1838,25 @@ func (g *KVGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID Rep
 	return commitID, nil
 }
 
-func (g *KVGraveler) AddCommit(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
+func (g *KVGraveler) AddCommit(ctx context.Context, repository *RepositoryRecord, commit Commit) (CommitID, error) {
 	// at least a single parent must exists
 	if len(commit.Parents) == 0 {
 		return "", ErrAddCommitNoParent
 	}
-	_, err := validateCommitParent(ctx, repositoryID, commit, g.RefManager)
+	_, err := validateCommitParent(ctx, repository, commit, g.RefManager)
 	if err != nil {
 		return "", err
 	}
 
 	// check if commit already exists.
 	commitID := CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
-	if exists, err := CommitExists(ctx, repositoryID, commitID, g.RefManager); err != nil {
+	if exists, err := CommitExists(ctx, repository, commitID, g.RefManager); err != nil {
 		return "", err
 	} else if exists {
 		return commitID, nil
 	}
 
-	commitID, err = g.addCommitNoLock(ctx, repositoryID, commit)
+	commitID, err = g.addCommitNoLock(ctx, repository, commit)
 	if err != nil {
 		return "", fmt.Errorf("adding commit: %w", err)
 	}
@@ -1919,14 +1865,9 @@ func (g *KVGraveler) AddCommit(ctx context.Context, repositoryID RepositoryID, c
 }
 
 // addCommitNoLock lower API used to add commit into a repository. It will verify that the commit meta-range is accessible but will not lock any metadata update.
-func (g *KVGraveler) addCommitNoLock(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
-	repo, err := g.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return "", fmt.Errorf("get repository %s: %w", repositoryID, err)
-	}
-
+func (g *KVGraveler) addCommitNoLock(ctx context.Context, repository *RepositoryRecord, commit Commit) (CommitID, error) {
 	// verify access to meta range
-	ok, err := g.CommittedManager.Exists(ctx, repo.StorageNamespace, commit.MetaRangeID)
+	ok, err := g.CommittedManager.Exists(ctx, repository.StorageNamespace, commit.MetaRangeID)
 	if err != nil {
 		return "", fmt.Errorf("checking for meta range %s: %w", commit.MetaRangeID, err)
 	}
@@ -1935,14 +1876,14 @@ func (g *KVGraveler) addCommitNoLock(ctx context.Context, repositoryID Repositor
 	}
 
 	// add commit
-	commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
+	commitID, err := g.RefManager.AddCommit(ctx, repository, commit)
 	if err != nil {
 		return "", fmt.Errorf("add commit: %w", err)
 	}
 	return commitID, nil
 }
 
-func (g *KVGraveler) isStagingEmpty(ctx context.Context, repositoryID RepositoryID, repo *Repository, branch *Branch) (bool, error) {
+func (g *KVGraveler) isStagingEmpty(ctx context.Context, repository *RepositoryRecord, branch *Branch) (bool, error) {
 	itr, err := g.listStagingArea(ctx, branch)
 	if err != nil {
 		return false, err
@@ -1950,17 +1891,17 @@ func (g *KVGraveler) isStagingEmpty(ctx context.Context, repositoryID Repository
 	defer itr.Close()
 
 	// Iterating over staging area (staging + sealed) of the branch and check for entries
-	return g.checkEmpty(ctx, repositoryID, repo, branch, itr)
+	return g.checkEmpty(ctx, repository, branch, itr)
 }
 
 // checkEmpty - staging iterator is not considered empty IFF it contains any non-tombstone entry
 // or a tombstone entry exists for a key which is already committed
-func (g *KVGraveler) checkEmpty(ctx context.Context, repositoryID RepositoryID, repo *Repository, branch *Branch, changesIt ValueIterator) (bool, error) {
-	commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+func (g *KVGraveler) checkEmpty(ctx context.Context, repository *RepositoryRecord, branch *Branch, changesIt ValueIterator) (bool, error) {
+	commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
 	if err != nil {
 		return false, err
 	}
-	committedList, err := g.CommittedManager.List(ctx, repo.StorageNamespace, commit.MetaRangeID)
+	committedList, err := g.CommittedManager.List(ctx, repository.StorageNamespace, commit.MetaRangeID)
 	if err != nil {
 		return false, err
 	}
@@ -1971,7 +1912,7 @@ func (g *KVGraveler) checkEmpty(ctx context.Context, repositoryID RepositoryID, 
 	return !diffIt.Next(), nil
 }
 
-func (g *KVGraveler) isSealedEmpty(ctx context.Context, repositoryID RepositoryID, repo *Repository, branch *Branch) (bool, error) {
+func (g *KVGraveler) isSealedEmpty(ctx context.Context, repository *RepositoryRecord, branch *Branch) (bool, error) {
 	if len(branch.SealedTokens) == 0 {
 		return true, nil
 	}
@@ -1980,7 +1921,7 @@ func (g *KVGraveler) isSealedEmpty(ctx context.Context, repositoryID RepositoryI
 		return false, err
 	}
 	defer itrs.Close()
-	return g.checkEmpty(ctx, repositoryID, repo, branch, itrs)
+	return g.checkEmpty(ctx, repository, branch, itrs)
 }
 
 // dropTokens deletes all staging area entries of a given branch from store
@@ -1993,8 +1934,8 @@ func (g *KVGraveler) dropTokens(ctx context.Context, tokens ...StagingToken) {
 	}
 }
 
-func (g *KVGraveler) Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
-	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+func (g *KVGraveler) Reset(ctx context.Context, repository *RepositoryRecord, branchID BranchID) error {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 	if err != nil {
 		return err
 	}
@@ -2002,13 +1943,13 @@ func (g *KVGraveler) Reset(ctx context.Context, repositoryID RepositoryID, branc
 		return ErrWriteToProtectedBranch
 	}
 	tokensToDrop := make([]StagingToken, 0)
-	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
+	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		// Save current branch tokens for drop
 		tokensToDrop = append(tokensToDrop, branch.StagingToken)
 		tokensToDrop = append(tokensToDrop, branch.SealedTokens...)
 
 		// Zero tokens and try to set branch
-		branch.StagingToken = GenerateStagingToken(repositoryID, branchID)
+		branch.StagingToken = GenerateStagingToken(repository.RepositoryID, branchID)
 		branch.SealedTokens = make([]StagingToken, 0)
 		return branch, nil
 	})
@@ -2023,9 +1964,9 @@ func (g *KVGraveler) Reset(ctx context.Context, repositoryID RepositoryID, branc
 // resetKey resets given key on branch
 // Since we cannot (will not) modify sealed tokens data, we overwrite changes done on entry on a new staging token, effectively reverting it
 // to the current state in the branch committed data. If entry is not committed return an error
-func (g *KVGraveler) resetKey(ctx context.Context, repositoryID RepositoryID, branch *Branch, key Key, stagedValue *Value, st StagingToken) error {
+func (g *KVGraveler) resetKey(ctx context.Context, repository *RepositoryRecord, branch *Branch, key Key, stagedValue *Value, st StagingToken) error {
 	isCommitted := true
-	committed, err := g.Get(ctx, repositoryID, branch.CommitID.Ref(), key)
+	committed, err := g.Get(ctx, repository, branch.CommitID.Ref(), key)
 	if err != nil {
 		if !errors.Is(err, ErrNotFound) {
 			return err
@@ -2047,8 +1988,8 @@ func (g *KVGraveler) resetKey(ctx context.Context, repositoryID RepositoryID, br
 	return nil
 }
 
-func (g *KVGraveler) ResetKey(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
-	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+func (g *KVGraveler) ResetKey(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key) error {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 	if err != nil {
 		return err
 	}
@@ -2056,7 +1997,7 @@ func (g *KVGraveler) ResetKey(ctx context.Context, repositoryID RepositoryID, br
 		return ErrWriteToProtectedBranch
 	}
 
-	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
 	if err != nil {
 		return fmt.Errorf("getting branch: %w", err)
 	}
@@ -2069,7 +2010,7 @@ func (g *KVGraveler) ResetKey(ctx context.Context, repositoryID RepositoryID, br
 		return err
 	}
 
-	err = g.resetKey(ctx, repositoryID, branch, key, staged, branch.StagingToken)
+	err = g.resetKey(ctx, repository, branch, key, staged, branch.StagingToken)
 	if err != nil {
 		if !errors.Is(err, ErrNotFound) { // Not found in staging => ignore
 			return err
@@ -2083,8 +2024,8 @@ func (g *KVGraveler) ResetKey(ctx context.Context, repositoryID RepositoryID, br
 	return nil
 }
 
-func (g *KVGraveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
-	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+func (g *KVGraveler) ResetPrefix(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key) error {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 	if err != nil {
 		return err
 	}
@@ -2093,9 +2034,9 @@ func (g *KVGraveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID,
 	}
 	// New sealed tokens list after change includes current staging token
 	newSealedTokens := make([]StagingToken, 0)
-	newStagingToken := GenerateStagingToken(repositoryID, branchID)
+	newStagingToken := GenerateStagingToken(repository.RepositoryID, branchID)
 
-	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
+	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		newSealedTokens = []StagingToken{branch.StagingToken}
 		newSealedTokens = append(newSealedTokens, branch.SealedTokens...)
 
@@ -2113,7 +2054,7 @@ func (g *KVGraveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID,
 				break
 			}
 			wg.Go(func() error {
-				err = g.resetKey(ctx, repositoryID, branch, value.Key, value.Value, newStagingToken)
+				err = g.resetKey(ctx, repository, branch, value.Key, value.Value, newStagingToken)
 				if err != nil {
 					return err
 				}
@@ -2147,8 +2088,8 @@ type CommitIDAndSummary struct {
 // To revert C2, we merge C1 into the branch, with C2 as the merge base.
 // That is, try to apply the diff from C2 to C1 on the tip of the branch.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the revert is done.
-func (g *KVGraveler) Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, error) {
-	commitRecord, err := g.dereferenceCommit(ctx, repositoryID, ref)
+func (g *KVGraveler) Revert(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, error) {
+	commitRecord, err := g.dereferenceCommit(ctx, repository, ref)
 	if err != nil {
 		return "", fmt.Errorf("get commit from ref %s: %w", ref, err)
 	}
@@ -2164,37 +2105,33 @@ func (g *KVGraveler) Revert(ctx context.Context, repositoryID RepositoryID, bran
 		parentNumber--
 	}
 
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return "", fmt.Errorf("get repo %s: %w", repositoryID, err)
-	}
-
-	if err := g.prepareForCommitIDUpdate(ctx, repositoryID, branchID, repo); err != nil {
+	if err := g.prepareForCommitIDUpdate(ctx, repository, branchID); err != nil {
 		return "", err
 	}
 
 	var commitID CommitID
 	var tokensToDrop []StagingToken
-	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, func(branch *Branch) (*Branch, error) {
-		if empty, err := g.isSealedEmpty(ctx, repositoryID, repo, branch); err != nil {
+	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
+		if empty, err := g.isSealedEmpty(ctx, repository, branch); err != nil {
 			return nil, err
 		} else if !empty {
 			return nil, fmt.Errorf("%s: %w", branchID, ErrDirtyBranch)
 		}
 		var parentMetaRangeID MetaRangeID
 		if len(commitRecord.Parents) > 0 {
-			parentCommit, err := g.dereferenceCommit(ctx, repositoryID, commitRecord.Parents[parentNumber].Ref())
+			parentCommit, err := g.dereferenceCommit(ctx, repository, commitRecord.Parents[parentNumber].Ref())
 			if err != nil {
 				return nil, fmt.Errorf("get commit from ref %s: %w", commitRecord.Parents[parentNumber], err)
 			}
 			parentMetaRangeID = parentCommit.MetaRangeID
 		}
-		branchCommit, err := g.dereferenceCommit(ctx, repositoryID, branch.CommitID.Ref())
+		branchCommit, err := g.dereferenceCommit(ctx, repository, branch.CommitID.Ref())
 		if err != nil {
 			return nil, fmt.Errorf("get commit from ref %s: %w", branch.CommitID, err)
 		}
 		// merge from the parent to the top of the branch, with the given ref as the merge base:
-		metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID, MergeStrategyNone)
+		metaRangeID, err := g.CommittedManager.Merge(ctx, repository.StorageNamespace, branchCommit.MetaRangeID,
+			parentMetaRangeID, commitRecord.MetaRangeID, MergeStrategyNone)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge: %w", err)
@@ -2208,7 +2145,7 @@ func (g *KVGraveler) Revert(ctx context.Context, repositoryID RepositoryID, bran
 		commit.Parents = []CommitID{branch.CommitID}
 		commit.Metadata = commitParams.Metadata
 		commit.Generation = branchCommit.Generation + 1
-		commitID, err = g.RefManager.AddCommit(ctx, repositoryID, commit)
+		commitID, err = g.RefManager.AddCommit(ctx, repository, commit)
 		if err != nil {
 			return nil, fmt.Errorf("add commit: %w", err)
 		}
@@ -2226,21 +2163,15 @@ func (g *KVGraveler) Revert(ctx context.Context, repositoryID RepositoryID, bran
 	return commitID, nil
 }
 
-func (g *KVGraveler) Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error) {
+func (g *KVGraveler) Merge(ctx context.Context, repository *RepositoryRecord, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error) {
 	var (
-		preRunID         string
-		storageNamespace StorageNamespace
-		commit           Commit
-		commitID         CommitID
+		preRunID string
+		commit   Commit
+		commitID CommitID
 	)
 
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return "", err
-	}
-	storageNamespace = repo.StorageNamespace
-
-	if err := g.prepareForCommitIDUpdate(ctx, repositoryID, destination, repo); err != nil {
+	storageNamespace := repository.StorageNamespace
+	if err := g.prepareForCommitIDUpdate(ctx, repository, destination); err != nil {
 		return "", err
 	}
 
@@ -2248,15 +2179,15 @@ func (g *KVGraveler) Merge(ctx context.Context, repositoryID RepositoryID, desti
 	// No retries on any failure during the merge. If the branch changed, it's either that commit is in progress, commit occurred,
 	// or some other branch changing operation. If commit is in-progress, then staging area wasn't empty after we checked so not retrying is ok.
 	// If another commit/merge succeeded, then the user should decide whether to retry the merge.
-	err = g.RefManager.BranchUpdate(ctx, repositoryID, destination, func(branch *Branch) (*Branch, error) {
-		empty, err := g.isSealedEmpty(ctx, repositoryID, repo, branch)
+	err := g.RefManager.BranchUpdate(ctx, repository, destination, func(branch *Branch) (*Branch, error) {
+		empty, err := g.isSealedEmpty(ctx, repository, branch)
 		if err != nil {
 			return nil, fmt.Errorf("check if staging empty: %w", err)
 		}
 		if !empty {
 			return nil, fmt.Errorf("%s: %w", destination, ErrDirtyBranch)
 		}
-		fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, source, Ref(destination))
+		fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repository, source, Ref(destination))
 		if err != nil {
 			return nil, err
 		}
@@ -2297,7 +2228,7 @@ func (g *KVGraveler) Merge(ctx context.Context, repositoryID RepositoryID, desti
 		err = g.hooks.PreMergeHook(ctx, HookRecord{
 			EventType:        EventTypePreMerge,
 			RunID:            preRunID,
-			RepositoryID:     repositoryID,
+			RepositoryID:     repository.RepositoryID,
 			StorageNamespace: storageNamespace,
 			BranchID:         destination,
 			SourceRef:        fromCommit.CommitID.Ref(),
@@ -2310,7 +2241,7 @@ func (g *KVGraveler) Merge(ctx context.Context, repositoryID RepositoryID, desti
 				Err:       err,
 			}
 		}
-		commitID, err = g.RefManager.AddCommit(ctx, repositoryID, commit)
+		commitID, err = g.RefManager.AddCommit(ctx, repository, commit)
 		if err != nil {
 			return nil, fmt.Errorf("add commit: %w", err)
 		}
@@ -2329,7 +2260,7 @@ func (g *KVGraveler) Merge(ctx context.Context, repositoryID RepositoryID, desti
 	err = g.hooks.PostMergeHook(ctx, HookRecord{
 		EventType:        EventTypePostMerge,
 		RunID:            postRunID,
-		RepositoryID:     repositoryID,
+		RepositoryID:     repository.RepositoryID,
 		StorageNamespace: storageNamespace,
 		BranchID:         destination,
 		SourceRef:        commitID.Ref(),
@@ -2348,18 +2279,14 @@ func (g *KVGraveler) Merge(ctx context.Context, repositoryID RepositoryID, desti
 }
 
 // DiffUncommitted returns DiffIterator between committed data and staging area of a branch
-func (g *KVGraveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+func (g *KVGraveler) DiffUncommitted(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (DiffIterator, error) {
+	branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
 	if err != nil {
 		return nil, err
 	}
 	var metaRangeID MetaRangeID
 	if branch.CommitID != "" {
-		commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+		commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
 		if err != nil {
 			return nil, err
 		}
@@ -2372,7 +2299,7 @@ func (g *KVGraveler) DiffUncommitted(ctx context.Context, repositoryID Repositor
 	}
 	var committedValueIterator ValueIterator
 	if metaRangeID != "" {
-		committedValueIterator, err = g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
+		committedValueIterator, err = g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)
 		if err != nil {
 			valueIterator.Close()
 			return nil, err
@@ -2383,15 +2310,15 @@ func (g *KVGraveler) DiffUncommitted(ctx context.Context, repositoryID Repositor
 
 // dereferenceCommit will dereference and load the commit record based on 'ref'.
 //   will return an error if 'ref' points to an explicit staging area
-func (g *KVGraveler) dereferenceCommit(ctx context.Context, repositoryID RepositoryID, ref Ref) (*CommitRecord, error) {
-	reference, err := g.Dereference(ctx, repositoryID, ref)
+func (g *KVGraveler) dereferenceCommit(ctx context.Context, repository *RepositoryRecord, ref Ref) (*CommitRecord, error) {
+	reference, err := g.Dereference(ctx, repository, ref)
 	if err != nil {
 		return nil, err
 	}
 	if reference.ResolvedBranchModifier == ResolvedBranchModifierStaging {
 		return nil, fmt.Errorf("reference '%s': %w", ref, ErrDereferenceCommitWithStaging)
 	}
-	commit, err := g.RefManager.GetCommit(ctx, repositoryID, reference.CommitID)
+	commit, err := g.RefManager.GetCommit(ctx, repository, reference.CommitID)
 	if err != nil {
 		return nil, err
 	}
@@ -2401,36 +2328,32 @@ func (g *KVGraveler) dereferenceCommit(ctx context.Context, repositoryID Reposit
 	}, nil
 }
 
-func (g *KVGraveler) Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+func (g *KVGraveler) Diff(ctx context.Context, repository *RepositoryRecord, left, right Ref) (DiffIterator, error) {
+	leftCommit, err := g.dereferenceCommit(ctx, repository, left)
 	if err != nil {
 		return nil, err
 	}
-	leftCommit, err := g.dereferenceCommit(ctx, repositoryID, left)
+	rightRawRef, err := g.Dereference(ctx, repository, right)
 	if err != nil {
 		return nil, err
 	}
-	rightRawRef, err := g.Dereference(ctx, repositoryID, right)
+	rightCommit, err := g.RefManager.GetCommit(ctx, repository, rightRawRef.CommitID)
 	if err != nil {
 		return nil, err
 	}
-	rightCommit, err := g.RefManager.GetCommit(ctx, repositoryID, rightRawRef.CommitID)
-	if err != nil {
-		return nil, err
-	}
-	diff, err := g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.MetaRangeID, rightCommit.MetaRangeID)
+	diff, err := g.CommittedManager.Diff(ctx, repository.StorageNamespace, leftCommit.MetaRangeID, rightCommit.MetaRangeID)
 	if err != nil {
 		return nil, err
 	}
 	if rightRawRef.ResolvedBranchModifier != ResolvedBranchModifierStaging {
 		return diff, nil
 	}
-	leftValueIterator, err := g.CommittedManager.List(ctx, repo.StorageNamespace, leftCommit.MetaRangeID)
+	leftValueIterator, err := g.CommittedManager.List(ctx, repository.StorageNamespace, leftCommit.MetaRangeID)
 	if err != nil {
 		return nil, err
 	}
 
-	rightBranch, err := g.RefManager.GetBranch(ctx, repositoryID, rightRawRef.BranchID)
+	rightBranch, err := g.RefManager.GetBranch(ctx, repository, rightRawRef.BranchID)
 	if err != nil {
 		leftValueIterator.Close()
 		return nil, err
@@ -2443,16 +2366,16 @@ func (g *KVGraveler) Diff(ctx context.Context, repositoryID RepositoryID, left, 
 	return NewCombinedDiffIterator(diff, leftValueIterator, stagingIterator), nil
 }
 
-func (g *KVGraveler) getCommitsForMerge(ctx context.Context, repositoryID RepositoryID, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
-	fromCommit, err := g.dereferenceCommit(ctx, repositoryID, from)
+func (g *KVGraveler) getCommitsForMerge(ctx context.Context, repository *RepositoryRecord, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
+	fromCommit, err := g.dereferenceCommit(ctx, repository, from)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("get commit by ref %s: %w", from, err)
 	}
-	toCommit, err := g.dereferenceCommit(ctx, repositoryID, to)
+	toCommit, err := g.dereferenceCommit(ctx, repository, to)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("get commit by branch %s: %w", to, err)
 	}
-	baseCommit, err := g.RefManager.FindMergeBase(ctx, repositoryID, fromCommit.CommitID, toCommit.CommitID)
+	baseCommit, err := g.RefManager.FindMergeBase(ctx, repository, fromCommit.CommitID, toCommit.CommitID)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("find merge base: %w", err)
 	}
@@ -2462,16 +2385,12 @@ func (g *KVGraveler) getCommitsForMerge(ctx context.Context, repositoryID Reposi
 	return fromCommit, toCommit, baseCommit, nil
 }
 
-func (g *KVGraveler) Compare(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+func (g *KVGraveler) Compare(ctx context.Context, repository *RepositoryRecord, left, right Ref) (DiffIterator, error) {
+	fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repository, right, left)
 	if err != nil {
 		return nil, err
 	}
-	fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, right, left)
-	if err != nil {
-		return nil, err
-	}
-	return g.CommittedManager.Compare(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
+	return g.CommittedManager.Compare(ctx, repository.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
 }
 
 func (g *KVGraveler) SetHooksHandler(handler HooksHandler) {
@@ -2482,12 +2401,8 @@ func (g *KVGraveler) SetHooksHandler(handler HooksHandler) {
 	}
 }
 
-func (g *KVGraveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error {
-	repo, err := g.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	iter, err := g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
+func (g *KVGraveler) LoadCommits(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) error {
+	iter, err := g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)
 	if err != nil {
 		return err
 	}
@@ -2506,7 +2421,7 @@ func (g *KVGraveler) LoadCommits(ctx context.Context, repositoryID RepositoryID,
 		if commit.GetGeneration() == 0 {
 			return fmt.Errorf("dumps created by lakeFS versions before v0.61.0 are no longer supported: %w", ErrNoCommitGeneration)
 		}
-		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
+		commitID, err := g.RefManager.AddCommit(ctx, repository, Commit{
 			Version:      CommitVersion(commit.Version),
 			Committer:    commit.GetCommitter(),
 			Message:      commit.GetMessage(),
@@ -2530,12 +2445,8 @@ func (g *KVGraveler) LoadCommits(ctx context.Context, repositoryID RepositoryID,
 	return nil
 }
 
-func (g *KVGraveler) LoadBranches(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error {
-	repo, err := g.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	iter, err := g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
+func (g *KVGraveler) LoadBranches(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) error {
+	iter, err := g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)
 	if err != nil {
 		return err
 	}
@@ -2548,9 +2459,9 @@ func (g *KVGraveler) LoadBranches(ctx context.Context, repositoryID RepositoryID
 			return err
 		}
 		branchID := BranchID(branch.Id)
-		err = g.RefManager.SetBranch(ctx, repositoryID, branchID, Branch{
+		err = g.RefManager.SetBranch(ctx, repository, branchID, Branch{
 			CommitID:     CommitID(branch.CommitId),
-			StagingToken: GenerateStagingToken(repositoryID, branchID),
+			StagingToken: GenerateStagingToken(repository.RepositoryID, branchID),
 			SealedTokens: make([]StagingToken, 0),
 		})
 		if err != nil {
@@ -2563,12 +2474,8 @@ func (g *KVGraveler) LoadBranches(ctx context.Context, repositoryID RepositoryID
 	return nil
 }
 
-func (g *KVGraveler) LoadTags(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error {
-	repo, err := g.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	iter, err := g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
+func (g *KVGraveler) LoadTags(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) error {
+	iter, err := g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)
 	if err != nil {
 		return err
 	}
@@ -2581,7 +2488,7 @@ func (g *KVGraveler) LoadTags(ctx context.Context, repositoryID RepositoryID, me
 			return err
 		}
 		tagID := TagID(tag.Id)
-		err = g.RefManager.CreateTag(ctx, repositoryID, tagID, CommitID(tag.CommitId))
+		err = g.RefManager.CreateTag(ctx, repository, tagID, CommitID(tag.CommitId))
 		if err != nil {
 			return err
 		}
@@ -2589,28 +2496,16 @@ func (g *KVGraveler) LoadTags(ctx context.Context, repositoryID RepositoryID, me
 	return iter.Err()
 }
 
-func (g *KVGraveler) GetMetaRange(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) (MetaRangeAddress, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return "", nil
-	}
-	return g.CommittedManager.GetMetaRange(ctx, repo.StorageNamespace, metaRangeID)
+func (g *KVGraveler) GetMetaRange(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) (MetaRangeAddress, error) {
+	return g.CommittedManager.GetMetaRange(ctx, repository.StorageNamespace, metaRangeID)
 }
 
-func (g *KVGraveler) GetRange(ctx context.Context, repositoryID RepositoryID, rangeID RangeID) (RangeAddress, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return "", nil
-	}
-	return g.CommittedManager.GetRange(ctx, repo.StorageNamespace, rangeID)
+func (g *KVGraveler) GetRange(ctx context.Context, repository *RepositoryRecord, rangeID RangeID) (RangeAddress, error) {
+	return g.CommittedManager.GetRange(ctx, repository.StorageNamespace, rangeID)
 }
 
-func (g *KVGraveler) DumpCommits(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error) {
-	repo, err := g.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	iter, err := g.RefManager.ListCommits(ctx, repositoryID)
+func (g *KVGraveler) DumpCommits(ctx context.Context, repository *RepositoryRecord) (*MetaRangeID, error) {
+	iter, err := g.RefManager.ListCommits(ctx, repository)
 	if err != nil {
 		return nil, err
 	}
@@ -2619,7 +2514,7 @@ func (g *KVGraveler) DumpCommits(ctx context.Context, repositoryID RepositoryID)
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repo.StorageNamespace,
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageNamespace,
 		commitsToValueIterator(iter),
 		Metadata{
 			EntityTypeKey:             EntityTypeCommit,
@@ -2629,12 +2524,8 @@ func (g *KVGraveler) DumpCommits(ctx context.Context, repositoryID RepositoryID)
 	)
 }
 
-func (g *KVGraveler) DumpBranches(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error) {
-	repo, err := g.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	iter, err := g.RefManager.ListBranches(ctx, repositoryID)
+func (g *KVGraveler) DumpBranches(ctx context.Context, repository *RepositoryRecord) (*MetaRangeID, error) {
+	iter, err := g.RefManager.ListBranches(ctx, repository)
 	if err != nil {
 		return nil, err
 	}
@@ -2643,7 +2534,7 @@ func (g *KVGraveler) DumpBranches(ctx context.Context, repositoryID RepositoryID
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repo.StorageNamespace,
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageNamespace,
 		branchesToValueIterator(iter),
 		Metadata{
 			EntityTypeKey:             EntityTypeBranch,
@@ -2653,12 +2544,8 @@ func (g *KVGraveler) DumpBranches(ctx context.Context, repositoryID RepositoryID
 	)
 }
 
-func (g *KVGraveler) DumpTags(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error) {
-	repo, err := g.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	iter, err := g.RefManager.ListTags(ctx, repositoryID)
+func (g *KVGraveler) DumpTags(ctx context.Context, repository *RepositoryRecord) (*MetaRangeID, error) {
+	iter, err := g.RefManager.ListTags(ctx, repository)
 	if err != nil {
 		return nil, err
 	}
@@ -2667,7 +2554,7 @@ func (g *KVGraveler) DumpTags(ctx context.Context, repositoryID RepositoryID) (*
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repo.StorageNamespace,
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageNamespace,
 		tagsToValueIterator(iter),
 		Metadata{
 			EntityTypeKey:             EntityTypeTag,
@@ -2877,7 +2764,7 @@ type GarbageCollectionManager interface {
 	GetRules(ctx context.Context, storageNamespace StorageNamespace) (*GarbageCollectionRules, error)
 	SaveRules(ctx context.Context, storageNamespace StorageNamespace, rules *GarbageCollectionRules) error
 
-	SaveGarbageCollectionCommits(ctx context.Context, storageNamespace StorageNamespace, repositoryID RepositoryID, rules *GarbageCollectionRules, previouslyExpiredCommits []CommitID) (string, error)
+	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, rules *GarbageCollectionRules, previouslyExpiredCommits []CommitID) (string, error)
 	GetRunExpiredCommits(ctx context.Context, storageNamespace StorageNamespace, runID string) ([]CommitID, error)
 	GetCommitsCSVLocation(runID string, sn StorageNamespace) (string, error)
 	GetAddressesLocation(sn StorageNamespace) (string, error)
@@ -2886,15 +2773,15 @@ type GarbageCollectionManager interface {
 type ProtectedBranchesManager interface {
 	// Add creates a rule for the given name pattern, blocking the given actions.
 	// Returns ErrRuleAlreadyExists if there is already a rule for the given pattern.
-	Add(ctx context.Context, repositoryID RepositoryID, branchNamePattern string, blockedActions []BranchProtectionBlockedAction) error
+	Add(ctx context.Context, repository *RepositoryRecord, branchNamePattern string, blockedActions []BranchProtectionBlockedAction) error
 	// Delete deletes the rule for the given name pattern, or returns ErrRuleNotExists if there is no such rule.
-	Delete(ctx context.Context, repositoryID RepositoryID, branchNamePattern string) error
+	Delete(ctx context.Context, repository *RepositoryRecord, branchNamePattern string) error
 	// Get returns the list of blocked actions for the given name pattern, or nil if no rule was defined for the pattern.
-	Get(ctx context.Context, repositoryID RepositoryID, branchNamePattern string) ([]BranchProtectionBlockedAction, error)
+	Get(ctx context.Context, repository *RepositoryRecord, branchNamePattern string) ([]BranchProtectionBlockedAction, error)
 	// GetRules returns all branch protection rules for the repository
-	GetRules(ctx context.Context, repositoryID RepositoryID) (*BranchProtectionRules, error)
+	GetRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error)
 	// IsBlocked returns whether the action is blocked by any branch protection rule matching the given branch.
-	IsBlocked(ctx context.Context, repositoryID RepositoryID, branchID BranchID, action BranchProtectionBlockedAction) (bool, error)
+	IsBlocked(ctx context.Context, repository *RepositoryRecord, branchID BranchID, action BranchProtectionBlockedAction) (bool, error)
 }
 
 // NewRepoInstanceID Returns a new unique identifier for the repository instance

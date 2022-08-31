@@ -9,8 +9,14 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.{Callable, ExecutorService, Executors}
 import scala.util.Random
 import scala.collection.JavaConverters._
-import org.apache.spark._
 import org.rogach.scallop._
+import io.treeverse.clients.LakeFSContext.{
+  LAKEFS_CONF_API_ACCESS_KEY_KEY,
+  LAKEFS_CONF_API_SECRET_KEY_KEY,
+  LAKEFS_CONF_API_URL_KEY,
+  LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY,
+  LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY
+}
 
 class Exporter(
     spark: SparkSession,
@@ -176,16 +182,20 @@ object Main {
     val spark = SparkSession.builder().getOrCreate()
     val sc = spark.sparkContext
 
-    val endpoint = sc.hadoopConfiguration.get("lakefs.api.url")
-    val accessKey = sc.hadoopConfiguration.get("lakefs.api.access_key")
-    val secretKey = sc.hadoopConfiguration.get("lakefs.api.secret_key")
+    val endpoint = sc.hadoopConfiguration.get(LAKEFS_CONF_API_URL_KEY)
+    val accessKey = sc.hadoopConfiguration.get(LAKEFS_CONF_API_ACCESS_KEY_KEY)
+    val secretKey = sc.hadoopConfiguration.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
+    val connectionTimeout = sc.hadoopConfiguration.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY)
+    val readTimeout = sc.hadoopConfiguration.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY)
 
     val rawLocation = conf.rootLocation()
     val s3Prefix = "s3://"
     val rootLocation =
       if (rawLocation.startsWith(s3Prefix)) "s3a://" + rawLocation.substring(s3Prefix.length)
       else rawLocation
-    val apiClient = new ApiClient(endpoint, accessKey, secretKey)
+    val apiClient = ApiClient.get(
+      APIConfigurations(endpoint, accessKey, secretKey, connectionTimeout, readTimeout)
+    )
     val exporter = new Exporter(spark, apiClient, conf.repo(), rootLocation)
 
     if (conf.commit_id.isSupplied) {

@@ -70,56 +70,48 @@ func onBlock(deps *dependencies, path string) string {
 	return fmt.Sprintf("%s://%s", deps.blocks.BlockstoreType(), path)
 }
 
-var tests = map[string]func(*testing.T, bool){
-	"ListRepositoriesHandler":          testController_ListRepositoriesHandler,
-	"GetRepoHandler":                   testController_GetRepoHandler,
-	"CommitsGetBranchCommitLogHandler": testController_CommitsGetBranchCommitLogHandler,
-	"CommitsGetBranchCommitLogByPath":  testController_CommitsGetBranchCommitLogByPath,
-	"GetCommitHandler":                 testController_GetCommitHandler,
-	"CommitHandler":                    testController_CommitHandler,
-	"CreateRepositoryHandler":          testController_CreateRepositoryHandler,
-	"DeleteRepositoryHandler":          testController_DeleteRepositoryHandler,
-	"ListBranchesHandler":              testController_ListBranchesHandler,
-	"ListTagsHandler":                  testController_ListTagsHandler,
-	"GetBranchHandler":                 testController_GetBranchHandler,
-	"BranchesDiffBranchHandler":        testController_BranchesDiffBranchHandler,
-	"CreateBranchHandler":              testController_CreateBranchHandler,
-	"UploadObject":                     testController_UploadObject,
-	"DeleteBranchHandler":              testController_DeleteBranchHandler,
-	"IngestRangeHandler":               testController_IngestRangeHandler,
-	"WriteMetaRangeHandler":            testController_WriteMetaRangeHandler,
-	"ObjectsStatObjectHandler":         testController_ObjectsStatObjectHandler,
-	"ObjectsListObjectsHandler":        testController_ObjectsListObjectsHandler,
-	"ObjectsGetObjectHandler":          testController_ObjectsGetObjectHandler,
-	"ObjectsUploadObjectHandler":       testController_ObjectsUploadObjectHandler,
-	"ObjectsStageObjectHandler":        testController_ObjectsStageObjectHandler,
-	"ObjectsDeleteObjectHandler":       testController_ObjectsDeleteObjectHandler,
-	"CreatePolicyHandler":              testController_CreatePolicyHandler,
-	"ConfigHandlers":                   testController_ConfigHandlers,
-	"SetupLakeFSHandler":               testController_SetupLakeFSHandler,
-	"ListRepositoryRuns":               testController_ListRepositoryRuns,
-	"MergeDiffWithParent":              testController_MergeDiffWithParent,
-	"MergeIntoExplicitBranch":          testController_MergeIntoExplicitBranch,
-	"CreateTag":                        testController_CreateTag,
-	"Revert":                           testController_Revert,
-	"RevertConflict":                   testController_RevertConflict,
-	"ExpandTemplate":                   testController_ExpandTemplate,
+func testControllerWithKV(t *testing.T, kvEnabled bool) {
+	testController_ListRepositoriesHandler(t, kvEnabled)
+	testController_GetRepoHandler(t, kvEnabled)
+	testController_LogCommitsHandler(t, kvEnabled)
+	testController_CommitsGetBranchCommitLogByPath(t, kvEnabled)
+	testController_GetCommitHandler(t, kvEnabled)
+	testController_CommitHandler(t, kvEnabled)
+	testController_CreateRepositoryHandler(t, kvEnabled)
+	testController_DeleteRepositoryHandler(t, kvEnabled)
+	testController_ListBranchesHandler(t, kvEnabled)
+	testController_ListTagsHandler(t, kvEnabled)
+	testController_GetBranchHandler(t, kvEnabled)
+	testController_BranchesDiffBranchHandler(t, kvEnabled)
+	testController_CreateBranchHandler(t, kvEnabled)
+	testController_UploadObject(t, kvEnabled)
+	testController_DeleteBranchHandler(t, kvEnabled)
+	testController_IngestRangeHandler(t, kvEnabled)
+	testController_WriteMetaRangeHandler(t, kvEnabled)
+	testController_ObjectsStatObjectHandler(t, kvEnabled)
+	testController_ObjectsListObjectsHandler(t, kvEnabled)
+	testController_ObjectsGetObjectHandler(t, kvEnabled)
+	testController_ObjectsUploadObjectHandler(t, kvEnabled)
+	testController_ObjectsStageObjectHandler(t, kvEnabled)
+	testController_ObjectsDeleteObjectHandler(t, kvEnabled)
+	testController_CreatePolicyHandler(t, kvEnabled)
+	testController_ConfigHandlers(t, kvEnabled)
+	testController_SetupLakeFSHandler(t, kvEnabled)
+	testController_ListRepositoryRuns(t, kvEnabled)
+	testController_MergeDiffWithParent(t, kvEnabled)
+	testController_MergeIntoExplicitBranch(t, kvEnabled)
+	testController_CreateTag(t, kvEnabled)
+	testController_Revert(t, kvEnabled)
+	testController_RevertConflict(t, kvEnabled)
+	testController_ExpandTemplate(t, kvEnabled)
 }
 
 func TestKVEnabled(t *testing.T) {
-	for name, test := range tests {
-		t.Run(name, runWithKVFlag(test, true))
-	}
+	testControllerWithKV(t, true)
 }
 
 func TestKVDisabled(t *testing.T) {
-	for name, test := range tests {
-		t.Run(name, runWithKVFlag(test, false))
-	}
-}
-
-func runWithKVFlag(f func(t *testing.T, kvEnabled bool), kvEnabled bool) func(t *testing.T) {
-	return func(t *testing.T) { f(t, kvEnabled) }
+	testControllerWithKV(t, false)
 }
 
 func testController_ListRepositoriesHandler(t *testing.T, kvEnabled bool) {
@@ -276,11 +268,11 @@ func testCommitEntries(t *testing.T, ctx context.Context, cat catalog.Interface,
 	return commit.Reference
 }
 
-func testController_CommitsGetBranchCommitLogHandler(t *testing.T, kvEnabled bool) {
+func testController_LogCommitsHandler(t *testing.T, kvEnabled bool) {
 	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
-	t.Run("get missing branch", func(t *testing.T) {
+	t.Run("missing branch", func(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "ns1"), "main")
 		testutil.Must(t, err)
 
@@ -291,7 +283,7 @@ func testController_CommitsGetBranchCommitLogHandler(t *testing.T, kvEnabled boo
 		}
 	})
 
-	t.Run("get branch log", func(t *testing.T) {
+	t.Run("log", func(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "repo2", onBlock(deps, "ns1"), "main")
 		testutil.Must(t, err)
 
@@ -312,6 +304,42 @@ func testController_CommitsGetBranchCommitLogHandler(t *testing.T, kvEnabled boo
 		commitsLog := resp.JSON200.Results
 		if len(commitsLog) != expectedCommits {
 			t.Fatalf("Log %d commits, expected %d", len(commitsLog), expectedCommits)
+		}
+	})
+
+	t.Run("limit", func(t *testing.T) {
+		const repoID = "repo3"
+		_, err := deps.catalog.CreateRepository(ctx, repoID, onBlock(deps, "ns2"), "main")
+		testutil.Must(t, err)
+
+		const commitsLen = 2
+		for i := 0; i < commitsLen; i++ {
+			n := strconv.Itoa(i + 1)
+			p := "foo/bar" + n
+			err := deps.catalog.CreateEntry(ctx, repoID, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
+			testutil.MustDo(t, "create entry "+p, err)
+			_, err = deps.catalog.Commit(ctx, repoID, "main", "commit"+n, "some_user", nil, nil, nil)
+			testutil.MustDo(t, "commit "+p, err)
+		}
+		limit := true
+		resp, err := clt.LogCommitsWithResponse(ctx, repoID, "main", &api.LogCommitsParams{
+			Amount: api.PaginationAmountPtr(commitsLen - 1),
+			Limit:  &limit,
+		})
+		verifyResponseOK(t, resp, err)
+
+		// repo is created with a commit
+		if resp.JSON200 == nil {
+			t.Fatal("LogCommits expected valid response")
+		}
+		commitsLog := resp.JSON200.Results
+		// expect exact number of commits without more
+		const expectedCommits = commitsLen - 1
+		if len(commitsLog) != expectedCommits {
+			t.Fatalf("Log %d commits, expected %d", len(commitsLog), expectedCommits)
+		}
+		if resp.JSON200.Pagination.HasMore {
+			t.Fatalf("Log HasMore %t, expected false", resp.JSON200.Pagination.HasMore)
 		}
 	})
 }
@@ -2037,7 +2065,7 @@ func testController_SetupLakeFSHandler(t *testing.T, kvEnabled bool) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			handler, deps := setupHandler(t, true)
+			handler, deps := setupHandler(t, kvEnabled)
 			server := setupServer(t, handler)
 			clt := setupClientByEndpoint(t, server.URL, "", "")
 
