@@ -1742,7 +1742,7 @@ func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repository *Reposito
 		}
 		return nil
 	}, bo)
-	if try == setTries {
+	if try > setTries {
 		return fmt.Errorf("update branch: %w", ErrTooManyTries)
 	}
 	return err
