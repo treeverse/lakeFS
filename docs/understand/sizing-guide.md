@@ -68,7 +68,8 @@ We recommend starting at 10 GiB for a production deployment, as it will likely b
     <li><a href="#dynamodb-ram">DynamoDB</a></li>
   </ul>
 <div markdown="1" id="postgres-ram">
-#### RAM
+
+**RAM**  
 Since the data size is small, it's recommended to provide enough memory to hold the vast majority of that data in RAM.
 Cloud providers will save you the need to tune this parameter - it will be set to a fixed percentage the chosen instance's available RAM (25% on AWS RDS, 30% on Google Cloud SQL).
 It is recommended that you check with your selected cloud provider for configuration and provisioning information for you database.
@@ -78,16 +79,19 @@ Ideally, configure the [shared_buffers](https://www.postgresql.org/docs/current/
 of your PostgreSQL instances to be large enough to contain the currently active dataset.
 Pick a database instance with enough RAM to accommodate this buffer size at roughly x4 the size given for `shared_buffers`. For example, if an installation has ~500,000 uncommitted writes at any given time, it would require about 750 MiB of `shared_buffers`
 that would require about 3 GiB of RAM.
-#### CPU
+
+**CPU**  
 PostgreSQL CPU cores help scale concurrent requests. 1 CPU core for every 5,000 requests/second is ideal.
 </div>
 <div markdown="1" id="dynamodb-ram">
 lakeFS will create a table on the DB, with the default on-demand setting. No need to specify how much read and write throughput you expect your application to perform, as DynamoDB instantly accommodates your workloads as they ramp up or down.
 
 You can customize the table settings to provisioned capacity which allows you to manage and optimize your costs by allocating read/write capacity in advance (see [Benchmarks](https://docs.lakefs.io/understand/sizing-guide.html#benchmarks))
-#### RAM
+
+**RAM**  
 Managed by AWS.
-#### CPU
+
+**CPU**  
 Managed by AWS.
 </div>
 </div>
@@ -129,6 +133,8 @@ Most critical path operations scale very well across machines.
     <li><a href="#dynamodb-ram">DynamoDB</a></li>
   </ul>
 <div markdown="1" id="postgres-ram">
+
+### PostgresSQL
 All benchmarks below were measured using 2 x [c5ad.4xlarge](https://aws.amazon.com/ec2/instance-types/c5/){: target="_blank" } instances
 on [AWS us-east-1](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
 Similar results can be achieved on Google Cloud using a `c2-standard-16` machine type, with an attached [local SSD](https://cloud.google.com/compute/docs/disks/local-ssd).
@@ -143,7 +149,7 @@ where each commit contains **~180,000,000** objects (representing ~7.5 Petabytes
 All tests are reproducible using the [lakectl abuse command](../reference/commands.md#lakectl-abuse),
 so use it to properly size and tune your setup. All tests are accompanied by the relevant `lakectl abuse` command that generated them.
 
-### Random reads - PostgresSQL
+### Random reads
 
 This test generates random read requests to lakeFS,
 in a given commit. Paths are requested randomly from a file containing a set of preconfigured (and existing) paths.
@@ -192,7 +198,7 @@ So 50% of all requests took <10ms, while 99.9% of them took <50ms
 
 Average throughput during the experiment was **10851.69 requests/second**
 
-### Random Writes - PostgresSQL
+### Random Writes
 
 This test generates random write requests to a given lakeFS branch.
 All the paths are pre-generated and don't overwrite each other (as overwrites are relatively rare in a Data Lake setup).
@@ -240,7 +246,7 @@ So, 50% of all requests took <10ms, while 99.9% of them took <25ms.
 
 The average throughput during the experiment was **7595.46 requests/second**.
 
-### Branch creation - PostgresSQL
+### Branch creation
 
 This test creates branches from a given reference.
 
@@ -288,6 +294,8 @@ So, 50% of all requests took <15ms, while 99.9% of them took <100ms.
 The average throughput during the experiment was **7069.03 requests/second**.
 </div>
 <div markdown="1" id="dynamodb-ram">
+
+### DynamoDB
 All benchmarks below were measured using m5.xlarge instance on AWS us-east-1.
 
 The DynamoDB table that was used was provisioned with 500/1000 read/write capacity.
@@ -296,7 +304,7 @@ The example repository we tested against contains the metadata of a large lakeFS
 
 All tests are reproducible using the lakectl abuse command, so use it to properly size and tune your setup. All tests are accompanied by the relevant lakectl abuse command that generated them.
 
-### Random reads - DynamoDB
+### Random reads
 
 This test generates random read requests to lakeFS,
 in a given commit. Paths are requested randomly from a file containing a set of preconfigured (and existing) paths.
@@ -364,7 +372,7 @@ max	648085
 total	499998
 ```
 
-### Random Writes - DynamoDB
+### Random Writes
 
 This test generates random write requests to a given lakeFS branch.
 All the paths are pre-generated and don't overwrite each other (as overwrites are relatively rare in a Data Lake setup).
@@ -429,7 +437,7 @@ max	50157
 total 500000
 ```
 
-### Branch creation - DynamoDB
+### Branch creation
 
 This test creates branches from a given reference.
 
