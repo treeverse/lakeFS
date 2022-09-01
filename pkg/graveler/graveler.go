@@ -29,7 +29,7 @@ const (
 
 	SettingsRelativeKey = "%s/settings/%s.json" // where the settings are saved relative to the storage namespace
 
-	BrnachUpdateMaxInterval = 5
+	BrnachUpdateMaxInterval = 5 * time.Second
 	BranchUpdateMaxTries    = 3
 )
 
@@ -1722,7 +1722,7 @@ func (g *KVGraveler) Commit(ctx context.Context, repository *RepositoryRecord, b
 
 func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID, f BranchUpdateFunc) error {
 	bo := backoff.NewExponentialBackOff()
-	bo.MaxInterval = BrnachUpdateMaxInterval * time.Second
+	bo.MaxInterval = BrnachUpdateMaxInterval
 
 	try := 1
 	err := backoff.Retry(func() error {
