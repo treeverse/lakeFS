@@ -15,6 +15,30 @@ In this document:
 
 # Why <a href="#user-content-why" id="user-content-why">#</a>
 
+## Summary
+
+The LakeFSOutputCommitter will be:
+
+* **Faster.** Because it uses native lakeFS features we can avoid the long
+  troubled history of Spark writes on object stores.
+
+  * 3x fewer API calls than when using the FileOutputCommitter v1 algorithm
+	(which seems the most commonly used by our users).  Many of these are
+	entirely useless statObject calls.
+  * 2x fewer API calls that when using the FileOutputCommitter v2 algorithm
+    (which seems less used, and is often not as safe as the v1 algorithm).
+  * Around the same number of API calls as we would achieve if we supported
+    the new magic committer.  Many of these are entirely useless statObject
+    call.
+* **Atomic.** All objects and partitions of a file appear at once as a
+  committed object on the target branch. `_SUCCESS` files are still
+  generated, but only as a courtesy to AirFlow and similar triggers.  A
+  process that examines the target branch will never see a partial state.
+* **Integrated.** A full Spark write is a native lakeFS commit, a
+  first-class object in the lakeFS ecosystem.  It has a commit log (useful
+  for lineage and structured metadata tagging), it can be reverted and
+  merged, it has clear semantics for garbage collection, etc.
+
 ## Issues with existing OutputCommitters
 
 OutputCommitters are charged with writing a directory tree (a multi-part
