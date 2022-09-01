@@ -541,7 +541,7 @@ func TestGravelerCommit(t *testing.T) {
 				return nil
 			}).Times(1)
 
-		test.refManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).Times(3).Return(kv.ErrPredicateFailed)
+		test.refManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).Times(graveler.BranchUpdateMaxTries).Return(kv.ErrPredicateFailed)
 
 		val, err := test.sut.Commit(ctx, repository, branch1ID, graveler.CommitParams{})
 
