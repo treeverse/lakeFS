@@ -149,18 +149,16 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("Emailer has not been properly configured, check the values in sender field")
 		}
 
-		var idGen actions.IDGenerator
 		migrator := kv.NewDatabaseMigrator(kvParams)
 		storeMessage := &kv.StoreMessage{Store: kvStore}
 		multipartsTracker := multiparts.NewTracker(*storeMessage)
 		actionsStore := actions.NewActionsKVStore(*storeMessage)
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
-		idGen = &actions.DecreasingIDGenerator{}
+		idGen := &actions.DecreasingIDGenerator{}
 
 		// initialize auth service
 		var authService auth.Service
-		switch {
-		case cfg.IsAuthTypeAPI():
+		if cfg.IsAuthTypeAPI() {
 			var apiEmailer *email.Emailer
 			if !cfg.GetAuthAPISupportsInvites() {
 				// invites not supported by API - delegate it to emailer
@@ -174,7 +172,7 @@ var runCmd = &cobra.Command{
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create authentication service")
 			}
-		default:
+		} else {
 			authService = auth.NewKVAuthService(
 				storeMessage,
 				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),

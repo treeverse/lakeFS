@@ -69,7 +69,7 @@ var gotoCmd = &cobra.Command{
 		ctx := cmd.Context()
 		dbParams := cfg.GetDatabaseParams()
 		if dbParams.ConnectionString != "" {
-			fmt.Printf("Missing connection string\n")
+			fmt.Printf("Missing database.connection_string for migration\n")
 			os.Exit(1)
 		}
 		version, err := cmd.Flags().GetUint("version")
