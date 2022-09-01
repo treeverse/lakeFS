@@ -29,6 +29,8 @@ const (
 
 	SettingsRelativeKey = "%s/settings/%s.json" // where the settings are saved relative to the storage namespace
 
+	BrnachUpdateMaxInterval = 5
+	BranchUpdateMaxTries    = 3
 )
 
 // Basic Types
@@ -1719,18 +1721,14 @@ func (g *KVGraveler) Commit(ctx context.Context, repository *RepositoryRecord, b
 }
 
 func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID, f BranchUpdateFunc) error {
-	const (
-		maxInterval = 5
-		setTries    = 3
-	)
 	bo := backoff.NewExponentialBackOff()
-	bo.MaxInterval = maxInterval * time.Second
+	bo.MaxInterval = BrnachUpdateMaxInterval * time.Second
 
 	try := 1
 	err := backoff.Retry(func() error {
 		// TODO(eden) issue 3586 - if the branch commit id hasn't changed, update the fields instead of fail
 		err := g.RefManager.BranchUpdate(ctx, repository, branchID, f)
-		if errors.Is(err, kv.ErrPredicateFailed) && try < setTries {
+		if errors.Is(err, kv.ErrPredicateFailed) && try < BranchUpdateMaxTries {
 			g.log.WithField("try", try).
 				WithField("branchID", branchID).
 				Info("Retrying update branch")
@@ -1742,7 +1740,7 @@ func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repository *Reposito
 		}
 		return nil
 	}, bo)
-	if err != nil && try >= setTries {
+	if err != nil && try >= BranchUpdateMaxTries {
 		return fmt.Errorf("update branch: %w", ErrTooManyTries)
 	}
 	return err

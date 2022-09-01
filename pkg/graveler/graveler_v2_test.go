@@ -332,7 +332,7 @@ func TestGravelerMerge(t *testing.T) {
 		test.refManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
 			DoAndReturn(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
 				return kv.ErrPredicateFailed
-			}).Times(3)
+			}).Times(graveler.BranchUpdateMaxTries)
 
 		val, err := test.sut.Merge(ctx, repository, branch1ID, graveler.Ref(branch2ID), graveler.CommitParams{}, "")
 
