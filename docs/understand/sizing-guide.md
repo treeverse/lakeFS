@@ -85,6 +85,10 @@ PostgreSQL CPU cores help scale concurrent requests. 1 CPU core for every 5,000 
 lakeFS will create a table on the DB, with the default on-demand setting. No need to specify how much read and write throughput you expect your application to perform, as DynamoDB instantly accommodates your workloads as they ramp up or down.
 
 You can customize the table settings to provisioned capacity which allows you to manage and optimize your costs by allocating read/write capacity in advance (see [Benchmarks](https://docs.lakefs.io/understand/sizing-guide.html#benchmarks))
+#### RAM
+Managed by AWS.
+#### CPU
+Managed by AWS.
 </div>
 </div>
 
@@ -139,7 +143,7 @@ where each commit contains **~180,000,000** objects (representing ~7.5 Petabytes
 All tests are reproducible using the [lakectl abuse command](../reference/commands.md#lakectl-abuse),
 so use it to properly size and tune your setup. All tests are accompanied by the relevant `lakectl abuse` command that generated them.
 
-### Random reads
+### Random reads - PostgresSQL
 
 This test generates random read requests to lakeFS,
 in a given commit. Paths are requested randomly from a file containing a set of preconfigured (and existing) paths.
@@ -188,7 +192,7 @@ So 50% of all requests took <10ms, while 99.9% of them took <50ms
 
 Average throughput during the experiment was **10851.69 requests/second**
 
-### Random Writes
+### Random Writes - PostgresSQL
 
 This test generates random write requests to a given lakeFS branch.
 All the paths are pre-generated and don't overwrite each other (as overwrites are relatively rare in a Data Lake setup).
@@ -236,7 +240,7 @@ So, 50% of all requests took <10ms, while 99.9% of them took <25ms.
 
 The average throughput during the experiment was **7595.46 requests/second**.
 
-### Branch creation
+### Branch creation - PostgresSQL
 
 This test creates branches from a given reference.
 
@@ -286,7 +290,81 @@ The average throughput during the experiment was **7069.03 requests/second**.
 <div markdown="1" id="dynamodb-ram">
 All benchmarks below were measured using m5.xlarge instance on AWS us-east-1.
 
-### Random Writes
+The DynamoDB table that was used was provisioned with 500/1000 read/write capacity.
+
+The example repository we tested against contains the metadata of a large lakeFS installation, where each commit contains ~100,000,000 objects (representing ~3.5 Petabytes of data).
+
+All tests are reproducible using the lakectl abuse command, so use it to properly size and tune your setup. All tests are accompanied by the relevant lakectl abuse command that generated them.
+
+### Random reads - DynamoDB
+
+This test generates random read requests to lakeFS,
+in a given commit. Paths are requested randomly from a file containing a set of preconfigured (and existing) paths.
+
+
+**command executed:**
+
+```shell
+lakectl abuse random-read \
+    --from-file randomly_selected_paths.txt \
+    --amount 500000 \
+    --parallelism 128 \
+    lakefs://example-repo/<commit hash>
+```
+
+**Result Histogram (raw): Provisioned read capacity units = 1000
+Provisioned write capacity units = 1000**
+
+```
+Histogram (ms):
+1	0
+2	0
+5	0
+7	0
+10	0
+15	0
+25	122
+50	47364
+75	344489
+100	460404
+250	497912
+350	498016
+500	498045
+750	498111
+1000 498176
+5000 499478
+min	18
+max	52272
+total 500000
+```
+
+**Result Histogram (raw): Provisioned read capacity units = 500
+Provisioned write capacity units = 500**
+
+```
+Histogram (ms):
+1	0
+2	0
+5	0
+7	0
+10	0
+15	1
+25	2672
+50	239661
+75	420171
+100	470146
+250	486603
+350	486715
+500	486789
+750	487443
+1000	488113
+5000	493201
+min	14
+max	648085
+total	499998
+```
+
+### Random Writes - DynamoDB
 
 This test generates random write requests to a given lakeFS branch.
 All the paths are pre-generated and don't overwrite each other (as overwrites are relatively rare in a Data Lake setup).
@@ -336,24 +414,22 @@ Histogram (ms):
 7	0
 10	0
 15	0
-25	46
-50	244800
-75	458098
-100	486082
-250	493376
-350	493647
-500	493773
-750	496227
-1000	499268
-5000	500000
+25	174
+50	266460
+75	462641
+100	484486
+250	490633
+350	490856
+500	490984
+750	492973
+1000 495605
+5000 498920
 min	21
-max	4588
-total	500000
+max	50157
+total 500000
 ```
-</div>
-</div>
 
-### Branch creation
+### Branch creation - DynamoDB
 
 This test creates branches from a given reference.
 
@@ -369,32 +445,6 @@ lakectl abuse create-branches \
 
 **Result Histogram (raw): Provisioned read capacity units = 1000
 Provisioned write capacity units = 1000**
-
-```
-Histogram (ms):
-1	0
-2	1
-5	5901
-7	39835
-10	135863
-15	270201
-25	399895
-50	484932
-75	497180
-100	499303
-250	499996
-350	500000
-500	500000
-750	500000
-1000	500000
-5000	500000
-min	2
-max	304
-total	500000
-```
-
-**Result Histogram (raw): Provisioned read capacity units = 500
-Provisioned write capacity units = 500**
 
 ```
 Histogram (ms):
@@ -419,6 +469,35 @@ max	430725
 total	490054
 ```
 
+**Result Histogram (raw): Provisioned read capacity units = 500
+Provisioned write capacity units = 500**
+
+```
+Histogram (ms):
+1	0
+2	0
+5	0
+7	0
+10	0
+15	0
+25	0
+50	3132
+75	155570
+100	292745
+250	384224
+350	397258
+500	431141
+750	441360
+1000 445597
+5000 469538
+min	39
+max	760626
+total 497520
+```
+
+</div>
+</div>
+
 ## Important metrics
 
 lakeFS exposes metrics using the [Prometheus protocol](https://prometheus.io/docs/introduction/overview/){: target="_blank" }. 
@@ -432,8 +511,21 @@ Here are a few notable metrics to keep track of when sizing lakeFS:
 
 `gateway_request_duration_seconds` - Histogram of latency per [S3 Gateway](architecture.md#s3-gateway) operation.
 
-`go_sql_stats_*` - Important client-side metrics collected from the PostgreSQL driver.
-See [The full reference here](https://github.com/dlmiddlecote/sqlstats#exposed-metrics){: target="_blank" }.
+<div class="tabs">
+  <ul>
+    <li><a href="#dynamodb">DynamoDB</a></li>
+    <li><a href="#postgres">PostgreSQL</a></li>
+  </ul>
+<div markdown="1" id="dynamodb">
+
+`dynamo_request_duration_seconds` - Time spent doing DynamoDB requests.
+
+`dynamo_consumed_capacity_total` - The capacity units consumed by operation.
+
+`dynamo_failures_total` - The total number of errors while working for kv store.
+
+</div>
+</div>
 
 ## Reference architectures
 
