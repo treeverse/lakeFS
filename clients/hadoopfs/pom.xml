@@ -17,8 +17,8 @@ To export to S3:
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.lakefs</groupId>
-    <artifactId>hadoop-lakefs${name-suffix}</artifactId>
-    <packaging>jar</packaging>
+    <artifactId>hadoop-lakefs</artifactId>
+    <packaging>pom</packaging>
     <name>hadoop-lakefs${name-suffix}</name>
     <version>0.1.0</version><!--MARKER: keep this comment here, we update the version with the lakeFS version when on deploy-->
     <url>https://lakefs.io</url>
@@ -104,109 +104,28 @@ To export to S3:
         </profile>
         <profile>
             <id>assembly-h2</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
-                        <version>3.3.0</version>
-                        <executions>
-                            <execution>
-                                <id>add-source</id>
-                                <phase>generate-sources</phase>
-                                <goals>
-                                    <goal>add-source</goal>
-                                </goals>
-                                <configuration>
-                                    <sources>
-                                        <source>src/hadoop2/io/lakefs</source>
-                                    </sources>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
+            <!--  spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider -->
+            <modules>
+                <module>src/hadoop2/pom.xml</module>
+            </modules>
             <properties>
                 <name-suffix>-assembly-h2</name-suffix>
                 <hadoop2.version>2.7.7</hadoop2.version>
             </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-common</artifactId>
-                    <version>${hadoop2.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-common</artifactId>
-                    <scope>test</scope>
-                    <type>test-jar</type>
-                    <version>${hadoop2.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-aws</artifactId>
-                    <version>${hadoop2.version}</version>
-                </dependency>
-            </dependencies>
         </profile>
         <profile>
             <id>assembly-h3</id>
+            <!--  -->
+            <modules>
+                <module>src/hadoop3/pom.xml</module>
+            </modules>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
-                        <version>3.3.0</version>
-                        <executions>
-                            <execution>
-                                <id>add-source</id>
-                                <phase>generate-sources</phase>
-                                <goals>
-                                    <goal>add-source</goal>
-                                </goals>
-                                <configuration>
-                                    <sources>
-                                        <source>src/hadoop3/io/lakefs</source>
-                                    </sources>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
             <properties>
                 <name-suffix>-assembly-h3</name-suffix>
-                <hadoop3.version>3.3.2</hadoop3.version>
+                <hadoop3.version>3.1.4</hadoop3.version>
             </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-common</artifactId>
-                    <version>${hadoop3.version}</version> <!-- Useful for Spark-on-Hadoop3 (which is Spark3) -->
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-common</artifactId>
-                    <scope>test</scope>
-                    <type>test-jar</type>
-                    <version>${hadoop3.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-aws</artifactId>
-                    <version>${hadoop3.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>commons-lang</groupId>
-                    <artifactId>commons-lang</artifactId>
-                    <version>2.6</version>
-                </dependency>
-            </dependencies>
         </profile>
     </profiles>
 
@@ -265,6 +184,10 @@ To export to S3:
                                     <pattern>io.lakefs.clients.api</pattern>
                                     <shadedPattern>io.lakefs.shaded.api</shadedPattern>
                                 </relocation>
+<!--                                <relocation>-->
+<!--                                    <pattern>com.google.common</pattern>-->
+<!--                                    <shadedPattern>shade.lakefs.com.google.common</shadedPattern>-->
+<!--                                </relocation>-->
                             </relocations>
                         </configuration>
                     </execution>

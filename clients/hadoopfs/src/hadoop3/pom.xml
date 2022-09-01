@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Can build a JAR and an assembled JAR.  The first is useful for programming a larger
+component, and will most likely require assembly and shading to use.  The second is
+useful for inserting directly into Spark.
+
+To publish to Maven Central:
+    mvn deploy
+    mvn -Passembly deploy
+
+To export to S3:
+    mvn package s3-storage-wagon:s3-upload@upload-jar
+    mvn -Passembly package s3-storage-wagon:s3-upload@upload-jar
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>lakefsfs-hadoop3</artifactId>
+    <packaging>jar</packaging>
+    <name>hadoop3-lakefs${name-suffix}</name>
+    <version>${hadoop3.version}</version>
+
+    <parent>
+        <artifactId>hadoop-lakefs</artifactId>
+        <groupId>io.lakefs</groupId>
+        <version>0.1.0</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <version>${hadoop3.version}</version> <!-- Useful for Spark-on-Hadoop3 (which is Spark3) -->
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <scope>test</scope>
+            <type>test-jar</type>
+            <version>${hadoop3.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-aws</artifactId>
+            <version>${hadoop3.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.6</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <sourceDirectory>../main/java</sourceDirectory>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
