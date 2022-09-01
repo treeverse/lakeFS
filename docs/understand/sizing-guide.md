@@ -300,10 +300,8 @@ lakectl abuse random-write \
     lakefs://example-repo/main
 ```
 
-**Note** lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and branch.
-
-**Result Histogram (raw): Provisioned read capacity units - 1000
-Provisioned write capacity units - 1000**
+**Result Histogram (raw): Provisioned read capacity units = 1000
+Provisioned write capacity units = 1000**
 
 ```
 Histogram (ms):
@@ -327,8 +325,8 @@ min	23
 max	4437
 total	500000
 ```
-**Result Histogram (raw): Provisioned read capacity units - 500
-Provisioned write capacity units - 500**
+**Result Histogram (raw): Provisioned read capacity units = 500
+Provisioned write capacity units = 500**
 
 ```
 Histogram (ms):
@@ -354,6 +352,72 @@ total	500000
 ```
 </div>
 </div>
+
+### Branch creation
+
+This test creates branches from a given reference.
+
+**command executed:**
+
+```shell
+lakectl abuse create-branches \
+    --amount 500000 \
+    --branch-prefix "benchmark-" \
+    --parallelism 256 \
+    lakefs://example-repo/<commit hash>
+```
+
+**Result Histogram (raw): Provisioned read capacity units = 1000
+Provisioned write capacity units = 1000**
+
+```
+Histogram (ms):
+1	0
+2	1
+5	5901
+7	39835
+10	135863
+15	270201
+25	399895
+50	484932
+75	497180
+100	499303
+250	499996
+350	500000
+500	500000
+750	500000
+1000	500000
+5000	500000
+min	2
+max	304
+total	500000
+```
+
+**Result Histogram (raw): Provisioned read capacity units = 500
+Provisioned write capacity units = 500**
+
+```
+Histogram (ms):
+1	0
+2	0
+5	0
+7	0
+10	0
+15	0
+25	0
+50	628
+75	26153
+100	58099
+250	216160
+350	307078
+500	406165
+750	422898
+1000	431332
+5000	475848
+min	41
+max	430725
+total	490054
+```
 
 ## Important metrics
 
