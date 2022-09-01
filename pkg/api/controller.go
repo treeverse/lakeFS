@@ -1743,6 +1743,9 @@ func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, 
 	case errors.Is(err, db.ErrAlreadyExists):
 		writeError(w, http.StatusBadRequest, "Already exists")
 
+	case errors.Is(err, graveler.ErrTooManyTries):
+		writeError(w, http.StatusLocked, "Concurrent resource updates, try again later")
+
 	case err != nil:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
 		writeError(w, http.StatusInternalServerError, err)
