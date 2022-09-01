@@ -293,7 +293,11 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 	}
 
 	tfs.fileTracker.inc(fileRef.fsRelativePath)
-	defer tfs.fileTracker.dec(fileRef.fsRelativePath, func(i int) {})
+	defer tfs.fileTracker.dec(fileRef.fsRelativePath, func(ref int) {
+		if ref == -1 {
+			tfs.removeFromLocalInternal(fileRef.fsRelativePath)
+		}
+	})
 	fileFullPath, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
 		// check again file existence, now that we have the lock
 		_, err := os.Stat(fileRef.fullPath)
