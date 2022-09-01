@@ -217,7 +217,7 @@ func GetDB(t testing.TB, uri string, opts ...GetDBOption) (db.Database, string) 
 			}
 		}
 
-		err = db.MigrateUp(params.Database{ConnectionString: connURI}, cfg)
+		err = db.MigrateUp(params.Database{ConnectionString: connURI}, cfg, cfg.GetKVParams())
 		if err != nil {
 			t.Fatal("could not create schema:", err)
 		}

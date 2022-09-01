@@ -21,8 +21,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
-	"github.com/treeverse/lakefs/pkg/db"
-	dbparams "github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -138,7 +136,7 @@ func TestLocalLoad(t *testing.T) {
 			testutil.Must(t, err)
 
 			authenticator := auth.NewBuiltinAuthenticator(tt.authService)
-			migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: databaseURI})
+			migrator := kv.NewDatabaseMigrator(conf.GetKVParams())
 			t.Cleanup(func() {
 				_ = c.Close()
 			})

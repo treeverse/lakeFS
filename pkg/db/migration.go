@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
@@ -17,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/ddl"
 	_ "github.com/treeverse/lakefs/pkg/kv/dynamodb"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"gopkg.in/retry.v1"
@@ -26,32 +26,6 @@ var ErrSchemaNotCompatible = errors.New("db schema version not compatible with l
 
 type Migrator interface {
 	Migrate(ctx context.Context) error
-}
-
-type DatabaseMigrator struct {
-	params params.Database
-}
-
-func NewDatabaseMigrator(params params.Database) Migrator {
-	return &DatabaseMigrator{
-		params: params,
-	}
-}
-
-func (d *DatabaseMigrator) Migrate(ctx context.Context) error {
-	log := logging.FromContext(ctx)
-	start := time.Now()
-	lg := log.WithFields(logging.Fields{
-		"direction": "up",
-	})
-	err := MigrateUp(d.params, nil)
-	if err != nil {
-		lg.WithError(err).Error("Failed to migrate")
-		return err
-	} else {
-		lg.WithField("took", time.Since(start)).Info("schema migrated")
-	}
-	return nil
 }
 
 // newDriverSourceForDDLContent migration driver source with our DDL content
@@ -161,7 +135,7 @@ func closeMigrate(m *migrate.Migrate) {
 	}
 }
 
-func MigrateUp(dbParams params.Database, blockParams blockparams.AdapterConfig) error {
+func MigrateUp(dbParams params.Database, blockParams blockparams.AdapterConfig, kvParams kvparams.KV) error {
 	m, err := getMigrate(dbParams)
 	if err != nil {
 		return err
@@ -174,7 +148,7 @@ func MigrateUp(dbParams params.Database, blockParams blockparams.AdapterConfig) 
 	ctx := context.Background()
 	d := BuildDatabaseConnection(ctx, dbParams)
 	defer d.Close()
-	return kvpg.Migrate(ctx, d.Pool(), dbParams, blockParams)
+	return kvpg.Migrate(ctx, d.Pool(), dbParams, blockParams, kvParams.Postgres)
 }
 
 func MigrateDown(params params.Database) error {

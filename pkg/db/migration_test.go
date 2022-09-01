@@ -19,7 +19,7 @@ func TestMigrations(t *testing.T) {
 	}
 	databaseURI, closer := testutil.GetDBInstance(pool)
 	defer closer()
-	err = db.MigrateUp(params.Database{ConnectionString: databaseURI}, cfg)
+	err = db.MigrateUp(cfg.GetDatabaseParams(), cfg, cfg.GetKVParams())
 	if err != nil {
 		t.Fatal("failed running migrate up:", err)
 	}

@@ -21,6 +21,7 @@ import (
 )
 
 var ErrAlreadyMigrated = errors.New("already migrated")
+var ErrWrongDriverTypeMigration = errors.New("trying to migrate to non Postgres DB isn't supported")
 
 type MigrateFunc func(ctx context.Context, db *pgxpool.Pool, c blockparams.AdapterConfig, writer io.Writer) error
 
@@ -40,10 +41,13 @@ func timeTrack(start time.Time, logger logging.Logger, name string) {
 }
 
 // Migrate data migration from DB to KV
-func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database, blockParams blockparams.AdapterConfig) error {
+func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database, blockParams blockparams.AdapterConfig, postgresParams *kvparams.Postgres) error {
+	if dbParams.Type != DriverName {
+		return fmt.Errorf("driver type %s: %w", dbParams.Type, ErrWrongDriverTypeMigration)
+	}
 	kvParams := kvparams.KV{
 		Type:     DriverName,
-		Postgres: &kvparams.Postgres{ConnectionString: dbParams.ConnectionString},
+		Postgres: postgresParams,
 	}
 	store, err := kv.Open(ctx, kvParams)
 	if err != nil {
