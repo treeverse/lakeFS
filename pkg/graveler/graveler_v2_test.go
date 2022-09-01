@@ -301,7 +301,7 @@ func TestGravelerMerge(t *testing.T) {
 		test.refManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
 			DoAndReturn(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
 				return kv.ErrPredicateFailed
-			}).Times(1)
+			}).Times(graveler.BranchUpdateMaxTries - 1)
 		test.refManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
 			Do(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
 				branchTest := &graveler.Branch{StagingToken: stagingToken4, CommitID: commit1ID, SealedTokens: []graveler.StagingToken{stagingToken1, stagingToken2, stagingToken3}}

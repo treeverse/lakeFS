@@ -30,7 +30,7 @@ const (
 	SettingsRelativeKey = "%s/settings/%s.json" // where the settings are saved relative to the storage namespace
 
 	BrnachUpdateMaxInterval = 5 * time.Second
-	BranchUpdateMaxTries    = 3
+	BranchUpdateMaxTries    = 10
 )
 
 // Basic Types
