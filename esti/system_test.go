@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -78,8 +79,17 @@ func tearDownTest(repoName string) {
 	deleteRepositoryIfAskedTo(ctx, repoName)
 }
 
+func generateLettersOnlyString(n int) string {
+	var chars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	str := make([]rune, n)
+	for i := range str {
+		str[i] = chars[rand.Intn(len(chars))]
+	}
+	return string(str)
+}
+
 func createRepositoryForTest(ctx context.Context, t *testing.T) string {
-	name := makeRepositoryName(strings.ToLower(t.Name()) + "-" + xid.New().String())
+	name := makeRepositoryName(strings.ToLower(t.Name()) + generateLettersOnlyString(3))
 	return createRepositoryByName(ctx, t, name)
 }
 
