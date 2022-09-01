@@ -98,6 +98,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 	}
 	logger := logging.Default().WithField("TempDir", tmpDir)
 	logger.Info("Starting KV Migration Process")
+	logger.Warning("Make sure to follow the instructions in https://docs.lakefs.io/reference/upgrade.html (it's highly recommended to commit the data and take a DB snapshot)")
 	defer timeTrack(time.Now(), logger, "KV Migration")
 	for n, p := range kvPkgs {
 		name := n
