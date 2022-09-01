@@ -80,7 +80,7 @@ func tearDownTest(repoName string) {
 }
 
 func generateLettersOnlyString(n int) string {
-	var chars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	var chars = []rune("abcdefghijklmnopqrstuvwxyz")
 	str := make([]rune, n)
 	for i := range str {
 		str[i] = chars[rand.Intn(len(chars))]
