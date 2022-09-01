@@ -25,10 +25,10 @@ type TierFS struct {
 	logger  logging.Logger
 	adapter block.Adapter
 
-	eviction   params.Eviction
-	keyLock    cache.OnlyOne
-	syncDir    *directory
-	fileLocker *fileLocker
+	eviction    params.Eviction
+	keyLock     cache.OnlyOne
+	syncDir     *directory
+	fileTracker *fileTracker
 
 	fsName string
 
@@ -56,7 +56,7 @@ func NewFS(c *params.InstanceParams) (FS, error) {
 		syncDir:        &directory{ceilingDir: fsLocalBaseDir},
 		keyLock:        cache.NewChanOnlyOne(),
 		remotePrefix:   c.BlockStoragePrefix,
-		fileLocker:     newFileLocker(),
+		fileTracker:    newFileTracker(),
 	}
 	if c.Eviction == nil {
 		var err error
@@ -115,13 +115,15 @@ func (tfs *TierFS) removeFromLocal(rPath params.RelativePath, filesize int64) {
 	// This will be called by the cache eviction mechanism during entry insert.
 	// We don't want to wait while the file is being removed from the local disk.
 	evictionHistograms.WithLabelValues(tfs.fsName).Observe(float64(filesize))
-	go tfs.removeFromLocalInternal(rPath)
+	// Decrement the reference count on the file. When the ref count reaches -1, The file will be deleted
+	tfs.fileTracker.dec(rPath, func(ref int) {
+		if ref == -1 {
+			tfs.removeFromLocalInternal(rPath)
+		}
+	})
 }
 
 func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
-	// we must wait until the file is not being written to
-	tfs.fileLocker.waitUntilUnlock(rPath)
-
 	p := path.Join(tfs.fsLocalBaseDir, string(rPath))
 	if tfs.logger.IsTracing() {
 		tfs.logger.WithField("path", p).Trace("remove from local")
@@ -132,10 +134,13 @@ func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
 		return
 	}
 
-	if err := tfs.syncDir.deleteDirRecIfEmpty(path.Dir(string(rPath))); err != nil {
-		tfs.logger.WithError(err).Error("Failed deleting empty dir")
-		errorsTotal.WithLabelValues(tfs.fsName, "DirRemoval")
-	}
+	// Delete Dir async
+	go func() {
+		if err := tfs.syncDir.deleteDirRecIfEmpty(path.Dir(string(rPath))); err != nil {
+			tfs.logger.WithError(err).Error("Failed deleting empty dir")
+			errorsTotal.WithLabelValues(tfs.fsName, "DirRemoval")
+		}
+	}()
 }
 
 func (tfs *TierFS) store(ctx context.Context, namespace, originalPath, nsPath, filename string) error {
@@ -287,8 +292,8 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 		}).Trace("try to lock for open")
 	}
 
-	rcb := tfs.fileLocker.lock(fileRef.fsRelativePath)
-	defer rcb() // release callback
+	tfs.fileTracker.inc(fileRef.fsRelativePath)
+	defer tfs.fileTracker.dec(fileRef.fsRelativePath, func(i int) {})
 	fileFullPath, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
 		// check again file existence, now that we have the lock
 		_, err := os.Stat(fileRef.fullPath)
