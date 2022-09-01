@@ -1730,10 +1730,7 @@ func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repository *Reposito
 	err := backoff.Retry(func() error {
 		// TODO(eden) issue 3586 - if the branch commit id hasn't changed, update the fields instead of fail
 		err := g.RefManager.BranchUpdate(ctx, repository, branchID, f)
-		if err != nil && !errors.Is(err, kv.ErrPredicateFailed) {
-			return backoff.Permanent(err)
-		}
-		if err != nil && try < setTries {
+		if errors.Is(err, kv.ErrPredicateFailed) && try < setTries {
 			g.log.WithField("try", try).
 				WithField("branchID", branchID).
 				Info("Retrying update branch")
@@ -1745,8 +1742,8 @@ func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repository *Reposito
 		}
 		return nil
 	}, bo)
-	if try > setTries {
-		return backoff.Permanent(fmt.Errorf("update branch: %w", ErrTooManyTries))
+	if err != nil && try >= setTries {
+		return fmt.Errorf("update branch: %w", ErrTooManyTries)
 	}
 	return err
 }
