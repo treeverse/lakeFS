@@ -71,7 +71,11 @@ private object ApiClient {
        *  extract the storage account, container and blob path, and use them in abfs url
        */
       val storageAccountName = StorageUtils.AzureBlob.uriToStorageAccountName(uri)
-      val Array(_, container, blobPath) = uri.getPath.split("/", 3)
+      val (container, blobPath) = uri.getPath.split("/", 3) match {
+        case Array(a, b, c) => (b, c)
+        case Array(a, b)    => (b, "")
+        case _              => throw new IllegalArgumentException
+      }
       return new URI(
         s"abfs://${container}@${storageAccountName}.dfs.core.windows.net/${blobPath}"
       )
