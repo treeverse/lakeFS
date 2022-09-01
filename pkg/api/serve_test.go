@@ -3,7 +3,6 @@ package api_test
 import (
 	"context"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/kv/mem"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -26,6 +25,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
+	"github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
