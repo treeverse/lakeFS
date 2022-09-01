@@ -80,12 +80,13 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 	}
 
 	// TODO(niro): Add validation to the header in the future
-	logging.Default().WithFields(logging.Fields{
+	log := logging.Default().WithFields(logging.Fields{
 		"package_name":      header.PackageName,
 		"lakefs_version":    header.LakeFSVersion,
 		"db_schema_version": header.DBSchemaVersion,
 		"created_at":        header.CreatedAt,
-	}).Info("Processing file")
+	})
+	log.Info("Processing file")
 
 	entryChan := make(chan *Entry, entryQueueSize)
 	var g multierror.Group
@@ -95,7 +96,9 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 		})
 	}
 
+	i := 0
 	for {
+		i++
 		entry := new(Entry)
 		err := jd.Decode(entry)
 		if errors.Is(err, io.EOF) {
@@ -104,6 +107,9 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 		// Decode does not return error on missing data / incompatible format
 		if err != nil {
 			return fmt.Errorf("decoding entry: %w", err)
+		}
+		if i%100_000 == 0 {
+			log.Infof("Migrated %d entries", i)
 		}
 		entryChan <- entry
 	}
