@@ -56,8 +56,8 @@ func NewFS(c *params.InstanceParams) (FS, error) {
 		syncDir:        &directory{ceilingDir: fsLocalBaseDir},
 		keyLock:        cache.NewChanOnlyOne(),
 		remotePrefix:   c.BlockStoragePrefix,
-		fileTracker:    newFileTracker(),
 	}
+	tfs.fileTracker = NewFileTracker(tfs.removeFromLocalInternal)
 	if c.Eviction == nil {
 		var err error
 		c.Eviction, err = newRistrettoEviction(c.AllocatedBytes(), tfs.removeFromLocal)
@@ -115,12 +115,8 @@ func (tfs *TierFS) removeFromLocal(rPath params.RelativePath, filesize int64) {
 	// This will be called by the cache eviction mechanism during entry insert.
 	// We don't want to wait while the file is being removed from the local disk.
 	evictionHistograms.WithLabelValues(tfs.fsName).Observe(float64(filesize))
-	// Decrement the reference count on the file. When the ref count reaches -1, The file will be deleted
-	tfs.fileTracker.dec(rPath, func(ref int) {
-		if ref == -1 {
-			tfs.removeFromLocalInternal(rPath)
-		}
-	})
+	// Notify tracker on delete
+	tfs.fileTracker.Delete(rPath)
 }
 
 func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
@@ -292,12 +288,8 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 		}).Trace("try to lock for open")
 	}
 
-	tfs.fileTracker.inc(fileRef.fsRelativePath)
-	defer tfs.fileTracker.dec(fileRef.fsRelativePath, func(ref int) {
-		if ref == -1 {
-			tfs.removeFromLocalInternal(fileRef.fsRelativePath)
-		}
-	})
+	closer := tfs.fileTracker.Open(fileRef.fsRelativePath)
+	defer closer()
 	fileFullPath, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
 		// check again file existence, now that we have the lock
 		_, err := os.Stat(fileRef.fullPath)
