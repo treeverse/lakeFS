@@ -521,8 +521,8 @@ Here are a few notable metrics to keep track of when sizing lakeFS:
 
 <div class="tabs">
   <ul>
-    <li><a href="#dynamodb">DynamoDB</a></li>
     <li><a href="#postgres">PostgreSQL</a></li>
+    <li><a href="#dynamodb">DynamoDB</a></li>
   </ul>
 <div markdown="1" id="dynamodb">
 
