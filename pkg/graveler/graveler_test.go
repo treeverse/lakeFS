@@ -993,9 +993,6 @@ func testGravelerCreateBranch(t *testing.T, kvEnabled bool) {
 }
 
 func TestGraveler_UpdateBranch(t *testing.T) {
-	t.Run("TestDBGraveler_UpdateBranch", func(t *testing.T) {
-		testGravelerUpdateBranch(t, false)
-	})
 	t.Run("TestKVGraveler_UpdateBranch", func(t *testing.T) {
 		testGravelerUpdateBranch(t, true)
 	})
@@ -1005,7 +1002,7 @@ func testGravelerUpdateBranch(t *testing.T, kvEnabled bool) {
 	gravel := newGraveler(t, kvEnabled, nil, &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
 		&testutil.RefsFake{Branch: &graveler.Branch{}, UpdateErr: kv.ErrPredicateFailed}, nil, nil)
 	_, err := gravel.UpdateBranch(context.Background(), repository, "", "")
-	require.ErrorIs(t, err, graveler.ErrConflictFound)
+	require.ErrorIs(t, err, graveler.ErrTooManyTries)
 
 	gravel = newGraveler(t, kvEnabled, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})}, &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
 		&testutil.RefsFake{Branch: &graveler.Branch{StagingToken: "st1", CommitID: "commit1"}, Commits: map[graveler.CommitID]*graveler.Commit{"commit1": {}}}, nil, nil)
