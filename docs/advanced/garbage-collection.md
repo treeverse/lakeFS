@@ -5,7 +5,7 @@ description: Clean up unnecessary objects using the garbage collection feature i
 parent: Advanced features of lakeFS
 nav_order: 25
 has_children: false
-redirect_from: https://docs.lakefs.io/reference/garbage-collection.html
+redirect_from: ["../reference/garbage-collection.html"]
 ---
 
 # Garbage Collection
