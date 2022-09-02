@@ -1036,7 +1036,7 @@ func (g *KVGraveler) UpdateBranch(ctx context.Context, repository *RepositoryRec
 // the branch HEAD as a preparation for deleting the staging area.
 // see issue #3771 for more information on the algorithm used.
 func (g *KVGraveler) prepareForCommitIDUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID) error {
-	err := g.RefManager.BranchUpdate(ctx, repository, branchID, func(currBranch *Branch) (*Branch, error) {
+	return g.retryBranchUpdate(ctx, repository, branchID, func(currBranch *Branch) (*Branch, error) {
 		empty, err := g.isStagingEmpty(ctx, repository, currBranch)
 		if err != nil {
 			return nil, err
@@ -1049,13 +1049,6 @@ func (g *KVGraveler) prepareForCommitIDUpdate(ctx context.Context, repository *R
 		currBranch.StagingToken = GenerateStagingToken(repository.RepositoryID, branchID)
 		return currBranch, nil
 	})
-	if err != nil {
-		if errors.Is(err, kv.ErrPredicateFailed) {
-			err = ErrConflictFound
-		}
-		return err
-	}
-	return nil
 }
 
 func (g *KVGraveler) GetBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (*Branch, error) {
