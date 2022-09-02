@@ -8,22 +8,22 @@ import (
 
 // fileTracker tracks file open requests in TierFS to avoid race conditions with cache rejection/eviction
 type fileTracker struct {
-	refMap map[string]*track
+	refMap map[string]*tracked
 	mu     sync.Mutex
 	delete deleteCallback
 }
 
 type deleteCallback func(path params.RelativePath)
 
-type track struct {
+type tracked struct {
+	path    params.RelativePath
 	ref     int
 	deleted bool
 }
 
 func NewFileTracker(delete deleteCallback) *fileTracker {
 	return &fileTracker{
-		refMap: map[string]*track{},
-		mu:     sync.Mutex{},
+		refMap: map[string]*tracked{},
 		delete: delete,
 	}
 }
@@ -35,8 +35,9 @@ func (t *fileTracker) Open(path params.RelativePath) func() {
 	if val, ok := t.refMap[string(path)]; ok {
 		val.ref++
 	} else {
-		t.refMap[string(path)] = &track{
-			ref: 1,
+		t.refMap[string(path)] = &tracked{
+			path: path,
+			ref:  1,
 		}
 	}
 	return func() {
@@ -47,27 +48,38 @@ func (t *fileTracker) Open(path params.RelativePath) func() {
 func (t *fileTracker) close(path params.RelativePath) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-
 	if val, ok := t.refMap[string(path)]; ok {
-		val.ref--
-		if val.ref == 0 && val.deleted {
-			t.innerDelete(path)
+		if val.ref > 0 {
+			val.ref--
 		}
+		t.innerDelete(val)
 	}
 }
 
-func (t *fileTracker) innerDelete(path params.RelativePath) {
-	delete(t.refMap, string(path))
-	t.delete(path)
+func (t *fileTracker) innerDelete(file *tracked) {
+	if file.ref == 0 {
+		delete(t.refMap, string(file.path))
+		if file.deleted {
+			t.delete(file.path)
+		}
+	}
 }
 
 func (t *fileTracker) Delete(path params.RelativePath) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	if val, ok := t.refMap[string(path)]; ok {
+	var (
+		val *tracked
+		ok  bool
+	)
+	if val, ok = t.refMap[string(path)]; ok {
 		val.deleted = true
-		if val.ref == 0 {
-			t.innerDelete(path)
+	} else {
+		val = &tracked{
+			path:    path,
+			ref:     0,
+			deleted: true,
 		}
 	}
+	t.innerDelete(val)
 }
