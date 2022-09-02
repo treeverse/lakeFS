@@ -2,9 +2,10 @@
 layout: default
 title: Protected Branches
 description: Branch protection rules prevent direct changes from being applied to your important branches.
-parent: Reference
-nav_order: 4
+parent: Advanced features of lakeFS
+nav_order: 15
 has_children: false
+redirect_from: https://docs.lakefs.io/reference/garbage-collection.html
 ---
 
 # Branch Protection Rules
