@@ -62,42 +62,37 @@ in the range of 150 MiB per every 100,000 uncommitted writes.
 
 We recommend starting at 10 GiB for a production deployment, as it will likely be more than enough.
 
-#### RAM
-Since the data size is small, it's recommended to provide enough memory to hold the vast majority of that data in RAM.
-Cloud providers will save you the need to tune this parameter - it will be set to a fixed percentage the chosen instance's available RAM (25% on AWS RDS, 30% on Google Cloud SQL).
-It is recommended that you check with your selected cloud provider for configuration and provisioning information for you database.
-For self-managed database instances follow these best practices
-
 <div class="tabs">
   <ul>
     <li><a href="#postgres-ram">PostgreSQL</a></li>
     <li><a href="#dynamodb-ram">DynamoDB</a></li>
   </ul>
 <div markdown="1" id="postgres-ram">
+
+**RAM**  
+Since the data size is small, it's recommended to provide enough memory to hold the vast majority of that data in RAM.
+Cloud providers will save you the need to tune this parameter - it will be set to a fixed percentage the chosen instance's available RAM (25% on AWS RDS, 30% on Google Cloud SQL).
+It is recommended that you check with your selected cloud provider for configuration and provisioning information for you database.
+For self-managed database instances follow these best practices
+
 Ideally, configure the [shared_buffers](https://www.postgresql.org/docs/current/runtime-config-resource.html#GUC-SHARED-BUFFERS){: target="_blank" }
 of your PostgreSQL instances to be large enough to contain the currently active dataset.
 Pick a database instance with enough RAM to accommodate this buffer size at roughly x4 the size given for `shared_buffers`. For example, if an installation has ~500,000 uncommitted writes at any given time, it would require about 750 MiB of `shared_buffers`
 that would require about 3 GiB of RAM.
-</div>
 
-<div markdown="1" id="dynamodb-ram">
-TBD RAM
-</div>
-</div>
-
-#### CPU
-
-<div class="tabs">
-  <ul>
-    <li><a href="#postgres-cpu">PostgreSQL</a></li>
-    <li><a href="#dynamodb-cpu">DynamoDB</a></li>
-  </ul>
-<div markdown="1" id="postgres-cpu">
+**CPU**  
 PostgreSQL CPU cores help scale concurrent requests. 1 CPU core for every 5,000 requests/second is ideal.
 </div>
+<div markdown="1" id="dynamodb-ram">
+lakeFS will create a table on the DB, with the default on-demand setting. No need to specify how much read and write throughput you expect your application to perform, as DynamoDB instantly accommodates your workloads as they ramp up or down.
 
-<div markdown="1" id="dynamodb-cpu">
-TBD CPU
+You can customize the table settings to provisioned capacity which allows you to manage and optimize your costs by allocating read/write capacity in advance (see [Benchmarks](https://docs.lakefs.io/understand/sizing-guide.html#benchmarks))
+
+**RAM**  
+Managed by AWS.
+
+**CPU**  
+Managed by AWS.
 </div>
 </div>
 
@@ -134,10 +129,12 @@ Most critical path operations scale very well across machines.
 
 <div class="tabs">
   <ul>
-    <li><a href="#postgres-bench">PostgreSQL</a></li>
-    <li><a href="#dynamodb-bench">DynamoDB</a></li>
+    <li><a href="#postgres-ram">PostgreSQL</a></li>
+    <li><a href="#dynamodb-ram">DynamoDB</a></li>
   </ul>
-<div markdown="1" id="postgres-bench">
+<div markdown="1" id="postgres-ram">
+
+### PostgresSQL
 All benchmarks below were measured using 2 x [c5ad.4xlarge](https://aws.amazon.com/ec2/instance-types/c5/){: target="_blank" } instances
 on [AWS us-east-1](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
 Similar results can be achieved on Google Cloud using a `c2-standard-16` machine type, with an attached [local SSD](https://cloud.google.com/compute/docs/disks/local-ssd).
@@ -296,9 +293,216 @@ So, 50% of all requests took <15ms, while 99.9% of them took <100ms.
 
 The average throughput during the experiment was **7069.03 requests/second**.
 </div>
+<div markdown="1" id="dynamodb-ram">
 
-<div markdown="1" id="#dynamodb-bench">
-TBD Bench
+### DynamoDB
+All benchmarks below were measured using m5.xlarge instance on AWS us-east-1.
+
+The DynamoDB table that was used was provisioned with 500/1000 read/write capacity.
+
+The example repository we tested against contains the metadata of a large lakeFS installation, where each commit contains ~100,000,000 objects (representing ~3.5 Petabytes of data).
+
+All tests are reproducible using the lakectl abuse command, so use it to properly size and tune your setup. All tests are accompanied by the relevant lakectl abuse command that generated them.
+
+### Random reads
+
+This test generates random read requests to lakeFS,
+in a given commit. Paths are requested randomly from a file containing a set of preconfigured (and existing) paths.
+
+
+**command executed:**
+
+```shell
+lakectl abuse random-read \
+    --from-file randomly_selected_paths.txt \
+    --amount 500000 \
+    --parallelism 128 \
+    lakefs://example-repo/<commit hash>
+```
+
+**Result Histogram (raw): Provisioned read capacity units = 1000
+Provisioned write capacity units = 1000**
+
+```
+Histogram (ms):
+1	0
+2	0
+5	0
+7	0
+10	0
+15	0
+25	122
+50	47364
+75	344489
+100	460404
+250	497912
+350	498016
+500	498045
+750	498111
+1000 498176
+5000 499478
+min	18
+max	52272
+total 500000
+```
+
+**Result Histogram (raw): Provisioned read capacity units = 500
+Provisioned write capacity units = 500**
+
+```
+Histogram (ms):
+1	0
+2	0
+5	0
+7	0
+10	0
+15	1
+25	2672
+50	239661
+75	420171
+100	470146
+250	486603
+350	486715
+500	486789
+750	487443
+1000	488113
+5000	493201
+min	14
+max	648085
+total	499998
+```
+
+### Random Writes
+
+This test generates random write requests to a given lakeFS branch.
+All the paths are pre-generated and don't overwrite each other (as overwrites are relatively rare in a Data Lake setup).
+
+**command executed:**
+
+```shell
+lakectl abuse random-write \
+    --amount 500000 \
+    --parallelism 64 \
+    lakefs://example-repo/main
+```
+
+**Result Histogram (raw): Provisioned read capacity units = 1000
+Provisioned write capacity units = 1000**
+
+```
+Histogram (ms):
+1	0
+2	0
+5	0
+7	0
+10	0
+15	0
+25	24
+50	239852
+75	458504
+100	485225
+250	493687
+350	493872
+500	493960
+750	496239
+1000	499194
+5000	500000
+min	23
+max	4437
+total	500000
+```
+**Result Histogram (raw): Provisioned read capacity units = 500
+Provisioned write capacity units = 500**
+
+```
+Histogram (ms):
+1	0
+2	0
+5	0
+7	0
+10	0
+15	0
+25	174
+50	266460
+75	462641
+100	484486
+250	490633
+350	490856
+500	490984
+750	492973
+1000 495605
+5000 498920
+min	21
+max	50157
+total 500000
+```
+
+### Branch creation
+
+This test creates branches from a given reference.
+
+**command executed:**
+
+```shell
+lakectl abuse create-branches \
+    --amount 500000 \
+    --branch-prefix "benchmark-" \
+    --parallelism 256 \
+    lakefs://example-repo/<commit hash>
+```
+
+**Result Histogram (raw): Provisioned read capacity units = 1000
+Provisioned write capacity units = 1000**
+
+```
+Histogram (ms):
+1	0
+2	0
+5	0
+7	0
+10	0
+15	0
+25	0
+50	628
+75	26153
+100	58099
+250	216160
+350	307078
+500	406165
+750	422898
+1000	431332
+5000	475848
+min	41
+max	430725
+total	490054
+```
+
+**Result Histogram (raw): Provisioned read capacity units = 500
+Provisioned write capacity units = 500**
+
+```
+Histogram (ms):
+1	0
+2	0
+5	0
+7	0
+10	0
+15	0
+25	0
+50	3132
+75	155570
+100	292745
+250	384224
+350	397258
+500	431141
+750	441360
+1000 445597
+5000 469538
+min	39
+max	760626
+total 497520
+```
+
 </div>
 </div>
 
@@ -315,8 +519,21 @@ Here are a few notable metrics to keep track of when sizing lakeFS:
 
 `gateway_request_duration_seconds` - Histogram of latency per [S3 Gateway](architecture.md#s3-gateway) operation.
 
-`go_sql_stats_*` - Important client-side metrics collected from the PostgreSQL driver.
-See [The full reference here](https://github.com/dlmiddlecote/sqlstats#exposed-metrics){: target="_blank" }.
+<div class="tabs">
+  <ul>
+    <li><a href="#postgres">PostgreSQL</a></li>
+    <li><a href="#dynamodb">DynamoDB</a></li>
+  </ul>
+<div markdown="1" id="dynamodb">
+
+`dynamo_request_duration_seconds` - Time spent doing DynamoDB requests.
+
+`dynamo_consumed_capacity_total` - The capacity units consumed by operation.
+
+`dynamo_failures_total` - The total number of errors while working for kv store.
+
+</div>
+</div>
 
 ## Reference architectures
 
