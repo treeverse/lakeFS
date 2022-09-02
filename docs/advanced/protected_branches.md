@@ -5,7 +5,7 @@ description: Branch protection rules prevent direct changes from being applied t
 parent: Advanced features of lakeFS
 nav_order: 15
 has_children: false
-redirect_from: https://docs.lakefs.io/reference/garbage-collection.html
+redirect_from: ["../reference/protected_branches.html"]
 ---
 
 # Branch Protection Rules
