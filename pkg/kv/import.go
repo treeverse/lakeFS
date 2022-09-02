@@ -44,53 +44,59 @@ func (e *SafeEncoder) Encode(v interface{}) error {
 }
 
 func consumer(ctx context.Context, cancel context.CancelFunc, jobChan <-chan *Entry, store Store) error {
-	for e := range jobChan {
-		if len(e.PartitionKey) == 0 {
-			cancel()
-			return fmt.Errorf("bad entry partition key: %w", ErrInvalidFormat)
-		}
-		if len(e.Key) == 0 {
-			cancel()
-			return fmt.Errorf("bad entry key: %w", ErrInvalidFormat)
-		}
-		if e.Value == nil {
-			cancel()
-			return fmt.Errorf("bad entry value: %w", ErrInvalidFormat)
-		}
-		err := store.SetIf(ctx, e.PartitionKey, e.Key, e.Value, nil)
-		if err != nil {
-			cancel()
-			return fmt.Errorf("import (partition key: %s, key: %s): %w", e.PartitionKey, e.Key, err)
+	for {
+		select {
+		case e, more := <-jobChan:
+			if !more {
+				return nil
+			}
+			if len(e.PartitionKey) == 0 {
+				cancel()
+				return fmt.Errorf("bad entry partition key: %w", ErrInvalidFormat)
+			}
+			if len(e.Key) == 0 {
+				cancel()
+				return fmt.Errorf("bad entry key: %w", ErrInvalidFormat)
+			}
+			if e.Value == nil {
+				cancel()
+				return fmt.Errorf("bad entry value: %w", ErrInvalidFormat)
+			}
+			err := store.SetIf(ctx, e.PartitionKey, e.Key, e.Value, nil)
+			if err != nil {
+				cancel()
+				return fmt.Errorf("import (partition key: %s, key: %s): %w", e.PartitionKey, e.Key, err)
+			}
+		case <-ctx.Done():
+			return nil
 		}
 	}
-	return nil
 }
 
 func producer(ctx context.Context, cancel context.CancelFunc, log logging.Logger, jobChan chan<- *Entry, jd *json.Decoder) error {
 	i := 0
 	for {
+		i++
+		entry := new(Entry)
+		err := jd.Decode(entry)
+		if errors.Is(err, io.EOF) {
+			close(jobChan)
+			return nil
+		}
+		// Decode does not return error on missing data / incompatible format
+		if err != nil {
+			cancel()
+			return fmt.Errorf("decoding entry: %w", err)
+		}
+		if i%100_000 == 0 {
+			log.Infof("Migrated %d entries", i)
+		}
+
 		select {
 		case <-ctx.Done():
 			return nil
-		default:
-			if len(jobChan) < entryQueueSize { // Prevent hanging on blocked chan
-				i++
-				entry := new(Entry)
-				err := jd.Decode(entry)
-				if errors.Is(err, io.EOF) {
-					close(jobChan)
-					return nil
-				}
-				// Decode does not return error on missing data / incompatible format
-				if err != nil {
-					cancel()
-					return fmt.Errorf("decoding entry: %w", err)
-				}
-				if i%100_000 == 0 {
-					log.Infof("Migrated %d entries", i)
-				}
-				jobChan <- entry
-			}
+		case jobChan <- entry:
+			// Nothing to do
 		}
 	}
 }
