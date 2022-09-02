@@ -5,7 +5,7 @@ description: Use the lakeFS Spark client or RClone inside Docker to export a lak
 parent: Advanced features of lakeFS
 nav_order: 20
 has_children: false
-redirect_from: https://docs.lakefs.io/reference/export.html
+redirect_from: ["../reference/export.html"]
 ---
 
 # Exporting Data
