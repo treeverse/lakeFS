@@ -184,6 +184,7 @@ const (
 	LakefsEmailBaseURLKey      = "email.lakefs_base_url"
 
 	DynamoDBTableNameKey = "database.dynamodb.table_name"
+	DatabaseType         = "database.type"
 
 	UIEnabledKey = "ui.enabled"
 )

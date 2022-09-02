@@ -20,7 +20,7 @@ import (
 func TestMigrate(t *testing.T) {
 	ctx := context.Background()
 	database, _ := testutil.GetDB(t, databaseURI)
-	kvStore := kvtest.MakeStoreByName(postgres.DriverName, kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})(t, ctx)
+	kvStore := kvtest.MakeStoreByName(postgres.DriverName, kvparams.KV{Type: postgres.DriverName, Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})(t, ctx)
 	defer kvStore.Close()
 	dbTracker := multiparts.NewDBTracker(database)
 

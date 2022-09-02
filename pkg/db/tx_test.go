@@ -12,7 +12,7 @@ import (
 func getDB(t *testing.T) db.Database {
 	t.Helper()
 	ctx := context.Background()
-	ret, err := db.ConnectDB(ctx, params.Database{Driver: "pgx", ConnectionString: databaseURI})
+	ret, err := db.ConnectDB(ctx, params.Database{Type: "postgres", Driver: "pgx", ConnectionString: databaseURI})
 	if err != nil {
 		t.Fatal("failed to get DB")
 	}

@@ -1,6 +1,7 @@
 package db_test
 
 import (
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -13,12 +14,17 @@ import (
 
 func TestMigrations(t *testing.T) {
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
+	viper.Set(config.DatabaseType, kvpg.DriverName)
+
+	databaseURI, closer := testutil.GetDBInstance(pool)
+	defer closer()
+	viper.Set("database.connection_string", databaseURI)
+	viper.Set("database.postgres.connection_string", databaseURI)
+
 	cfg, err := config.NewConfig()
 	if err != nil {
 		t.Fatal("creating config:", err)
 	}
-	databaseURI, closer := testutil.GetDBInstance(pool)
-	defer closer()
 	err = db.MigrateUp(cfg.GetDatabaseParams(), cfg, cfg.GetKVParams())
 	if err != nil {
 		t.Fatal("failed running migrate up:", err)

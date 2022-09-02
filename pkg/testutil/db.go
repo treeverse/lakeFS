@@ -32,6 +32,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/kv"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
@@ -217,7 +219,8 @@ func GetDB(t testing.TB, uri string, opts ...GetDBOption) (db.Database, string) 
 			}
 		}
 
-		err = db.MigrateUp(params.Database{ConnectionString: connURI}, cfg, cfg.GetKVParams())
+		kvParams := kvparams.KV{Type: kvpg.DriverName, Postgres: &kvparams.Postgres{ConnectionString: connURI}}
+		err = db.MigrateUp(params.Database{Type: kvParams.Type, ConnectionString: connURI}, cfg, kvParams)
 		if err != nil {
 			t.Fatal("could not create schema:", err)
 		}
