@@ -16,7 +16,6 @@ type fileTracker struct {
 type deleteCallback func(path params.RelativePath)
 
 type tracked struct {
-	path    params.RelativePath
 	ref     int
 	deleted bool
 }
@@ -31,13 +30,11 @@ func NewFileTracker(delete deleteCallback) *fileTracker {
 func (t *fileTracker) Open(path params.RelativePath) func() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-
 	if val, ok := t.refMap[string(path)]; ok {
 		val.ref++
 	} else {
 		t.refMap[string(path)] = &tracked{
-			path: path,
-			ref:  1,
+			ref: 1,
 		}
 	}
 	return func() {
@@ -49,18 +46,12 @@ func (t *fileTracker) close(path params.RelativePath) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if val, ok := t.refMap[string(path)]; ok {
-		if val.ref > 0 {
-			val.ref--
-		}
-		t.innerDelete(val)
-	}
-}
-
-func (t *fileTracker) innerDelete(file *tracked) {
-	if file.ref == 0 {
-		delete(t.refMap, string(file.path))
-		if file.deleted {
-			t.delete(file.path)
+		val.ref--
+		if val.ref == 0 {
+			delete(t.refMap, string(path))
+			if val.deleted {
+				t.delete(path)
+			}
 		}
 	}
 }
@@ -68,18 +59,9 @@ func (t *fileTracker) innerDelete(file *tracked) {
 func (t *fileTracker) Delete(path params.RelativePath) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	var (
-		val *tracked
-		ok  bool
-	)
-	if val, ok = t.refMap[string(path)]; ok {
+	if val, ok := t.refMap[string(path)]; ok {
 		val.deleted = true
 	} else {
-		val = &tracked{
-			path:    path,
-			ref:     0,
-			deleted: true,
-		}
+		t.delete(path)
 	}
-	t.innerDelete(val)
 }

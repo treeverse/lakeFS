@@ -261,7 +261,7 @@ func (tfs *TierFS) openFile(ctx context.Context, fileRef localFileRef, fh *os.Fi
 	}
 
 	if !tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
-		// deletion will be handled by onReject callback
+		tfs.fileTracker.Delete(fileRef.fsRelativePath)
 		tfs.log(ctx).WithFields(logging.Fields{
 			"namespace": fileRef.namespace,
 			"file":      fileRef.filename,
