@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.80.0 - 2022-08-31
+This release requires running database migration.
+The lakeFS service will not run if the migration version isn't compatible with the binary.
+Before running the new version you will be required to run migrate, with the new version. 
+Please refer to this [upgrade documentation](https://docs.lakefs.io/reference/upgrade.html##lakefs-0800-or-greater-kv-migration) for more information on the specific migration to KV
+
+This is the first lakeFS version over Key-Value Store
+lakeFS is decoupling from PostgreSQL and moving to a KV Store interface. 
+This will provide greater flexibility and allow production groups working with lakeFS to select their backing DB of choice.  
+Check our updated [Deploy lakeFS](https://docs.lakefs.io/deploy/#deploy-lakefs) page, for deployment instructions.
+Also make sure to check our [Sizing Guide](https://docs.lakefs.io/understand/sizing-guide.html#lakefs-kv-store) for best practices, requirements and benchmarks
+
 ## v0.70.6 - 2022-08-30
 - UI: fix focus on branch lookup while creating tag (#4005)
 
