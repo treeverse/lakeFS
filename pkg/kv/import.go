@@ -36,57 +36,30 @@ type SafeEncoder struct {
 func (e *SafeEncoder) Encode(v interface{}) error {
 	e.Mu.Lock()
 	defer e.Mu.Unlock()
-	err := e.Je.Encode(v)
-	if err != nil {
-		return err
-	}
-	return nil
+	return e.Je.Encode(v)
 }
 
-func consumer(ctx context.Context, cancel context.CancelFunc, jobChan <-chan *Entry, store Store) error {
-	for {
-		select {
-		case e, more := <-jobChan:
-			if !more {
-				return nil
-			}
-			if len(e.PartitionKey) == 0 {
-				cancel()
-				return fmt.Errorf("bad entry partition key: %w", ErrInvalidFormat)
-			}
-			if len(e.Key) == 0 {
-				cancel()
-				return fmt.Errorf("bad entry key: %w", ErrInvalidFormat)
-			}
-			if e.Value == nil {
-				cancel()
-				return fmt.Errorf("bad entry value: %w", ErrInvalidFormat)
-			}
-			err := store.SetIf(ctx, e.PartitionKey, e.Key, e.Value, nil)
-			if err != nil {
-				cancel()
-				return fmt.Errorf("import (partition key: %s, key: %s): %w", e.PartitionKey, e.Key, err)
-			}
-		case <-ctx.Done():
-			return nil
-		}
-	}
-}
-
-func producer(ctx context.Context, cancel context.CancelFunc, log logging.Logger, jobChan chan<- *Entry, jd *json.Decoder) error {
+func importReader(ctx context.Context, log logging.Logger, jobChan chan<- *Entry, jd *json.Decoder) error {
 	i := 0
 	for {
 		i++
 		entry := new(Entry)
 		err := jd.Decode(entry)
 		if errors.Is(err, io.EOF) {
-			close(jobChan)
 			return nil
 		}
 		// Decode does not return error on missing data / incompatible format
 		if err != nil {
-			cancel()
 			return fmt.Errorf("decoding entry: %w", err)
+		}
+		if len(entry.PartitionKey) == 0 {
+			return fmt.Errorf("bad entry partition key: %w", ErrInvalidFormat)
+		}
+		if len(entry.Key) == 0 {
+			return fmt.Errorf("bad entry key: %w", ErrInvalidFormat)
+		}
+		if entry.Value == nil {
+			return fmt.Errorf("bad entry value: %w", ErrInvalidFormat)
 		}
 		if i%100_000 == 0 {
 			log.Infof("Migrated %d entries", i)
@@ -117,7 +90,6 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 	if header == (Header{}) {
 		return fmt.Errorf("bad header format: %w", ErrInvalidFormat)
 	}
-	cctx, cancel := context.WithCancel(ctx)
 	// TODO(niro): Add validation to the header in the future
 	log := logging.Default().WithFields(logging.Fields{
 		"package_name":      header.PackageName,
@@ -127,16 +99,27 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 	})
 	log.Info("Processing file")
 
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	entryChan := make(chan *Entry, entryQueueSize)
 	var g multierror.Group
 	for i := 0; i < importWorkers; i++ {
 		g.Go(func() error {
-			return consumer(cctx, cancel, entryChan, store)
+			for e := range entryChan {
+				err := store.SetIf(ctx, e.PartitionKey, e.Key, e.Value, nil)
+				if err != nil {
+					cancel() // make sure reader will stop processing on first error
+					return fmt.Errorf("import (partition key: %s, key: %s): %w", e.PartitionKey, e.Key, err)
+				}
+			}
+			return nil
 		})
 	}
-	g.Go(func() error {
-		return producer(cctx, cancel, log, entryChan, jd)
-	})
+	readerErr := importReader(ctx, log, entryChan, jd)
+	close(entryChan)
 
-	return g.Wait().ErrorOrNil()
+	err := g.Wait()
+	err = multierror.Append(err, readerErr)
+	return err.ErrorOrNil()
 }
