@@ -82,8 +82,6 @@ type configuration struct {
 		// Deprecated: use Postgres struct
 		DeprecatedConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
 
-		// KVEnabled Development flag to switch between postgres DB and KV store implementations
-		KVEnabled bool `mapstructure:"kv_enabled"`
 		// DropTables Development flag to delete tables after successful migration to KV
 		DropTables bool `mapstructure:"drop_tables"`
 		// Type  Name of the KV Store driver DB implementation which is available according to the kv package Drivers function

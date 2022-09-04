@@ -21,14 +21,19 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/ory/dockertest/v3"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/gs"
 	"github.com/treeverse/lakefs/pkg/block/mem"
+	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	lakefsS3 "github.com/treeverse/lakefs/pkg/block/s3"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/kv"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
@@ -198,7 +203,24 @@ func GetDB(t testing.TB, uri string, opts ...GetDBOption) (db.Database, string) 
 
 	if options.ApplyDDL {
 		// do the actual migration
-		err := db.MigrateUp(params.Database{ConnectionString: connURI})
+
+		cfg, err := config.NewConfig()
+		if err != nil {
+			t.Fatalf("creating config: %s", err)
+		}
+		if cfg.GetBlockstoreType() == "" {
+			// migration requires blockstore initilization
+			viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
+
+			// creating config with the new adapter type
+			cfg, err = config.NewConfig()
+			if err != nil {
+				t.Fatalf("creating fresh config: %s", err)
+			}
+		}
+
+		kvParams := kvparams.KV{Type: kvpg.DriverName, Postgres: &kvparams.Postgres{ConnectionString: connURI}}
+		err = db.MigrateUp(params.Database{Type: kvParams.Type, ConnectionString: connURI}, cfg, kvParams)
 		if err != nil {
 			t.Fatal("could not create schema:", err)
 		}
@@ -257,16 +279,16 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 
 // migrate functions for test scenarios
 
-func MigrateEmpty(_ context.Context, _ *pgxpool.Pool, _ io.Writer) error {
+func MigrateEmpty(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterConfig, _ io.Writer) error {
 	return nil
 }
 
-func MigrateBasic(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error {
+func MigrateBasic(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterConfig, writer io.Writer) error {
 	buildTestData(1, 5, writer) //nolint: gomnd
 	return nil
 }
 
-func MigrateNoHeader(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error {
+func MigrateNoHeader(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterConfig, writer io.Writer) error {
 	jd := json.NewEncoder(writer)
 
 	for i := 1; i < 5; i++ {
@@ -282,7 +304,7 @@ func MigrateNoHeader(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error
 	return nil
 }
 
-func MigrateBadEntry(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error {
+func MigrateBadEntry(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterConfig, writer io.Writer) error {
 	jd := json.NewEncoder(writer)
 
 	err := jd.Encode(kv.Entry{
@@ -295,7 +317,7 @@ func MigrateBadEntry(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error
 	return nil
 }
 
-func MigrateParallel(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error {
+func MigrateParallel(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterConfig, writer io.Writer) error {
 	const index = 6                 // Magic number WA
 	buildTestData(index, 5, writer) //nolint: gomnd
 	return nil

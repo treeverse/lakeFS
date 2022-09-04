@@ -15,8 +15,9 @@ import (
 
 func TestKVMigration(t *testing.T) {
 	ctx := context.Background()
-	dbParams := params.Database{Driver: "pgx", ConnectionString: databaseURI, KVEnabled: true, DropTables: true}
-	kvStore, err := kv.Open(ctx, kvparams.KV{Type: kvpg.DriverName, Postgres: &kvparams.Postgres{ConnectionString: dbParams.ConnectionString}})
+	dbParams := params.Database{Type: kvpg.DriverName, Driver: "pgx", ConnectionString: databaseURI, DropTables: true}
+	kvParams := kvparams.KV{Type: kvpg.DriverName, Postgres: &kvparams.Postgres{ConnectionString: dbParams.ConnectionString}}
+	kvStore, err := kv.Open(ctx, kvParams)
 	require.NoError(t, err)
 	defer kvStore.Close()
 
@@ -61,7 +62,7 @@ func TestKVMigration(t *testing.T) {
 			for n, m := range tt.migrations {
 				kvpg.RegisterMigrate(n, m, nil)
 			}
-			err = db.MigrateUp(dbParams)
+			err = db.MigrateUp(dbParams, nil, kvParams)
 			require.ErrorIs(t, err, tt.err)
 
 			if tt.err == nil {
@@ -72,6 +73,7 @@ func TestKVMigration(t *testing.T) {
 
 			testutil.ValidateKV(ctx, t, kvStore, tt.entries)
 			testutil.CleanupKV(ctx, t, kvStore)
+			kvpg.UnregisterAll()
 		})
 	}
 }

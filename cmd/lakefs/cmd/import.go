@@ -3,7 +3,6 @@ package cmd
 import (
 	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -15,7 +14,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -71,40 +69,16 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	cfg := loadConfig()
 	ctx := cmd.Context()
 	logger := logging.FromContext(ctx)
-	dbParams := cfg.GetDatabaseParams()
-	var (
-		idGen        actions.IDGenerator
-		actionsStore actions.Store
-		storeMessage *kv.StoreMessage
-		dbPool       db.Database
-	)
-	if dbParams.KVEnabled {
-		kvParams := cfg.GetKVParams()
-		kvStore, err := kv.Open(ctx, kvParams)
-		if err != nil {
-			logger.WithError(err).Fatal("failed to open KV store")
-		}
-		defer kvStore.Close()
-		storeMessage = &kv.StoreMessage{Store: kvStore}
-
-		actionsStore = actions.NewActionsKVStore(*storeMessage)
-		idGen = &actions.DecreasingIDGenerator{}
-	} else {
-		dbPool = db.BuildDatabaseConnection(ctx, dbParams)
-		defer dbPool.Close()
-		err := db.ValidateSchemaUpToDate(ctx, dbPool, dbParams)
-		if errors.Is(err, db.ErrSchemaNotCompatible) {
-			fmt.Println("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
-			return 1
-		}
-		if err != nil {
-			fmt.Printf("%s\n", err)
-			return 1
-		}
-
-		actionsStore = actions.NewActionsDBStore(dbPool)
-		idGen = &actions.IncreasingIDGenerator{}
+	kvParams := cfg.GetKVParams()
+	kvStore, err := kv.Open(ctx, kvParams)
+	if err != nil {
+		logger.WithError(err).Fatal("failed to open KV store")
 	}
+	defer kvStore.Close()
+	storeMessage := &kv.StoreMessage{Store: kvStore}
+
+	actionsStore := actions.NewActionsKVStore(*storeMessage)
+	idGen := &actions.DecreasingIDGenerator{}
 
 	u := uri.Must(uri.Parse(args[0]))
 	if !u.IsRepository() {
@@ -134,7 +108,6 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 
 	c, err := catalog.New(ctx, catalog.Config{
 		Config:  cfg,
-		DB:      dbPool,
 		KVStore: storeMessage,
 	})
 	if err != nil {

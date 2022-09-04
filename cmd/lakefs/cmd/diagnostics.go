@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/diagnostics"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -22,24 +21,14 @@ var diagnosticsCmd = &cobra.Command{
 		ctx := cmd.Context()
 		output, _ := cmd.Flags().GetString("output")
 
-		dbParams := cfg.GetDatabaseParams()
-		var (
-			dbPool       db.Database
-			storeMessage *kv.StoreMessage
-		)
-		if dbParams.KVEnabled {
-			kvParams := cfg.GetKVParams()
-			kvStore, err := kv.Open(ctx, kvParams)
-			if err != nil {
-				log.Fatalf("Failed to open KV store: %s", err)
-			}
-			defer kvStore.Close()
-			storeMessage = &kv.StoreMessage{
-				Store: kvStore,
-			}
-		} else {
-			dbPool = db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
-			defer dbPool.Close()
+		kvParams := cfg.GetKVParams()
+		kvStore, err := kv.Open(ctx, kvParams)
+		if err != nil {
+			log.Fatalf("Failed to open KV store: %s", err)
+		}
+		defer kvStore.Close()
+		storeMessage := &kv.StoreMessage{
+			Store: kvStore,
 		}
 
 		adapter, err := factory.BuildBlockAdapter(ctx, &stats.NullCollector{}, cfg)
@@ -48,7 +37,6 @@ var diagnosticsCmd = &cobra.Command{
 		}
 		c, err := catalog.New(ctx, catalog.Config{
 			Config:  cfg,
-			DB:      dbPool,
 			KVStore: storeMessage,
 		})
 		if err != nil {

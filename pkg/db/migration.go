@@ -6,16 +6,17 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
+	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/ddl"
 	_ "github.com/treeverse/lakefs/pkg/kv/dynamodb"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"gopkg.in/retry.v1"
@@ -25,32 +26,6 @@ var ErrSchemaNotCompatible = errors.New("db schema version not compatible with l
 
 type Migrator interface {
 	Migrate(ctx context.Context) error
-}
-
-type DatabaseMigrator struct {
-	params params.Database
-}
-
-func NewDatabaseMigrator(params params.Database) Migrator {
-	return &DatabaseMigrator{
-		params: params,
-	}
-}
-
-func (d *DatabaseMigrator) Migrate(ctx context.Context) error {
-	log := logging.FromContext(ctx)
-	start := time.Now()
-	lg := log.WithFields(logging.Fields{
-		"direction": "up",
-	})
-	err := MigrateUp(d.params)
-	if err != nil {
-		lg.WithError(err).Error("Failed to migrate")
-		return err
-	} else {
-		lg.WithField("took", time.Since(start)).Info("schema migrated")
-	}
-	return nil
 }
 
 // newDriverSourceForDDLContent migration driver source with our DDL content
@@ -160,8 +135,8 @@ func closeMigrate(m *migrate.Migrate) {
 	}
 }
 
-func MigrateUp(p params.Database) error {
-	m, err := getMigrate(p)
+func MigrateUp(dbParams params.Database, blockParams blockparams.AdapterConfig, kvParams kvparams.KV) error {
+	m, err := getMigrate(dbParams)
 	if err != nil {
 		return err
 	}
@@ -171,9 +146,9 @@ func MigrateUp(p params.Database) error {
 		return err
 	}
 	ctx := context.Background()
-	d := BuildDatabaseConnection(ctx, p)
+	d := BuildDatabaseConnection(ctx, dbParams)
 	defer d.Close()
-	return kvpg.Migrate(ctx, d.Pool(), p)
+	return kvpg.Migrate(ctx, d.Pool(), dbParams, blockParams, kvParams.Postgres)
 }
 
 func MigrateDown(params params.Database) error {

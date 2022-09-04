@@ -10,6 +10,7 @@ import (
 
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgx/v4/pgxpool"
+	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
@@ -106,7 +107,7 @@ func (m *dbTracker) Delete(ctx context.Context, uploadID string) error {
 	return err
 }
 
-func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
+func Migrate(ctx context.Context, d *pgxpool.Pool, _ blockparams.AdapterConfig, writer io.Writer) error {
 	je := json.NewEncoder(writer)
 	// Create header
 	if err := je.Encode(kv.Header{

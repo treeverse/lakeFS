@@ -52,7 +52,7 @@ func benchmarkMigrate(runCount int, b *testing.B) {
 	defer buf.Close()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		err := actions.Migrate(ctx, database.Pool(), buf)
+		err := actions.Migrate(ctx, database.Pool(), nil, buf)
 		require.NoError(b, err)
 		_, _ = buf.Seek(0, 0)
 		testutil.MustDo(b, "Import file", kv.Import(ctx, buf, kvStore))
@@ -74,7 +74,7 @@ func TestMigrate(t *testing.T) {
 	}
 
 	buf := bytes.Buffer{}
-	err := actions.Migrate(ctx, database.Pool(), &buf)
+	err := actions.Migrate(ctx, database.Pool(), nil, &buf)
 	require.NoError(t, err)
 
 	kvStore := kvtest.MakeStoreByName(postgres.DriverName, kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})(t, ctx)
