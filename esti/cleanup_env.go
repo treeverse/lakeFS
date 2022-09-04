@@ -3,6 +3,7 @@ package esti
 import (
 	"context"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"net/http"
 
 	"github.com/treeverse/lakefs/pkg/api"
@@ -18,28 +19,28 @@ func arrayFlagsToMap(arr arrayFlags) map[interface{}]bool {
 	return retMap
 }
 
-func envCleanup(client api.ClientWithResponsesInterface, repositoriesToKeep, groupsToKeep, usersToKeep, policiesToKeep arrayFlags) error {
+func envCleanup(client api.ClientWithResponsesInterface, repositoriesToKeep, groupsToKeep, usersToKeep, policiesToKeep arrayFlags, logger logging.Logger) error {
 	ctx := context.Background()
-	err := deleteAllRepositories(ctx, client, repositoriesToKeep)
+	err := deleteAllRepositories(ctx, client, repositoriesToKeep, logger)
 	if err != nil {
 		return err
 	}
 
-	err = deleteAllGroups(ctx, client, groupsToKeep)
+	err = deleteAllGroups(ctx, client, groupsToKeep, logger)
 	if err != nil {
 		return err
 	}
 
-	err = deleteAllPolicies(ctx, client, policiesToKeep)
+	err = deleteAllPolicies(ctx, client, policiesToKeep, logger)
 	if err != nil {
 		return err
 	}
 
-	err = deleteAllUsers(ctx, client, usersToKeep)
+	err = deleteAllUsers(ctx, client, usersToKeep, logger)
 	return err
 }
 
-func deleteAllRepositories(ctx context.Context, client api.ClientWithResponsesInterface, repositoriesToKeep arrayFlags) error {
+func deleteAllRepositories(ctx context.Context, client api.ClientWithResponsesInterface, repositoriesToKeep arrayFlags, logger logging.Logger) error {
 	repositoriesToNotDelete := arrayFlagsToMap(repositoriesToKeep)
 	listRepositoriesResponse, err := client.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
 	if err != nil {
@@ -52,7 +53,10 @@ func deleteAllRepositories(ctx context.Context, client api.ClientWithResponsesIn
 	for hasMore {
 		for _, repo := range listRepositoriesResponse.JSON200.Results {
 			if !repositoriesToNotDelete[repo.Id] {
-				client.DeleteRepositoryWithResponse(ctx, repo.Id)
+				deleteRepositoryResponse, err := client.DeleteRepositoryWithResponse(ctx, repo.Id)
+				if err != nil || deleteRepositoryResponse.StatusCode() != http.StatusOK {
+					logger.Warnf("failed to delete repository: %s", repo.Id)
+				}
 			}
 		}
 		hasMore = listRepositoriesResponse.JSON200.Pagination.HasMore
@@ -70,7 +74,7 @@ func deleteAllRepositories(ctx context.Context, client api.ClientWithResponsesIn
 	return err
 }
 
-func deleteAllGroups(ctx context.Context, client api.ClientWithResponsesInterface, groupsToKeep arrayFlags) error {
+func deleteAllGroups(ctx context.Context, client api.ClientWithResponsesInterface, groupsToKeep arrayFlags, logger logging.Logger) error {
 	groupsToNotDelete := arrayFlagsToMap(groupsToKeep)
 
 	listGroupsResponse, err := client.ListGroupsWithResponse(ctx, &api.ListGroupsParams{})
@@ -84,7 +88,10 @@ func deleteAllGroups(ctx context.Context, client api.ClientWithResponsesInterfac
 	for hasMore {
 		for _, group := range listGroupsResponse.JSON200.Results {
 			if !groupsToNotDelete[group.Id] {
-				client.DeleteGroupWithResponse(ctx, group.Id)
+				deleteGroupResponse, err := client.DeleteGroupWithResponse(ctx, group.Id)
+				if err != nil || deleteGroupResponse.StatusCode() != http.StatusOK {
+					logger.Warnf("failed to delete group: %s", group.Id)
+				}
 			}
 		}
 		hasMore = listGroupsResponse.JSON200.Pagination.HasMore
@@ -102,7 +109,7 @@ func deleteAllGroups(ctx context.Context, client api.ClientWithResponsesInterfac
 	return err
 }
 
-func deleteAllUsers(ctx context.Context, client api.ClientWithResponsesInterface, usersToKeep arrayFlags) error {
+func deleteAllUsers(ctx context.Context, client api.ClientWithResponsesInterface, usersToKeep arrayFlags, logger logging.Logger) error {
 	usersToNotDelete := arrayFlagsToMap(usersToKeep)
 
 	listUsersResponse, err := client.ListUsersWithResponse(ctx, &api.ListUsersParams{})
@@ -116,7 +123,10 @@ func deleteAllUsers(ctx context.Context, client api.ClientWithResponsesInterface
 	for hasMore {
 		for _, user := range listUsersResponse.JSON200.Results {
 			if !usersToNotDelete[user.Id] {
-				client.DeleteUserWithResponse(ctx, user.Id)
+				deleteUserResponse, err := client.DeleteUserWithResponse(ctx, user.Id)
+				if err != nil || deleteUserResponse.StatusCode() != http.StatusOK {
+					logger.Warnf("failed to delete user: %s", user.Id)
+				}
 			}
 		}
 		hasMore = listUsersResponse.JSON200.Pagination.HasMore
@@ -134,7 +144,7 @@ func deleteAllUsers(ctx context.Context, client api.ClientWithResponsesInterface
 	return err
 }
 
-func deleteAllPolicies(ctx context.Context, client api.ClientWithResponsesInterface, policiesToKeep arrayFlags) error {
+func deleteAllPolicies(ctx context.Context, client api.ClientWithResponsesInterface, policiesToKeep arrayFlags, logger logging.Logger) error {
 	policiesToNotDelete := arrayFlagsToMap(policiesToKeep)
 
 	listPoliciesResponse, err := client.ListPoliciesWithResponse(ctx, &api.ListPoliciesParams{})
@@ -148,7 +158,11 @@ func deleteAllPolicies(ctx context.Context, client api.ClientWithResponsesInterf
 	for hasMore {
 		for _, policy := range listPoliciesResponse.JSON200.Results {
 			if !policiesToNotDelete[policy.Id] {
-				client.DeletePolicyWithResponse(ctx, policy.Id)
+				deletePolicyResponse, err := client.DeletePolicyWithResponse(ctx, policy.Id)
+				if err != nil || deletePolicyResponse.StatusCode() != http.StatusOK {
+					logger.Warnf("failed to delete policy: %s", policy.Id)
+				}
+
 			}
 		}
 		hasMore = listPoliciesResponse.JSON200.Pagination.HasMore

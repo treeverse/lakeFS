@@ -109,7 +109,7 @@ func TestMain(m *testing.M) {
 	if *cleanupEnv {
 		logger.Infof("Deleting Repositories, groups, users and policies before Esti run. Repositories to keep: %s, groups to keep: %s, users to keep: %s, policies to keep: %s", repositoriesToKeep, groupsToKeep, usersToKeep, policiesToKeep)
 
-		err = envCleanup(client, repositoriesToKeep, groupsToKeep, usersToKeep, policiesToKeep)
+		err = envCleanup(client, repositoriesToKeep, groupsToKeep, usersToKeep, policiesToKeep, logger)
 		if err != nil {
 			log.Fatal(err)
 		}
