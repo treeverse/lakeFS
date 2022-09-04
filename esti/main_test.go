@@ -49,7 +49,7 @@ func (bs *Booleans) Parse(value string) error {
 }
 
 func (i *arrayFlags) String() string {
-	return "my string representation"
+	return strings.Join(*i, " ")
 }
 
 func (i *arrayFlags) Set(value string) error {
