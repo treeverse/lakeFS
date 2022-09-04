@@ -18,7 +18,7 @@ If you're upgrading, check whether the [release](https://github.com/treeverse/la
 ### lakeFS 0.80.0 or greater (KV Migration)
 
 Starting with version 0.80.0, lakeFS has transitioned from using a PostgreSQL based database implementation to a Key-Value datastore interface supporting
-multiple database implementations. More information can be found [here](link-to-lakefs-on-kv-documentation).  
+multiple database implementations. More information can be found [here](https://github.com/treeverse/lakeFS/blob/master/design/accepted/metadata_kv/index.md).  
 Users upgrading from a previous version of lakeFS must pass through the KV migration version (0.80.0) before upgrading to newer versions of lakeFS.
 
 > **IMPORTANT: Pre Migrate Requirements**  
