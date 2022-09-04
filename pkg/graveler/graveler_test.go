@@ -147,15 +147,6 @@ func newGraveler(t *testing.T, committedManager graveler.CommittedManager, stagi
 }
 
 func TestGraveler_List(t *testing.T) {
-	t.Run("TestDBGraveler_List", func(t *testing.T) {
-		testGravelerList(t, false)
-	})
-	t.Run("TestKVGraveler_List", func(t *testing.T) {
-		testGravelerList(t, true)
-	})
-}
-
-func testGravelerList(t *testing.T, kvEnabled bool) {
 	ctx := context.Background()
 	tests := []struct {
 		name        string
@@ -210,15 +201,6 @@ func testGravelerList(t *testing.T, kvEnabled bool) {
 }
 
 func TestGraveler_Get(t *testing.T) {
-	t.Run("TestDBGraveler_Get", func(t *testing.T) {
-		testGravelerGet(t, false)
-	})
-	t.Run("TestKVGraveler_Get", func(t *testing.T) {
-		testGravelerGet(t, true)
-	})
-}
-
-func testGravelerGet(t *testing.T, kvEnabled bool) {
 	errTest := errors.New("some kind of err")
 	tests := []struct {
 		name                string
@@ -298,15 +280,6 @@ func testGravelerGet(t *testing.T, kvEnabled bool) {
 }
 
 func TestGraveler_Set(t *testing.T) {
-	t.Run("TestDBGraveler_Set", func(t *testing.T) {
-		testGravelerSet(t, false)
-	})
-	t.Run("TestKVGraveler_Set", func(t *testing.T) {
-		testGravelerSet(t, true)
-	})
-}
-
-func testGravelerSet(t *testing.T, kvEnabled bool) {
 	newSetVal := graveler.ValueRecord{Key: []byte("key"), Value: &graveler.Value{Data: []byte("newValue"), Identity: []byte("newIdentity")}}
 	tests := []struct {
 		name                string
@@ -464,7 +437,7 @@ func TestGravelerGet_Advanced(t *testing.T) {
 			expectedErr: graveler.ErrNotFound,
 		},
 		{
-			name: "branch -committed, staged entry + tombstoned",
+			name: "branch -committed, staged entry + tombstone",
 			r: newGraveler(t, &testutil.CommittedFake{
 				ValuesByKey: map[string]*graveler.Value{"staged": {Identity: []byte("stagedA")}}},
 				&testutil.StagingFake{
@@ -733,15 +706,6 @@ func TestGraveler_Diff(t *testing.T) {
 }
 
 func TestGraveler_DiffUncommitted(t *testing.T) {
-	t.Run("TestDBGraveler_DiffUncommitted", func(t *testing.T) {
-		testGravelerDiffUncommitted(t, false)
-	})
-	t.Run("TestKVGraveler_DiffUncommitted", func(t *testing.T) {
-		testGravelerDiffUncommitted(t, true)
-	})
-}
-
-func testGravelerDiffUncommitted(t *testing.T, kvEnabled bool) {
 	tests := []struct {
 		name            string
 		r               catalog.Store
@@ -961,15 +925,6 @@ func TestGravelerDiffUncommitted_Advanced(t *testing.T) {
 }
 
 func TestGraveler_CreateBranch(t *testing.T) {
-	t.Run("TestDBGraveler_CreateBranch", func(t *testing.T) {
-		testGravelerCreateBranch(t, false)
-	})
-	t.Run("TestKVGraveler_CreateBranch", func(t *testing.T) {
-		testGravelerCreateBranch(t, true)
-	})
-}
-
-func testGravelerCreateBranch(t *testing.T, kvEnabled bool) {
 	gravel := newGraveler(t, nil, nil, &testutil.RefsFake{Err: graveler.ErrBranchNotFound, CommitID: "8888888798e3aeface8e62d1c7072a965314b4"}, nil, nil)
 	_, err := gravel.CreateBranch(context.Background(), repository, "", "")
 	if err != nil {
@@ -984,12 +939,6 @@ func testGravelerCreateBranch(t *testing.T, kvEnabled bool) {
 }
 
 func TestGraveler_UpdateBranch(t *testing.T) {
-	t.Run("TestKVGraveler_UpdateBranch", func(t *testing.T) {
-		testGravelerUpdateBranch(t, true)
-	})
-}
-
-func testGravelerUpdateBranch(t *testing.T, kvEnabled bool) {
 	gravel := newGraveler(t, nil, &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
 		&testutil.RefsFake{Branch: &graveler.Branch{}, UpdateErr: kv.ErrPredicateFailed}, nil, nil)
 	_, err := gravel.UpdateBranch(context.Background(), repository, "", "")
@@ -1282,15 +1231,6 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 
 // TestGraveler_MergeInvalidRef test merge with invalid source reference in order
 func TestGraveler_MergeInvalidRef(t *testing.T) {
-	t.Run("TestDBGraveler_MergeInvalidRef", func(t *testing.T) {
-		testGravelerMergeInvalidRef(t, false)
-	})
-	t.Run("TestKVGraveler_MergeInvalidRef", func(t *testing.T) {
-		testGravelerMergeInvalidRef(t, true)
-	})
-}
-
-func testGravelerMergeInvalidRef(t *testing.T, kvEnabled bool) {
 	// prepare graveler
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const destinationCommitID = graveler.CommitID("destinationCommitID")
@@ -1352,12 +1292,11 @@ func testGravelerAddCommitToBranchHead(t *testing.T, kvEnabled bool) {
 		RefManager       *testutil.RefsFake
 	}
 	type args struct {
-		ctx          context.Context
-		repositoryID graveler.RepositoryID
-		branchID     graveler.BranchID
-		committer    string
-		message      string
-		metadata     graveler.Metadata
+		ctx       context.Context
+		branchID  graveler.BranchID
+		committer string
+		message   string
+		metadata  graveler.Metadata
 	}
 	tests := []struct {
 		name        string
@@ -1486,15 +1425,6 @@ func testGravelerAddCommitToBranchHead(t *testing.T, kvEnabled bool) {
 }
 
 func TestGraveler_AddCommit(t *testing.T) {
-	t.Run("TestDBGraveler_AddCommit", func(t *testing.T) {
-		testGravelerAddCommit(t, false)
-	})
-	t.Run("TestKVGraveler_AddCommit", func(t *testing.T) {
-		testGravelerAddCommit(t, true)
-	})
-}
-
-func testGravelerAddCommit(t *testing.T, kvEnabled bool) {
 	const (
 		expectedCommitID       = graveler.CommitID("expectedCommitId")
 		expectedParentCommitID = graveler.CommitID("expectedParentCommitId")
@@ -1652,9 +1582,8 @@ func testGravelerDelete(t *testing.T, kvEnabled bool) {
 		RefManager       graveler.RefManager
 	}
 	type args struct {
-		repositoryID graveler.RepositoryID
-		branchID     graveler.BranchID
-		key          graveler.Key
+		branchID graveler.BranchID
+		key      graveler.Key
 	}
 	tests := []struct {
 		name               string
@@ -1820,15 +1749,6 @@ func testGravelerDelete(t *testing.T, kvEnabled bool) {
 }
 
 func TestGraveler_PreCommitHook(t *testing.T) {
-	t.Run("TestDBGraveler_PreCommitHook", func(t *testing.T) {
-		testGravelerPreCommitHook(t, false)
-	})
-	t.Run("TestKVGraveler_PreCommitHook", func(t *testing.T) {
-		testGravelerPreCommitHook(t, true)
-	})
-}
-
-func testGravelerPreCommitHook(t *testing.T, kvEnabled bool) {
 	// prepare graveler
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const expectedCommitID = graveler.CommitID("expectedCommitId")
@@ -1912,15 +1832,6 @@ func testGravelerPreCommitHook(t *testing.T, kvEnabled bool) {
 }
 
 func TestGraveler_PreMergeHook(t *testing.T) {
-	t.Run("TestDBGraveler_PreMergeHook", func(t *testing.T) {
-		testGravelerPreMergeHook(t, false)
-	})
-	t.Run("TestKVGraveler_PreMergeHook", func(t *testing.T) {
-		testGravelerPreMergeHook(t, true)
-	})
-}
-
-func testGravelerPreMergeHook(t *testing.T, kvEnabled bool) {
 	// prepare graveler
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const expectedCommitID = graveler.CommitID("expectedCommitID")
@@ -2034,15 +1945,6 @@ func testGravelerPreMergeHook(t *testing.T, kvEnabled bool) {
 }
 
 func TestGraveler_CreateTag(t *testing.T) {
-	t.Run("TestDBGraveler_CreateTag", func(t *testing.T) {
-		testGravelerCreateTag(t, false)
-	})
-	t.Run("TestKVGraveler_CreateTag", func(t *testing.T) {
-		testGravelerCreateTag(t, true)
-	})
-}
-
-func testGravelerCreateTag(t *testing.T, kvEnabled bool) {
 	// prepare graveler
 	const commitID = graveler.CommitID("commitID")
 	const tagID = graveler.TagID("tagID")
@@ -2090,15 +1992,6 @@ func testGravelerCreateTag(t *testing.T, kvEnabled bool) {
 }
 
 func TestGraveler_PreCreateTagHook(t *testing.T) {
-	t.Run("TestDBGraveler_PreCreateTagHook", func(t *testing.T) {
-		testGravelerPreCreateTagHook(t, false)
-	})
-	t.Run("TestKVGraveler_PreCreateTagHook", func(t *testing.T) {
-		testGravelerPreCreateTagHook(t, true)
-	})
-}
-
-func testGravelerPreCreateTagHook(t *testing.T, kvEnabled bool) {
 	// prepare graveler
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const expectedCommitID = graveler.CommitID("expectedCommitID")
@@ -2178,15 +2071,6 @@ func testGravelerPreCreateTagHook(t *testing.T, kvEnabled bool) {
 }
 
 func TestGraveler_PreDeleteTagHook(t *testing.T) {
-	t.Run("TestDBGraveler_PreDeleteTagHook", func(t *testing.T) {
-		testGravelerPreDeleteTagHook(t, false)
-	})
-	t.Run("TestKVGraveler_PreDeleteTagHook", func(t *testing.T) {
-		testGravelerPreDeleteTagHook(t, true)
-	})
-}
-
-func testGravelerPreDeleteTagHook(t *testing.T, kvEnabled bool) {
 	// prepare graveler
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const expectedCommitID = graveler.CommitID("expectedCommitID")
@@ -2264,15 +2148,6 @@ func testGravelerPreDeleteTagHook(t *testing.T, kvEnabled bool) {
 }
 
 func TestGraveler_PreCreateBranchHook(t *testing.T) {
-	t.Run("TestDBGraveler_PreCreateBranchHook", func(t *testing.T) {
-		testGravelerPreCreateBranchHook(t, false)
-	})
-	t.Run("TestKVGraveler_PreCreateBranchHook", func(t *testing.T) {
-		testGravelerPreCreateBranchHook(t, true)
-	})
-}
-
-func testGravelerPreCreateBranchHook(t *testing.T, kvEnabled bool) {
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const sourceCommitID = graveler.CommitID("sourceCommitID")
 	const sourceBranchID = graveler.CommitID("sourceBranchID")
@@ -2360,15 +2235,6 @@ func testGravelerPreCreateBranchHook(t *testing.T, kvEnabled bool) {
 }
 
 func TestGraveler_PreDeleteBranchHook(t *testing.T) {
-	t.Run("TestDBGraveler_PreDeleteBranchHook", func(t *testing.T) {
-		testGravelerPreDeleteBranchHook(t, false)
-	})
-	t.Run("TestKVGraveler_PreDeleteBranchHook", func(t *testing.T) {
-		testGravelerPreDeleteBranchHook(t, true)
-	})
-}
-
-func testGravelerPreDeleteBranchHook(t *testing.T, kvEnabled bool) {
 	// prepare graveler
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const sourceCommitID = graveler.CommitID("sourceCommitID")
