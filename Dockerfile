@@ -20,6 +20,7 @@ RUN go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERS
 
 # lakectl image
 FROM alpine:3.15.0 AS lakectl
+RUN apk add -U --no-cache ca-certificates
 WORKDIR /app
 ENV PATH /app:$PATH
 COPY --from=build /build/lakectl ./
@@ -31,6 +32,7 @@ ENTRYPOINT ["/app/lakectl"]
 # lakefs image
 FROM alpine:3.15.0 AS lakefs
 
+RUN apk add -U --no-cache ca-certificates
 # Be Docker compose friendly (i.e. support wait-for)
 RUN apk add netcat-openbsd
 
