@@ -167,8 +167,6 @@ object GarbageCollector {
       repo: String,
       hcValues: Broadcast[ConfMap]
   ): Set[(String, String, Boolean, Long)] = {
-    distinctEntryTuples(leftRangeIDs, apiConf, repo, hcValues)
-
     val leftTuples = distinctEntryTuples(leftRangeIDs, apiConf, repo, hcValues)
     val rightTuples = distinctEntryTuples(rightRangeIDs, apiConf, repo, hcValues)
     leftTuples -- rightTuples
