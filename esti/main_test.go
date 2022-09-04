@@ -289,8 +289,8 @@ func TestMain(m *testing.M) {
 	}
 	viper.SetDefault("post_migrate", false)
 
-	setupLakeFS := viper.GetBool("setup_lakefs")
-	logger, client, svc = testutil.SetupTestingEnv(&params, setupLakeFS)
+	setupLakeFS := false
+	logger, client, svc, setupLakeFS = testutil.SetupTestingEnv(&params)
 
 	var err error
 	if !setupLakeFS && *cleanupEnv {

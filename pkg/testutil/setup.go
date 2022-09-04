@@ -31,7 +31,7 @@ type SetupTestingEnvParams struct {
 	AdminSecretAccessKey string
 }
 
-func SetupTestingEnv(params *SetupTestingEnvParams, setupLakeFS bool) (logging.Logger, api.ClientWithResponsesInterface, *s3.S3) {
+func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientWithResponsesInterface, *s3.S3, bool) {
 	logger := logging.Default()
 
 	viper.SetDefault("setup_lakefs", true)
@@ -70,6 +70,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams, setupLakeFS bool) (logging.L
 		logger.WithError(err).Fatal("Waiting for lakeFS")
 	}
 
+	setupLakeFS := viper.GetBool("setup_lakefs")
 	if setupLakeFS {
 		// first setup of lakeFS
 		adminUserName := params.Name
@@ -117,7 +118,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams, setupLakeFS bool) (logging.L
 						SecretAccessKey: viper.GetString("secret_access_key"),
 					}})))
 
-	return logger, client, svc
+	return logger, client, svc, setupLakeFS
 }
 
 // Parses the given endpoint string
