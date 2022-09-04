@@ -36,11 +36,7 @@ type SafeEncoder struct {
 func (e *SafeEncoder) Encode(v interface{}) error {
 	e.Mu.Lock()
 	defer e.Mu.Unlock()
-	err := e.Je.Encode(v)
-	if err != nil {
-		return err
-	}
-	return nil
+	return e.Je.Encode(v)
 }
 
 func importReader(ctx context.Context, log logging.Logger, jobChan chan<- *Entry, jd *json.Decoder) error {
@@ -107,31 +103,23 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 	defer cancel()
 
 	entryChan := make(chan *Entry, entryQueueSize)
-	workerErr := make([]error, importWorkers)
-	var wg sync.WaitGroup
-	wg.Add(importWorkers)
+	var g multierror.Group
 	for i := 0; i < importWorkers; i++ {
-		go func(idx int) {
-			defer wg.Done()
+		g.Go(func() error {
 			for e := range entryChan {
 				err := store.SetIf(ctx, e.PartitionKey, e.Key, e.Value, nil)
 				if err != nil {
-					workerErr[idx] = fmt.Errorf("import (partition key: %s, key: %s): %w", e.PartitionKey, e.Key, err)
-					return
+					cancel() // make sure reader will stop processing on first error
+					return fmt.Errorf("import (partition key: %s, key: %s): %w", e.PartitionKey, e.Key, err)
 				}
 			}
-			if workerErr[idx] != nil {
-				cancel()
-			}
-		}(i)
+			return nil
+		})
 	}
 	err := importReader(ctx, log, entryChan, jd)
 	close(entryChan)
 
-	wg.Wait()
-
-	var merr *multierror.Error
+	merr := g.Wait()
 	merr = multierror.Append(merr, err)
-	merr = multierror.Append(merr, workerErr...)
 	return merr.ErrorOrNil()
 }
