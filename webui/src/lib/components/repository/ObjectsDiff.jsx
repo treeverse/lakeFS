@@ -4,6 +4,7 @@ import {objects} from "../../api";
 import ReactDiffViewer, {DiffMethod} from "@mockingjay-io/react-diff-viewer";
 import {Error, Loading} from "../controls";
 import {humanSize} from "./tree";
+import Alert from "react-bootstrap/Alert";
 
 const maxDiffSizeBytes = 120 << 10;
 const supportedReadableFormats = ["txt", "csv", "tsv"];
@@ -39,7 +40,7 @@ export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
     const leftStat = left && left.response;
     const rightStat = right && right.response;
     if (!readable) {
-        return <StatDiff left={leftStat} right={rightStat} diffType={diffType}/>;
+        return <NoContentDiff left={leftStat} right={rightStat} diffType={diffType}/>;
     }
     const objectTooBig = (leftStat && leftStat.size_bytes > maxDiffSizeBytes) || (rightStat && rightStat.size_bytes > maxDiffSizeBytes);
     if (objectTooBig) {
@@ -59,6 +60,13 @@ function readableObject(path) {
         }
     }
     return false;
+}
+
+const NoContentDiff = ({left, right, diffType}) => {
+    return <div>
+        <span><StatDiff left={left} right={right} diffType={diffType}/></span>
+        <span><Alert variant="warning">Unsupported format for content diff</Alert></span>
+    </div>;
 }
 
 const ContentDiff = ({repoId, path, leftRef, rightRef, leftSize, rightSize, diffType}) => {
@@ -93,7 +101,7 @@ function validateDiffInput(left, right, diffType) {
             if (!left) return <Error error={"Invalid diff input: left hand-side is missing"}/>;
             break;
         case 'conflict':
-            return <Error error={"Conflicting file: both source and destination file were changed"}/>;
+            break;
         default:
             return <Error error={"Unknown diff type: " + diffType}/>;
     }
@@ -116,7 +124,6 @@ const DiffSizeReport = ({leftSize, rightSize, diffType}) => {
     let size;
     switch (diffType) {
         case 'changed':
-        case 'conflict': // conflict will compare left and right. further details: https://github.com/treeverse/lakeFS/issues/3269
             size = leftSize - rightSize;
             if (size === 0) {
                 return <div>
@@ -130,6 +137,15 @@ const DiffSizeReport = ({leftSize, rightSize, diffType}) => {
                 label = "removed";
             }
             break;
+        case 'conflict': // conflict will compare left and right. further details: https://github.com/treeverse/lakeFS/issues/3269
+                return <div>
+                    <span className={label}>{label} </span>
+                    <span>both source and destination file were changed.</span>
+                    <span className={"diff-size"}> Source: {humanSize(leftSize)}</span>
+                    <span> in size, </span>
+                    <span className={"diff-size"}> Destination: {humanSize(rightSize)}</span>
+                    <span> in size</span>
+                </div>;
         case 'added':
             size = rightSize;
             break;
