@@ -71,10 +71,10 @@ private object ApiClient {
        *  extract the storage account, container and blob path, and use them in abfs url
        */
       val storageAccountName = StorageUtils.AzureBlob.uriToStorageAccountName(uri)
-      val (container, blobPath) = uri.getPath.split("/", 3) match {
+      val (container: String, blobPath: String) = uri.getPath.split("/", 3) match {
         case Array(a, b, c) => (b, c)
         case Array(a, b)    => (b, "")
-        case _              => throw new IllegalArgumentException
+        case _              => throw new IllegalArgumentException(s"Expected https://host/container or https://host/container/path in ${uri.toString}")
       }
       return new URI(
         s"abfs://${container}@${storageAccountName}.dfs.core.windows.net/${blobPath}"
@@ -145,7 +145,7 @@ class ApiClient private (conf: APIConfigurations) {
           .normalize()
           .toString
       case StorageClientType.SDKClient => repo.getStorageNamespace
-      case _                           => throw new IllegalArgumentException
+      case _                           => throw new IllegalArgumentException("Unknown storage type ${key.storageClientType}")
     }
     storageNamespace
   }
