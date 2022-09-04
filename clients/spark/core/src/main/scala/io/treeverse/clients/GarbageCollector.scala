@@ -180,7 +180,9 @@ object GarbageCollector {
     // Process rangeIDs using mutation to ensure complete control over when
     // each range is read.
     var tuples = collection.mutable.Set[(String, String, Boolean, Long)]()
-    rangeIDs.foreach((rangeID: String) => tuples ++= getEntryTuples(rangeID, apiConf, repo, hcValues))
+    rangeIDs.foreach((rangeID: String) =>
+      tuples ++= getEntryTuples(rangeID, apiConf, repo, hcValues)
+    )
     tuples.toSet
   }
 
