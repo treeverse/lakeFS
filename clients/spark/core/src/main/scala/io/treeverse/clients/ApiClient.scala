@@ -74,7 +74,10 @@ private object ApiClient {
       val (container: String, blobPath: String) = uri.getPath.split("/", 3) match {
         case Array(a, b, c) => (b, c)
         case Array(a, b)    => (b, "")
-        case _              => throw new IllegalArgumentException(s"Expected https://host/container or https://host/container/path in ${uri.toString}")
+        case _ =>
+          throw new IllegalArgumentException(
+            s"Expected https://host/container or https://host/container/path in ${uri.toString}"
+          )
       }
       return new URI(
         s"abfs://${container}@${storageAccountName}.dfs.core.windows.net/${blobPath}"
@@ -145,7 +148,7 @@ class ApiClient private (conf: APIConfigurations) {
           .normalize()
           .toString
       case StorageClientType.SDKClient => repo.getStorageNamespace
-      case _                           => throw new IllegalArgumentException("Unknown storage type ${key.storageClientType}")
+      case _ => throw new IllegalArgumentException("Unknown storage type ${key.storageClientType}")
     }
     storageNamespace
   }
