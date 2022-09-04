@@ -133,7 +133,7 @@ object GarbageCollector {
       apiConf: APIConfigurations,
       repo: String,
       hcValues: Broadcast[ConfMap]
-  ): Set[(String, String, Boolean, Long)] = {
+  ): Iterator[(String, String, Boolean, Long)] = {
     def getSeconds(ts: Option[Timestamp]): Long = {
       ts.getOrElse(0).asInstanceOf[Timestamp].seconds
     }
@@ -152,7 +152,6 @@ object GarbageCollector {
           getSeconds(a.message.lastModified)
         )
       )
-      .toSet
   }
 
   /** @param leftRangeIDs
@@ -178,9 +177,13 @@ object GarbageCollector {
       repo: String,
       hcValues: Broadcast[ConfMap]
   ) = {
-    val tuples =
-      rangeIDs.map((rangeID: String) => getEntryTuples(rangeID, apiConf, repo, hcValues))
-    if (tuples.isEmpty) Set[(String, String, Boolean, Long)]() else tuples.reduce(_.union(_))
+    // Process rangeIDs using mutation to ensure complete control over when
+    // each range is read.
+    var tuples = collection.mutable.Set[(String, String, Boolean, Long)]()
+    rangeIDs.foreach((rangeID: String) =>
+      tuples ++= getEntryTuples(rangeID, apiConf, repo, hcValues)
+    )
+    tuples.toSet
   }
 
   /** receives a dataframe containing active and expired ranges and returns entries contained only in expired ranges
