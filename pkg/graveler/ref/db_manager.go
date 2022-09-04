@@ -17,7 +17,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/block/factory"
-	"github.com/treeverse/lakefs/pkg/config"
+	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/branch"
@@ -762,17 +762,12 @@ func rWorker(ctx context.Context, d *pgxpool.Pool, rChan <-chan *graveler.Reposi
 	return nil
 }
 
-func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
-	cfg, err := config.NewConfig()
-	if err != nil {
-		return err
-	}
-
-	blockstorePrefix = cfg.GetCommittedBlockStoragePrefix()
+func Migrate(ctx context.Context, d *pgxpool.Pool, cfg blockparams.AdapterConfig, writer io.Writer) error {
 	bs, err := factory.BuildBlockAdapter(ctx, nil, cfg)
 	if err != nil {
 		return err
 	}
+	blockstorePrefix = cfg.GetCommittedBlockStoragePrefix()
 
 	return MigrateWithBlockstore(ctx, d, writer, bs, blockstorePrefix)
 }

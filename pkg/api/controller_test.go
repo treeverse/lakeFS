@@ -110,12 +110,8 @@ func TestKVEnabled(t *testing.T) {
 	testControllerWithKV(t, true)
 }
 
-func TestKVDisabled(t *testing.T) {
-	testControllerWithKV(t, false)
-}
-
 func testController_ListRepositoriesHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	t.Run("list no repos", func(t *testing.T) {
@@ -205,7 +201,7 @@ func testController_ListRepositoriesHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_GetRepoHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	t.Run("get missing repo", func(t *testing.T) {
@@ -269,7 +265,7 @@ func testCommitEntries(t *testing.T, ctx context.Context, cat catalog.Interface,
 }
 
 func testController_LogCommitsHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	t.Run("missing branch", func(t *testing.T) {
@@ -345,7 +341,7 @@ func testController_LogCommitsHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_CommitsGetBranchCommitLogByPath(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	/*
 			This is the tree we test on:
@@ -532,7 +528,7 @@ func testController_CommitsGetBranchCommitLogByPath(t *testing.T, kvEnabled bool
 }
 
 func testController_GetCommitHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	t.Run("get missing commit", func(t *testing.T) {
@@ -572,7 +568,7 @@ func testController_GetCommitHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_CommitHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	t.Run("commit non-existent commit", func(t *testing.T) {
@@ -681,7 +677,7 @@ func testController_CommitHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_CreateRepositoryHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	t.Run("create repo success", func(t *testing.T) {
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
@@ -736,7 +732,7 @@ func testController_CreateRepositoryHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_DeleteRepositoryHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	t.Run("delete repo success", func(t *testing.T) {
@@ -783,7 +779,7 @@ func testController_DeleteRepositoryHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_ListBranchesHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	t.Run("list branches only default", func(t *testing.T) {
@@ -856,7 +852,7 @@ func testController_ListBranchesHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_ListTagsHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	// setup test data
@@ -934,7 +930,7 @@ func testController_ListTagsHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_GetBranchHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	t.Run("get default branch", func(t *testing.T) {
@@ -976,7 +972,7 @@ func testController_GetBranchHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_BranchesDiffBranchHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	const testBranch = "main"
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), testBranch)
@@ -1025,7 +1021,7 @@ func testController_BranchesDiffBranchHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_CreateBranchHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	t.Run("create branch and diff refs success", func(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
@@ -1138,7 +1134,7 @@ func writeMultipart(fieldName, filename, content string) (string, io.Reader) {
 }
 
 func testController_UploadObject(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "main")
@@ -1256,7 +1252,7 @@ func testController_UploadObject(t *testing.T, kvEnabled bool) {
 }
 
 func testController_DeleteBranchHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	t.Run("delete branch success", func(t *testing.T) {
@@ -1319,7 +1315,7 @@ func testController_IngestRangeHandler(t *testing.T, kvEnabled bool) {
 		ctx := context.Background()
 
 		w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, expectedErr)
-		clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w}, kvEnabled)
+		clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
 
 		// setup test data
 		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
@@ -1397,7 +1393,7 @@ func testController_IngestRangeHandler(t *testing.T, kvEnabled bool) {
 
 func testController_WriteMetaRangeHandler(t *testing.T, kvEnabled bool) {
 	ctx := context.Background()
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	repo := testUniqueRepoName()
 	// setup test data
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
@@ -1435,7 +1431,7 @@ func testController_WriteMetaRangeHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_ObjectsStatObjectHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "some-bucket"), "main")
@@ -1510,7 +1506,7 @@ func testController_ObjectsStatObjectHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_ObjectsListObjectsHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "bucket/prefix"), "main")
@@ -1604,7 +1600,7 @@ func testController_ObjectsListObjectsHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_ObjectsGetObjectHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", "ns1", "main")
@@ -1681,7 +1677,7 @@ func testController_ObjectsGetObjectHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_ObjectsUploadObjectHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "bucket/prefix"), "main")
@@ -1734,7 +1730,7 @@ func testController_ObjectsUploadObjectHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_ObjectsStageObjectHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "bucket/prefix"), "main")
@@ -1794,7 +1790,7 @@ func testController_ObjectsStageObjectHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_ObjectsDeleteObjectHandler(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	const repo = "repo1"
@@ -1939,7 +1935,7 @@ func testController_ObjectsDeleteObjectHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_CreatePolicyHandler(t *testing.T, kvEnabled bool) {
-	clt, _ := setupClientWithAdmin(t, kvEnabled)
+	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()
 	t.Run("valid_policy", func(t *testing.T) {
 		resp, err := clt.CreatePolicyWithResponse(ctx, api.CreatePolicyJSONRequestBody{
@@ -2013,7 +2009,7 @@ func testController_CreatePolicyHandler(t *testing.T, kvEnabled bool) {
 }
 
 func testController_ConfigHandlers(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	ExpectedExample := onBlock(deps, "example-bucket/")
@@ -2065,7 +2061,7 @@ func testController_SetupLakeFSHandler(t *testing.T, kvEnabled bool) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			handler, deps := setupHandler(t, kvEnabled)
+			handler, deps := setupHandler(t)
 			server := setupServer(t, handler)
 			clt := setupClientByEndpoint(t, server.URL, "", "")
 
@@ -2160,7 +2156,7 @@ hooks:
 `))
 
 func testController_ListRepositoryRuns(t *testing.T, kvEnabled bool) {
-	clt, _ := setupClientWithAdmin(t, kvEnabled)
+	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()
 	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -2254,7 +2250,7 @@ func testController_ListRepositoryRuns(t *testing.T, kvEnabled bool) {
 }
 
 func testController_MergeDiffWithParent(t *testing.T, kvEnabled bool) {
-	clt, _ := setupClientWithAdmin(t, kvEnabled)
+	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	const repoName = "repo7"
@@ -2292,7 +2288,7 @@ func testController_MergeDiffWithParent(t *testing.T, kvEnabled bool) {
 }
 
 func testController_MergeIntoExplicitBranch(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	// setup env
@@ -2327,7 +2323,7 @@ func testController_MergeIntoExplicitBranch(t *testing.T, kvEnabled bool) {
 }
 
 func testController_CreateTag(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	// setup env
 	repo := testUniqueRepoName()
@@ -2402,7 +2398,7 @@ func testUniqueRepoName() string {
 }
 
 func testController_Revert(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	// setup env
 	repo := testUniqueRepoName()
@@ -2439,7 +2435,7 @@ func testController_Revert(t *testing.T, kvEnabled bool) {
 }
 
 func testController_RevertConflict(t *testing.T, kvEnabled bool) {
-	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	// setup env
 	repo := testUniqueRepoName()
@@ -2460,7 +2456,7 @@ func testController_RevertConflict(t *testing.T, kvEnabled bool) {
 }
 
 func testController_ExpandTemplate(t *testing.T, kvEnabled bool) {
-	clt, _ := setupClientWithAdmin(t, kvEnabled)
+	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	t.Run("not-found", func(t *testing.T) {

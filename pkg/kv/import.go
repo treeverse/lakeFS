@@ -16,7 +16,7 @@ import (
 var ErrInvalidFormat = errors.New("invalid format")
 
 const (
-	importWorkers  = 10
+	importWorkers  = 20
 	entryQueueSize = 100
 )
 

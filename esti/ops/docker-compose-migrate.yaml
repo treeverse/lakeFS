@@ -1,18 +1,18 @@
 version: '3'
 services:
-  lakefs:
-    image: "${REPO:-treeverse}/lakefs:${TAG:-dev}"
+  lakefs-pre-migrate:
+    image: "treeverse/lakefs:0.70.6"
     command: "${COMMAND:-run}"
     ports:
       - "8000:8000"
     depends_on:
       - "postgres"
-    volumes: 
-      - lakefs-app:/app:ro
     environment:
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
-      - LAKEFS_DATABASE_TYPE=${LAKEFS_DATABASE_TYPE:-postgres}
-      - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
+      - LAKEFS_DATABASE_KV_ENABLED=false
+      - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
+      - LAKEFS_DATABASE_POSTGRES_MAX_OPEN_CONNECTIONS=4
+      - LAKEFS_DATABASE_POSTGRES_MAX_IDLE_CONNECTIONS=4
       - LAKEFS_BLOCKSTORE_TYPE=${LAKEFS_BLOCKSTORE_TYPE:-local}
       - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
@@ -22,6 +22,33 @@ services:
       - LAKEFS_STATS_ENABLED
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
+      - LAKEFS_GATEWAYS_S3_DOMAIN_NAME=s3.local.lakefs-pre.io
+      - ACTIONS_VAR=this_is_actions_var
+    entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
+  lakefs-post-migrate:
+    image: "${REPO:-treeverse}/lakefs:${TAG:-dev}"
+    command: "${COMMAND:-run}"
+    ports:
+      - "8001:8000"
+    depends_on:
+      - "postgres"
+    environment:
+      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
+      - LAKEFS_DATABASE_TYPE=${LAKEFS_DATABASE_TYPE:-postgres}
+      - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
+      - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
+      - LAKEFS_DATABASE_POSTGRES_MAX_OPEN_CONNECTIONS=4
+      - LAKEFS_DATABASE_POSTGRES_MAX_IDLE_CONNECTIONS=4
+      - LAKEFS_BLOCKSTORE_TYPE=${LAKEFS_BLOCKSTORE_TYPE:-local}
+      - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - LAKEFS_LOGGING_LEVEL=DEBUG
+      - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
+      - LAKEFS_STATS_ENABLED
+      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
+      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
+      - LAKEFS_GATEWAYS_S3_DOMAIN_NAME=s3.local.lakefs-post.io
       - ACTIONS_VAR=this_is_actions_var
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   postgres:
@@ -34,11 +61,10 @@ services:
   esti:
     image: "golang:1.17.8-alpine"
     links:
-      - lakefs:s3.local.lakefs.io
-      - lakefs:testmultipartupload.s3.local.lakefs.io
-      - lakefs:testdeleteobjects.s3.local.lakefs.io
-      - lakefs:testmigrate-testpremigratemultipart.s3.local.lakefs.io
-      - lakefs:migrate.s3.local.lakefs.io
+      - lakefs-pre-migrate:testmigrate-testpremigratemultipart.s3.local.lakefs-pre.io
+      - lakefs-pre-migrate:migrate.s3.local.lakefs-pre.io
+      - lakefs-post-migrate:testmigrate-testpremigratemultipart.s3.local.lakefs-post.io
+      - lakefs-post-migrate:migrate.s3.local.lakefs-post.io
     environment:
       - CGO_ENABLED=0
       - AWS_ACCESS_KEY_ID
@@ -50,7 +76,8 @@ services:
       - ESTI_AWS_ACCESS_KEY_ID
       - ESTI_SETUP_LAKEFS
       - ESTI_AWS_SECRET_ACCESS_KEY
-      - ESTI_ENDPOINT_URL=http://lakefs:8000
+      - ESTI_ENDPOINT_URL
+      - ESTI_S3_ENDPOINT
       - ESTI_LAKECTL_DIR=/app
       - ESTI_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
       - ESTI_DATABASE_KV_ENABLED
@@ -67,7 +94,6 @@ services:
         go test -v $ESTI_GOTEST_FLAGS ./esti --system-tests $ESTI_FLAGS
     volumes:
       - lakefs-code:/lakefs
-      - lakefs-app:/app:ro 
 
 volumes:
   lakefs-code:
@@ -76,5 +102,4 @@ volumes:
       o: bind
       type: none
       device: ${LAKEFS_ROOT:-.}
-  lakefs-app:
 

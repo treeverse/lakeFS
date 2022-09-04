@@ -9,6 +9,5 @@ type Database struct {
 	MaxIdleConnections    int32
 	ConnectionMaxLifetime time.Duration
 	Type                  string
-	KVEnabled             bool
 	DropTables            bool
 }

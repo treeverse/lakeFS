@@ -184,6 +184,7 @@ const (
 	LakefsEmailBaseURLKey      = "email.lakefs_base_url"
 
 	DynamoDBTableNameKey = "database.dynamodb.table_name"
+	DatabaseType         = "database.type"
 
 	UIEnabledKey = "ui.enabled"
 )
@@ -294,7 +295,6 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 		MaxIdleConnections:    c.values.Database.DeprecatedMaxIdleConnections,
 		ConnectionMaxLifetime: c.values.Database.DeprecatedConnectionMaxLifetime,
 		Type:                  c.values.Database.Type,
-		KVEnabled:             c.values.Database.KVEnabled,
 		DropTables:            c.values.Database.DropTables,
 	}
 }

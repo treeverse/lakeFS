@@ -17,7 +17,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/config"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/branch"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
@@ -105,8 +104,6 @@ const (
 
 type Config struct {
 	Config        *config.Config
-	DB            db.Database
-	LockDB        db.Database
 	KVStore       *kv.StoreMessage
 	WalkerFactory WalkerFactory
 }
@@ -139,10 +136,6 @@ func (c *ctxCloser) Close() error {
 }
 
 func New(ctx context.Context, cfg Config) (*Catalog, error) {
-	if cfg.LockDB == nil {
-		cfg.LockDB = cfg.DB
-	}
-
 	ctx, cancelFn := context.WithCancel(ctx)
 	adapter, err := factory.BuildBlockAdapter(ctx, nil, cfg.Config)
 	if err != nil {
@@ -200,28 +193,12 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	executor := batch.NewConditionalExecutor(logging.Default())
 	go executor.Run(ctx)
 
-	var gStore Store
-	var stagingManager graveler.StagingManager
-	var refManager graveler.RefManager
-	var gcManager graveler.GarbageCollectionManager
-	var protectedBranchesManager graveler.ProtectedBranchesManager
-	branchLocker := ref.NewBranchLocker(cfg.LockDB) // TODO (niro): Will not be needed in KV implementation
-
-	if cfg.Config.GetDatabaseParams().KVEnabled { // TODO (niro): Each module should be replaced by an appropriate KV implementation
-		refManager = ref.NewKVRefManager(executor, *cfg.KVStore, ident.NewHexAddressProvider())
-		gcManager = retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
-		settingManager := settings.NewManager(refManager, *cfg.KVStore)
-		protectedBranchesManager = branch.NewProtectionManager(settingManager)
-		stagingManager = staging.NewManager(ctx, *cfg.KVStore)
-		gStore = graveler.NewKVGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
-	} else {
-		refManager = ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
-		gcManager = retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
-		settingManager := settings.NewDBManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
-		protectedBranchesManager = branch.NewProtectionManager(settingManager)
-		stagingManager = staging.NewDBManager(cfg.DB)
-		gStore = graveler.NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
-	}
+	refManager := ref.NewKVRefManager(executor, *cfg.KVStore, ident.NewHexAddressProvider())
+	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
+	settingManager := settings.NewManager(refManager, *cfg.KVStore)
+	protectedBranchesManager := branch.NewProtectionManager(settingManager)
+	stagingManager := staging.NewManager(ctx, *cfg.KVStore)
+	gStore := graveler.NewKVGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 
 	return &Catalog{
 		BlockAdapter:  tierFSParams.Adapter,
