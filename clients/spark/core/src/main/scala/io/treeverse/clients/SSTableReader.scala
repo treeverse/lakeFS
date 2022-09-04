@@ -90,6 +90,12 @@ class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     fp.close()
   }
 
+  def getProperties(): Map[String, Array[Byte]] = {
+    val bytes = reader.iterate(reader.length - BlockParser.footerLength, BlockParser.footerLength)
+    val footer = BlockParser.readFooter(bytes)
+    BlockParser.readProperties(reader, footer).map(kv => (new String(kv._1.toArray) -> kv._2)).toMap
+  }
+
   def newIterator(): SSTableIterator[Proto] = {
     val it = BlockParser.entryIterator(reader)
     new SSTableIterator(it, companion)

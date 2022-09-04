@@ -18,16 +18,20 @@ object LakeFSContext {
   val LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY = "lakefs.api.connection.timeout_seconds"
   val LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY = "lakefs.api.read.timeout_seconds"
   val LAKEFS_CONF_JOB_REPO_NAME_KEY = "lakefs.job.repo_name"
+  val LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY = "lakefs.job.storage_namespace"
   val LAKEFS_CONF_JOB_COMMIT_ID_KEY = "lakefs.job.commit_id"
 
   def newRDD(
       sc: SparkContext,
       repoName: String,
-      commitID: String
+      storageNamespace: String,
+      commitID: String,
+      inputFormat: Class[_ <: LakeFSBaseInputFormat]
   ): RDD[(Array[Byte], WithIdentifier[Entry])] = {
     val conf = new Configuration(sc.hadoopConfiguration)
     conf.set(LAKEFS_CONF_JOB_REPO_NAME_KEY, repoName)
     conf.set(LAKEFS_CONF_JOB_COMMIT_ID_KEY, commitID)
+    conf.set(LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY, storageNamespace)
     if (StringUtils.isBlank(conf.get(LAKEFS_CONF_API_URL_KEY))) {
       throw new InvalidJobConfException(s"$LAKEFS_CONF_API_URL_KEY must not be empty")
     }
@@ -39,14 +43,20 @@ object LakeFSContext {
     }
     sc.newAPIHadoopRDD(
       conf,
-      classOf[LakeFSInputFormat],
+      inputFormat,
       classOf[Array[Byte]],
       classOf[WithIdentifier[Entry]]
     )
   }
 
-  def newDF(spark: SparkSession, repoName: String, commitID: String): DataFrame = {
-    val rdd = newRDD(spark.sparkContext, repoName, commitID).map { case (k, v) =>
+  def newDF(
+      spark: SparkSession,
+      repoName: String,
+      storageNamespace: String,
+      commitID: String,
+      inputFormat: Class[_ <: LakeFSBaseInputFormat]
+  ): DataFrame = {
+    val rdd = newRDD(spark.sparkContext, repoName, storageNamespace, commitID, inputFormat).map { case (k, v) =>
       val entry = v.message
       Row(
         new String(k),
@@ -63,5 +73,35 @@ object LakeFSContext {
       .add(StructField("last_modified", TimestampType))
       .add(StructField("size", LongType))
     spark.createDataFrame(rdd, schema)
+  }
+
+  def newDFFromStorageNamespace(
+      spark: SparkSession,
+      storageNamespace: String
+  ): DataFrame = {
+    newDF(spark, "", storageNamespace, "", classOf[LakeFSRepositoryInputFormat])
+  }
+
+  def newDF(
+      spark: SparkSession,
+      repoName: String
+  ): DataFrame = {
+    newDF(spark, repoName, "", "", classOf[LakeFSRepositoryInputFormat])
+  }
+
+  def newDF(
+      spark: SparkSession,
+      repoName: String,
+      commitID: String
+  ): DataFrame = {
+    newDF(spark, repoName, "", commitID, classOf[LakeFSCommitInputFormat])
+  }
+
+  def newRDD(
+      spark: SparkSession,
+      repoName: String,
+      commitID: String
+  ): RDD[(Array[Byte], WithIdentifier[Entry])] = {
+    newRDD(spark.sparkContext, repoName, "", commitID, classOf[LakeFSCommitInputFormat])
   }
 }
