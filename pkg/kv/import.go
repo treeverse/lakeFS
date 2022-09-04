@@ -116,10 +116,10 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 			return nil
 		})
 	}
-	err := importReader(ctx, log, entryChan, jd)
+	readerErr := importReader(ctx, log, entryChan, jd)
 	close(entryChan)
 
-	merr := g.Wait()
-	merr = multierror.Append(merr, err)
-	return merr.ErrorOrNil()
+	err := g.Wait()
+	err = multierror.Append(err, readerErr)
+	return err.ErrorOrNil()
 }
