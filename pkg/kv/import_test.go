@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
-	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
