@@ -11,10 +11,70 @@ redirect_from: ../deploying-aws/upgrade.html
 # Upgrading lakeFS
 {: .no_toc }
 Upgrading lakeFS from a previous version usually just requires re-deploying with the latest image (or downloading the latest version if you're using the binary).
-In some cases, the database may require a migration - check whether the [release](https://github.com/treeverse/lakeFS/releases) you're upgrading to requires that.
-
+If you're upgrading, check whether the [release](https://github.com/treeverse/lakeFS/releases) requires a migration.
 
 ## When DB migrations are required
+
+### lakeFS 0.80.0 or greater (KV Migration)
+
+Starting with version 0.80.0, lakeFS has transitioned from using a PostgreSQL based database implementation to a Key-Value datastore interface supporting
+multiple database implementations. More information can be found [here](link-to-lakefs-on-kv-documentation).  
+Users upgrading from a previous version of lakeFS must pass through the KV migration version (0.80.0) before upgrading to newer versions of lakeFS.
+
+> **IMPORTANT: Pre Migrate Requirements**  
+> * **Users using OS environment variables for database configuration must define the `connection_string` explicitly or as environment variable before proceeding with the migration.**  
+> * **Database storage free capacity of at least twice the amount of the currently used capacity**
+> * It is strongly recommended to perform these additional steps:
+>   * Commit all uncommitted data on branches
+>   * Create a snapshot of your database
+> * By default, old database tables are not being deleted by the migration process, and should be removed manually after a successful migration.
+> To enable table drop as part of the migration, set the `database.drop_tables` configuration param to `true`
+{: .note }
+
+#### Migration Steps
+For each lakeFS instance currently running with the database
+1. Modify the `database` section under lakeFS configuration yaml:
+   1. Add `type` field with `"postgres"` as value
+   2. Copy the current configuration parameters to a new section called `postgres`
+
+   ```yaml
+   ---
+   database:
+    type: "postgres"
+    connection_string: "postgres://localhost:5432/postgres?sslmode=disable"
+    max_open_connections: 20
+   
+    postgres:
+      connection_string: "postgres://localhost:5432/postgres?sslmode=disable"
+      max_open_connections: 20
+   ```
+
+2. Stop all lakeFS instances
+3. Using the `lakefs` binary for the new version (0.80.0), run the following:
+
+   ```bash
+   lakefs migrate up
+   ```
+
+4. lakeFS will run the migration process, which in the end should display the following message with no errors:
+
+   ```shell
+   time="2022-08-10T14:46:25Z" level=info msg="KV Migration took 717.629563ms" func="pkg/logging.(*logrusEntryWrapper).Infof" file="build/pkg/logging/logger.go:246" TempDir=/tmp/kv_migrate_2913402680
+   ```
+
+5. It is now possible to remove the old database configuration. The updated configuration should look as such:
+
+   ```yaml
+   ---
+   database:
+    type: "postgres"
+   
+    postgres:
+      connection_string: "postgres://localhost:5432/postgres?sslmode=disable"
+      max_open_connections: 20
+   ```
+ 
+6. Deploy (or run) the new version of lakeFS.
 
 ### lakeFS 0.30.0 or greater
 
