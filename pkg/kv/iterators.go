@@ -323,7 +323,7 @@ func (p *PartitionIterator) Err() error {
 func (p *PartitionIterator) Close() {
 	// Check itr is set, can be null in case seek fails
 	if !p.itrClosed {
-		p.itrClosed = true
 		p.itr.Close()
+		p.itrClosed = true
 	}
 }
