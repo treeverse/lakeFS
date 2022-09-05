@@ -4,7 +4,7 @@
 
 Bug fix:
 - Fix PartitionIterator panic on Close (#4108)
-- UI: Fix error while conflicting diff of binary objects, show original file size (#4105)
+- UI: Remove error message on conflicting diff of binary objects, show src, dst file sizes instead of diff (#4105)
 
 What's new:
 - Dockerfile update CA certificates (#4101)
