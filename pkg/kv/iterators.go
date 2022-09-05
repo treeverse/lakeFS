@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	reflect "reflect"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -317,8 +318,9 @@ func (p *PartitionIterator) Err() error {
 }
 
 func (p *PartitionIterator) Close() {
-	// check itr is set, can be null in case seek fails
-	if p.itr != nil {
+	// Check itr is set, can be null in case seek fails
+	// Since itr is an interface, need to verify both its value and type for nil
+	if p.itr != nil && !reflect.ValueOf(p.itr).IsNil() {
 		p.itr.Close()
 	}
 }
