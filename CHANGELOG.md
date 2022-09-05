@@ -1,6 +1,17 @@
 # Changelog
 
+## v0.80.1 - 2022-09-01
+
+Bug fix:
+- Fix PartitionIterator panic on Close (#4108)
+- UI: Remove error message on conflicting diff of binary objects, show src, dst file sizes instead of diff (#4105)
+
+What's new:
+- Dockerfile update CA certificates (#4101)
+
+
 ## v0.80.0 - 2022-08-31
+
 This release requires running database migration.
 The lakeFS service will not run if the migration version isn't compatible with the binary.
 Before running the new version you will be required to run migrate, with the new version. 
