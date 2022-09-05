@@ -13,6 +13,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"github.com/treeverse/lakefs/pkg/kv/testdriver"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -869,5 +870,5 @@ func GetStore(ctx context.Context, t testing.TB) kv.Store {
 	t.Cleanup(func() {
 		store.Close()
 	})
-	return store
+	return testdriver.NewTestStore(store)
 }
