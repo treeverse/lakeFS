@@ -38,7 +38,7 @@ func TestTracker(t *testing.T) {
 	require.False(t, testFileMap[string(file1)])
 	require.True(t, testFileMap[string(file2)])
 
-	// Close delete file - sanity
+	// Close deleted file - sanity
 	closer()
 
 	// Delete after close
