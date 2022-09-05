@@ -117,7 +117,7 @@ object GarbageCollector {
       apiConf: APIConfigurations,
       repo: String,
       hcValues: Broadcast[ConfMap]
-  ): Seq[String] = {
+  ): Iterator[String] = {
     val location = ApiClient
       .get(apiConf)
       .getRangeURL(repo, rangeID)
@@ -125,7 +125,6 @@ object GarbageCollector {
       .forRange(configurationFromValues(hcValues), location)
       .newIterator()
       .map(a => a.message.address)
-      .toSeq
   }
 
   def getEntryTuples(
