@@ -291,8 +291,8 @@ func TestMain(m *testing.M) {
 
 	logger, client, svc = testutil.SetupTestingEnv(&params)
 
-	setupLakeFS := viper.GetBool("setup_lakefs")
 	var err error
+	setupLakeFS := viper.GetBool("setup_lakefs")
 	if !setupLakeFS && *cleanupEnv {
 		logger.Infof("Deleting Repositories, groups, users and policies before Esti run. Repositories to keep: %s, groups to keep: %s, users to keep: %s, policies to keep: %s", repositoriesToKeep, groupsToKeep, usersToKeep, policiesToKeep)
 
