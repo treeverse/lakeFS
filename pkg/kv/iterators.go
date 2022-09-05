@@ -246,6 +246,7 @@ type PartitionIterator struct {
 	ctx          context.Context
 	store        Store
 	msgType      protoreflect.MessageType
+	itrClosed    bool
 	itr          EntriesIterator
 	partitionKey string
 	value        *MessageEntry
@@ -257,6 +258,7 @@ func NewPartitionIterator(ctx context.Context, store Store, msgType protoreflect
 		ctx:          ctx,
 		store:        store,
 		msgType:      msgType,
+		itrClosed:    true,
 		partitionKey: partitionKey,
 	}
 }
@@ -266,11 +268,12 @@ func (p *PartitionIterator) Next() bool {
 		return false
 	}
 	p.value = nil
-	if p.itr == nil {
+	if p.itrClosed {
 		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), []byte(""))
-		if p.Err() != nil {
+		if p.err != nil {
 			return false
 		}
+		p.itrClosed = false
 	}
 	if !p.itr.Next() {
 		return false
@@ -295,10 +298,9 @@ func (p *PartitionIterator) Next() bool {
 
 func (p *PartitionIterator) SeekGE(key []byte) {
 	if p.Err() == nil {
-		if p.itr != nil {
-			p.itr.Close() // Close previous before creating new iterator
-		}
+		p.Close() // Close previous before creating new iterator
 		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), key)
+		p.itrClosed = p.err != nil
 	}
 }
 
@@ -317,8 +319,9 @@ func (p *PartitionIterator) Err() error {
 }
 
 func (p *PartitionIterator) Close() {
-	// check itr is set, can be null in case seek fails
-	if p.itr != nil {
+	// Check itr is set, can be null in case seek fails
+	if !p.itrClosed {
 		p.itr.Close()
+		p.itrClosed = true
 	}
 }
