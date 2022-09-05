@@ -268,14 +268,13 @@ func (p *PartitionIterator) Next() bool {
 		return false
 	}
 	p.value = nil
-	if p.itr == nil {
+	if p.itrClosed {
 		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), []byte(""))
-		if p.Err() != nil {
-			p.itrClosed = true
+		if p.err != nil {
 			return false
 		}
+		p.itrClosed = false
 	}
-	p.itrClosed = false
 	if !p.itr.Next() {
 		return false
 	}
@@ -299,13 +298,11 @@ func (p *PartitionIterator) Next() bool {
 
 func (p *PartitionIterator) SeekGE(key []byte) {
 	if p.Err() == nil {
-		if p.itr != nil {
+		if !p.itrClosed {
 			p.itr.Close() // Close previous before creating new iterator
 		}
 		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), key)
-		if p.err != nil {
-			p.itrClosed = true
-		}
+		p.itrClosed = p.err != nil
 	}
 }
 
@@ -325,7 +322,8 @@ func (p *PartitionIterator) Err() error {
 
 func (p *PartitionIterator) Close() {
 	// Check itr is set, can be null in case seek fails
-	if !p.itrClosed && p.itr != nil {
+	if !p.itrClosed {
+		p.itrClosed = true
 		p.itr.Close()
 	}
 }
