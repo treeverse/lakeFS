@@ -38,7 +38,7 @@ class ApiClientSpec extends AnyFunSpec with Matchers {
         translate("ex://account.example.net/container/path/to/blob") should be("abfs://container@account.dfs.core.windows.net/path/to/blob")
       }
 
-      ignore("should handle empty paths") {
+      it("should handle empty paths") {
         // TODO(lynn): Trailing slashes might well be incorrect here.
         translate("https://account.example.net/container/") should be("abfs://container@account.dfs.core.windows.net/")
         translate("https://account.example.net/container") should be("abfs://container@account.dfs.core.windows.net/")
