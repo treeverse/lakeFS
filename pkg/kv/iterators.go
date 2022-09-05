@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	reflect "reflect"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -247,6 +246,7 @@ type PartitionIterator struct {
 	ctx          context.Context
 	store        Store
 	msgType      protoreflect.MessageType
+	itrClosed    bool
 	itr          EntriesIterator
 	partitionKey string
 	value        *MessageEntry
@@ -258,6 +258,7 @@ func NewPartitionIterator(ctx context.Context, store Store, msgType protoreflect
 		ctx:          ctx,
 		store:        store,
 		msgType:      msgType,
+		itrClosed:    true,
 		partitionKey: partitionKey,
 	}
 }
@@ -270,9 +271,11 @@ func (p *PartitionIterator) Next() bool {
 	if p.itr == nil {
 		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), []byte(""))
 		if p.Err() != nil {
+			p.itrClosed = true
 			return false
 		}
 	}
+	p.itrClosed = false
 	if !p.itr.Next() {
 		return false
 	}
@@ -300,6 +303,9 @@ func (p *PartitionIterator) SeekGE(key []byte) {
 			p.itr.Close() // Close previous before creating new iterator
 		}
 		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), key)
+		if p.err != nil {
+			p.itrClosed = true
+		}
 	}
 }
 
@@ -319,8 +325,7 @@ func (p *PartitionIterator) Err() error {
 
 func (p *PartitionIterator) Close() {
 	// Check itr is set, can be null in case seek fails
-	// Since itr is an interface, need to verify both its value and type for nil
-	if p.itr != nil && !reflect.ValueOf(p.itr).IsNil() {
+	if !p.itrClosed && p.itr != nil {
 		p.itr.Close()
 	}
 }
