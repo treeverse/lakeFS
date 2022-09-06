@@ -1,3 +1,7 @@
 target/
 gen/
 .bsp/
+.bloop/
+.bsp/
+.metals/
+**/metals.sbt
