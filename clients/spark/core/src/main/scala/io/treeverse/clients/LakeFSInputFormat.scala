@@ -65,7 +65,7 @@ class GravelerSplit(var range: RangeData, var path: Path, var rangeID: Array[Byt
       p += in.readChar()
     }
     path = new Path(p.result)
-    logger.warn(s"Read split $this")
+    logger.debug(s"Read split $this")
   }
   override def getLength: Long = byteSize
 
@@ -116,7 +116,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     val sstableReader =
       new SSTableReader(localFile.getAbsolutePath, companion)
     val props = sstableReader.getProperties()
-    logger.warn(s"Props: $props")  
+    logger.debug(s"Props: $props")  
     if (gravelerSplit.range == null) {
       if (new String(props.get("type").get) != "ranges" || props.get("entity").nonEmpty) {
         return
@@ -128,7 +128,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
         new String(props.get("count").get).toLong
       )
     }
-    logger.warn(s"Initializing reader for split $gravelerSplit")
+    logger.debug(s"Initializing reader for split $gravelerSplit")
     it = sstableReader.newIterator()
   }
 
@@ -199,7 +199,7 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
         // explicitly upcast to generate Seq[InputSplit].
         .asInstanceOf[InputSplit]
     )
-    logger.warn(s"Returning ${res.size} splits")
+    logger.debug(s"Returning ${res.size} splits")
     res
   }.asJava
 }
@@ -248,7 +248,7 @@ class LakeFSRepositoryInputFormat extends LakeFSBaseInputFormat {
         file.getLen,
       )
     }
-    logger.warn(s"Returning ${splits.size} splits")
+    logger.debug(s"Returning ${splits.size} splits")
     return splits.asJava
   }
 }
