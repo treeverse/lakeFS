@@ -241,7 +241,6 @@ class LakeFSRepositoryInputFormat extends LakeFSBaseInputFormat {
     val splits = new ListBuffer[InputSplit]()
     while (it.hasNext) {
       val file = it.next()
-      
       splits += new GravelerSplit(
         null,
         file.getPath,
