@@ -80,7 +80,7 @@ object GarbageCollector {
       commitID: String,
       repo: String,
       apiConf: APIConfigurations,
-      hcValues: Broadcast[ConfMap],
+      hcValues: Broadcast[ConfMap]
   ): Set[(String, Array[Byte], Array[Byte])] = {
     val conf = configurationFromValues(hcValues)
     val apiClient = ApiClient.get(apiConf)
