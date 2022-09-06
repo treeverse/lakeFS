@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -26,9 +25,10 @@ type TierFS struct {
 	logger  logging.Logger
 	adapter block.Adapter
 
-	eviction params.Eviction
-	keyLock  cache.OnlyOne
-	syncDir  *directory
+	eviction    params.Eviction
+	keyLock     cache.OnlyOne
+	syncDir     *directory
+	fileTracker *fileTracker
 
 	fsName string
 
@@ -57,6 +57,7 @@ func NewFS(c *params.InstanceParams) (FS, error) {
 		keyLock:        cache.NewChanOnlyOne(),
 		remotePrefix:   c.BlockStoragePrefix,
 	}
+	tfs.fileTracker = NewFileTracker(tfs.removeFromLocalInternal)
 	if c.Eviction == nil {
 		var err error
 		c.Eviction, err = newRistrettoEviction(c.AllocatedBytes(), tfs.removeFromLocal)
@@ -83,7 +84,7 @@ func (tfs *TierFS) log(ctx context.Context) logging.Logger {
 // It does 2 things:
 // 1. Adds stored files to the eviction control
 // 2. Remove workspace directories and all its content if it
-//	  exist under the namespace dir.
+//	  exists under the namespace dir.
 func (tfs *TierFS) handleExistingFiles() error {
 	if err := filepath.Walk(tfs.fsLocalBaseDir, func(p string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -114,7 +115,8 @@ func (tfs *TierFS) removeFromLocal(rPath params.RelativePath, filesize int64) {
 	// This will be called by the cache eviction mechanism during entry insert.
 	// We don't want to wait while the file is being removed from the local disk.
 	evictionHistograms.WithLabelValues(tfs.fsName).Observe(float64(filesize))
-	go tfs.removeFromLocalInternal(rPath)
+	// Notify tracker on delete
+	tfs.fileTracker.Delete(rPath)
 }
 
 func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
@@ -128,10 +130,13 @@ func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
 		return
 	}
 
-	if err := tfs.syncDir.deleteDirRecIfEmpty(path.Dir(string(rPath))); err != nil {
-		tfs.logger.WithError(err).Error("Failed deleting empty dir")
-		errorsTotal.WithLabelValues(tfs.fsName, "DirRemoval")
-	}
+	// Delete Dir async
+	go func() {
+		if err := tfs.syncDir.deleteDirRecIfEmpty(path.Dir(string(rPath))); err != nil {
+			tfs.logger.WithError(err).Error("Failed deleting empty dir")
+			errorsTotal.WithLabelValues(tfs.fsName, "DirRemoval")
+		}
+	}()
 }
 
 func (tfs *TierFS) store(ctx context.Context, namespace, originalPath, nsPath, filename string) error {
@@ -205,7 +210,7 @@ func (tfs *TierFS) Create(_ context.Context, namespace string) (StoredFile, erro
 	}, nil
 }
 
-// Open returns the a file descriptor to the local file.
+// Open returns a file descriptor to the local file.
 // If the file is missing from the local disk, it will try to fetch it from the block storage.
 func (tfs *TierFS) Open(ctx context.Context, namespace, filename string) (File, error) {
 	nsPath, err := parseNamespacePath(namespace)
@@ -256,19 +261,12 @@ func (tfs *TierFS) openFile(ctx context.Context, fileRef localFileRef, fh *os.Fi
 	}
 
 	if !tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
+		tfs.fileTracker.Delete(fileRef.fsRelativePath)
 		tfs.log(ctx).WithFields(logging.Fields{
 			"namespace": fileRef.namespace,
 			"file":      fileRef.filename,
 			"full_path": fileRef.fullPath,
 		}).Info("stored file immediately rejected from cache (delete but continue)")
-
-		// A rare occurrence, (currently) happens when Ristretto cache is not set up
-		// to perform any caching.  So be less strict: prefer to serve the file and
-		// delete it from the cache. It will be removed from disk when the last
-		// surviving file descriptor -- returned from this function -- is closed.
-		if err := os.Remove(fileRef.fullPath); err != nil {
-			return nil, err
-		}
 	}
 	return &ROFile{
 		File:     fh,
@@ -289,7 +287,10 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 			"fullpath":  fileRef.fullPath,
 		}).Trace("try to lock for open")
 	}
-	_, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
+
+	closer := tfs.fileTracker.Open(fileRef.fsRelativePath)
+	defer closer()
+	fileFullPath, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
 		// check again file existence, now that we have the lock
 		_, err := os.Stat(fileRef.fullPath)
 		if err == nil {
@@ -301,7 +302,8 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 				}).Trace("got lock; file exists after all")
 			}
 			cacheAccess.WithLabelValues(tfs.fsName, "Hit").Inc()
-			return nil, nil
+
+			return fileRef.fullPath, nil
 		}
 		if !os.IsNotExist(err) {
 			return nil, fmt.Errorf("stat file: %w", err)
@@ -350,18 +352,16 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 			return nil, fmt.Errorf("rename temp file: %w", err)
 		}
 
-		return nil, nil
+		return fileRef.fullPath, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
 
-	fh, err := os.Open(fileRef.fullPath)
+	fh, err := os.Open(fileFullPath.(string))
 	if err != nil {
 		return nil, fmt.Errorf("open file: %w", err)
 	}
-
 	return fh, nil
 }
 
