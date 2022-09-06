@@ -19,13 +19,19 @@ import java.net.URI
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 import com.google.protobuf.ByteString
+import org.slf4j.{Logger, LoggerFactory}
 
-class GravelerSplit(var range: RangeData, var path: Path, var rangeID: Array[Byte])
+object GravelerSplit {
+  val logger: Logger = LoggerFactory.getLogger(getClass.toString)
+}
+class GravelerSplit(var range: RangeData, var path: Path, var rangeID: Array[Byte], var byteSize: Long)
     extends InputSplit
     with Writable {
-  def this() = this(null, null, null)
+  import GravelerSplit._
+  def this() = this(null, null, null, 0L)
 
   override def write(out: DataOutput): Unit = {
+    out.writeLong(byteSize)
     out.writeInt(rangeID.length)
     out.write(rangeID)
     if (range != null) {
@@ -41,6 +47,7 @@ class GravelerSplit(var range: RangeData, var path: Path, var rangeID: Array[Byt
   }
 
   override def readFields(in: DataInput): Unit = {
+    byteSize = in.readLong()
     val rangeIDLength = in.readInt()
     rangeID = new Array[Byte](rangeIDLength)
     in.readFully(rangeID)
@@ -58,23 +65,43 @@ class GravelerSplit(var range: RangeData, var path: Path, var rangeID: Array[Byt
       p += in.readChar()
     }
     path = new Path(p.result)
+    logger.warn(s"Read split $this")
   }
-  override def getLength: Long = if (range == null) 0 else range.count
+  override def getLength: Long = byteSize
 
   override def getLocations: Array[String] = Array.empty[String]
 
   override def getLocationInfo: Array[SplitLocationInfo] =
     Array.empty[SplitLocationInfo]
+
+  override def toString: String = {
+    val sb = new StringBuilder
+    sb.append("GravelerSplit: ")
+    sb.append("rangeID: ")
+    sb.append(new String(rangeID))
+    sb.append("\n")
+    sb.append("path: ")
+    sb.append(path)
+    sb.append("\n")
+    sb.append("range: ")
+    sb.append(range)
+    sb.toString
+  }
 }
 
 class WithIdentifier[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     val id: Array[Byte],
-    val message: Proto
+    val message: Proto,
+    val rangeID: Array[Byte],
 ) {}
 
+object EntryRecordReader {
+  val logger: Logger = LoggerFactory.getLogger(getClass.toString)
+}
 class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     companion: GeneratedMessageCompanion[Proto]
 ) extends RecordReader[Array[Byte], WithIdentifier[Proto]] {
+  import EntryRecordReader._
   var it: SSTableIterator[Proto] = _
   var item: Item[Proto] = _
   var gravelerSplit: GravelerSplit = _
@@ -88,9 +115,10 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     // TODO(johnnyaug) should we cache this?
     val sstableReader =
       new SSTableReader(localFile.getAbsolutePath, companion)
+    val props = sstableReader.getProperties()
+    logger.warn(s"Props: $props")  
     if (gravelerSplit.range == null) {
-      val props = sstableReader.getProperties()
-      if (new String(props.get("type").get) != "ranges") {
+      if (new String(props.get("type").get) != "ranges" || props.get("entity").nonEmpty) {
         return
       }
       gravelerSplit.range = new RangeData(
@@ -100,6 +128,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
         new String(props.get("count").get).toLong
       )
     }
+    logger.warn(s"Initializing reader for split $gravelerSplit")
     it = sstableReader.newIterator()
   }
 
@@ -116,7 +145,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 
   override def getCurrentKey: Array[Byte] = item.key
 
-  override def getCurrentValue = new WithIdentifier(item.id, item.message)
+  override def getCurrentValue = new WithIdentifier(item.id, item.message, gravelerSplit.rangeID)
 
   override def close() = Unit
 
@@ -126,6 +155,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 }
 
 object LakeFSInputFormat {
+  val logger: Logger = LoggerFactory.getLogger(getClass.toString)
   def read[Proto <: GeneratedMessage with scalapb.Message[Proto]](
       reader: SSTableReader[Proto]
   ): Seq[Item[Proto]] = reader.newIterator().toSeq
@@ -158,20 +188,24 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
     val rangesReader: SSTableReader[RangeData] =
       SSTableReader.forMetaRange(job.getConfiguration, metaRangeURL)
     val ranges = read(rangesReader)
-    ranges.map(r =>
+    val res = ranges.map(r =>
       new GravelerSplit(
         r.message,
         new Path(apiClient.getRangeURL(repoName, new String(r.id))),
-        r.id
+        r.id,
+        r.message.estimatedSize,        
       )
         // Scala / JRE not strong enough to handle List<FileSplit> as List<InputSplit>;
         // explicitly upcast to generate Seq[InputSplit].
         .asInstanceOf[InputSplit]
     )
+    logger.warn(s"Returning ${res.size} splits")
+    res
   }.asJava
 }
 
 class LakeFSRepositoryInputFormat extends LakeFSBaseInputFormat {
+  import LakeFSInputFormat._
   override def getSplits(job: JobContext): java.util.List[InputSplit] = {
     val conf = job.getConfiguration
     val repoName = conf.get(LAKEFS_CONF_JOB_REPO_NAME_KEY)
@@ -207,12 +241,15 @@ class LakeFSRepositoryInputFormat extends LakeFSBaseInputFormat {
     val splits = new ListBuffer[InputSplit]()
     while (it.hasNext) {
       val file = it.next()
+      
       splits += new GravelerSplit(
         null,
         file.getPath,
-        file.getPath.getName.getBytes
+        file.getPath.getName.getBytes,
+        file.getLen,
       )
     }
+    logger.warn(s"Returning ${splits.size} splits")
     return splits.asJava
   }
 }
