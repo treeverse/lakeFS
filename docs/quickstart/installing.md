@@ -37,6 +37,36 @@ You can try lakeFS:
 1. With docker-compose [on Windows](more_quickstart_options.md#docker-on-windows).
 1. By [running the binary directly](more_quickstart_options.md#using-the-binary).
 
+## Modifying the local configuration file
+
+To modify the local configuration file, for example, in order to use your local lakeFS environment against S3 storage as opposed to the local storage, download the configuration file https://compose.lakefs.io, modify it and then run the container with the modified copy:
+
+```bash
+docker-compose -f ModifiedYMLFile.yml up
+```
+
+For example, to run against S3 instead of local storage, change:
+```bash
+- LAKEFS_BLOCKSTORE_TYPE=${LAKEFS_BLOCKSTORE_TYPE:-local}
+
+...
+
+- LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+
+- LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_SECRET_KEY=${AWS_SECRET_ACCESS_KEY:-}
+```
+
+To:
+```bash
+- LAKEFS_BLOCKSTORE_TYPE=${LAKEFS_BLOCKSTORE_TYPE:-s3}
+
+...
+
+- LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=###
+
+- LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_SECRET_KEY=###
+```
+
 ## Next steps
 
 Now that your lakeFS is running, try [creating a repository](repository.md).
