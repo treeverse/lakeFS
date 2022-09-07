@@ -37,7 +37,7 @@ You can try lakeFS:
 1. With docker-compose [on Windows](more_quickstart_options.md#docker-on-windows).
 1. By [running the binary directly](more_quickstart_options.md#using-the-binary).
 
-## Modifying the local configuration file
+## Modifying the Compose file
 
 To modify the local configuration file, for example, in order to use your local lakeFS environment against S3 storage as opposed to the local storage, download the configuration file https://compose.lakefs.io, modify it and then run the container with the modified copy:
 
