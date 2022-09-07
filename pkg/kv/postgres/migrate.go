@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
@@ -20,8 +21,9 @@ import (
 )
 
 var ErrAlreadyMigrated = errors.New("already migrated")
+var ErrWrongDriverTypeMigration = errors.New("trying to migrate to non Postgres DB isn't supported")
 
-type MigrateFunc func(ctx context.Context, db *pgxpool.Pool, writer io.Writer) error
+type MigrateFunc func(ctx context.Context, db *pgxpool.Pool, c blockparams.AdapterConfig, writer io.Writer) error
 
 var (
 	kvPkgs   = make(map[string]pkgMigrate)
@@ -39,14 +41,13 @@ func timeTrack(start time.Time, logger logging.Logger, name string) {
 }
 
 // Migrate data migration from DB to KV
-func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database) error {
-	if !dbParams.KVEnabled {
-		return nil
+func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database, blockParams blockparams.AdapterConfig, postgresParams *kvparams.Postgres) error {
+	if dbParams.Type != DriverName {
+		return fmt.Errorf("driver type %s: %w", dbParams.Type, ErrWrongDriverTypeMigration)
 	}
-
 	kvParams := kvparams.KV{
 		Type:     DriverName,
-		Postgres: &kvparams.Postgres{ConnectionString: dbParams.ConnectionString},
+		Postgres: postgresParams,
 	}
 	store, err := kv.Open(ctx, kvParams)
 	if err != nil {
@@ -98,6 +99,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 	}
 	logger := logging.Default().WithField("TempDir", tmpDir)
 	logger.Info("Starting KV Migration Process")
+	logger.Warning("Make sure to follow the instructions in https://docs.lakefs.io/reference/upgrade.html (it's highly recommended to commit the data and take a DB snapshot)")
 	defer timeTrack(time.Now(), logger, "KV Migration")
 	for n, p := range kvPkgs {
 		name := n
@@ -112,7 +114,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 				return fmt.Errorf("create temp file: %w", err)
 			}
 			defer fd.Close()
-			err = migrateFunc(ctx, dbPool, fd)
+			err = migrateFunc(ctx, dbPool, blockParams, fd)
 			if err != nil {
 				return fmt.Errorf("failed migration on package %s: %w", name, err)
 			}
@@ -157,7 +159,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 func getMigrationStatus(ctx context.Context, store kv.Store) (bool, error) {
 	version, err := kv.GetDBSchemaVersion(ctx, store)
 	if err != nil && errors.Is(err, kv.ErrNotFound) {
-		return false, nil
+		return true, nil
 	} else if err == nil { // Version exists in DB
 		if version >= kv.InitialMigrateVersion {
 			return false, ErrAlreadyMigrated

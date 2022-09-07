@@ -112,10 +112,6 @@ hooks:
 		actionsService getService
 	}{
 		{
-			name:           "DB service test",
-			actionsService: GetDBService,
-		},
-		{
 			name:           "KV service test",
 			actionsService: GetKVService,
 		},
@@ -269,10 +265,6 @@ func TestDisableHooksRun(t *testing.T) {
 		actionsService getService
 	}{
 		{
-			name:           "DB service test",
-			actionsService: GetDBService,
-		},
-		{
 			name:           "KV service test",
 			actionsService: GetKVService,
 		},
@@ -322,10 +314,6 @@ hooks:
 		name           string
 		actionsService getService
 	}{
-		{
-			name:           "DB service test",
-			actionsService: GetDBService,
-		},
 		{
 			name:           "KV service test",
 			actionsService: GetKVService,

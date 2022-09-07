@@ -1,15 +1,9 @@
 package cmd
 
 import (
-	"context"
-	"fmt"
-	"os"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/db/params"
-
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/db"
 )
 
 type ReqResult struct {
@@ -21,15 +15,6 @@ type ReqResult struct {
 var dbCmd = &cobra.Command{
 	Use:   "db",
 	Short: "Load test database actions",
-}
-
-func connectToDB(ctx context.Context, connectionString string) db.Database {
-	database, err := db.ConnectDB(ctx, params.Database{Driver: db.DatabaseDriver, ConnectionString: connectionString})
-	if err != nil {
-		fmt.Printf("Failed connecting to database: %s\n", err)
-		os.Exit(1)
-	}
-	return database
 }
 
 //nolint:gochecknoinits,gomnd

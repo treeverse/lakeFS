@@ -109,9 +109,6 @@ func initConfig() {
 	}
 
 	logger.WithFields(cfg.ToLoggerFields()).Info("Config")
-	if cfg.GetDatabaseParams().KVEnabled {
-		logger.Warn("USING KV EXPERIMENTAL FLAG!!! USE AT YOUR OWN RISK!!!")
-	}
 }
 
 // getHomeDir find and return the home directory

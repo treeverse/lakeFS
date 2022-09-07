@@ -32,11 +32,6 @@ func TestTracker_Get(t *testing.T) {
 	testTrackerGet(t, tracker)
 }
 
-func TestDBTracker_Get(t *testing.T) {
-	tracker := testDBTracker(t)
-	testTrackerGet(t, tracker)
-}
-
 func testTrackerGet(t *testing.T, tracker multiparts.Tracker) {
 	ctx := context.Background()
 	creationTime := time.Now().UTC().Round(time.Second) // round in order to remove the monotonic clock
@@ -108,11 +103,6 @@ func TestTracker_Delete(t *testing.T) {
 	testTrackerDelete(t, tracker)
 }
 
-func TestDBTracker_Delete(t *testing.T) {
-	tracker := testDBTracker(t)
-	testTrackerDelete(t, tracker)
-}
-
 func testTrackerDelete(t *testing.T, tracker multiparts.Tracker) {
 	t.Helper()
 	ctx := context.Background()
@@ -153,11 +143,6 @@ func testTrackerDelete(t *testing.T, tracker multiparts.Tracker) {
 func TestTracker_Create(t *testing.T) {
 	store := kvtest.GetStore(context.Background(), t)
 	tracker := multiparts.NewTracker(kv.StoreMessage{Store: store})
-	testTrackerCreate(t, tracker)
-}
-
-func TestDBTracker_Create(t *testing.T) {
-	tracker := testDBTracker(t)
 	testTrackerCreate(t, tracker)
 }
 

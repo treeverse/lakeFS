@@ -23,7 +23,6 @@ func NewDatabaseMigrator(params kvparams.KV) *DatabaseMigrator {
 	}
 }
 
-// Migrate TODO (niro): Currently just set up the KV DB Schema version. Need to create a migration flow for KV
 func (d *DatabaseMigrator) Migrate(ctx context.Context) error {
 	kvStore, err := Open(ctx, d.params)
 	if err != nil {

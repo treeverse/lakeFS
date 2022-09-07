@@ -8,9 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/version"
@@ -36,23 +34,10 @@ var setupCmd = &cobra.Command{
 			fmt.Printf("Conflicting database parameters, connection_string should be defined for the specific driver. Do you need to go through migration?\n")
 			os.Exit(1)
 		}
-		var (
-			dbPool   db.Database
-			kvParams params.KV
-			migrator db.Migrator
-			err      error
-		)
-		if dbParams.KVEnabled {
-			kvParams = cfg.GetKVParams()
-			migrator = kv.NewDatabaseMigrator(kvParams)
-		} else {
-			dbPool = db.BuildDatabaseConnection(ctx, dbParams)
-			defer dbPool.Close()
+		kvParams := cfg.GetKVParams()
+		migrator := kv.NewDatabaseMigrator(kvParams)
 
-			migrator = db.NewDatabaseMigrator(dbParams)
-		}
-
-		err = migrator.Migrate(ctx)
+		err := migrator.Migrate(ctx)
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)
 			os.Exit(1)
@@ -78,21 +63,16 @@ var setupCmd = &cobra.Command{
 			authService     auth.Service
 			metadataManager auth.MetadataManager
 		)
-		authLogger := logging.Default().WithField("service", "auth_service")
-		if dbParams.KVEnabled {
-			kvStore, err := kv.Open(ctx, kvParams)
-			if err != nil {
-				fmt.Printf("Failed to connect to DB: %s", err)
-				os.Exit(1)
-			}
-			defer kvStore.Close()
-			storeMessage := &kv.StoreMessage{Store: kvStore}
-			authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), authLogger)
-			metadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
-		} else {
-			authService = auth.NewDBAuthService(dbPool, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), authLogger)
-			metadataManager = auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
+		kvStore, err := kv.Open(ctx, kvParams)
+		if err != nil {
+			fmt.Printf("Failed to connect to DB: %s", err)
+			os.Exit(1)
 		}
+		defer kvStore.Close()
+		storeMessage := &kv.StoreMessage{Store: kvStore}
+		authLogger := logging.Default().WithField("service", "auth_service")
+		authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), authLogger)
+		metadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
 
 		cloudMetadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
 		metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), metadataManager, cloudMetadataProvider)

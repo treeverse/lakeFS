@@ -20,7 +20,9 @@ object LakeFSContext {
   val LAKEFS_CONF_JOB_REPO_NAME_KEY = "lakefs.job.repo_name"
   val LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY = "lakefs.job.storage_namespace"
   val LAKEFS_CONF_JOB_COMMIT_ID_KEY = "lakefs.job.commit_id"
-
+  val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY = "lakefs.debug.gc.max_commit_iso_datetime"
+  val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY = "lakefs.debug.gc.max_commit_epoch_seconds"
+  val LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY = "lakefs.debug.gc.no_delete"
   def newRDD(
       sc: SparkContext,
       repoName: String,

@@ -22,17 +22,15 @@ var versionCmd = &cobra.Command{
 		cfg := loadConfig()
 		ctx := cmd.Context()
 		dbParams := cfg.GetDatabaseParams()
-		if dbParams.KVEnabled {
-			kvStore, err := kv.Open(ctx, cfg.GetKVParams())
-			if err != nil {
-				fmt.Printf("Failed to open KV store: %s\n", err)
-				return
-			}
-			defer kvStore.Close()
-			if kv.ValidateSchemaVersion(ctx, kvStore, false) == nil {
-				// Migration already occurred in KV or setup is required
-				return
-			}
+		kvStore, err := kv.Open(ctx, cfg.GetKVParams())
+		if err != nil {
+			fmt.Printf("Failed to open KV store: %s\n", err)
+			return
+		}
+		defer kvStore.Close()
+		if kv.ValidateSchemaVersion(ctx, kvStore, false) == nil {
+			// Migration already occurred in KV or setup is required
+			return
 		}
 		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
 		defer dbPool.Close()
@@ -55,7 +53,7 @@ var upCmd = &cobra.Command{
 	Short: "Apply all up migrations",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
-		err := db.MigrateUp(cfg.GetDatabaseParams())
+		err := db.MigrateUp(cfg.GetDatabaseParams(), cfg, cfg.GetKVParams())
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)
 			os.Exit(1)
@@ -70,8 +68,8 @@ var gotoCmd = &cobra.Command{
 		cfg := loadConfig()
 		ctx := cmd.Context()
 		dbParams := cfg.GetDatabaseParams()
-		if dbParams.KVEnabled {
-			fmt.Printf("Unsupported command for KV migration version\n")
+		if dbParams.ConnectionString != "" {
+			fmt.Printf("Missing database.connection_string for migration\n")
 			os.Exit(1)
 		}
 		version, err := cmd.Flags().GetUint("version")
