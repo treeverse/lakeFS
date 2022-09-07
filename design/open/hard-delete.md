@@ -16,9 +16,10 @@ so no specific approach was selected as a solution.
 ### Base assumptions
 
 The following assumptions are required in all the suggested proposals:
-1. Copy operation requires to be changed and implemented is full copy.
+1. Copy operation requires to be changed and implemented is full copy. (*irrelevant for suggestion no.3)
 2. lakeFS is not responsible for retention of data outside the repository path (data ingest)
-3. An online solution is not bulletproof, and will require a complementary external solution to handle edge cases
+3. An online solution is not bulletproof, and will require a complementary external solution to handle edge cases as well as
+existing uncommitted garbage.
 
 ## 1. Write staged data directly to object store on a defined path
 
@@ -77,22 +78,12 @@ This solution incurs an additional metadata read (and possible write) in case it
 #### Stage Object
 
 1. Object path is in the repo namespace:
-   1. read its metadata, increment the counter and update the metadata on the object. 
+   1. read its metadata, 
+      1. If counter > 0, increment the counter and update the metadata on the object. Otherwise, treat as deleted. 
    2. If the object's write to object store fails - rollback the metadata update. 
 2. Object path is outside the repo namespace:
    1. lakeFS will not handle its retention - therefore it will have to be deleted by the
    user or by a dedicated GC process
-
-#### Delete Object
-
-1. Read object's metadata
-2. Reference counter exists:
-   1. if counter == 1
-      1. Hard-delete object
-   2. if counter > 1
-      1. Decrement counter 
-3. If reference counter doesn't exist:
-   1. Retention is not handled in lakeFS
 
 #### LinkPhysicalAddress
 
@@ -101,11 +92,17 @@ Assume this API uses a physical address in the repo namespace
 2. Increment counter and write metadata
 3. Add staging entry
 
-#### StageObject
+#### Delete Object
 
-If physical address in repo namespace - perform increment as described above, otherwise do not handle retention
+1. Read object's metadata
+2. Reference counter exists:
+   1. Decrement counter
+   2. if counter == 0
+      1. Hard-delete object 
+3. If reference counter doesn't exist:
+   1. Retention is not handled in lakeFS
 
-#### Reset Branch
+#### Reset / Delete Branch
 
 When resetting a branch we throw all the uncommitted branch data.
 We can leverage the new KV drop async functionality to also check and hard-delete objects as needed
@@ -137,6 +134,7 @@ We will introduce a new object to the database:
 
       key    = <repo>/references/<physical_address>/<staging_token>  
       value  = state enum (staged|deleted|comitted)
+               last_modified timestamp
 
 On Upload object to a branch, we will add a key in the references path with the physical address and current staging token and 
 mark it as staged.   
@@ -144,7 +142,9 @@ On Delete object from a staging area, we will update the reference key with valu
 On Commit, we will update the reference key with value `comitted`
 
 A background job will be responsible for scanning the references prefix, and handling the references according to the state.
-
+The `last_modified` parameter is used to prevent any race conditions between reference candidates for deletion and ongoing operations 
+which might add references for this physical address. The assumption is that when all references of a physical address 
+are in `deleted` state, after a certain amount of time (TBD), this physical address cannot be referenced anymore (all staging tokens were either dropped or committed).
 
 ### Background delete job (pseudo-code)
 
@@ -152,7 +152,7 @@ A background job will be responsible for scanning the references prefix, and han
 2. For each `physical_address` read all entries
       1. If found state == 'committed' in any entry
          1. Delete all keys for `physical_address`, by order of state: deleted -> staged -> committed
-      2. If state == 'deleted' in all entries
+      2. If state == 'deleted' in all entries and min(`last_modified`) < `TBD`
          1. Hard-delete object
          2. Delete all keys for `physical_address`
 
@@ -186,9 +186,10 @@ Assume this API uses a physical address in the repo namespace
 
 #### Delete Object
 
-1. Remove staged entry
-2. Read reference key, if not `committed`
-   1. Change reference state to `deleted`
+1. If object staged
+   1. Read reference key
+   2. If not `committed` 
+      1. Change reference state to `deleted` and update `last_modified`
 
 #### Commit
 
@@ -197,6 +198,9 @@ Assume this API uses a physical address in the repo namespace
 3. Create commit
 4. Update branch commit ID
 
-#### Reset Branch
+#### Reset / Delete Branch
 When resetting a branch we throw all the uncommitted branch data, this operation happens asynchronously via `AsyncDrop`.
 We can leverage this asynchronous job to also check and perform the hard-delete
+1. Scan deleted staging token entries
+2. If entry is `tombstone` remove entry reference key
+3. Otherwise, modify reference state to `deleted` and update `last_modified`
