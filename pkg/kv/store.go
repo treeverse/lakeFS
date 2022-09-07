@@ -25,7 +25,6 @@ var (
 	ErrMissingKey           = errors.New("missing key")
 	ErrMissingValue         = errors.New("missing value")
 	ErrNotFound             = errors.New("not found")
-	ErrOperationFailed      = errors.New("operation failed")
 	ErrPredicateFailed      = errors.New("predicate failed")
 	ErrSetupFailed          = errors.New("setup failed")
 	ErrUnknownDriver        = errors.New("unknown driver")
