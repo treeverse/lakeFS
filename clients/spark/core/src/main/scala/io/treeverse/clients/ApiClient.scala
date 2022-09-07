@@ -177,11 +177,11 @@ class ApiClient private (conf: APIConfigurations) {
     storageConfig.getBlockstoreType()
   }
 
-  /** Query lakeFS for a URL to the metarange of commitID of repoName and
-   *  translate that URL to use an appropriate Hadoop FileSystem.
-   */
-  def getMetaRangeURL(repoName: String, commitID: String): String = {
-    val commit = commitsApi.getCommit(repoName, commitID)
+  def getCommit(repoName: String, commitID: String): api.model.Commit = {
+    commitsApi.getCommit(repoName, commitID)
+  }
+
+  def getMetaRangeURL(repoName: String, commit: api.model.Commit): String = {
     val metaRangeID = commit.getMetaRangeId
     if (metaRangeID != "") {
       val metaRange = metadataApi.getMetaRange(repoName, metaRangeID)
@@ -192,6 +192,14 @@ class ApiClient private (conf: APIConfigurations) {
         .normalize()
         .toString
     } else ""
+  }
+
+  /** Query lakeFS for a URL to the metarange of commitID of repoName and
+   *  translate that URL to use an appropriate Hadoop FileSystem.
+   */
+  def getMetaRangeURL(repoName: String, commitID: String): String = {
+    val commit = commitsApi.getCommit(repoName, commitID)
+    getMetaRangeURL(repoName, commit)
   }
 
   /** Query lakeFS for a URL to the range of rangeID of repoName and
