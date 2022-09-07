@@ -1,15 +1,7 @@
 package io.treeverse.clients
 
 import com.google.protobuf.timestamp.Timestamp
-import io.treeverse.clients.LakeFSContext.{
-  LAKEFS_CONF_API_ACCESS_KEY_KEY,
-  LAKEFS_CONF_API_SECRET_KEY_KEY,
-  LAKEFS_CONF_API_URL_KEY,
-  LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY,
-  LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY,
-  LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY,
-  LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_DATE_KEY
-}
+import io.treeverse.clients.LakeFSContext._
 import org.apache.hadoop.fs._
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.broadcast.Broadcast
@@ -25,9 +17,9 @@ import java.time.format.DateTimeFormatter
 import org.json4s.native.JsonMethods._
 import org.json4s._
 import org.json4s.JsonDSL._
-import org.apache.commons.lang3.StringUtils
-import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 
 /** Interface to build an S3 client.  The object
  *  io.treeverse.clients.conditional.S3ClientBuilder -- conditionally
@@ -56,9 +48,8 @@ object GarbageCollector {
   /** @return a serializable summary of values in hc starting with prefix.
    */
   def getHadoopConfigurationValues(hc: Configuration, prefixes: String*): ConfMap =
-
     hc.iterator.asScala
-      .filter(c => StringUtils.startsWithAny(c.getKey, prefixes:_*))
+      .filter(c => prefixes.exists(c.getKey.startsWith))
       .map(entry => (entry.getKey, entry.getValue))
       .toList
       .asInstanceOf[ConfMap]
@@ -85,12 +76,9 @@ object GarbageCollector {
     val conf = configurationFromValues(hcValues)
     val apiClient = ApiClient.get(apiConf)
     val commit = apiClient.getCommit(repo, commitID)
-    if (StringUtils.isNotBlank(conf.get(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_DATE_KEY))) {
-      val maxDate = LocalDate.parse(conf.get(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_DATE_KEY), DateTimeFormatter.ISO_DATE)
-      val maxDateEpoch = maxDate.atStartOfDay(ZoneId.of("UTC")).toInstant.toEpochMilli() / 1000      
-      if (commit.getCreationDate > maxDateEpoch) {
-        return Set()
-      }
+    val maxCommitEpochSeconds = conf.getLong(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY, -1)
+    if (maxCommitEpochSeconds > 0 && commit.getCreationDate > maxCommitEpochSeconds) {
+      return Set()
     }
     val location = apiClient.getMetaRangeURL(repo, commit)
     // continue on empty location, empty location is a result of a commit with no metaRangeID (e.g 'Repository created' commit)
@@ -327,6 +315,17 @@ object GarbageCollector {
     val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
     val connectionTimeout = hc.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY)
     val readTimeout = hc.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY)
+    val maxCommitIsoDatetime = hc.get(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY, "")
+    if (!maxCommitIsoDatetime.isEmpty) {
+      hc.setLong(
+        LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY,
+        LocalDateTime
+          .parse(hc.get(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY),
+                 DateTimeFormatter.ISO_DATE_TIME
+                )
+          .toEpochSecond(ZoneOffset.UTC)
+      )
+    }
     val apiClient = ApiClient.get(
       APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout)
     )
@@ -400,19 +399,19 @@ object GarbageCollector {
     if (!storageNSForSdkClient.endsWith("/")) {
       storageNSForSdkClient += "/"
     }
-    
-    var removed : DataFrame = spark.emptyDataFrame
 
-    if (!hc.getBoolean(LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, false)) {
-      removed = remove(storageNSForSdkClient,
-             gcAddressesLocation,
-             expiredAddresses,
-             runID,
-             region,
-             hcValues,
-             storageType
-            )
-    }
+    var removed =
+      if (hc.getBoolean(LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, false))
+        spark.emptyDataFrame
+      else
+        remove(storageNSForSdkClient,
+               gcAddressesLocation,
+               expiredAddresses,
+               runID,
+               region,
+               hcValues,
+               storageType
+              )
     var storageNSForHadoopFS = apiClient.getStorageNamespace(repo, StorageClientType.HadoopFS)
     if (!storageNSForHadoopFS.endsWith("/")) {
       storageNSForHadoopFS += "/"

@@ -177,6 +177,10 @@ class ApiClient private (conf: APIConfigurations) {
     storageConfig.getBlockstoreType()
   }
 
+  def getCommit(repoName: String, commitID: String): api.model.Commit = {
+    commitsApi.getCommit(repoName, commitID)
+  }
+  
   def getMetaRangeURL(repoName: String, commit: api.model.Commit): String = {
     val metaRangeID = commit.getMetaRangeId
     if (metaRangeID != "") {
@@ -190,10 +194,6 @@ class ApiClient private (conf: APIConfigurations) {
     } else ""
   }
 
-  def getCommit(repoName: String, commitID: String): api.model.Commit = {
-    commitsApi.getCommit(repoName, commitID)
-  }
-  
   /** Query lakeFS for a URL to the metarange of commitID of repoName and
    *  translate that URL to use an appropriate Hadoop FileSystem.
    */
