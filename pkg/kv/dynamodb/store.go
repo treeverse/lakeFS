@@ -213,7 +213,7 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	}
 
 	if result.Item == nil {
-		return nil, fmt.Errorf("key=%v: %w", string(key), kv.ErrNotFound)
+		return nil, kv.ErrNotFound
 	}
 
 	var item DynKVItem
