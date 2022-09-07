@@ -55,12 +55,13 @@ func (m *MetadataProvider) GetMetadata() map[string]string {
 	err = backoff.Retry(func() error {
 		identity, err = stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 		if err != nil {
-			m.logger.WithError(err).Warn("Failed to get AWS account ID for BI")
+			m.logger.WithError(err).Warn("Tried to to get AWS account ID for BI")
 			return err
 		}
 		return nil
 	}, bo)
 	if err != nil {
+		m.logger.WithError(err).Warn("Failed to to get AWS account ID for BI")
 		return nil
 	}
 
