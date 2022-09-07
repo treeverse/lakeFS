@@ -151,10 +151,10 @@ A background job will be responsible for scanning the references prefix, and han
 1. Scan `reference` prefix (can use after prefix for load balancing)
 2. For each `physical_address` read all entries
       1. If found state == 'committed' in any entry
-         1. Delete all keys for `phisycal_address`, by order of state: deleted -> staged -> committed
+         1. Delete all keys for `physical_address`, by order of state: deleted -> staged -> committed
       2. If state == 'deleted' in all entries
          1. Hard-delete object
-         2. Delete all keys for `phisycal_address`
+         2. Delete all keys for `physical_address`
 
 ### Key Update Order of Precedence
 
