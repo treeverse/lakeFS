@@ -14,17 +14,12 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
-// IteratorPrefetchSize is the amount of records to maybeFetch from PG
-const IteratorPrefetchSize = 1000
-
 // MaxBatchDelay - 3ms was chosen as a max delay time for critical path queries.
 // It trades off amount of queries per second (and thus effectiveness of the batching mechanism) with added latency.
 // Since reducing # of expensive operations is only beneficial when there are a lot of concurrent requests,
 // 	the sweet spot is probably between 1-5 milliseconds (representing 200-1000 requests/second to the data store).
 // 3ms of delay with ~300 requests/second per resource sounds like a reasonable tradeoff.
 const MaxBatchDelay = time.Millisecond * 3
-
-const BatchUpdateSQLSize = 10000
 
 // commitIDStringLength string representation length of commit ID - based on hex representation of sha256
 const commitIDStringLength = 64
@@ -33,12 +28,6 @@ type KVManager struct {
 	kvStore         kv.StoreMessage
 	addressProvider ident.AddressProvider
 	batchExecutor   batch.Batcher
-}
-
-type CommitNode struct {
-	children       []graveler.CommitID
-	parentsToVisit map[graveler.CommitID]struct{}
-	generation     int
 }
 
 func branchFromProto(pb *graveler.BranchData) *graveler.Branch {

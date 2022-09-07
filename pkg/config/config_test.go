@@ -83,7 +83,7 @@ func pushEnv(key, value string) func() {
 
 func TestConfig_EnvironmentVariables(t *testing.T) {
 	const dbString = "not://a/database"
-	defer pushEnv("LAKEFS_DATABASE_CONNECTION_STRING", dbString)()
+	defer pushEnv("LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING", dbString)()
 
 	viper.SetEnvPrefix("LAKEFS")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
@@ -92,8 +92,8 @@ func TestConfig_EnvironmentVariables(t *testing.T) {
 
 	c, err := newConfigFromFile("testdata/valid_config.yaml")
 	testutil.Must(t, err)
-	if c.GetDatabaseParams().ConnectionString != dbString {
-		t.Errorf("got DB connection string %s, expected to override to %s", c.GetDatabaseParams().ConnectionString, dbString)
+	if c.GetKVParams().Postgres.ConnectionString != dbString {
+		t.Errorf("got DB connection string %s, expected to override to %s", c.GetKVParams().Postgres.ConnectionString, dbString)
 	}
 }
 

@@ -271,6 +271,9 @@ func (c *Catalog) GetRepository(ctx context.Context, repository string) (*Reposi
 	}
 	repo, err := c.Store.GetRepository(ctx, repositoryID)
 	if err != nil {
+		if errors.Is(err, graveler.ErrRepositoryNotFound) {
+			err = ErrRepositoryNotFound
+		}
 		return nil, err
 	}
 	catalogRepository := &Repository{
@@ -522,6 +525,9 @@ func (c *Catalog) GetBranchReference(ctx context.Context, repositoryID string, b
 	}
 	b, err := c.Store.GetBranch(ctx, repository, branchID)
 	if err != nil {
+		if errors.Is(err, graveler.ErrBranchNotFound) {
+			err = ErrBranchNotFound
+		}
 		return "", err
 	}
 	return string(b.CommitID), nil
@@ -906,6 +912,9 @@ func (c *Catalog) GetCommit(ctx context.Context, repositoryID string, reference 
 	}
 	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
 	if err != nil {
+		if errors.Is(err, graveler.ErrRepositoryNotFound) {
+			err = ErrRepositoryNotFound
+		}
 		return nil, err
 	}
 	commitID, err := c.dereferenceCommitID(ctx, repository, graveler.Ref(reference))

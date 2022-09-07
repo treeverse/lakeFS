@@ -23,7 +23,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 const (
@@ -51,12 +50,6 @@ func (c *ActionStatsMockCollector) SetInstallationID(_ string)        {}
 func (c *ActionStatsMockCollector) Close()                            {}
 
 type getService func(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service
-
-func GetDBService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
-	t.Helper()
-	conn, _ := testutil.GetDB(t, databaseURI)
-	return actions.NewService(ctx, actions.NewActionsDBStore(conn), source, writer, &actions.IncreasingIDGenerator{}, stats, runHooks)
-}
 
 func GetKVService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
 	t.Helper()

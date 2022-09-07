@@ -28,12 +28,6 @@ var setupCmd = &cobra.Command{
 		}
 
 		ctx := cmd.Context()
-		dbParams := cfg.GetDatabaseParams()
-
-		if len(dbParams.Type) > 0 && len(dbParams.ConnectionString) > 0 { // Conflicting configuration
-			fmt.Printf("Conflicting database parameters, connection_string should be defined for the specific driver. Do you need to go through migration?\n")
-			os.Exit(1)
-		}
 		kvParams := cfg.GetKVParams()
 		migrator := kv.NewDatabaseMigrator(kvParams)
 

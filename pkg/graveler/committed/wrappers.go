@@ -2,31 +2,6 @@ package committed
 
 import "github.com/treeverse/lakefs/pkg/graveler"
 
-func NewIteratorWrapper(iter graveler.ValueIterator) Iterator {
-	return &IteratorWrapper{ValueIterator: iter}
-}
-
-type IteratorWrapper struct {
-	graveler.ValueIterator
-	err error
-}
-
-func (i *IteratorWrapper) NextRange() bool {
-	i.err = ErrNoRange
-	return false
-}
-
-func (i *IteratorWrapper) Err() error {
-	if i.err != nil {
-		return i.err
-	}
-	return i.ValueIterator.Err()
-}
-
-func (i *IteratorWrapper) Value() (*graveler.ValueRecord, *Range) {
-	return i.ValueIterator.Value(), nil
-}
-
 func NewDiffIteratorWrapper(iter graveler.DiffIterator) DiffIterator {
 	return &DiffIteratorWrapper{DiffIterator: iter}
 }
