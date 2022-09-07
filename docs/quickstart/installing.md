@@ -42,7 +42,7 @@ You can try lakeFS:
 To modify the local configuration file, for example, in order to use your local lakeFS environment against S3 storage as opposed to the local storage, download the configuration file https://compose.lakefs.io, modify it and then run the container with the modified copy:
 
 ```bash
-docker-compose -f ModifiedYMLFile.yml up
+docker-compose -f modified-docker-compose.yml up
 ```
 
 For example, to run against S3 instead of local storage, change:
