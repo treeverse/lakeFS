@@ -59,7 +59,6 @@ func (m *MetadataProvider) GetMetadata() map[string]string {
 			return err
 		}
 		return nil
-
 	}, bo)
 	if err != nil {
 		return nil
