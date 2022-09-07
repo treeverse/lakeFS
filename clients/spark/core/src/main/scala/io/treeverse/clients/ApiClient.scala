@@ -180,7 +180,7 @@ class ApiClient private (conf: APIConfigurations) {
   def getCommit(repoName: String, commitID: String): api.model.Commit = {
     commitsApi.getCommit(repoName, commitID)
   }
-  
+
   def getMetaRangeURL(repoName: String, commit: api.model.Commit): String = {
     val metaRangeID = commit.getMetaRangeId
     if (metaRangeID != "") {
