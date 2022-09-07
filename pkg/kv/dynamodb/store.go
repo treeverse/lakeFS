@@ -206,20 +206,20 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 	if err != nil {
 		dynamoFailures.WithLabelValues(operation).Inc()
-		return nil, fmt.Errorf("get item: %s (key=%v): %w", err, string(key), kv.ErrOperationFailed)
+		return nil, fmt.Errorf("get item: %w", err)
 	}
 	if result.ConsumedCapacity != nil {
 		dynamoConsumedCapacity.WithLabelValues(operation).Add(*result.ConsumedCapacity.CapacityUnits)
 	}
 
 	if result.Item == nil {
-		return nil, fmt.Errorf("key=%v: %w", string(key), kv.ErrNotFound)
+		return nil, kv.ErrNotFound
 	}
 
 	var item DynKVItem
 	err = dynamodbattribute.UnmarshalMap(result.Item, &item)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshal map: %s (key=%v): %w", err, string(key), kv.ErrOperationFailed)
+		return nil, fmt.Errorf("unmarshal map: %w", err)
 	}
 
 	return &kv.ValueWithPredicate{
@@ -255,7 +255,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 
 	marshaledItem, err := dynamodbattribute.MarshalMap(item)
 	if err != nil {
-		return fmt.Errorf("marshal map: %s (key=%v): %w", err, string(key), kv.ErrOperationFailed)
+		return fmt.Errorf("marshal map: %w", err)
 	}
 
 	input := &dynamodb.PutItemInput{
@@ -283,7 +283,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 			return kv.ErrPredicateFailed
 		}
 		dynamoFailures.WithLabelValues(operation).Inc()
-		return fmt.Errorf("put item: %s (key=%v): %w", err, string(key), kv.ErrOperationFailed)
+		return fmt.Errorf("put item: %w", err)
 	}
 	if resp.ConsumedCapacity != nil {
 		dynamoConsumedCapacity.WithLabelValues(operation).Add(*resp.ConsumedCapacity.CapacityUnits)
@@ -309,7 +309,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 	if err != nil {
 		dynamoFailures.WithLabelValues(operation).Inc()
-		return fmt.Errorf("delete item: %s (key=%v): %w", err, string(key), kv.ErrOperationFailed)
+		return fmt.Errorf("delete item: %w", err)
 	}
 	if resp.ConsumedCapacity != nil {
 		dynamoConsumedCapacity.WithLabelValues(operation).Add(*resp.ConsumedCapacity.CapacityUnits)
@@ -360,7 +360,7 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, 
 	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 	if err != nil {
 		dynamoFailures.WithLabelValues(operation).Inc()
-		return nil, fmt.Errorf("query: %s (start=%v): %w ", err, string(scanKey), kv.ErrOperationFailed)
+		return nil, fmt.Errorf("query: %w ", err)
 	}
 	dynamoConsumedCapacity.WithLabelValues(operation).Add(*queryOutput.ConsumedCapacity.CapacityUnits)
 
@@ -406,7 +406,7 @@ func (e *EntriesIterator) Next() bool {
 	var item DynKVItem
 	err := dynamodbattribute.UnmarshalMap(e.queryResult.Items[e.currEntryIdx], &item)
 	if err != nil {
-		e.err = fmt.Errorf("unmarshal map: %s: %w", err, kv.ErrOperationFailed)
+		e.err = fmt.Errorf("unmarshal map: %w", err)
 	}
 	e.entry = &kv.Entry{
 		Key:   item.ItemKey,
