@@ -24,6 +24,12 @@ class TestRetentionApi(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def test_delete_garbage_collection_rules(self):
+        """Test case for delete_garbage_collection_rules
+
+        """
+        pass
+
     def test_get_garbage_collection_rules(self):
         """Test case for get_garbage_collection_rules
 

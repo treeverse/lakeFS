@@ -84,6 +84,9 @@ func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageNamespac
 	if err != nil {
 		return nil, err
 	}
+	if len(rulesBytes) == 0 {
+		return nil, graveler.ErrNotFound
+	}
 	err = proto.Unmarshal(rulesBytes, &rules)
 	if err != nil {
 		return nil, err

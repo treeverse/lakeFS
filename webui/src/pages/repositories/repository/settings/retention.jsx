@@ -32,29 +32,53 @@ const GCPolicy = ({repo}) => {
     const [refresh, setRefresh] = useState(true);
     const [jsonView, setJsonView] = useState(false);
     const [showCreate, setShowCreate] = useState(false);
+    const [isActionsDisabled, setIsActionsDisabled] = useState(false);
 
     const {response, error, loading} = useAPI(async () => {
         return await retention.getGCPolicy(repo.id)
     }, [repo, refresh])
+
     const doRefresh = () => setRefresh(!refresh);
-    const onSubmit = (policy) => {
-        return retention.setGCPolicy(repo.id, policy).then(() => {
-            setShowCreate(false);
-            setRefresh(!refresh);
-        })
+    const onDelete = async () => {
+        setIsActionsDisabled(true);
+        try {
+            await retention.deleteGCPolicy(repo.id);
+        }
+        catch (err) {
+            setIsActionsDisabled(false);
+            throw err;
+        }
+        setRefresh(!refresh);
+        setIsActionsDisabled(false);
+    }
+
+    const onSubmit = async (policy) => {
+        setIsActionsDisabled(true);
+        try {
+            await retention.setGCPolicy(repo.id, policy);
+        }
+        catch (err) {
+            setIsActionsDisabled(false);
+            throw err;
+        }
+        setShowCreate(false);
+        setRefresh(!refresh);
+        setIsActionsDisabled(false);
     };
+
     const jsonToggleBar = <ActionsBar>
         <ActionGroup orientation="right">
             <ToggleSwitch label={"JSON view"} id={"policy-json-switch"} onChange={setJsonView}
                           defaultChecked={jsonView}/>
         </ActionGroup>
     </ActionsBar>
+    const isPolicyNotSet = error && error instanceof NotFoundError
     const policy = response
     let content;
     if (loading) {
         content = <Loading/>;
     } else if (error) {
-        content = error instanceof NotFoundError ? <Alert variant="info" className={"mt-3"}>A garbage collection policy is not set yet.</Alert> :  <Error error={error}/>;
+        content = isPolicyNotSet ? <Alert variant="info" className={"mt-3"}>A garbage collection policy is not set yet.</Alert> :  <Error error={error}/>;
     } else if (jsonView) {
         content = <>
             <pre className={"policy-body"}>{JSON.stringify(policy, null, 4)}</pre>
@@ -108,7 +132,10 @@ const GCPolicy = ({repo}) => {
                 <div className={"ml-1 mr-1 pl-0 row flex"}>
                     <div className={"flex-fill"}>Garbage collection policy</div>
                     <RefreshButton className={"ml-1"} onClick={doRefresh}/>
-                    <Button className={"ml-2"} onClick={() => setShowCreate(true)}>Edit Policy</Button>
+                    {!error && !loading && !isPolicyNotSet &&
+                        <Button className={"ml-2 btn-secondary"} disabled={isActionsDisabled} onClick={onDelete}>Delete
+                            Policy</Button>}
+                    <Button className={"ml-2"} disabled={isActionsDisabled} onClick={() => setShowCreate(true)}>Edit Policy</Button>
                 </div>
             </h4>
         </div>
