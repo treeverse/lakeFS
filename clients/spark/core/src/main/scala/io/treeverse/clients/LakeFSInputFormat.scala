@@ -24,7 +24,7 @@ import org.slf4j.{Logger, LoggerFactory}
 object GravelerSplit {
   val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 }
-class GravelerSplit(var range: RangeData, var path: Path, var rangeID: Array[Byte], var byteSize: Long)
+class GravelerSplit(var range: RangeData, var path: Path, var rangeID: String, var byteSize: Long)
     extends InputSplit
     with Writable {
   import GravelerSplit._
@@ -33,7 +33,7 @@ class GravelerSplit(var range: RangeData, var path: Path, var rangeID: Array[Byt
   override def write(out: DataOutput): Unit = {
     out.writeLong(byteSize)
     out.writeInt(rangeID.length)
-    out.write(rangeID)
+    out.writeChars(rangeID)
     if (range != null) {
       val encodedRange = range.toByteArray
       out.writeInt(encodedRange.length)
@@ -49,8 +49,12 @@ class GravelerSplit(var range: RangeData, var path: Path, var rangeID: Array[Byt
   override def readFields(in: DataInput): Unit = {
     byteSize = in.readLong()
     val rangeIDLength = in.readInt()
-    rangeID = new Array[Byte](rangeIDLength)
-    in.readFully(rangeID)
+
+    val rangeIDBuilder = new StringBuilder
+    for (_ <- 1 to rangeIDLength) {
+      rangeIDBuilder += in.readChar()
+    }
+    rangeID = rangeIDBuilder.toString
     val encodedRangeLength = in.readInt()
     if (encodedRangeLength == 0) {
       range = null
@@ -92,7 +96,7 @@ class GravelerSplit(var range: RangeData, var path: Path, var rangeID: Array[Byt
 class WithIdentifier[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     val id: Array[Byte],
     val message: Proto,
-    val rangeID: Array[Byte],
+    val rangeID: String
 ) {}
 
 object EntryRecordReader {
@@ -116,7 +120,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     val sstableReader =
       new SSTableReader(localFile.getAbsolutePath, companion)
     val props = sstableReader.getProperties()
-    logger.debug(s"Props: $props")  
+    logger.debug(s"Props: $props")
     if (gravelerSplit.range == null) {
       if (new String(props.get("type").get) != "ranges" || props.get("entity").nonEmpty) {
         return
@@ -192,8 +196,8 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
       new GravelerSplit(
         r.message,
         new Path(apiClient.getRangeURL(repoName, new String(r.id))),
-        r.id,
-        r.message.estimatedSize,        
+        new String(r.id),
+        r.message.estimatedSize
       )
         // Scala / JRE not strong enough to handle List<FileSplit> as List<InputSplit>;
         // explicitly upcast to generate Seq[InputSplit].
@@ -244,8 +248,8 @@ class LakeFSRepositoryInputFormat extends LakeFSBaseInputFormat {
       splits += new GravelerSplit(
         null,
         file.getPath,
-        file.getPath.getName.getBytes,
-        file.getLen,
+        file.getPath.getName,
+        file.getLen
       )
     }
     logger.debug(s"Returning ${splits.size} splits")
