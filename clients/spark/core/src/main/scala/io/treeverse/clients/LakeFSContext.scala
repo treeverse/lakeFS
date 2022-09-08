@@ -28,7 +28,7 @@ object LakeFSContext {
       repoName: String,
       storageNamespace: String,
       commitID: String,
-      inputFormat: Class[_ <: LakeFSBaseInputFormat]
+      inputFormatClass: Class[_ <: LakeFSBaseInputFormat]
   ): RDD[(Array[Byte], WithIdentifier[Entry])] = {
     val conf = new Configuration(sc.hadoopConfiguration)
     conf.set(LAKEFS_CONF_JOB_REPO_NAME_KEY, repoName)
@@ -45,7 +45,7 @@ object LakeFSContext {
     }
     sc.newAPIHadoopRDD(
       conf,
-      inputFormat,
+      inputFormatClass,
       classOf[Array[Byte]],
       classOf[WithIdentifier[Entry]]
     )
@@ -56,9 +56,9 @@ object LakeFSContext {
       repoName: String,
       storageNamespace: String,
       commitID: String,
-      inputFormat: Class[_ <: LakeFSBaseInputFormat]
+      inputFormatClass: Class[_ <: LakeFSBaseInputFormat]
   ): DataFrame = {
-    val rdd = newRDD(spark.sparkContext, repoName, storageNamespace, commitID, inputFormat).map { case (k, v) =>
+    val rdd = newRDD(spark.sparkContext, repoName, storageNamespace, commitID, inputFormatClass).map { case (k, v) =>
       val entry = v.message
       Row(
         new String(k),
@@ -79,7 +79,7 @@ object LakeFSContext {
     spark.createDataFrame(rdd, schema)
   }
 
-  def newDFFromStorageNamespace(
+  def newDF(
       spark: SparkSession,
       storageNamespace: String
   ): DataFrame = {
@@ -88,15 +88,8 @@ object LakeFSContext {
 
   def newDF(
       spark: SparkSession,
-      repoName: String
-  ): DataFrame = {
-    newDF(spark, repoName, "", "", classOf[LakeFSRepositoryInputFormat])
-  }
-
-  def newDF(
-      spark: SparkSession,
       repoName: String,
-      commitID: String
+      commitID: String = "",
   ): DataFrame = {
     newDF(spark, repoName, "", commitID, classOf[LakeFSCommitInputFormat])
   }
