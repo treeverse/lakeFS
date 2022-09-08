@@ -8,6 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/kv"
+
+	"github.com/treeverse/lakefs/pkg/kv/mock"
+
+	"github.com/golang/mock/gomock"
+
 	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -562,4 +568,56 @@ func TestKVOrderedCommitIteratorGrid(t *testing.T) {
 	}
 	iterator.Close()
 
+}
+
+func TestKVOrderedCommitIterator_CloseTwice(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	ctx := context.Background()
+	entIt := mock.NewMockEntriesIterator(ctrl)
+	entIt.EXPECT().Close().Times(1)
+	store := mock.NewMockStore(ctrl)
+	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
+	msgStore := kv.StoreMessage{Store: store}
+	repository := &graveler.RepositoryRecord{
+		RepositoryID: "CommitIterClose",
+		Repository: &graveler.Repository{
+			StorageNamespace: "",
+			CreationDate:     time.Time{},
+			DefaultBranchID:  "",
+			State:            0,
+			InstanceUID:      "rid",
+		},
+	}
+	it, err := ref.NewKVOrderedCommitIterator(ctx, &msgStore, repository, false)
+	if err != nil {
+		t.Fatal("failed to create kv ordered commit iterator", err)
+	}
+	it.Close()
+	// calling 'Close()` again to verify the iterator doesn't call the internal iterator close method
+	it.Close()
+}
+
+func TestKVOrderedCommitIterator_NextAfterClose(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	ctx := context.Background()
+	entIt := mock.NewMockEntriesIterator(ctrl)
+	entIt.EXPECT().Close().Times(1)
+	store := mock.NewMockStore(ctrl)
+	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
+	msgStore := kv.StoreMessage{Store: store}
+	repository := &graveler.RepositoryRecord{
+		RepositoryID: "CommitIterClose",
+		Repository: &graveler.Repository{
+			InstanceUID: "rid",
+		},
+	}
+	it, err := ref.NewKVOrderedCommitIterator(ctx, &msgStore, repository, false)
+	if err != nil {
+		t.Fatal("failed to create kv ordered commit iterator", err)
+	}
+	it.Close()
+	// calling Next after Close should not crash
+	if it.Next() {
+		t.Fatal("Next() should return false after Close()")
+	}
 }

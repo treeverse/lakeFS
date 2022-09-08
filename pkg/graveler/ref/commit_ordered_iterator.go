@@ -48,7 +48,7 @@ func NewKVOrderedCommitIterator(ctx context.Context, store *kv.StoreMessage, rep
 }
 
 func (i *KVOrderedCommitIterator) Next() bool {
-	if i.Err() != nil {
+	if i.Err() != nil || i.it == nil {
 		return false
 	}
 	for i.it.Next() {
