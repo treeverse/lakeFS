@@ -31,7 +31,7 @@ Note: If you already have lakeFS credentials, log in and skip to [creating the r
    ![Setup]({{ site.baseurl }}/assets/img/setup.png){: style="padding:20px 40px"}
 
 
-1. After clicking _Setup_, you will see your lakeFS credentials. Copy and store them somewhere safe, since you won't be able to see them again.
+1. After clicking _Setup_, your lakeFS credentials will appear. Copy and store them somewhere safe, since you won't be able to see them again.
 
    ![Setup]({{ site.baseurl }}/assets/img/setup_done.png){: style="padding:20px 40px"}
 
