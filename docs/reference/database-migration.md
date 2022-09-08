@@ -45,7 +45,7 @@ Now, with KV Store replacing the SQL database, this easy solution is no longer a
   * `Commit` A is retired, setting `StagingToken` to val3 and samples the `Branch`
   * `Commit` B finishes, tries to update the `Branch` and fails due to the recent modification by `Commit` A,
   * And so on...
-At some point, as retries will be exhausted, commits will succeed, if not earlier, but this was definitely something that had to be taken into consideration when designing our KV Store. You can read more on the Commit Flow in the [dedicated section in the KV Design](https://github.com/treeverse/lakeFS/blob/master/design/accepted/metadata_kv/index.md#graveler-metadata---branches-and-staged-writes)
+Eventually , as retries will be exhausted, at least one commit will succeed, if not earlier, but this was definitely something that had to be taken into consideration when designing our KV Store. You can read more on the Commit Flow in the [dedicated section in the KV Design](https://github.com/treeverse/lakeFS/blob/master/design/accepted/metadata_kv/index.md#graveler-metadata---branches-and-staged-writes)
 
 ### DB Transactions and Atomic Updates
 
