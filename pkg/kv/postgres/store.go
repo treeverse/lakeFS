@@ -115,7 +115,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 	}
 
 	// register collector to public pgx stats as prometheus metrics
-	collector := pgxpoolprometheus.NewCollector(pool, map[string]string{"db_name": "kv"})
+	collector := pgxpoolprometheus.NewCollector(pool, map[string]string{"db_name": params.TableName})
 	prometheus.MustRegister(collector)
 
 	store := &Store{
