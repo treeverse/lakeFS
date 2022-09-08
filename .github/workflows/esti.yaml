@@ -2,11 +2,6 @@ name: Esti
 on:
   pull_request:
   push:
-    paths-ignore:
-      - "*.md"
-      - "docs/**"
-      - "webui/**"
-      - "design/**"
     branches:
       - master
 
