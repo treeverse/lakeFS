@@ -566,3 +566,7 @@ td .form-group {
 .readme-heading {
   background-color: inherit;
 }
+
+.form-label {
+  white-space: nowrap;
+}
