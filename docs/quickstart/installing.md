@@ -37,35 +37,39 @@ You can try lakeFS:
 1. With docker-compose [on Windows](more_quickstart_options.md#docker-on-windows).
 1. By [running the binary directly](more_quickstart_options.md#using-the-binary).
 
-## Modifying the Compose file
+## Modifying the local deployment
 
-To modify the local configuration file, for example, in order to use your local lakeFS environment against S3 storage as opposed to the local storage, download the configuration file https://compose.lakefs.io, modify it and then run the container with the modified copy:
+To modify the local deployment, for example, in order to use your local lakeFS against S3 storage (as opposed to the local storage), you can either:
+1. Pass or expose the variables using this syntax:
 
-```bash
-docker-compose -f modified-docker-compose.yml up
-```
+   ```bash
+   curl https://compose.lakefs.io | LAKEFS_BLOCKSTORE_TYPE=s3 AWS_ACCESS_KEY_ID=YourAccessKeyValue AWS_SECRET_ACCESS_KEY=YourSecretKeyValue docker-compose -f - up
+   ```
+2. Download the configuration file https://compose.lakefs.io, modify it and then run the container with the modified copy:
 
-For example, to run against S3 instead of local storage, change:
-```bash
-- LAKEFS_BLOCKSTORE_TYPE=${LAKEFS_BLOCKSTORE_TYPE:-local}
+   ```bash
+   docker-compose -f modified-docker-compose.yml up
+   ```
 
-...
-
-- LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
-
-- LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_SECRET_KEY=${AWS_SECRET_ACCESS_KEY:-}
-```
-
-To:
-```bash
-- LAKEFS_BLOCKSTORE_TYPE=${LAKEFS_BLOCKSTORE_TYPE:-s3}
-
-...
-
-- LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=###
-
-- LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_SECRET_KEY=###
-```
+   For example, to run against S3 instead of local storage, change:
+   ```bash
+   ...
+   - LAKEFS_BLOCKSTORE_TYPE=${LAKEFS_BLOCKSTORE_TYPE:-local}
+   ...
+   - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+   - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_SECRET_KEY=${AWS_SECRET_ACCESS_KEY:-}
+   ...
+   ```
+   To:
+   ```bash
+   ...
+   - LAKEFS_BLOCKSTORE_TYPE=s3
+   ...
+   - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=###
+   - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_SECRET_KEY=###
+   ...
+   ```
+Note that if you only stop/start the container as opposed to remove the a previous run, lakeFS will try to identify repositories that use different storange namespaces, and prevert running.
 
 ## Next steps
 
