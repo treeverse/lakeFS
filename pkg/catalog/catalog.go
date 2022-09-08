@@ -7,11 +7,12 @@ import (
 	_ "crypto/sha256"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/go-multierror"
 	"io"
 	"strings"
+	"sync"
 
 	"github.com/cockroachdb/pebble"
-	"github.com/hashicorp/go-multierror"
 	"github.com/hnlq715/golang-lru/simplelru"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -114,6 +115,9 @@ type Catalog struct {
 	log           logging.Logger
 	walkerFactory WalkerFactory
 	managers      []io.Closer
+	inLogCommits  chan func()
+	done          chan struct{}
+	wg            sync.WaitGroup
 }
 
 const (
@@ -200,12 +204,37 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	stagingManager := staging.NewManager(ctx, *cfg.KVStore)
 	gStore := graveler.NewKVGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 
+	const (
+		numWorkers    = 15
+		channelBuffer = 100
+	)
+	inLogCommits := make(chan func(), channelBuffer)
+	done := make(chan struct{})
+	wg := sync.WaitGroup{}
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-done:
+					return
+				case f := <-inLogCommits:
+					f()
+				}
+			}
+		}()
+	}
+
 	return &Catalog{
 		BlockAdapter:  tierFSParams.Adapter,
 		Store:         gStore,
 		log:           logging.Default().WithField("service_name", "entry_catalog"),
 		walkerFactory: cfg.WalkerFactory,
 		managers:      []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
+		done:          done,
+		inLogCommits:  inLogCommits,
+		wg:            wg,
 	}, nil
 }
 
@@ -974,6 +1003,24 @@ func (c *Catalog) GetCommit(ctx context.Context, repositoryID string, reference 
 	return catalogCommitLog, nil
 }
 
+// wrapper for simplelru.LRU that is safe to access from multiple go routines
+type safeCache struct {
+	sync.Mutex
+	cache *simplelru.LRU
+}
+
+func (sc *safeCache) Add(key, value interface{}) bool {
+	sc.Mutex.Lock()
+	defer sc.Mutex.Unlock()
+	return sc.cache.Add(key, value)
+}
+
+func (sc *safeCache) Get(key interface{}) (value interface{}, ok bool) {
+	sc.Mutex.Lock()
+	defer sc.Mutex.Unlock()
+	return sc.cache.Get(key)
+}
+
 func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch string, params LogParams) ([]*CommitLog, bool, error) {
 	branchRef := graveler.BranchID(branch)
 	if err := validator.Validate([]validator.ValidateArg{
@@ -1015,9 +1062,6 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 		}
 	}
 
-	// collect commits
-	var commits []*CommitLog
-
 	// commit/key to value cache - helps when fetching the same commit/key while processing parent commits
 	const commitLogCacheSize = 1024 * 5
 	commitCache, err := simplelru.NewLRU(commitLogCacheSize, nil)
@@ -1025,48 +1069,107 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 		return nil, false, err
 	}
 
-	for it.Next() {
-		v := it.Value()
+	safeCache := &safeCache{cache: commitCache}
 
-		if len(params.PathList) > 0 {
-			// verify that commit includes a change with object/prefix from PathList
-			if len(v.Parents) != NumberOfParentsOfNonMergeCommit {
-				// skip merge commits
-				continue
-			}
-			pathInCommit, err := c.checkPathListInCommit(ctx, repository, v, params.PathList, commitCache)
-			if err != nil {
-				return nil, false, err
-			}
-			if !pathInCommit {
-				// no object or prefix found skip commit
-				continue
-			}
-		}
+	childCtx, cancel := context.WithCancel(ctx)
+	const (
+		numReadResults = 3
+	)
+	out := make(chan compareJobResult, numReadResults)
 
-		commit := &CommitLog{
-			Reference:    v.CommitID.String(),
-			Committer:    v.Committer,
-			Message:      v.Message,
-			CreationDate: v.CreationDate,
-			Metadata:     map[string]string(v.Metadata),
-			MetaRangeID:  string(v.MetaRangeID),
-			Parents:      make([]string, 0, len(v.Parents)),
+	paths := params.PathList
+	var g multierror.Group
+
+	g.Go(func() error {
+		for num := 0; it.Next(); num++ {
+			numm := num
+			vall := it.Value()
+			c.inLogCommits <- func() {
+				select {
+				case <-childCtx.Done():
+					// this job is no longer needed
+					return
+				default:
+				}
+
+				if len(paths) > 0 {
+					// verify that commit includes a change with object/prefix from PathList
+					if len(vall.Parents) != NumberOfParentsOfNonMergeCommit {
+						// skip merge commits
+						out <- compareJobResult{num: numm}
+						return
+					}
+					pathInCommit, err := c.checkPathListInCommit(ctx, repository, vall, paths, safeCache)
+					if err != nil {
+						out <- compareJobResult{num: numm, err: err}
+						return
+					}
+					if !pathInCommit {
+						// no object or prefix found skip commit
+						out <- compareJobResult{num: numm}
+						return
+					}
+				}
+
+				commit := &CommitLog{
+					Reference:    vall.CommitID.String(),
+					Committer:    vall.Committer,
+					Message:      vall.Message,
+					CreationDate: vall.CreationDate,
+					Metadata:     map[string]string(vall.Metadata),
+					MetaRangeID:  string(vall.MetaRangeID),
+					Parents:      make([]string, 0, len(vall.Parents)),
+				}
+				for _, parent := range vall.Parents {
+					commit.Parents = append(commit.Parents, parent.String())
+				}
+				out <- compareJobResult{num: numm, log: commit}
+			}
 		}
-		for _, parent := range v.Parents {
-			commit.Parents = append(commit.Parents, parent.String())
-		}
-		commits = append(commits, commit)
-		if params.Limit && len(commits) >= params.Amount {
-			break
-		}
-		if len(commits) >= params.Amount+1 {
-			break
-		}
-	}
+		return it.Err()
+	})
 	if err := it.Err(); err != nil {
 		return nil, false, err
 	}
+
+	results := map[int]*CommitLog{}
+	g.Go(func() error {
+		for {
+			select {
+			case <-childCtx.Done():
+				return nil
+			case res, ok := <-out:
+				if !ok {
+					// compareJobResults is closed, workers finished.
+					return nil
+				}
+				if res.err != nil {
+					drainAndWaitForWorkers(cancel, out)
+					return res.err
+				}
+				results[res.num] = res.log
+
+				if res.log == nil {
+					// no result
+					continue
+				}
+
+				// scan the results array to see if we got the number of results needed
+				_, done := findAllCommits(results, params)
+				if done {
+					drainAndWaitForWorkers(cancel, out)
+					return nil
+				}
+			}
+		}
+	})
+
+	err = g.Wait().ErrorOrNil()
+	if err != nil {
+		return nil, false, err
+	}
+
+	commits, _ := findAllCommits(results, params)
 	hasMore := false
 	if len(commits) > params.Amount {
 		hasMore = true
@@ -1075,10 +1178,56 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	return commits, hasMore, nil
 }
 
+func drainAndWaitForWorkers(cancel context.CancelFunc, compareJobResults chan compareJobResult) {
+	cancel()
+
+	drained := false
+	for !drained {
+		_, ok := <-compareJobResults
+		drained = !ok
+	}
+}
+
+func findAllCommits(results map[int]*CommitLog, params LogParams) ([]*CommitLog, bool) {
+	var commits []*CommitLog
+	for i := 0; i < len(results); i++ {
+		log, ok := results[i]
+		if !ok {
+			// we're missing a result - not done yet
+			return nil, false
+		}
+		if log != nil {
+			commits = append(commits, log)
+		}
+
+		if (params.Limit && len(commits) >= params.Amount) ||
+			len(commits) >= params.Amount+1 {
+			// All results returned until the last commit found
+			// and the number of commits found is as expected.
+			// we have what we need. return commits, true
+			return commits, true
+		}
+	}
+
+	// return the commits found, although they are less than max
+	return commits, false
+}
+
+type compareJob struct {
+	commitRecord *graveler.CommitRecord
+	num          int
+}
+
+type compareJobResult struct {
+	log *CommitLog
+	num int
+	err error
+}
+
 // checkPathListInCommit checks whether the given commit contains changes to a list of paths.
 // it searches the path in the diff between the commit, and it's parent, but do so only to commits
 // that have single parent (not merge commits)
-func (c *Catalog) checkPathListInCommit(ctx context.Context, repository *graveler.RepositoryRecord, commit *graveler.CommitRecord, pathList []PathRecord, commitCache *simplelru.LRU) (bool, error) {
+func (c *Catalog) checkPathListInCommit(ctx context.Context, repository *graveler.RepositoryRecord, commit *graveler.CommitRecord, pathList []PathRecord, commitCache *safeCache) (bool, error) {
 	left := commit.Parents[0]
 	right := commit.CommitID
 
@@ -1135,7 +1284,7 @@ func (c *Catalog) checkPathListInCommit(ctx context.Context, repository *gravele
 
 // storeGetCache helper to calls Get and cache the return info 'commitCache'. This method is helpful in case of calling Get
 // on a large set of commits with the same object, and we can return the cached data we returned so far
-func storeGetCache(ctx context.Context, store graveler.KeyValueStore, repository *graveler.RepositoryRecord, commitID graveler.CommitID, key graveler.Key, commitCache *simplelru.LRU) (*graveler.Value, error) {
+func storeGetCache(ctx context.Context, store graveler.KeyValueStore, repository *graveler.RepositoryRecord, commitID graveler.CommitID, key graveler.Key, commitCache *safeCache) (*graveler.Value, error) {
 	cacheKey := fmt.Sprintf("%s/%s", commitID, key)
 	if o, found := commitCache.Get(cacheKey); found {
 		return o.(*graveler.Value), nil
@@ -1334,8 +1483,7 @@ func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, a
 }
 
 func (c *Catalog) Merge(ctx context.Context, repositoryID string, destinationBranch string, sourceRef string,
-	committer string, message string, metadata Metadata, strategy string,
-) (string, error) {
+	committer string, message string, metadata Metadata, strategy string) (string, error) {
 	destination := graveler.BranchID(destinationBranch)
 	source := graveler.Ref(sourceRef)
 	meta := graveler.Metadata(metadata)
@@ -1541,6 +1689,9 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string
 }
 
 func (c *Catalog) Close() error {
+	close(c.done)
+	c.wg.Wait()
+
 	var errs error
 	for _, manager := range c.managers {
 		err := manager.Close()
