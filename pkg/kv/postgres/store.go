@@ -7,10 +7,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/IBM/pgxpoolprometheus"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 )
@@ -21,6 +23,7 @@ type Store struct {
 	Pool           *pgxpool.Pool
 	Params         *Params
 	TableSanitized string
+	collector      prometheus.Collector
 }
 
 type EntriesIterator struct {
@@ -110,10 +113,16 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
 	}
+
+	// register collector to public pgx stats as prometheus metrics
+	collector := pgxpoolprometheus.NewCollector(pool, map[string]string{"db_name": "kv"})
+	prometheus.MustRegister(collector)
+
 	store := &Store{
 		Pool:           pool,
 		Params:         params,
 		TableSanitized: pgx.Identifier{params.TableName}.Sanitize(),
+		collector:      collector,
 	}
 	pool = nil
 	return store, nil
@@ -307,6 +316,7 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, start []byte, in
 }
 
 func (s *Store) Close() {
+	prometheus.Unregister(s.collector)
 	s.Pool.Close()
 }
 
