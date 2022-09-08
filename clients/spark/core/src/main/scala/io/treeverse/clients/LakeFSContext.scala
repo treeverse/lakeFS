@@ -23,6 +23,7 @@ object LakeFSContext {
   val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY = "lakefs.debug.gc.max_commit_iso_datetime"
   val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY = "lakefs.debug.gc.max_commit_epoch_seconds"
   val LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY = "lakefs.debug.gc.no_delete"
+
   def newRDD(
       sc: SparkContext,
       repoName: String,
@@ -51,6 +52,14 @@ object LakeFSContext {
     )
   }
 
+  def newRDD(
+      sc: SparkContext,
+      repoName: String,
+      commitID: String
+  ): RDD[(Array[Byte], WithIdentifier[Entry])] = {
+    newRDD(sc, repoName, "", commitID, classOf[LakeFSCommitInputFormat])
+  }
+
   def newDF(
       spark: SparkSession,
       repoName: String,
@@ -58,17 +67,19 @@ object LakeFSContext {
       commitID: String,
       inputFormatClass: Class[_ <: LakeFSBaseInputFormat]
   ): DataFrame = {
-    val rdd = newRDD(spark.sparkContext, repoName, storageNamespace, commitID, inputFormatClass).map { case (k, v) =>
-      val entry = v.message
-      Row(
-        new String(k),
-        entry.address,
-        entry.eTag,
-        new java.sql.Timestamp(TimeUnit.SECONDS.toMillis(entry.getLastModified.seconds)),
-        entry.size,
-        new String(v.rangeID),
-      )
-    }
+    val rdd =
+      newRDD(spark.sparkContext, repoName, storageNamespace, commitID, inputFormatClass).map {
+        case (k, v) =>
+          val entry = v.message
+          Row(
+            new String(k),
+            entry.address,
+            entry.eTag,
+            new java.sql.Timestamp(TimeUnit.SECONDS.toMillis(entry.getLastModified.seconds)),
+            entry.size,
+            new String(v.rangeID)
+          )
+      }
     val schema = new StructType()
       .add(StructField("key", StringType))
       .add(StructField("address", StringType))
@@ -89,16 +100,8 @@ object LakeFSContext {
   def newDF(
       spark: SparkSession,
       repoName: String,
-      commitID: String = "",
+      commitID: String = ""
   ): DataFrame = {
     newDF(spark, repoName, "", commitID, classOf[LakeFSCommitInputFormat])
-  }
-
-  def newRDD(
-      spark: SparkSession,
-      repoName: String,
-      commitID: String
-  ): RDD[(Array[Byte], WithIdentifier[Entry])] = {
-    newRDD(spark.sparkContext, repoName, "", commitID, classOf[LakeFSCommitInputFormat])
   }
 }
