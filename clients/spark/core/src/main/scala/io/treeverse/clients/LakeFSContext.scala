@@ -55,9 +55,13 @@ object LakeFSContext {
   def newRDD(
       sc: SparkContext,
       repoName: String,
-      commitID: String
+      commitID: String = ""
   ): RDD[(Array[Byte], WithIdentifier[Entry])] = {
-    newRDD(sc, repoName, "", commitID, classOf[LakeFSCommitInputFormat])
+    val inputFormatClass =
+      if (StringUtils.isNotBlank(commitID)) classOf[LakeFSCommitInputFormat]
+      else classOf[LakeFSAllRangesInputFormat]
+
+    newRDD(sc, repoName, "", commitID, inputFormatClass)
   }
 
   def newDF(
@@ -94,7 +98,7 @@ object LakeFSContext {
       spark: SparkSession,
       storageNamespace: String
   ): DataFrame = {
-    newDF(spark, "", storageNamespace, "", classOf[LakeFSRepositoryInputFormat])
+    newDF(spark, "", storageNamespace, "", classOf[LakeFSAllRangesInputFormat])
   }
 
   def newDF(
@@ -102,6 +106,9 @@ object LakeFSContext {
       repoName: String,
       commitID: String = ""
   ): DataFrame = {
-    newDF(spark, repoName, "", commitID, classOf[LakeFSCommitInputFormat])
+    val inputFormatClass =
+      if (StringUtils.isNotBlank(commitID)) classOf[LakeFSCommitInputFormat]
+      else classOf[LakeFSAllRangesInputFormat]
+    newDF(spark, repoName, "", commitID, inputFormatClass)
   }
 }

@@ -208,7 +208,7 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
   }.asJava
 }
 
-class LakeFSRepositoryInputFormat extends LakeFSBaseInputFormat {
+class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
   import LakeFSInputFormat._
   override def getSplits(job: JobContext): java.util.List[InputSplit] = {
     val conf = job.getConfiguration
