@@ -16,6 +16,8 @@ It can be considered the lakeFS analog of a bucket in an object store. Since it 
 
 ## Create the first user
 
+When you first open the lakeFS UI, you will be asked to create an initial admin user.
+
 Note: If you already have lakeFS credentials, log in and skip to [creating the repository](#create-the-repository).
 {: .note .pb-3 }
 
@@ -43,7 +45,7 @@ Note: If you already have lakeFS credentials, log in and skip to [creating the r
 
 1. When logged in to lakeFS, click _Create Repository_.
     
-2. In the shown dropdown, choose _Blank Repository_
+1. In the shown dropdown, choose _Blank Repository_
    <span class="tooltip">(<a href="#">what are the other options?</a>)
      <span class="tooltiptext">
        The other options can help you integrate your existing tools with lakeFS.
@@ -52,9 +54,9 @@ Note: If you already have lakeFS credentials, log in and skip to [creating the r
 
    ![Create Repository]({{ site.baseurl }}/assets/img/create_repo_s3.png){: style="padding:20px 40px"}
 
-4. Fill in a repository name.
+1. Fill in a repository name.
 
-5. Set the _Storage Namespace_ to a location in the bucket you've configured in a [previous step](./storage/index.md).
+1. Set the _Storage Namespace_ to a location in the bucket you've configured in a [previous step](./storage/index.md).
    The storage namespace is a location in the
    [underlying storage](../glossary.md#storage-namespace)
    where data for this repository will be stored.
@@ -62,7 +64,7 @@ Note: If you already have lakeFS credentials, log in and skip to [creating the r
    The storage namespace is a URI, and its scheme is determined by the storage type. For example, the storage namespace can be `s3://example-bucket/example-path/` if you're using AWS S3, or `gs://example-bucket/example-path` if you're using Google Cloud Storage.
    {: .note }
    
-6. To finish creating the repository, click _Create Repository_.
+1. To finish creating the repository, click _Create Repository_.
 
 # Next steps
 
