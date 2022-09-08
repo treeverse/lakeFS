@@ -92,14 +92,10 @@ The garbage collection process proceeds in three main phases:
 
 ### What does _not_ get collected
 
-From the above definition of what gets collected, some objects will _not_ be
-collected regardless of configured GC rules:
-
+Some objects will _not_ be collected regardless of configured GC rules:
+* Any object that is accessible from any branch's HEAD.
 * Any object that was _uploaded but never committed_ cannot be collected.  See
   [#1933](https://github.com/treeverse/lakeFS/issues/1933) for more details.
-* Any object that is present on a branch HEAD is visible on that branch.
-  Commits at the HEAD of a branch are retained, so such an object will not
-  be collected.
 * Objects stored outside the repository's [storage namespace](../glossary.md#storage-namespace).
   For example, objects imported using the lakeFS import UI are not collected.
 
