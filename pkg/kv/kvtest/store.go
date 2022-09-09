@@ -68,9 +68,9 @@ func TestDriver(t *testing.T, name string, params kvparams.KV) {
 func testDriverOpen(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
 	store1 := ms(t, ctx)
-	defer store1.Close()
+	store1.Close()
 	store2 := ms(t, ctx)
-	defer store2.Close()
+	store2.Close()
 }
 
 func testStoreSetGet(t *testing.T, ms MakeStore) {
