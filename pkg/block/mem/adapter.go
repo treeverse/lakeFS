@@ -53,31 +53,23 @@ func (m *mpu) get() []byte {
 }
 
 type Adapter struct {
-	data               map[string][]byte
-	mpu                map[string]*mpu
-	properties         map[string]block.Properties
-	mutex              *sync.RWMutex
-	uploadIDTranslator block.UploadIDTranslator
+	data       map[string][]byte
+	mpu        map[string]*mpu
+	properties map[string]block.Properties
+	mutex      *sync.RWMutex
 }
 
 func New(opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
-		uploadIDTranslator: &block.NoOpTranslator{},
-		data:               make(map[string][]byte),
-		mpu:                make(map[string]*mpu),
-		properties:         make(map[string]block.Properties),
-		mutex:              &sync.RWMutex{},
+		data:       make(map[string][]byte),
+		mpu:        make(map[string]*mpu),
+		properties: make(map[string]block.Properties),
+		mutex:      &sync.RWMutex{},
 	}
 	for _, opt := range opts {
 		opt(a)
 	}
 	return a
-}
-
-func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
-	return func(a *Adapter) {
-		a.uploadIDTranslator = t
-	}
 }
 
 func getKey(obj block.ObjectPointer) string {
@@ -88,7 +80,7 @@ func getPrefix(lsOpts block.WalkOpts) string {
 	return fmt.Sprintf("%s:%s", lsOpts.StorageNamespace, lsOpts.Prefix)
 }
 
-func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
+func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	data, err := io.ReadAll(reader)
@@ -101,7 +93,7 @@ func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, sizeBytes int6
 	return nil
 }
 
-func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
+func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 	data, ok := a.data[getKey(obj)]
@@ -155,10 +147,9 @@ func (a *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.Object
 	return nil
 }
 
-func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, _ block.ObjectPointer, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	mpu, ok := a.mpu[uploadID]
 	if !ok {
 		return nil, ErrMultiPartNotFound
@@ -187,7 +178,6 @@ func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, _ block.ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	mpu, ok := a.mpu[uploadID]
 	if !ok {
 		return nil, ErrMultiPartNotFound
@@ -214,21 +204,19 @@ func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, _ block.Obje
 	}, nil
 }
 
-func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+func (a *Adapter) CreateMultiPartUpload(_ context.Context, _ block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	mpu := newMPU()
 	a.mpu[mpu.id] = mpu
-	tid := a.uploadIDTranslator.SetUploadID(mpu.id)
 	return &block.CreateMultiPartUploadResponse{
-		UploadID: tid,
+		UploadID: mpu.id,
 	}, nil
 }
 
-func (a *Adapter) UploadPart(_ context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadPart(_ context.Context, _ block.ObjectPointer, _ int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	mpu, ok := a.mpu[uploadID]
 	if !ok {
 		return nil, ErrMultiPartNotFound
@@ -250,23 +238,20 @@ func (a *Adapter) UploadPart(_ context.Context, obj block.ObjectPointer, sizeByt
 	}, nil
 }
 
-func (a *Adapter) AbortMultiPartUpload(_ context.Context, obj block.ObjectPointer, uploadID string) error {
+func (a *Adapter) AbortMultiPartUpload(_ context.Context, _ block.ObjectPointer, uploadID string) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	_, ok := a.mpu[uploadID]
 	if !ok {
 		return ErrMultiPartNotFound
 	}
 	delete(a.mpu, uploadID)
-	a.uploadIDTranslator.RemoveUploadID(uploadID)
 	return nil
 }
 
 func (a *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPointer, uploadID string, _ *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	mpu, ok := a.mpu[uploadID]
 	if !ok {
 		return nil, ErrMultiPartNotFound
@@ -279,7 +264,6 @@ func (a *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPoi
 	}
 	code := h.Sum(nil)
 	hexCode := fmt.Sprintf("%x", code)
-	a.uploadIDTranslator.RemoveUploadID(uploadID)
 	a.data[getKey(obj)] = data
 	return &block.CompleteMultiPartUploadResponse{
 		ETag:          hexCode,

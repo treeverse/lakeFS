@@ -34,20 +34,12 @@ var (
 )
 
 type Adapter struct {
-	client             *storage.Client
-	uploadIDTranslator block.UploadIDTranslator
-}
-
-func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
-	return func(a *Adapter) {
-		a.uploadIDTranslator = t
-	}
+	client *storage.Client
 }
 
 func NewAdapter(client *storage.Client, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
-		client:             client,
-		uploadIDTranslator: &block.NoOpTranslator{},
+		client: client,
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -254,8 +246,7 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 	if err != nil {
 		return nil, err
 	}
-	// we use the qualified key as the upload id
-	uploadID := a.uploadIDTranslator.SetUploadID(qualifiedKey.Key)
+	uploadID := qualifiedKey.Key
 	// we keep a marker file to identify multipart in progress
 	objName := formatMultipartMarkerFilename(uploadID)
 	o := a.client.
@@ -289,7 +280,6 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	if err != nil {
 		return nil, err
 	}
-	uploadID = a.uploadIDTranslator.SetUploadID(uploadID)
 	objName := formatMultipartFilename(uploadID, partNumber)
 	o := a.client.
 		Bucket(qualifiedKey.StorageNamespace).
@@ -319,7 +309,6 @@ func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 	if err != nil {
 		return nil, err
 	}
-	uploadID = a.uploadIDTranslator.SetUploadID(uploadID)
 	objName := formatMultipartFilename(uploadID, partNumber)
 	o := a.client.
 		Bucket(qualifiedKey.StorageNamespace).
@@ -347,7 +336,6 @@ func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinatio
 	if err != nil {
 		return nil, err
 	}
-	uploadID = a.uploadIDTranslator.SetUploadID(uploadID)
 	objName := formatMultipartFilename(uploadID, partNumber)
 	o := a.client.
 		Bucket(qualifiedKey.StorageNamespace).
@@ -388,7 +376,6 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 	if err != nil {
 		return err
 	}
-	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	bucket := a.client.Bucket(qualifiedKey.StorageNamespace)
 
 	// delete all related files by listing the prefix
@@ -408,7 +395,6 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 			return fmt.Errorf("bucket(%s).object(%s).Delete(): %w", qualifiedKey.StorageNamespace, attrs.Name, err)
 		}
 	}
-	a.uploadIDTranslator.RemoveUploadID(uploadID)
 	return nil
 }
 
@@ -419,7 +405,6 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	if err != nil {
 		return nil, err
 	}
-	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	lg := a.log(ctx).WithFields(logging.Fields{
 		"upload_id":     uploadID,
 		"qualified_ns":  qualifiedKey.StorageNamespace,
@@ -457,7 +442,6 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	if err := objMarker.Delete(ctx); err != nil {
 		a.log(ctx).WithError(err).Warn("Failed to delete multipart upload marker")
 	}
-	a.uploadIDTranslator.RemoveUploadID(uploadID)
 	lg.Debug("completed multipart upload")
 	return &block.CompleteMultiPartUploadResponse{
 		ETag:          targetAttrs.Etag,
