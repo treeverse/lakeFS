@@ -31,7 +31,7 @@ For further reading, please refer to our [KV Design](https://github.com/treevers
 
 ### Optimistic Locking with KV
 
-One important key difference between SQL databases and Key Value Store is the ability to lock resources. While this is a common practice with relational databases, Key Value stores lack this ability. Let us take a look at a common lakeFS flow, a `Commit`. During this flow, several ref store operations are performed:
+One important key difference between SQL databases and Key Value Store is the ability to lock resources. While this is a common practice with relational databases, Key Value stores lack this ability. Let us take a look at a common lakeFS flow, `Commit`, during this flow several ref store operations are performed:
 * All relevant (`Branch` correlated) uncommitted objects are collected and marked as committed 
 * A new `Commit` object is created
 * The relevant `Branch` is updated to point to the new commit
