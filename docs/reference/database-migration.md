@@ -38,13 +38,14 @@ One important key difference between SQL databases and Key Value Store is the ab
 The `Commit` flow includes multiple database accesses and modifications, and is very sensitive to concurrent executions: If 2 `Commit` flows run in parallel, we must guarantee correctness of the data. `lakeFS` with PostgreSQL simply locks the `Branch` for the entire `Commit` operation, preventing concurrent execution of such flows.
 Now, with KV Store replacing the SQL database, this easy solution is no longer available. Instead, we implemented an [Optimistic Locking](https://en.wikipedia.org/wiki/Optimistic_concurrency_control) algorithm, which leverages the KV Store `Compare-and-Set` (`CAS`) functionality to remember the `Branch` state at the beginning of the `Commit` flow, and updating the branch at the end, only if it remains unchanged, using `CAS`. Before sampling the `Branch` another update, of the `Branch`'s `StagingToken`, is made, and so, if another `Commit` is already running in parallel, it will fail the final step, of updating the `Branch`, as it was already changed. If 2 commits do run in parallel there are only 2 possible outcomes:
 1. Either 1 of the `Commits` manages to start, sample the `Branch` state, modify the `StagingToken`, create a new `Commit` and use `CAS` to find out that the branch was not modified and update it, and so it succeeds and causing the other `Commit` to fail, or
-2. Both `Commits` interfere with each other, and both will fail, as  depicted in the following scenario:
+2. Both `Commits` interfere with each other, and both will fail, as depicted in the following scenario:
   * `Commit` A sets the `StagingToken` to val1 and samples the `Branch`,
   * `Commit` B sets the `StagingToken` to val2 and samples the `Branch`,
   * `Commit` A finishes, tries to update the `Branch` and fails due to the recent modification by `Commit` B,
   * `Commit` A is retired, setting `StagingToken` to val3 and samples the `Branch`
   * `Commit` B finishes, tries to update the `Branch` and fails due to the recent modification by `Commit` A,
-  * And so on...
+The first commit to succeed, releases this mutual interference, and the next commits can continue uninterrupted.
+
 Eventually , as retries will be exhausted, at least one commit will succeed, if not earlier, but this was definitely something that had to be taken into consideration when designing our KV Store. You can read more on the Commit Flow in the [dedicated section in the KV Design](https://github.com/treeverse/lakeFS/blob/master/design/accepted/metadata_kv/index.md#graveler-metadata---branches-and-staged-writes)
 
 ### DB Transactions and Atomic Updates
