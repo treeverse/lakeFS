@@ -66,7 +66,7 @@ func GetDynamoDBInstance() (string, func(), error) {
 		if err != nil {
 			return err
 		}
-		_ = resp.body.Close()
+		_ = resp.Body.Close()
 		return nil
 	})
 	if err != nil {

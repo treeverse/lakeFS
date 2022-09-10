@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"math/rand"
-	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -47,20 +46,12 @@ func benchmarkMigrate(runCount int, b *testing.B) {
 
 	createMigrateTestData(b, ctx, database, migrateBenchRepo, runCount)
 	kvStore := kvtest.MakeStoreByName(postgres.DriverName, kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})(b, ctx)
-	buf, err := os.CreateTemp("", "migrate")
-	if err != nil {
-		b.Fatal("Create temp file for migrate", err)
-	}
-	defer func() {
-		_ = os.Remove(buf.Name())
-		_ = buf.Close()
-	}()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		err := actions.Migrate(ctx, database.Pool(), nil, buf)
+		var buffer bytes.Buffer
+		err := actions.Migrate(ctx, database.Pool(), nil, &buffer)
 		require.NoError(b, err)
-		_, _ = buf.Seek(0, 0)
-		testutil.MustDo(b, "Import file", kv.Import(ctx, buf, kvStore))
+		testutil.MustDo(b, "Import file", kv.Import(ctx, &buffer, kvStore))
 	}
 }
 

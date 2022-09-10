@@ -58,7 +58,7 @@ type Config struct {
 func ReadConfig() (c *Config) {
 	c = &Config{}
 
-	// Inform viper of all expected fields.  Otherwise, it fails to deserialize from the
+	// Inform viper of all expected fields.  Otherwise it fails to deserialize from the
 	// environment.
 	keys := config.GetStructKeys(reflect.TypeOf(c.Values), "mapstructure", "squash")
 	for _, key := range keys {

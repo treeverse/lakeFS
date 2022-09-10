@@ -126,9 +126,11 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 func deleteRepositoryIfAskedTo(ctx context.Context, repositoryName string) {
 	deleteRepositories := viper.GetBool("delete_repositories")
 	if deleteRepositories {
-		_, err := client.DeleteRepositoryWithResponse(ctx, repositoryName)
+		resp, err := client.DeleteRepositoryWithResponse(ctx, repositoryName)
 		if err != nil {
-			logger.WithError(err).WithField("repo", repositoryName).Error("Deleted repository")
+			logger.WithError(err).WithField("repo", repositoryName).Error("Reuqest to delete repository failed")
+		} else if resp.StatusCode() != http.StatusNoContent {
+			logger.WithFields(logging.Fields{"repo": repositoryName, "status_code": resp.StatusCode()}).Error("Reuqest to delete repository failed")
 		} else {
 			logger.WithField("repo", repositoryName).Info("Deleted repository")
 		}

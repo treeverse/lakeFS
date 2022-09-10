@@ -60,8 +60,10 @@ func TestIsAWSSignedRequest(t *testing.T) {
 	}
 }
 
-type Signer func(req http.Request) *http.Request
-type Verifier func(req *http.Request) error
+type (
+	Signer   func(req http.Request) *http.Request
+	Verifier func(req *http.Request) error
+)
 
 type Style string
 
@@ -169,9 +171,9 @@ func TestAWSSigVerify(t *testing.T) {
 				host = fmt.Sprintf("%s.%s", bucket, domain)
 			}
 
-			randomizer := rand.New(rand.NewSource(seed))
+			r := rand.New(rand.NewSource(seed))
 			for i := 0; i < numRounds; i++ {
-				path := s3utils.EncodePath("my-branch/ariels/x/" + testutil.RandomString(randomizer, pathLength))
+				path := s3utils.EncodePath("my-branch/ariels/x/" + testutil.RandomString(r, pathLength))
 				bucketURL := &url.URL{
 					Scheme: "s3",
 					Host:   bucket,
@@ -181,7 +183,7 @@ func TestAWSSigVerify(t *testing.T) {
 					RawPath: "",
 				}
 				req := http.Request{
-					Method: methods[randomizer.Intn(len(methods))],
+					Method: methods[r.Intn(len(methods))],
 					Host:   host,
 					URL:    bucketURL,
 					Header: MakeHeader(map[string]string{
