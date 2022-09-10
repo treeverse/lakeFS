@@ -64,7 +64,7 @@ type GatewayService interface {
 }
 
 type Authorizer interface {
-	// authorize user for an action
+	// Authorize user for an action
 	Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
 }
 

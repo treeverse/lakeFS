@@ -42,7 +42,7 @@ func WithRemoveEmptyDir(b bool) func(a *Adapter) {
 func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 	// Clean() the path so that misconfiguration does not allow path traversal.
 	path = filepath.Clean(path)
-	err := os.MkdirAll(path, 0700) //nolint: gomnd
+	err := os.MkdirAll(path, 0o700) //nolint: gomnd
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (l *Adapter) maybeMkdir(path string, f func(p string) (*os.File, error)) (*
 		return ret, err
 	}
 	d := filepath.Dir(filepath.Clean(path))
-	if err = os.MkdirAll(d, 0750); err != nil { //nolint: gomnd
+	if err = os.MkdirAll(d, 0o750); err != nil { //nolint: gomnd
 		return nil, err
 	}
 	return f(path)
@@ -237,7 +237,7 @@ func (l *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (read
 	if err != nil {
 		return nil, err
 	}
-	f, err := os.OpenFile(filepath.Clean(p), os.O_RDONLY, 0600) //nolint: gomnd
+	f, err := os.OpenFile(filepath.Clean(p), os.O_RDONLY, 0o600) //nolint: gomnd
 	if os.IsNotExist(err) {
 		return nil, adapter.ErrDataNotFound
 	}
@@ -328,7 +328,7 @@ func (l *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPoint
 			return nil, err
 		}
 		fullDir := path.Dir(fullPath)
-		err = os.MkdirAll(fullDir, 0750) //nolint: gomnd
+		err = os.MkdirAll(fullDir, 0o750) //nolint: gomnd
 		if err != nil {
 			return nil, err
 		}
@@ -402,7 +402,7 @@ func computeETag(parts []block.MultipartPart) string {
 	return csm
 }
 
-func (l *Adapter) unitePartFiles(identifier block.ObjectPointer, files []string) (int64, error) {
+func (l *Adapter) unitePartFiles(identifier block.ObjectPointer, filenames []string) (int64, error) {
 	p, err := l.getPath(identifier)
 	if err != nil {
 		return 0, err
@@ -411,11 +411,14 @@ func (l *Adapter) unitePartFiles(identifier block.ObjectPointer, files []string)
 	if err != nil {
 		return 0, fmt.Errorf("create path %s: %w", p, err)
 	}
+	files := make([]*os.File, 0, len(filenames))
 	defer func() {
 		_ = unitedFile.Close()
+		for _, f := range files {
+			_ = f.Close()
+		}
 	}()
-	readers := []io.Reader{}
-	for _, name := range files {
+	for _, name := range filenames {
 		if err := l.verifyPath(name); err != nil {
 			return 0, err
 		}
@@ -423,14 +426,15 @@ func (l *Adapter) unitePartFiles(identifier block.ObjectPointer, files []string)
 		if err != nil {
 			return 0, fmt.Errorf("open file %s: %w", name, err)
 		}
-		readers = append(readers, f)
-		defer func() {
-			_ = f.Close()
-		}()
+		files = append(files, f)
+	}
+	// convert slice file files to readers
+	readers := make([]io.Reader, len(files))
+	for i := range files {
+		readers[i] = files[i]
 	}
 	unitedReader := io.MultiReader(readers...)
-	size, err := io.Copy(unitedFile, unitedReader)
-	return size, err
+	return io.Copy(unitedFile, unitedReader)
 }
 
 func (l *Adapter) removePartFiles(files []string) error {

@@ -118,7 +118,6 @@ func NewConfig() (*Config, error) {
 	return c, nil
 }
 
-// Default flag keys
 const (
 	ListenAddressKey = "listen_address"
 
@@ -139,18 +138,17 @@ const (
 	AuthOIDCInitialGroupsClaimName = "auth.oidc.initial_groups_claim_name"
 	AuthLogoutRedirectURL          = "auth.logout_redirect_url"
 
-	BlockstoreTypeKey                    = "blockstore.type"
-	BlockstoreLocalPathKey               = "blockstore.local.path"
-	BlockstoreDefaultNamespacePrefixKey  = "blockstore.default_namespace_prefix"
+	BlockstoreTypeKey      = "blockstore.type"
+	BlockstoreLocalPathKey = "blockstore.local.path"
+
 	BlockstoreS3RegionKey                = "blockstore.s3.region"
 	BlockstoreS3StreamingChunkSizeKey    = "blockstore.s3.streaming_chunk_size"
 	BlockstoreS3StreamingChunkTimeoutKey = "blockstore.s3.streaming_chunk_timeout"
 	BlockstoreS3MaxRetriesKey            = "blockstore.s3.max_retries"
 	BlockstoreS3DiscoverBucketRegionKey  = "blockstore.s3.discover_bucket_region"
 
-	BlockstoreAzureTryTimeoutKey                = "blockstore.azure.try_timeout"
-	BlockstoreAzureStorageAccountKey            = "blockstore.azure.storage_account"
-	BlockstoreAzureStorageAccessKey             = "blockstore.azure.storage_access_key"
+	BlockstoreAzureTryTimeoutKey = "blockstore.azure.try_timeout"
+
 	BlockstoreAzureAuthMethod                   = "blockstore.azure.auth_method"
 	CommittedLocalCacheSizeBytesKey             = "committed.local_cache.size_bytes"
 	CommittedLocalCacheDirKey                   = "committed.local_cache.dir"

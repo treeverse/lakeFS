@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	// Last-Modified: <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT
+	// DateHeaderTimestampFormat - Last-Modified: <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT
 	DateHeaderTimestampFormat = "Mon, 02 Jan 2006 15:04:05 GMT"
 )
 

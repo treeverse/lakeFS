@@ -78,7 +78,7 @@ func testReadAfterWrite(t *testing.T) {
 	read2Done := make(chan bool)
 	read2Batched := make(chan struct{})
 
-	// we pass a custom delay func that ensures we make the write only after
+	// we pass a custom delay func that ensures we make to write only after
 	//  reader1 started
 	waitWrite := make(chan bool)
 	delays := int32(0)

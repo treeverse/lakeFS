@@ -47,9 +47,14 @@ func benchmarkMigrate(runCount int, b *testing.B) {
 
 	createMigrateTestData(b, ctx, database, migrateBenchRepo, runCount)
 	kvStore := kvtest.MakeStoreByName(postgres.DriverName, kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})(b, ctx)
-	buf, _ := os.CreateTemp("", "migrate")
-	defer os.Remove(buf.Name())
-	defer buf.Close()
+	buf, err := os.CreateTemp("", "migrate")
+	if err != nil {
+		b.Fatal("Create temp file for migrate", err)
+	}
+	defer func() {
+		_ = os.Remove(buf.Name())
+		_ = buf.Close()
+	}()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		err := actions.Migrate(ctx, database.Pool(), nil, buf)

@@ -113,7 +113,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 			if err != nil {
 				return fmt.Errorf("create temp file: %w", err)
 			}
-			defer fd.Close()
+			defer func() { _ = fd.Close() }()
 			err = migrateFunc(ctx, dbPool, blockParams, fd)
 			if err != nil {
 				return fmt.Errorf("failed migration on package %s: %w", name, err)

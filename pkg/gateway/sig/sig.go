@@ -17,7 +17,7 @@ import (
 var (
 	ErrHeaderMalformed = errors.New("header malformed")
 
-	// if object matches reserved string, no need to encode them
+	// reservedObjectNames - if object matches reserved string, no need to encode them
 	reservedObjectNames = regexp.MustCompile("^[a-zA-Z0-9-_.~/]+$")
 )
 
@@ -38,6 +38,7 @@ var (
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 // EncodePath encode the strings from UTF-8 byte representations to HTML hex escape sequences
 // This is necessary since regular url.Parse() and url.Encode() functions do not support UTF-8
 // non english characters cannot be parsed due to the nature in which url.Encode() is written

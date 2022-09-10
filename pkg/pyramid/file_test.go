@@ -218,10 +218,10 @@ func newMockEviction() *mockEviction {
 	}
 }
 
-func (me *mockEviction) Touch(rPath params.RelativePath) {
-	me.touchedTimes[rPath]++
+func (m *mockEviction) Touch(rPath params.RelativePath) {
+	m.touchedTimes[rPath]++
 }
 
-func (me *mockEviction) Store(_ params.RelativePath, _ int64) bool {
+func (m *mockEviction) Store(_ params.RelativePath, _ int64) bool {
 	return false
 }

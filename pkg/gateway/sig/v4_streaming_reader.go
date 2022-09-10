@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package cmd This file implements helper functions to validate Streaming AWS
+// Package sig This file implements helper functions to validate Streaming AWS
 // Signature Version '4' authorization header.
 package sig
 

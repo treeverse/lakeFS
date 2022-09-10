@@ -48,7 +48,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 	for _, sig := range sigs {
 		t.Run("Sig"+sig.Name, func(t *testing.T) {
 			// Use same sequence of pathnames to test each sig.
-			rand := rand.New(rand.NewSource(17))
+			randomizer := rand.New(rand.NewSource(17))
 
 			creds := sig.GetCredentials(accessKeyID, secretAccessKey, "")
 
@@ -100,10 +100,10 @@ func TestS3UploadAndDownload(t *testing.T) {
 
 			for i := 0; i < numUploads; i++ {
 				objects <- Object{
-					Content: testutil.RandomString(rand, randomDataContentLength),
+					Content: testutil.RandomString(randomizer, randomDataContentLength),
 					// lakeFS supports _any_ path, even if its
 					// byte sequence is not legal UTF-8 string.
-					Path: prefix + testutil.RandomString(rand, randomDataPathLength-len(prefix)),
+					Path: prefix + testutil.RandomString(randomizer, randomDataPathLength-len(prefix)),
 				}
 			}
 			close(objects)
@@ -124,7 +124,7 @@ func TestS3CopyObject(t *testing.T) {
 	secretAccessKey := viper.GetString("secret_access_key")
 	endpoint := viper.GetString("s3_endpoint")
 	opts := minio.PutObjectOptions{}
-	rand := rand.New(rand.NewSource(17))
+	randomizer := rand.New(rand.NewSource(17))
 
 	creds := sigs[0].GetCredentials(accessKeyID, secretAccessKey, "")
 
@@ -136,7 +136,7 @@ func TestS3CopyObject(t *testing.T) {
 		t.Fatalf("minio.New: %s", err)
 	}
 
-	Content := testutil.RandomString(rand, randomDataContentLength)
+	Content := testutil.RandomString(randomizer, randomDataContentLength)
 	SourcePath := prefix + "source-file"
 	DestPath := prefix + "dest-file"
 

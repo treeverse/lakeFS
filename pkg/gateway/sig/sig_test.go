@@ -65,11 +65,6 @@ type Verifier func(req *http.Request) error
 
 type Style string
 
-const (
-	PathStyle = "path"
-	HostStyle = "host"
-)
-
 func MakeV2Signer(keyID, secretKey string, style Style) Signer {
 	return func(req http.Request) *http.Request {
 		return signer.SignV2(req, keyID, secretKey, style == "host")
@@ -174,10 +169,10 @@ func TestAWSSigVerify(t *testing.T) {
 				host = fmt.Sprintf("%s.%s", bucket, domain)
 			}
 
-			rand := rand.New(rand.NewSource(seed))
+			randomizer := rand.New(rand.NewSource(seed))
 			for i := 0; i < numRounds; i++ {
-				path := s3utils.EncodePath("my-branch/ariels/x/" + testutil.RandomString(rand, pathLength))
-				url := &url.URL{
+				path := s3utils.EncodePath("my-branch/ariels/x/" + testutil.RandomString(randomizer, pathLength))
+				bucketURL := &url.URL{
 					Scheme: "s3",
 					Host:   bucket,
 					Path:   path,
@@ -186,9 +181,9 @@ func TestAWSSigVerify(t *testing.T) {
 					RawPath: "",
 				}
 				req := http.Request{
-					Method: methods[rand.Intn(len(methods))],
+					Method: methods[randomizer.Intn(len(methods))],
 					Host:   host,
-					URL:    url,
+					URL:    bucketURL,
 					Header: MakeHeader(map[string]string{
 						"Date":         date.Format(http.TimeFormat),
 						"x-amz-date":   date.Format("20060102T150405Z"),
@@ -204,7 +199,7 @@ func TestAWSSigVerify(t *testing.T) {
 					if errors.As(err, &apiErr) {
 						errText = apiErr.ToAPIErr().Description
 					}
-					t.Errorf("Sign and verify %s: %s", url.String(), errText)
+					t.Errorf("Sign and verify %s: %s", bucketURL.String(), errText)
 				}
 			}
 		})

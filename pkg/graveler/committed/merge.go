@@ -193,7 +193,7 @@ func (m *merger) handleAll(iter Iterator, strategyToInclude graveler.MergeStrate
 				return fmt.Errorf("base value GE: %w", err)
 			}
 			if baseValue == nil || !bytes.Equal(baseValue.Identity, iterValue.Identity) {
-				shouldWrietRecord := true
+				shouldWriteRecord := true
 				if baseValue != nil && bytes.Equal(baseValue.Key, iterValue.Key) { // deleted by one changed by iter
 					if m.strategy == graveler.MergeStrategyNone { // conflict is only reported if no strategy is selected
 						return graveler.ErrConflictFound
@@ -201,10 +201,10 @@ func (m *merger) handleAll(iter Iterator, strategyToInclude graveler.MergeStrate
 					// In case of conflict, if the strategy favors the given iter we
 					// still want to write the record. Otherwise it will be ignored.
 					if m.strategy != strategyToInclude {
-						shouldWrietRecord = false
+						shouldWriteRecord = false
 					}
 				}
-				if shouldWrietRecord {
+				if shouldWriteRecord {
 					if err := m.writeRecord(iterValue); err != nil {
 						return err
 					}
