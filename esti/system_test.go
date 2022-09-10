@@ -178,7 +178,10 @@ func uploadContent(ctx context.Context, repo string, branch string, objPath stri
 	if err != nil {
 		return nil, fmt.Errorf("write content: %w", err)
 	}
-	_ = w.Close()
+	err = w.Close()
+	if err != nil {
+		return nil, fmt.Errorf("close form file: %w", err)
+	}
 	return client.UploadObjectWithBodyWithResponse(ctx, repo, branch, &api.UploadObjectParams{
 		Path: objPath,
 	}, w.FormDataContentType(), &b)
