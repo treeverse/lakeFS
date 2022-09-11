@@ -39,7 +39,6 @@ const (
 
 	DefaultTableName = "kv"
 	paramTableName   = "lakefskv_table"
-	paramPrometheus  = "prometheus"
 
 	// DefaultPartitions Changing the below value means repartitioning and probably a migration.
 	// Change it only if you really know what you're doing.
@@ -117,7 +116,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 
 	// register collector to public pgx stats as prometheus metrics
 	var collector prometheus.Collector
-	if params.Prometheus {
+	if !params.DisableMetrics {
 		collector = pgxpoolprometheus.NewCollector(pool, map[string]string{"db_name": params.TableName})
 		err := prometheus.Register(collector)
 		if err != nil {
@@ -140,7 +139,7 @@ type Params struct {
 	SanitizedTableName string
 	PartitionsAmount   int
 	ScanPageSize       int
-	Prometheus         bool
+	DisableMetrics     bool
 }
 
 func parseStoreConfig(runtimeParams map[string]string, pgParams *kvparams.Postgres) *Params {
@@ -148,15 +147,10 @@ func parseStoreConfig(runtimeParams map[string]string, pgParams *kvparams.Postgr
 		TableName:        DefaultTableName,
 		PartitionsAmount: DefaultPartitions,
 		ScanPageSize:     DefaultScanPageSize,
-		Prometheus:       true,
+		DisableMetrics:   pgParams.DisableMetrics,
 	}
 	if tableName, ok := runtimeParams[paramTableName]; ok {
 		p.TableName = tableName
-	}
-	if val, ok := runtimeParams[paramPrometheus]; ok {
-		if enabled, err := strconv.ParseBool(val); err != nil {
-			p.Prometheus = enabled
-		}
 	}
 
 	p.SanitizedTableName = pgx.Identifier{p.TableName}.Sanitize()
