@@ -60,6 +60,7 @@ func TestDriver(t *testing.T, name string, params kvparams.KV) {
 	t.Run("ScanPrefix", func(t *testing.T) { testScanPrefix(t, ms) })
 	t.Run("DeleteWhileIterating", func(t *testing.T) { testDeleteWhileIterPrefix(t, ms) })
 	t.Run("DeleteWhileIteratingSamePrefix", func(t *testing.T) { testDeleteWhileIterSamePrefix(t, ms) })
+	t.Run("Iterators", func(t *testing.T) { testIterators(t, ms) })
 }
 
 func testDriverOpen(t *testing.T, ms MakeStore) {

@@ -1,4 +1,4 @@
-package kv_test
+package kvtest
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 )
 
 const (
@@ -16,13 +15,13 @@ const (
 	thirdPartitionKey  = "mb"
 )
 
-func TestIterators(t *testing.T) {
+func testIterators(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
-	store := kvtest.GetStore(ctx, t)
+	store := ms(t, ctx)
 	sm := kv.StoreMessage{
 		Store: store,
 	}
-	m := []kvtest.TestModel{
+	m := []TestModel{
 		{Name: []byte("a")},
 		{Name: []byte("aa")},
 		{Name: []byte("b")},
@@ -42,12 +41,12 @@ func TestIterators(t *testing.T) {
 			t.Fatal("failed to set model", err)
 		}
 	}
-	err := sm.SetMsg(ctx, thirdPartitionKey, []byte("e"), &kvtest.TestModel{})
+	err := sm.SetMsg(ctx, thirdPartitionKey, []byte("e"), &TestModel{})
 	if err != nil {
 		t.Fatal("failed to set model", err)
 	}
 
-	err = sm.SetMsg(ctx, thirdPartitionKey, []byte("f"), &kvtest.TestModel{Name: []byte("notin")})
+	err = sm.SetMsg(ctx, thirdPartitionKey, []byte("f"), &TestModel{Name: []byte("notin")})
 	if err != nil {
 		t.Fatal("failed to set model", err)
 	}
@@ -55,15 +54,22 @@ func TestIterators(t *testing.T) {
 	// second partition - (a,a) (aa,aa) (b,b) (c,c) (d,d)
 	// third partition - (e,nil) (f,"notin")
 
+	testPartitionIterator(t, ctx, ms)
+	testPrimaryIterator(t, ctx, ms)
+	testSecondaryIterator(t, ctx, ms)
+}
+
+func testPartitionIterator(t *testing.T, ctx context.Context, ms MakeStore) {
+	store := ms(t, ctx)
 	t.Run("partition iterator listing all values of partition", func(t *testing.T) {
-		itr := kv.NewPartitionIterator(ctx, store, (&kvtest.TestModel{}).ProtoReflect().Type(), firstPartitionKey)
+		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), firstPartitionKey)
 		if itr == nil {
 			t.Fatalf("failed to create partition iterator")
 		}
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
-			model, ok := e.Value.(*kvtest.TestModel)
+			model, ok := e.Value.(*TestModel)
 			if !ok {
 				t.Fatalf("cannot read from store")
 			}
@@ -80,7 +86,7 @@ func TestIterators(t *testing.T) {
 	})
 
 	t.Run("partition iterator listing values SeekGE", func(t *testing.T) {
-		itr := kv.NewPartitionIterator(ctx, store, (&kvtest.TestModel{}).ProtoReflect().Type(), secondPartitionKey)
+		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), secondPartitionKey)
 		if itr == nil {
 			t.Fatalf("failed to create partition iterator")
 		}
@@ -88,7 +94,7 @@ func TestIterators(t *testing.T) {
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
-			model, ok := e.Value.(*kvtest.TestModel)
+			model, ok := e.Value.(*TestModel)
 			if !ok {
 				t.Fatalf("cannot read from store")
 			}
@@ -105,30 +111,30 @@ func TestIterators(t *testing.T) {
 	})
 
 	t.Run("partition iterator failed SeekGE", func(t *testing.T) {
-		itr := kv.NewPartitionIterator(ctx, store, (&kvtest.TestModel{}).ProtoReflect().Type(), "")
+		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), "")
 		if itr == nil {
 			t.Fatalf("failed to create partition iterator")
 		}
 		itr.SeekGE([]byte("d"))
-		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
-			model, ok := e.Value.(*kvtest.TestModel)
+			_, ok := e.Value.(*TestModel)
 			if !ok {
 				t.Fatalf("cannot read from store")
 			}
-			names = append(names, string(model.Name))
 		}
 		itr.Close()
 
 		if !errors.Is(itr.Err(), kv.ErrMissingPartitionKey) {
 			t.Fatalf("expected error: got %v", itr.Err())
 		}
-
 	})
+}
 
+func testPrimaryIterator(t *testing.T, ctx context.Context, ms MakeStore) {
+	store := ms(t, ctx)
 	t.Run("primary iterator listing all values of partition", func(t *testing.T) {
-		itr, err := kv.NewPrimaryIterator(ctx, store, (&kvtest.TestModel{}).ProtoReflect().Type(),
+		itr, err := kv.NewPrimaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			firstPartitionKey, []byte(""), kv.IteratorOptionsFrom([]byte("")))
 		if err != nil {
 			t.Fatalf("failed to create primary iterator: %v", err)
@@ -136,7 +142,7 @@ func TestIterators(t *testing.T) {
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
-			model, ok := e.Value.(*kvtest.TestModel)
+			model, ok := e.Value.(*TestModel)
 			if !ok {
 				t.Fatalf("cannot read from store")
 			}
@@ -153,7 +159,7 @@ func TestIterators(t *testing.T) {
 	})
 
 	t.Run("primary iterator listing with prefix", func(t *testing.T) {
-		itr, err := kv.NewPrimaryIterator(ctx, store, (&kvtest.TestModel{}).ProtoReflect().Type(),
+		itr, err := kv.NewPrimaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			secondPartitionKey, []byte("a"), kv.IteratorOptionsFrom([]byte("")))
 		if err != nil {
 			t.Fatalf("failed to create primary iterator: %v", err)
@@ -161,7 +167,7 @@ func TestIterators(t *testing.T) {
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
-			model, ok := e.Value.(*kvtest.TestModel)
+			model, ok := e.Value.(*TestModel)
 			if !ok {
 				t.Fatalf("cannot read from store")
 			}
@@ -178,7 +184,7 @@ func TestIterators(t *testing.T) {
 	})
 
 	t.Run("primary iterator listing empty value", func(t *testing.T) {
-		itr, err := kv.NewPrimaryIterator(ctx, store, (&kvtest.TestModel{}).ProtoReflect().Type(),
+		itr, err := kv.NewPrimaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			secondPartitionKey, []byte(""), kv.IteratorOptionsAfter([]byte("d")))
 		if err != nil {
 			t.Fatalf("failed to create primary iterator: %v", err)
@@ -187,7 +193,7 @@ func TestIterators(t *testing.T) {
 
 		for itr.Next() {
 			e := itr.Entry()
-			model, ok := e.Value.(*kvtest.TestModel)
+			model, ok := e.Value.(*TestModel)
 			if !ok {
 				t.Fatalf("cannot read from store")
 			}
@@ -204,7 +210,7 @@ func TestIterators(t *testing.T) {
 	})
 
 	t.Run("primary iterator listing from", func(t *testing.T) {
-		itr, err := kv.NewPrimaryIterator(ctx, store, (&kvtest.TestModel{}).ProtoReflect().Type(),
+		itr, err := kv.NewPrimaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			firstPartitionKey, []byte(""), kv.IteratorOptionsFrom([]byte("b")))
 		if err != nil {
 			t.Fatalf("failed to create primary iterator: %v", err)
@@ -212,7 +218,7 @@ func TestIterators(t *testing.T) {
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
-			model, ok := e.Value.(*kvtest.TestModel)
+			model, ok := e.Value.(*TestModel)
 			if !ok {
 				t.Fatalf("cannot read from store")
 			}
@@ -229,7 +235,7 @@ func TestIterators(t *testing.T) {
 	})
 
 	t.Run("primary iterator listing after", func(t *testing.T) {
-		itr, err := kv.NewPrimaryIterator(ctx, store, (&kvtest.TestModel{}).ProtoReflect().Type(),
+		itr, err := kv.NewPrimaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			firstPartitionKey, []byte(""), kv.IteratorOptionsAfter([]byte("b")))
 		if err != nil {
 			t.Fatalf("failed to create primary iterator: %v", err)
@@ -237,7 +243,7 @@ func TestIterators(t *testing.T) {
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
-			model, ok := e.Value.(*kvtest.TestModel)
+			model, ok := e.Value.(*TestModel)
 			if !ok {
 				t.Fatalf("cannot read from store")
 			}
@@ -252,9 +258,12 @@ func TestIterators(t *testing.T) {
 			t.Fatalf("got wrong list of names: %v", diffs)
 		}
 	})
+}
 
+func testSecondaryIterator(t *testing.T, ctx context.Context, ms MakeStore) {
+	store := ms(t, ctx)
 	t.Run("secondary iterator listing all values of partition", func(t *testing.T) {
-		itr, err := kv.NewSecondaryIterator(ctx, store, (&kvtest.TestModel{}).ProtoReflect().Type(),
+		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			firstPartitionKey, []byte(""), []byte(""))
 		if err != nil {
 			t.Fatalf("failed to create secondary iterator: %v", err)
@@ -262,7 +271,7 @@ func TestIterators(t *testing.T) {
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
-			model, ok := e.Value.(*kvtest.TestModel)
+			model, ok := e.Value.(*TestModel)
 			if !ok {
 				t.Fatalf("cannot read from store")
 			}
@@ -279,7 +288,7 @@ func TestIterators(t *testing.T) {
 	})
 
 	t.Run("secondary iterator listing with prefix", func(t *testing.T) {
-		itr, err := kv.NewSecondaryIterator(ctx, store, (&kvtest.TestModel{}).ProtoReflect().Type(),
+		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			firstPartitionKey, []byte("a"), []byte(""))
 		if err != nil {
 			t.Fatalf("failed to create secondary iterator: %v", err)
@@ -287,7 +296,7 @@ func TestIterators(t *testing.T) {
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
-			model, ok := e.Value.(*kvtest.TestModel)
+			model, ok := e.Value.(*TestModel)
 			if !ok {
 				t.Fatalf("cannot read from store")
 			}
@@ -304,7 +313,7 @@ func TestIterators(t *testing.T) {
 	})
 
 	t.Run("secondary iterator listing after", func(t *testing.T) {
-		itr, err := kv.NewSecondaryIterator(ctx, store, (&kvtest.TestModel{}).ProtoReflect().Type(),
+		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			firstPartitionKey, []byte(""), []byte("b"))
 		if err != nil {
 			t.Fatalf("failed to create secondary iterator: %v", err)
@@ -312,7 +321,7 @@ func TestIterators(t *testing.T) {
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
-			model, ok := e.Value.(*kvtest.TestModel)
+			model, ok := e.Value.(*TestModel)
 			if !ok {
 				t.Fatalf("cannot read from store")
 			}
@@ -329,19 +338,18 @@ func TestIterators(t *testing.T) {
 	})
 
 	t.Run("secondary iterator entry not found", func(t *testing.T) {
-		itr, err := kv.NewSecondaryIterator(ctx, store, (&kvtest.TestModel{}).ProtoReflect().Type(),
+		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			thirdPartitionKey, []byte(""), []byte(""))
 		if err != nil {
 			t.Fatalf("failed to create secondary iterator: %v", err)
 		}
-		names := make([]string, 0)
+
 		for itr.Next() {
 			e := itr.Entry()
-			model, ok := e.Value.(*kvtest.TestModel)
+			_, ok := e.Value.(*TestModel)
 			if !ok {
 				t.Fatalf("cannot read from store")
 			}
-			names = append(names, string(model.Name))
 		}
 		itr.Close()
 
@@ -351,7 +359,7 @@ func TestIterators(t *testing.T) {
 	})
 
 	t.Run("secondary iterator primary not found", func(t *testing.T) {
-		itr, err := kv.NewSecondaryIterator(ctx, store, (&kvtest.TestModel{}).ProtoReflect().Type(),
+		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			thirdPartitionKey, []byte(""), []byte("e"))
 		if err != nil {
 			t.Fatalf("failed to create secondary iterator: %v", err)
@@ -359,7 +367,7 @@ func TestIterators(t *testing.T) {
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
-			model, ok := e.Value.(*kvtest.TestModel)
+			model, ok := e.Value.(*TestModel)
 			if !ok {
 				t.Fatalf("cannot read from store")
 			}
