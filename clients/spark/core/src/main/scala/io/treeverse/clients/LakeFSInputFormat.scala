@@ -79,17 +79,7 @@ class GravelerSplit(var range: RangeData, var path: Path, var rangeID: String, v
     Array.empty[SplitLocationInfo]
 
   override def toString: String = {
-    val sb = new StringBuilder
-    sb.append("GravelerSplit: ")
-    sb.append("rangeID: ")
-    sb.append(new String(rangeID))
-    sb.append("\n")
-    sb.append("path: ")
-    sb.append(path)
-    sb.append("\n")
-    sb.append("range: ")
-    sb.append(range)
-    sb.toString
+    s"GravelerSplit(range=$range, path=$path, rangeID=$rangeID, byteSize=$byteSize)"
   }
 }
 
@@ -214,9 +204,10 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
     val conf = job.getConfiguration
     val repoName = conf.get(LAKEFS_CONF_JOB_REPO_NAME_KEY)
     var storageNamespace = conf.get(LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY)
-    if (StringUtils.isBlank(repoName) && StringUtils.isBlank(storageNamespace)) {
+    if ((StringUtils.isBlank(repoName) && StringUtils.isBlank(storageNamespace)) ||
+      (StringUtils.isNotBlank(repoName) && StringUtils.isNotBlank(storageNamespace))) {
       throw new IllegalArgumentException(
-        "Must specify either LAKEFS_CONF_JOB_REPO_NAME_KEY or LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY"
+        "Must specify exactly one of LAKEFS_CONF_JOB_REPO_NAME_KEY or LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY"
       )
     }
     val apiClient = ApiClient.get(
@@ -231,17 +222,17 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
     if (StringUtils.isBlank(storageNamespace)) {
       storageNamespace = apiClient.getStorageNamespace(repoName, StorageClientType.HadoopFS)
     }
-    var nsURI = URI.create(storageNamespace)
-    nsURI = new URI(nsURI.getScheme,
-                    nsURI.getUserInfo,
-                    nsURI.getHost,
-                    nsURI.getPort,
-                    nsURI.getPath + (if (nsURI.getPath.endsWith("/")) "_lakefs" else "/_lakefs"),
+    var lakeFSMetadataURI = URI.create(storageNamespace)
+    lakeFSMetadataURI = new URI(lakeFSMetadataURI.getScheme,
+                    lakeFSMetadataURI.getUserInfo,
+                    lakeFSMetadataURI.getHost,
+                    lakeFSMetadataURI.getPort,
+                    lakeFSMetadataURI.getPath + (if (lakeFSMetadataURI.getPath.endsWith("/")) "_lakefs" else "/_lakefs"),
                     null,
                     null
                    )
-    val fs = FileSystem.get(nsURI, conf)
-    val it = fs.listFiles(new Path(nsURI.toString), false)
+    val fs = FileSystem.get(lakeFSMetadataURI, conf)
+    val it = fs.listFiles(new Path(lakeFSMetadataURI.toString), false)
     val splits = new ListBuffer[InputSplit]()
     while (it.hasNext) {
       val file = it.next()

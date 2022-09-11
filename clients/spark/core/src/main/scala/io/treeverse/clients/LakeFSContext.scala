@@ -24,7 +24,7 @@ object LakeFSContext {
   val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY = "lakefs.debug.gc.max_commit_epoch_seconds"
   val LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY = "lakefs.debug.gc.no_delete"
 
-  def newRDD(
+  private def newRDD(
       sc: SparkContext,
       repoName: String,
       storageNamespace: String,
@@ -52,6 +52,11 @@ object LakeFSContext {
     )
   }
 
+  /**
+   * Returns all entries in all ranges of the given commit, as an RDD.
+   * If no commit is given, returns all entries in all ranges of the entire repository.
+   * The same entry may be found in multiple ranges.
+   */
   def newRDD(
       sc: SparkContext,
       repoName: String,
@@ -64,7 +69,7 @@ object LakeFSContext {
     newRDD(sc, repoName, "", commitID, inputFormatClass)
   }
 
-  def newDF(
+  private def newDF(
       spark: SparkSession,
       repoName: String,
       storageNamespace: String,
@@ -94,6 +99,12 @@ object LakeFSContext {
     spark.createDataFrame(rdd, schema)
   }
 
+  /**
+   * Returns all entries in all ranges found in this storage namespace.
+   * The same entry may be found in multiple ranges.
+   * 
+   * The storage namespace is expected to be a URI accessible by Hadoop.
+   */
   def newDF(
       spark: SparkSession,
       storageNamespace: String
@@ -101,6 +112,11 @@ object LakeFSContext {
     newDF(spark, "", storageNamespace, "", classOf[LakeFSAllRangesInputFormat])
   }
 
+  /**
+   * Returns all entries in all ranges of the given commit, as a DataFrame.
+   * If no commit is given, returns all entries in all ranges of the entire repository.
+   * The same entry may be found in multiple ranges.
+   */
   def newDF(
       spark: SparkSession,
       repoName: String,
