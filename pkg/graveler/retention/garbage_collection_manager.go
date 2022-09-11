@@ -85,6 +85,7 @@ func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageNamespac
 		return nil, err
 	}
 	if len(rulesBytes) == 0 {
+		// empty file - no GC rules
 		return nil, graveler.ErrNotFound
 	}
 	err = proto.Unmarshal(rulesBytes, &rules)
