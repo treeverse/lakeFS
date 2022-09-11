@@ -20,8 +20,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-var ErrAlreadyMigrated = errors.New("already migrated")
-var ErrWrongDriverTypeMigration = errors.New("trying to migrate to non Postgres DB isn't supported")
+var (
+	ErrAlreadyMigrated          = errors.New("already migrated")
+	ErrWrongDriverTypeMigration = errors.New("trying to migrate to non Postgres DB isn't supported")
+)
 
 type MigrateFunc func(ctx context.Context, db *pgxpool.Pool, c blockparams.AdapterConfig, writer io.Writer) error
 
@@ -53,12 +55,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 	if err != nil {
 		return fmt.Errorf("opening kv store: %w", err)
 	}
-	defer func() {
-		// we re-open the store in case of drop. we need to check if it is set before we close
-		if store != nil {
-			store.Close()
-		}
-	}()
+	defer store.Close()
 
 	shouldDrop, err := getMigrationStatus(ctx, store)
 	if err != nil {
@@ -82,12 +79,11 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 			return err
 		}
 
-		store.Close()
-		store = nil
-		store, err = kv.Open(ctx, kvParams) // Open flow recreates table
+		tmpStore, err := kv.Open(ctx, kvParams) // Open flow recreates table
 		if err != nil {
 			return fmt.Errorf("opening kv store: %w", err)
 		}
+		tmpStore.Close()
 	}
 
 	// Mark KV Migration started
