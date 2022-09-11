@@ -124,7 +124,7 @@ To do so, add the following to your configuration (relevant **only** for 0.30.0)
 
 ```yaml
 cataloger:
-  type: local
+  type: rocks
 ```
 
 ## Data Migration for Version v0.50.0
