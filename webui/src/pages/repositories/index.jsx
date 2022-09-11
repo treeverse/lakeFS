@@ -75,7 +75,7 @@ const RepositoryTemplatesModal = ({show, onExit, createRepo, repoCreationError})
                 onContinue={() => setIsExitDialogOpen(false)}
                 isOpen={isExitDialogOpen}
             />
-            <Modal show={show} onHide={onHide} size="lg">
+            <Modal show={show} onHide={onHide} className={"wizard-modal"} size="lg">
                 <Modal.Header closeButton>
                     <TemplatesModalTitleContainer/>
                 </Modal.Header>
@@ -98,7 +98,7 @@ const GetStarted = ({onCreateRepo}) => {
             <h4>You don&apos;t have any repositories yet.</h4>
             {/* eslint-disable-next-line react/jsx-no-target-blank */}
             <Link onClick={onCreateRepo} href="#">Create your first repository</Link> or <a
-            href="https://docs.lakefs.io/understand/branching-model.html#repositories" target="_blank">learn more about
+            href="https://docs.lakefs.io/understand/model.html#repository" target="_blank">learn more about
             repositories in lakeFS</a>.
         </Alert>
     );
@@ -266,7 +266,7 @@ const ModalTitleContainer = () => {
             </Row>
             <Row>
                 <Col>
-                    A repository contains all of your objects, including the revision history. <a href="https://docs.lakefs.io/understand/branching-model.html#repositories" target="_blank" rel="noopener noreferrer">Learn more.</a>
+                    A repository contains all of your objects, including the revision history. <a href="https://docs.lakefs.io/understand/model.html#repository" target="_blank" rel="noopener noreferrer">Learn more.</a>
                 </Col>
             </Row>
         </Container>
