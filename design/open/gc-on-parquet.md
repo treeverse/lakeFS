@@ -14,7 +14,8 @@ Parquet is more than a file format. It's a breathing open-source project aiming 
 #### 1. Sync
 Ranges of the repository are translated into Parquet files. These are stored in a new metadata location under the repository's storage namespace.
 
-#### 2. Sanity: verify all the ranges required for this run are present, and that the number of entries in each range is correct.
+#### 2. Sanity
+Verify all the ranges required for this run are present, and that the number of entries in each range is correct.
 
 #### 3. Start
 Do an anti-join extracting all the addresses that need to be deleted.
