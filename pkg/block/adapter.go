@@ -144,23 +144,3 @@ type Adapter interface {
 	GetStorageNamespaceInfo() StorageNamespaceInfo
 	RuntimeStats() map[string]string
 }
-
-type UploadIDTranslator interface {
-	SetUploadID(uploadID string) string
-	TranslateUploadID(simulationID string) string
-	RemoveUploadID(inputUploadID string)
-}
-
-// the uploadID translator is required to enable re-play of recorded requests (playback_test)
-// the NoOp translator is the default for non-simulated runs. a playback translator is implemented in playback_test
-type NoOpTranslator struct{}
-
-func (d *NoOpTranslator) SetUploadID(uploadID string) string {
-	return uploadID
-}
-
-func (d *NoOpTranslator) TranslateUploadID(uploadID string) string {
-	return uploadID
-}
-
-func (d *NoOpTranslator) RemoveUploadID(_ string) {}

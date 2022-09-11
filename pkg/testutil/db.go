@@ -244,7 +244,7 @@ func MustDo(t testing.TB, what string, err error) {
 	}
 }
 
-func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, blockstoreType string) block.Adapter {
+func NewBlockAdapterByType(t testing.TB, blockstoreType string) block.Adapter {
 	switch blockstoreType {
 	case block.BlockstoreTypeGS:
 		ctx := context.Background()
@@ -252,7 +252,7 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 		if err != nil {
 			t.Fatal("Google Storage new client", err)
 		}
-		return gs.NewAdapter(client, gs.WithTranslator(translator))
+		return gs.NewAdapter(client)
 
 	case block.BlockstoreTypeS3:
 		awsRegion, regionOk := os.LookupEnv(envKeyAwsRegion)
@@ -270,10 +270,10 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 			cfg.Credentials = credentials.NewSharedCredentials("", "default")
 		}
 		sess := session.Must(session.NewSession(cfg))
-		return lakefsS3.NewAdapter(sess, lakefsS3.WithTranslator(translator))
+		return lakefsS3.NewAdapter(sess)
 
 	default:
-		return mem.New(mem.WithTranslator(translator))
+		return mem.New()
 	}
 }
 
@@ -284,7 +284,7 @@ func MigrateEmpty(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterConfi
 }
 
 func MigrateBasic(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterConfig, writer io.Writer) error {
-	buildTestData(1, 5, writer) //nolint: gomnd
+	buildTestData(1, 5, writer) //nolint:gomnd
 	return nil
 }
 
@@ -319,7 +319,7 @@ func MigrateBadEntry(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterCo
 
 func MigrateParallel(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterConfig, writer io.Writer) error {
 	const index = 6                 // Magic number WA
-	buildTestData(index, 5, writer) //nolint: gomnd
+	buildTestData(index, 5, writer) //nolint:gomnd
 	return nil
 }
 
