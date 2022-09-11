@@ -27,6 +27,7 @@ type S3 struct {
 	StreamingChunkSize    int
 	StreamingChunkTimeout time.Duration
 	DiscoverBucketRegion  bool
+	SkipVerifyCertificate bool
 }
 
 type GS struct {

@@ -388,6 +388,7 @@ func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
 		StreamingChunkSize:    c.values.Blockstore.S3.StreamingChunkSize,
 		StreamingChunkTimeout: c.values.Blockstore.S3.StreamingChunkTimeout,
 		DiscoverBucketRegion:  c.values.Blockstore.S3.DiscoverBucketRegion,
+		SkipVerifyCertificate: c.values.Blockstore.S3.SkipVerifyCertificate,
 	}, nil
 }
 

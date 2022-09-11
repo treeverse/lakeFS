@@ -157,6 +157,7 @@ type configuration struct {
 			MaxRetries            int           `mapstructure:"max_retries"`
 			ForcePathStyle        bool          `mapstructure:"force_path_style"`
 			DiscoverBucketRegion  bool          `mapstructure:"discover_bucket_region"`
+			SkipVerifyCertificate bool          `mapstructure:"skip_verify_certificate"`
 		}
 		Azure *struct {
 			TryTimeout       time.Duration `mapstructure:"try_timeout"`
