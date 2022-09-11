@@ -34,6 +34,8 @@ const (
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
 	DefaultBlockStoreS3DiscoverBucketRegion  = true
 
+	DefaultLocalKVPath = "~/data/lakefs/kv"
+
 	DefaultCommittedLocalCacheRangePercent          = 0.9
 	DefaultCommittedLocalCacheMetaRangePercent      = 0.1
 	DefaultCommittedLocalCacheBytes                 = 1 * 1024 * 1024 * 1024
@@ -54,6 +56,7 @@ const (
 
 	DefaultAuthOIDCInitialGroupsClaimName = "initial_groups"
 	DefaultAuthLogoutRedirectURL          = "/auth/login"
+	DefaultAuthEncryptSecretKey           = "THIS_MUST_BE_CHANGED_IN_PRODUCTION"
 
 	DefaultListenAddr          = "0.0.0.0:8000"
 	DefaultS3GatewayDomainName = "s3.local.lakefs.io"
@@ -130,17 +133,18 @@ const (
 
 	ActionsEnabledKey = "actions.enabled"
 
-	AuthCacheEnabledKey = "auth.cache.enabled"
-	AuthCacheSizeKey    = "auth.cache.size"
-	AuthCacheTTLKey     = "auth.cache.ttl"
-	AuthCacheJitterKey  = "auth.cache.jitter"
+	AuthCacheEnabledKey  = "auth.cache.enabled"
+	AuthCacheSizeKey     = "auth.cache.size"
+	AuthCacheTTLKey      = "auth.cache.ttl"
+	AuthCacheJitterKey   = "auth.cache.jitter"
+	AuthEncryptSecretKey = "auth.encrypt.secret_key"
 
 	AuthOIDCInitialGroupsClaimName = "auth.oidc.initial_groups_claim_name"
 	AuthLogoutRedirectURL          = "auth.logout_redirect_url"
 
-	BlockstoreTypeKey      = "blockstore.type"
-	BlockstoreLocalPathKey = "blockstore.local.path"
-
+	BlockstoreTypeKey                    = "blockstore.type"
+	DefaultBlockStoreType                = "local"
+	BlockstoreLocalPathKey               = "blockstore.local.path"
 	BlockstoreS3RegionKey                = "blockstore.s3.region"
 	BlockstoreS3StreamingChunkSizeKey    = "blockstore.s3.streaming_chunk_size"
 	BlockstoreS3StreamingChunkTimeoutKey = "blockstore.s3.streaming_chunk_timeout"
@@ -183,6 +187,8 @@ const (
 
 	DynamoDBTableNameKey = "database.dynamodb.table_name"
 	DatabaseType         = "database.type"
+	LocalKVPath          = "database.local.path"
+	DefaultDatabaseType  = "local"
 
 	UIEnabledKey = "ui.enabled"
 )
@@ -207,6 +213,7 @@ func setDefaults() {
 	viper.SetDefault(AuthLogoutRedirectURL, DefaultAuthLogoutRedirectURL)
 
 	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockStoreLocalPath)
+	viper.SetDefault(BlockstoreTypeKey, DefaultBlockStoreType)
 	viper.SetDefault(BlockstoreS3RegionKey, DefaultBlockStoreS3Region)
 	viper.SetDefault(BlockstoreS3StreamingChunkSizeKey, DefaultBlockStoreS3StreamingChunkSize)
 	viper.SetDefault(BlockstoreS3StreamingChunkTimeoutKey, DefaultBlockStoreS3StreamingChunkTimeout)
@@ -243,6 +250,10 @@ func setDefaults() {
 	viper.SetDefault(EmailLimitEveryDurationKey, DefaultEmailLimitEveryDuration)
 	viper.SetDefault(EmailBurstKey, DefaultEmailBurst)
 	viper.SetDefault(LakefsEmailBaseURLKey, DefaultLakefsEmailBaseURL)
+	viper.SetDefault(AuthEncryptSecretKey, DefaultAuthEncryptSecretKey)
+
+	viper.SetDefault(DatabaseType, DefaultDatabaseType)
+	viper.SetDefault(LocalKVPath, DefaultLocalKVPath)
 
 	viper.SetDefault(DynamoDBTableNameKey, DefaultDynamoDBTableName)
 
@@ -297,6 +308,13 @@ func (c *Config) GetKVParams() kvparams.KV {
 	p := kvparams.KV{
 		Type: c.values.Database.Type,
 	}
+	if c.values.Database.Local != nil {
+		p.Local = &kvparams.Local{
+			DirectoryPath: c.values.Database.Local.Path,
+			PrefetchSize:  c.values.Database.Local.PrefetchSize,
+		}
+	}
+
 	if c.values.Database.Postgres != nil {
 		p.Postgres = &kvparams.Postgres{
 			ConnectionString:      c.values.Database.Postgres.ConnectionString.SecureValue(),

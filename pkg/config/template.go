@@ -78,6 +78,11 @@ type configuration struct {
 		// Type  Name of the KV Store driver DB implementation which is available according to the kv package Drivers function
 		Type string `mapstructure:"type"`
 
+		Local *struct {
+			Path         string `mapstructure:"path"`
+			PrefetchSize int    `mapstructure:"prefetch_size"`
+		} `mapstructure:"local"`
+
 		Postgres *struct {
 			ConnectionString      SecureString  `mapstructure:"connection_string"`
 			MaxOpenConnections    int32         `mapstructure:"max_open_connections"`

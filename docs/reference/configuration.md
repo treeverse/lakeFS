@@ -44,7 +44,7 @@ This reference uses `.` to denote the nesting of values.
   **Note:** Deprecated - See `database` section 
   {: .note }
 * `database` - Configuration section for the lakeFS key-value store database
-  + `database.type` `(string : ["postgres"|"dynamodb"])` - lakeFS database type 
+  + `database.type` `(string ["postgres"|"dynamodb"|"local"] : "local")` - lakeFS database type 
   + `database.postgres` - Configuration section when using `database.type="postgres"`
     + `database.postgres.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use
     + `database.postgres.max_open_connections` `(int : 25)` - Maximum number of open connections to the database
@@ -63,9 +63,11 @@ This reference uses `.` to denote the nesting of values.
     + `database.dynamodb.aws_profile` `(string : )` - AWS named profile to use
     + `database.dynamodb.aws_access_key_id` `(string : )` - AWS access key ID
     + `database.dynamodb.aws_secret_access_key` `(string : )` - AWS secret access key
-    
-      **Note:** `endpoint` `aw_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials. 
-      {: .note } 
+    + **Note:** `endpoint` `aws_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials.
+      {: .note }
+  + `database.local` - Configuration section when using `database.type="local"`
+    + `database.local.path` `(string : "~/data/lakefs/kv")` - Local path on the filesystem to store embedded KV data
+    + `database.local.prefetch_size` `(int: 256)` - How many items to prefetch when iterating over embedded KV records
 * `listen_address` `(string : "0.0.0.0:8000")` - A `<host>:<port>` structured string representing the address to listen on
 * `auth.cache.enabled` `(bool : true)` - Whether to cache access credentials and user policies in-memory. Can greatly improve throughput when enabled.
 * `auth.cache.size` `(int : 1024)` - How many items to store in the auth cache. Systems with a very high user count should use a larger value at the expense of ~1kb of memory per cached user.

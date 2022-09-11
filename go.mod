@@ -17,7 +17,7 @@ require (
 	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deepmap/oapi-codegen v1.5.6
-	github.com/dgraph-io/ristretto v0.0.4-0.20210108140656-b1486d8516f2
+	github.com/dgraph-io/ristretto v0.1.0
 	github.com/dlmiddlecote/sqlstats v1.0.2
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/georgysavva/scany v0.2.7
@@ -98,8 +98,11 @@ require (
 	github.com/butuzov/ireturn v0.1.1 // indirect
 	github.com/chavacava/garif v0.0.0-20220316182200-5cad0b5181d4 // indirect
 	github.com/denis-tingaikin/go-header v0.4.3 // indirect
+	github.com/dgraph-io/badger/v3 v3.2103.2 // indirect
 	github.com/ettle/strcase v0.1.1 // indirect
 	github.com/firefart/nonamedreturns v1.0.1 // indirect
+	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
+	github.com/google/flatbuffers v2.0.0+incompatible // indirect
 	github.com/hashicorp/go-version v1.4.0 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/ldez/gomoddirectives v0.2.3 // indirect

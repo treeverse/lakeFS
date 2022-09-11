@@ -113,7 +113,7 @@ lakefs migrate db
 Or migrate using Docker image:
 
 ```shell
-docker run --rm -it -e LAKEFS_DATABASE_CONNECTION_STRING=<database connection string> treeverse/lakefs:rocks-migrate migrate db
+docker run --rm -it -e LAKEFS_DATABASE_CONNECTION_STRING=<database connection string> treeverse/lakefs:local-migrate migrate db
 ```
 
 Once migrated, it is possible to now use more recent lakeFS versions. Please refer to their release notes for more information on ugrading and usage).
@@ -124,7 +124,7 @@ To do so, add the following to your configuration (relevant **only** for 0.30.0)
 
 ```yaml
 cataloger:
-  type: rocks
+  type: local
 ```
 
 ## Data Migration for Version v0.50.0

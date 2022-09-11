@@ -157,38 +157,3 @@ comply with data privacy policies. Currently, lakeFS only supports Garbage Colle
 Use lakeFS to comment, review and request changes before your data reaches consumers.
 
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/pull/3741){: target="_blank" class="btn" }
-
-
-## Architecture
-
-### Decouple ref-store from PostgreSQL <span>High Priority</span>{: .label .label-blue }
-
-Currently, lakeFS requires a PostgreSQL database. Internally, it's used to store references (branches, tags, etc.), uncommitted objects metadata, and other metadata such as user management.
-
-Making this store a pluggable component would allow the following:
-
-1. Simpler quickstart using **only an object store**: allow running lakeFS without any dependencies. This ref-store will use the underlying object store to also store the references. For S3 (or any object store that doesn't support any native transaction/compare-and-swap semantics), this will be available only when running in single-instance mode. This is still beneficial for running lakeFS in POC or development mode, removing the need to run and connect multiple Docker containers.
-1. Flexible production setup: A PostgreSQL option will still be available, but additional implementations will also be possible. Using other RDBMS types such as MySQL &emdash; or using managed services such as DynamoDB that lakeFS will be able to manage itself.
-1. Easier scalability: Scaling RDBMS for very high throughput while keeping it predictable in performance for different loads and access patterns has a very high operational cost.
-
-This release will mark the completion of project **["lakeFS on the Rocks"](https://docs.google.com/document/d/1jzD7-jun-tdU5BGapmnMBe9ovSzBvTNjXCcVztV07A4/edit?usp=sharing){:target="_blank"}**
-
-[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/blob/master/design/open/metadata_kv/index.md){: target="_blank" class="btn" }
-
-### Ref-store implementation for DynamoDB <span>High Priority</span>{: .label .label-blue }
-
-Once we've decoupled the ref-store from PostgreSQL, we'd like to create a ref-store implementation that supports DynamoDB.
-This has several advantages for users looking to run lakeFS on AWS:
-
-1. DynamoDB is fast to provision and requires very little configuration.
-1. The operational overhead of maintaining a serverless database is very small.
-1. Scaling according to usage is much more fine grained, which eliminates a lot of the cost for smaller installations (as opposed to RDS).
-
-[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/blob/master/design/open/metadata_kv/index.md#databases-that-meet-these-requirements-examples){: target="_blank" class="btn" }
-
-### Ref-store implementation for RocksDB (for testing and experimentation)
-
-Once we've decoupled the ref-store from PostgreSQL, we'd like to create a ref-store implementation that supports running with an embedded RocksDB database.
-While not fit for real world production use, it makes trying lakeFS when running locally easier - either by directly executing the binary or doing a single `docker run` with the right configuration (as opposed to having to use `docker-compose` or run PostgreSQL locally).
-
-[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/blob/master/design/open/metadata_kv/index.md#databases-that-meet-these-requirements-examples){: target="_blank" class="btn" }

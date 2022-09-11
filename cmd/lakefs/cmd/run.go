@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -132,6 +133,14 @@ var runCmd = &cobra.Command{
 		idGen := &actions.DecreasingIDGenerator{}
 
 		// initialize auth service
+		if bytes.Equal(cfg.GetAuthEncryptionSecret(), []byte(config.DefaultAuthEncryptSecretKey)) {
+			logger.Warn("\n\n\n\tYOU ARE USING THE DEFAULT AUTH ENCRYPT SECRET KEY.\n" +
+				"\tTHIS MUST BE CHANGED IN A PRODUCTION DEPLOYMENT.\n" +
+				"\tPLEASE REFER TO THE DOCUMENTATION REFERENCE.\n" +
+				"\thttps://docs.lakefs.io/reference/configuration.html#reference\n" +
+				"\t(Under `auth.encrypt.secret_key`)\n\n\n")
+		}
+
 		var authService auth.Service
 		if cfg.IsAuthTypeAPI() {
 			var apiEmailer *email.Emailer

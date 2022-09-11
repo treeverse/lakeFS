@@ -8,6 +8,13 @@ type KV struct {
 	Type     string
 	Postgres *Postgres
 	DynamoDB *DynamoDB
+	Local    *Local
+}
+
+type Local struct {
+	DirectoryPath  string
+	DisableLogging bool
+	PrefetchSize   int
 }
 
 type Postgres struct {
