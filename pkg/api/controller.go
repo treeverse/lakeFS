@@ -1351,12 +1351,7 @@ func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, re
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_repo")
 	err := c.Catalog.DeleteRepository(ctx, repository)
-	if errors.Is(err, catalog.ErrNotFound) {
-		writeError(w, http.StatusNotFound, "repository not found")
-		return
-	}
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
