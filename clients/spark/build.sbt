@@ -73,7 +73,9 @@ def generateCoreProject(buildType: BuildType) =
         "org.scalatest" %% "scalatest" % "3.2.9" % "test",
         "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.10" % "test",
         "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
-        "com.lihaoyi" %% "os-lib" % "0.7.8" % "test"
+        "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
+        // Test with an up-to-date fasterxml.
+         "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2" % "test"
       ),
       Test / logBuffered := false,
       // Uncomment to get (very) full stacktraces in test:

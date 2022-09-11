@@ -20,7 +20,7 @@ import java.time.ZoneOffset
 import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse
 import java.util.UUID
 
-class ConfigMapper(val hcValues: Broadcast[Seq[(String, String)]]) {
+class ConfigMapper(val hcValues: Broadcast[Array[(String, String)]]) extends Serializable {
   @transient lazy val configuration = {
     val conf = new Configuration()
     hcValues.value.foreach({ case (k, v) => conf.set(k, v) })
@@ -39,7 +39,8 @@ trait RangeGetter extends Serializable {
   def getRangeAddresses(rangeID: String, repo: String): Iterator[String]
 }
 
-class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: ConfigMapper) extends RangeGetter {
+class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: ConfigMapper)
+    extends RangeGetter {
   def getRangeIDs(commitID: String, repo: String): Iterator[String] = {
     val conf = configMapper.configuration
     val apiClient = ApiClient.get(apiConf)
@@ -49,7 +50,8 @@ class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: Config
       return Iterator.empty
     }
     val location = apiClient.getMetaRangeURL(repo, commit)
-    // continue on empty location, empty location is a result of a commit with no metaRangeID (e.g 'Repository created' commit)
+    // continue on empty location, empty location is a result of a commit
+    // with no metaRangeID (e.g 'Repository created' commit)
     if (location == "") Iterator.empty
     else
       SSTableReader
@@ -91,8 +93,8 @@ trait S3ClientBuilder extends Serializable {
   def build(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3
 }
 
-class GarbageCollector(val spark: SparkSession, val rangeGetter: RangeGetter, configMap: ConfigMapper) {
-  import spark.implicits._
+class GarbageCollector(val rangeGetter: RangeGetter, configMap: ConfigMapper) extends Serializable {
+  @transient lazy val spark = SparkSession.active
 
   def getCommitsDF(runID: String, commitDFLocation: String): Dataset[Row] = {
     spark.read
@@ -101,9 +103,9 @@ class GarbageCollector(val spark: SparkSession, val rangeGetter: RangeGetter, co
       .csv(commitDFLocation)
   }
 
-  def getRangeIDsForCommits(
-      commitIDs: Dataset[String],
-      repo: String): Dataset[String] = {
+  def getRangeIDsForCommits(commitIDs: Dataset[String], repo: String): Dataset[String] = {
+    import spark.implicits._
+
     commitIDs.flatMap(rangeGetter.getRangeIDs(_, repo))
   }
 
@@ -112,6 +114,8 @@ class GarbageCollector(val spark: SparkSession, val rangeGetter: RangeGetter, co
       keepRangeIDs: Dataset[String],
       repo: String
   ): Dataset[String] = {
+    import spark.implicits._
+
     // Partition range IDs by hashing the range ID into the same number of
     // partitions (implicit in conf param spark.sql.shuffle.partitions).
     // This should keep the subsequent operations cheap!
@@ -148,6 +152,8 @@ class GarbageCollector(val spark: SparkSession, val rangeGetter: RangeGetter, co
       runID: String,
       commitDFLocation: String
   ): Dataset[String] = {
+    import spark.implicits._
+
     val commitsDF = getCommitsDF(runID, commitDFLocation)
 
     val keepCommitsDF = commitsDF.where("!expired").select("commit_id").as[String]
@@ -162,7 +168,8 @@ class GarbageCollector(val spark: SparkSession, val rangeGetter: RangeGetter, co
   def getEntryTuples(
       rangeID: String,
       apiConf: APIConfigurations,
-      repo: String): Iterator[(String, String, Boolean, Long)] = {
+      repo: String
+  ): Iterator[(String, String, Boolean, Long)] = {
     def getSeconds(ts: Option[Timestamp]): Long = {
       ts.getOrElse(0).asInstanceOf[Timestamp].seconds
     }
@@ -191,16 +198,12 @@ object GarbageCollector {
     hc.iterator.asScala
       .filter(c => prefixes.exists(c.getKey.startsWith))
       .map(entry => (entry.getKey, entry.getValue))
-      .toSeq
+      .toArray
 
   /** @return a serializable summary of values in hc starting with prefix.
    */
   def getHadoopConfigMapper(hc: Configuration, prefixes: String*): ConfigMapper =
-    new ConfigMapper(spark.sparkContext.broadcast(
-      hc.iterator.asScala
-        .filter(c => prefixes.exists(c.getKey.startsWith))
-        .map(entry => (entry.getKey, entry.getValue))
-        .toList))
+    new ConfigMapper(spark.sparkContext.broadcast(getHadoopConfigurationValues(hc, prefixes: _*)))
 
   def main(args: Array[String]) {
     val hc = spark.sparkContext.hadoopConfiguration
@@ -286,13 +289,14 @@ object GarbageCollector {
     }
     println("apiURL: " + apiURL)
 
-    val expiredAddresses =
-      getExpiredAddresses(
-        repo,
-        runID,
-        gcCommitsLocation)
-        .toDF("address")
-        .withColumn("run_id", lit(runID))
+    val configMapper = new ConfigMapper(hcValues)
+    val gc = new GarbageCollector(new LakeFSRangeGetter(apiConf, configMapper), configMapper)
+
+    val expiredAddresses = gc
+      .getExpiredAddresses(repo, runID, gcCommitsLocation)
+      .toDF("address")
+      .withColumn("run_id", lit(runID))
+
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
     expiredAddresses.write
       .partitionBy("run_id")
@@ -375,7 +379,8 @@ object GarbageCollector {
         // mapPartitions lambda executions are sent over to Spark executors, the executors don't have access to the
         // bulkRemover created above because it was created on the driver and it is not a serializeable object. Therefore,
         // we create new bulkRemovers.
-        val bulkRemover = BulkRemoverFactory(storageType, configMapper.configuration, storageNamespace, region)
+        val bulkRemover =
+          BulkRemoverFactory(storageType, configMapper.configuration, storageNamespace, region)
         iter
           .grouped(bulkSize)
           .flatMap(bulkRemover.deleteObjects(_, storageNamespace))
@@ -383,13 +388,13 @@ object GarbageCollector {
   }
 
   def remove(
-    configMapper: ConfigMapper,
-    storageNamespace: String,
-    addressDFLocation: String,
-    expiredAddresses: Dataset[Row],
-    runID: String,
-    region: String,
-    storageType: String
+      configMapper: ConfigMapper,
+      storageNamespace: String,
+      addressDFLocation: String,
+      expiredAddresses: Dataset[Row],
+      runID: String,
+      region: String,
+      storageType: String
   ) = {
     println("addressDFLocation: " + addressDFLocation)
 
