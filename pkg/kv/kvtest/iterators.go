@@ -15,7 +15,7 @@ const (
 	thirdPartitionKey  = "mb"
 )
 
-func testIterators(t *testing.T, ms MakeStore) {
+func testPartitionIterator(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
 	store := ms(t, ctx)
 	sm := kv.StoreMessage{
@@ -41,26 +41,7 @@ func testIterators(t *testing.T, ms MakeStore) {
 			t.Fatal("failed to set model", err)
 		}
 	}
-	err := sm.SetMsg(ctx, thirdPartitionKey, []byte("e"), &TestModel{})
-	if err != nil {
-		t.Fatal("failed to set model", err)
-	}
 
-	err = sm.SetMsg(ctx, thirdPartitionKey, []byte("f"), &TestModel{Name: []byte("notin")})
-	if err != nil {
-		t.Fatal("failed to set model", err)
-	}
-	// first partition - (a,a) (aa,aa) (b,b) (c,c) (d,d)
-	// second partition - (a,a) (aa,aa) (b,b) (c,c) (d,d)
-	// third partition - (e,nil) (f,"notin")
-
-	testPartitionIterator(t, ctx, ms)
-	testPrimaryIterator(t, ctx, ms)
-	testSecondaryIterator(t, ctx, ms)
-}
-
-func testPartitionIterator(t *testing.T, ctx context.Context, ms MakeStore) {
-	store := ms(t, ctx)
 	t.Run("partition iterator listing all values of partition", func(t *testing.T) {
 		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), firstPartitionKey)
 		if itr == nil {
@@ -131,8 +112,33 @@ func testPartitionIterator(t *testing.T, ctx context.Context, ms MakeStore) {
 	})
 }
 
-func testPrimaryIterator(t *testing.T, ctx context.Context, ms MakeStore) {
+func testPrimaryIterator(t *testing.T, ms MakeStore) {
+	ctx := context.Background()
 	store := ms(t, ctx)
+	sm := kv.StoreMessage{
+		Store: store,
+	}
+	m := []TestModel{
+		{Name: []byte("a")},
+		{Name: []byte("aa")},
+		{Name: []byte("b")},
+		{Name: []byte("c")},
+		{Name: []byte("d")},
+	}
+
+	// prepare data
+	for i := 0; i < len(m); i++ {
+		err := sm.SetMsg(ctx, firstPartitionKey, m[i].Name, &m[i])
+		if err != nil {
+			t.Fatal("failed to set model", err)
+		}
+
+		err = sm.SetMsg(ctx, secondPartitionKey, m[i].Name, &m[i])
+		if err != nil {
+			t.Fatal("failed to set model", err)
+		}
+	}
+
 	t.Run("primary iterator listing all values of partition", func(t *testing.T) {
 		itr, err := kv.NewPrimaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			firstPartitionKey, []byte(""), kv.IteratorOptionsFrom([]byte("")))
@@ -260,8 +266,45 @@ func testPrimaryIterator(t *testing.T, ctx context.Context, ms MakeStore) {
 	})
 }
 
-func testSecondaryIterator(t *testing.T, ctx context.Context, ms MakeStore) {
+func testSecondaryIterator(t *testing.T, ms MakeStore) {
+	ctx := context.Background()
 	store := ms(t, ctx)
+	sm := kv.StoreMessage{
+		Store: store,
+	}
+	m := []TestModel{
+		{Name: []byte("a")},
+		{Name: []byte("aa")},
+		{Name: []byte("b")},
+		{Name: []byte("c")},
+		{Name: []byte("d")},
+	}
+
+	// prepare data
+	for i := 0; i < len(m); i++ {
+		err := sm.SetMsg(ctx, firstPartitionKey, m[i].Name, &m[i])
+		if err != nil {
+			t.Fatal("failed to set model", err)
+		}
+
+		err = sm.SetMsg(ctx, secondPartitionKey, m[i].Name, &m[i])
+		if err != nil {
+			t.Fatal("failed to set model", err)
+		}
+	}
+	err := sm.SetMsg(ctx, thirdPartitionKey, []byte("e"), &TestModel{})
+	if err != nil {
+		t.Fatal("failed to set model", err)
+	}
+
+	err = sm.SetMsg(ctx, thirdPartitionKey, []byte("f"), &TestModel{Name: []byte("notin")})
+	if err != nil {
+		t.Fatal("failed to set model", err)
+	}
+	// first partition - (a,a) (aa,aa) (b,b) (c,c) (d,d)
+	// second partition - (a,a) (aa,aa) (b,b) (c,c) (d,d)
+	// third partition - (e,nil) (f,"notin")
+
 	t.Run("secondary iterator listing all values of partition", func(t *testing.T) {
 		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			firstPartitionKey, []byte(""), []byte(""))
