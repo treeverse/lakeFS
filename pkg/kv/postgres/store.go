@@ -114,9 +114,9 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
 	}
 
-	// register collector to public pgx stats as prometheus metrics
+	// register collector to publish  pgxpool stats as metrics
 	var collector prometheus.Collector
-	if !params.DisableMetrics {
+	if params.Metrics {
 		collector = pgxpoolprometheus.NewCollector(pool, map[string]string{"db_name": params.TableName})
 		err := prometheus.Register(collector)
 		if err != nil {
@@ -139,7 +139,7 @@ type Params struct {
 	SanitizedTableName string
 	PartitionsAmount   int
 	ScanPageSize       int
-	DisableMetrics     bool
+	Metrics            bool
 }
 
 func parseStoreConfig(runtimeParams map[string]string, pgParams *kvparams.Postgres) *Params {
@@ -147,7 +147,7 @@ func parseStoreConfig(runtimeParams map[string]string, pgParams *kvparams.Postgr
 		TableName:        DefaultTableName,
 		PartitionsAmount: DefaultPartitions,
 		ScanPageSize:     DefaultScanPageSize,
-		DisableMetrics:   pgParams.DisableMetrics,
+		Metrics:          pgParams.Metrics,
 	}
 	if tableName, ok := runtimeParams[paramTableName]; ok {
 		p.TableName = tableName
