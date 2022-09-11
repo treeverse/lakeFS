@@ -28,7 +28,7 @@ At this point, lakeFS supports Garbage Collection only on S3 and Azure.  We have
 
 ## Understanding Garbage Collection
 
-For every branch, the GC job retains deleted objects for the number of days defined for the branch.
+For every branch, the GC job retains deletes objects for the number of days defined for the branch.
 In the absence of a branch-specific rule, the default rule for the repository is used.
 If an object is present in more than one branch ancestry, it's retained according to the rule with the largest number of days between those branches.
 That is, it's hard-deleted only after the retention period has ended for all relevant branches.
@@ -57,7 +57,7 @@ objects on each branch. If a branch is configured to retain objects for a
 given number of days, any object that was accessible from the HEAD of a
 branch in that past number of days will be retained.
 
-The garbage collection process proceeds in two main phases:
+The garbage collection process proceeds in three main phases:
 
 * **Discover which commits will retain their objects.**  For every branch,
   the garbage collection job looks at the HEAD of the branch that many days
@@ -82,7 +82,7 @@ The garbage collection process proceeds in two main phases:
   In the example, all objects of commit `2022-03-12`, for instance, are
   retained. This _includes_ objects added in previous commits. However,
   objects added in commit `d: 2022-03-14` which were overwritten or
-  committed in commit `d: 2022-03-20` are not visible in any retained commit
+  deleted in commit `d: 2022-03-20` are not visible in any retained commit
   and will be garbage collected.
   
 * **Garbage collect those objects by deleting them.** The data of any
@@ -92,14 +92,12 @@ The garbage collection process proceeds in two main phases:
 
 ### What does _not_ get collected
 
-From the above definition of what gets collected, some objects will _not_ be
-collected regardless of configured GC rules:
-
+Some objects will _not_ be collected regardless of configured GC rules:
+* Any object that is accessible from any branch's HEAD.
 * Any object that was _uploaded but never committed_ cannot be collected.  See
   [#1933](https://github.com/treeverse/lakeFS/issues/1933) for more details.
-* Any object that is present on a branch HEAD is visible on that branch.
-  Commits at the HEAD of a branch are retained, so such an object will not
-  be collected.
+* Objects stored outside the repository's [storage namespace](../glossary.md#storage-namespace).
+  For example, objects imported using the lakeFS import UI are not collected.
 
 ## Configuring GC rules
 
