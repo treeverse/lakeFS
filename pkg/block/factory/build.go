@@ -87,9 +87,9 @@ func buildLocalAdapter(params params.Local) (*local.Adapter, error) {
 	return adapter, nil
 }
 
-func BuildS3Client(params *aws.Config, skipVerifyCertificate bool) (*session.Session, error) {
+func BuildS3Client(params *aws.Config, skipVerifyCertificateTestOnly bool) (*session.Session, error) {
 	client := http.DefaultClient
-	if skipVerifyCertificate {
+	if skipVerifyCertificateTestOnly {
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
 		}
@@ -104,7 +104,7 @@ func BuildS3Client(params *aws.Config, skipVerifyCertificate bool) (*session.Ses
 }
 
 func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adapter, error) {
-	sess, err := BuildS3Client(params.AwsConfig, params.SkipVerifyCertificate)
+	sess, err := BuildS3Client(params.AwsConfig, params.SkipVerifyCertificateTestOnly)
 	if err != nil {
 		return nil, err
 	}

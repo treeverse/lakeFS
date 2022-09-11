@@ -23,11 +23,11 @@ type Local struct {
 }
 
 type S3 struct {
-	AwsConfig             *aws.Config
-	StreamingChunkSize    int
-	StreamingChunkTimeout time.Duration
-	DiscoverBucketRegion  bool
-	SkipVerifyCertificate bool
+	AwsConfig                     *aws.Config
+	StreamingChunkSize            int
+	StreamingChunkTimeout         time.Duration
+	DiscoverBucketRegion          bool
+	SkipVerifyCertificateTestOnly bool
 }
 
 type GS struct {
