@@ -32,11 +32,6 @@ type Dependencies struct {
 
 func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI string, repoName string) (http.Handler, *Dependencies) {
 	ctx := context.Background()
-	idTranslator := &testutil.UploadIDTranslator{
-		TransMap:   make(map[string]string),
-		ExpectedID: "",
-		T:          t,
-	}
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 
 	store := kvtest.MakeStoreByName("mem", kvparams.KV{})(t, context.Background())
@@ -45,7 +40,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI str
 	multipartsTracker := multiparts.NewTracker(*storeMessage)
 
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
-	blockAdapter := testutil.NewBlockAdapterByType(t, idTranslator, blockstoreType)
+	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
 
 	conf, err := config.NewConfig()
 	testutil.MustDo(t, "config", err)
@@ -99,7 +94,8 @@ func (m *FakeAuthService) GetCredentials(_ context.Context, accessKey string) (*
 func (m *FakeAuthService) GetUser(_ context.Context, _ string) (*model.User, error) {
 	return &model.User{
 		CreatedAt: time.Now(),
-		Username:  "user"}, nil
+		Username:  "user",
+	}, nil
 }
 
 func (m *FakeAuthService) Authorize(_ context.Context, _ *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {
