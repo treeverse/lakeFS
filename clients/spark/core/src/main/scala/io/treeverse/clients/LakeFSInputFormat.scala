@@ -78,9 +78,7 @@ class GravelerSplit(var range: RangeData, var path: Path, var rangeID: String, v
   override def getLocationInfo: Array[SplitLocationInfo] =
     Array.empty[SplitLocationInfo]
 
-  override def toString: String = {
-    s"GravelerSplit(range=$range, path=$path, rangeID=$rangeID, byteSize=$byteSize)"
-  }
+  override def toString: String = s"GravelerSplit(range=$range, path=$path, rangeID=$rangeID, byteSize=$byteSize)"
 }
 
 class WithIdentifier[Proto <: GeneratedMessage with scalapb.Message[Proto]](
