@@ -53,7 +53,12 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 	if err != nil {
 		return fmt.Errorf("opening kv store: %w", err)
 	}
-	defer store.Close()
+	defer func() {
+		// we re-open the store in case of drop. we need to check if it is set before we close
+		if store != nil {
+			store.Close()
+		}
+	}()
 
 	shouldDrop, err := getMigrationStatus(ctx, store)
 	if err != nil {
@@ -67,7 +72,6 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 		// After unsuccessful migration attempt, clean KV table
 		// Delete store if exists from previous failed KV migration and reopen store
 		logging.Default().Warn("Removing KV table")
-		store.Close()
 		// drop partitions first
 		err = dropTables(ctx, dbPool, getTablePartitions(DefaultTableName, DefaultPartitions))
 		if err != nil {
@@ -78,6 +82,8 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 			return err
 		}
 
+		store.Close()
+		store = nil
 		store, err = kv.Open(ctx, kvParams) // Open flow recreates table
 		if err != nil {
 			return fmt.Errorf("opening kv store: %w", err)
