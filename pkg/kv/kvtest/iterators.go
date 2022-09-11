@@ -42,11 +42,12 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 		}
 	}
 
-	t.Run("partition iterator listing all values of partition", func(t *testing.T) {
+	t.Run("listing all values of partition", func(t *testing.T) {
 		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), firstPartitionKey)
 		if itr == nil {
 			t.Fatalf("failed to create partition iterator")
 		}
+		defer itr.Close()
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
@@ -59,18 +60,18 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
 		}
-		itr.Close()
 
 		if diffs := deep.Equal(names, []string{"a", "aa", "b", "c", "d"}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
 		}
 	})
 
-	t.Run("partition iterator listing values SeekGE", func(t *testing.T) {
+	t.Run("listing values SeekGE", func(t *testing.T) {
 		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), secondPartitionKey)
 		if itr == nil {
 			t.Fatalf("failed to create partition iterator")
 		}
+		defer itr.Close()
 		itr.SeekGE([]byte("b"))
 		names := make([]string, 0)
 		for itr.Next() {
@@ -84,18 +85,18 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
 		}
-		itr.Close()
 
 		if diffs := deep.Equal(names, []string{"b", "c", "d"}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
 		}
 	})
 
-	t.Run("partition iterator failed SeekGE", func(t *testing.T) {
+	t.Run("failed SeekGE partition not found", func(t *testing.T) {
 		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), "")
 		if itr == nil {
 			t.Fatalf("failed to create partition iterator")
 		}
+		defer itr.Close()
 		itr.SeekGE([]byte("d"))
 		for itr.Next() {
 			e := itr.Entry()
@@ -104,10 +105,9 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 				t.Fatalf("cannot read from store")
 			}
 		}
-		itr.Close()
 
 		if !errors.Is(itr.Err(), kv.ErrMissingPartitionKey) {
-			t.Fatalf("expected error: got %v", itr.Err())
+			t.Fatalf("expected error: %s, got %v", kv.ErrMissingPartitionKey, itr.Err())
 		}
 	})
 }
@@ -139,12 +139,13 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 		}
 	}
 
-	t.Run("primary iterator listing all values of partition", func(t *testing.T) {
+	t.Run("listing all values of partition", func(t *testing.T) {
 		itr, err := kv.NewPrimaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			firstPartitionKey, []byte(""), kv.IteratorOptionsFrom([]byte("")))
 		if err != nil {
 			t.Fatalf("failed to create primary iterator: %v", err)
 		}
+		defer itr.Close()
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
@@ -157,19 +158,19 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
 		}
-		itr.Close()
 
 		if diffs := deep.Equal(names, []string{"a", "aa", "b", "c", "d"}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
 		}
 	})
 
-	t.Run("primary iterator listing with prefix", func(t *testing.T) {
+	t.Run("listing with prefix", func(t *testing.T) {
 		itr, err := kv.NewPrimaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			secondPartitionKey, []byte("a"), kv.IteratorOptionsFrom([]byte("")))
 		if err != nil {
 			t.Fatalf("failed to create primary iterator: %v", err)
 		}
+		defer itr.Close()
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
@@ -182,19 +183,19 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
 		}
-		itr.Close()
 
 		if diffs := deep.Equal(names, []string{"a", "aa"}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
 		}
 	})
 
-	t.Run("primary iterator listing empty value", func(t *testing.T) {
+	t.Run("listing empty value", func(t *testing.T) {
 		itr, err := kv.NewPrimaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			secondPartitionKey, []byte(""), kv.IteratorOptionsAfter([]byte("d")))
 		if err != nil {
 			t.Fatalf("failed to create primary iterator: %v", err)
 		}
+		defer itr.Close()
 		names := make([]string, 0)
 
 		for itr.Next() {
@@ -208,19 +209,19 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
 		}
-		itr.Close()
 
 		if diffs := deep.Equal(names, []string{}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
 		}
 	})
 
-	t.Run("primary iterator listing from", func(t *testing.T) {
+	t.Run("listing from", func(t *testing.T) {
 		itr, err := kv.NewPrimaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			firstPartitionKey, []byte(""), kv.IteratorOptionsFrom([]byte("b")))
 		if err != nil {
 			t.Fatalf("failed to create primary iterator: %v", err)
 		}
+		defer itr.Close()
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
@@ -233,19 +234,19 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
 		}
-		itr.Close()
 
 		if diffs := deep.Equal(names, []string{"b", "c", "d"}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
 		}
 	})
 
-	t.Run("primary iterator listing after", func(t *testing.T) {
+	t.Run("listing after", func(t *testing.T) {
 		itr, err := kv.NewPrimaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			firstPartitionKey, []byte(""), kv.IteratorOptionsAfter([]byte("b")))
 		if err != nil {
 			t.Fatalf("failed to create primary iterator: %v", err)
 		}
+		defer itr.Close()
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
@@ -258,7 +259,6 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
 		}
-		itr.Close()
 
 		if diffs := deep.Equal(names, []string{"c", "d"}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
@@ -305,12 +305,13 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 	// second partition - (a,a) (aa,aa) (b,b) (c,c) (d,d)
 	// third partition - (e,nil) (f,"notin")
 
-	t.Run("secondary iterator listing all values of partition", func(t *testing.T) {
+	t.Run("listing all values of partition", func(t *testing.T) {
 		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			firstPartitionKey, []byte(""), []byte(""))
 		if err != nil {
 			t.Fatalf("failed to create secondary iterator: %v", err)
 		}
+		defer itr.Close()
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
@@ -323,19 +324,19 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
 		}
-		itr.Close()
 
 		if diffs := deep.Equal(names, []string{"a", "aa", "b", "c", "d"}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
 		}
 	})
 
-	t.Run("secondary iterator listing with prefix", func(t *testing.T) {
+	t.Run("listing with prefix", func(t *testing.T) {
 		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			firstPartitionKey, []byte("a"), []byte(""))
 		if err != nil {
 			t.Fatalf("failed to create secondary iterator: %v", err)
 		}
+		defer itr.Close()
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
@@ -348,19 +349,19 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
 		}
-		itr.Close()
 
 		if diffs := deep.Equal(names, []string{"a", "aa"}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
 		}
 	})
 
-	t.Run("secondary iterator listing after", func(t *testing.T) {
+	t.Run("listing after", func(t *testing.T) {
 		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			firstPartitionKey, []byte(""), []byte("b"))
 		if err != nil {
 			t.Fatalf("failed to create secondary iterator: %v", err)
 		}
+		defer itr.Close()
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
@@ -373,19 +374,19 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
 		}
-		itr.Close()
 
 		if diffs := deep.Equal(names, []string{"c", "d"}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
 		}
 	})
 
-	t.Run("secondary iterator entry not found", func(t *testing.T) {
+	t.Run("entry not found", func(t *testing.T) {
 		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			thirdPartitionKey, []byte(""), []byte(""))
 		if err != nil {
 			t.Fatalf("failed to create secondary iterator: %v", err)
 		}
+		defer itr.Close()
 
 		for itr.Next() {
 			e := itr.Entry()
@@ -394,19 +395,19 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 				t.Fatalf("cannot read from store")
 			}
 		}
-		itr.Close()
 
 		if !errors.Is(itr.Err(), kv.ErrMissingKey) {
-			t.Fatalf("expected error: got %v", itr.Err())
+			t.Fatalf("expected error: %s, got %v", kv.ErrMissingKey, itr.Err())
 		}
 	})
 
-	t.Run("secondary iterator primary not found", func(t *testing.T) {
+	t.Run("primary not found", func(t *testing.T) {
 		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			thirdPartitionKey, []byte(""), []byte("e"))
 		if err != nil {
 			t.Fatalf("failed to create secondary iterator: %v", err)
 		}
+		defer itr.Close()
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
@@ -419,7 +420,6 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
 		}
-		itr.Close()
 
 		if diffs := deep.Equal(names, []string{}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
