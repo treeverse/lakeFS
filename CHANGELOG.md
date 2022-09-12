@@ -6,7 +6,7 @@ The lakeFS service will not run if the migration version isn't compatible with t
 Before running the new version you will be required to run migrate, with the new version. 
 Please refer to this [upgrade documentation](https://docs.lakefs.io/reference/upgrade.html##lakefs-0800-or-greater-kv-migration) for more information on the specific migration to KV
 
-This is the first lakeFS version over Key-Value Store
+⚠️  This is the first lakeFS version over Key-Value Store ⚠️ 
 lakeFS is decoupling from PostgreSQL and moving to a KV Store interface. 
 This will provide greater flexibility and allow production groups working with lakeFS to select their backing DB of choice.  
 Check our updated [Deploy lakeFS](https://docs.lakefs.io/deploy/#deploy-lakefs) page, for deployment instructions.
