@@ -18,39 +18,53 @@ It can be considered the lakeFS analog of a bucket in an object store. Since it 
 
 When you first open the lakeFS UI, you will be asked to create an initial admin user.
 
-1. In your browser, open the address of your lakeFS server.
-   Depending on how you deployed lakeFS, this can be a custom address pointing at your server (e.g., https://lakefs.example.com),
-   the address of a load balancer, or something else. You should see the following page, prompting you to set up an admin user.
+Note: If you already have lakeFS credentials, log in and skip to [creating the repository](#create-the-repository).
+{: .note .pb-3 }
 
-   ![Setup]({{ site.baseurl }}/assets/img/setup.png)
+1. Open the lakeFS UI in your browser
+   <span class="tooltip">(<a href="#">how?</a>)
+     <span class="tooltiptext">
+       Use an address pointing at your lakeFS server. Depending on how you deployed lakeFS, this can be a custom address (e.g., https://lakefs.example.com),
+       the address of a load balancer, or something else.
+     </span>
+   </span>
+   and choose a name for your admin user. 
 
-   Note: If you already have lakeFS credentials, log in and skip to [creating the repository](#create-the-repository).
-   {: .note .pb-3 }
+   ![Setup]({{ site.baseurl }}/assets/img/setup.png){: style="padding:20px 40px"}
 
-1. Follow the steps to create an initial administrator user. Save the credentials you've received somewhere safe, you won't be able to see them again!
 
-   ![Setup]({{ site.baseurl }}/assets/img/setup.png)
+1. After clicking _Setup_, your lakeFS credentials will appear. Copy and store them somewhere safe, since you won't be able to see them again.
 
-1. Follow the link and go to the login screen.
+   ![Setup]({{ site.baseurl }}/assets/img/setup_done.png){: style="padding:20px 40px"}
+
+1. Click the button to go to the login screen.
 
 1. Use the credentials to login as an administrator.
 
-   ![Login Screen]({{ site.baseurl }}/assets/img/login.png)
-
 ## Create the repository
 
-1. Click _Create Repository_.
+1. When logged in to lakeFS, click _Create Repository_.
     
-   ![Create Repository]({{ site.baseurl }}/assets/img/create_repo_s3.png)
+1. In the shown dropdown, choose _Blank Repository_
+   <span class="tooltip">(<a href="#">what are the other options?</a>)
+     <span class="tooltiptext">
+       The other options can help you integrate your existing tools with lakeFS.
+     </span>
+   </span>
+
+   ![Create Repository]({{ site.baseurl }}/assets/img/create_repo_s3.png){: style="padding:20px 40px"}
 
 1. Fill in a repository name.
 
 1. Set the _Storage Namespace_ to a location in the bucket you've configured in a [previous step](./storage/index.md).
-   The _storage namespace_ is a location in the
-   [underlying storage](../understand/model.md#concepts-unique-to-lakefs)
+   The storage namespace is a location in the
+   [underlying storage](../glossary.md#storage-namespace)
    where data for this repository will be stored.
 
-1. Click _Create Repository_.
+   The storage namespace is a URI, and its scheme is determined by the storage type. For example, the storage namespace can be `s3://example-bucket/example-path/` if you're using AWS S3, or `gs://example-bucket/example-path` if you're using Google Cloud Storage.
+   {: .note }
+   
+1. To finish creating the repository, click _Create Repository_.
 
 # Next steps
 

@@ -1,0 +1,5 @@
+.bloop/
+.bsp/
+.metals/
+metals.sbt
+

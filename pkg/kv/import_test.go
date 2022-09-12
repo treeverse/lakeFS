@@ -47,7 +47,7 @@ func TestImport(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := bytes.Buffer{}
-			testutil.MustDo(t, "fill buffer", tt.data(ctx, nil, &buf))
+			testutil.MustDo(t, "fill buffer", tt.data(ctx, nil, nil, &buf))
 			err := kv.Import(ctx, &buf, kvStore)
 			require.ErrorIs(t, err, tt.err)
 

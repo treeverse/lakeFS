@@ -124,7 +124,7 @@ This is because lakeFS is used for unstructured data, where it makes little sens
 {: .no_toc }
 
 To merge a _merge source_ (a commit) into a _merge destination_ (another commit), lakeFS first
-finds the [merge base]((https://git-scm.com/docs/git-merge-base#_description)) the nearest common parent of the two commits.
+finds the [merge base](https://git-scm.com/docs/git-merge-base#_description) the nearest common parent of the two commits.
 It can now perform a _three-way merge_, by examining the presence and identity of files in each commit. In the table
 below, "A", "B" and "C" are possible file contents, "X" is a missing file, and "conflict"
 (which only appears as a result) is a merge failure.

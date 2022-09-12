@@ -4079,6 +4079,40 @@ paths:
       - metadata
       x-accepts: application/json
   /repositories/{repository}/gc/rules:
+    delete:
+      operationId: delete garbage collection rules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: deleted garbage collection rules successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - retention
+      x-accepts: application/json
     get:
       operationId: getGarbageCollectionRules
       parameters:

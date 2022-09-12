@@ -155,6 +155,7 @@ func TestUpdate(t *testing.T) {
 	}
 	require.ErrorIs(t, m.Update(ctx, repository, "settingKey", emptySettings, update), graveler.ErrTooManyTries)
 	gotSettings, err = m.GetLatest(ctx, repository, "settingKey", emptySettings)
+	require.NoError(t, err)
 	if diff := deep.Equal(validationData, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
 	}
@@ -166,6 +167,7 @@ func TestUpdate(t *testing.T) {
 	}
 	require.ErrorIs(t, m.Update(ctx, repository, "settingKey", emptySettings, update), testErr)
 	gotSettings, err = m.GetLatest(ctx, repository, "settingKey", emptySettings)
+	require.NoError(t, err)
 	if diff := deep.Equal(validationData, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
 	}

@@ -12,14 +12,14 @@ import (
 
 const repoName = "example"
 
-func setupTest(t *testing.T, method, target string, body io.Reader, kvEnabled bool) *http.Response {
+func setupTest(t *testing.T, method, target string, body io.Reader) *http.Response {
 	h, _ := testutil.GetBasicHandler(t, &testutil.FakeAuthService{
 		BareDomain:      "example.com",
 		AccessKeyID:     "AKIAIO5FODNN7EXAMPLE",
 		SecretAccessKey: "MockAccessSecretKey",
 		UserID:          "65867",
 		Region:          "MockRegion",
-	}, databaseURI, repoName, kvEnabled)
+	}, databaseURI, repoName)
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(method, target, body)
 	req.Header["Content-Type"] = []string{"text/tab - separated - values"}
@@ -32,12 +32,7 @@ func setupTest(t *testing.T, method, target string, body io.Reader, kvEnabled bo
 }
 
 func TestPathWithTrailingSlash(t *testing.T) {
-	result := setupTest(t, http.MethodHead, "/example/", nil, true)
-	testPathWithTrailingSlash(t, result)
-}
-
-func TestPathWithTrailingSlashDB(t *testing.T) {
-	result := setupTest(t, http.MethodHead, "/example/", nil, false)
+	result := setupTest(t, http.MethodHead, "/example/", nil)
 	testPathWithTrailingSlash(t, result)
 }
 

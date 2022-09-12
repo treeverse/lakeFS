@@ -39,6 +39,7 @@ var annotateCmd = &cobra.Command{
 			listObjectsDelimiter = PathDelimiter
 		}
 		var from string
+		limit := true
 		for {
 			params := &api.ListObjectsParams{
 				Prefix:    &pfx,
@@ -50,6 +51,7 @@ var annotateCmd = &cobra.Command{
 			for _, obj := range listObjectsResp.JSON200.Results {
 				logCommitsParams := &api.LogCommitsParams{
 					Amount: api.PaginationAmountPtr(1),
+					Limit:  &limit,
 				}
 				if recursive {
 					logCommitsParams.Objects = &[]string{obj.Path}

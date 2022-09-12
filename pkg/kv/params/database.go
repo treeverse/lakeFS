@@ -34,7 +34,7 @@ type DynamoDB struct {
 	// Can be used to redirect to DynmoDB on AWS, local docker etc.
 	Endpoint string
 
-	// AWS connection details - region and credentials
+	// AWS connection details - region, profile and credentials
 	// This will override any such details that are already exist in the system
 	// While in general, AWS region and credentials are configured in the system for AWS usage,
 	// these can be used to specify fake values, that cna be used to connect to local DynamoDB,
@@ -42,6 +42,7 @@ type DynamoDB struct {
 	// This is a client requirement as described in section 4 in
 	// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
 	AwsRegion          string
+	AwsProfile         string
 	AwsAccessKeyID     string
 	AwsSecretAccessKey string
 }

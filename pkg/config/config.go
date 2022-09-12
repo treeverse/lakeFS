@@ -184,6 +184,7 @@ const (
 	LakefsEmailBaseURLKey      = "email.lakefs_base_url"
 
 	DynamoDBTableNameKey = "database.dynamodb.table_name"
+	DatabaseType         = "database.type"
 
 	UIEnabledKey = "ui.enabled"
 )
@@ -294,7 +295,6 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 		MaxIdleConnections:    c.values.Database.DeprecatedMaxIdleConnections,
 		ConnectionMaxLifetime: c.values.Database.DeprecatedConnectionMaxLifetime,
 		Type:                  c.values.Database.Type,
-		KVEnabled:             c.values.Database.KVEnabled,
 		DropTables:            c.values.Database.DropTables,
 	}
 }
@@ -320,6 +320,7 @@ func (c *Config) GetKVParams() kvparams.KV {
 			ScanLimit:          c.values.Database.DynamoDB.ScanLimit,
 			Endpoint:           c.values.Database.DynamoDB.Endpoint,
 			AwsRegion:          c.values.Database.DynamoDB.AwsRegion,
+			AwsProfile:         c.values.Database.DynamoDB.AwsProfile,
 			AwsAccessKeyID:     c.values.Database.DynamoDB.AwsAccessKeyID.SecureValue(),
 			AwsSecretAccessKey: c.values.Database.DynamoDB.AwsSecretAccessKey.SecureValue(),
 		}
@@ -384,10 +385,11 @@ func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
 	cfg := c.GetAwsConfig()
 
 	return blockparams.S3{
-		AwsConfig:             cfg,
-		StreamingChunkSize:    c.values.Blockstore.S3.StreamingChunkSize,
-		StreamingChunkTimeout: c.values.Blockstore.S3.StreamingChunkTimeout,
-		DiscoverBucketRegion:  c.values.Blockstore.S3.DiscoverBucketRegion,
+		AwsConfig:                     cfg,
+		StreamingChunkSize:            c.values.Blockstore.S3.StreamingChunkSize,
+		StreamingChunkTimeout:         c.values.Blockstore.S3.StreamingChunkTimeout,
+		DiscoverBucketRegion:          c.values.Blockstore.S3.DiscoverBucketRegion,
+		SkipVerifyCertificateTestOnly: c.values.Blockstore.S3.SkipVerifyCertificateTestOnly,
 	}, nil
 }
 

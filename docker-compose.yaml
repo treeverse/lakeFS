@@ -15,7 +15,8 @@ services:
     environment:
       - LAKEFS_BLOCKSTORE_TYPE=local
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
-      - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
+      - LAKEFS_DATABASE_TYPE=postgres
+      - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
       - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
       - LAKEFS_GATEWAYS_S3_DOMAIN_NAME
       - LAKEFS_STATS_ENABLED
@@ -33,7 +34,6 @@ services:
       - LAKEFS_COMMITTED_PERMANENT_MAX_RANGE_SIZE_BYTES
       - LAKEFS_COMMITTED_PERMANENT_RANGE_RAGGEDNESS_ENTRIES
       - LAKEFS_COMMITTED_BLOCK_STORAGE_PREFIX
-
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   postgres:
     image: "postgres:11"

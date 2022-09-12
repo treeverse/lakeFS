@@ -13,6 +13,7 @@ type AdapterConfig interface {
 	GetBlockAdapterS3Params() (S3, error)
 	GetBlockAdapterGSParams() (GS, error)
 	GetBlockAdapterAzureParams() (Azure, error)
+	GetCommittedBlockStoragePrefix() string
 }
 
 type Mem struct{}
@@ -22,10 +23,11 @@ type Local struct {
 }
 
 type S3 struct {
-	AwsConfig             *aws.Config
-	StreamingChunkSize    int
-	StreamingChunkTimeout time.Duration
-	DiscoverBucketRegion  bool
+	AwsConfig                     *aws.Config
+	StreamingChunkSize            int
+	StreamingChunkTimeout         time.Duration
+	DiscoverBucketRegion          bool
+	SkipVerifyCertificateTestOnly bool
 }
 
 type GS struct {

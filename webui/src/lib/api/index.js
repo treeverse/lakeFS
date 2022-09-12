@@ -771,6 +771,16 @@ class Retention {
         }
         return response;
     }
+
+    async deleteGCPolicy(repoID) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`,{
+            method: 'DELETE',
+        });
+        if (response.status !== 204) {
+            throw new Error(`could not delete gc policy: ${await extractError(response)}`);
+        }
+        return response;
+    }
 }
 
 class Setup {

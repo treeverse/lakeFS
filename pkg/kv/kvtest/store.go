@@ -462,12 +462,9 @@ func testStoreMissingArgument(t *testing.T, ms MakeStore) {
 	t.Run("Scan", func(t *testing.T) {
 		start := uniqueKey("test-missing-argument")
 		for _, pk := range [][]byte{nil, {}} {
-			it, err := store.Scan(ctx, pk, start)
+			_, err := store.Scan(ctx, pk, start)
 			if !errors.Is(err, kv.ErrMissingPartitionKey) {
-				t.Errorf("Scan using empty partition key - err=%v, expected %s", err, kv.ErrMissingPartitionKey)
-			}
-			if it != nil {
-				t.Errorf("Scan using empty partition key - expected nil iterator: %s", it)
+				t.Fatalf("Scan using empty partition key - err=%v, expected %s", err, kv.ErrMissingPartitionKey)
 			}
 		}
 	})

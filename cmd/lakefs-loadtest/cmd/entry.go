@@ -34,7 +34,6 @@ var entryCmd = &cobra.Command{
 			fmt.Printf("Invalid 'ref': %s", uri.ErrInvalidRefURI)
 			os.Exit(1)
 		}
-		connectionString, _ := cmd.Flags().GetString("db")
 		requests, _ := cmd.Flags().GetInt("requests")
 		concurrency, _ := cmd.Flags().GetInt("concurrency")
 		sampleRatio, _ := cmd.Flags().GetFloat64("sample")
@@ -51,10 +50,6 @@ var entryCmd = &cobra.Command{
 		rand.Seed(time.Now().UTC().UnixNano()) // make it special
 
 		ctx := cmd.Context()
-		database := connectToDB(ctx, connectionString)
-		defer database.Close()
-		lockDB := connectToDB(ctx, connectionString)
-		defer lockDB.Close()
 
 		conf, err := config.NewConfig()
 		if err != nil {
@@ -65,22 +60,16 @@ var entryCmd = &cobra.Command{
 			fmt.Printf("invalid config: %s\n", err)
 		}
 
-		var storeMessage *kv.StoreMessage
-		dbParams := conf.GetDatabaseParams()
-		if dbParams.KVEnabled {
-			kvParams := conf.GetKVParams()
-			kvStore, err := kv.Open(ctx, kvParams)
-			if err != nil {
-				logging.Default().WithError(err).Fatal("failed to open KV store")
-			}
-			defer kvStore.Close()
-			storeMessage = &kv.StoreMessage{Store: kvStore}
+		kvParams := conf.GetKVParams()
+		kvStore, err := kv.Open(ctx, kvParams)
+		if err != nil {
+			logging.Default().WithError(err).Fatal("failed to open KV store")
 		}
+		defer kvStore.Close()
+		storeMessage := &kv.StoreMessage{Store: kvStore}
 
 		c, err := catalog.New(ctx, catalog.Config{
 			Config:  conf,
-			DB:      database,
-			LockDB:  lockDB,
 			KVStore: storeMessage,
 		})
 		if err != nil {

@@ -26,6 +26,9 @@ const MaxBatchDelay = time.Millisecond * 3
 
 const BatchUpdateSQLSize = 10000
 
+// commitIDStringLength string representation length of commit ID - based on hex representation of sha256
+const commitIDStringLength = 64
+
 type KVManager struct {
 	kvStore         kv.StoreMessage
 	addressProvider ident.AddressProvider
@@ -387,6 +390,10 @@ func (m *KVManager) ListTags(ctx context.Context, repository *graveler.Repositor
 }
 
 func (m *KVManager) GetCommitByPrefix(ctx context.Context, repository *graveler.RepositoryRecord, prefix graveler.CommitID) (*graveler.Commit, error) {
+	// optimize by get if prefix is not a prefix, but a full length commit id
+	if len(prefix) == commitIDStringLength {
+		return m.GetCommit(ctx, repository, prefix)
+	}
 	key := fmt.Sprintf("GetCommitByPrefix:%s:%s", repository.RepositoryID, prefix)
 	commit, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
 		it, err := NewKVOrderedCommitIterator(ctx, &m.kvStore, repository, false)

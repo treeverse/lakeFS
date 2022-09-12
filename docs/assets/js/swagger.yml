@@ -2238,6 +2238,11 @@ paths:
             type: array
             items:
               type: string
+        - in: query
+          name: limit
+          description: limit the number of items in return to 'amount'. Without further indication on actual number of items.
+          schema:
+            type: boolean
       responses:
         200:
           description: commit log
@@ -3373,6 +3378,19 @@ paths:
       responses:
         204:
           description: set garbage collection rules successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - retention
+      operationId: delete garbage collection rules
+      responses:
+        204:
+          description: deleted garbage collection rules successfully
         401:
           $ref: "#/components/responses/Unauthorized"
         404:

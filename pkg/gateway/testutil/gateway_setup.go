@@ -30,41 +30,23 @@ type Dependencies struct {
 	catalog *catalog.Catalog
 }
 
-func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI string, repoName string, kvEnabled bool) (http.Handler, *Dependencies) {
+func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI string, repoName string) (http.Handler, *Dependencies) {
 	ctx := context.Background()
-	conn, _ := testutil.GetDB(t, databaseURI)
-	idTranslator := &testutil.UploadIDTranslator{
-		TransMap:   make(map[string]string),
-		ExpectedID: "",
-		T:          t,
-	}
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
-	// Disable KV by default (used for determining KV state by certain packages such as catalog)
-	viper.Set("database.kv_enabled", false)
 
-	var (
-		multipartsTracker multiparts.Tracker
-		storeMessage      *kv.StoreMessage
-	)
-	if kvEnabled {
-		store := kvtest.MakeStoreByName("mem", kvparams.KV{})(t, context.Background())
-		defer store.Close()
-		storeMessage = &kv.StoreMessage{Store: store}
-		multipartsTracker = multiparts.NewTracker(*storeMessage)
-		viper.Set("database.kv_enabled", true)
-	} else {
-		multipartsTracker = multiparts.NewDBTracker(conn)
-	}
+	store := kvtest.MakeStoreByName("mem", kvparams.KV{})(t, context.Background())
+	defer store.Close()
+	storeMessage := &kv.StoreMessage{Store: store}
+	multipartsTracker := multiparts.NewTracker(*storeMessage)
 
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
-	blockAdapter := testutil.NewBlockAdapterByType(t, idTranslator, blockstoreType)
+	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
 
 	conf, err := config.NewConfig()
 	testutil.MustDo(t, "config", err)
 
 	c, err := catalog.New(ctx, catalog.Config{
 		Config:  conf,
-		DB:      conn,
 		KVStore: storeMessage,
 	})
 	testutil.MustDo(t, "build catalog", err)
@@ -112,7 +94,8 @@ func (m *FakeAuthService) GetCredentials(_ context.Context, accessKey string) (*
 func (m *FakeAuthService) GetUser(_ context.Context, _ string) (*model.User, error) {
 	return &model.User{
 		CreatedAt: time.Now(),
-		Username:  "user"}, nil
+		Username:  "user",
+	}, nil
 }
 
 func (m *FakeAuthService) Authorize(_ context.Context, _ *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {

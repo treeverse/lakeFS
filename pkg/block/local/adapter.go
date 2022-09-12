@@ -22,9 +22,8 @@ import (
 )
 
 type Adapter struct {
-	path               string
-	uploadIDTranslator block.UploadIDTranslator
-	removeEmptyDir     bool
+	path           string
+	removeEmptyDir bool
 }
 
 var (
@@ -33,12 +32,6 @@ var (
 	ErrInvalidUploadIDFormat = errors.New("invalid upload id format")
 	ErrBadPath               = errors.New("bad path traversal blocked")
 )
-
-func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
-	return func(a *Adapter) {
-		a.uploadIDTranslator = t
-	}
-}
 
 func WithRemoveEmptyDir(b bool) func(a *Adapter) {
 	return func(a *Adapter) {
@@ -57,9 +50,8 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 		return nil, ErrPathNotWritable
 	}
 	localAdapter := &Adapter{
-		path:               path,
-		uploadIDTranslator: &block.NoOpTranslator{},
-		removeEmptyDir:     true,
+		path:           path,
+		removeEmptyDir: true,
 	}
 	for _, opt := range opts {
 		opt(localAdapter)
@@ -343,7 +335,6 @@ func (l *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPoint
 	}
 	uidBytes := uuid.New()
 	uploadID := hex.EncodeToString(uidBytes[:])
-	uploadID = l.uploadIDTranslator.SetUploadID(uploadID)
 	return &block.CreateMultiPartUploadResponse{
 		UploadID: uploadID,
 	}, nil
@@ -423,7 +414,7 @@ func (l *Adapter) unitePartFiles(identifier block.ObjectPointer, files []string)
 	defer func() {
 		_ = unitedFile.Close()
 	}()
-	var readers = []io.Reader{}
+	readers := []io.Reader{}
 	for _, name := range files {
 		if err := l.verifyPath(name); err != nil {
 			return 0, err

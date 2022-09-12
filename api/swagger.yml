@@ -3384,6 +3384,19 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - retention
+      operationId: delete garbage collection rules
+      responses:
+        204:
+          description: deleted garbage collection rules successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/gc/prepare_commits:
     parameters:

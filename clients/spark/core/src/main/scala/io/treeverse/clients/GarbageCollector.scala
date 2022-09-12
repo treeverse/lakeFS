@@ -1,13 +1,7 @@
 package io.treeverse.clients
 
 import com.google.protobuf.timestamp.Timestamp
-import io.treeverse.clients.LakeFSContext.{
-  LAKEFS_CONF_API_ACCESS_KEY_KEY,
-  LAKEFS_CONF_API_SECRET_KEY_KEY,
-  LAKEFS_CONF_API_URL_KEY,
-  LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY,
-  LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY
-}
+import io.treeverse.clients.LakeFSContext._
 import org.apache.hadoop.fs._
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.broadcast.Broadcast
@@ -23,6 +17,10 @@ import java.time.format.DateTimeFormatter
 import org.json4s.native.JsonMethods._
 import org.json4s._
 import org.json4s.JsonDSL._
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse
+import java.util.UUID
 
 /** Interface to build an S3 client.  The object
  *  io.treeverse.clients.conditional.S3ClientBuilder -- conditionally
@@ -50,9 +48,9 @@ object GarbageCollector {
 
   /** @return a serializable summary of values in hc starting with prefix.
    */
-  def getHadoopConfigurationValues(hc: Configuration, prefix: String): ConfMap =
+  def getHadoopConfigurationValues(hc: Configuration, prefixes: String*): ConfMap =
     hc.iterator.asScala
-      .filter(_.getKey.startsWith(prefix))
+      .filter(c => prefixes.exists(c.getKey.startsWith))
       .map(entry => (entry.getKey, entry.getValue))
       .toList
       .asInstanceOf[ConfMap]
@@ -76,14 +74,19 @@ object GarbageCollector {
       apiConf: APIConfigurations,
       hcValues: Broadcast[ConfMap]
   ): Set[(String, Array[Byte], Array[Byte])] = {
-    val location = ApiClient
-      .get(apiConf)
-      .getMetaRangeURL(repo, commitID)
+    val conf = configurationFromValues(hcValues)
+    val apiClient = ApiClient.get(apiConf)
+    val commit = apiClient.getCommit(repo, commitID)
+    val maxCommitEpochSeconds = conf.getLong(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY, -1)
+    if (maxCommitEpochSeconds > 0 && commit.getCreationDate > maxCommitEpochSeconds) {
+      return Set()
+    }
+    val location = apiClient.getMetaRangeURL(repo, commit)
     // continue on empty location, empty location is a result of a commit with no metaRangeID (e.g 'Repository created' commit)
     if (location == "") Set()
     else
       SSTableReader
-        .forMetaRange(configurationFromValues(hcValues), location)
+        .forMetaRange(conf, location)
         .newIterator()
         .map(range =>
           (new String(range.id), range.message.minKey.toByteArray, range.message.maxKey.toByteArray)
@@ -117,7 +120,7 @@ object GarbageCollector {
       apiConf: APIConfigurations,
       repo: String,
       hcValues: Broadcast[ConfMap]
-  ): Seq[String] = {
+  ): Iterator[String] = {
     val location = ApiClient
       .get(apiConf)
       .getRangeURL(repo, rangeID)
@@ -125,7 +128,6 @@ object GarbageCollector {
       .forRange(configurationFromValues(hcValues), location)
       .newIterator()
       .map(a => a.message.address)
-      .toSeq
   }
 
   def getEntryTuples(
@@ -133,7 +135,7 @@ object GarbageCollector {
       apiConf: APIConfigurations,
       repo: String,
       hcValues: Broadcast[ConfMap]
-  ): Set[(String, String, Boolean, Long)] = {
+  ): Iterator[(String, String, Boolean, Long)] = {
     def getSeconds(ts: Option[Timestamp]): Long = {
       ts.getOrElse(0).asInstanceOf[Timestamp].seconds
     }
@@ -152,7 +154,6 @@ object GarbageCollector {
           getSeconds(a.message.lastModified)
         )
       )
-      .toSet
   }
 
   /** @param leftRangeIDs
@@ -167,8 +168,6 @@ object GarbageCollector {
       repo: String,
       hcValues: Broadcast[ConfMap]
   ): Set[(String, String, Boolean, Long)] = {
-    distinctEntryTuples(leftRangeIDs, apiConf, repo, hcValues)
-
     val leftTuples = distinctEntryTuples(leftRangeIDs, apiConf, repo, hcValues)
     val rightTuples = distinctEntryTuples(rightRangeIDs, apiConf, repo, hcValues)
     leftTuples -- rightTuples
@@ -180,9 +179,13 @@ object GarbageCollector {
       repo: String,
       hcValues: Broadcast[ConfMap]
   ) = {
-    val tuples =
-      rangeIDs.map((rangeID: String) => getEntryTuples(rangeID, apiConf, repo, hcValues))
-    if (tuples.isEmpty) Set[(String, String, Boolean, Long)]() else tuples.reduce(_.union(_))
+    // Process rangeIDs using mutation to ensure complete control over when
+    // each range is read.
+    var tuples = collection.mutable.Set[(String, String, Boolean, Long)]()
+    rangeIDs.foreach((rangeID: String) =>
+      tuples ++= getEntryTuples(rangeID, apiConf, repo, hcValues)
+    )
+    tuples.toSet
   }
 
   /** receives a dataframe containing active and expired ranges and returns entries contained only in expired ranges
@@ -313,6 +316,18 @@ object GarbageCollector {
     val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
     val connectionTimeout = hc.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY)
     val readTimeout = hc.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY)
+    val maxCommitIsoDatetime = hc.get(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY, "")
+    val runIDToReproduce = hc.get(LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY, "")
+    if (!maxCommitIsoDatetime.isEmpty) {
+      hc.setLong(
+        LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY,
+        LocalDateTime
+          .parse(hc.get(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY),
+                 DateTimeFormatter.ISO_DATE_TIME
+                )
+          .toEpochSecond(ZoneOffset.UTC)
+      )
+    }
     val apiClient = ApiClient.get(
       APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout)
     )
@@ -339,7 +354,7 @@ object GarbageCollector {
     // do that.  Transmit (all) Hadoop filesystem configuration values to
     // let them generate a (close-enough) Hadoop configuration to build the
     // needed FileSystems.
-    val hcValues = spark.sparkContext.broadcast(getHadoopConfigurationValues(hc, "fs."))
+    val hcValues = spark.sparkContext.broadcast(getHadoopConfigurationValues(hc, "fs.", "lakefs."))
 
     var gcRules: String = ""
     try {
@@ -351,17 +366,34 @@ object GarbageCollector {
         // Exiting with a failure status code because users should not really run gc on repos without GC rules.
         System.exit(2)
     }
-
-    val res = apiClient.prepareGarbageCollectionCommits(repo, previousRunID)
-    val runID = res.getRunId
+    var storageNSForHadoopFS = apiClient.getStorageNamespace(repo, StorageClientType.HadoopFS)
+    if (!storageNSForHadoopFS.endsWith("/")) {
+      storageNSForHadoopFS += "/"
+    }
+    var prepareResult: GarbageCollectionPrepareResponse = null
+    var runID = ""
+    var gcCommitsLocation = ""
+    var gcAddressesLocation = ""
+    if (runIDToReproduce == "") {
+      prepareResult = apiClient.prepareGarbageCollectionCommits(repo, previousRunID)
+      runID = prepareResult.getRunId
+      gcCommitsLocation =
+        ApiClient.translateURI(new URI(prepareResult.getGcCommitsLocation), storageType).toString
+      println("gcCommitsLocation: " + gcCommitsLocation)
+      gcAddressesLocation =
+        ApiClient.translateURI(new URI(prepareResult.getGcAddressesLocation), storageType).toString
+      println("gcAddressesLocation: " + gcAddressesLocation)
+    } else {
+      // reproducing a previous run
+      // TODO(johnnyaug): the server should generate these paths
+      runID = UUID.randomUUID().toString
+      gcCommitsLocation =
+        s"${storageNSForHadoopFS.stripSuffix("/")}/_lakefs/retention/gc/commits/run_id=$runIDToReproduce/commits.csv"
+      gcAddressesLocation =
+        s"${storageNSForHadoopFS.stripSuffix("/")}/_lakefs/retention/gc/addresses/"
+    }
     println("apiURL: " + apiURL)
 
-    val gcCommitsLocation =
-      ApiClient.translateURI(new URI(res.getGcCommitsLocation), storageType).toString
-    println("gcCommitsLocation: " + gcCommitsLocation)
-    val gcAddressesLocation =
-      ApiClient.translateURI(new URI(res.getGcAddressesLocation), storageType).toString
-    println("gcAddressesLocation: " + gcAddressesLocation)
     val expiredAddresses =
       getExpiredAddresses(
         repo,
@@ -387,20 +419,18 @@ object GarbageCollector {
       storageNSForSdkClient += "/"
     }
 
-    val removed =
-      remove(storageNSForSdkClient,
-             gcAddressesLocation,
-             expiredAddresses,
-             runID,
-             region,
-             hcValues,
-             storageType
-            )
-
-    var storageNSForHadoopFS = apiClient.getStorageNamespace(repo, StorageClientType.HadoopFS)
-    if (!storageNSForHadoopFS.endsWith("/")) {
-      storageNSForHadoopFS += "/"
-    }
+    var removed =
+      if (hc.getBoolean(LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, false))
+        spark.emptyDataFrame
+      else
+        remove(storageNSForSdkClient,
+               gcAddressesLocation,
+               expiredAddresses,
+               runID,
+               region,
+               hcValues,
+               storageType
+              )
 
     val commitsDF = getCommitsDF(runID, gcCommitsLocation, spark)
     val reportLogsDst = concatToGCLogsPrefix(storageNSForHadoopFS, "summary")

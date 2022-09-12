@@ -15,8 +15,6 @@ import (
 )
 
 type gravelerTest struct {
-	db                       *graveler.DBGraveler
-	hooks                    graveler.HooksHandler
 	committedManager         *mock.MockCommittedManager
 	refManager               *mock.MockRefManager
 	stagingManager           *mock.MockStagingManager

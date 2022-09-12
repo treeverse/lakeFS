@@ -11,7 +11,7 @@ services:
       - lakefs-app:/app:ro
     environment:
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
-      - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
+      - LAKEFS_DATABASE_TYPE=${LAKEFS_DATABASE_TYPE:-postgres}
       - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
       - LAKEFS_BLOCKSTORE_TYPE=${LAKEFS_BLOCKSTORE_TYPE:-local}
       - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
@@ -23,8 +23,6 @@ services:
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
       - ACTIONS_VAR=this_is_actions_var
-      - LAKEFS_DATABASE_TYPE=${LAKEFS_DATABASE_TYPE}
-      - LAKEFS_DATABASE_KV_ENABLED=${LAKEFS_DATABASE_KV_ENABLED:-false}
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   postgres:
     image: "postgres:11"

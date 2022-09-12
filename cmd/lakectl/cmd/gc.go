@@ -24,13 +24,13 @@ Branch Rules: {{ range $branch := .Branches }}
 
 var gcCmd = &cobra.Command{
 	Use:   "gc",
-	Short: "Manage garbage collection configuration",
+	Short: "Manage the garbage collection policy",
 }
 
 var gcSetConfigCmd = &cobra.Command{
 	Use:   "set-config",
-	Short: "Set garbage collection configuration JSON",
-	Long: `Sets the garbage collection configuration JSON.
+	Short: "Set garbage collection policy JSON",
+	Long: `Sets the garbage collection policy JSON.
 Example configuration file:
 {
   "default_retention_days": 21,
@@ -73,10 +73,22 @@ Example configuration file:
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
+var gcDeleteConfigCmd = &cobra.Command{
+	Use:     "delete-config",
+	Short:   "Deletes the garbage collection policy for the repository",
+	Example: "lakectl gc delete-config <repository uri>",
+	Args:    cobra.ExactArgs(gcSetConfigCmdArgs),
+	Run: func(cmd *cobra.Command, args []string) {
+		u := MustParseRepoURI("repository", args[0])
+		client := getClient()
+		resp, err := client.DeleteGarbageCollectionRules(cmd.Context(), u.Repository)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+	},
+}
 
 var gcGetConfigCmd = &cobra.Command{
 	Use:     "get-config",
-	Short:   "Show garbage collection configuration JSON",
+	Short:   "Show the garbage collection policy for this repository",
 	Example: "lakectl gc get-config <repository uri>",
 	Args:    cobra.ExactArgs(gcSetConfigCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -95,10 +107,11 @@ var gcGetConfigCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	gcSetConfigCmd.Flags().StringP(filenameFlagName, "f", "", "file containing the GC configuration")
+	gcSetConfigCmd.Flags().StringP(filenameFlagName, "f", "", "file containing the GC policy as JSON")
 	_ = gcSetConfigCmd.MarkFlagRequired(filenameFlagName)
 	gcGetConfigCmd.Flags().BoolP(jsonFlagName, "p", false, "get rules as JSON")
 	rootCmd.AddCommand(gcCmd)
 	gcCmd.AddCommand(gcSetConfigCmd)
 	gcCmd.AddCommand(gcGetConfigCmd)
+	gcCmd.AddCommand(gcDeleteConfigCmd)
 }
