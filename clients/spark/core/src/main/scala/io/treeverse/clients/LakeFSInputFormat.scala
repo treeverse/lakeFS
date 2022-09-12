@@ -29,7 +29,7 @@ class GravelerSplit(
     var byteSize: Long,
     var isValidated: Boolean
 ) extends InputSplit
-    with Writable { 
+    with Writable {
   def this() = this(null, null, 0, false)
 
   import GravelerSplit._
@@ -94,7 +94,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     fs.copyToLocalFile(gravelerSplit.path, new Path(localFile.getAbsolutePath))
     // TODO(johnnyaug) should we cache this?
     val sstableReader =
-    new SSTableReader(localFile.getAbsolutePath, companion)
+      new SSTableReader(localFile.getAbsolutePath, companion)
     if (!gravelerSplit.isValidated) {
       // this file may not be a valid range file, validate it
       val props = sstableReader.getProperties()
