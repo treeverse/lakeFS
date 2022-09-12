@@ -10,8 +10,11 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
+	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/mock"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -31,112 +34,113 @@ type testCommit struct {
 
 func TestDBOrderedCommitIterator(t *testing.T) {
 	ctx := context.Background()
-	var (
-		cases = []struct {
-			Name                   string
-			Commits                []*testCommit
-			expectedCommits        []string
-			expectedAncestryLeaves []string
-		}{
-			{
-				Name: "two_ancestries",
-				Commits: []*testCommit{
-					{id: "e0", parents: []string{}},
-					{id: "c1", parents: []string{"e0"}},
-					{id: "b2", parents: []string{"e0"}},
-					{id: "d3", parents: []string{"c1"}},
-					{id: "e4", parents: []string{"b2"}},
-					{id: "f5", parents: []string{"d3"}},
-					{id: "a6", parents: []string{"e4"}},
-					{id: "c7", parents: []string{"f5"}}},
-				expectedCommits:        []string{"a6", "b2", "c1", "c7", "d3", "e0", "e4", "f5"},
-				expectedAncestryLeaves: []string{"a6", "c7"},
+	cases := []struct {
+		Name                   string
+		Commits                []*testCommit
+		expectedCommits        []string
+		expectedAncestryLeaves []string
+	}{
+		{
+			Name: "two_ancestries",
+			Commits: []*testCommit{
+				{id: "e0", parents: []string{}},
+				{id: "c1", parents: []string{"e0"}},
+				{id: "b2", parents: []string{"e0"}},
+				{id: "d3", parents: []string{"c1"}},
+				{id: "e4", parents: []string{"b2"}},
+				{id: "f5", parents: []string{"d3"}},
+				{id: "a6", parents: []string{"e4"}},
+				{id: "c7", parents: []string{"f5"}},
 			},
-			{
-				Name: "with_merge",
-				Commits: []*testCommit{
-					{id: "e0", parents: []string{}},
-					{id: "c1", parents: []string{"e0"}},
-					{id: "b2", parents: []string{"e0"}},
-					{id: "d3", parents: []string{"c1"}},
-					{id: "e4", parents: []string{"b2"}},
-					{id: "f5", parents: []string{"d3"}},
-					{id: "a6", parents: []string{"e4"}},
-					{id: "c7", parents: []string{"f5", "a6"}}},
-				expectedCommits:        []string{"a6", "b2", "c1", "c7", "d3", "e0", "e4", "f5"},
-				expectedAncestryLeaves: []string{"a6", "c7"},
+			expectedCommits:        []string{"a6", "b2", "c1", "c7", "d3", "e0", "e4", "f5"},
+			expectedAncestryLeaves: []string{"a6", "c7"},
+		},
+		{
+			Name: "with_merge",
+			Commits: []*testCommit{
+				{id: "e0", parents: []string{}},
+				{id: "c1", parents: []string{"e0"}},
+				{id: "b2", parents: []string{"e0"}},
+				{id: "d3", parents: []string{"c1"}},
+				{id: "e4", parents: []string{"b2"}},
+				{id: "f5", parents: []string{"d3"}},
+				{id: "a6", parents: []string{"e4"}},
+				{id: "c7", parents: []string{"f5", "a6"}},
 			},
-			{
-				Name: "with_merge_old_version",
-				Commits: []*testCommit{
-					{id: "e0", parents: []string{}},
-					{id: "c1", parents: []string{"e0"}},
-					{id: "b2", parents: []string{"e0"}},
-					{id: "d3", parents: []string{"c1"}},
-					{id: "e4", parents: []string{"b2"}},
-					{id: "f5", parents: []string{"d3"}},
-					{id: "a6", parents: []string{"e4"}},
-					{id: "c7", parents: []string{"f5", "a6"}, version: swag.Int(int(graveler.CommitVersionInitial))}},
-				expectedCommits:        []string{"a6", "b2", "c1", "c7", "d3", "e0", "e4", "f5"},
-				expectedAncestryLeaves: []string{"c7", "f5"},
+			expectedCommits:        []string{"a6", "b2", "c1", "c7", "d3", "e0", "e4", "f5"},
+			expectedAncestryLeaves: []string{"a6", "c7"},
+		},
+		{
+			Name: "with_merge_old_version",
+			Commits: []*testCommit{
+				{id: "e0", parents: []string{}},
+				{id: "c1", parents: []string{"e0"}},
+				{id: "b2", parents: []string{"e0"}},
+				{id: "d3", parents: []string{"c1"}},
+				{id: "e4", parents: []string{"b2"}},
+				{id: "f5", parents: []string{"d3"}},
+				{id: "a6", parents: []string{"e4"}},
+				{id: "c7", parents: []string{"f5", "a6"}, version: swag.Int(int(graveler.CommitVersionInitial))},
 			},
-			{
-				Name: "criss_cross_merge",
-				Commits: []*testCommit{
-					{id: "e0", parents: []string{}},
-					{id: "c1", parents: []string{"e0"}},
-					{id: "b2", parents: []string{"e0"}},
-					{id: "d3", parents: []string{"c1", "b2"}},
-					{id: "a4", parents: []string{"c1", "b2"}},
-					{id: "c5", parents: []string{"d3"}},
-					{id: "f6", parents: []string{"a4"}},
-				},
-				expectedCommits:        []string{"a4", "b2", "c1", "c5", "d3", "e0", "f6"},
-				expectedAncestryLeaves: []string{"b2", "c5", "f6"},
+			expectedCommits:        []string{"a6", "b2", "c1", "c7", "d3", "e0", "e4", "f5"},
+			expectedAncestryLeaves: []string{"c7", "f5"},
+		},
+		{
+			Name: "criss_cross_merge",
+			Commits: []*testCommit{
+				{id: "e0", parents: []string{}},
+				{id: "c1", parents: []string{"e0"}},
+				{id: "b2", parents: []string{"e0"}},
+				{id: "d3", parents: []string{"c1", "b2"}},
+				{id: "a4", parents: []string{"c1", "b2"}},
+				{id: "c5", parents: []string{"d3"}},
+				{id: "f6", parents: []string{"a4"}},
 			},
-			{
-				Name: "merges_in_history",
-				// from git core tests:
-				// E---D---C---B---A
-				// \"-_         \   \
-				//  \  `---------G   \
-				//   \                \
-				//    F----------------H
-				Commits: []*testCommit{
-					{id: "e", parents: []string{}},
-					{id: "d", parents: []string{"e"}},
-					{id: "f", parents: []string{"e"}},
-					{id: "c", parents: []string{"d"}},
-					{id: "b", parents: []string{"c"}},
-					{id: "a", parents: []string{"b"}},
-					{id: "g", parents: []string{"b", "e"}},
-					{id: "h", parents: []string{"a", "f"}},
-				},
-				expectedCommits:        []string{"a", "b", "c", "d", "e", "f", "g", "h"},
-				expectedAncestryLeaves: []string{"f", "g", "h"},
+			expectedCommits:        []string{"a4", "b2", "c1", "c5", "d3", "e0", "f6"},
+			expectedAncestryLeaves: []string{"b2", "c5", "f6"},
+		},
+		{
+			Name: "merges_in_history",
+			// from git core tests:
+			// E---D---C---B---A
+			// \"-_         \   \
+			//  \  `---------G   \
+			//   \                \
+			//    F----------------H
+			Commits: []*testCommit{
+				{id: "e", parents: []string{}},
+				{id: "d", parents: []string{"e"}},
+				{id: "f", parents: []string{"e"}},
+				{id: "c", parents: []string{"d"}},
+				{id: "b", parents: []string{"c"}},
+				{id: "a", parents: []string{"b"}},
+				{id: "g", parents: []string{"b", "e"}},
+				{id: "h", parents: []string{"a", "f"}},
 			},
-			{
-				Name: "merge_to_and_from_main",
-				// E---D----C---B------A
-				//  \      /     \    /
-				//   F----G---H---I--J
-				Commits: []*testCommit{
-					{id: "e", parents: []string{}},
-					{id: "d", parents: []string{"e"}},
-					{id: "f", parents: []string{"e"}},
-					{id: "g", parents: []string{"f"}},
-					{id: "c", parents: []string{"d", "g"}},
-					{id: "b", parents: []string{"c"}},
-					{id: "h", parents: []string{"g"}},
-					{id: "i", parents: []string{"h", "b"}},
-					{id: "j", parents: []string{"i"}},
-					{id: "a", parents: []string{"b", "j"}},
-				},
-				expectedCommits:        []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"},
-				expectedAncestryLeaves: []string{"a", "j"},
+			expectedCommits:        []string{"a", "b", "c", "d", "e", "f", "g", "h"},
+			expectedAncestryLeaves: []string{"f", "g", "h"},
+		},
+		{
+			Name: "merge_to_and_from_main",
+			// E---D----C---B------A
+			//  \      /     \    /
+			//   F----G---H---I--J
+			Commits: []*testCommit{
+				{id: "e", parents: []string{}},
+				{id: "d", parents: []string{"e"}},
+				{id: "f", parents: []string{"e"}},
+				{id: "g", parents: []string{"f"}},
+				{id: "c", parents: []string{"d", "g"}},
+				{id: "b", parents: []string{"c"}},
+				{id: "h", parents: []string{"g"}},
+				{id: "i", parents: []string{"h", "b"}},
+				{id: "j", parents: []string{"i"}},
+				{id: "a", parents: []string{"b", "j"}},
 			},
-		}
-	)
+			expectedCommits:        []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"},
+			expectedAncestryLeaves: []string{"a", "j"},
+		},
+	}
 	for _, tst := range cases {
 		t.Run(tst.Name, func(t *testing.T) {
 			var commits []*graveler.Commit
@@ -292,117 +296,117 @@ func TestDBOrderedCommitIteratorGrid(t *testing.T) {
 		t.Errorf("Unexpected ancestry leaves from iterator. diff=%s", diff)
 	}
 	iterator.Close()
-
 }
 
 func TestKVOrderedCommitIterator(t *testing.T) {
 	ctx := context.Background()
-	var (
-		cases = []struct {
-			Name                   string
-			Commits                []*testCommit
-			expectedCommits        []string
-			expectedAncestryLeaves []string
-		}{
-			{
-				Name: "two_ancestries",
-				Commits: []*testCommit{
-					{id: "e0", parents: []string{}},
-					{id: "c1", parents: []string{"e0"}},
-					{id: "b2", parents: []string{"e0"}},
-					{id: "d3", parents: []string{"c1"}},
-					{id: "e4", parents: []string{"b2"}},
-					{id: "f5", parents: []string{"d3"}},
-					{id: "a6", parents: []string{"e4"}},
-					{id: "c7", parents: []string{"f5"}}},
-				expectedCommits:        []string{"a6", "b2", "c1", "c7", "d3", "e0", "e4", "f5"},
-				expectedAncestryLeaves: []string{"a6", "c7"},
+	cases := []struct {
+		Name                   string
+		Commits                []*testCommit
+		expectedCommits        []string
+		expectedAncestryLeaves []string
+	}{
+		{
+			Name: "two_ancestries",
+			Commits: []*testCommit{
+				{id: "e0", parents: []string{}},
+				{id: "c1", parents: []string{"e0"}},
+				{id: "b2", parents: []string{"e0"}},
+				{id: "d3", parents: []string{"c1"}},
+				{id: "e4", parents: []string{"b2"}},
+				{id: "f5", parents: []string{"d3"}},
+				{id: "a6", parents: []string{"e4"}},
+				{id: "c7", parents: []string{"f5"}},
 			},
-			{
-				Name: "with_merge",
-				Commits: []*testCommit{
-					{id: "e0", parents: []string{}},
-					{id: "c1", parents: []string{"e0"}},
-					{id: "b2", parents: []string{"e0"}},
-					{id: "d3", parents: []string{"c1"}},
-					{id: "e4", parents: []string{"b2"}},
-					{id: "f5", parents: []string{"d3"}},
-					{id: "a6", parents: []string{"e4"}},
-					{id: "c7", parents: []string{"f5", "a6"}}},
-				expectedCommits:        []string{"a6", "b2", "c1", "c7", "d3", "e0", "e4", "f5"},
-				expectedAncestryLeaves: []string{"a6", "c7"},
+			expectedCommits:        []string{"a6", "b2", "c1", "c7", "d3", "e0", "e4", "f5"},
+			expectedAncestryLeaves: []string{"a6", "c7"},
+		},
+		{
+			Name: "with_merge",
+			Commits: []*testCommit{
+				{id: "e0", parents: []string{}},
+				{id: "c1", parents: []string{"e0"}},
+				{id: "b2", parents: []string{"e0"}},
+				{id: "d3", parents: []string{"c1"}},
+				{id: "e4", parents: []string{"b2"}},
+				{id: "f5", parents: []string{"d3"}},
+				{id: "a6", parents: []string{"e4"}},
+				{id: "c7", parents: []string{"f5", "a6"}},
 			},
-			{
-				Name: "with_merge_old_version",
-				Commits: []*testCommit{
-					{id: "e0", parents: []string{}},
-					{id: "c1", parents: []string{"e0"}},
-					{id: "b2", parents: []string{"e0"}},
-					{id: "d3", parents: []string{"c1"}},
-					{id: "e4", parents: []string{"b2"}},
-					{id: "f5", parents: []string{"d3"}},
-					{id: "a6", parents: []string{"e4"}},
-					{id: "c7", parents: []string{"f5", "a6"}, version: swag.Int(int(graveler.CommitVersionInitial))}},
-				expectedCommits:        []string{"a6", "b2", "c1", "c7", "d3", "e0", "e4", "f5"},
-				expectedAncestryLeaves: []string{"c7", "f5"},
+			expectedCommits:        []string{"a6", "b2", "c1", "c7", "d3", "e0", "e4", "f5"},
+			expectedAncestryLeaves: []string{"a6", "c7"},
+		},
+		{
+			Name: "with_merge_old_version",
+			Commits: []*testCommit{
+				{id: "e0", parents: []string{}},
+				{id: "c1", parents: []string{"e0"}},
+				{id: "b2", parents: []string{"e0"}},
+				{id: "d3", parents: []string{"c1"}},
+				{id: "e4", parents: []string{"b2"}},
+				{id: "f5", parents: []string{"d3"}},
+				{id: "a6", parents: []string{"e4"}},
+				{id: "c7", parents: []string{"f5", "a6"}, version: swag.Int(int(graveler.CommitVersionInitial))},
 			},
-			{
-				Name: "criss_cross_merge",
-				Commits: []*testCommit{
-					{id: "e0", parents: []string{}},
-					{id: "c1", parents: []string{"e0"}},
-					{id: "b2", parents: []string{"e0"}},
-					{id: "d3", parents: []string{"c1", "b2"}},
-					{id: "a4", parents: []string{"c1", "b2"}},
-					{id: "c5", parents: []string{"d3"}},
-					{id: "f6", parents: []string{"a4"}},
-				},
-				expectedCommits:        []string{"a4", "b2", "c1", "c5", "d3", "e0", "f6"},
-				expectedAncestryLeaves: []string{"b2", "c5", "f6"},
+			expectedCommits:        []string{"a6", "b2", "c1", "c7", "d3", "e0", "e4", "f5"},
+			expectedAncestryLeaves: []string{"c7", "f5"},
+		},
+		{
+			Name: "criss_cross_merge",
+			Commits: []*testCommit{
+				{id: "e0", parents: []string{}},
+				{id: "c1", parents: []string{"e0"}},
+				{id: "b2", parents: []string{"e0"}},
+				{id: "d3", parents: []string{"c1", "b2"}},
+				{id: "a4", parents: []string{"c1", "b2"}},
+				{id: "c5", parents: []string{"d3"}},
+				{id: "f6", parents: []string{"a4"}},
 			},
-			{
-				Name: "merges_in_history",
-				// from git core tests:
-				// E---D---C---B---A
-				// \"-_         \   \
-				//  \  `---------G   \
-				//   \                \
-				//    F----------------H
-				Commits: []*testCommit{
-					{id: "e", parents: []string{}},
-					{id: "d", parents: []string{"e"}},
-					{id: "f", parents: []string{"e"}},
-					{id: "c", parents: []string{"d"}},
-					{id: "b", parents: []string{"c"}},
-					{id: "a", parents: []string{"b"}},
-					{id: "g", parents: []string{"b", "e"}},
-					{id: "h", parents: []string{"a", "f"}},
-				},
-				expectedCommits:        []string{"a", "b", "c", "d", "e", "f", "g", "h"},
-				expectedAncestryLeaves: []string{"f", "g", "h"},
+			expectedCommits:        []string{"a4", "b2", "c1", "c5", "d3", "e0", "f6"},
+			expectedAncestryLeaves: []string{"b2", "c5", "f6"},
+		},
+		{
+			Name: "merges_in_history",
+			// from git core tests:
+			// E---D---C---B---A
+			// \"-_         \   \
+			//  \  `---------G   \
+			//   \                \
+			//    F----------------H
+			Commits: []*testCommit{
+				{id: "e", parents: []string{}},
+				{id: "d", parents: []string{"e"}},
+				{id: "f", parents: []string{"e"}},
+				{id: "c", parents: []string{"d"}},
+				{id: "b", parents: []string{"c"}},
+				{id: "a", parents: []string{"b"}},
+				{id: "g", parents: []string{"b", "e"}},
+				{id: "h", parents: []string{"a", "f"}},
 			},
-			{
-				Name: "merge_to_and_from_main",
-				// E---D----C---B------A
-				//  \      /     \    /
-				//   F----G---H---I--J
-				Commits: []*testCommit{
-					{id: "e", parents: []string{}},
-					{id: "d", parents: []string{"e"}},
-					{id: "f", parents: []string{"e"}},
-					{id: "g", parents: []string{"f"}},
-					{id: "c", parents: []string{"d", "g"}},
-					{id: "b", parents: []string{"c"}},
-					{id: "h", parents: []string{"g"}},
-					{id: "i", parents: []string{"h", "b"}},
-					{id: "j", parents: []string{"i"}},
-					{id: "a", parents: []string{"b", "j"}},
-				},
-				expectedCommits:        []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"},
-				expectedAncestryLeaves: []string{"a", "j"},
+			expectedCommits:        []string{"a", "b", "c", "d", "e", "f", "g", "h"},
+			expectedAncestryLeaves: []string{"f", "g", "h"},
+		},
+		{
+			Name: "merge_to_and_from_main",
+			// E---D----C---B------A
+			//  \      /     \    /
+			//   F----G---H---I--J
+			Commits: []*testCommit{
+				{id: "e", parents: []string{}},
+				{id: "d", parents: []string{"e"}},
+				{id: "f", parents: []string{"e"}},
+				{id: "g", parents: []string{"f"}},
+				{id: "c", parents: []string{"d", "g"}},
+				{id: "b", parents: []string{"c"}},
+				{id: "h", parents: []string{"g"}},
+				{id: "i", parents: []string{"h", "b"}},
+				{id: "j", parents: []string{"i"}},
+				{id: "a", parents: []string{"b", "j"}},
 			},
-		}
-	)
+			expectedCommits:        []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"},
+			expectedAncestryLeaves: []string{"a", "j"},
+		},
+	}
 	for _, tst := range cases {
 		t.Run(tst.Name, func(t *testing.T) {
 			var commits []*graveler.Commit
@@ -561,5 +565,56 @@ func TestKVOrderedCommitIteratorGrid(t *testing.T) {
 		t.Errorf("Unexpected ancestry leaves from iterator. diff=%s", diff)
 	}
 	iterator.Close()
+}
 
+func TestKVOrderedCommitIterator_CloseTwice(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	ctx := context.Background()
+	entIt := mock.NewMockEntriesIterator(ctrl)
+	entIt.EXPECT().Close().Times(1)
+	store := mock.NewMockStore(ctrl)
+	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
+	msgStore := kv.StoreMessage{Store: store}
+	repository := &graveler.RepositoryRecord{
+		RepositoryID: "CommitIterClose",
+		Repository: &graveler.Repository{
+			StorageNamespace: "",
+			CreationDate:     time.Time{},
+			DefaultBranchID:  "",
+			State:            0,
+			InstanceUID:      "rid",
+		},
+	}
+	it, err := ref.NewKVOrderedCommitIterator(ctx, &msgStore, repository, false)
+	if err != nil {
+		t.Fatal("failed to create kv ordered commit iterator", err)
+	}
+	it.Close()
+	// calling 'Close()` again to verify the iterator doesn't call the internal iterator close method
+	it.Close()
+}
+
+func TestKVOrderedCommitIterator_NextAfterClose(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	ctx := context.Background()
+	entIt := mock.NewMockEntriesIterator(ctrl)
+	entIt.EXPECT().Close().Times(1)
+	store := mock.NewMockStore(ctrl)
+	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
+	msgStore := kv.StoreMessage{Store: store}
+	repository := &graveler.RepositoryRecord{
+		RepositoryID: "CommitIterClose",
+		Repository: &graveler.Repository{
+			InstanceUID: "rid",
+		},
+	}
+	it, err := ref.NewKVOrderedCommitIterator(ctx, &msgStore, repository, false)
+	if err != nil {
+		t.Fatal("failed to create kv ordered commit iterator", err)
+	}
+	it.Close()
+	// calling Next after Close should not crash
+	if it.Next() {
+		t.Fatal("Next() should return false after Close()")
+	}
 }
