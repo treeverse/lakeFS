@@ -169,6 +169,7 @@ are in `deleted` state, after a certain amount of time (TBD), this physical addr
 1. Write blob
 2. Write reference entry to the database as staged
 3. Add staged entry to database
+4. If entry exists in current staging token - mark old reference as deleted
 
 #### Stage Object
 
@@ -204,3 +205,18 @@ We can leverage this asynchronous job to also check and perform the hard-delete
 1. Scan deleted staging token entries
 2. If entry is `tombstone` remove entry reference key
 3. Otherwise, modify reference state to `deleted` and update `last_modified`
+
+## Staging Token States
+<repo>/staging/deleted/<staging_token>
+<repo>/staging/committed/<commit_id> - list(staging tokens)
+* Track state on the staging token instead of objects - but keep tracking references (without state)
+* `deleted` - token was dropped (reset) or branch was deleted
+* `commit_etarted` - Commit started for the token
+* `commit_ended` - Commit completed for the token
+* Background delete job
+  * Scan deleted tokens 
+    * For each token - remove references for all objects on staging token
+    * If it is the last reference for that object - perform hard-delete
+  * Scan committed tokens
+    * For each committed object - remove all references of object
+    * "Move staging token to deleted" (all objects in committed staging tokens that were not actually committed are candidates for deletion)
