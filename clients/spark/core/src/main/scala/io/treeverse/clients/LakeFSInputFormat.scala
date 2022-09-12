@@ -90,9 +90,9 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     // TODO(johnnyaug) should we cache this?
     val sstableReader =
       new SSTableReader(localFile.getAbsolutePath, companion)
-    val props = sstableReader.getProperties()
-    logger.debug(s"Props: $props")
-    if (gravelerSplit.rangeID == null || gravelerSplit.rangeID.isEmpty) {
+    if (gravelerSplit.byteSize == 0) {
+      val props = sstableReader.getProperties()
+      logger.debug(s"Props: $props")
       if (new String(props.get("type").get) != "ranges" || props.get("entity").nonEmpty) {
         return
       }
