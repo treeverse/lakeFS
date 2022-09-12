@@ -23,3 +23,4 @@ Do an anti-join extracting all the addresses that need to be deleted.
 ### Considerations
 1. Storage: this requires using more of the user's storage. I don't think that's an issue since metadata is usually very small compared to the data size. In the future we can also optimize the set of ranges we actually bring there.
 1. Risk: we are using a copy of the metadata instead of the actual one. We need to be careful not to miss anything, since missing data may potentially cause innocent objects to be deleted.  This is a risk that any GC solution needs to take into account.
+1. Ops burden: we will have to maintain and monitor the copying of the metadata. In case it fails, we need to recover it.
