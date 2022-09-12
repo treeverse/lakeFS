@@ -98,12 +98,9 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 		}
 		defer itr.Close()
 		itr.SeekGE([]byte("d"))
-		for itr.Next() {
-			e := itr.Entry()
-			_, ok := e.Value.(*TestModel)
-			if !ok {
-				t.Fatalf("cannot read from store")
-			}
+
+		if itr.Next() {
+			t.Fatalf("seekGE error expected to be false")
 		}
 
 		if !errors.Is(itr.Err(), kv.ErrMissingPartitionKey) {
@@ -380,7 +377,7 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 		}
 	})
 
-	t.Run("entry not found", func(t *testing.T) {
+	t.Run("key not found", func(t *testing.T) {
 		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			thirdPartitionKey, []byte(""), []byte(""))
 		if err != nil {
@@ -401,7 +398,7 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 		}
 	})
 
-	t.Run("primary not found", func(t *testing.T) {
+	t.Run("value as key not found", func(t *testing.T) {
 		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
 			thirdPartitionKey, []byte(""), []byte("e"))
 		if err != nil {
