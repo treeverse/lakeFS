@@ -24,11 +24,14 @@ object GravelerSplit {
   val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 }
 class GravelerSplit(
-    var path: Path = null,
-    var rangeID: String = null,
-    var byteSize: Long = 0
+    var path: Path,
+    var rangeID: String,
+    var byteSize: Long,
+    var isValidated: Boolean
 ) extends InputSplit
-    with Writable {
+    with Writable { 
+  def this() = this(null, null, 0, false)
+
   import GravelerSplit._
   override def write(out: DataOutput): Unit = {
     out.writeLong(byteSize)
@@ -37,6 +40,7 @@ class GravelerSplit(
     val p = path.toString
     out.writeInt(p.length)
     out.writeChars(p)
+    out.writeBoolean(isValidated)
   }
 
   override def readFields(in: DataInput): Unit = {
@@ -53,6 +57,7 @@ class GravelerSplit(
       p += in.readChar()
     }
     path = new Path(p.result)
+    isValidated = in.readBoolean()
     logger.debug(s"Read split $this")
   }
   override def getLength: Long = byteSize
@@ -63,7 +68,7 @@ class GravelerSplit(
     Array.empty[SplitLocationInfo]
 
   override def toString: String =
-    s"GravelerSplit(path=$path, rangeID=$rangeID, byteSize=$byteSize)"
+    s"GravelerSplit(path=$path, rangeID=$rangeID, byteSize=$byteSize, isValidated=$isValidated)"
 }
 
 class WithIdentifier[Proto <: GeneratedMessage with scalapb.Message[Proto]](
@@ -89,14 +94,14 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     fs.copyToLocalFile(gravelerSplit.path, new Path(localFile.getAbsolutePath))
     // TODO(johnnyaug) should we cache this?
     val sstableReader =
-      new SSTableReader(localFile.getAbsolutePath, companion)
-    if (gravelerSplit.byteSize == 0) {
+    new SSTableReader(localFile.getAbsolutePath, companion)
+    if (!gravelerSplit.isValidated) {
+      // this file may not be a valid range file, validate it
       val props = sstableReader.getProperties()
       logger.debug(s"Props: $props")
       if (new String(props.get("type").get) != "ranges" || props.get("entity").nonEmpty) {
         return
       }
-      gravelerSplit.byteSize = new String(props.get("estimated_size_bytes").get).toLong
     }
     rangeID = gravelerSplit.rangeID
     logger.debug(s"Initializing reader for split $gravelerSplit")
@@ -163,7 +168,8 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
       new GravelerSplit(
         new Path(apiClient.getRangeURL(repoName, new String(r.id))),
         new String(r.id),
-        r.message.estimatedSize
+        r.message.estimatedSize,
+        true
       )
         // Scala / JRE not strong enough to handle List<FileSplit> as List<InputSplit>;
         // explicitly upcast to generate Seq[InputSplit].
@@ -219,7 +225,8 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
       splits += new GravelerSplit(
         file.getPath,
         file.getPath.getName,
-        file.getLen
+        file.getLen,
+        false
       )
     }
     logger.debug(s"Returning ${splits.size} splits")
