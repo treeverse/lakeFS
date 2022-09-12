@@ -60,6 +60,7 @@ This reference uses `.` to denote the nesting of values.
       {: .note }
     + `database.dynamodb.endpoint` `(string : )` - Endpoint URL for database instance
     + `database.dynamodb.aws_region` `(string : )` - AWS Region of database instance
+    + `database.dynamodb.aws_profile` `(string : )` - AWS named profile to use
     + `database.dynamodb.aws_access_key_id` `(string : )` - AWS access key ID
     + `database.dynamodb.aws_secret_access_key` `(string : )` - AWS secret access key
     

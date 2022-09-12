@@ -320,6 +320,7 @@ func (c *Config) GetKVParams() kvparams.KV {
 			ScanLimit:          c.values.Database.DynamoDB.ScanLimit,
 			Endpoint:           c.values.Database.DynamoDB.Endpoint,
 			AwsRegion:          c.values.Database.DynamoDB.AwsRegion,
+			AwsProfile:         c.values.Database.DynamoDB.AwsProfile,
 			AwsAccessKeyID:     c.values.Database.DynamoDB.AwsAccessKeyID.SecureValue(),
 			AwsSecretAccessKey: c.values.Database.DynamoDB.AwsSecretAccessKey.SecureValue(),
 		}

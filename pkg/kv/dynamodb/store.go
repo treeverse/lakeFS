@@ -82,6 +82,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 	normalizeDBParams(params)
 	sess, err := session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
+		Profile:           params.AwsProfile,
 	})
 	if err != nil {
 		return nil, err

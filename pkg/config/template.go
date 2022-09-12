@@ -118,6 +118,7 @@ type configuration struct {
 			// This is a client requirement as described in section 4 in
 			// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
 			AwsRegion          string       `mapstructure:"aws_region"`
+			AwsProfile         string       `mapstructure:"aws_profile"`
 			AwsAccessKeyID     SecureString `mapstructure:"aws_access_key_id"`
 			AwsSecretAccessKey SecureString `mapstructure:"aws_secret_access_key"`
 		} `mapstructure:"dynamodb"`
