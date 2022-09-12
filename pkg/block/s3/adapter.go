@@ -99,7 +99,7 @@ func WithDiscoverBucketRegion(b bool) func(a *Adapter) {
 func NewAdapter(awsSession *session.Session, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		clients:               NewClientCache(awsSession),
-		httpClient:            http.DefaultClient,
+		httpClient:            awsSession.Config.HTTPClient,
 		streamingChunkSize:    DefaultStreamingChunkSize,
 		streamingChunkTimeout: DefaultStreamingChunkTimeout,
 	}
