@@ -7,6 +7,7 @@ import (
 
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
@@ -24,7 +25,7 @@ func (controller *HeadObject) RequiredPermissions(_ *http.Request, repoID, _, pa
 func (controller *HeadObject) Handle(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("stat_object")
 	entry, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{ReturnExpired: true})
-	if errors.Is(err, catalog.ErrNotFound) {
+	if errors.Is(err, catalog.ErrNotFound) || errors.Is(err, graveler.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
 		o.Log(req).Debug("path not found")
 		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))

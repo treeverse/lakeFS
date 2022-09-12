@@ -16,7 +16,7 @@ import (
 )
 
 func TestKVRepositoryIterator(t *testing.T) {
-	r, store := testRefManagerWithKV(t)
+	r, store := testRefManager(t)
 	repos := []graveler.RepositoryID{"a", "aa", "b", "c", "e", "d", "f"}
 
 	// prepare data
