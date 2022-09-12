@@ -2,6 +2,7 @@ package kv_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -26,4 +27,17 @@ func TestPartitionIterator_ClosedBehaviour(t *testing.T) {
 	if err != nil {
 		t.Fatal("Err() on closed iterator", err)
 	}
+}
+
+func TestPartitionIterator_CloseAfterSeekGEFailed(t *testing.T) {
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	store := mock.NewMockStore(ctrl)
+	var entIt *mock.MockEntriesIterator
+	entItErr := errors.New("failed to scan")
+	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, entItErr).Times(1)
+
+	it := kv.NewPartitionIterator(ctx, store, (&graveler.StagedEntryData{}).ProtoReflect().Type(), "partitionKey")
+	it.SeekGE([]byte("test"))
+	it.Close() // verify we don't crash after see failedcx
 }
