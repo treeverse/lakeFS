@@ -312,7 +312,7 @@ func (p *PartitionIterator) Err() error {
 	if p.err != nil {
 		return p.err
 	}
-	if p.itr != nil {
+	if !p.itrClosed {
 		return p.itr.Err()
 	}
 	return nil

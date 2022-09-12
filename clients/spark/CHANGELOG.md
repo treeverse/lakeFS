@@ -1,4 +1,7 @@
 # Changelog
+## v0.2.3 - 2022-09-11
+- Performance improvements (#4097, #4099, #4110)
+- Fix bug: parsing problems in Azure (#4081)
 
 ## v0.2.2 - 2022-08-29
 What's new:

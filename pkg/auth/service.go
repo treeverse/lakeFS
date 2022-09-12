@@ -153,22 +153,23 @@ func fieldByTag(t reflect.Type, key, tag string) string {
 }
 
 func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.MessageType, params *model.PaginationParams, prefix []byte, secondary bool) ([]proto.Message, *model.Paginator, error) {
+	var (
+		it  kv.MessageIterator
+		err error
+	)
+	if secondary {
+		it, err = kv.NewSecondaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, []byte(params.After))
+	} else {
+		it, err = kv.NewPrimaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, kv.IteratorOptionsAfter([]byte(params.After)))
+	}
+	if err != nil {
+		return nil, nil, fmt.Errorf("scan prefix(%s): %w", prefix, err)
+	}
+	defer it.Close()
+
 	amount := maxPage
-	var it kv.MessageIterator
-	var err error
-	if params != nil {
-		if secondary {
-			it, err = kv.NewSecondaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, []byte(params.After))
-		} else {
-			it, err = kv.NewPrimaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, kv.IteratorOptionsAfter([]byte(params.After)))
-		}
-		defer it.Close()
-		if err != nil {
-			return nil, nil, fmt.Errorf("scan prefix(%s): %w", prefix, err)
-		}
-		if params.Amount >= 0 && params.Amount < maxPage {
-			amount = params.Amount
-		}
+	if params.Amount >= 0 && params.Amount < maxPage {
+		amount = params.Amount
 	}
 
 	entries := make([]proto.Message, 0)

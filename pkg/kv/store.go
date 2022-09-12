@@ -1,5 +1,7 @@
 package kv
 
+//go:generate mockgen -source=store.go -destination=mock/store.go -package=mock
+
 import (
 	"context"
 	"errors"

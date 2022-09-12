@@ -69,7 +69,8 @@ clean:
 		pkg/auth/client.gen.go \
 		pkg/graveler/sstable/mock \
 	    pkg/graveler/committed/mock \
-	    pkg/graveler/mock
+	    pkg/graveler/mock \
+	    pkg/kv/mock
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
@@ -144,13 +145,14 @@ gen-api: go-install ## Run the swagger code generator
 .PHONY: gen-code
 gen-code: go-install ## Run the generator for inline commands
 	$(GOGENERATE) \
-		./pkg/graveler/sstable \
-		./pkg/graveler/committed \
-		./pkg/graveler \
-		./pkg/pyramid \
-		./pkg/onboard \
 		./pkg/actions \
-		./pkg/auth
+		./pkg/auth \
+		./pkg/graveler \
+		./pkg/graveler/committed \
+		./pkg/graveler/sstable \
+		./pkg/onboard \
+		./pkg/pyramid \
+	    ./pkg/kv
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
 build: gen docs ## Download dependencies and build the default binary

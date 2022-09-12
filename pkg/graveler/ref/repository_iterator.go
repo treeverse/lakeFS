@@ -17,11 +17,12 @@ type RepositoryIterator interface {
 }
 
 type KVRepositoryIterator struct {
-	ctx   context.Context
-	it    kv.MessageIterator
-	err   error
-	value *graveler.RepositoryRecord
-	store kv.Store
+	ctx    context.Context
+	it     kv.MessageIterator
+	err    error
+	value  *graveler.RepositoryRecord
+	store  kv.Store
+	closed bool
 }
 
 func NewKVRepositoryIterator(ctx context.Context, store *kv.StoreMessage) (*KVRepositoryIterator, error) {
@@ -30,14 +31,15 @@ func NewKVRepositoryIterator(ctx context.Context, store *kv.StoreMessage) (*KVRe
 		return nil, err
 	}
 	return &KVRepositoryIterator{
-		it:    it,
-		store: store.Store,
-		ctx:   ctx,
+		ctx:    ctx,
+		it:     it,
+		store:  store.Store,
+		closed: false,
 	}, nil
 }
 
 func (ri *KVRepositoryIterator) Next() bool {
-	if ri.Err() != nil {
+	if ri.Err() != nil || ri.closed {
 		return false
 	}
 
@@ -65,8 +67,9 @@ func (ri *KVRepositoryIterator) SeekGE(id graveler.RepositoryID) {
 	if errors.Is(ri.Err(), kv.ErrClosedEntries) {
 		return
 	}
-	ri.it.Close()
+	ri.Close()
 	ri.it, ri.err = kv.NewPrimaryIterator(ri.ctx, ri.store, (&graveler.RepositoryData{}).ProtoReflect().Type(), graveler.RepositoriesPartition(), []byte(graveler.RepoPath("")), kv.IteratorOptionsFrom([]byte(graveler.RepoPath(id))))
+	ri.closed = ri.err != nil
 	ri.value = nil
 }
 
@@ -78,13 +81,19 @@ func (ri *KVRepositoryIterator) Value() *graveler.RepositoryRecord {
 }
 
 func (ri *KVRepositoryIterator) Err() error {
-	if ri.err == nil {
+	if ri.err != nil {
+		return ri.err
+	}
+	if !ri.closed {
 		return ri.it.Err()
 	}
-	return ri.err
+	return nil
 }
 
 func (ri *KVRepositoryIterator) Close() {
+	if ri.closed {
+		return
+	}
 	ri.it.Close()
-	ri.err = ErrIteratorClosed
+	ri.closed = true
 }

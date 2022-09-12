@@ -6,8 +6,11 @@ import (
 	"time"
 
 	"github.com/go-test/deep"
+	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/mock"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -208,4 +211,50 @@ func TestKVTagIterator(t *testing.T) {
 			t.Fatalf("expected nil value after seekGE")
 		}
 	})
+}
+
+func TestKVTagIterator_CloseTwice(t *testing.T) {
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	entIt := mock.NewMockEntriesIterator(ctrl)
+	entIt.EXPECT().Close().Times(1)
+	store := mock.NewMockStore(ctrl)
+	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
+	msgStore := kv.StoreMessage{Store: store}
+	repo := &graveler.RepositoryRecord{
+		RepositoryID: "repo",
+		Repository: &graveler.Repository{
+			InstanceUID: "rid",
+		},
+	}
+	it, err := ref.NewKVTagIterator(ctx, &msgStore, repo)
+	if err != nil {
+		t.Fatal("TestKVTagIterator failed", err)
+	}
+	it.Close()
+	// Make sure calling Close again do not crash
+	it.Close()
+}
+
+func TestKVTagIterator_NextClosed(t *testing.T) {
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	entIt := mock.NewMockEntriesIterator(ctrl)
+	entIt.EXPECT().Close().Times(1)
+	store := mock.NewMockStore(ctrl)
+	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
+	msgStore := kv.StoreMessage{Store: store}
+	repo := &graveler.RepositoryRecord{
+		RepositoryID: "repo",
+		Repository: &graveler.Repository{
+			InstanceUID: "rid",
+		},
+	}
+	it, err := ref.NewKVTagIterator(ctx, &msgStore, repo)
+	if err != nil {
+		t.Fatal("TestKVTagIterator failed", err)
+	}
+	it.Close()
+	// Make sure calling Next should not crash
+	it.Next()
 }
