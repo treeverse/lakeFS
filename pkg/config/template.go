@@ -150,14 +150,15 @@ type configuration struct {
 			Path string
 		}
 		S3 *struct {
-			S3AuthInfo            `mapstructure:",squash"`
-			Region                string
-			Endpoint              string
-			StreamingChunkSize    int           `mapstructure:"streaming_chunk_size"`
-			StreamingChunkTimeout time.Duration `mapstructure:"streaming_chunk_timeout"`
-			MaxRetries            int           `mapstructure:"max_retries"`
-			ForcePathStyle        bool          `mapstructure:"force_path_style"`
-			DiscoverBucketRegion  bool          `mapstructure:"discover_bucket_region"`
+			S3AuthInfo                    `mapstructure:",squash"`
+			Region                        string
+			Endpoint                      string
+			StreamingChunkSize            int           `mapstructure:"streaming_chunk_size"`
+			StreamingChunkTimeout         time.Duration `mapstructure:"streaming_chunk_timeout"`
+			MaxRetries                    int           `mapstructure:"max_retries"`
+			ForcePathStyle                bool          `mapstructure:"force_path_style"`
+			DiscoverBucketRegion          bool          `mapstructure:"discover_bucket_region"`
+			SkipVerifyCertificateTestOnly bool          `mapstructure:"skip_verify_certificate_test_only"`
 		}
 		Azure *struct {
 			TryTimeout       time.Duration `mapstructure:"try_timeout"`
