@@ -18,30 +18,6 @@ type KVOrderedCommitIterator struct {
 	firstParents       map[string]bool
 }
 
-// getAllFirstParents returns a set of all commits that are not a first parent of other commit in the given repository.
-func getAllFirstParents(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord) (map[string]bool, error) {
-	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.CommitData{}).ProtoReflect().Type(),
-		graveler.RepoPartition(repo),
-		[]byte(graveler.CommitPath("")), kv.IteratorOptionsFrom([]byte("")))
-	if err != nil {
-		return nil, err
-	}
-	defer it.Close()
-	firstParents := make(map[string]bool)
-	for it.Next() {
-		entry := it.Entry()
-		commit := entry.Value.(*graveler.CommitData)
-		if len(commit.Parents) > 0 {
-			if graveler.CommitVersion(commit.Version) < graveler.CommitVersionParentSwitch && len(commit.Parents) > 1 {
-				firstParents[commit.Parents[1]] = true
-			} else {
-				firstParents[commit.Parents[0]] = true
-			}
-		}
-	}
-	return firstParents, nil
-}
-
 // NewKVOrderedCommitIterator returns an iterator over all commits in the given repository.
 // Ordering is based on the Commit ID value.
 // WithOnlyAncestryLeaves causes the iterator to return only commits which are not the first parent of any other commit.
@@ -72,7 +48,7 @@ func NewKVOrderedCommitIterator(ctx context.Context, store *kv.StoreMessage, rep
 }
 
 func (i *KVOrderedCommitIterator) Next() bool {
-	if i.Err() != nil {
+	if i.Err() != nil || i.it == nil {
 		return false
 	}
 	for i.it.Next() {
@@ -113,14 +89,42 @@ func (i *KVOrderedCommitIterator) Value() *graveler.CommitRecord {
 }
 
 func (i *KVOrderedCommitIterator) Err() error {
-	if i.err == nil {
+	if i.err != nil {
+		return i.err
+	}
+	if i.it != nil {
 		return i.it.Err()
 	}
-	return i.err
+	return nil
 }
 
 func (i *KVOrderedCommitIterator) Close() {
 	if i.it != nil {
 		i.it.Close()
+		i.it = nil
 	}
+}
+
+// getAllFirstParents returns a set of all commits that are not a first parent of other commit in the given repository.
+func getAllFirstParents(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord) (map[string]bool, error) {
+	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.CommitData{}).ProtoReflect().Type(),
+		graveler.RepoPartition(repo),
+		[]byte(graveler.CommitPath("")), kv.IteratorOptionsFrom([]byte("")))
+	if err != nil {
+		return nil, err
+	}
+	defer it.Close()
+	firstParents := make(map[string]bool)
+	for it.Next() {
+		entry := it.Entry()
+		commit := entry.Value.(*graveler.CommitData)
+		if len(commit.Parents) > 0 {
+			if graveler.CommitVersion(commit.Version) < graveler.CommitVersionParentSwitch && len(commit.Parents) > 1 {
+				firstParents[commit.Parents[1]] = true
+			} else {
+				firstParents[commit.Parents[0]] = true
+			}
+		}
+	}
+	return firstParents, nil
 }
