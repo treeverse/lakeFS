@@ -39,5 +39,5 @@ func TestPartitionIterator_CloseAfterSeekGEFailed(t *testing.T) {
 
 	it := kv.NewPartitionIterator(ctx, store, (&graveler.StagedEntryData{}).ProtoReflect().Type(), "partitionKey")
 	it.SeekGE([]byte("test"))
-	it.Close() // verify we don't crash after see failedcx
+	it.Close() // verify we don't crash after after SeekGE failed internally with Scan
 }
