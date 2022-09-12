@@ -18,29 +18,22 @@ import java.io.File
 import java.net.URI
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
-import com.google.protobuf.ByteString
 import org.slf4j.{Logger, LoggerFactory}
 
 object GravelerSplit {
   val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 }
-class GravelerSplit(var range: RangeData, var path: Path, var rangeID: String, var byteSize: Long)
-    extends InputSplit
+class GravelerSplit(
+    var path: Path = null,
+    var rangeID: String = null,
+    var byteSize: Long = 0
+) extends InputSplit
     with Writable {
   import GravelerSplit._
-  def this() = this(null, null, null, 0L)
-
   override def write(out: DataOutput): Unit = {
     out.writeLong(byteSize)
     out.writeInt(rangeID.length)
     out.writeChars(rangeID)
-    if (range != null) {
-      val encodedRange = range.toByteArray
-      out.writeInt(encodedRange.length)
-      out.write(encodedRange)
-    } else {
-      out.writeInt(0)
-    }
     val p = path.toString
     out.writeInt(p.length)
     out.writeChars(p)
@@ -49,20 +42,11 @@ class GravelerSplit(var range: RangeData, var path: Path, var rangeID: String, v
   override def readFields(in: DataInput): Unit = {
     byteSize = in.readLong()
     val rangeIDLength = in.readInt()
-
     val rangeIDBuilder = new StringBuilder
     for (_ <- 1 to rangeIDLength) {
       rangeIDBuilder += in.readChar()
     }
     rangeID = rangeIDBuilder.toString
-    val encodedRangeLength = in.readInt()
-    if (encodedRangeLength == 0) {
-      range = null
-    } else {
-      val encodedRange = new Array[Byte](encodedRangeLength)
-      in.readFully(encodedRange)
-      range = RangeData.parseFrom(encodedRange)
-    }
     val pathLength = in.readInt()
     val p = new StringBuilder
     for (_ <- 1 to pathLength) {
@@ -78,7 +62,8 @@ class GravelerSplit(var range: RangeData, var path: Path, var rangeID: String, v
   override def getLocationInfo: Array[SplitLocationInfo] =
     Array.empty[SplitLocationInfo]
 
-  override def toString: String = s"GravelerSplit(range=$range, path=$path, rangeID=$rangeID, byteSize=$byteSize)"
+  override def toString: String =
+    s"GravelerSplit(path=$path, rangeID=$rangeID, byteSize=$byteSize)"
 }
 
 class WithIdentifier[Proto <: GeneratedMessage with scalapb.Message[Proto]](
@@ -87,20 +72,18 @@ class WithIdentifier[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     val rangeID: String
 ) {}
 
-object EntryRecordReader {
-  val logger: Logger = LoggerFactory.getLogger(getClass.toString)
-}
 class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     companion: GeneratedMessageCompanion[Proto]
 ) extends RecordReader[Array[Byte], WithIdentifier[Proto]] {
-  import EntryRecordReader._
+  val logger: Logger = LoggerFactory.getLogger(getClass.toString)
+
   var it: SSTableIterator[Proto] = _
   var item: Item[Proto] = _
-  var gravelerSplit: GravelerSplit = _
+  var rangeID: String = ""
   override def initialize(split: InputSplit, context: TaskAttemptContext): Unit = {
     val localFile = File.createTempFile("lakefs.", ".range")
     localFile.deleteOnExit()
-    gravelerSplit = split.asInstanceOf[GravelerSplit]
+    var gravelerSplit = split.asInstanceOf[GravelerSplit]
 
     val fs = gravelerSplit.path.getFileSystem(context.getConfiguration)
     fs.copyToLocalFile(gravelerSplit.path, new Path(localFile.getAbsolutePath))
@@ -109,23 +92,19 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
       new SSTableReader(localFile.getAbsolutePath, companion)
     val props = sstableReader.getProperties()
     logger.debug(s"Props: $props")
-    if (gravelerSplit.range == null) {
+    if (gravelerSplit.rangeID == null || gravelerSplit.rangeID.isEmpty) {
       if (new String(props.get("type").get) != "ranges" || props.get("entity").nonEmpty) {
         return
       }
-      gravelerSplit.range = new RangeData(
-        ByteString.copyFrom(props.get("min_key").get),
-        ByteString.copyFrom(props.get("max_key").get),
-        new String(props.get("estimated_size_bytes").get).toLong,
-        new String(props.get("count").get).toLong
-      )
+      gravelerSplit.byteSize = new String(props.get("estimated_size_bytes").get).toLong
     }
+    rangeID = gravelerSplit.rangeID
     logger.debug(s"Initializing reader for split $gravelerSplit")
     it = sstableReader.newIterator()
   }
 
   override def nextKeyValue: Boolean = {
-    if (gravelerSplit.range == null) {
+    if (rangeID == "") {
       return false
     }
     if (!it.hasNext) {
@@ -137,7 +116,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 
   override def getCurrentKey: Array[Byte] = item.key
 
-  override def getCurrentValue = new WithIdentifier(item.id, item.message, gravelerSplit.rangeID)
+  override def getCurrentValue = new WithIdentifier(item.id, item.message, rangeID)
 
   override def close() = Unit
 
@@ -182,7 +161,6 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
     val ranges = read(rangesReader)
     val res = ranges.map(r =>
       new GravelerSplit(
-        r.message,
         new Path(apiClient.getRangeURL(repoName, new String(r.id))),
         new String(r.id),
         r.message.estimatedSize
@@ -202,8 +180,10 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
     val conf = job.getConfiguration
     val repoName = conf.get(LAKEFS_CONF_JOB_REPO_NAME_KEY)
     var storageNamespace = conf.get(LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY)
-    if ((StringUtils.isBlank(repoName) && StringUtils.isBlank(storageNamespace)) ||
-      (StringUtils.isNotBlank(repoName) && StringUtils.isNotBlank(storageNamespace))) {
+    if (
+      (StringUtils.isBlank(repoName) && StringUtils.isBlank(storageNamespace)) ||
+      (StringUtils.isNotBlank(repoName) && StringUtils.isNotBlank(storageNamespace))
+    ) {
       throw new IllegalArgumentException(
         "Must specify exactly one of LAKEFS_CONF_JOB_REPO_NAME_KEY or LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY"
       )
@@ -221,21 +201,22 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
       storageNamespace = apiClient.getStorageNamespace(repoName, StorageClientType.HadoopFS)
     }
     var lakeFSMetadataURI = URI.create(storageNamespace)
-    lakeFSMetadataURI = new URI(lakeFSMetadataURI.getScheme,
-                    lakeFSMetadataURI.getUserInfo,
-                    lakeFSMetadataURI.getHost,
-                    lakeFSMetadataURI.getPort,
-                    lakeFSMetadataURI.getPath + (if (lakeFSMetadataURI.getPath.endsWith("/")) "_lakefs" else "/_lakefs"),
-                    null,
-                    null
-                   )
+    lakeFSMetadataURI = new URI(
+      lakeFSMetadataURI.getScheme,
+      lakeFSMetadataURI.getUserInfo,
+      lakeFSMetadataURI.getHost,
+      lakeFSMetadataURI.getPort,
+      lakeFSMetadataURI.getPath + (if (lakeFSMetadataURI.getPath.endsWith("/")) "_lakefs"
+                                   else "/_lakefs"),
+      null,
+      null
+    )
     val fs = FileSystem.get(lakeFSMetadataURI, conf)
     val it = fs.listFiles(new Path(lakeFSMetadataURI.toString), false)
     val splits = new ListBuffer[InputSplit]()
     while (it.hasNext) {
       val file = it.next()
       splits += new GravelerSplit(
-        null,
         file.getPath,
         file.getPath.getName,
         file.getLen
