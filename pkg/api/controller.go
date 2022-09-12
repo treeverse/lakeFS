@@ -2272,6 +2272,23 @@ func (c *Controller) SetGarbageCollectionRules(w http.ResponseWriter, r *http.Re
 	writeResponse(w, http.StatusNoContent, nil)
 }
 
+func (c *Controller) DeleteGarbageCollectionRules(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.SetGarbageCollectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	err := c.Catalog.SetGarbageCollectionRules(ctx, repository, nil)
+	if c.handleAPIError(ctx, w, err) {
+		return
+	}
+	writeResponse(w, http.StatusNoContent, nil)
+}
+
 func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *http.Request, body PrepareGarbageCollectionCommitsJSONRequestBody, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
