@@ -12,9 +12,10 @@ type KV struct {
 }
 
 type Local struct {
-	DirectoryPath  string
-	DisableLogging bool
-	PrefetchSize   int
+	DirectoryPath string
+	SyncWrites    bool
+	PrefetchSize  int
+	EnableLogging bool
 }
 
 type Postgres struct {

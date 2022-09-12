@@ -15,7 +15,7 @@ import (
 
 const (
 	InitialMigrateVersion = 1
-	PathDelimiter         = "/"
+	PathDelimiter         = '/'
 	MetadataPartitionKey  = "kv-internal-metadata"
 )
 
@@ -35,7 +35,7 @@ var (
 )
 
 func FormatPath(p ...string) string {
-	return strings.Join(p, PathDelimiter)
+	return strings.Join(p, string(PathDelimiter))
 }
 
 // Driver is the interface to access a kv database as a Store.

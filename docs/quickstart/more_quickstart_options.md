@@ -43,7 +43,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
    database:
      type: local
      local:
-       path: ""~/lakefs/metadata"
+       path: "~/lakefs/metadata"
     
    blockstore: 
      type: "local"
@@ -51,10 +51,10 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
        path: "~/lakefs/data"
    ```
 
-1. Create a local directory to store objects:
+1. Create a local directories to store objects and metadata:
 
    ```sh
-   mkdir -p ~/lakefs/data
+   mkdir -p ~/lakefs/data ~/lakefs/metadata
    ```
 
 1. Run the server:

@@ -18,8 +18,8 @@ func ValidateAuthEntityID(name string) error {
 	if len(name) == 0 {
 		return fmt.Errorf("empty name: %w", ErrValidationError)
 	}
-	if strings.Contains(name, kv.PathDelimiter) {
-		return fmt.Errorf("name contains delimiter %s: %w", kv.PathDelimiter, ErrValidationError)
+	if strings.Contains(name, string(kv.PathDelimiter)) {
+		return fmt.Errorf("name contains delimiter %c: %w", kv.PathDelimiter, ErrValidationError)
 	}
 	return nil
 }

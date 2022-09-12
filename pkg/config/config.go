@@ -34,8 +34,6 @@ const (
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
 	DefaultBlockStoreS3DiscoverBucketRegion  = true
 
-	DefaultLocalKVPath = "~/data/lakefs/kv"
-
 	DefaultCommittedLocalCacheRangePercent          = 0.9
 	DefaultCommittedLocalCacheMetaRangePercent      = 0.1
 	DefaultCommittedLocalCacheBytes                 = 1 * 1024 * 1024 * 1024
@@ -56,7 +54,7 @@ const (
 
 	DefaultAuthOIDCInitialGroupsClaimName = "initial_groups"
 	DefaultAuthLogoutRedirectURL          = "/auth/login"
-	DefaultAuthEncryptSecretKey           = "THIS_MUST_BE_CHANGED_IN_PRODUCTION"
+	DefaultAuthEncryptSecretKey           = "THIS_MUST_BE_CHANGED_IN_PRODUCTION" // #nosec
 
 	DefaultListenAddr          = "0.0.0.0:8000"
 	DefaultS3GatewayDomainName = "s3.local.lakefs.io"
@@ -137,7 +135,7 @@ const (
 	AuthCacheSizeKey     = "auth.cache.size"
 	AuthCacheTTLKey      = "auth.cache.ttl"
 	AuthCacheJitterKey   = "auth.cache.jitter"
-	AuthEncryptSecretKey = "auth.encrypt.secret_key"
+	AuthEncryptSecretKey = "auth.encrypt.secret_key" // #nosec
 
 	AuthOIDCInitialGroupsClaimName = "auth.oidc.initial_groups_claim_name"
 	AuthLogoutRedirectURL          = "auth.logout_redirect_url"
@@ -187,8 +185,6 @@ const (
 
 	DynamoDBTableNameKey = "database.dynamodb.table_name"
 	DatabaseType         = "database.type"
-	LocalKVPath          = "database.local.path"
-	DefaultDatabaseType  = "local"
 
 	UIEnabledKey = "ui.enabled"
 )
@@ -252,9 +248,6 @@ func setDefaults() {
 	viper.SetDefault(LakefsEmailBaseURLKey, DefaultLakefsEmailBaseURL)
 	viper.SetDefault(AuthEncryptSecretKey, DefaultAuthEncryptSecretKey)
 
-	viper.SetDefault(DatabaseType, DefaultDatabaseType)
-	viper.SetDefault(LocalKVPath, DefaultLocalKVPath)
-
 	viper.SetDefault(DynamoDBTableNameKey, DefaultDynamoDBTableName)
 
 	viper.SetDefault(UIEnabledKey, DefaultUIEnabled)
@@ -312,6 +305,14 @@ func (c *Config) GetKVParams() kvparams.KV {
 		p.Local = &kvparams.Local{
 			DirectoryPath: c.values.Database.Local.Path,
 			PrefetchSize:  c.values.Database.Local.PrefetchSize,
+		}
+		p.Local.SyncWrites = true
+		if c.values.Database.Local.SyncWrites != nil {
+			p.Local.SyncWrites = *c.values.Database.Local.SyncWrites
+		}
+		p.Local.EnableLogging = false
+		if c.values.Database.Local.EnableLogging != nil {
+			p.Local.EnableLogging = *c.values.Database.Local.EnableLogging
 		}
 	}
 

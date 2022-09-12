@@ -2,10 +2,11 @@ package local
 
 import (
 	"bytes"
+	"time"
+
 	"github.com/dgraph-io/badger/v3"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"time"
 )
 
 type EntriesIterator struct {
@@ -23,14 +24,16 @@ type EntriesIterator struct {
 
 func (e *EntriesIterator) Next() bool {
 	start := time.Now()
-	if !e.primed && e.iter.Valid() {
+	switch {
+	case !e.primed && e.iter.Valid():
 		e.primed = true
-	} else if !e.primed {
+	case !e.primed:
 		e.primed = true
 		e.iter.Seek(e.start)
-	} else {
+	default:
 		e.iter.Next()
 	}
+
 	if !e.iter.Valid() {
 		e.logger.Trace("no next values")
 		return false
@@ -51,8 +54,7 @@ func (e *EntriesIterator) Next() bool {
 		Key:          key[len(partitionRange(e.partitionKey)):],
 		Value:        value,
 	}
-	e.logger.
-		WithField("next_key", string(key)).
+	e.logger.WithField("next_key", string(key)).
 		WithField("took", time.Since(start)).
 		Trace("read next value")
 	return true

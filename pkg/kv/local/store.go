@@ -5,16 +5,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/dgraph-io/badger/v3"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"time"
 )
 
-const Separator = '/'
-
 func partitionRange(partitionKey []byte) []byte {
-	return append(partitionKey[:], Separator)
+	return append(partitionKey, kv.PathDelimiter)
 }
 
 func composeKey(partitionKey, key []byte) []byte {
@@ -146,25 +145,21 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 					Trace("predicate condition failed")
 				return fmt.Errorf("%w: partition=%s, key=%v", kv.ErrPredicateFailed, partitionKey, key)
 			}
-			value, err := item.ValueCopy(nil)
+			val, err := item.ValueCopy(nil)
 			if err != nil {
 				log.WithError(err).Error("could not get byte value for predicate")
 				return err
 			}
-			if !bytes.Equal(value, valuePredicate.([]byte)) {
-				log.
-					WithField("predicate", valuePredicate.([]byte)).
-					WithField("value", value).
+			if !bytes.Equal(val, valuePredicate.([]byte)) {
+				log.WithField("predicate", valuePredicate.([]byte)).
+					WithField("value", val).
 					Trace("predicate condition failed")
 				return fmt.Errorf("%w: partition=%s, key=%v", kv.ErrPredicateFailed, partitionKey, key)
 			}
-		} else {
-			if !errors.Is(err, badger.ErrKeyNotFound) {
-				log.
-					WithField("predicate", valuePredicate).
-					Trace("predicate condition failed (key not found)")
-				return fmt.Errorf("%w: partition=%s, key=%v", kv.ErrPredicateFailed, partitionKey, key)
-			}
+		} else if !errors.Is(err, badger.ErrKeyNotFound) {
+			log.WithField("predicate", valuePredicate).
+				Trace("predicate condition failed (key not found)")
+			return fmt.Errorf("%w: partition=%s, key=%v", kv.ErrPredicateFailed, partitionKey, key)
 		}
 
 		return txn.Set(composeKey(partitionKey, key), value)

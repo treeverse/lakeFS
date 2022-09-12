@@ -1,12 +1,13 @@
 package local_test
 
 import (
-	"github.com/treeverse/lakefs/pkg/kv/kvtest"
-	"github.com/treeverse/lakefs/pkg/kv/local"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/treeverse/lakefs/pkg/kv/kvtest"
+	"github.com/treeverse/lakefs/pkg/kv/local"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 )
 
 func TestLocalKV(t *testing.T) {
@@ -18,8 +19,8 @@ func TestLocalKV(t *testing.T) {
 	kvtest.TestDriver(t, local.DriverName, kvparams.KV{
 		Type: local.DriverName,
 		Local: &kvparams.Local{
-			DirectoryPath:  dir,
-			DisableLogging: true,
+			DirectoryPath: dir,
+			EnableLogging: true,
 		},
 	})
 
