@@ -22,7 +22,7 @@ var (
 	databaseURI string
 )
 
-func testRefManagerWithKV(t testing.TB) (graveler.RefManager, kv.StoreMessage) {
+func testRefManager(t testing.TB) (graveler.RefManager, kv.StoreMessage) {
 	t.Helper()
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)

@@ -51,7 +51,7 @@ func ValidateSchemaVersion(ctx context.Context, store Store) error {
 		return fmt.Errorf("get KV schema version: %w", err)
 	}
 	if kvVersion < InitialMigrateVersion {
-		logging.Default().Info("Migration to KV required. Did you migrate using version v0.80.1? https://docs.lakefs.io/reference/upgrade.html#lakefs-0800-or-greater-kv-migration")
+		logging.Default().Info("Migration to KV required. Did you migrate using version v0.80.x? https://docs.lakefs.io/reference/upgrade.html#lakefs-0800-or-greater-kv-migration")
 		return errMigrationRequired
 	}
 

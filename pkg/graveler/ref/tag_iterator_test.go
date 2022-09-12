@@ -15,7 +15,7 @@ import (
 )
 
 func TestKVTagIterator(t *testing.T) {
-	r, kvstore := testRefManagerWithKV(t)
+	r, kvstore := testRefManager(t)
 	tags := []graveler.TagID{"a", "aa", "b", "c", "e", "d", "f", "g"}
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{

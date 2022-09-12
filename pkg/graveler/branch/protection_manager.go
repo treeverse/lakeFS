@@ -28,11 +28,11 @@ var (
 )
 
 type ProtectionManager struct {
-	settingManager settings.Manager
+	settingManager *settings.KVManager
 	matchers       cache.Cache
 }
 
-func NewProtectionManager(settingManager settings.Manager) *ProtectionManager {
+func NewProtectionManager(settingManager *settings.KVManager) *ProtectionManager {
 	return &ProtectionManager{settingManager: settingManager, matchers: cache.NewCache(matcherCacheSize, matcherCacheExpiry, cache.NewJitterFn(matcherCacheJitter))}
 }
 

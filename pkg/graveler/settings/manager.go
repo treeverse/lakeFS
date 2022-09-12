@@ -27,16 +27,6 @@ type cacheKey struct {
 
 type updateFunc func(proto.Message) (proto.Message, error)
 
-// Manager - TODO(niro): Remove interface once DB implementation is deleted
-type Manager interface {
-	// Save - TODO(niro): Delete Save (unused)
-	Save(context.Context, *graveler.RepositoryRecord, string, proto.Message) error
-	GetLatest(context.Context, *graveler.RepositoryRecord, string, proto.Message) (proto.Message, error)
-	Get(context.Context, *graveler.RepositoryRecord, string, proto.Message) (proto.Message, error)
-	Update(context.Context, *graveler.RepositoryRecord, string, proto.Message, updateFunc) error
-	WithCache(cache cache.Cache)
-}
-
 // KVManager is a key-value store for Graveler repository-level settings.
 // Each setting is stored under a key, and can be any proto.Message.
 // Fetched settings are cached using cache.Cache with a default expiry time of 1 second. Hence, the store is eventually consistent.
@@ -46,10 +36,10 @@ type KVManager struct {
 	cache      cache.Cache
 }
 
-type ManagerOption func(m Manager)
+type ManagerOption func(m *KVManager)
 
 func WithCache(cache cache.Cache) ManagerOption {
-	return func(m Manager) {
+	return func(m *KVManager) {
 		m.WithCache(cache)
 	}
 }

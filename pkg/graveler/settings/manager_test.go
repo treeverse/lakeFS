@@ -240,7 +240,7 @@ func (m *nopCache) GetOrSet(_ interface{}, setFn cache.SetFn) (v interface{}, er
 	return setFn()
 }
 
-func prepareTest(t *testing.T, ctx context.Context, cache cache.Cache, branchLockCallback func(context.Context, *graveler.RepositoryRecord, graveler.BranchID, func() (interface{}, error)) (interface{}, error)) (settings.Manager, block.Adapter) {
+func prepareTest(t *testing.T, ctx context.Context, cache cache.Cache, branchLockCallback func(context.Context, *graveler.RepositoryRecord, graveler.BranchID, func() (interface{}, error)) (interface{}, error)) (*settings.KVManager, block.Adapter) {
 	ctrl := gomock.NewController(t)
 	refManager := mock.NewMockRefManager(ctrl)
 

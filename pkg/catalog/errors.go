@@ -11,7 +11,7 @@ var (
 	ErrRequiredValue            = fmt.Errorf("required value: %w", ErrInvalid)
 	ErrPathRequiredValue        = fmt.Errorf("missing path: %w", ErrRequiredValue)
 	ErrInvalidValue             = fmt.Errorf("invalid value: %w", ErrInvalid)
-	ErrNotFound                 = errors.New("already exists")
+	ErrNotFound                 = errors.New("not found")
 	ErrInvalidMetadataSrcFormat = errors.New("invalid metadata src format")
 	ErrExpired                  = errors.New("expired from storage")
 	ErrFeatureNotSupported      = errors.New("feature not supported")
