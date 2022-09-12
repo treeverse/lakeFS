@@ -77,14 +77,10 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 	if kvParams.Postgres == nil {
 		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
 	}
-	normalizeDBParams(kvParams.Postgres)
-	config, err := pgxpool.ParseConfig(kvParams.Postgres.ConnectionString)
+	config, err := newPgxpoolConfig(kvParams)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", kv.ErrDriverConfiguration, err)
+		return nil, err
 	}
-	config.MaxConns = kvParams.Postgres.MaxOpenConnections
-	config.MinConns = kvParams.Postgres.MaxIdleConnections
-	config.MaxConnLifetime = kvParams.Postgres.ConnectionMaxLifetime
 
 	pool, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
@@ -109,7 +105,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 	}
 
 	params := parseStoreConfig(config.ConnConfig.RuntimeParams, kvParams.Postgres)
-	err = setupKeyValueDatabase(ctx, conn, params)
+	err = setupKeyValueDatabase(ctx, conn, params.TableName, params.PartitionsAmount)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
 	}
@@ -132,6 +128,18 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 	}
 	pool = nil
 	return store, nil
+}
+
+func newPgxpoolConfig(kvParams kvparams.KV) (*pgxpool.Config, error) {
+	normalizeDBParams(kvParams.Postgres)
+	config, err := pgxpool.ParseConfig(kvParams.Postgres.ConnectionString)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", kv.ErrDriverConfiguration, err)
+	}
+	config.MaxConns = kvParams.Postgres.MaxOpenConnections
+	config.MinConns = kvParams.Postgres.MaxIdleConnections
+	config.MaxConnLifetime = kvParams.Postgres.ConnectionMaxLifetime
+	return config, err
 }
 
 type Params struct {
@@ -159,9 +167,10 @@ func parseStoreConfig(runtimeParams map[string]string, pgParams *kvparams.Postgr
 }
 
 // setupKeyValueDatabase setup everything required to enable kv over postgres
-func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, params *Params) error {
+func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, table string, partitionsAmount int) error {
 	// main kv table
-	_, err := conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS `+params.SanitizedTableName+` (
+	tableSanitize := pgx.Identifier{table}.Sanitize()
+	_, err := conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS `+tableSanitize+` (
 		partition_key BYTEA NOT NULL,
 		key BYTEA NOT NULL,
 		value BYTEA NOT NULL,
@@ -172,19 +181,19 @@ func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, params *Para
 		return err
 	}
 
-	partitions := getTablePartitions(params.TableName, params.PartitionsAmount)
+	partitions := getTablePartitions(table, partitionsAmount)
 	for i := 0; i < len(partitions); i++ {
 		_, err := conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS`+
 			pgx.Identifier{partitions[i]}.Sanitize()+` PARTITION OF `+
-			params.SanitizedTableName+` FOR VALUES WITH (MODULUS `+strconv.Itoa(params.PartitionsAmount)+
+			tableSanitize+` FOR VALUES WITH (MODULUS `+strconv.Itoa(partitionsAmount)+
 			`,REMAINDER `+strconv.Itoa(i)+`);`)
 		if err != nil {
 			return err
 		}
 	}
 	// view of kv table to help humans select from table (same as table with _v as suffix)
-	_, err = conn.Exec(ctx, `CREATE OR REPLACE VIEW `+pgx.Identifier{params.TableName + "_v"}.Sanitize()+
-		` AS SELECT ENCODE(partition_key, 'escape') AS partition_key, ENCODE(key, 'escape') AS key, value FROM `+params.SanitizedTableName)
+	_, err = conn.Exec(ctx, `CREATE OR REPLACE VIEW `+pgx.Identifier{table + "_v"}.Sanitize()+
+		` AS SELECT ENCODE(partition_key, 'escape') AS partition_key, ENCODE(key, 'escape') AS key, value FROM `+tableSanitize)
 	return err
 }
 
@@ -193,7 +202,6 @@ func getTablePartitions(tableName string, partitionsAmount int) []string {
 	for i := 0; i < partitionsAmount; i++ {
 		res = append(res, fmt.Sprintf("%s_%d", tableName, i))
 	}
-
 	return res
 }
 
