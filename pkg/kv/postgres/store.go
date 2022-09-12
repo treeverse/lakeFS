@@ -110,7 +110,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
 	}
 
-	// register collector to publish  pgxpool stats as metrics
+	// register collector to publish pgxpool stats as metrics
 	var collector prometheus.Collector
 	if params.Metrics {
 		collector = pgxpoolprometheus.NewCollector(pool, map[string]string{"db_name": params.TableName})
@@ -335,6 +335,7 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, start []byte, in
 func (s *Store) Close() {
 	if s.collector != nil {
 		prometheus.Unregister(s.collector)
+		s.collector = nil
 	}
 	s.Pool.Close()
 }
