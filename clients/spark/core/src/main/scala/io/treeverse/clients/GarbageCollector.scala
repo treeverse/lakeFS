@@ -387,8 +387,10 @@ object GarbageCollector {
       // reproducing a previous run
       // TODO(johnnyaug): the server should generate these paths
       runID = UUID.randomUUID().toString
-      gcCommitsLocation = s"${storageNSForHadoopFS.stripSuffix("/")}/_lakefs/retention/gc/commits/run_id=$runIDToReproduce/commits.csv"
-      gcAddressesLocation = s"${storageNSForHadoopFS.stripSuffix("/")}/_lakefs/retention/gc/addresses/"
+      gcCommitsLocation =
+        s"${storageNSForHadoopFS.stripSuffix("/")}/_lakefs/retention/gc/commits/run_id=$runIDToReproduce/commits.csv"
+      gcAddressesLocation =
+        s"${storageNSForHadoopFS.stripSuffix("/")}/_lakefs/retention/gc/addresses/"
     }
     println("apiURL: " + apiURL)
 
