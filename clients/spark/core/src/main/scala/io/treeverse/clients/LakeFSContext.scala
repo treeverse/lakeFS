@@ -52,10 +52,9 @@ object LakeFSContext {
     )
   }
 
-  /**
-   * Returns all entries in all ranges of the given commit, as an RDD.
-   * If no commit is given, returns all entries in all ranges of the entire repository.
-   * The same entry may be found in multiple ranges.
+  /** Returns all entries in all ranges of the given commit, as an RDD.
+   *  If no commit is given, returns all entries in all ranges of the entire repository.
+   *  The same entry may be found in multiple ranges.
    */
   def newRDD(
       sc: SparkContext,
@@ -99,11 +98,10 @@ object LakeFSContext {
     spark.createDataFrame(rdd, schema)
   }
 
-  /**
-   * Returns all entries in all ranges found in this storage namespace.
-   * The same entry may be found in multiple ranges.
-   * 
-   * The storage namespace is expected to be a URI accessible by Hadoop.
+  /** Returns all entries in all ranges found in this storage namespace.
+   *  The same entry may be found in multiple ranges.
+   *
+   *  The storage namespace is expected to be a URI accessible by Hadoop.
    */
   def newDF(
       spark: SparkSession,
@@ -112,10 +110,9 @@ object LakeFSContext {
     newDF(spark, "", storageNamespace, "", classOf[LakeFSAllRangesInputFormat])
   }
 
-  /**
-   * Returns all entries in all ranges of the given commit, as a DataFrame.
-   * If no commit is given, returns all entries in all ranges of the entire repository.
-   * The same entry may be found in multiple ranges.
+  /** Returns all entries in all ranges of the given commit, as a DataFrame.
+   *  If no commit is given, returns all entries in all ranges of the entire repository.
+   *  The same entry may be found in multiple ranges.
    */
   def newDF(
       spark: SparkSession,
