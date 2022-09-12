@@ -252,15 +252,16 @@ object GarbageCollector {
     // needed FileSystems.
     val hcValues = spark.sparkContext.broadcast(getHadoopConfigurationValues(hc, "fs.", "lakefs."))
 
-    val gcRules: String = try {
-      apiClient.getGarbageCollectionRules(repo)
-    } catch {
-      case e: Throwable =>
-        e.printStackTrace()
-        println("No GC rules found for repository: " + repo)
-        // Exiting with a failure status code because users should not really run gc on repos without GC rules.
+    val gcRules: String =
+      try {
+        apiClient.getGarbageCollectionRules(repo)
+      } catch {
+        case e: Throwable =>
+          e.printStackTrace()
+          println("No GC rules found for repository: " + repo)
+          // Exiting with a failure status code because users should not really run gc on repos without GC rules.
           sys.exit(2)
-    }
+      }
     var storageNSForHadoopFS = apiClient.getStorageNamespace(repo, StorageClientType.HadoopFS)
     if (!storageNSForHadoopFS.endsWith("/")) {
       storageNSForHadoopFS += "/"
