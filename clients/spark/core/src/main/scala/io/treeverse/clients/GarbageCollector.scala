@@ -19,6 +19,8 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import java.time.LocalDateTime
 import java.time.ZoneOffset
+import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse
+import java.util.UUID
 
 /** Interface to build an S3 client.  The object
  *  io.treeverse.clients.conditional.S3ClientBuilder -- conditionally
@@ -315,6 +317,7 @@ object GarbageCollector {
     val connectionTimeout = hc.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY)
     val readTimeout = hc.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY)
     val maxCommitIsoDatetime = hc.get(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY, "")
+    val runIDToReproduce = hc.get(LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY, "")
     if (!maxCommitIsoDatetime.isEmpty) {
       hc.setLong(
         LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY,
@@ -363,17 +366,34 @@ object GarbageCollector {
         // Exiting with a failure status code because users should not really run gc on repos without GC rules.
         System.exit(2)
     }
-
-    val res = apiClient.prepareGarbageCollectionCommits(repo, previousRunID)
-    val runID = res.getRunId
+    var storageNSForHadoopFS = apiClient.getStorageNamespace(repo, StorageClientType.HadoopFS)
+    if (!storageNSForHadoopFS.endsWith("/")) {
+      storageNSForHadoopFS += "/"
+    }
+    var prepareResult: GarbageCollectionPrepareResponse = null
+    var runID = ""
+    var gcCommitsLocation = ""
+    var gcAddressesLocation = ""
+    if (runIDToReproduce == "") {
+      prepareResult = apiClient.prepareGarbageCollectionCommits(repo, previousRunID)
+      runID = prepareResult.getRunId
+      gcCommitsLocation =
+        ApiClient.translateURI(new URI(prepareResult.getGcCommitsLocation), storageType).toString
+      println("gcCommitsLocation: " + gcCommitsLocation)
+      gcAddressesLocation =
+        ApiClient.translateURI(new URI(prepareResult.getGcAddressesLocation), storageType).toString
+      println("gcAddressesLocation: " + gcAddressesLocation)
+    } else {
+      // reproducing a previous run
+      // TODO(johnnyaug): the server should generate these paths
+      runID = UUID.randomUUID().toString
+      gcCommitsLocation =
+        s"${storageNSForHadoopFS.stripSuffix("/")}/_lakefs/retention/gc/commits/run_id=$runIDToReproduce/commits.csv"
+      gcAddressesLocation =
+        s"${storageNSForHadoopFS.stripSuffix("/")}/_lakefs/retention/gc/addresses/"
+    }
     println("apiURL: " + apiURL)
 
-    val gcCommitsLocation =
-      ApiClient.translateURI(new URI(res.getGcCommitsLocation), storageType).toString
-    println("gcCommitsLocation: " + gcCommitsLocation)
-    val gcAddressesLocation =
-      ApiClient.translateURI(new URI(res.getGcAddressesLocation), storageType).toString
-    println("gcAddressesLocation: " + gcAddressesLocation)
     val expiredAddresses =
       getExpiredAddresses(
         repo,
@@ -411,10 +431,6 @@ object GarbageCollector {
                hcValues,
                storageType
               )
-    var storageNSForHadoopFS = apiClient.getStorageNamespace(repo, StorageClientType.HadoopFS)
-    if (!storageNSForHadoopFS.endsWith("/")) {
-      storageNSForHadoopFS += "/"
-    }
 
     val commitsDF = getCommitsDF(runID, gcCommitsLocation, spark)
     val reportLogsDst = concatToGCLogsPrefix(storageNSForHadoopFS, "summary")
