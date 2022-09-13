@@ -121,7 +121,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	return logger, client, svc
 }
 
-// Parses the given endpoint string
+// ParseEndpointURL parses the given endpoint string
 func ParseEndpointURL(logger logging.Logger, endpointURL string) string {
 	u, err := url.Parse(endpointURL)
 	if err != nil {
@@ -134,7 +134,7 @@ func ParseEndpointURL(logger logging.Logger, endpointURL string) string {
 	return endpointURL
 }
 
-// Creates a client using the credentials of a user
+// NewClientFromCreds creates a client using the credentials of a user
 func NewClientFromCreds(logger logging.Logger, accessKeyID string, secretAccessKey string, endpointURL string) (*api.ClientWithResponses, error) {
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
 	if err != nil {

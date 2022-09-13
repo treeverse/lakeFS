@@ -14,7 +14,7 @@ type Iterator interface {
 	// Next moves to look at the next value in the current Range, or a header for the next
 	// Range if the current Range is over.
 	Next() bool
-	// NextRange() skips the current Range and continues at the header for the next Range.
+	// NextRange skips the current Range and continues at the header for the next Range.
 	NextRange() bool
 	// Value returns a nil ValueRecord and a Range before starting a Range, or a Value and
 	// that Range when inside a Range.
@@ -77,7 +77,7 @@ type MetaRangeManager interface {
 	// MetaRange with id.
 	GetValue(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error)
 
-	// NewRangeWriter returns a writer that is used for creating new MetaRanges
+	// NewWriter returns a writer that is used for creating new MetaRanges
 	NewWriter(ctx context.Context, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriter
 
 	// NewMetaRangeIterator returns an Iterator over the MetaRange with id.
@@ -99,7 +99,7 @@ type MetaRangeWriter interface {
 	// If the most recent insertion was using WriteRange, the key must be greater than any key in the added ranges.
 	WriteRecord(graveler.ValueRecord) error
 
-	// AddRange adds a complete range to the MetaRange at the current insertion point.
+	// WriteRange adds a complete range to the MetaRange at the current insertion point.
 	// Added Range must not contain keys smaller than last previously written value.
 	WriteRange(Range) error
 

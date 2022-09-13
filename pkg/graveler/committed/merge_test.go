@@ -1357,7 +1357,7 @@ func TestMergeStrategies(t *testing.T) {
 		// - No strategy - a conflict
 		// - Dest strategy - favors dest branch, so record 'a', with the modified value, is written, ignoring its deletion on source
 		// - Source strategy - favors source branch, so record 'a' is deleted, ignoring its value change on branch dest
-		// Record 'b' is deleted for both strategies as there is no conflict invloving it. Same goes for records 'c' and 'd' that are written,
+		// Record 'b' is deleted for both strategies as there is no conflict involving it. Same goes for records 'c' and 'd' that are written,
 		// regardless of merge strategy
 		"dest range before source": {
 			baseRange: newTestMetaRange([]testRange{

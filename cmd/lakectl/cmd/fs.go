@@ -66,7 +66,7 @@ var fsListCmd = &cobra.Command{
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		prefix := *pathURI.Path
 
-		// prefix we need to trim in ls output (non recursive)
+		// prefix we need to trim in ls output (non-recursive)
 		var trimPrefix string
 		if idx := strings.LastIndex(prefix, PathDelimiter); idx != -1 {
 			trimPrefix = prefix[:idx+1]
@@ -90,7 +90,7 @@ var fsListCmd = &cobra.Command{
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 			results := resp.JSON200.Results
-			// trim prefix if non recursive
+			// trim prefix if non-recursive
 			if !recursive {
 				for i := range results {
 					trimmed := strings.TrimPrefix(results[i].Path, trimPrefix)
@@ -132,7 +132,11 @@ var fsCatCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		defer body.Close()
+		defer func() {
+			if err := body.Close(); err != nil {
+				DieErr(err)
+			}
+		}()
 		_, err = io.Copy(os.Stdout, body)
 		if err != nil {
 			DieErr(err)
@@ -341,7 +345,7 @@ var fsRmCmd = &cobra.Command{
 		go func() {
 			defer errorsWg.Done()
 			for err := range errors {
-				fmt.Fprintln(os.Stderr, err)
+				_, _ = fmt.Fprintln(os.Stderr, err)
 				success = false
 			}
 		}()

@@ -39,8 +39,8 @@ func TestWalkEntryIterator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := testutils.NewFakeWalker(count, tt.max, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, nil)
-			url, _ := url.Parse(fromSourceURIWithPrefix)
-			sut, err := catalog.NewWalkEntryIterator(context.Background(), store.NewWrapper(w, url), prepend, after, continuationToken)
+			parsedURL, _ := url.Parse(fromSourceURIWithPrefix)
+			sut, err := catalog.NewWalkEntryIterator(context.Background(), store.NewWrapper(w, parsedURL), prepend, after, continuationToken)
 			require.NoError(t, err, "creating walk entry iterator")
 			require.NotNil(t, sut)
 

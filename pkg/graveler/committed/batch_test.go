@@ -32,9 +32,8 @@ type closeResult struct {
 }
 
 var (
-	ErrNotImplemented = errors.New("not implemented")
-	ErrAlreadyClosed  = errors.New("closed more than once")
-	ErrUnexpected     = errors.New("unexpected call")
+	ErrAlreadyClosed = errors.New("closed more than once")
+	ErrUnexpected    = errors.New("unexpected call")
 )
 
 func (f *FakeRangeWriter) Err() error {
@@ -124,7 +123,7 @@ func TestBatchWriterFailed(t *testing.T) {
 
 func TestBatchCloserMultipleWaitCalls(t *testing.T) {
 	writer := NewFakeRangeWriter(&committed.WriteResult{
-		RangeID: committed.ID("last"),
+		RangeID: "last",
 		First:   committed.Key("row_1"),
 		Last:    committed.Key("row_2"),
 		Count:   4321,

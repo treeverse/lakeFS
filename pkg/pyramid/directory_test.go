@@ -41,7 +41,7 @@ func TestConcurrentCreateDeleteDir(t *testing.T) {
 		}()
 	}
 	// It doesn't really matter if the dir exists and its content.
-	// It's more about not panicking thru all of this
+	// It's more about not panicking through all of this
 	wg.Wait()
 }
 
@@ -78,6 +78,6 @@ func TestConcurrentRenameDeleteDir(t *testing.T) {
 		}()
 	}
 	// It doesn't really matter if the dir exists and its content.
-	// It's more about not panicking thru all of this
+	// It's more about not panicking through all of this
 	wg.Wait()
 }

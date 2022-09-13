@@ -64,7 +64,8 @@ type GatewayService interface {
 }
 
 type Authorizer interface {
-	// authorize user for an action
+	// Authorize checks 'req' containing user and required permissions. An error returns in case we fail perform the request.
+	// AuthorizationResponse holds if the request allowed and Error in case we fail with additional reason as ErrInsufficientPermissions.
 	Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
 }
 

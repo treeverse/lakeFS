@@ -145,8 +145,8 @@ func exportMetadata(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) erro
 	}
 
 	// Gathering DB metadata to exclude from export
-	db := db.NewPgxDatabase(d)
-	dbMeta, err := db.Metadata(ctx)
+	pgdb := db.NewPgxDatabase(d)
+	dbMeta, err := pgdb.Metadata(ctx)
 	if err != nil {
 		return err
 	}
