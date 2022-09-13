@@ -214,15 +214,15 @@ object GarbageCollector {
       expiredRangesDF("range_id") === activeRangesDF("range_id"),
       "leftanti"
     )
-    allEntries
+    val expiredEntries = allEntries
       .as("all_entries")
       .join(uniqueExpiredRangesDF.as("expired"), "range_id")
       .select("all_entries.*")
-      .join(activeRangesDF.as("active"),
-            allEntries("address") === activeRangesDF("address"),
-            "leftanti"
-           )
+    val activeEntries = allEntries
+      .as("all_entries")
+      .join(activeRangesDF.as("active"), "range_id")
       .select("all_entries.*")
+    expiredEntries.join(activeEntries, Seq("address"), "leftanti")
   }
 
   def getExpiredAddresses(
