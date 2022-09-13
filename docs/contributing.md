@@ -62,10 +62,10 @@ Note: Make build won't work for Windows user for building lakeFS.
 ## Before creating a pull request
 
 1. Review this document in full.
-1. Make sure there's an open issue on GitHub that this pull request addresses, and that it isn't labeled `x/wontfix`.
-1. Fork the [lakeFS repository](https://github.com/treeverse/lakeFS).
-1. If you're adding new functionality, create a new branch named `feature/<DESCRIPTIVE NAME>`.
-1. If you're fixing a bug, create a new branch named `fix/<DESCRIPTIVE NAME>-<ISSUE NUMBER>`.
+2. Make sure there's an open issue on GitHub that this pull request addresses, and that it isn't labeled `x/wontfix`.
+3. Fork the [lakeFS repository](https://github.com/treeverse/lakeFS).
+4. If you're adding new functionality, create a new branch named `feature/<DESCRIPTIVE NAME>`.
+5. If you're fixing a bug, create a new branch named `fix/<DESCRIPTIVE NAME>-<ISSUE NUMBER>`.
 
 ## Testing your change
 
@@ -96,7 +96,15 @@ Want to dive deeper into our system tests infrastructure? Need to debug the test
 ## Submitting a pull request
 
 Open a GitHub pull request with your change. The PR description should include a brief explanation of your change.
-You should also mention the related GitHub issue. If the issue should be automatically closed after the merge, please [link it to the PR](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).
+You should also mention the related GitHub issue using a [closing keyword](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).  
+As a rule, we require each PR to have a linked issue and enforce it via a Github action. That being said, we understand 
+not every PR justifies opening a dedicated issue. The following changes qualify to be exempt from a linked issue:
+1. Typo fixes (whether in code or documentation)
+2. Changelog updates
+3. Packages version bump  
+
+Regardless of the list described, always use discretion. If the PR require context/rational/motivation this probably means an issue must be opened and linked.
+If you've reached the conclusion that this PR should be exempt, use the `minor-change` label to disable this check.
 
 After submitting your pull request, [GitHub Actions](https://github.com/treeverse/lakeFS/actions) will automatically run tests on your changes and make sure that your updated code builds and runs on Go 1.17.x.
 
