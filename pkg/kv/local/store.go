@@ -205,10 +205,11 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 
 func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.EntriesIterator, error) {
 	var k []byte
+	prefix := partitionRange(partitionKey)
 	if start != nil {
 		k = composeKey(partitionKey, start)
 	} else {
-		k = partitionRange(partitionKey)
+		k = prefix
 	}
 	log := s.logger.
 		WithField("partition_key", string(partitionKey)).
@@ -224,6 +225,7 @@ func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.Entrie
 	txn := s.db.NewTransaction(false)
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchSize = s.prefetchSize
+	opts.Prefix = prefix
 
 	iter := txn.NewIterator(opts)
 	return &EntriesIterator{
