@@ -75,9 +75,18 @@ def generateCoreProject(buildType: BuildType) =
         "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
         "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
         // Test with an up-to-date fasterxml.
-         "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2" % "test"
+         "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2" % "test",
+        "com.storm-enroute" %% "scalameter" % "0.18" % "test"
       ),
+      testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
       Test / logBuffered := false,
+      // Uncomment to get accurate benchmarks with just "sbt test".
+      // Otherwise tell sbt to
+      //     "testOnly io.treeverse.clients.ReadSSTableBenchmark"
+      // (or similar).
+      //
+      //     Test / parallelExecution := false,
+
       // Uncomment to get (very) full stacktraces in test:
       //      Test / testOptions += Tests.Argument("-oF"),
       target := file(s"target/core-${buildType.name}/")
