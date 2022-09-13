@@ -303,7 +303,6 @@ func (c *Config) GetKVParams() kvparams.KV {
 			MaxIdleConnections:    c.values.Database.Postgres.MaxIdleConnections,
 			MaxOpenConnections:    c.values.Database.Postgres.MaxOpenConnections,
 			ConnectionMaxLifetime: c.values.Database.Postgres.ConnectionMaxLifetime,
-			Metrics:               true,
 		}
 	}
 

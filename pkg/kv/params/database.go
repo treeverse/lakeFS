@@ -10,6 +10,20 @@ type KV struct {
 	DynamoDB *DynamoDB
 }
 
+// EnableMetrics returns a copy of params with Metrics enabled for Postgres.
+// This is used only when we like to get parameters for the main run of lakeFS
+// as the is only one metrics set we expose
+func (p KV) EnableMetrics() KV {
+	if p.Postgres == nil || p.Postgres.Metrics {
+		return p
+	}
+	// make a copy of postgres settings and set metrics on
+	pg := *p.Postgres
+	pg.Metrics = true
+	p.Postgres = &pg
+	return p
+}
+
 type Postgres struct {
 	ConnectionString      string
 	MaxOpenConnections    int32
