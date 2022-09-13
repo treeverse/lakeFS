@@ -126,8 +126,14 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 func deleteRepositoryIfAskedTo(ctx context.Context, repositoryName string) {
 	deleteRepositories := viper.GetBool("delete_repositories")
 	if deleteRepositories {
-		client.DeleteRepositoryWithResponse(ctx, repositoryName)
-		logger.WithField("repo", repositoryName).Info("Deleted repository")
+		resp, err := client.DeleteRepositoryWithResponse(ctx, repositoryName)
+		if err != nil {
+			logger.WithError(err).WithField("repo", repositoryName).Error("Reuqest to delete repository failed")
+		} else if resp.StatusCode() != http.StatusNoContent {
+			logger.WithFields(logging.Fields{"repo": repositoryName, "status_code": resp.StatusCode()}).Error("Reuqest to delete repository failed")
+		} else {
+			logger.WithField("repo", repositoryName).Info("Deleted repository")
+		}
 	}
 }
 
@@ -172,7 +178,10 @@ func uploadContent(ctx context.Context, repo string, branch string, objPath stri
 	if err != nil {
 		return nil, fmt.Errorf("write content: %w", err)
 	}
-	w.Close()
+	err = w.Close()
+	if err != nil {
+		return nil, fmt.Errorf("close form file: %w", err)
+	}
 	return client.UploadObjectWithBodyWithResponse(ctx, repo, branch, &api.UploadObjectParams{
 		Path: objPath,
 	}, w.FormDataContentType(), &b)

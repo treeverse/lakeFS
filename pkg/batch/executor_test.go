@@ -61,7 +61,7 @@ func testReadAfterWrite(t *testing.T) {
 
 	// Prove the executor does not violate read-after-write consistency.
 	// First, let's define read-after-write consistency:
-	// 	Any read that started after a successful write has returned, must return the updated value.
+	// Any read that started after a successful write has returned, must return the updated value.
 	// To test this, let's simulate the following scenario:
 	// 1. reader (r1) starts (Current version: v0)
 	// 2. writer (w1) writes v1
@@ -78,7 +78,7 @@ func testReadAfterWrite(t *testing.T) {
 	read2Done := make(chan bool)
 	read2Batched := make(chan struct{})
 
-	// we pass a custom delay func that ensures we make the write only after
+	// we pass a custom delay func that ensures writer starts when reader is waiting for batch
 	//  reader1 started
 	waitWrite := make(chan bool)
 	delays := int32(0)

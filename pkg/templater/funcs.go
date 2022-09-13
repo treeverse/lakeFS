@@ -80,7 +80,7 @@ func newCredentials(params *ControlledParams, name string) (*Credentials, error)
 	return retCreds, nil
 }
 
-// fail fails template expansion with the message passed in.
+// fail - fails template expansion with the message passed in.
 func fail(_ *ControlledParams, msg string) (string, error) {
 	return msg, fmt.Errorf("%s%w", msg, ErrTemplateFailed)
 }

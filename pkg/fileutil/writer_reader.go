@@ -10,22 +10,20 @@ import (
 // repeatedly processing large volumes of data.
 type WriterThenReader interface {
 	io.Writer
-	// StartReading stops writing and returns a ResetableReader that will allow repeatedly
+	// StartReading stops writing and returns a RewindableReader that will allow repeatedly
 	// reading the data and the total length of data.  The WriterThenReader should be
 	// discarded; calls to Write() after StartReading() will fail.
 	StartReading() (RewindableReader, int64, error)
-	// Name() returns a user-visible name for underlying storage.  It may help debug some
-	// issues.
+	// Name returns a user-visible name for underlying storage.  It may help debug some issues.
 	Name() string
 }
 
 // RewindableReader allows repeatedly reading the same stream.
 type RewindableReader interface {
 	io.ReadSeeker
-	// Rewind allows sets ResetableReader to start re-reading the same data.
+	// Rewind allows sets RewindableReader to start re-reading the same data.
 	Rewind() error
-	// Name() returns a user-visible name for underlying storage.  It may help debug some
-	// issues.
+	// Name returns a user-visible name for underlying storage.  It may help debug some issues.
 	Name() string
 }
 

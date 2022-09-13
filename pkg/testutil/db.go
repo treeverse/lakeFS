@@ -209,7 +209,7 @@ func GetDB(t testing.TB, uri string, opts ...GetDBOption) (db.Database, string) 
 			t.Fatalf("creating config: %s", err)
 		}
 		if cfg.GetBlockstoreType() == "" {
-			// migration requires blockstore initilization
+			// migration requires blockstore initialization
 			viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 
 			// creating config with the new adapter type

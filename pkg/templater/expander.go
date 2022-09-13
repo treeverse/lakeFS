@@ -3,7 +3,7 @@ package templater
 import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	auth_model "github.com/treeverse/lakefs/pkg/auth/model"
-	config "github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/config"
 
 	"context"
 	"errors"
@@ -123,7 +123,7 @@ func (e *expander) expandTo(w io.Writer, params *Params) error {
 	return clone.Execute(w, params.Data)
 }
 
-// ExpanderMap reads and caches Expanders from a fs.FS.  Currently it
+// ExpanderMap reads and caches Expanders from a fs.FS.  Currently, it
 // provides no uncaching as it is only used with a prebuilt FS.
 type ExpanderMap struct {
 	fs   fs.FS

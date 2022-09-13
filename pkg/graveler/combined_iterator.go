@@ -39,7 +39,7 @@ func newCombinedIterator(iterA, iterB ValueIterator) *CombinedIterator {
 	}
 }
 
-// advanceInnerIterators advances the inner iterators and returns true if has more
+// advanceInnerIterators advances the inner iterators and returns true if it has more
 func (c *CombinedIterator) advanceInnerIterators() bool {
 	valA := c.iterA.Value()
 	valB := c.iterB.Value()

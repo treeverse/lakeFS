@@ -69,7 +69,7 @@ func copyFromReader(ctx context.Context, from io.Reader, to blockWriter, o azblo
 // Do not use directly, instead use copyFromReader().
 type copier struct {
 	// ctx holds the context of a copier. This is normally a faux pas to store a Context in a struct. In this case,
-	// the copier has the lifetime of a function call, so its fine.
+	// the copier has the lifetime of a function call, so it's fine.
 	ctx    context.Context
 	cancel context.CancelFunc
 
@@ -207,7 +207,7 @@ func (id *id) next() string {
 	return str
 }
 
-// issued returns all ids that have been issued. This returned value shares the internal slice so it is not safe to modify the return.
+// issued returns all ids that have been issued. This returned value shares the internal slice, so it is not safe to modify the return.
 // The value is only valid until the next time next() is called.
 func (id *id) issued() []string {
 	return id.all

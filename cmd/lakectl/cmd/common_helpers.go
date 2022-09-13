@@ -35,7 +35,6 @@ var ErrInvalidValueInList = errors.New("empty string in list")
 
 var accessKeyRegexp = regexp.MustCompile(`^AKIA[I|J][A-Z0-9]{14}Q$`)
 
-// const values used by lakectl commands
 const (
 	PathDelimiter = "/"
 )
@@ -47,7 +46,7 @@ const (
 )
 
 const (
-	internalPageSize           = 1000 // when retreiving all records, use this page size under the hood
+	internalPageSize           = 1000 // when retrieving all records, use this page size under the hood
 	defaultAmountArgumentValue = 100  // when no amount is specified, use this value for the argument
 )
 

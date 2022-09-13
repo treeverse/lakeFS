@@ -216,7 +216,7 @@ func checkContent(t *testing.T, ctx context.Context, namespace string, filename 
 		t.Errorf("Failed to open namespace:%s filename:%s - %s", namespace, filename, err)
 		return
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	data, err := io.ReadAll(f)
 	if err != nil {

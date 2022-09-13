@@ -91,9 +91,8 @@ func createSStableIterator(t *testing.T, keys, vals []string) pebblesst.Iterator
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		iter.Close()
+		_ = iter.Close()
 	})
-
 	return iter
 }
 
@@ -145,7 +144,7 @@ func createSStableReader(t *testing.T, keys []string, vals []string) fakeReader 
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		if wf.NumClosed == 0 {
-			ssReader.Close()
+			_ = ssReader.Close()
 		}
 	})
 

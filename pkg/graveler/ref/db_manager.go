@@ -731,24 +731,25 @@ func rWorker(ctx context.Context, d *pgxpool.Pool, rChan <-chan *graveler.Reposi
 				IdentifierType:   block.IdentifierTypeRelative,
 			}
 			reader, err := blockstore.Get(ctx, objectPointer, -1)
-			if err != nil && !errors.Is(err, adapter.ErrDataNotFound) { // skip settings migration if not found
+			if err != nil {
+				// skip settings migration if not found
+				if errors.Is(err, adapter.ErrDataNotFound) {
+					return nil
+				}
 				return fmt.Errorf("failed to get from blockstore: %w", err)
-			} else if err == nil {
-				buff, err := io.ReadAll(reader)
-				reader.Close()
-				if err != nil {
-					return fmt.Errorf("failed to read object: %w", err)
-				}
-
-				if err = encoder.Encode(kv.Entry{
-					PartitionKey: []byte(graveler.RepoPartition(r)),
-					Key:          []byte(graveler.SettingsPath(branch.ProtectionSettingKey)),
-					Value:        buff,
-				}); err != nil {
-					return err
-				}
 			}
-			return nil
+			defer func() {
+				_ = reader.Close()
+			}()
+			buff, err := io.ReadAll(reader)
+			if err != nil {
+				return fmt.Errorf("failed to read object: %w", err)
+			}
+			return encoder.Encode(kv.Entry{
+				PartitionKey: []byte(graveler.RepoPartition(r)),
+				Key:          []byte(graveler.SettingsPath(branch.ProtectionSettingKey)),
+				Value:        buff,
+			})
 		})
 
 		workersErr := wg.Wait().ErrorOrNil()

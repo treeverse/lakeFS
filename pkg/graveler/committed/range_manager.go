@@ -90,8 +90,8 @@ type RangeWriter interface {
 	// WriteRecord appends the given record to the Range.
 	WriteRecord(record Record) error
 
-	// SetMetadata associates metadata value (which will be stringified when the writer is
-	// Closed and added to the resulting range ID) with key.
+	// SetMetadata associates metadata value (which will be stringify when the writer is
+	// closed and added to the resulting range ID) with key.
 	SetMetadata(key, value string)
 
 	// GetApproximateSize returns an estimate of the current written size of the Range.

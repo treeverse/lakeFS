@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	sq "github.com/Masterminds/squirrel"
 	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
@@ -32,7 +31,6 @@ import (
 var (
 	pool        *dockertest.Pool
 	databaseURI string
-	psql        = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 	someSecret  = []byte("some secret")
 
 	userPoliciesForTesting = []*model.Policy{{

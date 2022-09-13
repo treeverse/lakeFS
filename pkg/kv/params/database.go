@@ -31,7 +31,7 @@ type DynamoDB struct {
 	ScanLimit int64
 
 	// The endpoint URL of the DynamoDB endpoint
-	// Can be used to redirect to DynmoDB on AWS, local docker etc.
+	// Can be used to redirect to DynamoDB on AWS, local docker etc.
 	Endpoint string
 
 	// AWS connection details - region, profile and credentials

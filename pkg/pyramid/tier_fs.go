@@ -320,7 +320,7 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 		if err != nil {
 			return nil, fmt.Errorf("read from block storage: %w", err)
 		}
-		defer reader.Close()
+		defer func() { _ = reader.Close() }()
 
 		// write to temp file - otherwise the file is available to other readers with partial data
 		tmpFullPath := fileRef.fullPath + ".tmp"

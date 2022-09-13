@@ -43,7 +43,7 @@ type File interface {
 type StoredFile interface {
 	File
 
-	// Successful Store operation guarantees that the file is persistent.
+	// Store - Successful operation guarantees that the file is persistent.
 	// If the file wasn't closed, Store closes it.
 	Store(ctx context.Context, filename string) error
 

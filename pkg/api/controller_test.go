@@ -2483,12 +2483,12 @@ func testController_ExpandTemplate(t *testing.T, kvEnabled bool) {
 		// place.  Use a request editor to place them directly as a
 		// query string.
 		resp, err := clt.ExpandTemplateWithResponse(ctx, "spark.submit.conf.tt", &api.ExpandTemplateParams{},
-			api.RequestEditorFn(func(_ context.Context, req *http.Request) error {
+			func(_ context.Context, req *http.Request) error {
 				values := req.URL.Query()
 				values.Add("lakefs_url", lfsURL)
 				req.URL.RawQuery = values.Encode()
 				return nil
-			}))
+			})
 		testutil.Must(t, err)
 		if resp.HTTPResponse.StatusCode != http.StatusOK {
 			t.Errorf("Expansion failed with status %d\n\t%s\n\t%+v", resp.HTTPResponse.StatusCode, string(resp.Body), resp)
