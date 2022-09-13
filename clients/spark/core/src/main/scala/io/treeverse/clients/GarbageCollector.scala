@@ -219,7 +219,7 @@ object GarbageCollector {
       .join(uniqueExpiredRangesDF.as("expired"), "range_id")
       .select("all_entries.*")
       .join(activeRangesDF.as("active"),
-            allEntries("range_id") === activeRangesDF("range_id"),
+            allEntries("address") === activeRangesDF("address"),
             "leftanti"
            )
       .select("all_entries.*")
@@ -329,8 +329,8 @@ object GarbageCollector {
     if (!storageNSForHadoopFS.endsWith("/")) {
       storageNSForHadoopFS += "/"
     }
-    val allEntriesPath = new Path(storageNSForHadoopFS + "_lakefs/gc/all_ranges/")
-    new RepositoryConverter(spark, hc, repo, allEntriesPath).convert()
+    val allEntriesPath = new Path(storageNSForHadoopFS + "_lakefs/retention/gc/all_ranges/")
+    new RepositoryConverter(spark, hc, repo, allEntriesPath).write()
     val allEntries = spark.read.parquet(allEntriesPath.toString)
     var prepareResult: GarbageCollectionPrepareResponse = null
     var runID = ""

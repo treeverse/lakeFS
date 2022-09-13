@@ -12,16 +12,16 @@ class RepositoryConverter(
     val dstPath: Path
 ) {
 
-  def convert(): Unit = {
+  def write(): Unit = {
     val fs = dstPath.getFileSystem(conf)
-    var rangesToAdd = LakeFSContext.newDF(spark, repoName = repoName)
+    var entriesToAdd = LakeFSContext.newDF(spark, repoName = repoName)
     try {
       val existingRanges = spark.read
         .option("spark.sql.files.ignoreMissingFiles", "true")
         .parquet(dstPath.toString)
         .select("range_id")
         .distinct
-      rangesToAdd = rangesToAdd
+      entriesToAdd = entriesToAdd
         .as("r1")
         .join(existingRanges.as("r2"), Seq("range_id"), "left_anti")
         .select(col("r1.*"))
@@ -30,7 +30,7 @@ class RepositoryConverter(
         // TODO add debug log
       }
     }
-    rangesToAdd.write
+    entriesToAdd.write
       .partitionBy("range_id")
       .mode("overwrite")
       .format("parquet")
