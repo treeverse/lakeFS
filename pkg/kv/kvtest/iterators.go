@@ -193,22 +193,12 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 			t.Fatalf("failed to create primary iterator: %v", err)
 		}
 		defer itr.Close()
-		names := make([]string, 0)
 
-		for itr.Next() {
-			e := itr.Entry()
-			model, ok := e.Value.(*TestModel)
-			if !ok {
-				t.Fatalf("cannot read from store")
-			}
-			names = append(names, string(model.Name))
+		if itr.Next() {
+			t.Fatalf("expected to be false")
 		}
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
-		}
-
-		if diffs := deep.Equal(names, []string{}); diffs != nil {
-			t.Fatalf("got wrong list of names: %v", diffs)
 		}
 	})
 
@@ -385,12 +375,8 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 		}
 		defer itr.Close()
 
-		for itr.Next() {
-			e := itr.Entry()
-			_, ok := e.Value.(*TestModel)
-			if !ok {
-				t.Fatalf("cannot read from store")
-			}
+		if itr.Next() {
+			t.Fatalf("expected to be false")
 		}
 
 		if !errors.Is(itr.Err(), kv.ErrMissingKey) {
@@ -405,21 +391,11 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 			t.Fatalf("failed to create secondary iterator: %v", err)
 		}
 		defer itr.Close()
-		names := make([]string, 0)
-		for itr.Next() {
-			e := itr.Entry()
-			model, ok := e.Value.(*TestModel)
-			if !ok {
-				t.Fatalf("cannot read from store")
-			}
-			names = append(names, string(model.Name))
+		if itr.Next() {
+			t.Fatalf("expected to be false")
 		}
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
-		}
-
-		if diffs := deep.Equal(names, []string{}); diffs != nil {
-			t.Fatalf("got wrong list of names: %v", diffs)
 		}
 	})
 }
