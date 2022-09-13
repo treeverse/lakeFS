@@ -59,21 +59,71 @@ For example, if you install lakeFS on GKE, you need to deploy the SQL Auth Proxy
    **Note:** it is preferable to run the binary as a service using systemd or your operating system's facilities.
 
 ### On Google Cloud Run
-To support container-based environments like Google Cloud Run, lakeFS can be configured using environment variables. Here is a `docker run`
-command to demonstrate starting lakeFS using Docker:
+To support container-based environments like Google Cloud Run, lakeFS can be configured using environment variables.
 
-```sh
-docker run \
-  --name lakefs \
-  -p 8000:8000 \
-  -e LAKEFS_DATABASE_TYPE="postgres" \
-  -e LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \
-  -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="[ENCRYPTION_SECRET_KEY]" \
-  -e LAKEFS_BLOCKSTORE_TYPE="gs" \
-  treeverse/lakefs:latest run
-```
+1. Save the following configuration file as `config.yaml`:
 
-See the [reference](../reference/configuration.md#using-environment-variables) for a complete list of environment variables.
+   ```yaml
+   apiVersion: serving.knative.dev/v1
+   kind: Service
+   metadata:
+     name: [LAKEFS_SERVICE_NAME]
+   spec:
+     template:
+       metadata:
+         annotations:
+           autoscaling.knative.dev/maxScale: '5'
+           run.googleapis.com/client-name: cloud-console
+           run.googleapis.com/cloudsql-instances: [POSTGRES_INSTANCE_NAME]
+       spec:
+         containers:
+         - image: gcr.io/lakefs/treeverse/lakefs@sha256:18be2f7e86f7572160909b7dcae2e50be5704cb174eeaf4fb61274def3536009
+           ports:
+           - name: http1
+             containerPort: 8000
+           env:
+           - name: LAKEFS_BLOCKSTORE_TYPE
+             value: gs
+           - name: LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
+             value: '[YOUR SERVICE ACCOUNT JSON STRING]'
+           - name: LAKEFS_DATABASE_CONNECTION_STRING
+             value: [DATABASE_CONNECTION_STRING]
+           - name: LAKEFS_STATS_ENABLED
+             value: 'false'
+           - name: INSTANCE_CONNECTION_NAME
+             value: [POSTGRES_INSTANCE_NAME]
+           - name: CLOUD_SQL_CONNECTION_NAME
+             value: [POSTGRES_INSTANCE_NAME]
+           - name: LAKEFS_AUTH_ENCRYPT_SECRET_KEY
+             valueFrom:
+               secretKeyRef:
+                 key: '2'
+                 name: [ENCRYPTION_SECRET_KEY]
+           resources:
+             limits:
+               cpu: 2000m
+               memory: 1Gi
+   ```
+   
+   See the [reference](../reference/configuration.md#using-environment-variables) for a complete list of environment variables.
+
+1. Create the service using Google Cloud CLI:
+
+   ```sh
+   gcloud run services replace config.yaml
+   ```
+
+1. Go to Google Cloud Run UI, select the checkbox for the lakeFS service created in the previous step and click on "ADD PRINCIPAL" button:
+
+   <img src="{{ site.baseurl }}/assets/img/gcp_1.png" alt="Google Cloud Run UI" />
+
+1. Enter "allUsers" in "New principals" column, select "Cloud Run Invoker" role and save:
+
+   <img src="{{ site.baseurl }}/assets/img/gcp_2.png" alt="Add principals and roles" />
+
+1. Select service name to go to service details and click on the URL to go to lakeFS UI:
+
+   <img src="{{ site.baseurl }}/assets/img/gcp_3.png" alt="lakeFS URL" />
 
 ### On GKE
 See [Kubernetes Deployment](./k8s.md).
