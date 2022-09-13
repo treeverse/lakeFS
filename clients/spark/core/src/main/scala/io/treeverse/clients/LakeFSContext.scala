@@ -86,7 +86,8 @@ object LakeFSContext {
             entry.eTag,
             new java.sql.Timestamp(TimeUnit.SECONDS.toMillis(entry.getLastModified.seconds)),
             entry.size,
-            new String(v.rangeID)
+            new String(v.rangeID),
+            entry.addressType.isRelative
           )
       }
     val schema = new StructType()
@@ -96,6 +97,7 @@ object LakeFSContext {
       .add(StructField("last_modified", TimestampType))
       .add(StructField("size", LongType))
       .add(StructField("range_id", StringType))
+      .add(StructField("relative", BooleanType))
     spark.createDataFrame(rdd, schema)
   }
 

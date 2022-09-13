@@ -1,26 +1,31 @@
 package io.treeverse.clients
 
+import com.amazonaws.services.s3.AmazonS3
 import com.google.protobuf.timestamp.Timestamp
+import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse
 import io.treeverse.clients.LakeFSContext._
-import org.apache.hadoop.fs._
+import io.treeverse.parquet.RepositoryConverter
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs._
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import org.apache.spark.sql.{SparkSession, _}
-import com.amazonaws.services.s3.AmazonS3
+import org.apache.spark.sql.types.StringType
+import org.apache.spark.sql.types.StructField
+import org.apache.spark.sql.types.StructType
+import org.json4s.JsonDSL._
+import org.json4s._
+import org.json4s.native.JsonMethods._
 
 import java.net.URI
-import collection.JavaConverters._
-import java.time.format.DateTimeFormatter
-import org.json4s.native.JsonMethods._
-import org.json4s._
-import org.json4s.JsonDSL._
 import java.time.LocalDateTime
 import java.time.ZoneOffset
-import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse
+import java.time.format.DateTimeFormatter
 import java.util.UUID
+
+import collection.JavaConverters._
 
 /** Interface to build an S3 client.  The object
  *  io.treeverse.clients.conditional.S3ClientBuilder -- conditionally
@@ -195,13 +200,11 @@ object GarbageCollector {
    */
   def getExpiredEntriesFromRanges(
       ranges: Dataset[Row],
+      allEntries: Dataset[Row],
       apiConf: APIConfigurations,
       repo: String,
       hcValues: Broadcast[ConfMap]
   ): Dataset[Row] = {
-    val left_anti_join_addresses = udf((x: Seq[String], y: Seq[String]) => {
-      leftAntiJoinAddresses(x.toSet, y.toSet, apiConf, repo, hcValues).toSeq
-    })
     val expiredRangesDF = ranges.where("expired")
     val activeRangesDF = ranges.where("!expired")
 
@@ -211,73 +214,29 @@ object GarbageCollector {
       expiredRangesDF("range_id") === activeRangesDF("range_id"),
       "leftanti"
     )
-
-    //  intersecting options are __(____[_____)______]__   __(____[____]___)__   ___[___(__)___]___   ___[__(___]___)__
-    //  intersecting ranges  maintain  ( <= ] && [ <= )
-    val intersecting =
-      udf((aMin: Array[Byte], aMax: Array[Byte], bMin: Array[Byte], bMax: Array[Byte]) => {
-        val byteArrayOrdering = Ordering.by((_: Array[Byte]).toIterable)
-        byteArrayOrdering.compare(aMin, bMax) <= 0 && byteArrayOrdering.compare(bMin, aMax) <= 0
-      })
-
-    val minMax = udf((min: String, max: String) => (min, max))
-
-    // for every expired range - get all intersecting active ranges
-    //  expired_range | active_ranges  | min-max (of expired_range)
-    val joinActiveByRange = uniqueExpiredRangesDF
-      .as("u")
-      .join(
-        activeRangesDF.as("a"),
-        intersecting(col("a.min_key"), col("a.max_key"), col("u.min_key"), col("u.max_key")),
-        "left"
-      )
-      .select(
-        col("u.range_id").as("unique_range"),
-        col("a.range_id").as("active_range"),
-        minMax(col("u.min_key"), col("u.max_key")).as("min-max")
-      )
-
-    // group unique_ranges and active_ranges by min-max
-    // unique_ranges: Set[String] | active_ranges: Set[String] | min-max
-    // for each row, unique_ranges contains ranges with exact min-max, active_ranges contain ranges intersecting with min-max
-    val groupByMinMax = joinActiveByRange
-      .groupBy("min-max")
-      .agg(
-        collect_set("unique_range").alias("unique_ranges"),
-        collect_set("active_range").alias("active_ranges")
-      )
-
-    // add a column of all addresses contained only in unique ranges
-    // for every Row - [ collection of unique ranges | collection of active ranges] the column would contain a collection of addresses existing only in unique ranges
-    val addresses = groupByMinMax.withColumn(
-      "addresses",
-      left_anti_join_addresses(col("unique_ranges"), col("active_ranges"))
-    )
-
-    addresses
-      .select(explode(col("addresses")).as("addresses"))
-      .select(
-        col("addresses._1").as("key"),
-        col("addresses._2").as("address"),
-        col("addresses._3").as("relative"),
-        col("addresses._4").as("last_modified")
-      )
+    allEntries
+      .as("all_entries")
+      .join(uniqueExpiredRangesDF.as("expired"), "range_id")
+      .select("all_entries.*")
+      .join(activeRangesDF.as("active"),
+            allEntries("range_id") === activeRangesDF("range_id"),
+            "leftanti"
+           )
+      .select("all_entries.*")
   }
 
   def getExpiredAddresses(
       repo: String,
       runID: String,
       commitDFLocation: String,
+      allEntries: Dataset[Row],
       spark: SparkSession,
       apiConf: APIConfigurations,
       hcValues: Broadcast[ConfMap]
   ): Dataset[Row] = {
     val commitsDF = getCommitsDF(runID, commitDFLocation, spark)
     val rangesDF = getRangesDFFromCommits(commitsDF, repo, apiConf, hcValues)
-    val expired = getExpiredEntriesFromRanges(rangesDF, apiConf, repo, hcValues)
-
-    val activeRangesDF = rangesDF.where("!expired")
-    subtractDeduplications(expired, activeRangesDF, apiConf, repo, spark, hcValues)
+    getExpiredEntriesFromRanges(rangesDF, allEntries, apiConf, repo, hcValues)
   }
 
   private def subtractDeduplications(
@@ -370,6 +329,9 @@ object GarbageCollector {
     if (!storageNSForHadoopFS.endsWith("/")) {
       storageNSForHadoopFS += "/"
     }
+    val allEntriesPath = new Path(storageNSForHadoopFS + "_lakefs/gc/all_ranges/")
+    new RepositoryConverter(spark, hc, repo, allEntriesPath).convert()
+    val allEntries = spark.read.parquet(allEntriesPath.toString)
     var prepareResult: GarbageCollectionPrepareResponse = null
     var runID = ""
     var gcCommitsLocation = ""
@@ -399,6 +361,7 @@ object GarbageCollector {
         repo,
         runID,
         gcCommitsLocation,
+        allEntries,
         spark,
         APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout),
         hcValues
