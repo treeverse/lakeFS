@@ -100,7 +100,7 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 		itr.SeekGE([]byte("d"))
 
 		if itr.Next() {
-			t.Fatalf("seekGE error expected to be false")
+			t.Fatalf("next after seekGE expected to be false")
 		}
 
 		if !errors.Is(itr.Err(), kv.ErrMissingPartitionKey) {
@@ -195,7 +195,7 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 		defer itr.Close()
 
 		if itr.Next() {
-			t.Fatalf("expected to be false")
+			t.Fatalf("next should return false")
 		}
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
@@ -376,7 +376,7 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 		defer itr.Close()
 
 		if itr.Next() {
-			t.Fatalf("expected to be false")
+			t.Fatalf("next should return false")
 		}
 
 		if !errors.Is(itr.Err(), kv.ErrMissingKey) {
@@ -392,7 +392,7 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 		}
 		defer itr.Close()
 		if itr.Next() {
-			t.Fatalf("expected to be false")
+			t.Fatalf("next should return false")
 		}
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
