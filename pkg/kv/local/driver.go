@@ -28,7 +28,7 @@ func normalizeDBParams(p *kvparams.Local) {
 	if len(p.DirectoryPath) == 0 {
 		p.DirectoryPath = DefaultDirectoryPath
 	}
-	if p.PrefetchSize == 0 {
+	if p.PrefetchSize <= 0 {
 		p.PrefetchSize = DefaultPrefetchSize
 	}
 }
