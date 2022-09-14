@@ -62,10 +62,10 @@ Note: Make build won't work for Windows user for building lakeFS.
 ## Before creating a pull request
 
 1. Review this document in full.
-2. Make sure there's an open issue on GitHub that this pull request addresses, and that it isn't labeled `x/wontfix`.
-3. Fork the [lakeFS repository](https://github.com/treeverse/lakeFS).
-4. If you're adding new functionality, create a new branch named `feature/<DESCRIPTIVE NAME>`.
-5. If you're fixing a bug, create a new branch named `fix/<DESCRIPTIVE NAME>-<ISSUE NUMBER>`.
+1. Make sure there's an open issue on GitHub that this pull request addresses, and that it isn't labeled `x/wontfix`.
+1. Fork the [lakeFS repository](https://github.com/treeverse/lakeFS).
+1. If you're adding new functionality, create a new branch named `feature/<DESCRIPTIVE NAME>`.
+1. If you're fixing a bug, create a new branch named `fix/<DESCRIPTIVE NAME>-<ISSUE NUMBER>`.
 
 ## Testing your change
 
