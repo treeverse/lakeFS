@@ -83,8 +83,8 @@ class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     sstableFile: String,
     companion: GeneratedMessageCompanion[Proto]
 ) extends Closeable {
-  private val fp = new java.io.FileInputStream(sstableFile)
-  private val reader = new BlockReadableFileChannel(fp.getChannel)
+  private val fp = new java.io.RandomAccessFile(sstableFile, "r")
+  private val reader = new BlockReadableFileChannel(fp)
 
   def close(): Unit = {
     fp.close()

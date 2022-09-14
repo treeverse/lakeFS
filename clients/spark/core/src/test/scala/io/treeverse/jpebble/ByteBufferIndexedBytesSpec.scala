@@ -1,7 +1,5 @@
 package io.treeverse.jpebble
 
-import java.nio.ByteBuffer
-
 import org.scalatest._
 import matchers.should._
 import funspec._
@@ -11,20 +9,20 @@ class ByteBufferIndexedBytesSpec extends AnyFunSpec with Matchers {
 
   describe("ByteBufferIndexedBytes") {
     it("returns bytes in buffer through iterator") {
-      val bytes = IndexedBytes.create(ByteBuffer.wrap(bytesSeq)).iterator.toSeq
+      val bytes = IndexedBytes.create(bytesSeq).iterator.toSeq
 
       bytes should contain theSameElementsInOrderAs bytesSeq
     }
 
     it("slices") {
-      val buffer = IndexedBytes.create(ByteBuffer.wrap(bytesSeq))
+      val buffer = IndexedBytes.create(bytesSeq)
       val slice = buffer.slice(2, 5)
 
       slice.iterator.toSeq should contain theSameElementsInOrderAs bytesSeq.slice(2, 5)
     }
 
     it("doesn't let slices interfere with one another") {
-      val buffer = IndexedBytes.create(ByteBuffer.wrap(bytesSeq))
+      val buffer = IndexedBytes.create(bytesSeq)
       val sliceIndices = Seq((1, 4), (2, 5), (3, 6), (2, 6))
 
       // Verify slices contents
@@ -44,9 +42,22 @@ class ByteBufferIndexedBytesSpec extends AnyFunSpec with Matchers {
       }
     }
 
+    describe("iterator") {
+      it("takes") {
+        val buffer = IndexedBytes.create(bytesSeq)
+        val sliceIndices = Seq((1, 4), (2, 5), (3, 6), (2, 6))
+
+        // Verify slices contents
+        for (indices <- sliceIndices) {
+          val taken = buffer.iterator.drop(indices._1).take(indices._2 - indices._1)
+          taken.toSeq should contain theSameElementsInOrderAs (bytesSeq.view(indices._1, indices._2))
+        }
+      }
+    }
+
     describe("exceptions") {
       it("should throw IndexOutOfBoundsException when applied out of bounds") {
-        val buffer = IndexedBytes.create(ByteBuffer.wrap(bytesSeq))
+        val buffer = IndexedBytes.create(bytesSeq)
         intercept[IndexOutOfBoundsException] {
           buffer(-1)
         }
@@ -56,7 +67,7 @@ class ByteBufferIndexedBytesSpec extends AnyFunSpec with Matchers {
       }
 
       it("iterators should throw NoSuchElementException after end") {
-        val iterator = IndexedBytes.create(ByteBuffer.wrap(bytesSeq)).iterator
+        val iterator = IndexedBytes.create(bytesSeq).iterator
         while (iterator.hasNext) {
           iterator.next()
         }
