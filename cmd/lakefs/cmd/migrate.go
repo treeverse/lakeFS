@@ -30,12 +30,12 @@ var versionCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 
-		version := MustValidateSchemaVersion(ctx, kvStore)
+		version := mustValidateSchemaVersion(ctx, kvStore)
 		fmt.Printf("Database schema version: %d\n", version)
 	},
 }
 
-func MustValidateSchemaVersion(ctx context.Context, kvStore kv.Store) int {
+func mustValidateSchemaVersion(ctx context.Context, kvStore kv.Store) int {
 	version, err := kv.ValidateSchemaVersion(ctx, kvStore)
 	if errors.Is(err, kv.ErrNotFound) {
 		fmt.Fprintf(os.Stderr, "No version information - KV not initialized.\n")
@@ -62,7 +62,7 @@ var upCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 
-		_ = MustValidateSchemaVersion(ctx, kvStore)
+		_ = mustValidateSchemaVersion(ctx, kvStore)
 		fmt.Printf("No migrations to apply.\n")
 	},
 }
@@ -81,7 +81,7 @@ var gotoCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 
-		_ = MustValidateSchemaVersion(ctx, kvStore)
+		_ = mustValidateSchemaVersion(ctx, kvStore)
 		fmt.Printf("No migrations to apply.\n")
 	},
 }
