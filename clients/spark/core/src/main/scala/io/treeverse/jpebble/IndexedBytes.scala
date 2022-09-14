@@ -33,6 +33,12 @@ class BufferIterator(private val buf: BufferIndexedBytes) extends Iterator[Byte]
         throw new java.util.NoSuchElementException().initCause(e)
     }
   }
+
+  override def take(n: Int): Iterator[Byte] = {
+    val ret = buf.sliceView(index, index + n).iterator
+    index += n
+    ret
+  }
 }
 
 /** IndexedBytes running on an immutable array of bytes on the range
@@ -57,6 +63,15 @@ class BufferIndexedBytes(private val buf: Array[Byte], private val offset: Int, 
     new BufferIndexedBytes(buf, offset + start, end - start)
   }
 
+  def sliceView(start: Int, end: Int) = {
+    if (start < 0 || end < 0) {
+      throw new IndexOutOfBoundsException(s"Cannot expand slice of size $size after end to [$start, $end)")
+    }
+    if (end > size) {
+      throw new IndexOutOfBoundsException(s"Cannot expand slice of size $size after end to [$start, $end)")
+    }
+    buf.view.slice(offset + start, offset + end)
+  }
 
   override def iterator = new BufferIterator(this)
 

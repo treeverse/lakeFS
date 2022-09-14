@@ -1,6 +1,6 @@
 package io.treeverse.clients
 
-import io.treeverse.jpebble.{BlockParser, BlockReadableFileChannel, Entry => PebbleEntry}
+import io.treeverse.jpebble.{BlockParser, BlockReadableFile, Entry => PebbleEntry}
 import com.google.protobuf.CodedInputStream
 import io.treeverse.lakefs.catalog.Entry
 import io.treeverse.lakefs.graveler.committed.RangeData
@@ -84,7 +84,7 @@ class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     companion: GeneratedMessageCompanion[Proto]
 ) extends Closeable {
   private val fp = new java.io.RandomAccessFile(sstableFile, "r")
-  private val reader = new BlockReadableFileChannel(fp)
+  private val reader = new BlockReadableFile(fp)
 
   def close(): Unit = {
     fp.close()
