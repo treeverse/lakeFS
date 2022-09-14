@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -15,7 +18,25 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print current migration version and available version",
 	Run: func(cmd *cobra.Command, args []string) {
-		logging.Default().Info("Nothing to do, DB migrate is deprecated")
+		logger := logging.Default()
+		cfg := loadConfig()
+
+		ctx := cmd.Context()
+		kvParams := cfg.GetKVParams()
+		kvStore, err := kv.Open(ctx, kvParams)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to open KV store")
+		}
+		defer kvStore.Close()
+
+		version, err := kv.GetDBSchemaVersion(ctx, kvStore)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to get DB schema version")
+			return
+
+		}
+		logger.WithField("schema_version", version).Info("DB schema version")
+		fmt.Printf("Database schema version: %d\n", version)
 	},
 }
 
@@ -23,7 +44,7 @@ var upCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Apply all up migrations",
 	Run: func(cmd *cobra.Command, args []string) {
-		logging.Default().Info("Nothing to do, DB migrate is deprecated")
+		fmt.Printf("No migrations to apply.\n")
 	},
 }
 
@@ -31,7 +52,7 @@ var gotoCmd = &cobra.Command{
 	Use:   "goto",
 	Short: "Migrate to version V.",
 	Run: func(cmd *cobra.Command, args []string) {
-		logging.Default().Info("Nothing to do, DB migrate is deprecated")
+		fmt.Printf("No migrations to apply.\n")
 	},
 }
 
