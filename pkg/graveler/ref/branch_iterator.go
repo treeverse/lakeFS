@@ -2,6 +2,7 @@ package ref
 
 import (
 	"context"
+	"errors"
 	"sort"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -11,6 +12,8 @@ import (
 // CompareFunc type used for sorting in InMemIterator, it is a strictly bigger comparison function required for the
 // sort.Slice algorithm, implementors need to decide how to handle equal values
 type CompareFunc func(i, j int) bool
+
+var ErrIteratorClosed = errors.New("iterator already closed")
 
 // BranchSimpleIterator Iterates over repository's branches in a sorted way, since the branches are already sorted in DB according to BranchID
 type BranchSimpleIterator struct {

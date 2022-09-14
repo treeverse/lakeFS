@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	packageName            = "multiparts"
 	multipartsPartitionKey = "multiparts"
 )
 
@@ -43,9 +42,8 @@ type tracker struct {
 }
 
 var (
-	ErrMultipartUploadNotFound  = errors.New("multipart upload not found")
-	ErrInvalidUploadID          = errors.New("invalid upload id")
-	ErrInvalidMetadataSrcFormat = errors.New("invalid metadata source format")
+	ErrMultipartUploadNotFound = errors.New("multipart upload not found")
+	ErrInvalidUploadID         = errors.New("invalid upload id")
 )
 
 func NewTracker(ms kv.StoreMessage) Tracker {

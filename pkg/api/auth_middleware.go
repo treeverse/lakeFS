@@ -17,7 +17,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/oidc"
 	"github.com/treeverse/lakefs/pkg/config"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -184,7 +183,7 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 	}
 	_, err = authService.CreateUser(ctx, &u)
 	if err != nil {
-		if !errors.Is(err, db.ErrAlreadyExists) {
+		if !errors.Is(err, auth.ErrAlreadyExists) {
 			logger.WithError(err).Error("Failed to create external user in database")
 			return nil, ErrAuthenticatingRequest
 		}

@@ -73,15 +73,6 @@ type configuration struct {
 	}
 
 	Database struct {
-		// Deprecated: use Postgres struct
-		DeprecatedConnectionString SecureString `mapstructure:"connection_string"`
-		// Deprecated: use Postgres struct
-		DeprecatedMaxOpenConnections int32 `mapstructure:"max_open_connections"`
-		// Deprecated: use Postgres struct
-		DeprecatedMaxIdleConnections int32 `mapstructure:"max_idle_connections"`
-		// Deprecated: use Postgres struct
-		DeprecatedConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
-
 		// DropTables Development flag to delete tables after successful migration to KV
 		DropTables bool `mapstructure:"drop_tables"`
 		// Type  Name of the KV Store driver DB implementation which is available according to the kv package Drivers function

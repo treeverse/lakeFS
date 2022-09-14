@@ -1,7 +1,6 @@
 package graveler_test
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"strconv"
@@ -950,16 +949,7 @@ func TestGraveler_UpdateBranch(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestGraveler_Commit(t *testing.T) {
-	t.Run("TestDBGraveler_Commit", func(t *testing.T) {
-		testGravelerCommit(t, false)
-	})
-	t.Run("TestKVGraveler_Commit", func(t *testing.T) {
-		testGravelerCommit(t, true)
-	})
-}
-
-func testGravelerCommit(t *testing.T, kvEnabled bool) {
+func TestGravelerCommit(t *testing.T) {
 	expectedCommitID := graveler.CommitID("expectedCommitId")
 	expectedRangeID := graveler.MetaRangeID("expectedRangeID")
 	values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
@@ -1202,9 +1192,6 @@ func testGravelerCommit(t *testing.T, kvEnabled bool) {
 			if tt.args.sourceMetarange != nil {
 				expectedAppliedData = testutil.AppliedData{}
 			}
-			if !kvEnabled && tt.values != values {
-				t.Skip("no sealed tokens on db")
-			}
 			if diff := deep.Equal(tt.fields.CommittedManager.AppliedData, expectedAppliedData); diff != nil {
 				t.Errorf("unexpected apply data %s", diff)
 			}
@@ -1271,13 +1258,7 @@ func TestGraveler_MergeInvalidRef(t *testing.T) {
 	}
 }
 
-func TestGraveler_AddCommitToBranchHead(t *testing.T) {
-	t.Run("TestKVGraveler_AddCommitToBranchHead", func(t *testing.T) {
-		testGravelerAddCommitToBranchHead(t, true)
-	})
-}
-
-func testGravelerAddCommitToBranchHead(t *testing.T, kvEnabled bool) {
+func TestGravelerAddCommitToBranchHead(t *testing.T) {
 	const (
 		expectedCommitID         = graveler.CommitID("expectedCommitId")
 		expectedParentCommitID   = graveler.CommitID("expectedParentCommitId")
@@ -1412,9 +1393,6 @@ func testGravelerAddCommitToBranchHead(t *testing.T, kvEnabled bool) {
 				Metadata:    graveler.Metadata{},
 			}); diff != nil {
 				t.Errorf("unexpected added commit %s", diff)
-			}
-			if !kvEnabled && tt.fields.StagingManager.DropCalled {
-				t.Error("Staging manager drop shouldn't be called")
 			}
 
 			if got != expectedCommitID {
@@ -1569,13 +1547,7 @@ func TestGraveler_AddCommit(t *testing.T) {
 	}
 }
 
-func TestGraveler_Delete(t *testing.T) {
-	t.Run("TestKVGraveler_Delete", func(t *testing.T) {
-		testGravelerDelete(t, true)
-	})
-}
-
-func testGravelerDelete(t *testing.T, kvEnabled bool) {
+func TestGravelerDelete(t *testing.T) {
 	type fields struct {
 		CommittedManager graveler.CommittedManager
 		StagingManager   *testutil.StagingFake
@@ -1727,21 +1699,10 @@ func testGravelerDelete(t *testing.T, kvEnabled bool) {
 				t.Errorf("Delete() returned unexpected error. got = %v, expected %v", err, tt.expectedErr)
 			}
 
-			if kvEnabled {
-				if tt.expectedRemovedKey != nil {
-					// validate set on staging
-					if diff := deep.Equal(tt.fields.StagingManager.LastSetValueRecord, &graveler.ValueRecord{Key: tt.expectedRemovedKey, Value: nil}); diff != nil {
-						t.Errorf("unexpected set value %s", diff)
-					}
-				}
-			} else {
+			if tt.expectedRemovedKey != nil {
 				// validate set on staging
-				if diff := deep.Equal(tt.fields.StagingManager.LastSetValueRecord, tt.expectedSetValue); diff != nil {
+				if diff := deep.Equal(tt.fields.StagingManager.LastSetValueRecord, &graveler.ValueRecord{Key: tt.expectedRemovedKey, Value: nil}); diff != nil {
 					t.Errorf("unexpected set value %s", diff)
-				}
-				// validate removed from staging
-				if !bytes.Equal(tt.fields.StagingManager.LastRemovedKey, tt.expectedRemovedKey) {
-					t.Errorf("unexpected removed key got = %s, expected = %s ", tt.fields.StagingManager.LastRemovedKey, tt.expectedRemovedKey)
 				}
 			}
 		})

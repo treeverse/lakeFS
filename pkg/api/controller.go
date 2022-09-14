@@ -1351,12 +1351,7 @@ func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, re
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_repo")
 	err := c.Catalog.DeleteRepository(ctx, repository)
-	if errors.Is(err, catalog.ErrNotFound) {
-		writeError(w, http.StatusNotFound, "repository not found")
-		return
-	}
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
@@ -1384,7 +1379,8 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 		}
 		writeResponse(w, http.StatusOK, response)
 
-	case errors.Is(err, catalog.ErrNotFound):
+	case errors.Is(err, catalog.ErrNotFound),
+		errors.Is(err, catalog.ErrRepositoryNotFound):
 		writeError(w, http.StatusNotFound, "repository not found")
 
 	case errors.Is(err, graveler.ErrRepositoryInDeletion):
@@ -1711,8 +1707,7 @@ func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, 
 		errors.Is(err, graveler.ErrNotFound),
 		errors.Is(err, actions.ErrNotFound),
 		errors.Is(err, auth.ErrNotFound),
-		errors.Is(err, kv.ErrNotFound),
-		errors.Is(err, db.ErrNotFound):
+		errors.Is(err, kv.ErrNotFound):
 		writeError(w, http.StatusNotFound, err)
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
@@ -1740,7 +1735,7 @@ func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, 
 	case errors.Is(err, adapter.ErrDataNotFound):
 		writeError(w, http.StatusGone, "No data")
 
-	case errors.Is(err, db.ErrAlreadyExists):
+	case errors.Is(err, auth.ErrAlreadyExists):
 		writeError(w, http.StatusBadRequest, "Already exists")
 
 	case errors.Is(err, graveler.ErrTooManyTries):
@@ -2203,6 +2198,10 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 	ctx := r.Context()
 	c.LogAction(ctx, "get_commit")
 	commit, err := c.Catalog.GetCommit(ctx, repository, commitID)
+	if errors.Is(err, catalog.ErrRepositoryNotFound) {
+		writeError(w, http.StatusNotFound, "repository not found")
+		return
+	}
 	if errors.Is(err, catalog.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "commit not found")
 		return

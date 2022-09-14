@@ -16,11 +16,8 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/dlmiddlecote/sqlstats"
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-ldap/ldap/v3"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -32,13 +29,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
-	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
@@ -110,13 +105,6 @@ var runCmd = &cobra.Command{
 		ctx := cmd.Context()
 		logger.WithField("version", version.Version).Info("lakeFS run")
 
-		// validate service names and turn on the right flags
-		dbParams := cfg.GetDatabaseParams()
-
-		var (
-			dbPool db.Database
-			err    error
-		)
 		kvParams := cfg.GetKVParams()
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
@@ -124,24 +112,10 @@ var runCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 
-		// Check if migration required only on postgres
-		migrationRequired := false
-		if dbParams.Type == kvpg.DriverName && len(dbParams.ConnectionString) > 0 {
-			dbPool = db.BuildDatabaseConnection(ctx, dbParams)
-			defer dbPool.Close()
-			_, _, err := db.MigrateVersion(ctx, dbPool, dbParams)
-			if err == nil {
-				migrationRequired = true
-			} else if !errors.Is(err, migrate.ErrNilVersion) {
-				logger.WithError(err).Fatal("Failed to get schema version")
-			}
-		}
-		err = kv.ValidateSchemaVersion(ctx, kvStore, migrationRequired)
-		if err != nil {
+		err = kv.ValidateSchemaVersion(ctx, kvStore)
+		if err != nil && !errors.Is(err, kv.ErrNotFound) {
 			logger.WithError(err).Fatal("Failure on schema validation")
 		}
-
-		registerPrometheusCollector(dbPool)
 
 		emailParams, _ := cfg.GetEmailParams()
 		emailer, err := email.NewEmailer(emailParams)
@@ -481,17 +455,6 @@ Using the "%s" block adapter.  This is suitable only for testing, but not for pr
 
 func printLocalWarning(w io.Writer, adapter string) {
 	_, _ = fmt.Fprintf(w, localWarningBanner, adapter)
-}
-
-func registerPrometheusCollector(db sqlstats.StatsGetter) {
-	if db == nil { // TODO (niro): WA for KV stats collector until https://github.com/treeverse/lakeFS/issues/3869 is resolved
-		return
-	}
-	collector := sqlstats.NewStatsCollector("lakefs", db)
-	err := prometheus.Register(collector)
-	if err != nil {
-		logging.Default().WithError(err).Error("failed to register db stats collector")
-	}
 }
 
 func gracefulShutdown(ctx context.Context, quit <-chan os.Signal, done chan<- bool, servers ...Shutter) {
