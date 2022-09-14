@@ -24,7 +24,7 @@ For further reading, please refer to our [KV Design](https://github.com/treevers
 
 ## Optimistic Locking with KV
 
-One important key difference between SQL databases and Key Value Store is the ability to lock resources. While this is a common practice with relational databases, Key Value stores lack this ability. Let us take a look at a common lakeFS flow, `Commit`, during which several database operations are performed:
+One important key difference between SQL databases and Key Value Store is the ability to lock resources. While this is a common practice with relational databases, Key Value stores not always support this ability. When designing our KV Store, we tried to support the most simplistic straight-forward interface, with flexibility in backing DB selection, and so, we decided not to support locking. This decision brought some concurrency challenges we had to overcome. Let us take a look at a common lakeFS flow, `Commit`, during which several database operations are performed:
 * All relevant (`Branch` correlated) uncommitted objects are collected and marked as committed 
 * A new `Commit` object is created
 * The relevant `Branch` is updated to point to the new commit
@@ -48,4 +48,4 @@ With KV Store, this ability is gone, and we had to come up with various solution
 A brand new `Repository` has 3 objects: The `Repository` object itself, an initial `Branch` object and an initial `Commit`, which the `Branch` points to. With SQL DB, it was as simple as creating all 3 objects in the DB under one transaction (at this order). Any failure resulted in a rollback and no redundant leftovers in our DB.
 With no transaction in KV Store, if for example the `Branch` creation fails, it will leave the `Repository` without an initial `Branch` (or a `Branch` at all), yet the `Repository` will be accessible. Trying to delete the `Repository` as a response to `Branch` creation failure is ony a partial solution as this operation can fail as well.
 To mitigate this we introduced a per-`Repository`-partition, which holds all repository related objects (the `Branch` and `Commit` in this scenario). The partition key can only be derived from the specific`Repository` instance itself. In addition we first create the `Repository` objects, the `Commit` and the `Branch`, under the `Repository`'s partition key, and then the `Repository` is created. The `Repository` and its objects will be accessible only after a successful creation of all 3 entities. A failure in this flow might leave some dangling objects, but consistency is maintained.
-The number of such dangling objects is not expected to be significant, and we plan to implement a cleaning algorithm to keep our KV Store neat and clean.
+The number of such dangling objects is not expected to be significant, and we plan to implement a cleaning algorithm to keep our KV Store neat and clean
