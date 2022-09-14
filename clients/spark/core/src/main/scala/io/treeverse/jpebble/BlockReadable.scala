@@ -21,7 +21,7 @@ trait BlockReadable {
     readBlock(offset, size).iterator
 }
 
-class BlockReadableFileChannel(private val in: RandomAccessFile) extends BlockReadable with Closeable {
+class BlockReadableFile(private val in: RandomAccessFile) extends BlockReadable with Closeable {
   if (in == null) {
     throw new NullPointerException("null file")
   }
@@ -31,7 +31,7 @@ class BlockReadableFileChannel(private val in: RandomAccessFile) extends BlockRe
   override def length = inSize
 
   override def readBlock(offset: Long, size: Long) = {
-    // TODO(ariels): Cache return values - readonly mmaps are reusable
+    // TODO(ariels): Cache return values - our RandomAccessFiles are reusable!
     val buf = new Array[Byte](size.toInt)
     in.synchronized {
       in.seek(offset)
