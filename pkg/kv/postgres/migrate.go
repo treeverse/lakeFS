@@ -20,8 +20,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-var ErrAlreadyMigrated = errors.New("already migrated")
-var ErrWrongDriverTypeMigration = errors.New("trying to migrate to non Postgres DB isn't supported")
+var (
+	ErrAlreadyMigrated          = errors.New("already migrated")
+	ErrWrongDriverTypeMigration = errors.New("trying to migrate to non Postgres DB isn't supported")
+)
 
 type MigrateFunc func(ctx context.Context, db *pgxpool.Pool, c blockparams.AdapterConfig, writer io.Writer) error
 
@@ -64,24 +66,10 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 		return fmt.Errorf("validating version: %w", err)
 	}
 	if shouldDrop {
-		// After unsuccessful migration attempt, clean KV table
-		// Delete store if exists from previous failed KV migration and reopen store
-		logging.Default().Warn("Removing KV table")
-		// drop partitions first
-		err = dropTables(ctx, dbPool, getTablePartitions(DefaultTableName, DefaultPartitions))
+		err := recreateTables(ctx, dbPool)
 		if err != nil {
 			return err
 		}
-		err = dropTables(ctx, dbPool, []string{DefaultTableName})
-		if err != nil {
-			return err
-		}
-
-		tmpStore, err := kv.Open(ctx, kvParams) // Open flow recreates table
-		if err != nil {
-			return fmt.Errorf("opening kv store: %w", err)
-		}
-		tmpStore.Close()
 	}
 
 	// Mark KV Migration started
@@ -142,13 +130,46 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 	}
 
 	if dbParams.DropTables {
-		err = dropTables(ctx, dbPool, tables)
+		conn, err := dbPool.Acquire(ctx)
+		if err != nil {
+			return err
+		}
+		defer conn.Release()
+		err = dropTables(ctx, conn, tables)
 		if err != nil {
 			return err
 		}
 	}
 	if err = os.RemoveAll(tmpDir); err != nil {
 		logger.WithError(err).Warn("Failed to remove migration directory") // This should not fail the migration process
+	}
+	return nil
+}
+
+func recreateTables(ctx context.Context, dbPool *pgxpool.Pool) error {
+	// After unsuccessful migration attempt, clean KV table
+	// Delete store if exists from previous failed KV migration and reopen store
+	logging.Default().Warn("Removing KV table")
+
+	conn, err := dbPool.Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("%w: %s", kv.ErrConnectFailed, err)
+	}
+	defer conn.Release()
+
+	// drop partitions first
+	err = dropTables(ctx, conn, getTablePartitions(DefaultTableName, DefaultPartitions))
+	if err != nil {
+		return err
+	}
+	err = dropTables(ctx, conn, []string{DefaultTableName})
+	if err != nil {
+		return err
+	}
+
+	err = setupKeyValueDatabase(ctx, conn, DefaultTableName, DefaultPartitions)
+	if err != nil {
+		return fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
 	}
 	return nil
 }
@@ -190,7 +211,7 @@ func UnregisterAll() {
 	}
 }
 
-func dropTables(ctx context.Context, dbPool *pgxpool.Pool, tables []string) error {
+func dropTables(ctx context.Context, conn *pgxpool.Conn, tables []string) error {
 	if len(tables) < 1 {
 		return nil
 	}
@@ -198,7 +219,7 @@ func dropTables(ctx context.Context, dbPool *pgxpool.Pool, tables []string) erro
 		tables[i] = pgx.Identifier{table}.Sanitize()
 	}
 
-	_, err := dbPool.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s CASCADE`, strings.Join(tables, ", ")))
+	_, err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s CASCADE`, strings.Join(tables, ", ")))
 	if err != nil {
 		return fmt.Errorf("failed during drop tables: %s. Please perform manual cleanup of old database tables: %w", tables, err)
 	}
