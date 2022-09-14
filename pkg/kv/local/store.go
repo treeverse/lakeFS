@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
@@ -31,10 +30,7 @@ type Store struct {
 func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWithPredicate, error) {
 	k := composeKey(partitionKey, key)
 	start := time.Now()
-	log := s.logger.
-		WithField("key", string(k)).
-		WithField("op", "get").
-		WithContext(ctx)
+	log := s.logger.WithField("key", string(k)).WithField("op", "get").WithContext(ctx)
 	log.Trace("performing operation")
 	if len(partitionKey) == 0 {
 		log.WithError(kv.ErrMissingPartitionKey).Warn("got empty partition key")
@@ -55,23 +51,18 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 			log.WithError(err).Error("error getting key")
 			return err
 		}
-		var copyErr error
-		value, copyErr = item.ValueCopy(nil)
-		if copyErr != nil {
+		value, err = item.ValueCopy(nil)
+		if err != nil {
 			log.WithError(err).Error("error getting value for key")
 			return err
 		}
 		return nil
 	})
 	if err != nil {
-		log.
-			WithField("took", time.Since(start)).
-			Trace("operation failed")
+		log.WithField("took", time.Since(start)).Trace("operation failed")
 		return nil, err
 	}
-	log.
-		WithField("took", time.Since(start)).
-		WithField("size", len(value)).
+	log.WithField("took", time.Since(start)).WithField("size", len(value)).
 		Trace("operation complete")
 	return &kv.ValueWithPredicate{
 		Value:     value,
@@ -82,10 +73,7 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error {
 	k := composeKey(partitionKey, key)
 	start := time.Now()
-	log := s.logger.
-		WithField("key", string(k)).
-		WithField("op", "set").
-		WithContext(ctx)
+	log := s.logger.WithField("key", string(k)).WithField("op", "set").WithContext(ctx)
 	log.Trace("performing operation")
 	if len(partitionKey) == 0 {
 		log.WithError(kv.ErrMissingPartitionKey).Warn("got empty partition key")
@@ -115,10 +103,7 @@ func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error 
 func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valuePredicate kv.Predicate) error {
 	k := composeKey(partitionKey, key)
 	start := time.Now()
-	log := s.logger.
-		WithField("key", string(k)).
-		WithField("op", "set_if").
-		WithContext(ctx)
+	log := s.logger.WithField("key", string(k)).WithField("op", "set_if").WithContext(ctx)
 	log.Trace("performing operation")
 	if len(partitionKey) == 0 {
 		log.WithError(kv.ErrMissingPartitionKey).Warn("got empty partition key")
@@ -132,18 +117,18 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 		log.WithError(kv.ErrMissingValue).Warn("got nil value")
 		return kv.ErrMissingValue
 	}
+
 	err := s.db.Update(func(txn *badger.Txn) error {
 		item, err := txn.Get(k)
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 			log.WithError(err).Error("could not get key for predicate")
 			return err
 		}
+
 		if valuePredicate != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
-				log.
-					WithField("predicate", nil).
-					Trace("predicate condition failed")
-				return fmt.Errorf("%w: partition=%s, key=%v", kv.ErrPredicateFailed, partitionKey, key)
+				log.WithField("predicate", nil).Trace("predicate condition failed")
+				return kv.ErrPredicateFailed
 			}
 			val, err := item.ValueCopy(nil)
 			if err != nil {
@@ -151,15 +136,13 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 				return err
 			}
 			if !bytes.Equal(val, valuePredicate.([]byte)) {
-				log.WithField("predicate", valuePredicate.([]byte)).
-					WithField("value", val).
-					Trace("predicate condition failed")
-				return fmt.Errorf("%w: partition=%s, key=%v", kv.ErrPredicateFailed, partitionKey, key)
+				log.WithField("predicate", valuePredicate.([]byte)).WithField("value", val).Trace("predicate condition failed")
+				return kv.ErrPredicateFailed
 			}
 		} else if !errors.Is(err, badger.ErrKeyNotFound) {
 			log.WithField("predicate", valuePredicate).
 				Trace("predicate condition failed (key not found)")
-			return fmt.Errorf("%w: partition=%s, key=%v", kv.ErrPredicateFailed, partitionKey, key)
+			return kv.ErrPredicateFailed
 		}
 
 		return txn.Set(composeKey(partitionKey, key), value)
@@ -204,13 +187,8 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 }
 
 func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.EntriesIterator, error) {
-	var k []byte
 	prefix := partitionRange(partitionKey)
-	if start != nil {
-		k = composeKey(partitionKey, start)
-	} else {
-		k = prefix
-	}
+	k := composeKey(partitionKey, start)
 	log := s.logger.
 		WithField("partition_key", string(partitionKey)).
 		WithField("start_key", string(start)).

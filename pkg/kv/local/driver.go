@@ -54,14 +54,10 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 		if err != nil {
 			return nil, err
 		}
-		prefetchSize := params.PrefetchSize
-		if prefetchSize == 0 {
-			prefetchSize = DefaultPrefetchSize
-		}
 		connection = &Store{
 			db:           db,
 			logger:       logger,
-			prefetchSize: prefetchSize,
+			prefetchSize: params.PrefetchSize,
 			path:         params.DirectoryPath,
 		}
 		connectionMap[params.DirectoryPath] = connection

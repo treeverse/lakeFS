@@ -23,6 +23,10 @@ type EntriesIterator struct {
 }
 
 func (e *EntriesIterator) Next() bool {
+	if e.err != nil {
+		return false
+	}
+
 	start := time.Now()
 	switch {
 	case !e.primed && e.iter.Valid():
@@ -54,9 +58,7 @@ func (e *EntriesIterator) Next() bool {
 		Key:          key[len(partitionRange(e.partitionKey)):],
 		Value:        value,
 	}
-	e.logger.WithField("next_key", string(key)).
-		WithField("took", time.Since(start)).
-		Trace("read next value")
+	e.logger.WithField("next_key", string(key)).WithField("took", time.Since(start)).Trace("read next value")
 	return true
 }
 
