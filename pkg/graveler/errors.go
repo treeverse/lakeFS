@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/kv"
 )
 
 var (
@@ -13,7 +13,7 @@ var (
 	ErrUserVisible = errors.New("")
 
 	// TODO(ariels): Wrap with ErrUserVisible once db is gone.
-	ErrNotFound                     = wrapError(db.ErrNotFound, "not found")
+	ErrNotFound                     = wrapError(kv.ErrNotFound, "not found")
 	ErrNotUnique                    = wrapError(ErrUserVisible, "not unique")
 	ErrPreconditionFailed           = errors.New("precondition failed")
 	ErrWriteToProtectedBranch       = wrapError(ErrUserVisible, "cannot write to protected branch")
@@ -37,7 +37,6 @@ var (
 	ErrRepositoryInDeletion         = errors.New("repository in deletion")
 	ErrBranchNotFound               = fmt.Errorf("branch %w", ErrNotFound)
 	ErrTagNotFound                  = fmt.Errorf("tag %w", ErrNotFound)
-	ErrRefAmbiguous                 = fmt.Errorf("reference is ambiguous: %w", ErrNotFound)
 	ErrNoChanges                    = wrapError(ErrUserVisible, "no changes")
 	ErrConflictFound                = wrapError(ErrUserVisible, "conflict found")
 	ErrCommitNotHeadBranch          = wrapError(ErrUserVisible, "commit is not head of branch")

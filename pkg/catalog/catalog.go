@@ -261,6 +261,18 @@ func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, s
 	return catalogRepo, nil
 }
 
+func (c *Catalog) getRepository(ctx context.Context, repository string) (*graveler.RepositoryRecord, error) {
+	repositoryID := graveler.RepositoryID(repository)
+	repo, err := c.Store.GetRepository(ctx, repositoryID)
+	if err != nil {
+		if errors.Is(err, graveler.ErrRepositoryNotFound) {
+			err = ErrRepositoryNotFound
+		}
+		return nil, err
+	}
+	return repo, err
+}
+
 // GetRepository get repository information
 func (c *Catalog) GetRepository(ctx context.Context, repository string) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
@@ -269,10 +281,11 @@ func (c *Catalog) GetRepository(ctx context.Context, repository string) (*Reposi
 	}); err != nil {
 		return nil, err
 	}
-	repo, err := c.Store.GetRepository(ctx, repositoryID)
+	repo, err := c.getRepository(ctx, repository)
 	if err != nil {
 		return nil, err
 	}
+
 	catalogRepository := &Repository{
 		Name:             repositoryID.String(),
 		StorageNamespace: repo.StorageNamespace.String(),
@@ -359,7 +372,7 @@ func (c *Catalog) GetStagingToken(ctx context.Context, repositoryID string, bran
 	}); err != nil {
 		return nil, err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -387,7 +400,7 @@ func (c *Catalog) CreateBranch(ctx context.Context, repositoryID string, branch 
 		}
 		return nil, err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -419,7 +432,7 @@ func (c *Catalog) DeleteBranch(ctx context.Context, repositoryID string, branch 
 	}); err != nil {
 		return err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -432,7 +445,7 @@ func (c *Catalog) ListBranches(ctx context.Context, repositoryID string, prefix 
 	}); err != nil {
 		return nil, false, err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, false, err
 	}
@@ -494,7 +507,7 @@ func (c *Catalog) BranchExists(ctx context.Context, repositoryID string, branch 
 	}); err != nil {
 		return false, err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return false, err
 	}
@@ -516,12 +529,15 @@ func (c *Catalog) GetBranchReference(ctx context.Context, repositoryID string, b
 	}); err != nil {
 		return "", err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return "", err
 	}
 	b, err := c.Store.GetBranch(ctx, repository, branchID)
 	if err != nil {
+		if errors.Is(err, graveler.ErrBranchNotFound) {
+			err = ErrBranchNotFound
+		}
 		return "", err
 	}
 	return string(b.CommitID), nil
@@ -535,7 +551,7 @@ func (c *Catalog) ResetBranch(ctx context.Context, repositoryID string, branch s
 	}); err != nil {
 		return err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -550,7 +566,7 @@ func (c *Catalog) CreateTag(ctx context.Context, repositoryID string, tagID stri
 	}); err != nil {
 		return "", err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return "", err
 	}
@@ -573,7 +589,7 @@ func (c *Catalog) DeleteTag(ctx context.Context, repositoryID string, tagID stri
 	}); err != nil {
 		return err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -589,7 +605,7 @@ func (c *Catalog) ListTags(ctx context.Context, repositoryID string, prefix stri
 	}); err != nil {
 		return nil, false, err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, false, err
 	}
@@ -643,7 +659,7 @@ func (c *Catalog) GetTag(ctx context.Context, repositoryID string, tagID string)
 	}); err != nil {
 		return "", err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return "", err
 	}
@@ -665,7 +681,7 @@ func (c *Catalog) GetEntry(ctx context.Context, repositoryID string, reference s
 	}); err != nil {
 		return nil, err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -736,7 +752,7 @@ func (c *Catalog) CreateEntry(ctx context.Context, repositoryID string, branch s
 	if err != nil {
 		return err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -753,7 +769,7 @@ func (c *Catalog) DeleteEntry(ctx context.Context, repositoryID string, branch s
 	}); err != nil {
 		return err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -778,7 +794,7 @@ func (c *Catalog) ListEntries(ctx context.Context, repositoryID string, referenc
 	}); err != nil {
 		return nil, false, err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, false, err
 	}
@@ -827,7 +843,7 @@ func (c *Catalog) ResetEntry(ctx context.Context, repositoryID string, branch st
 	}); err != nil {
 		return err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -844,7 +860,7 @@ func (c *Catalog) ResetEntries(ctx context.Context, repositoryID string, branch 
 	}); err != nil {
 		return err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -861,7 +877,7 @@ func (c *Catalog) Commit(ctx context.Context, repositoryID, branch, message, com
 		return nil, err
 	}
 
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -904,7 +920,7 @@ func (c *Catalog) GetCommit(ctx context.Context, repositoryID string, reference 
 	}); err != nil {
 		return nil, err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -941,7 +957,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 
 	// disabling batching for this flow. See #3935 for more details
 	ctx = context.WithValue(ctx, batch.SkipBatchContextKey, struct{}{})
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, false, err
 	}
@@ -1122,7 +1138,7 @@ func (c *Catalog) Revert(ctx context.Context, repositoryID string, branch string
 	}); err != nil {
 		return err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -1140,7 +1156,7 @@ func (c *Catalog) Diff(ctx context.Context, repositoryID string, leftReference s
 	}); err != nil {
 		return nil, false, err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, false, err
 	}
@@ -1164,7 +1180,7 @@ func (c *Catalog) Compare(ctx context.Context, repositoryID, leftReference strin
 	}); err != nil {
 		return nil, false, err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, false, err
 	}
@@ -1186,7 +1202,7 @@ func (c *Catalog) DiffUncommitted(ctx context.Context, repositoryID, branch, pre
 	}); err != nil {
 		return nil, false, err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, false, err
 	}
@@ -1313,7 +1329,7 @@ func (c *Catalog) Merge(ctx context.Context, repositoryID string, destinationBra
 	}); err != nil {
 		return "", err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return "", err
 	}
@@ -1330,7 +1346,7 @@ func (c *Catalog) Merge(ctx context.Context, repositoryID string, destinationBra
 }
 
 func (c *Catalog) DumpCommits(ctx context.Context, repositoryID string) (string, error) {
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return "", err
 	}
@@ -1343,7 +1359,7 @@ func (c *Catalog) DumpCommits(ctx context.Context, repositoryID string) (string,
 }
 
 func (c *Catalog) DumpBranches(ctx context.Context, repositoryID string) (string, error) {
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return "", err
 	}
@@ -1356,7 +1372,7 @@ func (c *Catalog) DumpBranches(ctx context.Context, repositoryID string) (string
 }
 
 func (c *Catalog) DumpTags(ctx context.Context, repositoryID string) (string, error) {
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return "", err
 	}
@@ -1369,7 +1385,7 @@ func (c *Catalog) DumpTags(ctx context.Context, repositoryID string) (string, er
 }
 
 func (c *Catalog) LoadCommits(ctx context.Context, repositoryID, commitsMetaRangeID string) error {
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -1377,7 +1393,7 @@ func (c *Catalog) LoadCommits(ctx context.Context, repositoryID, commitsMetaRang
 }
 
 func (c *Catalog) LoadBranches(ctx context.Context, repositoryID, branchesMetaRangeID string) error {
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -1385,7 +1401,7 @@ func (c *Catalog) LoadBranches(ctx context.Context, repositoryID, branchesMetaRa
 }
 
 func (c *Catalog) LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID string) error {
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -1393,7 +1409,7 @@ func (c *Catalog) LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID st
 }
 
 func (c *Catalog) GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeAddress, error) {
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return "", err
 	}
@@ -1401,7 +1417,7 @@ func (c *Catalog) GetMetaRange(ctx context.Context, repositoryID, metaRangeID st
 }
 
 func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeAddress, error) {
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return "", err
 	}
@@ -1409,7 +1425,7 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 }
 
 func (c *Catalog) WriteRange(ctx context.Context, repositoryID, fromSourceURI, prepend, after, continuationToken string) (*graveler.RangeInfo, *Mark, error) {
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1435,7 +1451,7 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID, fromSourceURI, p
 }
 
 func (c *Catalog) WriteMetaRange(ctx context.Context, repositoryID string, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -1443,7 +1459,7 @@ func (c *Catalog) WriteMetaRange(ctx context.Context, repositoryID string, range
 }
 
 func (c *Catalog) GetGarbageCollectionRules(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRules, error) {
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -1451,7 +1467,7 @@ func (c *Catalog) GetGarbageCollectionRules(ctx context.Context, repositoryID st
 }
 
 func (c *Catalog) SetGarbageCollectionRules(ctx context.Context, repositoryID string, rules *graveler.GarbageCollectionRules) error {
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -1459,7 +1475,7 @@ func (c *Catalog) SetGarbageCollectionRules(ctx context.Context, repositoryID st
 }
 
 func (c *Catalog) GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, error) {
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -1468,7 +1484,7 @@ func (c *Catalog) GetBranchProtectionRules(ctx context.Context, repositoryID str
 }
 
 func (c *Catalog) DeleteBranchProtectionRule(ctx context.Context, repositoryID string, pattern string) error {
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -1476,7 +1492,7 @@ func (c *Catalog) DeleteBranchProtectionRule(ctx context.Context, repositoryID s
 }
 
 func (c *Catalog) CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, blockedActions []graveler.BranchProtectionBlockedAction) error {
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -1489,7 +1505,7 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string
 	}); err != nil {
 		return nil, err
 	}
-	repository, err := c.Store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}

@@ -13,7 +13,7 @@ import (
 )
 
 func TestBranchSimpleIterator(t *testing.T) {
-	r, kvStore := testRefManagerWithKV(t)
+	r, kvStore := testRefManager(t)
 	branches := []graveler.BranchID{"a", "aa", "b", "c", "e", "d"}
 	ctx := context.Background()
 	repo := &graveler.RepositoryRecord{
@@ -90,7 +90,7 @@ func TestBranchSimpleIterator(t *testing.T) {
 }
 
 func TestBranchByCommitIterator(t *testing.T) {
-	r, kvStore := testRefManagerWithKV(t)
+	r, kvStore := testRefManager(t)
 	branches := []graveler.BranchID{"a", "aa", "b", "c", "e", "d"}
 	ctx := context.Background()
 	repo := &graveler.RepositoryRecord{

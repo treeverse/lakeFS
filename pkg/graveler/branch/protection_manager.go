@@ -28,11 +28,11 @@ var (
 )
 
 type ProtectionManager struct {
-	settingManager settings.Manager
+	settingManager *settings.KVManager
 	matchers       cache.Cache
 }
 
-func NewProtectionManager(settingManager settings.Manager) *ProtectionManager {
+func NewProtectionManager(settingManager *settings.KVManager) *ProtectionManager {
 	return &ProtectionManager{settingManager: settingManager, matchers: cache.NewCache(matcherCacheSize, matcherCacheExpiry, cache.NewJitterFn(matcherCacheJitter))}
 }
 
@@ -41,30 +41,30 @@ func (m *ProtectionManager) Add(ctx context.Context, repository *graveler.Reposi
 	if err != nil {
 		return fmt.Errorf("invalid branch pattern syntax: %w", err)
 	}
-	return m.settingManager.Update(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) error {
+	return m.settingManager.Update(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) (proto.Message, error) {
 		rules := message.(*graveler.BranchProtectionRules)
 		if rules.BranchPatternToBlockedActions == nil {
 			rules.BranchPatternToBlockedActions = make(map[string]*graveler.BranchProtectionBlockedActions)
 		}
 		if _, ok := rules.BranchPatternToBlockedActions[branchNamePattern]; ok {
-			return ErrRuleAlreadyExists
+			return nil, ErrRuleAlreadyExists
 		}
 		rules.BranchPatternToBlockedActions[branchNamePattern] = &graveler.BranchProtectionBlockedActions{Value: blockedActions}
-		return nil
+		return rules, nil
 	})
 }
 
 func (m *ProtectionManager) Delete(ctx context.Context, repository *graveler.RepositoryRecord, branchNamePattern string) error {
-	return m.settingManager.Update(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) error {
+	return m.settingManager.Update(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) (proto.Message, error) {
 		rules := message.(*graveler.BranchProtectionRules)
 		if rules.BranchPatternToBlockedActions == nil {
 			rules.BranchPatternToBlockedActions = make(map[string]*graveler.BranchProtectionBlockedActions)
 		}
 		if _, ok := rules.BranchPatternToBlockedActions[branchNamePattern]; !ok {
-			return ErrRuleNotExists
+			return nil, ErrRuleNotExists
 		}
 		delete(rules.BranchPatternToBlockedActions, branchNamePattern)
-		return nil
+		return rules, nil
 	})
 }
 

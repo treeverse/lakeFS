@@ -20,7 +20,6 @@ import (
 )
 
 const (
-	packageName  = "actions"
 	PartitionKey = "actions"
 	reposPrefix  = "repos"
 	runsPrefix   = "runs"

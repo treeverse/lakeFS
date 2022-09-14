@@ -288,12 +288,8 @@ func (c *Config) Validate() error {
 
 func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{
-		ConnectionString:      c.values.Database.DeprecatedConnectionString.SecureValue(),
-		MaxOpenConnections:    c.values.Database.DeprecatedMaxOpenConnections,
-		MaxIdleConnections:    c.values.Database.DeprecatedMaxIdleConnections,
-		ConnectionMaxLifetime: c.values.Database.DeprecatedConnectionMaxLifetime,
-		Type:                  c.values.Database.Type,
-		DropTables:            c.values.Database.DropTables,
+		Type:       c.values.Database.Type,
+		DropTables: c.values.Database.DropTables,
 	}
 }
 

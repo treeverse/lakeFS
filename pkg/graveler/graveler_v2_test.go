@@ -440,7 +440,7 @@ func TestGravelerRevert(t *testing.T) {
 	})
 }
 
-func TestGravelerCommit(t *testing.T) {
+func TestGravelerCommit_v2(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("commit with sealed tokens", func(t *testing.T) {

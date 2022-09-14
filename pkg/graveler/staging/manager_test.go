@@ -15,64 +15,15 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func newTestStagingManager(t *testing.T, kvEnabled bool) (context.Context, graveler.StagingManager) {
+func newTestStagingManager(t *testing.T) (context.Context, graveler.StagingManager) {
 	t.Helper()
 	ctx := context.Background()
-	conn, _ := testutil.GetDB(t, databaseURI)
-	if kvEnabled {
-		store := kvtest.GetStore(ctx, t)
-		return ctx, staging.NewManager(ctx, kv.StoreMessage{Store: store})
-	}
-	return ctx, staging.NewDBManager(conn)
+	store := kvtest.GetStore(ctx, t)
+	return ctx, staging.NewManager(ctx, kv.StoreMessage{Store: store})
 }
 
-func TestStagingManager(t *testing.T) {
-	kvE := [2]bool{false, true}
-	for _, kvEnabled := range kvE {
-		dbStr := ""
-		if kvEnabled {
-			dbStr = "DB"
-		}
-		t.Run(fmt.Sprintf("Test%sSetGet", dbStr), func(t *testing.T) {
-			testSetGet(t, kvEnabled)
-		})
-		t.Run(fmt.Sprintf("Test%sMultiToken", dbStr), func(t *testing.T) {
-			testMultiToken(t, kvEnabled)
-		})
-		t.Run(fmt.Sprintf("Test%sDrop", dbStr), func(t *testing.T) {
-			testDrop(t, kvEnabled)
-		})
-		t.Run(fmt.Sprintf("Test%sDropByPrefix", dbStr), func(t *testing.T) {
-			testDropByPrefix(t, kvEnabled)
-		})
-		t.Run(fmt.Sprintf("Test%sDropPrefixBytes", dbStr), func(t *testing.T) {
-			testDropPrefixBytes(t, kvEnabled)
-		})
-		t.Run(fmt.Sprintf("Test%sList", dbStr), func(t *testing.T) {
-			testList(t, kvEnabled)
-		})
-		t.Run(fmt.Sprintf("Test%sSeek", dbStr), func(t *testing.T) {
-			testSeek(t, kvEnabled)
-		})
-		t.Run(fmt.Sprintf("Test%sNilValue", dbStr), func(t *testing.T) {
-			testNilValue(t, kvEnabled)
-		})
-		t.Run(fmt.Sprintf("Test%sNilIdentity", dbStr), func(t *testing.T) {
-			testNilIdentity(t, kvEnabled)
-		})
-		t.Run(fmt.Sprintf("Test%sDeleteAndTombstone", dbStr), func(t *testing.T) {
-			testDeleteAndTombstone(t, kvEnabled)
-		})
-		if kvEnabled {
-			t.Run("TestUpdateKV", func(t *testing.T) {
-				testUpdate(t)
-			})
-		}
-	}
-}
-
-func testUpdate(t *testing.T) {
-	ctx, s := newTestStagingManager(t, true)
+func TestUpdate(t *testing.T) {
+	ctx, s := newTestStagingManager(t)
 
 	key := "a/b/c/my-key-1234"
 	testVal := newTestValue("identity1", "value1")
@@ -109,8 +60,8 @@ func testUpdate(t *testing.T) {
 	require.Equal(t, testVal2, val)
 }
 
-func testSetGet(t *testing.T, kvEnabled bool) {
-	ctx, s := newTestStagingManager(t, kvEnabled)
+func TestSetGet(t *testing.T) {
+	ctx, s := newTestStagingManager(t)
 	_, err := s.Get(ctx, "t1", []byte("a/b/c/"))
 	if !errors.Is(err, graveler.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", graveler.ErrNotFound, err)
@@ -123,20 +74,10 @@ func testSetGet(t *testing.T, kvEnabled bool) {
 	if string(e.Identity) != "identity1" {
 		t.Errorf("got wrong value. expected=%s, got=%s", "identity1", string(e.Identity))
 	}
-
-	if !kvEnabled {
-		t.Run("test overwrites", func(t *testing.T) {
-			err = s.Set(ctx, "t2", []byte("a/b/c/d"), value, false)
-			testutil.Must(t, err)
-
-			err = s.Set(ctx, "t2", []byte("a/b/c/d"), value, false)
-			require.ErrorIs(t, graveler.ErrPreconditionFailed, err)
-		})
-	}
 }
 
-func testMultiToken(t *testing.T, kvEnabled bool) {
-	ctx, s := newTestStagingManager(t, kvEnabled)
+func TestMultiToken(t *testing.T) {
+	ctx, s := newTestStagingManager(t)
 	_, err := s.Get(ctx, "t1", []byte("a/b/c/"))
 	if !errors.Is(err, graveler.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", graveler.ErrNotFound, err)
@@ -163,8 +104,8 @@ func testMultiToken(t *testing.T, kvEnabled bool) {
 	}
 }
 
-func testDrop(t *testing.T, kvEnabled bool) {
-	ctx, s := newTestStagingManager(t, kvEnabled)
+func TestDrop(t *testing.T) {
+	ctx, s := newTestStagingManager(t)
 	numOfValues := 1400
 	setupDrop(ctx, t, numOfValues, s)
 	err := s.Drop(ctx, "t1")
@@ -225,8 +166,8 @@ func TestDropAsync(t *testing.T) {
 	it.Close()
 }
 
-func testDropByPrefix(t *testing.T, kvEnabled bool) {
-	ctx, s := newTestStagingManager(t, kvEnabled)
+func TestDropByPrefix(t *testing.T) {
+	ctx, s := newTestStagingManager(t)
 	numOfValues := 2400
 	setupDrop(ctx, t, numOfValues, s)
 
@@ -260,8 +201,8 @@ func testDropByPrefix(t *testing.T, kvEnabled bool) {
 	}
 }
 
-func testDropPrefixBytes(t *testing.T, kvEnabled bool) {
-	ctx, s := newTestStagingManager(t, kvEnabled)
+func TestDropPrefixBytes(t *testing.T) {
+	ctx, s := newTestStagingManager(t)
 	tests := map[string]struct {
 		keys                    []graveler.Key
 		prefix                  graveler.Key
@@ -362,8 +303,8 @@ func testDropPrefixBytes(t *testing.T, kvEnabled bool) {
 	}
 }
 
-func testList(t *testing.T, kvEnabled bool) {
-	ctx, s := newTestStagingManager(t, kvEnabled)
+func TestList(t *testing.T) {
+	ctx, s := newTestStagingManager(t)
 	for _, numOfValues := range []int{1, 100, 1000, 1500, 2500} {
 		token := graveler.StagingToken(fmt.Sprintf("t_%d", numOfValues))
 		for i := 0; i < numOfValues; i++ {
@@ -393,8 +334,8 @@ func testList(t *testing.T, kvEnabled bool) {
 	}
 }
 
-func testSeek(t *testing.T, kvEnabled bool) {
-	ctx, s := newTestStagingManager(t, kvEnabled)
+func TestSeek(t *testing.T) {
+	ctx, s := newTestStagingManager(t)
 	numOfValues := 100
 	for i := 0; i < numOfValues; i++ {
 		err := s.Set(ctx, "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue("identity1", "value1"), true)
@@ -431,8 +372,8 @@ func testSeek(t *testing.T, kvEnabled bool) {
 	}
 }
 
-func testNilValue(t *testing.T, kvEnabled bool) {
-	ctx, s := newTestStagingManager(t, kvEnabled)
+func TestNilValue(t *testing.T) {
+	ctx, s := newTestStagingManager(t)
 	err := s.Set(ctx, "t1", []byte("key1"), nil, true)
 	testutil.Must(t, err)
 	err = s.Set(ctx, "t1", []byte("key2"), newTestValue("identity2", "value2"), true)
@@ -466,8 +407,8 @@ func testNilValue(t *testing.T, kvEnabled bool) {
 	}
 }
 
-func testNilIdentity(t *testing.T, kvEnabled bool) {
-	ctx, s := newTestStagingManager(t, kvEnabled)
+func TestNilIdentity(t *testing.T) {
+	ctx, s := newTestStagingManager(t)
 	err := s.Set(ctx, "t1", []byte("key1"), newTestValue("identity1", "value1"), true)
 	testutil.Must(t, err)
 	err = s.Set(ctx, "t1", []byte("key1"), &graveler.Value{
@@ -484,8 +425,8 @@ func testNilIdentity(t *testing.T, kvEnabled bool) {
 	}
 }
 
-func testDeleteAndTombstone(t *testing.T, kvEnabled bool) {
-	ctx, s := newTestStagingManager(t, kvEnabled)
+func TestDeleteAndTombstone(t *testing.T) {
+	ctx, s := newTestStagingManager(t)
 	_, err := s.Get(ctx, "t1", []byte("key1"))
 	if !errors.Is(err, graveler.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", graveler.ErrNotFound, err)

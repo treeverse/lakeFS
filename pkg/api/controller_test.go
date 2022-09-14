@@ -70,47 +70,7 @@ func onBlock(deps *dependencies, path string) string {
 	return fmt.Sprintf("%s://%s", deps.blocks.BlockstoreType(), path)
 }
 
-func testControllerWithKV(t *testing.T, kvEnabled bool) {
-	testController_ListRepositoriesHandler(t, kvEnabled)
-	testController_GetRepoHandler(t, kvEnabled)
-	testController_LogCommitsHandler(t, kvEnabled)
-	testController_CommitsGetBranchCommitLogByPath(t, kvEnabled)
-	testController_GetCommitHandler(t, kvEnabled)
-	testController_CommitHandler(t, kvEnabled)
-	testController_CreateRepositoryHandler(t, kvEnabled)
-	testController_DeleteRepositoryHandler(t, kvEnabled)
-	testController_ListBranchesHandler(t, kvEnabled)
-	testController_ListTagsHandler(t, kvEnabled)
-	testController_GetBranchHandler(t, kvEnabled)
-	testController_BranchesDiffBranchHandler(t, kvEnabled)
-	testController_CreateBranchHandler(t, kvEnabled)
-	testController_UploadObject(t, kvEnabled)
-	testController_DeleteBranchHandler(t, kvEnabled)
-	testController_IngestRangeHandler(t, kvEnabled)
-	testController_WriteMetaRangeHandler(t, kvEnabled)
-	testController_ObjectsStatObjectHandler(t, kvEnabled)
-	testController_ObjectsListObjectsHandler(t, kvEnabled)
-	testController_ObjectsGetObjectHandler(t, kvEnabled)
-	testController_ObjectsUploadObjectHandler(t, kvEnabled)
-	testController_ObjectsStageObjectHandler(t, kvEnabled)
-	testController_ObjectsDeleteObjectHandler(t, kvEnabled)
-	testController_CreatePolicyHandler(t, kvEnabled)
-	testController_ConfigHandlers(t, kvEnabled)
-	testController_SetupLakeFSHandler(t, kvEnabled)
-	testController_ListRepositoryRuns(t, kvEnabled)
-	testController_MergeDiffWithParent(t, kvEnabled)
-	testController_MergeIntoExplicitBranch(t, kvEnabled)
-	testController_CreateTag(t, kvEnabled)
-	testController_Revert(t, kvEnabled)
-	testController_RevertConflict(t, kvEnabled)
-	testController_ExpandTemplate(t, kvEnabled)
-}
-
-func TestKVEnabled(t *testing.T) {
-	testControllerWithKV(t, true)
-}
-
-func testController_ListRepositoriesHandler(t *testing.T, kvEnabled bool) {
+func TestController_ListRepositoriesHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -200,7 +160,7 @@ func testController_ListRepositoriesHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_GetRepoHandler(t *testing.T, kvEnabled bool) {
+func TestController_GetRepoHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -264,7 +224,7 @@ func testCommitEntries(t *testing.T, ctx context.Context, cat catalog.Interface,
 	return commit.Reference
 }
 
-func testController_LogCommitsHandler(t *testing.T, kvEnabled bool) {
+func TestController_LogCommitsHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -340,7 +300,7 @@ func testController_LogCommitsHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_CommitsGetBranchCommitLogByPath(t *testing.T, kvEnabled bool) {
+func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	/*
@@ -527,7 +487,7 @@ func testController_CommitsGetBranchCommitLogByPath(t *testing.T, kvEnabled bool
 	}
 }
 
-func testController_GetCommitHandler(t *testing.T, kvEnabled bool) {
+func TestController_GetCommitHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -567,7 +527,7 @@ func testController_GetCommitHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_CommitHandler(t *testing.T, kvEnabled bool) {
+func TestController_CommitHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -676,7 +636,7 @@ func testController_CommitHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_CreateRepositoryHandler(t *testing.T, kvEnabled bool) {
+func TestController_CreateRepositoryHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	t.Run("create repo success", func(t *testing.T) {
@@ -731,7 +691,7 @@ func testController_CreateRepositoryHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_DeleteRepositoryHandler(t *testing.T, kvEnabled bool) {
+func TestController_DeleteRepositoryHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -778,7 +738,7 @@ func testController_DeleteRepositoryHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_ListBranchesHandler(t *testing.T, kvEnabled bool) {
+func TestController_ListBranchesHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -851,7 +811,7 @@ func testController_ListBranchesHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_ListTagsHandler(t *testing.T, kvEnabled bool) {
+func TestController_ListTagsHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -929,7 +889,7 @@ func testController_ListTagsHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_GetBranchHandler(t *testing.T, kvEnabled bool) {
+func TestController_GetBranchHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -971,7 +931,7 @@ func testController_GetBranchHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_BranchesDiffBranchHandler(t *testing.T, kvEnabled bool) {
+func TestController_BranchesDiffBranchHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	const testBranch = "main"
@@ -1020,7 +980,7 @@ func testController_BranchesDiffBranchHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_CreateBranchHandler(t *testing.T, kvEnabled bool) {
+func TestController_CreateBranchHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	t.Run("create branch and diff refs success", func(t *testing.T) {
@@ -1133,7 +1093,7 @@ func writeMultipart(fieldName, filename, content string) (string, io.Reader) {
 	return mpw.FormDataContentType(), &buf
 }
 
-func testController_UploadObject(t *testing.T, kvEnabled bool) {
+func TestController_UploadObject(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -1251,7 +1211,7 @@ func testController_UploadObject(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_DeleteBranchHandler(t *testing.T, kvEnabled bool) {
+func TestController_DeleteBranchHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -1299,7 +1259,7 @@ func testController_DeleteBranchHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_IngestRangeHandler(t *testing.T, kvEnabled bool) {
+func TestController_IngestRangeHandler(t *testing.T) {
 	const (
 		fromSourceURI           = "https://valid.uri"
 		uriPrefix               = "take/from/here"
@@ -1391,7 +1351,7 @@ func testController_IngestRangeHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_WriteMetaRangeHandler(t *testing.T, kvEnabled bool) {
+func TestController_WriteMetaRangeHandler(t *testing.T) {
 	ctx := context.Background()
 	clt, deps := setupClientWithAdmin(t)
 	repo := testUniqueRepoName()
@@ -1430,7 +1390,7 @@ func testController_WriteMetaRangeHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_ObjectsStatObjectHandler(t *testing.T, kvEnabled bool) {
+func TestController_ObjectsStatObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -1505,7 +1465,7 @@ func testController_ObjectsStatObjectHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_ObjectsListObjectsHandler(t *testing.T, kvEnabled bool) {
+func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -1599,7 +1559,7 @@ func testController_ObjectsListObjectsHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_ObjectsGetObjectHandler(t *testing.T, kvEnabled bool) {
+func TestController_ObjectsGetObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -1676,7 +1636,7 @@ func testController_ObjectsGetObjectHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_ObjectsUploadObjectHandler(t *testing.T, kvEnabled bool) {
+func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -1729,7 +1689,7 @@ func testController_ObjectsUploadObjectHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_ObjectsStageObjectHandler(t *testing.T, kvEnabled bool) {
+func TestController_ObjectsStageObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -1789,7 +1749,7 @@ func testController_ObjectsStageObjectHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_ObjectsDeleteObjectHandler(t *testing.T, kvEnabled bool) {
+func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -1934,7 +1894,7 @@ func testController_ObjectsDeleteObjectHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_CreatePolicyHandler(t *testing.T, kvEnabled bool) {
+func TestController_CreatePolicyHandler(t *testing.T) {
 	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()
 	t.Run("valid_policy", func(t *testing.T) {
@@ -2008,7 +1968,7 @@ func testController_CreatePolicyHandler(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_ConfigHandlers(t *testing.T, kvEnabled bool) {
+func TestController_ConfigHandlers(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -2025,7 +1985,7 @@ func testController_ConfigHandlers(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_SetupLakeFSHandler(t *testing.T, kvEnabled bool) {
+func TestController_SetupLakeFSHandler(t *testing.T) {
 	const validAccessKeyID = "AKIAIOSFODNN7EXAMPLE"
 	cases := []struct {
 		name               string
@@ -2155,7 +2115,7 @@ hooks:
       url: {{.URL}}
 `))
 
-func testController_ListRepositoryRuns(t *testing.T, kvEnabled bool) {
+func TestController_ListRepositoryRuns(t *testing.T) {
 	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()
 	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -2249,7 +2209,7 @@ func testController_ListRepositoryRuns(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_MergeDiffWithParent(t *testing.T, kvEnabled bool) {
+func TestController_MergeDiffWithParent(t *testing.T) {
 	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -2287,7 +2247,7 @@ func testController_MergeDiffWithParent(t *testing.T, kvEnabled bool) {
 	}
 }
 
-func testController_MergeIntoExplicitBranch(t *testing.T, kvEnabled bool) {
+func TestController_MergeIntoExplicitBranch(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -2322,7 +2282,7 @@ func testController_MergeIntoExplicitBranch(t *testing.T, kvEnabled bool) {
 	}
 }
 
-func testController_CreateTag(t *testing.T, kvEnabled bool) {
+func TestController_CreateTag(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	// setup env
@@ -2397,7 +2357,7 @@ func testUniqueRepoName() string {
 	return "repo-" + nanoid.MustGenerate("abcdef1234567890", 8)
 }
 
-func testController_Revert(t *testing.T, kvEnabled bool) {
+func TestController_Revert(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	// setup env
@@ -2434,7 +2394,7 @@ func testController_Revert(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testController_RevertConflict(t *testing.T, kvEnabled bool) {
+func TestController_RevertConflict(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	// setup env
@@ -2455,7 +2415,7 @@ func testController_RevertConflict(t *testing.T, kvEnabled bool) {
 	}
 }
 
-func testController_ExpandTemplate(t *testing.T, kvEnabled bool) {
+func TestController_ExpandTemplate(t *testing.T) {
 	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()
 

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -26,17 +25,7 @@ type cacheKey struct {
 	Key          string
 }
 
-type updateFunc func(proto.Message) error
-
-// Manager - TODO(niro): Remove interface once DB implementation is deleted
-type Manager interface {
-	// Save - TODO(niro): Delete Save (unused)
-	Save(context.Context, *graveler.RepositoryRecord, string, proto.Message) error
-	GetLatest(context.Context, *graveler.RepositoryRecord, string, proto.Message) (proto.Message, error)
-	Get(context.Context, *graveler.RepositoryRecord, string, proto.Message) (proto.Message, error)
-	Update(context.Context, *graveler.RepositoryRecord, string, proto.Message, updateFunc) error
-	WithCache(cache cache.Cache)
-}
+type updateFunc func(proto.Message) (proto.Message, error)
 
 // KVManager is a key-value store for Graveler repository-level settings.
 // Each setting is stored under a key, and can be any proto.Message.
@@ -47,10 +36,10 @@ type KVManager struct {
 	cache      cache.Cache
 }
 
-type ManagerOption func(m Manager)
+type ManagerOption func(m *KVManager)
 
 func WithCache(cache cache.Cache) ManagerOption {
-	return func(m Manager) {
+	return func(m *KVManager) {
 		m.WithCache(cache)
 	}
 }
@@ -140,18 +129,18 @@ func (m *KVManager) Update(ctx context.Context, repository *graveler.RepositoryR
 		}
 
 		logSetting(logging.FromContext(ctx), repository.RepositoryID, key, data, "update repository-level setting")
-		err = update(data)
+		newData, err := update(data)
 		if err != nil {
 			return backoff.Permanent(err)
 		}
-		err = m.store.SetMsgIf(ctx, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), data, pred)
+		err = m.store.SetMsgIf(ctx, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), newData, pred)
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			logging.Default().WithError(err).Warn("Predicate failed on settings update. Retrying")
-			err = graveler.ErrPreconditionFailed
+			return graveler.ErrPreconditionFailed
 		} else if err != nil {
 			return backoff.Permanent(err)
 		}
-		return err
+		return nil
 	}, bo)
 	if errors.Is(err, graveler.ErrPreconditionFailed) {
 		return fmt.Errorf("update settings: %w", graveler.ErrTooManyTries)

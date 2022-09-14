@@ -61,7 +61,8 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 		lg := o.Log(req).WithField("key", obj.Key)
 		err = o.Catalog.DeleteEntry(req.Context(), o.Repository.Name, resolvedPath.Ref, resolvedPath.Path)
 		switch {
-		case errors.Is(err, catalog.ErrNotFound):
+		case errors.Is(err, catalog.ErrNotFound),
+			errors.Is(err, graveler.ErrNotFound):
 			lg.Debug("tried to delete a non-existent object (OK)")
 		case errors.Is(err, graveler.ErrWriteToProtectedBranch):
 			_ = o.EncodeError(w, req, gerrors.Codes.ToAPIErr(gerrors.ErrWriteToProtectedBranch))
