@@ -17,6 +17,8 @@ type DatabaseMigrator struct {
 	params kvparams.KV
 }
 
+var ErrMigrationRequired = errors.New("wrong kv version")
+
 func NewDatabaseMigrator(params kvparams.KV) *DatabaseMigrator {
 	return &DatabaseMigrator{
 		params: params,
@@ -39,22 +41,20 @@ func (d *DatabaseMigrator) Migrate(ctx context.Context) error {
 	return nil
 }
 
-var errMigrationRequired = errors.New("wrong kv version")
-
-func ValidateSchemaVersion(ctx context.Context, store Store) error {
+func ValidateSchemaVersion(ctx context.Context, store Store) (int, error) {
 	kvVersion, err := GetDBSchemaVersion(ctx, store)
 	if errors.Is(err, ErrNotFound) {
 		// probably a new installation
-		return ErrNotFound
+		return 0, ErrNotFound
 	}
 	if err != nil {
-		return fmt.Errorf("get KV schema version: %w", err)
+		return 0, fmt.Errorf("get KV schema version: %w", err)
 	}
 	if kvVersion < InitialMigrateVersion {
 		logging.Default().Info("Migration to KV required. Did you migrate using version v0.80.x? https://docs.lakefs.io/reference/upgrade.html#lakefs-0800-or-greater-kv-migration")
-		return errMigrationRequired
+		return 0, ErrMigrationRequired
 	}
 
 	logging.Default().WithField("version", kvVersion).Info("KV valid")
-	return nil
+	return kvVersion, nil
 }

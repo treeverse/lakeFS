@@ -112,7 +112,7 @@ var runCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 
-		err = kv.ValidateSchemaVersion(ctx, kvStore)
+		_, err = kv.ValidateSchemaVersion(ctx, kvStore)
 		if err != nil && !errors.Is(err, kv.ErrNotFound) {
 			logger.WithError(err).Fatal("Failure on schema validation")
 		}

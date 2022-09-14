@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 // migrateCmd represents the migrate command
@@ -18,32 +20,49 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print current migration version and available version",
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := logging.Default()
 		cfg := loadConfig()
-
-		ctx := cmd.Context()
 		kvParams := cfg.GetKVParams()
+		ctx := cmd.Context()
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
-			logger.WithError(err).Fatal("Failed to open KV store")
+			_, _ = fmt.Fprintf(os.Stderr, "Failed to open KV store: %s\n", err)
+			os.Exit(1)
 		}
 		defer kvStore.Close()
 
-		version, err := kv.GetDBSchemaVersion(ctx, kvStore)
-		if err != nil {
-			logger.WithError(err).Fatal("Failed to get DB schema version")
-			return
-
-		}
-		logger.WithField("schema_version", version).Info("DB schema version")
+		version := MustValidateSchemaVersion(ctx, kvStore)
 		fmt.Printf("Database schema version: %d\n", version)
 	},
+}
+
+func MustValidateSchemaVersion(ctx context.Context, kvStore kv.Store) int {
+	version, err := kv.ValidateSchemaVersion(ctx, kvStore)
+	if errors.Is(err, kv.ErrNotFound) {
+		fmt.Fprintf(os.Stderr, "No version information - KV not initialized.\n")
+		os.Exit(1)
+	}
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Failed to get schema version: %s\n", err)
+		os.Exit(1)
+	}
+	return version
 }
 
 var upCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Apply all up migrations",
 	Run: func(cmd *cobra.Command, args []string) {
+		cfg := loadConfig()
+		kvParams := cfg.GetKVParams()
+		ctx := cmd.Context()
+		kvStore, err := kv.Open(ctx, kvParams)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Failed to open KV store: %s\n", err)
+			os.Exit(1)
+		}
+		defer kvStore.Close()
+
+		_ = MustValidateSchemaVersion(ctx, kvStore)
 		fmt.Printf("No migrations to apply.\n")
 	},
 }
@@ -52,6 +71,17 @@ var gotoCmd = &cobra.Command{
 	Use:   "goto",
 	Short: "Migrate to version V.",
 	Run: func(cmd *cobra.Command, args []string) {
+		cfg := loadConfig()
+		kvParams := cfg.GetKVParams()
+		ctx := cmd.Context()
+		kvStore, err := kv.Open(ctx, kvParams)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Failed to open KV store: %s\n", err)
+			os.Exit(1)
+		}
+		defer kvStore.Close()
+
+		_ = MustValidateSchemaVersion(ctx, kvStore)
 		fmt.Printf("No migrations to apply.\n")
 	},
 }
