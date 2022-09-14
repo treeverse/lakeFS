@@ -2,7 +2,7 @@ version: "3"
 services:
 
   lakefs-setup:
-    image: treeverse/lakefs:latest
+    image: treeverse/lakefs:0.70.6
     container_name: lakefs-setup
     depends_on:
       - postgres
@@ -36,7 +36,7 @@ services:
     entrypoint: ["minio", "server", "/data", "--console-address", ":9001"]
 
   lakefs:
-    image: treeverse/lakefs:latest
+    image: treeverse/lakefs:0.70.6
     container_name: lakefs
     ports:
       - "8000:8000"
