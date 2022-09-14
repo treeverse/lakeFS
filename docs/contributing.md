@@ -97,7 +97,7 @@ Want to dive deeper into our system tests infrastructure? Need to debug the test
 
 Open a GitHub pull request with your change. The PR description should include a brief explanation of your change.
 You should also mention the related GitHub issue using a [closing keyword](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).  
-As a rule, we require each PR to have a linked issue and enforce it via a Github action. That being said, we understand 
+As a rule, we require each PR to have a linked issue and enforce it via a Github action. That being said, we understand that
 not every PR justifies opening a dedicated issue. The following changes qualify to be exempt from a linked issue:
 1. Typo fixes (whether in code or documentation)
 2. Changelog updates
