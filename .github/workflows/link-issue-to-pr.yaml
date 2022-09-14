@@ -9,8 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Check linked issues
     steps:
-      - uses: nearform/github-action-check-linked-issues@v1.2.10
+      - uses: nearform/github-action-check-linked-issues@v1.3.0
         id: check-linked-issues
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           exclude-branches: "dependabot/**"
+          exclude-labels: "minor-change"
