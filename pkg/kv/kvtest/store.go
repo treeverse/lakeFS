@@ -374,6 +374,7 @@ func MakeStoreByName(name string, kvParams kvparams.KV) MakeStore {
 		if err != nil {
 			t.Fatalf("failed to open kv '%s' store: %s", name, err)
 		}
+		t.Cleanup(store.Close)
 		return store
 	}
 }

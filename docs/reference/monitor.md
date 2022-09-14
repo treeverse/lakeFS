@@ -48,6 +48,15 @@ In addition, lakeFS exposes the following metrics to help monitor your deploymen
 | dynamo_request_duration_seconds  | Time spent doing DynamoDB requests                          | **operation**: DynamoDB operation name
 | dynamo_consumed_capacity_total   | The capacity units consumed by operation                    | **operation**: DynamoDB operation name
 | dynamo_failures_total            | The total number of errors while working for kv store       | **operation**: DynamoDB operation name
+| pgxpool_acquire_count            | PostgreSQL cumulative count of successful acquires from the pool | **db_name** default to the kv table name (kv)
+| pgxpool_acquire_duration_ns      | PostgreSQL total duration of all successful acquires from the pool in nanoseconds | **db_name** default to the kv table name (kv)
+| pgxpool_acquired_conns           | PostgreSQL number of currently acquired connections in the pool | **db_name** default to the kv table name (kv)
+| pgxpool_canceled_acquire_count   | PostgreSQL cumulative count of acquires from the pool that were canceled by a context | **db_name** default to the kv table name (kv)
+| pgxpool_constructing_conns       | PostgreSQL number of conns with construction in progress in the pool | **db_name** default to the kv table name (kv)
+| pgxpool_empty_acquire            | PostgreSQL cumulative count of successful acquires from the pool that waited for a resource to be released or constructed because the pool was empty | **db_name** default to the kv table name (kv)
+| pgxpool_idle_conns               | PostgreSQL number of currently idle conns in the pool       | **db_name** default to the kv table name (kv)
+| pgxpool_max_conns                | PostgreSQL maximum size of the pool                         | **db_name** default to the kv table name (kv)
+| pgxpool_total_conns              | PostgreSQL total number of resources currently in the pool  | **db_name** default to the kv table name (kv)
 
 
 ## Example queries

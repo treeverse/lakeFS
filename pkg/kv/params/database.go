@@ -16,6 +16,7 @@ type Postgres struct {
 	MaxIdleConnections    int32
 	ConnectionMaxLifetime time.Duration
 	ScanPageSize          int32
+	Metrics               bool
 }
 
 type DynamoDB struct {

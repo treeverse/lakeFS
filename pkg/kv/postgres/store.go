@@ -7,10 +7,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/IBM/pgxpoolprometheus"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 )
@@ -21,6 +23,7 @@ type Store struct {
 	Pool           *pgxpool.Pool
 	Params         *Params
 	TableSanitized string
+	collector      prometheus.Collector
 }
 
 type EntriesIterator struct {
@@ -74,14 +77,10 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 	if kvParams.Postgres == nil {
 		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
 	}
-	normalizeDBParams(kvParams.Postgres)
-	config, err := pgxpool.ParseConfig(kvParams.Postgres.ConnectionString)
+	config, err := newPgxpoolConfig(kvParams)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", kv.ErrDriverConfiguration, err)
+		return nil, err
 	}
-	config.MaxConns = kvParams.Postgres.MaxOpenConnections
-	config.MinConns = kvParams.Postgres.MaxIdleConnections
-	config.MaxConnLifetime = kvParams.Postgres.ConnectionMaxLifetime
 
 	pool, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
@@ -106,17 +105,41 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 	}
 
 	params := parseStoreConfig(config.ConnConfig.RuntimeParams, kvParams.Postgres)
-	err = setupKeyValueDatabase(ctx, conn, params)
+	err = setupKeyValueDatabase(ctx, conn, params.TableName, params.PartitionsAmount)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
 	}
+
+	// register collector to publish pgxpool stats as metrics
+	var collector prometheus.Collector
+	if params.Metrics {
+		collector = pgxpoolprometheus.NewCollector(pool, map[string]string{"db_name": params.TableName})
+		err := prometheus.Register(collector)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	store := &Store{
 		Pool:           pool,
 		Params:         params,
 		TableSanitized: pgx.Identifier{params.TableName}.Sanitize(),
+		collector:      collector,
 	}
 	pool = nil
 	return store, nil
+}
+
+func newPgxpoolConfig(kvParams kvparams.KV) (*pgxpool.Config, error) {
+	normalizeDBParams(kvParams.Postgres)
+	config, err := pgxpool.ParseConfig(kvParams.Postgres.ConnectionString)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", kv.ErrDriverConfiguration, err)
+	}
+	config.MaxConns = kvParams.Postgres.MaxOpenConnections
+	config.MinConns = kvParams.Postgres.MaxIdleConnections
+	config.MaxConnLifetime = kvParams.Postgres.ConnectionMaxLifetime
+	return config, err
 }
 
 type Params struct {
@@ -124,6 +147,7 @@ type Params struct {
 	SanitizedTableName string
 	PartitionsAmount   int
 	ScanPageSize       int
+	Metrics            bool
 }
 
 func parseStoreConfig(runtimeParams map[string]string, pgParams *kvparams.Postgres) *Params {
@@ -131,19 +155,22 @@ func parseStoreConfig(runtimeParams map[string]string, pgParams *kvparams.Postgr
 		TableName:        DefaultTableName,
 		PartitionsAmount: DefaultPartitions,
 		ScanPageSize:     DefaultScanPageSize,
+		Metrics:          pgParams.Metrics,
 	}
 	if tableName, ok := runtimeParams[paramTableName]; ok {
 		p.TableName = tableName
 	}
+
 	p.SanitizedTableName = pgx.Identifier{p.TableName}.Sanitize()
 	p.ScanPageSize = int(pgParams.ScanPageSize)
 	return p
 }
 
 // setupKeyValueDatabase setup everything required to enable kv over postgres
-func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, params *Params) error {
+func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, table string, partitionsAmount int) error {
 	// main kv table
-	_, err := conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS `+params.SanitizedTableName+` (
+	tableSanitize := pgx.Identifier{table}.Sanitize()
+	_, err := conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS `+tableSanitize+` (
 		partition_key BYTEA NOT NULL,
 		key BYTEA NOT NULL,
 		value BYTEA NOT NULL,
@@ -154,19 +181,19 @@ func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, params *Para
 		return err
 	}
 
-	partitions := getTablePartitions(params.TableName, params.PartitionsAmount)
+	partitions := getTablePartitions(table, partitionsAmount)
 	for i := 0; i < len(partitions); i++ {
 		_, err := conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS`+
 			pgx.Identifier{partitions[i]}.Sanitize()+` PARTITION OF `+
-			params.SanitizedTableName+` FOR VALUES WITH (MODULUS `+strconv.Itoa(params.PartitionsAmount)+
+			tableSanitize+` FOR VALUES WITH (MODULUS `+strconv.Itoa(partitionsAmount)+
 			`,REMAINDER `+strconv.Itoa(i)+`);`)
 		if err != nil {
 			return err
 		}
 	}
 	// view of kv table to help humans select from table (same as table with _v as suffix)
-	_, err = conn.Exec(ctx, `CREATE OR REPLACE VIEW `+pgx.Identifier{params.TableName + "_v"}.Sanitize()+
-		` AS SELECT ENCODE(partition_key, 'escape') AS partition_key, ENCODE(key, 'escape') AS key, value FROM `+params.SanitizedTableName)
+	_, err = conn.Exec(ctx, `CREATE OR REPLACE VIEW `+pgx.Identifier{table + "_v"}.Sanitize()+
+		` AS SELECT ENCODE(partition_key, 'escape') AS partition_key, ENCODE(key, 'escape') AS key, value FROM `+tableSanitize)
 	return err
 }
 
@@ -175,7 +202,6 @@ func getTablePartitions(tableName string, partitionsAmount int) []string {
 	for i := 0; i < partitionsAmount; i++ {
 		res = append(res, fmt.Sprintf("%s_%d", tableName, i))
 	}
-
 	return res
 }
 
@@ -307,6 +333,10 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, start []byte, in
 }
 
 func (s *Store) Close() {
+	if s.collector != nil {
+		prometheus.Unregister(s.collector)
+		s.collector = nil
+	}
 	s.Pool.Close()
 }
 

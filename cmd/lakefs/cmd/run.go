@@ -34,6 +34,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
@@ -106,7 +107,7 @@ var runCmd = &cobra.Command{
 		logger.WithField("version", version.Version).Info("lakeFS run")
 
 		kvParams := cfg.GetKVParams()
-		kvStore, err := kv.Open(ctx, kvParams)
+		kvStore, err := kv.Open(ctx, enableKVParamsMetrics(kvParams))
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to open KV store")
 		}
@@ -475,6 +476,18 @@ func gracefulShutdown(ctx context.Context, quit <-chan os.Signal, done chan<- bo
 		}
 	}
 	close(done)
+}
+
+// enableKVParamsMetrics reutrns a copy of params.KV with postgres metrics enabled.
+func enableKVParamsMetrics(p params.KV) params.KV {
+	if p.Postgres == nil || p.Postgres.Metrics {
+		return p
+	}
+	// make a copy of postgres settings and set metrics on
+	pg := *p.Postgres
+	pg.Metrics = true
+	p.Postgres = &pg
+	return p
 }
 
 //nolint:gochecknoinits
