@@ -71,7 +71,6 @@ require (
 	google.golang.org/api v0.74.0
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
-	gopkg.in/retry.v1 v1.0.3
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
 
