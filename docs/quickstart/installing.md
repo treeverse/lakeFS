@@ -22,7 +22,7 @@ To run a local lakeFS instance using [Docker](https://docs.docker.com/){:target=
 1. Run the following command in your terminal:
 
    ```bash
-   docker run -p 8000:8000 treeverse/lakefs --pull always
+   docker run --pull always -p 8000:8000 treeverse/lakefs
    ```
 
 1. Check your installation by opening [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank"} in your web browser.
