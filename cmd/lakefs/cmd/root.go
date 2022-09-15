@@ -42,11 +42,24 @@ var initOnce sync.Once
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.lakefs.yaml)")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.PersistentFlags().Bool(config.UseLocalConfiguration, false, "Use lakeFS local default configuration")
+}
+
+func useLocal() bool {
+	res, err := rootCmd.PersistentFlags().GetBool(config.UseLocalConfiguration)
+	if err != nil {
+		fmt.Printf("%s: %s\n", config.UseLocalConfiguration, err)
+		os.Exit(1)
+	}
+	if res {
+		printLocalWarning(os.Stderr, "local parameters configuration")
+	}
+	return res
 }
 
 func loadConfig() *config.Config {
 	initOnce.Do(initConfig)
-	cfg, err := config.NewConfig()
+	cfg, err := config.NewConfig(useLocal())
 	if err != nil {
 		fmt.Println("Failed to load config file", err)
 		os.Exit(1)
@@ -96,7 +109,7 @@ func initConfig() {
 	}
 
 	// setup config used by the executed command
-	cfg, err := config.NewConfig()
+	cfg, err := config.NewConfig(useLocal())
 	if err != nil {
 		logger.WithError(err).Fatal("Load config")
 	} else {

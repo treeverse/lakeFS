@@ -35,11 +35,13 @@ var (
 	ErrMissingRequiredKeys = fmt.Errorf("%w: missing required keys", ErrBadConfiguration)
 )
 
+const UseLocalConfiguration = "local-config"
+
 type Config struct {
 	values configuration
 }
 
-func NewConfig() (*Config, error) {
+func NewConfig(useLocal bool) (*Config, error) {
 	c := &Config{}
 
 	// Inform viper of all expected fields.  Otherwise, it fails to deserialize from the
@@ -49,7 +51,7 @@ func NewConfig() (*Config, error) {
 		viper.SetDefault(key, nil)
 	}
 
-	setDefaults()
+	setDefaults(useLocal)
 	setupLogger()
 
 	err := viper.UnmarshalExact(&c.values, viper.DecodeHook(
