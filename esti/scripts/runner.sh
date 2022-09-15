@@ -44,15 +44,6 @@ wait_for_lakefs_ready() {
   echo "lakeFS is ready"
 }
 
-wait_for_db_ready() {
-  echo "Waiting for DB ready"
-  until docker-compose -f ../ops/docker-compose.yaml exec -T postgres pg_isready -h localhost; do
-    printf '.'
-    sleep 1
-  done
-  echo "DB is ready"
-}
-
 run_tests() {
   echo "Run Tests (logs at $TEST_LOG)"
   go test -v ../../esti --args --system-tests --use-local-credentials "$@" | tee "$TEST_LOG"
@@ -60,11 +51,6 @@ run_tests() {
 }
 
 run_lakefs() {
-  echo "Create Postgres DB via docker compose"
-  docker-compose -f ../ops/docker-compose.yaml up --force-recreate -V -d postgres
-
-  wait_for_db_ready
-
   echo "Run LakeFS (logs at $LAKEFS_LOG)"
   lakefs run -c lakefs.yaml | tee "$LAKEFS_LOG"
 }
