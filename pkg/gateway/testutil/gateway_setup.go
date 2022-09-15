@@ -32,7 +32,7 @@ type Dependencies struct {
 
 func GetBasicHandler(t *testing.T, authService *FakeAuthService, _ string, repoName string) (http.Handler, *Dependencies) {
 	ctx := context.Background()
-	viper.Set(config.BlockStoreTypeKey, block.BlockstoreTypeMem)
+	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 
 	store := kvtest.MakeStoreByName("mem", kvparams.KV{})(t, context.Background())
 	defer store.Close()

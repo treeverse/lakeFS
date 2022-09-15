@@ -7,35 +7,35 @@ import (
 )
 
 const (
-	BlockStoreTypeKey     = "blockstore.type"
-	DefaultBlockStoreType = "local"
+	BlockstoreTypeKey     = "blockstore.type"
+	DefaultBlockstoreType = "local"
 
-	BlockStoreLocalPathKey     = "blockstore.local.path"
-	DefaultBlockStoreLocalPath = "~/lakefs/data/block"
+	BlockstoreLocalPathKey     = "blockstore.local.path"
+	DefaultBlockstoreLocalPath = "~/lakefs/data/block"
 
-	BlockStoreS3RegionKey     = "blockstore.s3.region"
-	DefaultBlockStoreS3Region = "us-east-1"
+	BlockstoreS3RegionKey     = "blockstore.s3.region"
+	DefaultBlockstoreS3Region = "us-east-1"
 
-	BlockStoreS3StreamingChunkSizeKey     = "blockstore.s3.streaming_chunk_size"
-	DefaultBlockStoreS3StreamingChunkSize = 2 << 19 // 1MiB by default per chunk
+	BlockstoreS3StreamingChunkSizeKey     = "blockstore.s3.streaming_chunk_size"
+	DefaultBlockstoreS3StreamingChunkSize = 2 << 19 // 1MiB by default per chunk
 
-	BlockStoreS3StreamingChunkTimeoutKey     = "blockstore.s3.streaming_chunk_timeout"
-	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
+	BlockstoreS3StreamingChunkTimeoutKey     = "blockstore.s3.streaming_chunk_timeout"
+	DefaultBlockstoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
 
-	BlockStoreS3DiscoverBucketRegionKey     = "blockstore.s3.discover_bucket_region"
-	DefaultBlockStoreS3DiscoverBucketRegion = true
+	BlockstoreS3DiscoverBucketRegionKey     = "blockstore.s3.discover_bucket_region"
+	DefaultBlockstoreS3DiscoverBucketRegion = true
 
-	BlockStoreS3MaxRetriesKey     = "blockstore.s3.max_retries"
-	DefaultBlockStoreS3MaxRetries = 5
+	BlockstoreS3MaxRetriesKey     = "blockstore.s3.max_retries"
+	DefaultBlockstoreS3MaxRetries = 5
 
-	BlockStoreAzureTryTimeoutKey     = "blockstore.azure.try_timeout"
-	DefaultBlockStoreAzureTryTimeout = 10 * time.Minute
+	BlockstoreAzureTryTimeoutKey     = "blockstore.azure.try_timeout"
+	DefaultBlockstoreAzureTryTimeout = 10 * time.Minute
 
-	BlockStoreAzureAuthMethod        = "blockstore.azure.auth_method"
-	DefaultBlockStoreAzureAuthMethod = "access-key"
+	BlockstoreAzureAuthMethod        = "blockstore.azure.auth_method"
+	DefaultBlockstoreAzureAuthMethod = "access-key"
 
-	BlockStoreGSS3EndpointKey     = "blockstore.gs.s3_endpoint"
-	DefaultBlockStoreGSS3Endpoint = "https://storage.googleapis.com"
+	BlockstoreGSS3EndpointKey     = "blockstore.gs.s3_endpoint"
+	DefaultBlockstoreGSS3Endpoint = "https://storage.googleapis.com"
 
 	DefaultCommittedLocalCacheRangePercent          = 0.9
 	DefaultCommittedLocalCacheMetaRangePercent      = 0.1
@@ -142,14 +142,14 @@ func setDefaults() {
 	viper.SetDefault(AuthOIDCInitialGroupsClaimName, DefaultAuthOIDCInitialGroupsClaimName)
 	viper.SetDefault(AuthLogoutRedirectURL, DefaultAuthLogoutRedirectURL)
 
-	viper.SetDefault(BlockStoreLocalPathKey, DefaultBlockStoreLocalPath)
-	viper.SetDefault(BlockStoreTypeKey, DefaultBlockStoreType)
-	viper.SetDefault(BlockStoreS3RegionKey, DefaultBlockStoreS3Region)
-	viper.SetDefault(BlockStoreS3StreamingChunkSizeKey, DefaultBlockStoreS3StreamingChunkSize)
-	viper.SetDefault(BlockStoreS3StreamingChunkTimeoutKey, DefaultBlockStoreS3StreamingChunkTimeout)
-	viper.SetDefault(BlockStoreS3MaxRetriesKey, DefaultBlockStoreS3MaxRetries)
-	viper.SetDefault(BlockStoreS3StreamingChunkSizeKey, DefaultBlockStoreS3StreamingChunkSize)
-	viper.SetDefault(BlockStoreS3DiscoverBucketRegionKey, DefaultBlockStoreS3DiscoverBucketRegion)
+	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockstoreLocalPath)
+	viper.SetDefault(BlockstoreTypeKey, DefaultBlockstoreType)
+	viper.SetDefault(BlockstoreS3RegionKey, DefaultBlockstoreS3Region)
+	viper.SetDefault(BlockstoreS3StreamingChunkSizeKey, DefaultBlockstoreS3StreamingChunkSize)
+	viper.SetDefault(BlockstoreS3StreamingChunkTimeoutKey, DefaultBlockstoreS3StreamingChunkTimeout)
+	viper.SetDefault(BlockstoreS3MaxRetriesKey, DefaultBlockstoreS3MaxRetries)
+	viper.SetDefault(BlockstoreS3StreamingChunkSizeKey, DefaultBlockstoreS3StreamingChunkSize)
+	viper.SetDefault(BlockstoreS3DiscoverBucketRegionKey, DefaultBlockstoreS3DiscoverBucketRegion)
 
 	viper.SetDefault(CommittedLocalCacheSizeBytesKey, DefaultCommittedLocalCacheBytes)
 	viper.SetDefault(CommittedLocalCacheDirKey, DefaultCommittedLocalCacheDir)
@@ -166,14 +166,14 @@ func setDefaults() {
 	viper.SetDefault(GatewaysS3DomainNamesKey, DefaultS3GatewayDomainName)
 	viper.SetDefault(GatewaysS3RegionKey, DefaultS3GatewayRegion)
 
-	viper.SetDefault(BlockStoreGSS3EndpointKey, DefaultBlockStoreGSS3Endpoint)
+	viper.SetDefault(BlockstoreGSS3EndpointKey, DefaultBlockstoreGSS3Endpoint)
 
 	viper.SetDefault(StatsEnabledKey, DefaultStatsEnabled)
 	viper.SetDefault(StatsAddressKey, DefaultStatsAddr)
 	viper.SetDefault(StatsFlushIntervalKey, DefaultStatsFlushInterval)
 
-	viper.SetDefault(BlockStoreAzureTryTimeoutKey, DefaultBlockStoreAzureTryTimeout)
-	viper.SetDefault(BlockStoreAzureAuthMethod, DefaultBlockStoreAzureAuthMethod)
+	viper.SetDefault(BlockstoreAzureTryTimeoutKey, DefaultBlockstoreAzureTryTimeout)
+	viper.SetDefault(BlockstoreAzureAuthMethod, DefaultBlockstoreAzureAuthMethod)
 
 	viper.SetDefault(SecurityAuditCheckIntervalKey, DefaultSecurityAuditCheckInterval)
 	viper.SetDefault(SecurityAuditCheckURLKey, DefaultSecurityAuditCheckURL)
