@@ -30,9 +30,9 @@ type Dependencies struct {
 	catalog *catalog.Catalog
 }
 
-func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI string, repoName string) (http.Handler, *Dependencies) {
+func GetBasicHandler(t *testing.T, authService *FakeAuthService, _ string, repoName string) (http.Handler, *Dependencies) {
 	ctx := context.Background()
-	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
+	viper.Set(config.BlockStoreTypeKey, block.BlockstoreTypeMem)
 
 	store := kvtest.MakeStoreByName("mem", kvparams.KV{})(t, context.Background())
 	defer store.Close()

@@ -13,7 +13,7 @@ import (
 
 const (
 	DriverName           = "local"
-	DefaultDirectoryPath = "~/data/lakefs/kv"
+	DefaultDirectoryPath = "~/lakefs/metadata"
 	DefaultPrefetchSize  = 256
 )
 
@@ -25,8 +25,8 @@ var (
 type Driver struct{}
 
 func normalizeDBParams(p *kvparams.Local) {
-	if len(p.DirectoryPath) == 0 {
-		p.DirectoryPath = DefaultDirectoryPath
+	if len(p.Path) == 0 {
+		p.Path = DefaultDirectoryPath
 	}
 	if p.PrefetchSize <= 0 {
 		p.PrefetchSize = DefaultPrefetchSize
@@ -34,21 +34,22 @@ func normalizeDBParams(p *kvparams.Local) {
 }
 
 func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, error) {
-	driverLock.Lock()
-	defer driverLock.Unlock()
 	params := kvParams.Local
 	if params == nil {
 		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
 	}
 	normalizeDBParams(params)
-	connection, ok := connectionMap[params.DirectoryPath]
+
+	driverLock.Lock()
+	defer driverLock.Unlock()
+	connection, ok := connectionMap[params.Path]
 	if !ok {
 		// no database open for this path
 		var logger logging.Logger = logging.DummyLogger{}
 		if params.EnableLogging {
 			logger = logging.FromContext(ctx).WithField("store", "local")
 		}
-		opts := badger.DefaultOptions(params.DirectoryPath)
+		opts := badger.DefaultOptions(params.Path)
 		opts.Logger = &BadgerLogger{logger}
 		db, err := badger.Open(opts)
 		if err != nil {
@@ -58,9 +59,9 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 			db:           db,
 			logger:       logger,
 			prefetchSize: params.PrefetchSize,
-			path:         params.DirectoryPath,
+			path:         params.Path,
 		}
-		connectionMap[params.DirectoryPath] = connection
+		connectionMap[params.Path] = connection
 	}
 	connection.refCount++
 	return connection, nil

@@ -9,8 +9,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/google/uuid"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/kv"
+	_ "github.com/treeverse/lakefs/pkg/kv/local"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"golang.org/x/sync/errgroup"
@@ -862,8 +864,13 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 // GetStore helper function to return Store object for all unit tests
 func GetStore(ctx context.Context, t testing.TB) kv.Store {
 	t.Helper()
-	const storeType = "mem"
-	store, err := kv.Open(ctx, kvparams.KV{Type: storeType})
+	const storeType = "local"
+	store, err := kv.Open(ctx, kvparams.KV{
+		Type: storeType,
+		Local: &kvparams.Local{
+			Path:          "~/tmp/lakefs/" + t.Name() + uuid.New().String(),
+			EnableLogging: true,
+		}})
 	if err != nil {
 		t.Fatalf("failed to open kv (%s) store: %s", storeType, err)
 	}

@@ -1,7 +1,6 @@
 package local
 
 import (
-	"bytes"
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
@@ -14,12 +13,22 @@ type EntriesIterator struct {
 	partitionKey []byte
 	primed       bool
 
-	entry *kv.Entry
-	err   error
-	iter  *badger.Iterator
-
-	closer func()
+	entry  *kv.Entry
+	err    error
+	iter   *badger.Iterator
+	txn    *badger.Txn
 	logger logging.Logger
+}
+
+func newEntriesIterator(logger logging.Logger, txn *badger.Txn, options badger.IteratorOptions, partitionKey, start []byte) *EntriesIterator {
+	iter := txn.NewIterator(options)
+	return &EntriesIterator{
+		iter:         iter,
+		partitionKey: partitionKey,
+		start:        start,
+		logger:       logger,
+		txn:          txn,
+	}
 }
 
 func (e *EntriesIterator) Next() bool {
@@ -43,16 +52,13 @@ func (e *EntriesIterator) Next() bool {
 		return false
 	}
 	item := e.iter.Item()
-	key := item.KeyCopy(nil)
-	if !bytes.HasPrefix(key, e.partitionKey) {
-		e.logger.WithField("next_key", string(key)).Trace("no next values with prefix")
-		return false
-	}
 	value, err := item.ValueCopy(nil)
 	if err != nil {
 		e.logger.WithError(err).Trace("error reading value")
 		e.err = err
+		return false
 	}
+	key := item.KeyCopy(nil)
 	e.entry = &kv.Entry{
 		PartitionKey: e.partitionKey,
 		Key:          key[len(partitionRange(e.partitionKey)):],
@@ -71,5 +77,6 @@ func (e *EntriesIterator) Err() error {
 }
 
 func (e *EntriesIterator) Close() {
-	e.closer()
+	e.iter.Close()
+	e.txn.Discard()
 }

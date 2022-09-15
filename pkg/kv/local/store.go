@@ -12,7 +12,7 @@ import (
 )
 
 func partitionRange(partitionKey []byte) []byte {
-	return append(partitionKey, kv.PathDelimiter)
+	return append(partitionKey, kv.PathDelimiter[0])
 }
 
 func composeKey(partitionKey, key []byte) []byte {
@@ -58,12 +58,11 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 		}
 		return nil
 	})
+	log.WithField("took", time.Since(start)).WithError(err).WithField("size", len(value)).Trace("operation complete")
 	if err != nil {
-		log.WithField("took", time.Since(start)).Trace("operation failed")
 		return nil, err
 	}
-	log.WithField("took", time.Since(start)).WithField("size", len(value)).
-		Trace("operation complete")
+
 	return &kv.ValueWithPredicate{
 		Value:     value,
 		Predicate: kv.Predicate(value),
@@ -94,9 +93,7 @@ func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error 
 		log.WithError(err).Error("error setting value")
 		return err
 	}
-	log.
-		WithField("took", time.Since(start)).
-		Trace("done setting value")
+	log.WithField("took", time.Since(start)).Trace("done setting value")
 	return nil
 }
 
@@ -136,25 +133,24 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 				return err
 			}
 			if !bytes.Equal(val, valuePredicate.([]byte)) {
-				log.WithField("predicate", valuePredicate.([]byte)).WithField("value", val).Trace("predicate condition failed")
+				log.WithField("predicate", valuePredicate).WithField("value", val).Trace("predicate condition failed")
 				return kv.ErrPredicateFailed
 			}
 		} else if !errors.Is(err, badger.ErrKeyNotFound) {
-			log.WithField("predicate", valuePredicate).
-				Trace("predicate condition failed (key not found)")
+			log.WithField("predicate", valuePredicate).Trace("predicate condition failed (key not found)")
 			return kv.ErrPredicateFailed
 		}
 
 		return txn.Set(composeKey(partitionKey, key), value)
 	})
-	took := time.Since(start)
-	log = log.WithField("took", took)
-	if err != nil {
-		log.WithError(err).Trace("operation failed")
-		return err
+	if errors.Is(err, badger.ErrConflict) { // Return predicate failed on transaction conflict - to retry
+		log.WithError(err).Trace("transaction conflict")
+		err = kv.ErrPredicateFailed
 	}
-	log.Trace("operation complete")
-	return nil
+	took := time.Since(start)
+	log.WithField("took", took).Trace("operation complete")
+
+	return err
 }
 
 func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
@@ -200,22 +196,13 @@ func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.Entrie
 		log.WithError(kv.ErrMissingPartitionKey).Warn("got empty partition key")
 		return nil, kv.ErrMissingPartitionKey
 	}
+
 	txn := s.db.NewTransaction(false)
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchSize = s.prefetchSize
 	opts.Prefix = prefix
 
-	iter := txn.NewIterator(opts)
-	return &EntriesIterator{
-		iter:         iter,
-		partitionKey: partitionKey,
-		start:        k,
-		logger:       log,
-		closer: func() {
-			iter.Close()
-			txn.Discard()
-		},
-	}, nil
+	return newEntriesIterator(log, txn, opts, partitionKey, k), nil
 }
 
 func (s *Store) Close() {

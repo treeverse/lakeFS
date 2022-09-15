@@ -12,9 +12,13 @@ type KV struct {
 }
 
 type Local struct {
-	DirectoryPath string
-	SyncWrites    bool
-	PrefetchSize  int
+	// Path - Local directory path to store the DB files
+	Path string
+	// SyncWrites - Sync ensures data written to disk on each write instead of mem cache
+	SyncWrites bool
+	// PrefetchSize - Number of elements to prefetch while iterating
+	PrefetchSize int
+	// EnableLogging - Enable store and badger (trace only) logging
 	EnableLogging bool
 }
 

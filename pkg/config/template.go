@@ -79,10 +79,14 @@ type configuration struct {
 		Type string `mapstructure:"type"`
 
 		Local *struct {
-			Path          string `mapstructure:"path"`
-			SyncWrites    *bool  `mapstructure:"sync_writes"`
-			PrefetchSize  int    `mapstructure:"prefetch_size"`
-			EnableLogging *bool  `mapstructure:"enable_logging"`
+			// Path - Local directory path to store the DB files
+			Path string `mapstructure:"path"`
+			// SyncWrites - Sync ensures data written to disk on each write instead of mem cache
+			SyncWrites *bool `mapstructure:"sync_writes"`
+			// PrefetchSize - Number of elements to prefetch while iterating
+			PrefetchSize int `mapstructure:"prefetch_size"`
+			// EnableLogging - Enable store and badger (trace only) logging
+			EnableLogging *bool `mapstructure:"enable_logging"`
 		} `mapstructure:"local"`
 
 		Postgres *struct {

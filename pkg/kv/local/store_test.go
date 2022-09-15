@@ -1,7 +1,6 @@
 package local_test
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -11,23 +10,17 @@ import (
 )
 
 func TestLocalKV(t *testing.T) {
-	dir, err := ioutil.TempDir("", "local_kv_testing_*")
+	dir, err := os.MkdirTemp("", "local_kv_testing_*")
 	if err != nil {
-		t.Fatalf("could not created temp dir %s: %v", dir, err)
+		t.Fatalf("could not created temp: %v", err)
 	}
+	defer os.RemoveAll(dir)
 
 	kvtest.TestDriver(t, local.DriverName, kvparams.KV{
 		Type: local.DriverName,
 		Local: &kvparams.Local{
-			DirectoryPath: dir,
+			Path:          dir,
 			EnableLogging: true,
 		},
-	})
-
-	t.Cleanup(func() {
-		err := os.RemoveAll(dir)
-		if err != nil {
-			t.Fatalf("could not remove temporary dir %s", dir)
-		}
 	})
 }

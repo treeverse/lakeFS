@@ -8,10 +8,12 @@ services:
       - minio-setup
       - lakefs
     environment:
+      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
       - LAKECTL_CREDENTIALS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
       - LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
       - LAKECTL_SERVER_ENDPOINT_URL=http://lakefs:8000
-    entrypoint: ["wait-for", "lakefs:8000", "--", "sh", "-c", "lakectl repo create lakefs://example s3://example"]
+    entrypoint: ["wait-for", "lakefs:8000", "--", "sh", "-c",
+                 "lakefs setup --user-name docker --access-key-id AKIAIOSFODNN7EXAMPLE --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY && lakectl repo create lakefs://example s3://example"]
 
   minio-setup:
     image: minio/mc
@@ -41,12 +43,10 @@ services:
       - LAKEFS_BLOCKSTORE_S3_ENDPOINT=http://minio:9000
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=minioadmin
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=minioadmin
+      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
       - LAKEFS_STATS_ENABLED=false
       - LAKEFS_LOGGING_LEVEL
-    entrypoint: [
-      "sh", "-c",
-      "lakefs setup --user-name docker --access-key-id AKIAIOSFODNN7EXAMPLE --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY && lakefs run"
-    ]
+    entrypoint: ["sh", "-c", "lakefs run"]
 
 
   mariadb:
@@ -222,4 +222,3 @@ services:
 networks:
   default:
     name: bagel
-
