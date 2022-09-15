@@ -217,7 +217,11 @@ We can leverage this asynchronous job to also check and perform the hard-delete
 
 ## 4. Staging Token States
 
-Track state on the staging token instead of objects - but keep tracking references (without state)
+This is an improvement over the 3rd proposal which suggests tracking the state on the staging token instead of objects,
+while still keeping track of references (without state)
+
+This will be done using the following objects:
+
 References will be tracked in a list instead of an explicit entry per reference
     
     key    = <repo>/references/<physical_address>  
@@ -230,7 +234,7 @@ For each staging token of a deleted / reset branches a deleted entry will be add
 For each commit we will add the staging tokens to a committed entry.
 Adding a reference is done using `set if` and a retry mechanism to ensure consistency.
 
-    key    = <repo>/references/<physical_address>  
+    key    = <repo>/staging/committed/<physical_address>  
     value  = list(staging tokens)
 
 ### Flows
@@ -278,10 +282,13 @@ The new flow ensures that we do not add a reference for a committed object after
 the background delete job, and preventing the accidental deletion of committed objects.
 
 1. While retry not exhausted
-   1. Read reference list for address, if list is empty
-      1. Assume address is committed or not managed by lakeFS
-   2. Else - add branch staging token to reference list and perform `set if`
-      1. If predicate failed - retry
+   1. Read reference key, if key found
+      1. Read reference list for address, if list is empty
+         1. Assume address is deleted - return error  
+         (only way it is empty is if background job is currently working on this reference during the delete flow)
+      2. Else - add branch staging token to reference list and perform `set if`
+         1. If predicate failed - retry
+   2. If key not found - assume address was committed - perform copy without adding a new reference
 
 #### Commit
 
@@ -296,12 +303,16 @@ the background delete job, and preventing the accidental deletion of committed o
 ### Background delete job
 
 * Scan committed tokens
-    * For each committed object - remove all references of object
+    * For each committed object - remove reference key
     * For each staging token in committed entry - "Move staging token to deleted"   
       All objects in committed staging tokens that were not actually committed are candidates for deletion, therefore
   we can either execute the deleted tokens logic, or create entries for these tokens under the deleted prefix (implementation detail)
-    * Remove committed key
+    * Remove `staging/committed` key
     * Delete staging area
 * Scan deleted tokens  
   * For each token - remove references for all objects on staging token
-  * If it is the last reference for that object - perform hard-delete
+  * If it is the last reference for that object (list is empty after update) - perform hard-delete
+  * Delete staging area
+
+### Handling key override on same staging token - improvement
+
