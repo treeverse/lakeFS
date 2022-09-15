@@ -29,7 +29,7 @@ func newEntriesIterator(logger logging.Logger, db *badger.DB, partitionKey, star
 	return &EntriesIterator{
 		iter:         iter,
 		partitionKey: partitionKey,
-		start:        start,
+		start:        composeKey(partitionKey, start),
 		logger:       logger,
 		txn:          txn,
 	}
