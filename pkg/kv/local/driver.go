@@ -18,8 +18,8 @@ const (
 )
 
 var (
-	driverLock    = &sync.Mutex{}
-	connectionMap = make(map[string]*Store)
+	driverLock = &sync.Mutex{}
+	dbMap      = make(map[string]*Store)
 )
 
 type Driver struct{}
@@ -42,7 +42,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 
 	driverLock.Lock()
 	defer driverLock.Unlock()
-	connection, ok := connectionMap[params.Path]
+	connection, ok := dbMap[params.Path]
 	if !ok {
 		// no database open for this path
 		var logger logging.Logger = logging.DummyLogger{}
@@ -61,7 +61,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 			prefetchSize: params.PrefetchSize,
 			path:         params.Path,
 		}
-		connectionMap[params.Path] = connection
+		dbMap[params.Path] = connection
 	}
 	connection.refCount++
 	return connection, nil

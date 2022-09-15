@@ -211,6 +211,6 @@ func (s *Store) Close() {
 	s.refCount--
 	if s.refCount <= 0 {
 		_ = s.db.Close()
-		delete(connectionMap, s.path)
+		delete(dbMap, s.path)
 	}
 }
