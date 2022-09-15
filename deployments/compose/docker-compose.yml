@@ -33,7 +33,7 @@ services:
     entrypoint: ["minio", "server", "/data", "--console-address", ":9001"]
 
   lakefs:
-    image: treeverse/lakefs:latest
+    image: treeverse/lakefs:dev
     container_name: lakefs
     ports:
       - "8000:8000"

@@ -12,16 +12,20 @@ type EntriesIterator struct {
 	start        []byte
 	partitionKey []byte
 	primed       bool
-
-	entry  *kv.Entry
-	err    error
-	iter   *badger.Iterator
-	txn    *badger.Txn
-	logger logging.Logger
+	entry        *kv.Entry
+	err          error
+	iter         *badger.Iterator
+	txn          *badger.Txn
+	logger       logging.Logger
 }
 
-func newEntriesIterator(logger logging.Logger, txn *badger.Txn, options badger.IteratorOptions, partitionKey, start []byte) *EntriesIterator {
-	iter := txn.NewIterator(options)
+func newEntriesIterator(logger logging.Logger, db *badger.DB, partitionKey, start []byte, prefetchSize int) *EntriesIterator {
+	prefix := partitionRange(partitionKey)
+	txn := db.NewTransaction(false)
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchSize = prefetchSize
+	opts.Prefix = prefix
+	iter := txn.NewIterator(opts)
 	return &EntriesIterator{
 		iter:         iter,
 		partitionKey: partitionKey,
