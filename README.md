@@ -52,16 +52,16 @@ For more information, see the [official lakeFS documentation](https://docs.lakef
 
 ## Getting Started
 
-### Using Docker Compose (Linux/Mac)
+### Using Docker
 
 _Use this section to learn about lakeFS. For a production-suitable deployment, see the [docs](https://docs.lakefs.io/deploy/)._
 
-1. Ensure you have Docker and Docker Compose installed on your computer.
+1. Ensure you have Docker installed on your computer.
 
 2. Run the following command:
 
    ```bash
-   curl https://compose.lakefs.io | docker-compose -f - up
+   docker run --pull always --name lakefs -p 8000:8000 treeverse/lakefs
    ```
 
 3. Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your web browser to set up an initial admin user.  You will use this user to log in and send API requests.
@@ -72,7 +72,6 @@ You can try lakeFS:
 
 * Without installing, using the [lakeFS Playground](https://demo.lakefs.io).
 * [On Kubernetes](https://docs.lakefs.io/quickstart/more_quickstart_options.html#on-kubernetes-with-helm).
-* [With Docker Compose on Windows](https://docs.lakefs.io/quickstart/more_quickstart_options.html#docker-on-windows).
 * By [running the binary directly](https://docs.lakefs.io/quickstart/more_quickstart_options.html#using-the-binary).
 
 ### Setting up a repository

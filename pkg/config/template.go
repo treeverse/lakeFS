@@ -75,8 +75,19 @@ type configuration struct {
 	Database struct {
 		// DropTables Development flag to delete tables after successful migration to KV
 		DropTables bool `mapstructure:"drop_tables"`
-		// Type  Name of the KV Store driver DB implementation which is available according to the kv package Drivers function
+		// Type Name of the KV Store driver DB implementation which is available according to the kv package Drivers function
 		Type string `mapstructure:"type"`
+
+		Local *struct {
+			// Path - Local directory path to store the DB files
+			Path string `mapstructure:"path"`
+			// SyncWrites - Sync ensures data written to disk on each write instead of mem cache
+			SyncWrites *bool `mapstructure:"sync_writes"`
+			// PrefetchSize - Number of elements to prefetch while iterating
+			PrefetchSize int `mapstructure:"prefetch_size"`
+			// EnableLogging - Enable store and badger (trace only) logging
+			EnableLogging *bool `mapstructure:"enable_logging"`
+		} `mapstructure:"local"`
 
 		Postgres *struct {
 			ConnectionString      SecureString  `mapstructure:"connection_string"`

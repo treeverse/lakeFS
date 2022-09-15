@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
+	"github.com/hashicorp/go-multierror"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/mem"
@@ -184,16 +185,13 @@ func TestMultipleUpdates(t *testing.T) {
 		newSettings.ExampleMap["boo"] = settingsToEdit.(*settings.ExampleSettings).ExampleMap["boo"] + 1
 		return &newSettings, nil
 	}
-	var wg sync.WaitGroup
-	wg.Add(IncrementCount)
+	var wg multierror.Group
 	for i := 0; i < IncrementCount; i++ {
-		go func() {
-			emptySettingss := &settings.ExampleSettings{}
-			testutil.Must(t, m.Update(ctx, repository, "settingKey", emptySettingss, update))
-			wg.Done()
-		}()
+		wg.Go(func() error {
+			return m.Update(ctx, repository, "settingKey", &settings.ExampleSettings{}, update)
+		})
 	}
-	wg.Wait()
+	err = wg.Wait().ErrorOrNil()
 	testutil.Must(t, err)
 	gotSettings, err := m.Get(ctx, repository, "settingKey", emptySettings)
 	testutil.Must(t, err)

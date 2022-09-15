@@ -44,7 +44,7 @@ This reference uses `.` to denote the nesting of values.
   **Note:** Deprecated - See `database` section 
   {: .note }
 * `database` - Configuration section for the lakeFS key-value store database
-  + `database.type` `(string : ["postgres"|"dynamodb"])` - lakeFS database type 
+  + `database.type` `(string ["postgres"|"dynamodb"|"local"] : )` - lakeFS database type 
   + `database.postgres` - Configuration section when using `database.type="postgres"`
     + `database.postgres.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use
     + `database.postgres.max_open_connections` `(int : 25)` - Maximum number of open connections to the database
@@ -63,9 +63,13 @@ This reference uses `.` to denote the nesting of values.
     + `database.dynamodb.aws_profile` `(string : )` - AWS named profile to use
     + `database.dynamodb.aws_access_key_id` `(string : )` - AWS access key ID
     + `database.dynamodb.aws_secret_access_key` `(string : )` - AWS secret access key
-    
-      **Note:** `endpoint` `aw_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials. 
-      {: .note } 
+    + **Note:** `endpoint` `aws_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials.
+      {: .note }
+  + `database.local` - Configuration section when using `database.type="local"`
+    + `database.local.path` `(string : "~/lakefs/metadata")` - Local path on the filesystem to store embedded KV metadata, like branches and uncommitted entries
+    + `database.local.sync_writes` `(bool: true)` - Ensure each write is written to the disk. Disable to increase performance
+    + `database.local.prefetch_size` `(int: 256)` - How many items to prefetch when iterating over embedded KV records
+    + `database.local.enable_logging` `(bool: false)` - Enable trace logging for local driver
 * `listen_address` `(string : "0.0.0.0:8000")` - A `<host>:<port>` structured string representing the address to listen on
 * `auth.cache.enabled` `(bool : true)` - Whether to cache access credentials and user policies in-memory. Can greatly improve throughput when enabled.
 * `auth.cache.size` `(int : 1024)` - How many items to store in the auth cache. Systems with a very high user count should use a larger value at the expense of ~1kb of memory per cached user.
@@ -85,8 +89,8 @@ This reference uses `.` to denote the nesting of values.
 * `auth.ldap.user_base_dn` `(string : required)` - Base DN for searching for users.  Search looks for users in the subtree below this.
 * `auth.ldap.default_user_group` `(string : )` - Create all LDAP users in this group.  Defaults to `Viewers`.
 * `auth.ldap.user_filter` `(string : )` - Additional filter for users.
-* `auth.oidc.enabled` `(boolean : false)` - Set to true to enable authentication with an external OIDC provider.
-* `auth.oidc.is_default_login` `(boolean : false)` - If true, the lakeFS login page will redirect to the external provider by default.
+* `auth.oidc.enabled` `(bool : false)` - Set to true to enable authentication with an external OIDC provider.
+* `auth.oidc.is_default_login` `(bool : false)` - If true, the lakeFS login page will redirect to the external provider by default.
 * `auth.oidc.client_id` `(string : )` - OIDC client ID.
 * `auth.oidc.client_secret` `(string : )` - OIDC client secret.
 * `auth.oidc.url` `(string : )` - The base URL of your OIDC compatible identity provider.
@@ -113,10 +117,10 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.credentials.secret_access_key` `(string : )` - If specified, will be used as a static set of credential
 * `blockstore.s3.credentials.session_token` `(string : )` - If specified, will be used as a static session token
 * `blockstore.s3.endpoint` `(string : )` - If specified, custom endpoint for the AWS S3 API (https://s3_compatible_service_endpoint:port)
-* `blockstore.s3.force_path_style` `(boolean : false)` - When true, use path-style S3 URLs (https://<host>/<bucket> instead of https://<bucket>.<host>)
+* `blockstore.s3.force_path_style` `(bool : false)` - When true, use path-style S3 URLs (https://<host>/<bucket> instead of https://<bucket>.<host>)
 * `blockstore.s3.streaming_chunk_size` `(int : 1048576)` - Object chunk size to buffer before streaming to blockstore (use a lower value for less reliable networks). Minimum is 8192.
 * `blockstore.s3.streaming_chunk_timeout` `(time duration : "60s")` - Per object chunk timeout for blockstore streaming operations (use a larger value for less reliable networks).
-* `blockstore.s3.discover_bucket_region` `(boolean : true)` - (Can be turned off if the underlying S3 bucket doesn't support the GetBucketRegion API).
+* `blockstore.s3.discover_bucket_region` `(bool : true)` - (Can be turned off if the underlying S3 bucket doesn't support the GetBucketRegion API).
 * `blockstore.s3.skip_verify_certificate_test_only` `(boolean: false)` - Skip certificate verification while connecting to the storage endpoint. Should be used only for testing.
 * `committed.local_cache` - an object describing the local (on-disk) cache of metadata from
   permanent storage:
@@ -163,9 +167,9 @@ This reference uses `.` to denote the nesting of values.
   local development, if using [virtual-host addressing](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html).
 * `gateways.s3.region` `(string : "us-east-1")` - AWS region we're pretending to be in, it should match the region configuration used in AWS SDK clients
 * `gateways.s3.fallback_url` `(string)` - If specified, requests with a non-existing repository will be forwarded to this URL. This can be useful for using lakeFS side-by-side with S3, with the URL pointing at an [S3Proxy](https://github.com/gaul/s3proxy) instance.
-* `stats.enabled` `(boolean : true)` - Whether to periodically collect anonymous usage statistics
+* `stats.enabled` `(bool : true)` - Whether to periodically collect anonymous usage statistics
 * `security.audit_check_interval` `(duration : 12h)` - Duration in which we check for security audit.
-* `ui.enable` `(boolean: true)` - Whether to server the embedded UI from the binary  
+* `ui.enable` `(bool: true)` - Whether to server the embedded UI from the binary  
 {: .ref-list }
 
 ## Using Environment Variables

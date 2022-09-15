@@ -20,4 +20,3 @@ More information can be found [here](https://github.com/treeverse/lakeFS/issues/
 
 Starting at version 0.80.0, lakeFS abandoned the tight coupling to [PostgreSQL](https://en.wikipedia.org/wiki/PostgreSQL) and moved all database operations to work over [Key-Value Store](https://en.wikipedia.org/wiki/Key%E2%80%93value_database)
 To better understand how lakeFS uses KV Store, please refer to [KV in a Nutshell](../understand/kv-in-a-nutshell.html)
-
