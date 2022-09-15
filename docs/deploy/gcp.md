@@ -88,8 +88,6 @@ To support container-based environments like Google Cloud Run, lakeFS can be con
              value: '[YOUR SERVICE ACCOUNT JSON STRING]'
            - name: LAKEFS_DATABASE_CONNECTION_STRING
              value: [DATABASE_CONNECTION_STRING]
-           - name: LAKEFS_STATS_ENABLED
-             value: 'false'
            - name: INSTANCE_CONNECTION_NAME
              value: [POSTGRES_INSTANCE_NAME]
            - name: CLOUD_SQL_CONNECTION_NAME
