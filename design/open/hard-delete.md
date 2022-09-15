@@ -316,3 +316,19 @@ the background delete job, and preventing the accidental deletion of committed o
 
 ### Handling key override on same staging token - improvement
 
+## 5. No copies
+
+The idea is to make sure we do not enable copies, when no two entries in stage will point to the same physical object we will enable delete of the physical address in the following:
+
+- Upload - get previous entry and delete previous physical address unless staging token was updated
+- Revert - branch / prefix / object, when entry is dropped we can delete the physical address
+- Delete - repo/branch/object, delete the physical address after entry no longer exists
+
+We should enable the following to enable the physical delete:
+
+- Make sure we don't have the same physical address by sign links we return in our API. The logical path will be part of the signature that will be part of the physical address we generate. This will enable us to block and use of a physical address outside the repo/branch/entry.
+- The S3 gateway `put` operation with the copy support will use the underlying adapter to copy the data. Will require from each adapter to support/emulate a 'copy' operation.
+* (optional) Enable 'move' API as alternative to 'copy' we have seen that moving objects from one location to another by copy+delete of metadata will enable easy support for lakeFSFS move. This can be implemented by marking the entry on staging as 'locked'. During the move operation - lock+copy+delete+unlock operation. In case of any failure, as we don't have transactions, we may keep two entries, or keep locked object without ever delete its physical address.
+
+TODO(Barak): list more cases and how it will be address in this solution.
+
