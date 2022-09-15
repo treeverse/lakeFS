@@ -49,3 +49,14 @@ A brand new `Repository` has 3 objects: The `Repository` object itself, an initi
 With no transaction in KV Store, if for example the `Branch` creation fails, it will leave the `Repository` without an initial `Branch` (or a `Branch` at all), yet the `Repository` will be accessible. Trying to delete the `Repository` as a response to `Branch` creation failure is ony a partial solution as this operation can fail as well.
 To mitigate this we introduced a per-`Repository`-partition, which holds all repository related objects (the `Branch` and `Commit` in this scenario). The partition key can only be derived from the specific`Repository` instance itself. In addition we first create the `Repository` objects, the `Commit` and the `Branch`, under the `Repository`'s partition key, and then the `Repository` is created. The `Repository` and its objects will be accessible only after a successful creation of all 3 entities. A failure in this flow might leave some dangling objects, but consistency is maintained.
 The number of such dangling objects is not expected to be significant, and we plan to implement a cleaning algorithm to keep our KV Store neat and clean
+
+## So, Which Approach is Better?
+
+This documents provides a peek into `lakeFS`' new database approach - Key Value Store instead of a Relational SQL. It discusses the challenges we faced, and the solutions we provided to overcome these challenges. Considering the fact that `lakeFS` over with relational database did work, you might ask yourself why did we bother to develop another solution. The simple answer, is that while PostgreSQL was not a bad option, it was the only option, and any drawback of PostgreSQL, reflected on our users:
+* PostgreSQL can only scale vertically and that is a limitation. At some point this might not hold.
+* PostgreSQL is not a managed solution, meaning that users had to take care of all maintenance tasks, including the above mentioned scale (when needed)
+* As an unmanaged database, scaling means downtime - is that acceptable?
+* It might even get to the point that your organization is not willing to work with PostgreSQL due to various business considerations
+
+If none of the above apply, and you have no seemingly reason to switch from PostgreSQL, it can definitely still be used as an excellent option for the backing database for `lakeFS`'s KV Store. If you do need another solution, you have DynamoDB support, out of the box. DynamoDB, as a fully managed solution, with horizontal scalability support and optimized partitions support, answers all the pain-points specified above. It is definitely an option to consider, if you need to overcome these
+And, of course, you can always decide to implement your own KV Store driver to use your database of choice - we would love to add your contribution to `lakeFS`
