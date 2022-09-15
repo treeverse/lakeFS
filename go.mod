@@ -9,7 +9,6 @@ require (
 	github.com/Azure/azure-storage-blob-go v0.14.0
 	github.com/Azure/go-autorest/autorest v0.11.18
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.7
-	github.com/Masterminds/squirrel v1.5.0
 	github.com/apache/thrift v0.14.1
 	github.com/aws/aws-sdk-go v1.44.56
 	github.com/cockroachdb/pebble v0.0.0-20210308135031-3c37882d2ac8
@@ -17,8 +16,7 @@ require (
 	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deepmap/oapi-codegen v1.5.6
-	github.com/dgraph-io/ristretto v0.0.4-0.20210108140656-b1486d8516f2
-	github.com/dlmiddlecote/sqlstats v1.0.2
+	github.com/dgraph-io/ristretto v0.1.0
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/georgysavva/scany v0.2.7
 	github.com/getkin/kin-openapi v0.53.0
@@ -28,7 +26,6 @@ require (
 	github.com/go-test/deep v1.0.7
 	github.com/gobwas/glob v0.2.3
 	github.com/golang-jwt/jwt v3.2.2+incompatible
-	github.com/golang-migrate/migrate/v4 v4.15.1
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
 	github.com/golangci/golangci-lint v1.46.2
@@ -36,13 +33,11 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hnlq715/golang-lru v0.3.0
 	github.com/jackc/pgconn v1.10.1
-	github.com/jackc/pgerrcode v0.0.0-20201024163028-a0d42d470451
-	github.com/jackc/pgproto3/v2 v2.2.0
+	github.com/jackc/pgproto3/v2 v2.2.0 // indirect
 	github.com/jackc/pgx/v4 v4.14.1
 	github.com/jamiealquiza/tachymeter v2.0.0+incompatible
 	github.com/jedib0t/go-pretty/v6 v6.2.4
 	github.com/johannesboyne/gofakes3 v0.0.0-20210217223559-02ffa763be97
-	github.com/lib/pq v1.10.4
 	github.com/manifoldco/promptui v0.8.0
 	github.com/matoous/go-nanoid/v2 v2.0.0
 	github.com/minio/minio-go/v7 v7.0.13
@@ -83,6 +78,7 @@ require (
 
 require (
 	github.com/IBM/pgxpoolprometheus v1.0.1
+	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
 )
@@ -97,9 +93,12 @@ require (
 	github.com/breml/errchkjson v0.3.0 // indirect
 	github.com/butuzov/ireturn v0.1.1 // indirect
 	github.com/chavacava/garif v0.0.0-20220316182200-5cad0b5181d4 // indirect
+	github.com/cockroachdb/cockroach-go/v2 v2.1.1 // indirect
 	github.com/denis-tingaikin/go-header v0.4.3 // indirect
 	github.com/ettle/strcase v0.1.1 // indirect
 	github.com/firefart/nonamedreturns v1.0.1 // indirect
+	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
+	github.com/google/flatbuffers v2.0.0+incompatible // indirect
 	github.com/hashicorp/go-version v1.4.0 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/ldez/gomoddirectives v0.2.3 // indirect
@@ -120,6 +119,7 @@ require (
 	github.com/yeya24/promlinter v0.2.0 // indirect
 	gitlab.com/bosi/decorder v0.2.1 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220218215828-6cf2b201936e // indirect
+	gonum.org/v1/gonum v0.9.3 // indirect
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 )
 
@@ -234,8 +234,6 @@ require (
 	github.com/kyoh86/exportloopref v0.1.8 // indirect
 	github.com/labstack/echo/v4 v4.2.1 // indirect
 	github.com/labstack/gommon v0.3.0 // indirect
-	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
-	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect

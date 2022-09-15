@@ -14,22 +14,6 @@ has_children: false
 
 {% include toc.html %}
 
-## Docker on Windows
-
-To run a local lakeFS instance using [Docker Compose](https://docs.docker.com/compose/){:target="_blank"}:
-
-1. Ensure that you have Docker installed on your computer and that compose version is 1.25.04 or higher. For more information, please see this [issue](https://github.com/treeverse/lakeFS/issues/894).
-
-1. Run the following command in your terminal:
-
-   ```bash
-   Invoke-WebRequest https://compose.lakefs.io | Select-Object -ExpandProperty Content | docker-compose -f - up
-   ```
-
-1. Check your installation by opening [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank"} in your web browser.
-
-1. You're now ready to [create your first repository](repository.md) in lakeFS.
-
 ## On Kubernetes with Helm
 
 1. Install lakeFS on a Kubernetes cluster using Helm:
@@ -52,29 +36,25 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
    [Download lakefs](../index.md#downloads){: .btn .btn-green target="_blank"}
 
-1. Install and configure [PostgreSQL](https://www.postgresql.org/download/){:target="_blank"}
-
 1. Create a configuration file:
     
    ```yaml
    ---
    database:
-     connection_string: "postgres://localhost:5432/postgres?sslmode=disable"
+     type: local
+     local:
+       path: "~/lakefs/metadata"
     
    blockstore: 
      type: "local"
      local:
-       path: "~/lakefs_data"
-    
-   auth:
-     encrypt:
-       secret_key: "a random string that should be kept secret"
+       path: "~/lakefs/data"
    ```
 
-1. Create a local directory to store objects:
+1. Create a local directories to store objects and metadata:
 
    ```sh
-   mkdir ~/lakefs_data
+   mkdir -p ~/lakefs/data ~/lakefs/metadata
    ```
 
 1. Run the server:

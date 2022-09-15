@@ -89,7 +89,7 @@ On the object store, ranges are stored in the following hierarchy:
 
 lakeFS always stores the object data in the storage namespace in the user's object store, committed and uncommitted data alike.
 
-However, the lakeFS object metadata might be stored in either the object store or PostgresSQL.
+However, the lakeFS object metadata might be stored in either the object store or a key-value store.
 
 Unlike committed metadata which is immutable, uncommitted (or "staged") metadata experiences frequent random writes and is very mutable in nature. This is also true for "refs" - in particular, branches, which are simply pointers to an underlying commit, are modified frequently: on every commit or merge operation.
 
@@ -97,7 +97,4 @@ Both these types of metadata are not only mutable, but also require strong consi
 
 Luckily, this is also much smaller set of metadata compared to the committed metadata.
 
-References and uncommitted metadata are currently stored on PostgreSQL for its strong consistency and transactional guarantees.
-
-[In the future](roadmap.md#decouple-ref-store-from-postgresql), we plan on eliminating the need for an RDBMS by using a pluggable Key-Value store interface that would allow the use of [many databases](https://github.com/treeverse/lakeFS/blob/master/design/open/metadata_kv/index.md#databases-that-meet-these-requirements-examples) that meet its naive requirements.
-Non-production single server installations can leverage an embedded key-value store like RocksDB that will allow running with only a single container.
+References and uncommitted metadata are currently stored on a key-value store (See [supported databases](../reference/configuration.md)) for consistency guarantees.
