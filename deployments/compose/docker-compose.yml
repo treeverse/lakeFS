@@ -46,8 +46,6 @@ services:
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
       - LAKEFS_STATS_ENABLED=false
       - LAKEFS_LOGGING_LEVEL
-    entrypoint: ["sh", "-c", "lakefs run"]
-
 
   mariadb:
     image: mariadb:10
