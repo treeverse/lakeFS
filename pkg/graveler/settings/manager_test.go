@@ -6,10 +6,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/hashicorp/go-multierror"
-
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
+	"github.com/hashicorp/go-multierror"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/mem"
@@ -189,8 +188,7 @@ func TestMultipleUpdates(t *testing.T) {
 	var wg multierror.Group
 	for i := 0; i < IncrementCount; i++ {
 		wg.Go(func() error {
-			emptySettingss := &settings.ExampleSettings{}
-			return m.Update(ctx, repository, "settingKey", emptySettingss, update)
+			return m.Update(ctx, repository, "settingKey", &settings.ExampleSettings{}, update)
 		})
 	}
 	err = wg.Wait().ErrorOrNil()
