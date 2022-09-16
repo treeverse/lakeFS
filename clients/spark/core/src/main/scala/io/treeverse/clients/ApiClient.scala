@@ -2,7 +2,7 @@ package io.treeverse.clients
 
 import io.lakefs.clients.api
 import io.lakefs.clients.api.{ConfigApi, RetentionApi}
-import io.lakefs.clients.api.model.{GarbageCollectionPrepareRequest, GarbageCollectionPrepareResponse, Repository}
+import io.lakefs.clients.api.model.{GarbageCollectionPrepareRequest, GarbageCollectionPrepareResponse}
 import io.treeverse.clients.StorageClientType.StorageClientType
 import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
 import com.google.common.cache.{Cache, CacheBuilder, CacheLoader, LoadingCache}
@@ -131,6 +131,8 @@ class ApiClient private (conf: APIConfigurations) {
   private val retentionApi = new RetentionApi(client)
   private val configApi = new ConfigApi(client)
 
+  private val retryWrapper = new RequestRetryWrapper()
+
   private val storageNamespaceCache: LoadingCache[StorageNamespaceCacheKey, String] =
     CacheBuilder
       .newBuilder()
@@ -141,7 +143,7 @@ class ApiClient private (conf: APIConfigurations) {
 
   def keyToStorageNamespace(key: StorageNamespaceCacheKey): String = {
 
-    val repo = RequestRetryWrapper.wrapWithRetry(() => repositoriesApi.getRepository(key.repoName))
+    val repo = retryWrapper.wrapWithRetry(() => repositoriesApi.getRepository(key.repoName))
     val storageNamespace = key.storageClientType match {
       case StorageClientType.HadoopFS =>
         ApiClient
@@ -162,30 +164,30 @@ class ApiClient private (conf: APIConfigurations) {
       repoName: String,
       previousRunID: String
   ): GarbageCollectionPrepareResponse = {
-    RequestRetryWrapper.wrapWithRetry(() => retentionApi.prepareGarbageCollectionCommits(
+    retryWrapper.wrapWithRetry(() => retentionApi.prepareGarbageCollectionCommits(
       repoName,
       new GarbageCollectionPrepareRequest().previousRunId(previousRunID)
     ))
   }
 
   def getGarbageCollectionRules(repoName: String): String = {
-    val gcRules = RequestRetryWrapper.wrapWithRetry(() => retentionApi.getGarbageCollectionRules(repoName))
+    val gcRules = retryWrapper.wrapWithRetry(() => retentionApi.getGarbageCollectionRules(repoName))
     gcRules.toString()
   }
 
   def getBlockstoreType(): String = {
-    val storageConfig = RequestRetryWrapper.wrapWithRetry(() => configApi.getStorageConfig())
+    val storageConfig = retryWrapper.wrapWithRetry(() => configApi.getStorageConfig())
     storageConfig.getBlockstoreType()
   }
 
   def getCommit(repoName: String, commitID: String): api.model.Commit = {
-    RequestRetryWrapper.wrapWithRetry(() => commitsApi.getCommit(repoName, commitID))
+    retryWrapper.wrapWithRetry(() => commitsApi.getCommit(repoName, commitID))
   }
 
   def getMetaRangeURL(repoName: String, commit: api.model.Commit): String = {
     val metaRangeID = commit.getMetaRangeId
     if (metaRangeID != "") {
-      val metaRange = RequestRetryWrapper.wrapWithRetry(() => metadataApi.getMetaRange(repoName, metaRangeID))
+      val metaRange = retryWrapper.wrapWithRetry(() => metadataApi.getMetaRange(repoName, metaRangeID))
       val location = metaRange.getLocation
       URI
         .create(getStorageNamespace(repoName, StorageClientType.HadoopFS) + "/")
@@ -199,7 +201,7 @@ class ApiClient private (conf: APIConfigurations) {
    *  translate that URL to use an appropriate Hadoop FileSystem.
    */
   def getMetaRangeURL(repoName: String, commitID: String): String = {
-    val commit = RequestRetryWrapper.wrapWithRetry(() => commitsApi.getCommit(repoName, commitID))
+    val commit = retryWrapper.wrapWithRetry(() => commitsApi.getCommit(repoName, commitID))
     getMetaRangeURL(repoName, commit)
   }
 
@@ -207,7 +209,7 @@ class ApiClient private (conf: APIConfigurations) {
    *  translate that URL to use an appropriate Hadoop FileSystem.
    */
   def getRangeURL(repoName: String, rangeID: String): String = {
-    val range = RequestRetryWrapper.wrapWithRetry(() => metadataApi.getRange(repoName, rangeID))
+    val range = retryWrapper.wrapWithRetry(() => metadataApi.getRange(repoName, rangeID))
     val location = range.getLocation
     URI
       .create(getStorageNamespace(repoName, StorageClientType.HadoopFS) + "/" + location)
@@ -216,7 +218,7 @@ class ApiClient private (conf: APIConfigurations) {
   }
 
   def getBranchHEADCommit(repoName: String, branch: String): String = {
-    val response = RequestRetryWrapper.wrapWithRetry(() => branchesApi.getBranch(repoName, branch))
+    val response = retryWrapper.wrapWithRetry(() => branchesApi.getBranch(repoName, branch))
     response.getCommitId
   }
 
@@ -225,20 +227,16 @@ class ApiClient private (conf: APIConfigurations) {
       repoName: String,
       storageClientType: StorageClientType
   )
+}
 
-  class RequestRetryWrapper private {
-
-  }
-
-  object RequestRetryWrapper {
+class RequestRetryWrapper(val numRetries: Int = 5) {
     private val retryPolicy : Policy[Any] = RetryPolicy.builder()
-      .handle(new Exception().getClass)
       .withDelay(Duration.ofMillis(500))
-      .withMaxRetries(5)
+      .withMaxRetries(numRetries)
       .build()
 
-    def wrapWithRetry[T](fn: CheckedSupplier[T]): T = {
+  def wrapWithRetry[T](fn: CheckedSupplier[T]): T = {
       Failsafe.`with`(Seq(retryPolicy).asJava).get(fn)
     }
-  }
+
 }
