@@ -7,7 +7,7 @@ import org.scalatest._
 import matchers.should._
 import funspec._
 import io.lakefs.clients.api.ApiException
-import org.mockito.Mockito.{doReturn, doThrow, spy, times, verify, when}
+import org.mockito.Mockito.{doThrow, spy, times, verify}
 
 class ApiClientSpec extends AnyFunSpec with Matchers {
   describe("translateURI") {
@@ -70,6 +70,12 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
     def someMethod() : String = {
       SomeValue
     }
+
+    def createCheckedSupplierForSomeMethod() : dev.failsafe.function.CheckedSupplier[String] = {
+      new dev.failsafe.function.CheckedSupplier[String]() {
+        def get(): String = someMethod()
+      }
+    }
   }
 
   describe("wrapWithRetry") {
@@ -86,7 +92,7 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
         .when(dummyMethodInvoker).someMethod()
 
       assertThrows[FailsafeException] {
-        retryWrapper.wrapWithRetry(() => dummyMethodInvoker.someMethod())
+        retryWrapper.wrapWithRetry(dummyMethodInvoker.createCheckedSupplierForSomeMethod())
       }
 
       // assert
@@ -104,7 +110,7 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
         .when(dummyMethodInvoker).someMethod()
 
       assertThrows[NullPointerException] {
-        retryWrapper.wrapWithRetry(() => dummyMethodInvoker.someMethod())
+        retryWrapper.wrapWithRetry(dummyMethodInvoker.createCheckedSupplierForSomeMethod())
       }
 
       // assert
@@ -121,7 +127,7 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
           .when(dummyMethodInvoker).someMethod()
 
         // test
-        retryWrapper.wrapWithRetry(() => dummyMethodInvoker.someMethod())
+        retryWrapper.wrapWithRetry(dummyMethodInvoker.createCheckedSupplierForSomeMethod())
 
         // assert
         verify(dummyMethodInvoker, times(5)).someMethod()
@@ -135,7 +141,7 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
         .when(dummyMethodInvoker).someMethod()
 
       // test
-      retryWrapper.wrapWithRetry(() => dummyMethodInvoker.someMethod())
+      retryWrapper.wrapWithRetry(dummyMethodInvoker.createCheckedSupplierForSomeMethod())
 
       // assert
       verify(dummyMethodInvoker, times(3)).someMethod()
