@@ -12,7 +12,8 @@ import org.mockito.Mockito.{doThrow, spy, times, verify}
 class ApiClientSpec extends AnyFunSpec with Matchers {
   describe("translateURI") {
     describe("s3") {
-      val translate = (u: String) => ApiClient.translateURI(new URI(u), StorageUtils.StorageTypeS3).toString
+      val translate =
+        (u: String) => ApiClient.translateURI(new URI(u), StorageUtils.StorageTypeS3).toString
       it("should translate to s3a") {
         translate("s3://bucket/path/to/object") should be("s3a://bucket/path/to/object")
       }
@@ -25,7 +26,9 @@ class ApiClientSpec extends AnyFunSpec with Matchers {
         translate("s3://bucket/") should be("s3a://bucket/")
       }
 
-      it("should translate bucket with path ending in a slash to a bucket with a path ending in a slash") {
+      it(
+        "should translate bucket with path ending in a slash to a bucket with a path ending in a slash"
+      ) {
         translate("s3://bucket/path/") should be("s3a://bucket/path/")
       }
 
@@ -35,16 +38,25 @@ class ApiClientSpec extends AnyFunSpec with Matchers {
     }
 
     describe("Azure") {
-      val translate = (u: String) => ApiClient.translateURI(new URI(u), StorageUtils.StorageTypeAzure).toString
+      val translate =
+        (u: String) => ApiClient.translateURI(new URI(u), StorageUtils.StorageTypeAzure).toString
       it("should translate any protocol to abfs") {
-        translate("https://account.example.net/container/path/to/blob") should be("abfs://container@account.dfs.core.windows.net/path/to/blob")
-        translate("ex://account.example.net/container/path/to/blob") should be("abfs://container@account.dfs.core.windows.net/path/to/blob")
+        translate("https://account.example.net/container/path/to/blob") should be(
+          "abfs://container@account.dfs.core.windows.net/path/to/blob"
+        )
+        translate("ex://account.example.net/container/path/to/blob") should be(
+          "abfs://container@account.dfs.core.windows.net/path/to/blob"
+        )
       }
 
       it("should handle empty paths") {
         // TODO(lynn): Trailing slashes might well be incorrect here.
-        translate("https://account.example.net/container/") should be("abfs://container@account.dfs.core.windows.net/")
-        translate("https://account.example.net/container") should be("abfs://container@account.dfs.core.windows.net/")
+        translate("https://account.example.net/container/") should be(
+          "abfs://container@account.dfs.core.windows.net/"
+        )
+        translate("https://account.example.net/container") should be(
+          "abfs://container@account.dfs.core.windows.net/"
+        )
       }
     }
   }
@@ -67,11 +79,11 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
 
   class DummyMethodInvoker {
     @throws[Exception]
-    def someMethod() : String = {
+    def someMethod(): String = {
       SomeValue
     }
 
-    def createCheckedSupplierForSomeMethod() : dev.failsafe.function.CheckedSupplier[String] = {
+    def createCheckedSupplierForSomeMethod(): dev.failsafe.function.CheckedSupplier[String] = {
       new dev.failsafe.function.CheckedSupplier[String]() {
         def get(): String = someMethod()
       }
@@ -81,7 +93,9 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
   describe("wrapWithRetry") {
     // In case all retries fail, the last result or exception are returned or thrown
     // https://failsafe.dev/faqs/#how-to-i-throw-an-exception-when-retries-are-exceeded
-    it("should throw the a FailSafeException exception in case all retries failed and last exception is checked") {
+    it(
+      "should throw the a FailSafeException exception in case all retries failed and last exception is checked"
+    ) {
       // prepare
       doThrow(classOf[Exception])
         .doThrow(classOf[Exception])
@@ -89,7 +103,8 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
         .doThrow(classOf[Exception])
         .doThrow(classOf[Exception])
         .doThrow(classOf[ApiException])
-        .when(dummyMethodInvoker).someMethod()
+        .when(dummyMethodInvoker)
+        .someMethod()
 
       assertThrows[FailsafeException] {
         retryWrapper.wrapWithRetry(dummyMethodInvoker.createCheckedSupplierForSomeMethod())
@@ -107,7 +122,8 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
         .doThrow(classOf[Exception])
         .doThrow(classOf[Exception])
         .doThrow(classOf[NullPointerException])
-        .when(dummyMethodInvoker).someMethod()
+        .when(dummyMethodInvoker)
+        .someMethod()
 
       assertThrows[NullPointerException] {
         retryWrapper.wrapWithRetry(dummyMethodInvoker.createCheckedSupplierForSomeMethod())
@@ -118,19 +134,20 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
     }
 
     it("should retry on any type of exception") {
-        // prepare
-        doThrow(classOf[RuntimeException])
-          .doThrow(classOf[SocketException])
-          .doThrow(classOf[ApiException])
-          .doThrow(classOf[NullPointerException])
-          .doCallRealMethod()
-          .when(dummyMethodInvoker).someMethod()
+      // prepare
+      doThrow(classOf[RuntimeException])
+        .doThrow(classOf[SocketException])
+        .doThrow(classOf[ApiException])
+        .doThrow(classOf[NullPointerException])
+        .doCallRealMethod()
+        .when(dummyMethodInvoker)
+        .someMethod()
 
-        // test
-        retryWrapper.wrapWithRetry(dummyMethodInvoker.createCheckedSupplierForSomeMethod())
+      // test
+      retryWrapper.wrapWithRetry(dummyMethodInvoker.createCheckedSupplierForSomeMethod())
 
-        // assert
-        verify(dummyMethodInvoker, times(5)).someMethod()
+      // assert
+      verify(dummyMethodInvoker, times(5)).someMethod()
     }
 
     it("should retry until success within the boundaries of the allowed number of retries") {
@@ -138,7 +155,8 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
       doThrow(classOf[Exception])
         .doThrow(classOf[Exception])
         .doCallRealMethod()
-        .when(dummyMethodInvoker).someMethod()
+        .when(dummyMethodInvoker)
+        .someMethod()
 
       // test
       retryWrapper.wrapWithRetry(dummyMethodInvoker.createCheckedSupplierForSomeMethod())
