@@ -25,6 +25,8 @@ Then import the package:
 ```python
 import lakefs_client
 ```
+##Calling the lakeFS API from Python
+For Python, this example uses lakeFS’s python [package](https://docs.lakefs.io/integrations/python.html)
 
 ### Setuptools
 
