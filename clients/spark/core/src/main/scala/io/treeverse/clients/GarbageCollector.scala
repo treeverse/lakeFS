@@ -1,6 +1,5 @@
 package io.treeverse.clients
 
-import com.google.protobuf.timestamp.Timestamp
 import io.treeverse.clients.LakeFSContext._
 import org.apache.hadoop.fs._
 import org.apache.hadoop.conf.Configuration
@@ -182,7 +181,12 @@ class GarbageCollector(val rangeGetter: RangeGetter, configMap: ConfigMapper) ex
     val keepRangeIDsDF = getRangeIDsForCommits(keepCommitsDF, repo)
     val expiredRangeIDsDF = getRangeIDsForCommits(expiredCommitsDF, repo)
 
-    getAddressesToDelete(expiredRangeIDsDF, keepRangeIDsDF, repo, numRangePartitions, numAddressPartitions)
+    getAddressesToDelete(expiredRangeIDsDF,
+                         keepRangeIDsDF,
+                         repo,
+                         numRangePartitions,
+                         numAddressPartitions
+                        )
   }
 }
 
@@ -288,8 +292,11 @@ object GarbageCollector {
     val configMapper = new ConfigMapper(hcValues)
     val gc = new GarbageCollector(new LakeFSRangeGetter(apiConf, configMapper), configMapper)
 
-    val numRangePartitions = hc.getInt(LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS, DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS)
-    val numAddressPartitions = hc.getInt(LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS, DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS)
+    val numRangePartitions =
+      hc.getInt(LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS, DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS)
+    val numAddressPartitions = hc.getInt(LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS,
+                                         DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS
+                                        )
 
     val expiredAddresses = gc
       .getExpiredAddresses(repo, runID, gcCommitsLocation, numRangePartitions, numAddressPartitions)
