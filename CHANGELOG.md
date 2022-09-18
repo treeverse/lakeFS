@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.81.0
+
+What's new:
+- Run standalone lakeFS (no PostgreSQL!) with Badger KV for experimentation purposes. 
+- Add delete operation for GC rules (#4143)
+- support AWS named profile for dynamodb (#4163)
+- Add pgxpool metrics to kv/postgres implementation (#4137)
+
+Bug fixes:
+- Fix: Pyramid delete before open (#4062)
+
 ## v0.80.1 - 2022-09-01
 
 Bug fix:
