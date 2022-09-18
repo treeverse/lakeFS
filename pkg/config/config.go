@@ -41,7 +41,15 @@ type Config struct {
 	values configuration
 }
 
-func NewConfig(useLocal bool) (*Config, error) {
+func NewConfig() (*Config, error) {
+	return newConfig(false)
+}
+
+func NewLocalConfig() (*Config, error) {
+	return newConfig(true)
+}
+
+func newConfig(useLocal bool) (*Config, error) {
 	c := &Config{}
 
 	// Inform viper of all expected fields.  Otherwise, it fails to deserialize from the

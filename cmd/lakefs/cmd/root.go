@@ -57,9 +57,16 @@ func useLocal() bool {
 	return res
 }
 
+func newConfig() (*config.Config, error) {
+	if useLocal() {
+		return config.NewLocalConfig()
+	}
+	return config.NewConfig()
+}
+
 func loadConfig() *config.Config {
 	initOnce.Do(initConfig)
-	cfg, err := config.NewConfig(useLocal())
+	cfg, err := newConfig()
 	if err != nil {
 		fmt.Println("Failed to load config file", err)
 		os.Exit(1)
@@ -109,7 +116,7 @@ func initConfig() {
 	}
 
 	// setup config used by the executed command
-	cfg, err := config.NewConfig(useLocal())
+	cfg, err := newConfig()
 	if err != nil {
 		logger.WithError(err).Fatal("Load config")
 	} else {
