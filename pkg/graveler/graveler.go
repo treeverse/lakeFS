@@ -1460,16 +1460,17 @@ func (g *KVGraveler) Delete(ctx context.Context, repository *RepositoryRecord, b
 
 			// check staging for entry or tombstone
 			val, err := g.getFromStagingArea(ctx, branch, key)
-			if err != nil {
+			switch {
+			case err != nil:
 				if !errors.Is(err, ErrNotFound) {
 					// unknown error
 					return fmt.Errorf("reading from staging: %w", err)
 				}
-				// entry not found in staging - continue to fall to committed check
-			} else if val == nil {
+				// entry not found in staging - continue to committed check
+			case val == nil:
 				// found tombstone in staging, return ErrNotFound
 				return ErrNotFound
-			} else {
+			default:
 				// found in staging, set tombstone
 				return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
 			}
