@@ -9,15 +9,18 @@ import org.scalameter.api._
 import org.scalameter.picklers.Implicits._
 
 object ReadSSTableBenchmark extends Bench.LocalTime {
-  val filename = "/tmp/range.sst" // BUG(ariels): Needs to come from the repo!
+  val filename = "/bench/56569996.sst"
+  val sstURL = getClass.getResource(filename)
 
-  val sstables = Gen.single("file")(filename)
+  val sstables = Gen.single("file")(sstURL.getPath)
 
   performance of "SSTableReaderIterator" in {
     measure method "next" in {
       using (sstables) in {
-        sst => val reader: SSTableReader[Entry] = new SSTableReader(sst, Entry.messageCompanion)
-        val count = reader.newIterator.length
+        sst => {
+          val reader: SSTableReader[Entry] = new SSTableReader(sst, Entry.messageCompanion)
+          val count = reader.newIterator.length
+        }
       }
     }
   }

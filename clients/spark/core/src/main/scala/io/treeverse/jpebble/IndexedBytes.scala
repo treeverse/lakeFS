@@ -10,6 +10,7 @@ trait IndexedBytes {
 
   /** @return underlying array of bytes. */
   def bytes: Array[Byte]
+
   /** @return start offset of this in bytes. */
   def from: Int
 
@@ -44,13 +45,19 @@ class BufferIterator(private val buf: BufferIndexedBytes) extends Iterator[Byte]
 /** IndexedBytes running on an immutable array of bytes on the range
  *  [offset, offset+length).  After calling, change *nothing* in buf.
  */
-class BufferIndexedBytes(private val buf: Array[Byte], private val offset: Int, private val length: Int) extends IndexedBytes {
+class BufferIndexedBytes(
+    private val buf: Array[Byte],
+    private val offset: Int,
+    private val length: Int
+) extends IndexedBytes {
   def size = length
   def bytes = buf
   def from = offset
 
   if (offset + length > buf.size) {
-    throw new IndexOutOfBoundsException(s"Cannot create buffer on [$offset, ${offset + length}) from array of size ${buf.size}")
+    throw new IndexOutOfBoundsException(
+      s"Cannot create buffer on [$offset, ${offset + length}) from array of size ${buf.size}"
+    )
   }
 
   override def slice(start: Int, end: Int) = {
@@ -58,17 +65,23 @@ class BufferIndexedBytes(private val buf: Array[Byte], private val offset: Int, 
       throw new IndexOutOfBoundsException(s"Cannot expand slice before start to [$start, $end)")
     }
     if (end > size) {
-      throw new IndexOutOfBoundsException(s"Cannot expand slice of size $size after end to [$start, $end)")
+      throw new IndexOutOfBoundsException(
+        s"Cannot expand slice of size $size after end to [$start, $end)"
+      )
     }
     new BufferIndexedBytes(buf, offset + start, end - start)
   }
 
   def sliceView(start: Int, end: Int) = {
     if (start < 0 || end < 0) {
-      throw new IndexOutOfBoundsException(s"Cannot expand slice of size $size after end to [$start, $end)")
+      throw new IndexOutOfBoundsException(
+        s"Cannot expand slice of size $size after end to [$start, $end)"
+      )
     }
     if (end > size) {
-      throw new IndexOutOfBoundsException(s"Cannot expand slice of size $size after end to [$start, $end)")
+      throw new IndexOutOfBoundsException(
+        s"Cannot expand slice of size $size after end to [$start, $end)"
+      )
     }
     buf.view.slice(offset + start, offset + end)
   }

@@ -64,27 +64,26 @@ object SSTableReader {
 
   def forMetaRange(configuration: Configuration, metaRangeURL: String) = {
     val localFile: File = copyToLocal(configuration, metaRangeURL)
-    new SSTableReader(
-      localFile.getAbsolutePath,
-      RangeData.messageCompanion
-    )
+    new SSTableReader(localFile, RangeData.messageCompanion)
   }
 
   def forRange(configuration: Configuration, rangeURL: String) = {
     val localFile: File = copyToLocal(configuration, rangeURL)
-    new SSTableReader(
-      localFile.getAbsolutePath,
-      Entry.messageCompanion
-    )
+    new SSTableReader(localFile, Entry.messageCompanion)
   }
 }
 
-class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
-    sstableFile: String,
+class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] private (
+    fp: java.io.RandomAccessFile,
     companion: GeneratedMessageCompanion[Proto]
 ) extends Closeable {
-  private val fp = new java.io.RandomAccessFile(sstableFile, "r")
   private val reader = new BlockReadableFile(fp)
+
+  def this(sstableFilename: String, companion: GeneratedMessageCompanion[Proto]) =
+    this(new java.io.RandomAccessFile(sstableFilename, "r"), companion)
+
+  def this(sstableFile: File, companion: GeneratedMessageCompanion[Proto]) =
+    this(new java.io.RandomAccessFile(sstableFile, "r"), companion)
 
   def close(): Unit = {
     fp.close()

@@ -110,24 +110,28 @@ class GarbageCollector(val rangeGetter: RangeGetter, configMap: ConfigMapper) ex
     commitIDs.flatMap(rangeGetter.getRangeIDs(_, repo))
   }
 
-  /**
-   *  Compute a distinct antijoin using  partitioner.  This is the same as
-   * 
+  /** Compute a distinct antijoin using  partitioner.  This is the same as
+   *
    *  <pre>
    *     left.distinct.except(right.distinct)
    *  </pre>
-   * 
+   *
    *  but forces our plan.  Useful when Spark is unable to predict the
    *  structure and/or size of either argument.
    *
    *  @return all elements in left that are not in right.
    */
-  def minus(left: Dataset[String], right: Dataset[String], partitioner: Partitioner): Dataset[String] = {
+  def minus(
+      left: Dataset[String],
+      right: Dataset[String],
+      partitioner: Partitioner
+  ): Dataset[String] = {
     import spark.implicits._
     def mark(f: Int) = (p: Any) => p match { case (t: String) => (t, f) }
     val both = left.map(mark(1)).union(right.map(mark(2)))
     val reduced = both.rdd.reduceByKey(partitioner, _ | _)
-    reduced.filter({ case (_, y) => y == 1 })
+    reduced
+      .filter({ case (_, y) => y == 1 })
       .map({ case (x, _) => x })
       .toDS
   }
@@ -150,9 +154,12 @@ class GarbageCollector(val rangeGetter: RangeGetter, configMap: ConfigMapper) ex
     val cleanExpiredRangeIDs = minus(expiredRangeIDs, keepRangeIDs, rangePartitioner)
 
     val numAddressPartitions = 200 // TODO(ariels): Get a number from conf!
-    val expiredAddresses = cleanExpiredRangeIDs.repartition(numAddressPartitions).flatMap(rangeGetter.getRangeAddresses(_, repo))
+    val expiredAddresses = cleanExpiredRangeIDs
+      .repartition(numAddressPartitions)
+      .flatMap(rangeGetter.getRangeAddresses(_, repo))
 
-    val keepAddresses = keepRangeIDs.repartition(numAddressPartitions).flatMap(rangeGetter.getRangeAddresses(_, repo))
+    val keepAddresses =
+      keepRangeIDs.repartition(numAddressPartitions).flatMap(rangeGetter.getRangeAddresses(_, repo))
 
     println(s"getAddressesToDelete: use $numAddressPartitions partitions for addresses")
     val addressPartitioner = new HashPartitioner(numAddressPartitions)
