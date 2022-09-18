@@ -132,7 +132,7 @@ const (
 	UIEnabledKey = "ui.enabled"
 )
 
-func setDefaultLocalConfig() {
+func SetDefaultLocalConfig() {
 	viper.SetDefault(DatabaseTypeKey, DefaultDatabaseType)
 	viper.SetDefault(DatabaseKVLocalPath, DefaultDatabaseLocalKVPath)
 	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockstoreLocalPath)
@@ -140,11 +140,7 @@ func setDefaultLocalConfig() {
 	viper.SetDefault(BlockstoreTypeKey, DefaultBlockstoreType)
 }
 
-func setDefaults(useLocal bool) {
-	if useLocal {
-		setDefaultLocalConfig()
-	}
-
+func setDefaults() {
 	viper.SetDefault(ListenAddressKey, DefaultListenAddr)
 
 	viper.SetDefault(LoggingFormatKey, DefaultLoggingFormat)
