@@ -7,6 +7,12 @@ import (
 )
 
 const (
+	DatabaseTypeKey     = "database.type"
+	DefaultDatabaseType = "local"
+
+	DatabaseKVLocalPath        = "database.local.path"
+	DefaultDatabaseLocalKVPath = "~/lakefs/metadata"
+
 	BlockstoreTypeKey     = "blockstore.type"
 	DefaultBlockstoreType = "local"
 
@@ -81,6 +87,9 @@ const (
 	LoggingFilesKeepKey     = "logging.files_keep"
 	LoggingAuditLogLevel    = "logging.audit_log_level"
 
+	AuthEncryptSecretKey        = "auth.encrypt.secret_key"            // #nosec
+	DefaultAuthEncryptSecretKey = "THIS_MUST_BE_CHANGED_IN_PRODUCTION" // #nosec
+
 	ActionsEnabledKey = "actions.enabled"
 
 	AuthCacheEnabledKey = "auth.cache.enabled"
@@ -122,6 +131,14 @@ const (
 
 	UIEnabledKey = "ui.enabled"
 )
+
+func SetDefaultLocalConfig() {
+	viper.SetDefault(DatabaseTypeKey, DefaultDatabaseType)
+	viper.SetDefault(DatabaseKVLocalPath, DefaultDatabaseLocalKVPath)
+	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockstoreLocalPath)
+	viper.SetDefault(AuthEncryptSecretKey, DefaultAuthEncryptSecretKey)
+	viper.SetDefault(BlockstoreTypeKey, DefaultBlockstoreType)
+}
 
 func setDefaults() {
 	viper.SetDefault(ListenAddressKey, DefaultListenAddr)

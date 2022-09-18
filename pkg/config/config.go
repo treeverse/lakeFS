@@ -35,6 +35,10 @@ var (
 	ErrMissingRequiredKeys = fmt.Errorf("%w: missing required keys", ErrBadConfiguration)
 )
 
+// UseLocalConfiguration set to true will add defaults that enable a lakeFS run
+// without any other configuration like DB or blockstore.
+const UseLocalConfiguration = "local-settings"
+
 type Config struct {
 	values configuration
 }
