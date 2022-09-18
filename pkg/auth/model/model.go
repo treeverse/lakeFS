@@ -43,7 +43,7 @@ func init() {
 	kv.RegisterType(string(GroupPolicyPath(kv.PathNoDelimiterRegexp, kv.PathNoDelimiterRegexp)), &kv.SecondaryIndex{})
 	kv.RegisterType(string(UserPolicyPath(kv.PathNoDelimiterRegexp, kv.PathNoDelimiterRegexp)), &kv.SecondaryIndex{})
 	kv.RegisterType(string(ExpiredTokenPath(kv.PathNoDelimiterRegexp)), &TokenData{})
-	kv.RegisterType(string(MetadataKeyPath(kv.PathNoDelimiterRegexp)), nil)
+	kv.RegisterType(MetadataKeyPath(kv.PathNoDelimiterRegexp), nil)
 }
 
 func UserPath(userName string) []byte {
