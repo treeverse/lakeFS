@@ -96,15 +96,7 @@ Want to dive deeper into our system tests infrastructure? Need to debug the test
 ## Submitting a pull request
 
 Open a GitHub pull request with your change. The PR description should include a brief explanation of your change.
-You should also mention the related GitHub issue using a [closing keyword](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).  
-As a rule, we require each PR to have a linked issue and enforce it via a Github action. That being said, we understand that
-not every PR justifies opening a dedicated issue. The following changes qualify to be exempt from a linked issue:
-1. Typo fixes (whether in code or documentation)
-2. Changelog updates
-3. Packages version bump  
-
-Regardless of the list described, always use discretion. If the PR require context/rational/motivation this probably means an issue must be opened and linked.
-If you've reached the conclusion that this PR should be exempt, use the `minor-change` label to disable this check.
+You should also mention the related GitHub issue. If the issue should be automatically closed after the merge, please [link it to the PR](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).
 
 After submitting your pull request, [GitHub Actions](https://github.com/treeverse/lakeFS/actions) will automatically run tests on your changes and make sure that your updated code builds and runs on Go 1.17.x.
 

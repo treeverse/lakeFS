@@ -2,21 +2,18 @@ version: "3"
 services:
 
   lakefs-setup:
-    image: treeverse/lakefs:0.70.6
+    image: treeverse/lakefs:latest
     container_name: lakefs-setup
     depends_on:
-      - postgres
       - minio-setup
+      - lakefs
     environment:
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
-      - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
       - LAKECTL_CREDENTIALS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
       - LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
       - LAKECTL_SERVER_ENDPOINT_URL=http://lakefs:8000
-      - LAKEFS_BLOCKSTORE_TYPE=s3
-    entrypoint: ["/app/wait-for", "postgres:5432", "--", "sh", "-c",
-      "lakefs setup --user-name docker --access-key-id AKIAIOSFODNN7EXAMPLE --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY && lakectl repo create lakefs://example s3://example"
-      ]
+    entrypoint: ["wait-for", "lakefs:8000", "--", "sh", "-c",
+                 "lakefs setup --user-name docker --access-key-id AKIAIOSFODNN7EXAMPLE --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY && lakectl repo create lakefs://example s3://example"]
 
   minio-setup:
     image: minio/mc
@@ -36,30 +33,21 @@ services:
     entrypoint: ["minio", "server", "/data", "--console-address", ":9001"]
 
   lakefs:
-    image: treeverse/lakefs:0.70.6
+    image: treeverse/lakefs:latest
     container_name: lakefs
     ports:
       - "8000:8000"
-    depends_on:
-      - postgres
     environment:
+      - LAKEFS_DATABASE_TYPE=local
+      - LAKEFS_DATABASE_LOCAL_PATH=~/lakefs/metadata
       - LAKEFS_BLOCKSTORE_TYPE=s3
       - LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE=true
       - LAKEFS_BLOCKSTORE_S3_ENDPOINT=http://minio:9000
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=minioadmin
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=minioadmin
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
-      - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
       - LAKEFS_STATS_ENABLED=false
       - LAKEFS_LOGGING_LEVEL
-    entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
-
-  postgres:
-    image: postgres:11
-    container_name: postgres
-    environment:
-      POSTGRES_USER: lakefs
-      POSTGRES_PASSWORD: lakefs
 
   mariadb:
     image: mariadb:10
@@ -109,7 +97,7 @@ services:
     build: hive
     profiles: ["client"]
     entrypoint: ["beeline", "-u", "jdbc:hive2://hiveserver2:10000"]
-  
+
   trino:
     image: trinodb/trino:358
     container_name: trino
@@ -234,4 +222,3 @@ services:
 networks:
   default:
     name: bagel
-
