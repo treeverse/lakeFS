@@ -163,7 +163,7 @@ var runCmd = &cobra.Command{
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		blockstoreType := cfg.GetBlockstoreType()
 		if blockstoreType == "local" || blockstoreType == "mem" {
-			printLocalWarning(os.Stderr, blockstoreType)
+			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
 			logger.WithField("adapter_type", blockstoreType).
 				Error("Block adapter NOT SUPPORTED for production use")
 		}
@@ -454,11 +454,11 @@ func printWelcome(w io.Writer) {
 const localWarningBanner = `
 WARNING!
 
-Using the "%s" block adapter.  This is suitable only for testing, but not for production.
+Using %s.  This is suitable only for testing! It is NOT SUPPORTED for production.
 `
 
-func printLocalWarning(w io.Writer, adapter string) {
-	_, _ = fmt.Fprintf(w, localWarningBanner, adapter)
+func printLocalWarning(w io.Writer, msg string) {
+	_, _ = fmt.Fprintf(w, localWarningBanner, msg)
 }
 
 func gracefulShutdown(ctx context.Context, quit <-chan os.Signal, done chan<- bool, servers ...Shutter) {
