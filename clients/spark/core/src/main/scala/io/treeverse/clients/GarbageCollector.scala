@@ -4,9 +4,10 @@ import com.google.protobuf.timestamp.Timestamp
 import io.treeverse.clients.LakeFSContext._
 import org.apache.hadoop.fs._
 import org.apache.hadoop.conf.Configuration
+import org.apache.spark.{HashPartitioner, Partitioner}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.{SparkSession, _}
+import org.apache.spark.sql._
 import com.amazonaws.services.s3.AmazonS3
 
 import java.net.URI
@@ -109,6 +110,28 @@ class GarbageCollector(val rangeGetter: RangeGetter, configMap: ConfigMapper) ex
     commitIDs.flatMap(rangeGetter.getRangeIDs(_, repo))
   }
 
+  /**
+   *  Compute a distinct antijoin using  partitioner.  This is the same as
+   * 
+   *  <pre>
+   *     left.distinct.except(right.distinct)
+   *  </pre>
+   * 
+   *  but forces our plan.  Useful when Spark is unable to predict the
+   *  structure and/or size of either argument.
+   *
+   *  @return all elements in left that are not in right.
+   */
+  def minus(left: Dataset[String], right: Dataset[String], partitioner: Partitioner): Dataset[String] = {
+    import spark.implicits._
+    def mark(f: Int) = (p: Any) => p match { case (t: String) => (t, f) }
+    val both = left.map(mark(1)).union(right.map(mark(2)))
+    val reduced = both.rdd.reduceByKey(partitioner, _ | _)
+    reduced.filter({ case (_, y) => y == 1 })
+      .map({ case (x, _) => x })
+      .toDS
+  }
+
   def getAddressesToDelete(
       expiredRangeIDs: Dataset[String],
       keepRangeIDs: Dataset[String],
@@ -116,35 +139,24 @@ class GarbageCollector(val rangeGetter: RangeGetter, configMap: ConfigMapper) ex
   ): Dataset[String] = {
     import spark.implicits._
 
-    // Partition range IDs by hashing the range ID into the same number of
-    // partitions (implicit in conf param spark.sql.shuffle.partitions).
-    // This should keep the subsequent operations cheap!
-    def repartition[T](ds: Dataset[T], distinct: Boolean = true): Dataset[T] = {
-      val rep = ds.repartition(ds.col(ds.columns(0)))
-      if (distinct) rep.distinct else rep
-    }
+    val numRangePartitions = 50 // TODO(ariels): Get a number from conf
 
-    val partitionedExpiredRangeIDs = repartition(expiredRangeIDs)
-    val partitionedKeepRangeIDs = repartition(keepRangeIDs)
+    // TODO(ariels): Still appears to run on too few executors.  Might
+    // repartition ahead of time.
+    println(s"getAddressesToDelete: use $numRangePartitions partitions for ranges")
+    val rangePartitioner = new HashPartitioner(numRangePartitions)
 
     // If a rangeID is exactly "kept", it need not be expanded!
-    val cleanPartitionedExpiredRangeIDs =
-      repartition(partitionedExpiredRangeIDs.except(partitionedKeepRangeIDs), false)
-    // TODO(ariels): Is this repartition ^^^ needed for performance?  It
-    // shouldn't be, but "except" is a wide operation so the planner might
-    // think that it is...
+    val cleanExpiredRangeIDs = minus(expiredRangeIDs, keepRangeIDs, rangePartitioner)
 
-    // Enter all other ranges to fetch addresses... but repartition and
-    // remove dupes (there will be many dupes!)
-    val expiredAddresses = repartition(
-      cleanPartitionedExpiredRangeIDs.flatMap(rangeGetter.getRangeAddresses(_, repo))
-    )
+    val numAddressPartitions = 200 // TODO(ariels): Get a number from conf!
+    val expiredAddresses = cleanExpiredRangeIDs.repartition(numAddressPartitions).flatMap(rangeGetter.getRangeAddresses(_, repo))
 
-    val keepAddresses = repartition(
-      partitionedKeepRangeIDs.flatMap(rangeGetter.getRangeAddresses(_, repo))
-    )
+    val keepAddresses = keepRangeIDs.repartition(numAddressPartitions).flatMap(rangeGetter.getRangeAddresses(_, repo))
 
-    expiredAddresses.except(keepAddresses)
+    println(s"getAddressesToDelete: use $numAddressPartitions partitions for addresses")
+    val addressPartitioner = new HashPartitioner(numAddressPartitions)
+    minus(expiredAddresses, keepAddresses, addressPartitioner)
   }
 
   def getExpiredAddresses(

@@ -4,7 +4,7 @@ import org.scalatest._
 import matchers.should._
 import funspec._
 
-import org.apache.spark.SparkConf
+import org.apache.spark.{HashPartitioner, SparkConf}
 import org.apache.spark.sql.{Dataset, SparkSession}
 
 class ARangeGetter(
@@ -55,6 +55,22 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
       "222" -> Seq("a2", "b2", "c2")))
 
   describe("GarbageCollector") {
+    describe("minus") {
+      it("removes elements in a simple case") {
+        withSparkSession(spark => {
+          import spark.implicits._
+          val sc = spark.sparkContext
+          val gc = new GarbageCollector(getter, new ConfigMapper(spark.sparkContext.broadcast(Array.empty)))
+
+          val partitioner = new HashPartitioner(3)
+          val threes = sc.parallelize(0 to 100 by 3).map(_.toString).toDS
+          val sevens = sc.parallelize(0 to 100 by 7).map(_.toString).toDS
+          val m = gc.minus(threes, sevens, partitioner).map(_.toInt)
+          compareDS(m, sc.parallelize((0 to 100 by 3).filter(x => x % 7 != 0)).toDS)
+        })
+      }
+    }
+
     describe("getAddressesToDelete") {
       // (Primarily tests everything is Serializable!)
       it("should report nothing for nothing") {
