@@ -72,13 +72,15 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
     }
 
     describe("getAddressesToDelete") {
+      val numRangePartitions = 3
+      val numAddressPartitions = 7
       // (Primarily tests everything is Serializable!)
       it("should report nothing for nothing") {
         withSparkSession(spark => {
           import spark.implicits._
           val gc = new GarbageCollector(getter, new ConfigMapper(spark.sparkContext.broadcast(Array.empty)))
 
-          val actualToDelete = gc.getAddressesToDelete(Seq[String]().toDS, Seq[String]().toDS, "repo")
+          val actualToDelete = gc.getAddressesToDelete(Seq[String]().toDS, Seq[String]().toDS, "repo", numRangePartitions, numAddressPartitions)
           val expectedToDelete = Seq[String]().toDS
 
           compareDS(actualToDelete, expectedToDelete)
@@ -90,7 +92,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
           import spark.implicits._
           val gc = new GarbageCollector(getter, new ConfigMapper(spark.sparkContext.broadcast(Array.empty)))
 
-          val actualToDelete = gc.getAddressesToDelete(Seq("aaa", "222", "bbb").toDS, Seq[String]().toDS, "repo")
+          val actualToDelete = gc.getAddressesToDelete(Seq("aaa", "222", "bbb").toDS, Seq[String]().toDS, "repo", numRangePartitions, numAddressPartitions)
           val expectedToDelete = Seq("a1", "a2", "a3", "b1", "b2", "b3", "c2").toDS
 
           compareDS(actualToDelete, expectedToDelete)
@@ -102,7 +104,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
           import spark.implicits._
           val gc = new GarbageCollector(getter, new ConfigMapper(spark.sparkContext.broadcast(Array.empty)))
 
-          val actualToDelete = gc.getAddressesToDelete(Seq("aaa", "bbb").toDS, Seq("222").toDS, "repo")
+          val actualToDelete = gc.getAddressesToDelete(Seq("aaa", "bbb").toDS, Seq("222").toDS, "repo", numRangePartitions, numAddressPartitions)
           val expectedToDelete = Seq("a1", "a3", "b1", "b3").toDS
 
           compareDS(actualToDelete, expectedToDelete)
@@ -114,7 +116,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
           import spark.implicits._
           val gc = new GarbageCollector(getter, new ConfigMapper(spark.sparkContext.broadcast(Array.empty)))
 
-          val actualToDelete = gc.getAddressesToDelete(Seq("aaa", "bbb").toDS, Seq("bbb").toDS, "repo")
+          val actualToDelete = gc.getAddressesToDelete(Seq("aaa", "bbb").toDS, Seq("bbb").toDS, "repo", numRangePartitions, numAddressPartitions)
           val expectedToDelete = Seq("a1", "a2", "a3").toDS
 
           compareDS(actualToDelete, expectedToDelete)
@@ -126,7 +128,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
           import spark.implicits._
           val gc = new GarbageCollector(getter, new ConfigMapper(spark.sparkContext.broadcast(Array.empty)))
 
-          val actualToDelete = gc.getAddressesToDelete(Seq("aaa", "bbb", "ab12").toDS, Seq("bbb", "222").toDS, "repo")
+          val actualToDelete = gc.getAddressesToDelete(Seq("aaa", "bbb", "ab12").toDS, Seq("bbb", "222").toDS, "repo", numRangePartitions, numAddressPartitions)
           val expectedToDelete = Seq("a1", "a3").toDS
 
           compareDS(actualToDelete, expectedToDelete)

@@ -139,11 +139,11 @@ class GarbageCollector(val rangeGetter: RangeGetter, configMap: ConfigMapper) ex
   def getAddressesToDelete(
       expiredRangeIDs: Dataset[String],
       keepRangeIDs: Dataset[String],
-      repo: String
+      repo: String,
+      numRangePartitions: Int,
+      numAddressPartitions: Int
   ): Dataset[String] = {
     import spark.implicits._
-
-    val numRangePartitions = 50 // TODO(ariels): Get a number from conf
 
     // TODO(ariels): Still appears to run on too few executors.  Might
     // repartition ahead of time.
@@ -153,7 +153,6 @@ class GarbageCollector(val rangeGetter: RangeGetter, configMap: ConfigMapper) ex
     // If a rangeID is exactly "kept", it need not be expanded!
     val cleanExpiredRangeIDs = minus(expiredRangeIDs, keepRangeIDs, rangePartitioner)
 
-    val numAddressPartitions = 200 // TODO(ariels): Get a number from conf!
     val expiredAddresses = cleanExpiredRangeIDs
       .repartition(numAddressPartitions)
       .flatMap(rangeGetter.getRangeAddresses(_, repo))
@@ -169,7 +168,9 @@ class GarbageCollector(val rangeGetter: RangeGetter, configMap: ConfigMapper) ex
   def getExpiredAddresses(
       repo: String,
       runID: String,
-      commitDFLocation: String
+      commitDFLocation: String,
+      numRangePartitions: Int,
+      numAddressPartitions: Int
   ): Dataset[String] = {
     import spark.implicits._
 
@@ -181,7 +182,7 @@ class GarbageCollector(val rangeGetter: RangeGetter, configMap: ConfigMapper) ex
     val keepRangeIDsDF = getRangeIDsForCommits(keepCommitsDF, repo)
     val expiredRangeIDsDF = getRangeIDsForCommits(expiredCommitsDF, repo)
 
-    getAddressesToDelete(expiredRangeIDsDF, keepRangeIDsDF, repo)
+    getAddressesToDelete(expiredRangeIDsDF, keepRangeIDsDF, repo, numRangePartitions, numAddressPartitions)
   }
 }
 
@@ -287,8 +288,11 @@ object GarbageCollector {
     val configMapper = new ConfigMapper(hcValues)
     val gc = new GarbageCollector(new LakeFSRangeGetter(apiConf, configMapper), configMapper)
 
+    val numRangePartitions = hc.getInt(LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS, DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS)
+    val numAddressPartitions = hc.getInt(LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS, DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS)
+
     val expiredAddresses = gc
-      .getExpiredAddresses(repo, runID, gcCommitsLocation)
+      .getExpiredAddresses(repo, runID, gcCommitsLocation, numRangePartitions, numAddressPartitions)
       .toDF("address")
       .withColumn("run_id", lit(runID))
 
