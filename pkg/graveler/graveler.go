@@ -1453,11 +1453,6 @@ func (g *KVGraveler) Delete(ctx context.Context, repository *RepositoryRecord, b
 
 	return g.safeBranchWrite(ctx, g.log.WithField("key", key).WithField("operation", "delete"),
 		repository, branchID, func(branch *Branch) error {
-			commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
-			if err != nil {
-				return err
-			}
-
 			// check staging for entry or tombstone
 			val, err := g.getFromStagingArea(ctx, branch, key)
 			switch {
@@ -1476,6 +1471,10 @@ func (g *KVGraveler) Delete(ctx context.Context, repository *RepositoryRecord, b
 			}
 
 			// check key in committed - do we need tombstone?
+			commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
+			if err != nil {
+				return err
+			}
 			_, err = g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
 			if err != nil {
 				if !errors.Is(err, ErrNotFound) {
