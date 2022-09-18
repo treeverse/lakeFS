@@ -5,7 +5,7 @@
 What's new:
 - Run standalone lakeFS (no PostgreSQL!) with Badger KV for experimentation purposes. 
 - Add delete operation for GC rules (#4143)
-- support aws named profile for dynamodb (#4163)
+- support AWS named profile for dynamodb (#4163)
 - Add pgxpool metrics to kv/postgres implementation (#4137)
 
 Bug fixes:
