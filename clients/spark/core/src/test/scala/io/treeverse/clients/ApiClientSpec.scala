@@ -73,7 +73,7 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
   override def beforeEach(): Unit = {
     super.beforeEach()
     retryWrapper = spy(new RequestRetryWrapper)
-    assert(retryWrapper.numRetries == DefaultMaxNumRetries)
+    assert(retryWrapper.maxNumRetries == DefaultMaxNumRetries)
     dummyMethodInvoker = spy(new DummyMethodInvoker)
   }
 
@@ -167,7 +167,7 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
 
     it("should use custom max number of retries") {
       retryWrapper = new RequestRetryWrapper(3)
-      assert(retryWrapper.numRetries == 3)
+      assert(retryWrapper.maxNumRetries == 3)
     }
   }
 }

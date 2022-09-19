@@ -1,19 +1,20 @@
 package io.treeverse.clients
 
-import io.lakefs.clients.api
-import io.lakefs.clients.api.{ConfigApi, RetentionApi}
-import io.lakefs.clients.api.model.{Commit, GarbageCollectionPrepareRequest, GarbageCollectionPrepareResponse, GarbageCollectionRules, Ref, Repository, StorageConfig, StorageURI}
-import io.treeverse.clients.StorageClientType.StorageClientType
-import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
 import com.google.common.cache.{Cache, CacheBuilder, CacheLoader, LoadingCache}
 import dev.failsafe.function.CheckedSupplier
+import dev.failsafe.{Failsafe, FailsafeExecutor, Policy, RetryPolicy, Timeout}
+import io.lakefs.clients.api
+import io.lakefs.clients.api.model._
+import io.lakefs.clients.api.{ConfigApi, RetentionApi}
 import io.treeverse.clients.ApiClient.TIMEOUT_NOT_SET
+import io.treeverse.clients.StorageClientType.StorageClientType
+import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
 
 import java.net.URI
-import java.util.concurrent.{Callable, TimeUnit}
 import java.time.Duration
-import collection.JavaConverters._
-import dev.failsafe.{Failsafe, Policy, RetryPolicy}
+import java.time.temporal.ChronoUnit
+import java.util.concurrent.{Callable, TimeUnit}
+import scala.collection.JavaConverters._
 
 // The different types of storage clients the metadata client uses to access the object store.
 object StorageClientType extends Enumeration {
@@ -167,12 +168,13 @@ class ApiClient private (conf: APIConfigurations) {
       repoName: String,
       previousRunID: String
   ): GarbageCollectionPrepareResponse = {
-    val prepareGcCommits = new dev.failsafe.function.CheckedSupplier[GarbageCollectionPrepareResponse]() {
-      def get(): GarbageCollectionPrepareResponse = retentionApi.prepareGarbageCollectionCommits(
-        repoName,
-        new GarbageCollectionPrepareRequest().previousRunId(previousRunID)
-      )
-    }
+    val prepareGcCommits =
+      new dev.failsafe.function.CheckedSupplier[GarbageCollectionPrepareResponse]() {
+        def get(): GarbageCollectionPrepareResponse = retentionApi.prepareGarbageCollectionCommits(
+          repoName,
+          new GarbageCollectionPrepareRequest().previousRunId(previousRunID)
+        )
+      }
     retryWrapper.wrapWithRetry(prepareGcCommits)
   }
 
@@ -253,14 +255,20 @@ class ApiClient private (conf: APIConfigurations) {
   )
 }
 
-class RequestRetryWrapper(val numRetries: Int = 5) {
-    private val retryPolicy : Policy[Any] = RetryPolicy.builder()
-      .withDelay(Duration.ofMillis(500))
-      .withMaxRetries(numRetries)
-      .build()
+class RequestRetryWrapper(val maxNumRetries: Int = 5) {
+
+  private val retryPolicy: Policy[Any] = RetryPolicy
+    .builder()
+    .withBackoff(1, 20, ChronoUnit.SECONDS)
+    .withJitter(.25)
+    .withMaxRetries(maxNumRetries)
+    .withMaxDuration() //TODO: complete this
+    .build()
+
+  // https://failsafe.dev/faqs/#how-does-failsafe-use-threads failsafe uses a thread pool for retries concurrency
+  private val failSafeExecutor = new FailsafeExecutor[Any](Seq(retryPolicy).asJava)
 
   def wrapWithRetry[T](fn: CheckedSupplier[T]): T = {
-      Failsafe.`with`(Seq(retryPolicy).asJava).get(fn)
-    }
-
+    failSafeExecutor.get(fn)
+  }
 }
