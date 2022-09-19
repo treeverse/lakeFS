@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.81.1
+
+Bug fixes:
+- Fix: Fix local settings command (#4200)
+
 ## v0.81.0
 
 What's new:
