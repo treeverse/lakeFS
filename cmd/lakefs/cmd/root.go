@@ -59,7 +59,7 @@ func useLocal() bool {
 
 func newConfig() (*config.Config, error) {
 	if useLocal() {
-		config.SetDefaultLocalConfig()
+		return config.NewLocalConfig()
 	}
 
 	return config.NewConfig()
