@@ -44,6 +44,14 @@ type Config struct {
 }
 
 func NewConfig() (*Config, error) {
+	return newConfig(false)
+}
+
+func NewLocalConfig() (*Config, error) {
+	return newConfig(true)
+}
+
+func newConfig(local bool) (*Config, error) {
 	c := &Config{}
 
 	// Inform viper of all expected fields.  Otherwise, it fails to deserialize from the
@@ -53,7 +61,7 @@ func NewConfig() (*Config, error) {
 		viper.SetDefault(key, nil)
 	}
 
-	setDefaults()
+	setDefaults(local)
 	setupLogger()
 
 	err := viper.UnmarshalExact(&c.values, viper.DecodeHook(
