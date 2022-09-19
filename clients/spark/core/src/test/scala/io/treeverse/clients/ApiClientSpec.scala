@@ -1,13 +1,12 @@
 package io.treeverse.clients
 
-import dev.failsafe.FailsafeException
-
-import java.net.{SocketException, URI}
-import org.scalatest._
-import matchers.should._
-import funspec._
 import io.lakefs.clients.api.ApiException
 import org.mockito.Mockito.{doThrow, spy, times, verify}
+import org.scalatest._
+import org.scalatest.funspec._
+import org.scalatest.matchers.should._
+
+import java.net.{SocketException, URI}
 
 class ApiClientSpec extends AnyFunSpec with Matchers {
   describe("translateURI") {
@@ -66,13 +65,15 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
   val SomeValue = "some value"
   val DefaultMaxNumRetries = 5
   val DefaultMaxNumAttempts = 6
+  val TestReadTimeoutSec = 2
 
-  var retryWrapper = spy(new RequestRetryWrapper)
+  var retryWrapper = spy(new RequestRetryWrapper(TestReadTimeoutSec, Double.MaxValue))
   var dummyMethodInvoker = spy(new DummyMethodInvoker)
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    retryWrapper = spy(new RequestRetryWrapper)
+    // Create with unbounded maximum duration to prevent test flakiness
+    retryWrapper = spy(new RequestRetryWrapper(TestReadTimeoutSec, Double.MaxValue))
     assert(retryWrapper.maxNumRetries == DefaultMaxNumRetries)
     dummyMethodInvoker = spy(new DummyMethodInvoker)
   }
@@ -94,7 +95,7 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
     // In case all retries fail, the last result or exception are returned or thrown
     // https://failsafe.dev/faqs/#how-to-i-throw-an-exception-when-retries-are-exceeded
     it(
-      "should throw the a FailSafeException exception in case all retries failed and last exception is checked"
+      "should throw the last checked exception in case all retries failed"
     ) {
       // prepare
       doThrow(classOf[Exception])
@@ -106,7 +107,7 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
         .when(dummyMethodInvoker)
         .someMethod()
 
-      assertThrows[FailsafeException] {
+      assertThrows[ApiException] {
         retryWrapper.wrapWithRetry(dummyMethodInvoker.createCheckedSupplierForSomeMethod())
       }
 
@@ -144,9 +145,10 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
         .someMethod()
 
       // test
-      retryWrapper.wrapWithRetry(dummyMethodInvoker.createCheckedSupplierForSomeMethod())
+      val res = retryWrapper.wrapWithRetry(dummyMethodInvoker.createCheckedSupplierForSomeMethod())
 
       // assert
+      assert(SomeValue.equals(res))
       verify(dummyMethodInvoker, times(5)).someMethod()
     }
 
@@ -159,15 +161,11 @@ class RequestRetryWrapperSpec extends AnyFunSpec with Matchers with BeforeAndAft
         .someMethod()
 
       // test
-      retryWrapper.wrapWithRetry(dummyMethodInvoker.createCheckedSupplierForSomeMethod())
+      val res = retryWrapper.wrapWithRetry(dummyMethodInvoker.createCheckedSupplierForSomeMethod())
 
       // assert
+      assert(SomeValue.equals(res))
       verify(dummyMethodInvoker, times(3)).someMethod()
-    }
-
-    it("should use custom max number of retries") {
-      retryWrapper = new RequestRetryWrapper(3)
-      assert(retryWrapper.maxNumRetries == 3)
     }
   }
 }

@@ -2,7 +2,7 @@ package io.treeverse.clients
 
 import com.google.common.cache.{Cache, CacheBuilder, CacheLoader, LoadingCache}
 import dev.failsafe.function.CheckedSupplier
-import dev.failsafe.{Failsafe, FailsafeExecutor, Policy, RetryPolicy, Timeout}
+import dev.failsafe.{Failsafe, FailsafeException, FailsafeExecutor, Policy, RetryPolicy}
 import io.lakefs.clients.api
 import io.lakefs.clients.api.model._
 import io.lakefs.clients.api.{ConfigApi, RetentionApi}
@@ -132,7 +132,7 @@ class ApiClient private (conf: APIConfigurations) {
   private val retentionApi = new RetentionApi(client)
   private val configApi = new ConfigApi(client)
 
-  private val retryWrapper = new RequestRetryWrapper()
+  private val retryWrapper = new RequestRetryWrapper(client.getReadTimeout)
 
   private val storageNamespaceCache: LoadingCache[StorageNamespaceCacheKey, String] =
     CacheBuilder
@@ -255,20 +255,36 @@ class ApiClient private (conf: APIConfigurations) {
   )
 }
 
-class RequestRetryWrapper(val maxNumRetries: Int = 5) {
+class RequestRetryWrapper(
+    val readTimeout: Int,
+    val maxDurationSeconds: Double = -1,
+    val maxNumRetries: Int = 5
+) {
+  val UnsetMaxDuration = -1
+
+  var maxDuration = maxDurationSeconds
+  if (maxDuration == UnsetMaxDuration) {
+    maxDuration = maxNumRetries * readTimeout + 7.1 * 1
+  }
 
   private val retryPolicy: Policy[Any] = RetryPolicy
     .builder()
     .withBackoff(1, 20, ChronoUnit.SECONDS)
     .withJitter(.25)
     .withMaxRetries(maxNumRetries)
-    .withMaxDuration() //TODO: complete this
+    .withMaxDuration(Duration.ofSeconds(maxDuration.asInstanceOf[Number].longValue))
     .build()
 
   // https://failsafe.dev/faqs/#how-does-failsafe-use-threads failsafe uses a thread pool for retries concurrency
-  private val failSafeExecutor = new FailsafeExecutor[Any](Seq(retryPolicy).asJava)
+  private val failSafeExecutor: FailsafeExecutor[Any] = Failsafe.`with`((Seq(retryPolicy).asJava))
 
   def wrapWithRetry[T](fn: CheckedSupplier[T]): T = {
-    failSafeExecutor.get(fn)
+    try {
+      failSafeExecutor.get(fn)
+    } catch {
+      case e: (FailsafeException) =>
+        throw e.getCause
+      case e: Exception => throw e
+    }
   }
 }
