@@ -36,6 +36,7 @@ import org.testcontainers.utility.DockerImageName;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -347,6 +348,12 @@ public class LakeFSFileSystemTest {
         Assert.assertFalse(delete);
     }
 
+    private PathList newPathList(String... paths) {
+        PathList pl = new PathList();
+        pl.setPaths(Arrays.asList(paths));
+        return pl;
+    }
+
     @Test
     public void testDelete_DirectoryWithFileRecursive() throws ApiException, IOException {
         ApiException noSuchFileException = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
@@ -364,6 +371,8 @@ public class LakeFSFileSystemTest {
                                 mtime(UNUSED_MTIME).
                                 sizeBytes(UNUSED_FILE_SIZE)))
                         .pagination(new Pagination().hasMore(false)));
+        when(objectsApi.deleteObjects(eq("repo"), eq("main"), eq(newPathList("lakefs:/repo/main/delete/sample/file.txt"))))
+            .thenReturn(new ObjectErrorList());
         // recursive will always end successfully
         boolean delete = fs.delete(new Path("lakefs://repo/main/delete/sample"), true);
         Assert.assertTrue(delete);
