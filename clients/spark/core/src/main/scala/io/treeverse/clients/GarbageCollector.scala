@@ -109,6 +109,8 @@ class GarbageCollector(val rangeGetter: RangeGetter, configMap: ConfigMapper) ex
     commitIDs.flatMap(rangeGetter.getRangeIDs(_, repo))
   }
 
+  val bitwiseOR = (a: Int, b: Int) => a | b
+
   /** Compute a distinct antijoin using  partitioner.  This is the same as
    *
    *  <pre>
@@ -128,7 +130,13 @@ class GarbageCollector(val rangeGetter: RangeGetter, configMap: ConfigMapper) ex
     import spark.implicits._
     def mark(f: Int) = (p: Any) => p match { case (t: String) => (t, f) }
     val both = left.map(mark(1)).union(right.map(mark(2)))
-    val reduced = both.rdd.reduceByKey(partitioner, _ | _)
+    // For every potential output element in left.union(right), compute the
+    // bitwise OR of its values in both.  This will be:
+    //
+    //     1 if it appears only on left;
+    //     2 if it appears only on right;
+    //     3 if it appears on both left and right;
+    val reduced = both.rdd.reduceByKey(partitioner, bitwiseOR)
     reduced
       .filter({ case (_, y) => y == 1 })
       .map({ case (x, _) => x })
