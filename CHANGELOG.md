@@ -3,7 +3,7 @@
 ## v0.81.1
 
 Bug fixes:
-- Fix: Fix local settings command (#4200)
+- Fix: local-settings flag (#4200)
 
 ## v0.81.0
 
