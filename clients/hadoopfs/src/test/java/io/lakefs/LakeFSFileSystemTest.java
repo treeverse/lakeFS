@@ -403,7 +403,6 @@ public class LakeFSFileSystemTest {
             for (int i = start; i < numObjects && i < start + bulkSize; i++) {
                 pl.addPathsItem(String.format("delete/sample/file%04d.txt", i));
             }
-            System.out.printf("[DEBUG] expect for bulk %d (start %d): [%d] %s\n", bulkSize, start, pl.getPaths().size(), pl.toString());
             when(objectsApi.deleteObjects("repo", "main", pl)).thenReturn(new ObjectErrorList());
         }
         // recursive will always end successfully
