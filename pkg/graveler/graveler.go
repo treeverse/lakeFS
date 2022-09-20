@@ -1468,7 +1468,7 @@ func (g *KVGraveler) DeleteBatch(ctx context.Context, repository *RepositoryReco
 		return ErrWriteToProtectedBranch
 	}
 	if len(keys) > DeleteKeysMaxSize {
-		return fmt.Errorf("%w keys length passsed %d", ErrInvalidValue, DeleteKeysMaxSize)
+		return fmt.Errorf("keys length (%d) passed the maximum allowed(%d): %w", len(keys), DeleteKeysMaxSize, ErrInvalidValue)
 	}
 	var m *multierror.Error
 	err = g.safeBranchWrite(ctx, g.log.WithField("operation", "delete_keys"),
