@@ -82,8 +82,8 @@ class BulkDeleter implements Closeable {
   public synchronized void close() throws IOException {
     if (!pathList.getPaths().isEmpty()) {
       startDeletingUnlocked();
-      maybeWaitForDeletionUnlocked();
     }
+    maybeWaitForDeletionUnlocked();
   }
 
   /**
