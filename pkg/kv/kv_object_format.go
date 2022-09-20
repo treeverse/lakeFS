@@ -43,7 +43,7 @@ func resolvePath(path string) (protoreflect.ProtoMessage, error) {
 	return defaultMsg, nil
 }
 
-func ToPrettyString(path string, protoStr []byte) (string, error) {
+func ToPrettyString(path string, rawValue []byte) (string, error) {
 	msg, err := resolvePath(path)
 	if err != nil {
 		return "", err
