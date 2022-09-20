@@ -3153,7 +3153,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
-	if initialized || c.Config.IsAuthTypeAPI() {
+	if initialized {
 		writeError(w, http.StatusConflict, "lakeFS already initialized")
 		return
 	}
@@ -3165,6 +3165,11 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 		return
 	}
 
+	if c.Config.IsAuthTypeAPI() {
+		// nothing to do - users are managed elsewhere
+		writeResponse(w, http.StatusOK, CredentialsWithSecret{})
+		return
+	}
 	var cred *model.Credential
 	if body.Key == nil {
 		cred, err = auth.CreateInitialAdminUser(ctx, c.Auth, c.MetadataManager, body.Username)
