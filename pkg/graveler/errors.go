@@ -8,8 +8,7 @@ import (
 )
 
 var (
-	// Base error for "user-visible" errors, which should not be wrapped with internal
-	// debug info.
+	// ErrUserVisible is base error for "user-visible" errors, which should not be wrapped with internal debug info.
 	ErrUserVisible = errors.New("")
 
 	// TODO(ariels): Wrap with ErrUserVisible once db is gone.
@@ -88,4 +87,18 @@ func (e *HookAbortError) Error() string {
 
 func (e *HookAbortError) Unwrap() error {
 	return e.Err
+}
+
+// DeleteError single delete error used by DeleteBatch's multierror.Error to report each key that failed
+type DeleteError struct {
+	Key Key
+	Err error
+}
+
+func (d *DeleteError) Error() string {
+	return fmt.Sprintf("%s: %s", d.Key, d.Err.Error())
+}
+
+func (d *DeleteError) Unwrap() error {
+	return d.Err
 }
