@@ -135,6 +135,10 @@ public class LakeFSFileSystemTest {
 
         System.setProperty("hadoop.home.dir", "/");
 
+        // Return the *same* mock for each client.  Otherwise it is too hard
+        // to program _which_ client should do *what*.  There is no risk of
+        // blocking, this client is synchronous.
+
         lfsClient = mock(LakeFSClient.class);
         objectsApi = mock(ObjectsApi.class);
         //        objectsApi = mock(ObjectsApi.class, Answers.RETURNS_SMART_NULLS);
@@ -149,7 +153,10 @@ public class LakeFSFileSystemTest {
         when(repositoriesApi.getRepository("repo"))
             .thenReturn(new Repository().storageNamespace(s3Url("/repo-base")));
 
-        fs.initializeWithClient(new URI("lakefs://repo/main/file.txt"), conf, lfsClient);
+        fs.initializeWithClientFactory(new URI("lakefs://repo/main/file.txt"), conf,
+                                       new LakeFSFileSystem.ClientFactory() {
+                public LakeFSClient newClient() { return lfsClient; }
+            });
     }
 
     /**

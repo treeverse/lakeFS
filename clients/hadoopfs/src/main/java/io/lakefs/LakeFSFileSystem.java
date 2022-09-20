@@ -47,6 +47,7 @@ public class LakeFSFileSystem extends FileSystem {
     private Configuration conf;
     private URI uri;
     private Path workingDirectory = new Path(Constants.SEPARATOR);
+    private ClientFactory clientFactory;
     private LakeFSClient lfsClient;
     private int listAmount;
     private FileSystem fsForConfig;
@@ -68,16 +69,23 @@ public class LakeFSFileSystem extends FileSystem {
         return uri;
     }
 
-    @Override
-    public void initialize(URI name, Configuration conf) throws IOException {
-        initializeWithClient(name, conf, new LakeFSClient(name.getScheme(), conf));
+    public interface ClientFactory {
+        LakeFSClient newClient() throws IOException;
     }
 
-    void initializeWithClient(URI name, Configuration conf, LakeFSClient lfsClient) throws IOException {
+    @Override
+    public void initialize(URI name, Configuration conf) throws IOException {
+        initializeWithClientFactory(name, conf, new ClientFactory() {
+                public LakeFSClient newClient() throws IOException { return new LakeFSClient(name.getScheme(), conf); }
+            });
+    }
+
+    void initializeWithClientFactory(URI name, Configuration conf, ClientFactory clientFactory) throws IOException {
         super.initialize(name, conf);
         this.uri = name;
         this.conf = conf;
-        this.lfsClient = lfsClient;
+        this.clientFactory = clientFactory;
+        this.lfsClient = clientFactory.newClient();
 
         String host = name.getHost();
         if (host == null) {
@@ -506,8 +514,10 @@ public class LakeFSFileSystem extends FileSystem {
         return deleted;
     }
 
-    private BulkDeleter newDeleter(String repository, String branch) {
-        ObjectsApi objectsApi = lfsClient.getObjects();
+    private BulkDeleter newDeleter(String repository, String branch) throws IOException {
+        // Use a different client -- a different thread waits for its calls,
+        // *late*.
+        ObjectsApi objectsApi = clientFactory.newClient().getObjects();
         return new BulkDeleter(deleteExecutor, new BulkDeleter.Callback() {
                 public ObjectErrorList apply(String repository, String branch, PathList pathList) throws ApiException {
                     return objectsApi.deleteObjects(repository, branch, pathList);
