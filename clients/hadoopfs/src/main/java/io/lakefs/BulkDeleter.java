@@ -49,6 +49,9 @@ class BulkDeleter implements Closeable {
     this.callback = callback;
     this.repository = repository;
     this.branch = branch;
+    if (bulkSize <= 0) {
+      bulkSize = defaultBulkSize;
+    }
     this.bulkSize = bulkSize;
   }
 
@@ -60,7 +63,7 @@ class BulkDeleter implements Closeable {
    * Add another key to be deleted.  If a bulk is ready, delete it.  Any
    * errors thrown may be related to previously-added keys.
    */
-  public synchronized void add(String key) throws ApiException, InterruptedException, IOException, DeleteFailuresException {
+  public synchronized void add(String key) throws IOException, DeleteFailuresException {
     if (pathList == null) {
       pathList = new PathList();
     }
@@ -77,20 +80,16 @@ class BulkDeleter implements Closeable {
    */
   @Override
   public synchronized void close() throws IOException {
-    try {
-      if (!pathList.getPaths().isEmpty()) {
-        startDeletingUnlocked();
-        maybeWaitForDeletionUnlocked();
-      }
-    } catch (ApiException | InterruptedException ie) {
-      throw new IOException("Interrupted", ie);
+    if (!pathList.getPaths().isEmpty()) {
+      startDeletingUnlocked();
+      maybeWaitForDeletionUnlocked();
     }
   }
 
   /**
    * Start deleting everything in pathList and empty it.  Must call locked.
    */
-  private void startDeletingUnlocked() throws ApiException, InterruptedException, IOException, DeleteFailuresException {
+  private void startDeletingUnlocked() throws IOException, DeleteFailuresException {
     maybeWaitForDeletionUnlocked();
     deletion = executor.submit(new Callable() {
         @Override
@@ -108,7 +107,7 @@ class BulkDeleter implements Closeable {
    *
    * @throws DeleteFailuresException if deletion did not (entirely) succeed.
    */
-  private void maybeWaitForDeletionUnlocked() throws InterruptedException, IOException, DeleteFailuresException {
+  private void maybeWaitForDeletionUnlocked() throws DeleteFailuresException, IOException {
     try {
       if (deletion != null) {
         ObjectErrorList errors = deletion.get();
@@ -126,6 +125,8 @@ class BulkDeleter implements Closeable {
       } else {
         throw new IOException("failed to wait for bulk delete", cause);
       }
+    } catch (InterruptedException ie) {
+      throw new IOException("wait for deletion", ie);
     }
   }
 }
