@@ -31,7 +31,7 @@ func matchPath(path string, pathRegexp string) bool {
 	return err == nil && match
 }
 
-func resolvePath(path string) (protoreflect.ProtoMessage, error) {
+func resolveKVPathToMsgType(path string) (protoreflect.ProtoMessage, error) {
 	for pathRegexp, msg := range matchers {
 		if matchPath(path, pathRegexp) {
 			return msg, nil
@@ -44,16 +44,16 @@ func resolvePath(path string) (protoreflect.ProtoMessage, error) {
 }
 
 func ToPrettyString(path string, rawValue []byte) (string, error) {
-	msg, err := resolvePath(path)
+	msg, err := resolveKVPathToMsgType(path)
 	if err != nil {
 		return "", err
 	}
 
 	if msg == nil {
-		return string(protoStr), nil
+		return string(rawValue), nil
 	}
 
-	err = proto.Unmarshal(protoStr, msg)
+	err = proto.Unmarshal(rawValue, msg)
 	if err != nil {
 		return "", err
 	}
