@@ -272,7 +272,7 @@ class RequestRetryWrapper(
     .withBackoff(1, 20, ChronoUnit.SECONDS)
     .withJitter(.25)
     .withMaxRetries(maxNumRetries)
-    .withMaxDuration(Duration.ofSeconds(maxDuration.asInstanceOf[Number].longValue))
+    .withMaxDuration(Duration.ofMillis((1000 * maxDuration).asInstanceOf[Long]))
     .build()
 
   // https://failsafe.dev/faqs/#how-does-failsafe-use-threads failsafe uses a thread pool for retries concurrency
