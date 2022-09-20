@@ -37,6 +37,11 @@ var setupCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		if cfg.IsAuthTypeAPI() {
+			// nothing to do - users are managed elsewhere
+			return
+		}
+
 		userName, err := cmd.Flags().GetString("user-name")
 		if err != nil {
 			fmt.Printf("user-name: %s\n", err)
