@@ -10,7 +10,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.ArrayDeque;
 import java.util.HashSet;
+import java.util.Queue;
 import java.util.Set;
 
 class BulkDeleter implements Closeable {
@@ -23,7 +25,9 @@ class BulkDeleter implements Closeable {
   private final int bulkSize;
 
   private PathList pathList;
-  private Future<ObjectErrorList> deletion;
+  // TODO(ariels): Configure this!
+  private final int concurrency = 5;
+  private Queue<Future<ObjectErrorList>> deletions = new ArrayDeque();
 
   public static interface Callback {
     ObjectErrorList apply(String repository, String branch, PathList pathList) throws ApiException;
@@ -82,7 +86,7 @@ class BulkDeleter implements Closeable {
     if (pathList != null && !pathList.getPaths().isEmpty()) {
       startDeletingUnlocked();
     }
-    maybeWaitForDeletionUnlocked();
+    drainDeletionsUnlocked();
   }
 
   /**
@@ -92,29 +96,47 @@ class BulkDeleter implements Closeable {
     maybeWaitForDeletionUnlocked();
     PathList toDelete = pathList;
     pathList = null;
-    deletion = executor.submit(new Callable() {
+    deletions.add(executor.submit(new Callable() {
         @Override
         public ObjectErrorList call() throws ApiException, InterruptedException, DeleteFailuresException {
           ObjectErrorList ret = callback.apply(repository, branch, toDelete);
           return ret;
         }
-      });
+      }));
   }
 
   /**
-   * Wait for deletion callback to end if it is non-null, then make it null.
-   * Must call locked.
+   * Wait for deletion callbacks to end until deletions has space.  Must
+   * call locked.
    *
    * @throws DeleteFailuresException if deletion did not (entirely) succeed.
    */
   private void maybeWaitForDeletionUnlocked() throws DeleteFailuresException, IOException {
+      while (deletions.size() >= concurrency) {
+        waitForOneDeletionUnlocked();
+      }
+  }
+
+  /**
+   * Wait for deletion callbacks to end until deletions has space.  Must
+   * call locked.
+   *
+   * @throws DeleteFailuresException if deletion did not (entirely) succeed.
+   */
+  private void drainDeletionsUnlocked() throws DeleteFailuresException, IOException {
+      while (!deletions.isEmpty()) {
+        waitForOneDeletionUnlocked();
+      }
+  }
+
+  private void waitForOneDeletionUnlocked() throws DeleteFailuresException, IOException {
     try {
-      if (deletion != null) {
-        ObjectErrorList errors = deletion.get();
-        deletion = null;
-        if (errors != null && errors.getErrors() != null && !errors.getErrors().isEmpty()) {
-          throw new DeleteFailuresException(errors);
-        }
+      Future<ObjectErrorList> deletion = deletions.poll();
+      if (deletion == null) return;
+
+      ObjectErrorList errors = deletion.get();
+      if (errors != null && errors.getErrors() != null && !errors.getErrors().isEmpty()) {
+        throw new DeleteFailuresException(errors);
       }
     } catch (ExecutionException e) {
       Throwable cause = e.getCause();
