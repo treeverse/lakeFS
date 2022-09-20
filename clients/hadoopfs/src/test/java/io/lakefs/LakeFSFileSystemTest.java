@@ -36,6 +36,7 @@ import org.testcontainers.utility.DockerImageName;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -53,6 +54,7 @@ public class LakeFSFileSystemTest {
     private static final Long STATUS_MTIME = 0L;
     private static final String STATUS_CHECKSUM = "status";
 
+    protected Configuration conf;
     protected final LakeFSFileSystem fs = new LakeFSFileSystem();
 
     protected LakeFSClient lfsClient;
@@ -69,6 +71,8 @@ public class LakeFSFileSystemTest {
     private static final DockerImageName MINIO = DockerImageName.parse("minio/minio:RELEASE.2021-06-07T21-40-51Z");
     protected static final String S3_ACCESS_KEY_ID = "AKIArootkey";
     protected static final String S3_SECRET_ACCESS_KEY = "secret/minio/key=";
+
+    protected static final ApiException noSuchFile = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
 
     @Rule
     public final GenericContainer s3 = new GenericContainer(MINIO.toString()).
@@ -119,7 +123,7 @@ public class LakeFSFileSystemTest {
         CreateBucketRequest cbr = new CreateBucketRequest(s3Bucket);
         s3Client.createBucket(cbr);
 
-        Configuration conf = new Configuration(false);
+        conf = new Configuration(false);
 
         conf.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem");
 
@@ -132,7 +136,8 @@ public class LakeFSFileSystemTest {
         System.setProperty("hadoop.home.dir", "/");
 
         lfsClient = mock(LakeFSClient.class);
-        objectsApi = mock(ObjectsApi.class, Answers.RETURNS_SMART_NULLS);
+        objectsApi = mock(ObjectsApi.class);
+        //        objectsApi = mock(ObjectsApi.class, Answers.RETURNS_SMART_NULLS);
         when(lfsClient.getObjects()).thenReturn(objectsApi);
         branchesApi = mock(BranchesApi.class, Answers.RETURNS_SMART_NULLS);
         when(lfsClient.getBranches()).thenReturn(branchesApi);
@@ -191,11 +196,11 @@ public class LakeFSFileSystemTest {
     @Test
     public void testGetFileStatus_NoFile() throws ApiException, IOException {
         Path noFilePath = new Path("lakefs://repo/main/no.file");
-        ApiException noSuchFileException = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
+
         when(objectsApi.statObject("repo", "main", "no.file", false))
-                .thenThrow(noSuchFileException);
+                .thenThrow(noSuchFile);
         when(objectsApi.statObject("repo", "main", "no.file/", false))
-                .thenThrow(noSuchFileException);
+                .thenThrow(noSuchFile);
         when(objectsApi.listObjects("repo", "main", false, "", 1, "", "no.file/"))
                 .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
         Assert.assertThrows(FileNotFoundException.class, () -> fs.getFileStatus(noFilePath));
@@ -204,9 +209,8 @@ public class LakeFSFileSystemTest {
     @Test
     public void testGetFileStatus_DirectoryMarker() throws ApiException, IOException {
         Path dirPath = new Path("lakefs://repo/main/dir1/dir2");
-        ApiException noSuchFileException = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
         when(objectsApi.statObject("repo", "main", "dir1/dir2", false))
-                .thenThrow(noSuchFileException);
+                .thenThrow(noSuchFile);
         ObjectStats dirObjectStats = new ObjectStats();
         dirObjectStats.setPath("dir1/dir2/");
         dirObjectStats.checksum(UNUSED_CHECKSUM);
@@ -256,7 +260,6 @@ public class LakeFSFileSystemTest {
                         checksum(UNUSED_CHECKSUM).
                         mtime(UNUSED_MTIME).
                         sizeBytes(UNUSED_FILE_SIZE));
-        ApiException noSuchFile = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
         String[] arrDirs = {"no/place", "no"};
         for (String dir: arrDirs) {
             when(objectsApi.statObject("repo", "main", dir, false))
@@ -279,7 +282,6 @@ public class LakeFSFileSystemTest {
     public void testDelete_FileNotExists() throws ApiException, IOException {
         doThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "not found"))
                 .when(objectsApi).deleteObject("repo", "main", "no/place/file.txt");
-        ApiException noSuchFile = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
         when(objectsApi.statObject("repo", "main", "no/place/file.txt", false))
                 .thenThrow(noSuchFile);
         when(objectsApi.statObject("repo", "main", "no/place/file.txt/", false))
@@ -297,7 +299,6 @@ public class LakeFSFileSystemTest {
         ObjectLocation dirObjLoc = new ObjectLocation("lakefs", "repo", "main", "delete/me");
         String key = objectLocToS3ObjKey(dirObjLoc);
 
-        ApiException noSuchFile = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
         when(objectsApi.statObject(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath(), false))
                 .thenThrow(noSuchFile);
 
@@ -318,7 +319,6 @@ public class LakeFSFileSystemTest {
 
     @Test(expected = IOException.class)
     public void testDelete_DirectoryWithFile() throws ApiException, IOException {
-        ApiException noSuchFile = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
         when(objectsApi.statObject("repo", "main", "delete/sample", false))
                 .thenThrow(noSuchFile);
         when(objectsApi.statObject("repo", "main", "delete/sample/", false))
@@ -339,9 +339,8 @@ public class LakeFSFileSystemTest {
 
     @Test
     public void testDelete_NotExistsRecursive() throws ApiException, IOException {
-        ApiException noSuchFileException = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
         when(objectsApi.statObject(eq("repo"), eq("main"), any(), eq(false)))
-                .thenThrow(noSuchFileException);
+                .thenThrow(noSuchFile);
         when(objectsApi.listObjects(eq("repo"), eq("main"),eq(false), eq(""), any(), eq(""), eq("no/place/file.txt/")))
                 .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
         boolean delete = fs.delete(new Path("lakefs://repo/main/no/place/file.txt"), true);
@@ -349,18 +348,15 @@ public class LakeFSFileSystemTest {
     }
 
     private PathList newPathList(String... paths) {
-        PathList pl = new PathList();
-        pl.setPaths(Arrays.asList(paths));
-        return pl;
+        return new PathList().paths(Arrays.asList(paths));
     }
 
     @Test
     public void testDelete_DirectoryWithFileRecursive() throws ApiException, IOException {
-        ApiException noSuchFileException = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
         when(objectsApi.statObject("repo", "main", "delete/sample", false))
-                .thenThrow(noSuchFileException);
+                .thenThrow(noSuchFile);
         when(objectsApi.statObject("repo", "main", "delete/sample/", false))
-                .thenThrow(noSuchFileException);
+                .thenThrow(noSuchFile);
         when(objectsApi.listObjects(eq("repo"), eq("main"), eq(false), eq(""), any(), eq(""), eq("delete/sample/")))
                 .thenReturn(new ObjectStatsList().results(Collections
                         .singletonList(new ObjectStats().
@@ -371,11 +367,74 @@ public class LakeFSFileSystemTest {
                                 mtime(UNUSED_MTIME).
                                 sizeBytes(UNUSED_FILE_SIZE)))
                         .pagination(new Pagination().hasMore(false)));
-        when(objectsApi.deleteObjects(eq("repo"), eq("main"), eq(newPathList("lakefs:/repo/main/delete/sample/file.txt"))))
+        when(objectsApi.deleteObjects("repo", "main", newPathList("delete/sample/file.txt")))
             .thenReturn(new ObjectErrorList());
         // recursive will always end successfully
         boolean delete = fs.delete(new Path("lakefs://repo/main/delete/sample"), true);
         Assert.assertTrue(delete);
+    }
+
+    protected void caseDeleteDirectoryRecursive(int bulkSize, int numObjects) throws ApiException, IOException {
+        conf.setInt(LakeFSFileSystem.LAKEFS_DELETE_BULK_SIZE, bulkSize);
+        when(objectsApi.statObject("repo", "main", "delete/sample", false))
+            .thenThrow(noSuchFile);
+        when(objectsApi.statObject("repo", "main", "delete/sample/", false))
+                .thenThrow(noSuchFile);
+
+        List<ObjectStats> objects = new ArrayList();
+        for (int i = 0; i < numObjects; i++) {
+            objects.add(new ObjectStats().
+                        path(String.format("lakefs://repo/main/delete/sample/file%04d.txt", i)).
+                        pathType(PathTypeEnum.OBJECT).
+                        physicalAddress(s3Url(String.format("/repo-base/delete%04d", i))).
+                        checksum(UNUSED_CHECKSUM).
+                        mtime(UNUSED_MTIME).
+                        sizeBytes(UNUSED_FILE_SIZE));
+        }
+        when(objectsApi.listObjects(eq("repo"), eq("main"), eq(false), eq(""), any(), eq(""), eq("delete/sample/")))
+            .thenReturn(new ObjectStatsList()
+                        .results(objects)
+                        .pagination(new Pagination().hasMore(false)));
+
+        // Set up multiple deleteObjects expectations of bulkSize deletes
+        // each (except for the last, which might be smaller).
+        for (int start = 0; start < numObjects; start += bulkSize) {
+            PathList pl = new PathList();
+            for (int i = start; i < numObjects && i < start + bulkSize; i++) {
+                pl.addPathsItem(String.format("delete/sample/file%04d.txt", i));
+            }
+            when(objectsApi.deleteObjects("repo", "main", pl)).thenReturn(new ObjectErrorList());
+        }
+        // recursive will always end successfully
+        boolean delete = fs.delete(new Path("lakefs://repo/main/delete/sample"), true);
+        Assert.assertTrue(delete);
+    }
+
+    @Test
+    public void testDeleteDirectoryRecursiveBatch1() throws ApiException, IOException {
+        caseDeleteDirectoryRecursive(1, 123);
+    }
+
+    @Test
+    public void testDeleteDirectoryRecursiveBatch2() throws ApiException, IOException {
+        caseDeleteDirectoryRecursive(2, 123);
+    }
+
+    @Test
+    public void testDeleteDirectoryRecursiveBatch3() throws ApiException, IOException {
+        caseDeleteDirectoryRecursive(3, 123);
+    }
+    @Test
+    public void testDeleteDirectoryRecursiveBatch5() throws ApiException, IOException {
+        caseDeleteDirectoryRecursive(5, 123);
+    }
+    @Test
+    public void testDeleteDirectoryRecursiveBatch120() throws ApiException, IOException {
+        caseDeleteDirectoryRecursive(120, 123);
+    }
+    @Test
+    public void testDeleteDirectoryRecursiveBatch123() throws ApiException, IOException {
+        caseDeleteDirectoryRecursive(123, 123);
     }
 
     @Test
@@ -435,13 +494,12 @@ public class LakeFSFileSystemTest {
     @Test
     public void testMkdirs() throws ApiException, IOException {
         // setup empty folder checks
-        ApiException noSuchFileException = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
         Path testPath = new Path("dir1/dir2/dir3");
         do {
             when(objectsApi.statObject("repo", "main", testPath.toString(), false))
-                    .thenThrow(noSuchFileException);
+                    .thenThrow(noSuchFile);
             when(objectsApi.statObject("repo", "main", testPath.toString()+"/", false))
-                    .thenThrow(noSuchFileException);
+                    .thenThrow(noSuchFile);
             when(objectsApi.listObjects(eq("repo"), eq("main"), eq(false), eq(""), any(), eq(""), eq(testPath.toString()+"/")))
                     .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
             testPath = testPath.getParent();
@@ -502,9 +560,8 @@ public class LakeFSFileSystemTest {
     @Test(expected = FileNotFoundException.class)
     public void testOpen_NotExists() throws IOException, ApiException {
         Path p = new Path("lakefs://repo/main/doesNotExi.st");
-        ApiException noSuchFileException = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
         when(objectsApi.statObject(any(), any(), any(), any()))
-            .thenThrow(noSuchFileException);
+            .thenThrow(noSuchFile);
         fs.open(p);
     }
 

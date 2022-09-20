@@ -51,7 +51,6 @@ public class LakeFSFileSystem extends FileSystem {
     private int listAmount;
     private FileSystem fsForConfig;
 
-    private int bulkDeleteSize = -1;
     // Currently bulk deletes *must* receive a single-threaded executor!
     private ExecutorService deleteExecutor = Executors.newSingleThreadExecutor();
 
@@ -79,8 +78,6 @@ public class LakeFSFileSystem extends FileSystem {
         this.uri = name;
         this.conf = conf;
         this.lfsClient = lfsClient;
-
-        this.bulkDeleteSize = conf.getInt(LAKEFS_DELETE_BULK_SIZE, 0);
 
         String host = name.getHost();
         if (host == null) {
@@ -515,7 +512,7 @@ public class LakeFSFileSystem extends FileSystem {
                 public ObjectErrorList apply(String repository, String branch, PathList pathList) throws ApiException {
                     return objectsApi.deleteObjects(repository, branch, pathList);
                 }
-            }, repository, branch);
+            }, repository, branch, conf.getInt(LAKEFS_DELETE_BULK_SIZE, 0));
     }
 
     private boolean deleteHelper(ObjectLocation loc) throws IOException {
