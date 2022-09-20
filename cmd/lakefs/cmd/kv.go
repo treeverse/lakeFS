@@ -40,16 +40,18 @@ var kvGetCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 
-		val, err := kvStore.Get(ctx, []byte(args[0]), []byte(args[1]))
+		partitionKey := args[0]
+		key := args[1]
+		val, err := kvStore.Get(ctx, []byte(partitionKey), []byte(key))
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to get value")
 		}
-		prettyVal, err := kv.ToPrettyString(args[1], val.Value)
+		prettyVal, err := kv.ToPrettyString(key, val.Value)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to build object from KV value")
 		}
 
-		fmt.Printf("%s:\n%s\n", args[1], prettyVal)
+		fmt.Printf("%s:\n%s\n", key, prettyVal)
 	},
 }
 
@@ -72,11 +74,12 @@ var kvScanCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 
+		partitionKey := args[0]
 		var start []byte = nil
 		if len(args) > ScanCmdMinArgs {
 			start = []byte(args[1])
 		}
-		iter, err := kvStore.Scan(ctx, []byte(args[0]), start)
+		iter, err := kvStore.Scan(ctx, []byte(partitionKey), start)
 		if err != nil {
 			logger.WithError(err).Fatal("Scan failed")
 		}
