@@ -1,7 +1,6 @@
 package io.lakefs;
 
 import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.ObjectsApi;
 import io.lakefs.clients.api.model.ObjectErrorList;
 import io.lakefs.clients.api.model.PathList;
 
@@ -41,7 +40,7 @@ class BulkDeleter implements Closeable {
 
   /**
    * Construct a BulkDeleter to bulk-delete objects on branch in repository,
-   * using objectsApi on executor (which should be single-threaded for
+   * using callback on executor (which should be single-threaded for
    * correctness).
    */
   BulkDeleter(ExecutorService executor, Callback callback, String repository, String branch, int bulkSize) {
@@ -128,6 +127,9 @@ class BulkDeleter implements Closeable {
         throw (DeleteFailuresException)cause;
       } else if (cause instanceof IOException) {
         throw (IOException)cause;
+      } else if (cause instanceof Error) {
+        // Don't wrap serious errors.
+        throw (Error)cause;
       } else {
         throw new IOException("failed to wait for bulk delete", cause);
       }
