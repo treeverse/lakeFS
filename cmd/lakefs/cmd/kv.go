@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"github.com/treeverse/lakefs/pkg/version"
 )
 
 const (
@@ -31,8 +30,6 @@ var kvGetCmd = &cobra.Command{
 		cfg := loadConfig()
 
 		ctx := cmd.Context()
-		logger.WithField("version", version.Version).Info("lakeFS kv")
-
 		kvParams := cfg.GetKVParams()
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
@@ -65,8 +62,6 @@ var kvScanCmd = &cobra.Command{
 		cfg := loadConfig()
 
 		ctx := cmd.Context()
-		logger.WithField("version", version.Version).Info("lakeFS scan")
-
 		kvParams := cfg.GetKVParams()
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
