@@ -45,6 +45,7 @@ class BulkDeleter implements Closeable {
    * correctness).
    */
   BulkDeleter(ExecutorService executor, Callback callback, String repository, String branch, int bulkSize) {
+    System.out.printf("[DEBUG] start for %s %s bulk %d\n", repository, branch, bulkSize);
     this.executor = executor;
     this.callback = callback;
     this.repository = repository;
@@ -80,7 +81,7 @@ class BulkDeleter implements Closeable {
    */
   @Override
   public synchronized void close() throws IOException {
-    if (!pathList.getPaths().isEmpty()) {
+    if (pathList != null && !pathList.getPaths().isEmpty()) {
       startDeletingUnlocked();
     }
     maybeWaitForDeletionUnlocked();
@@ -91,11 +92,12 @@ class BulkDeleter implements Closeable {
    */
   private void startDeletingUnlocked() throws IOException, DeleteFailuresException {
     maybeWaitForDeletionUnlocked();
+    PathList toDelete = pathList;
+    pathList = null;
     deletion = executor.submit(new Callable() {
         @Override
         public ObjectErrorList call() throws ApiException, InterruptedException, DeleteFailuresException {
-          ObjectErrorList ret = callback.apply(repository, branch, pathList);
-          pathList = null;
+          ObjectErrorList ret = callback.apply(repository, branch, toDelete);
           return ret;
         }
       });
