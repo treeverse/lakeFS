@@ -83,7 +83,7 @@ class BulkDeleter implements Closeable {
   public synchronized void close() throws IOException {
     System.out.printf("[DEBUG] close for %s %s bulk %d\n", repository, branch, bulkSize);
     if (pathList != null && !pathList.getPaths().isEmpty()) {
-      System.out.printf("[DEBUG] close start last block of <=%d: %s\n", repository, branch, bulkSize, pathList.toString());
+      System.out.printf("[DEBUG] close start last block of <=%d: %s\n", bulkSize, pathList.toString());
       startDeletingUnlocked();
     }
     System.out.println("[DEBUG] close wait for deletion to end");
