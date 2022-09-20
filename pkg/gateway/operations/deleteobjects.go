@@ -31,8 +31,6 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	// TODO(barak): limit request size to DefaultMaxDeleteObjects
-
 	// delete all the files and collect responses
 	var (
 		errs      []serde.DeleteError
@@ -61,7 +59,8 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 				Permission: permissions.Permission{
 					Action:   permissions.DeleteObjectAction,
 					Resource: permissions.ObjectArn(o.Repository.Name, resolvedPath.Path),
-				}},
+				},
+			},
 		})
 		if err != nil || !authResp.Allowed {
 			errs = append(errs, serde.DeleteError{
