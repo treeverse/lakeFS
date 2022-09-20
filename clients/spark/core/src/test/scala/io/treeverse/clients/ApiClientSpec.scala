@@ -1,12 +1,9 @@
 package io.treeverse.clients
 
-import io.lakefs.clients.api.ApiException
-import org.mockito.Mockito.{doThrow, spy, times, verify}
-import org.scalatest._
 import org.scalatest.funspec._
 import org.scalatest.matchers.should._
 
-import java.net.{SocketException, URI}
+import java.net.URI
 
 class ApiClientSpec extends AnyFunSpec with Matchers {
   describe("translateURI") {
