@@ -106,15 +106,16 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 
 	// limit check
 	if len(body.Paths) > DefaultMaxDeleteObjects {
-		writeError(w, http.StatusInternalServerError, fmt.Errorf("%w, max paths is set to %d",
-			ErrRequestSizeExceeded, DefaultMaxDeleteObjects))
+		err := fmt.Errorf("%w, max paths is set to %d", ErrRequestSizeExceeded, DefaultMaxDeleteObjects)
+		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	// delete all the files and collect responses
-	var errs []ObjectError
+	// errs used to collect errors as part of the response, can't be nil
+	errs := make([]ObjectError, 0)
+	// check if we authorize to delete each object, prepare a list of paths we can delete
+	var pathsToDelete []string
 	for _, objectPath := range body.Paths {
-		// authorize this object deletion
 		if !c.authorize(w, r, permissions.Node{
 			Permission: permissions.Permission{
 				Action:   permissions.DeleteObjectAction,
@@ -126,14 +127,24 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 				StatusCode: http.StatusUnauthorized,
 				Message:    http.StatusText(http.StatusUnauthorized),
 			})
-			continue
+		} else {
+			pathsToDelete = append(pathsToDelete, objectPath)
 		}
+	}
 
+	// batch delete the entries we allow to delete
+	delErr := c.Catalog.DeleteEntries(ctx, repository, branch, pathsToDelete)
+	delErrs := graveler.NewMapDeleteErrors(delErr)
+	for _, objectPath := range pathsToDelete {
+		// set err to the specific error when possible
+		err := delErrs[objectPath]
+		if err == nil {
+			err = delErr
+		}
 		lg := c.Logger.WithField("path", objectPath)
-		err := c.Catalog.DeleteEntry(ctx, repository, branch, objectPath)
 		switch {
-		case errors.Is(err, catalog.ErrNotFound):
-			lg.Debug("tried to delete a non-existent object")
+		case errors.Is(err, catalog.ErrNotFound), errors.Is(err, graveler.ErrNotFound):
+			lg.WithError(err).Debug("tried to delete a non-existent object")
 		case errors.Is(err, graveler.ErrWriteToProtectedBranch):
 			errs = append(errs, ObjectError{
 				Path:       StringPtr(objectPath),
@@ -156,12 +167,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 			lg.Debug("object set for deletion")
 		}
 	}
-	// no content in case there are no errors
-	if len(errs) == 0 {
-		writeResponse(w, http.StatusNoContent, nil)
-		return
-	}
-	// status ok with list of errors
+
 	response := ObjectErrorList{
 		Errors: errs,
 	}
