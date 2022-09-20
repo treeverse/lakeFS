@@ -1,6 +1,8 @@
 package kv
 
 import (
+	"regexp"
+
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -24,9 +26,14 @@ func RegisterDefaultType(pb protoreflect.ProtoMessage) {
 	defaultMsg = pb
 }
 
+func matchPath(path string, pathRegexp string) bool {
+	match, err := regexp.MatchString(PathBeginRegexp+pathRegexp, path)
+	return err == nil && match
+}
+
 func resolvePath(path string) (protoreflect.ProtoMessage, error) {
 	for pathRegexp, msg := range matchers {
-		if MatchPath(path, pathRegexp) {
+		if matchPath(path, pathRegexp) {
 			return msg, nil
 		}
 	}
