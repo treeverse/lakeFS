@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -38,11 +37,6 @@ var (
 
 func FormatPath(p ...string) string {
 	return strings.Join(p, string(PathDelimiter))
-}
-
-func MatchPath(path string, pathRegexp string) bool {
-	match, err := regexp.MatchString(PathBeginRegexp+pathRegexp, path)
-	return err == nil && match
 }
 
 // Driver is the interface to access a kv database as a Store.
