@@ -190,7 +190,7 @@ func saveStateInLakeFS(t *testing.T) {
 	_ = createRepositoryByName(ctx, t, migrateStateRepoName)
 
 	// file is big - so we better use multipart writing here.
-	resp, err := svc.CreateMultipartUpload(&s3.CreateMultipartUploadInput{
+	resp, err := pathStyleSvc.CreateMultipartUpload(&s3.CreateMultipartUploadInput{
 		Bucket: aws.String(migrateStateRepoName),
 		Key:    aws.String(migrateStateBranch + "/" + migrateStateObjectPath),
 	})
@@ -205,7 +205,7 @@ func saveStateInLakeFS(t *testing.T) {
 		parts = append(parts, stateBytes[i:last])
 	}
 	completedParts := uploadMultipartParts(t, logger, resp, parts, 0)
-	_, err = uploadMultipartComplete(svc, resp, completedParts)
+	_, err = uploadMultipartComplete(pathStyleSvc, resp, completedParts)
 	require.NoError(t, err, "writing state file")
 	_, err = client.CommitWithResponse(ctx, migrateStateRepoName, migrateStateBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
 		Message: "Save state file",
@@ -235,7 +235,7 @@ func testPreMigrateMultipart(t *testing.T) {
 		Key:    aws.String(migrateMultipartsFilepath),
 	}
 
-	resp, err := svc.CreateMultipartUpload(input)
+	resp, err := pathStyleSvc.CreateMultipartUpload(input)
 	require.NoError(t, err, "failed to create multipart upload")
 	logger.Info("Created multipart upload request")
 
@@ -264,7 +264,7 @@ func testPostMigrateMultipart(t *testing.T) {
 
 	partsConcat, completedParts := createAndUploadParts(t, logger, &state.Multiparts.Info, migratePostPartsCount, migratePrePartsCount)
 
-	completeResponse, err := uploadMultipartComplete(svc, &state.Multiparts.Info, append(state.Multiparts.CompletedParts, completedParts...))
+	completeResponse, err := uploadMultipartComplete(pathStyleSvc, &state.Multiparts.Info, append(state.Multiparts.CompletedParts, completedParts...))
 	require.NoError(t, err, "failed to complete multipart upload")
 
 	logger.WithField("key", completeResponse.Key).Info("Completed multipart request successfully")

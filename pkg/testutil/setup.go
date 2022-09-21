@@ -31,7 +31,7 @@ type SetupTestingEnvParams struct {
 	AdminSecretAccessKey string
 }
 
-func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientWithResponsesInterface, *s3.S3) {
+func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientWithResponsesInterface, *s3.S3, *s3.S3) {
 	logger := logging.Default()
 
 	viper.SetDefault("setup_lakefs", true)
@@ -106,7 +106,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 
 	s3Endpoint := viper.GetString("s3_endpoint")
 	awsSession := session.Must(session.NewSession())
-	svc := s3.New(awsSession,
+	pathStyleSvc := s3.New(awsSession,
 		aws.NewConfig().
 			WithRegion("us-east-1").
 			WithEndpoint(s3Endpoint).
@@ -119,7 +119,19 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 						SecretAccessKey: viper.GetString("secret_access_key"),
 					}})))
 
-	return logger, client, svc
+	hostStyleSvc := s3.New(awsSession,
+		aws.NewConfig().
+			WithRegion("us-east-1").
+			WithEndpoint(s3Endpoint).
+			WithDisableSSL(true).
+			WithCredentials(credentials.NewCredentials(
+				&credentials.StaticProvider{
+					Value: credentials.Value{
+						AccessKeyID:     viper.GetString("access_key_id"),
+						SecretAccessKey: viper.GetString("secret_access_key"),
+					}})))
+
+	return logger, client, pathStyleSvc, hostStyleSvc
 }
 
 // ParseEndpointURL parses the given endpoint string
