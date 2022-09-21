@@ -777,6 +777,34 @@ func (c *Catalog) DeleteEntry(ctx context.Context, repositoryID string, branch s
 	return c.Store.Delete(ctx, repository, branchID, key)
 }
 
+func (c *Catalog) DeleteEntries(ctx context.Context, repositoryID string, branch string, paths []string) error {
+	branchID := graveler.BranchID(branch)
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
+	}); err != nil {
+		return err
+	}
+	// validate path
+	for i, path := range paths {
+		p := Path(path)
+		if err := ValidatePath(p); err != nil {
+			return fmt.Errorf("argument path[%d]: %w", i, err)
+		}
+	}
+
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+
+	keys := make([]graveler.Key, len(paths))
+	for i := range paths {
+		keys[i] = graveler.Key(paths[i])
+	}
+	return c.Store.DeleteBatch(ctx, repository, branchID, keys)
+}
+
 func (c *Catalog) ListEntries(ctx context.Context, repositoryID string, reference string, prefix string, after string, delimiter string, limit int) ([]*DBEntry, bool, error) {
 	// normalize limit
 	if limit < 0 || limit > ListEntriesLimitMax {

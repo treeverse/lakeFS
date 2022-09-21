@@ -21,16 +21,13 @@ import (
 //go:generate mockgen -source=graveler.go -destination=mock/graveler.go -package=mock
 
 const (
-	ListingDefaultBatchSize = 1000
-	ListingMaxBatchSize     = 100000
-
 	MergeStrategySrcWins  = "source-wins"
 	MergeStrategyDestWins = "dest-wins"
 
-	SettingsRelativeKey = "%s/settings/%s.json" // where the settings are saved relative to the storage namespace
-
 	BranchUpdateMaxInterval = 5 * time.Second
 	BranchUpdateMaxTries    = 10
+
+	DeleteKeysMaxSize = 1000
 )
 
 // Basic Types
@@ -383,6 +380,9 @@ type KeyValueStore interface {
 
 	// Delete value from repository / branch by key
 	Delete(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key) error
+
+	// DeleteBatch delete values from repository / branch by batch of keys
+	DeleteBatch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, keys []Key) error
 
 	// List lists values on repository / ref
 	List(ctx context.Context, repository *RepositoryRecord, ref Ref) (ValueIterator, error)
@@ -1453,40 +1453,80 @@ func (g *KVGraveler) Delete(ctx context.Context, repository *RepositoryRecord, b
 
 	return g.safeBranchWrite(ctx, g.log.WithField("key", key).WithField("operation", "delete"),
 		repository, branchID, func(branch *Branch) error {
-			// check staging for entry or tombstone
-			val, err := g.getFromStagingArea(ctx, branch, key)
-			switch {
-			case err != nil:
-				if !errors.Is(err, ErrNotFound) {
-					// unknown error
-					return fmt.Errorf("reading from staging: %w", err)
-				}
-				// entry not found in staging - continue to committed check
-			case val == nil:
-				// found tombstone in staging, return ErrNotFound
-				return ErrNotFound
-			default:
-				// found in staging, set tombstone
-				return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
-			}
-
-			// check key in committed - do we need tombstone?
-			commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
-			if err != nil {
-				return err
-			}
-			_, err = g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
-			if err != nil {
-				if !errors.Is(err, ErrNotFound) {
-					// unknown error
-					return fmt.Errorf("reading from committed: %w", err)
-				}
-				// key is nowhere to be found
-				return ErrNotFound
-			}
-			// found in committed, set tombstone
-			return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
+			return g.deleteUnsafe(ctx, repository, branch, key, nil)
 		})
+}
+
+// DeleteBatch delete batch of keys. Keys length is limited to DeleteKeysMaxSize. Return error can be of type
+// 'multi-error' holds DeleteError with each key/error that failed as part of the batch.
+func (g *KVGraveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, keys []Key) error {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrWriteToProtectedBranch
+	}
+	if len(keys) > DeleteKeysMaxSize {
+		return fmt.Errorf("keys length (%d) passed the maximum allowed(%d): %w", len(keys), DeleteKeysMaxSize, ErrInvalidValue)
+	}
+	var m *multierror.Error
+	err = g.safeBranchWrite(ctx, g.log.WithField("operation", "delete_keys"),
+		repository, branchID, func(branch *Branch) error {
+			var cachedMetaRangeID MetaRangeID // used to cache the committed branch metarange ID
+			for _, key := range keys {
+				err := g.deleteUnsafe(ctx, repository, branch, key, &cachedMetaRangeID)
+				if err != nil {
+					m = multierror.Append(m, &DeleteError{Key: key, Err: err})
+				}
+			}
+			return m.ErrorOrNil()
+		})
+	return err
+}
+
+func (g *KVGraveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecord, branch *Branch, key Key, cachedMetaRangeID *MetaRangeID) error {
+	// check staging for entry or tombstone
+	val, err := g.getFromStagingArea(ctx, branch, key)
+	switch {
+	case err != nil:
+		if !errors.Is(err, ErrNotFound) {
+			// unknown error
+			return fmt.Errorf("reading from staging: %w", err)
+		}
+		// entry not found in staging - continue to committed check
+	case val == nil:
+		// found tombstone in staging, return ErrNotFound
+		return ErrNotFound
+	default:
+		// found in staging, set tombstone
+		return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
+	}
+
+	// check key in committed - do we need tombstone?
+	var metaRangeID MetaRangeID
+	if cachedMetaRangeID != nil && *cachedMetaRangeID != "" {
+		metaRangeID = *cachedMetaRangeID
+	} else {
+		commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
+		if err != nil {
+			return err
+		}
+		metaRangeID = commit.MetaRangeID
+	}
+
+	_, err = g.CommittedManager.Get(ctx, repository.StorageNamespace, metaRangeID, key)
+	if err != nil {
+		if !errors.Is(err, ErrNotFound) {
+			// unknown error
+			return fmt.Errorf("reading from committed: %w", err)
+		}
+		// key is nowhere to be found
+		return ErrNotFound
+	}
+
+	// found in committed, set tombstone
+	return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
 }
 
 // listStagingArea Returns an iterator which is an aggregation of all changes on all the branch's staging area (staging + sealed)

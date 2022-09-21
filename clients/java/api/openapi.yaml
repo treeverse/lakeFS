@@ -3436,8 +3436,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ObjectErrorList'
           description: Delete objects response
-        "204":
-          description: all requested objects successfully deleted
         "401":
           content:
             application/json:
