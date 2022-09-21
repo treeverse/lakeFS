@@ -77,19 +77,6 @@ class BulkDeleter implements Closeable {
   }
 
   /**
-   * Close this BulkDeleter, possibly performing one last deletion.
-   *
-   * @throws DeleteFailuresException if last deletion did not (entirely) succeed.
-   */
-  @Override
-  public synchronized void close() throws IOException {
-    if (pathList != null && !pathList.getPaths().isEmpty()) {
-      startDeletingUnlocked();
-    }
-    drainDeletionsUnlocked();
-  }
-
-  /**
    * Start deleting everything in pathList and empty it.  Must call locked.
    */
   private void startDeletingUnlocked() throws IOException, DeleteFailuresException {
@@ -104,35 +91,6 @@ class BulkDeleter implements Closeable {
         }
       }));
   }
-
-  /**
-   * Wait for deletion callbacks to end until deletions has space.  Must
-   * call locked.
-   *
-   * @throws DeleteFailuresException if deletion did not (entirely) succeed.
-   */
-  private void maybeWaitForDeletionUnlocked() throws DeleteFailuresException, IOException {
-      while (deletions.size() >= concurrency) {
-        waitForOneDeletionUnlocked();
-      }
-  }
-
-  /**
-   * Wait for deletion callbacks to end until deletions has space.  Must
-   * call locked.
-   *
-   * @throws DeleteFailuresException if deletion did not (entirely) succeed.
-   */
-  private void drainDeletionsUnlocked() throws DeleteFailuresException, IOException {
-      while (!deletions.isEmpty()) {
-        waitForOneDeletionUnlocked();
-      }
-  }
-
-  private void waitForOneDeletionUnlocked() throws DeleteFailuresException, IOException {
-    try {
-      Future<ObjectErrorList> deletion = deletions.poll();
-      if (deletion == null) return;
 
     /**
      * Close this BulkDeleter, possibly performing one last deletion.
@@ -213,4 +171,3 @@ class BulkDeleter implements Closeable {
         }
     }
   }
-}
