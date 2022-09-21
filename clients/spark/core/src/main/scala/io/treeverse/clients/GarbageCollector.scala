@@ -67,8 +67,7 @@ class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: Config
     SSTableReader
       .forRange(configMapper.configuration, location)
       .newIterator()
-      // TODO(yoni): Do we need to filter?
-      //     .filter(a.message.addressType == AddressType.FULL)
+      .filter(_.message.addressType.isRelative)
       .map(a => a.message.address)
   }
 }
