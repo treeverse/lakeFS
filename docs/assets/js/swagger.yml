@@ -2960,8 +2960,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ObjectErrorList"
-        204:
-          description: all requested objects successfully deleted
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
