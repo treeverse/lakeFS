@@ -28,50 +28,6 @@ class ConfigMapper(val hcValues: Broadcast[Array[(String, String)]]) extends Ser
   }
 }
 
-trait RangeGetter extends Serializable {
-
-  /** @return all rangeIDs in metarange of commitID on repo.
-   */
-  def getRangeIDs(commitID: String, repo: String): Iterator[String]
-
-  /** @return all object addresses in range rangeID on repo
-   */
-  def getRangeAddresses(rangeID: String, repo: String): Iterator[String]
-}
-
-class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: ConfigMapper)
-    extends RangeGetter {
-  def getRangeIDs(commitID: String, repo: String): Iterator[String] = {
-    val conf = configMapper.configuration
-    val apiClient = ApiClient.get(apiConf)
-    val commit = apiClient.getCommit(repo, commitID)
-    val maxCommitEpochSeconds = conf.getLong(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY, -1)
-    if (maxCommitEpochSeconds > 0 && commit.getCreationDate > maxCommitEpochSeconds) {
-      return Iterator.empty
-    }
-    val location = apiClient.getMetaRangeURL(repo, commit)
-    // continue on empty location, empty location is a result of a commit
-    // with no metaRangeID (e.g 'Repository created' commit)
-    if (location == "") Iterator.empty
-    else
-      SSTableReader
-        .forMetaRange(conf, location)
-        .newIterator()
-        .map(o => new String(o.id))
-  }
-
-  def getRangeAddresses(rangeID: String, repo: String): Iterator[String] = {
-    val location = ApiClient
-      .get(apiConf)
-      .getRangeURL(repo, rangeID)
-    SSTableReader
-      .forRange(configMapper.configuration, location)
-      .newIterator()
-      .filter(_.message.addressType.isRelative)
-      .map(a => a.message.address)
-  }
-}
-
 /** Interface to build an S3 client.  The object
  *  io.treeverse.clients.conditional.S3ClientBuilder -- conditionally
  *  defined in a separate file according to the supported Hadoop version --
