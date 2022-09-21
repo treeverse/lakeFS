@@ -35,7 +35,9 @@ services:
     links:
       - lakefs:s3.local.lakefs.io
       - lakefs:testmultipartupload.s3.local.lakefs.io
+      - lakefs:testmultipartuploadhoststyleclient.s3.local.lakefs.io
       - lakefs:testdeleteobjects.s3.local.lakefs.io
+      - lakefs:testdeleteobjectshoststylesvc.s3.local.lakefs.io
       - lakefs:testmigrate-testpremigratemultipart.s3.local.lakefs.io
       - lakefs:migrate.s3.local.lakefs.io
     environment:
