@@ -48,9 +48,6 @@ RUN addgroup -S lakefs && adduser -S lakefs -G lakefs
 USER lakefs
 WORKDIR /home/lakefs
 
-# Configuration location
-VOLUME /etc/lakefs.yaml
-
 ENTRYPOINT ["/app/lakefs"]
 CMD ["run"]
 
