@@ -92,7 +92,7 @@ type Controller struct {
 }
 
 func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, _ *http.Request) {
-	inviteSupported := c.Auth.IsInviteSupported(c.Emailer.Params.SMTPHost)
+	inviteSupported := c.Auth.IsInviteSupported()
 	emailSupported := c.Emailer.Params.SMTPHost != ""
 	writeResponse(w, http.StatusOK, AuthCapabilities{
 		InviteUser:     &inviteSupported,

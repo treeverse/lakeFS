@@ -1160,7 +1160,7 @@ func (a *APIAuthService) InviteUser(ctx context.Context, email string) error {
 	return a.validateResponse(resp, http.StatusCreated)
 }
 
-func (a *APIAuthService) IsInviteSupported(_ string) bool {
+func (a *APIAuthService) IsInviteSupported() bool {
 	return true
 }
 
