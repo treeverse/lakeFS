@@ -22,10 +22,6 @@ trait BlockReadable {
 }
 
 class BlockReadableFile(private val in: RandomAccessFile) extends BlockReadable with Closeable {
-  if (in == null) {
-    throw new NullPointerException("null file")
-  }
-
   lazy val inSize = in.length() // Compute once, the file should anyway be immutable!
 
   override def length = inSize
