@@ -62,5 +62,5 @@ func (i *EmailInviteHandler) InviteUser(ctx context.Context, email string) error
 }
 
 func (i *EmailInviteHandler) IsInviteSupported() bool {
-	return i.emailer != nil
+	return i.emailer != nil && i.emailer.Params.SMTPHost != ""
 }
