@@ -1,14 +1,12 @@
 package io.treeverse.clients
 
-import com.google.protobuf.timestamp.Timestamp
 import io.treeverse.clients.LakeFSContext._
 import org.apache.hadoop.fs._
 import org.apache.hadoop.conf.Configuration
+import org.apache.spark.{HashPartitioner, Partitioner}
 import org.apache.spark.broadcast.Broadcast
-import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import org.apache.spark.sql.{SparkSession, _}
+import org.apache.spark.sql._
 import com.amazonaws.services.s3.AmazonS3
 
 import java.net.URI
@@ -21,6 +19,59 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse
 import java.util.UUID
+
+class ConfigMapper(val hcValues: Broadcast[Array[(String, String)]]) extends Serializable {
+  @transient lazy val configuration = {
+    val conf = new Configuration()
+    hcValues.value.foreach({ case (k, v) => conf.set(k, v) })
+    conf
+  }
+}
+
+trait RangeGetter extends Serializable {
+
+  /** @return all rangeIDs in metarange of commitID on repo.
+   */
+  def getRangeIDs(commitID: String, repo: String): Iterator[String]
+
+  /** @return all object addresses in range rangeID on repo
+   */
+  def getRangeAddresses(rangeID: String, repo: String): Iterator[String]
+}
+
+class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: ConfigMapper)
+    extends RangeGetter {
+  def getRangeIDs(commitID: String, repo: String): Iterator[String] = {
+    val conf = configMapper.configuration
+    val apiClient = ApiClient.get(apiConf)
+    val commit = apiClient.getCommit(repo, commitID)
+    val maxCommitEpochSeconds = conf.getLong(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY, -1)
+    if (maxCommitEpochSeconds > 0 && commit.getCreationDate > maxCommitEpochSeconds) {
+      return Iterator.empty
+    }
+    val location = apiClient.getMetaRangeURL(repo, commit)
+    // continue on empty location, empty location is a result of a commit
+    // with no metaRangeID (e.g 'Repository created' commit)
+    if (location == "") Iterator.empty
+    else
+      SSTableReader
+        .forMetaRange(conf, location)
+        .newIterator()
+        .map(o => new String(o.id))
+  }
+
+  def getRangeAddresses(rangeID: String, repo: String): Iterator[String] = {
+    val location = ApiClient
+      .get(apiConf)
+      .getRangeURL(repo, rangeID)
+    SSTableReader
+      .forRange(configMapper.configuration, location)
+      .newIterator()
+      // TODO(yoni): Do we need to filter?
+      //     .filter(a.message.addressType == AddressType.FULL)
+      .map(a => a.message.address)
+  }
+}
 
 /** Interface to build an S3 client.  The object
  *  io.treeverse.clients.conditional.S3ClientBuilder -- conditionally
@@ -42,273 +93,126 @@ trait S3ClientBuilder extends Serializable {
   def build(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3
 }
 
-object GarbageCollector {
+class GarbageCollector(val rangeGetter: RangeGetter, configMap: ConfigMapper) extends Serializable {
+  @transient lazy val spark = SparkSession.active
 
-  type ConfMap = List[(String, String)]
-
-  /** @return a serializable summary of values in hc starting with prefix.
-   */
-  def getHadoopConfigurationValues(hc: Configuration, prefixes: String*): ConfMap =
-    hc.iterator.asScala
-      .filter(c => prefixes.exists(c.getKey.startsWith))
-      .map(entry => (entry.getKey, entry.getValue))
-      .toList
-      .asInstanceOf[ConfMap]
-
-  def configurationFromValues(v: Broadcast[ConfMap]) = {
-    val hc = new Configuration()
-    v.value.foreach({ case (k, v) => hc.set(k, v) })
-    hc
-  }
-
-  def getCommitsDF(runID: String, commitDFLocation: String, spark: SparkSession): Dataset[Row] = {
+  def getCommitsDF(runID: String, commitDFLocation: String): Dataset[Row] = {
     spark.read
       .option("header", value = true)
       .option("inferSchema", value = true)
       .csv(commitDFLocation)
   }
 
-  private def getRangeTuples(
-      commitID: String,
-      repo: String,
-      apiConf: APIConfigurations,
-      hcValues: Broadcast[ConfMap]
-  ): Set[(String, Array[Byte], Array[Byte])] = {
-    val conf = configurationFromValues(hcValues)
-    val apiClient = ApiClient.get(apiConf)
-    val commit = apiClient.getCommit(repo, commitID)
-    val maxCommitEpochSeconds = conf.getLong(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY, -1)
-    if (maxCommitEpochSeconds > 0 && commit.getCreationDate > maxCommitEpochSeconds) {
-      return Set()
-    }
-    val location = apiClient.getMetaRangeURL(repo, commit)
-    // continue on empty location, empty location is a result of a commit with no metaRangeID (e.g 'Repository created' commit)
-    if (location == "") Set()
-    else
-      SSTableReader
-        .forMetaRange(conf, location)
-        .newIterator()
-        .map(range =>
-          (new String(range.id), range.message.minKey.toByteArray, range.message.maxKey.toByteArray)
-        )
-        .toSet
+  def getRangeIDsForCommits(commitIDs: Dataset[String], repo: String): Dataset[String] = {
+    import spark.implicits._
+
+    commitIDs.flatMap(rangeGetter.getRangeIDs(_, repo))
   }
 
-  def getRangesDFFromCommits(
-      commits: Dataset[Row],
-      repo: String,
-      apiConf: APIConfigurations,
-      hcValues: Broadcast[ConfMap]
-  ): Dataset[Row] = {
-    val get_range_tuples = udf((commitID: String) => {
-      getRangeTuples(commitID, repo, apiConf, hcValues).toSeq
-    })
+  val bitwiseOR = (a: Int, b: Int) => a | b
 
-    commits.distinct
-      .select(col("expired"), explode(get_range_tuples(col("commit_id"))).as("range_data"))
-      .select(
-        col("expired"),
-        col("range_data._1").as("range_id"),
-        col("range_data._2").as("min_key"),
-        col("range_data._3").as("max_key")
-      )
-      .distinct
-  }
-
-  def getRangeAddresses(
-      rangeID: String,
-      apiConf: APIConfigurations,
-      repo: String,
-      hcValues: Broadcast[ConfMap]
-  ): Iterator[String] = {
-    val location = ApiClient
-      .get(apiConf)
-      .getRangeURL(repo, rangeID)
-    SSTableReader
-      .forRange(configurationFromValues(hcValues), location)
-      .newIterator()
-      .map(a => a.message.address)
-  }
-
-  def getEntryTuples(
-      rangeID: String,
-      apiConf: APIConfigurations,
-      repo: String,
-      hcValues: Broadcast[ConfMap]
-  ): Iterator[(String, String, Boolean, Long)] = {
-    def getSeconds(ts: Option[Timestamp]): Long = {
-      ts.getOrElse(0).asInstanceOf[Timestamp].seconds
-    }
-
-    val location = ApiClient
-      .get(apiConf)
-      .getRangeURL(repo, rangeID)
-    SSTableReader
-      .forRange(configurationFromValues(hcValues), location)
-      .newIterator()
-      .map(a =>
-        (
-          new String(a.key),
-          new String(a.message.address),
-          a.message.addressType.isRelative,
-          getSeconds(a.message.lastModified)
-        )
-      )
-  }
-
-  /** @param leftRangeIDs
-   *  @param rightRangeIDs
-   *  @param apiConf
-   *  @return tuples of type (key, address, isRelative, lastModified) for every address existing in leftRanges and not in rightRanges
-   */
-  def leftAntiJoinAddresses(
-      leftRangeIDs: Set[String],
-      rightRangeIDs: Set[String],
-      apiConf: APIConfigurations,
-      repo: String,
-      hcValues: Broadcast[ConfMap]
-  ): Set[(String, String, Boolean, Long)] = {
-    val leftTuples = distinctEntryTuples(leftRangeIDs, apiConf, repo, hcValues)
-    val rightTuples = distinctEntryTuples(rightRangeIDs, apiConf, repo, hcValues)
-    leftTuples -- rightTuples
-  }
-
-  private def distinctEntryTuples(
-      rangeIDs: Set[String],
-      apiConf: APIConfigurations,
-      repo: String,
-      hcValues: Broadcast[ConfMap]
-  ) = {
-    // Process rangeIDs using mutation to ensure complete control over when
-    // each range is read.
-    var tuples = collection.mutable.Set[(String, String, Boolean, Long)]()
-    rangeIDs.foreach((rangeID: String) =>
-      tuples ++= getEntryTuples(rangeID, apiConf, repo, hcValues)
-    )
-    tuples.toSet
-  }
-
-  /** receives a dataframe containing active and expired ranges and returns entries contained only in expired ranges
+  /** Compute a distinct antijoin using  partitioner.  This is the same as
    *
-   *  @param ranges dataframe of type   rangeID:String | expired: Boolean
-   *  @return dataframe of type  key:String | address:String | relative:Boolean | last_modified:Long
+   *  <pre>
+   *     left.distinct.except(right.distinct)
+   *  </pre>
+   *
+   *  but forces our plan.  Useful when Spark is unable to predict the
+   *  structure and/or size of either argument.
+   *
+   *  @return all elements in left that are not in right.
    */
-  def getExpiredEntriesFromRanges(
-      ranges: Dataset[Row],
-      apiConf: APIConfigurations,
+  def minus(
+      left: Dataset[String],
+      right: Dataset[String],
+      partitioner: Partitioner
+  ): Dataset[String] = {
+    import spark.implicits._
+    def mark(f: Int) = (p: Any) => p match { case (t: String) => (t, f) }
+    val both = left.map(mark(1)).union(right.map(mark(2)))
+    // For every potential output element in left.union(right), compute the
+    // bitwise OR of its values in both.  This will be:
+    //
+    //     1 if it appears only on left;
+    //     2 if it appears only on right;
+    //     3 if it appears on both left and right;
+    val reduced = both.rdd.reduceByKey(partitioner, bitwiseOR)
+    reduced
+      .filter({ case (_, y) => y == 1 })
+      .map({ case (x, _) => x })
+      .toDS
+  }
+
+  def getAddressesToDelete(
+      expiredRangeIDs: Dataset[String],
+      keepRangeIDs: Dataset[String],
       repo: String,
-      hcValues: Broadcast[ConfMap]
-  ): Dataset[Row] = {
-    val left_anti_join_addresses = udf((x: Seq[String], y: Seq[String]) => {
-      leftAntiJoinAddresses(x.toSet, y.toSet, apiConf, repo, hcValues).toSeq
-    })
-    val expiredRangesDF = ranges.where("expired")
-    val activeRangesDF = ranges.where("!expired")
+      numRangePartitions: Int,
+      numAddressPartitions: Int
+  ): Dataset[String] = {
+    import spark.implicits._
 
-    // ranges existing in expired and not in active
-    val uniqueExpiredRangesDF = expiredRangesDF.join(
-      activeRangesDF,
-      expiredRangesDF("range_id") === activeRangesDF("range_id"),
-      "leftanti"
-    )
+    // TODO(ariels): Still appears to run on too few executors.  Might
+    // repartition ahead of time.
+    println(s"getAddressesToDelete: use $numRangePartitions partitions for ranges")
+    val rangePartitioner = new HashPartitioner(numRangePartitions)
 
-    //  intersecting options are __(____[_____)______]__   __(____[____]___)__   ___[___(__)___]___   ___[__(___]___)__
-    //  intersecting ranges  maintain  ( <= ] && [ <= )
-    val intersecting =
-      udf((aMin: Array[Byte], aMax: Array[Byte], bMin: Array[Byte], bMax: Array[Byte]) => {
-        val byteArrayOrdering = Ordering.by((_: Array[Byte]).toIterable)
-        byteArrayOrdering.compare(aMin, bMax) <= 0 && byteArrayOrdering.compare(bMin, aMax) <= 0
-      })
+    // If a rangeID is exactly "kept", it need not be expanded!
+    val cleanExpiredRangeIDs = minus(expiredRangeIDs, keepRangeIDs, rangePartitioner)
 
-    val minMax = udf((min: String, max: String) => (min, max))
+    val expiredAddresses = cleanExpiredRangeIDs
+      .repartition(numAddressPartitions)
+      .flatMap(rangeGetter.getRangeAddresses(_, repo))
 
-    // for every expired range - get all intersecting active ranges
-    //  expired_range | active_ranges  | min-max (of expired_range)
-    val joinActiveByRange = uniqueExpiredRangesDF
-      .as("u")
-      .join(
-        activeRangesDF.as("a"),
-        intersecting(col("a.min_key"), col("a.max_key"), col("u.min_key"), col("u.max_key")),
-        "left"
-      )
-      .select(
-        col("u.range_id").as("unique_range"),
-        col("a.range_id").as("active_range"),
-        minMax(col("u.min_key"), col("u.max_key")).as("min-max")
-      )
+    val keepAddresses =
+      keepRangeIDs.repartition(numAddressPartitions).flatMap(rangeGetter.getRangeAddresses(_, repo))
 
-    // group unique_ranges and active_ranges by min-max
-    // unique_ranges: Set[String] | active_ranges: Set[String] | min-max
-    // for each row, unique_ranges contains ranges with exact min-max, active_ranges contain ranges intersecting with min-max
-    val groupByMinMax = joinActiveByRange
-      .groupBy("min-max")
-      .agg(
-        collect_set("unique_range").alias("unique_ranges"),
-        collect_set("active_range").alias("active_ranges")
-      )
-
-    // add a column of all addresses contained only in unique ranges
-    // for every Row - [ collection of unique ranges | collection of active ranges] the column would contain a collection of addresses existing only in unique ranges
-    val addresses = groupByMinMax.withColumn(
-      "addresses",
-      left_anti_join_addresses(col("unique_ranges"), col("active_ranges"))
-    )
-
-    addresses
-      .select(explode(col("addresses")).as("addresses"))
-      .select(
-        col("addresses._1").as("key"),
-        col("addresses._2").as("address"),
-        col("addresses._3").as("relative"),
-        col("addresses._4").as("last_modified")
-      )
+    println(s"getAddressesToDelete: use $numAddressPartitions partitions for addresses")
+    val addressPartitioner = new HashPartitioner(numAddressPartitions)
+    minus(expiredAddresses, keepAddresses, addressPartitioner)
   }
 
   def getExpiredAddresses(
       repo: String,
       runID: String,
       commitDFLocation: String,
-      spark: SparkSession,
-      apiConf: APIConfigurations,
-      hcValues: Broadcast[ConfMap]
-  ): Dataset[Row] = {
-    val commitsDF = getCommitsDF(runID, commitDFLocation, spark)
-    val rangesDF = getRangesDFFromCommits(commitsDF, repo, apiConf, hcValues)
-    val expired = getExpiredEntriesFromRanges(rangesDF, apiConf, repo, hcValues)
+      numRangePartitions: Int,
+      numAddressPartitions: Int
+  ): Dataset[String] = {
+    import spark.implicits._
 
-    val activeRangesDF = rangesDF.where("!expired")
-    subtractDeduplications(expired, activeRangesDF, apiConf, repo, spark, hcValues)
-  }
+    val commitsDF = getCommitsDF(runID, commitDFLocation)
 
-  private def subtractDeduplications(
-      expired: Dataset[Row],
-      activeRangesDF: Dataset[Row],
-      apiConf: APIConfigurations,
-      repo: String,
-      spark: SparkSession,
-      hcValues: Broadcast[ConfMap]
-  ): Dataset[Row] = {
-    val activeRangesRDD: RDD[String] =
-      activeRangesDF.select("range_id").rdd.distinct().map(x => x.getString(0))
-    val activeAddresses: RDD[String] = activeRangesRDD
-      .flatMap(range => {
-        getRangeAddresses(range, apiConf, repo, hcValues)
-      })
-      .distinct()
-    val activeAddressesRows: RDD[Row] = activeAddresses.map(x => Row(x))
-    val schema = new StructType().add(StructField("address", StringType, true))
-    val activeDF = spark.createDataFrame(activeAddressesRows, schema)
-    // remove active addresses from delete candidates
-    expired.join(
-      activeDF,
-      expired("address") === activeDF("address"),
-      "leftanti"
-    )
+    val keepCommitsDF = commitsDF.where("!expired").select("commit_id").as[String]
+    val expiredCommitsDF = commitsDF.where("expired").select("commit_id").as[String]
+
+    val keepRangeIDsDF = getRangeIDsForCommits(keepCommitsDF, repo)
+    val expiredRangeIDsDF = getRangeIDsForCommits(expiredCommitsDF, repo)
+
+    getAddressesToDelete(expiredRangeIDsDF,
+                         keepRangeIDsDF,
+                         repo,
+                         numRangePartitions,
+                         numAddressPartitions
+                        )
   }
+}
+
+object GarbageCollector {
+  lazy val spark = SparkSession.builder().appName("GarbageCollector").getOrCreate()
+
+  def getHadoopConfigurationValues(hc: Configuration, prefixes: String*) =
+    hc.iterator.asScala
+      .filter(c => prefixes.exists(c.getKey.startsWith))
+      .map(entry => (entry.getKey, entry.getValue))
+      .toArray
+
+  /** @return a serializable summary of values in hc starting with prefix.
+   */
+  def getHadoopConfigMapper(hc: Configuration, prefixes: String*): ConfigMapper =
+    new ConfigMapper(spark.sparkContext.broadcast(getHadoopConfigurationValues(hc, prefixes: _*)))
 
   def main(args: Array[String]) {
-
-    val spark = SparkSession.builder().appName("GarbageCollector").getOrCreate()
     val hc = spark.sparkContext.hadoopConfiguration
 
     val apiURL = hc.get(LAKEFS_CONF_API_URL_KEY)
@@ -328,9 +232,8 @@ object GarbageCollector {
           .toEpochSecond(ZoneOffset.UTC)
       )
     }
-    val apiClient = ApiClient.get(
-      APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout)
-    )
+    val apiConf = APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout)
+    val apiClient = ApiClient.get(apiConf)
     val storageType = apiClient.getBlockstoreType()
 
     if (storageType == StorageUtils.StorageTypeS3 && args.length != 2) {
@@ -356,16 +259,16 @@ object GarbageCollector {
     // needed FileSystems.
     val hcValues = spark.sparkContext.broadcast(getHadoopConfigurationValues(hc, "fs.", "lakefs."))
 
-    var gcRules: String = ""
-    try {
-      gcRules = apiClient.getGarbageCollectionRules(repo)
-    } catch {
-      case e: Throwable =>
-        e.printStackTrace()
-        println("No GC rules found for repository: " + repo)
-        // Exiting with a failure status code because users should not really run gc on repos without GC rules.
-        System.exit(2)
-    }
+    val gcRules: String =
+      try {
+        apiClient.getGarbageCollectionRules(repo)
+      } catch {
+        case e: Throwable =>
+          e.printStackTrace()
+          println("No GC rules found for repository: " + repo)
+          // Exiting with a failure status code because users should not really run gc on repos without GC rules.
+          sys.exit(2)
+      }
     var storageNSForHadoopFS = apiClient.getStorageNamespace(repo, StorageClientType.HadoopFS)
     if (!storageNSForHadoopFS.endsWith("/")) {
       storageNSForHadoopFS += "/"
@@ -394,15 +297,20 @@ object GarbageCollector {
     }
     println("apiURL: " + apiURL)
 
-    val expiredAddresses =
-      getExpiredAddresses(
-        repo,
-        runID,
-        gcCommitsLocation,
-        spark,
-        APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout),
-        hcValues
-      ).withColumn("run_id", lit(runID))
+    val configMapper = new ConfigMapper(hcValues)
+    val gc = new GarbageCollector(new LakeFSRangeGetter(apiConf, configMapper), configMapper)
+
+    val numRangePartitions =
+      hc.getInt(LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS, DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS)
+    val numAddressPartitions = hc.getInt(LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS,
+                                         DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS
+                                        )
+
+    val expiredAddresses = gc
+      .getExpiredAddresses(repo, runID, gcCommitsLocation, numRangePartitions, numAddressPartitions)
+      .toDF("address")
+      .withColumn("run_id", lit(runID))
+
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
     expiredAddresses.write
       .partitionBy("run_id")
@@ -419,27 +327,27 @@ object GarbageCollector {
       storageNSForSdkClient += "/"
     }
 
-    var removed =
+    val removed =
       if (hc.getBoolean(LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, false))
         spark.emptyDataFrame
       else
-        remove(storageNSForSdkClient,
+        remove(configMapper,
+               storageNSForSdkClient,
                gcAddressesLocation,
                expiredAddresses,
                runID,
                region,
-               hcValues,
                storageType
               )
 
-    val commitsDF = getCommitsDF(runID, gcCommitsLocation, spark)
+    val commitsDF = gc.getCommitsDF(runID, gcCommitsLocation)
     val reportLogsDst = concatToGCLogsPrefix(storageNSForHadoopFS, "summary")
     val reportExpiredDst = concatToGCLogsPrefix(storageNSForHadoopFS, "expired_addresses")
 
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
     writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
     writeParquetReport(expiredAddresses, reportExpiredDst, time)
-    writeJsonSummary(reportLogsDst, removed.count(), gcRules, hcValues, time)
+    writeJsonSummary(configMapper, reportLogsDst, removed.count(), gcRules, time)
 
     removed
       .withColumn("run_id", lit(runID))
@@ -465,17 +373,16 @@ object GarbageCollector {
   }
 
   def bulkRemove(
+      configMapper: ConfigMapper,
       readKeysDF: DataFrame,
       storageNamespace: String,
       region: String,
-      hcValues: Broadcast[ConfMap],
       storageType: String
   ): Dataset[String] = {
-    val bulkRemover =
-      BulkRemoverFactory(storageType, configurationFromValues(hcValues), storageNamespace, region)
-    val bulkSize = bulkRemover.getMaxBulkSize()
-    val spark = org.apache.spark.sql.SparkSession.active
     import spark.implicits._
+    val bulkRemover =
+      BulkRemoverFactory(storageType, configMapper.configuration, storageNamespace, region)
+    val bulkSize = bulkRemover.getMaxBulkSize()
     val repartitionedKeys = repartitionBySize(readKeysDF, bulkSize, "address")
     val bulkedKeyStrings = repartitionedKeys
       .select("address")
@@ -486,11 +393,8 @@ object GarbageCollector {
         // mapPartitions lambda executions are sent over to Spark executors, the executors don't have access to the
         // bulkRemover created above because it was created on the driver and it is not a serializeable object. Therefore,
         // we create new bulkRemovers.
-        val bulkRemover = BulkRemoverFactory(storageType,
-                                             configurationFromValues(hcValues),
-                                             storageNamespace,
-                                             region
-                                            )
+        val bulkRemover =
+          BulkRemoverFactory(storageType, configMapper.configuration, storageNamespace, region)
         iter
           .grouped(bulkSize)
           .flatMap(bulkRemover.deleteObjects(_, storageNamespace))
@@ -498,21 +402,19 @@ object GarbageCollector {
   }
 
   def remove(
+      configMapper: ConfigMapper,
       storageNamespace: String,
       addressDFLocation: String,
       expiredAddresses: Dataset[Row],
       runID: String,
       region: String,
-      hcValues: Broadcast[ConfMap],
       storageType: String
   ) = {
     println("addressDFLocation: " + addressDFLocation)
 
-    val df = expiredAddresses
-      .where(col("run_id") === runID)
-      .where(col("relative") === true)
+    val df = expiredAddresses.where(col("run_id") === runID)
 
-    bulkRemove(df, storageNamespace, region, hcValues, storageType).toDF("addresses")
+    bulkRemove(configMapper, df, storageNamespace, region, storageType).toDF("addresses")
   }
 
   private def writeParquetReport(
@@ -526,14 +428,14 @@ object GarbageCollector {
   }
 
   private def writeJsonSummary(
+      configMapper: ConfigMapper,
       dstRoot: String,
       numDeletedObjects: Long,
       gcRules: String,
-      hcValues: Broadcast[ConfMap],
       time: String
   ) = {
     val dstPath = new Path(s"${dstRoot}/dt=${time}/summary.json")
-    val dstFS = dstPath.getFileSystem(configurationFromValues(hcValues))
+    val dstFS = dstPath.getFileSystem(configMapper.configuration)
     val jsonSummary = JObject("gc_rules" -> gcRules, "num_deleted_objects" -> numDeletedObjects)
 
     val stream = dstFS.create(dstPath)

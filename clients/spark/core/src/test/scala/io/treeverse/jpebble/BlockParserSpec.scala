@@ -20,10 +20,10 @@ import scala.io.Source
 class BlockReadableSpec extends AnyFunSpec with Matchers {
 
   describe("instantiate BlockReadableFileChannel") {
-    describe("with null file channel") {
-      it("should fail with a Null Pointer Exception") {
-        assertThrows[NullPointerException] {
-          new BlockReadableFileChannel(null)
+    describe("with null file") {
+      it("should fail with an IllegalArgumentException") {
+        assertThrows[IllegalArgumentException] {
+          new BlockReadableFile(null)
         }
       }
     }
@@ -229,7 +229,7 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
       sstContents.close()
       out.close()
 
-      val in = new BlockReadableFileChannel(new java.io.FileInputStream(tempFile).getChannel)
+      val in = new BlockReadableFile(new java.io.RandomAccessFile(tempFile, "r"))
       try {
         test(in)
       } finally {
@@ -454,7 +454,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
     val tmpSstFile = copyTestFile(baseFileName, ".sst")
     val tmpJsonFile = copyTestFile(baseFileName, ".json")
 
-    val in = new BlockReadableFileChannel(new java.io.FileInputStream(tmpSstFile).getChannel)
+    val in = new BlockReadableFile(new java.io.RandomAccessFile(tmpSstFile, "r"))
     try {
       val jsonString = os.read(os.Path(tmpJsonFile.getAbsolutePath))
       val data = ujson.read(jsonString)
@@ -470,7 +470,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
       test: (BlockReadable, Seq[(String, String)], Long) => Any
   ) = {
     val tmpFile = copyTestFile(baseFileName, "")
-    val in = new BlockReadableFileChannel(new java.io.FileInputStream(tmpFile).getChannel)
+    val in = new BlockReadableFile(new java.io.RandomAccessFile(tmpFile, "r"))
     try {
       test(in, null, tmpFile.length())
     } finally {

@@ -3,7 +3,6 @@ package io.treeverse.jpebble
 import org.xerial.snappy.Snappy
 
 import java.io.IOException
-import java.nio.ByteBuffer
 import java.util.zip.Checksum;
 import org.xerial.snappy.{PureJavaCrc32C => CRC32C}
 
@@ -16,7 +15,7 @@ case class BlockHandle(offset: Long, size: Long) {
 
 case class IndexBlockHandles(metaIndex: BlockHandle, index: BlockHandle)
 
-class BadFileFormatException(msg: String) extends IOException(msg)
+class BadFileFormatException(msg: String, cause: Throwable = null) extends IOException(msg, cause)
 
 /** A wrapper for Iterator that counts calls to next.
  *
@@ -121,13 +120,8 @@ object BlockParser {
   val INDEX_TYPE_KEY = "rocksdb.block.based.table.index.type".getBytes
   val INDEX_TYPE_TWO_LEVEL = 2
 
-  def update(checksum: Checksum, buf: ByteBuffer, offset: Int, length: Int) {
-    if (buf.hasArray()) {
-      checksum.update(buf.array(), buf.position() + buf.arrayOffset() + offset, length)
-    } else {
-      val start = buf.position() + offset
-      (start until start + length).foreach((b) => checksum.update(buf.get(b)))
-    }
+  def update(checksum: Checksum, buf: Array[Byte], offset: Int, length: Int) {
+    checksum.update(buf.array, offset, length)
   }
 
   def readEnd(bytes: Iterator[Byte]) =
@@ -221,7 +215,7 @@ object BlockParser {
    */
   def startBlockParse(block: IndexedBytes): IndexedBytes = {
     val crc = new CRC32C()
-    update(crc, block.toByteBuffer, 0, block.size - blockTrailerLen + 1)
+    update(crc, block.bytes, block.from, block.size - blockTrailerLen + 1)
     val computedCRC = fixupCRC(crc.getValue().toInt)
     val expectedCRC = readFixedInt(
       block.slice(block.size - blockTrailerLen + 1, block.size).iterator
@@ -236,13 +230,16 @@ object BlockParser {
     compressionType match {
       case COMPRESSION_BLOCK_TYPE_NONE => data
       case COMPRESSION_BLOCK_TYPE_SNAPPY => {
-        val dataBytes = data.toByteBuffer
-        if (!Snappy.isValidCompressedBuffer(dataBytes)) {
-          throw new BadFileFormatException("Bad Snappy-compressed data")
+        val dataBytes = data.bytes
+        try {
+          val uncompressedLength = Snappy.uncompressedLength(dataBytes, data.from, data.size)
+          val uncompressed = new Array[Byte](uncompressedLength)
+          Snappy.uncompress(dataBytes, data.from, data.size, uncompressed, 0)
+          IndexedBytes.create(uncompressed)
+        } catch {
+          case e: IOException =>
+            throw new BadFileFormatException(s"Bad Snappy-compressed data", e)
         }
-        val uncompressed = ByteBuffer.allocateDirect(Snappy.uncompressedLength(dataBytes))
-        Snappy.uncompress(dataBytes, uncompressed)
-        IndexedBytes.create(uncompressed)
       }
       case _ => throw new BadFileFormatException(s"Unknown compression type $compressionType")
     }
