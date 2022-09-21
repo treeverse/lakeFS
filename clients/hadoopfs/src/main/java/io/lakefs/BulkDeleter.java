@@ -16,81 +16,66 @@ import java.util.Queue;
 import java.util.Set;
 
 class BulkDeleter implements Closeable {
-  private static final int defaultBulkSize = 1000;
+    private static final int defaultBulkSize = 1000;
 
-  private final ExecutorService executor;
-  private final Callback callback;
-  private final String repository;
-  private final String branch;
-  private final int bulkSize;
+    private final ExecutorService executor;
+    private final Callback callback;
+    private final String repository;
+    private final String branch;
+    private final int bulkSize;
 
-  private PathList pathList;
-  // TODO(ariels): Configure this!
-  private final int concurrency = 5;
-  private Queue<Future<ObjectErrorList>> deletions = new ArrayDeque();
+    private PathList pathList;
+    // TODO(ariels): Configure this!
+    private final int concurrency = 5;
+    private Queue<Future<ObjectErrorList>> deletions = new ArrayDeque();
 
-  public static interface Callback {
-    ObjectErrorList apply(String repository, String branch, PathList pathList) throws ApiException;
-  }
-
-  public static class DeleteFailuresException extends IOException {
-    private final ObjectErrorList errorList;
-
-    public DeleteFailuresException(ObjectErrorList errorList) {
-      super("failed to delete: " + errorList.toString());
-      this.errorList = errorList;
+    public static interface Callback {
+        ObjectErrorList apply(String repository, String branch, PathList pathList) throws ApiException;
     }
-  }
 
-  /**
-   * Construct a BulkDeleter to bulk-delete objects on branch in repository,
-   * using callback on executor (which should be single-threaded for
-   * correctness).
-   */
-  BulkDeleter(ExecutorService executor, Callback callback, String repository, String branch, int bulkSize) {
-    this.executor = executor;
-    this.callback = callback;
-    this.repository = repository;
-    this.branch = branch;
-    if (bulkSize <= 0) {
-      bulkSize = defaultBulkSize;
-    }
-    this.bulkSize = bulkSize;
-  }
+    public static class DeleteFailuresException extends IOException {
+        private final ObjectErrorList errorList;
 
-  BulkDeleter(ExecutorService executor, Callback callback, String repository, String branch) {
-    this(executor, callback, repository, branch, defaultBulkSize);
-  }
-
-  /**
-   * Add another key to be deleted.  If a bulk is ready, delete it.  Any
-   * errors thrown may be related to previously-added keys.
-   */
-  public synchronized void add(String key) throws IOException, DeleteFailuresException {
-    if (pathList == null) {
-      pathList = new PathList();
-    }
-    pathList.addPathsItem(key);
-    if (pathList.getPaths().size() >= bulkSize) {
-      startDeletingUnlocked();
-    }
-  }
-
-  /**
-   * Start deleting everything in pathList and empty it.  Must call locked.
-   */
-  private void startDeletingUnlocked() throws IOException, DeleteFailuresException {
-    maybeWaitForDeletionUnlocked();
-    PathList toDelete = pathList;
-    pathList = null;
-    deletions.add(executor.submit(new Callable() {
-        @Override
-        public ObjectErrorList call() throws ApiException, InterruptedException, DeleteFailuresException {
-          ObjectErrorList ret = callback.apply(repository, branch, toDelete);
-          return ret;
+        public DeleteFailuresException(ObjectErrorList errorList) {
+            super("failed to delete: " + errorList.toString());
+            this.errorList = errorList;
         }
-      }));
-  }
+    }
+
+    /**
+     * Construct a BulkDeleter to bulk-delete objects on branch in repository,
+     * using callback on executor (which should be single-threaded for
+     * correctness).
+     */
+    BulkDeleter(ExecutorService executor, Callback callback, String repository, String branch, int bulkSize) {
+        System.out.printf("[DEBUG] start for %s %s bulk %d\n", repository, branch, bulkSize);
+        this.executor = executor;
+        this.callback = callback;
+        this.repository = repository;
+        this.branch = branch;
+        if (bulkSize <= 0) {
+            bulkSize = defaultBulkSize;
+        }
+        this.bulkSize = bulkSize;
+    }
+
+    BulkDeleter(ExecutorService executor, Callback callback, String repository, String branch) {
+        this(executor, callback, repository, branch, defaultBulkSize);
+    }
+
+    /**
+     * Add another key to be deleted.  If a bulk is ready, delete it.  Any
+     * errors thrown may be related to previously-added keys.
+     */
+    public synchronized void add(String key) throws IOException, DeleteFailuresException {
+        if (pathList == null) {
+            pathList = new PathList();
+        }
+        pathList.addPathsItem(key);
+        if (pathList.getPaths().size() >= bulkSize) {
+            startDeletingUnlocked();
+        }
+    }
 
     /**
      * Close this BulkDeleter, possibly performing one last deletion.
@@ -170,4 +155,4 @@ class BulkDeleter implements Closeable {
             throw new IOException("wait for deletion", ie);
         }
     }
-  }
+}
