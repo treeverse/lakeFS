@@ -111,7 +111,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 			WithRegion("us-east-1").
 			WithEndpoint(s3Endpoint).
 			WithDisableSSL(true).
-
+			WithS3ForcePathStyle(true).
 			WithCredentials(credentials.NewCredentials(
 				&credentials.StaticProvider{
 					Value: credentials.Value{
