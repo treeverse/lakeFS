@@ -54,7 +54,7 @@ var kvGetCmd = &cobra.Command{
 
 var kvScanCmd = &cobra.Command{
 	Use:    "scan <partition key> [<key>]",
-	Short:  "Scan through keys and values under the given partition. An optional key cna be specified as a starting point (inclusive)",
+	Short:  "Scan through keys and values under the given partition. An optional key can be specified as a starting point (inclusive)",
 	Hidden: true,
 	Args:   cobra.RangeArgs(ScanCmdMinArgs, ScanCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
