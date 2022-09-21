@@ -1,4 +1,9 @@
 # Changelog
+## v0.3.0 - 2022-09-21
+What's new:
+- Add retries mechanism (#4190)
+- Improve performance (#4194)
+
 ## v0.2.3 - 2022-09-11
 - Performance improvements (#4097, #4099, #4110)
 - Fix bug: parsing problems in Azure (#4081)
