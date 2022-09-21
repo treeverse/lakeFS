@@ -232,7 +232,7 @@ public class LakeFSFileSystem extends FileSystem {
         OutputStream physicalOut = createStream.apply(physicalFs, physicalPath);
         MetadataClient metadataClient = new MetadataClient(physicalFs);
         LinkOnCloseOutputStream out = new LinkOnCloseOutputStream(this,
-                stagingLoc, objectLoc, physicalUri, metadataClient, physicalOut);
+                                                                  stagingLoc, objectLoc, physicalUri, metadataClient, physicalOut);
         // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
         return new FSDataOutputStream(out, null);
     }
@@ -491,20 +491,21 @@ public class LakeFSFileSystem extends FileSystem {
                 deleted = deleteHelper(loc);
             } else {
                 ObjectLocation location = pathToObjectLocation(path);
-                BulkDeleter deleter = newDeleter(location.getRepository(), location.getRef());
-                ListingIterator iterator = new ListingIterator(path, true, listAmount);
-                iterator.setRemoveDirectory(false);
-                while (iterator.hasNext()) {
-                    LakeFSFileStatus fileStatus = iterator.next();
-                    ObjectLocation fileLoc = pathToObjectLocation(fileStatus.getPath());
-                    if (fileStatus.isDirectory()) {
-                        fileLoc = fileLoc.toDirectory();
+                try (BulkDeleter deleter = newDeleter(location.getRepository(), location.getRef())) {
+                    ListingIterator iterator = new ListingIterator(path, true, listAmount);
+                    iterator.setRemoveDirectory(false);
+                    while (iterator.hasNext()) {
+                        LakeFSFileStatus fileStatus = iterator.next();
+                        ObjectLocation fileLoc = pathToObjectLocation(fileStatus.getPath());
+                        if (fileStatus.isDirectory()) {
+                            fileLoc = fileLoc.toDirectory();
+                        }
+                        deleter.add(fileLoc.getPath());
                     }
-                    deleter.add(fileLoc.getPath());
+                } catch (BulkDeleter.DeleteFailuresException e) {
+                    LOG.error("delete(%s, %b): %s", path, recursive, e.toString());
+                    deleted = false;
                 }
-                // If loop fails on an exception, delete _as little as
-                // possible_, do *not* close the last batch.
-                deleter.close();
             }
         } else {
             deleted = deleteHelper(loc);

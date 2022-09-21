@@ -134,24 +134,83 @@ class BulkDeleter implements Closeable {
       Future<ObjectErrorList> deletion = deletions.poll();
       if (deletion == null) return;
 
-      ObjectErrorList errors = deletion.get();
-      if (errors != null && errors.getErrors() != null && !errors.getErrors().isEmpty()) {
-        throw new DeleteFailuresException(errors);
-      }
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      if (cause instanceof DeleteFailuresException) {
-        throw (DeleteFailuresException)cause;
-      } else if (cause instanceof IOException) {
-        throw (IOException)cause;
-      } else if (cause instanceof Error) {
-        // Don't wrap serious errors.
-        throw (Error)cause;
-      } else {
-        throw new IOException("failed to wait for bulk delete", cause);
-      }
-    } catch (InterruptedException ie) {
-      throw new IOException("wait for deletion", ie);
+    /**
+     * Close this BulkDeleter, possibly performing one last deletion.
+     *
+     * @throws DeleteFailuresException if last deletion did not (entirely) succeed.
+     */
+    @Override
+    public synchronized void close() throws IOException, DeleteFailuresException {
+        if (pathList != null && !pathList.getPaths().isEmpty()) {
+            startDeletingUnlocked();
+        }
+        drainDeletionsUnlocked();
+    }
+
+    /**
+     * Start deleting everything in pathList and empty it.  Must call locked.
+     */
+    private void startDeletingUnlocked() throws IOException, DeleteFailuresException {
+        maybeWaitForDeletionUnlocked();
+        PathList toDelete = pathList;
+        pathList = null;
+        deletions.add(executor.submit(new Callable() {
+                @Override
+                public ObjectErrorList call() throws ApiException, InterruptedException, DeleteFailuresException {
+                    ObjectErrorList ret = callback.apply(repository, branch, toDelete);
+                    String retString = ret != null ? ret.toString() : "<null>";
+                    return ret;
+                }
+            }));
+    }
+
+    /**
+     * Wait for deletion callbacks to end until deletions has space.  Must
+     * call locked.
+     *
+     * @throws DeleteFailuresException if deletion did not (entirely) succeed.
+     */
+    private void maybeWaitForDeletionUnlocked() throws DeleteFailuresException, IOException {
+        while (deletions.size() >= concurrency) {
+            waitForOneDeletionUnlocked();
+        }
+    }
+
+    /**
+     * Wait for deletion callbacks to end until deletions has space.  Must
+     * call locked.
+     *
+     * @throws DeleteFailuresException if deletion did not (entirely) succeed.
+     */
+    private void drainDeletionsUnlocked() throws DeleteFailuresException, IOException {
+        while (!deletions.isEmpty()) {
+            waitForOneDeletionUnlocked();
+        }
+    }
+
+    private void waitForOneDeletionUnlocked() throws DeleteFailuresException, IOException {
+        try {
+            Future<ObjectErrorList> deletion = deletions.poll();
+            if (deletion == null) return;
+
+            ObjectErrorList errors = deletion.get();
+            if (errors != null && errors.getErrors() != null && !errors.getErrors().isEmpty()) {
+                throw new DeleteFailuresException(errors);
+            }
+        } catch (ExecutionException e) {
+            // Unwrap and re-throw e (usually)
+            Throwable cause = e.getCause();
+            if (cause instanceof IOException) {
+                throw (IOException)cause;
+            } else if (cause instanceof Error) {
+                // Don't wrap serious errors.
+                throw (Error)cause;
+            } else {
+                throw new IOException("failed to wait for bulk delete", cause);
+            }
+        } catch (InterruptedException ie) {
+            throw new IOException("wait for deletion", ie);
+        }
     }
   }
 }
