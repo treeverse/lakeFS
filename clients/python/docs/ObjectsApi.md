@@ -219,7 +219,6 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | Delete objects response |  -  |
-**204** | all requested objects successfully deleted |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
