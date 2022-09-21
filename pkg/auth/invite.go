@@ -11,7 +11,7 @@ import (
 
 type InviteHandler interface {
 	InviteUser(ctx context.Context, email string) error
-	IsInviteSupported() bool
+	IsInviteSupported(smtpHost string) bool
 }
 
 type EmailInviteHandler struct {
@@ -61,6 +61,6 @@ func (i *EmailInviteHandler) InviteUser(ctx context.Context, email string) error
 	return i.inviteUserRequest(email)
 }
 
-func (i *EmailInviteHandler) IsInviteSupported() bool {
-	return i.emailer != nil
+func (i *EmailInviteHandler) IsInviteSupported(smtpHost string) bool {
+	return i.emailer != nil && smtpHost != ""
 }
