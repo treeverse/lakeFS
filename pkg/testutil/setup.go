@@ -37,7 +37,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	viper.SetDefault("setup_lakefs", true)
 	viper.SetDefault("setup_lakefs_timeout", defaultSetupTimeout)
 	viper.SetDefault("endpoint_url", "http://localhost:8000")
-	viper.SetDefault("s3_endpoint", "http://localhost:8000")
+	viper.SetDefault("s3_endpoint", "s3.local.lakefs.io:8000")
 	viper.SetDefault("storage_namespace", fmt.Sprintf("s3://%s", params.StorageNS))
 	viper.SetDefault("blockstore_type", block.BlockstoreTypeS3)
 	viper.SetDefault("version", "dev")
@@ -111,7 +111,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 			WithRegion("us-east-1").
 			WithEndpoint(s3Endpoint).
 			WithDisableSSL(true).
-			WithS3ForcePathStyle(true).
+
 			WithCredentials(credentials.NewCredentials(
 				&credentials.StaticProvider{
 					Value: credentials.Value{
