@@ -106,7 +106,11 @@ const EntryRow = ({repo, reference, path, entry, onDelete, showActions}) => {
     } else if (entry.diff_type === 'removed') {
         button = (<span>{buttonText}</span>);
     } else {
-        button = (<PathLink repoId={repo.id} reference={reference} path={entry.path}>{buttonText}</PathLink>);
+        const filePathParams = {
+            objectName: query.path,
+            ...params,
+        };
+        button = (<Link href={{pathname: '/repositories/:repoId/objects/:objectName', query, params: filePathParams}}>{buttonText}</Link>);
     }
 
     let size;
@@ -225,7 +229,7 @@ const buildPathURL = (params, query) => {
     return {pathname: '/repositories/:repoId/objects', params, query};
 };
 
-export const URINavigator = ({ repo, reference, path, relativeTo = "", pathURLBuilder = buildPathURL }) => {
+export const URINavigator = ({ repo, reference, path, relativeTo = "", pathURLBuilder = buildPathURL, trailingSlash = true }) => {
     const parts = pathParts(path);
     const params = {repoId: repo.id};
 
@@ -253,7 +257,7 @@ export const URINavigator = ({ repo, reference, path, relativeTo = "", pathURLBu
                 return (
                     <span key={i}>
                         <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
-                        <strong>{'/'}</strong>
+                        { trailingSlash && <strong>{'/'}</strong> }
                     </span>
                 );
             })}

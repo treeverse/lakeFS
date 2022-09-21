@@ -612,7 +612,7 @@ class Objects {
         }
     }
 
-    async get(repoId, ref, path) {
+    async get(repoId, ref, path, includeHeaders = false) {
         const query = qs({path});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?`+query, {
             method: 'GET',
@@ -620,7 +620,14 @@ class Objects {
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
-        return response.text()
+        if (!includeHeaders) {
+            return response.text()
+        }
+
+        return {
+            responseText: await response.text(),
+            headers: response.headers,
+        }
     }
 
     async getStat(repoId, ref, path) {

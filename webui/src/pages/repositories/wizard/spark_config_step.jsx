@@ -24,6 +24,18 @@ async function uploadAndCommitReadme(repoId, branchName, importLocation) {
     await commits.commit(repoId, branchName, 'Add Spark quickstart README', {user: 'Spark quickstart'},);
 }
 
+async function uploadAndCommitSampleNotebook(repoId, branchName, importLocation) {
+    const SPARK_SAMPLE_NOTEBOOK_TEMPLATE_NAME = 'python.notebook.ipynb.tt';
+    const notebookProp = { repo: repoId, branch: branchName, ...lakeFSURLProp };
+    if (importLocation) {
+        notebookProp['import_location'] = importLocation;
+    }
+    const notebookConfig = await templates.expandTemplate(SPARK_SAMPLE_NOTEBOOK_TEMPLATE_NAME, notebookProp);
+    const notebookFile = new File([notebookConfig], 'Spark Demo.ipynb', {type: 'application/x-ipynb+json'});
+    await objects.upload(repoId, branchName, 'Spark Demo.ipynb', notebookFile);
+    await commits.commit(repoId, branchName, 'Added Spark Demo Notebook', {user: 'Spark quickstart'},);
+}
+
 export const SparkConfigStep = ({onComplete=()=>{}, repoId, branchName, importLocation }) => {
     const [selectedIndex, setSelectedIndex] = useState(0);
     const {loading, error, response} = useAPI(async () => {
@@ -31,7 +43,8 @@ export const SparkConfigStep = ({onComplete=()=>{}, repoId, branchName, importLo
         const sparkCoreSiteConfig = templates.expandTemplate(SPARK_CORE_SITE_TEMPLATE_NAME, lakeFSURLProp);
         const sparkDBConfig = templates.expandTemplate(SPARK_DATABRICKS_TEMPLATE_NAME, lakeFSURLProp);
         const readmeGeneration = uploadAndCommitReadme(repoId, branchName, importLocation);
-        await Promise.all([sparkSubmitConfig, sparkCoreSiteConfig, sparkDBConfig, readmeGeneration]);
+        const sampleNotebookGeneration = uploadAndCommitSampleNotebook(repoId, branchName, importLocation);
+        await Promise.all([sparkSubmitConfig, sparkCoreSiteConfig, sparkDBConfig, readmeGeneration, sampleNotebookGeneration]);
         onComplete();
         return [
             {conf: await sparkSubmitConfig, title: 'spark-submit', language: 'bash'},
