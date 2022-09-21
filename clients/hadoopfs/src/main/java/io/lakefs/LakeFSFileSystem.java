@@ -22,6 +22,7 @@ import java.nio.file.AccessDeniedException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -53,7 +54,14 @@ public class LakeFSFileSystem extends FileSystem {
     private FileSystem fsForConfig;
 
     // Currently bulk deletes *must* receive a single-threaded executor!
-    private ExecutorService deleteExecutor = Executors.newSingleThreadExecutor();
+    private ExecutorService deleteExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(r);
+                t.setDaemon(true);
+                return t;
+            }
+        });
 
     private URI translateUri(URI uri) throws java.net.URISyntaxException {
         switch (uri.getScheme()) {

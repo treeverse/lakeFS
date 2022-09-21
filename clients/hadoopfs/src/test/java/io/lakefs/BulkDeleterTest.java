@@ -3,6 +3,7 @@ package io.lakefs;
 import io.lakefs.clients.api.*;
 import io.lakefs.clients.api.model.*;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import org.hamcrest.CustomTypeSafeMatcher;
@@ -13,6 +14,11 @@ import java.io.IOException;
 
 public class BulkDeleterTest {
     protected ExecutorService executorService = Executors.newSingleThreadExecutor();
+
+    @After
+    public void shutdownExecutor() {
+        executorService.shutdown();
+    }
 
     @Test
     public void nothing() throws IOException {
