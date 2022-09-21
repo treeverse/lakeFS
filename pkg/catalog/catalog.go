@@ -7,12 +7,12 @@ import (
 	_ "crypto/sha256"
 	"errors"
 	"fmt"
-	"github.com/hashicorp/go-multierror"
 	"io"
 	"strings"
 	"sync"
 
 	"github.com/cockroachdb/pebble"
+	"github.com/hashicorp/go-multierror"
 	"github.com/hnlq715/golang-lru/simplelru"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -33,6 +33,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/pyramid"
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
 	"github.com/treeverse/lakefs/pkg/validator"
+	"go.uber.org/atomic"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -115,9 +116,7 @@ type Catalog struct {
 	log           logging.Logger
 	walkerFactory WalkerFactory
 	managers      []io.Closer
-	inLogCommits  chan func()
-	done          chan struct{}
-	wg            sync.WaitGroup
+	workpool      *sharedWorkpool
 }
 
 const (
@@ -126,6 +125,7 @@ const (
 	ListTagsLimitMax         = 1000
 	DiffLimitMax             = 1000
 	ListEntriesLimitMax      = 10000
+	SharedWorkers            = 15
 )
 
 var ErrUnknownDiffType = errors.New("unknown graveler difference type")
@@ -203,38 +203,14 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
 	stagingManager := staging.NewManager(ctx, *cfg.KVStore)
 	gStore := graveler.NewKVGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
-
-	const (
-		numWorkers    = 15
-		channelBuffer = 100
-	)
-	inLogCommits := make(chan func(), channelBuffer)
-	done := make(chan struct{})
-	wg := sync.WaitGroup{}
-	for i := 0; i < numWorkers; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for {
-				select {
-				case <-done:
-					return
-				case f := <-inLogCommits:
-					f()
-				}
-			}
-		}()
-	}
-
+	workpool := newSharedWorkpool(SharedWorkers)
 	return &Catalog{
 		BlockAdapter:  tierFSParams.Adapter,
 		Store:         gStore,
 		log:           logging.Default().WithField("service_name", "entry_catalog"),
 		walkerFactory: cfg.WalkerFactory,
-		managers:      []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
-		done:          done,
-		inLogCommits:  inLogCommits,
-		wg:            wg,
+		workpool:      workpool,
+		managers:      []io.Closer{sstableManager, sstableMetaManager, workpool, &ctxCloser{cancelFn}},
 	}, nil
 }
 
@@ -1072,19 +1048,22 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	safeCache := &safeCache{cache: commitCache}
 
 	childCtx, cancel := context.WithCancel(ctx)
-	const (
-		numReadResults = 3
-	)
+	const numReadResults = 3
 	out := make(chan compareJobResult, numReadResults)
 
 	paths := params.PathList
 	var g multierror.Group
+	createdTasks := atomic.NewInt64(-1)
 
 	g.Go(func() error {
-		for num := 0; it.Next(); num++ {
+		num := 0
+		for ; it.Next(); num++ {
 			numm := num
 			vall := it.Value()
-			c.inLogCommits <- func() {
+			if childCtx.Err() != nil {
+				break
+			}
+			c.workpool.incoming <- func() {
 				select {
 				case <-childCtx.Done():
 					// this job is no longer needed
@@ -1126,11 +1105,9 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 				out <- compareJobResult{num: numm, log: commit}
 			}
 		}
+		createdTasks.Store(int64(num))
 		return it.Err()
 	})
-	if err := it.Err(); err != nil {
-		return nil, false, err
-	}
 
 	results := map[int]*CommitLog{}
 	g.Go(func() error {
@@ -1144,20 +1121,15 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 					return nil
 				}
 				if res.err != nil {
-					drainAndWaitForWorkers(cancel, out)
+					drain(cancel, out)
 					return res.err
 				}
 				results[res.num] = res.log
 
-				if res.log == nil {
-					// no result
-					continue
-				}
-
 				// scan the results array to see if we got the number of results needed
-				_, done := findAllCommits(results, params)
+				_, done := findAllCommits(results, params, createdTasks)
 				if done {
-					drainAndWaitForWorkers(cancel, out)
+					drain(cancel, out)
 					return nil
 				}
 			}
@@ -1169,7 +1141,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 		return nil, false, err
 	}
 
-	commits, _ := findAllCommits(results, params)
+	commits, _ := findAllCommits(results, params, createdTasks)
 	hasMore := false
 	if len(commits) > params.Amount {
 		hasMore = true
@@ -1178,17 +1150,20 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	return commits, hasMore, nil
 }
 
-func drainAndWaitForWorkers(cancel context.CancelFunc, compareJobResults chan compareJobResult) {
+func drain(cancel context.CancelFunc, compareJobResults chan compareJobResult) {
 	cancel()
 
-	drained := false
-	for !drained {
-		_, ok := <-compareJobResults
-		drained = !ok
+	for {
+		select {
+		case <-compareJobResults:
+			// nothing to do - continue to drain
+		default:
+			return
+		}
 	}
 }
 
-func findAllCommits(results map[int]*CommitLog, params LogParams) ([]*CommitLog, bool) {
+func findAllCommits(results map[int]*CommitLog, params LogParams, num *atomic.Int64) ([]*CommitLog, bool) {
 	var commits []*CommitLog
 	for i := 0; i < len(results); i++ {
 		log, ok := results[i]
@@ -1209,13 +1184,12 @@ func findAllCommits(results map[int]*CommitLog, params LogParams) ([]*CommitLog,
 		}
 	}
 
+	if len(results) == int(num.Load()) {
+		return commits, true
+	}
+
 	// return the commits found, although they are less than max
 	return commits, false
-}
-
-type compareJob struct {
-	commitRecord *graveler.CommitRecord
-	num          int
 }
 
 type compareJobResult struct {
@@ -1689,9 +1663,6 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string
 }
 
 func (c *Catalog) Close() error {
-	close(c.done)
-	c.wg.Wait()
-
 	var errs error
 	for _, manager := range c.managers {
 		err := manager.Close()
