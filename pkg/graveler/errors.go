@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
@@ -101,4 +102,21 @@ func (d *DeleteError) Error() string {
 
 func (d *DeleteError) Unwrap() error {
 	return d.Err
+}
+
+// NewMapDeleteErrors map multi error holding DeleteError to a map of object key -> error
+func NewMapDeleteErrors(err error) map[string]error {
+	if err == nil {
+		return nil
+	}
+	m := make(map[string]error)
+	if merr, ok := err.(*multierror.Error); ok {
+		for i := range merr.Errors {
+			var delErr *DeleteError
+			if errors.As(merr.Errors[i], &delErr) {
+				m[string(delErr.Key)] = delErr.Err
+			}
+		}
+	}
+	return m
 }

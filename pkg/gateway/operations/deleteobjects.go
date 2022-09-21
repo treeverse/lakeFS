@@ -32,15 +32,12 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 	}
 
 	// delete all the files and collect responses
-	var (
-		errs      []serde.DeleteError
-		responses []serde.Deleted
-	)
 	// arrays of keys/path to delete, left after authorization check
 	var (
 		keysToDelete  []string
 		pathsToDelete []string
 		refsToDelete  []string
+		errs          []serde.DeleteError
 	)
 	for _, obj := range decodedXML.Object {
 		resolvedPath, err := path.ResolvePath(obj.Key)
@@ -76,8 +73,8 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 		pathsToDelete = append(pathsToDelete, resolvedPath.Path)
 	}
 	if len(pathsToDelete) == 0 {
-		// construct response
-		resp := serde.DeleteResult{Deleted: responses, Error: errs}
+		// construct response - probably we failed with all errors
+		resp := serde.DeleteResult{Error: errs}
 		o.EncodeResponse(w, req, resp, http.StatusOK)
 		return
 	}
@@ -93,7 +90,7 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 
 	var resp serde.DeleteResult
 	if canBatch {
-		// batch - call batch delete and translate error/responses
+		// batch - call batch delete for all keys on ref
 		resp = controller.batchDelete(req.Context(), o.Log(req), o, decodedXML.Quiet, refsToDelete[0], keysToDelete, pathsToDelete)
 	} else {
 		// non batch - call delete for each key
@@ -103,9 +100,6 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 	// construct response - concat what we had so far with delete results
 	if len(errs) > 0 {
 		resp.Error = append(errs, resp.Error...)
-	}
-	if len(responses) > 0 {
-		resp.Deleted = append(responses, resp.Deleted...)
 	}
 	o.EncodeResponse(w, req, resp, http.StatusOK)
 }
@@ -159,7 +153,7 @@ func checkForDeleteError(log logging.Logger, key string, err error) *serde.Delet
 		// issue #1706 - https://github.com/treeverse/lakeFS/issues/1706
 		// Spark trying to delete the path "main/", which we map to branch "main" with an empty path.
 		// Spark expects it to succeed (not deleting anything is a success), instead of returning an error.
-		log.WithField("key", key).Debug("tried to delete with an empty branch")
+		log.Debug("tried to delete with an empty path")
 	case err != nil:
 		log.WithField("key", key).WithError(err).Error("failed deleting object")
 		return &serde.DeleteError{

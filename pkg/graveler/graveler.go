@@ -1453,7 +1453,7 @@ func (g *KVGraveler) Delete(ctx context.Context, repository *RepositoryRecord, b
 
 	return g.safeBranchWrite(ctx, g.log.WithField("key", key).WithField("operation", "delete"),
 		repository, branchID, func(branch *Branch) error {
-			return g.deleteUnsafe(ctx, repository, branch, key)
+			return g.deleteUnsafe(ctx, repository, branch, key, nil)
 		})
 }
 
@@ -1473,8 +1473,9 @@ func (g *KVGraveler) DeleteBatch(ctx context.Context, repository *RepositoryReco
 	var m *multierror.Error
 	err = g.safeBranchWrite(ctx, g.log.WithField("operation", "delete_keys"),
 		repository, branchID, func(branch *Branch) error {
+			var cachedMetaRangeID MetaRangeID // used to cache the committed branch metarange ID
 			for _, key := range keys {
-				err := g.deleteUnsafe(ctx, repository, branch, key)
+				err := g.deleteUnsafe(ctx, repository, branch, key, &cachedMetaRangeID)
 				if err != nil {
 					m = multierror.Append(m, &DeleteError{Key: key, Err: err})
 				}
@@ -1484,7 +1485,7 @@ func (g *KVGraveler) DeleteBatch(ctx context.Context, repository *RepositoryReco
 	return err
 }
 
-func (g *KVGraveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecord, branch *Branch, key Key) error {
+func (g *KVGraveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecord, branch *Branch, key Key, cachedMetaRangeID *MetaRangeID) error {
 	// check staging for entry or tombstone
 	val, err := g.getFromStagingArea(ctx, branch, key)
 	switch {
@@ -1503,11 +1504,18 @@ func (g *KVGraveler) deleteUnsafe(ctx context.Context, repository *RepositoryRec
 	}
 
 	// check key in committed - do we need tombstone?
-	commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
-	if err != nil {
-		return err
+	var metaRangeID MetaRangeID
+	if cachedMetaRangeID != nil && *cachedMetaRangeID != "" {
+		metaRangeID = *cachedMetaRangeID
+	} else {
+		commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
+		if err != nil {
+			return err
+		}
+		metaRangeID = commit.MetaRangeID
 	}
-	_, err = g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
+
+	_, err = g.CommittedManager.Get(ctx, repository.StorageNamespace, metaRangeID, key)
 	if err != nil {
 		if !errors.Is(err, ErrNotFound) {
 			// unknown error
@@ -1516,6 +1524,7 @@ func (g *KVGraveler) deleteUnsafe(ctx context.Context, repository *RepositoryRec
 		// key is nowhere to be found
 		return ErrNotFound
 	}
+
 	// found in committed, set tombstone
 	return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
 }
@@ -2805,21 +2814,4 @@ type ProtectedBranchesManager interface {
 func NewRepoInstanceID() string {
 	tm := time.Now().UTC()
 	return xid.NewWithTime(tm).String()
-}
-
-// NewMapDeleteErrors map multi error holding DeleteError to a map of object key -> error
-func NewMapDeleteErrors(err error) map[string]error {
-	if err == nil {
-		return nil
-	}
-	m := make(map[string]error)
-	if merr, ok := err.(*multierror.Error); ok {
-		for i := range merr.Errors {
-			var delErr *DeleteError
-			if errors.As(merr.Errors[i], &delErr) {
-				m[string(delErr.Key)] = delErr.Err
-			}
-		}
-	}
-	return m
 }
