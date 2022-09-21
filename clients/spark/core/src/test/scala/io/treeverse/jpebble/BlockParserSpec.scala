@@ -20,9 +20,9 @@ import scala.io.Source
 class BlockReadableSpec extends AnyFunSpec with Matchers {
 
   describe("instantiate BlockReadableFileChannel") {
-    describe("with null file channel") {
-      it("should fail with a Null Pointer Exception") {
-        assertThrows[NullPointerException] {
+    describe("with null file") {
+      it("should fail with an IllegalArgumentException") {
+        assertThrows[IllegalArgumentException] {
           new BlockReadableFile(null)
         }
       }
