@@ -66,7 +66,7 @@ func TestDeleteObjectsHostStyleSvc(t *testing.T) {
 		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, file, false)
 	}
 
-	listOut, err := pathStyleSvc.ListObjects(&s3.ListObjectsInput{
+	listOut, err := hostStyleSvc.ListObjects(&s3.ListObjectsInput{
 		Bucket: aws.String(repo),
 		Prefix: aws.String(mainBranch + "/"),
 	})
@@ -74,7 +74,7 @@ func TestDeleteObjectsHostStyleSvc(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, listOut.Contents, numOfObjects)
 
-	deleteOut, err := pathStyleSvc.DeleteObjects(&s3.DeleteObjectsInput{
+	deleteOut, err := hostStyleSvc.DeleteObjects(&s3.DeleteObjectsInput{
 		Bucket: aws.String(repo),
 		Delete: &s3.Delete{
 			Objects: identifiers,
@@ -84,7 +84,7 @@ func TestDeleteObjectsHostStyleSvc(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, deleteOut.Deleted, numOfObjects)
 
-	listOut, err = pathStyleSvc.ListObjects(&s3.ListObjectsInput{
+	listOut, err = hostStyleSvc.ListObjects(&s3.ListObjectsInput{
 		Bucket: aws.String(repo),
 		Prefix: aws.String(mainBranch + "/"),
 	})

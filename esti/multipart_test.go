@@ -41,7 +41,7 @@ func TestMultipartUpload(t *testing.T) {
 		partsConcat = append(partsConcat, parts[i]...)
 	}
 
-	completedParts := uploadMultipartParts(t, logger, resp, parts, 0)
+	completedParts := uploadMultipartParts(t, logger, resp, parts, 0, false)
 
 	completeResponse, err := uploadMultipartComplete(pathStyleSvc, resp, completedParts)
 	require.NoError(t, err, "failed to complete multipart upload")
@@ -64,7 +64,7 @@ func TestMultipartUploadHostStyleClient(t *testing.T) {
 		Key:    aws.String(path),
 	}
 
-	resp, err := pathStyleSvc.CreateMultipartUpload(input)
+	resp, err := hostStyleSvc.CreateMultipartUpload(input)
 	require.NoError(t, err, "failed to create multipart upload")
 	logger.Info("Created multipart upload request")
 
@@ -75,7 +75,7 @@ func TestMultipartUploadHostStyleClient(t *testing.T) {
 		partsConcat = append(partsConcat, parts[i]...)
 	}
 
-	completedParts := uploadMultipartParts(t, logger, resp, parts, 0)
+	completedParts := uploadMultipartParts(t, logger, resp, parts, 0, true)
 
 	completeResponse, err := uploadMultipartComplete(hostStyleSvc, resp, completedParts)
 	require.NoError(t, err, "failed to complete multipart upload")
@@ -88,42 +88,21 @@ func TestMultipartUploadHostStyleClient(t *testing.T) {
 	require.Equal(t, partsConcat, getResp.Body, "uploaded object did not match")
 }
 
-func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte, firstIndex int) []*s3.CompletedPart {
+func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte, firstIndex int, useHostStyleSvc bool) []*s3.CompletedPart {
 	count := len(parts)
 	completedParts := make([]*s3.CompletedPart, count)
 	errs := make([]error, count)
 	var wg sync.WaitGroup
 	wg.Add(count)
+	svc := pathStyleSvc
+	if useHostStyleSvc {
+		svc = hostStyleSvc
+	}
 	for i := 0; i < count; i++ {
 		go func(i int) {
 			defer wg.Done()
 			partNumber := firstIndex + i + 1
-			completedParts[i], errs[i] = uploadMultipartPart(logger, pathStyleSvc, resp, parts[i], partNumber)
-		}(i)
-	}
-	wg.Wait()
-
-	// verify upload completed successfully
-	for i, err := range errs {
-		partNumber := int64(firstIndex + i + 1)
-		assert.NoErrorf(t, err, "error while upload part number %d", partNumber)
-		// verify part number
-		assert.Equal(t, partNumber, *(completedParts[i].PartNumber), "inconsistent part number")
-	}
-	return completedParts
-}
-
-func uploadMultipartPartsHostStyleClient(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte, firstIndex int) []*s3.CompletedPart {
-	count := len(parts)
-	completedParts := make([]*s3.CompletedPart, count)
-	errs := make([]error, count)
-	var wg sync.WaitGroup
-	wg.Add(count)
-	for i := 0; i < count; i++ {
-		go func(i int) {
-			defer wg.Done()
-			partNumber := firstIndex + i + 1
-			completedParts[i], errs[i] = uploadMultipartPart(logger, hostStyleSvc, resp, parts[i], partNumber)
+			completedParts[i], errs[i] = uploadMultipartPart(logger, svc, resp, parts[i], partNumber)
 		}(i)
 	}
 	wg.Wait()

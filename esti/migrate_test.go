@@ -204,7 +204,7 @@ func saveStateInLakeFS(t *testing.T) {
 		}
 		parts = append(parts, stateBytes[i:last])
 	}
-	completedParts := uploadMultipartParts(t, logger, resp, parts, 0)
+	completedParts := uploadMultipartParts(t, logger, resp, parts, 0, false)
 	_, err = uploadMultipartComplete(pathStyleSvc, resp, completedParts)
 	require.NoError(t, err, "writing state file")
 	_, err = client.CommitWithResponse(ctx, migrateStateRepoName, migrateStateBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
@@ -255,7 +255,7 @@ func createAndUploadParts(t *testing.T, logger logging.Logger, resp *s3.CreateMu
 		partsConcat = append(partsConcat, parts[i]...)
 	}
 
-	completedParts := uploadMultipartParts(t, logger, resp, parts, firstIndex)
+	completedParts := uploadMultipartParts(t, logger, resp, parts, firstIndex, false)
 	return partsConcat, completedParts
 }
 
