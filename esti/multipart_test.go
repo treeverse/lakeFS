@@ -55,6 +55,9 @@ func TestMultipartUpload(t *testing.T) {
 }
 
 func TestMultipartUploadHostStyleClient(t *testing.T) {
+	if skipS3HostStyleTests {
+		t.Skip("Skip S3 host-style tests")
+	}
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	file := "multipart_file"

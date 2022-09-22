@@ -70,6 +70,7 @@ var (
 	server       *webhookServer
 
 	testDirectDataAccess = Booleans{false}
+	skipS3HostStyleTests = false
 
 	repositoriesToKeep arrayFlags
 	groupsToKeep       arrayFlags
@@ -263,6 +264,7 @@ func TestMain(m *testing.M) {
 	adminAccessKeyID := flag.String("admin-access-key-id", DefaultAdminAccessKeyId, "lakeFS Admin access key ID")
 	adminSecretAccessKey := flag.String("admin-secret-access-key", DefaultAdminSecretAccessKey, "lakeFS Admin secret access key")
 	cleanupEnv := flag.Bool("cleanup-env-pre-run", false, "Clean repositories, groups, users and polices before running esti tests")
+	skipS3HostStyleTests = *flag.Bool("skip-s3-host-style-tests", false, "Skip s3 host style tests")
 	flag.Var(&repositoriesToKeep, "repository-to-keep", "Repositories to keep in case of pre-run cleanup")
 	flag.Var(&groupsToKeep, "group-to-keep", "Groups to keep in case of pre-run cleanup")
 	flag.Var(&usersToKeep, "user-to-keep", "Users to keep in case of pre-run cleanup")

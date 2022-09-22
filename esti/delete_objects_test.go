@@ -52,6 +52,9 @@ func TestDeleteObjects(t *testing.T) {
 }
 
 func TestDeleteObjectsHostStyleSvc(t *testing.T) {
+	if skipS3HostStyleTests {
+		t.Skip("Skip S3 host-style tests")
+	}
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	const numOfObjects = 10
