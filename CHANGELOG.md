@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.82.0
+
+What's new:
+
+- UI: New file viewer (#4226)
+- Performance improvements: enable delete-objects as part of Graveler (#4205)
+
+Bug fixes:
+
+- Migrate work as part of setup for auth-api installations (#4208)
+- Invite user is enabled when SMTP server is not configured (#4224)
+
 ## v0.81.1
 
 Bug fixes:
