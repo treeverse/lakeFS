@@ -326,7 +326,7 @@ object GarbageCollector {
       storageNSForSdkClient += "/"
     }
 
-    val schema = StructType(Array(StructField("addresses", StringType, nullable = true)))
+    val schema = StructType(Array(StructField("addresses", StringType, nullable = false)))
     val removed =
       if (hc.getBoolean(LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, false)) {
         spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
