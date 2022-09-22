@@ -139,7 +139,7 @@ public class LakeFSFileSystemTest {
         // to program _which_ client should do *what*.  There is no risk of
         // blocking, this client is synchronous.
 
-        lfsClient = mock(LakeFSClient.class);
+        lfsClient = mock(LakeFSClient.class, Answers.RETURNS_SMART_NULLS);
         objectsApi = mock(ObjectsApi.class, Answers.RETURNS_SMART_NULLS);
         when(lfsClient.getObjects()).thenReturn(objectsApi);
         branchesApi = mock(BranchesApi.class, Answers.RETURNS_SMART_NULLS);
@@ -260,7 +260,7 @@ public class LakeFSFileSystemTest {
     public void testDelete_FileExists() throws ApiException, IOException {
         when(objectsApi.statObject("repo", "main", "no/place/file.txt", false))
                 .thenReturn(new ObjectStats().
-                        path("lakefs://repo/main/delete/sample/file.txt").
+                        path("delete/sample/file.txt").
                         pathType(PathTypeEnum.OBJECT).
                         physicalAddress(s3Url("/repo-base/delete")).
                         checksum(UNUSED_CHECKSUM).
@@ -331,7 +331,7 @@ public class LakeFSFileSystemTest {
                 .thenThrow(noSuchFile);
         when(objectsApi.listObjects(eq("repo"), eq("main"), eq(false), eq(""), any(), eq(""), eq("delete/sample/")))
                 .thenReturn(new ObjectStatsList().results(Collections.singletonList(new ObjectStats().
-                        path("lakefs://repo/main/delete/sample/file.txt").
+                        path("delete/sample/file.txt").
                         pathType(PathTypeEnum.OBJECT).
                         physicalAddress(s3Url("/repo-base/delete")).
                         checksum(UNUSED_CHECKSUM).
@@ -366,7 +366,7 @@ public class LakeFSFileSystemTest {
         when(objectsApi.listObjects(eq("repo"), eq("main"), eq(false), eq(""), any(), eq(""), eq("delete/sample/")))
                 .thenReturn(new ObjectStatsList().results(Collections
                         .singletonList(new ObjectStats().
-                                path("lakefs://repo/main/delete/sample/file.txt").
+                                path("delete/sample/file.txt").
                                 pathType(PathTypeEnum.OBJECT).
                                 physicalAddress(s3Url("/repo-base/delete")).
                                 checksum(UNUSED_CHECKSUM).
@@ -390,7 +390,7 @@ public class LakeFSFileSystemTest {
         List<ObjectStats> objects = new ArrayList();
         for (int i = 0; i < numObjects; i++) {
             objects.add(new ObjectStats().
-                        path(String.format("lakefs://repo/main/delete/sample/file%04d.txt", i)).
+                        path(String.format("delete/sample/file%04d.txt", i)).
                         pathType(PathTypeEnum.OBJECT).
                         physicalAddress(s3Url(String.format("/repo-base/delete%04d", i))).
                         checksum(UNUSED_CHECKSUM).
@@ -409,7 +409,8 @@ public class LakeFSFileSystemTest {
             for (int i = start; i < numObjects && i < start + bulkSize; i++) {
                 pl.addPathsItem(String.format("delete/sample/file%04d.txt", i));
             }
-            when(objectsApi.deleteObjects("repo", "main", pl)).thenReturn(new ObjectErrorList());
+            when(objectsApi.deleteObjects(eq("repo"), eq("main"), eq(pl)))
+                .thenReturn(new ObjectErrorList());
         }
         // recursive will always end successfully
         boolean delete = fs.delete(new Path("lakefs://repo/main/delete/sample"), true);
