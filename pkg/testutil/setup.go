@@ -31,7 +31,7 @@ type SetupTestingEnvParams struct {
 	AdminSecretAccessKey string
 }
 
-func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientWithResponsesInterface, *s3.S3, *s3.S3) {
+func SetupTestingEnv(params *SetupTestingEnvParams) (log logging.Logger, apiClient api.ClientWithResponsesInterface, pathStyleSvc *s3.S3, hostStyleSvc *s3.S3) {
 	logger := logging.Default()
 
 	viper.SetDefault("setup_lakefs", true)
@@ -106,32 +106,29 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 
 	s3Endpoint := viper.GetString("s3_endpoint")
 	awsSession := session.Must(session.NewSession())
-	pathStyleSvc := s3.New(awsSession,
-		aws.NewConfig().
-			WithRegion("us-east-1").
-			WithEndpoint(s3Endpoint).
-			WithDisableSSL(true).
-			WithS3ForcePathStyle(true).
-			WithCredentials(credentials.NewCredentials(
-				&credentials.StaticProvider{
-					Value: credentials.Value{
-						AccessKeyID:     viper.GetString("access_key_id"),
-						SecretAccessKey: viper.GetString("secret_access_key"),
-					}})))
+	accessKeyID := viper.GetString("access_key_id")
+	secretAccessKey := viper.GetString("secret_access_key")
 
-	hostStyleSvc := s3.New(awsSession,
-		aws.NewConfig().
-			WithRegion("us-east-1").
-			WithEndpoint(s3Endpoint).
-			WithDisableSSL(true).
-			WithCredentials(credentials.NewCredentials(
-				&credentials.StaticProvider{
-					Value: credentials.Value{
-						AccessKeyID:     viper.GetString("access_key_id"),
-						SecretAccessKey: viper.GetString("secret_access_key"),
-					}})))
+	pathStyleSvc = getS3Client(awsSession, s3Endpoint, false, accessKeyID, secretAccessKey)
+
+	hostStyleSvc = getS3Client(awsSession, s3Endpoint, true, accessKeyID, secretAccessKey)
 
 	return logger, client, pathStyleSvc, hostStyleSvc
+}
+
+func getS3Client(awsSession *session.Session, s3Endpoint string, hostBaseClient bool, accessKeyID string, secretAccessKey string) *s3.S3 {
+	return s3.New(awsSession,
+		aws.NewConfig().
+			WithRegion("us-east-1").
+			WithEndpoint(s3Endpoint).
+			WithDisableSSL(true).
+			WithS3ForcePathStyle(hostBaseClient).
+			WithCredentials(credentials.NewCredentials(
+				&credentials.StaticProvider{
+					Value: credentials.Value{
+						AccessKeyID:     accessKeyID,
+						SecretAccessKey: secretAccessKey,
+					}})))
 }
 
 // ParseEndpointURL parses the given endpoint string

@@ -20,87 +20,53 @@ const (
 	multipartPartSize      = 5 * 1024 * 1024
 )
 
+func testMultipartUpload(t *testing.T, svc *s3.S3, usHostStyleSvc bool) {
+	ctx, logger, repo := setupTest(t)
+	defer tearDownTest(repo)
+	file := "multipart_file"
+	path := mainBranch + "/" + file
+	input := &s3.CreateMultipartUploadInput{
+		Bucket: aws.String(repo),
+		Key:    aws.String(path),
+	}
+
+	resp, err := svc.CreateMultipartUpload(input)
+	require.NoError(t, err, "failed to create multipart upload")
+	logger.Info("Created multipart upload request")
+
+	parts := make([][]byte, multipartNumberOfParts)
+	var partsConcat []byte
+	for i := 0; i < multipartNumberOfParts; i++ {
+		parts[i] = randstr.Bytes(multipartPartSize + i)
+		partsConcat = append(partsConcat, parts[i]...)
+	}
+
+	completedParts := uploadMultipartParts(t, logger, resp, parts, 0, svc)
+
+	completeResponse, err := uploadMultipartComplete(svc, resp, completedParts)
+	require.NoError(t, err, "failed to complete multipart upload")
+
+	logger.WithField("key", completeResponse.Key).Info("Completed multipart request successfully")
+
+	getResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &api.GetObjectParams{Path: file})
+	require.NoError(t, err, "failed to get object")
+	require.Equal(t, http.StatusOK, getResp.StatusCode())
+	require.Equal(t, partsConcat, getResp.Body, "uploaded object did not match")
+}
+
 func TestMultipartUpload(t *testing.T) {
-	ctx, logger, repo := setupTest(t)
-	defer tearDownTest(repo)
-	file := "multipart_file"
-	path := mainBranch + "/" + file
-	input := &s3.CreateMultipartUploadInput{
-		Bucket: aws.String(repo),
-		Key:    aws.String(path),
+	testMultipartUpload(t, pathStyleSvc, false)
+	if !skipS3HostStyleTests {
+		testMultipartUpload(t, hostStyleSvc, true)
 	}
-
-	resp, err := pathStyleSvc.CreateMultipartUpload(input)
-	require.NoError(t, err, "failed to create multipart upload")
-	logger.Info("Created multipart upload request")
-
-	parts := make([][]byte, multipartNumberOfParts)
-	var partsConcat []byte
-	for i := 0; i < multipartNumberOfParts; i++ {
-		parts[i] = randstr.Bytes(multipartPartSize + i)
-		partsConcat = append(partsConcat, parts[i]...)
-	}
-
-	completedParts := uploadMultipartParts(t, logger, resp, parts, 0, false)
-
-	completeResponse, err := uploadMultipartComplete(pathStyleSvc, resp, completedParts)
-	require.NoError(t, err, "failed to complete multipart upload")
-
-	logger.WithField("key", completeResponse.Key).Info("Completed multipart request successfully")
-
-	getResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &api.GetObjectParams{Path: file})
-	require.NoError(t, err, "failed to get object")
-	require.Equal(t, http.StatusOK, getResp.StatusCode())
-	require.Equal(t, partsConcat, getResp.Body, "uploaded object did not match")
 }
 
-func TestMultipartUploadHostStyleClient(t *testing.T) {
-	if skipS3HostStyleTests {
-		t.Skip("Skip S3 host-style tests")
-	}
-	ctx, logger, repo := setupTest(t)
-	defer tearDownTest(repo)
-	file := "multipart_file"
-	path := mainBranch + "/" + file
-	input := &s3.CreateMultipartUploadInput{
-		Bucket: aws.String(repo),
-		Key:    aws.String(path),
-	}
-
-	resp, err := hostStyleSvc.CreateMultipartUpload(input)
-	require.NoError(t, err, "failed to create multipart upload")
-	logger.Info("Created multipart upload request")
-
-	parts := make([][]byte, multipartNumberOfParts)
-	var partsConcat []byte
-	for i := 0; i < multipartNumberOfParts; i++ {
-		parts[i] = randstr.Bytes(multipartPartSize + i)
-		partsConcat = append(partsConcat, parts[i]...)
-	}
-
-	completedParts := uploadMultipartParts(t, logger, resp, parts, 0, true)
-
-	completeResponse, err := uploadMultipartComplete(hostStyleSvc, resp, completedParts)
-	require.NoError(t, err, "failed to complete multipart upload")
-
-	logger.WithField("key", completeResponse.Key).Info("Completed multipart request successfully")
-
-	getResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &api.GetObjectParams{Path: file})
-	require.NoError(t, err, "failed to get object")
-	require.Equal(t, http.StatusOK, getResp.StatusCode())
-	require.Equal(t, partsConcat, getResp.Body, "uploaded object did not match")
-}
-
-func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte, firstIndex int, useHostStyleSvc bool) []*s3.CompletedPart {
+func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte, firstIndex int, svc *s3.S3) []*s3.CompletedPart {
 	count := len(parts)
 	completedParts := make([]*s3.CompletedPart, count)
 	errs := make([]error, count)
 	var wg sync.WaitGroup
 	wg.Add(count)
-	svc := pathStyleSvc
-	if useHostStyleSvc {
-		svc = hostStyleSvc
-	}
 	for i := 0; i < count; i++ {
 		go func(i int) {
 			defer wg.Done()

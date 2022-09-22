@@ -165,7 +165,6 @@ func preMigrateTests(t *testing.T) {
 	t.Run("TestPreMigrateAuth", testPreMigrateAuth)
 	t.Run("TestPreMigrateGraveler", testPreMigrateGraveler)
 
-	saveStateInLakeFS(t)
 }
 
 func postMigrateTests(t *testing.T) {
@@ -179,38 +178,6 @@ func postMigrateTests(t *testing.T) {
 	t.Run("TestPostMigrateAuth", testPostMigrateAuth)
 	t.Run("TestPostMigrateGraveler", testPostMigrateGraveler)
 
-}
-
-func saveStateInLakeFS(t *testing.T) {
-	// write the state file
-	stateBytes, err := json.Marshal(&state)
-	require.NoError(t, err, "marshal state")
-
-	ctx := context.Background()
-	_ = createRepositoryByName(ctx, t, migrateStateRepoName)
-
-	// file is big - so we better use multipart writing here.
-	resp, err := pathStyleSvc.CreateMultipartUpload(&s3.CreateMultipartUploadInput{
-		Bucket: aws.String(migrateStateRepoName),
-		Key:    aws.String(migrateStateBranch + "/" + migrateStateObjectPath),
-	})
-	require.NoError(t, err, "failed to create multipart upload for state.json")
-
-	var parts [][]byte
-	for i := 0; i < len(stateBytes); i += multipartPartSize {
-		last := i + multipartPartSize
-		if last > len(stateBytes) {
-			last = len(stateBytes)
-		}
-		parts = append(parts, stateBytes[i:last])
-	}
-	completedParts := uploadMultipartParts(t, logger, resp, parts, 0, false)
-	_, err = uploadMultipartComplete(pathStyleSvc, resp, completedParts)
-	require.NoError(t, err, "writing state file")
-	_, err = client.CommitWithResponse(ctx, migrateStateRepoName, migrateStateBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
-		Message: "Save state file",
-	})
-	require.NoError(t, err, "commit state file")
 }
 
 func readStateFromLakeFS(t *testing.T) {
