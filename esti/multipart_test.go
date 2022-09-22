@@ -54,8 +54,11 @@ func testMultipartUpload(t *testing.T, svc *s3.S3) {
 	require.Equal(t, partsConcat, getResp.Body, "uploaded object did not match")
 }
 
-func TestMultipartUpload(t *testing.T) {
+func TestMultipartUploadPathStyleSvc(t *testing.T) {
 	testMultipartUpload(t, pathStyleSvc)
+}
+
+func TestMultipartUploadHostStyleSvc(t *testing.T) {
 	if !skipS3HostStyleTests {
 		testMultipartUpload(t, hostStyleSvc)
 	}

@@ -55,8 +55,11 @@ func testDeleteObjects(t *testing.T, svc *s3.S3) {
 	assert.Len(t, listOut.Contents, 0)
 }
 
-func TestDeleteObjects(t *testing.T) {
+func TestDeleteObjectsPathStyleSvc(t *testing.T) {
 	testDeleteObjects(t, pathStyleSvc)
+}
+
+func TestDeleteObjectsHostStyleSvc(t *testing.T) {
 	if !skipS3HostStyleTests {
 		testDeleteObjects(t, hostStyleSvc)
 	}
@@ -112,9 +115,13 @@ func testDeleteObjectsViewer(t *testing.T, useHostBaseClient bool, svc *s3.S3) {
 	assert.Equal(t, aws.StringValue(listOut.Contents[0].Key), mainBranch+"/"+filename)
 }
 
-func TestDeleteObjects_Viewer(t *testing.T) {
+func TestDeleteObjects_ViewerPathStyleSvc(t *testing.T) {
 	t.SkipNow()
 	testDeleteObjectsViewer(t, false, pathStyleSvc)
+}
+
+func TestDeleteObjects_ViewerHostStyleSvc(t *testing.T) {
+	t.SkipNow()
 	if !skipS3HostStyleTests {
 		testDeleteObjectsViewer(t, true, hostStyleSvc)
 	}
