@@ -12,7 +12,7 @@ const SPARK_CORE_SITE_TEMPLATE_NAME = 'spark.core.site.conf.tt';
 const SPARK_DATABRICKS_TEMPLATE_NAME = 'spark.databricks.conf.tt';
 const lakeFSURLProp = {lakefs_url: window.location.origin};
 
-async function uploadAndCommitReadme(repoId, branchName, importLocation) {
+async function uploadReadme(repoId, branchName, importLocation) {
     const README_TEMPLATE_NAME = 'spark.metastore.readme.tt';
     const readmeProp = {repo: repoId, branch: branchName};
     if (importLocation) {
@@ -21,7 +21,25 @@ async function uploadAndCommitReadme(repoId, branchName, importLocation) {
     const sparkSubmitConfig = await templates.expandTemplate(README_TEMPLATE_NAME, readmeProp);
     const readmeFile = new File([sparkSubmitConfig], 'README.md', {type: 'text/markdown',});
     await objects.upload(repoId, branchName, 'README.md', readmeFile);
-    await commits.commit(repoId, branchName, 'Add Spark quickstart README', {user: 'Spark quickstart'},);
+}
+
+async function uploadSampleNotebook(repoId, branchName, importLocation) {
+    const SPARK_SAMPLE_NOTEBOOK_TEMPLATE_NAME = 'python.notebook.ipynb.tt';
+    const notebookProp = { repo: repoId, branch: branchName, ...lakeFSURLProp };
+    if (importLocation) {
+        notebookProp['import_location'] = importLocation;
+    }
+    const notebookConfig = await templates.expandTemplate(SPARK_SAMPLE_NOTEBOOK_TEMPLATE_NAME, notebookProp);
+    const notebookFile = new File([notebookConfig], 'spark_demo.ipynb', {type: 'application/x-ipynb+json'});
+    await objects.upload(repoId, branchName, 'spark_demo.ipynb', notebookFile);
+}
+
+async function uploadAndCommitPreloadedFiles(repoId, branchName, importLocation) {
+    const readmePromise = uploadReadme(repoId, branchName, importLocation);
+    const notebookPromise = uploadSampleNotebook(repoId, branchName, importLocation);
+
+    await Promise.all([readmePromise, notebookPromise]);
+    await commits.commit(repoId, branchName, 'Added preloaded files', { user: 'Spark quickstart'},);
 }
 
 export const SparkConfigStep = ({onComplete=()=>{}, repoId, branchName, importLocation }) => {
@@ -30,8 +48,8 @@ export const SparkConfigStep = ({onComplete=()=>{}, repoId, branchName, importLo
         const sparkSubmitConfig = templates.expandTemplate(SPARK_SUBMIT_TEMPLATE_NAME, lakeFSURLProp);
         const sparkCoreSiteConfig = templates.expandTemplate(SPARK_CORE_SITE_TEMPLATE_NAME, lakeFSURLProp);
         const sparkDBConfig = templates.expandTemplate(SPARK_DATABRICKS_TEMPLATE_NAME, lakeFSURLProp);
-        const readmeGeneration = uploadAndCommitReadme(repoId, branchName, importLocation);
-        await Promise.all([sparkSubmitConfig, sparkCoreSiteConfig, sparkDBConfig, readmeGeneration]);
+        const preloadedFiles = uploadAndCommitPreloadedFiles(repoId, branchName, importLocation);
+        await Promise.all([sparkSubmitConfig, sparkCoreSiteConfig, sparkDBConfig, preloadedFiles]);
         onComplete();
         return [
             {conf: await sparkSubmitConfig, title: 'spark-submit', language: 'bash'},
