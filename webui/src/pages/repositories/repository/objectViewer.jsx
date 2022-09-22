@@ -30,12 +30,12 @@ export const Loading = () => {
 // 3. Fall back on download behavior
 export const resolveRenderer = (contentType, extension) => {
     
-    if (contentType) {
-        return (contentType in supportedContentTypeRenderers) ? supportedContentTypeRenderers[contentType] : null;
+    if (contentType && contentType in supportedContentTypeRenderers) {
+        return supportedContentTypeRenderers[contentType];
     }
 
-    if (extension) {
-        return (extension in supportedFileExtensionRenderers) ? supportedFileExtensionRenderers[extension] : null;
+    if (extension && extension in supportedFileExtensionRenderers) {
+        return supportedFileExtensionRenderers[extension];
     }
 
     return null;
@@ -47,17 +47,27 @@ const FileTypeNotSupported = () => (
     </Alert>
 );
 
+export const getFileExtension = (objectName) => {
+    const objectNameParts = objectName.split(".");
+    return objectNameParts[objectNameParts.length - 1];
+}
+
+export const getContentType = (headers) => {
+    if (!headers) return null;
+
+    return headers.get("Content-Type") ?? null;
+}
+
 const FileObjectsViewerPage = () => {
     const { objectName, repoId } = useParams();
     const queryString = useQuery();
     const refId = queryString["ref"];
     const {response, error, loading} = useAPI(async () => {
-        return await objects.get(repoId, refId, objectName, true);
+        return await objects.getWithHeaders(repoId, refId, objectName);
     }, [objectName]);
 
-    const objectNameParts = objectName.split(".");
-    const fileExtension = objectNameParts[objectNameParts.length - 1];
-    const contentType = response?.headers.get("Content-Type") ?? null;
+    const fileExtension = getFileExtension(objectName);
+    const contentType = getContentType(response?.headers);
 
     return (
         <RefContextProvider>
@@ -78,7 +88,7 @@ const FileObjectsViewerPage = () => {
     );
 };
 
-const FileContents = ({repoId, refId, path, loading, error, rawContent, contentType = null, fileExtension=''}) => {
+export const FileContents = ({repoId, refId, path, loading, error, rawContent, contentType = null, fileExtension='', showFullNavigator = true}) => {
 
     const blob = new Blob([rawContent], { type: contentType ?? "application/octet-stream" });
     const objectUrl = URL.createObjectURL(blob);
@@ -111,18 +121,22 @@ const FileContents = ({repoId, refId, path, loading, error, rawContent, contentT
         type: RefTypeCommit,
     }
 
+    const titleComponent = showFullNavigator ?
+        (<URINavigator path={path} repo={repo} reference={reference} trailingSlash={false} isPathToFile={true} />) :
+        (<span>{path}</span>);
+
     return (
             <Card className={'readme-card'}>
                 <Card.Header className={'readme-heading d-flex justify-content-between align-items-center'}>
-                    <URINavigator path={path} repo={repo} reference={reference} trailingSlash={false} />
+                    {titleComponent}
                     <span>
                         <a 
                             href={objectUrl}
                             download={path}
-                            className="btn btn-primary download-button">
+                            className="btn btn-primary btn-sm download-button">
                                 <FaDownload />
                         </a>
-                        <ClipboardButton text={rawContent} variant="outline-primary" onSuccess={noop} onError={noop} />
+                        <ClipboardButton text={rawContent} variant="outline-primary" size="sm" onSuccess={noop} onError={noop} />
                     </span>
                 </Card.Header>
                 <Card.Body>

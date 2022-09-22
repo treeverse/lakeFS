@@ -110,7 +110,12 @@ const EntryRow = ({repo, reference, path, entry, onDelete, showActions}) => {
             objectName: query.path,
             ...params,
         };
-        button = (<Link href={{pathname: '/repositories/:repoId/objects/:objectName', query, params: filePathParams}}>{buttonText}</Link>);
+        
+        const filePathQuery = {
+            ref: query.ref,
+        };
+
+        button = (<Link href={{pathname: '/repositories/:repoId/objects/:objectName', query: filePathQuery, params: filePathParams}}>{buttonText}</Link>);
     }
 
     let size;
@@ -229,7 +234,7 @@ const buildPathURL = (params, query) => {
     return {pathname: '/repositories/:repoId/objects', params, query};
 };
 
-export const URINavigator = ({ repo, reference, path, relativeTo = "", pathURLBuilder = buildPathURL, trailingSlash = true }) => {
+export const URINavigator = ({ repo, reference, path, relativeTo = "", pathURLBuilder = buildPathURL, trailingSlash = true, isPathToFile = false }) => {
     const parts = pathParts(path);
     const params = {repoId: repo.id};
 
@@ -254,9 +259,18 @@ export const URINavigator = ({ repo, reference, path, relativeTo = "", pathURLBu
             {parts.map((part, i) => {
                 const path = parts.slice(0, i+1).map(p => p.name).join('/') + '/';
                 const query = {path, ref: reference.id};
+                const edgeElement = isPathToFile ?
+                    (
+                        <span>
+                            {part.name}
+                        </span>
+                    ) :
+                    (
+                        <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
+                    )
                 return (
                     <span key={i}>
-                        <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
+                        {edgeElement}
                         { trailingSlash && <strong>{'/'}</strong> }
                     </span>
                 );
