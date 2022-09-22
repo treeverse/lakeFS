@@ -3,7 +3,6 @@ package io.treeverse.clients
 import io.treeverse.clients.LakeFSContext.LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.Dataset
-
 trait RangeGetter extends Serializable {
 
   /** @return all rangeIDs in metarange of commitID on repo.
@@ -43,8 +42,7 @@ class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: Config
     SSTableReader
       .forRange(configMapper.configuration, location)
       .newIterator()
-      // TODO(yoni): Do we need to filter?
-      //     .filter(a.message.addressType == AddressType.FULL)
+      .filter(_.message.addressType.isRelative)
       .map(a => a.message.address)
   }
 
