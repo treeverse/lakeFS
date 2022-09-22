@@ -6,11 +6,12 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 func TestDeleteObjects(t *testing.T) {
@@ -81,9 +82,18 @@ func TestDeleteObjects_Viewer(t *testing.T) {
 	require.Equal(t, http.StatusCreated, resCreateCreds.StatusCode(), "CreateCredentials unexpectedly status code")
 
 	// client with viewer user credentials
-	s3Endpoint := aws.StringValue(svc.Config.Endpoint)
 	creds := resCreateCreds.JSON201
-	svcViewer := testutil.SetupTestS3Client(s3Endpoint, creds.AccessKeyId, creds.SecretAccessKey)
+	newSession := session.Must(session.NewSession())
+	newConfig := aws.NewConfig()
+	newConfig.MergeIn(&svc.Config)
+	svcViewer := s3.New(newSession, newConfig.WithCredentials(
+		credentials.NewCredentials(
+			&credentials.StaticProvider{
+				Value: credentials.Value{
+					AccessKeyID:     creds.AccessKeyId,
+					SecretAccessKey: creds.SecretAccessKey,
+				},
+			})))
 
 	// delete objects using viewer
 	deleteOut, err := svcViewer.DeleteObjects(&s3.DeleteObjectsInput{
