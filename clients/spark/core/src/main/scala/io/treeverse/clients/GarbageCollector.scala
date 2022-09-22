@@ -340,24 +340,36 @@ object GarbageCollector {
               )
 
     val commitsDF = gc.getCommitsDF(runID, gcCommitsLocation)
+    writeReports(storageNSForHadoopFS, gcRules, runID, commitsDF, expiredAddresses, removed, configMapper)
+
+    spark.close()
+  }
+
+  private def writeReports(storageNSForHadoopFS: String,
+                   gcRules: String,
+                   runID: String,
+                   commitsDF: DataFrame,
+                   expiredAddresses: DataFrame,
+                   removed: DataFrame,
+                   configMapper: ConfigMapper
+                  ) = {
     val reportLogsDst = concatToGCLogsPrefix(storageNSForHadoopFS, "summary")
     val reportExpiredDst = concatToGCLogsPrefix(storageNSForHadoopFS, "expired_addresses")
-
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
     writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
     writeParquetReport(expiredAddresses, reportExpiredDst, time)
     writeJsonSummary(configMapper, reportLogsDst, removed.count(), gcRules, time)
 
-    removed
-      .withColumn("run_id", lit(runID))
-      .write
-      .partitionBy("run_id")
-      .mode(SaveMode.Overwrite)
-      .parquet(
-        concatToGCLogsPrefix(storageNSForHadoopFS, s"deleted_objects/$time/deleted.parquet")
-      )
-
-    spark.close()
+    if(!removed.isEmpty) {
+      removed
+        .withColumn("run_id", lit(runID))
+        .write
+        .partitionBy("run_id")
+        .mode(SaveMode.Overwrite)
+        .parquet(
+          concatToGCLogsPrefix(storageNSForHadoopFS, s"deleted_objects/$time/deleted.parquet")
+        )
+    }
   }
 
   private def concatToGCLogsPrefix(storageNameSpace: String, key: String): String = {
