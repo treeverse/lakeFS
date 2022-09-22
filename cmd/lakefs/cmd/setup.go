@@ -22,11 +22,6 @@ var setupCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
 
-		if cfg.IsAuthTypeAPI() {
-			fmt.Printf("Can't setup lakeFS while using external auth API - auth.api.endpoint is configured.\n")
-			os.Exit(1)
-		}
-
 		ctx := cmd.Context()
 		kvParams := cfg.GetKVParams()
 		migrator := kv.NewDatabaseMigrator(kvParams)
@@ -35,6 +30,11 @@ var setupCmd = &cobra.Command{
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)
 			os.Exit(1)
+		}
+
+		if cfg.IsAuthTypeAPI() {
+			// nothing to do - users are managed elsewhere
+			return
 		}
 
 		userName, err := cmd.Flags().GetString("user-name")

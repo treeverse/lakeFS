@@ -177,7 +177,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
-  s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.2.3/lakefs-spark-client-312-hadoop3-assembly-0.2.3.jar \
+  s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.3.0/lakefs-spark-client-312-hadoop3-assembly-0.3.0.jar \
   example-repo
   ```
 
@@ -188,6 +188,36 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
 * For GC to work on Azure blob, [soft delete](https://docs.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview) should be disabled.
   
 </div>
+
+The list of expired objects is written in Parquet format in the storage
+namespace of the bucket under
+`_lakefs/retention/gc/addresses/run_id=RUN_ID`, where RUN_ID identifies the
+run.
+
+### First run
+
+To create a list of objects to delete you can
+
+* Add `-c spark.hadoop.lakefs.debug.gc.no_delete=true` to disable object
+  deletion.
+
+Nothing will be deleted.  The list of expired objects will still be created
+and may be examined.
+
+### Performance
+
+Garbage collection reads many commits.  It uses Spark to spread the load of
+reading the contents of all of these commits.  For very large jobs running
+on very large clusters, you may want to tweak this load.  To do this:
+
+* Add `-c spark.hadoop.lakefs.gc.range.num_partitions=RANGE_PARTITIONS`
+  (default 50) to spread the initial load of reading commits across more
+  Spark executors.
+* Add `-c spark.hadoop.lakefs.gc.address.num_partitions=RANGE_PARTITIONS`
+  (default 200) to spread the load of reading all objects included in a
+  commit across more Spark executors.
+
+Normally this should not be needed.
 
 ### Networking
 

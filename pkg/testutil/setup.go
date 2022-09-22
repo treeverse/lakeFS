@@ -99,24 +99,22 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (log logging.Logger, apiClie
 		viper.Set("secret_access_key", params.AdminSecretAccessKey)
 	}
 
-	client, err = NewClientFromCreds(logger, viper.GetString("access_key_id"), viper.GetString("secret_access_key"), endpointURL)
+	key := viper.GetString("access_key_id")
+	secret := viper.GetString("secret_access_key")
+	s3Endpoint := viper.GetString("s3_endpoint")
+
+	client, err = NewClientFromCreds(logger, key, secret, endpointURL)
 	if err != nil {
 		logger.WithError(err).Fatal("could not initialize API client with security provider")
 	}
 
-	s3Endpoint := viper.GetString("s3_endpoint")
-	awsSession := session.Must(session.NewSession())
-	accessKeyID := viper.GetString("access_key_id")
-	secretAccessKey := viper.GetString("secret_access_key")
-
-	pathStyleSvc = getS3Client(awsSession, s3Endpoint, false, accessKeyID, secretAccessKey)
-
-	hostStyleSvc = getS3Client(awsSession, s3Endpoint, true, accessKeyID, secretAccessKey)
-
+	pathStyleSvc = SetupTestS3Client(key, secret, s3Endpoint, false)
+	hostStyleSvc = SetupTestS3Client(key, secret, s3Endpoint, true)
 	return logger, client, pathStyleSvc, hostStyleSvc
 }
 
-func getS3Client(awsSession *session.Session, s3Endpoint string, hostBaseClient bool, accessKeyID string, secretAccessKey string) *s3.S3 {
+func SetupTestS3Client(key, secret, s3Endpoint string, hostBaseClient bool) *s3.S3 {
+	awsSession := session.Must(session.NewSession())
 	return s3.New(awsSession,
 		aws.NewConfig().
 			WithRegion("us-east-1").
@@ -126,8 +124,8 @@ func getS3Client(awsSession *session.Session, s3Endpoint string, hostBaseClient 
 			WithCredentials(credentials.NewCredentials(
 				&credentials.StaticProvider{
 					Value: credentials.Value{
-						AccessKeyID:     accessKeyID,
-						SecretAccessKey: secretAccessKey,
+						AccessKeyID:     key,
+						SecretAccessKey: secret,
 					}})))
 }
 

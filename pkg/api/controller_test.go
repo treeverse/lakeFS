@@ -21,6 +21,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-test/deep"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/require"
@@ -1814,8 +1815,11 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		// delete objects
 		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, api.DeleteObjectsJSONRequestBody{Paths: paths})
 		verifyResponseOK(t, delResp, err)
-		if delResp.StatusCode() != http.StatusNoContent {
-			t.Errorf("DeleteObjects should return 204 (no content) for successful delete, got %d", delResp.StatusCode())
+		if delResp.JSON200 == nil {
+			t.Errorf("DeleteObjects should return 200 for successful delete, got status code %d", delResp.StatusCode())
+		}
+		if len(delResp.JSON200.Errors) > 0 {
+			t.Errorf("DeleteObjects (round 2) should have no errors, got %v", delResp.JSON200.Errors)
 		}
 
 		// check objects no longer there
@@ -1829,6 +1833,16 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 			if statResp.JSON404 == nil {
 				t.Fatalf("expected file to be gone now for '%s'", p)
 			}
+		}
+
+		// delete objects again - make sure we do not fail or get any error
+		delResp2, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, api.DeleteObjectsJSONRequestBody{Paths: paths})
+		verifyResponseOK(t, delResp2, err)
+		if delResp2.JSON200 == nil {
+			t.Errorf("DeleteObjects (round 2) should return 200 for successful delete, got status code %d", delResp2.StatusCode())
+		}
+		if len(delResp2.JSON200.Errors) > 0 {
+			t.Errorf("DeleteObjects (round 2) should have no errors, got %s", spew.Sdump(delResp2.JSON200.Errors))
 		}
 	})
 
