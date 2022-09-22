@@ -10,7 +10,6 @@ services:
       - "8000:8000"
     environment:
       - LAKEFS_DATABASE_TYPE=local
-      - LAKEFS_DATABASE_LOCAL_PATH=~/lakefs/metadata
       - LAKEFS_BLOCKSTORE_TYPE=s3
       - LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE=true
       - LAKEFS_BLOCKSTORE_S3_ENDPOINT=http://minio:9000
@@ -25,9 +24,9 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
         - |
-          lakefs setup --local-settings --user-name docker --access-key-id AKIAIOSFODNN7EXAMPLE --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          lakefs setup --local-settings --user-name docker --access-key-id AKIAIOSFODNN7EXAMPLE --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY || true
           lakefs run &
-          wait-for -t 60 lakefs:8000 -- lakectl repo create lakefs://example s3://example
+          wait-for -t 60 lakefs:8000 -- lakectl repo create lakefs://example s3://example || true
           wait
 
   minio-setup:
