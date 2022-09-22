@@ -1,27 +1,24 @@
 package io.treeverse.clients
 
-import io.treeverse.clients.LakeFSContext._
-import org.apache.hadoop.fs._
-import org.apache.hadoop.conf.Configuration
-import org.apache.spark.{HashPartitioner, Partitioner}
-import org.apache.spark.broadcast.Broadcast
-import org.apache.spark.sql.functions._
-import org.apache.spark.sql._
 import com.amazonaws.services.s3.AmazonS3
+import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse
+import io.treeverse.clients.LakeFSContext._
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs._
+import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.sql._
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.{HashPartitioner, Partitioner}
+import org.json4s.JsonDSL._
+import org.json4s._
+import org.json4s.native.JsonMethods._
 
 import java.net.URI
-import collection.JavaConverters._
+import java.time.{LocalDateTime, ZoneOffset}
 import java.time.format.DateTimeFormatter
-import org.json4s.native.JsonMethods._
-import org.json4s._
-import org.json4s.JsonDSL._
-
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse
-import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
-
 import java.util.UUID
+import scala.collection.JavaConverters._
 
 class ConfigMapper(val hcValues: Broadcast[Array[(String, String)]]) extends Serializable {
   @transient lazy val configuration = {
