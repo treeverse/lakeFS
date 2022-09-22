@@ -31,7 +31,7 @@ type SetupTestingEnvParams struct {
 	AdminSecretAccessKey string
 }
 
-func SetupTestingEnv(params *SetupTestingEnvParams) (log logging.Logger, apiClient api.ClientWithResponsesInterface, pathStyleSvc *s3.S3, hostStyleSvc *s3.S3) {
+func SetupTestingEnv(params *SetupTestingEnvParams) (log logging.Logger, apiClient api.ClientWithResponsesInterface, pathStyleSvc *s3.S3, hostStyleSvc *s3.S3, s3Endpoint string) {
 	logger := logging.Default()
 
 	viper.SetDefault("setup_lakefs", true)
@@ -101,7 +101,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (log logging.Logger, apiClie
 
 	key := viper.GetString("access_key_id")
 	secret := viper.GetString("secret_access_key")
-	s3Endpoint := viper.GetString("s3_endpoint")
+	s3Endpoint = viper.GetString("s3_endpoint")
 
 	client, err = NewClientFromCreds(logger, key, secret, endpointURL)
 	if err != nil {
@@ -110,7 +110,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (log logging.Logger, apiClie
 
 	pathStyleSvc = SetupTestS3Client(key, secret, s3Endpoint, false)
 	hostStyleSvc = SetupTestS3Client(key, secret, s3Endpoint, true)
-	return logger, client, pathStyleSvc, hostStyleSvc
+	return logger, client, pathStyleSvc, hostStyleSvc, s3Endpoint
 }
 
 func SetupTestS3Client(key, secret, s3Endpoint string, hostBaseClient bool) *s3.S3 {

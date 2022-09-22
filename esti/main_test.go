@@ -72,6 +72,8 @@ var (
 	testDirectDataAccess = Booleans{false}
 	skipS3HostStyleTests = false
 
+	s3Endpoint string
+
 	repositoriesToKeep arrayFlags
 	groupsToKeep       arrayFlags
 	usersToKeep        arrayFlags
@@ -292,7 +294,7 @@ func TestMain(m *testing.M) {
 	}
 	viper.SetDefault("post_migrate", false)
 
-	logger, client, pathStyleSvc, hostStyleSvc = testutil.SetupTestingEnv(&params)
+	logger, client, pathStyleSvc, hostStyleSvc, s3Endpoint = testutil.SetupTestingEnv(&params)
 
 	var err error
 	setupLakeFS := viper.GetBool("setup_lakefs")

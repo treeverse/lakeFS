@@ -20,7 +20,7 @@ const (
 	multipartPartSize      = 5 * 1024 * 1024
 )
 
-func testMultipartUpload(t *testing.T, svc *s3.S3, usHostStyleSvc bool) {
+func testMultipartUpload(t *testing.T, svc *s3.S3) {
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	file := "multipart_file"
@@ -55,9 +55,9 @@ func testMultipartUpload(t *testing.T, svc *s3.S3, usHostStyleSvc bool) {
 }
 
 func TestMultipartUpload(t *testing.T) {
-	testMultipartUpload(t, pathStyleSvc, false)
+	testMultipartUpload(t, pathStyleSvc)
 	if !skipS3HostStyleTests {
-		testMultipartUpload(t, hostStyleSvc, true)
+		testMultipartUpload(t, hostStyleSvc)
 	}
 }
 
