@@ -55,6 +55,7 @@ func TestDeleteObjects(t *testing.T) {
 	assert.Len(t, listOut.Contents, 0)
 }
 
+// TestDeleteObjects_Viewer verify we can't delete with read only user
 func TestDeleteObjects_Viewer(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
