@@ -7,7 +7,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.hamcrest.CustomTypeSafeMatcher;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -37,23 +36,17 @@ public class BulkDeleterTest {
 
     class Callback implements BulkDeleter.Callback {
         private int bulkSize;
-        private int numPaths;
         private Set<String> expected;
 
-        Callback(int bulkSize, int numPaths, Set<String> expected) {
+        Callback(int bulkSize, Set<String> expected) {
             this.bulkSize = bulkSize;
-            this.numPaths = numPaths;
             this.expected = new HashSet(expected);
         }
 
         public ObjectErrorList apply(String repository, String branch, PathList pathList) throws ApiException {
             Assert.assertNotNull(pathList);
-            Assert.assertThat(pathList.getPaths().size(),
-                              new CustomTypeSafeMatcher<Integer>(String.format("has at most %d elements", bulkSize)) {
-                                  public boolean matchesSafely(Integer size) {
-                                      return size <= bulkSize;
-                                  }
-                              });
+            Assert.assertTrue(String.format("expected at most %d paths but got %d", bulkSize, pathList.getPaths().size()),
+                              pathList.getPaths().size() <= bulkSize);
             synchronized(expected) {
                 for(String p: pathList.getPaths()) {
                     Assert.assertTrue(expected.remove(p));
@@ -72,7 +65,7 @@ public class BulkDeleterTest {
         for (int i = 0; i < numPaths; i++) {
             toDelete.add(String.format("%d", i));
         }
-        Callback callback = new Callback(bulkSize, numPaths, toDelete);
+        Callback callback = new Callback(bulkSize, toDelete);
 
         BulkDeleter deleter = new BulkDeleter(executorService, callback, "repo", "branch", 50);
         for (int i = 0; i < numPaths; i++) {
