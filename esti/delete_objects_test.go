@@ -113,6 +113,7 @@ func testDeleteObjectsViewer(t *testing.T, useHostBaseClient bool, svc *s3.S3) {
 }
 
 func TestDeleteObjects_Viewer(t *testing.T) {
+	t.SkipNow()
 	testDeleteObjectsViewer(t, false, pathStyleSvc)
 	if !skipS3HostStyleTests {
 		testDeleteObjectsViewer(t, true, hostStyleSvc)
