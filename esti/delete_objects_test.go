@@ -62,7 +62,7 @@ func TestDeleteObjects(t *testing.T) {
 	}
 }
 
-func testDeleteObjects_Viewer(t *testing.T, useHostBaseClient bool, svc *s3.S3) {
+func testDeleteObjectsViewer(t *testing.T, useHostBaseClient bool, svc *s3.S3) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
@@ -113,8 +113,8 @@ func testDeleteObjects_Viewer(t *testing.T, useHostBaseClient bool, svc *s3.S3) 
 }
 
 func TestDeleteObjects_Viewer(t *testing.T) {
-	testDeleteObjects_Viewer(t, false, pathStyleSvc)
+	testDeleteObjectsViewer(t, false, pathStyleSvc)
 	if !skipS3HostStyleTests {
-		testDeleteObjects_Viewer(t, true, hostStyleSvc)
+		testDeleteObjectsViewer(t, true, hostStyleSvc)
 	}
 }
