@@ -108,19 +108,19 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (log logging.Logger, apiClie
 		logger.WithError(err).Fatal("could not initialize API client with security provider")
 	}
 
-	pathStyleSvc = SetupTestS3Client(key, secret, s3Endpoint, false)
-	hostStyleSvc = SetupTestS3Client(key, secret, s3Endpoint, true)
+	pathStyleSvc = SetupTestS3Client(key, secret, s3Endpoint, true)
+	hostStyleSvc = SetupTestS3Client(key, secret, s3Endpoint, false)
 	return logger, client, pathStyleSvc, hostStyleSvc, s3Endpoint
 }
 
-func SetupTestS3Client(key, secret, s3Endpoint string, hostBaseClient bool) *s3.S3 {
+func SetupTestS3Client(key, secret, s3Endpoint string, forcePathStyle bool) *s3.S3 {
 	awsSession := session.Must(session.NewSession())
 	return s3.New(awsSession,
 		aws.NewConfig().
 			WithRegion("us-east-1").
 			WithEndpoint(s3Endpoint).
 			WithDisableSSL(true).
-			WithS3ForcePathStyle(hostBaseClient).
+			WithS3ForcePathStyle(forcePathStyle).
 			WithCredentials(credentials.NewCredentials(
 				&credentials.StaticProvider{
 					Value: credentials.Value{
