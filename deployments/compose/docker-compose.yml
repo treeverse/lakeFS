@@ -1,19 +1,33 @@
-version: "3"
+version: "3.5"
 services:
 
-  lakefs-setup:
+  lakefs:
     image: treeverse/lakefs:latest
-    container_name: lakefs-setup
+    container_name: lakefs
     depends_on:
       - minio-setup
-      - lakefs
+    ports:
+      - "8000:8000"
     environment:
+      - LAKEFS_DATABASE_TYPE=local
+      - LAKEFS_BLOCKSTORE_TYPE=s3
+      - LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE=true
+      - LAKEFS_BLOCKSTORE_S3_ENDPOINT=http://minio:9000
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=minioadmin
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=minioadmin
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
+      - LAKEFS_STATS_ENABLED
+      - LAKEFS_LOGGING_LEVEL
       - LAKECTL_CREDENTIALS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
       - LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-      - LAKECTL_SERVER_ENDPOINT_URL=http://lakefs:8000
-    entrypoint: ["wait-for", "lakefs:8000", "--", "sh", "-c",
-                 "lakefs setup --user-name docker --access-key-id AKIAIOSFODNN7EXAMPLE --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY && lakectl repo create lakefs://example s3://example"]
+      - LAKECTL_SERVER_ENDPOINT_URL=http://localhost:8000
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+        - |
+          lakefs setup --local-settings --user-name docker --access-key-id AKIAIOSFODNN7EXAMPLE --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY || true
+          lakefs run &
+          wait-for -t 60 lakefs:8000 -- lakectl repo create lakefs://example s3://example || true
+          wait
 
   minio-setup:
     image: minio/mc
@@ -31,23 +45,6 @@ services:
       - "9000:9000"
       - "9001:9001"
     entrypoint: ["minio", "server", "/data", "--console-address", ":9001"]
-
-  lakefs:
-    image: treeverse/lakefs:latest
-    container_name: lakefs
-    ports:
-      - "8000:8000"
-    environment:
-      - LAKEFS_DATABASE_TYPE=local
-      - LAKEFS_DATABASE_LOCAL_PATH=~/lakefs/metadata
-      - LAKEFS_BLOCKSTORE_TYPE=s3
-      - LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE=true
-      - LAKEFS_BLOCKSTORE_S3_ENDPOINT=http://minio:9000
-      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=minioadmin
-      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=minioadmin
-      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
-      - LAKEFS_STATS_ENABLED=false
-      - LAKEFS_LOGGING_LEVEL
 
   mariadb:
     image: mariadb:10
