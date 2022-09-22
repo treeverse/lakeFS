@@ -13,7 +13,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func testDeleteObjects(t *testing.T, svc *s3.S3) {
+func TestDeleteObjects(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	const numOfObjects = 10
@@ -55,17 +55,8 @@ func testDeleteObjects(t *testing.T, svc *s3.S3) {
 	assert.Len(t, listOut.Contents, 0)
 }
 
-func TestDeleteObjectsPathStyleSvc(t *testing.T) {
-	testDeleteObjects(t, pathStyleSvc)
-}
-
-func TestDeleteObjectsHostStyleSvc(t *testing.T) {
-	if !skipS3HostStyleTests {
-		testDeleteObjects(t, hostStyleSvc)
-	}
-}
-
-func testDeleteObjectsViewer(t *testing.T, useHostBaseClient bool, svc *s3.S3) {
+func TestDeleteObjects_Viewer(t *testing.T) {
+	t.SkipNow()
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
@@ -91,7 +82,7 @@ func testDeleteObjectsViewer(t *testing.T, useHostBaseClient bool, svc *s3.S3) {
 
 	// client with viewer user credentials
 	creds := resCreateCreds.JSON201
-	svcViewer := testutil.SetupTestS3Client(creds.AccessKeyId, creds.SecretAccessKey, s3Endpoint, useHostBaseClient)
+	svcViewer := testutil.SetupTestS3Client(creds.AccessKeyId, creds.SecretAccessKey)
 
 	// delete objects using viewer
 	deleteOut, err := svcViewer.DeleteObjects(&s3.DeleteObjectsInput{
@@ -113,16 +104,4 @@ func testDeleteObjectsViewer(t *testing.T, useHostBaseClient bool, svc *s3.S3) {
 	assert.NoError(t, err)
 	assert.Len(t, listOut.Contents, 1, "list should find 'delete-me' file")
 	assert.Equal(t, aws.StringValue(listOut.Contents[0].Key), mainBranch+"/"+filename)
-}
-
-func TestDeleteObjects_ViewerPathStyleSvc(t *testing.T) {
-	t.SkipNow()
-	testDeleteObjectsViewer(t, false, pathStyleSvc)
-}
-
-func TestDeleteObjects_ViewerHostStyleSvc(t *testing.T) {
-	t.SkipNow()
-	if !skipS3HostStyleTests {
-		testDeleteObjectsViewer(t, true, hostStyleSvc)
-	}
 }

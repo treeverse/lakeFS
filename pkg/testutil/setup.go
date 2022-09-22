@@ -29,9 +29,11 @@ type SetupTestingEnvParams struct {
 	// Only if non-empty
 	AdminAccessKeyID     string
 	AdminSecretAccessKey string
+
+	ForcePathStyleS3Client bool
 }
 
-func SetupTestingEnv(params *SetupTestingEnvParams) (log logging.Logger, apiClient api.ClientWithResponsesInterface, pathStyleSvc *s3.S3, hostStyleSvc *s3.S3, s3Endpoint string) {
+func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientWithResponsesInterface, *s3.S3) {
 	logger := logging.Default()
 
 	viper.SetDefault("setup_lakefs", true)
@@ -99,34 +101,33 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (log logging.Logger, apiClie
 		viper.Set("secret_access_key", params.AdminSecretAccessKey)
 	}
 
-	key := viper.GetString("access_key_id")
-	secret := viper.GetString("secret_access_key")
-	s3Endpoint = viper.GetString("s3_endpoint")
-
-	client, err = NewClientFromCreds(logger, key, secret, endpointURL)
+	client, err = NewClientFromCreds(logger, viper.GetString("access_key_id"), viper.GetString("secret_access_key"), endpointURL)
 	if err != nil {
 		logger.WithError(err).Fatal("could not initialize API client with security provider")
 	}
 
-	pathStyleSvc = SetupTestS3Client(key, secret, s3Endpoint, true)
-	hostStyleSvc = SetupTestS3Client(key, secret, s3Endpoint, false)
-	return logger, client, pathStyleSvc, hostStyleSvc, s3Endpoint
+	key := viper.GetString("access_key_id")
+	secret := viper.GetString("secret_access_key")
+	svc := SetupTestS3Client(key, secret, params.ForcePathStyleS3Client)
+	return logger, client, svc
 }
 
-func SetupTestS3Client(key, secret, s3Endpoint string, forcePathStyle bool) *s3.S3 {
+func SetupTestS3Client(key, secret string, forcePathStyleS3Client bool) *s3.S3 {
+	s3Endpoint := viper.GetString("s3_endpoint")
 	awsSession := session.Must(session.NewSession())
-	return s3.New(awsSession,
+	svc := s3.New(awsSession,
 		aws.NewConfig().
 			WithRegion("us-east-1").
 			WithEndpoint(s3Endpoint).
+			WithS3ForcePathStyle(forcePathStyleS3Client).
 			WithDisableSSL(true).
-			WithS3ForcePathStyle(forcePathStyle).
 			WithCredentials(credentials.NewCredentials(
 				&credentials.StaticProvider{
 					Value: credentials.Value{
 						AccessKeyID:     key,
 						SecretAccessKey: secret,
 					}})))
+	return svc
 }
 
 // ParseEndpointURL parses the given endpoint string

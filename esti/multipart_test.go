@@ -20,7 +20,7 @@ const (
 	multipartPartSize      = 5 * 1024 * 1024
 )
 
-func testMultipartUpload(t *testing.T, svc *s3.S3) {
+func TestMultipartUpload(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	file := "multipart_file"
@@ -41,7 +41,7 @@ func testMultipartUpload(t *testing.T, svc *s3.S3) {
 		partsConcat = append(partsConcat, parts[i]...)
 	}
 
-	completedParts := uploadMultipartParts(t, logger, resp, parts, 0, svc)
+	completedParts := uploadMultipartParts(t, logger, resp, parts, 0)
 
 	completeResponse, err := uploadMultipartComplete(svc, resp, completedParts)
 	require.NoError(t, err, "failed to complete multipart upload")
@@ -54,17 +54,7 @@ func testMultipartUpload(t *testing.T, svc *s3.S3) {
 	require.Equal(t, partsConcat, getResp.Body, "uploaded object did not match")
 }
 
-func TestMultipartUploadPathStyleSvc(t *testing.T) {
-	testMultipartUpload(t, pathStyleSvc)
-}
-
-func TestMultipartUploadHostStyleSvc(t *testing.T) {
-	if !skipS3HostStyleTests {
-		testMultipartUpload(t, hostStyleSvc)
-	}
-}
-
-func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte, firstIndex int, svc *s3.S3) []*s3.CompletedPart {
+func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte, firstIndex int) []*s3.CompletedPart {
 	count := len(parts)
 	completedParts := make([]*s3.CompletedPart, count)
 	errs := make([]error, count)
