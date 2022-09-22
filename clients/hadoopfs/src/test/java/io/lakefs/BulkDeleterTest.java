@@ -1,19 +1,23 @@
 package io.lakefs;
 
-import io.lakefs.clients.api.*;
-import io.lakefs.clients.api.model.*;
+import java.io.IOException;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import org.hamcrest.CustomTypeSafeMatcher;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
-import org.hamcrest.CustomTypeSafeMatcher;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.io.IOException;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.model.ObjectErrorList;
+import io.lakefs.clients.api.model.PathList;
 
 public class BulkDeleterTest {
-    protected ExecutorService executorService = Executors.newSingleThreadExecutor();
+    protected ExecutorService executorService = Executors.newFixedThreadPool(3);
 
     @After
     public void shutdownExecutor() {
@@ -32,14 +36,14 @@ public class BulkDeleterTest {
     }
 
     class Callback implements BulkDeleter.Callback {
-        private int i = 0;
-
         private int bulkSize;
         private int numPaths;
+        private Set<String> expected;
 
-        Callback(int bulkSize, int numPaths) {
+        Callback(int bulkSize, int numPaths, Set<String> expected) {
             this.bulkSize = bulkSize;
             this.numPaths = numPaths;
+            this.expected = new HashSet(expected);
         }
 
         public ObjectErrorList apply(String repository, String branch, PathList pathList) throws ApiException {
@@ -50,23 +54,33 @@ public class BulkDeleterTest {
                                       return size <= bulkSize;
                                   }
                               });
-            for(String p: pathList.getPaths()) {
-                Assert.assertEquals(String.format("%d", i++), p);
+            synchronized(expected) {
+                for(String p: pathList.getPaths()) {
+                    Assert.assertTrue(expected.remove(p));
+                }
             }
             return new ObjectErrorList();
         }
-        public int getCount() { return i; }
+
+        public void verify() {
+            Assert.assertEquals(java.util.Collections.emptySet(), expected);
+        }
     }
 
     protected void goodBulkCase(int bulkSize, int numPaths) throws IOException {
-        Callback callback = new Callback(bulkSize, numPaths);
-        BulkDeleter deleter = new BulkDeleter(executorService, callback, "repo", "branch", 50);
+        Set<String> toDelete = new HashSet<>();
+        for (int i = 0; i < numPaths; i++) {
+            toDelete.add(String.format("%d", i));
+        }
+        Callback callback = new Callback(bulkSize, numPaths, toDelete);
 
+        BulkDeleter deleter = new BulkDeleter(executorService, callback, "repo", "branch", 50);
         for (int i = 0; i < numPaths; i++) {
             deleter.add(String.format("%d", i));
         }
+
         deleter.close();
-        Assert.assertEquals(numPaths, callback.getCount());
+        callback.verify();
     }
 
     @Test

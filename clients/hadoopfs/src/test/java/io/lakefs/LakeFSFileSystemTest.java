@@ -140,8 +140,7 @@ public class LakeFSFileSystemTest {
         // blocking, this client is synchronous.
 
         lfsClient = mock(LakeFSClient.class);
-        objectsApi = mock(ObjectsApi.class);
-        //        objectsApi = mock(ObjectsApi.class, Answers.RETURNS_SMART_NULLS);
+        objectsApi = mock(ObjectsApi.class, Answers.RETURNS_SMART_NULLS);
         when(lfsClient.getObjects()).thenReturn(objectsApi);
         branchesApi = mock(BranchesApi.class, Answers.RETURNS_SMART_NULLS);
         when(lfsClient.getBranches()).thenReturn(branchesApi);

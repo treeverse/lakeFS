@@ -1,19 +1,17 @@
 package io.lakefs;
 
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.model.ObjectErrorList;
-import io.lakefs.clients.api.model.PathList;
-
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.ArrayDeque;
-import java.util.HashSet;
-import java.util.Queue;
-import java.util.Set;
+
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.model.ObjectErrorList;
+import io.lakefs.clients.api.model.PathList;
 
 class BulkDeleter implements Closeable {
     private static final int defaultBulkSize = 1000;
@@ -26,29 +24,24 @@ class BulkDeleter implements Closeable {
 
     private PathList pathList;
     // TODO(ariels): Configure this!
-    private final int concurrency = 5;
-    private Queue<Future<ObjectErrorList>> deletions = new ArrayDeque();
+    private final int concurrency = 1;
+    private Queue<Future<ObjectErrorList>> deletions = new ArrayDeque<>();
 
     public static interface Callback {
         ObjectErrorList apply(String repository, String branch, PathList pathList) throws ApiException;
     }
 
     public static class DeleteFailuresException extends IOException {
-        private final ObjectErrorList errorList;
-
         public DeleteFailuresException(ObjectErrorList errorList) {
             super("failed to delete: " + errorList.toString());
-            this.errorList = errorList;
         }
     }
 
     /**
      * Construct a BulkDeleter to bulk-delete objects on branch in repository,
-     * using callback on executor (which should be single-threaded for
-     * correctness).
+     * using callback on executor.
      */
     BulkDeleter(ExecutorService executor, Callback callback, String repository, String branch, int bulkSize) {
-        System.out.printf("[DEBUG] start for %s %s bulk %d\n", repository, branch, bulkSize);
         this.executor = executor;
         this.callback = callback;
         this.repository = repository;
@@ -101,7 +94,6 @@ class BulkDeleter implements Closeable {
                 @Override
                 public ObjectErrorList call() throws ApiException, InterruptedException, DeleteFailuresException {
                     ObjectErrorList ret = callback.apply(repository, branch, toDelete);
-                    String retString = ret != null ? ret.toString() : "<null>";
                     return ret;
                 }
             }));
