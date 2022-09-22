@@ -16,6 +16,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
 
+// maxDeleteObjects maximum number of objects we can delete in one call.
+// base on https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObjects.html
+const maxDeleteObjects = 1000
+
 type DeleteObjects struct{}
 
 func (controller *DeleteObjects) RequiredPermissions(_ *http.Request, _ string) (permissions.Node, error) {
@@ -28,6 +32,10 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 	err := DecodeXMLBody(req.Body, decodedXML)
 	if err != nil {
 		_ = o.EncodeError(w, req, gerrors.Codes.ToAPIErr(gerrors.ErrBadRequest))
+		return
+	}
+	if len(decodedXML.Object) == 0 || len(decodedXML.Object) > maxDeleteObjects {
+		_ = o.EncodeError(w, req, gerrors.Codes.ToAPIErr(gerrors.ErrMalformedXML))
 		return
 	}
 
