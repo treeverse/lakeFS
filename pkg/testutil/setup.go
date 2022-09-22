@@ -106,14 +106,14 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 		logger.WithError(err).Fatal("could not initialize API client with security provider")
 	}
 
+	s3Endpoint := viper.GetString("s3_endpoint")
 	key := viper.GetString("access_key_id")
 	secret := viper.GetString("secret_access_key")
-	svc := SetupTestS3Client(key, secret, params.ForcePathStyleS3Client)
+	svc := SetupTestS3Client(s3Endpoint, key, secret, params.ForcePathStyleS3Client)
 	return logger, client, svc
 }
 
-func SetupTestS3Client(key, secret string, forcePathStyleS3Client bool) *s3.S3 {
-	s3Endpoint := viper.GetString("s3_endpoint")
+func SetupTestS3Client(s3Endpoint, key, secret string, forcePathStyleS3Client bool) *s3.S3 {
 	awsSession := session.Must(session.NewSession())
 	svc := s3.New(awsSession,
 		aws.NewConfig().
