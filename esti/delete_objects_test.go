@@ -81,8 +81,9 @@ func TestDeleteObjects_Viewer(t *testing.T) {
 	require.Equal(t, http.StatusCreated, resCreateCreds.StatusCode(), "CreateCredentials unexpectedly status code")
 
 	// client with viewer user credentials
+	s3Endpoint := aws.StringValue(svc.Config.Endpoint)
 	creds := resCreateCreds.JSON201
-	svcViewer := testutil.SetupTestS3Client(creds.AccessKeyId, creds.SecretAccessKey)
+	svcViewer := testutil.SetupTestS3Client(s3Endpoint, creds.AccessKeyId, creds.SecretAccessKey)
 
 	// delete objects using viewer
 	deleteOut, err := svcViewer.DeleteObjects(&s3.DeleteObjectsInput{
