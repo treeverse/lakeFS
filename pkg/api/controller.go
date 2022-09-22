@@ -2816,7 +2816,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	w.Header().Set("Last-Modified", lastModified)
 	cd := mime.FormatMediaType("attachment", map[string]string{"filename": filepath.Base(entry.Path)})
 	w.Header().Set("Content-Disposition", cd)
-	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Type", entry.ContentType)
 	_, err = io.Copy(w, reader)
 	if err != nil {
 		c.Logger.

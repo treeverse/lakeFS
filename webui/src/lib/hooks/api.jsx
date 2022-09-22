@@ -46,6 +46,7 @@ const initialAPIState = {
     loading: true,
     error: null,
     response: null,
+    responseHeaders: null,
 };
 
 export const useAPI = (promise, deps = []) => {

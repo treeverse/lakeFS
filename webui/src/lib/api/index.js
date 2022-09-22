@@ -620,7 +620,23 @@ class Objects {
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
+        
         return response.text()
+    }
+
+    async getWithHeaders(repoId, ref, path) {
+        const query = qs({path});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?`+query, {
+            method: 'GET',
+        });
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+
+        return {
+            responseText: await response.text(),
+            headers: response.headers,
+        }
     }
 
     async getStat(repoId, ref, path) {

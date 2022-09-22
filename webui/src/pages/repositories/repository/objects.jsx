@@ -25,12 +25,11 @@ import {
     ImportProgress,
     runImport
 } from "../services/import_data";
-import ReactMarkdown from 'react-markdown';
-import Card from "react-bootstrap/Card";
-import remarkGfm from 'remark-gfm'
-import remarkHtml from 'remark-html'
-import {Box, Typography} from "@mui/material";
+import {Box} from "@mui/material";
 import {RepoError} from "./error";
+import { getContentType, getFileExtension, FileContents } from "./objectViewer";
+
+const README_FILE_NAME = 'README.md';
 
 const ImportButton = ({variant = "success", enabled = false, onClick}) => {
     return (
@@ -300,30 +299,32 @@ const TreeContainer = ({
 const ReadmeContainer = ({repo, reference, path='', refreshDep=''}) => {
     const {response, error, loading} = useAPI(async () => {
         if (path) {
-            path = path.endsWith('/') ? `${path}README.md` : `${path}/README.md`;
+            path = path.endsWith('/') ? `${path}${README_FILE_NAME}` : `${path}/${README_FILE_NAME}`;
         } else {
-            path = 'README.md';
+            path = README_FILE_NAME;
         }
-        return await objects.get(repo.id, reference.id, path);
+        return await objects.getWithHeaders(repo.id, reference.id, path);
     }, [path, refreshDep]);
 
     if (loading || error) {
         return <></>;
     }
 
+    const fileExtension = getFileExtension(path);
+    const contentType = getContentType(response?.headers);
+
     return (
-            <Card className={'readme-card'}>
-                <Card.Header className={'readme-heading'}>
-                    <Typography variant={'subtitle2'}>README.md</Typography>
-                </Card.Header>
-                <Card.Body>
-                    <Box sx={{mx: 1}}>
-                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkHtml]} linkTarget={"_blank"}>
-                            {response}
-                        </ReactMarkdown>
-                    </Box>
-                </Card.Body>
-            </Card>
+        <FileContents 
+            repoId={repo.id} 
+            refId={reference.id}
+            path={README_FILE_NAME}
+            fileExtension={fileExtension}
+            contentType={contentType}
+            rawContent={response?.responseText} 
+            error={error}
+            loading={loading}
+            showFullNavigator={false}
+        />
     );
 }
 
