@@ -240,65 +240,80 @@ func TestController_LogCommitsHandler(t *testing.T) {
 		}
 	})
 
-	t.Run("log", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "repo2", onBlock(deps, "ns1"), "main")
-		testutil.Must(t, err)
+	tests := []struct {
+		name            string
+		commits         int
+		limit           bool
+		expectedCommits int
+		objects         []string
+		prefixes        []string
+	}{
+		{
+			name:            "log",
+			commits:         2,
+			expectedCommits: 3,
+		},
+		{
+			name:            "limit",
+			commits:         2,
+			expectedCommits: 1,
+			limit:           true,
+		},
+		{
+			name:            "log-with-objects",
+			commits:         10,
+			expectedCommits: 3,
+			objects:         []string{"foo/bar7", "foo/bar3", "foo/bar9"},
+		},
+		{
+			name:            "log-with-objects-no-commits",
+			commits:         5,
+			expectedCommits: 0,
+			objects:         []string{"you-won't-find-me"},
+		},
+		{
+			name:            "log-with-prefixes",
+			commits:         10,
+			expectedCommits: 10,
+			prefixes:        []string{"foo/bar"},
+		},
+	}
 
-		const commitsLen = 2
-		for i := 0; i < commitsLen; i++ {
-			n := strconv.Itoa(i + 1)
-			p := "foo/bar" + n
-			err := deps.catalog.CreateEntry(ctx, "repo2", "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
-			testutil.MustDo(t, "create entry "+p, err)
-			_, err = deps.catalog.Commit(ctx, "repo2", "main", "commit"+n, "some_user", nil, nil, nil)
-			testutil.MustDo(t, "commit "+p, err)
-		}
-		resp, err := clt.LogCommitsWithResponse(ctx, "repo2", "main", &api.LogCommitsParams{})
-		verifyResponseOK(t, resp, err)
+	for _, ttt := range tests {
+		tt := ttt
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := deps.catalog.CreateRepository(ctx, tt.name, onBlock(deps, tt.name), "main")
+			testutil.Must(t, err)
 
-		// repo is created with a commit
-		const expectedCommits = commitsLen + 1
-		commitsLog := resp.JSON200.Results
-		if len(commitsLog) != expectedCommits {
-			t.Fatalf("Log %d commits, expected %d", len(commitsLog), expectedCommits)
-		}
-	})
+			const prefix = "foo/bar"
+			for i := 0; i < tt.commits; i++ {
+				n := strconv.Itoa(i + 1)
+				p := prefix + n
+				err := deps.catalog.CreateEntry(ctx, tt.name, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
+				testutil.MustDo(t, "create entry "+p, err)
+				_, err = deps.catalog.Commit(ctx, tt.name, "main", "commit"+n, "some_user", nil, nil, nil)
+				testutil.MustDo(t, "commit "+p, err)
+			}
+			params := &api.LogCommitsParams{}
+			if tt.objects != nil {
+				params.Objects = &tt.objects
+			}
+			if tt.prefixes != nil {
+				params.Prefixes = &tt.prefixes
+			}
+			if tt.limit {
+				params.Limit = &tt.limit
+				params.Amount = api.PaginationAmountPtr(1)
+			}
+			resp, err := clt.LogCommitsWithResponse(ctx, tt.name, "main", params)
+			verifyResponseOK(t, resp, err)
 
-	t.Run("limit", func(t *testing.T) {
-		const repoID = "repo3"
-		_, err := deps.catalog.CreateRepository(ctx, repoID, onBlock(deps, "ns2"), "main")
-		testutil.Must(t, err)
-
-		const commitsLen = 2
-		for i := 0; i < commitsLen; i++ {
-			n := strconv.Itoa(i + 1)
-			p := "foo/bar" + n
-			err := deps.catalog.CreateEntry(ctx, repoID, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
-			testutil.MustDo(t, "create entry "+p, err)
-			_, err = deps.catalog.Commit(ctx, repoID, "main", "commit"+n, "some_user", nil, nil, nil)
-			testutil.MustDo(t, "commit "+p, err)
-		}
-		limit := true
-		resp, err := clt.LogCommitsWithResponse(ctx, repoID, "main", &api.LogCommitsParams{
-			Amount: api.PaginationAmountPtr(commitsLen - 1),
-			Limit:  &limit,
+			commitsLog := resp.JSON200.Results
+			if len(commitsLog) != tt.expectedCommits {
+				t.Fatalf("Log %d commits, expected %d", len(commitsLog), tt.expectedCommits)
+			}
 		})
-		verifyResponseOK(t, resp, err)
-
-		// repo is created with a commit
-		if resp.JSON200 == nil {
-			t.Fatal("LogCommits expected valid response")
-		}
-		commitsLog := resp.JSON200.Results
-		// expect exact number of commits without more
-		const expectedCommits = commitsLen - 1
-		if len(commitsLog) != expectedCommits {
-			t.Fatalf("Log %d commits, expected %d", len(commitsLog), expectedCommits)
-		}
-		if resp.JSON200.Pagination.HasMore {
-			t.Fatalf("Log HasMore %t, expected false", resp.JSON200.Pagination.HasMore)
-		}
-	})
+	}
 }
 
 func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
