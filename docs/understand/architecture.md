@@ -22,9 +22,9 @@ lakeFS is distributed as a single binary encapsulating several logical services:
 The server itself is stateless, meaning you can easily add more instances to handle a bigger load.
 
 lakeFS stores data in an underlying object store ([GCS](https://cloud.google.com/storage), [ABS](https://azure.microsoft.com/en-us/services/storage/blobs/),
-[S3](https://aws.amazon.com/s3/), or any S3-compatible stores like [MinIO](https://min.io/) or [Ceph](https://docs.ceph.com/)), with some of its metadata stored in [PostgreSQL](https://www.postgresql.org/){:target="_blank"} (see [Versioning internals](../understand/versioning-internals.md)).
+[S3](https://aws.amazon.com/s3/), or any S3-compatible stores like [MinIO](https://min.io/) or [Ceph](https://docs.ceph.com/)), with some of its metadata stored in Key Value storage ([PostgreSQL](https://www.postgresql.org/){:target="_blank"} or [DynamoDB](https://aws.amazon.com/dynamodb/){:target="_blank"}). More information on the data format can be found in [Versioning internals](../understand/versioning-internals.md).
 
-<!-- The below draw.io diagram source can be found here: https://drive.google.com/file/d/1lctPtGVEmOlCNHi3jiW4XXmyQQFkxzyx/view?usp=sharing -->
+<!-- The below diagram source can be found here: ../../design/architecture.excalidraw -->
 
 ![Architecture]({{ site.baseurl }}/assets/img/arch.png)
 
