@@ -271,7 +271,7 @@ func (l logrusEntryWrapper) Logf(level logrus.Level, format string, args ...inte
 }
 
 func (*logrusEntryWrapper) IsTracing() bool {
-	return logrus.IsLevelEnabled(logrus.TraceLevel)
+	return defaultLogger.IsLevelEnabled(logrus.TraceLevel)
 }
 
 type logrusCallerFormatter struct {
