@@ -1,24 +1,24 @@
 package io.treeverse.clients
 
-import io.treeverse.clients.LakeFSContext._
-import org.apache.hadoop.fs._
-import org.apache.hadoop.conf.Configuration
-import org.apache.spark.{HashPartitioner, Partitioner}
-import org.apache.spark.broadcast.Broadcast
-import org.apache.spark.sql.functions._
-import org.apache.spark.sql._
 import com.amazonaws.services.s3.AmazonS3
+import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse
+import io.treeverse.clients.LakeFSContext._
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs._
+import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.sql._
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.{HashPartitioner, Partitioner}
+import org.json4s.JsonDSL._
+import org.json4s._
+import org.json4s.native.JsonMethods._
 
 import java.net.URI
-import collection.JavaConverters._
+import java.time.{LocalDateTime, ZoneOffset}
 import java.time.format.DateTimeFormatter
-import org.json4s.native.JsonMethods._
-import org.json4s._
-import org.json4s.JsonDSL._
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse
 import java.util.UUID
+import scala.collection.JavaConverters._
 
 class ConfigMapper(val hcValues: Broadcast[Array[(String, String)]]) extends Serializable {
   @transient lazy val configuration = {
@@ -326,23 +326,45 @@ object GarbageCollector {
       storageNSForSdkClient += "/"
     }
 
+    val schema = StructType(Array(StructField("addresses", StringType, nullable = false)))
     val removed =
-      if (hc.getBoolean(LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, false))
-        spark.emptyDataFrame
-      else
+      if (hc.getBoolean(LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, false)) {
+        spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
+      } else
         remove(configMapper,
                storageNSForSdkClient,
                gcAddressesLocation,
                expiredAddresses,
                runID,
                region,
-               storageType
+               storageType,
+               schema
               )
 
     val commitsDF = gc.getCommitsDF(runID, gcCommitsLocation)
+    writeReports(storageNSForHadoopFS,
+                 gcRules,
+                 runID,
+                 commitsDF,
+                 expiredAddresses,
+                 removed,
+                 configMapper
+                )
+
+    spark.close()
+  }
+
+  private def writeReports(
+      storageNSForHadoopFS: String,
+      gcRules: String,
+      runID: String,
+      commitsDF: DataFrame,
+      expiredAddresses: DataFrame,
+      removed: DataFrame,
+      configMapper: ConfigMapper
+  ) = {
     val reportLogsDst = concatToGCLogsPrefix(storageNSForHadoopFS, "summary")
     val reportExpiredDst = concatToGCLogsPrefix(storageNSForHadoopFS, "expired_addresses")
-
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
     writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
     writeParquetReport(expiredAddresses, reportExpiredDst, time)
@@ -356,8 +378,6 @@ object GarbageCollector {
       .parquet(
         concatToGCLogsPrefix(storageNSForHadoopFS, s"deleted_objects/$time/deleted.parquet")
       )
-
-    spark.close()
   }
 
   private def concatToGCLogsPrefix(storageNameSpace: String, key: String): String = {
@@ -407,13 +427,13 @@ object GarbageCollector {
       expiredAddresses: Dataset[Row],
       runID: String,
       region: String,
-      storageType: String
+      storageType: String,
+      schema: StructType
   ) = {
     println("addressDFLocation: " + addressDFLocation)
 
     val df = expiredAddresses.where(col("run_id") === runID)
-
-    bulkRemove(configMapper, df, storageNamespace, region, storageType).toDF("addresses")
+    bulkRemove(configMapper, df, storageNamespace, region, storageType).toDF(schema.fieldNames: _*)
   }
 
   private def writeParquetReport(
