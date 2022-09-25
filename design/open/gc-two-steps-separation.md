@@ -11,8 +11,8 @@ The `lakefs.debug.gc.no_delete` flag lets users run GC and generate intermediate
 yet GC doesn't continue over those results, and retrieving them manually is quite tedious.  
 Both problems can be solved by introducing two flags and changing the `lakefs.debug.gc.no_delete`:
 
-1. `lakefs.debug.gc.no_delete` -> `lakefs.gc.only_mark` (Boolean): This flag instructs the GC operation to only mark the addresses that are intended to be deleted.
-2. `lakefs.gc.only_sweep` (Boolean): The GC operation will only sweep, i.e. delete, the marked addresses of the provided mark ID.
+1. `lakefs.debug.gc.no_delete` -> `lakefs.gc.only_mark` (Boolean): This flag instructs the GC operation to only mark, i.e. collect, the addresses that are intended to be deleted.
+2. `lakefs.gc.only_sweep` (Boolean): The GC operation will only sweep, i.e. delete, the marked addresses based on the provided mark ID.
 3. `lakefs.gc.mark_id` (String): This flag specifies which ID the GC will use to generate intermediate results and write outputs to.
 
 ## Flags permutations
