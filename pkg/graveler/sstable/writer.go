@@ -162,7 +162,7 @@ func (dw *DiskWriter) Close() (*committed.WriteResult, error) {
 	}, nil
 }
 
-// ShouldBreakAtKey returns true if should break range after the given key
+// ShouldBreakAtKey returns true if it should break range after the given key
 func (dw *DiskWriter) ShouldBreakAtKey(key graveler.Key, params *committed.Params) bool {
 	approximateSize := dw.GetApproximateSize()
 	if approximateSize < params.MinRangeSizeBytes {

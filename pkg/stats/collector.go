@@ -2,13 +2,13 @@ package stats
 
 import (
 	"context"
-	"encoding/hex"
-	"hash/fnv"
+	"fmt"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/cespare/xxhash/v2"
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -368,6 +368,6 @@ func HashMetricValue(s string) string {
 	if s == "" {
 		return s
 	}
-	v := fnv.New64().Sum([]byte(s))
-	return hex.EncodeToString(v)
+	v := xxhash.Sum64String(s)
+	return fmt.Sprintf("%02x", v)
 }
