@@ -113,10 +113,12 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 
 func SetupTestS3Client(endpoint, key, secret string) *s3.S3 {
 	awsSession := session.Must(session.NewSession())
+	forcePathStyleS3Client := viper.GetBool("force_path_style")
 	svc := s3.New(awsSession,
 		aws.NewConfig().
 			WithRegion("us-east-1").
 			WithEndpoint(endpoint).
+			WithS3ForcePathStyle(forcePathStyleS3Client).
 			WithDisableSSL(true).
 			WithCredentials(credentials.NewCredentials(
 				&credentials.StaticProvider{
