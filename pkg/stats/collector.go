@@ -111,6 +111,7 @@ type BufferedCollector struct {
 	done             chan bool
 	runCalled        int32
 	extended         bool
+	log              logging.Logger
 }
 
 type BufferedCollectorOpts func(s *BufferedCollector)
@@ -151,6 +152,12 @@ func WithExtended(b bool) BufferedCollectorOpts {
 	}
 }
 
+func WithLogger(l logging.Logger) BufferedCollectorOpts {
+	return func(s *BufferedCollector) {
+		s.log = l
+	}
+}
+
 func NewBufferedCollector(installationID string, c *config.Config, opts ...BufferedCollectorOpts) *BufferedCollector {
 	statsEnabled := true
 	flushDuration := flushInterval
@@ -175,15 +182,21 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 		runCalled:       0,
 		sendTimeout:     sendTimeout,
 		extended:        extended,
+		log:             logging.Default(),
 	}
 	for _, opt := range opts {
 		opt(s)
 	}
+
+	// re-assign logger with service name
+	s.log = s.log.WithField("service", "stats_collector")
+
+	// assign sender
 	if s.sender == nil {
 		if statsEnabled {
 			s.sender = NewHTTPSender(c.GetStatsAddress(), s.sendTimeout, time.Now)
 		} else {
-			s.sender = &dummySender{Log: logging.Default().WithField("service", "dummy_stats_collector")}
+			s.sender = &dummySender{Log: s.log}
 		}
 	}
 	return s
@@ -206,10 +219,7 @@ func (s *BufferedCollector) send(metrics []Metric) {
 		}
 		err := s.sender.SendEvent(context.Background(), s.getInstallationID(), s.processID, metrics)
 		if err != nil {
-			logging.Default().
-				WithError(err).
-				WithField("service", "stats_collector").
-				Debug("could not send stats")
+			s.log.WithError(err).WithField("service", "stats_collector").Debug("could not send stats")
 		}
 	}()
 }
@@ -304,10 +314,7 @@ func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
 	defer cancel()
 	err := s.sender.UpdateMetadata(ctx, *accountMetadata)
 	if err != nil {
-		logging.Default().
-			WithError(err).
-			WithField("service", "stats_collector").
-			Debug("could not update metadata")
+		s.log.WithError(err).WithField("service", "stats_collector").Debug("could not update metadata")
 	}
 }
 

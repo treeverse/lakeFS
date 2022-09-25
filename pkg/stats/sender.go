@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -108,7 +107,7 @@ func (s *dummySender) SendEvent(_ context.Context, installationID, processID str
 	s.Log.WithFields(logging.Fields{
 		"installation_id": installationID,
 		"process_id":      processID,
-		"metrics":         spew.Sdump(metrics),
+		"metrics":         fmt.Sprintf("%+v", metrics),
 	}).Trace("dummy sender received metrics")
 	return nil
 }
@@ -118,7 +117,7 @@ func (s *dummySender) UpdateMetadata(_ context.Context, m Metadata) error {
 		return nil
 	}
 	s.Log.WithFields(logging.Fields{
-		"metadata": spew.Sdump(m),
+		"metadata": fmt.Sprintf("%+v", m),
 	}).Trace("dummy sender received metadata")
 	return nil
 }

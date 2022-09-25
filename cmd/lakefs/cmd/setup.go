@@ -64,12 +64,13 @@ var setupCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 		storeMessage := &kv.StoreMessage{Store: kvStore}
-		authLogger := logging.Default().WithField("service", "auth_service")
+		logger := logging.Default()
+		authLogger := logger.WithField("service", "auth_service")
 		authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), authLogger)
 		metadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
 
-		cloudMetadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
-		metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), metadataManager, cloudMetadataProvider)
+		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
+		metadata := stats.NewMetadata(ctx, logger, cfg.GetBlockstoreType(), metadataManager, cloudMetadataProvider)
 
 		initialized, err := metadataManager.IsInitialized(ctx)
 		if err != nil {
@@ -88,7 +89,7 @@ var setupCmd = &cobra.Command{
 		}
 
 		ctx, cancelFn := context.WithCancel(ctx)
-		collector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
+		collector := stats.NewBufferedCollector(metadata.InstallationID, cfg, stats.WithLogger(logger))
 		collector.Run(ctx)
 		defer collector.Close()
 
