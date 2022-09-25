@@ -229,7 +229,7 @@ checks-validator: lint validate-fmt validate-proto validate-client-python valida
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
 
-gen-ui:  ## Build UI app
+gen-ui: $(UI_DIR)/node_modules  ## Build UI web app
 	cd $(UI_DIR) && $(NPM) run build
 
 proto: ## Build proto (Protocol Buffers) files
