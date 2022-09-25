@@ -44,6 +44,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 	secretAccessKey := viper.GetString("secret_access_key")
 	endpoint := viper.GetString("s3_endpoint")
 	opts := minio.PutObjectOptions{}
+	forcePatchStyle := viper.GetBool("force_path_style")
 
 	for _, sig := range sigs {
 		t.Run("Sig"+sig.Name, func(t *testing.T) {
@@ -61,10 +62,16 @@ func TestS3UploadAndDownload(t *testing.T) {
 				objects = make(chan Object, parallelism*2)
 			)
 
+			bucketLookupType := minio.BucketLookupAuto
+			if forcePatchStyle {
+				bucketLookupType = minio.BucketLookupPath
+			}
+
 			for i := 0; i < parallelism; i++ {
 				client, err := minio.New(endpoint, &minio.Options{
-					Creds:  creds,
-					Secure: false,
+					Creds:        creds,
+					Secure:       false,
+					BucketLookup: bucketLookupType,
 				})
 				if err != nil {
 					t.Fatalf("minio.New: %s", err)
@@ -125,12 +132,19 @@ func TestS3CopyObject(t *testing.T) {
 	endpoint := viper.GetString("s3_endpoint")
 	opts := minio.PutObjectOptions{}
 	r := rand.New(rand.NewSource(17))
+	forcePatchStyle := viper.GetBool("force_path_style")
 
 	creds := sigs[0].GetCredentials(accessKeyID, secretAccessKey, "")
 
+	bucketLookupType := minio.BucketLookupAuto
+	if forcePatchStyle {
+		bucketLookupType = minio.BucketLookupPath
+	}
+
 	minioClient, err := minio.New(endpoint, &minio.Options{
-		Creds:  creds,
-		Secure: false,
+		Creds:        creds,
+		Secure:       false,
+		BucketLookup: bucketLookupType,
 	})
 	if err != nil {
 		t.Fatalf("minio.New: %s", err)
