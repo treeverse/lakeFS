@@ -73,7 +73,7 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
                 default_branch: defaultBranchField.current.value
             });
         }}>
-	    {config?.warnings && <Warnings warnings={config.warnings}/>}
+        {config?.warnings && <Warnings warnings={config.warnings}/>}
 
             <Form.Group as={Row} controlId="id">
                 <Form.Label column sm={fieldNameOffset}>Repository ID</Form.Label>
