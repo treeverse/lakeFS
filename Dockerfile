@@ -1,4 +1,4 @@
-FROM golang:1.17.8-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.17.8-alpine AS build
 
 ARG VERSION=dev
 
@@ -15,11 +15,18 @@ RUN go mod download
 COPY . ./
 
 # Build a binaries
-RUN go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o lakefs ./cmd/lakefs
-RUN go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o lakectl ./cmd/lakectl
+ARG TARGETOS TARGETARCH
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg \
+    GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o lakefs ./cmd/lakefs
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg \
+    GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o lakectl ./cmd/lakectl
 
 # lakectl image
-FROM alpine:3.15.0 AS lakectl
+FROM --platform=$BUILDPLATFORM alpine:3.15.0 AS lakectl
 RUN apk add -U --no-cache ca-certificates
 WORKDIR /app
 ENV PATH /app:$PATH
@@ -30,7 +37,7 @@ WORKDIR /home/lakefs
 ENTRYPOINT ["/app/lakectl"]
 
 # lakefs image
-FROM alpine:3.15.0 AS lakefs
+FROM --platform=$BUILDPLATFORM alpine:3.15.0 AS lakefs
 
 RUN apk add -U --no-cache ca-certificates
 # Be Docker compose friendly (i.e. support wait-for)
