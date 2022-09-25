@@ -42,6 +42,10 @@ If the `lakefs.gc.only_sweep` is enabled, and `lakefs.gc.mark_id` is not provide
 GC will use the `lakefs.gc.mark_id` to write intermediate results to `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=MARK_ID/`,
 and will do a complete run (marking and sweeping).
 
+#### Only Mark and Only Sweep
+
+The operation will fail.
+
 #### No flags are provided
 
 Complete run of GC, including marking and sweeping (while writing intermediate results to `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=RANDOM_VALUE/`).
