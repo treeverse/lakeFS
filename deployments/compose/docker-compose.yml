@@ -219,7 +219,7 @@ services:
   lakefs-hooks:
     image: lakefs-hooks
     ports:
-      - 5000:5000
+      - 5001:5001
     environment:
       - LAKEFS_SERVER_ADDRESS=http://lakefs:8000
       - LAKEFS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
