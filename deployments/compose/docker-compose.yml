@@ -216,6 +216,15 @@ services:
       - ./etc/jupyter_notebook_config.py:/home/jovyan/.jupyter/jupyter_notebook_config.py
       - ./etc/hive-site.xml:/usr/local/spark/conf/hive-site.xml
 
+  lakefs-hooks:
+    image: lakefs-hooks
+    ports:
+      - 5000:5000
+    environment:
+      - LAKEFS_SERVER_ADDRESS=http://lakefs:8000
+      - LAKEFS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+      - LAKEFS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
 networks:
   default:
     name: bagel
