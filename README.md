@@ -61,7 +61,7 @@ _Use this section to learn about lakeFS. For a production-suitable deployment, s
 2. Run the following command:
 
    ```bash
-   docker run --pull always --name lakefs -p 8000:8000 treeverse/lakefs
+   docker run --pull always --name lakefs -p 8000:8000 treeverse/lakefs run --local-settings
    ```
 
 3. Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your web browser to set up an initial admin user.  You will use this user to log in and send API requests.

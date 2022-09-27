@@ -90,8 +90,6 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 
 	collector := &memCollector{}
 
-	// wire actions
-
 	cfg, err := config.NewConfig()
 	testutil.MustDo(t, "config", err)
 	kvStore := kvtest.GetStore(ctx, t)
@@ -111,6 +109,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	})
 	testutil.MustDo(t, "build catalog", err)
 
+	// wire actions
 	actionsService := actions.NewService(
 		ctx,
 		actionsStore,

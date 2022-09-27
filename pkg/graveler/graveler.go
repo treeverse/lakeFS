@@ -1451,47 +1451,42 @@ func (g *KVGraveler) Delete(ctx context.Context, repository *RepositoryRecord, b
 		return ErrWriteToProtectedBranch
 	}
 
-	deleteEntry := func(branch *Branch) error {
-		commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
-		if err != nil {
-			return err
-		}
-
-		// check key in committed - do we need tombstone?
-		foundInCommitted := false
-		_, err = g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
-		if err != nil {
-			if !errors.Is(err, ErrNotFound) {
-				// unknown error
-				return fmt.Errorf("reading from committed: %w", err)
-			}
-		} else {
-			foundInCommitted = true
-		}
-
-		foundInStaging := true
-		val, err := g.getFromStagingArea(ctx, branch, key)
-		if err != nil {
-			if !errors.Is(err, ErrNotFound) {
-				// unknown error
-				return fmt.Errorf("reading from staging: %w", err)
-			}
-			foundInStaging = false
-		} else if val == nil {
-			// found tombstone in staging, return ErrNotFound
-			return ErrNotFound
-		}
-
-		if foundInCommitted || foundInStaging {
-			return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
-		}
-
-		// key is nowhere to be found, return ErrNotFound
-		return ErrNotFound
-	}
-
 	return g.safeBranchWrite(ctx, g.log.WithField("key", key).WithField("operation", "delete"),
-		repository, branchID, deleteEntry)
+		repository, branchID, func(branch *Branch) error {
+			// check staging for entry or tombstone
+			val, err := g.getFromStagingArea(ctx, branch, key)
+			switch {
+			case err != nil:
+				if !errors.Is(err, ErrNotFound) {
+					// unknown error
+					return fmt.Errorf("reading from staging: %w", err)
+				}
+				// entry not found in staging - continue to committed check
+			case val == nil:
+				// found tombstone in staging, return ErrNotFound
+				return ErrNotFound
+			default:
+				// found in staging, set tombstone
+				return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
+			}
+
+			// check key in committed - do we need tombstone?
+			commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
+			if err != nil {
+				return err
+			}
+			_, err = g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
+			if err != nil {
+				if !errors.Is(err, ErrNotFound) {
+					// unknown error
+					return fmt.Errorf("reading from committed: %w", err)
+				}
+				// key is nowhere to be found
+				return ErrNotFound
+			}
+			// found in committed, set tombstone
+			return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
+		})
 }
 
 // listStagingArea Returns an iterator which is an aggregation of all changes on all the branch's staging area (staging + sealed)
