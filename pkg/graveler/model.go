@@ -20,10 +20,10 @@ const (
 //nolint:gochecknoinits
 func init() {
 	kv.RegisterDefaultType(&StagedEntryData{})
-	kv.RegisterType(RepoPath(kv.PathNoDelimiterRegexp), &RepositoryData{})
-	kv.RegisterType(BranchPath(kv.PathNoDelimiterRegexp), &BranchData{})
-	kv.RegisterType(CommitPath(kv.PathNoDelimiterRegexp), &CommitData{})
-	kv.RegisterType(TagPath(kv.PathNoDelimiterRegexp), &TagData{})
+	kv.RegisterType(reposPrefix, &RepositoryData{})
+	kv.RegisterType(branchesPrefix, &BranchData{})
+	kv.RegisterType(commitsPrefix, &CommitData{})
+	kv.RegisterType(tagsPrefix, &TagData{})
 }
 
 func RepoPath(repoID RepositoryID) string {
