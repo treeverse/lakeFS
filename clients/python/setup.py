@@ -24,6 +24,7 @@ REQUIRES = [
   "urllib3 >= 1.25.3",
   "python-dateutil",
 ]
+
 with open('README.md') as f:
     long_description = f.read()
 
