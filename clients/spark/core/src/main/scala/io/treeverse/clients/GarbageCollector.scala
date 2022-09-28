@@ -345,7 +345,7 @@ object GarbageCollector {
                storageNSForSdkClient,
                gcAddressesLocation,
                expiredAddresses,
-               runID,
+               markId,
                region,
                storageType,
                schema
@@ -354,7 +354,7 @@ object GarbageCollector {
     val commitsDF = gc.getCommitsDF(runID, gcCommitsLocation)
     writeReports(storageNSForHadoopFS,
                  gcRules,
-                 runID,
+                 markId,
                  commitsDF,
                  expiredAddresses,
                  removed,
@@ -367,7 +367,7 @@ object GarbageCollector {
   private def writeReports(
       storageNSForHadoopFS: String,
       gcRules: String,
-      runID: String,
+      markId: String,
       commitsDF: DataFrame,
       expiredAddresses: DataFrame,
       removed: DataFrame,
@@ -381,9 +381,9 @@ object GarbageCollector {
     writeJsonSummary(configMapper, reportLogsDst, removed.count(), gcRules, time)
 
     removed
-      .withColumn("run_id", lit(runID))
+      .withColumn(MARK_ID_KEY, lit(markId))
       .write
-      .partitionBy("run_id")
+      .partitionBy(MARK_ID_KEY)
       .mode(SaveMode.Overwrite)
       .parquet(
         concatToGCLogsPrefix(storageNSForHadoopFS, s"deleted_objects/$time/deleted.parquet")
