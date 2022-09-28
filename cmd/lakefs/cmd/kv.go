@@ -5,7 +5,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 const (
@@ -26,14 +25,14 @@ var kvGetCmd = &cobra.Command{
 	Hidden: true,
 	Args:   cobra.ExactArgs(GetCmdNumArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := logging.Default()
 		cfg := loadConfig()
 
 		ctx := cmd.Context()
 		kvParams := cfg.GetKVParams()
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
-			logger.WithError(err).Fatal("Failed to open KV store")
+			fmt.Printf("Failed to open KV store - %v\n", err)
+			return
 		}
 		defer kvStore.Close()
 
@@ -41,11 +40,13 @@ var kvGetCmd = &cobra.Command{
 		key := args[1]
 		val, err := kvStore.Get(ctx, []byte(partitionKey), []byte(key))
 		if err != nil {
-			logger.WithError(err).Fatal("Failed to get value")
+			fmt.Printf("Failed to get value for (%s,%s), %v\n", partitionKey, key, err)
+			return
 		}
 		prettyVal, err := kv.ToPrettyString(key, val.Value)
 		if err != nil {
-			logger.WithError(err).Fatal("Failed to build object from KV value")
+			fmt.Print("Failed to parse object from KV value - %s\n", err)
+			return
 		}
 
 		fmt.Printf("%s:\n%s\n", key, prettyVal)
@@ -58,14 +59,14 @@ var kvScanCmd = &cobra.Command{
 	Hidden: true,
 	Args:   cobra.RangeArgs(ScanCmdMinArgs, ScanCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := logging.Default()
 		cfg := loadConfig()
 
 		ctx := cmd.Context()
 		kvParams := cfg.GetKVParams()
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
-			logger.WithError(err).Fatal("Failed to open KV store")
+			fmt.Printf("Failed to open KV store - %v\n", err)
+			return
 		}
 		defer kvStore.Close()
 
@@ -76,18 +77,26 @@ var kvScanCmd = &cobra.Command{
 		}
 		iter, err := kvStore.Scan(ctx, []byte(partitionKey), start)
 		if err != nil {
-			logger.WithError(err).Fatal("Scan failed")
+			logMsg := "Failed to scan partition '" + partitionKey + "'"
+			if start != nil {
+				logMsg += " with start key '" + string(start) + "'"
+			}
+			logMsg += " - " + err.Error() + "\n"
+			fmt.Printf("Failed to scan partition %s - %v\n", partitionKey, err)
+			return
 		}
 		defer iter.Close()
 
 		for iter.Next() {
 			if iter.Err() != nil {
-				logger.WithError(err).Fatal("Iteration failed")
+				fmt.Printf("Failed to get next value - %v\n", iter.Err())
+				return
 			}
 			entry := iter.Entry()
 			prettyVal, err := kv.ToPrettyString(string(entry.Key), entry.Value)
 			if err != nil {
-				logger.WithError(err).Fatal("Failed to build object from KV value")
+				fmt.Printf("Failed to parse object from KV value - %s\n", err)
+				return
 			}
 			fmt.Printf("%s:\n%s\n", string(entry.Key), prettyVal)
 		}
