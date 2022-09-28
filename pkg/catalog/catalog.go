@@ -10,7 +10,9 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/alitto/pond"
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
 	"github.com/hnlq715/golang-lru/simplelru"
@@ -116,7 +118,7 @@ type Catalog struct {
 	log           logging.Logger
 	walkerFactory WalkerFactory
 	managers      []io.Closer
-	workpool      *sharedWorkpool
+	workpool      *pond.WorkerPool
 }
 
 const (
@@ -125,7 +127,8 @@ const (
 	ListTagsLimitMax         = 1000
 	DiffLimitMax             = 1000
 	ListEntriesLimitMax      = 10000
-	SharedWorkers            = 15
+	sharedWorkers            = 15
+	workersToBufferRatio     = 3
 )
 
 var ErrUnknownDiffType = errors.New("unknown graveler difference type")
@@ -203,14 +206,14 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
 	stagingManager := staging.NewManager(ctx, *cfg.KVStore)
 	gStore := graveler.NewKVGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
-	workpool := newSharedWorkpool(SharedWorkers)
+	workpool := pond.New(sharedWorkers, sharedWorkers*workersToBufferRatio)
 	return &Catalog{
 		BlockAdapter:  tierFSParams.Adapter,
 		Store:         gStore,
 		log:           logging.Default().WithField("service_name", "entry_catalog"),
 		walkerFactory: cfg.WalkerFactory,
 		workpool:      workpool,
-		managers:      []io.Closer{sstableManager, sstableMetaManager, workpool, &ctxCloser{cancelFn}},
+		managers:      []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
 	}, nil
 }
 
@@ -1052,10 +1055,10 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	out := make(chan compareJobResult, numReadResults)
 
 	paths := params.PathList
-	var g multierror.Group
 	createdTasks := atomic.NewInt64(-1)
+	group, ctx := c.workpool.GroupContext(childCtx)
 
-	g.Go(func() error {
+	group.Submit(func() error {
 		num := 0
 		for ; it.Next(); num++ {
 			numm := num
@@ -1063,12 +1066,9 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 			if childCtx.Err() != nil {
 				break
 			}
-			c.workpool.incoming <- func() {
-				select {
-				case <-childCtx.Done():
-					// this job is no longer needed
-					return
-				default:
+			group.Submit(func() error {
+				if childCtx.Err() != nil {
+					return childCtx.Err()
 				}
 
 				if len(paths) > 0 {
@@ -1076,17 +1076,17 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 					if len(vall.Parents) != NumberOfParentsOfNonMergeCommit {
 						// skip merge commits
 						out <- compareJobResult{num: numm}
-						return
+						return nil
 					}
 					pathInCommit, err := c.checkPathListInCommit(ctx, repository, vall, paths, safeCache)
 					if err != nil {
 						out <- compareJobResult{num: numm, err: err}
-						return
+						return err
 					}
 					if !pathInCommit {
 						// no object or prefix found skip commit
 						out <- compareJobResult{num: numm}
-						return
+						return nil
 					}
 				}
 
@@ -1103,14 +1103,15 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 					commit.Parents = append(commit.Parents, parent.String())
 				}
 				out <- compareJobResult{num: numm, log: commit}
-			}
+				return nil
+			})
 		}
 		createdTasks.Store(int64(num))
 		return it.Err()
 	})
 
 	results := map[int]*CommitLog{}
-	g.Go(func() error {
+	group.Submit(func() error {
 		for {
 			select {
 			case <-childCtx.Done():
@@ -1135,8 +1136,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 			}
 		}
 	})
-
-	err = g.Wait().ErrorOrNil()
+	err = group.Wait()
 	if err != nil {
 		return nil, false, err
 	}
@@ -1670,6 +1670,7 @@ func (c *Catalog) Close() error {
 			_ = multierror.Append(errs, err)
 		}
 	}
+	c.workpool.StopAndWaitFor(1 * time.Second)
 	return errs
 }
 

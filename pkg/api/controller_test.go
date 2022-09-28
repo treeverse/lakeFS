@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/go-multierror"
 	"io"
 	"math"
 	"mime/multipart"
@@ -314,6 +315,53 @@ func TestController_LogCommitsHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestController_LogCommitsParallelHandler(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	repo := "repo-log-commits-parallel"
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	testutil.Must(t, err)
+
+	commits := 30
+	const prefix = "foo/bar"
+	commitsToLook := map[string]*catalog.CommitLog{}
+	for i := 0; i < commits; i++ {
+		n := strconv.Itoa(i + 1)
+		p := prefix + n
+		err := deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
+		testutil.MustDo(t, "create entry "+p, err)
+		log, err := deps.catalog.Commit(ctx, repo, "main", "commit"+n, "some_user", nil, nil, nil)
+		testutil.MustDo(t, "commit "+p, err)
+		if i%5 == 0 {
+			commitsToLook[p] = log
+		}
+	}
+
+	var g multierror.Group
+	for path, logRef := range commitsToLook {
+		objects := []string{path}
+		params := &api.LogCommitsParams{Objects: &objects}
+		log := logRef
+		g.Go(func() error {
+			resp, err := clt.LogCommitsWithResponse(ctx, repo, "main", params)
+			verifyResponseOK(t, resp, err)
+
+			commitsLog := resp.JSON200.Results
+			if len(commitsLog) != 1 {
+				t.Fatalf("Log %d commits, expected %d", len(commitsLog), 1)
+			}
+			if commitsLog[0].Id != log.Reference {
+				t.Fatalf("Found commit %s, expected %s", commitsLog[0].Id, log.Reference)
+			}
+			return nil
+		})
+	}
+
+	err = g.Wait()
+	require.Nil(t, err)
 }
 
 func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
