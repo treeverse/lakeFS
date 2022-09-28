@@ -100,6 +100,9 @@ var kvScanCmd = &cobra.Command{
 			}
 			fmt.Printf("%s:\n%s\n", string(entry.Key), prettyVal)
 		}
+		if iter.Err() != nil {
+			fmt.Printf("Scan operation ended with error - %v", iter.Err())
+		}
 	},
 }
 
