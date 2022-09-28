@@ -60,12 +60,3 @@ It should be made clear to users that using it sequentially with the same mark I
 According to the current behavior of GC, intermediate results are written to `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/run_id=RUN_ID/`.
 There is no need to use run IDs here. It will be possible to limit the work of GC by using Run IDs, but this will be done with **commits** rather than addresses.
 Mark ID seems to make more sense than run ID.
-
-## Unrelated but important
-
-lakeFS generates a run ID and collects the commits that take part in it.
-Between this step and the actual deletion, many things can go wrong, so the GC should write a successful run,
-with the return run ID, in a different location than the one lakeFS refers to,
-i.e. the place where it has written the commits (`/_lakefs/retention/gc/commits/run_id=RUN_ID/commits.csv`).  
-It involves changes to both the GC and lakeFS that should be pulled before version 1.0.0 of lakeFS is released.
-
