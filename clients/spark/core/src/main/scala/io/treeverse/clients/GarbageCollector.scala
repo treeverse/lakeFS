@@ -222,8 +222,11 @@ object GarbageCollector {
     val maxCommitIsoDatetime = hc.get(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY, "")
     val runIDToReproduce = hc.get(LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY, "")
 
-    if(hc.getBoolean(LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, false)) {
-      Console.err.printf("The \"%s\" configuration is deprecated. Use \"%s=false\" instead", LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, LAKEFS_CONF_GC_DO_SWEEP)
+    if (hc.getBoolean(LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, false)) {
+      Console.err.printf("The \"%s\" configuration is deprecated. Use \"%s=false\" instead",
+                         LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY,
+                         LAKEFS_CONF_GC_DO_SWEEP
+                        )
       System.exit(1)
     }
 
