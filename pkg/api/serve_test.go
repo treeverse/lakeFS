@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -50,13 +51,18 @@ type memCollector struct {
 	Events         []*stats.Event
 	Metadata       []*stats.Metadata
 	InstallationID string
+	mu             sync.Mutex
 }
 
 func (m *memCollector) CollectEvent(ev stats.Event) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.Events = append(m.Events, &ev)
 }
 
 func (m *memCollector) CollectMetadata(metadata *stats.Metadata) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.Metadata = append(m.Metadata, metadata)
 }
 
