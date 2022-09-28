@@ -337,19 +337,21 @@ object GarbageCollector {
     }
 
     val schema = StructType(Array(StructField("addresses", StringType, nullable = false)))
-    val removed =
-      if (hc.getBoolean(LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, false)) {
-        spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
-      } else
+    val removed = {
+      if (shouldSweep) {
         remove(configMapper,
-               storageNSForSdkClient,
-               gcAddressesLocation,
-               expiredAddresses,
-               markId,
-               region,
-               storageType,
-               schema
-              )
+          storageNSForSdkClient,
+          gcAddressesLocation,
+          expiredAddresses,
+          markId,
+          region,
+          storageType,
+          schema
+        )
+      } else {
+        spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
+      }
+    }
 
     val commitsDF = gc.getCommitsDF(runID, gcCommitsLocation)
     writeReports(storageNSForHadoopFS,
