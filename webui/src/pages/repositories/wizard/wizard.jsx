@@ -1,9 +1,10 @@
 import React, {useState} from "react";
 import {Box, Button, Step, StepLabel, Stepper, Typography} from "@mui/material";
+import noop from "lodash/noop";
 
 const defaultSteps = [{label: '', component: <></>, optional: false}];
 
-export const Wizard = ({steps = defaultSteps, isShowBack= true, completed= {}, onDone = () => {}, isStepInProgress}) => {
+export const Wizard = ({steps = defaultSteps, isShowBack= true, completed= {}, onDone = noop, isStepInProgress}) => {
     const [activeStep, setActiveStep] = useState(0);
     const [skipped, setSkipped] = useState(new Set());
 

@@ -6,6 +6,7 @@ import React, {useState} from "react";
 import {TabsWrapper} from "../../../lib/components/nav";
 import {CodeTabPanel} from "../../../lib/components/code_tabs";
 import Alert from "react-bootstrap/Alert";
+import noop from "lodash/noop";
 
 const SPARK_SUBMIT_TEMPLATE_NAME = 'spark.submit.conf.tt';
 const SPARK_CORE_SITE_TEMPLATE_NAME = 'spark.core.site.conf.tt';
@@ -42,7 +43,7 @@ async function uploadAndCommitPreloadedFiles(repoId, branchName, importLocation)
     await commits.commit(repoId, branchName, 'Added preloaded files', { user: 'Spark quickstart'},);
 }
 
-export const SparkConfigStep = ({onComplete=()=>{}, repoId, branchName, importLocation }) => {
+export const SparkConfigStep = ({onComplete=noop, repoId, branchName, importLocation }) => {
     const [selectedIndex, setSelectedIndex] = useState(0);
     const {loading, error, response} = useAPI(async () => {
         const sparkSubmitConfig = templates.expandTemplate(SPARK_SUBMIT_TEMPLATE_NAME, lakeFSURLProp);

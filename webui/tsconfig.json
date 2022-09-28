@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "outDir": "./dist",
+        "allowJs": true,
+        "checkJs": false,
+        "target": "ESNext",
+        "isolatedModules": true,
+        "moduleResolution": "node",
+        "allowSyntheticDefaultImports": true,
+        "jsx": "preserve",
+        "noEmit": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "alwaysStrict": true
+    },
+    "include": ["./src/**/*"]
+}
