@@ -8,7 +8,7 @@ export default ({ command }) => {
     plugins: [
       reactRefresh(),
       eslintPlugin({
-        include: ['src/**/*.jsx', 'src/**/*.js']
+        include: ['src/**/*.jsx', 'src/**/*.js', 'src/**/*.ts', 'src/**/*.tsx']
       })
     ],
     publicDir: './pub',
