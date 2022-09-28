@@ -313,7 +313,8 @@ public class LakeFSFileSystem extends FileSystem {
 
 
     /**
-     * Recursively rename objects under src dir.
+     * Recursively rename objects under src dir.  First copy them all over,
+     * then delete all the sources.
      *
      * @return true if all objects under src renamed successfully, false otherwise.
      */
@@ -343,6 +344,7 @@ public class LakeFSFileSystem extends FileSystem {
             }
         }
 
+        List<Path> pathsToDelete = new ArrayList<>();
         ListingIterator iterator = new ListingIterator(src, true, listAmount);
         iterator.setRemoveDirectory(false);
         while (iterator.hasNext()) {
@@ -350,12 +352,24 @@ public class LakeFSFileSystem extends FileSystem {
             LakeFSFileStatus fileStatus = iterator.next();
             Path objDst = buildObjPathOnNonExistingDestinationDir(fileStatus.getPath(), src, dst);
             try {
-                renameObject(fileStatus, objDst);
+                copyObjectForRename(fileStatus, objDst);
+                pathsToDelete.add(fileStatus.getPath());
             } catch (IOException e) {
                 // Rename dir operation in non-transactional. if one object rename failed we will end up in an
                 // intermediate state. TODO: consider adding a cleanup similar to
                 // https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/impl/RenameOperation.java#L191
                 throw new IOException("renameDirectory: failed to rename src directory " + src, e);
+            }
+        }
+        if (!pathsToDelete.isEmpty()) {
+            ObjectLocation srcLocation = pathToObjectLocation(src);
+            try (BulkDeleter deleter = newDeleter(srcLocation.getRepository(), srcLocation.getRef())) {
+                for (Path p : pathsToDelete) {
+                    deleter.add(pathToObjectLocation(p).getPath());
+                }
+            } catch (BulkDeleter.DeleteFailuresException e) {
+                LOG.error("delete after rename(%s, %s): %s", src.toString(), dst.toString(), e.toString());
+                return false;
             }
         }
         return true;
@@ -421,19 +435,7 @@ public class LakeFSFileSystem extends FileSystem {
         return renameObject(srcStatus, dst);
     }
 
-    /**
-     * Non-atomic rename operation.
-     *
-     * @return true if rename succeeded, false otherwise
-     */
-    private boolean renameObject(LakeFSFileStatus srcStatus, Path dst) throws IOException {
-        ObjectLocation srcObjectLoc = pathToObjectLocation(srcStatus.getPath());
-        ObjectLocation dstObjectLoc = pathToObjectLocation(dst);
-        if (srcStatus.isEmptyDirectory()) {
-            srcObjectLoc = srcObjectLoc.toDirectory();
-            dstObjectLoc = dstObjectLoc.toDirectory();
-        }
-
+    private void copyObjectForRename(LakeFSFileStatus srcStatus, ObjectLocation srcObjectLoc, ObjectLocation dstObjectLoc) throws IOException {
         ObjectsApi objects = lfsClient.getObjects();
         //TODO (Tals): Can we add metadata? we currently don't have an API to get the metadata of an object.
         ObjectStageCreation creationReq = new ObjectStageCreation()
@@ -445,8 +447,39 @@ public class LakeFSFileSystem extends FileSystem {
             objects.stageObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
                     creationReq);
         } catch (ApiException e) {
-            throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst + ", failed to stage object", e);
+            throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dstObjectLoc.toString() + ", failed to stage object", e);
         }
+    }
+
+    private void copyObjectForRename(LakeFSFileStatus srcStatus, Path dst) throws IOException {
+        ObjectLocation srcObjectLoc = pathToObjectLocation(srcStatus.getPath());
+        ObjectLocation dstObjectLoc = pathToObjectLocation(dst);
+
+        if (srcStatus.isEmptyDirectory()) {
+            srcObjectLoc = srcObjectLoc.toDirectory();
+            dstObjectLoc = dstObjectLoc.toDirectory();
+        }
+
+        copyObjectForRename(srcStatus, srcObjectLoc, dstObjectLoc);
+    }
+
+    /**
+     * Non-atomic rename operation.
+     *
+     * @return true if rename succeeded, false otherwise
+     */
+    private boolean renameObject(LakeFSFileStatus srcStatus, Path dst) throws IOException {
+        ObjectsApi objects = lfsClient.getObjects();
+
+        ObjectLocation srcObjectLoc = pathToObjectLocation(srcStatus.getPath());
+        ObjectLocation dstObjectLoc = pathToObjectLocation(dst);
+
+        if (srcStatus.isEmptyDirectory()) {
+            srcObjectLoc = srcObjectLoc.toDirectory();
+            dstObjectLoc = dstObjectLoc.toDirectory();
+        }
+
+        copyObjectForRename(srcStatus, srcObjectLoc, dstObjectLoc);
 
         // delete src path
         try {
@@ -510,6 +543,7 @@ public class LakeFSFileSystem extends FileSystem {
                         }
                         deleter.add(fileLoc.getPath());
                     }
+                    deleter.close();
                 } catch (BulkDeleter.DeleteFailuresException e) {
                     LOG.error("delete(%s, %b): %s", path, recursive, e.toString());
                     deleted = false;
@@ -530,7 +564,7 @@ public class LakeFSFileSystem extends FileSystem {
         return new BulkDeleter(deleteExecutor, new BulkDeleter.Callback() {
                 public ObjectErrorList apply(String repository, String branch, PathList pathList) throws ApiException {
                     return objectsApi.deleteObjects(repository, branch, pathList);
-                }
+                 }
             }, repository, branch, conf.getInt(LAKEFS_DELETE_BULK_SIZE, 0));
     }
 
