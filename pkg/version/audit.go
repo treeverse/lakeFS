@@ -43,7 +43,7 @@ type AuditChecker struct {
 	CheckURL                 string
 	Client                   http.Client
 	Version                  string
-	AnonymizedInstallationId string
+	AnonymizedInstallationID string
 	periodicResponse         atomic.Value
 	ticker                   *time.Ticker
 }
@@ -53,14 +53,14 @@ func NewDefaultAuditChecker(checkURL, installationID string) *AuditChecker {
 }
 
 func NewAuditChecker(checkURL, version, installationID string) *AuditChecker {
-	anonymizedInstallationId := fmt.Sprintf("%x", md5.Sum([]byte(installationID)))
+	anonymizedInstallationID := fmt.Sprintf("%x", md5.Sum([]byte(installationID))) // #nosec
 	ac := &AuditChecker{
 		CheckURL: checkURL,
 		Client: http.Client{
 			Timeout: auditCheckTimeout,
 		},
 		Version:                  version,
-		AnonymizedInstallationId: anonymizedInstallationId,
+		AnonymizedInstallationID: anonymizedInstallationID,
 	}
 	// initial value for last check - empty value
 	ac.periodicResponse.Store(auditPeriodicResponse{})
@@ -77,7 +77,7 @@ func (a *AuditChecker) Check(ctx context.Context) (*AuditResponse, error) {
 	}
 	q := req.URL.Query()
 	q.Add("version", a.Version)
-	q.Add("anonymized_installation_id", a.AnonymizedInstallationId)
+	q.Add("anonymized_installation_id", a.AnonymizedInstallationID)
 	req.URL.RawQuery = q.Encode()
 
 	resp, err := a.Client.Do(req)
