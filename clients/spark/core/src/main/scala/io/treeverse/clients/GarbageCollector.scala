@@ -221,6 +221,16 @@ object GarbageCollector {
     val readTimeout = hc.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY)
     val maxCommitIsoDatetime = hc.get(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY, "")
     val runIDToReproduce = hc.get(LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY, "")
+
+    val markId = hc.get(LAKEFS_CONF_GC_MARK_ID, UUID.randomUUID().toString)
+    val shouldMark = hc.getBoolean(LAKEFS_CONF_GC_DO_MARK, true)
+    val shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, true)
+
+    if (!shouldMark && !shouldSweep) {
+      Console.out.println("Mark and sweep disabled. Exiting...")
+      System.exit(0)
+    }
+
     if (!maxCommitIsoDatetime.isEmpty) {
       hc.setLong(
         LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY,
@@ -308,11 +318,11 @@ object GarbageCollector {
     val expiredAddresses = gc
       .getExpiredAddresses(repo, runID, gcCommitsLocation, numRangePartitions, numAddressPartitions)
       .toDF("address")
-      .withColumn("run_id", lit(runID))
+      .withColumn(MARK_ID_KEY, lit(markId))
 
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
     expiredAddresses.write
-      .partitionBy("run_id")
+      .partitionBy(MARK_ID_KEY)
       .mode(SaveMode.Overwrite)
       .parquet(gcAddressesLocation)
 
@@ -425,14 +435,14 @@ object GarbageCollector {
       storageNamespace: String,
       addressDFLocation: String,
       expiredAddresses: Dataset[Row],
-      runID: String,
+      markID: String,
       region: String,
       storageType: String,
       schema: StructType
   ) = {
     println("addressDFLocation: " + addressDFLocation)
 
-    val df = expiredAddresses.where(col("run_id") === runID)
+    val df = expiredAddresses.where(col(MARK_ID_KEY) === markID)
     bulkRemove(configMapper, df, storageNamespace, region, storageType).toDF(schema.fieldNames: _*)
   }
 
