@@ -208,6 +208,7 @@ services:
     entrypoint: dbt
 
   notebook:
+    # To login to jupyter notebook, use password:lakefs
     build: jupyter
     container_name: notebook
     ports:
