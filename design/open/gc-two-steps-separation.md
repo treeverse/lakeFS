@@ -11,38 +11,38 @@ The `lakefs.debug.gc.no_delete` flag lets users run GC and generate intermediate
 yet GC doesn't continue over those results, and retrieving them manually is quite tedious.  
 Both problems can be solved by introducing two flags and changing the `lakefs.debug.gc.no_delete`:
 
-1. `lakefs.debug.gc.no_delete` -> `lakefs.gc.only_mark` (Boolean): This flag instructs the GC operation to only mark, i.e. collect, the addresses that are intended to be deleted.
-2. `lakefs.gc.only_sweep` (Boolean): The GC operation will only sweep, i.e. delete, the marked addresses based on the provided mark ID.
+1. `lakefs.debug.gc.no_delete` -> `lakefs.gc.do_mark` (Boolean: default = true): This flag instructs the GC operation to mark, i.e. collect, the addresses that are intended to be deleted.
+2. `lakefs.gc.do_sweep` (Boolean: default = true): The GC operation sweep, i.e. delete, the marked addresses.
 3. `lakefs.gc.mark_id` (String): This flag specifies which ID the GC will use to generate intermediate results and write outputs to.
 
 ## Flags permutations
 
 #### Only Mark
 
-In the case of `lakefs.gc.only_mark`, the GC will run, collect the addresses to be deleted, and write them to:
+In the case of `lakefs.gc.do_sweep=false`, the GC will run, collect the addresses to be deleted, and write them to:
 `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=RANDOM_VALUE/`.
 
 #### Only Mark and Mark ID
 
-If the `lakefs.gc.only_mark` is enabled, and a `lakefs.gc.mark_id` is provided,
+If `lakefs.gc.do_sweep=false`, and a `lakefs.gc.mark_id` is provided,
 the GC will run and collect the addresses to be deleted, and use the `lakefs.gc.mark_id` as the `MARK_ID` in:
 i.e. `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=MARK_ID/`.
 
 #### Only Sweep and Mark ID
 
-If the `lakefs.gc.only_sweep` is enabled, the GC will use the provided `lakefs.gc.mark_id` and delete the objects mapped
+If `lakefs.gc.do_mark=false`, the GC will use the provided `lakefs.gc.mark_id` and delete the objects mapped
 from the addresses found under `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=MARK_ID/`.
 
 #### Only Sweep
 
-If the `lakefs.gc.only_sweep` is enabled, and `lakefs.gc.mark_id` is not provided (or empty), the operation will fail.
+If `lakefs.gc.do_mark=false`, and `lakefs.gc.mark_id` is not provided (or empty), the operation will fail.
 
 #### Mark ID
 
 GC will use the `lakefs.gc.mark_id` to write intermediate results to `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=MARK_ID/`,
 and will do a complete run (marking and sweeping).
 
-#### Only Mark and Only Sweep
+#### No Mark and No Sweep
 
 The operation will fail.
 
