@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -31,8 +32,8 @@ var kvGetCmd = &cobra.Command{
 		kvParams := cfg.GetKVParams()
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
-			fmt.Printf("Failed to open KV store - %v\n", err)
-			return
+			fmt.Fprintf(os.Stderr, "Failed to open KV store - %s\n", err)
+			os.Exit(1)
 		}
 		defer kvStore.Close()
 
@@ -40,13 +41,13 @@ var kvGetCmd = &cobra.Command{
 		key := args[1]
 		val, err := kvStore.Get(ctx, []byte(partitionKey), []byte(key))
 		if err != nil {
-			fmt.Printf("Failed to get value for (%s,%s), %v\n", partitionKey, key, err)
-			return
+			fmt.Fprintf(os.Stderr, "Failed to get value for (%s,%s), %s\n", partitionKey, key, err)
+			os.Exit(1)
 		}
 		prettyVal, err := kv.ToPrettyString(key, val.Value)
 		if err != nil {
-			fmt.Print("Failed to parse object from KV value - %s\n", err)
-			return
+			fmt.Fprintf(os.Stderr, "Failed to parse object from KV value - %s\n", err)
+			os.Exit(1)
 		}
 
 		fmt.Printf("%s:\n%s\n", key, prettyVal)
@@ -65,8 +66,8 @@ var kvScanCmd = &cobra.Command{
 		kvParams := cfg.GetKVParams()
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
-			fmt.Printf("Failed to open KV store - %v\n", err)
-			return
+			fmt.Fprintf(os.Stderr, "Failed to open KV store - %s\n", err)
+			os.Exit(1)
 		}
 		defer kvStore.Close()
 
@@ -82,26 +83,27 @@ var kvScanCmd = &cobra.Command{
 				logMsg += " with start key '" + string(start) + "'"
 			}
 			logMsg += " - " + err.Error() + "\n"
-			fmt.Printf("Failed to scan partition %s - %v\n", partitionKey, err)
-			return
+			fmt.Fprintf(os.Stderr, "Failed to scan partition %s - %s\n", partitionKey, err)
+			os.Exit(1)
 		}
 		defer iter.Close()
 
 		for iter.Next() {
 			if iter.Err() != nil {
-				fmt.Printf("Failed to get next value - %v\n", iter.Err())
-				return
+				fmt.Fprintf(os.Stderr, "Failed to get next value - %s\n", iter.Err())
+				os.Exit(1)
 			}
 			entry := iter.Entry()
 			prettyVal, err := kv.ToPrettyString(string(entry.Key), entry.Value)
 			if err != nil {
-				fmt.Printf("Failed to parse object from KV value - %s\n", err)
-				return
+				fmt.Fprintf(os.Stderr, "Failed to parse object from KV value - %s\n", err)
+				os.Exit(1)
 			}
 			fmt.Printf("%s:\n%s\n", string(entry.Key), prettyVal)
 		}
 		if iter.Err() != nil {
-			fmt.Printf("Scan operation ended with error - %v", iter.Err())
+			fmt.Fprintf(os.Stderr, "Scan operation ended with error - %s", iter.Err())
+			os.Exit(1)
 		}
 	},
 }
