@@ -227,7 +227,7 @@ object GarbageCollector {
     val shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, true)
 
     if (!shouldMark && !shouldSweep) {
-      Console.out.println("Mark and sweep disabled. Exiting...")
+      Console.out.println("Nothing to do, must specify at least one of mark, sweep. Exiting...")
       System.exit(0)
     }
 
