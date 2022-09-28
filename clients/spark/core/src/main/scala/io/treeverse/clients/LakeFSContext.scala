@@ -30,6 +30,7 @@ object LakeFSContext {
   val LAKEFS_CONF_GC_MARK_ID = "lakefs.gc.mark_id"
 
   val MARK_ID_KEY = "mark_id"
+  val RUN_ID_KEY = "run_id"
   val DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = 50
   val DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = 200
 
