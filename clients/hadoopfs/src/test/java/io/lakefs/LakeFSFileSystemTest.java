@@ -876,6 +876,8 @@ public class LakeFSFileSystemTest {
         ObjectLocation fileObjLoc = fs.pathToObjectLocation(fileInSrcDir);
         Path srcDir = new Path("lakefs://repo/main/existing-dir");
         ObjectLocation srcDirObjLoc = fs.pathToObjectLocation(srcDir);
+        when(objectsApi.deleteObjects("repo", "main", newPathList("existing-dir/existing.src")))
+            .thenReturn(new ObjectErrorList());
         mockExistingDirPath(srcDirObjLoc, ImmutableList.of(fileObjLoc));
         mockExistingDirPath(new ObjectLocation("lakefs", "repo", "main", "existing-dir2/new"), Collections.emptyList());
 
