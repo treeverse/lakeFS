@@ -12,7 +12,7 @@ has_children: false
 
 {% include learn_only.html %} 
 
-## Using Docker Compose
+## Using Docker
 {: .no_toc }
 
 To run a local lakeFS instance using [Docker](https://docs.docker.com/){:target="_blank"}:
