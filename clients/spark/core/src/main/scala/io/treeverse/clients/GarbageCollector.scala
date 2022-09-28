@@ -340,14 +340,14 @@ object GarbageCollector {
     val removed = {
       if (shouldSweep) {
         remove(configMapper,
-          storageNSForSdkClient,
-          gcAddressesLocation,
-          expiredAddresses,
-          markId,
-          region,
-          storageType,
-          schema
-        )
+               storageNSForSdkClient,
+               gcAddressesLocation,
+               expiredAddresses,
+               markId,
+               region,
+               storageType,
+               schema
+              )
       } else {
         spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
       }
