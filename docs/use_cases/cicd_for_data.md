@@ -63,7 +63,7 @@ Hooks are run on a remote server that can serve http requests from lakeFS server
 1. webhooks (run remotely on a web server. e.g.: flask server in python) 
 2. airflow hooks (a dag of complex data quality checks/tasks that can be run on airflow server) 
 
-In this tutorial, we will show how to use webhooks (python flask webserver) to implement quality gates on your data branches. That is, how to configure hooks to allow only parquet and delta lake format files in the main branch.
+In this tutorial, we will show how to use webhooks (python flask webserver) to implement quality gates on your data branches. Specifically, how to configure hooks to allow only parquet and delta lake format files in the main branch.
 
 The tutorial uses an existing lakeFS environment (lakeFS running on [everything bagel docker](https://lakefs.io/the-docker-everything-bagel-spin-up-a-local-data-stack/) container), python flask server running on a docker container, a Jupyter notebook and sample data sets to demonstrate the integration of lakeFS hooks with Apache Spark and Python. 
 
