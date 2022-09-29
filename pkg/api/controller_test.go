@@ -325,7 +325,7 @@ func TestController_LogCommitsParallelHandler(t *testing.T) {
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 	testutil.Must(t, err)
 
-	commits := 50
+	commits := 100
 	const prefix = "foo/bar"
 	commitsToLook := map[string]*catalog.CommitLog{}
 	for i := 0; i < commits; i++ {
