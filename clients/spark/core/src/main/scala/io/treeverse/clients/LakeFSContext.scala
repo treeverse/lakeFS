@@ -31,6 +31,7 @@ object LakeFSContext {
   val LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY = "lakefs.debug.gc.no_delete"
 
   val MARK_ID_KEY = "mark_id"
+  val RUN_ID_KEY = "run_id"
   val DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = 50
   val DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = 200
 

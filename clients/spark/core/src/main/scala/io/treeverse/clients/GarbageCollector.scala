@@ -230,7 +230,7 @@ object GarbageCollector {
       System.exit(1)
     }
 
-    val markId = hc.get(LAKEFS_CONF_GC_MARK_ID, UUID.randomUUID().toString)
+    val markID = hc.get(LAKEFS_CONF_GC_MARK_ID, UUID.randomUUID().toString)
     val shouldMark = hc.getBoolean(LAKEFS_CONF_GC_DO_MARK, true)
     val shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, true)
 
@@ -326,13 +326,15 @@ object GarbageCollector {
     val expiredAddresses = gc
       .getExpiredAddresses(repo, runID, gcCommitsLocation, numRangePartitions, numAddressPartitions)
       .toDF("address")
-      .withColumn(MARK_ID_KEY, lit(markId))
+      .withColumn(MARK_ID_KEY, lit(markID))
 
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
     expiredAddresses.write
       .partitionBy(MARK_ID_KEY)
       .mode(SaveMode.Overwrite)
       .parquet(gcAddressesLocation)
+
+    writeAddressesMarkMetadata(runID, markID, gcAddressesLocation)
 
     println("Expired addresses:")
     expiredAddresses.show()
@@ -351,7 +353,7 @@ object GarbageCollector {
                storageNSForSdkClient,
                gcAddressesLocation,
                expiredAddresses,
-               markId,
+               markID,
                region,
                storageType,
                schema
@@ -363,8 +365,9 @@ object GarbageCollector {
 
     val commitsDF = gc.getCommitsDF(runID, gcCommitsLocation)
     writeReports(storageNSForHadoopFS,
+                 gcAddressesLocation,
                  gcRules,
-                 markId,
+                 markID,
                  commitsDF,
                  expiredAddresses,
                  removed,
@@ -376,6 +379,7 @@ object GarbageCollector {
 
   private def writeReports(
       storageNSForHadoopFS: String,
+      gcAddressesLocation: String,
       gcRules: String,
       markId: String,
       commitsDF: DataFrame,
@@ -385,15 +389,26 @@ object GarbageCollector {
   ) = {
     val reportLogsDst = concatToGCLogsPrefix(storageNSForHadoopFS, "summary")
     val reportExpiredDst = concatToGCLogsPrefix(storageNSForHadoopFS, "expired_addresses")
+    val addressesMarkMetadataLocation = getMetadataMarkLocation(markId, gcAddressesLocation)
+    val addressesMarkMetadataDF = spark.read.json(addressesMarkMetadataLocation)
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
     writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
     writeParquetReport(expiredAddresses, reportExpiredDst, time)
     writeJsonSummary(configMapper, reportLogsDst, removed.count(), gcRules, time)
 
+    import spark.implicits._
+    val metadataArray = addressesMarkMetadataDF
+      .select(RUN_ID_KEY)
+      .map(_.getString(0))
+      .collect
+
+    val runID = metadataArray(0)
+
     removed
       .withColumn(MARK_ID_KEY, lit(markId))
+      .withColumn(RUN_ID_KEY, lit(runID))
       .write
-      .partitionBy(MARK_ID_KEY)
+      .partitionBy(MARK_ID_KEY, RUN_ID_KEY)
       .mode(SaveMode.Overwrite)
       .parquet(
         concatToGCLogsPrefix(storageNSForHadoopFS, s"deleted_objects/$time/deleted.parquet")
@@ -454,6 +469,27 @@ object GarbageCollector {
 
     val df = expiredAddresses.where(col(MARK_ID_KEY) === markID)
     bulkRemove(configMapper, df, storageNamespace, region, storageType).toDF(schema.fieldNames: _*)
+  }
+
+  private def getMetadataMarkLocation(markId: String, gcAddressesLocation: String) = {
+    s"$gcAddressesLocation/$markId.meta"
+  }
+
+  private def generateMarkMetadataDataframe(runId: String): DataFrame = {
+    val metadata = List(runId).map(Tuple1(_))
+    val fields = Array(StructField(RUN_ID_KEY, StringType, nullable = false))
+    val schema = StructType(fields)
+    spark.createDataFrame(metadata).toDF(schema.fieldNames: _*)
+  }
+
+  private def writeAddressesMarkMetadata(
+      runID: String,
+      markId: String,
+      gcAddressesLocation: String
+  ) = {
+    generateMarkMetadataDataframe(runID).write
+      .mode(SaveMode.Overwrite)
+      .json(getMetadataMarkLocation(markId, gcAddressesLocation))
   }
 
   private def writeParquetReport(
