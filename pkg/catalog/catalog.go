@@ -1035,9 +1035,12 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 
 	paths := params.PathList
 	createdTasks := atomic.NewInt64(-1)
-	group, ctx := c.workpool.GroupContext(childCtx)
 
-	group.Submit(func() error {
+	// Shared workpool for the workers. 2 designated to create the work and receive the result
+	workerGroup, ctx := c.workpool.GroupContext(childCtx)
+	var mgmtGroup multierror.Group
+
+	mgmtGroup.Go(func() error {
 		num := 0
 		for ; it.Next(); num++ {
 			numm := num
@@ -1045,7 +1048,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 			if childCtx.Err() != nil {
 				break
 			}
-			group.Submit(func() error {
+			workerGroup.Submit(func() error {
 				if childCtx.Err() != nil {
 					return childCtx.Err()
 				}
@@ -1090,7 +1093,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	})
 
 	results := map[int]*CommitLog{}
-	group.Submit(func() error {
+	mgmtGroup.Go(func() error {
 		for {
 			select {
 			case <-childCtx.Done():
@@ -1115,8 +1118,11 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 			}
 		}
 	})
-	err = group.Wait()
-	if err != nil {
+
+	if err := mgmtGroup.Wait(); err != nil {
+		return nil, false, err
+	}
+	if err := workerGroup.Wait(); err != nil {
 		return nil, false, err
 	}
 
