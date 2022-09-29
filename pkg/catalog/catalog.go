@@ -1119,10 +1119,10 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 		}
 	})
 
-	if err := mgmtGroup.Wait(); err != nil {
+	if err := mgmtGroup.Wait(); err != nil && !errors.Is(err, context.Canceled) {
 		return nil, false, err
 	}
-	if err := workerGroup.Wait(); err != nil {
+	if err := workerGroup.Wait(); err != nil && !errors.Is(err, context.Canceled) {
 		return nil, false, err
 	}
 
