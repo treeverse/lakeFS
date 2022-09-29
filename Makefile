@@ -111,10 +111,11 @@ go-install: go-mod-download ## Install dependencies
 client-python: api/swagger.yml  ## Generate SDK for Python client
 	# remove the build folder as it also holds lakefs_client folder which keeps because we skip it during find
 	rm -rf clients/python/build; cd clients/python && \
-		find . -depth -name lakefs_client -prune -o ! \( -name client.py -or -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore \) -delete
+		find . -depth -name lakefs_client -prune -o ! \( -name client.py -or -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache \) -delete
 	$(OPENAPI_GENERATOR) generate \
 		-i /mnt/$< \
 		-g python \
+		-t /mnt/clients/python/templates \
 		--package-name lakefs_client \
 		--git-user-id treeverse --git-repo-id lakeFS \
 		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageName=lakefs_client,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-client,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python \
