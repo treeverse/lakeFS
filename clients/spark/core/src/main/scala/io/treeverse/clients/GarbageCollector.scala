@@ -211,7 +211,7 @@ object GarbageCollector {
   def getHadoopConfigMapper(hc: Configuration, prefixes: String*): ConfigMapper =
     new ConfigMapper(spark.sparkContext.broadcast(getHadoopConfigurationValues(hc, prefixes: _*)))
 
-  private def validateStorageType(storageType: String, args: Array[String]) = {
+  private def validateArgsByStorageType(storageType: String, args: Array[String]) = {
     if (storageType == StorageUtils.StorageTypeS3 && args.length != 2) {
       Console.err.println(
         "Usage: ... <repo_name> <region>"
@@ -270,7 +270,7 @@ object GarbageCollector {
     val apiClient = ApiClient.get(apiConf)
     val storageType = apiClient.getBlockstoreType()
 
-    validateStorageType(storageType, args)
+    validateArgsByStorageType(storageType, args)
 
     val repo = args(0)
 
