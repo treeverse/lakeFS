@@ -25,7 +25,7 @@ services:
     command:
         - |
           lakefs setup --local-settings --user-name docker --access-key-id AKIAIOSFODNN7EXAMPLE --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY || true
-          lakefs run &
+          lakefs run --local-settings &
           wait-for -t 60 lakefs:8000 -- lakectl repo create lakefs://example s3://example || true
           wait
 
