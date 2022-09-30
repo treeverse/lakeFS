@@ -1,4 +1,13 @@
 # Changelog
+
+## v0.4.0 - 2022-09-30
+What's new:
+* Separate GC into mark and sweep parts and add configuration parameteres to control what phases to run (#4264)
+
+Bug fixes:
+* Fix a failure to writing an empty datafame into GC report while running in mark-only mode (#4239)
+* Only clean up relative path names (#4222) 
+
 ## v0.3.0 - 2022-09-21
 What's new:
 - Add retries mechanism (#4190)
