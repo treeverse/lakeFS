@@ -68,9 +68,7 @@ Now, you can add, modify or delete the data files in the `test-env` branch witho
 
 Adding or deleting files from different branches in a lakeFS repo can be performed from the UI as shown above. However, to perform complex transformations on the data using Spark or other compute engine, you would need to use lakeFS supported APIs.
 
-This use case shows how lakeFS branches can create dev/test data environments using lakeFS python client API.  The notebook uses python lakefs_client, Jupyter notebook and [Spark](../integrations/spark). Let’s use them to manipulate the data on one branch, showing how it has no effect on the other.
-
-The following tutorial will use an existing lakeFS environment (say playground) and a Jupyter Notebook to demonstrate integration of lakeFS with Apache Spark and Python. You can run this tutorial on your local machine.
+This use case shows how you can create dev/test data environments using lakeFS branches. The following tutorial will use an existing lakeFS environment (i.e., playground) and a jupyter notebook, python lakefs_client API to demonstrate integration of lakeFS with [Spark](../integrations/spark). You can run this tutorial on your local machine.
 
 ### Prerequisites
 
