@@ -153,9 +153,9 @@ gen-code: go-install ## Run the generator for inline commands
 		./pkg/graveler \
 		./pkg/graveler/committed \
 		./pkg/graveler/sstable \
+		./pkg/kv \
 		./pkg/onboard \
-		./pkg/pyramid \
-	    ./pkg/kv
+		./pkg/pyramid
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
 build: gen docs ## Download dependencies and build the default binary
