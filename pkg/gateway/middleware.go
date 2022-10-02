@@ -128,6 +128,7 @@ func DurationHandler(next http.Handler) http.Handler {
 		start := time.Now()
 		mrw := httputil.NewMetricResponseWriter(w)
 		next.ServeHTTP(mrw, req)
+		operationID := o.OperationID
 		requestHistograms.WithLabelValues(string(o.OperationID), strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 	})
 }
@@ -175,7 +176,7 @@ func OperationLookupHandler(next http.Handler) http.Handler {
 		ctx := req.Context()
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		repoID := ctx.Value(ContextKeyRepositoryID).(string)
-		var operationID operations.OperationID
+		operationID := operations.OperationIDOperationNotFound
 		if repoID == "" {
 			if req.Method == http.MethodGet {
 				operationID = operations.OperationIDListBuckets
