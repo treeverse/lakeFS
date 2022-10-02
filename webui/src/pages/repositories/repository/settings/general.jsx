@@ -72,7 +72,7 @@ const SettingsContainer = () => {
 
             <Container>
                 <Row>
-                    <Form.Label column md={{span:2}} className="mb-3">
+                    <Form.Label column md={{span:3}} className="mb-3">
                         Repository name
                     </Form.Label>
                     <Col md={{span:4}}>
@@ -80,7 +80,7 @@ const SettingsContainer = () => {
                     </Col>
                 </Row>
                 <Row>
-                    <Form.Label column md={{span:2}} className="mb-3">
+                    <Form.Label column md={{span:3}} className="mb-3">
                         Storage namespace
                     </Form.Label>
                     <Col md={{span:4}}>
@@ -88,7 +88,7 @@ const SettingsContainer = () => {
                     </Col>
                 </Row>
                 <Row>
-                    <Form.Label column md={{span:2}} className="mb-3">
+                    <Form.Label column md={{span:3}} className="mb-3">
                         Default branch
                     </Form.Label>
                     <Col md={{span:4}}>
