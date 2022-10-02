@@ -47,7 +47,7 @@ func (s *HTTPSender) UpdateMetadata(ctx context.Context, m Metadata) error {
 	if len(m.InstallationID) == 0 {
 		return ErrNoInstallationID
 	}
-	serialized, err := json.MarshalIndent(m, "", "  ")
+	serialized, err := json.Marshal(m)
 	if err != nil {
 		return fmt.Errorf("failed to serialize account metadata: %w", err)
 	}
@@ -74,7 +74,7 @@ func (s *HTTPSender) SendEvent(ctx context.Context, installationID, processID st
 		Time:           s.timeFunc().Format(time.RFC3339),
 		Metrics:        metrics,
 	}
-	serialized, err := json.MarshalIndent(event, "", "  ")
+	serialized, err := json.Marshal(event)
 	if err != nil {
 		return fmt.Errorf("could not serialize event: %s: %w", err, ErrSendError)
 	}

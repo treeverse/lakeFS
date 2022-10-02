@@ -32,10 +32,6 @@ export const linkToPath = (repoId, branchId, path) => {
     return `${API_ENDPOINT}/repositories/${repoId}/refs/${branchId}/objects?${query}`;
 };
 
-const json =(data) => {
-    return JSON.stringify(data, null, "");
-};
-
 const qs = (queryParts) => {
     const parts = Object.keys(queryParts).map(key => [key, queryParts[key]]);
     return new URLSearchParams(parts).toString();
@@ -55,8 +51,8 @@ export const extractError = async (response) => {
 export const defaultAPIHeaders = {
     "Accept": "application/json",
     "Content-Type": "application/json",
-    "User-Agent": "lakefs-webui/__buildVersion",
-}
+    "X-Lakefs-Client": "lakefs-webui/__buildVersion",
+};
 
 const authenticationError = "error authenticating request"
 
@@ -78,7 +74,7 @@ const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
     }
 
     return response;
-}
+};
 
 // helper errors
 export class NotFoundError extends Error {
@@ -144,7 +140,7 @@ class Auth {
         const response = await fetch(`${API_ENDPOINT}/auth/password`, {
             headers: new Headers(defaultAPIHeaders),
             method: 'POST',
-            body: json({token: token, newPassword: newPassword, email: email})
+            body: JSON.stringify({token: token, newPassword: newPassword, email: email})
         });
 
         if (response.status === 401) {
@@ -159,7 +155,7 @@ class Auth {
         const response = await fetch(`${API_ENDPOINT}/auth/password/forgot`, {
             headers: new Headers(defaultAPIHeaders),
             method: 'POST',
-            body: json({email: email})
+            body: JSON.stringify({email: email})
         });
 
         if (response.status === 400) {
@@ -174,7 +170,7 @@ class Auth {
         const response = await fetch(`${API_ENDPOINT}/auth/login`, {
             headers: new Headers(defaultAPIHeaders),
             method: 'POST',
-            body: json({access_key_id: accessKeyId, secret_access_key: secretAccessKey})
+            body: JSON.stringify({access_key_id: accessKeyId, secret_access_key: secretAccessKey})
         });
 
         if (response.status === 401) {
@@ -220,7 +216,7 @@ class Auth {
 
     async createUser(userId, inviteUser = false) {
         const response = await apiRequest(`/auth/users`,
-            {method: 'POST', body: json({id: userId, invite_user: inviteUser})});
+            {method: 'POST', body: JSON.stringify({id: userId, invite_user: inviteUser})});
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
@@ -295,7 +291,7 @@ class Auth {
     }
 
     async createGroup(groupId) {
-        const response = await apiRequest(`/auth/groups`, {method: 'POST',  body: json({id: groupId})});
+        const response = await apiRequest(`/auth/groups`, {method: 'POST',  body: JSON.stringify({id: groupId})});
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
@@ -315,7 +311,7 @@ class Auth {
         const policy = {id: policyId, ...JSON.parse(policyDocument)};
         const response = await apiRequest(`/auth/policies`, {
             method: 'POST',
-            body: json(policy)
+            body: JSON.stringify(policy)
         });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
@@ -327,7 +323,7 @@ class Auth {
         const policy = {id: policyId, ...JSON.parse(policyDocument)};
         const response = await apiRequest(`/auth/policies/${encodeURIComponent(policyId)}`, {
             method: 'PUT',
-            body: json(policy)
+            body: JSON.stringify(policy)
         });
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -463,7 +459,7 @@ class Repositories {
     async create(repo) {
         const response = await apiRequest('/repositories', {
             method: 'POST',
-            body: json(repo),
+            body: JSON.stringify(repo),
         });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
@@ -496,7 +492,7 @@ class Branches {
     async create(repoId, name, source) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches`, {
             method: 'POST',
-            body: json({name, source}),
+            body: JSON.stringify({name, source}),
         });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
@@ -516,7 +512,7 @@ class Branches {
     async revert(repoId, branch, options) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branch)}`, {
             method: 'PUT',
-            body: json(options),
+            body: JSON.stringify(options),
         });
         if (response.status !== 204) {
             throw new Error(await extractError(response));
@@ -557,7 +553,7 @@ class Tags {
     async create(repoId, id, ref) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/tags`, {
             method: 'POST',
-            body: json({id, ref}),
+            body: JSON.stringify({id, ref}),
         });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
@@ -676,7 +672,7 @@ class Commits {
         const response = await apiRequest(parsedURL, {
 
             method: 'POST',
-            body: json({message, metadata}),
+            body: JSON.stringify({message, metadata}),
         });
 
         if (response.status !== 201) {
@@ -709,7 +705,7 @@ class Refs {
     async merge(repoId, sourceBranch, destinationBranch, strategy="") {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(sourceBranch)}/merge/${encodeURIComponent(destinationBranch)}`, {
             method: 'POST',
-            body: json({strategy})
+            body: JSON.stringify({strategy})
         });
 
         let resp;
@@ -899,7 +895,7 @@ class Ranges {
     async createRange(repoID, fromSourceURI, after, prepend, continuation_token="") {
         const response = await apiRequest(`/repositories/${repoID}/branches/ranges`, {
             method: 'POST',
-            body: json({fromSourceURI, after, prepend, continuation_token}),
+            body: JSON.stringify({fromSourceURI, after, prepend, continuation_token}),
         });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
@@ -912,7 +908,7 @@ class MetaRanges {
     async createMetaRange(repoID, ranges) {
         const response = await apiRequest(`/repositories/${repoID}/branches/metaranges`, {
             method: 'POST',
-            body: json({ranges}),
+            body: JSON.stringify({ranges}),
         });
         if (response.status !== 201) {
             throw new Error(await extractError(response));

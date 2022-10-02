@@ -36,11 +36,11 @@ type Collector interface {
 type Event struct {
 	Class      string `json:"class"`
 	Name       string `json:"name"`
-	Repository string `json:"repository"`
-	Ref        string `json:"ref"`
-	SourceRef  string `json:"source_ref"`
-	Client     string `json:"client"`
-	UserID     string `json:"user_id"`
+	Repository string `json:"repository,omitempty"`
+	Ref        string `json:"ref,omitempty"`
+	SourceRef  string `json:"source_ref,omitempty"`
+	UserID     string `json:"user_id,omitempty"`
+	Client     string `json:"client,omitempty"`
 }
 
 // ClearExtended clear values of *all* extended fields
@@ -179,7 +179,6 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 		pendingRequests: sync.WaitGroup{},
 		ctxCancelled:    0,
 		done:            make(chan bool),
-		runCalled:       0,
 		sendTimeout:     sendTimeout,
 		extended:        extended,
 		log:             logging.Default(),
@@ -245,6 +244,9 @@ func (s *BufferedCollector) isCtxCancelled() bool {
 }
 
 func (s *BufferedCollector) Run(ctx context.Context) {
+	if atomic.LoadInt32(&s.runCalled) != 0 {
+		return
+	}
 	atomic.StoreInt32(&s.runCalled, 1)
 	go func() {
 		for {
