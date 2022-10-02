@@ -117,6 +117,7 @@ client-python: api/swagger.yml  ## Generate SDK for Python client
 		-g python \
 		-t /mnt/clients/python/templates \
 		--package-name lakefs_client \
+		--http-user-agent "lakefs-python-sdk/$(PACKAGE_VERSION)" \
 		--git-user-id treeverse --git-repo-id lakeFS \
 		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageName=lakefs_client,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-client,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python \
 		-o /mnt/clients/python
@@ -127,6 +128,7 @@ client-java: api/swagger.yml  ## Generate SDK for Java (and Scala) client
 		-i /mnt/$< \
 		-g java \
 		--invoker-package io.lakefs.clients.api \
+		--http-user-agent "lakefs-java-sdk/$(PACKAGE_VERSION)" \
 		--additional-properties=hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='api-client',artifactDescription='lakeFS OpenAPI Java client',artifactUrl=https://lakefs.io,apiPackage=io.lakefs.clients.api,modelPackage=io.lakefs.clients.api.model,mainPackage=io.lakefs.clients.api,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
 		-o /mnt/clients/java
 
@@ -151,9 +153,9 @@ gen-code: go-install ## Run the generator for inline commands
 		./pkg/graveler \
 		./pkg/graveler/committed \
 		./pkg/graveler/sstable \
+		./pkg/kv \
 		./pkg/onboard \
-		./pkg/pyramid \
-	    ./pkg/kv
+		./pkg/pyramid
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
 build: gen docs ## Download dependencies and build the default binary
@@ -227,11 +229,8 @@ checks-validator: lint validate-fmt validate-proto validate-client-python valida
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
 
-# UI operations
-ui-build: $(UI_DIR)/node_modules  ## Build UI app
+gen-ui: $(UI_DIR)/node_modules  ## Build UI web app
 	cd $(UI_DIR) && $(NPM) run build
-
-gen-ui: ui-build
 
 proto: ## Build proto (Protocol Buffers) files
 	$(PROTOC) --proto_path=pkg/catalog --go_out=pkg/catalog --go_opt=paths=source_relative catalog.proto

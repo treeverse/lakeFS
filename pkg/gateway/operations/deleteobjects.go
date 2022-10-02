@@ -27,7 +27,7 @@ func (controller *DeleteObjects) RequiredPermissions(_ *http.Request, _ string) 
 }
 
 func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
-	o.Incr("delete_objects")
+	o.Incr("delete_objects", o.Principal, o.Repository.Name, "")
 	decodedXML := &serde.Delete{}
 	err := DecodeXMLBody(req.Body, decodedXML)
 	if err != nil {

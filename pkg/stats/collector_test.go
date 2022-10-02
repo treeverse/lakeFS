@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-test/deep"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/stats"
 )
@@ -29,7 +30,6 @@ type mockTicker struct {
 }
 
 func (m *mockTicker) Stop() {
-
 }
 
 func (m *mockTicker) makeItTick() {
@@ -40,13 +40,11 @@ func (m *mockTicker) Tick() <-chan time.Time {
 	return m.tc
 }
 
-func setupTest(buffer int) (*mockSender, *mockTicker, *stats.BufferedCollector) {
+func setupTest(buffer int, opts ...stats.BufferedCollectorOpts) (*mockSender, *mockTicker, *stats.BufferedCollector) {
 	sender := &mockSender{metrics: make(chan []stats.Metric, 10), metadata: make(chan stats.Metadata, 10)}
 	ticker := &mockTicker{tc: make(chan time.Time)}
-	collector := stats.NewBufferedCollector("installation_id", nil,
-		stats.WithSender(sender),
-		stats.WithTicker(ticker),
-		stats.WithWriteBufferSize(buffer))
+	opts = append(opts, stats.WithSender(sender), stats.WithTicker(ticker), stats.WithWriteBufferSize(buffer))
+	collector := stats.NewBufferedCollector("installation_id", nil, opts...)
 	collector.SetRuntimeCollector(func() map[string]string {
 		return map[string]string{"runtime": "stat"}
 	})
@@ -60,7 +58,7 @@ func TestCallHomeCollector_QuickNoTick(t *testing.T) {
 
 	// Forcing collector to run last so that we make sure a race between context and collector
 	// isn't impacting what's being sent
-	collector.CollectEvent("foo", "bar")
+	collector.CollectEvent(stats.Event{Class: "foo", Name: "bar"})
 	cancelFn()
 
 	collector.Run(ctx)
@@ -82,12 +80,12 @@ func TestCallHomeCollector_Collect(t *testing.T) {
 	collector.Run(ctx)
 
 	// add metrics
-	collector.CollectEvent("foo", "bar")
-	collector.CollectEvent("foo", "bar")
-	collector.CollectEvent("foo", "bar")
-	collector.CollectEvent("foo", "bazzz")
-	collector.CollectEvent("foo", "bazzz")
-	collector.CollectEvent("other", "bar")
+	collector.CollectEvent(stats.Event{Class: "foo", Name: "bar"})
+	collector.CollectEvent(stats.Event{Class: "foo", Name: "bar"})
+	collector.CollectEvent(stats.Event{Class: "foo", Name: "bar"})
+	collector.CollectEvent(stats.Event{Class: "foo", Name: "bazzz"})
+	collector.CollectEvent(stats.Event{Class: "foo", Name: "bazzz"})
+	collector.CollectEvent(stats.Event{Class: "other", Name: "bar"})
 
 	// ensure we flush at the given interval
 	ticker.makeItTick()
@@ -119,7 +117,7 @@ func TestCallHomeCollector_Collect(t *testing.T) {
 		t.Fatalf("expected all %d keys, got %d", 3, keys)
 	}
 
-	collector.CollectEvent("foo", "bar")
+	collector.CollectEvent(stats.Event{Class: "foo", Name: "bar"})
 
 	cancelFn()
 	collector.Close()
@@ -142,4 +140,100 @@ func TestCallHomeCollector_Collect(t *testing.T) {
 		require.Fail(t, "should not send the same metadata runtime stats more than once")
 	default:
 	}
+}
+
+func TestCallHomeCollector_ExtendedHashValues(t *testing.T) {
+	sender, ticker, collector := setupTest(0, stats.WithExtended(true))
+	ctx, cancelFn := context.WithCancel(context.Background())
+	collector.Run(ctx)
+
+	const events = 2
+	for i := 0; i < events; i++ {
+		collector.CollectEvent(stats.Event{
+			Class:      "foo",
+			Name:       "bar",
+			Repository: "repository1",
+			Ref:        "ref1",
+			SourceRef:  "source_ref1",
+			Client:     "client1",
+			UserID:     "user_id1",
+		})
+	}
+
+	// ensure we flush at the given interval
+	ticker.makeItTick()
+
+	counters, ok := <-sender.metrics
+	if !ok {
+		t.Fatal("Failed to pull counters from sender's metrics")
+	}
+
+	diff := deep.Equal(counters, []stats.Metric{
+		{
+			Event: stats.Event{
+				Class:      "foo",
+				Name:       "bar",
+				Repository: stats.HashMetricValue("repository1"),
+				Ref:        stats.HashMetricValue("ref1"),
+				SourceRef:  stats.HashMetricValue("source_ref1"),
+				UserID:     stats.HashMetricValue("user_id1"),
+				Client:     "client1",
+			},
+			Value: 2,
+		},
+	})
+	if diff != nil {
+		t.Fatalf("Metric events should match: %s", diff)
+	}
+
+	cancelFn()
+	collector.Close()
+}
+
+func TestCallHomeCollector_NoExtendedValues(t *testing.T) {
+	sender, ticker, collector := setupTest(0, stats.WithExtended(false))
+	ctx, cancelFn := context.WithCancel(context.Background())
+	collector.Run(ctx)
+
+	const events = 2
+	for i := 0; i < events; i++ {
+		collector.CollectEvent(stats.Event{
+			Class:      "foo",
+			Name:       "bar",
+			Repository: "repository1",
+			Ref:        "ref1",
+			SourceRef:  "source_ref1",
+			Client:     "client1",
+			UserID:     "user_id1",
+		})
+	}
+
+	// ensure we flush at the given interval
+	ticker.makeItTick()
+
+	counters, ok := <-sender.metrics
+	if !ok {
+		t.Fatal("Failed to pull counters from sender's metrics")
+	}
+
+	diff := deep.Equal(counters, []stats.Metric{
+		{
+			Event: stats.Event{
+				Class:      "foo",
+				Name:       "bar",
+				Repository: "",
+				Ref:        "",
+				SourceRef:  "",
+				UserID:     "",
+				Client:     "",
+			},
+			Value: 2,
+		},
+	})
+	if diff != nil {
+		t.Fatalf("Metric events should match: %s", diff)
+	}
+
+	cancelFn()
+	collector.Close()
 }

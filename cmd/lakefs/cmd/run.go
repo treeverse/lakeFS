@@ -167,8 +167,10 @@ var runCmd = &cobra.Command{
 			logger.WithField("adapter_type", blockstoreType).
 				Error("Block adapter NOT SUPPORTED for production use")
 		}
+
 		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
-		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
+		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg, stats.WithLogger(logger))
+
 		// init block store
 		blockStore, err := factory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
 		if err != nil {
@@ -313,7 +315,7 @@ var runCmd = &cobra.Command{
 		bufferedCollector.Run(ctx)
 		defer bufferedCollector.Close()
 
-		bufferedCollector.CollectEvent("global", "run")
+		bufferedCollector.CollectEvent(stats.Event{Class: "global", Name: "run"})
 
 		logging.Default().WithField("listen_address", cfg.GetListenAddress()).Info("starting HTTP server")
 		server := &http.Server{
