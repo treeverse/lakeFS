@@ -1022,6 +1022,26 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 		}
 	}
 
+	paths := params.PathList
+
+	if len(paths) == 0 {
+		// no need to parallelize here - just read the commits
+		var commits []*CommitLog
+		for it.Next() {
+			val := it.Value()
+
+			commits = append(commits, convertCommit(val))
+			if foundAllCommits(params, commits) {
+				// All results returned until the last commit found
+				// and the number of commits found is as expected.
+				// we have what we need. return commits, true
+				break
+			}
+		}
+
+		return logCommitsResult(commits, params)
+	}
+
 	// commit/key to value cache - helps when fetching the same commit/key while processing parent commits
 	const commitLogCacheSize = 1024 * 5
 	commitCache, err := lru.New(commitLogCacheSize)
@@ -1029,15 +1049,14 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 		return nil, false, err
 	}
 
-	childCtx, cancel := context.WithCancel(ctx)
 	const numReadResults = 3
+	done := atomic.NewBool(false)
 	out := make(chan compareJobResult, numReadResults)
 
-	paths := params.PathList
 	createdTasks := atomic.NewInt64(-1)
 
 	// Shared workpool for the workers. 2 designated to create the work and receive the result
-	workerGroup, ctx := c.workpool.GroupContext(childCtx)
+	workerGroup, ctx := c.workpool.GroupContext(ctx)
 	var mgmtGroup multierror.Group
 
 	mgmtGroup.Go(func() error {
@@ -1045,12 +1064,13 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 		for ; it.Next(); num++ {
 			numm := num
 			vall := it.Value()
-			if childCtx.Err() != nil {
+			if done.Load() {
 				break
 			}
 			workerGroup.Submit(func() error {
-				if childCtx.Err() != nil {
-					return childCtx.Err()
+				if done.Load() {
+					out <- compareJobResult{num: numm}
+					return nil
 				}
 
 				if len(paths) > 0 {
@@ -1072,19 +1092,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 					}
 				}
 
-				commit := &CommitLog{
-					Reference:    vall.CommitID.String(),
-					Committer:    vall.Committer,
-					Message:      vall.Message,
-					CreationDate: vall.CreationDate,
-					Metadata:     map[string]string(vall.Metadata),
-					MetaRangeID:  string(vall.MetaRangeID),
-					Parents:      make([]string, 0, len(vall.Parents)),
-				}
-				for _, parent := range vall.Parents {
-					commit.Parents = append(commit.Parents, parent.String())
-				}
-				out <- compareJobResult{num: numm, log: commit}
+				out <- compareJobResult{num: numm, log: convertCommit(vall)}
 				return nil
 			})
 		}
@@ -1096,7 +1104,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	mgmtGroup.Go(func() error {
 		for {
 			select {
-			case <-childCtx.Done():
+			case <-ctx.Done():
 				return nil
 			case res, ok := <-out:
 				if !ok {
@@ -1104,15 +1112,15 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 					return nil
 				}
 				if res.err != nil {
-					drain(cancel, out)
+					drain(done, out)
 					return res.err
 				}
 				results[res.num] = res.log
 
 				// scan the results array to see if we got the number of results needed
-				_, done := findAllCommits(results, params, createdTasks)
-				if done {
-					drain(cancel, out)
+				_, foundAll := findAllCommits(results, params, createdTasks)
+				if foundAll {
+					drain(done, out)
 					return nil
 				}
 			}
@@ -1127,6 +1135,31 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	}
 
 	commits, _ := findAllCommits(results, params, createdTasks)
+	return logCommitsResult(commits, params)
+}
+
+func foundAllCommits(params LogParams, commits []*CommitLog) bool {
+	return (params.Limit && len(commits) >= params.Amount) ||
+		len(commits) >= params.Amount+1
+}
+
+func convertCommit(val *graveler.CommitRecord) *CommitLog {
+	commit := &CommitLog{
+		Reference:    val.CommitID.String(),
+		Committer:    val.Committer,
+		Message:      val.Message,
+		CreationDate: val.CreationDate,
+		Metadata:     map[string]string(val.Metadata),
+		MetaRangeID:  string(val.MetaRangeID),
+		Parents:      make([]string, 0, len(val.Parents)),
+	}
+	for _, parent := range val.Parents {
+		commit.Parents = append(commit.Parents, parent.String())
+	}
+	return commit
+}
+
+func logCommitsResult(commits []*CommitLog, params LogParams) ([]*CommitLog, bool, error) {
 	hasMore := false
 	if len(commits) > params.Amount {
 		hasMore = true
@@ -1135,8 +1168,8 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	return commits, hasMore, nil
 }
 
-func drain(cancel context.CancelFunc, compareJobResults chan compareJobResult) {
-	cancel()
+func drain(done *atomic.Bool, compareJobResults chan compareJobResult) {
+	done.Store(true)
 
 	for {
 		select {
@@ -1160,8 +1193,7 @@ func findAllCommits(results map[int]*CommitLog, params LogParams, num *atomic.In
 			commits = append(commits, log)
 		}
 
-		if (params.Limit && len(commits) >= params.Amount) ||
-			len(commits) >= params.Amount+1 {
+		if foundAllCommits(params, commits) {
 			// All results returned until the last commit found
 			// and the number of commits found is as expected.
 			// we have what we need. return commits, true
