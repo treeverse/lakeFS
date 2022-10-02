@@ -43,6 +43,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
 	endpoint := viper.GetString("s3_endpoint")
+	endpointSecure := viper.GetBool("s3_endpoint_secure")
 	opts := minio.PutObjectOptions{}
 
 	for _, sig := range sigs {
@@ -64,7 +65,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 			for i := 0; i < parallelism; i++ {
 				client, err := minio.New(endpoint, &minio.Options{
 					Creds:  creds,
-					Secure: false,
+					Secure: endpointSecure,
 				})
 				if err != nil {
 					t.Fatalf("minio.New: %s", err)
@@ -123,6 +124,7 @@ func TestS3CopyObject(t *testing.T) {
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
 	endpoint := viper.GetString("s3_endpoint")
+	endpointSecure := viper.GetBool("s3_endpoint_secure")
 	opts := minio.PutObjectOptions{}
 	r := rand.New(rand.NewSource(17))
 
@@ -130,7 +132,7 @@ func TestS3CopyObject(t *testing.T) {
 
 	minioClient, err := minio.New(endpoint, &minio.Options{
 		Creds:  creds,
-		Secure: false,
+		Secure: endpointSecure,
 	})
 	if err != nil {
 		t.Fatalf("minio.New: %s", err)
