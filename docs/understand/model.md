@@ -26,11 +26,11 @@ lakeFS manages pointers and additional metadata about these objects.
 
 ## Version Control
 
-lakeFS introduces version control semantics for data. Most of these will be familiar to [Git](https://git-scm.com/){:target="_blank"} users:
+lakeFS is spearheading version control semantics for data. Most of these concepts will be familiar to Git users:
 
 ### Repository
 
-In lakeFS, a _repository_ is a set of related objects (or collections of objects). In many cases, these represent tables of [various formats](https://lakefs.io/hudi-iceberg-and-delta-lake-data-lake-table-formats-compared/){:target="_blank"} for tabular data, or a set of unstructured objects such as images, videos, sensor data, etc.
+In lakeFS, a _repository_ is a set of related objects (or collections of objects). In many cases, these represent tables of [various formats](https://lakefs.io/hudi-iceberg-and-delta-lake-data-lake-table-formats-compared/){:target="_blank"} for tabular data, semi-structured data such as JSON or log files - or a set of unstructured objects such as images, videos, sensor data, etc.
 
 lakeFS represents repositories as a logical namespace used to group together objects, branches, and commits - analogous to a repository in Git.
 
@@ -38,7 +38,7 @@ lakeFS represents repositories as a logical namespace used to group together obj
 
 Using commits, you can view a [repository](#repository) at a certain point in its history and you're guaranteed that the data you see is exactly as it was at the point of committing it.
 
-These commits are immutable "checkpoints" containing all contents of a repository at a given point in time. This is very similar to commits in Git.
+These commits are immutable "checkpoints" containing all contents of a repository at a given point in the repository's history.
 
 Each commit contains metadata - the committer, timestamp, a commit message, as well as arbitrary key/value pairs you can choose to add.
 
@@ -61,7 +61,8 @@ Under the hood, branches are simply a pointer to a [commit](#commits) along with
 
 ### Tags
 
-Tags are a way to give a meaningful name to a specific commit.
+Tags are a way to give a meaningful name to a specific commit. 
+Using tags allow users to reference specific releases, experiments or versions by using a human friendly name.
 
 Example tags:
 

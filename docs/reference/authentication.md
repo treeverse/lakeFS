@@ -102,8 +102,9 @@ See [this example for authenticating with the AWS CLI](../integrations/aws_cli.m
 
 ## OIDC support
 
-You can manage lakeFS users externally using an identity provider compatible with OpenID Connect (OIDC).
-
+OpenID Connect (OIDC) is a simple identity layer on top of the OAuth 2.0 protocol.
+You can configure lakeFS to enable OIDC to manage your lakeFS users externally. 
+Essentially, once configured, this enables you the benefit of OpenID connect, such as a single sign-on (SSO), etc. 
 
 ### Configuring lakeFS server for OIDC
 
