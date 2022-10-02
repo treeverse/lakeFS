@@ -86,7 +86,7 @@ export const Error = ({error, onDismiss = null, className = null}) => {
     return (
         <Alert className={className} variant="danger">{content}</Alert>
     );
-}
+};
 
 export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => {
     if (typeof dateValue === 'number') {
@@ -402,4 +402,4 @@ export const ExitConfirmationDialog = ({dialogAlert, dialogDescription, onExit, 
             </DialogActions>
         </Dialog>
     )
-}
+};

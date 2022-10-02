@@ -338,7 +338,7 @@ const ObjectsBrowser = ({config, configError}) => {
     const refresh = () => setRefreshToken(!refreshToken);
 
     if (loading) return <Loading/>;
-    if (!!error || configError) return <RepoError error={error || configError}/>;
+    if (error || configError) return <RepoError error={error || configError}/>;
 
     return (
         <>
