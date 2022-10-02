@@ -47,13 +47,13 @@ type dependencies struct {
 
 // memCollector in-memory collector stores events and metadata sent
 type memCollector struct {
-	Events         []*stats.MetadataEntry
+	Events         []*stats.Event
 	Metadata       []*stats.Metadata
 	InstallationID string
 }
 
-func (m *memCollector) CollectEvent(class, action string) {
-	m.Events = append(m.Events, &stats.MetadataEntry{Name: class, Value: action})
+func (m *memCollector) CollectEvent(ev stats.Event) {
+	m.Events = append(m.Events, &ev)
 }
 
 func (m *memCollector) CollectMetadata(metadata *stats.Metadata) {

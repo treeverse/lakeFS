@@ -42,9 +42,10 @@ func NewActionStatsMockCollector() ActionStatsMockCollector {
 	}
 }
 
-func (c *ActionStatsMockCollector) CollectEvent(_, action string) {
-	c.Hits[action]++
+func (c *ActionStatsMockCollector) CollectEvent(ev stats.Event) {
+	c.Hits[ev.Name]++
 }
+
 func (c *ActionStatsMockCollector) CollectMetadata(_ *stats.Metadata) {}
 func (c *ActionStatsMockCollector) SetInstallationID(_ string)        {}
 func (c *ActionStatsMockCollector) Close()                            {}

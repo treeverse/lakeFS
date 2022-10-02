@@ -19,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 func AuthenticationHandler(authService auth.GatewayService, next http.Handler) http.Handler {
@@ -102,6 +103,7 @@ func stripPort(host string) string {
 func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
+		client := httputil.GetRequestLakeFSClient(req)
 		o := &operations.Operation{
 			Region:            sc.region,
 			FQDN:              getBareDomain(stripPort(req.Host), sc.bareDomains),
@@ -109,12 +111,24 @@ func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 			MultipartsTracker: sc.multipartsTracker,
 			BlockStore:        sc.blockStore,
 			Auth:              sc.authService,
-			Incr: func(action string) {
+			Incr: func(action, userID, repository, ref string) {
 				logging.FromContext(ctx).
-					WithField("action", action).
-					WithField("message_type", "action").
+					WithFields(logging.Fields{
+						"action":       action,
+						"message_type": "action",
+						"repository":   repository,
+						"ref":          ref,
+						"user_id":      userID,
+					}).
 					Debug("performing S3 action")
-				sc.stats.CollectEvent("s3_gateway", action)
+				sc.stats.CollectEvent(stats.Event{
+					Class:      "s3_gateway",
+					Name:       action,
+					Repository: repository,
+					Ref:        ref,
+					UserID:     userID,
+					Client:     client,
+				})
 			},
 		}
 		next.ServeHTTP(w, req.WithContext(context.WithValue(ctx, ContextKeyOperation, o)))
@@ -148,7 +162,8 @@ func EnrichWithRepositoryOrFallback(c catalog.Interface, authService auth.Gatewa
 			authResp, authErr := authService.Authorize(ctx, &auth.AuthorizationRequest{
 				Username: username,
 				RequiredPermissions: permissions.Node{
-					Permission: permissions.Permission{Action: permissions.ListRepositoriesAction, Resource: "*"}},
+					Permission: permissions.Permission{Action: permissions.ListRepositoriesAction, Resource: "*"},
+				},
 			})
 			if authErr != nil || authResp.Error != nil || !authResp.Allowed {
 				_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
@@ -202,7 +217,7 @@ func OperationLookupHandler(next http.Handler) http.Handler {
 	})
 }
 
-// memberFold returns true if a is equal case-folded to a member of bs.
+// memberFold returns true if 'a' is equal case-folded to a member of bs.
 func memberFold(a string, bs []string) bool {
 	for _, b := range bs {
 		if strings.EqualFold(a, b) {

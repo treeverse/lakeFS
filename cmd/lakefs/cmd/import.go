@@ -102,7 +102,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		return 1
 	}
 
-	bufferedCollector := stats.NewBufferedCollector(cfg.GetFixedInstallationID(), cfg)
+	bufferedCollector := stats.NewBufferedCollector(cfg.GetFixedInstallationID(), cfg, stats.WithLogger(logger))
 	defer bufferedCollector.Close()
 	bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
 
