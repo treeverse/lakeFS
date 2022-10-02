@@ -127,7 +127,7 @@ func DurationHandler(next http.Handler) http.Handler {
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		start := time.Now()
 		mrw := httputil.NewMetricResponseWriter(w)
-		next.ServeHTTP(w, req)
+		next.ServeHTTP(mrw, req)
 		requestHistograms.WithLabelValues(string(o.OperationID), strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 	})
 }
