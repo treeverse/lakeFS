@@ -1,9 +1,10 @@
+import queryString from "query-string"
+
 export const API_ENDPOINT = '/api/v1';
 export const DEFAULT_LISTING_AMOUNT = 100;
 
 export const SETUP_STATE_INITIALIZED = "initialized"
 export const SETUP_STATE_NOT_INITIALIZED = "not_initialized"
-import queryString from "query-string"
 
 class LocalCache {
     get(key) {
