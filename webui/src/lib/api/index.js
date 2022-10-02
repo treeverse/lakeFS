@@ -55,6 +55,7 @@ export const extractError = async (response) => {
 export const defaultAPIHeaders = {
     "Accept": "application/json",
     "Content-Type": "application/json",
+    "User-Agent": "lakefs-webui/__buildVersion",
 }
 
 const authenticationError = "error authenticating request"

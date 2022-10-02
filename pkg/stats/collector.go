@@ -2,7 +2,8 @@ package stats
 
 import (
 	"context"
-	"fmt"
+	"encoding/hex"
+	"hash/fnv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -15,16 +16,16 @@ import (
 )
 
 const (
-	collectorEventBufferSize = 1024 * 1024
-	flushInterval            = time.Second * 600
-	sendTimeout              = time.Second * 5
+	collectorEventBufferSize = 8 * 1024
+	flushInterval            = 10 * time.Minute
+	sendTimeout              = 5 * time.Second
 
 	// heartbeatInterval is the interval between 2 heartbeat events.
 	heartbeatInterval = 60 * time.Minute
 )
 
 type Collector interface {
-	CollectEvent(class, action string)
+	CollectEvent(ev Event)
 	CollectMetadata(accountMetadata *Metadata)
 	SetInstallationID(installationID string)
 
@@ -32,9 +33,38 @@ type Collector interface {
 	Close()
 }
 
+type Event struct {
+	Class      string `json:"class"`
+	Name       string `json:"name"`
+	Repository string `json:"repository"`
+	Ref        string `json:"ref"`
+	SourceRef  string `json:"source_ref"`
+	Client     string `json:"client"`
+	UserID     string `json:"user_id"`
+}
+
+// ClearExtended clear values of *all* extended fields
+func (e Event) ClearExtended() Event {
+	e.Repository = ""
+	e.Ref = ""
+	e.SourceRef = ""
+	e.UserID = ""
+	e.Client = ""
+	return e
+}
+
+// HashExtended hash the values of extended fields with sensitive information
+func (e Event) HashExtended() Event {
+	e.Repository = HashMetricValue(e.Repository)
+	e.Ref = HashMetricValue(e.Ref)
+	e.SourceRef = HashMetricValue(e.SourceRef)
+	e.UserID = HashMetricValue(e.UserID)
+	// e.Client - no need to hash the client value
+	return e
+}
+
 type Metric struct {
-	Class string `json:"class"`
-	Name  string `json:"name"`
+	Event
 	Value uint64 `json:"value"`
 }
 
@@ -45,16 +75,7 @@ type InputEvent struct {
 	Metrics        []Metric `json:"metrics"`
 }
 
-type primaryKey struct {
-	class  string
-	action string
-}
-
-func (p primaryKey) String() string {
-	return fmt.Sprintf("%s/%s", p.class, p.action)
-}
-
-type keyIndex map[primaryKey]uint64
+type keyIndex map[Event]uint64
 
 type FlushTicker interface {
 	Stop()
@@ -75,7 +96,7 @@ func (t *TimeTicker) Tick() <-chan time.Time {
 
 type BufferedCollector struct {
 	cache            keyIndex
-	writes           chan primaryKey
+	writes           chan Event
 	sender           Sender
 	sendTimeout      time.Duration
 	flushTicker      FlushTicker
@@ -84,19 +105,19 @@ type BufferedCollector struct {
 	processID        string
 	runtimeCollector func() map[string]string
 	runtimeStats     map[string]string
-
-	pendingWrites   sync.WaitGroup
-	pendingRequests sync.WaitGroup
-	ctxCancelled    int32
-	done            chan bool
-	runCalled       int32
+	pendingWrites    sync.WaitGroup
+	pendingRequests  sync.WaitGroup
+	ctxCancelled     int32
+	done             chan bool
+	runCalled        int32
+	extended         bool
 }
 
 type BufferedCollectorOpts func(s *BufferedCollector)
 
 func WithWriteBufferSize(bufferSize int) BufferedCollectorOpts {
 	return func(s *BufferedCollector) {
-		s.writes = make(chan primaryKey, bufferSize)
+		s.writes = make(chan Event, bufferSize)
 	}
 }
 
@@ -124,36 +145,55 @@ func WithSendTimeout(d time.Duration) BufferedCollectorOpts {
 	}
 }
 
+func WithExtended(b bool) BufferedCollectorOpts {
+	return func(s *BufferedCollector) {
+		s.extended = b
+	}
+}
+
 func NewBufferedCollector(installationID string, c *config.Config, opts ...BufferedCollectorOpts) *BufferedCollector {
-	processID, moreOpts := getBufferedCollectorArgs(c)
-	opts = append(opts, moreOpts...)
+	statsEnabled := true
+	flushDuration := flushInterval
+	extended := false
+	if c != nil {
+		statsEnabled = c.GetStatsEnabled() && !strings.HasPrefix(version.Version, version.UnreleasedVersion)
+		flushDuration = c.GetStatsFlushInterval()
+		extended = c.GetStatsExtended()
+	}
 	s := &BufferedCollector{
 		cache:           make(keyIndex),
-		writes:          make(chan primaryKey, collectorEventBufferSize),
-		sender:          NewDummySender(),
-		sendTimeout:     sendTimeout,
+		writes:          make(chan Event, collectorEventBufferSize),
 		runtimeStats:    map[string]string{},
-		flushTicker:     &TimeTicker{ticker: time.NewTicker(flushInterval)},
+		flushTicker:     &TimeTicker{ticker: time.NewTicker(flushDuration)},
 		heartbeatTicker: &TimeTicker{ticker: time.NewTicker(heartbeatInterval)},
 		installationID:  installationID,
-		processID:       processID,
+		processID:       uuid.Must(uuid.NewUUID()).String(),
 		pendingWrites:   sync.WaitGroup{},
 		pendingRequests: sync.WaitGroup{},
 		ctxCancelled:    0,
 		done:            make(chan bool),
 		runCalled:       0,
+		sendTimeout:     sendTimeout,
+		extended:        extended,
 	}
 	for _, opt := range opts {
 		opt(s)
 	}
-
+	if s.sender == nil {
+		if statsEnabled {
+			s.sender = NewHTTPSender(c.GetStatsAddress(), s.sendTimeout, time.Now)
+		} else {
+			s.sender = &dummySender{Log: logging.Default().WithField("service", "dummy_stats_collector")}
+		}
+	}
 	return s
 }
+
 func (s *BufferedCollector) getInstallationID() string {
 	return s.installationID
 }
 
-func (s *BufferedCollector) incr(k primaryKey) {
+func (s *BufferedCollector) incr(k Event) {
 	s.cache[k]++
 }
 
@@ -164,9 +204,7 @@ func (s *BufferedCollector) send(metrics []Metric) {
 		if len(metrics) == 0 {
 			return
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
-		defer cancel()
-		err := s.sender.SendEvent(ctx, s.getInstallationID(), s.processID, metrics)
+		err := s.sender.SendEvent(context.Background(), s.getInstallationID(), s.processID, metrics)
 		if err != nil {
 			logging.Default().
 				WithError(err).
@@ -176,17 +214,20 @@ func (s *BufferedCollector) send(metrics []Metric) {
 	}()
 }
 
-func (s *BufferedCollector) CollectEvent(class, action string) {
+func (s *BufferedCollector) CollectEvent(ev Event) {
 	if s.isCtxCancelled() {
 		return
 	}
 	s.pendingWrites.Add(1)
 	defer s.pendingWrites.Done()
 
-	s.writes <- primaryKey{
-		class:  class,
-		action: action,
+	// hash or clear extended fields on the event
+	if s.extended {
+		ev = ev.HashExtended()
+	} else {
+		ev = ev.ClearExtended()
 	}
+	s.writes <- ev
 }
 
 func (s *BufferedCollector) isCtxCancelled() bool {
@@ -201,9 +242,9 @@ func (s *BufferedCollector) Run(ctx context.Context) {
 			case w := <-s.writes: // collect events
 				s.incr(w)
 			case <-s.heartbeatTicker.Tick():
-				s.incr(primaryKey{
-					class:  "global",
-					action: "heartbeat",
+				s.incr(Event{
+					Class: "global",
+					Name:  "heartbeat",
 				})
 			case <-s.flushTicker.Tick(): // every N seconds, send the collected events
 				s.handleRuntimeStats()
@@ -250,8 +291,7 @@ func makeMetrics(counters keyIndex) []Metric {
 	i := 0
 	for k, v := range counters {
 		metrics[i] = Metric{
-			Class: k.class,
-			Name:  k.action,
+			Event: k,
 			Value: v,
 		}
 		i++
@@ -324,19 +364,10 @@ func (s *BufferedCollector) sendRuntimeStats() {
 	}()
 }
 
-func getBufferedCollectorArgs(c *config.Config) (processID string, opts []BufferedCollectorOpts) {
-	if c == nil {
-		return "", nil
+func HashMetricValue(s string) string {
+	if s == "" {
+		return s
 	}
-	var sender Sender
-	if c.GetStatsEnabled() && !strings.HasPrefix(version.Version, version.UnreleasedVersion) {
-		sender = NewHTTPSender(c.GetStatsAddress(), time.Now)
-	} else {
-		sender = NewDummySender()
-	}
-	return uuid.Must(uuid.NewUUID()).String(),
-		[]BufferedCollectorOpts{
-			WithSender(sender),
-			WithFlushInterval(c.GetStatsFlushInterval()),
-		}
+	v := fnv.New64().Sum([]byte(s))
+	return hex.EncodeToString(v)
 }

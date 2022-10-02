@@ -313,7 +313,7 @@ var runCmd = &cobra.Command{
 		bufferedCollector.Run(ctx)
 		defer bufferedCollector.Close()
 
-		bufferedCollector.CollectEvent("global", "run")
+		bufferedCollector.CollectEvent(stats.Event{Class: "global", Name: "run"})
 
 		logging.Default().WithField("listen_address", cfg.GetListenAddress()).Info("starting HTTP server")
 		server := &http.Server{

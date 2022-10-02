@@ -15,12 +15,13 @@ func (controller *ListBuckets) RequiredPermissions(_ *http.Request) (permissions
 	return permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ListRepositoriesAction,
-			Resource: "*"},
+			Resource: "*",
+		},
 	}, nil
 }
 
 func (controller *ListBuckets) Handle(w http.ResponseWriter, req *http.Request, o *AuthorizedOperation) {
-	o.Incr("list_repos")
+	o.Incr("list_repos", o.Principal, "", "")
 	repos, _, err := o.Catalog.ListRepositories(req.Context(), -1, "", "")
 	if err != nil {
 		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))

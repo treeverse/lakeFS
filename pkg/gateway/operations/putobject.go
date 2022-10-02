@@ -37,7 +37,8 @@ func (controller *PutObject) RequiredPermissions(req *http.Request, repoID, _, d
 		return permissions.Node{
 			Permission: permissions.Permission{
 				Action:   permissions.WriteObjectAction,
-				Resource: permissions.ObjectArn(repoID, destPath)},
+				Resource: permissions.ObjectArn(repoID, destPath),
+			},
 		}, nil
 	}
 	// this is a copy operation
@@ -53,13 +54,17 @@ func (controller *PutObject) RequiredPermissions(req *http.Request, repoID, _, d
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.WriteObjectAction,
-					Resource: permissions.ObjectArn(repoID, destPath)},
+					Resource: permissions.ObjectArn(repoID, destPath),
+				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ReadObjectAction,
-					Resource: permissions.ObjectArn(p.Repo, p.Path)},
-			}}}, nil
+					Resource: permissions.ObjectArn(p.Repo, p.Path),
+				},
+			},
+		},
+	}, nil
 }
 
 // extractEntryFromCopyReq: get metadata from source file
@@ -132,7 +137,7 @@ func getPathFromSource(copySource string) (path.ResolvedAbsolutePath, error) {
 }
 
 func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copySource string) {
-	o.Incr("copy_object")
+	o.Incr("copy_object", o.Principal, o.Repository.Name, o.Reference)
 	p, err := getPathFromSource(copySource)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not parse copy source path")
@@ -168,7 +173,7 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 }
 
 func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation) {
-	o.Incr("put_mpu_part")
+	o.Incr("put_mpu_part", o.Principal, o.Repository.Name, o.Reference)
 	query := req.URL.Query()
 	uploadID := query.Get(QueryParamUploadID)
 	partNumberStr := query.Get(QueryParamPartNumber)
@@ -296,7 +301,7 @@ func (controller *PutObject) Handle(w http.ResponseWriter, req *http.Request, o 
 }
 
 func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
-	o.Incr("put_object")
+	o.Incr("put_object", o.Principal, o.Repository.Name, o.Reference)
 	storageClass := StorageClassFromHeader(req.Header)
 	opts := block.PutOpts{StorageClass: storageClass}
 	blob, err := upload.WriteBlob(req.Context(), o.BlockStore, o.Repository.StorageNamespace, req.Body, req.ContentLength, opts)
