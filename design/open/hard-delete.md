@@ -316,7 +316,9 @@ the background delete job, and preventing the accidental deletion of committed o
 
 ### Handling key override on same staging token - improvement
 
-## 5. No copies
+TBD
+
+## 5. No Copies
 
 The idea is to make sure we do not enable copies, when no two entries in stage will point to the same physical object we will enable delete of the physical address in the following:
 
@@ -332,3 +334,67 @@ We should enable the following to enable the physical delete:
 
 TODO(Barak): list more cases and how it will be address in this solution.
 
+### Flows
+
+#### Move operation
+1. Get entry
+2. "Lock" entry (`SetIf`)
+3. Copy entry to new path on current staging token
+4. Delete old entry
+5. "Unlock" entry (new entry) 
+
+#### Upload Object
+
+1. Get entry
+2. "Lock" entry if exists (override scenario) (`SetIf`)
+3. Write blob
+4. Add staged entry (or update)
+5. Delete physical address if previously existed
+
+#### Delete Object
+1. Get entry
+2. "Lock" entry (`SetIf`) to protect from delete - move race
+3. Delete staging entry
+4. Hard delete object
+
+### Races and issues
+
+#### 1. Commit - Move Race
+1. Start Move:
+   1. Get entry
+   2. "Lock" entry
+2. Start Commit:
+   1. Change staging token
+   2. write commit data (old entry path was written)
+3. Move:
+   1. Create new entry on new staging token
+   2. Delete old entry
+   3. "Unlock" physical address
+
+Now we have an uncommitted entry pointing to a committed physical address. If we reset the branch we will delete
+committed data!
+
+#### 2. Delete - Move Race
+1. Start Delete:
+   1. Get entry
+   2. Check if not "locked"
+2. Start Move:
+   1. Get entry
+   2. "Lock" entry
+   3. Copy entry to new path on current staging token
+3. Delete:
+   1. Hard Delete object from store
+
+In this situation we have an uncommitted entry which points to an invalid physical address.
+**Resolved by locking the entry on delete flow as well**
+
+#### 3. Concurrent Move
+Concurrent move should be blocked as it may cause multiple pointers for the same physical address.
+The most straightforward way to do so is to rely on the absence of the lock.
+The problem with this approach is that permanently locked addresses (which is a protection mechanism in case of catastrophic failures)
+can never be moved -which leads us to the stale lock problem.
+
+#### 4. Stale lock problem
+We use the lock mechanism to protect from race scenarios on Upload (override), Move and Delete. As such, an entry with a stale
+lock will prevent us from performing any of these operations.
+We can overcome it with a time based lock - but this might present additional challenges to the proposed solution.
