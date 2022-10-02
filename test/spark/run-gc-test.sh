@@ -152,7 +152,6 @@ do_case() {
   extract_gc_mode "${test_case}"
   local gc_mode=$?
   local mark_id=$(echo "${test_case}" | jq -r '.mark_id // empty')
-  echo "mark id = ${mark_id}, gc_mode = ${gc_mode}\n"
   repo="${REPOSITORY}-${test_id}"
   prepare_for_gc "${test_case}" "${test_id}"
   run_gc "${repo}" $gc_mode "${mark_id}"
