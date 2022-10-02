@@ -278,7 +278,7 @@ Once an issued address was used by LinkPhysicalAddress, we will delete the token
 
 #### CopyObject
 
-The new flow ensures that we do not add a reference for a committed object after we removed all it's references as part of 
+The new flow ensures that we do not add a reference for a committed object after we removed all its references as part of 
 the background delete job, and preventing the accidental deletion of committed objects.
 
 1. While retry not exhausted
@@ -333,6 +333,20 @@ We should enable the following to enable the physical delete:
 * (optional) Enable 'move' API as alternative to 'copy' we have seen that moving objects from one location to another by copy+delete of metadata will enable easy support for lakeFSFS move. This can be implemented by marking the entry on staging as 'locked'. During the move operation - lock+copy+delete+unlock operation. In case of any failure, as we don't have transactions, we may keep two entries, or keep locked object without ever delete its physical address.
 
 TODO(Barak): list more cases and how it will be address in this solution.
+
+### Object Locking
+
+Add a new field in the staging area struct to indicate whether the entry is currently locked or not
+```
+type Value struct {
+	Identity []byte
+	Data     []byte
+	Locked   bool
+}
+```
+We can then use `SetIf` to ensure concurrently safe locking mechanism.
+When deleting a staged entry (either by DropKey, ResetBranch, DeleteBranch) we will perform Hard Delete of object only in case 
+the entry is not locked.
 
 ### Flows
 
