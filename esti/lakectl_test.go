@@ -8,6 +8,7 @@ import (
 var emptyVars = make(map[string]string)
 
 func TestLakectlHelp(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl(), false, "lakectl_help", emptyVars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" --help", false, "lakectl_help", emptyVars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl(), true, "lakectl_help", emptyVars)
@@ -16,7 +17,7 @@ func TestLakectlHelp(t *testing.T) {
 }
 
 func TestLakectlBasicRepoActions(t *testing.T) {
-
+	SkipTestIfAskedTo(t)
 	// RunCmdAndVerifySuccess(t, Lakectl()+" repo list", false, "\n", emptyVars)
 
 	// Fails due to the usage of repos for isolation - esti creates repos in parallel and
@@ -96,6 +97,7 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 }
 
 func TestLakectlCommit(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
@@ -135,6 +137,7 @@ func TestLakectlCommit(t *testing.T) {
 }
 
 func TestLakectlBranchAndTagValidation(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	validTagName := "my.valid.tag"
@@ -166,6 +169,7 @@ func TestLakectlBranchAndTagValidation(t *testing.T) {
 }
 
 func TestLakectlMergeAndStrategies(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
@@ -253,6 +257,7 @@ func TestLakectlMergeAndStrategies(t *testing.T) {
 }
 
 func TestLakectlAnnotate(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
@@ -322,6 +327,7 @@ func TestLakectlAnnotate(t *testing.T) {
 }
 
 func TestLakectlAuthUsers(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	userName := "test_user"
 	vars := map[string]string{
 		"ID": userName,
@@ -339,6 +345,7 @@ func TestLakectlAuthUsers(t *testing.T) {
 }
 
 func TestLakectlIngestS3(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	// Specific S3 test - due to the limitation on ingest source type that has to match lakefs underlying block store,
 	// this test can only run on AWS setup, and therefore is skipped for other store types
 	skipOnSchemaMismatch(t, IngestTestBucketPath)

@@ -74,6 +74,9 @@ var (
 	groupsToKeep       arrayFlags
 	usersToKeep        arrayFlags
 	policiesToKeep     arrayFlags
+	testsToSkip        arrayFlags
+
+	testsToSkipMap map[interface{}]bool
 )
 
 func arrayFlagsToMap(arr arrayFlags) map[interface{}]bool {
@@ -266,6 +269,7 @@ func TestMain(m *testing.M) {
 	flag.Var(&groupsToKeep, "group-to-keep", "Groups to keep in case of pre-run cleanup")
 	flag.Var(&usersToKeep, "user-to-keep", "Users to keep in case of pre-run cleanup")
 	flag.Var(&policiesToKeep, "policy-to-keep", "Policies to keep in case of pre-run cleanup")
+	flag.Var(&testsToSkip, "skip", "Tests to skip")
 
 	if directs, ok := os.LookupEnv("ESTI_TEST_DATA_ACCESS"); ok {
 		if err := testDirectDataAccess.Parse(directs); err != nil {
@@ -309,6 +313,13 @@ func TestMain(m *testing.M) {
 
 	defer func() { _ = server.s.Close() }()
 
+	testsToSkipMap = arrayFlagsToMap(testsToSkip)
 	logger.Info("Setup succeeded, running the tests")
 	os.Exit(m.Run())
+}
+
+func SkipTestIfAskedTo(t *testing.T) {
+	if testsToSkipMap[t.Name()] {
+		t.Skip(fmt.Printf("Skip on test: %s", t.Name()))
+	}
 }
