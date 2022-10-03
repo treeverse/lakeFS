@@ -224,12 +224,16 @@ object GarbageCollector {
     }
   }
 
-  private def validateRunModeConfigs(hc: Configuration, shouldMark: Boolean, shouldSweep: Boolean): Unit = {
+  private def validateRunModeConfigs(
+      hc: Configuration,
+      shouldMark: Boolean,
+      shouldSweep: Boolean
+  ): Unit = {
     if (hc.getBoolean(LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, false)) {
       Console.err.printf("The \"%s\" configuration is deprecated. Use \"%s=false\" instead",
-        LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY,
-        LAKEFS_CONF_GC_DO_SWEEP
-      )
+                         LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY,
+                         LAKEFS_CONF_GC_DO_SWEEP
+                        )
       System.exit(1)
     }
 
@@ -238,8 +242,8 @@ object GarbageCollector {
       System.exit(2)
     } else if (!shouldMark && hc.get(LAKEFS_CONF_GC_MARK_ID, "").isEmpty) { // Sweep-only mode but no mark ID to sweep
       Console.out.printf("Please provide a mark ID (%s) for sweep-only mode. Exiting...\n",
-        LAKEFS_CONF_GC_MARK_ID
-      )
+                         LAKEFS_CONF_GC_MARK_ID
+                        )
       System.exit(2)
     }
   }
@@ -346,7 +350,7 @@ object GarbageCollector {
         spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
       }
     }
-    
+
 //    It is necessary to fetch the run ID and commit location if we did not mark in this run (sweep-only mode).
     if (!shouldMark) {
       val runIDAndCommitsLocation = populateRunIDAndCommitsLocation(markID, gcAddressesLocation)
