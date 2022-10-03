@@ -141,7 +141,7 @@ func DurationHandler(next http.Handler) http.Handler {
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		start := time.Now()
 		mrw := httputil.NewMetricResponseWriter(w)
-		next.ServeHTTP(w, req)
+		next.ServeHTTP(mrw, req)
 		requestHistograms.WithLabelValues(string(o.OperationID), strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 	})
 }
@@ -190,10 +190,10 @@ func OperationLookupHandler(next http.Handler) http.Handler {
 		ctx := req.Context()
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		repoID := ctx.Value(ContextKeyRepositoryID).(string)
-		var operationID operations.OperationID
+		o.OperationID = operations.OperationIDOperationNotFound
 		if repoID == "" {
 			if req.Method == http.MethodGet {
-				operationID = operations.OperationIDListBuckets
+				o.OperationID = operations.OperationIDListBuckets
 			} else {
 				_ = o.EncodeError(w, req, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
 				return
@@ -204,15 +204,14 @@ func OperationLookupHandler(next http.Handler) http.Handler {
 			switch {
 			case ref != "" && pth != "":
 				req = req.WithContext(ctx)
-				operationID = pathBasedOperationID(req.Method)
+				o.OperationID = pathBasedOperationID(req.Method)
 			case ref == "" && pth == "":
-				operationID = repositoryBasedOperationID(req.Method)
+				o.OperationID = repositoryBasedOperationID(req.Method)
 			default:
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
 		}
-		o.OperationID = operationID
 		next.ServeHTTP(w, req)
 	})
 }
