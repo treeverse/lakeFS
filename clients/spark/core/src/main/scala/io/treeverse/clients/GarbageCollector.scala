@@ -346,9 +346,8 @@ object GarbageCollector {
         spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
       }
     }
-
-    // If we didn't mark in this run (sweep-only mode) we should fetch the run ID and commit location according to the
-    // provided mark ID.
+    
+//    It is necessary to fetch the run ID and commit location if we did not mark in this run (sweep-only mode).
     if (!shouldMark) {
       val runIDAndCommitsLocation = populateRunIDAndCommitsLocation(markID, gcAddressesLocation)
       runID = runIDAndCommitsLocation(0)
