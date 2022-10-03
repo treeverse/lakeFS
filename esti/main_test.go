@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -74,9 +75,8 @@ var (
 	groupsToKeep       arrayFlags
 	usersToKeep        arrayFlags
 	policiesToKeep     arrayFlags
-	testsToSkip        arrayFlags
 
-	testsToSkipMap map[interface{}]bool
+	testsToSkipRegex *regexp.Regexp
 )
 
 func arrayFlagsToMap(arr arrayFlags) map[interface{}]bool {
@@ -265,11 +265,11 @@ func TestMain(m *testing.M) {
 	adminAccessKeyID := flag.String("admin-access-key-id", DefaultAdminAccessKeyId, "lakeFS Admin access key ID")
 	adminSecretAccessKey := flag.String("admin-secret-access-key", DefaultAdminSecretAccessKey, "lakeFS Admin secret access key")
 	cleanupEnv := flag.Bool("cleanup-env-pre-run", false, "Clean repositories, groups, users and polices before running esti tests")
+	testsToSkip := flag.String("skip", "", "Tests to skip in a regex format")
 	flag.Var(&repositoriesToKeep, "repository-to-keep", "Repositories to keep in case of pre-run cleanup")
 	flag.Var(&groupsToKeep, "group-to-keep", "Groups to keep in case of pre-run cleanup")
 	flag.Var(&usersToKeep, "user-to-keep", "Users to keep in case of pre-run cleanup")
 	flag.Var(&policiesToKeep, "policy-to-keep", "Policies to keep in case of pre-run cleanup")
-	flag.Var(&testsToSkip, "skip", "Tests to skip")
 
 	if directs, ok := os.LookupEnv("ESTI_TEST_DATA_ACCESS"); ok {
 		if err := testDirectDataAccess.Parse(directs); err != nil {
@@ -312,14 +312,14 @@ func TestMain(m *testing.M) {
 	}
 
 	defer func() { _ = server.s.Close() }()
+	testsToSkipRegex, _ = regexp.Compile(*testsToSkip)
 
-	testsToSkipMap = arrayFlagsToMap(testsToSkip)
 	logger.Info("Setup succeeded, running the tests")
 	os.Exit(m.Run())
 }
 
 func SkipTestIfAskedTo(t *testing.T) {
-	if testsToSkipMap[t.Name()] {
-		t.Skip(fmt.Printf("Skip on test: %s", t.Name()))
+	if testsToSkipRegex.MatchString(t.Name()) {
+		t.SkipNow()
 	}
 }
