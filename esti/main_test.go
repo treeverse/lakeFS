@@ -312,14 +312,17 @@ func TestMain(m *testing.M) {
 	}
 
 	defer func() { _ = server.s.Close() }()
-	testsToSkipRegex, _ = regexp.Compile(*testsToSkip)
+	testsToSkipRegex, err = regexp.Compile(*testsToSkip)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	logger.Info("Setup succeeded, running the tests")
 	os.Exit(m.Run())
 }
 
 func SkipTestIfAskedTo(t *testing.T) {
-	if testsToSkipRegex.MatchString(t.Name()) {
+	if testsToSkipRegex.String() != "" && testsToSkipRegex.MatchString(t.Name()) {
 		t.SkipNow()
 	}
 }
