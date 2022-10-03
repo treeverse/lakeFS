@@ -80,21 +80,21 @@ const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
 export class NotFoundError extends Error {
     constructor(message) {
         super(message)
-        this.name = "NotFoundError"
+        this.name = this.constructor.name;
     }
 }
 
 export class BadRequestError extends Error {
     constructor(message) {
         super(message)
-        this.name = "BadRequestError"
+        this.name = this.constructor.name;
     }
 }
 
 export class AuthorizationError extends Error {
     constructor(message) {
         super(message);
-        this.name = "AuthorizationError"
+        this.name = this.constructor.name;
     }
 }
 
@@ -102,14 +102,14 @@ export class AuthenticationError extends Error {
     constructor(message, status) {
         super(message);
         this.status = status;
-        this.name = "AuthenticationError"
+        this.name = this.constructor.name;
     }
 }
 
 export class MergeError extends Error {
     constructor(message, payload) {
         super(message);
-        this.name = "MergeError";
+        this.name = this.constructor.name;
         this.payload = payload;
     }
 }
@@ -117,7 +117,7 @@ export class MergeError extends Error {
 export class RepositoryDeletionError extends Error {
     constructor(message, repoId) {
         super(message);
-        this.name = "RepositoryDeletionError";
+        this.name = this.constructor.name;
         this.repoId = repoId;
     }
 }
