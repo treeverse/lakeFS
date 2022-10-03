@@ -2,7 +2,8 @@ name: Docker
 on:
   release:
     types: [published]
-  commit:
+  pull_request:
+  pull:
 
 # These permissions are needed to interact with GitHub's OIDC Token endpoint.
 permissions:
