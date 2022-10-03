@@ -79,7 +79,7 @@ parent of each commit. Histories go back in time.
 _Merging_ is the way to integrate changes from a branch into another branch.
 The result of a merge is a new commit, with the destination as the first parent and the source as the second.
 
-To learn more about how merging works in lakeFS, see [versioning internals](./versioning-internals.md#merging-changes-to-data)
+To learn more about how merging works in lakeFS, see the [merge reference](../reference/merge.md)
 {: .note }
 
 
