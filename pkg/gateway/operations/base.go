@@ -41,7 +41,7 @@ const (
 type ActionIncr func(string)
 
 type Operation struct {
-	FooOperationID    OperationID
+	OperationID       OperationID
 	Region            string
 	FQDN              string
 	Catalog           catalog.Interface

@@ -126,7 +126,7 @@ func NewHandler(region string, catalog catalog.Interface, multipartsTracker mult
 func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	setDefaultContentType(w, req)
 	o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
-	operationHandler := h.operationHandlers[o.FooOperationID]
+	operationHandler := h.operationHandlers[o.OperationID]
 	if operationHandler == nil {
 		// TODO(johnnyaug): consider other status code or add text with unknown gateway operation
 		w.WriteHeader(http.StatusNotFound)
