@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.83.0
+
+What's new:
+- Adding lakeSF description to python's pypi package (#4260)
+- Report extended information with metrics (off by default) (#4196)
+
+Bug fixes:
+- Fix S3 gateway delete object limits check (#4240)
+- Fix S3 gateway report status code and operation ID in case of an error (#4293)
+- Fix UI render error inside repo error (#4301)
+- Fix UI repository settings label width (#4300)
+- Fix logging.IsTracing should check default logger level (#4252)
+
 ## v0.82.0
 
 What's new:
