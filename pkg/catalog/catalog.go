@@ -1023,25 +1023,14 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	}
 
 	paths := params.PathList
-
 	if len(paths) == 0 {
-		// no need to parallelize here - just read the commits
-		var commits []*CommitLog
-		for it.Next() {
-			val := it.Value()
-
-			commits = append(commits, convertCommit(val))
-			if foundAllCommits(params, commits) {
-				// All results returned until the last commit found
-				// and the number of commits found is as expected.
-				// we have what we need. return commits, true
-				break
-			}
-		}
-
-		return logCommitsResult(commits, params)
+		return listCommitsWithoutPaths(it, params)
 	}
 
+	return c.listCommitsWithPaths(ctx, repository, it, params)
+}
+
+func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler.RepositoryRecord, it graveler.CommitIterator, params LogParams) ([]*CommitLog, bool, error) {
 	// commit/key to value cache - helps when fetching the same commit/key while processing parent commits
 	const commitLogCacheSize = 1024 * 5
 	commitCache, err := lru.New(commitLogCacheSize)
@@ -1058,7 +1047,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	// Shared workpool for the workers. 2 designated to create the work and receive the result
 	workerGroup, ctx := c.workpool.GroupContext(ctx)
 	var mgmtGroup multierror.Group
-
+	paths := params.PathList
 	mgmtGroup.Go(func() error {
 		num := 0
 		for ; it.Next(); num++ {
@@ -1135,6 +1124,24 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	}
 
 	commits, _ := findAllCommits(results, params, createdTasks)
+	return logCommitsResult(commits, params)
+}
+
+func listCommitsWithoutPaths(it graveler.CommitIterator, params LogParams) ([]*CommitLog, bool, error) {
+	// no need to parallelize here - just read the commits
+	var commits []*CommitLog
+	for it.Next() {
+		val := it.Value()
+
+		commits = append(commits, convertCommit(val))
+		if foundAllCommits(params, commits) {
+			// All results returned until the last commit found
+			// and the number of commits found is as expected.
+			// we have what we need. return commits, true
+			break
+		}
+	}
+
 	return logCommitsResult(commits, params)
 }
 
