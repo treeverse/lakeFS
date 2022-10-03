@@ -235,7 +235,7 @@ object GarbageCollector {
 
     if (!shouldMark && !shouldSweep) {
       Console.out.println("Nothing to do, must specify at least one of mark, sweep. Exiting...")
-      System.exit(0)
+      System.exit(2)
     } else if (!shouldMark && hc.get(LAKEFS_CONF_GC_MARK_ID, "").isEmpty) { // Sweep-only mode but no mark ID to sweep
       Console.out.printf("Please provide a mark ID (%s) for sweep-only mode. Exiting...\n",
         LAKEFS_CONF_GC_MARK_ID
