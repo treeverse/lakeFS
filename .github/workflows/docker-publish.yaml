@@ -3,7 +3,7 @@ on:
   release:
     types: [published]
   pull_request:
-  pull:
+  push:
 
 # These permissions are needed to interact with GitHub's OIDC Token endpoint.
 permissions:
