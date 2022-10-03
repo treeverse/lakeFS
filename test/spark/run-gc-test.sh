@@ -37,6 +37,7 @@ run_gc () {
   local mark_id_config=""
   echo "mark id = ${mark_id}, gc_mode = ${run_mode}"
   if [ ${run_mode} -eq ${MARK_ONLY_MODE} ] || [ ${run_mode} -eq ${SWEEP_ONLY_MODE} ]; then
+    # If we are in sweep-only mode, we'll first mark and afterwards we'll sweep
     sweep_config="-c spark.hadoop.lakefs.gc.do_sweep=false "
   fi
   if [[ ${mark_id} != "" ]]; then
