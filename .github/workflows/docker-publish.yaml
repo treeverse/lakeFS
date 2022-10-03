@@ -60,6 +60,7 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY_LAKEFS: lakefs
           ECR_REPOSITORY_LAKECTL: lakectl
+          DOCKER_BUILDKIT: '1'
         run: |
           docker build --target lakectl -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKECTL:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} --label db-schema-version=${{ steps.schema.outputs.dbschema_version}} .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKECTL:${{ steps.version.outputs.tag }}
