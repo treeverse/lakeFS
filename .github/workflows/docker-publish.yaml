@@ -61,9 +61,9 @@ jobs:
           ECR_REPOSITORY_LAKEFS: lakefs
           ECR_REPOSITORY_LAKECTL: lakectl
         run: |
-          docker build --target lakectl -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKECTL:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} --label db-schema-version=${{ steps.schema.outputs.dbschema_version}} .
+          docker buildx build --target lakectl -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKECTL:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} --label db-schema-version=${{ steps.schema.outputs.dbschema_version}} .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKECTL:${{ steps.version.outputs.tag }}
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} --label db-schema-version=${{ steps.schema.outputs.dbschema_version}} .
+          docker buildx build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} --label db-schema-version=${{ steps.schema.outputs.dbschema_version}} .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
       - name: Build and push lakectl to Docker hub
         uses: docker/build-push-action@v1
