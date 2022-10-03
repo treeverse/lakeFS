@@ -145,9 +145,10 @@ func TestAuditChecker_PassVersionOnRequest(t *testing.T) {
 	defer svr.Close()
 
 	ctx := context.Background()
+	installationID := "a-sample-installation-id"
 	for _, version := range []string{"v1", "v1.2", "v2.0.1"} {
 		t.Run(version, func(t *testing.T) {
-			auditChecker := NewAuditChecker(svr.URL, version)
+			auditChecker := NewAuditChecker(svr.URL, version, installationID)
 			_, err := auditChecker.Check(ctx)
 			if err != nil {
 				t.Errorf("Check() error = %v", err)
@@ -195,9 +196,10 @@ func TestAuditChecker_Check(t *testing.T) {
 		{name: "failed", alerts: []Alert{}, statusCode: http.StatusInternalServerError, wantErr: true},
 	}
 	ctx := context.Background()
+	installationID := "a-sample-installation-id"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := NewAuditChecker(svr.URL, "v1")
+			a := NewAuditChecker(svr.URL, "v1", installationID)
 			responseAlerts = tt.alerts
 			responseStatusCode = tt.statusCode
 			got, err := a.Check(ctx)
@@ -212,6 +214,29 @@ func TestAuditChecker_Check(t *testing.T) {
 			}
 			if diff := deep.Equal(got.Alerts, tt.alerts); diff != nil {
 				t.Error("Check() found difference in expected alerts", diff)
+			}
+		})
+	}
+}
+
+func TestAuditChecker_Anonymization(t *testing.T) {
+	const upgradeURL = "https://no.place.like/home"
+
+	tests := []struct {
+		name               string
+		installationID     string
+		respInstallationID string
+	}{
+		{name: "none", installationID: "", respInstallationID: ""},
+		{name: "anonymized", installationID: "a-sample-installation-id", respInstallationID: "ddb767d9f0aeb9c9c0e7643d71d16d4d"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := NewAuditChecker(upgradeURL, "v1", tt.installationID)
+
+			if tt.respInstallationID != a.AnonymizedInstallationID {
+				t.Errorf("Check() anonymized installation ID: %s (%s), expected %s", tt.respInstallationID, tt.installationID, a.AnonymizedInstallationID)
 			}
 		})
 	}
@@ -240,7 +265,8 @@ func TestAuditChecker_CheckAndLog(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	checker := NewAuditChecker(svr.URL, "v1.0")
+	installationID := "a-sample-installation-id"
+	checker := NewAuditChecker(svr.URL, "v1.0", installationID)
 	ctx := context.Background()
 	memLog := &MemLogger{}
 	checker.CheckAndLog(ctx, memLog)

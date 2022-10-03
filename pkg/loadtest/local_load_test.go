@@ -120,7 +120,7 @@ func TestLocalLoad(t *testing.T) {
 			t.Cleanup(func() {
 				_ = c.Close()
 			})
-			auditChecker := version.NewDefaultAuditChecker(conf.GetSecurityAuditCheckURL())
+			auditChecker := version.NewDefaultAuditChecker(conf.GetSecurityAuditCheckURL(), "")
 			emailParams, _ := conf.GetEmailParams()
 			emailer, err := email.NewEmailer(emailParams)
 			testutil.Must(t, err)

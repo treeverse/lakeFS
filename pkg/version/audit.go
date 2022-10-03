@@ -53,7 +53,10 @@ func NewDefaultAuditChecker(checkURL, installationID string) *AuditChecker {
 }
 
 func NewAuditChecker(checkURL, version, installationID string) *AuditChecker {
-	anonymizedInstallationID := fmt.Sprintf("%x", md5.Sum([]byte(installationID))) // #nosec
+	var anonymizedInstallationID string
+	if installationID != "" {
+		anonymizedInstallationID = fmt.Sprintf("%x", md5.Sum([]byte(installationID))) // #nosec
+	}
 	ac := &AuditChecker{
 		CheckURL: checkURL,
 		Client: http.Client{
