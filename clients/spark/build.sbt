@@ -71,6 +71,7 @@ def generateCoreProject(buildType: BuildType) =
         "org.xerial.snappy" % "snappy-java" % "1.1.8.4",
         "org.scalactic" %% "scalactic" % "3.2.9",
         "dev.failsafe" % "failsafe" % "3.2.4",
+        "org.apache.hadoop" % "hadoop-distcp" % buildType.hadoopVersion,
         "org.scalatestplus" %% "mockito-3-4" % "3.2.9.0" % "test",
         "org.scalatest" %% "scalatest" % "3.2.9" % "test",
         "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.10" % "test",
