@@ -314,7 +314,7 @@ func TestMain(m *testing.M) {
 	defer func() { _ = server.s.Close() }()
 	testsToSkipRegex, err = regexp.Compile(*testsToSkip)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Skip pattern '%s' failed to compile:", *testsToSkip, err)
 	}
 
 	logger.Info("Setup succeeded, running the tests")
@@ -322,7 +322,7 @@ func TestMain(m *testing.M) {
 }
 
 func SkipTestIfAskedTo(t *testing.T) {
-	if testsToSkipRegex.String() != "" && testsToSkipRegex.MatchString(t.Name()) {
+	if testsToSkipRegex != nil && testsToSkipRegex.MatchString(t.Name()) {
 		t.SkipNow()
 	}
 }
