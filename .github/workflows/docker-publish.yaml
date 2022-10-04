@@ -46,12 +46,12 @@ jobs:
 
       - name: Extract version
         shell: bash
-        run: echo "::set-output name=tag::0.83.0a"
+        run: echo "::set-output name=tag::0.83.0b"
         #run: echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//g)"
         id: version
 
-      #- name: Set up QEMU
-        #uses: docker/setup-qemu-action@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -74,7 +74,7 @@ jobs:
           context: .
           target: lakectl
           push: true
-          #platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
           build-args: VERSION=${{ steps.version.outputs.tag }}
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/lakectl:${{ steps.version.outputs.tag }}
@@ -87,7 +87,7 @@ jobs:
           context: .
           target: lakefs
           push: true
-          #platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
           build-args: VERSION=${{ steps.version.outputs.tag }}
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ steps.version.outputs.tag }}
