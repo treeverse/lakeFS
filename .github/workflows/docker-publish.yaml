@@ -2,8 +2,6 @@ name: Docker
 on:
   release:
     types: [published]
-  pull_request:
-  push:
 
 # These permissions are needed to interact with GitHub's OIDC Token endpoint.
 permissions:
@@ -46,8 +44,7 @@ jobs:
 
       - name: Extract version
         shell: bash
-        run: echo "::set-output name=tag::0.83.0c"
-        #run: echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//g)"
+        run: echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//g)"
         id: version
 
       - name: Set up QEMU
