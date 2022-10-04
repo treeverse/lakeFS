@@ -10,7 +10,7 @@ has_children: false
 
 lakeFS allows merging a _merge source_ (a commit/reference) into a _merge destination_ (a **branch**). 
 
-## How it works?
+## How does it work?
 
 lakeFS first finds the [merge base](https://git-scm.com/docs/git-merge-base#_description) the nearest common parent of the two commits.
 It can now perform a _three-way merge_, by examining the presence and identity of files in each commit. In the table
