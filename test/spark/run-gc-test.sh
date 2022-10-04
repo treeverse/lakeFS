@@ -41,7 +41,7 @@ run_gc () {
     sweep_config="-c spark.hadoop.lakefs.gc.do_sweep=false "
   fi
   if [[ ${mark_id} != "" ]]; then
-    mark_id_config="-c spark.hadoop.lakefs.gc.mark_id=${mark_id}"
+    mark_id_config="-c spark.hadoop.lakefs.gc.mark_id=${mark_id} "
   fi
   local additional_config_string="${sweep_config}${mark_id_config}"
   run_gc_according_to_storage_provider "${repo}" "${additional_config_string}"
