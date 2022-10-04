@@ -60,6 +60,7 @@ jobs:
       - name: Build and puth lakefs to Amazon ECR
         uses: docker/build-push-action@v3
         with:
+          context: .
           target: lakefs
           push: true
           build-args: VERSION=${{ steps.version.outputs.tag }}
@@ -68,6 +69,8 @@ jobs:
       - name: Build and puth lakectl to Amazon ECR
         uses: docker/build-push-action@v3
         with:
+          context: .
+          push: true
           target: lakectl
           build-args: VERSION=${{ steps.version.outputs.tag }}
           tags: ${{ steps.login-ecr.outputs.registry }}/lakectl:${{ steps.version.outputs.tag }}
@@ -75,6 +78,8 @@ jobs:
       - name: Build and push lakefs to Docker hub
         uses: docker/build-push-action@v3
         with:
+          context: .
+          push: true
           target: lakefs
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -84,6 +89,8 @@ jobs:
       - name: Build and push lakectl to Docker hub
         uses: docker/build-push-action@v3
         with:
+          context: .
+          push: true
           target: lakectl
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
