@@ -9,6 +9,7 @@ import (
 )
 
 func TestRepositoryBasicOps(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	ctx := context.Background()
 	const numOfRepos = 5
 

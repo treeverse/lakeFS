@@ -12,6 +12,7 @@ import (
 )
 
 func TestCommitSingle(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	for _, direct := range testDirectDataAccess {
 		name := "indirect"
 		if direct {
@@ -66,6 +67,7 @@ func upload(ctx context.Context, uploads chan Upload, direct bool) error {
 }
 
 func TestCommitInMixedOrder(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	const (
 		parallelism = 5
 		size        = 100
@@ -142,6 +144,7 @@ func TestCommitInMixedOrder(t *testing.T) {
 
 // Verify panic fix when committing with nil tombstone over KV
 func TestCommitWithTombstone(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	for _, direct := range testDirectDataAccess {
 		name := "indirect"
 		if direct {
