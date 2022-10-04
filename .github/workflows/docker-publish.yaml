@@ -15,15 +15,15 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Setup NodeJS
+      - name: Set up NodeJS
         uses: actions/setup-node@v3
         with:
           node-version: '16.15.0'
 
       - name: Set up Go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v2
         with:
           go-version: 1.17.8
         id: go
@@ -47,43 +47,46 @@ jobs:
         run: echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//g)"
         id: version
 
-      - name: Extract db schema version from ddl migration files
-        run: echo "::set-output name=dbschema_version::$( (cd pkg/ddl/ && ls -d *.up.sql) | sed -nE '$s/^0*([0-9]+).*/\1/p' )"
-        id: schema
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          buildkitd-flags: --debug
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build and push to Amazon ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY_LAKEFS: lakefs
-          ECR_REPOSITORY_LAKECTL: lakectl
-          DOCKER_BUILDKIT: '1'
-        run: |
-          docker build --target lakectl -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKECTL:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} --label db-schema-version=${{ steps.schema.outputs.dbschema_version}} .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKECTL:${{ steps.version.outputs.tag }}
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} --label db-schema-version=${{ steps.schema.outputs.dbschema_version}} .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
-      - name: Build and push lakectl to Docker hub
-        uses: docker/build-push-action@v1
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          build_args: VERSION=${{ steps.version.outputs.tag }}
-          labels: db-schema-version=${{ steps.schema.outputs.dbschema_version}}
-          target: lakectl
-          repository: treeverse/lakectl
-          tags: ${{ steps.version.outputs.tag }},latest
 
-      - name: Build and push lakefs to Docker hub
-        uses: docker/build-push-action@v1
+      - name: Build and push lakectl
+        uses: docker/build-push-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          build_args: VERSION=${{ steps.version.outputs.tag }}
-          labels: db-schema-version=${{ steps.schema.outputs.dbschema_version}}
+          context: .
+          target: lakectl
+          push: true
+          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          build-args: VERSION=${{ steps.version.outputs.tag }}
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/lakectl:${{ steps.version.outputs.tag }}
+            treeverse/lakectl:${{ steps.version.outputs.tag }}
+            treeverse/lakectl:latest
+
+      - name: Build and push lakefs
+        uses: docker/build-push-action@v3
+        with:
+          context: .
           target: lakefs
-          repository: treeverse/lakefs
-          tags: ${{ steps.version.outputs.tag }},latest
+          push: true
+          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          build-args: VERSION=${{ steps.version.outputs.tag }}
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ steps.version.outputs.tag }}
+            treeverse/lakefs:${{ steps.version.outputs.tag }}
+            treeverse/lakefs:latest
