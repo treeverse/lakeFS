@@ -35,6 +35,7 @@ const (
 )
 
 func TestS3UploadAndDownload(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	const parallelism = 10
 
 	ctx, _, repo := setupTest(t)
@@ -114,6 +115,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 }
 
 func TestS3CopyObject(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
