@@ -66,7 +66,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and puth lakectl
+      - name: Build and push lakectl
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -79,7 +79,7 @@ jobs:
             treeverse/lakectl:${{ steps.version.outputs.tag }}
             treeverse/lakectl:latest
 
-      - name: Build and puth lakefs
+      - name: Build and push lakefs
         uses: docker/build-push-action@v3
         with:
           context: .
