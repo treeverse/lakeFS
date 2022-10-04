@@ -12,7 +12,7 @@ lakeFS allows merging a _merge source_ (a commit/reference) into a _merge destin
 
 ## How does it work?
 
-lakeFS first finds the [merge base](https://git-scm.com/docs/git-merge-base#_description) the nearest common parent of the two commits.
+lakeFS first finds the [merge base](https://git-scm.com/docs/git-merge-base#_description): the nearest common ancestor of the two commits.
 It can now perform a _three-way merge_, by examining the presence and identity of files in each commit. In the table
 below, "A", "B" and "C" are possible file contents, "X" is a missing file, and "conflict"
 (which only appears as a result) is a merge failure.
