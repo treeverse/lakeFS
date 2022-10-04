@@ -56,7 +56,7 @@ lakectl merge lakefs://example-repo/validated-data lakefs://example-repo/product
 ```
 When a merge conflict arises, the conflicting objects in the `production` branch will be chosen to end up in `validated-data`. The `production` branch will not be affected by object changes from `validated-data` conflicting objects.
 
-The strategy will affect all conflicting objects in the merge if it is set. At the moment, it is not possible to treat conflicts individually.
+The strategy will affect all conflicting objects in the merge if it is set. Currently it is not possible to treat conflicts individually.
 
 As a format-agnostic system, lakeFS currently merges by complete files. Format-specific and
 other user-defined merge strategies for handling conflicts are on the roadmap.
