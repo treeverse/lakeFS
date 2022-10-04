@@ -54,7 +54,7 @@ In case of a conflict, merge will pick the destination objects.
 ```bash
 lakectl merge lakefs://example-repo/validated-data lakefs://example-repo/production --strategy dest-wins
 ```
-When a merge conflict arise, the conflicting objects in the `production` branch will be chosen and found in `validated-data`. The `production` branch will not be affected by object changes from `validated-data` conflicted objects.
+When a merge conflict arises, the conflicting objects in the `production` branch will be chosen to end up in `validated-data`. The `production` branch will not be affected by object changes from `validated-data` conflicting objects.
 
 The strategy will affect all conflicting objects in the merge if it is set. At the moment, it is not possible to treat conflicts individually.
 
