@@ -40,7 +40,7 @@ You can try lakeFS:
 
 To modify the local deployment, for example, in order to use your local lakeFS against S3 storage (as opposed to the local storage), run the command with local parameters:
    ```bash
-docker run --pull always -p 8000:8000 -e LAKEFS_BLOCKSTORE_TYPE='s3' -e AWS_ACCESS_KEY_ID='XXX' -e AWS_SECRET_ACCESS_KEY='YYY'  treeverse/lakefs run --local-settings
+docker run --pull always -p 8000:8000 -e LAKEFS_BLOCKSTORE_TYPE='s3' -e AWS_ACCESS_KEY_ID='YourAccessKeyValue' -e AWS_SECRET_ACCESS_KEY='YourSecretKeyValue'  treeverse/lakefs run --local-settings
    ```
 
 ## Next steps
