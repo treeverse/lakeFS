@@ -43,7 +43,7 @@ In case of a conflict, merge will pick the source objects.
 ```bash
 lakectl merge lakefs://example-repo/validated-data lakefs://example-repo/production --strategy source-wins
 ```
-When a merge conflict arise, the conflicting objects in the `validated-data` branch will be chosen and found in `production`.
+When a merge conflict arises, the conflicting objects in the `validated-data` branch will be chosen to end up in `production`.
 
 ### `dest-wins`
 
