@@ -42,6 +42,7 @@ To modify the local deployment, for example, in order to use your local lakeFS a
    ```bash
 docker run --pull always -p 8000:8000 -e LAKEFS_BLOCKSTORE_TYPE='s3' -e AWS_ACCESS_KEY_ID='YourAccessKeyValue' -e AWS_SECRET_ACCESS_KEY='YourSecretKeyValue'  treeverse/lakefs run --local-settings
    ```
+Note using the ```bash--local-settings``` flag, metadata is being stored locally in the lakeFS container. Therefore, avoid using this flag for production usages.
 
 ## Next steps
 
