@@ -30,7 +30,7 @@ below, "A", "B" and "C" are possible file contents, "X" is a missing file, and "
 |      A      |       A       |         X          |     X      | File deleted on one side                       |
 |      A      |       X       |         A          |     X      | File deleted on one side                       |
 
-## Merging Strategies
+## Merge Strategies
 
 The [API](./api.md) and [`lakectl`](./commands.md#lakectl-merge) allow passing an optional `strategy` flag with the following values:
 
