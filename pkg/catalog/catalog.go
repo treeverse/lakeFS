@@ -127,7 +127,7 @@ const (
 	DiffLimitMax             = 1000
 	ListEntriesLimitMax      = 10000
 	sharedWorkers            = 15
-	workersToBufferRatio     = 3
+	pendingTasksPerWorker    = 3
 )
 
 var ErrUnknownDiffType = errors.New("unknown graveler difference type")
@@ -205,7 +205,9 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
 	stagingManager := staging.NewManager(ctx, *cfg.KVStore)
 	gStore := graveler.NewKVGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
-	workpool := pond.New(sharedWorkers, sharedWorkers*workersToBufferRatio)
+
+	// The size of the workpool is determined by the number of workers and the number of desired pending tasks for each worker.
+	workpool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))
 	return &Catalog{
 		BlockAdapter:  tierFSParams.Adapter,
 		Store:         gStore,
