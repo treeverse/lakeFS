@@ -46,7 +46,7 @@ jobs:
 
       - name: Extract version
         shell: bash
-        run: echo "::set-output name=tag::0.83.0b"
+        run: echo "::set-output name=tag::0.83.0c"
         #run: echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//g)"
         id: version
 
