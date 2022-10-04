@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.83.0
+## v0.83.2
 
 What's new:
 - Adding lakeSF description to python's pypi package (#4260)
