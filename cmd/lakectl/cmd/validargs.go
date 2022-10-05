@@ -18,21 +18,43 @@ func ValidArgsRepository(cmd *cobra.Command, args []string, toComplete string) (
 
 func validRepositoryToComplete(ctx context.Context, toComplete string) ([]string, cobra.ShellCompDirective) {
 	// do not suggest in case we are passed the repository part
-	prefix := uri.LakeFSSchema + uri.LakeFSSchemaSeparator
-	if strings.HasPrefix(toComplete, prefix) && strings.Contains(toComplete[len(prefix):], uri.PathSeparator) {
+	uriPrefix := uri.LakeFSSchema + uri.LakeFSSchemaSeparator
+	if strings.HasPrefix(toComplete, uriPrefix) && strings.Contains(toComplete[len(uriPrefix):], uri.PathSeparator) {
 		return nil, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace
 	}
 
+	// extract repository name written so far
+	var prefix api.PaginationPrefix
+	if strings.HasPrefix(toComplete, uriPrefix) {
+		idx := strings.Index(toComplete[len(uriPrefix):], uri.PathSeparator)
+		if idx > 1 {
+			prefix = api.PaginationPrefix(toComplete[len(uriPrefix):idx])
+		}
+	}
+
 	// suggest repositories
-	// TODO(barak): smart suggest based on current value
 	clt := getClient()
-	resp, err := clt.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
-	if err != nil || resp.JSON200 == nil {
-		return nil, cobra.ShellCompDirectiveError
+	var (
+		completions []string
+		after       string
+	)
+	for {
+		params := &api.ListRepositoriesParams{
+			Prefix: &prefix,
+			After:  api.PaginationAfterPtr(after),
+		}
+		resp, err := clt.ListRepositoriesWithResponse(ctx, params)
+		result := resp.JSON200
+		if err != nil || result == nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+		for _, repo := range result.Results {
+			completions = append(completions, uriPrefix+repo.Id)
+		}
+		if !result.Pagination.HasMore {
+			break
+		}
+		after = result.Pagination.NextOffset
 	}
-	results := make([]string, 0, len(resp.JSON200.Results))
-	for _, repo := range resp.JSON200.Results {
-		results = append(results, prefix+repo.Id)
-	}
-	return results, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace
+	return completions, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace
 }

@@ -22,6 +22,10 @@ var repoCmd = &cobra.Command{
 var repoListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List repositories",
+	Args:  cobra.NoArgs,
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		after := MustString(cmd.Flags().GetString("after"))
