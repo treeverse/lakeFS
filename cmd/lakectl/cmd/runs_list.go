@@ -12,11 +12,12 @@ const actionsRunsListTemplate = `{{.ActionsRunsTable | table -}}
 `
 
 var runsListCmd = &cobra.Command{
-	Use:     "list",
-	Short:   "List runs",
-	Long:    `List all runs on a repository optional filter by branch or commit`,
-	Example: "lakectl actions runs list lakefs://<repository> [--branch <branch>] [--commit <commit_id>]",
-	Args:    cobra.ExactArgs(1),
+	Use:               "list",
+	Short:             "List runs",
+	Long:              `List all runs on a repository optional filter by branch or commit`,
+	Example:           "lakectl actions runs list lakefs://<repository> [--branch <branch>] [--commit <commit_id>]",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		after := MustString(cmd.Flags().GetString("after"))

@@ -26,10 +26,11 @@ Merge:         {{ $val.Parents|join ", "|bold }}
 
 // logCmd represents the log command
 var logCmd = &cobra.Command{
-	Use:   "log <branch uri>",
-	Short: "Show log of commits",
-	Long:  "Show log of commits for a given branch",
-	Args:  cobra.ExactArgs(1),
+	Use:               "log <branch uri>",
+	Short:             "Show log of commits",
+	Long:              "Show log of commits for a given branch",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		after := MustString(cmd.Flags().GetString("after"))

@@ -18,11 +18,12 @@ const actionTaskResultTemplate = `{{ $r := . }}{{ range $idx, $val := .Hooks }}{
 const runsShowRequiredArgs = 2
 
 var runsDescribeCmd = &cobra.Command{
-	Use:     "describe",
-	Short:   "Describe run results",
-	Long:    `Show information about the run and all the hooks that were executed as part of the run`,
-	Example: "lakectl actions runs describe lakefs://<repository> <run_id>",
-	Args:    cobra.ExactArgs(runsShowRequiredArgs),
+	Use:               "describe",
+	Short:             "Describe run results",
+	Long:              `Show information about the run and all the hooks that were executed as part of the run`,
+	Example:           "lakectl actions runs describe lakefs://<repository> <run_id>",
+	Args:              cobra.ExactArgs(runsShowRequiredArgs),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		after := MustString(cmd.Flags().GetString("after"))

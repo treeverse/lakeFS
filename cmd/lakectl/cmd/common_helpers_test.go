@@ -19,7 +19,7 @@ func TestIsValidAccessKeyID(t *testing.T) {
 		{name: "access key id with extra char", args: args{accessKeyID: "AKIAJ123ZZZZZZZZZZZZQ"}, want: false},
 		{name: "access key id with missing char", args: args{accessKeyID: "AKIAJ1ZZZZZZZZZZZZQ"}, want: false},
 		{name: "access key id with wrong prefix", args: args{accessKeyID: "AKIAM12ZZZZZZZZZZZZQ"}, want: false},
-		{name: "access key id with wrong suffiix", args: args{accessKeyID: "AKIAJ12ZZZZZZZZZZZZA"}, want: false},
+		{name: "access key id with wrong suffix", args: args{accessKeyID: "AKIAJ12ZZZZZZZZZZZZA"}, want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

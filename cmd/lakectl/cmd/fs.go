@@ -35,9 +35,10 @@ Human Total Size: {{.Bytes|human_bytes}}
 var quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
 
 var fsStatCmd = &cobra.Command{
-	Use:   "stat <path uri>",
-	Short: "View object metadata",
-	Args:  cobra.ExactArgs(1),
+	Use:               "stat <path uri>",
+	Short:             "View object metadata",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
 		client := getClient()
@@ -57,9 +58,10 @@ const fsLsTemplate = `{{ range $val := . -}}
 `
 
 var fsListCmd = &cobra.Command{
-	Use:   "ls <path uri>",
-	Short: "List entries under a given tree",
-	Args:  cobra.ExactArgs(1),
+	Use:               "ls <path uri>",
+	Short:             "List entries under a given tree",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := MustParsePathURI("path", args[0])
@@ -109,9 +111,10 @@ var fsListCmd = &cobra.Command{
 }
 
 var fsCatCmd = &cobra.Command{
-	Use:   "cat <path uri>",
-	Short: "Dump content of object to stdout",
-	Args:  cobra.ExactArgs(1),
+	Use:               "cat <path uri>",
+	Short:             "Dump content of object to stdout",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
 		direct, _ := cmd.Flags().GetBool("direct")
@@ -206,9 +209,10 @@ func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 }
 
 var fsUploadCmd = &cobra.Command{
-	Use:   "upload <path uri>",
-	Short: "Upload a local file to the specified URI",
-	Args:  cobra.ExactArgs(1),
+	Use:               "upload <path uri>",
+	Short:             "Upload a local file to the specified URI",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := MustParsePathURI("path", args[0])
@@ -258,10 +262,11 @@ var fsUploadCmd = &cobra.Command{
 }
 
 var fsStageCmd = &cobra.Command{
-	Use:    "stage <path uri>",
-	Short:  "Stage a reference to an existing object, to be managed in lakeFS",
-	Hidden: true,
-	Args:   cobra.ExactArgs(1),
+	Use:               "stage <path uri>",
+	Short:             "Stage a reference to an existing object, to be managed in lakeFS",
+	Hidden:            true,
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := MustParsePathURI("path", args[0])
@@ -321,9 +326,10 @@ func deleteObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 }
 
 var fsRmCmd = &cobra.Command{
-	Use:   "rm <path uri>",
-	Short: "Delete object",
-	Args:  cobra.ExactArgs(1),
+	Use:               "rm <path uri>",
+	Short:             "Delete object",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		concurrency := MustInt(cmd.Flags().GetInt("concurrency"))
