@@ -14,7 +14,6 @@ import io.treeverse.clients.StorageUtils._
 import org.apache.hadoop.conf.Configuration
 
 import java.net.URI
-import java.nio.charset.Charset
 import java.util.stream.Collectors
 import collection.JavaConverters._
 
@@ -76,14 +75,7 @@ object BulkRemoverFactory {
       println(
         "storageNamespace: " + storageNamespace
       ) // example storage namespace s3://bucket/repoDir/
-      val uri = new URI(storageNamespace)
-      val key = uri.getPath
-      val addSuffixSlash = if (key.endsWith("/")) key else key.concat("/")
-      val snPrefix =
-        if (addSuffixSlash.startsWith("/")) addSuffixSlash.substring(1) else addSuffixSlash
-
-      if (keys.isEmpty) return Seq.empty
-      keys.map(x => snPrefix.concat(x))
+      StorageUtils.S3.concatKeysToStorageNamespacePrefix(keys, storageNamespace)
     }
 
     override def getMaxBulkSize(): Int = {
@@ -165,14 +157,7 @@ object BulkRemoverFactory {
         storageNamespace: String
     ): Seq[String] = {
       println("storageNamespace: " + storageNamespace)
-      val addSuffixSlash =
-        if (storageNamespace.endsWith("/")) storageNamespace else storageNamespace.concat("/")
-
-      if (keys.isEmpty) return Seq.empty
-      keys
-        .map(x => addSuffixSlash.concat(x))
-        .map(x => x.getBytes(Charset.forName("UTF-8")))
-        .map(x => new String(x))
+      StorageUtils.AzureBlob.concatKeysToStorageNamespace(keys, storageNamespace)
     }
 
     override def getMaxBulkSize(): Int = {
