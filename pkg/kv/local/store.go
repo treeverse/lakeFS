@@ -43,6 +43,9 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 
 	var value []byte
 	err := s.db.View(func(txn *badger.Txn) error {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		item, err := txn.Get(composeKey(partitionKey, key))
 		if errors.Is(err, badger.ErrKeyNotFound) {
 			return kv.ErrNotFound
@@ -87,6 +90,10 @@ func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error 
 		return kv.ErrMissingValue
 	}
 	err := s.db.Update(func(txn *badger.Txn) error {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		return txn.Set(k, value)
 	})
 	if err != nil {
@@ -116,6 +123,10 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 	}
 
 	err := s.db.Update(func(txn *badger.Txn) error {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		item, err := txn.Get(k)
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 			log.WithError(err).Error("could not get key for predicate")
@@ -170,6 +181,10 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 		return kv.ErrMissingKey
 	}
 	err := s.db.Update(func(txn *badger.Txn) error {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		return txn.Delete(k)
 	})
 	took := time.Since(start)
@@ -194,7 +209,11 @@ func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.Entrie
 		return nil, kv.ErrMissingPartitionKey
 	}
 
-	return newEntriesIterator(log, s.db, partitionKey, start, s.prefetchSize), nil
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
+	return newEntriesIterator(ctx, log, s.db, partitionKey, start, s.prefetchSize), nil
 }
 
 func (s *Store) Close() {

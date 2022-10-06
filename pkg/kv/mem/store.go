@@ -24,6 +24,7 @@ type Store struct {
 }
 
 type EntriesIterator struct {
+	ctx       context.Context
 	entry     *kv.Entry
 	err       error
 	start     []byte
@@ -48,16 +49,19 @@ func encodeKey(key []byte) string {
 	return base64.StdEncoding.EncodeToString(key)
 }
 
-func (s *Store) Get(_ context.Context, partitionKey, key []byte) (*kv.ValueWithPredicate, error) {
+func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWithPredicate, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
 	if len(key) == 0 {
 		return nil, kv.ErrMissingKey
 	}
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-
 	sKey := encodeKey(key)
 	value, ok := s.m[string(partitionKey)][sKey]
 	if !ok {
@@ -69,7 +73,7 @@ func (s *Store) Get(_ context.Context, partitionKey, key []byte) (*kv.ValueWithP
 	}, nil
 }
 
-func (s *Store) Set(_ context.Context, partitionKey, key, value []byte) error {
+func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error {
 	if len(partitionKey) == 0 {
 		return kv.ErrMissingPartitionKey
 	}
@@ -79,6 +83,10 @@ func (s *Store) Set(_ context.Context, partitionKey, key, value []byte) error {
 	if value == nil {
 		return kv.ErrMissingValue
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -99,7 +107,7 @@ func (s *Store) internalSet(partitionKey, key, value []byte) {
 	}
 }
 
-func (s *Store) SetIf(_ context.Context, partitionKey, key, value []byte, valuePredicate kv.Predicate) error {
+func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valuePredicate kv.Predicate) error {
 	if len(partitionKey) == 0 {
 		return kv.ErrMissingPartitionKey
 	}
@@ -111,6 +119,9 @@ func (s *Store) SetIf(_ context.Context, partitionKey, key, value []byte, valueP
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	sKey := encodeKey(key)
 	curr, currOK := s.m[string(partitionKey)][sKey]
@@ -127,13 +138,17 @@ func (s *Store) SetIf(_ context.Context, partitionKey, key, value []byte, valueP
 	return nil
 }
 
-func (s *Store) Delete(_ context.Context, partitionKey, key []byte) error {
+func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	if len(partitionKey) == 0 {
 		return kv.ErrMissingPartitionKey
 	}
 	if len(key) == 0 {
 		return kv.ErrMissingKey
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -145,13 +160,17 @@ func (s *Store) Delete(_ context.Context, partitionKey, key []byte) error {
 	return nil
 }
 
-func (s *Store) Scan(_ context.Context, partitionKey, start []byte) (kv.EntriesIterator, error) {
+func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.EntriesIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
+	}
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
 	}
 
 	return &EntriesIterator{
 		store:     s,
+		ctx:       ctx,
 		start:     start,
 		partition: string(partitionKey),
 	}, nil
@@ -163,7 +182,10 @@ func (e *EntriesIterator) Next() bool {
 	if e.err != nil || e.start == nil { // start is nil only if last iteration we reached end of keys
 		return false
 	}
-
+	if e.ctx.Err() != nil {
+		e.err = e.ctx.Err()
+		return false
+	}
 	e.store.mu.RLock()
 	defer e.store.mu.RUnlock()
 
