@@ -111,7 +111,7 @@ object GCBackupAndRestore {
       hadoopProps: Array[(String, String)],
       absoluteAddressesTextFilePath: String,
       dstNamespaceForHadoopFs: String
-  ): Seq[String] = {
+  ): Array[String] = {
     hadoopProps.map((prop) => "-D" + prop._1 + "=" + prop._2) ++
       Seq(
         // -f option copies the files listed in the file after the -f option
