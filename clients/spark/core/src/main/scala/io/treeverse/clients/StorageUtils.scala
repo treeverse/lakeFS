@@ -7,9 +7,13 @@ object StorageUtils {
   val StorageTypeS3 = "s3"
   val StorageTypeAzure = "azure"
 
-  def concatKeysToStorageNamespace(keys: Seq[String], storageNamespace: String, storageType: String) : Seq[String] = {
+  def concatKeysToStorageNamespace(
+      keys: Seq[String],
+      storageNamespace: String,
+      storageType: String
+  ): Seq[String] = {
     storageType match {
-      case StorageTypeS3 => S3.concatKeysToStorageNamespace(keys, storageNamespace)
+      case StorageTypeS3    => S3.concatKeysToStorageNamespace(keys, storageNamespace)
       case StorageTypeAzure => AzureBlob.concatKeysToStorageNamespace(keys, storageNamespace)
       case _ => throw new IllegalArgumentException("Unknown storage type " + storageType)
     }
@@ -24,10 +28,10 @@ object StorageUtils {
     val AzureBlobMaxBulkSize = 256
 
     /** Converts storage namespace URIs of the form https://<storageAccountName>.blob.core.windows.net/<container>/<path-in-container>
-     * to storage account URL of the form https://<storageAccountName>.blob.core.windows.net and storage namespace format is
+     *  to storage account URL of the form https://<storageAccountName>.blob.core.windows.net and storage namespace format is
      *
-     * @param storageNsURI
-     * @return
+     *  @param storageNsURI
+     *  @return
      */
     def uriToStorageAccountUrl(storageNsURI: URI): String = {
       storageNsURI.getScheme + "://" + storageNsURI.getHost
@@ -53,8 +57,9 @@ object StorageUtils {
     val S3MaxBulkSize = 1000
     val S3NumRetries = 1000
 
-    def concatKeysToStorageNamespace(keys: Seq[String], storageNamespace: String) : Seq[String] = {
-      val addSuffixSlash = if (storageNamespace.endsWith("/")) storageNamespace else storageNamespace.concat("/")
+    def concatKeysToStorageNamespace(keys: Seq[String], storageNamespace: String): Seq[String] = {
+      val addSuffixSlash =
+        if (storageNamespace.endsWith("/")) storageNamespace else storageNamespace.concat("/")
       val snPrefix =
         if (addSuffixSlash.startsWith("/")) addSuffixSlash.substring(1) else addSuffixSlash
 
@@ -62,7 +67,10 @@ object StorageUtils {
       keys.map(x => snPrefix.concat(x))
     }
 
-    def concatKeysToStorageNamespacePrefix(keys: Seq[String], storageNamespace: String) : Seq[String] = {
+    def concatKeysToStorageNamespacePrefix(
+        keys: Seq[String],
+        storageNamespace: String
+    ): Seq[String] = {
       val uri = new URI(storageNamespace)
       val key = uri.getPath
       val addSuffixSlash = if (key.endsWith("/")) key else key.concat("/")

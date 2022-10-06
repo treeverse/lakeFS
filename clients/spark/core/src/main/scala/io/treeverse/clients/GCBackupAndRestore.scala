@@ -11,21 +11,6 @@ import java.net.URI
 
 class GCBackupAndRestore {}
 
-/**
-Example usage:
-S3 -
-  spark-submit --class io.treeverse.clients.GCBackupAndRestore \
-  -c spark.hadoop.fs.s3a.access.key=#### \
-  -c spark.hadoop.fs.s3a.secret.key=#### \
-  lakefs-spark-client-312-hadoop3-assembly-0.4.0.jar \
-  s3a://my-bucket/repo/_lakefs/retention/gc/addresses/mark_id=1/part-00057-36bb66f0-6a38-47b4-86cb-0e8718dfacfe.c000.snappy.parquet s3://my-bucket/repo/ s3://external_location/gc_backup s3
-
-Azure -
-  spark-submit --packages org.apache.hadoop:hadoop-azure:3.2.1 --class io.treeverse.clients.GCBackupAndRestore \
-  -c spark.hadoop.fs.azure.account.key.<storage_account>.dfs.core.windows.net=#### \
-  lakefs-spark-client-312-hadoop3-assembly-0.4.0.jar \
-  https://my-bucket/repo/_lakefs/retention/gc/addresses/mark_id=1/part-00146-55e42537-8c0e-4613-981f-c13a9be8f55b.c000.snappy.parquet https://my-bucket/repo/ https://external_location/gc_backup azure
- */
 object GCBackupAndRestore {
   val S3AccessKeyName = "fs.s3a.access.key"
   val S3SecretKeyName = "fs.s3a.secret.key"
@@ -55,7 +40,10 @@ object GCBackupAndRestore {
     }
 
     val storageType = args(3)
-    if (!storageType.equals(StorageUtils.StorageTypeS3) && !storageType.equals(StorageUtils.StorageTypeAzure)) {
+    if (
+      !storageType
+        .equals(StorageUtils.StorageTypeS3) && !storageType.equals(StorageUtils.StorageTypeAzure)
+    ) {
       Console.err.println(
         "Invalid <storage type>, must be either \"s3\" or \"azure\""
       )
@@ -63,7 +51,11 @@ object GCBackupAndRestore {
     }
   }
 
-  def constructAbsoluteObjectPaths(objectsRelativePathsDF: DataFrame, srcNamespace: String, storageType: String): DataFrame = {
+  def constructAbsoluteObjectPaths(
+      objectsRelativePathsDF: DataFrame,
+      srcNamespace: String,
+      storageType: String
+  ): DataFrame = {
     var storageNSForHadoopFS = ApiClient
       .translateURI(URI.create(srcNamespace), storageType)
       .normalize()
@@ -78,10 +70,15 @@ object GCBackupAndRestore {
       .collect()
       .toSeq
 
-    StorageUtils.concatKeysToStorageNamespace(objectsRelativePathsSeq, storageNSForHadoopFS, storageType).toDF()
+    StorageUtils
+      .concatKeysToStorageNamespace(objectsRelativePathsSeq, storageNSForHadoopFS, storageType)
+      .toDF()
   }
 
-  def validateAndParseHadoopConfig(hc: Configuration, storageType: String): Array[(String, String)] = {
+  def validateAndParseHadoopConfig(
+      hc: Configuration,
+      storageType: String
+  ): Array[(String, String)] = {
     var hadoopProps: Array[(String, String)] = null
     storageType match {
       case StorageUtils.StorageTypeS3 =>
@@ -104,9 +101,14 @@ object GCBackupAndRestore {
     hadoopProps
   }
 
-  //    DistCp.main(Array("-f", absoluteAddressesTextFilePath, dstNamespaceForHadoopFs))
+  // Construct a DistCp command of the form:
+  // `hadoop distcp -D<per storage credentials> -f absoluteAddressesTextFilePath dstNamespaceForHadoopFs`
   // example for command format https://docs.lakefs.io/integrations/distcp.html
-  def constructDistCpCommand(hadoopProps: Array[(String, String)], absoluteAddressesTextFilePath: String, dstNamespaceForHadoopFs: String): Array[String] = {
+  def constructDistCpCommand(
+      hadoopProps: Array[(String, String)],
+      absoluteAddressesTextFilePath: String,
+      dstNamespaceForHadoopFs: String
+  ): Array[String] = {
     var res: Array[String] = Array()
     for (prop <- hadoopProps) {
       val formattedProp = "-D" + prop._1 + "=" + prop._2
@@ -119,6 +121,24 @@ object GCBackupAndRestore {
     res
   }
 
+  // Find the path of the first txt file under a prefix.
+  def getTextFileLocation(prefix: String, hc: Configuration): String = {
+    val fs = FileSystem.get(URI.create(prefix), hc)
+    val dirIterator = fs.listFiles(new Path(prefix), false)
+    var textFilePath = ""
+    breakable(
+      while (dirIterator.hasNext) {
+        val curFile = dirIterator.next()
+        val curPath = curFile.getPath.toString
+        if (curPath.endsWith("txt")) {
+          textFilePath = curPath
+          break
+        }
+      }
+    )
+    textFilePath
+  }
+
   def main(args: Array[String]): Unit = {
     validateArgs(args)
     val relativeAddressesLocation = args(0)
@@ -129,14 +149,18 @@ object GCBackupAndRestore {
     val hc = spark.sparkContext.hadoopConfiguration
     val hadoopProps = validateAndParseHadoopConfig(hc, storageType)
 
-    val relativeAddressesLocationForHadoopFs = ApiClient.translateURI(URI.create(relativeAddressesLocation), storageType).toString
-    val dstNamespaceForHadoopFs = ApiClient.translateURI(URI.create(dstNamespace), storageType).toString
+    val relativeAddressesLocationForHadoopFs =
+      ApiClient.translateURI(URI.create(relativeAddressesLocation), storageType).toString
+    val dstNamespaceForHadoopFs =
+      ApiClient.translateURI(URI.create(dstNamespace), storageType).toString
     print("translated dstNamespace: " + dstNamespaceForHadoopFs + "\n")
 
     val objectsRelativePathsDF = spark.read.parquet(relativeAddressesLocationForHadoopFs)
-    val objectsAbsolutePathsDF = constructAbsoluteObjectPaths(objectsRelativePathsDF, srcNamespace, storageType)
+    val objectsAbsolutePathsDF =
+      constructAbsoluteObjectPaths(objectsRelativePathsDF, srcNamespace, storageType)
     // We assume that there are write permissions to the dst namespace and therefore creating intermediate output there.
-    val absoluteAddressesLocation = dstNamespaceForHadoopFs + "/_gc-backup-restore/absolute_addresses/"
+    val absoluteAddressesLocation =
+      dstNamespaceForHadoopFs + "/_gc-backup-restore/absolute_addresses/"
     print("absoluteAddressesLocation: " + absoluteAddressesLocation + "\n")
     // This application uses distCp to copy files. distCp can copy a list of files in a given input text file. therefore,
     // we write the absolute file paths into a text file rather than a parquet.
@@ -145,25 +169,12 @@ object GCBackupAndRestore {
       .write
       .text(absoluteAddressesLocation)
 
-    // Spark writes two files under absoluteAddressesLocation, a _SUCCESS file and the actual txt file that has dynamic
-    // name. iterate the files in the absoluteAddressesLocation and find the path of the txt files that includes the
-    // list of absolute addresses.
-    val fs = FileSystem.get(URI.create(absoluteAddressesLocation), hc)
-    val dirIterator = fs.listFiles(new Path(absoluteAddressesLocation), false)
-    var absoluteAddressesTextFilePath = ""
-    breakable(
-      while (dirIterator.hasNext) {
-        val curFile = dirIterator.next()
-        val curPath = curFile.getPath.toString
-        if (curPath.endsWith("txt")) {
-          absoluteAddressesTextFilePath = curPath
-          break
-        }
-      }
-    )
+    // Spark writes two files under absoluteAddressesLocation, a _SUCCESS file and the actual txt file that has dynamic name.
+    val absoluteAddressesTextFilePath = getTextFileLocation(absoluteAddressesLocation, hc)
     print("txtFilePath: " + absoluteAddressesTextFilePath + "\n")
 
-    val distCpCommand = constructDistCpCommand(hadoopProps, absoluteAddressesTextFilePath, dstNamespaceForHadoopFs)
+    val distCpCommand =
+      constructDistCpCommand(hadoopProps, absoluteAddressesTextFilePath, dstNamespaceForHadoopFs)
     DistCp.main(distCpCommand)
   }
 }
