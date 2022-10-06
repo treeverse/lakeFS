@@ -18,7 +18,6 @@ import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneOffset}
 import java.util.UUID
-import scala.collection.JavaConverters._
 
 class ConfigMapper(val hcValues: Broadcast[Array[(String, String)]]) extends Serializable {
   @transient lazy val configuration = {
@@ -200,16 +199,12 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
 object GarbageCollector {
   lazy val spark = SparkSession.builder().appName("GarbageCollector").getOrCreate()
 
-  def getHadoopConfigurationValues(hc: Configuration, prefixes: String*) =
-    hc.iterator.asScala
-      .filter(c => prefixes.exists(c.getKey.startsWith))
-      .map(entry => (entry.getKey, entry.getValue))
-      .toArray
-
   /** @return a serializable summary of values in hc starting with prefix.
    */
   def getHadoopConfigMapper(hc: Configuration, prefixes: String*): ConfigMapper =
-    new ConfigMapper(spark.sparkContext.broadcast(getHadoopConfigurationValues(hc, prefixes: _*)))
+    new ConfigMapper(
+      spark.sparkContext.broadcast(HadoopUtils.getHadoopConfigurationValues(hc, prefixes: _*))
+    )
 
   private def validateArgsByStorageType(storageType: String, args: Array[String]) = {
     if (storageType == StorageUtils.StorageTypeS3 && args.length != 2) {
@@ -306,7 +301,8 @@ object GarbageCollector {
     // do that.  Transmit (all) Hadoop filesystem configuration values to
     // let them generate a (close-enough) Hadoop configuration to build the
     // needed FileSystems.
-    val hcValues = spark.sparkContext.broadcast(getHadoopConfigurationValues(hc, "fs.", "lakefs."))
+    val hcValues =
+      spark.sparkContext.broadcast(HadoopUtils.getHadoopConfigurationValues(hc, "fs.", "lakefs."))
     val configMapper = new ConfigMapper(hcValues)
     val gc = new GarbageCollector(new LakeFSRangeGetter(apiConf, configMapper))
     var storageNSForHadoopFS = apiClient.getStorageNamespace(repo, StorageClientType.HadoopFS)
