@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -214,13 +213,10 @@ var runCmd = &cobra.Command{
 		}
 		controllerAuthenticator := append(middlewareAuthenticator, auth.NewEmailAuthenticator(authService))
 
-		auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
+		auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL(), metadata.InstallationID)
 		defer auditChecker.Close()
 		if version.Version != version.UnreleasedVersion {
-			const maxSecondsToJitter = 12 * 60 * 60                                // 12h in seconds
-			jitter := time.Duration(rand.Int63n(maxSecondsToJitter)) * time.Second //nolint:gosec
-			interval := cfg.GetSecurityAuditCheckInterval() + jitter
-			auditChecker.StartPeriodicCheck(ctx, interval, logger)
+			auditChecker.StartPeriodicCheck(ctx, cfg.GetSecurityAuditCheckInterval(), logger)
 		}
 
 		allowForeign, err := cmd.Flags().GetBool(mismatchedReposFlagName)
