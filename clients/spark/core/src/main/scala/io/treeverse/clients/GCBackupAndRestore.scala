@@ -18,32 +18,6 @@ object GCBackupAndRestore {
   lazy val spark = SparkSession.builder().appName("GCBackupAndRestore").getOrCreate()
   import spark.implicits._
 
-  /** Validates that args are the following:
-   *  1. address of parquet that includes the relative paths of files to backup or restore, created by a gc run
-   *     2. src: the namespace to backup or restore objects from/to (i.e. repo storage namespace, or an external location compatibly)
-   *     3. backup/restore destination: the namespace to backup or restore objects from/to (i.e. an external location or repo storage namespace compatibly)
-   *     4. Object storage type: "s3" or "azure"
-   */
-  def validateArgs(args: Array[String]): Unit = {
-    if (args.length != 4) {
-      Console.err.println(
-        "Usage: ... <objects list location> <src namespace> <dst namespace> <storage type>"
-      )
-      System.exit(1)
-    }
-
-    val storageType = args(3)
-    if (
-      !storageType
-        .equals(StorageUtils.StorageTypeS3) && !storageType.equals(StorageUtils.StorageTypeAzure)
-    ) {
-      Console.err.println(
-        "Invalid <storage type>, must be either \"s3\" or \"azure\""
-      )
-      System.exit(1)
-    }
-  }
-
   def constructAbsoluteObjectPaths(
       objectsRelativePathsDF: DataFrame,
       srcNamespace: String,
@@ -139,8 +113,19 @@ object GCBackupAndRestore {
     textFilePath
   }
 
+  /** Required arguments are the following:
+   *  1. address of parquet that includes the relative paths of files to backup or restore, created by a gc run
+   *  2. src: the namespace to backup or restore objects from/to (i.e. repo storage namespace, or an external location compatibly)
+   *  3. backup/restore destination: the namespace to backup or restore objects from/to (i.e. an external location or repo storage namespace compatibly)
+   *  4. Object storage type: "s3" or "azure"
+   */
   def main(args: Array[String]): Unit = {
-    validateArgs(args)
+    if (args.length != 4) {
+      Console.err.println(
+        "Usage: ... <objects list location> <src namespace> <dst namespace> <storage type>"
+      )
+      System.exit(1)
+    }
     val relativeAddressesLocation = args(0)
     val srcNamespace = args(1)
     val dstNamespace = args(2)
