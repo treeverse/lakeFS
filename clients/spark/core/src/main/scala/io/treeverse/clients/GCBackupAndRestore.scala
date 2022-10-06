@@ -5,7 +5,7 @@ import org.apache.hadoop.conf.Configuration
 import scala.util.control.Breaks._
 import org.apache.hadoop.tools.DistCp
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 
 import java.net.URI
 
@@ -16,6 +16,7 @@ object GCBackupAndRestore {
   val S3SecretKeyName = "fs.s3a.secret.key"
   val AzureStorageAccountKeyName = "fs.azure.account.key"
   lazy val spark = SparkSession.builder().appName("GCBackupAndRestore").getOrCreate()
+  import spark.implicits._
 
   /** Validates that args are the following:
    *  1. address of parquet that includes the relative paths of files to backup or restore, created by a gc run
@@ -27,14 +28,6 @@ object GCBackupAndRestore {
     if (args.length != 4) {
       Console.err.println(
         "Usage: ... <objects list location> <src namespace> <dst namespace> <storage type>"
-      )
-      System.exit(1)
-    }
-
-    val objectsListPath = args(0)
-    if (!objectsListPath.endsWith("parquet")) {
-      Console.err.println(
-        "<objects list path> must be of type parquet"
       )
       System.exit(1)
     }
@@ -55,50 +48,60 @@ object GCBackupAndRestore {
       objectsRelativePathsDF: DataFrame,
       srcNamespace: String,
       storageType: String
-  ): DataFrame = {
-    var storageNSForHadoopFS = ApiClient
+  ): Dataset[String] = {
+    var storageNSForFS = ApiClient
       .translateURI(URI.create(srcNamespace), storageType)
       .normalize()
       .toString
-    if (!storageNSForHadoopFS.endsWith("/")) {
-      storageNSForHadoopFS += "/"
+    if (!storageNSForFS.endsWith("/")) {
+      storageNSForFS += "/"
     }
-    import spark.implicits._
-    val objectsRelativePathsSeq = objectsRelativePathsDF
-      .select("address")
-      .map(_.getString(0))
-      .collect()
-      .toSeq
 
-    StorageUtils
-      .concatKeysToStorageNamespace(objectsRelativePathsSeq, storageNSForHadoopFS, storageType)
-      .toDF()
+    objectsRelativePathsDF
+      .select("address")
+      .as[String]
+      .flatMap(x => StorageUtils.concatKeysToStorageNamespace(Seq(x), storageNSForFS, storageType))
   }
 
   def validateAndParseHadoopConfig(
       hc: Configuration,
       storageType: String
   ): Array[(String, String)] = {
-    var hadoopProps: Array[(String, String)] = null
     storageType match {
       case StorageUtils.StorageTypeS3 =>
-        hadoopProps = HadoopUtils.getHadoopConfigurationValues(hc, S3AccessKeyName, S3SecretKeyName)
-        if (hadoopProps == null || hadoopProps.length != 2) {
+        val hadoopProps =
+          HadoopUtils.getHadoopConfigurationValues(hc, S3AccessKeyName, S3SecretKeyName)
+        if (
+          hadoopProps.iterator
+            .filter(x => S3AccessKeyName.equals(x._1))
+            .length != 1
+        ) {
           Console.err.println(
-            "missing required hadoop properties. " + S3AccessKeyName + " or " + S3SecretKeyName
+            "missing required hadoop property. " + S3AccessKeyName
           )
           System.exit(1)
         }
+        if (
+          hadoopProps.iterator
+            .filter(x => S3SecretKeyName.equals(x._1))
+            .length != 1
+        ) {
+          Console.err.println(
+            "missing required hadoop property. " + S3SecretKeyName
+          )
+          System.exit(1)
+        }
+        hadoopProps
       case StorageUtils.StorageTypeAzure =>
-        hadoopProps = HadoopUtils.getHadoopConfigurationValues(hc, AzureStorageAccountKeyName)
+        val hadoopProps = HadoopUtils.getHadoopConfigurationValues(hc, AzureStorageAccountKeyName)
         if (hadoopProps == null || hadoopProps.length != 1) {
           Console.err.println(
             "missing required hadoop property. " + AzureStorageAccountKeyName
           )
           System.exit(1)
         }
+        hadoopProps
     }
-    hadoopProps
   }
 
   // Construct a DistCp command of the form:
@@ -108,17 +111,14 @@ object GCBackupAndRestore {
       hadoopProps: Array[(String, String)],
       absoluteAddressesTextFilePath: String,
       dstNamespaceForHadoopFs: String
-  ): Array[String] = {
-    var res: Array[String] = Array()
-    for (prop <- hadoopProps) {
-      val formattedProp = "-D" + prop._1 + "=" + prop._2
-      res = res :+ formattedProp
-    }
-    // -f option copies the files listed in the file after the -f option
-    res = res :+ "-f"
-    res = res :+ absoluteAddressesTextFilePath
-    res = res :+ dstNamespaceForHadoopFs
-    res
+  ): Seq[String] = {
+    hadoopProps.map((prop) => "-D" + prop._1 + "=" + prop._2) ++
+      Seq(
+        // -f option copies the files listed in the file after the -f option
+        "-f",
+        absoluteAddressesTextFilePath,
+        dstNamespaceForHadoopFs
+      )
   }
 
   // Find the path of the first txt file under a prefix.
