@@ -224,6 +224,34 @@ object GarbageCollector {
     }
   }
 
+  /** This function validates that at least one of the mark or sweep flags is true, and that if only sweep is true, then a mark ID is provided.
+   *  If 'lakefs.debug.gc.no_delete' is passed or if the above is not true, the function will stop the execution of the GC and exit.
+   */
+  private def validateRunModeConfigs(
+      noDeleteFlag: Boolean,
+      shouldMark: Boolean,
+      shouldSweep: Boolean,
+      markID: String
+  ): Unit = {
+    if (noDeleteFlag) {
+      Console.err.printf("The \"%s\" configuration is deprecated. Use \"%s=false\" instead",
+                         LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY,
+                         LAKEFS_CONF_GC_DO_SWEEP
+                        )
+      System.exit(1)
+    }
+
+    if (!shouldMark && !shouldSweep) {
+      Console.out.println("Nothing to do, must specify at least one of mark, sweep. Exiting...")
+      System.exit(2)
+    } else if (!shouldMark && markID.isEmpty) { // Sweep-only mode but no mark ID to sweep
+      Console.out.printf("Please provide a mark ID (%s) for sweep-only mode. Exiting...\n",
+                         LAKEFS_CONF_GC_MARK_ID
+                        )
+      System.exit(2)
+    }
+  }
+
   def main(args: Array[String]) {
     val hc = spark.sparkContext.hadoopConfiguration
 
@@ -234,26 +262,15 @@ object GarbageCollector {
     val readTimeout = hc.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY)
     val maxCommitIsoDatetime = hc.get(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY, "")
 
-    if (hc.getBoolean(LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, false)) {
-      Console.err.printf("The \"%s\" configuration is deprecated. Use \"%s=false\" instead",
-                         LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY,
-                         LAKEFS_CONF_GC_DO_SWEEP
-                        )
-      System.exit(1)
-    }
-
     val shouldMark = hc.getBoolean(LAKEFS_CONF_GC_DO_MARK, true)
     val shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, true)
 
-    if (!shouldMark && !shouldSweep) {
-      Console.out.println("Nothing to do, must specify at least one of mark, sweep. Exiting...")
-      System.exit(0)
-    } else if (!shouldMark && hc.get(LAKEFS_CONF_GC_MARK_ID, "").isEmpty) {
-      Console.out.printf("Please provide a mark ID (%s) for sweep-only mode. Exiting...\n",
-                         LAKEFS_CONF_GC_MARK_ID
-                        )
-      System.exit(2)
-    }
+    validateRunModeConfigs(hc.getBoolean(LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, false),
+                           shouldMark,
+                           shouldSweep,
+                           hc.get(LAKEFS_CONF_GC_MARK_ID, "")
+                          )
+
     val markID = hc.get(LAKEFS_CONF_GC_MARK_ID, UUID.randomUUID().toString)
 
     if (!maxCommitIsoDatetime.isEmpty) {
@@ -313,6 +330,7 @@ object GarbageCollector {
     val schema = StructType(Array(StructField("addresses", StringType, nullable = false)))
     val removed = {
       if (shouldSweep) {
+        // If a mark didn't happen in this run, gcAddressesLocation will be empty and expiredAddresses will be null.
         if (gcAddressesLocation.isEmpty) {
           gcAddressesLocation = getAddressesLocation(storageNSForHadoopFS)
         }
@@ -341,6 +359,7 @@ object GarbageCollector {
       }
     }
 
+//    It is necessary to fetch the run ID and commit location if we did not mark in this run (sweep-only mode).
     if (!shouldMark) {
       val runIDAndCommitsLocation = populateRunIDAndCommitsLocation(markID, gcAddressesLocation)
       runID = runIDAndCommitsLocation(0)
