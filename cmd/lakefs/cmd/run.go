@@ -166,8 +166,7 @@ var runCmd = &cobra.Command{
 		blockstoreType := cfg.GetBlockstoreType()
 		if blockstoreType == "local" || blockstoreType == "mem" {
 			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
-			logger.WithField("adapter_type", blockstoreType).
-				Error("Block adapter NOT SUPPORTED for production use")
+			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
 		}
 
 		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
