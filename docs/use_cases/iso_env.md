@@ -174,7 +174,7 @@ client.branches.create_branch(
         source="main"))
 ```
 
-Now we can use Spark to write the csv file from `main` branch as a Parquet file to the `test-env` of our lakeFS repo. Suppose if we accidentally write the dataframe back to "test-env" branch again, this time in append mode.
+Now we can use Spark to write the csv file from `main` branch as a Parquet file to the `test-env` of our lakeFS repo. Suppose we accidentally write the dataframe back to "test-env" branch again, this time in append mode.
 
 ```bash
 df.write.mode('overwrite').parquet('s3a://my-repo/test-env/')
