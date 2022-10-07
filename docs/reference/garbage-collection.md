@@ -213,7 +213,7 @@ spark.hadoop.lakefs.gc.mark_id=<MARK_ID> # Replace <MARK_ID> with your own ident
 ```
 Running in mark only mode, GC will write the addresses of the expired objects to delete to the following location: `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=<MARK_ID>/` as a parquet.
 
-*Note:* The `spark.hadoop.lakefs.debug.gc.no_delete` property has been deprecated.
+**Note:** The `spark.hadoop.lakefs.debug.gc.no_delete` property has been deprecated.
 
 #### Sweep only mode
 
@@ -269,3 +269,99 @@ repositories may require increasing a read timeout.  If you run into timeout err
 
 ## GC backup and restore 
 
+GC was created to hard-delete objects from your underlying objects store according to your retention rules. However, when you start 
+using the feature you may want to first gain confident in the decisions GC makes. The GC backup and restore utility was created to help 
+you do that. 
+
+This utility is a Spark application that uses [distCp](https://hadoop.apache.org/docs/current/hadoop-distcp/DistCp.html) under the hood to copy objects marked by GC as expired from one location to another. 
+
+**Use-cases:**
+* Backup: copy expired objects from your repository's storage namespace to an external location before running GC in [sweep only mode](#sweep-only-mode).  
+* Restore: copy objects that were hard-deleted by GC from an external location you used for saving your backup into your repository's storage namespace.
+
+### Running GC backup and restore 
+{: .no_toc }
+
+You can run GC backup and restore using `spark-submit` or using your preferred method of running Spark programs. 
+Currently, GC backup and restore is available for Spark 3.1.2 and 3.2.1, but it may work for other versions.  
+
+First, download the lakeFS Spark client Uber-jar. The Uber-jar can be found on a public S3 location:
+`http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/${CLIENT_VERSION}/lakefs-spark-client-312-hadoop3-assembly-${CLIENT_VERSION}.jar
+`
+**Note** GC backup and restore is available from version 0.5.0 of lakeFS Spark client.
+
+Running instructions:
+
+#### Backup
+{: .no_toc }
+
+<div class="tabs">
+  <ul>
+    <li><a href="#aws-option">On AWS</a></li>
+	<li><a href="#azure-option">On Azure</a></li>
+  </ul>
+  <div markdown="1" id="aws-option">
+
+You should specify the Uber-jar path instead of `<APPLICATION-JAR-PATH>`
+Program arguments:
+* _location of expired objects list_: the path of an expired objects parquet created by a [mark-only](#mark-only-mode) GC run. given a `MARK_ID` used for a mark-only run this file is located under `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=<MARK_ID>/`.
+* _storage namespace_: The storage namespace of the lakeFS repository you are running GC for. The storage namespace include the data you are backing up. 
+* _external location for backup_: A storage location outside your lakeFS storage namespace into which you want to save the backup.
+* _storage type_: s3
+
+Run the following command to make the garbage collector start running:
+  ```bash
+spark-submit --class io.treeverse.clients.GCBackupAndRestore \
+  -c spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY> \
+  -c spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_KEY> \
+  <APPLICATION-JAR-PATH> \
+  expired-objects-list-location storage-namespace backup-external-location s3 
+  ```
+  </div>
+
+  <div markdown="1" id="azure-option">
+You should run the following command to make the garbage collector start running:
+
+  ```bash
+spark-submit --class io.treeverse.clients.GCBackupAndRestore \
+  -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
+  <APPLICATION-JAR-PATH> \
+  expired-objects-list-location storage-namespace backup-external-location azure
+  ```
+
+#### Restore
+{: .no_toc }
+
+<div class="tabs">
+  <ul>
+    <li><a href="#aws-option">On AWS</a></li>
+	<li><a href="#azure-option">On Azure</a></li>
+  </ul>
+  <div markdown="1" id="aws-option">
+
+You should specify the Uber-jar path instead of `<APPLICATION-JAR-PATH>`
+Program arguments:
+* _location of objects to restore list_: the path for a list of object that were hard-deleted by a [sweep-only](#sweep-only-mode) GC run. given a `MARK_ID` used for a sweep only run the file is located under `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=<MARK_ID>/`.
+* _external location for backup_: A storage location outside your lakeFS storage namespace into which you want to save the backup.
+* _storage namespace_: The storage namespace of the lakeFS repository you are running GC for. The storage namespace include the data you are backing up.
+* _storage type_: s3
+
+Run the following command to make the garbage collector start running:
+  ```bash
+spark-submit --class io.treeverse.clients.GCBackupAndRestore \
+  -c spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY> \
+  -c spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_KEY> \
+  <APPLICATION-JAR-PATH> \
+  objects-to-restore-list-location backup-external-location storage-namespace s3 
+  ```
+  </div>
+
+  <div markdown="1" id="azure-option">
+You should run the following command to make the garbage collector start running:
+
+  ```bash
+spark-submit --class io.treeverse.clients.GCBackupAndRestore \
+  -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
+  <APPLICATION-JAR-PATH> \
+  objects-to-restore-list-location backup-external-location storage-namespace azure
+  ```
