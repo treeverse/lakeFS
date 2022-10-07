@@ -190,9 +190,10 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
 </div>
 
 The list of expired objects is written in Parquet format in the storage
-namespace of the bucket under
-`_lakefs/retention/gc/addresses/mark_id=MARK_ID`, where MARK_ID identifies the
-run.
+namespace of the bucket under `_lakefs/retention/gc/addresses/mark_id=MARK_ID`, where MARK_ID identifies the run.
+
+**Note:** if you are running lakeFS Spark client of version < v0.4.0, this file is located under `_lakefs/retention/gc/addresses/run_id=RUN_ID`,
+where RUN_ID identifies the run. 
 
 ### GC job options
 
@@ -202,7 +203,7 @@ However, you can use GC options to break the GC job down into two stages:
 2. Sweep stage: GC will hard-delete objects marked by a previous mark-only GC run. 
 
 By breaking GC into these stages, you can pause and create a backup of the objects that GC is about to sweep and later 
-restore them. You can use [GC backup and restore](#gc-backup-and-restore) utility for that.   
+restore them. You can use the [GC backup and restore](#gc-backup-and-restore) utility to do that.   
 
 #### Mark only mode 
 
@@ -213,7 +214,9 @@ spark.hadoop.lakefs.gc.mark_id=<MARK_ID> # Replace <MARK_ID> with your own ident
 ```
 Running in mark only mode, GC will write the addresses of the expired objects to delete to the following location: `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=<MARK_ID>/` as a parquet.
 
-**Note:** The `spark.hadoop.lakefs.debug.gc.no_delete` property has been deprecated.
+**Notes:** 
+* Mark only mode is only available from v0.4.0 of lakeFS Spark client.
+* The `spark.hadoop.lakefs.debug.gc.no_delete` property has been deprecated with v0.4.0.
 
 #### Sweep only mode
 
@@ -223,6 +226,8 @@ spark.hadoop.lakefs.gc.do_mark=false
 spark.hadoop.lakefs.gc.mark_id=<MARK_ID> # Replace <MARK_ID> with the identifier you used on a previous mark-only run
 ```
 Running in sweep only mode, GC will hard-delete the expired objects marked by a mark-only run and listed in: `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=<MARK_ID>/`.
+
+**Note:** Mark only mode is only available from v0.4.0 of lakeFS Spark client.
 
 #### Performance
 
@@ -269,9 +274,8 @@ repositories may require increasing a read timeout.  If you run into timeout err
 
 ## GC backup and restore 
 
-GC was created to hard-delete objects from your underlying objects store according to your retention rules. However, when you start 
-using the feature you may want to first gain confident in the decisions GC makes. The GC backup and restore utility was created to help 
-you do that. 
+GC was created to hard-delete objects from your underlying objects store according to your retention rules. However, when you start
+using the feature you may want to first gain confidence in the decisions GC makes. The GC backup and restore utility helps you do that. 
 
 This utility is a Spark application that uses [distCp](https://hadoop.apache.org/docs/current/hadoop-distcp/DistCp.html) under the hood to copy objects marked by GC as expired from one location to another. 
 
