@@ -21,7 +21,11 @@ var versionCmd = &cobra.Command{
 	Short: "Print current migration version and available version",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
-		kvParams := cfg.GetKVParams()
+		kvParams, err := cfg.GetKVParams()
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
+			os.Exit(1)
+		}
 		ctx := cmd.Context()
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
@@ -53,7 +57,11 @@ var upCmd = &cobra.Command{
 	Short: "Apply all up migrations",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
-		kvParams := cfg.GetKVParams()
+		kvParams, err := cfg.GetKVParams()
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
+			os.Exit(1)
+		}
 		ctx := cmd.Context()
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
@@ -72,7 +80,11 @@ var gotoCmd = &cobra.Command{
 	Short: "Migrate to version V.",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
-		kvParams := cfg.GetKVParams()
+		kvParams, err := cfg.GetKVParams()
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
+			os.Exit(1)
+		}
 		ctx := cmd.Context()
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {

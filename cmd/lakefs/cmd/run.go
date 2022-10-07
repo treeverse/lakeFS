@@ -108,7 +108,10 @@ var runCmd = &cobra.Command{
 		ctx := cmd.Context()
 		logger.WithField("version", version.Version).Info("lakeFS run")
 
-		kvParams := cfg.GetKVParams()
+		kvParams, err := cfg.GetKVParams()
+		if err != nil {
+			logger.WithError(err).Fatal("Get KV params")
+		}
 		kvStore, err := kv.Open(ctx, enableKVParamsMetrics(kvParams))
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to open KV store")

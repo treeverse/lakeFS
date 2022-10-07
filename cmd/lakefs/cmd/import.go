@@ -69,7 +69,11 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	cfg := loadConfig()
 	ctx := cmd.Context()
 	logger := logging.FromContext(ctx)
-	kvParams := cfg.GetKVParams()
+	kvParams, err := cfg.GetKVParams()
+	if err != nil {
+		logger.WithError(err).Fatal("Get KV params")
+	}
+
 	kvStore, err := kv.Open(ctx, kvParams)
 	if err != nil {
 		logger.WithError(err).Fatal("failed to open KV store")

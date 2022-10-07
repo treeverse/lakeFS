@@ -23,10 +23,14 @@ var setupCmd = &cobra.Command{
 		cfg := loadConfig()
 
 		ctx := cmd.Context()
-		kvParams := cfg.GetKVParams()
+		kvParams, err := cfg.GetKVParams()
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
+			os.Exit(1)
+		}
 		migrator := kv.NewDatabaseMigrator(kvParams)
 
-		err := migrator.Migrate(ctx)
+		err = migrator.Migrate(ctx)
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)
 			os.Exit(1)
