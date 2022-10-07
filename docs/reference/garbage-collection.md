@@ -146,7 +146,7 @@ http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark
 
 `CLIENT_VERSION`s for Spark 2.4.7 can be found [here](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-247), and for Spark 3.0.1 they can be found [here](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-301).
 
-Running options:
+Running instructions:
 
 <div class="tabs">
   <ul>
@@ -191,20 +191,40 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
 
 The list of expired objects is written in Parquet format in the storage
 namespace of the bucket under
-`_lakefs/retention/gc/addresses/run_id=RUN_ID`, where RUN_ID identifies the
+`_lakefs/retention/gc/addresses/mark_id=MARK_ID`, where MARK_ID identifies the
 run.
 
-### First run
+### GC job options
 
-To create a list of objects to delete you can
+By default, GC first creates a list of expired objects according to your retention rules and then hard-deletes those objects. 
+However, you can use GC options to break the GC job down into two stages: 
+1. Mark stage: GC will mark the expired objects to hard-delete, **without** deleting them. 
+2. Sweep stage: GC will hard-delete objects marked by a previous mark-only GC run. 
 
-* Add `-c spark.hadoop.lakefs.debug.gc.no_delete=true` to disable object
-  deletion.
+By breaking GC into these stages, you can pause and create a backup of the objects that GC is about to sweep and later 
+restore them. You can use [GC backup and restore](#gc-backup-and-restore) utility for that.   
 
-Nothing will be deleted.  The list of expired objects will still be created
-and may be examined.
+#### Mark only mode 
 
-### Performance
+To make GC run the mark stage only, add the following properties to your spark-submit command:
+```properties
+spark.hadoop.lakefs.gc.do_sweep=false
+spark.hadoop.lakefs.gc.mark_id=<MARK_ID> # Replace <MARK_ID> with your own identification string. This MARK_ID will enable you to start a sweep (actual deletion) run later
+```
+Running in mark only mode, GC will write the addresses of the expired objects to delete to the following location: `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=<MARK_ID>/` as a parquet.
+
+*Note:* The `spark.hadoop.lakefs.debug.gc.no_delete` property has been deprecated.
+
+#### Sweep only mode
+
+To make GC run the sweep stage only, add the following properties to your spark-submit command:
+```properties
+spark.hadoop.lakefs.gc.do_mark=false
+spark.hadoop.lakefs.gc.mark_id=<MARK_ID> # Replace <MARK_ID> with the identifier you used on a previous mark-only run
+```
+Running in sweep only mode, GC will hard-delete the expired objects marked by a mark-only run and listed in: `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=<MARK_ID>/`.
+
+#### Performance
 
 Garbage collection reads many commits.  It uses Spark to spread the load of
 reading the contents of all of these commits.  For very large jobs running
@@ -219,7 +239,7 @@ on very large clusters, you may want to tweak this load.  To do this:
 
 Normally this should not be needed.
 
-### Networking
+#### Networking
 
 Garbage collection communicates with the lakeFS server.  Very large
 repositories may require increasing a read timeout.  If you run into timeout errors during communication from the Spark job to lakefs consider increasing these timeouts:
@@ -231,6 +251,7 @@ repositories may require increasing a read timeout.  If you run into timeout err
   (default 10) to wait longer for lakeFS to accept connections.
 
 ## Considerations
+
 1. In order for an object to be hard-deleted, it must be deleted from all branches.
    You should remove stale branches to prevent them from retaining old objects.
    For example, consider a branch that has been merged to `main` and has become stale.
@@ -245,3 +266,6 @@ repositories may require increasing a read timeout.  If you run into timeout err
    1. Branching out from an old commit.
    1. Expanding the retention period of a branch.
    1. Creating a branch from an existing branch, where the new branch has a longer retention period.
+
+## GC backup and restore 
+
