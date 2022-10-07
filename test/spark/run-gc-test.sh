@@ -4,6 +4,10 @@ set -o pipefail
 
 REPOSITORY=${REPOSITORY//./-}
 
+FULL_GC_MODE=0
+MARK_ONLY_MODE=1
+SWEEP_ONLY_MODE=2
+
 _jq() {
  echo ${1} | base64 --decode | jq -r '.'
 }
@@ -15,11 +19,41 @@ run_lakectl() {
 
 parallelism='-c spark.sql.shuffle.partitions=7 -c spark.default.parallelism=13 -c spark.hadoop.lakefs.gc.range.num_partitions=3 -c spark.hadoop.lakefs.gc.address.num_partitions=7'
 
-run_gc () {
-  if [ ${LAKEFS_BLOCKSTORE_TYPE} == "azure" ]; then
-    docker-compose run -v ${CLIENT_JAR}:/client/client.jar -T --no-deps --rm spark-submit bash -c "spark-submit -v --packages org.apache.hadoop:hadoop-azure:3.2.1 --master spark://spark:7077 --class io.treeverse.clients.GarbageCollector -c spark.hadoop.lakefs.api.url=http://docker.lakefs.io:8000/api/v1 -c spark.hadoop.lakefs.api.access_key=\${TESTER_ACCESS_KEY_ID} -c spark.hadoop.lakefs.api.secret_key=\${TESTER_SECRET_ACCESS_KEY} -c spark.hadoop.lakefs.api.connection.timeout_seconds=3 -c spark.hadoop.lakefs.api.read.timeout_seconds=8 -c spark.hadoop.fs.azure.account.key.\${LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT}.dfs.core.windows.net=\${LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY} $parallelism /client/client.jar $1"
+run_gc_according_to_storage_provider() {
+  local repo=$1
+  local additional_config_string=$2
+  if [[ ${LAKEFS_BLOCKSTORE_TYPE} == "azure" ]]; then
+    docker-compose run -v ${CLIENT_JAR}:/client/client.jar -T --no-deps --rm spark-submit bash -c "spark-submit -v --packages org.apache.hadoop:hadoop-azure:3.2.1 --master spark://spark:7077 \
+     --class io.treeverse.clients.GarbageCollector ${additional_config_string} -c spark.hadoop.lakefs.api.url=http://docker.lakefs.io:8000/api/v1 -c spark.hadoop.lakefs.api.access_key=\${TESTER_ACCESS_KEY_ID} \
+     -c spark.hadoop.lakefs.api.secret_key=\${TESTER_SECRET_ACCESS_KEY} -c spark.hadoop.lakefs.api.connection.timeout_seconds=3 -c spark.hadoop.lakefs.api.read.timeout_seconds=8 -c \
+     spark.hadoop.fs.azure.account.key.\${LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT}.dfs.core.windows.net=\${LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY} ${parallelism} /client/client.jar ${repo}"
   else
-    docker-compose run -v ${CLIENT_JAR}:/client/client.jar -T --no-deps --rm spark-submit bash -c "spark-submit -v --master spark://spark:7077 --class io.treeverse.clients.GarbageCollector -c spark.hadoop.lakefs.api.url=http://docker.lakefs.io:8000/api/v1 -c spark.hadoop.lakefs.api.access_key=\${TESTER_ACCESS_KEY_ID} -c spark.hadoop.lakefs.api.secret_key=\${TESTER_SECRET_ACCESS_KEY} -c spark.hadoop.fs.s3a.access.key=\${AWS_ACCESS_KEY_ID} -c spark.hadoop.fs.s3a.secret.key=\${AWS_SECRET_ACCESS_KEY} $parallelism /client/client.jar $1 us-east-1"
+    docker-compose run -v ${CLIENT_JAR}:/client/client.jar -T --no-deps --rm spark-submit bash -c "spark-submit -v --master spark://spark:7077 --class io.treeverse.clients.GarbageCollector \
+     -c spark.hadoop.lakefs.api.url=http://docker.lakefs.io:8000/api/v1 ${additional_config_string} -c spark.hadoop.lakefs.api.access_key=\${TESTER_ACCESS_KEY_ID} \
+     -c spark.hadoop.lakefs.api.secret_key=\${TESTER_SECRET_ACCESS_KEY} -c spark.hadoop.fs.s3a.access.key=\${AWS_ACCESS_KEY_ID} -c spark.hadoop.fs.s3a.secret.key=\${AWS_SECRET_ACCESS_KEY} \
+     ${parallelism} /client/client.jar ${repo} us-east-1"
+  fi
+}
+
+run_gc () {
+  local repo=$1
+  local run_mode=$2
+  local mark_id=$3
+  local sweep_config=""
+  local mark_id_config=""
+  echo "mark id = ${mark_id}, gc_mode = ${run_mode}"
+  if [ ${run_mode} -eq ${MARK_ONLY_MODE} ] || [ ${run_mode} -eq ${SWEEP_ONLY_MODE} ]; then
+    # If we are in sweep-only mode, we'll first mark and afterwards we'll sweep
+    sweep_config="-c spark.hadoop.lakefs.gc.do_sweep=false "
+  fi
+  if [[ ${mark_id} != "" ]]; then
+    mark_id_config="-c spark.hadoop.lakefs.gc.mark_id=${mark_id} "
+  fi
+  local additional_config_string="${sweep_config}${mark_id_config}"
+  run_gc_according_to_storage_provider "${repo}" "${additional_config_string}"
+  if [ ${run_mode} -eq ${SWEEP_ONLY_MODE} ]; then
+    additional_config_string="-c spark.hadoop.lakefs.gc.do_mark=false ${mark_id_config}"
+    run_gc_according_to_storage_provider "${repo}" "${additional_config_string}"
   fi
 }
 
@@ -122,9 +156,24 @@ do_case() {
   test_case=$(jq -r ".[${test_key}] | @base64" gc-tests/test_scenarios.json)
   test_case=$(_jq "${test_case}")
   test_id=$(echo "${test_case}" | jq -r '.id')
+  extract_gc_mode "${test_case}"
+  local gc_mode=$?
+  local mark_id=$(echo "${test_case}" | jq -r '.mark_id // empty')
   repo="${REPOSITORY}-${test_id}"
   prepare_for_gc "${test_case}" "${test_id}"
-  run_gc "${repo}"
+  run_gc "${repo}" $gc_mode "${mark_id}"
+}
+
+extract_gc_mode() {
+  local case=$1
+  local test_mode=$(echo "${case}" | jq -r '.mode // empty')
+  echo "test_mode = ${test_mode}\n"
+  if [[ ${test_mode} == "mark" ]]; then
+    return ${MARK_ONLY_MODE}
+  elif [[ ${test_mode} == "sweep" ]]; then
+    return ${SWEEP_ONLY_MODE}
+  fi
+  return ${FULL_GC_MODE}
 }
 
 test_keys=()

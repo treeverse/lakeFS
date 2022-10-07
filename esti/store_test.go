@@ -12,6 +12,7 @@ import (
 const IngestTestBucketPath = "s3://esti-system-testing-data/ingest-test-data/"
 
 func TestS3Walk(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	// Specific S3 test, this test can only run on AWS setup, and therefore is skipped for other store types
 	skipOnSchemaMismatch(t, IngestTestBucketPath)
 

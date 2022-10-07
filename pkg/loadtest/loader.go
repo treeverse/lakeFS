@@ -19,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 type Loader struct {
@@ -137,6 +138,10 @@ func (t *Loader) getClient() (api.ClientWithResponsesInterface, error) {
 	apiClient, err := api.NewClientWithResponses(
 		serverEndpoint,
 		api.WithRequestEditorFn(basicAuthProvider.Intercept),
+		api.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+			req.Header.Set("User-Agent", "lakefs-loadtest/"+version.Version)
+			return nil
+		}),
 	)
 	if err != nil {
 		return nil, ErrCreateClient

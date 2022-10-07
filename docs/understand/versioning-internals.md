@@ -98,3 +98,34 @@ Both these types of metadata are not only mutable, but also require strong consi
 Luckily, this is also much smaller set of metadata compared to the committed metadata.
 
 References and uncommitted metadata are currently stored on a key-value store (See [supported databases](../reference/configuration.md)) for consistency guarantees.
+
+## Merging changes to data
+
+lakeFS allows merging a _merge source_ (a commit) into a _merge destination_ (another commit).
+
+lakeFS first finds the [merge base](https://git-scm.com/docs/git-merge-base#_description) the nearest common parent of the two commits.
+It can now perform a _three-way merge_, by examining the presence and identity of files in each commit. In the table
+below, "A", "B" and "C" are possible file contents, "X" is a missing file, and "conflict"
+(which only appears as a result) is a merge failure.
+
+| **In base** | **In source** | **In destination** | **Result** | **Comment**                                    |
+| :---:       | :---:         | :---:              | :---:      | :---                                           |
+| A           | A             | A                  | A          | Unchanged file                                 |
+| A           | B             | B                  | B          | Files changed on both sides in same way        |
+| A           | B             | C                  | conflict   | Files changed on both sides differently        |
+| A           | A             | B                  | B          | File changed only on one branch                |
+| A           | B             | A                  | B          | File changed only on one branch                |
+| A           | X             | X                  | X          | Files deleted on both sides                    |
+| A           | B             | X                  | conflict   | File changed on one side, deleted on the other |
+| A           | X             | B                  | conflict   | File changed on one side, deleted on the other |
+| A           | A             | X                  | X          | File deleted on one side                       |
+| A           | X             | A                  | X          | File deleted on one side                       |
+
+The API and lakectl allow passing an optional `strategy` flag with the following values: 
+- dest-wins - in case of a conflict, merge will pick the destination object.
+- source-wins - in case of a conflict, merge will pick the source object.
+If the strategy is set, it will affect all the objects in the merge, there is currently no way to treat each conflict differently.
+
+As a format-agnostic system, lakeFS currently merges by complete files. Format-specific and
+other user-defined merge strategies for handling conflicts are on the roadmap.
+

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -167,8 +166,10 @@ var runCmd = &cobra.Command{
 			logger.WithField("adapter_type", blockstoreType).
 				Error("Block adapter NOT SUPPORTED for production use")
 		}
+
 		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
-		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
+		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg, stats.WithLogger(logger))
+
 		// init block store
 		blockStore, err := factory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
 		if err != nil {
@@ -212,13 +213,10 @@ var runCmd = &cobra.Command{
 		}
 		controllerAuthenticator := append(middlewareAuthenticator, auth.NewEmailAuthenticator(authService))
 
-		auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
+		auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL(), metadata.InstallationID)
 		defer auditChecker.Close()
 		if version.Version != version.UnreleasedVersion {
-			const maxSecondsToJitter = 12 * 60 * 60                                // 12h in seconds
-			jitter := time.Duration(rand.Int63n(maxSecondsToJitter)) * time.Second //nolint:gosec
-			interval := cfg.GetSecurityAuditCheckInterval() + jitter
-			auditChecker.StartPeriodicCheck(ctx, interval, logger)
+			auditChecker.StartPeriodicCheck(ctx, cfg.GetSecurityAuditCheckInterval(), logger)
 		}
 
 		allowForeign, err := cmd.Flags().GetBool(mismatchedReposFlagName)
@@ -313,7 +311,7 @@ var runCmd = &cobra.Command{
 		bufferedCollector.Run(ctx)
 		defer bufferedCollector.Close()
 
-		bufferedCollector.CollectEvent("global", "run")
+		bufferedCollector.CollectEvent(stats.Event{Class: "global", Name: "run"})
 
 		logging.Default().WithField("listen_address", cfg.GetListenAddress()).Info("starting HTTP server")
 		server := &http.Server{

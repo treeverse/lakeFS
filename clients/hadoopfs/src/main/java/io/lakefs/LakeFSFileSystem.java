@@ -20,6 +20,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.AccessDeniedException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -40,13 +43,25 @@ import static io.lakefs.Constants.*;
 public class LakeFSFileSystem extends FileSystem {
     public static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystem.class);
     public static final Logger OPERATIONS_LOG = LoggerFactory.getLogger(LakeFSFileSystem.class + "[OPERATION]");
+    public static final String LAKEFS_DELETE_BULK_SIZE = "fs.lakefs.delete.bulk_size";
 
     private Configuration conf;
     private URI uri;
     private Path workingDirectory = new Path(Constants.SEPARATOR);
+    private ClientFactory clientFactory;
     private LakeFSClient lfsClient;
     private int listAmount;
     private FileSystem fsForConfig;
+
+    // Currently bulk deletes *must* receive a single-threaded executor!
+    private ExecutorService deleteExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(r);
+                t.setDaemon(true);
+                return t;
+            }
+        });
 
     private URI translateUri(URI uri) throws java.net.URISyntaxException {
         switch (uri.getScheme()) {
@@ -62,16 +77,23 @@ public class LakeFSFileSystem extends FileSystem {
         return uri;
     }
 
-    @Override
-    public void initialize(URI name, Configuration conf) throws IOException {
-        initializeWithClient(name, conf, new LakeFSClient(name.getScheme(), conf));
+    public interface ClientFactory {
+        LakeFSClient newClient() throws IOException;
     }
 
-    void initializeWithClient(URI name, Configuration conf, LakeFSClient lfsClient) throws IOException {
+    @Override
+    public void initialize(URI name, Configuration conf) throws IOException {
+        initializeWithClientFactory(name, conf, new ClientFactory() {
+                public LakeFSClient newClient() throws IOException { return new LakeFSClient(name.getScheme(), conf); }
+            });
+    }
+
+    void initializeWithClientFactory(URI name, Configuration conf, ClientFactory clientFactory) throws IOException {
         super.initialize(name, conf);
         this.uri = name;
         this.conf = conf;
-        this.lfsClient = lfsClient;
+        this.clientFactory = clientFactory;
+        this.lfsClient = clientFactory.newClient();
 
         String host = name.getHost();
         if (host == null) {
@@ -218,7 +240,7 @@ public class LakeFSFileSystem extends FileSystem {
         OutputStream physicalOut = createStream.apply(physicalFs, physicalPath);
         MetadataClient metadataClient = new MetadataClient(physicalFs);
         LinkOnCloseOutputStream out = new LinkOnCloseOutputStream(this,
-                stagingLoc, objectLoc, physicalUri, metadataClient, physicalOut);
+                                                                  stagingLoc, objectLoc, physicalUri, metadataClient, physicalOut);
         // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
         return new FSDataOutputStream(out, null);
     }
@@ -476,15 +498,21 @@ public class LakeFSFileSystem extends FileSystem {
                 loc = loc.toDirectory();
                 deleted = deleteHelper(loc);
             } else {
-                ListingIterator iterator = new ListingIterator(path, true, listAmount);
-                iterator.setRemoveDirectory(false);
-                while (iterator.hasNext()) {
-                    LakeFSFileStatus fileStatus = iterator.next();
-                    ObjectLocation fileLoc = pathToObjectLocation(fileStatus.getPath());
-                    if (fileStatus.isDirectory()) {
-                        fileLoc = fileLoc.toDirectory();
+                ObjectLocation location = pathToObjectLocation(path);
+                try (BulkDeleter deleter = newDeleter(location.getRepository(), location.getRef())) {
+                    ListingIterator iterator = new ListingIterator(path, true, listAmount);
+                    iterator.setRemoveDirectory(false);
+                    while (iterator.hasNext()) {
+                        LakeFSFileStatus fileStatus = iterator.next();
+                        ObjectLocation fileLoc = pathToObjectLocation(fileStatus.getPath());
+                        if (fileStatus.isDirectory()) {
+                            fileLoc = fileLoc.toDirectory();
+                        }
+                        deleter.add(fileLoc.getPath());
                     }
-                    deleteHelper(fileLoc);
+                } catch (BulkDeleter.DeleteFailuresException e) {
+                    LOG.error("delete(%s, %b): %s", path, recursive, e.toString());
+                    deleted = false;
                 }
             }
         } else {
@@ -493,6 +521,17 @@ public class LakeFSFileSystem extends FileSystem {
 
         createDirectoryMarkerIfEmptyDirectory(path.getParent());
         return deleted;
+    }
+
+    private BulkDeleter newDeleter(String repository, String branch) throws IOException {
+        // Use a different client -- a different thread waits for its calls,
+        // *late*.
+        ObjectsApi objectsApi = clientFactory.newClient().getObjects();
+        return new BulkDeleter(deleteExecutor, new BulkDeleter.Callback() {
+                public ObjectErrorList apply(String repository, String branch, PathList pathList) throws ApiException {
+                    return objectsApi.deleteObjects(repository, branch, pathList);
+                }
+            }, repository, branch, conf.getInt(LAKEFS_DELETE_BULK_SIZE, 0));
     }
 
     private boolean deleteHelper(ObjectLocation loc) throws IOException {

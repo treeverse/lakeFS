@@ -300,7 +300,7 @@ func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord,
 				task.Err = task.Hook.Run(ctx, record, &buf)
 				task.EndTime = time.Now().UTC()
 
-				s.stats.CollectEvent("actions_service", string(record.EventType))
+				s.stats.CollectEvent(stats.Event{Class: "actions_service", Name: string(record.EventType)})
 
 				if task.Err != nil {
 					_, _ = fmt.Fprintf(&buf, "Error: %s\n", task.Err)

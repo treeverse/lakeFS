@@ -105,20 +105,28 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	}
 
 	s3Endpoint := viper.GetString("s3_endpoint")
+	key := viper.GetString("access_key_id")
+	secret := viper.GetString("secret_access_key")
+	svc := SetupTestS3Client(s3Endpoint, key, secret)
+	return logger, client, svc
+}
+
+func SetupTestS3Client(endpoint, key, secret string) *s3.S3 {
 	awsSession := session.Must(session.NewSession())
+	forcePathStyleS3Client := viper.GetBool("force_path_style")
 	svc := s3.New(awsSession,
 		aws.NewConfig().
 			WithRegion("us-east-1").
-			WithEndpoint(s3Endpoint).
+			WithEndpoint(endpoint).
+			WithS3ForcePathStyle(forcePathStyleS3Client).
 			WithDisableSSL(true).
 			WithCredentials(credentials.NewCredentials(
 				&credentials.StaticProvider{
 					Value: credentials.Value{
-						AccessKeyID:     viper.GetString("access_key_id"),
-						SecretAccessKey: viper.GetString("secret_access_key"),
+						AccessKeyID:     key,
+						SecretAccessKey: secret,
 					}})))
-
-	return logger, client, svc
+	return svc
 }
 
 // ParseEndpointURL parses the given endpoint string

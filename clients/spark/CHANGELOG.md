@@ -1,4 +1,18 @@
 # Changelog
+
+## v0.5.0 - 2022-10-06
+What's new:
+* A utility for GC backup and restore. It allows users to copy objects that GC plans to delete or restore objects
+from a previously created backup (#4318)
+
+## v0.4.0 - 2022-09-30
+What's new:
+* Separate GC into a mark and sweep parts and add configuration parameters to control what phases to run (#4264)
+
+Bug fixes:
+* Fix the failure to write an empty dataframe into GC reports when running in mark-only mode (#4239)
+* Only clean up relative path names (#4222) 
+
 ## v0.3.0 - 2022-09-21
 What's new:
 - Add retries mechanism (#4190)

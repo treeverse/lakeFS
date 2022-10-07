@@ -24,9 +24,15 @@ object LakeFSContext {
   val LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = "lakefs.gc.address.num_partitions"
   val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY = "lakefs.debug.gc.max_commit_iso_datetime"
   val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY = "lakefs.debug.gc.max_commit_epoch_seconds"
-  val LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY = "lakefs.debug.gc.no_delete"
   val LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY = "lakefs.debug.gc.reproduce_run_id"
+  val LAKEFS_CONF_GC_DO_MARK = "lakefs.gc.do_mark"
+  val LAKEFS_CONF_GC_DO_SWEEP = "lakefs.gc.do_sweep"
+  val LAKEFS_CONF_GC_MARK_ID = "lakefs.gc.mark_id"
+  val LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY = "lakefs.debug.gc.no_delete"
 
+  val MARK_ID_KEY = "mark_id"
+  val RUN_ID_KEY = "run_id"
+  val COMMITS_LOCATION_KEY = "commits_location"
   val DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = 50
   val DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = 200
 

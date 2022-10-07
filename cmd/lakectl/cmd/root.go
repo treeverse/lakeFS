@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -121,8 +122,12 @@ func getClient() *api.ClientWithResponses {
 
 	client, err := api.NewClientWithResponses(
 		serverEndpoint,
-		api.WithRequestEditorFn(basicAuthProvider.Intercept),
 		api.WithHTTPClient(httpClient),
+		api.WithRequestEditorFn(basicAuthProvider.Intercept),
+		api.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+			req.Header.Set("User-Agent", "lakectl/"+version.Version)
+			return nil
+		}),
 	)
 	if err != nil {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)

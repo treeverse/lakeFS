@@ -7,6 +7,7 @@ import (
 )
 
 func TestDoctor(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
 	endPointURL := viper.GetString("endpoint_url") + "/api/v1"

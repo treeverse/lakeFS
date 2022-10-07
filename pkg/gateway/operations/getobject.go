@@ -22,12 +22,13 @@ func (controller *GetObject) RequiredPermissions(_ *http.Request, repoID, _, pat
 	return permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadObjectAction,
-			Resource: permissions.ObjectArn(repoID, path)},
+			Resource: permissions.ObjectArn(repoID, path),
+		},
 	}, nil
 }
 
 func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o *PathOperation) {
-	o.Incr("get_object")
+	o.Incr("get_object", o.Principal, o.Repository.Name, o.Reference)
 	query := req.URL.Query()
 	if _, exists := query["versioning"]; exists {
 		o.EncodeResponse(w, req, serde.VersioningConfiguration{}, http.StatusOK)

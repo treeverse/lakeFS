@@ -120,7 +120,7 @@ const (
 	StatsFlushIntervalKey = "stats.flush_interval"
 
 	SecurityAuditCheckIntervalKey     = "security.audit_check_interval"
-	DefaultSecurityAuditCheckInterval = 12 * time.Hour
+	DefaultSecurityAuditCheckInterval = 24 * time.Hour
 
 	SecurityAuditCheckURLKey     = "security.audit_check_url"
 	DefaultSecurityAuditCheckURL = "https://audit.lakefs.io/audit"

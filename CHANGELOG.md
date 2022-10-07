@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.83.2
+
+What's new:
+- Adding lakeSF description to python's pypi package (#4260)
+- Report extended information with metrics (off by default) (#4196)
+
+Bug fixes:
+- Fix S3 gateway delete object limits check (#4240)
+- Fix S3 gateway report status code and operation ID in case of an error (#4293)
+- Fix UI render error inside repo error (#4301)
+- Fix UI repository settings label width (#4300)
+- Fix logging.IsTracing should check default logger level (#4252)
+
+## v0.82.0
+
+What's new:
+
+- UI: New file viewer (#4226)
+- Performance improvements: enable delete-objects as part of Graveler (#4205)
+
+Bug fixes:
+
+- Migrate work as part of setup for auth-api installations (#4208)
+- Invite user is enabled when SMTP server is not configured (#4224)
+
 ## v0.81.1
 
 Bug fixes:

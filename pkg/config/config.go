@@ -307,6 +307,10 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 	return c.values.Stats.FlushInterval
 }
 
+func (c *Config) GetStatsExtended() bool {
+	return c.values.Stats.Extended
+}
+
 func (c *Config) GetEmailParams() (email.Params, error) {
 	return email.Params{
 		SMTPHost:           c.values.Email.SMTPHost,
