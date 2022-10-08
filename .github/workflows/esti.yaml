@@ -1,9 +1,13 @@
 name: Esti
 on:
-  pull_request:
   push:
     branches:
       - master
+  pull_request:
+    paths-ignore:
+      - "*.md"
+      - "docs/**"
+      - "design/**"
 
 # These permissions are needed to interact with GitHub's OIDC Token endpoint.
 permissions:

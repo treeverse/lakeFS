@@ -6,6 +6,10 @@ on:
     branches:
       - master
   pull_request:
+    paths-ignore:
+      - "*.md"
+      - "docs/**"
+      - "design/**"
 jobs:
   spark-metadata-client:
     name: Unit test Spark metadata client

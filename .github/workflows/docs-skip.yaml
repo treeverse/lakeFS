@@ -1,0 +1,91 @@
+name: Docs skip checks
+
+# Workflow to skip steps required for branch protection but not required for documentation changes.
+#
+# Add the job there with 'skip-' prefix and the step will just echo it is not required. 
+# The 'name' of the step MUST match the original step we like to skip
+#
+# Example:
+#
+# For the following step on a workflow that ignore docs but required for branch protection - 
+#
+# test-something:
+#    name: Testing something
+#    steps:
+#      ...
+#
+# We will add a skip step here -
+#
+# skip-test-something:
+#    name: Testing something
+#    steps:
+#      - run: 'echo "Not required"'
+#
+
+on:
+  pull_request:
+    paths-ignore:
+      - "*.md"
+      - "docs/**"
+      - "design/**"
+jobs:
+
+  skip-validator:
+    name: Run Linters and Checkers
+    steps:
+      - run: 'echo "Not required"'
+
+  skip-test-go:
+    name: Run Go tests
+    steps:
+      - run: 'echo "Not required"'
+
+  skip-run-system-azure-abfs:
+    name: Run latest lakeFS app on Azure with Azure blobstore
+    steps:
+      - run: 'echo "Not required"'
+
+  skip-run-system-aws-s3-kv-dynamodb:
+    name: Run latest lakeFS app on AWS S3 DynamoDB KV
+    steps:
+      - run: 'echo "Not required"'
+
+  skip-run-system-gcp-gs:
+    name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
+    steps:
+      - run: 'echo "Not required"'
+
+  skip-hadoopfs-tests:
+    name: Test lakeFS Hadoop FileSystem
+    steps:
+      - run: 'echo "Not required"'
+
+  skip-spark2:
+    name: Test lakeFS with Spark 2.x
+    steps:
+      - run: 'echo "Not required"'
+
+  skip-skip-spark3:
+    name: Test lakeFS with Spark 3.x
+    steps:
+      - run: 'echo "Not required"'
+
+  skip-spark-metadata-client:
+    name: Unit test Spark metadata client
+    steps:
+      - run: 'echo "Not required"'
+
+  skip-metastore-client-with-trino:
+    name: Test metastore client commands using trino and dbt
+    steps:
+      - run: 'echo "Not required"'
+
+  skip-hadoopfs-s3a-mpu:
+    name: Test lakeFS multipart upload with Hadoop S3A
+    steps:
+      - run: 'echo "Not required"'
+
+  skip-export:
+    name: Test lakeFS rclone export functionality
+    steps:
+      - run: 'echo "Not required"'
