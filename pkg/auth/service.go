@@ -724,16 +724,12 @@ func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.Policy) e
 		return err
 	}
 	policyKey := model.PolicyPath(policy.DisplayName)
-
 	m := model.ProtoFromPolicy(policy)
-	err := s.store.SetMsgIf(ctx, model.PartitionKey, policyKey, m, nil)
+	err := s.store.SetMsg(ctx, model.PartitionKey, policyKey, m)
 	if err != nil {
-		if errors.Is(err, kv.ErrPredicateFailed) {
-			err = ErrAlreadyExists
-		}
 		return fmt.Errorf("save policy (policyKey %s): %w", policyKey, err)
 	}
-	return err
+	return nil
 }
 
 func (s *KVAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
