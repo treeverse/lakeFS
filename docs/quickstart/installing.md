@@ -29,8 +29,8 @@ To run a local lakeFS instance using [Docker Compose](https://docs.docker.com/co
 
 1. [Create your first repository](repository.md) in lakeFS.
 
-### Configure HTTPS endpoint for lakeFS
-Run the following commands in your terminal to configure HTTPS endpoint for lakeFS.
+### Update Container SSL Certificates
+Run the following commands in your terminal to update the container SSL certificates.
 
 1. Copy your SSL certificates from the local machine to the lakeFS container:
 
