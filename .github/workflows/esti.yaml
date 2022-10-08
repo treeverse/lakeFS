@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Check-out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # No way to share code between workflows :-( If you change this, find and change the
       # same code wherever "Find Go module and build caches" appears!
@@ -41,13 +41,13 @@ jobs:
           cat $GITHUB_ENV
 
       - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17.8
         id: go
 
       - name: Cache Go modules and builds
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: cache-go-modules
         with:
@@ -62,7 +62,7 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: '16.15.0'
+          node-version: '16.17.1'
       - name: Generate code
         run: |
           make -j3 gen-api gen-ui
@@ -82,21 +82,21 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup NodeJS
         uses: actions/setup-node@v3
         with:
-          node-version: '16.15.0'
+          node-version: '16.17.1'
 
       - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17.8
         id: go
 
       - name: Retrieve generated code
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: generated-code
           path: /tmp/
@@ -129,16 +129,18 @@ jobs:
           echo "ECR_REPOSITORY_LAKEFS=lakefs" >> $GITHUB_ENV
 
       - name: Login to GitHub Docker Registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Pull last built docker image cache
         run: |
           docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2:${{ steps.version.outputs.tag }} || \
           docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2 || \
           true
+
       - name: Build Docker image with cache and push
         run: |
           set -ex
@@ -180,7 +182,7 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -217,7 +219,8 @@ jobs:
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
     steps:
       - name: Check-out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
       - name: Start lakeFS for contract tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -229,6 +232,7 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: minio
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: minio123
+
       - name: Setup contract tests
         working-directory: test/lakefsfs_contract
         run: ./setup-test.sh
@@ -256,7 +260,7 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
@@ -272,13 +276,14 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+
       - name: Setup lakeFS for tests
         working-directory: test/spark
         run: ./setup-test.sh
 
       - name: Generate uniquifying value
         id: unique
-        run:  echo "::set-output name=value::$RANDOM"
+        run: echo "::set-output name=value::$RANDOM"
 
       - name: Test lakeFS multipart upload with Hadoop S3A
         env:
@@ -313,7 +318,7 @@ jobs:
       SPARK_TAG: 2
     steps:
       - name: Check-out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
@@ -333,13 +338,14 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+
       - name: Setup lakeFS for tests
         working-directory: test/spark
         run: ./setup-test.sh
 
       - name: Generate uniquifying value
         id: unique
-        run:  echo "::set-output name=value::$RANDOM"
+        run: echo "::set-output name=value::$RANDOM"
 
       - name: Test lakeFS S3 with Spark 2.x
         env:
@@ -388,7 +394,7 @@ jobs:
       SPARK_TAG: 3
     steps:
       - name: Check-out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
@@ -399,7 +405,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run:  echo "::set-output name=value::$RANDOM"
+        run: echo "::set-output name=value::$RANDOM"
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -412,6 +418,7 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+
       - name: Setup lakeFS for tests
         working-directory: test/spark
         run: ./setup-test.sh
@@ -465,7 +472,7 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Start lakeFS for export tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -481,7 +488,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run:  echo "::set-output name=value::$RANDOM"
+        run: echo "::set-output name=value::$RANDOM"
 
       - name: Setup lakeFS for tests
         env:
@@ -512,7 +519,7 @@ jobs:
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
     steps:
       - name: Check-out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Go
         uses: actions/setup-go@v2
@@ -522,7 +529,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run:  echo "::set-output name=value::$RANDOM"
+        run: echo "::set-output name=value::$RANDOM"
 
       - name: Start lakeFS for Metastore tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -540,7 +547,7 @@ jobs:
           LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_SECRET_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
       - name: Build lakectl for dbt container
-        run:  go build -o test/lakectl_metastore/etc/lakectl ./cmd/lakectl
+        run: go build -o test/lakectl_metastore/etc/lakectl ./cmd/lakectl
 
       - name: Setup lakeFS for tests
         working-directory: test/lakectl_metastore
@@ -577,7 +584,7 @@ jobs:
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
     steps:
       - name: Check-out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
@@ -625,7 +632,7 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Import Metaclient
         id: import_metaclient
@@ -636,7 +643,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run:  echo "::set-output name=value::$RANDOM"
+        run: echo "::set-output name=value::$RANDOM"
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -697,7 +704,7 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Import Metaclient
         id: import_metaclient
@@ -763,7 +770,7 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Import Metaclient
         id: import_metaclient
@@ -774,7 +781,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run:  echo "::set-output name=value::$RANDOM"
+        run: echo "::set-output name=value::$RANDOM"
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -830,11 +837,11 @@ jobs:
       LAKEFS_DATABASE_CONNECTION_STRING: "" # Override lakeFS docker compose settings
     steps:
       - name: Check-out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Generate uniquifying value
         id: unique
-        run:  echo "::set-output name=value::$RANDOM"
+        run: echo "::set-output name=value::$RANDOM"
 
       - name: Test lakeFS with S3 tests KV
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -860,10 +867,12 @@ jobs:
         run: |
           FILES_COUNT=`aws s3 ls s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }} --recursive | wc -l`
           [ $FILES_COUNT -gt 5 ]
+
       - name: lakeFS Logs on s3 failure KV
         if: ${{ failure() }}
         continue-on-error: true
         run: docker-compose -f esti/ops/docker-compose-dynamodb.yaml logs --tail=1000 lakefs
+
       - name: Export DB KV
         if: ${{ always() }}
         working-directory: esti/ops
@@ -884,11 +893,11 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Generate uniquifying value
         id: unique
-        run:  echo "::set-output name=value::$RANDOM"
+        run: echo "::set-output name=value::$RANDOM"
 
       - name: Test lakeFS with S3 tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -912,10 +921,12 @@ jobs:
         run: |
             FILES_COUNT=`aws s3 ls s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }} --recursive | wc -l`
             [ $FILES_COUNT -gt 5 ]
+
       - name: lakeFS Logs on s3 failure
         if: ${{ failure() }}
         continue-on-error: true
         run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+
       - name: Export DB
         if: ${{ always() }}
         working-directory: esti/ops
@@ -923,6 +934,7 @@ jobs:
             if docker-compose ps -q postgres; then
               docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
             fi
+
       - name: Run lakeFS S3 to use with local API key
         env:
           LAKEFS_STATS_ENABLED: "false"
@@ -948,11 +960,11 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Generate uniquifying value
         id: unique
-        run:  echo "::set-output name=value::$RANDOM"
+        run: echo "::set-output name=value::$RANDOM"
 
       - name: Start lakeFS with GS tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -966,6 +978,7 @@ jobs:
           LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
           ESTI_BLOCKSTORE_TYPE: gs
           ESTI_STORAGE_NAMESPACE: gs://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
+
       - name: lakeFS Logs on GS failure
         if: ${{ failure() }}
         continue-on-error: true
@@ -983,11 +996,11 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Generate uniquifying value
         id: unique
-        run:  echo "::set-output name=value::$RANDOM"
+        run: echo "::set-output name=value::$RANDOM"
 
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -1002,10 +1015,12 @@ jobs:
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
           ESTI_BLOCKSTORE_TYPE: azure
           ESTI_STORAGE_NAMESPACE: https://esti.blob.core.windows.net/esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
+
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
         continue-on-error: true
         run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+
       - name: See the env when we would have tried to publish coverage
         run: env
         # uses: codecov/codecov-action@v1

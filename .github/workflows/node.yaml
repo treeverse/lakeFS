@@ -13,10 +13,10 @@ jobs:
     name: Test React App
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '16.15.0'
+          node-version: '16.17.1'
       - name: install UI dependencies
         run: npm install
         working-directory: ./webui
