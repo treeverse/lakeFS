@@ -193,11 +193,7 @@ const UsersIndexPage = () => {
             return USER_NOT_FOUND;
         }
 
-        if (!userRecord.email || userRecord.email === "") {
-            return userRecord.id;
-        }
-        
-        return userRecord.email;
+        return userRecord.email || userRecord.id;
     }, [usersList]);
 
     return (
