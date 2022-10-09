@@ -186,7 +186,7 @@ const UsersIndexPage = () => {
     }, [results, refresh]);
 
     const getUserEmailById = useCallback((id) => {
-        const userRecord = usersList.filter(user => user.id === id)[0];
+        const userRecord = usersList.find(user => user.id === id);
         // return something, so we don't completely break the state
         // this can help us track down issues later on
         if (!userRecord) {
