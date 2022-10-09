@@ -34,6 +34,7 @@ jobs:
       uses: github/codeql-action/init@v2
       with:
         languages: 'go, javascript'
+        config-file: ./.github/codeql/codeql-config.yaml
 
     - run: make gen-api
 

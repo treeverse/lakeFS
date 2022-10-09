@@ -1,0 +1,4 @@
+paths-ignore:
+  - 'webui/node_modules'
+  - 'webui/dist'
+  - 'pkg/**/testdata/*.yaml'
