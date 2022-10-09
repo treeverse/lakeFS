@@ -119,7 +119,8 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, _ blockparams.AdapterConfig, 
 		return err
 	}
 
-	rows, err := d.Query(ctx, "SELECT * FROM gateway_multiparts")
+	// skipping null content_type due to https://github.com/treeverse/lakeFS/issues/4342
+	rows, err := d.Query(ctx, "SELECT * FROM gateway_multiparts WHERE content_type IS NOT NULL")
 	if err != nil {
 		return err
 	}

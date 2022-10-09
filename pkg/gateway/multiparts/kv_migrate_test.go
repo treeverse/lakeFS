@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
@@ -25,9 +26,19 @@ func TestMigrate(t *testing.T) {
 	dbTracker := multiparts.NewDBTracker(database)
 
 	data := createMigrateTestData(t, ctx, dbTracker, 300)
+	notMigratedUploadID := "not_migrated_id"
+	// spam the database with stale nil values. Check they are skipped during migration.
+	// https://github.com/treeverse/lakeFS/issues/4342
+	_, err := database.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+		_, err := tx.Exec(`INSERT INTO gateway_multiparts (upload_id,path,creation_date,physical_address, metadata, content_type)
+			VALUES ($1, $2, $3, $4, $5, $6)`,
+			notMigratedUploadID, "fake_path", time.Now(), "fake_physical_address", nil, nil) // last nil is the actual bug
+		return nil, err
+	})
+	require.NoError(t, err)
 
 	buf := bytes.Buffer{}
-	err := multiparts.Migrate(ctx, database.Pool(), nil, &buf)
+	err = multiparts.Migrate(ctx, database.Pool(), nil, &buf)
 	require.NoError(t, err)
 
 	testutil.MustDo(t, "Import file", kv.Import(ctx, &buf, kvStore))
@@ -37,6 +48,10 @@ func TestMigrate(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, *m, entry)
 	}
+
+	m, err := kvTracker.Get(ctx, notMigratedUploadID)
+	require.Nil(t, m)
+	require.ErrorIs(t, err, kv.ErrNotFound)
 }
 
 func createMigrateTestData(t *testing.T, ctx context.Context, tracker multiparts.Tracker, size int) []multiparts.MultipartUpload {
@@ -58,6 +73,7 @@ func createMigrateTestData(t *testing.T, ctx context.Context, tracker multiparts
 		err := tracker.Create(ctx, m)
 		testutil.MustDo(t, "Create entry", err)
 	}
+
 	return data
 }
 
