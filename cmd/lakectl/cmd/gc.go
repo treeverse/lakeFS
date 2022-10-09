@@ -73,6 +73,7 @@ Example configuration file:
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
+
 var gcDeleteConfigCmd = &cobra.Command{
 	Use:     "delete-config",
 	Short:   "Deletes the garbage collection policy for the repository",

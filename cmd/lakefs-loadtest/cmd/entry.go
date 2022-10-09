@@ -60,7 +60,10 @@ var entryCmd = &cobra.Command{
 			fmt.Printf("invalid config: %s\n", err)
 		}
 
-		kvParams := conf.GetKVParams()
+		kvParams, err := conf.GetKVParams()
+		if err != nil {
+			logging.Default().WithError(err).Fatal("Get KV params")
+		}
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
 			logging.Default().WithError(err).Fatal("failed to open KV store")

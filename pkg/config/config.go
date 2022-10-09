@@ -123,13 +123,17 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 	}
 }
 
-func (c *Config) GetKVParams() kvparams.KV {
+func (c *Config) GetKVParams() (kvparams.KV, error) {
 	p := kvparams.KV{
 		Type: c.values.Database.Type,
 	}
 	if c.values.Database.Local != nil {
+		localPath, err := homedir.Expand(c.values.Database.Local.Path)
+		if err != nil {
+			return kvparams.KV{}, fmt.Errorf("parse database local path '%s': %w", c.values.Database.Local.Path, err)
+		}
 		p.Local = &kvparams.Local{
-			Path:         c.values.Database.Local.Path,
+			Path:         localPath,
 			PrefetchSize: c.values.Database.Local.PrefetchSize,
 		}
 		p.Local.SyncWrites = true
@@ -164,7 +168,7 @@ func (c *Config) GetKVParams() kvparams.KV {
 			AwsSecretAccessKey: c.values.Database.DynamoDB.AwsSecretAccessKey.SecureValue(),
 		}
 	}
-	return p
+	return p, nil
 }
 
 func (c *Config) GetLDAPConfiguration() *LDAP {

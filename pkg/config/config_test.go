@@ -9,8 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/treeverse/lakefs/pkg/logging"
-
 	"github.com/go-test/deep"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/block/factory"
@@ -18,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/local"
 	s3a "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -74,7 +73,7 @@ func TestConfig_NewFromFile(t *testing.T) {
 }
 
 func pushEnv(key, value string) func() {
-	var oldValue = os.Getenv(key)
+	oldValue := os.Getenv(key)
 	_ = os.Setenv(key, value)
 	return func() {
 		_ = os.Setenv(key, oldValue)
@@ -92,8 +91,10 @@ func TestConfig_EnvironmentVariables(t *testing.T) {
 
 	c, err := newConfigFromFile("testdata/valid_config.yaml")
 	testutil.Must(t, err)
-	if c.GetKVParams().Postgres.ConnectionString != dbString {
-		t.Errorf("got DB connection string %s, expected to override to %s", c.GetKVParams().Postgres.ConnectionString, dbString)
+	kvParams, err := c.GetKVParams()
+	testutil.Must(t, err)
+	if kvParams.Postgres.ConnectionString != dbString {
+		t.Errorf("got DB connection string %s, expected to override to %s", kvParams.Postgres.ConnectionString, dbString)
 	}
 }
 

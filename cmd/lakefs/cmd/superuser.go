@@ -45,10 +45,14 @@ var superuserCmd = &cobra.Command{
 
 		logger := logging.Default()
 		ctx := cmd.Context()
-		kvParams := cfg.GetKVParams()
+		kvParams, err := cfg.GetKVParams()
+		if err != nil {
+			fmt.Printf("KV params: %s\n", err)
+			os.Exit(1)
+		}
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
-			fmt.Printf("failed to open KV store: %s\n", err)
+			fmt.Printf("Failed to open KV store: %s\n", err)
 			os.Exit(1)
 		}
 		storeMessage := &kv.StoreMessage{Store: kvStore}
