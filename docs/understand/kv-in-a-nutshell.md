@@ -11,7 +11,7 @@ has_children: false
 
 {% include toc.html %}
 
-Starting at version 0.80.0, lakeFS abandoned the tight coupling to [PostgreSQL](https://en.wikipedia.org/wiki/PostgreSQL) and moved all database operations to work over [Key-Value Store](https://en.wikipedia.org/wiki/Key%E2%80%93value_database)
+Starting at version 0.80.2, lakeFS abandoned the tight coupling to [PostgreSQL](https://en.wikipedia.org/wiki/PostgreSQL) and moved all database operations to work over [Key-Value Store](https://en.wikipedia.org/wiki/Key%E2%80%93value_database)
 
 While SQL databases, and Postgres among them, have their obvious advantages, we felt that the tight coupling to Postgres is limiting our users and so, lakeFS with Key Value Store is introduced.
 Our KV Store implements a generic interface, with methods for `Get`, `Set`, `Compare-and-Set`, `Delete` and `Scan`. Each entry is represented by a [`partition`, `key`, `value`] triplet. All these fields are generic byte-array, and the using module has maximal flexibility on the format to use for each field
