@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 
 import {AuthLayout} from "../../../../lib/components/auth/layout";
-import {UserHeader} from "../../../../lib/components/auth/nav";
+import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {auth} from "../../../../lib/api";
 import {Paginator} from "../../../../lib/components/pagination";
@@ -48,7 +48,7 @@ const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
 
     return (
         <>
-            <UserHeader userId={userId} page={'effectivePolicies'}/>
+            <UserHeaderWithContext userId={userId} page={'effectivePolicies'}/>
 
             <ActionsBar>
                 <ActionGroup orientation="left">
