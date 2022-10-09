@@ -369,6 +369,24 @@ df.write.partitionBy("example-column").parquet(s"lakefs://${repo}/${branch}/outp
 
 The data is now created in lakeFS as new changes in your branch. You can now commit these changes or revert them.
 
+## Using the new OutputCommitter
+
+### Configuration
+
+On Hadoop 2, configure:
+
+```xml
+<?xml version="1.0"?>
+<configuration>
+    <property>
+        <name>spark.sql.sources.outputCommitterClass</name>
+        <value>io.lakefs.committer.LakeFSOutputCommitter</value>
+    </property>
+</configuration>
+```
+
+(You can also set a default output committer using mapred.output.committer.class and possibly setting mapred.mapper.new-api=false.)
+
 ## Case Study: SimilarWeb
 
 See how SimilarWeb is using lakeFS with Spark to [manage algorithm changes in data pipelines](https://grdoron.medium.com/a-smarter-way-to-manage-algorithm-changes-in-data-pipelines-with-lakefs-a4e284f8c756).

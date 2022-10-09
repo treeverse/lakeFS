@@ -157,4 +157,8 @@ public class ObjectLocation {
     public ObjectLocation toDirectory() {
         return new ObjectLocation(scheme, repository, ref, StringUtils.addLeadingSlash(path));
     }
+
+    public Path toFSPath() {
+        return new Path(this.toString());
+    }
 }
