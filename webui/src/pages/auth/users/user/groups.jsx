@@ -1,7 +1,7 @@
 import React from "react";
 
 import {AuthLayout} from "../../../../lib/components/auth/layout";
-import {UserHeader} from "../../../../lib/components/auth/nav";
+import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {
     ActionGroup,
     ActionsBar,
@@ -85,7 +85,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
 
     return (
         <>
-            <UserHeader userId={userId} page={'groups'}/>
+            <UserHeaderWithContext userId={userId} page={'groups'}/>
 
             <ActionsBar>
                 <ActionGroup orientation="left">
@@ -118,7 +118,7 @@ const UserGroupsContainer = () => {
 const UserGroupsPage = () => {
     return (
         <AuthLayout activeTab="users">
-            <UserGroupsContainer/>
+            <UserGroupsContainer />
         </AuthLayout>
     );
 };

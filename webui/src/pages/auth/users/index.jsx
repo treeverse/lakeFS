@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {createContext, useCallback, useEffect, useState} from "react";
 import {Route, Switch} from "react-router-dom";
 
 import Button from "react-bootstrap/Button";
@@ -24,22 +24,22 @@ import {
 import UserPage from "./user";
 import validator from "validator/es";
 
+const USER_NOT_FOUND = "unknown";
+export const GetUserEmailByIdContext = createContext();
 
-const UsersContainer = () => {
+
+const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userListResults}) => {
     const { user } = useUser();
     const currentUser = user;
 
+    const router = useRouter();
+    const after = (router.query.after) ? router.query.after : "";
     const [selected, setSelected] = useState([]);
     const [deleteError, setDeleteError] = useState(null);
     const [showCreate, setShowCreate] = useState(false);
     const [showInvite, setShowInvite] = useState(false);
-    const [refresh, setRefresh] = useState(false);
-
-    const router = useRouter();
-    const after = (router.query.after) ? router.query.after : "";
-    const { results, loading, error, nextPage } =  useAPIWithPagination(() => {
-        return auth.listUsers('', after);
-    }, [after, refresh]);
+    
+    
 
     useEffect(() => { setSelected([]); }, [refresh, after]);
 
@@ -105,7 +105,7 @@ const UsersContainer = () => {
             />
 
             <DataTable
-                results={results}
+                results={userListResults}
                 headers={['', 'User ID', 'Created At']}
                 keyFn={user => user.id}
                 rowFn={user => [
@@ -157,24 +157,63 @@ const UserActionsActionGroup = ({canInviteUsers, selected, onClickInvite, onClic
     );
 }
 
-const UsersPage = () => {
+const UsersPage = ({nextPage, refresh, setRefresh, error, loading, userListResults}) => {
     return (
         <AuthLayout activeTab="users">
-            <UsersContainer/>
+            <UsersContainer
+                refresh={refresh}
+                loading={loading}
+                error={error}
+                nextPage={nextPage}
+                setRefresh={setRefresh}
+                userListResults={userListResults}
+            />
         </AuthLayout>
     );
 };
 
 const UsersIndexPage = () => {
+    const [refresh, setRefresh] = useState(false);
+    const [usersList, setUsersList] = useState([]);
+    const router = useRouter();
+    const after = (router.query.after) ? router.query.after : "";
+    const { results, loading, error, nextPage } =  useAPIWithPagination(() => {
+        return auth.listUsers('', after);
+    }, [after, refresh]);
+
+    useEffect(() => {
+        setUsersList(results);
+    }, [results, refresh]);
+
+    const getUserEmailById = useCallback((id) => {
+        const userRecord = usersList.find(user => user.id === id);
+        // return something, so we don't completely break the state
+        // this can help us track down issues later on
+        if (!userRecord) {
+            return USER_NOT_FOUND;
+        }
+
+        return userRecord.email || userRecord.id;
+    }, [usersList]);
+
     return (
-        <Switch>
-            <Route path="/auth/users/:userId">
-                <UserPage/>
-            </Route>
-            <Route path="/auth/users">
-                <UsersPage/>
-            </Route>
-        </Switch>
+        <GetUserEmailByIdContext.Provider value={getUserEmailById}>
+            <Switch>
+                <Route path="/auth/users/:userId">
+                    <UserPage getUserEmailById={getUserEmailById} />
+                </Route>
+                <Route path="/auth/users">
+                    <UsersPage 
+                        refresh={refresh}
+                        loading={loading}
+                        error={error}
+                        nextPage={nextPage}
+                        setRefresh={setRefresh}
+                        userListResults={usersList}
+                    />
+                </Route>
+            </Switch>
+        </GetUserEmailByIdContext.Provider>
     )
 }
 
