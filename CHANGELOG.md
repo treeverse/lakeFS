@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.80.2 - 2022-10-09
+
+This version fixes kv migration bug in 0.80.1. If you already migrated to kv successfully,
+you can skip this version.
+
+This release requires running database migration.
+The lakeFS service will not run if the migration version isn't compatible with the binary.
+Before running the new version you will be required to run migrate, with the new version.
+Please refer to this [upgrade documentation](https://docs.lakefs.io/reference/upgrade.html##lakefs-0800-or-greater-kv-migration) for more information on the specific migration to KV
+
+Bug fix:
+- Fix multiparts KV migration for null content-type (#4343)
+
 ## v0.83.2
 
 What's new:
