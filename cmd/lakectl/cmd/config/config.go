@@ -124,6 +124,7 @@ func (c *Config) GetMetastoreHiveURI() string {
 func (c *Config) GetMetastoreGlueCatalogID() string {
 	return string(c.Values.Metastore.Glue.CatalogID)
 }
+
 func (c *Config) GetMetastoreType() string {
 	return c.Values.Metastore.Type
 }

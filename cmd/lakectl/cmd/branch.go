@@ -24,10 +24,11 @@ var branchCmd = &cobra.Command{
 }
 
 var branchListCmd = &cobra.Command{
-	Use:     "list <repository uri>",
-	Short:   "List branches in a repository",
-	Example: "lakectl branch list lakefs://<repository>",
-	Args:    cobra.ExactArgs(1),
+	Use:               "list <repository uri>",
+	Short:             "List branches in a repository",
+	Example:           "lakectl branch list lakefs://<repository>",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		after := MustString(cmd.Flags().GetString("after"))
@@ -51,10 +52,11 @@ var branchListCmd = &cobra.Command{
 }
 
 var branchCreateCmd = &cobra.Command{
-	Use:     "create <branch uri> -s <source ref uri>",
-	Short:   "Create a new branch in a repository",
-	Example: "lakectl branch create lakefs://example-repo/new-branch -s lakefs://example-repo/main",
-	Args:    cobra.ExactArgs(1),
+	Use:               "create <branch uri> -s <source ref uri>",
+	Short:             "Create a new branch in a repository",
+	Example:           "lakectl branch create lakefs://example-repo/new-branch -s lakefs://example-repo/main",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseBranchURI("branch", args[0])
 		client := getClient()
@@ -78,10 +80,11 @@ var branchCreateCmd = &cobra.Command{
 }
 
 var branchDeleteCmd = &cobra.Command{
-	Use:     "delete <branch uri>",
-	Short:   "Delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
-	Example: "lakectl branch delete lakefs://example-repo/example-branch",
-	Args:    cobra.ExactArgs(1),
+	Use:               "delete <branch uri>",
+	Short:             "Delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
+	Example:           "lakectl branch delete lakefs://example-repo/example-branch",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete branch")
 		if err != nil || !confirmation {
@@ -105,6 +108,9 @@ var branchRevertCmd = &cobra.Command{
 		      branch revert lakefs://example-repo/example-branch HEAD~1 HEAD~2 HEAD~3
 		      Revert the changes done by the second last commit to the fourth last commit in example-branch`,
 	Args: cobra.MinimumNArgs(branchRevertCmdArgs),
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return validRepositoryToComplete(cmd.Context(), toComplete)
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseBranchURI("branch", args[0])
 		Fmt("Branch: %s\n", u.String())
@@ -140,7 +146,8 @@ var branchResetCmd = &cobra.Command{
   1. reset all uncommitted changes - reset lakefs://myrepo/main 
   2. reset uncommitted changes under specific path - reset lakefs://myrepo/main --prefix path
   3. reset uncommitted changes for specific object - reset lakefs://myrepo/main --object path`,
-	Args: cobra.ExactArgs(1),
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
 		u := MustParseBranchURI("branch", args[0])
@@ -187,10 +194,11 @@ var branchResetCmd = &cobra.Command{
 }
 
 var branchShowCmd = &cobra.Command{
-	Use:     "show <branch uri>",
-	Example: "lakectl branch show lakefs://example-repo/example-branch",
-	Short:   "Show branch latest commit reference",
-	Args:    cobra.ExactArgs(1),
+	Use:               "show <branch uri>",
+	Example:           "lakectl branch show lakefs://example-repo/example-branch",
+	Short:             "Show branch latest commit reference",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := MustParseBranchURI("branch", args[0])
@@ -217,6 +225,7 @@ func init() {
 
 	branchCreateCmd.Flags().StringP("source", "s", "", "source branch uri")
 	_ = branchCreateCmd.MarkFlagRequired("source")
+	_ = branchCreateCmd.RegisterFlagCompletionFunc("source", ValidArgsRepository)
 
 	branchResetCmd.Flags().String("prefix", "", "prefix of the objects to be reset")
 	branchResetCmd.Flags().String("object", "", "path to object to be reset")

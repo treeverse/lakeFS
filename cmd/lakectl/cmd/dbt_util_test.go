@@ -36,7 +36,7 @@ func TestDbtDebug(t *testing.T) {
 		schemaRegex *regexp.Regexp
 		executor    DummyCommandExecutor
 	}
-	var schemaRegex = regexp.MustCompile(`schema: (.+)`)
+	schemaRegex := regexp.MustCompile(`schema: (.+)`)
 
 	type dbtDebugTestCase struct {
 		Name       string
