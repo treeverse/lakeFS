@@ -123,7 +123,9 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	c.SetHooksHandler(actionsService)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)
-	migrator := kv.NewDatabaseMigrator(cfg.GetKVParams())
+	kvParams, err := cfg.GetKVParams()
+	testutil.Must(t, err)
+	migrator := kv.NewDatabaseMigrator(kvParams)
 
 	t.Cleanup(func() {
 		actionsService.Stop()

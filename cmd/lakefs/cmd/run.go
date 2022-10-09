@@ -108,7 +108,10 @@ var runCmd = &cobra.Command{
 		ctx := cmd.Context()
 		logger.WithField("version", version.Version).Info("lakeFS run")
 
-		kvParams := cfg.GetKVParams()
+		kvParams, err := cfg.GetKVParams()
+		if err != nil {
+			logger.WithError(err).Fatal("Get KV params")
+		}
 		kvStore, err := kv.Open(ctx, enableKVParamsMetrics(kvParams))
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to open KV store")
@@ -163,8 +166,7 @@ var runCmd = &cobra.Command{
 		blockstoreType := cfg.GetBlockstoreType()
 		if blockstoreType == "local" || blockstoreType == "mem" {
 			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
-			logger.WithField("adapter_type", blockstoreType).
-				Error("Block adapter NOT SUPPORTED for production use")
+			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
 		}
 
 		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
