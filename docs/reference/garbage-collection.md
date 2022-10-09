@@ -309,11 +309,11 @@ Running instructions:
 You should specify the Uber-jar path instead of `<APPLICATION-JAR-PATH>`
 Program arguments:
 * _location of expired objects list_: the path of an expired objects parquet created by a [mark-only](#mark-only-mode) GC run. given a `MARK_ID` used for a mark-only run this file is located under `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=<MARK_ID>/`.
-* _storage namespace_: The storage namespace of the lakeFS repository you are running GC for. The storage namespace include the data you are backing up.
+* _storage namespace_: The storage namespace of the lakeFS repository you are running GC for. The storage namespace includes the data you are backing up.
 * _external location for backup_: A storage location outside your lakeFS storage namespace into which you want to save the backup.
 * _storage type_: s3
 
-Run the following command to make the garbage collector start running:
+Run the following command to make run backup process:
   ```bash
 spark-submit --class io.treeverse.clients.GCBackupAndRestore \
   -c spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY> \
@@ -328,11 +328,11 @@ spark-submit --class io.treeverse.clients.GCBackupAndRestore \
 You should specify the Uber-jar path instead of `<APPLICATION-JAR-PATH>`
 Program arguments:
 * _location of expired objects list_: the path of an expired objects parquet created by a [mark-only](#mark-only-mode) GC run. given a `MARK_ID` used for a mark-only run this file is located under `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=<MARK_ID>/`.
-* _storage namespace_: The storage namespace of the lakeFS repository you are running GC for. The storage namespace include the data you are backing up.
+* _storage namespace_: The storage namespace of the lakeFS repository you are running GC for. The storage namespace includes the data you are backing up.
 * _external location for backup_: A storage location outside your lakeFS storage namespace into which you want to save the backup.
 * _storage type_: s3
 
-Run the following command to make the garbage collector start running:
+Run the following command to make run backup process:
   ```bash
 spark-submit --class io.treeverse.clients.GCBackupAndRestore \
   -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
@@ -355,8 +355,8 @@ spark-submit --class io.treeverse.clients.GCBackupAndRestore \
 You should specify the Uber-jar path instead of `<APPLICATION-JAR-PATH>`
 Program arguments:
 * _location of objects to restore list_: the path for a list of object that were hard-deleted by a [sweep-only](#sweep-only-mode) GC run. given a `MARK_ID` used for a sweep only run the file is located under `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=<MARK_ID>/`.
-* _external location for backup_: A storage location outside your lakeFS storage namespace into which you want to save the backup.
-* _storage namespace_: The storage namespace of the lakeFS repository you are running GC for. The storage namespace include the data you are backing up.
+* _external location to restore from_: A storage location outside your lakeFS storage namespace you used for backup.
+* _storage namespace_: The storage namespace of the lakeFS repository you previously ran GC for.
 * _storage type_: s3
 
 Run the following command to make the garbage collector start running:
@@ -373,11 +373,11 @@ spark-submit --class io.treeverse.clients.GCBackupAndRestore \
 You should specify the Uber-jar path instead of `<APPLICATION-JAR-PATH>`
 Program arguments:
 * _location of objects to restore list_: the path for a list of object that were hard-deleted by a [sweep-only](#sweep-only-mode) GC run. given a `MARK_ID` used for a sweep only run the file is located under `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=<MARK_ID>/`.
-* _external location for backup_: A storage location outside your lakeFS storage namespace into which you want to save the backup.
-* _storage namespace_: The storage namespace of the lakeFS repository you are running GC for. The storage namespace include the data you are backing up.
-* _storage type_: s3
+* _external location to restore from_: A storage location outside your lakeFS storage namespace you used for backup.
+* _storage namespace_: The storage namespace of the lakeFS repository you previously ran GC for.
+* _storage type_: azure
 
-Run the following command to make the garbage collector start running:
+Run the following command to make the restore process start running:
 
   ```bash
 spark-submit --class io.treeverse.clients.GCBackupAndRestore \
