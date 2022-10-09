@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 
 import {AuthLayout} from "../../../../lib/components/auth/layout";
-import { UserHeaderWithContext } from "./userHeaderWithContext";
+import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {auth} from "../../../../lib/api";
 import {Paginator} from "../../../../lib/components/pagination";

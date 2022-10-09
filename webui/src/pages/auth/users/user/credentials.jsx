@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 
 import {AuthLayout} from "../../../../lib/components/auth/layout";
-import { UserHeaderWithContext } from "./userHeaderWithContext";
+import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {auth} from "../../../../lib/api";
 import {CredentialsShowModal, CredentialsTable} from "../../../../lib/components/auth/credentials";
 import useUser from "../../../../lib/hooks/user";
