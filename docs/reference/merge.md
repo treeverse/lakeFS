@@ -8,7 +8,7 @@ has_children: false
 
 # Merge
 
-lakeFS allows merging a _merge source_ (a commit/reference) into a _merge destination_ (a **branch**). 
+The merge operation in lakeFS is similar to Git. It incorporates changes from a _merge source_ (a commit/reference) into a _merge destination_ (a **branch**). 
 
 ## How does it work?
 
