@@ -39,7 +39,7 @@ This is different from creating a long-living test environment used as a staging
 
 # Creating Dev/Test Environments with lakeFS
 
-lakeFS supports UI, CLI (`lakectl` commandline utility) and several client API [integrations](../integrations) to run the git-like operations. Let us explore how to create dev/test environments using each of these options below.
+lakeFS supports UI, CLI (`lakectl` commandline utility) and several client API [integrations](../integrations) to run the Git-like operations. Let us explore how to create dev/test environments using each of these options below.
 
 ## Using lakeFS Playground UI
 In this tutorial, we will use [lakeFS playground](https://demo.lakefs.io/) to create dev/test data environments. Playground allows you to spin up a lakeFS instance in a click, create different data environments by simply branching out of your data repository and develop & test data pipelines in these isolated branches.
@@ -56,19 +56,17 @@ Click on `my-repo` and notice that by default, the repo has a `main` branch crea
 ![main branch]({{ site.baseurl }}/assets/img/iso_env_sampledata.png)
 
 
-You can create a new branch say `test-env` by going to the branches tab and clicking `Create branch`. Once it is successful, we see two branches under the repo: `main` and `test-env`.
+You can create a new branch (say, `test-env`) by going to the _Branches_ tab and clicking _Create Branch_. Once it is successful, you will see two branches under the repo: `main` and `test-env`.
 
 
 ![test-env branch]({{ site.baseurl }}/assets/img/iso_env_testenv_branch.png)
 
 
-Now, you can add, modify or delete the data files in the `test-env` branch without affecting the data in the main branch.
+Now you can add, modify or delete objects under the `test-env` branch without affecting the data in the main branch.
 
 ## Using lakeFS Python Client API and Jupyter notebook
 
-Adding or deleting files from different branches in a lakeFS repo can be performed from the UI as shown above. However, to perform complex transformations on the data using Spark or other compute engine, you would need to use lakeFS supported APIs.
-
-This use case shows how you can create dev/test data environments using lakeFS branches. The following tutorial will use an existing lakeFS environment (i.e., playground) and a jupyter notebook, python lakefs_client API to demonstrate integration of lakeFS with [Spark](../integrations/spark). You can run this tutorial on your local machine.
+This use case shows how to create dev/test data environments using lakeFS branches. The following tutorial will use an existing lakeFS environment (i.e., playground), a jupyter notebook, and python lakefs_client API to demonstrate integration of lakeFS with [Spark](../integrations/spark). You can run this tutorial on your local machine.
 
 ### Prerequisites
 
@@ -81,7 +79,7 @@ Once you have docker installed and a lakeFS instance running, you can access the
 
 Follow along the steps below to create dev/test environment with lakeFS.
 
-* Start by cloning the repository:
+* Start by cloning the lakeFS samples Git repository:
 ```bash
 git clone https://github.com/treeverse/lakeFS-samples.git && cd 03-apache-spark-python-demo
 ```
@@ -134,7 +132,7 @@ lakeFS can be configured to work with Spark in two ways:
 
 ### Upload the sample data to main branch
 
-To upload a file to the `my-repo`, use the following command.
+To upload an object to the `my-repo`, use the following command.
 
 ```bash
 import os
@@ -151,7 +149,7 @@ client.commits.commit(
     repository="my-repo",
     branch="main",
     commit_creation=models.CommitCreation(
-        message='Added my first file!',
+        message='Added my first object!',
         metadata={'using': 'python_api'}))
 ```
 
