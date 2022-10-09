@@ -1,7 +1,7 @@
 import React from "react";
 
 import {AuthLayout} from "../../../../lib/components/auth/layout";
-import { UserHeaderWithContext } from "./userHeaderWithContext";
+import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {
     ActionGroup,
     ActionsBar,
