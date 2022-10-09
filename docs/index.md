@@ -9,17 +9,16 @@ redirect_from: ./downloads.html
 ## What is lakeFS
 {: .no_toc }
 
-lakeFS transforms object storage buckets into data lake repositories that
-expose a Git-like interface. By design, it works with data of any size.
+lakeFS brings software engineering best practices and applies them to data engineering. 
+Concepts such as Dev/Test environments and CI/CD are harder to implement in data engineering, since the data, and not just the code, should be managed.
+lakeFS provides version control over the data lake, and uses git-like semantics to create and access those versions, so every engineer feels at home with lakeFS in a few minutes. 
 
-The Git-like interface means that lakeFS users can use the same development
-workflows for code and data. Git workflows greatly improved software
-development practices - we designed lakeFS to bring the same benefits to
-the world data.
+With lakeFS, you can use concepts such as ״branch״ to create an isolated version of the data, ״commit״, to create a reproducible point it time, and “merge” in order to incorporate your changes in one atomic action.
 
-That way, lakeFS brings a unique combination of performance and manageability to data lakes. *To learn more about applying Git principles to data, [see here](https://lakefs.io/how-to-manage-your-data-the-way-you-manage-your-code/).*
+lakeFS is an open source project that supports managing data in  AWS S3, Azure Blob Storage, Google Cloud Storage (GCS) and any other object storage with an S3 interface. It integrates seamlessly with popular data frameworks such as Spark, Hive Metastore, dbt, Trino, Presto, and many others and even features an S3 compatibility layer.
 
-The open-source lakeFS project supports AWS S3, Azure Blob Storage, and Google Cloud Storage (GCS) as its underlying storage service. It is API compatible with S3 and integrates seamlessly with popular data frameworks such as Spark, Hive, dbt, Trino, and many others.
+The vision of lakeFS is bringing this functionality across all the data sources in your data pipelines, from analytics databases to key value stores - and to allow one system from which you can easily manage the underlying data in all data stores, with atomic git-like actions.
+
 
 {: .pb-5 }
 
