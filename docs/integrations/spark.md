@@ -382,6 +382,10 @@ On Hadoop 2, configure:
         <name>spark.sql.sources.outputCommitterClass</name>
         <value>io.lakefs.committer.LakeFSOutputCommitter</value>
     </property>
+	<property>
+		<name>spark.sql.parquet.output.committer.class</name>
+		<value>io.lakefs.committer.DummyParquetOutputCommitter</value>
+	</property>
 </configuration>
 ```
 

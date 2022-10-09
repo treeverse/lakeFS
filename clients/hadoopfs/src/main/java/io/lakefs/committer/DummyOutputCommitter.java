@@ -23,11 +23,11 @@ import java.io.IOException;
 public class DummyOutputCommitter extends FileOutputCommitter {
     private static final Logger LOG = LoggerFactory.getLogger(DummyOutputCommitter.class);
 
-    private String branch = null;
-    private String outputBranch = null;
-    private Path outputPath = null;
-    private String workBranch;
-    private Path workPath;
+    protected String branch = null;
+    protected String outputBranch = null;
+    protected Path outputPath = null;
+    protected String workBranch;
+    protected Path workPath;
 
     public DummyOutputCommitter(Path outputPath, JobContext context) throws IOException {
         super(outputPath, context);
