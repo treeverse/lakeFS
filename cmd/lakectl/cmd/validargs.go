@@ -26,9 +26,8 @@ func validRepositoryToComplete(ctx context.Context, toComplete string) ([]string
 	// extract repository name written so far
 	var prefix api.PaginationPrefix
 	if strings.HasPrefix(toComplete, uriPrefix) {
-		idx := strings.Index(toComplete[len(uriPrefix):], uri.PathSeparator)
-		if idx > 1 {
-			prefix = api.PaginationPrefix(toComplete[len(uriPrefix):idx])
+		if !strings.Contains(toComplete[len(uriPrefix):], uri.PathSeparator) {
+			prefix = api.PaginationPrefix(toComplete[len(uriPrefix):])
 		}
 	}
 
