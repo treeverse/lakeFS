@@ -17,7 +17,7 @@ Once you set up lakeFS, you can use concepts such as ״branch״ to create an iso
 
 lakeFS is an open source project that supports managing data in  AWS S3, Azure Blob Storage, Google Cloud Storage (GCS) and any other object storage with an S3 interface. It integrates seamlessly with popular data frameworks such as Spark, Hive Metastore, dbt, Trino, Presto, and many others and even features an S3 compatibility layer.
 
-lakeFS’ vision is to bring this functionality across all the data sources in your data pipelines, from analytics databases to key value stores - and to allow one system from which you can easily manage the underlying data in all data stores, with atomic git-like actions.
+The vision of lakeFS is bringing this functionality across all the data sources in your data pipelines, from analytics databases to key value stores - and to allow one system from which you can easily manage the underlying data in all data stores, with atomic git-like actions.
 
 
 {: .pb-5 }
