@@ -22,6 +22,10 @@ var repoCmd = &cobra.Command{
 var repoListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List repositories",
+	Args:  cobra.NoArgs,
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		after := MustString(cmd.Flags().GetString("after"))
@@ -46,10 +50,11 @@ var repoListCmd = &cobra.Command{
 // repoCreateCmd represents the create repo command
 // lakectl create lakefs://myrepo s3://my-bucket/
 var repoCreateCmd = &cobra.Command{
-	Use:     "create <repository uri> <storage namespace>",
-	Short:   "Create a new repository",
-	Example: "lakectl repo create lakefs://some-repo-name s3://some-bucket-name",
-	Args:    cobra.ExactArgs(repoCreateCmdArgs),
+	Use:               "create <repository uri> <storage namespace>",
+	Short:             "Create a new repository",
+	Example:           "lakectl repo create lakefs://some-repo-name s3://some-bucket-name",
+	Args:              cobra.ExactArgs(repoCreateCmdArgs),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
 		u := MustParseRepoURI("repository", args[0])
@@ -79,11 +84,12 @@ var repoCreateCmd = &cobra.Command{
 // repoCreateBareCmd represents the create repo command
 // lakectl create-bare lakefs://myrepo s3://my-bucket/
 var repoCreateBareCmd = &cobra.Command{
-	Use:     "create-bare <repository uri> <storage namespace>",
-	Short:   "Create a new repository with no initial branch or commit",
-	Example: "lakectl create-bare lakefs://some-repo-name s3://some-bucket-name",
-	Hidden:  true,
-	Args:    cobra.ExactArgs(repoCreateCmdArgs),
+	Use:               "create-bare <repository uri> <storage namespace>",
+	Short:             "Create a new repository with no initial branch or commit",
+	Example:           "lakectl create-bare lakefs://some-repo-name s3://some-bucket-name",
+	Hidden:            true,
+	Args:              cobra.ExactArgs(repoCreateCmdArgs),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
 		u := MustParseRepoURI("repository", args[0])
@@ -114,9 +120,10 @@ var repoCreateBareCmd = &cobra.Command{
 // repoDeleteCmd represents the delete repo command
 // lakectl delete lakefs://myrepo
 var repoDeleteCmd = &cobra.Command{
-	Use:   "delete <repository uri>",
-	Short: "Delete existing repository",
-	Args:  cobra.ExactArgs(1),
+	Use:               "delete <repository uri>",
+	Short:             "Delete existing repository",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
 		u := MustParseRepoURI("repository", args[0])

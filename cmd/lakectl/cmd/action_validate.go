@@ -15,9 +15,7 @@ var actionsValidateCmd = &cobra.Command{
 	Short:   "Validate action file",
 	Long:    `Tries to parse the input action file as lakeFS action file`,
 	Example: "lakectl actions validate <path>",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(actionsValidateRequiredArgs),
-	),
+	Args:    cmdutils.ValidationChain(cobra.ExactArgs(actionsValidateRequiredArgs)),
 	Run: func(cmd *cobra.Command, args []string) {
 		file := args[0]
 		reader := OpenByPath(file)

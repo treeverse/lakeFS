@@ -17,10 +17,11 @@ var tagCmd = &cobra.Command{
 }
 
 var tagListCmd = &cobra.Command{
-	Use:     "list <repository uri>",
-	Short:   "List tags in a repository",
-	Example: "lakectl tag list lakefs://<repository>",
-	Args:    cobra.ExactArgs(1),
+	Use:               "list <repository uri>",
+	Short:             "List tags in a repository",
+	Example:           "lakectl tag list lakefs://<repository>",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		after := MustString(cmd.Flags().GetString("after"))
@@ -67,6 +68,12 @@ var tagCreateCmd = &cobra.Command{
 	Short:   "Create a new tag in a repository",
 	Example: "lakectl tag create lakefs://example-repo/example-tag lakefs://example-repo/2397cc9a9d04c20a4e5739b42c1dd3d8ba655c0b3a3b974850895a13d8bf9917",
 	Args:    cobra.ExactArgs(tagCreateRequiredArgs),
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if len(args) >= tagCreateRequiredArgs {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		return validRepositoryToComplete(cmd.Context(), toComplete)
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		tagURI := MustParseRefURI("tag uri", args[0])
 		commitURI := MustParseRefURI("commit uri", args[1])
@@ -103,9 +110,10 @@ var tagCreateCmd = &cobra.Command{
 }
 
 var tagDeleteCmd = &cobra.Command{
-	Use:   "delete <tag uri>",
-	Short: "Delete a tag from a repository",
-	Args:  cobra.ExactArgs(1),
+	Use:               "delete <tag uri>",
+	Short:             "Delete a tag from a repository",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete tag")
 		if err != nil || !confirmation {
@@ -122,9 +130,10 @@ var tagDeleteCmd = &cobra.Command{
 }
 
 var tagShowCmd = &cobra.Command{
-	Use:   "show <tag uri>",
-	Short: "Show tag's commit reference",
-	Args:  cobra.ExactArgs(1),
+	Use:               "show <tag uri>",
+	Short:             "Show tag's commit reference",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := MustParseRefURI("tag", args[0])

@@ -43,6 +43,12 @@ var diffCmd = &cobra.Command{
 	Show changes between the tip of the main and the dev branch, including uncommitted changes on dev.`, twoWayFlagName, twoWayFlagName),
 
 	Args: cobra.RangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if len(args) >= diffCmdMaxArgs {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		return validRepositoryToComplete(cmd.Context(), toComplete)
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		if len(args) == diffCmdMinArgs {

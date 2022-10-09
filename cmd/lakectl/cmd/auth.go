@@ -170,7 +170,6 @@ var authUsersPoliciesList = &cobra.Command{
 				ts := time.Unix(*policy.CreationDate, 0).String()
 				rows = append(rows, []interface{}{policy.Id, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
 			}
-
 		}
 
 		pagination := resp.JSON200.Pagination
@@ -434,7 +433,6 @@ var authGroupsPoliciesList = &cobra.Command{
 				ts := time.Unix(*policy.CreationDate, 0).String()
 				rows = append(rows, []interface{}{policy.Id, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
 			}
-
 		}
 
 		pagination := resp.JSON200.Pagination

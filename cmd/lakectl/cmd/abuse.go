@@ -46,10 +46,11 @@ func readLines(path string) (lines []string, err error) {
 }
 
 var abuseRandomReadsCmd = &cobra.Command{
-	Use:    "random-read <source ref uri>",
-	Short:  "Read keys from a file and generate random reads from the source ref for those keys.",
-	Hidden: false,
-	Args:   cobra.ExactArgs(1),
+	Use:               "random-read <source ref uri>",
+	Short:             "Read keys from a file and generate random reads from the source ref for those keys.",
+	Hidden:            false,
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRefURI("source ref", args[0])
 		amount := MustInt(cmd.Flags().GetInt("amount"))
@@ -97,10 +98,11 @@ var abuseRandomReadsCmd = &cobra.Command{
 }
 
 var abuseLinkSameObjectCmd = &cobra.Command{
-	Use:    "link-same-object <source ref uri>",
-	Short:  "Link the same object in parallel.",
-	Hidden: false,
-	Args:   cobra.ExactArgs(1),
+	Use:               "link-same-object <source ref uri>",
+	Short:             "Link the same object in parallel.",
+	Hidden:            false,
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRefURI("source ref", args[0])
 		amount := MustInt(cmd.Flags().GetInt("amount"))
@@ -164,10 +166,11 @@ var abuseLinkSameObjectCmd = &cobra.Command{
 }
 
 var abuseRandomWritesCmd = &cobra.Command{
-	Use:    "random-write <source branch uri>",
-	Short:  "Generate random writes to the source branch",
-	Hidden: false,
-	Args:   cobra.ExactArgs(1),
+	Use:               "random-write <source branch uri>",
+	Short:             "Generate random writes to the source branch",
+	Hidden:            false,
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRefURI("source branch", args[0])
 		amount := MustInt(cmd.Flags().GetInt("amount"))
@@ -221,10 +224,11 @@ var abuseRandomWritesCmd = &cobra.Command{
 }
 
 var abuseCommitCmd = &cobra.Command{
-	Use:    "commit <source ref uri>",
-	Short:  "Commits to the source ref repeatedly",
-	Hidden: false,
-	Args:   cobra.ExactArgs(1),
+	Use:               "commit <source ref uri>",
+	Short:             "Commits to the source ref repeatedly",
+	Hidden:            false,
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRefURI("source ref", args[0])
 		amount := MustInt(cmd.Flags().GetInt("amount"))
@@ -272,10 +276,11 @@ var abuseCommitCmd = &cobra.Command{
 }
 
 var abuseCreateBranchesCmd = &cobra.Command{
-	Use:    "create-branches <source ref uri>",
-	Short:  "Create a lot of branches very quickly.",
-	Hidden: false,
-	Args:   cobra.ExactArgs(1),
+	Use:               "create-branches <source ref uri>",
+	Short:             "Create a lot of branches very quickly.",
+	Hidden:            false,
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRefURI("source ref", args[0])
 		cleanOnly := MustBool(cmd.Flags().GetBool("clean-only"))
@@ -361,10 +366,11 @@ var abuseCreateBranchesCmd = &cobra.Command{
 }
 
 var abuseListCmd = &cobra.Command{
-	Use:    "list <source ref uri>",
-	Short:  "List from the source ref",
-	Hidden: false,
-	Args:   cobra.ExactArgs(1),
+	Use:               "list <source ref uri>",
+	Short:             "List from the source ref",
+	Hidden:            false,
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRefURI("source ref", args[0])
 		amount := MustInt(cmd.Flags().GetInt("amount"))

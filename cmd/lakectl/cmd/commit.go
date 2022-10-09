@@ -30,9 +30,10 @@ Parents: {{.Commit.Parents|join ", "}}
 )
 
 var commitCmd = &cobra.Command{
-	Use:   "commit <branch uri>",
-	Short: "Commit changes on a given branch",
-	Args:  cobra.ExactArgs(1),
+	Use:               "commit <branch uri>",
+	Short:             "Commit changes on a given branch",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		// validate message
 		kvPairs, err := getKV(cmd, metaFlagName)

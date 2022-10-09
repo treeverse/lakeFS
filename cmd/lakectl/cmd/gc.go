@@ -75,10 +75,11 @@ Example configuration file:
 }
 
 var gcDeleteConfigCmd = &cobra.Command{
-	Use:     "delete-config",
-	Short:   "Deletes the garbage collection policy for the repository",
-	Example: "lakectl gc delete-config <repository uri>",
-	Args:    cobra.ExactArgs(gcSetConfigCmdArgs),
+	Use:               "delete-config",
+	Short:             "Deletes the garbage collection policy for the repository",
+	Example:           "lakectl gc delete-config <repository uri>",
+	Args:              cobra.ExactArgs(gcSetConfigCmdArgs),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository", args[0])
 		client := getClient()
@@ -88,10 +89,11 @@ var gcDeleteConfigCmd = &cobra.Command{
 }
 
 var gcGetConfigCmd = &cobra.Command{
-	Use:     "get-config",
-	Short:   "Show the garbage collection policy for this repository",
-	Example: "lakectl gc get-config <repository uri>",
-	Args:    cobra.ExactArgs(gcSetConfigCmdArgs),
+	Use:               "get-config",
+	Short:             "Show the garbage collection policy for this repository",
+	Example:           "lakectl gc get-config <repository uri>",
+	Args:              cobra.ExactArgs(gcSetConfigCmdArgs),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository", args[0])
 		isJSON := MustBool(cmd.Flags().GetBool(jsonFlagName))

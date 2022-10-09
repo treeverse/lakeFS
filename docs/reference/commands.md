@@ -46,8 +46,6 @@ A cli tool to explore manage and work with lakeFS
 #### Synopsis
 {:.no_toc}
 
-lakeFS is data lake management solution, allowing Git-like semantics over common object stores
-
 lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment
 
 #### Options

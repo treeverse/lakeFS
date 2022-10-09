@@ -16,7 +16,8 @@ const (
 )
 
 type FromTo struct {
-	FromRef, ToRef string
+	FromRef string
+	ToRef   string
 }
 
 // mergeCmd represents the merge command
@@ -25,6 +26,12 @@ var mergeCmd = &cobra.Command{
 	Short: "Merge & commit changes from source branch into destination branch",
 	Long:  "Merge & commit changes from source branch into destination branch",
 	Args:  cobra.RangeArgs(mergeCmdMinArgs, mergeCmdMaxArgs),
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if len(args) >= mergeCmdMaxArgs {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		return validRepositoryToComplete(cmd.Context(), toComplete)
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		sourceRef := MustParseRefURI("source ref", args[0])
@@ -49,7 +56,10 @@ var mergeCmd = &cobra.Command{
 			Merge  FromTo
 			Result *api.MergeResult
 		}{
-			Merge:  FromTo{FromRef: sourceRef.Ref, ToRef: destinationRef.Ref},
+			Merge: FromTo{
+				FromRef: sourceRef.Ref,
+				ToRef:   destinationRef.Ref,
+			},
 			Result: resp.JSON200,
 		})
 	},
