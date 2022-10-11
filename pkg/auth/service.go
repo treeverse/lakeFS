@@ -139,7 +139,7 @@ func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.
 		after = make([]byte, len(prefix)+len(params.After))
 
 		l := copy(after, prefix)
-		l = copy(after[l:], params.After)
+		_ = copy(after[l:], params.After)
 	}
 
 	if secondary {
