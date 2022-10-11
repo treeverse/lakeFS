@@ -71,7 +71,7 @@ const (
 	DefaultStatsEnabled       = true
 	DefaultStatsAddr          = "https://stats.treeverse.io"
 	DefaultStatsFlushInterval = time.Second * 30
-	DefaultStatsFlushSize     = 1000
+	DefaultStatsFlushSize     = 100
 
 	DefaultEmailLimitEveryDuration = time.Minute
 	DefaultEmailBurst              = 10
