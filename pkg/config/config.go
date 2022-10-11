@@ -311,6 +311,10 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 	return c.values.Stats.FlushInterval
 }
 
+func (c *Config) GetStatsFlushSize() int {
+	return c.values.Stats.FlushSize
+}
+
 func (c *Config) GetStatsExtended() bool {
 	return c.values.Stats.Extended
 }

@@ -71,6 +71,7 @@ const (
 	DefaultStatsEnabled       = true
 	DefaultStatsAddr          = "https://stats.treeverse.io"
 	DefaultStatsFlushInterval = time.Second * 30
+	DefaultStatsFlushSize     = 100
 
 	DefaultEmailLimitEveryDuration = time.Minute
 	DefaultEmailBurst              = 10
@@ -118,6 +119,7 @@ const (
 	StatsEnabledKey       = "stats.enabled"
 	StatsAddressKey       = "stats.address"
 	StatsFlushIntervalKey = "stats.flush_interval"
+	StatsFlushSizeKey     = "stats.flush_size"
 
 	SecurityAuditCheckIntervalKey     = "security.audit_check_interval"
 	DefaultSecurityAuditCheckInterval = 24 * time.Hour
@@ -192,6 +194,7 @@ func setDefaults(local bool) {
 	viper.SetDefault(StatsEnabledKey, DefaultStatsEnabled)
 	viper.SetDefault(StatsAddressKey, DefaultStatsAddr)
 	viper.SetDefault(StatsFlushIntervalKey, DefaultStatsFlushInterval)
+	viper.SetDefault(StatsFlushSizeKey, DefaultStatsFlushSize)
 
 	viper.SetDefault(BlockstoreAzureTryTimeoutKey, DefaultBlockstoreAzureTryTimeout)
 	viper.SetDefault(BlockstoreAzureAuthMethod, DefaultBlockstoreAzureAuthMethod)

@@ -100,6 +100,7 @@ type BufferedCollector struct {
 	sender           Sender
 	sendTimeout      time.Duration
 	flushTicker      FlushTicker
+	flushSize        int
 	heartbeatTicker  FlushTicker
 	installationID   string
 	processID        string
@@ -162,9 +163,11 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 	statsEnabled := true
 	flushDuration := flushInterval
 	extended := false
+	flushSize := config.DefaultStatsFlushSize
 	if c != nil {
 		statsEnabled = c.GetStatsEnabled() && !strings.HasPrefix(version.Version, version.UnreleasedVersion)
 		flushDuration = c.GetStatsFlushInterval()
+		flushSize = c.GetStatsFlushSize()
 		extended = c.GetStatsExtended()
 	}
 	s := &BufferedCollector{
@@ -172,6 +175,7 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 		writes:          make(chan Event, collectorEventBufferSize),
 		runtimeStats:    map[string]string{},
 		flushTicker:     &TimeTicker{ticker: time.NewTicker(flushDuration)},
+		flushSize:       flushSize,
 		heartbeatTicker: &TimeTicker{ticker: time.NewTicker(heartbeatInterval)},
 		installationID:  installationID,
 		processID:       uuid.Must(uuid.NewUUID()).String(),
@@ -251,24 +255,38 @@ func (s *BufferedCollector) Run(ctx context.Context) {
 	go func() {
 		for {
 			select {
-			case w := <-s.writes: // collect events
+			case w := <-s.writes:
+				// collect events, and flush if needed by size
 				s.incr(w)
+				if len(s.cache) >= s.flushSize {
+					s.flush()
+				}
 			case <-s.heartbeatTicker.Tick():
+				// collect heartbeat
 				s.incr(Event{
 					Class: "global",
 					Name:  "heartbeat",
 				})
-			case <-s.flushTicker.Tick(): // every N seconds, send the collected events
-				s.handleRuntimeStats()
-				metrics := makeMetrics(s.cache)
-				s.cache = make(keyIndex)
-				s.send(metrics)
+			case <-s.flushTicker.Tick():
+				// every N seconds, send the collected events
+				s.flush()
 			case <-ctx.Done(): // we're done
 				close(s.done)
 				return
 			}
 		}
 	}()
+}
+
+func (s *BufferedCollector) flush() {
+	s.handleRuntimeStats()
+	if len(s.cache) == 0 {
+		// nothing to flush
+		return
+	}
+	metrics := makeMetrics(s.cache)
+	s.cache = make(keyIndex)
+	s.send(metrics)
 }
 
 func (s *BufferedCollector) Close() {
