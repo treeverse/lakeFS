@@ -83,7 +83,7 @@ var gcDeleteConfigCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository", args[0])
 		client := getClient()
-		resp, err := client.DeleteGarbageCollectionRules(cmd.Context(), u.Repository)
+		resp, err := client.DeleteGarbageCollectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
@@ -100,6 +100,9 @@ var gcGetConfigCmd = &cobra.Command{
 		client := getClient()
 		resp, err := client.GetGarbageCollectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 		if isJSON {
 			Write("{{ . | json }}", resp.JSON200)
 		} else {

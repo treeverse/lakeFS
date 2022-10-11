@@ -9,11 +9,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
-var metadataDumpTemplate = `
+const metadataDumpTemplate = `
 {{ .Response | json }}
 `
 
-var refsRestoreSuccess = `
+const refsRestoreSuccess = `
 {{ "All references restored successfully!" | green }}
 `
 
@@ -66,6 +66,9 @@ var refsDumpCmd = &cobra.Command{
 		client := getClient()
 		resp, err := client.DumpRefsWithResponse(cmd.Context(), repoURI.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		Write(metadataDumpTemplate, struct {
 			Response interface{}

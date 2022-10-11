@@ -45,9 +45,11 @@ var fsStatCmd = &cobra.Command{
 			Path: *pathURI.Path,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
-		stat := resp.JSON200
-		Write(fsStatTemplate, stat)
+		Write(fsStatTemplate, resp.JSON200)
 	},
 }
 
@@ -89,6 +91,9 @@ var fsListCmd = &cobra.Command{
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			if resp.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
 
 			results := resp.JSON200.Results
 			// trim prefix if non-recursive
@@ -297,6 +302,9 @@ var fsStageCmd = &cobra.Command{
 			Path: *pathURI.Path,
 		}, api.StageObjectJSONRequestBody(obj))
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		Write(fsStatTemplate, resp.JSON201)
 	},
@@ -371,6 +379,9 @@ var fsRmCmd = &cobra.Command{
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			if resp.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
 
 			results := resp.JSON200.Results
 			for i := range results {

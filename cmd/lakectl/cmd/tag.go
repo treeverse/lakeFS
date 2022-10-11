@@ -35,6 +35,9 @@ var tagListCmd = &cobra.Command{
 			Amount: api.PaginationAmountPtr(amount),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		refs := resp.JSON200.Results
 		rows := make([][]interface{}, len(refs))
@@ -91,6 +94,9 @@ var tagCreateCmd = &cobra.Command{
 			// checking validity of the commitRef before deleting the old one
 			res, err := client.GetCommitWithResponse(ctx, tagURI.Repository, commitURI.Ref)
 			DieOnErrorOrUnexpectedStatusCode(res, err, http.StatusOK)
+			if res.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
 
 			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref)
 			if err != nil && (resp == nil || resp.JSON404 == nil) {
@@ -103,6 +109,9 @@ var tagCreateCmd = &cobra.Command{
 			Ref: commitURI.Ref,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		commitID := *resp.JSON201
 		Fmt("Created tag '%s' (%s)\n", tagURI.Ref, commitID)
@@ -142,6 +151,9 @@ var tagShowCmd = &cobra.Command{
 		ctx := cmd.Context()
 		resp, err := client.GetTagWithResponse(ctx, u.Repository, u.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 		Fmt("%s %s", resp.JSON200.Id, resp.JSON200.CommitId)
 	},
 }

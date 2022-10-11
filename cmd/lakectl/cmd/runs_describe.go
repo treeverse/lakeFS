@@ -39,6 +39,9 @@ var runsDescribeCmd = &cobra.Command{
 		// run result information
 		runsRes, err := client.GetRunWithResponse(ctx, u.Repository, runID)
 		DieOnErrorOrUnexpectedStatusCode(runsRes, err, http.StatusOK)
+		if runsRes.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		runResult := runsRes.JSON200
 		Write(actionRunResultTemplate, convertRunResultTable(runResult))
@@ -53,6 +56,9 @@ var runsDescribeCmd = &cobra.Command{
 				Amount: api.PaginationAmountPtr(amountForPagination),
 			})
 			DieOnErrorOrUnexpectedStatusCode(runHooksRes, err, http.StatusOK)
+			if runHooksRes.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
 			pagination = runHooksRes.JSON200.Pagination
 			data := struct {
 				Hooks      []api.HookRun

@@ -39,6 +39,9 @@ var branchListCmd = &cobra.Command{
 			Amount: api.PaginationAmountPtr(amount),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		refs := resp.JSON200.Results
 		rows := make([][]interface{}, len(refs))
@@ -205,6 +208,9 @@ var branchShowCmd = &cobra.Command{
 		Fmt("Branch: %s\n", u.String())
 		resp, err := client.GetBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 		branch := resp.JSON200
 		Fmt("%s\n", branch)
 	},
