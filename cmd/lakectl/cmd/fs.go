@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
@@ -31,8 +32,6 @@ const fsRecursiveTemplate = `Files: {{.Count}}
 Total Size: {{.Bytes}} bytes
 Human Total Size: {{.Bytes|human_bytes}}
 `
-
-var quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
 
 var fsStatCmd = &cobra.Command{
 	Use:               "stat <path uri>",
@@ -147,10 +146,6 @@ var fsCatCmd = &cobra.Command{
 	},
 }
 
-func escapeQuotes(s string) string {
-	return quoteEscaper.Replace(s)
-}
-
 func upload(ctx context.Context, client api.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, direct bool) (*api.ObjectStats, error) {
 	fp := OpenByPath(sourcePathname)
 	defer func() {
@@ -179,7 +174,8 @@ func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 		// otherwise, we add a part and set the content-type.
 		if contentType != "" {
 			h := make(textproto.MIMEHeader)
-			h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s"`, fieldName, escapeQuotes(filename)))
+			contentDisposition := mime.FormatMediaType("form-data", map[string]string{"name": fieldName, "filename": filename})
+			h.Set("Content-Disposition", contentDisposition)
 			h.Set("Content-Type", contentType)
 			cw, err = mpw.CreatePart(h)
 		} else {
