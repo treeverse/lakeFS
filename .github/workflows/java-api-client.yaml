@@ -14,9 +14,9 @@ jobs:
     environment: Treeverse signing
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-        # Extract the version to 'version' based on workflow_dispatch or triggered tag in the published event
+        uses: actions/checkout@v3
 
+        # Extract the version to 'version' based on workflow_dispatch or triggered tag in the published event
       - name: Extract version
         shell: bash
         run: |
