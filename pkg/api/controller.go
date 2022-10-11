@@ -884,8 +884,8 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 		Source:       "internal",
 		Email:        parsedEmail,
 	}
-	_, err := c.Auth.CreateUser(ctx, u)
 
+	_, err := c.Auth.CreateUser(ctx, u)
 	if c.handleAPIError(ctx, w, err) {
 		c.Logger.WithError(err).WithField("username", u.Username).Warn("failed creating user")
 		return
@@ -1742,7 +1742,7 @@ func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, 
 		writeError(w, http.StatusGone, "No data")
 
 	case errors.Is(err, auth.ErrAlreadyExists):
-		writeError(w, http.StatusBadRequest, "Already exists")
+		writeError(w, http.StatusConflict, "Already exists")
 
 	case errors.Is(err, graveler.ErrTooManyTries):
 		writeError(w, http.StatusLocked, "Too many attempts, try again later")

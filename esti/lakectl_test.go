@@ -13,7 +13,6 @@ func TestLakectlHelp(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" --help", false, "lakectl_help", emptyVars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl(), true, "lakectl_help", emptyVars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" --help", true, "lakectl_help", emptyVars)
-
 }
 
 func TestLakectlBasicRepoActions(t *testing.T) {
@@ -165,7 +164,6 @@ func TestLakectlBranchAndTagValidation(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag create lakefs://"+repoName+"/"+vars["TAG"]+" lakefs://"+repoName+"/"+mainBranch+"^1", false, "lakectl_tag_create", vars)
 	vars["TAG"] = "tag4"
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag create lakefs://"+repoName+"/"+vars["TAG"]+" lakefs://"+repoName+"/"+mainBranch+"~", false, "lakectl_tag_create", vars)
-
 }
 
 func TestLakectlMergeAndStrategies(t *testing.T) {
@@ -214,7 +212,7 @@ func TestLakectlMergeAndStrategies(t *testing.T) {
 	vars["MESSAGE"] = commitMessage
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
 
-	//upload 'file2' on 'feature', delete 'file1' and commit
+	// upload 'file2' on 'feature', delete 'file1' and commit
 	vars["BRANCH"] = featureBranch
 	vars["FILE_PATH"] = filePath2
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+featureBranch+"/"+filePath2, false, "lakectl_fs_upload", vars)
@@ -239,7 +237,7 @@ func TestLakectlMergeAndStrategies(t *testing.T) {
 	vars["MESSAGE"] = commitMessage
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
 
-	//delete 'file1' on 'feature' again, and commit
+	// delete 'file1' on 'feature' again, and commit
 	vars["BRANCH"] = featureBranch
 	RunCmdAndVerifySuccess(t, Lakectl()+" fs rm lakefs://"+repoName+"/"+featureBranch+"/"+filePath1, false, "", vars)
 	commitMessage = "delete file on feature branch again"
@@ -323,7 +321,6 @@ func TestLakectlAnnotate(t *testing.T) {
 
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/iii/kkk/l", false, "lakectl_annotate_iiikkklll", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/iii/kkk/l --recursive", false, "lakectl_annotate_iiikkklll", vars)
-
 }
 
 func TestLakectlAuthUsers(t *testing.T) {
@@ -333,12 +330,12 @@ func TestLakectlAuthUsers(t *testing.T) {
 		"ID": userName,
 	}
 
-	//Not Found
+	// Not Found
 	RunCmdAndVerifyFailure(t, Lakectl()+" auth users delete --id "+userName, false, "user not found\n404 Not Found\n", vars)
 
 	// Check unique
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" auth users create --id "+userName, false, "lakectl_auth_users_create_success", vars)
-	RunCmdAndVerifyFailure(t, Lakectl()+" auth users create --id "+userName, false, "Already exists\n400 Bad Request\n", vars)
+	RunCmdAndVerifyFailure(t, Lakectl()+" auth users create --id "+userName, false, "Already exists\n409 Conflict\n", vars)
 
 	// Cleanup
 	RunCmdAndVerifySuccess(t, Lakectl()+" auth users delete --id "+userName, false, "User deleted successfully\n", vars)
