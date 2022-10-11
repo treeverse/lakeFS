@@ -640,17 +640,44 @@ func TestController_CommitHandler(t *testing.T) {
 func TestController_CreateRepositoryHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
+
 	t.Run("create repo success", func(t *testing.T) {
+		const repoName = "my-new-repo"
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    api.StringPtr("main"),
-			Name:             "my-new-repo",
+			Name:             repoName,
 			StorageNamespace: onBlock(deps, "foo-bucket-1"),
 		})
 		verifyResponseOK(t, resp, err)
 
-		repository := resp.JSON201
-		if repository.Id != "my-new-repo" {
-			t.Fatalf("got unexpected repo when creating my-new-repo: %s", repository.Id)
+		response := resp.JSON201
+		if response == nil {
+			t.Fatal("CreateRepository got bad response")
+		}
+		if response.Id != repoName {
+			t.Fatalf("CreateRepository id=%s, expected=%s", response.Id, repoName)
+		}
+	})
+
+	t.Run("create bare repo success", func(t *testing.T) {
+		const repoName = "my-new-repo-bare"
+		bareRepo := true
+		resp, err := clt.CreateRepositoryWithResponse(ctx,
+			&api.CreateRepositoryParams{
+				Bare: &bareRepo,
+			}, api.CreateRepositoryJSONRequestBody{
+				DefaultBranch:    api.StringPtr("main"),
+				Name:             repoName,
+				StorageNamespace: onBlock(deps, "foo-bucket-1"),
+			})
+		verifyResponseOK(t, resp, err)
+
+		response := resp.JSON201
+		if response == nil {
+			t.Fatal("CreateRepository (bare) got bad response")
+		}
+		if response.Id != repoName {
+			t.Fatalf("CreateRepository bare id=%s, expected=%s", response.Id, repoName)
 		}
 	})
 
