@@ -1274,7 +1274,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			Id:               repo.Name,
 			StorageNamespace: repo.StorageNamespace,
 		}
-		writeResponse(w, http.StatusOK, response)
+		writeResponse(w, http.StatusCreated, response)
 		return
 	}
 

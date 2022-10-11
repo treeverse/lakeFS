@@ -106,7 +106,7 @@ var repoCreateBareCmd = &cobra.Command{
 			Name:             u.Repository,
 			StorageNamespace: args[1],
 		})
-		DieOnErrorOrUnexpectedStatusCode(respCreateRepo, err, http.StatusOK)
+		DieOnErrorOrUnexpectedStatusCode(respCreateRepo, err, http.StatusCreated)
 
 		respGetRepo, err := clt.GetRepositoryWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(respGetRepo, err, http.StatusOK)
