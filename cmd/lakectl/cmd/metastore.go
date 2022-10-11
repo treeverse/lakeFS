@@ -288,6 +288,9 @@ var createSymlinkCmd = &cobra.Command{
 			DieErr(err)
 		}
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
 		location := resp.JSON201.Location
 
 		err = metastore.CopyOrMergeToSymlink(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, location, cfg.GetFixSparkPlaceholder())

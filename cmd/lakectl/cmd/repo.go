@@ -74,6 +74,9 @@ var repoCreateCmd = &cobra.Command{
 				DefaultBranch:    &defaultBranch,
 			})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
 		repo := resp.JSON201
 		Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
 			repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
@@ -106,6 +109,9 @@ var repoCreateBareCmd = &cobra.Command{
 			StorageNamespace: args[1],
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
 		repo := resp.JSON201
 		Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
 			repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
