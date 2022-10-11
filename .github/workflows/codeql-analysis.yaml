@@ -19,22 +19,24 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
+
     - uses: actions/setup-node@v3
       with:
-        node-version: '16.15.0'
+        node-version: '16.17.1'
+
     - name: Setup Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
         go-version: 1.17.8
 
     - name: Initialize CodeQL Go
       uses: github/codeql-action/init@v2
       with:
-        languages: go, javascript
+        languages: 'go, javascript'
         config-file: ./.github/codeql/codeql-config.yaml
 
-    - run: make gen
+    - run: make gen-api
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
