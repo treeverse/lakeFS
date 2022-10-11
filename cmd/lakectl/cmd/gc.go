@@ -83,7 +83,7 @@ var gcDeleteConfigCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository", args[0])
 		client := getClient()
-		resp, err := client.DeleteGarbageCollectionRules(cmd.Context(), u.Repository)
+		resp, err := client.DeleteGarbageCollectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }

@@ -29,6 +29,9 @@ var branchProtectListCmd = &cobra.Command{
 		u := MustParseRepoURI("repository", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 		patterns := make([][]interface{}, len(*resp.JSON200))
 		for i, rule := range *resp.JSON200 {
 			patterns[i] = []interface{}{rule.Pattern}
