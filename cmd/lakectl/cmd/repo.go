@@ -36,6 +36,9 @@ var repoListCmd = &cobra.Command{
 			Amount: api.PaginationAmountPtr(amount),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 		repos := resp.JSON200.Results
 		rows := make([][]interface{}, len(repos))
 		for i, repo := range repos {
@@ -63,19 +66,18 @@ var repoCreateCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		respCreateRepo, err := clt.CreateRepositoryWithResponse(cmd.Context(),
+		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(),
 			&api.CreateRepositoryParams{},
 			api.CreateRepositoryJSONRequestBody{
 				Name:             u.Repository,
 				StorageNamespace: args[1],
 				DefaultBranch:    &defaultBranch,
 			})
-		DieOnErrorOrUnexpectedStatusCode(respCreateRepo, err, http.StatusCreated)
-
-		respGetRepo, err := clt.GetRepositoryWithResponse(cmd.Context(), u.Repository)
-		DieOnErrorOrUnexpectedStatusCode(respGetRepo, err, http.StatusOK)
-
-		repo := respGetRepo.JSON200
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
+		repo := resp.JSON201
 		Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
 			repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
 	},
@@ -99,19 +101,18 @@ var repoCreateBareCmd = &cobra.Command{
 			DieErr(err)
 		}
 		bareRepo := true
-		respCreateRepo, err := clt.CreateRepositoryWithResponse(cmd.Context(), &api.CreateRepositoryParams{
+		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(), &api.CreateRepositoryParams{
 			Bare: &bareRepo,
 		}, api.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    &defaultBranch,
 			Name:             u.Repository,
 			StorageNamespace: args[1],
 		})
-		DieOnErrorOrUnexpectedStatusCode(respCreateRepo, err, http.StatusCreated)
-
-		respGetRepo, err := clt.GetRepositoryWithResponse(cmd.Context(), u.Repository)
-		DieOnErrorOrUnexpectedStatusCode(respGetRepo, err, http.StatusOK)
-
-		repo := respGetRepo.JSON200
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
+		repo := resp.JSON201
 		Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
 			repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
 	},

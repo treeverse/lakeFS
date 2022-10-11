@@ -60,6 +60,9 @@ var logCmd = &cobra.Command{
 		for pagination.HasMore {
 			resp, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, logCommitsParams)
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			if resp.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
 			pagination = resp.JSON200.Pagination
 			logCommitsParams.After = api.PaginationAfterPtr(pagination.NextOffset)
 			data := struct {

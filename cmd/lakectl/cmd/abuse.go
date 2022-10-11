@@ -191,6 +191,9 @@ var abuseRandomWritesCmd = &cobra.Command{
 		client := getClient()
 		resp, err := client.GetRepositoryWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		repo := resp.JSON200
 		storagePrefix := repo.StorageNamespace
@@ -249,6 +252,9 @@ var abuseCommitCmd = &cobra.Command{
 		client := getClient()
 		resp, err := client.GetRepositoryWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		// execute the things!
 		generator.Run(func(input chan string, output chan stress.Result) {
@@ -303,6 +309,9 @@ var abuseCreateBranchesCmd = &cobra.Command{
 					Amount: &amount,
 				})
 				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+				if resp.JSON200 == nil {
+					Die("Bad response from server", 1)
+				}
 
 				for _, ref := range resp.JSON200.Results {
 					if !strings.HasPrefix(ref.Id, branchPrefix) {

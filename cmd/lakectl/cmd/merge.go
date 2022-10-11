@@ -51,6 +51,9 @@ var mergeCmd = &cobra.Command{
 			Die("Conflict found.", 1)
 		}
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		Write(mergeCreateTemplate, struct {
 			Merge  FromTo

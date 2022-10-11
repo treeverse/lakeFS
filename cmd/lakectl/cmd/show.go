@@ -41,6 +41,9 @@ var showCmd = &cobra.Command{
 			client := getClient()
 			resp, err := client.GetCommitWithResponse(cmd.Context(), u.Repository, identifier)
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			if resp.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
 
 			commit := resp.JSON200
 			showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")

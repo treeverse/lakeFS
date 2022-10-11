@@ -68,6 +68,9 @@ var commitCmd = &cobra.Command{
 			Date:     datePtr,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		commit := resp.JSON201
 		Write(commitCreateTemplate, struct {

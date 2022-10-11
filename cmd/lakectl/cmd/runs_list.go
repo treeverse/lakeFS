@@ -48,6 +48,9 @@ var runsListCmd = &cobra.Command{
 			Commit: optionalCommit,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		results := resp.JSON200.Results
 		rows := make([][]interface{}, len(results))

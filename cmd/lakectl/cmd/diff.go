@@ -91,6 +91,9 @@ func printDiffBranch(ctx context.Context, client api.ClientWithResponsesInterfac
 			Amount: api.PaginationAmountPtr(int(pageSize)),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		for _, line := range resp.JSON200.Results {
 			FmtDiff(line, false)
@@ -119,6 +122,9 @@ func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface,
 			Type:   diffType,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		for _, line := range resp.JSON200.Results {
 			FmtDiff(line, true)

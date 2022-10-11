@@ -35,6 +35,9 @@ var annotateCmd = &cobra.Command{
 		context := cmd.Context()
 		resp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, &api.ListObjectsParams{Prefix: &pfx})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 		var listObjectsDelimiter api.PaginationDelimiter
 		if !recursive {
 			listObjectsDelimiter = PathDelimiter
@@ -49,6 +52,9 @@ var annotateCmd = &cobra.Command{
 			}
 			listObjectsResp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, params)
 			DieOnErrorOrUnexpectedStatusCode(listObjectsResp, err, http.StatusOK)
+			if resp.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
 			for _, obj := range listObjectsResp.JSON200.Results {
 				logCommitsParams := &api.LogCommitsParams{
 					Amount: api.PaginationAmountPtr(1),
@@ -61,6 +67,9 @@ var annotateCmd = &cobra.Command{
 				}
 				logCommitsResp, err := client.LogCommitsWithResponse(context, pathURI.Repository, pathURI.Ref, logCommitsParams)
 				DieOnErrorOrUnexpectedStatusCode(logCommitsResp, err, http.StatusOK)
+				if resp.JSON200 == nil {
+					Die("Bad response from server", 1)
+				}
 				data := objectCommitData{
 					Object: obj.Path,
 				}
