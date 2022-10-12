@@ -1672,6 +1672,16 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 			overwrite:              true,
 		},
 		{
+			name:                   "update_policy_not_exists",
+			policyName:             "NewPolicy",
+			firstStatementAction:   []string{"action"},
+			firstStatementEffect:   "effect",
+			firstStatementResource: "resource",
+			responseStatusCode:     http.StatusNotFound,
+			expectedErr:            auth.ErrNotFound,
+			overwrite:              true,
+		},
+		{
 			name:                   "internal_error",
 			firstStatementAction:   []string{"action"},
 			firstStatementEffect:   "effect",
