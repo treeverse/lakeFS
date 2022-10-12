@@ -3,6 +3,8 @@ package io.lakefs.contract;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystemContractBaseTest;
 import org.apache.hadoop.fs.Path;
+import org.junit.Assert;
+import org.junit.Before;
 
 /**
  *  Tests a live S3 system. If your keys and bucket aren't specified, all tests
@@ -13,23 +15,28 @@ import org.apache.hadoop.fs.Path;
  *  properly making it impossible to skip the tests if we don't have a valid
  *  bucket.
  **/
-public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
+public abstract class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
   public static final String TEST_FS_LAKEFS_NAME = "test.fs.lakefs.name";
 
-  private String pathPrefix;
+  protected String pathPrefix;
 
   @Override
+  protected String getDefaultWorkingDirectory() {
+      return pathPrefix;
+  }
+
+  @Before
   public void setUp() throws Exception {
     Configuration conf = new Configuration();
 
     fs = LakeFSTestUtils.createTestFileSystem(conf);
 
-    pathPrefix = conf.get(TEST_FS_LAKEFS_NAME) + "/main";
-    super.setUp();
+    pathPrefix = conf.get(TEST_FS_LAKEFS_NAME) + "/main/";
+    fs.setWorkingDirectory(new Path(pathPrefix));
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     if (fs != null) {
       fs.delete(path("/test"), true);
     }
@@ -39,11 +46,6 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
   @Override
   public void testMkdirsWithUmask() throws Exception {
     // skip("Not supported");
-  }
-
-  @Override
-  protected Path path(String pathString) {
-    return new Path(pathPrefix + pathString);
   }
 
   public void testRenameFileAsExistingFile() throws Exception {
@@ -65,13 +67,13 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
     Path dst = path("/test/new/newdir");
     fs.mkdirs(dst);
     rename(src, dst, true, false, true);
-    assertFalse("Nested file1 exists",
+    Assert.assertFalse("Nested file1 exists",
         fs.exists(path("/test/hadoop/dir/file1")));
-    assertFalse("Nested file2 exists",
+    Assert.assertFalse("Nested file2 exists",
         fs.exists(path("/test/hadoop/dir/subdir/file2")));
-    assertTrue("Renamed nested file1 exists",
+    Assert.assertTrue("Renamed nested file1 exists",
         fs.exists(path("/test/new/newdir/file1")));
-    assertTrue("Renamed nested exists",
+    Assert.assertTrue("Renamed nested exists",
         fs.exists(path("/test/new/newdir/subdir/file2")));
   }
 
@@ -80,4 +82,11 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
     // TODO make this test green and remove override
   }
 
+  public void testLSRootDir() throws Throwable {
+      // creating files under root dir is not supported in lakeFS
+  }
+
+  public void testListStatusRootDir() throws Throwable {
+      // creating files under root dir is not supported in lakeFS
+  }
 }
