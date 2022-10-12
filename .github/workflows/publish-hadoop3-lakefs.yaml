@@ -1,11 +1,11 @@
-name: publish hadoop lakefs
+name: publish hadoop lakefs filesystem - Hadoop 3
 
 on:
   workflow_dispatch:
     inputs:
       tag:
         description: Tag/version to publish
- 
+
 # These permissions are needed to interact with GitHub's OIDC Token endpoint.
 permissions:
   id-token: write
@@ -48,6 +48,10 @@ jobs:
         working-directory: clients/hadoopfs
         run: sed -i.bak 's/<version>.*<\/version><!--MARKER.*/<version>'${{ steps.version.outputs.tag }}'<\/version>/' pom.xml
 
+      - name: Update parent package version
+        working-directory: clients/hadoopfs/src/hadoop3
+        run: sed -i.bak 's/<version>.*<\/version><!--MARKER.*/<version>'${{ steps.version.outputs.tag }}'<\/version>/' pom-h3.xml
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -61,9 +65,13 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
 
+      - name: Package
+        working-directory: clients/hadoopfs
+        run: mvn package -Phadoop3 -DskipTests
+
       - name: Upload S3
         working-directory: clients/hadoopfs
-        run: mvn package s3-storage-wagon:s3-upload@upload-jar -DpublicRepository=true -DskipTests
+        run: mvn -Phadoop3 s3-storage-wagon:s3-upload@upload-jar -DpublicRepository=true
 
       - name: Publish - assembly
         working-directory: clients/hadoopfs

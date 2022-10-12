@@ -5,21 +5,25 @@ component, and will most likely require assembly and shading to use.  The second
 useful for inserting directly into Spark.
 
 To publish to Maven Central:
-    mvn deploy
-    mvn -Passembly deploy
+    1. Choose Hadoop profile from [hadoop3, hadoop321, hadoop2] -> <hadoopProfile>
+    2. mvn -P<hadoopProfile> deploy
+    3. mvn -Passembly,<hadoopProfile> deploy
 
 To export to S3:
-    mvn package s3-storage-wagon:s3-upload@upload-jar
-    mvn -Passembly package s3-storage-wagon:s3-upload@upload-jar
+    1. Choose Hadoop profile from [hadoop3, hadoop321, hadoop2] -> <hadoopProfile>
+    2. mvn package -P<hadoopProfile>
+    3. mvn package -Passembly,<hadoopProfile>
+    4. mvn -P<hadoopProfile> s3-storage-wagon:s3-upload@upload-jar
+    5. mvn -Passembly,<hadoopProfile> s3-storage-wagon:s3-upload@upload-jar
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.lakefs</groupId>
-    <artifactId>hadoop-lakefs</artifactId>
+    <artifactId>hadoop-lakefs-parent</artifactId>
     <packaging>pom</packaging>
-    <name>hadoop-lakefs${name-suffix}</name>
+    <name>hadoop-lakefs</name>
     <version>0.1.0</version><!--MARKER: keep this comment here, we update the version with the lakeFS version when on deploy-->
     <url>https://lakefs.io</url>
     <scm>
@@ -103,28 +107,100 @@ To export to S3:
             </build>
         </profile>
         <profile>
-            <id>assembly-h2</id>
-            <!--  spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider -->
+            <id>hadoop2</id>
             <modules>
                 <module>src/hadoop2/pom.xml</module>
             </modules>
             <properties>
-                <name-suffix>-assembly-h2</name-suffix>
-                <hadoop2.version>2.7.7</hadoop2.version>
+                <hadoop.version>2.7.7</hadoop.version>
             </properties>
         </profile>
         <profile>
-            <id>assembly-h3</id>
-            <!--  -->
+            <!--  spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider -->
+            <id>hadoop3</id>
             <modules>
-                <module>src/hadoop3/pom.xml</module>
+                <module>src/hadoop3/pom-h3.xml</module>
             </modules>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <name-suffix>-assembly-h3</name-suffix>
-                <hadoop3.version>3.1.4</hadoop3.version>
+                <hadoop.version>3.2.2</hadoop.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>hadoop321</id>
+            <modules>
+                <module>src/hadoop3/pom.xml</module>
+            </modules>
+            <properties>
+                <hadoop.version>3.2.1</hadoop.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>assembly</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <version>3.2.4</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>shade</goal>
+                                </goals>
+                                <configuration>
+                                    <shadedArtifactAttached>true</shadedArtifactAttached>
+                                    <shadedClassifierName>${assembly-suffix}</shadedClassifierName>
+                                    <filters>
+                                        <filter>
+                                            <artifact>*:*</artifact>
+                                            <excludes>
+                                                <exclude>module-info.class</exclude>
+                                                <exclude>META-INF/maven/**</exclude>
+                                                <exclude>META-INF/*.SF</exclude>
+                                                <exclude>META-INF/*.DSA</exclude>
+                                                <exclude>META-INF/*.RSA</exclude>
+                                            </excludes>
+                                        </filter>
+                                    </filters>
+                                    <relocations>
+                                        <relocation>
+                                            <pattern>org.apache.httpcomponents</pattern>
+                                            <shadedPattern>io.lakefs.shaded.apache.httpcomponents</shadedPattern>
+                                        </relocation>
+                                        <relocation>
+                                            <pattern>okio</pattern>
+                                            <shadedPattern>io.lakefs.shaded.okio</shadedPattern>
+                                        </relocation>
+                                        <relocation>
+                                            <pattern>okhttp3</pattern>
+                                            <shadedPattern>io.lakefs.shaded.okhttp3</shadedPattern>
+                                        </relocation>
+                                        <relocation>
+                                            <pattern>com.google.gson</pattern>
+                                            <shadedPattern>io.lakefs.shaded.gson</shadedPattern>
+                                        </relocation>
+                                        <relocation>
+                                            <pattern>io.gsonfire</pattern>
+                                            <shadedPattern>io.lakefs.shaded.gsonfire</shadedPattern>
+                                        </relocation>
+                                        <relocation>
+                                            <pattern>io.lakefs.clients.api</pattern>
+                                            <shadedPattern>io.lakefs.shaded.api</shadedPattern>
+                                        </relocation>
+                                    </relocations>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+            <properties>
+                <assembly-suffix>assembly</assembly-suffix>
+                <upload-path>${project.build.finalName}-${assembly-suffix}.jar</upload-path>
             </properties>
         </profile>
     </profiles>
@@ -133,66 +209,12 @@ To export to S3:
         <exclude.tests>io/lakefs/contract/**</exclude.tests>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <name-suffix/>          <!-- Set via profile to rename JAR -->
+        <assembly-suffix/>
+        <upload-path>${project.build.finalName}-assembly.jar</upload-path>
     </properties>
     <build>
+        <finalName>hadoop-${hadoop.version}-lakefs${name-suffix}-${project.version}</finalName>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>module-info.class</exclude>
-                                        <exclude>META-INF/maven/**</exclude>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                            <relocations>
-                                <relocation>
-                                    <pattern>org.apache.httpcomponents</pattern>
-                                    <shadedPattern>io.lakefs.shaded.apache.httpcomponents</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>okio</pattern>
-                                    <shadedPattern>io.lakefs.shaded.okio</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>okhttp3</pattern>
-                                    <shadedPattern>io.lakefs.shaded.okhttp3</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>com.google.gson</pattern>
-                                    <shadedPattern>io.lakefs.shaded.gson</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>io.gsonfire</pattern>
-                                    <shadedPattern>io.lakefs.shaded.gsonfire</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>io.lakefs.clients.api</pattern>
-                                    <shadedPattern>io.lakefs.shaded.api</shadedPattern>
-                                </relocation>
-<!--                                <relocation>-->
-<!--                                    <pattern>com.google.common</pattern>-->
-<!--                                    <shadedPattern>shade.lakefs.com.google.common</shadedPattern>-->
-<!--                                </relocation>-->
-                            </relocations>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -212,7 +234,6 @@ To export to S3:
                     <target>1.8</target>
                 </configuration>
             </plugin>
-
             <plugin>
                 <groupId>com.gkatzioura.maven.cloud</groupId>
                 <artifactId>s3-storage-wagon</artifactId>
@@ -224,10 +245,11 @@ To export to S3:
                             <goal>s3-upload</goal>
                         </goals>
                         <configuration>
-                            <path>target/${project.artifactId}-${project.version}.jar</path>
-                            <bucket>treeverse-clients-us-east</bucket>
+                            <path>target/${upload-path}</path>
+<!--                            <bucket>treeverse-clients-us-east</bucket>-->
+                            <bucket>jon-lakefs-2</bucket>
                             <region>us-east-1</region>
-                            <key>hadoop/${project.artifactId}-${project.version}.jar</key>
+                            <key>hadoop/${upload-path}</key>
                         </configuration>
                     </execution>
                 </executions>
