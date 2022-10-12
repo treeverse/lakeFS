@@ -117,11 +117,12 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 	if value == nil {
 		return kv.ErrMissingValue
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	sKey := encodeKey(key)
 	curr, currOK := s.m[string(partitionKey)][sKey]
