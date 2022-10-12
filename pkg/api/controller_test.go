@@ -2556,7 +2556,6 @@ func TestController_UpdatePolicy(t *testing.T) {
 	}
 
 	t.Run("unknown", func(t *testing.T) {
-		t.Skip("until we fix create/update policy")
 		const policyID = "UnknownPolicy"
 		updatePolicyResponse, err := clt.UpdatePolicyWithResponse(ctx, policyID, api.UpdatePolicyJSONRequestBody{
 			CreationDate: now,
