@@ -21,12 +21,25 @@ lakeFS is distributed as a single binary encapsulating several logical services:
 
 The server itself is stateless, meaning you can easily add more instances to handle a bigger load.
 
-lakeFS stores data in an underlying object store ([GCS](https://cloud.google.com/storage), [ABS](https://azure.microsoft.com/en-us/services/storage/blobs/),
-[S3](https://aws.amazon.com/s3/), or any S3-compatible stores like [MinIO](https://min.io/) or [Ceph](https://docs.ceph.com/)), with some of its metadata stored in [PostgreSQL](https://www.postgresql.org/){:target="_blank"} (see [Versioning internals](../understand/versioning-internals.md)).
+The following underlying object stores (or any S3-compatible store) can be used by lakeFS to store data:
 
-<!-- The below draw.io diagram source can be found here: https://drive.google.com/file/d/1lctPtGVEmOlCNHi3jiW4XXmyQQFkxzyx/view?usp=sharing -->
+- [Google Cloud Storage](https://cloud.google.com/storage) ([Prepare Your GCS Bucket](../setup/storage/gcs.md))
+- [Azure Blob Storage](https://azure.microsoft.com/en-us/services/storage/blobs/) ([Prepare Your Blob Storage Container](../setup/storage/blob.md))
+- [AWS S3](https://aws.amazon.com/s3/) ([Prepare Your AWS S3 Bucket](../setup/storage/s3.md))
+- [MinIO](https://min.io/) ([Using lakeFS with MinIO](../integrations/minio.md))
+- [Ceph](https://docs.ceph.com/)
 
-![Architecture]({{ site.baseurl }}/assets/img/arch.png)
+In additional a Key Value storage is used for storing metadata:
+
+- [PostgreSQL](https://www.postgresql.org/){:target="_blank"}
+- [DynamoDB](https://aws.amazon.com/dynamodb/){:target="_blank"}
+
+Instructions of how to deploy such database on AWS can be found [here](../deploy/aws.html#preparing-the-database-for-the-key-value-store).
+
+Additional information on the data format can be found in [Versioning internals](../understand/versioning-internals.md).
+
+
+![Architecture]({{ site.baseurl }}/assets/img/architecture.png)
 
 ## Ways to deploy lakeFS
 
