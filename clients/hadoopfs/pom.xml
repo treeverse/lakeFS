@@ -119,7 +119,7 @@ To export to S3:
             <!--  spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider -->
             <id>hadoop3</id>
             <modules>
-                <module>src/hadoop3/pom-h322.xml</module>
+                <module>src/hadoop3/pom-h3.xml</module>
             </modules>
             <activation>
                 <activeByDefault>true</activeByDefault>
