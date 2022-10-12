@@ -35,7 +35,7 @@ type ObjectStoreEntry struct {
 }
 
 type WalkOptions struct {
-	// All walked items must be greater then After
+	// All walked items must be greater than After
 	After string
 
 	// ContinuationToken is passed to the client for efficient listing.
@@ -99,7 +99,7 @@ func (f *walkerFactory) buildS3Walker(opts WalkerOptions) (*s3Walker, error) {
 		if err != nil {
 			return nil, err
 		}
-		sess, err = factory.BuildS3Client(s3params.AwsConfig)
+		sess, err = factory.BuildS3Client(s3params.AwsConfig, s3params.SkipVerifyCertificateTestOnly)
 		if err != nil {
 			return nil, err
 		}

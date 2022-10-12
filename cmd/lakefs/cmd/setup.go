@@ -22,25 +22,23 @@ var setupCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
 
-		if cfg.IsAuthTypeAPI() {
-			fmt.Printf("Can't setup lakeFS while using external auth API - auth.api.endpoint is configured.\n")
-			os.Exit(1)
-		}
-
 		ctx := cmd.Context()
-		dbParams := cfg.GetDatabaseParams()
-
-		if len(dbParams.Type) > 0 && len(dbParams.ConnectionString) > 0 { // Conflicting configuration
-			fmt.Printf("Conflicting database parameters, connection_string should be defined for the specific driver. Do you need to go through migration?\n")
+		kvParams, err := cfg.GetKVParams()
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
 			os.Exit(1)
 		}
-		kvParams := cfg.GetKVParams()
 		migrator := kv.NewDatabaseMigrator(kvParams)
 
-		err := migrator.Migrate(ctx)
+		err = migrator.Migrate(ctx)
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)
 			os.Exit(1)
+		}
+
+		if cfg.IsAuthTypeAPI() {
+			// nothing to do - users are managed elsewhere
+			return
 		}
 
 		userName, err := cmd.Flags().GetString("user-name")
@@ -70,12 +68,13 @@ var setupCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 		storeMessage := &kv.StoreMessage{Store: kvStore}
-		authLogger := logging.Default().WithField("service", "auth_service")
+		logger := logging.Default()
+		authLogger := logger.WithField("service", "auth_service")
 		authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), authLogger)
 		metadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
 
-		cloudMetadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
-		metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), metadataManager, cloudMetadataProvider)
+		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
+		metadata := stats.NewMetadata(ctx, logger, cfg.GetBlockstoreType(), metadataManager, cloudMetadataProvider)
 
 		initialized, err := metadataManager.IsInitialized(ctx)
 		if err != nil {
@@ -94,12 +93,12 @@ var setupCmd = &cobra.Command{
 		}
 
 		ctx, cancelFn := context.WithCancel(ctx)
-		stats := stats.NewBufferedCollector(metadata.InstallationID, cfg)
-		stats.Run(ctx)
-		defer stats.Close()
+		collector := stats.NewBufferedCollector(metadata.InstallationID, cfg, stats.WithLogger(logger))
+		collector.Run(ctx)
+		defer collector.Close()
 
-		stats.CollectMetadata(metadata)
-		stats.CollectEvent("global", "init")
+		collector.CollectMetadata(metadata)
+		collector.CollectEvent(stats.Event{Class: "global", Name: "init"})
 
 		fmt.Printf("credentials:\n  access_key_id: %s\n  secret_access_key: %s\n",
 			credentials.AccessKeyID, credentials.SecretAccessKey)

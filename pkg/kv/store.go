@@ -1,5 +1,7 @@
 package kv
 
+//go:generate mockgen -source=store.go -destination=mock/store.go -package=mock
+
 import (
 	"context"
 	"errors"
@@ -18,23 +20,21 @@ const (
 )
 
 var (
-	ErrClosedEntries        = errors.New("closed entries")
-	ErrConnectFailed        = errors.New("connect failed")
-	ErrDriverConfiguration  = errors.New("driver configuration")
-	ErrMissingPartitionKey  = errors.New("missing partition key")
-	ErrMissingKey           = errors.New("missing key")
-	ErrMissingValue         = errors.New("missing value")
-	ErrNotFound             = errors.New("not found")
-	ErrOperationFailed      = errors.New("operation failed")
-	ErrPredicateFailed      = errors.New("predicate failed")
-	ErrSetupFailed          = errors.New("setup failed")
-	ErrUnknownDriver        = errors.New("unknown driver")
-	ErrTableNotActive       = errors.New("table not active")
-	ErrInvalidSchemaVersion = errors.New("invalid database schema version")
+	ErrClosedEntries       = errors.New("closed entries")
+	ErrConnectFailed       = errors.New("connect failed")
+	ErrDriverConfiguration = errors.New("driver configuration")
+	ErrMissingPartitionKey = errors.New("missing partition key")
+	ErrMissingKey          = errors.New("missing key")
+	ErrMissingValue        = errors.New("missing value")
+	ErrNotFound            = errors.New("not found")
+	ErrPredicateFailed     = errors.New("predicate failed")
+	ErrSetupFailed         = errors.New("setup failed")
+	ErrUnknownDriver       = errors.New("unknown driver")
+	ErrTableNotActive      = errors.New("table not active")
 )
 
 func FormatPath(p ...string) string {
-	return strings.Join(p, PathDelimiter)
+	return strings.Join(p, string(PathDelimiter))
 }
 
 // Driver is the interface to access a kv database as a Store.

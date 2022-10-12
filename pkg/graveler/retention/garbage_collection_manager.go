@@ -84,6 +84,10 @@ func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageNamespac
 	if err != nil {
 		return nil, err
 	}
+	if len(rulesBytes) == 0 {
+		// empty file - no GC rules
+		return nil, graveler.ErrNotFound
+	}
 	err = proto.Unmarshal(rulesBytes, &rules)
 	if err != nil {
 		return nil, err
@@ -118,7 +122,7 @@ func (m *GarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, sto
 	if err != nil {
 		return nil, err
 	}
-	defer previousRunReader.Close()
+	defer func() { _ = previousRunReader.Close() }()
 	csvReader := csv.NewReader(previousRunReader)
 	csvReader.ReuseRecord = true
 	var res []graveler.CommitID

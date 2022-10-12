@@ -130,5 +130,3 @@ func ValidateRequiredStrategy(v interface{}) error {
 	}
 	return nil
 }
-
-var ValidateTagIDOptional = validator.MakeValidateOptional(ValidateTagID)

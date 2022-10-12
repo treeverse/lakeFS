@@ -58,7 +58,7 @@ type ExtParams struct {
 
 	// RangeAllocationProportion is the proportion allocated to range TierFS instance.
 	// The rest of the allocation is to be used by the meta-range TierFS instance.
-	// TODO(itai): make this configurable for more than 2 TierFS intances.
+	// TODO(itai): make this configurable for more than 2 TierFS instances.
 	RangeAllocationProportion     float64
 	MetaRangeAllocationProportion float64
 }

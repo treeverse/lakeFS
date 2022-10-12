@@ -9,11 +9,12 @@ import (
 const catHookOutputRequiredArgs = 3
 
 var catHookOutputCmd = &cobra.Command{
-	Use:     "cat-hook-output",
-	Short:   "Cat actions hook output",
-	Hidden:  true,
-	Example: "lakectl cat-hook-output lakefs://<repository> <run_id> <run_hook_id>",
-	Args:    cobra.ExactArgs(catHookOutputRequiredArgs),
+	Use:               "cat-hook-output",
+	Short:             "Cat actions hook output",
+	Hidden:            true,
+	Example:           "lakectl cat-hook-output lakefs://<repository> <run_id> <run_hook_id>",
+	Args:              cobra.ExactArgs(catHookOutputRequiredArgs),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository", args[0])
 		Fmt("Repository: %s\n", u.String())

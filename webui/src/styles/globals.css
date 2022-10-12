@@ -194,6 +194,11 @@
   font-weight: bold;
 }
 
+.table .leaf-entry-row .objects-diff .conflict {
+  color: var(--color-fg-conflict);
+  font-weight: bold;
+}
+
 .table .leaf-entry-row .objects-diff .diff-size {
   font-weight: bold;
 }
@@ -330,10 +335,6 @@
   display: inline-block;
 }
 
-.tree-container .alert {
-  /*margin: 20px;*/
-}
-
 .tree-container {
   font-size: .9rem;
 }
@@ -360,10 +361,6 @@
 
 .tree-container .table td {
   word-break: break-word;
-}
-
-.paginator  {
-  /*text-align: center;*/
 }
 
 .commit-metadata {
@@ -560,4 +557,12 @@ td .form-group {
 
 .readme-heading {
   background-color: inherit;
+}
+
+.form-label {
+  white-space: nowrap;
+}
+
+.download-button {
+  margin-right: 8px;
 }

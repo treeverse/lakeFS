@@ -13,11 +13,6 @@ import (
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 )
 
-const (
-	StreamingSha256          = "STREAMING-AWS4-HMAC-SHA256-PAYLOAD"
-	StreamingContentEncoding = "aws-chunked"
-)
-
 type StreamingReader struct {
 	Reader       io.Reader
 	Size         int

@@ -22,16 +22,16 @@ export default function UserPage() {
                 <UserRedirect subPath="/groups"/>
             </Route>
             <Route exact path="/auth/users/:userId/groups">
-                <UserGroupsPage/>
+                <UserGroupsPage />
             </Route>
             <Route exact path="/auth/users/:userId/policies">
-                <UserPoliciesPage/>
+                <UserPoliciesPage />
             </Route>
             <Route exact path="/auth/users/:userId/policies/effective">
-                <UserEffectivePoliciesPage/>
+                <UserEffectivePoliciesPage />
             </Route>
             <Route exact path="/auth/users/:userId/credentials">
-                <UserCredentialsPage/>
+                <UserCredentialsPage />
             </Route>
         </Switch>
     );

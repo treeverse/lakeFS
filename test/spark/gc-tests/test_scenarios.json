@@ -180,5 +180,47 @@
     ],
     "file_deleted": true,
     "description": "The file is deleted because it's in a dangling commit and the default retention policy has passed"
+  },
+  {
+    "id": 10,
+    "policy": {
+      "default_retention_days": 1,
+      "branches": []
+    },
+    "branches" : [
+      {
+        "branch_name": "a10",
+        "delete_commit_days_ago": -1
+      },
+      {
+        "branch_name": "b10",
+        "delete_commit_days_ago": -1
+      }
+    ],
+    "mode": "mark",
+    "mark_id": "marker10",
+    "file_deleted": false,
+    "description": "The file is only marked for deletion (not actually deleted)"
+  },
+  {
+    "id": 11,
+    "policy": {
+      "default_retention_days": 1,
+      "branches": []
+    },
+    "branches" : [
+      {
+        "branch_name": "a11",
+        "delete_commit_days_ago": -1
+      },
+      {
+        "branch_name": "b11",
+        "delete_commit_days_ago": -1
+      }
+    ],
+    "mode": "sweep",
+    "mark_id": "marker11",
+    "file_deleted": true,
+    "description": "The file is swept after it's first marked"
   }
 ]

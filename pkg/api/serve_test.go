@@ -47,13 +47,13 @@ type dependencies struct {
 
 // memCollector in-memory collector stores events and metadata sent
 type memCollector struct {
-	Events         []*stats.MetadataEntry
+	Events         []*stats.Event
 	Metadata       []*stats.Metadata
 	InstallationID string
 }
 
-func (m *memCollector) CollectEvent(class, action string) {
-	m.Events = append(m.Events, &stats.MetadataEntry{Name: class, Value: action})
+func (m *memCollector) CollectEvent(ev stats.Event) {
+	m.Events = append(m.Events, &ev)
 }
 
 func (m *memCollector) CollectMetadata(metadata *stats.Metadata) {
@@ -90,8 +90,6 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 
 	collector := &memCollector{}
 
-	// wire actions
-
 	cfg, err := config.NewConfig()
 	testutil.MustDo(t, "config", err)
 	kvStore := kvtest.GetStore(ctx, t)
@@ -111,6 +109,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	})
 	testutil.MustDo(t, "build catalog", err)
 
+	// wire actions
 	actionsService := actions.NewService(
 		ctx,
 		actionsStore,
@@ -124,20 +123,22 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	c.SetHooksHandler(actionsService)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)
-	migrator := kv.NewDatabaseMigrator(cfg.GetKVParams())
+	kvParams, err := cfg.GetKVParams()
+	testutil.Must(t, err)
+	migrator := kv.NewDatabaseMigrator(kvParams)
 
 	t.Cleanup(func() {
 		actionsService.Stop()
 		_ = c.Close()
 	})
 
-	auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
+	auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL(), "")
 	emailParams, _ := cfg.GetEmailParams()
 	emailer, err := email.NewEmailer(emailParams)
-	templater := templater.NewService(templates.Content, cfg, authService)
+	tmpl := templater.NewService(templates.Content, cfg, authService)
 
 	testutil.Must(t, err)
-	handler := api.Serve(cfg, c, authenticator, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.Default(), emailer, templater, nil, nil, nil, nil)
+	handler := api.Serve(cfg, c, authenticator, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.Default(), emailer, tmpl, nil, nil, nil, nil)
 
 	return handler, &dependencies{
 		blocks:      c.BlockAdapter,

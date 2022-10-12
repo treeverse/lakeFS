@@ -2,8 +2,10 @@ package factory
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"cloud.google.com/go/storage"
 	"github.com/Azure/azure-pipeline-go/pipeline"
@@ -85,8 +87,15 @@ func buildLocalAdapter(params params.Local) (*local.Adapter, error) {
 	return adapter, nil
 }
 
-func BuildS3Client(params *aws.Config) (*session.Session, error) {
-	sess, err := session.NewSession(params)
+func BuildS3Client(params *aws.Config, skipVerifyCertificateTestOnly bool) (*session.Session, error) {
+	client := http.DefaultClient
+	if skipVerifyCertificateTestOnly {
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
+		}
+		client = &http.Client{Transport: tr}
+	}
+	sess, err := session.NewSession(params, aws.NewConfig().WithHTTPClient(client))
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +104,7 @@ func BuildS3Client(params *aws.Config) (*session.Session, error) {
 }
 
 func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adapter, error) {
-	sess, err := BuildS3Client(params.AwsConfig)
+	sess, err := BuildS3Client(params.AwsConfig, params.SkipVerifyCertificateTestOnly)
 	if err != nil {
 		return nil, err
 	}

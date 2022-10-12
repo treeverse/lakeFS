@@ -22,6 +22,10 @@ var repoCmd = &cobra.Command{
 var repoListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List repositories",
+	Args:  cobra.NoArgs,
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		after := MustString(cmd.Flags().GetString("after"))
@@ -32,6 +36,9 @@ var repoListCmd = &cobra.Command{
 			Amount: api.PaginationAmountPtr(amount),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 		repos := resp.JSON200.Results
 		rows := make([][]interface{}, len(repos))
 		for i, repo := range repos {
@@ -46,10 +53,11 @@ var repoListCmd = &cobra.Command{
 // repoCreateCmd represents the create repo command
 // lakectl create lakefs://myrepo s3://my-bucket/
 var repoCreateCmd = &cobra.Command{
-	Use:     "create <repository uri> <storage namespace>",
-	Short:   "Create a new repository",
-	Example: "lakectl repo create lakefs://some-repo-name s3://some-bucket-name",
-	Args:    cobra.ExactArgs(repoCreateCmdArgs),
+	Use:               "create <repository uri> <storage namespace>",
+	Short:             "Create a new repository",
+	Example:           "lakectl repo create lakefs://some-repo-name s3://some-bucket-name",
+	Args:              cobra.ExactArgs(repoCreateCmdArgs),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
 		u := MustParseRepoURI("repository", args[0])
@@ -58,19 +66,18 @@ var repoCreateCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		respCreateRepo, err := clt.CreateRepositoryWithResponse(cmd.Context(),
+		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(),
 			&api.CreateRepositoryParams{},
 			api.CreateRepositoryJSONRequestBody{
 				Name:             u.Repository,
 				StorageNamespace: args[1],
 				DefaultBranch:    &defaultBranch,
 			})
-		DieOnErrorOrUnexpectedStatusCode(respCreateRepo, err, http.StatusCreated)
-
-		respGetRepo, err := clt.GetRepositoryWithResponse(cmd.Context(), u.Repository)
-		DieOnErrorOrUnexpectedStatusCode(respGetRepo, err, http.StatusOK)
-
-		repo := respGetRepo.JSON200
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
+		repo := resp.JSON201
 		Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
 			repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
 	},
@@ -79,11 +86,12 @@ var repoCreateCmd = &cobra.Command{
 // repoCreateBareCmd represents the create repo command
 // lakectl create-bare lakefs://myrepo s3://my-bucket/
 var repoCreateBareCmd = &cobra.Command{
-	Use:     "create-bare <repository uri> <storage namespace>",
-	Short:   "Create a new repository with no initial branch or commit",
-	Example: "lakectl create-bare lakefs://some-repo-name s3://some-bucket-name",
-	Hidden:  true,
-	Args:    cobra.ExactArgs(repoCreateCmdArgs),
+	Use:               "create-bare <repository uri> <storage namespace>",
+	Short:             "Create a new repository with no initial branch or commit",
+	Example:           "lakectl create-bare lakefs://some-repo-name s3://some-bucket-name",
+	Hidden:            true,
+	Args:              cobra.ExactArgs(repoCreateCmdArgs),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
 		u := MustParseRepoURI("repository", args[0])
@@ -93,19 +101,18 @@ var repoCreateBareCmd = &cobra.Command{
 			DieErr(err)
 		}
 		bareRepo := true
-		respCreateRepo, err := clt.CreateRepositoryWithResponse(cmd.Context(), &api.CreateRepositoryParams{
+		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(), &api.CreateRepositoryParams{
 			Bare: &bareRepo,
 		}, api.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    &defaultBranch,
 			Name:             u.Repository,
 			StorageNamespace: args[1],
 		})
-		DieOnErrorOrUnexpectedStatusCode(respCreateRepo, err, http.StatusOK)
-
-		respGetRepo, err := clt.GetRepositoryWithResponse(cmd.Context(), u.Repository)
-		DieOnErrorOrUnexpectedStatusCode(respGetRepo, err, http.StatusOK)
-
-		repo := respGetRepo.JSON200
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
+		repo := resp.JSON201
 		Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
 			repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
 	},
@@ -114,9 +121,10 @@ var repoCreateBareCmd = &cobra.Command{
 // repoDeleteCmd represents the delete repo command
 // lakectl delete lakefs://myrepo
 var repoDeleteCmd = &cobra.Command{
-	Use:   "delete <repository uri>",
-	Short: "Delete existing repository",
-	Args:  cobra.ExactArgs(1),
+	Use:               "delete <repository uri>",
+	Short:             "Delete existing repository",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
 		u := MustParseRepoURI("repository", args[0])

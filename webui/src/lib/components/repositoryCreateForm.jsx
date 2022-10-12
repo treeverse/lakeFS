@@ -73,7 +73,7 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
                 default_branch: defaultBranchField.current.value
             });
         }}>
-	    {config?.warnings && <Warnings warnings={config.warnings}/>}
+        {config?.warnings && <Warnings warnings={config.warnings}/>}
 
             <Form.Group as={Row} controlId="id">
                 <Form.Label column sm={fieldNameOffset}>Repository ID</Form.Label>
@@ -88,12 +88,12 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
             </Form.Group>
             <Form.Group as={Row}>
                 <Form.Label column sm={fieldNameOffset}>
-                    Storage Namespace&nbsp;
+                    <span>Storage Namespace&nbsp;
                     <OverlayTrigger placement="bottom" overlay={<Tooltip style={{"font-size": "s"}}>What should I type here?</Tooltip>}>
-                        <a href="https://docs.lakefs.io/understand/model.html#concepts-unique-to-lakefs" target={"_blank"} tabIndex="-1" rel="noopener noreferrer">
+                        <a href="https://docs.lakefs.io/setup/create-repo.html#create-the-repository" target={"_blank"} tabIndex="-1" rel="noopener noreferrer">
                             <InfoIcon />
                         </a>
-                    </OverlayTrigger>
+                    </OverlayTrigger></span>
                 </Form.Label>
                 <Col sm={sm}>
                     <Form.Control type="text" ref={storageNamespaceField} placeholder={storageNamespaceExample} onChange={checkStorageNamespaceValidity} />

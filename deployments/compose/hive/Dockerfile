@@ -1,4 +1,4 @@
-FROM openjdk:8u242-jre-buster
+FROM openjdk:8u342-jre-buster
 
 WORKDIR /opt
 

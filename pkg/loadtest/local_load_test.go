@@ -2,14 +2,12 @@ package loadtest
 
 import (
 	"context"
-	"log"
 	"math"
 	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/ory/dockertest/v3"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -28,24 +26,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/version"
 )
-
-var (
-	pool        *dockertest.Pool
-	databaseURI string
-)
-
-func TestMain(m *testing.M) {
-	var err error
-	var closer func()
-	pool, err = dockertest.NewPool("")
-	if err != nil {
-		log.Fatalf("Could not connect to Docker: %s", err)
-	}
-	databaseURI, closer = testutil.GetDBInstance(pool)
-	code := m.Run()
-	closer() // cleanup
-	os.Exit(code)
-}
 
 type getActionsService func(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service
 
@@ -118,7 +98,7 @@ func TestLocalLoad(t *testing.T) {
 				viper.Set("database.kv_enabled", true)
 			}
 
-			blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
+			blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
 			c, err := catalog.New(ctx, catalog.Config{
 				Config:  conf,
 				KVStore: storeMessage,
@@ -136,11 +116,13 @@ func TestLocalLoad(t *testing.T) {
 			testutil.Must(t, err)
 
 			authenticator := auth.NewBuiltinAuthenticator(tt.authService)
-			migrator := kv.NewDatabaseMigrator(conf.GetKVParams())
+			kvParams, err := conf.GetKVParams()
+			testutil.Must(t, err)
+			migrator := kv.NewDatabaseMigrator(kvParams)
 			t.Cleanup(func() {
 				_ = c.Close()
 			})
-			auditChecker := version.NewDefaultAuditChecker(conf.GetSecurityAuditCheckURL())
+			auditChecker := version.NewDefaultAuditChecker(conf.GetSecurityAuditCheckURL(), "")
 			emailParams, _ := conf.GetEmailParams()
 			emailer, err := email.NewEmailer(emailParams)
 			testutil.Must(t, err)

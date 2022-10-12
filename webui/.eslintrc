@@ -1,0 +1,29 @@
+{
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+        "@typescript-eslint"
+    ],
+    "env": {
+      "browser": true,
+      "jest": true,
+      "es6": true
+    },
+    "settings": {
+      "react": {
+        "version": "17.0"
+      }
+    },
+    "rules": {
+      "eqeqeq": "warn",
+      "strict": "error",
+      "react/prop-types": 0,
+      "react/jsx-key": 0,
+      "react/display-name": 0
+    },
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/eslint-recommended",
+      "plugin:@typescript-eslint/recommended",
+      "plugin:react/recommended"
+    ]
+}

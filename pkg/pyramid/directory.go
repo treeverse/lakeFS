@@ -12,7 +12,7 @@ import (
 
 // directory synchronizes between file operations that might change (create/delete) directories
 type directory struct {
-	// ceilingDir is the root directory of the FS - shouldn't never be deleted
+	// ceilingDir is the root directory of the FS - shouldn't be deleted
 	ceilingDir string
 	mu         sync.Mutex
 }

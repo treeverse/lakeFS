@@ -10,9 +10,10 @@ import (
 
 // showCmd represents the show command
 var showCmd = &cobra.Command{
-	Use:   "show <repository uri>",
-	Short: "See detailed information about an entity by ID (commit, user, etc)",
-	Args:  cobra.ExactArgs(1),
+	Use:               "show <repository uri>",
+	Short:             "See detailed information about an entity by ID (commit, user, etc)",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository", args[0])
 		Fmt("Repository: %s\n", u.String())
@@ -40,6 +41,9 @@ var showCmd = &cobra.Command{
 			client := getClient()
 			resp, err := client.GetCommitWithResponse(cmd.Context(), u.Repository, identifier)
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			if resp.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
 
 			commit := resp.JSON200
 			showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")

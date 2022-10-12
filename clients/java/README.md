@@ -206,6 +206,7 @@ Class | Method | HTTP request | Description
 *RepositoriesApi* | [**getBranchProtectionRules**](docs/RepositoriesApi.md#getBranchProtectionRules) | **GET** /repositories/{repository}/branch_protection | get branch protection rules
 *RepositoriesApi* | [**getRepository**](docs/RepositoriesApi.md#getRepository) | **GET** /repositories/{repository} | get repository
 *RepositoriesApi* | [**listRepositories**](docs/RepositoriesApi.md#listRepositories) | **GET** /repositories | list repositories
+*RetentionApi* | [**deleteGarbageCollectionRules**](docs/RetentionApi.md#deleteGarbageCollectionRules) | **DELETE** /repositories/{repository}/gc/rules | 
 *RetentionApi* | [**getGarbageCollectionRules**](docs/RetentionApi.md#getGarbageCollectionRules) | **GET** /repositories/{repository}/gc/rules | 
 *RetentionApi* | [**prepareGarbageCollectionCommits**](docs/RetentionApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active and expired commits for garbage collection
 *RetentionApi* | [**setGarbageCollectionRules**](docs/RetentionApi.md#setGarbageCollectionRules) | **POST** /repositories/{repository}/gc/rules | 

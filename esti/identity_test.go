@@ -8,6 +8,7 @@ import (
 )
 
 func TestIdentity(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	for _, direct := range testDirectDataAccess {
 		name := "indirect"
 		if direct {

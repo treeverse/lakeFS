@@ -46,8 +46,6 @@ A cli tool to explore manage and work with lakeFS
 #### Synopsis
 {:.no_toc}
 
-lakeFS is data lake management solution, allowing Git-like semantics over common object stores
-
 lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment
 
 #### Options
@@ -2000,7 +1998,7 @@ lakectl fs upload <path uri> [flags]
 
 ### lakectl gc
 
-Manage garbage collection configuration
+Manage the garbage collection policy
 
 #### Options
 {:.no_toc}
@@ -2011,9 +2009,33 @@ Manage garbage collection configuration
 
 
 
+### lakectl gc delete-config
+
+Deletes the garbage collection policy for the repository
+
+```
+lakectl gc delete-config [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl gc delete-config <repository uri>
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for delete-config
+```
+
+
+
 ### lakectl gc get-config
 
-Show garbage collection configuration JSON
+Show the garbage collection policy for this repository
 
 ```
 lakectl gc get-config [flags]
@@ -2061,12 +2083,12 @@ lakectl gc help [command] [flags]
 
 ### lakectl gc set-config
 
-Set garbage collection configuration JSON
+Set garbage collection policy JSON
 
 #### Synopsis
 {:.no_toc}
 
-Sets the garbage collection configuration JSON.
+Sets the garbage collection policy JSON.
 Example configuration file:
 {
   "default_retention_days": 21,
@@ -2097,7 +2119,7 @@ lakectl gc set-config <repository uri> -f config.json
 {:.no_toc}
 
 ```
-  -f, --filename string   file containing the GC configuration
+  -f, --filename string   file containing the GC policy as JSON
   -h, --help              help for set-config
 ```
 

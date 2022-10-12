@@ -73,19 +73,21 @@ type configuration struct {
 	}
 
 	Database struct {
-		// Deprecated: use Postgres struct
-		DeprecatedConnectionString SecureString `mapstructure:"connection_string"`
-		// Deprecated: use Postgres struct
-		DeprecatedMaxOpenConnections int32 `mapstructure:"max_open_connections"`
-		// Deprecated: use Postgres struct
-		DeprecatedMaxIdleConnections int32 `mapstructure:"max_idle_connections"`
-		// Deprecated: use Postgres struct
-		DeprecatedConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
-
 		// DropTables Development flag to delete tables after successful migration to KV
 		DropTables bool `mapstructure:"drop_tables"`
-		// Type  Name of the KV Store driver DB implementation which is available according to the kv package Drivers function
+		// Type Name of the KV Store driver DB implementation which is available according to the kv package Drivers function
 		Type string `mapstructure:"type"`
+
+		Local *struct {
+			// Path - Local directory path to store the DB files
+			Path string `mapstructure:"path"`
+			// SyncWrites - Sync ensures data written to disk on each write instead of mem cache
+			SyncWrites *bool `mapstructure:"sync_writes"`
+			// PrefetchSize - Number of elements to prefetch while iterating
+			PrefetchSize int `mapstructure:"prefetch_size"`
+			// EnableLogging - Enable store and badger (trace only) logging
+			EnableLogging *bool `mapstructure:"enable_logging"`
+		} `mapstructure:"local"`
 
 		Postgres *struct {
 			ConnectionString      SecureString  `mapstructure:"connection_string"`
@@ -118,6 +120,7 @@ type configuration struct {
 			// This is a client requirement as described in section 4 in
 			// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
 			AwsRegion          string       `mapstructure:"aws_region"`
+			AwsProfile         string       `mapstructure:"aws_profile"`
 			AwsAccessKeyID     SecureString `mapstructure:"aws_access_key_id"`
 			AwsSecretAccessKey SecureString `mapstructure:"aws_secret_access_key"`
 		} `mapstructure:"dynamodb"`
@@ -149,14 +152,15 @@ type configuration struct {
 			Path string
 		}
 		S3 *struct {
-			S3AuthInfo            `mapstructure:",squash"`
-			Region                string
-			Endpoint              string
-			StreamingChunkSize    int           `mapstructure:"streaming_chunk_size"`
-			StreamingChunkTimeout time.Duration `mapstructure:"streaming_chunk_timeout"`
-			MaxRetries            int           `mapstructure:"max_retries"`
-			ForcePathStyle        bool          `mapstructure:"force_path_style"`
-			DiscoverBucketRegion  bool          `mapstructure:"discover_bucket_region"`
+			S3AuthInfo                    `mapstructure:",squash"`
+			Region                        string
+			Endpoint                      string
+			StreamingChunkSize            int           `mapstructure:"streaming_chunk_size"`
+			StreamingChunkTimeout         time.Duration `mapstructure:"streaming_chunk_timeout"`
+			MaxRetries                    int           `mapstructure:"max_retries"`
+			ForcePathStyle                bool          `mapstructure:"force_path_style"`
+			DiscoverBucketRegion          bool          `mapstructure:"discover_bucket_region"`
+			SkipVerifyCertificateTestOnly bool          `mapstructure:"skip_verify_certificate_test_only"`
 		}
 		Azure *struct {
 			TryTimeout       time.Duration `mapstructure:"try_timeout"`
@@ -198,9 +202,11 @@ type configuration struct {
 		}
 	}
 	Stats struct {
-		Enabled       bool
-		Address       string
+		Enabled       bool          `mapstructure:"enabled"`
+		Address       string        `mapstructure:"address"`
 		FlushInterval time.Duration `mapstructure:"flush_interval"`
+		FlushSize     int           `mapstructure:"flush_size"`
+		Extended      bool          `mapstructure:"extended"`
 	}
 	Installation struct {
 		FixedID string `mapstructure:"fixed_id"`

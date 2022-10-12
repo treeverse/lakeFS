@@ -1,1 +1,0 @@
--- Keep all "fs:AttachStorageNamespace" operations, they will merely have no effect.

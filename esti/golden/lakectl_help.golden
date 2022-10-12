@@ -1,5 +1,3 @@
-lakeFS is data lake management solution, allowing Git-like semantics over common object stores
-
 lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment
 
 Usage:
@@ -18,7 +16,7 @@ Available Commands:
   diff            Show changes between two commits, or the currently uncommitted changes
   doctor          Run a basic diagnosis of the LakeFS configuration
   fs              View and manipulate objects
-  gc              Manage garbage collection configuration
+  gc              Manage the garbage collection policy
   help            Help about any command
   ingest          Ingest objects from an external source into a lakeFS branch (without actually copying them)
   log             Show log of commits

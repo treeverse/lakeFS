@@ -14,9 +14,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
-// IteratorPrefetchSize is the amount of records to maybeFetch from PG
-const IteratorPrefetchSize = 1000
-
 // MaxBatchDelay - 3ms was chosen as a max delay time for critical path queries.
 // It trades off amount of queries per second (and thus effectiveness of the batching mechanism) with added latency.
 // Since reducing # of expensive operations is only beneficial when there are a lot of concurrent requests,
@@ -24,18 +21,13 @@ const IteratorPrefetchSize = 1000
 // 3ms of delay with ~300 requests/second per resource sounds like a reasonable tradeoff.
 const MaxBatchDelay = time.Millisecond * 3
 
-const BatchUpdateSQLSize = 10000
+// commitIDStringLength string representation length of commit ID - based on hex representation of sha256
+const commitIDStringLength = 64
 
 type KVManager struct {
 	kvStore         kv.StoreMessage
 	addressProvider ident.AddressProvider
 	batchExecutor   batch.Batcher
-}
-
-type CommitNode struct {
-	children       []graveler.CommitID
-	parentsToVisit map[graveler.CommitID]struct{}
-	generation     int
 }
 
 func branchFromProto(pb *graveler.BranchData) *graveler.Branch {
@@ -387,6 +379,10 @@ func (m *KVManager) ListTags(ctx context.Context, repository *graveler.Repositor
 }
 
 func (m *KVManager) GetCommitByPrefix(ctx context.Context, repository *graveler.RepositoryRecord, prefix graveler.CommitID) (*graveler.Commit, error) {
+	// optimize by get if prefix is not a prefix, but a full length commit id
+	if len(prefix) == commitIDStringLength {
+		return m.GetCommit(ctx, repository, prefix)
+	}
 	key := fmt.Sprintf("GetCommitByPrefix:%s:%s", repository.RepositoryID, prefix)
 	commit, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
 		it, err := NewKVOrderedCommitIterator(ctx, &m.kvStore, repository, false)

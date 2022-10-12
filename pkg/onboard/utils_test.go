@@ -16,8 +16,7 @@ import (
 )
 
 const (
-	NewInventoryURL      = "s3://example-bucket/inventory-new.json"
-	PreviousInventoryURL = "s3://example-bucket/inventory-prev.json"
+	NewInventoryURL = "s3://example-bucket/inventory-new.json"
 )
 
 type mockInventory struct {

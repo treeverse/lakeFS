@@ -13,14 +13,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
-	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -126,8 +124,14 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 func deleteRepositoryIfAskedTo(ctx context.Context, repositoryName string) {
 	deleteRepositories := viper.GetBool("delete_repositories")
 	if deleteRepositories {
-		client.DeleteRepositoryWithResponse(ctx, repositoryName)
-		logger.WithField("repo", repositoryName).Info("Deleted repository")
+		resp, err := client.DeleteRepositoryWithResponse(ctx, repositoryName)
+		if err != nil {
+			logger.WithError(err).WithField("repo", repositoryName).Error("Reuqest to delete repository failed")
+		} else if resp.StatusCode() != http.StatusNoContent {
+			logger.WithFields(logging.Fields{"repo": repositoryName, "status_code": resp.StatusCode()}).Error("Reuqest to delete repository failed")
+		} else {
+			logger.WithField("repo", repositoryName).Info("Deleted repository")
+		}
 	}
 }
 
@@ -172,7 +176,10 @@ func uploadContent(ctx context.Context, repo string, branch string, objPath stri
 	if err != nil {
 		return nil, fmt.Errorf("write content: %w", err)
 	}
-	w.Close()
+	err = w.Close()
+	if err != nil {
+		return nil, fmt.Errorf("close form file: %w", err)
+	}
 	return client.UploadObjectWithBodyWithResponse(ctx, repo, branch, &api.UploadObjectParams{
 		Path: objPath,
 	}, w.FormDataContentType(), &b)
@@ -237,31 +244,4 @@ func listRepositories(t *testing.T, ctx context.Context) []api.Repository {
 		after = payload.Pagination.NextOffset
 	}
 	return listedRepos
-}
-
-// TestKVEnabled tests that lakefs database contains kv table in case feature is enabled
-func TestKVEnabled(t *testing.T) {
-	// skip test if not kv enabled on postgres
-	if !viper.GetBool("database_kv_enabled") ||
-		viper.GetString("database_type") != kvpg.DriverName {
-		t.Skip("PG KV not enabled")
-	}
-
-	// connect to database and verify that kv table exists
-	dbURI := viper.GetString("database_connection_string")
-	if dbURI == "" {
-		t.Fatal("lakefs database connection string environment variable is missing")
-	}
-	ctx := context.Background()
-	pool, err := pgxpool.Connect(ctx, dbURI)
-	if err != nil {
-		t.Fatal("failed connecting to lakefs db:", err)
-	}
-	var keyCount int
-	row := pool.QueryRow(ctx, `SELECT COUNT(*) FROM kv`)
-	err = row.Scan(&keyCount)
-	if err != nil {
-		t.Fatal("failed to check kv table", err)
-	}
-	t.Log("kv keys", keyCount)
 }

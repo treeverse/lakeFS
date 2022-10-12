@@ -35,6 +35,7 @@ const (
 )
 
 func TestS3UploadAndDownload(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	const parallelism = 10
 
 	ctx, _, repo := setupTest(t)
@@ -43,12 +44,13 @@ func TestS3UploadAndDownload(t *testing.T) {
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
 	endpoint := viper.GetString("s3_endpoint")
+	endpointSecure := viper.GetBool("s3_endpoint_secure")
 	opts := minio.PutObjectOptions{}
 
 	for _, sig := range sigs {
 		t.Run("Sig"+sig.Name, func(t *testing.T) {
 			// Use same sequence of pathnames to test each sig.
-			rand := rand.New(rand.NewSource(17))
+			r := rand.New(rand.NewSource(17))
 
 			creds := sig.GetCredentials(accessKeyID, secretAccessKey, "")
 
@@ -64,7 +66,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 			for i := 0; i < parallelism; i++ {
 				client, err := minio.New(endpoint, &minio.Options{
 					Creds:  creds,
-					Secure: false,
+					Secure: endpointSecure,
 				})
 				if err != nil {
 					t.Fatalf("minio.New: %s", err)
@@ -100,10 +102,10 @@ func TestS3UploadAndDownload(t *testing.T) {
 
 			for i := 0; i < numUploads; i++ {
 				objects <- Object{
-					Content: testutil.RandomString(rand, randomDataContentLength),
+					Content: testutil.RandomString(r, randomDataContentLength),
 					// lakeFS supports _any_ path, even if its
 					// byte sequence is not legal UTF-8 string.
-					Path: prefix + testutil.RandomString(rand, randomDataPathLength-len(prefix)),
+					Path: prefix + testutil.RandomString(r, randomDataPathLength-len(prefix)),
 				}
 			}
 			close(objects)
@@ -113,6 +115,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 }
 
 func TestS3CopyObject(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
@@ -123,20 +126,21 @@ func TestS3CopyObject(t *testing.T) {
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
 	endpoint := viper.GetString("s3_endpoint")
+	endpointSecure := viper.GetBool("s3_endpoint_secure")
 	opts := minio.PutObjectOptions{}
-	rand := rand.New(rand.NewSource(17))
+	r := rand.New(rand.NewSource(17))
 
 	creds := sigs[0].GetCredentials(accessKeyID, secretAccessKey, "")
 
 	minioClient, err := minio.New(endpoint, &minio.Options{
 		Creds:  creds,
-		Secure: false,
+		Secure: endpointSecure,
 	})
 	if err != nil {
 		t.Fatalf("minio.New: %s", err)
 	}
 
-	Content := testutil.RandomString(rand, randomDataContentLength)
+	Content := testutil.RandomString(r, randomDataContentLength)
 	SourcePath := prefix + "source-file"
 	DestPath := prefix + "dest-file"
 
@@ -149,10 +153,12 @@ func TestS3CopyObject(t *testing.T) {
 	_, err = minioClient.CopyObject(ctx,
 		minio.CopyDestOptions{
 			Bucket: repo,
-			Object: DestPath},
+			Object: DestPath,
+		},
 		minio.CopySrcOptions{
 			Bucket: repo,
-			Object: SourcePath})
+			Object: SourcePath,
+		})
 
 	if err != nil {
 		t.Errorf("minio.Client.CopyObjectFrom(%s)To(%s): %s", SourcePath, DestPath, err)
@@ -198,10 +204,12 @@ func TestS3CopyObject(t *testing.T) {
 	_, err = minioClient.CopyObject(ctx,
 		minio.CopyDestOptions{
 			Bucket: destRepo,
-			Object: DestPath},
+			Object: DestPath,
+		},
 		minio.CopySrcOptions{
 			Bucket: repo,
-			Object: SourcePath})
+			Object: SourcePath,
+		})
 
 	if err != nil {
 		t.Errorf("minio.Client.CopyObjectFrom(%s)To(%s): %s", SourcePath, DestPath, err)

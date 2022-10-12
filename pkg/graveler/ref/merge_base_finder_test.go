@@ -15,8 +15,6 @@ type MockCommitGetter struct {
 	visited    map[graveler.CommitID]int
 }
 
-var repository = &graveler.RepositoryRecord{RepositoryID: "ref-test-repo"}
-
 func (g *MockCommitGetter) GetCommit(_ context.Context, _ *graveler.RepositoryRecord, commitID graveler.CommitID) (*graveler.Commit, error) {
 	if commit, ok := g.byCommitID[commitID]; ok {
 		g.visited[commitID] += 1
@@ -233,7 +231,7 @@ func TestFindMergeBase(t *testing.T) {
 			// Verifying the fix introduced with https://github.com/treeverse/lakeFS/pull/2968. The following commits tree
 			// will generate multiple accesses to commit 'b' as it is a parent commit for both 'd' and 'c' and per BFS algo,
 			// it will be reached via both paths before ROOT is reached from L.
-			// The abovementioned fix eliminates that
+			// The above-mentioned fix eliminates that
 			Left:  "l",
 			Right: "r",
 			Getter: func() *MockCommitGetter {
@@ -321,6 +319,7 @@ func TestFindMergeBase(t *testing.T) {
 			Expected: []string{"ab"},
 		},
 	}
+	repository := &graveler.RepositoryRecord{RepositoryID: "ref-test-repo"}
 	for _, cas := range cases {
 		t.Run(cas.Name, func(t *testing.T) {
 			getter := cas.Getter()
@@ -373,6 +372,7 @@ func TestGrid(t *testing.T) {
 			kv[graveler.CommitID(fmt.Sprintf("%d-%d", i, j))] = grid[i][j]
 		}
 	}
+	repository := &graveler.RepositoryRecord{RepositoryID: "ref-test-repo"}
 	getter := newReader(kv)
 	c, err := ref.FindMergeBase(context.Background(), getter, repository, "7-4", "5-6")
 	testutil.Must(t, err)

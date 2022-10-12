@@ -21,7 +21,10 @@ var diagnosticsCmd = &cobra.Command{
 		ctx := cmd.Context()
 		output, _ := cmd.Flags().GetString("output")
 
-		kvParams := cfg.GetKVParams()
+		kvParams, err := cfg.GetKVParams()
+		if err != nil {
+			log.Fatalf("Get KV params: %s", err)
+		}
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
 			log.Fatalf("Failed to open KV store: %s", err)

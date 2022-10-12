@@ -15,6 +15,7 @@ import (
 
 // Test Admin Policies: AuthFullAccess, ExportSetConfiguration, FSFullAccess, RepoManagementFullAccess
 func TestAdminPolicies(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	adminClient := client
@@ -68,13 +69,14 @@ func TestAdminPolicies(t *testing.T) {
 
 // Test Super User Policies: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestSuperUserPolicies(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	ctx, logger, repo := setupTest(t)
 	gid := "SuperUsers"
 
 	// generate the SuperUser client
 	superUserClient := newClientFromGroup(t, ctx, logger, gid)
 
-	// listing the available braches should succeed
+	// listing the available branches should succeed
 	resListBranches, err := superUserClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
 	require.NoError(t, err, "SuperUser unexpectedly failed while listing branches of repository")
 	require.Equal(t, http.StatusOK, resListBranches.StatusCode(), "SuperUser unexpectedly failed to list branches of repository")
@@ -118,13 +120,14 @@ func TestSuperUserPolicies(t *testing.T) {
 
 // Test Developer Policies: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestDeveloperPolicies(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	ctx, logger, repo := setupTest(t)
 	gid := "Developers"
 
 	// generate the Developer client
 	developerClient := newClientFromGroup(t, ctx, logger, gid)
 
-	// listing the available braches should succeed
+	// listing the available branches should succeed
 	resListBranches, err := developerClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
 	require.NoError(t, err, "Developer failed while listing branches of repository")
 	require.Equal(t, http.StatusOK, resListBranches.StatusCode(), "Developer unexpectedly failed to list branches of repository")
@@ -163,6 +166,7 @@ func TestDeveloperPolicies(t *testing.T) {
 
 // Test Viewer Policies: AuthManageOwnCredentials, FSReadAll
 func TestViewerPolicies(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	ctx, logger, repo := setupTest(t)
 	gid := "Viewers"
 

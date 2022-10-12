@@ -14,14 +14,14 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Check-out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: '1'
       - uses: actions/setup-node@v3
         with:
-          node-version: '16.15.0'
+          node-version: '16.17.1'
       - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17.8
         id: go
@@ -39,13 +39,13 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup UI
         uses: actions/setup-node@v3
         with:
-          node-version: '16.15.0'
+          node-version: '16.17.1'
       - name: Cache node_modules # TODO(ariels): Share with UI build
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: cache-node-modules
         with:
@@ -59,7 +59,7 @@ jobs:
         run: npm install
         working-directory: ./webui
       - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17.8
         id: go
@@ -72,7 +72,7 @@ jobs:
           echo GOCACHE=`go env GOCACHE` >> $GITHUB_ENV
           cat $GITHUB_ENV
       - name: Cache Go modules and builds
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: cache-go-modules
         with:

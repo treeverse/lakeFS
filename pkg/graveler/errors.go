@@ -4,16 +4,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/hashicorp/go-multierror"
+	"github.com/treeverse/lakefs/pkg/kv"
 )
 
 var (
-	// Base error for "user-visible" errors, which should not be wrapped with internal
-	// debug info.
+	// ErrUserVisible is base error for "user-visible" errors, which should not be wrapped with internal debug info.
 	ErrUserVisible = errors.New("")
 
 	// TODO(ariels): Wrap with ErrUserVisible once db is gone.
-	ErrNotFound                     = wrapError(db.ErrNotFound, "not found")
+	ErrNotFound                     = wrapError(kv.ErrNotFound, "not found")
 	ErrNotUnique                    = wrapError(ErrUserVisible, "not unique")
 	ErrPreconditionFailed           = errors.New("precondition failed")
 	ErrWriteToProtectedBranch       = wrapError(ErrUserVisible, "cannot write to protected branch")
@@ -37,7 +37,6 @@ var (
 	ErrRepositoryInDeletion         = errors.New("repository in deletion")
 	ErrBranchNotFound               = fmt.Errorf("branch %w", ErrNotFound)
 	ErrTagNotFound                  = fmt.Errorf("tag %w", ErrNotFound)
-	ErrRefAmbiguous                 = fmt.Errorf("reference is ambiguous: %w", ErrNotFound)
 	ErrNoChanges                    = wrapError(ErrUserVisible, "no changes")
 	ErrConflictFound                = wrapError(ErrUserVisible, "conflict found")
 	ErrCommitNotHeadBranch          = wrapError(ErrUserVisible, "commit is not head of branch")
@@ -89,4 +88,35 @@ func (e *HookAbortError) Error() string {
 
 func (e *HookAbortError) Unwrap() error {
 	return e.Err
+}
+
+// DeleteError single delete error used by DeleteBatch's multierror.Error to report each key that failed
+type DeleteError struct {
+	Key Key
+	Err error
+}
+
+func (d *DeleteError) Error() string {
+	return fmt.Sprintf("%s: %s", d.Key, d.Err.Error())
+}
+
+func (d *DeleteError) Unwrap() error {
+	return d.Err
+}
+
+// NewMapDeleteErrors map multi error holding DeleteError to a map of object key -> error
+func NewMapDeleteErrors(err error) map[string]error {
+	if err == nil {
+		return nil
+	}
+	m := make(map[string]error)
+	if merr, ok := err.(*multierror.Error); ok {
+		for i := range merr.Errors {
+			var delErr *DeleteError
+			if errors.As(merr.Errors[i], &delErr) {
+				m[string(delErr.Key)] = delErr.Err
+			}
+		}
+	}
+	return m
 }

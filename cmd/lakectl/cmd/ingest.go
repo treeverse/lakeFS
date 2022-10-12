@@ -26,9 +26,11 @@ type stageRequest struct {
 func stageWorker(ctx context.Context, client api.ClientWithResponsesInterface, wg *sync.WaitGroup, requests <-chan *stageRequest, responses chan<- *api.StageObjectResponse) {
 	defer wg.Done()
 	for req := range requests {
-		resp, err := client.StageObjectWithResponse(
-			ctx, req.repository, req.branch, req.params, req.body)
+		resp, err := client.StageObjectWithResponse(ctx, req.repository, req.branch, req.params, req.body)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
 		responses <- resp
 	}
 }

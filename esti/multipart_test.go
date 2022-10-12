@@ -21,6 +21,7 @@ const (
 )
 
 func TestMultipartUpload(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	file := "multipart_file"

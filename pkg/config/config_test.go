@@ -9,8 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/treeverse/lakefs/pkg/logging"
-
 	"github.com/go-test/deep"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/block/factory"
@@ -18,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/local"
 	s3a "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -74,16 +73,16 @@ func TestConfig_NewFromFile(t *testing.T) {
 }
 
 func pushEnv(key, value string) func() {
-	var oldValue = os.Getenv(key)
-	os.Setenv(key, value)
+	oldValue := os.Getenv(key)
+	_ = os.Setenv(key, value)
 	return func() {
-		os.Setenv(key, oldValue)
+		_ = os.Setenv(key, oldValue)
 	}
 }
 
 func TestConfig_EnvironmentVariables(t *testing.T) {
 	const dbString = "not://a/database"
-	defer pushEnv("LAKEFS_DATABASE_CONNECTION_STRING", dbString)()
+	defer pushEnv("LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING", dbString)()
 
 	viper.SetEnvPrefix("LAKEFS")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
@@ -92,8 +91,10 @@ func TestConfig_EnvironmentVariables(t *testing.T) {
 
 	c, err := newConfigFromFile("testdata/valid_config.yaml")
 	testutil.Must(t, err)
-	if c.GetDatabaseParams().ConnectionString != dbString {
-		t.Errorf("got DB connection string %s, expected to override to %s", c.GetDatabaseParams().ConnectionString, dbString)
+	kvParams, err := c.GetKVParams()
+	testutil.Must(t, err)
+	if kvParams.Postgres.ConnectionString != dbString {
+		t.Errorf("got DB connection string %s, expected to override to %s", kvParams.Postgres.ConnectionString, dbString)
 	}
 }
 

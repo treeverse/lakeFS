@@ -17,23 +17,17 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/ory/dockertest/v3"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/gs"
 	"github.com/treeverse/lakefs/pkg/block/mem"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	lakefsS3 "github.com/treeverse/lakefs/pkg/block/s3"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
-	"github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/kv"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
-	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
@@ -158,78 +152,6 @@ type GetDBOptions struct {
 
 type GetDBOption func(options *GetDBOptions)
 
-func WithGetDBApplyDDL(apply bool) GetDBOption {
-	return func(options *GetDBOptions) {
-		options.ApplyDDL = apply
-	}
-}
-
-func GetDB(t testing.TB, uri string, opts ...GetDBOption) (db.Database, string) {
-	ctx := context.Background()
-	options := &GetDBOptions{
-		ApplyDDL: true,
-	}
-	for _, opt := range opts {
-		opt(options)
-	}
-
-	// generate uuid as schema name
-	generatedSchema := fmt.Sprintf("schema_%s",
-		strings.ReplaceAll(uuid.New().String(), "-", ""))
-
-	// create connection
-	connURI := fmt.Sprintf("%s&search_path=%s,public", uri, generatedSchema)
-	pool, err := pgxpool.Connect(ctx, connURI)
-	if err != nil {
-		t.Fatalf("could not connect to PostgreSQL: %s", err)
-	}
-	err = db.Ping(ctx, pool)
-	if err != nil {
-		pool.Close()
-		t.Fatalf("could not ping PostgreSQL: %s", err)
-	}
-
-	t.Cleanup(func() {
-		pool.Close()
-	})
-
-	database := db.NewPgxDatabase(pool)
-	_, err = database.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return tx.Exec("CREATE SCHEMA IF NOT EXISTS " + generatedSchema)
-	})
-	if err != nil {
-		t.Fatalf("could not create schema: %v", err)
-	}
-
-	if options.ApplyDDL {
-		// do the actual migration
-
-		cfg, err := config.NewConfig()
-		if err != nil {
-			t.Fatalf("creating config: %s", err)
-		}
-		if cfg.GetBlockstoreType() == "" {
-			// migration requires blockstore initilization
-			viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
-
-			// creating config with the new adapter type
-			cfg, err = config.NewConfig()
-			if err != nil {
-				t.Fatalf("creating fresh config: %s", err)
-			}
-		}
-
-		kvParams := kvparams.KV{Type: kvpg.DriverName, Postgres: &kvparams.Postgres{ConnectionString: connURI}}
-		err = db.MigrateUp(params.Database{Type: kvParams.Type, ConnectionString: connURI}, cfg, kvParams)
-		if err != nil {
-			t.Fatal("could not create schema:", err)
-		}
-	}
-
-	// return DB
-	return database, connURI
-}
-
 func Must(t testing.TB, err error) {
 	t.Helper()
 	if err != nil {
@@ -244,7 +166,7 @@ func MustDo(t testing.TB, what string, err error) {
 	}
 }
 
-func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, blockstoreType string) block.Adapter {
+func NewBlockAdapterByType(t testing.TB, blockstoreType string) block.Adapter {
 	switch blockstoreType {
 	case block.BlockstoreTypeGS:
 		ctx := context.Background()
@@ -252,7 +174,7 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 		if err != nil {
 			t.Fatal("Google Storage new client", err)
 		}
-		return gs.NewAdapter(client, gs.WithTranslator(translator))
+		return gs.NewAdapter(client)
 
 	case block.BlockstoreTypeS3:
 		awsRegion, regionOk := os.LookupEnv(envKeyAwsRegion)
@@ -270,10 +192,10 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 			cfg.Credentials = credentials.NewSharedCredentials("", "default")
 		}
 		sess := session.Must(session.NewSession(cfg))
-		return lakefsS3.NewAdapter(sess, lakefsS3.WithTranslator(translator))
+		return lakefsS3.NewAdapter(sess)
 
 	default:
-		return mem.New(mem.WithTranslator(translator))
+		return mem.New()
 	}
 }
 
@@ -284,7 +206,7 @@ func MigrateEmpty(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterConfi
 }
 
 func MigrateBasic(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterConfig, writer io.Writer) error {
-	buildTestData(1, 5, writer) //nolint: gomnd
+	buildTestData(1, 5, writer) //nolint:gomnd
 	return nil
 }
 
@@ -319,7 +241,7 @@ func MigrateBadEntry(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterCo
 
 func MigrateParallel(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterConfig, writer io.Writer) error {
 	const index = 6                 // Magic number WA
-	buildTestData(index, 5, writer) //nolint: gomnd
+	buildTestData(index, 5, writer) //nolint:gomnd
 	return nil
 }
 

@@ -1,6 +1,71 @@
 # Changelog
 
+## v0.80.2 - 2022-10-09
+
+This version fixes kv migration bug in 0.80.1. If you already migrated to kv successfully,
+you can skip this version.
+
+This release requires running database migration.
+The lakeFS service will not run if the migration version isn't compatible with the binary.
+Before running the new version you will be required to run migrate, with the new version.
+Please refer to this [upgrade documentation](https://docs.lakefs.io/reference/upgrade.html##lakefs-0800-or-greater-kv-migration) for more information on the specific migration to KV
+
+Bug fix:
+- Fix multiparts KV migration for null content-type (#4343)
+
+## v0.83.2
+
+What's new:
+- Adding lakeSF description to python's pypi package (#4260)
+- Report extended information with metrics (off by default) (#4196)
+
+Bug fixes:
+- Fix S3 gateway delete object limits check (#4240)
+- Fix S3 gateway report status code and operation ID in case of an error (#4293)
+- Fix UI render error inside repo error (#4301)
+- Fix UI repository settings label width (#4300)
+- Fix logging.IsTracing should check default logger level (#4252)
+
+## v0.82.0
+
+What's new:
+
+- UI: New file viewer (#4226)
+- Performance improvements: enable delete-objects as part of Graveler (#4205)
+
+Bug fixes:
+
+- Migrate work as part of setup for auth-api installations (#4208)
+- Invite user is enabled when SMTP server is not configured (#4224)
+
+## v0.81.1
+
+Bug fixes:
+- Fix: local-settings flag (#4200)
+
+## v0.81.0
+
+What's new:
+- Run standalone lakeFS (no PostgreSQL!) with Badger KV for experimentation purposes. 
+- Add delete operation for GC rules (#4143)
+- support AWS named profile for dynamodb (#4163)
+- Add pgxpool metrics to kv/postgres implementation (#4137)
+
+Bug fixes:
+- Fix: Pyramid delete before open (#4062)
+
+## v0.80.1 - 2022-09-01
+
+Bug fix:
+- Fix PartitionIterator panic on Close (#4108)
+- UI: Remove error message on conflicting diff of binary objects, show src, dst file sizes instead of diff (#4105)
+
+What's new:
+- Dockerfile update CA certificates (#4101)
+
+
 ## v0.80.0 - 2022-08-31
+
 This release requires running database migration.
 The lakeFS service will not run if the migration version isn't compatible with the binary.
 Before running the new version you will be required to run migrate, with the new version. 

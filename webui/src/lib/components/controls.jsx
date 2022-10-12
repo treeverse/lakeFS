@@ -25,18 +25,18 @@ import {
 
 const defaultDebounceMs = 300;
 
-export function debounce(func, wait, immediate) {
+export const debounce = (func, wait, immediate) => {
     let timeout;
     return function() {
-        let context = this, args = arguments;
+        let args = arguments;
         let later = function() {
             timeout = null;
-            if (!immediate) func.apply(context, args);
+            if (!immediate) func.apply(null, args);
         };
         let callNow = immediate && !timeout;
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
-        if (callNow) func.apply(context, args);
+        if (callNow) func.apply(null, args);
     };
 }
 
@@ -86,7 +86,7 @@ export const Error = ({error, onDismiss = null, className = null}) => {
     return (
         <Alert className={className} variant="danger">{content}</Alert>
     );
-}
+};
 
 export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => {
     if (typeof dateValue === 'number') {
@@ -402,4 +402,4 @@ export const ExitConfirmationDialog = ({dialogAlert, dialogDescription, onExit, 
             </DialogActions>
         </Dialog>
     )
-}
+};

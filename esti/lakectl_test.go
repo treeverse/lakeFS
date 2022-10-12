@@ -8,15 +8,15 @@ import (
 var emptyVars = make(map[string]string)
 
 func TestLakectlHelp(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl(), false, "lakectl_help", emptyVars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" --help", false, "lakectl_help", emptyVars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl(), true, "lakectl_help", emptyVars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" --help", true, "lakectl_help", emptyVars)
-
 }
 
 func TestLakectlBasicRepoActions(t *testing.T) {
-
+	SkipTestIfAskedTo(t)
 	// RunCmdAndVerifySuccess(t, Lakectl()+" repo list", false, "\n", emptyVars)
 
 	// Fails due to the usage of repos for isolation - esti creates repos in parallel and
@@ -96,6 +96,7 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 }
 
 func TestLakectlCommit(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
@@ -135,6 +136,7 @@ func TestLakectlCommit(t *testing.T) {
 }
 
 func TestLakectlBranchAndTagValidation(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	validTagName := "my.valid.tag"
@@ -162,10 +164,10 @@ func TestLakectlBranchAndTagValidation(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag create lakefs://"+repoName+"/"+vars["TAG"]+" lakefs://"+repoName+"/"+mainBranch+"^1", false, "lakectl_tag_create", vars)
 	vars["TAG"] = "tag4"
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag create lakefs://"+repoName+"/"+vars["TAG"]+" lakefs://"+repoName+"/"+mainBranch+"~", false, "lakectl_tag_create", vars)
-
 }
 
 func TestLakectlMergeAndStrategies(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
@@ -210,7 +212,7 @@ func TestLakectlMergeAndStrategies(t *testing.T) {
 	vars["MESSAGE"] = commitMessage
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
 
-	//upload 'file2' on 'feature', delete 'file1' and commit
+	// upload 'file2' on 'feature', delete 'file1' and commit
 	vars["BRANCH"] = featureBranch
 	vars["FILE_PATH"] = filePath2
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+featureBranch+"/"+filePath2, false, "lakectl_fs_upload", vars)
@@ -235,7 +237,7 @@ func TestLakectlMergeAndStrategies(t *testing.T) {
 	vars["MESSAGE"] = commitMessage
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
 
-	//delete 'file1' on 'feature' again, and commit
+	// delete 'file1' on 'feature' again, and commit
 	vars["BRANCH"] = featureBranch
 	RunCmdAndVerifySuccess(t, Lakectl()+" fs rm lakefs://"+repoName+"/"+featureBranch+"/"+filePath1, false, "", vars)
 	commitMessage = "delete file on feature branch again"
@@ -253,6 +255,7 @@ func TestLakectlMergeAndStrategies(t *testing.T) {
 }
 
 func TestLakectlAnnotate(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
@@ -318,27 +321,28 @@ func TestLakectlAnnotate(t *testing.T) {
 
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/iii/kkk/l", false, "lakectl_annotate_iiikkklll", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/iii/kkk/l --recursive", false, "lakectl_annotate_iiikkklll", vars)
-
 }
 
 func TestLakectlAuthUsers(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	userName := "test_user"
 	vars := map[string]string{
 		"ID": userName,
 	}
 
-	//Not Found
+	// Not Found
 	RunCmdAndVerifyFailure(t, Lakectl()+" auth users delete --id "+userName, false, "user not found\n404 Not Found\n", vars)
 
 	// Check unique
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" auth users create --id "+userName, false, "lakectl_auth_users_create_success", vars)
-	RunCmdAndVerifyFailure(t, Lakectl()+" auth users create --id "+userName, false, "Already exists\n400 Bad Request\n", vars)
+	RunCmdAndVerifyFailure(t, Lakectl()+" auth users create --id "+userName, false, "Already exists\n409 Conflict\n", vars)
 
 	// Cleanup
 	RunCmdAndVerifySuccess(t, Lakectl()+" auth users delete --id "+userName, false, "User deleted successfully\n", vars)
 }
 
 func TestLakectlIngestS3(t *testing.T) {
+	SkipTestIfAskedTo(t)
 	// Specific S3 test - due to the limitation on ingest source type that has to match lakefs underlying block store,
 	// this test can only run on AWS setup, and therefore is skipped for other store types
 	skipOnSchemaMismatch(t, IngestTestBucketPath)

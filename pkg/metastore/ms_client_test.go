@@ -195,9 +195,6 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	}
 
 	// verify first partition (enough)
-
-	values := expectedPartitionsMap[mock.GetPartitionKey(toDBName, toTableName, []string{"part=17"})].Values
-	fmt.Println(values) // TODO(Guys): remove
 	err = clientTo.DropPartition(ctx, toDBName, toTableName, []string{"part=17"})
 	if err != nil {
 		t.Fatal(err)
