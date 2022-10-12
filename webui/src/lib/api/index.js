@@ -309,7 +309,8 @@ class Auth {
     }
 
     async createPolicy(policyId, policyDocument) {
-        const policy = {id: policyId, ...JSON.parse(policyDocument)};
+        // keep id after policy document to override the id the user entered
+        const policy = {...JSON.parse(policyDocument), id: policyId};
         const response = await apiRequest(`/auth/policies`, {
             method: 'POST',
             body: JSON.stringify(policy)
@@ -321,7 +322,7 @@ class Auth {
     }
 
     async editPolicy(policyId, policyDocument) {
-        const policy = {id: policyId, ...JSON.parse(policyDocument)};
+        const policy = {...JSON.parse(policyDocument), id: policyId};
         const response = await apiRequest(`/auth/policies/${encodeURIComponent(policyId)}`, {
             method: 'PUT',
             body: JSON.stringify(policy)
