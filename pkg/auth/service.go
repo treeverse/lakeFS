@@ -141,7 +141,6 @@ func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.
 		l := copy(after, prefix)
 		_ = copy(after[l:], params.After)
 	}
-
 	if secondary {
 		it, err = kv.NewSecondaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, after)
 	} else {
@@ -164,7 +163,7 @@ func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.
 		value := entry.Value
 		entries = append(entries, value)
 		if len(entries) == amount {
-			p.NextPageToken = strings.TrimPrefix(string(entry.Key), params.Prefix)
+			p.NextPageToken = strings.TrimPrefix(string(entry.Key), string(prefix))
 			break
 		}
 	}

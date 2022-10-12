@@ -104,7 +104,7 @@ func TestKVAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
 		}
 	}
 
-	sizes := []int{10, 3, 2, 1}
+	sizes := []int{10, 3, 2}
 	prefixes := []string{"b", "ba", "bar", "f", "foo", "foob", "foobar"}
 	for _, size := range sizes {
 		for _, p := range prefixes {
