@@ -317,6 +317,8 @@ func TestController_LogCommitsHandler(t *testing.T) {
 	}
 }
 
+// TestController_LogCommitsParallelHandler sends concurrent requests to LogCommits.
+// LogCommits uses shared work pool, checking correctness for concurrent work is important.
 func TestController_LogCommitsParallelHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
