@@ -131,13 +131,20 @@ type Service interface {
 
 func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.MessageType, params *model.PaginationParams, prefix []byte, secondary bool) ([]proto.Message, *model.Paginator, error) {
 	var (
-		it  kv.MessageIterator
-		err error
+		it    kv.MessageIterator
+		err   error
+		after []byte
 	)
+	if params.After != "" {
+		after = make([]byte, len(prefix)+len(params.After))
+
+		l := copy(after, prefix)
+		_ = copy(after[l:], params.After)
+	}
 	if secondary {
-		it, err = kv.NewSecondaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, []byte(params.After))
+		it, err = kv.NewSecondaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, after)
 	} else {
-		it, err = kv.NewPrimaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, kv.IteratorOptionsAfter([]byte(params.After)))
+		it, err = kv.NewPrimaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, kv.IteratorOptionsAfter(after))
 	}
 	if err != nil {
 		return nil, nil, fmt.Errorf("scan prefix(%s): %w", prefix, err)
@@ -156,7 +163,7 @@ func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.
 		value := entry.Value
 		entries = append(entries, value)
 		if len(entries) == amount {
-			p.NextPageToken = string(entry.Key)
+			p.NextPageToken = strings.TrimPrefix(string(entry.Key), string(prefix))
 			break
 		}
 	}
@@ -328,7 +335,7 @@ func (s *KVAuthService) GetUserByExternalID(ctx context.Context, externalID stri
 
 func (s *KVAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
 	var user model.UserData
-	usersKey := model.UserPath("")
+	usersKey := model.UserPath(params.Prefix)
 
 	msgs, paginator, err := s.ListKVPaged(ctx, (&user).ProtoReflect().Type(), params, usersKey, false)
 	if msgs == nil {
@@ -339,7 +346,7 @@ func (s *KVAuthService) ListUsers(ctx context.Context, params *model.PaginationP
 
 func (s *KVAuthService) ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
 	var credential model.CredentialData
-	credentialsKey := model.CredentialPath(username, "")
+	credentialsKey := model.CredentialPath(username, params.Prefix)
 
 	msgs, paginator, err := s.ListKVPaged(ctx, (&credential).ProtoReflect().Type(), params, credentialsKey, false)
 	if msgs == nil {
@@ -390,7 +397,7 @@ func (s *KVAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayN
 
 func (s *KVAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.PolicyData
-	userPolicyKey := model.UserPolicyPath(username, "")
+	userPolicyKey := model.UserPolicyPath(username, params.Prefix)
 
 	msgs, paginator, err := s.ListKVPaged(ctx, (&policy).ProtoReflect().Type(), params, userPolicyKey, true)
 	if msgs == nil {
@@ -507,7 +514,7 @@ func ListEffectivePolicies(ctx context.Context, username string, params *model.P
 
 func (s *KVAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.PolicyData
-	groupPolicyKey := model.GroupPolicyPath(groupDisplayName, "")
+	groupPolicyKey := model.GroupPolicyPath(groupDisplayName, params.Prefix)
 
 	msgs, paginator, err := s.ListKVPaged(ctx, (&policy).ProtoReflect().Type(), params, groupPolicyKey, true)
 	if msgs == nil {
@@ -597,7 +604,7 @@ func (s *KVAuthService) GetGroup(ctx context.Context, groupDisplayName string) (
 
 func (s *KVAuthService) ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
 	var group model.GroupData
-	groupKey := model.GroupPath("")
+	groupKey := model.GroupPath(params.Prefix)
 
 	msgs, paginator, err := s.ListKVPaged(ctx, (&group).ProtoReflect().Type(), params, groupKey, false)
 	if msgs == nil {
@@ -690,7 +697,7 @@ func (s *KVAuthService) ListGroupUsers(ctx context.Context, groupDisplayName str
 		return nil, nil, err
 	}
 	var policy model.UserData
-	userGroupKey := model.GroupUserPath(groupDisplayName, "")
+	userGroupKey := model.GroupUserPath(groupDisplayName, params.Prefix)
 
 	msgs, paginator, err := s.ListKVPaged(ctx, (&policy).ProtoReflect().Type(), params, userGroupKey, true)
 	if msgs == nil {
@@ -791,7 +798,7 @@ func (s *KVAuthService) DeletePolicy(ctx context.Context, policyDisplayName stri
 
 func (s *KVAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.PolicyData
-	policyKey := model.PolicyPath("")
+	policyKey := model.PolicyPath(params.Prefix)
 
 	msgs, paginator, err := s.ListKVPaged(ctx, (&policy).ProtoReflect().Type(), params, policyKey, false)
 	if msgs == nil {

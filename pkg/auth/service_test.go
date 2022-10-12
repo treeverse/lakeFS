@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -85,6 +86,57 @@ func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) st
 	}
 
 	return userName
+}
+
+func TestKVAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
+	ctx := context.Background()
+	kvStore := kvtest.GetStore(ctx, t)
+	storeMessage := &kv.StoreMessage{Store: kvStore}
+	s := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+		Enabled: false,
+	}, logging.Default())
+
+	users := []string{"bar", "barn", "baz", "foo", "foobar", "foobaz"}
+	for _, u := range users {
+		user := model.User{Username: u}
+		if _, err := s.CreateUser(ctx, &user); err != nil {
+			t.Fatalf("create user: %s", err)
+		}
+	}
+
+	sizes := []int{10, 3, 2}
+	prefixes := []string{"b", "ba", "bar", "f", "foo", "foob", "foobar"}
+	for _, size := range sizes {
+		for _, p := range prefixes {
+			t.Run(fmt.Sprintf("Size:%d;Prefix:%s", size, p), func(t *testing.T) {
+				// Only count the correct number of entries were
+				// returned; values are tested below.
+				got := 0
+				after := ""
+				for {
+					value, paginator, err := s.ListUsers(ctx, &model.PaginationParams{Amount: size, Prefix: p, After: after})
+					if err != nil {
+						t.Fatal(err)
+					}
+					got += len(value)
+					after = paginator.NextPageToken
+					if after == "" {
+						break
+					}
+				}
+				// Verify got the right number of users
+				count := 0
+				for _, u := range users {
+					if strings.HasPrefix(u, p) {
+						count++
+					}
+				}
+				if got != count {
+					t.Errorf("Got %d users when expecting %d", got, count)
+				}
+			})
+		}
+	}
 }
 
 func TestKVAuthService_ListPaged(t *testing.T) {
