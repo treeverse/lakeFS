@@ -2528,3 +2528,93 @@ func TestController_ExpandTemplate(t *testing.T) {
 		}
 	})
 }
+
+func TestController_UpdatePolicy(t *testing.T) {
+	clt, _ := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	// test policy
+	now := api.Int64Ptr(time.Now().Unix())
+	const existingPolicyID = "TestUpdatePolicy"
+	response, err := clt.CreatePolicyWithResponse(ctx, api.CreatePolicyJSONRequestBody{
+		CreationDate: now,
+		Id:           existingPolicyID,
+		Statement: []api.Statement{
+			{
+				Action: []string{
+					"fs:Read*",
+					"fs:List*",
+				},
+				Effect:   "deny",
+				Resource: "*",
+			},
+		},
+	})
+	testutil.Must(t, err)
+	if response.JSON201 == nil {
+		t.Fatal("Failed to create test policy", response.Status())
+	}
+
+	t.Run("unknown", func(t *testing.T) {
+		const policyID = "UnknownPolicy"
+		updatePolicyResponse, err := clt.UpdatePolicyWithResponse(ctx, policyID, api.UpdatePolicyJSONRequestBody{
+			CreationDate: now,
+			Id:           policyID,
+			Statement: []api.Statement{
+				{
+					Action: []string{
+						"fs:Read*",
+						"fs:List*",
+					},
+					Effect:   "allow",
+					Resource: "*",
+				},
+			},
+		})
+		testutil.Must(t, err)
+		if updatePolicyResponse.JSON404 == nil {
+			t.Errorf("Update unknown policy should fail with 404: %s", updatePolicyResponse.Status())
+		}
+	})
+
+	t.Run("change_effect", func(t *testing.T) {
+		updatePolicyResponse, err := clt.UpdatePolicyWithResponse(ctx, existingPolicyID, api.UpdatePolicyJSONRequestBody{
+			CreationDate: now,
+			Id:           existingPolicyID,
+			Statement: []api.Statement{
+				{
+					Action: []string{
+						"fs:Read*",
+						"fs:List*",
+					},
+					Effect:   "allow",
+					Resource: "*",
+				},
+			},
+		})
+		testutil.Must(t, err)
+		if updatePolicyResponse.JSON200 == nil {
+			t.Errorf("Update policy failed: %s", updatePolicyResponse.Status())
+		}
+	})
+
+	t.Run("change_policy_id", func(t *testing.T) {
+		updatePolicyResponse, err := clt.UpdatePolicyWithResponse(ctx, "SomethingElse", api.UpdatePolicyJSONRequestBody{
+			CreationDate: now,
+			Id:           existingPolicyID,
+			Statement: []api.Statement{
+				{
+					Action: []string{
+						"fs:Read*",
+					},
+					Effect:   "allow",
+					Resource: "*",
+				},
+			},
+		})
+		testutil.Must(t, err)
+		if updatePolicyResponse.JSON400 == nil {
+			t.Errorf("Update policy with different id should fail with 400: %s", updatePolicyResponse.Status())
+		}
+	})
+}

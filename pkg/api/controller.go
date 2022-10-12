@@ -775,6 +775,12 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body U
 	}) {
 		return
 	}
+	// verify requested policy match the policy document id
+	if policyID != body.Id {
+		writeError(w, http.StatusBadRequest, "can't update policy id")
+		return
+	}
+
 	ctx := r.Context()
 	c.LogAction(ctx, "update_policy", r, "", "", "")
 
