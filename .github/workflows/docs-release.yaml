@@ -28,9 +28,9 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event.inputs.tag }}" != "" ]; then
-            echo "::set-output name=tag::$(echo ${{ github.event.inputs.tag }} | cut -d. -f1-2)"
+            echo "tag=$(echo ${{ github.event.inputs.tag }} | cut -d. -f1-2)" >> $GITHUB_ENV
           else
-            echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)"
+            echo "tag=$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" >> $GITHUB_ENV
           fi
 
       - name: Build release
