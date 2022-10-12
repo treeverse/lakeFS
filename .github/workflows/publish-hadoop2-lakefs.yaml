@@ -44,8 +44,12 @@ jobs:
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
 
-      - name: Update package version
+      - name: Update parent pom package version
         working-directory: clients/hadoopfs
+        run: sed -i.bak 's/<version>.*<\/version><!--MARKER.*/<version>'${{ steps.version.outputs.tag }}'<\/version>/' pom.xml
+
+      - name: Update hadoop 2 pom package version
+        working-directory: clients/hadoopfs/src/hadoop2
         run: sed -i.bak 's/<version>.*<\/version><!--MARKER.*/<version>'${{ steps.version.outputs.tag }}'<\/version>/' pom.xml
 
       - name: Configure AWS Credentials
@@ -56,24 +60,24 @@ jobs:
 
       - name: Publish
         working-directory: clients/hadoopfs
-        run: mvn -Prelease --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh"
+        run: mvn -Phadoop2,release --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh"
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
 
       - name: Upload S3
         working-directory: clients/hadoopfs
-        run: mvn package s3-storage-wagon:s3-upload@upload-jar -DpublicRepository=true -DskipTests
+        run: mvn package -Phadoop2 s3-storage-wagon:s3-upload@upload-jar -DpublicRepository=true -DskipTests
 
       - name: Publish - assembly
         working-directory: clients/hadoopfs
         run: |
-          mvn clean
-          mvn -Passembly,release --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh" -DskipTests
+          mvn -Phadoop2 clean
+          mvn -Phadoop2,assembly,release --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh" -DskipTests
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
 
       - name: Upload S3 - assembly
         working-directory: clients/hadoopfs
-        run: mvn -Passembly package s3-storage-wagon:s3-upload@upload-jar -DpublicRepository=true -DskipTests
+        run: mvn -Phadoop2,assembly package s3-storage-wagon:s3-upload@upload-jar -DpublicRepository=true -DskipTests
