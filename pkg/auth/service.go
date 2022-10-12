@@ -99,7 +99,7 @@ type Service interface {
 	ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
 	// policies
-	WritePolicy(ctx context.Context, policy *model.Policy) error
+	WritePolicy(ctx context.Context, policy *model.Policy, update bool) error
 	GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error)
 	DeletePolicy(ctx context.Context, policyDisplayName string) error
 	ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
@@ -726,15 +726,30 @@ func ValidatePolicy(policy *model.Policy) error {
 	return nil
 }
 
-func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.Policy) error {
+func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.Policy, update bool) error {
 	if err := ValidatePolicy(policy); err != nil {
 		return err
 	}
 	policyKey := model.PolicyPath(policy.DisplayName)
 	m := model.ProtoFromPolicy(policy)
-	err := s.store.SetMsg(ctx, model.PartitionKey, policyKey, m)
-	if err != nil {
-		return fmt.Errorf("save policy (policyKey %s): %w", policyKey, err)
+
+	if update {
+		_, err := s.store.GetMsg(ctx, model.PartitionKey, policyKey, &model.PolicyData{})
+		if err != nil {
+			return err
+		}
+		err = s.store.SetMsg(ctx, model.PartitionKey, policyKey, m)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := s.store.SetMsgIf(ctx, model.PartitionKey, policyKey, m, nil)
+		if err != nil {
+			if errors.Is(err, kv.ErrPredicateFailed) {
+				err = ErrAlreadyExists
+			}
+			return err
+		}
 	}
 	return nil
 }
@@ -1476,7 +1491,7 @@ func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupDisplayName st
 	return members, toPagination(resp.JSON200.Pagination), nil
 }
 
-func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy) error {
+func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy, update bool) error {
 	if err := model.ValidateAuthEntityID(policy.DisplayName); err != nil {
 		return err
 	}
@@ -1490,6 +1505,18 @@ func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy) 
 	}
 	createdAt := policy.CreatedAt.Unix()
 
+	if update { // Update existing policy
+		resp, err := a.apiClient.UpdatePolicyWithResponse(ctx, policy.DisplayName, UpdatePolicyJSONRequestBody{
+			CreationDate: &createdAt,
+			Name:         policy.DisplayName,
+			Statement:    stmts,
+		})
+		if err != nil {
+			return err
+		}
+		return a.validateResponse(resp, http.StatusOK)
+	}
+	// Otherwise Create new
 	resp, err := a.apiClient.CreatePolicyWithResponse(ctx, CreatePolicyJSONRequestBody{
 		CreationDate: &createdAt,
 		Name:         policy.DisplayName,
