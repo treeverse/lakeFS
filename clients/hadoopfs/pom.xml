@@ -119,7 +119,7 @@ To export to S3:
             <!--  spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider -->
             <id>hadoop3</id>
             <modules>
-                <module>src/hadoop3/pom-h3.xml</module>
+                <module>src/hadoop3/pom-h322.xml</module>
             </modules>
             <activation>
                 <activeByDefault>true</activeByDefault>
@@ -131,7 +131,7 @@ To export to S3:
         <profile>
             <id>hadoop321</id>
             <modules>
-                <module>src/hadoop3/pom.xml</module>
+                <module>src/hadoop3/pom-h321.xml</module>
             </modules>
             <properties>
                 <hadoop.version>3.2.1</hadoop.version>
@@ -210,7 +210,7 @@ To export to S3:
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <name-suffix/>          <!-- Set via profile to rename JAR -->
         <assembly-suffix/>
-        <upload-path>${project.build.finalName}-assembly.jar</upload-path>
+        <upload-path>${project.build.finalName}.jar</upload-path>
     </properties>
     <build>
         <finalName>hadoop-${hadoop.version}-lakefs${name-suffix}-${project.version}</finalName>
@@ -246,8 +246,7 @@ To export to S3:
                         </goals>
                         <configuration>
                             <path>target/${upload-path}</path>
-<!--                            <bucket>treeverse-clients-us-east</bucket>-->
-                            <bucket>jon-lakefs-2</bucket>
+                            <bucket>treeverse-clients-us-east</bucket>
                             <region>us-east-1</region>
                             <key>hadoop/${upload-path}</key>
                         </configuration>
