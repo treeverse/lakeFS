@@ -117,7 +117,7 @@ type Catalog struct {
 	log           logging.Logger
 	walkerFactory WalkerFactory
 	managers      []io.Closer
-	workpool      *pond.WorkerPool
+	workPool      *pond.WorkerPool
 }
 
 const (
@@ -206,14 +206,14 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	stagingManager := staging.NewManager(ctx, *cfg.KVStore)
 	gStore := graveler.NewKVGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 
-	// The size of the workpool is determined by the number of workers and the number of desired pending tasks for each worker.
-	workpool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))
+	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
+	workPool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))
 	return &Catalog{
 		BlockAdapter:  tierFSParams.Adapter,
 		Store:         gStore,
 		log:           logging.Default().WithField("service_name", "entry_catalog"),
 		walkerFactory: cfg.WalkerFactory,
-		workpool:      workpool,
+		workPool:      workPool,
 		managers:      []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
 	}, nil
 }
@@ -1046,8 +1046,8 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 
 	createdTasks := atomic.NewInt64(-1)
 
-	// Shared workpool for the workers. 2 designated to create the work and receive the result
-	workerGroup, ctx := c.workpool.GroupContext(ctx)
+	// Shared workPool for the workers. 2 designated to create the work and receive the result
+	workerGroup, ctx := c.workPool.GroupContext(ctx)
 	var mgmtGroup multierror.Group
 	paths := params.PathList
 	mgmtGroup.Go(func() error {
@@ -1142,6 +1142,9 @@ func listCommitsWithoutPaths(it graveler.CommitIterator, params LogParams) ([]*C
 			// we have what we need. return commits, true
 			break
 		}
+	}
+	if it.Err() != nil {
+		return nil, false, it.Err()
 	}
 
 	return logCommitsResult(commits, params)
@@ -1696,7 +1699,7 @@ func (c *Catalog) Close() error {
 			_ = multierror.Append(errs, err)
 		}
 	}
-	c.workpool.StopAndWaitFor(1 * time.Second)
+	c.workPool.StopAndWaitFor(5 * time.Second)
 	return errs
 }
 
