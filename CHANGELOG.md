@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.83.3
+
+What's new:
+- lakectl autocomplete with repository name (#4320)
+- Flush statistics based on events size (#4347)
+- lakectl check bad response (#4331)
+
+Bug fixes:
+- Update and create policy use the user's provided ID (#4359)
+- Fix KV local path using tilde (~) doesn't expand (#4330)
+- Fix username not shown for OIDC users (#4324)
+- Fix create repository API should return status created (#4336)
+- Correctly prefix "after" params in lakeFS auth service (#4353)
+- Fix create policy API and descriptor to return Conflict status (#4350)
+- Fix: Auth update policy (#4355)
+
 ## v0.80.2 - 2022-10-09
 
 This version fixes kv migration bug in 0.80.1. If you already migrated to kv successfully,
