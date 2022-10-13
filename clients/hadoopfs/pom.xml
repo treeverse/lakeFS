@@ -209,6 +209,9 @@ To export to S3:
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
+                    <testExcludes>
+                        <testExclude>${exclude.tests}</testExclude>
+                    </testExcludes>
                 </configuration>
             </plugin>
 

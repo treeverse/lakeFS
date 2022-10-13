@@ -26,11 +26,9 @@ public abstract class TestLakeFSFileSystemContract extends FileSystemContractBas
   }
 
   @Before
-  public void setUp() throws Exception {
+  public void setup() throws Exception {
     Configuration conf = new Configuration();
-
     fs = LakeFSTestUtils.createTestFileSystem(conf);
-
     pathPrefix = conf.get(TEST_FS_LAKEFS_NAME) + "/main/";
     fs.setWorkingDirectory(new Path(pathPrefix));
   }
