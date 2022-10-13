@@ -11,6 +11,12 @@ import (
 var matchers = make(map[string]protoreflect.ProtoMessage)
 var defaultMsg protoreflect.ProtoMessage = nil
 
+type KvObject struct {
+	Partition string
+	Key       string
+	Value     string
+}
+
 // Register a pb message type to parse the data, according to a path regex
 // All objects which match the path regex will be parsed as that type
 // A nil type parses the value as a plain string
@@ -42,19 +48,26 @@ func resolveKVPathToMsgType(path string) (protoreflect.ProtoMessage, error) {
 	return defaultMsg, nil
 }
 
-func ToPrettyString(path string, rawValue []byte) (string, error) {
+func ToKvObject(partition, path string, rawValue []byte) (*KvObject, error) {
 	msg, err := resolveKVPathToMsgType(path)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
+	var value string
 	if msg == nil {
-		return string(rawValue), nil
+		value = string(rawValue)
+	} else {
+		err = proto.Unmarshal(rawValue, msg)
+		if err != nil {
+			return nil, err
+		}
+		value = protojson.Format(msg)
 	}
 
-	err = proto.Unmarshal(rawValue, msg)
-	if err != nil {
-		return "", err
-	}
-	return protojson.Format(msg), nil
+	return &KvObject{
+		Partition: partition,
+		Key:       path,
+		Value:     value,
+	}, nil
 }
