@@ -22,35 +22,41 @@ run time.
 
 In order to optimize the GC run, we will use the following methods:
 1. Use the Storage Provider Inventory capabilities
-2. Save a list of uncommitted objects
+2. Save a list of uncommitted objects TODO: add how
 
 **Note:** Both AWS S3 and Azure Blob provide a built-in inventory feature which can be scheduled to create an inventory file, which lists all
 objects on the given path at a given point in time. Though Google Storage does not provide this functionality as is, we can simulate this behavior
 using the [Assets API](https://cloud.google.com/asset-inventory/docs/exporting-to-cloud-storage) or [Audit Logs](https://cloud.google.com/storage/docs/audit-logging).
 {: .note }
 
-### Required changes by lakeFS
-
-1. StageObject API allowed only for address outside the repo namespace
-   1. Prevent race between staging object and GC job
-2. GetPhysicalAddress to return a validation token along with the address.
-   1. The token will be valid for a specified amount of time and for a single use
-3. LinkPhysicalAddress to verify token valid before creating an entry
-   1. Doing so will allow us to use this time interval to filter objects that might have been uploaded and waiting for 
-   the link API and avoid deleting them by the GC process
-   2. Objects that were uploaded to a physical address issued by the API and were not linked before the token expired will 
-   eventually be deleted by the GC job.
-4. Introduce a new lakeFS API to process the lakeFS repository inventory.
+The basic idea for the design is to have two inventory files, one created by the Storage Provider and the other by lakeFS.
+These files will then be consumed by a GC client (i.e. _Spark_) and used to determine which objects can be deleted from the bucket. This approach has several advantages:
+1. Minimize the amount of listings performed on the bucket (either by lakeFS or the GC client)
+2. Most of the heavy lifting is being done on the GC Client side
+3. Take advantage of the GC Client's ability to process big datasets efficiently
 
 ### Terminology
 
 For the purpose of this document we will use the following terms:
 1. `Storage Inventory File` - File created by the Storage Provider Inventory Job containing list of all repository objects at the given time
-2. `Uncommitted Inventory File` - File containing the list of uncommitted objects at the given time - created by the GC job
-3. `Committed Objects List` - List of repository's committed objects from a given point of time (or genesis)
+2. `Uncommitted Inventory File` - File containing the list of uncommitted objects at the given time - created by lakeFS
+3. `Committed Objects List` - List of repository's committed objects from a given point of time (or genesis) TODO: clarify point of time committed vs uncommitted
 4. `Uncommitted Objects List` - List of repository's uncommitted objects at the given time
-5. `Repository Inventory File` - File containing the list of all repository objects (committed + uncommitted) at the given time
+5. `Repository Inventory File` - File containing the list of all repository objects (committed + uncommitted) at the given point in time
 6. `Last Commit` - The newest commit scanned by the last GC run
+
+### Required changes by lakeFS
+
+1. StageObject API allowed only for address outside the repo namespace
+    1. Prevent race between staging object and GC job
+2. GetPhysicalAddress to return a validation token along with the address.
+    1. The token will be valid for a specified amount of time and for a single use
+3. LinkPhysicalAddress to verify token valid before creating an entry
+    1. Doing so will allow us to use this time interval to filter objects that might have been uploaded and waiting for
+       the link API and avoid them being deleting by the GC process
+    2. Objects that were uploaded to a physical address issued by the API and were not linked before the token expired will
+       eventually be deleted by the GC job.
+4. Introduce a new lakeFS API to process and create the lakeFS `Repository Inventory File`.
 
 ### Flow 1: Clean Run
 
@@ -66,9 +72,8 @@ Will run when `Uncommitted Inventory File` doesn't exist and will scan the entir
 #### Step 2. Analyze Data and Perform Cleanup (GC client)
 
 1. Perform subtraction of `Repository Inventory File` from `Storage Inventory File`
-2. The remainder is a list of files which can be safely removed
-
-* Make sure GetPhysicalAddress paths are not deleted
+2. Filter out all objects newer than <token expiry time>
+3. The remainder is a list of files which can be safely removed
 
 ### Flow 2: Optimized Run
 
@@ -83,16 +88,15 @@ Optimized run uses the previous GC run output, to perform a partial scan of the 
 
 #### Step 2. Analyze Data and Perform Cleanup for old entries (GC client)
 1. Read previous runs' `Uncommitted Inventory File`
-2. Perform subtraction of `Repository Inventory File` from result `Uncommitted Inventory File
+2. Perform subtraction of `Repository Inventory File` from result
 3. The result is a list of files that can be safely removed
 
-**Note:** This handles cases of objects that were uncommitted during previous GC run and are now deleted
+**Note:** This step handles cases of objects that were uncommitted during previous GC run and are now deleted
 {: .note }
 
-#### Step 2. Analyze Data and Perform Cleanup for new entries (GC client)
+#### Step 3. Analyze Data and Perform Cleanup for new entries (GC client)
 1. Read `Storage Inventory File`
 2. Filter files with creation date <= last GC run timestamp 
 3. Perform subtraction of `Repository Inventory File` from result
-4. The remainder is a list of files which can be safely removed
-
-* Make sure GetPhysicalAddress paths are not deleted
+4. Filter out all files newer than <token expiry time>
+5. The remainder is a list of files which can be safely removed
