@@ -1,7 +1,7 @@
 ---
 layout: default
 title: During Deployment
-parent: Using lakeFS
+parent: Data Lifecycle Management
 description: lakeFS enables to continuously test newly ingested data to ensure data quality requirements are met
 nav_order: 35
 ---
