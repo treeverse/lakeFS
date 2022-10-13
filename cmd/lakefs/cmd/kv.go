@@ -56,18 +56,18 @@ var kvGetCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		var kvObjJson []byte
+		var kvObjJSON []byte
 		if pretty {
-			kvObjJson, err = json.MarshalIndent(kvObj, "", "  ")
+			kvObjJSON, err = json.MarshalIndent(kvObj, "", "  ")
 		} else {
-			kvObjJson, err = json.Marshal(kvObj)
+			kvObjJSON, err = json.Marshal(kvObj)
 		}
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "json.Marshal failed - %s\n", err)
 			os.Exit(1)
 		}
 
-		fmt.Println(string(kvObjJson))
+		fmt.Println(string(kvObjJSON))
 	},
 }
 
@@ -138,18 +138,18 @@ var kvScanCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		var kvObjsJson []byte
+		var kvObjsJSON []byte
 		if pretty {
-			kvObjsJson, err = json.MarshalIndent(kvObjs, "", "  ")
+			kvObjsJSON, err = json.MarshalIndent(kvObjs, "", "  ")
 		} else {
-			kvObjsJson, err = json.Marshal(kvObjs)
+			kvObjsJSON, err = json.Marshal(kvObjs)
 		}
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "json.Marshal failed - %s\n", err)
 			os.Exit(1)
 		}
 
-		fmt.Println(string(kvObjsJson))
+		fmt.Println(string(kvObjsJSON))
 	},
 }
 
