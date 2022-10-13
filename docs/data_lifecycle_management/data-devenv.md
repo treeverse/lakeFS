@@ -1,7 +1,7 @@
 ---
 layout: default
 title: In Test
-parent: Using lakeFS
+parent: Data Lifecycle Management
 description: lakeFS enables a safe test environment on your data lake without the need to copy or mock data
 nav_order: 25
 ---
