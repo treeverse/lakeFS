@@ -1,0 +1,110 @@
+name: Publish Hadoop lakeFS Filesystem
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag/version to publish
+      hadoop_version:
+        description: Hadoop version to publish
+        required: true
+        type: choice
+        options:
+        - 3
+        - 3.2.1
+        - 2
+
+# These permissions are needed to interact with GitHub's OIDC Token endpoint.
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-20.04
+    environment: Treeverse signing
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+        # Extract the version to 'version' based on workflow_dispatch or triggered tag in the published event
+      - name: Extract version
+        shell: bash
+        run: |
+          if [ "${{ github.event.inputs.tag }}" != "" ]; then
+            echo "::set-output name=tag::$(echo ${{ github.event.inputs.tag }} | sed s/^v//)"
+          else
+            echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//)"
+          fi
+        id: version
+
+      - name: Install secret key for signing
+        run: |
+          cat <(echo -e '${{ secrets.OSSRH_GPG_SECRET_KEY }}') | gpg --batch --import
+          gpg --list-secret-keys --keyid-format LONG
+
+      - name: Set up Java and Maven Central Repository
+        uses: actions/setup-java@v2
+        with:
+          java-version: '8'
+          distribution: 'adopt'
+          server-id: ossrh
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+
+      - name: Update parent pom package version
+        working-directory: clients/hadoopfs
+        run: sed -i.bak 's/<version>.*<\/version><!--MARKER.*/<version>'${{ steps.version.outputs.tag }}'<\/version>/' pom.xml
+
+      - name: Get Hadoop path from version
+        run: |
+          if [ "${{ github.event.inputs.hadoop_version }}" == "3" ] || [ "${{ github.event.inputs.hadoop_version }}" == "3.2.1" ]; then
+            echo "::set-output name=hadoopPath::hadoop3"
+          else
+            echo "::set-output name=hadoopPath::hadoop2"
+          fi
+        id: hadoop_path
+
+      - name: Get Hadoop pom name from version
+        run: |
+          if [ "${{ github.event.inputs.hadoop_version }}" == "3" ]; then
+            echo "::set-output name=hadoopPom::pom-h3.xml"
+          elif [ "${{ github.event.inputs.hadoop_version }}" == "3.2.1" ]; then
+            echo "::set-output name=hadoopPom::pom-h321.xml"
+          else
+            echo "::set-output name=hadoopPom::pom.xml"
+          fi
+        id: hadoop_pom
+
+      - name: Update hadoop 3 pom package version
+        working-directory: clients/hadoopfs/src/${{ steps.hadoop_path.outputs.hadoopPath }}
+        run: sed -i.bak 's/<version>.*<\/version><!--MARKER.*/<version>'${{ steps.version.outputs.tag }}'<\/version>/' ${{ steps.hadoop_pom.outputs.hadoopPom }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+
+      - name: Get Hadoop profile from version
+        run: |
+          if [ "${{ github.event.inputs.hadoop_version }}" == "3" ]; then
+            echo "::set-output name=hadoopProfile::hadoop3"
+          elif [ "${{ github.event.inputs.hadoop_version }}" == "3.2.1" ]; then
+            echo "::set-output name=hadoopProfile::hadoop321"
+          else
+            echo "::set-output name=hadoopProfile::hadoop2"
+          fi
+        id: hadoop_profile
+
+      - name: Package
+        working-directory: clients/hadoopfs
+        run: mvn package -P${{ steps.hadoop_profile.outputs.hadoopProfile }} -DskipTests
+
+      - name: Upload S3
+        working-directory: clients/hadoopfs
+        run: mvn -P${{ steps.hadoop_profile.outputs.hadoopProfile }} s3-storage-wagon:s3-upload@upload-jar -DpublicRepository=true
+
+      - name: Upload S3 - assembly
+        working-directory: clients/hadoopfs
+        run: mvn -P${{ steps.hadoop_profile.outputs.hadoopProfile }},assembly package s3-storage-wagon:s3-upload@upload-jar -DpublicRepository=true -DskipTests
