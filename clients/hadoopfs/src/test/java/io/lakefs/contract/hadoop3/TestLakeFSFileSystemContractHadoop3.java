@@ -1,8 +1,15 @@
 package io.lakefs.contract.hadoop3;
 
 import io.lakefs.contract.TestLakeFSFileSystemContract;
+import org.junit.Before;
 
 public class TestLakeFSFileSystemContractHadoop3 extends TestLakeFSFileSystemContract {
+    @Override
+    @Before
+    public void init() throws Exception {
+        super.init();
+    }
+
     public boolean rootDirTestEnabled() {
         return false;
     }
