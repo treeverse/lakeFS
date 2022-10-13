@@ -35,15 +35,15 @@ const (
 
 //nolint:gochecknoinits
 func init() {
-	kv.RegisterType(usersPrefix, &UserData{})
-	kv.RegisterType(policiesPrefix, &PolicyData{})
-	kv.RegisterType(groupsPrefix, &GroupData{})
-	kv.RegisterType(credentialsPrefix, &CredentialData{})
-	kv.RegisterType(groupsUsersPrefix, &kv.SecondaryIndex{})
-	kv.RegisterType(groupsPoliciesPrefix, &kv.SecondaryIndex{})
-	kv.RegisterType(usersPoliciesPrefix, &kv.SecondaryIndex{})
-	kv.RegisterType(expiredTokensPrefix, &TokenData{})
-	kv.RegisterType(metadataPrefix, nil)
+	kv.RegisterType(string(UserPath(kv.PathNoDelimiterRegexp)), &UserData{})
+	kv.RegisterType(string(PolicyPath(kv.PathNoDelimiterRegexp)), &PolicyData{})
+	kv.RegisterType(string(GroupPath(kv.PathNoDelimiterRegexp)), &GroupData{})
+	kv.RegisterType(string(CredentialPath(kv.PathNoDelimiterRegexp, kv.PathNoDelimiterRegexp)), &CredentialData{})
+	kv.RegisterType(string(GroupUserPath(kv.PathNoDelimiterRegexp, kv.PathNoDelimiterRegexp)), &kv.SecondaryIndex{})
+	kv.RegisterType(string(GroupPolicyPath(kv.PathNoDelimiterRegexp, kv.PathNoDelimiterRegexp)), &kv.SecondaryIndex{})
+	kv.RegisterType(string(UserPolicyPath(kv.PathNoDelimiterRegexp, kv.PathNoDelimiterRegexp)), &kv.SecondaryIndex{})
+	kv.RegisterType(string(ExpiredTokenPath(kv.PathNoDelimiterRegexp)), &TokenData{})
+	kv.RegisterType(MetadataKeyPath(kv.PathNoDelimiterRegexp), nil)
 }
 
 func UserPath(userName string) []byte {

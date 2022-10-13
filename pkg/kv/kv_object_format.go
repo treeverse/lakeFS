@@ -1,7 +1,7 @@
 package kv
 
 import (
-	"strings"
+	"regexp"
 
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -20,8 +20,8 @@ type KvObject struct {
 // Register a pb message type to parse the data, according to a path regex
 // All objects which match the path regex will be parsed as that type
 // A nil type parses the value as a plain string
-func RegisterType(pathPrefix string, pb protoreflect.ProtoMessage) {
-	matchers[pathPrefix] = pb
+func RegisterType(pathRegexp string, pb protoreflect.ProtoMessage) {
+	matchers[pathRegexp] = pb
 }
 
 // The pb message type to parse a value, in case the path does not meet
@@ -32,13 +32,14 @@ func RegisterDefaultType(pb protoreflect.ProtoMessage) {
 	defaultMsg = pb
 }
 
-func matchPath(path string, pathPrefix string) bool {
-	return strings.HasPrefix(path, pathPrefix)
+func matchPath(path string, pathRegexp string) bool {
+	match, err := regexp.MatchString(PathBeginRegexp+pathRegexp, path)
+	return err == nil && match
 }
 
 func resolveKVPathToMsgType(path string) (protoreflect.ProtoMessage, error) {
-	for pathPrefix, msg := range matchers {
-		if matchPath(path, pathPrefix) {
+	for pathRegexp, msg := range matchers {
+		if matchPath(path, pathRegexp) {
 			return msg, nil
 		}
 	}
