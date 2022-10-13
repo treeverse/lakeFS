@@ -114,20 +114,6 @@ object GCBackupAndRestore {
     textFilePath
   }
 
-  def isPathExist(path: String, configMapper: ConfigMapper): Boolean = {
-    val conf = configMapper.configuration
-    val fs = FileSystem.get(URI.create(path), conf)
-    var pathExists = false
-    try {
-      fs.getFileStatus(new Path(path))
-      pathExists = true
-    } catch {
-      case e: FileNotFoundException => print(path + " not exists.")
-      case e: IOException           => e.printStackTrace()
-    }
-    pathExists
-  }
-
   /** Eliminate objects that don't exist on the underlying object store from the path list.
    *  @param absolutePathsDF a data frame containing object absolute paths
    *  @param hc hadoop configurations
@@ -144,7 +130,10 @@ object GCBackupAndRestore {
     val hcValues =
       spark.sparkContext.broadcast(HadoopUtils.getHadoopConfigurationValues(hc, "fs."))
     val configMapper = new ConfigMapper(hcValues)
-    absolutePathsDF.filter(x => isPathExist(x, configMapper))
+    absolutePathsDF.filter(x => {
+      val path = new Path(x)
+      path.getFileSystem(configMapper.configuration).exists(path)
+    })
   }
 
   /** Required arguments are the following:
