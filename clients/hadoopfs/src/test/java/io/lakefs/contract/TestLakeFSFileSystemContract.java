@@ -4,7 +4,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystemContractBaseTest;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
-import org.junit.Before;
 
 /**
  *  Tests a live S3 system. If your keys and bucket aren't specified, all tests
