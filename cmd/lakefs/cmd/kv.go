@@ -79,7 +79,7 @@ var kvScanCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
 
-		amount, err := cmd.Flags().GetInt("amount")
+		limit, err := cmd.Flags().GetInt("limit")
 		if err != nil {
 			os.Exit(1)
 		}
@@ -129,7 +129,7 @@ var kvScanCmd = &cobra.Command{
 			}
 			kvObjs = append(kvObjs, *kvObj)
 			num++
-			if num == amount {
+			if num == limit {
 				break
 			}
 		}
@@ -159,6 +159,6 @@ func init() {
 	kvCmd.AddCommand(kvGetCmd)
 	kvGetCmd.Flags().Bool("pretty", false, "print indented output")
 	kvCmd.AddCommand(kvScanCmd)
-	kvScanCmd.Flags().Int("amount", 0, "number of results to return. By default, all results are returned")
+	kvScanCmd.Flags().Int("limit", 0, "maximal number of results to return. By default, all results are returned")
 	kvScanCmd.Flags().Bool("pretty", false, "print indented output")
 }
