@@ -19,14 +19,6 @@ import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneOffset}
 import java.util.UUID
 
-class ConfigMapper(val hcValues: Broadcast[Array[(String, String)]]) extends Serializable {
-  @transient lazy val configuration = {
-    val conf = new Configuration()
-    hcValues.value.foreach({ case (k, v) => conf.set(k, v) })
-    conf
-  }
-}
-
 trait RangeGetter extends Serializable {
 
   /** @return all rangeIDs in metarange of commitID on repo.

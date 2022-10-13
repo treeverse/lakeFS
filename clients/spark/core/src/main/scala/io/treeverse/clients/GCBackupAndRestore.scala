@@ -7,6 +7,7 @@ import org.apache.hadoop.tools.DistCp
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 
+import java.io.{FileNotFoundException, IOException}
 import java.net.URI
 
 class GCBackupAndRestore {}
@@ -113,6 +114,39 @@ object GCBackupAndRestore {
     textFilePath
   }
 
+  def isPathExist(path: String, configMapper: ConfigMapper): Boolean = {
+    val conf = configMapper.configuration
+    val fs = FileSystem.get(URI.create(path), conf)
+    var pathExists = false
+    try {
+      fs.getFileStatus(new Path(path))
+      pathExists = true
+    } catch {
+      case e: FileNotFoundException => print(path + " not exists.")
+      case e: IOException           => e.printStackTrace()
+    }
+    pathExists
+  }
+
+  /** Eliminate objects that don't exist on the underlying object store from the path list.
+   *  @param absolutePathsDF a data frame containing object absolute paths
+   *  @param hc hadoop configurations
+   *  @return a dataset only including absolute paths of objects that exist on the underlying object store
+   */
+  def eliminatePathsOfNonExistingObjects(
+      absolutePathsDF: Dataset[String],
+      hc: Configuration
+  ): Dataset[String] = {
+    // Spark operators will need to generate configured FileSystems to check if objects exist.
+    // They will not have a JobContext to let them do that. Transmit (all) Hadoop filesystem configuration values to
+    // let them generate a (close-enough) Hadoop configuration to build the
+    // needed FileSystems.
+    val hcValues =
+      spark.sparkContext.broadcast(HadoopUtils.getHadoopConfigurationValues(hc, "fs."))
+    val configMapper = new ConfigMapper(hcValues)
+    absolutePathsDF.filter(x => isPathExist(x, configMapper))
+  }
+
   /** Required arguments are the following:
    *  1. address of parquet that includes the relative paths of files to backup or restore, created by a gc run
    *  2. src: the namespace to backup or restore objects from/to (i.e. repo storage namespace, or an external location compatibly)
@@ -143,13 +177,16 @@ object GCBackupAndRestore {
     val objectsRelativePathsDF = spark.read.parquet(relativeAddressesLocationForHadoopFs)
     val objectsAbsolutePathsDF =
       constructAbsoluteObjectPaths(objectsRelativePathsDF, srcNamespace, storageType)
+    // Keep only paths to existing objects, otherwise, distCp will fail copying.
+    val existingAbsolutePaths = eliminatePathsOfNonExistingObjects(objectsAbsolutePathsDF, hc)
+
     // We assume that there are write permissions to the dst namespace and therefore creating intermediate output there.
     val absoluteAddressesLocation =
       dstNamespaceForHadoopFs + "/_gc-backup-restore/absolute_addresses/"
     print("absoluteAddressesLocation: " + absoluteAddressesLocation + "\n")
     // This application uses distCp to copy files. distCp can copy a list of files in a given input text file. therefore,
     // we write the absolute file paths into a text file rather than a parquet.
-    objectsAbsolutePathsDF
+    existingAbsolutePaths
       .repartition(1)
       .write
       .text(absoluteAddressesLocation)
