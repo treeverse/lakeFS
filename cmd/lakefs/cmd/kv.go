@@ -88,7 +88,7 @@ var kvScanCmd = &cobra.Command{
 				logMsg += " with start key '" + string(start) + "'"
 			}
 			logMsg += " - " + err.Error() + "\n"
-			fmt.Fprintf(os.Stderr, "Failed to scan partition %s - %s\n", partitionKey, err)
+			fmt.Fprint(os.Stderr, logMsg)
 			os.Exit(1)
 		}
 		defer iter.Close()
