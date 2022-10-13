@@ -16,6 +16,8 @@ import (
 const (
 	InitialMigrateVersion = 1
 	PathDelimiter         = "/"
+	PathBeginRegexp       = "^"
+	PathNoDelimiterRegexp = "[^" + PathDelimiter + "]+"
 	MetadataPartitionKey  = "kv-internal-metadata"
 )
 
