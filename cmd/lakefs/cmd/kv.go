@@ -62,6 +62,11 @@ var kvScanCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
 
+		amount, err := cmd.Flags().GetInt("amount")
+		if err != nil {
+			os.Exit(1)
+		}
+
 		ctx := cmd.Context()
 		kvParams := cfg.GetKVParams()
 		kvStore, err := kv.Open(ctx, kvParams)
@@ -88,6 +93,7 @@ var kvScanCmd = &cobra.Command{
 		}
 		defer iter.Close()
 
+		num := 0
 		for iter.Next() {
 			if iter.Err() != nil {
 				fmt.Fprintf(os.Stderr, "Failed to get next value - %s\n", iter.Err())
@@ -100,6 +106,10 @@ var kvScanCmd = &cobra.Command{
 				os.Exit(1)
 			}
 			fmt.Printf("%s:\n%s\n", string(entry.Key), prettyVal)
+			num++
+			if num == amount {
+				break
+			}
 		}
 		if iter.Err() != nil {
 			fmt.Fprintf(os.Stderr, "Scan operation ended with error - %s", iter.Err())
@@ -113,4 +123,5 @@ func init() {
 	rootCmd.AddCommand(kvCmd)
 	kvCmd.AddCommand(kvGetCmd)
 	kvCmd.AddCommand(kvScanCmd)
+	kvScanCmd.Flags().Int("amount", 0, "number of results to return. By default, all results are returned")
 }
