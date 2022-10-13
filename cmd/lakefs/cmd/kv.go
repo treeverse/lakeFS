@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -28,6 +29,11 @@ var kvGetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
 
+		pretty, err := cmd.Flags().GetBool("pretty")
+		if err != nil {
+			os.Exit(1)
+		}
+
 		ctx := cmd.Context()
 		kvParams := cfg.GetKVParams()
 		kvStore, err := kv.Open(ctx, kvParams)
@@ -44,13 +50,24 @@ var kvGetCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "Failed to get value for (%s,%s), %s\n", partitionKey, key, err)
 			os.Exit(1)
 		}
-		prettyVal, err := kv.ToPrettyString(key, val.Value)
+		kvObj, err := kv.ToKvObject(partitionKey, key, val.Value)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to parse object from KV value - %s\n", err)
 			os.Exit(1)
 		}
 
-		fmt.Printf("%s:\n%s\n", key, prettyVal)
+		var kvObjJson []byte
+		if pretty {
+			kvObjJson, err = json.MarshalIndent(kvObj, "", "  ")
+		} else {
+			kvObjJson, err = json.Marshal(kvObj)
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "json.Marshal failed - %s\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Println(string(kvObjJson))
 	},
 }
 
@@ -63,6 +80,10 @@ var kvScanCmd = &cobra.Command{
 		cfg := loadConfig()
 
 		amount, err := cmd.Flags().GetInt("amount")
+		if err != nil {
+			os.Exit(1)
+		}
+		pretty, err := cmd.Flags().GetBool("pretty")
 		if err != nil {
 			os.Exit(1)
 		}
@@ -94,18 +115,19 @@ var kvScanCmd = &cobra.Command{
 		defer iter.Close()
 
 		num := 0
+		kvObjs := []kv.KvObject{}
 		for iter.Next() {
 			if iter.Err() != nil {
 				fmt.Fprintf(os.Stderr, "Failed to get next value - %s\n", iter.Err())
 				os.Exit(1)
 			}
 			entry := iter.Entry()
-			prettyVal, err := kv.ToPrettyString(string(entry.Key), entry.Value)
+			kvObj, err := kv.ToKvObject(partitionKey, string(entry.Key), entry.Value)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Failed to parse object from KV value - %s\n", err)
 				os.Exit(1)
 			}
-			fmt.Printf("%s:\n%s\n", string(entry.Key), prettyVal)
+			kvObjs = append(kvObjs, *kvObj)
 			num++
 			if num == amount {
 				break
@@ -115,6 +137,19 @@ var kvScanCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "Scan operation ended with error - %s", iter.Err())
 			os.Exit(1)
 		}
+
+		var kvObjsJson []byte
+		if pretty {
+			kvObjsJson, err = json.MarshalIndent(kvObjs, "", "  ")
+		} else {
+			kvObjsJson, err = json.Marshal(kvObjs)
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "json.Marshal failed - %s\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Println(string(kvObjsJson))
 	},
 }
 
@@ -122,6 +157,8 @@ var kvScanCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(kvCmd)
 	kvCmd.AddCommand(kvGetCmd)
+	kvGetCmd.Flags().Bool("pretty", false, "print indented output")
 	kvCmd.AddCommand(kvScanCmd)
 	kvScanCmd.Flags().Int("amount", 0, "number of results to return. By default, all results are returned")
+	kvScanCmd.Flags().Bool("pretty", false, "print indented output")
 }
