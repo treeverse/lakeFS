@@ -28,4 +28,10 @@ public class TestLakeFSFileSystemContractHadoop3 extends TestLakeFSFileSystemCon
 
     public void testRenameChildDirForbidden() {
     }
+
+    public void testLSRootDir() throws Throwable {
+    }
+
+    public void testListStatusRootDir() throws Throwable {
+    }
 }

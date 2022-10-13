@@ -77,12 +77,4 @@ public abstract class TestLakeFSFileSystemContract extends FileSystemContractBas
   public void testWorkingDirectory() throws Exception {
     // TODO make this test green and remove override
   }
-
-  public void testLSRootDir() throws Throwable {
-      // creating files under root dir is not supported in lakeFS
-  }
-
-  public void testListStatusRootDir() throws Throwable {
-      // creating files under root dir is not supported in lakeFS
-  }
-}
+ }
