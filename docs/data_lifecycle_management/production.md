@@ -1,7 +1,7 @@
 ---
 layout: default
 title: In Production
-parent: Using lakeFS
+parent: Data Lifecycle Management
 description: lakeFS helps recover from errors and find root case in production.
 nav_order: 55
 ---
