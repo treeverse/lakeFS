@@ -3,7 +3,6 @@ package kv
 import (
 	"regexp"
 
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -14,7 +13,7 @@ var defaultMsg protoreflect.ProtoMessage = nil
 type KvObject struct {
 	Partition string
 	Key       string
-	Value     string
+	Value     interface{}
 }
 
 // Register a pb message type to parse the data, according to a path regex
@@ -55,15 +54,13 @@ func ToKvObject(partition, path string, rawValue []byte) (*KvObject, error) {
 		return nil, err
 	}
 
-	var value string
-	if msg == nil {
-		value = string(rawValue)
-	} else {
+	var value interface{} = rawValue
+	if msg != nil {
 		err = proto.Unmarshal(rawValue, msg)
 		if err != nil {
 			return nil, err
 		}
-		value = protojson.Format(msg)
+		value = msg
 	}
 
 	return &KvObject{
