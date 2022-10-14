@@ -5,7 +5,6 @@ import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse
 import io.treeverse.clients.LakeFSContext._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs._
-import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}

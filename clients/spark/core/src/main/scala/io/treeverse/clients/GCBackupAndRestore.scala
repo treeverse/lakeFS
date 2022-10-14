@@ -7,7 +7,6 @@ import org.apache.hadoop.tools.DistCp
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 
-import java.io.{FileNotFoundException, IOException}
 import java.net.URI
 
 class GCBackupAndRestore {}
@@ -130,10 +129,11 @@ object GCBackupAndRestore {
     val hcValues =
       spark.sparkContext.broadcast(HadoopUtils.getHadoopConfigurationValues(hc, "fs."))
     val configMapper = new ConfigMapper(hcValues)
-    absolutePathsDF.filter(x => {
-      val path = new Path(x)
-      path.getFileSystem(configMapper.configuration).exists(path)
-    })
+    absolutePathsDF
+      .filter(x => {
+        val path = new Path(x)
+        path.getFileSystem(configMapper.configuration).exists(path)
+      })
   }
 
   /** Required arguments are the following:
@@ -168,6 +168,12 @@ object GCBackupAndRestore {
       constructAbsoluteObjectPaths(objectsRelativePathsDF, srcNamespace, storageType)
     // Keep only paths to existing objects, otherwise, distCp will fail copying.
     val existingAbsolutePaths = eliminatePathsOfNonExistingObjects(objectsAbsolutePathsDF, hc)
+    val numExistingObjects = existingAbsolutePaths.count()
+    print("count: " + numExistingObjects)
+    if (numExistingObjects == 0) {
+      print("There are no objects to copy. process will finish without copying objects")
+      System.exit(0)
+    }
 
     // We assume that there are write permissions to the dst namespace and therefore creating intermediate output there.
     val absoluteAddressesLocation =
