@@ -68,13 +68,16 @@ Now you can add, modify or delete objects under the `test-env` branch without af
 
 This use case shows how to create dev/test data environments using lakeFS branches. The following tutorial will use an existing lakeFS environment (i.e., playground), a jupyter notebook, and python lakefs_client API to demonstrate integration of lakeFS with [Spark](../integrations/spark). You can run this tutorial on your local machine.
 
+Follow the tutorial video below to get started with the playground and jupyter notebook, or follow the instructions on this page.
+<iframe width="420" height="315" src="https://www.youtube.com/embed/fprpDZ96JQo"></iframe>
+
 ### Prerequisites
 
 To instantly spin up a lakeFS environment and to work with sample data, use [lakeFS playground](https://demo.lakefs.io/). To use lakeFS with your own production data or to run it in your own machine, check out [Quickstart](../quickstart/index.md) guide.
 
 Before getting started, you will need [docker](https://docs.docker.com/engine/install/) installed on your machine.
 
-{: .note }
+{: .note .note-info }
 Once you have docker installed and a lakeFS instance running, you can access the lakeFS demo notebooks by cloning the [lakeFS-samples](https://github.com/treeverse/lakeFS-samples) git repo.
 
 Follow along the steps below to create dev/test environment with lakeFS.
