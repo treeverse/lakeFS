@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"os"
 
+	_ "github.com/treeverse/lakefs/pkg/actions"
+	_ "github.com/treeverse/lakefs/pkg/auth"
+	_ "github.com/treeverse/lakefs/pkg/auth/model"
+	_ "github.com/treeverse/lakefs/pkg/graveler"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/kv"
 )
