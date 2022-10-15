@@ -93,9 +93,23 @@ var kvScanCmd = &cobra.Command{
 		if err != nil {
 			os.Exit(1)
 		}
+		until, err := cmd.Flags().GetString("until")
+		if err != nil {
+			os.Exit(1)
+		}
 		pretty, err := cmd.Flags().GetBool("pretty")
 		if err != nil {
 			os.Exit(1)
+		}
+
+		partitionKey := args[0]
+		var start []byte = nil
+		if len(args) > ScanCmdMinArgs {
+			start = []byte(args[1])
+		}
+
+		if len(until) > 0 && until < string(start) {
+			fmt.Fprintf(os.Stderr, "Invalid args: `until` cannot preced `key`")
 		}
 
 		ctx := cmd.Context()
@@ -112,11 +126,6 @@ var kvScanCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 
-		partitionKey := args[0]
-		var start []byte = nil
-		if len(args) > ScanCmdMinArgs {
-			start = []byte(args[1])
-		}
 		iter, err := kvStore.Scan(ctx, []byte(partitionKey), start)
 		if err != nil {
 			logMsg := "Failed to scan partition '" + partitionKey + "'"
@@ -137,6 +146,9 @@ var kvScanCmd = &cobra.Command{
 				os.Exit(1)
 			}
 			entry := iter.Entry()
+			if len(until) > 0 && string(entry.Key) > until {
+				break
+			}
 			kvObj, err := kv.ToKvObject(partitionKey, string(entry.Key), entry.Value)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Failed to parse object from KV value: %s\n", err)
@@ -175,5 +187,6 @@ func init() {
 	kvGetCmd.Flags().Bool("pretty", false, "print indented output")
 	kvCmd.AddCommand(kvScanCmd)
 	kvScanCmd.Flags().Int("limit", 0, "maximal number of results to return. By default, all results are returned")
+	kvScanCmd.Flags().String("until", "", "last prefix to scan. If this prefix is reached or exceeded, scan will stop")
 	kvScanCmd.Flags().Bool("pretty", false, "print indented output")
 }
