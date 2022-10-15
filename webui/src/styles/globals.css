@@ -335,10 +335,6 @@
   display: inline-block;
 }
 
-.tree-container .alert {
-  /*margin: 20px;*/
-}
-
 .tree-container {
   font-size: .9rem;
 }
@@ -365,10 +361,6 @@
 
 .tree-container .table td {
   word-break: break-word;
-}
-
-.paginator  {
-  /*text-align: center;*/
 }
 
 .commit-metadata {
@@ -569,4 +561,8 @@ td .form-group {
 
 .form-label {
   white-space: nowrap;
+}
+
+.download-button {
+  margin-right: 8px;
 }

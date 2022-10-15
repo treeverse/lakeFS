@@ -1,15 +1,3 @@
-## lakeFS Playground
-
-Experience lakeFS first hand with your own isolated environment.
-You can easily integrate it with your existing tools, and feel lakeFS in action in an environment
-similar to your own.
-
-<p>
-    <a class="btn btn-green" href="https://demo.lakefs.io/" target="_blank">
-        Try lakeFS now without installing
-    </a>
-</p>
-
 ## lakeFS Docker "Everything Bagel"
 
 Get a local lakeFS instance running in a Docker container. This environment includes lakeFS and other common data tools like Spark, dbt, Trino, Hive, and Jupyter.
@@ -17,6 +5,7 @@ Get a local lakeFS instance running in a Docker container. This environment incl
 As a prerequisite, Docker is required to be installed on your machine. For download instructions, [click here](https://docs.docker.com/get-docker/)
 
 The following commands can be run in your terminal to get the Bagel running:
+
 1. Clone the lakeFS repo: `git clone https://github.com/treeverse/lakeFS.git`
 2. Start the Docker containers: `cd lakeFS/deployments/compose && docker compose up -d`
 
@@ -32,4 +21,4 @@ The first thing to notice is in this environment, lakeFS comes with a repository
 
 ## Next Steps
 
-You can now [install lakeFS on your computer](installing.html) or [deploy it on your cloud account](../deploy/index.html).
+You can now [install lakeFS on your computer](installing.html), [try without installing](https://demo.lakefs.io), or [deploy it on your cloud account](../deploy/index.html).

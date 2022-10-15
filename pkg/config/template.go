@@ -202,9 +202,11 @@ type configuration struct {
 		}
 	}
 	Stats struct {
-		Enabled       bool
-		Address       string
+		Enabled       bool          `mapstructure:"enabled"`
+		Address       string        `mapstructure:"address"`
 		FlushInterval time.Duration `mapstructure:"flush_interval"`
+		FlushSize     int           `mapstructure:"flush_size"`
+		Extended      bool          `mapstructure:"extended"`
 	}
 	Installation struct {
 		FixedID string `mapstructure:"fixed_id"`

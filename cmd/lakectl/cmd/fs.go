@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
@@ -32,12 +33,11 @@ Total Size: {{.Bytes}} bytes
 Human Total Size: {{.Bytes|human_bytes}}
 `
 
-var quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
-
 var fsStatCmd = &cobra.Command{
-	Use:   "stat <path uri>",
-	Short: "View object metadata",
-	Args:  cobra.ExactArgs(1),
+	Use:               "stat <path uri>",
+	Short:             "View object metadata",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
 		client := getClient()
@@ -45,9 +45,11 @@ var fsStatCmd = &cobra.Command{
 			Path: *pathURI.Path,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
-		stat := resp.JSON200
-		Write(fsStatTemplate, stat)
+		Write(fsStatTemplate, resp.JSON200)
 	},
 }
 
@@ -57,9 +59,10 @@ const fsLsTemplate = `{{ range $val := . -}}
 `
 
 var fsListCmd = &cobra.Command{
-	Use:   "ls <path uri>",
-	Short: "List entries under a given tree",
-	Args:  cobra.ExactArgs(1),
+	Use:               "ls <path uri>",
+	Short:             "List entries under a given tree",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := MustParsePathURI("path", args[0])
@@ -88,6 +91,9 @@ var fsListCmd = &cobra.Command{
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			if resp.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
 
 			results := resp.JSON200.Results
 			// trim prefix if non-recursive
@@ -109,9 +115,10 @@ var fsListCmd = &cobra.Command{
 }
 
 var fsCatCmd = &cobra.Command{
-	Use:   "cat <path uri>",
-	Short: "Dump content of object to stdout",
-	Args:  cobra.ExactArgs(1),
+	Use:               "cat <path uri>",
+	Short:             "Dump content of object to stdout",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
 		direct, _ := cmd.Flags().GetBool("direct")
@@ -144,10 +151,6 @@ var fsCatCmd = &cobra.Command{
 	},
 }
 
-func escapeQuotes(s string) string {
-	return quoteEscaper.Replace(s)
-}
-
 func upload(ctx context.Context, client api.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, direct bool) (*api.ObjectStats, error) {
 	fp := OpenByPath(sourcePathname)
 	defer func() {
@@ -176,7 +179,8 @@ func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 		// otherwise, we add a part and set the content-type.
 		if contentType != "" {
 			h := make(textproto.MIMEHeader)
-			h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s"`, fieldName, escapeQuotes(filename)))
+			contentDisposition := mime.FormatMediaType("form-data", map[string]string{"name": fieldName, "filename": filename})
+			h.Set("Content-Disposition", contentDisposition)
 			h.Set("Content-Type", contentType)
 			cw, err = mpw.CreatePart(h)
 		} else {
@@ -206,9 +210,10 @@ func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 }
 
 var fsUploadCmd = &cobra.Command{
-	Use:   "upload <path uri>",
-	Short: "Upload a local file to the specified URI",
-	Args:  cobra.ExactArgs(1),
+	Use:               "upload <path uri>",
+	Short:             "Upload a local file to the specified URI",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := MustParsePathURI("path", args[0])
@@ -258,10 +263,11 @@ var fsUploadCmd = &cobra.Command{
 }
 
 var fsStageCmd = &cobra.Command{
-	Use:    "stage <path uri>",
-	Short:  "Stage a reference to an existing object, to be managed in lakeFS",
-	Hidden: true,
-	Args:   cobra.ExactArgs(1),
+	Use:               "stage <path uri>",
+	Short:             "Stage a reference to an existing object, to be managed in lakeFS",
+	Hidden:            true,
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := MustParsePathURI("path", args[0])
@@ -296,6 +302,9 @@ var fsStageCmd = &cobra.Command{
 			Path: *pathURI.Path,
 		}, api.StageObjectJSONRequestBody(obj))
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		Write(fsStatTemplate, resp.JSON201)
 	},
@@ -321,9 +330,10 @@ func deleteObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 }
 
 var fsRmCmd = &cobra.Command{
-	Use:   "rm <path uri>",
-	Short: "Delete object",
-	Args:  cobra.ExactArgs(1),
+	Use:               "rm <path uri>",
+	Short:             "Delete object",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		concurrency := MustInt(cmd.Flags().GetInt("concurrency"))
@@ -369,6 +379,9 @@ var fsRmCmd = &cobra.Command{
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			if resp.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
 
 			results := resp.JSON200.Results
 			for i := range results {

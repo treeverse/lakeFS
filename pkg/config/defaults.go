@@ -7,6 +7,12 @@ import (
 )
 
 const (
+	DatabaseTypeKey     = "database.type"
+	DefaultDatabaseType = "local"
+
+	DatabaseKVLocalPath        = "database.local.path"
+	DefaultDatabaseLocalKVPath = "~/lakefs/metadata"
+
 	BlockstoreTypeKey     = "blockstore.type"
 	DefaultBlockstoreType = "local"
 
@@ -65,6 +71,7 @@ const (
 	DefaultStatsEnabled       = true
 	DefaultStatsAddr          = "https://stats.treeverse.io"
 	DefaultStatsFlushInterval = time.Second * 30
+	DefaultStatsFlushSize     = 100
 
 	DefaultEmailLimitEveryDuration = time.Minute
 	DefaultEmailBurst              = 10
@@ -80,6 +87,9 @@ const (
 	LoggingFileMaxSizeMBKey = "logging.file_max_size_mb"
 	LoggingFilesKeepKey     = "logging.files_keep"
 	LoggingAuditLogLevel    = "logging.audit_log_level"
+
+	AuthEncryptSecretKey        = "auth.encrypt.secret_key"            // #nosec
+	DefaultAuthEncryptSecretKey = "THIS_MUST_BE_CHANGED_IN_PRODUCTION" // #nosec
 
 	ActionsEnabledKey = "actions.enabled"
 
@@ -109,9 +119,10 @@ const (
 	StatsEnabledKey       = "stats.enabled"
 	StatsAddressKey       = "stats.address"
 	StatsFlushIntervalKey = "stats.flush_interval"
+	StatsFlushSizeKey     = "stats.flush_size"
 
 	SecurityAuditCheckIntervalKey     = "security.audit_check_interval"
-	DefaultSecurityAuditCheckInterval = 12 * time.Hour
+	DefaultSecurityAuditCheckInterval = 24 * time.Hour
 
 	SecurityAuditCheckURLKey     = "security.audit_check_url"
 	DefaultSecurityAuditCheckURL = "https://audit.lakefs.io/audit"
@@ -123,7 +134,19 @@ const (
 	UIEnabledKey = "ui.enabled"
 )
 
-func setDefaults() {
+func setDefaultLocalConfig() {
+	viper.SetDefault(DatabaseTypeKey, DefaultDatabaseType)
+	viper.SetDefault(DatabaseKVLocalPath, DefaultDatabaseLocalKVPath)
+	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockstoreLocalPath)
+	viper.SetDefault(AuthEncryptSecretKey, DefaultAuthEncryptSecretKey)
+	viper.SetDefault(BlockstoreTypeKey, DefaultBlockstoreType)
+}
+
+func setDefaults(local bool) {
+	if local {
+		setDefaultLocalConfig()
+	}
+
 	viper.SetDefault(ListenAddressKey, DefaultListenAddr)
 
 	viper.SetDefault(LoggingFormatKey, DefaultLoggingFormat)
@@ -171,6 +194,7 @@ func setDefaults() {
 	viper.SetDefault(StatsEnabledKey, DefaultStatsEnabled)
 	viper.SetDefault(StatsAddressKey, DefaultStatsAddr)
 	viper.SetDefault(StatsFlushIntervalKey, DefaultStatsFlushInterval)
+	viper.SetDefault(StatsFlushSizeKey, DefaultStatsFlushSize)
 
 	viper.SetDefault(BlockstoreAzureTryTimeoutKey, DefaultBlockstoreAzureTryTimeout)
 	viper.SetDefault(BlockstoreAzureAuthMethod, DefaultBlockstoreAzureAuthMethod)

@@ -58,6 +58,7 @@ services:
       - ESTI_POST_MIGRATE
       - ESTI_GOTEST_FLAGS
       - ESTI_FLAGS
+      - ESTI_FORCE_PATH_STYLE
     working_dir: /lakefs
     command:
       - /bin/sh

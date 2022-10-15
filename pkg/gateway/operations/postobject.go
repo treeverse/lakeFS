@@ -33,12 +33,13 @@ func (controller *PostObject) RequiredPermissions(_ *http.Request, repoID, _, pa
 	return permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.WriteObjectAction,
-			Resource: permissions.ObjectArn(repoID, path)},
+			Resource: permissions.ObjectArn(repoID, path),
+		},
 	}, nil
 }
 
 func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter, req *http.Request, o *PathOperation) {
-	o.Incr("create_mpu")
+	o.Incr("create_mpu", o.Principal, o.Repository.Name, o.Reference)
 	branchExists, err := o.Catalog.BranchExists(req.Context(), o.Repository.Name, o.Reference)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not check if branch exists")
@@ -83,7 +84,7 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 }
 
 func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWriter, req *http.Request, o *PathOperation) {
-	o.Incr("complete_mpu")
+	o.Incr("complete_mpu", o.Principal, o.Repository.Name, o.Reference)
 	uploadID := req.URL.Query().Get(CompleteMultipartUploadQueryParam)
 	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{logging.UploadIDFieldKey: uploadID}))
 	multiPart, err := o.MultipartsTracker.Get(req.Context(), uploadID)

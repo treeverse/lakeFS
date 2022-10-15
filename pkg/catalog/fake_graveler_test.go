@@ -106,7 +106,11 @@ func (g *FakeGraveler) Set(_ context.Context, repository *graveler.RepositoryRec
 }
 
 func (g *FakeGraveler) Delete(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key) error {
-	panic("implement me")
+	return nil
+}
+
+func (g *FakeGraveler) DeleteBatch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, keys []graveler.Key) error {
+	return nil
 }
 
 func (g *FakeGraveler) List(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.Ref) (graveler.ValueIterator, error) {

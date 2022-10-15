@@ -1,67 +1,92 @@
 package io.treeverse.jpebble
 
-import java.nio.{Buffer, ByteBuffer}
-
 object IndexedBytes {
-  def create(buf: ByteBuffer): IndexedBytes = new ByteBufferIndexedBytes(buf)
+  def create(buf: Array[Byte]): IndexedBytes = new BufferIndexedBytes(buf, 0, buf.size)
 }
 
 trait IndexedBytes {
-  // Limit to 2GiB, because Java ByteBuffer has limited size, because Java.
+  // Limit to 2GiB, because Java arrays have limited size, because Java.
   def size: Int
+
+  /** @return underlying array of bytes. */
+  def bytes: Array[Byte]
+
+  /** @return start offset of this in bytes. */
+  def from: Int
+
   def slice(offset: Int, size: Int): IndexedBytes
   def iterator: Iterator[Byte]
   def apply(i: Int): Byte
-  def toByteBuffer: ByteBuffer = throw new UnsupportedOperationException(
-    "toByteBuffer not implemented"
-  )
 }
 
-/** Iterator over a ByteByffer.
+/** Iterator over a BufferIndexedBytes
  */
-class ByteBufferIterator(private val buf: ByteBufferIndexedBytes) extends Iterator[Byte] {
+class BufferIterator(private val buf: BufferIndexedBytes) extends Iterator[Byte] {
   var index = 0
   override def hasNext = index < buf.size
   override def next(): Byte = {
-    val ret =
-      try {
-        buf(index)
-      } catch {
-        case e: (IndexOutOfBoundsException) =>
-          throw new java.util.NoSuchElementException().initCause(e)
-      }
-    index += 1
+    try {
+      val ret = buf(index)
+      index += 1
+      ret
+    } catch {
+      case e: (IndexOutOfBoundsException) =>
+        throw new java.util.NoSuchElementException().initCause(e)
+    }
+  }
+
+  override def take(n: Int): Iterator[Byte] = {
+    val ret = buf.sliceView(index, index + n).iterator
+    index += n
     ret
   }
 }
 
-/** IndexedBytes running on an immutable ("owned") ByteBufffer.  After
- *  calling, change *nothing* in buf, not even its position or limit.  (Or
- *  slice() it first to create a shallow copy, then you can change position
- *  and limit...)
+/** IndexedBytes running on an immutable array of bytes on the range
+ *  [offset, offset+length).  After calling, change *nothing* in buf.
  */
-class ByteBufferIndexedBytes(private val buf: ByteBuffer) extends IndexedBytes {
-  override def size = buf.limit() - buf.position()
+class BufferIndexedBytes(
+    private val buf: Array[Byte],
+    private val offset: Int,
+    private val length: Int
+) extends IndexedBytes {
+  def size = length
+  def bytes = buf
+  def from = offset
 
-  override def slice(start: Int, end: Int) = new ByteBufferIndexedBytes(
-    // Hack around Java / Scala / Ubuntu / SBT / ??? madness: JDK changed
-    // Buffer methods to be covariant in their return types in version 9.
-    // Now Scala and/or Ubuntu compile based on the wrong JDK version, so
-    // code emitted tries to access ByteBuffer.limit but the JVM has only
-    // Buffer.limit.  Cast around that.
-    //
-    // Ref: https://stackoverflow.com/a/51223234/192263
-    buf
-      .slice()
-      .asInstanceOf[Buffer]
-      .limit(end)
-      .position(start)
-      .asInstanceOf[ByteBuffer]
-  )
+  if (offset + length > buf.size) {
+    throw new IndexOutOfBoundsException(
+      s"Cannot create buffer on [$offset, ${offset + length}) from array of size ${buf.size}"
+    )
+  }
 
-  override def iterator = new ByteBufferIterator(this)
+  override def slice(start: Int, end: Int) = {
+    if (start < 0 || end < 0) {
+      throw new IndexOutOfBoundsException(s"Cannot expand slice before start to [$start, $end)")
+    }
+    if (end > size) {
+      throw new IndexOutOfBoundsException(
+        s"Cannot expand slice of size $size after end to [$start, $end)"
+      )
+    }
+    new BufferIndexedBytes(buf, offset + start, end - start)
+  }
 
-  override def toByteBuffer = buf
+  def sliceView(start: Int, end: Int) = {
+    if (start < 0 || end < 0) {
+      throw new IndexOutOfBoundsException(
+        s"Cannot expand slice of size $size after end to [$start, $end)"
+      )
+    }
+    if (end > size) {
+      throw new IndexOutOfBoundsException(
+        s"Cannot expand slice of size $size after end to [$start, $end)"
+      )
+    }
+    buf.view.slice(offset + start, offset + end)
+  }
 
-  override def apply(i: Int) = toByteBuffer.get(i + buf.position())
+  override def iterator = new BufferIterator(this)
+
+  override def apply(i: Int) = buf(offset + i)
 }

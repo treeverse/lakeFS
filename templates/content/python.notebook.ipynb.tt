@@ -1,0 +1,442 @@
+{{contenttype "application/x-ipynb+json" -}}
+
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "9b2c8fa0-1702-411a-b11c-3190679bf31c",
+   "metadata": {},
+   "source": [
+    "# Integration of lakeFS with Spark and Python\n",
+    "\n",
+    "## Use Case: Isolated Testing Environment\n",
+    "\n",
+    "## Access lakeFS using the S3A gateway"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "387f4469-9708-435d-bec9-c943fd87a0bf",
+   "metadata": {},
+   "source": [
+    "## Using your lakeFS credentials"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "dfa46799-5f86-4104-9447-d91328edbff4",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+{{- with $creds := new_credentials "spark"}}
+    "lakefsAccessKey = '{{$creds.Key}}'\n",
+    "lakefsSecretKey = '{{$creds.Secret}}'\n",
+{{- end}}
+    "lakefsEndPoint = '{{ .Query.lakefs_url }}'"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "13d1c562-9899-4343-b887-c5c018ea79b0",
+   "metadata": {},
+   "source": [
+    "## Storage Information\n",
+    "#### Change the Storage Namespace to a location in the bucket you’ve configured. The storage namespace is a location in the underlying storage where data for this repository will be stored."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "25b151c2-743d-43e1-9f2f-25482967c207",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "storageNamespace = 's3://<S3 Bucket Name>/' # e.g. \"s3://username-lakefs-cloud/\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c093db8e-68d9-409f-bde7-73ee4ceca5a5",
+   "metadata": {},
+   "source": [
+    "## Versioning Information"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "3b839850-5954-4631-8e7e-d0dee6d17dde",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sourceBranch = \"main\"\n",
+    "newBranch = \"experiment1\"\n",
+    "newPath = \"partitioned_data\"\n",
+    "fileName = \"lakefs_test.csv\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a7ede096-1b84-4b59-bdd1-2608ced6be51",
+   "metadata": {},
+   "source": [
+    "## Working with the lakeFS Python client API"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "468e98e4-7e06-4373-b36b-f1763cc7755d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import lakefs_client\n",
+    "from lakefs_client import models\n",
+    "from lakefs_client.client import LakeFSClient\n",
+    "\n",
+    "# lakeFS credentials and endpoint\n",
+    "configuration = lakefs_client.Configuration()\n",
+    "configuration.username = lakefsAccessKey\n",
+    "configuration.password = lakefsSecretKey\n",
+    "configuration.host = lakefsEndPoint\n",
+    "\n",
+    "client = LakeFSClient(configuration)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "8724cfd8-bda5-4c16-bff6-e05d0ad7f74a",
+   "metadata": {},
+   "source": [
+    "## You can change lakeFS repo name (it can be an existing repo or provide another repo name)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0da678dc-5a25-4b90-9dea-30052f45e5d5",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "repo = \"my-repo\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2422d8af-c714-4d32-aa7b-eddfacbbddb4",
+   "metadata": {},
+   "source": [
+    "## If above mentioned repo already exists on your lakeFS server then you can skip following step otherwise create a new repo:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "19a4d613-f76d-497d-844d-21aadf1fc50e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "client.repositories.create_repository(\n",
+    "    repository_creation=models.RepositoryCreation(\n",
+    "        name=repo,\n",
+    "        storage_namespace=storageNamespace,\n",
+    "        default_branch=sourceBranch))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "70239947-a305-4f3a-a275-c9a528bafce6",
+   "metadata": {},
+   "source": [
+    "## Upload a file"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d2c1d011-b1ae-444b-88da-bf79f5eb00b8",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import os\n",
+    "contentToUpload = open(os.path.expanduser('~')+'/'+fileName, 'rb') # Only a single file per upload which must be named \\\\\\\"content\\\\\\\"\n",
+    "client.objects.upload_object(\n",
+    "    repository=repo,\n",
+    "    branch=sourceBranch,\n",
+    "    path=fileName, content=contentToUpload)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "ed1629fe-2b8d-442b-bb42-9a9e1779875e",
+   "metadata": {},
+   "source": [
+    "## Commit changes and attach some metadata"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "87b1708e-7d0a-413c-85c9-d5266cde2e20",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "client.commits.commit(\n",
+    "    repository=repo,\n",
+    "    branch=sourceBranch,\n",
+    "    commit_creation=models.CommitCreation(\n",
+    "        message='Added my first file!',\n",
+    "        metadata={'using': 'python_api'}))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "64b53725-95e6-4c78-9e17-fa271424a3d4",
+   "metadata": {},
+   "source": [
+    "## S3A Gateway configuration\n",
+    "\n",
+    "##### Note: lakeFS can be configured to work with Spark in two ways:\n",
+    "###### * Access lakeFS using the S3A gateway https://docs.lakefs.io/integrations/spark.html#access-lakefs-using-the-s3a-gateway.\n",
+    "###### * Access lakeFS using the lakeFS-specific Hadoop FileSystem https://docs.lakefs.io/integrations/spark.html#access-lakefs-using-the-lakefs-specific-hadoop-filesystem."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b5886ad4-d97d-4ab8-a158-9c034fa0e293",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from pyspark.context import SparkContext\n",
+    "from pyspark.sql.session import SparkSession\n",
+    "sc = SparkContext.getOrCreate()\n",
+    "spark = SparkSession(sc)\n",
+    "\n",
+    "sc._jsc.hadoopConfiguration().set(\"fs.s3a.access.key\", lakefsAccessKey)\n",
+    "sc._jsc.hadoopConfiguration().set(\"fs.s3a.secret.key\", lakefsSecretKey)\n",
+    "sc._jsc.hadoopConfiguration().set(\"fs.s3a.endpoint\", lakefsEndPoint)\n",
+    "sc._jsc.hadoopConfiguration().set(\"fs.s3a.path.style.access\", \"true\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "ddd6f1a5-16f3-4954-b18e-294df65a0cc0",
+   "metadata": {},
+   "source": [
+    "## Reading data by using S3A Gateway"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "562dce4b-59b4-460d-9414-753980fbd944",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "dataPath = f\"s3a://{repo}/{sourceBranch}/{fileName}\"\n",
+    "\n",
+    "df = spark.read.csv(dataPath)\n",
+    "df.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a2ca865d-0aa0-46bb-b6f2-54d7205dda64",
+   "metadata": {},
+   "source": [
+    "# Experimentation Starts"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "53e7ed20-7896-47c7-b526-816f4464569a",
+   "metadata": {},
+   "source": [
+    "## List the repository branches by using lakeFS Python client API"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "31099b5c-d59e-4ce3-8da0-4050382052ff",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "results = map(\n",
+    "    lambda n:[n.id,n.commit_id],\n",
+    "    client.branches.list_branches(\n",
+    "        repository=repo).results)\n",
+    "\n",
+    "from tabulate import tabulate\n",
+    "print(tabulate(\n",
+    "    results,\n",
+    "    headers=['id','commit_id']))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "49c7cd60-8a5a-4f90-9f2b-527093844411",
+   "metadata": {},
+   "source": [
+    "## Create a new branch"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "cce638f4-f63e-45d4-a3b5-1dcf85ddf1bc",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "client.branches.create_branch(\n",
+    "    repository=repo,\n",
+    "    branch_creation=models.BranchCreation(\n",
+    "        name=newBranch,\n",
+    "        source=sourceBranch))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4cff360f-69c6-4abc-9454-addae4a07a44",
+   "metadata": {},
+   "source": [
+    "## Partition the data and write to new branch by using S3A Gateway"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "53e7a3be-a572-4512-b219-227b9501c24b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "newDataPath = f\"s3a://{repo}/{newBranch}/{newPath}\"\n",
+    "\n",
+    "df.write.partitionBy(\"_c0\").csv(newDataPath)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "03d0e30a-9638-465d-9ee5-9dd41ba99fd8",
+   "metadata": {},
+   "source": [
+    "## Diffing a single branch will show all the uncommitted changes on that branch"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2bd88694-f32a-49b2-a6df-af73e6e2bb67",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "results = map(\n",
+    "    lambda n:[n.path,n.path_type,n.size_bytes,n.type],\n",
+    "    client.branches.diff_branch(\n",
+    "        repository=repo,\n",
+    "        branch=newBranch).results)\n",
+    "\n",
+    "from tabulate import tabulate\n",
+    "print(tabulate(\n",
+    "    results,\n",
+    "    headers=['Path','Path Type','Size(Bytes)','Type']))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b2faa4ae-b2e4-47ab-b51f-b61d9ed4d846",
+   "metadata": {},
+   "source": [
+    "## Commit changes and attach some metadata"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "cfc00b7e-5f9a-46f2-b6fd-0d64ee440943",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "client.commits.commit(\n",
+    "    repository=repo,\n",
+    "    branch=newBranch,\n",
+    "    commit_creation=models.CommitCreation(\n",
+    "        message='Partitioned CSV file!',\n",
+    "        metadata={'using': 'python_api'}))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6fc7c991-05e9-4adb-a071-c8e43f6181d7",
+   "metadata": {},
+   "source": [
+    "## Diff between the new branch and the source branch"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "08216aa6-c39e-46a8-aaac-d1e2a0f89d79",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "results = map(\n",
+    "    lambda n:[n.path,n.path_type,n.size_bytes,n.type],\n",
+    "    client.refs.diff_refs(\n",
+    "        repository=repo,\n",
+    "        left_ref=sourceBranch,\n",
+    "        right_ref=newBranch).results)\n",
+    "\n",
+    "from tabulate import tabulate\n",
+    "print(tabulate(\n",
+    "    results,\n",
+    "    headers=['Path','Path Type','Size(Bytes)','Type']))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5762d1a0-276f-4a20-8ca0-18f4a463a622",
+   "metadata": {},
+   "source": [
+    "# Experimentation Completes\n",
+    "\n",
+    "## Delete new branch"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2ac4765b-5a15-4296-a2a3-73d4fe54ef37",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "client.branches.delete_branch(\n",
+    "    repository=repo,\n",
+    "    branch=newBranch)"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.4"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

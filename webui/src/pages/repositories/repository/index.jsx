@@ -11,6 +11,7 @@ import RepositoryActionsIndexPage from "./actions";
 import RepositoryGeneralSettingsPage from "./settings/general";
 import RepositoryRetentionPage from "./settings/retention";
 import RepositorySettingsBranchesPage from "./settings/branches";
+import RepositoryObjectsViewPage from "./objectViewer";
 
 
 const RepositoryPage = () => {
@@ -19,8 +20,11 @@ const RepositoryPage = () => {
             <Route exact path="/">
                 <Redirect to="/repositories"/>
             </Route>
-            <Route path="/repositories/:repoId/objects">
+            <Route exact path="/repositories/:repoId/objects">
                 <RepositoryObjectsPage/>
+            </Route>
+            <Route path="/repositories/:repoId/objects/:objectName">
+                <RepositoryObjectsViewPage />
             </Route>
             <Route path="/repositories/:repoId/changes">
                 <RepositoryChangesPage/>

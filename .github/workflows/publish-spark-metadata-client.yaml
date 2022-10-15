@@ -8,7 +8,7 @@ jobs:
     environment: Treeverse signing
     steps:
       - name: Check-out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
       - name: validate format

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -49,9 +50,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "lakectl",
 	Short: "A cli tool to explore manage and work with lakeFS",
-	Long: `lakeFS is data lake management solution, allowing Git-like semantics over common object stores
-
-lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment`,
+	Long:  `lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		logging.SetLevel(logLevel)
 		logging.SetOutputFormat(logFormat)
@@ -121,8 +120,12 @@ func getClient() *api.ClientWithResponses {
 
 	client, err := api.NewClientWithResponses(
 		serverEndpoint,
-		api.WithRequestEditorFn(basicAuthProvider.Intercept),
 		api.WithHTTPClient(httpClient),
+		api.WithRequestEditorFn(basicAuthProvider.Intercept),
+		api.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+			req.Header.Set("User-Agent", "lakectl/"+version.Version)
+			return nil
+		}),
 	)
 	if err != nil {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)

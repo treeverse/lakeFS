@@ -1,18 +1,20 @@
 package io.treeverse.clients
 
+import com.google.common.cache.{Cache, CacheBuilder, CacheLoader, LoadingCache}
+import dev.failsafe.function.CheckedSupplier
+import dev.failsafe.{Failsafe, FailsafeException, FailsafeExecutor, Policy, RetryPolicy}
 import io.lakefs.clients.api
+import io.lakefs.clients.api.model._
 import io.lakefs.clients.api.{ConfigApi, RetentionApi}
-import io.lakefs.clients.api.model.{
-  GarbageCollectionPrepareRequest,
-  GarbageCollectionPrepareResponse
-}
+import io.treeverse.clients.ApiClient.TIMEOUT_NOT_SET
 import io.treeverse.clients.StorageClientType.StorageClientType
 import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
-import com.google.common.cache.{Cache, CacheBuilder, CacheLoader, LoadingCache}
-import io.treeverse.clients.ApiClient.TIMEOUT_NOT_SET
 
 import java.net.URI
+import java.time.Duration
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.{Callable, TimeUnit}
+import scala.collection.JavaConverters._
 
 // The different types of storage clients the metadata client uses to access the object store.
 object StorageClientType extends Enumeration {
@@ -130,6 +132,8 @@ class ApiClient private (conf: APIConfigurations) {
   private val retentionApi = new RetentionApi(client)
   private val configApi = new ConfigApi(client)
 
+  private val retryWrapper = new RequestRetryWrapper(client.getReadTimeout)
+
   private val storageNamespaceCache: LoadingCache[StorageNamespaceCacheKey, String] =
     CacheBuilder
       .newBuilder()
@@ -139,8 +143,11 @@ class ApiClient private (conf: APIConfigurations) {
       })
 
   def keyToStorageNamespace(key: StorageNamespaceCacheKey): String = {
-    val repo = repositoriesApi.getRepository(key.repoName)
 
+    val getRepo = new dev.failsafe.function.CheckedSupplier[Repository]() {
+      def get(): Repository = repositoriesApi.getRepository(key.repoName)
+    }
+    val repo = retryWrapper.wrapWithRetry(getRepo)
     val storageNamespace = key.storageClientType match {
       case StorageClientType.HadoopFS =>
         ApiClient
@@ -161,30 +168,46 @@ class ApiClient private (conf: APIConfigurations) {
       repoName: String,
       previousRunID: String
   ): GarbageCollectionPrepareResponse = {
-    retentionApi.prepareGarbageCollectionCommits(
-      repoName,
-      new GarbageCollectionPrepareRequest().previousRunId(previousRunID)
-    )
+    val prepareGcCommits =
+      new dev.failsafe.function.CheckedSupplier[GarbageCollectionPrepareResponse]() {
+        def get(): GarbageCollectionPrepareResponse = retentionApi.prepareGarbageCollectionCommits(
+          repoName,
+          new GarbageCollectionPrepareRequest().previousRunId(previousRunID)
+        )
+      }
+    retryWrapper.wrapWithRetry(prepareGcCommits)
   }
 
   def getGarbageCollectionRules(repoName: String): String = {
-    val gcRules = retentionApi.getGarbageCollectionRules(repoName)
+    val getGcRules = new dev.failsafe.function.CheckedSupplier[GarbageCollectionRules]() {
+      def get(): GarbageCollectionRules = retentionApi.getGarbageCollectionRules(repoName)
+    }
+    val gcRules = retryWrapper.wrapWithRetry(getGcRules)
     gcRules.toString()
   }
 
   def getBlockstoreType(): String = {
-    val storageConfig = configApi.getStorageConfig()
+    val getStorageConfig = new dev.failsafe.function.CheckedSupplier[StorageConfig]() {
+      def get(): StorageConfig = configApi.getStorageConfig()
+    }
+    val storageConfig = retryWrapper.wrapWithRetry(getStorageConfig)
     storageConfig.getBlockstoreType()
   }
 
   def getCommit(repoName: String, commitID: String): api.model.Commit = {
-    commitsApi.getCommit(repoName, commitID)
+    val getCommit = new dev.failsafe.function.CheckedSupplier[Commit]() {
+      def get(): Commit = commitsApi.getCommit(repoName, commitID)
+    }
+    retryWrapper.wrapWithRetry(getCommit)
   }
 
   def getMetaRangeURL(repoName: String, commit: api.model.Commit): String = {
     val metaRangeID = commit.getMetaRangeId
     if (metaRangeID != "") {
-      val metaRange = metadataApi.getMetaRange(repoName, metaRangeID)
+      val getMetaRange = new dev.failsafe.function.CheckedSupplier[StorageURI]() {
+        def get(): StorageURI = metadataApi.getMetaRange(repoName, metaRangeID)
+      }
+      val metaRange = retryWrapper.wrapWithRetry(getMetaRange)
       val location = metaRange.getLocation
       URI
         .create(getStorageNamespace(repoName, StorageClientType.HadoopFS) + "/")
@@ -198,7 +221,7 @@ class ApiClient private (conf: APIConfigurations) {
    *  translate that URL to use an appropriate Hadoop FileSystem.
    */
   def getMetaRangeURL(repoName: String, commitID: String): String = {
-    val commit = commitsApi.getCommit(repoName, commitID)
+    val commit = getCommit(repoName, commitID)
     getMetaRangeURL(repoName, commit)
   }
 
@@ -206,7 +229,10 @@ class ApiClient private (conf: APIConfigurations) {
    *  translate that URL to use an appropriate Hadoop FileSystem.
    */
   def getRangeURL(repoName: String, rangeID: String): String = {
-    val range = metadataApi.getRange(repoName, rangeID)
+    val getRange = new dev.failsafe.function.CheckedSupplier[StorageURI]() {
+      def get(): StorageURI = metadataApi.getRange(repoName, rangeID)
+    }
+    val range = retryWrapper.wrapWithRetry(getRange)
     val location = range.getLocation
     URI
       .create(getStorageNamespace(repoName, StorageClientType.HadoopFS) + "/" + location)
@@ -214,12 +240,51 @@ class ApiClient private (conf: APIConfigurations) {
       .toString
   }
 
-  def getBranchHEADCommit(repoName: String, branch: String): String =
-    branchesApi.getBranch(repoName, branch).getCommitId
+  def getBranchHEADCommit(repoName: String, branch: String): String = {
+    val getBranch = new dev.failsafe.function.CheckedSupplier[Ref]() {
+      def get(): Ref = branchesApi.getBranch(repoName, branch)
+    }
+    val response = retryWrapper.wrapWithRetry(getBranch)
+    response.getCommitId
+  }
 
   // Instances of case classes are compared by structure and not by reference https://docs.scala-lang.org/tour/case-classes.html.
   case class StorageNamespaceCacheKey(
       repoName: String,
       storageClientType: StorageClientType
   )
+}
+
+class RequestRetryWrapper(
+    val readTimeout: Int,
+    val maxDurationSeconds: Double = -1,
+    val maxNumRetries: Int = 5
+) {
+  val UnsetMaxDuration = -1
+
+  var maxDuration = maxDurationSeconds
+  if (maxDuration == UnsetMaxDuration) {
+    maxDuration = maxNumRetries * readTimeout + 7.1 * 1
+  }
+
+  private val retryPolicy: Policy[Any] = RetryPolicy
+    .builder()
+    .withBackoff(1, 20, ChronoUnit.SECONDS)
+    .withJitter(.25)
+    .withMaxRetries(maxNumRetries)
+    .withMaxDuration(Duration.ofMillis((1000 * maxDuration).asInstanceOf[Long]))
+    .build()
+
+  // https://failsafe.dev/faqs/#how-does-failsafe-use-threads failsafe uses a thread pool for retries concurrency
+  private val failSafeExecutor: FailsafeExecutor[Any] = Failsafe.`with`((Seq(retryPolicy).asJava))
+
+  def wrapWithRetry[T](fn: CheckedSupplier[T]): T = {
+    try {
+      failSafeExecutor.get(fn)
+    } catch {
+      case e: (FailsafeException) =>
+        throw e.getCause
+      case e: Exception => throw e
+    }
+  }
 }

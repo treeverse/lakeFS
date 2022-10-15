@@ -116,11 +116,13 @@ func TestLocalLoad(t *testing.T) {
 			testutil.Must(t, err)
 
 			authenticator := auth.NewBuiltinAuthenticator(tt.authService)
-			migrator := kv.NewDatabaseMigrator(conf.GetKVParams())
+			kvParams, err := conf.GetKVParams()
+			testutil.Must(t, err)
+			migrator := kv.NewDatabaseMigrator(kvParams)
 			t.Cleanup(func() {
 				_ = c.Close()
 			})
-			auditChecker := version.NewDefaultAuditChecker(conf.GetSecurityAuditCheckURL())
+			auditChecker := version.NewDefaultAuditChecker(conf.GetSecurityAuditCheckURL(), "")
 			emailParams, _ := conf.GetEmailParams()
 			emailer, err := email.NewEmailer(emailParams)
 			testutil.Must(t, err)

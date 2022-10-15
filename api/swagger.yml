@@ -1307,6 +1307,8 @@ paths:
                 $ref: "#/components/schemas/Error"
         401:
           $ref: "#/components/responses/Unauthorized"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1474,10 +1476,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Policy"
-        401:
-          $ref: "#/components/responses/Unauthorized"
         400:
           $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1528,6 +1532,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -2960,8 +2966,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ObjectErrorList"
-        204:
-          description: all requested objects successfully deleted
         401:
           $ref: "#/components/responses/Unauthorized"
         404:

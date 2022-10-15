@@ -548,8 +548,9 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | policy |  -  |
-**401** | Unauthorized |  -  |
 **400** | Validation Error |  -  |
+**401** | Unauthorized |  -  |
+**409** | Resource Conflicts With Target |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="createUser"></a>
@@ -635,6 +636,7 @@ Name | Type | Description  | Notes
 **201** | user |  -  |
 **400** | validation error |  -  |
 **401** | Unauthorized |  -  |
+**409** | Resource Conflicts With Target |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="deleteCredentials"></a>
@@ -2764,5 +2766,6 @@ Name | Type | Description  | Notes
 **200** | policy |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 

@@ -18,12 +18,13 @@ func (controller *DeleteObject) RequiredPermissions(_ *http.Request, repoID, _, 
 	return permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DeleteObjectAction,
-			Resource: permissions.ObjectArn(repoID, path)},
+			Resource: permissions.ObjectArn(repoID, path),
+		},
 	}, nil
 }
 
 func (controller *DeleteObject) HandleAbortMultipartUpload(w http.ResponseWriter, req *http.Request, o *PathOperation) {
-	o.Incr("abort_mpu")
+	o.Incr("abort_mpu", o.Principal, o.Repository.Name, o.Reference)
 	query := req.URL.Query()
 	uploadID := query.Get(QueryParamUploadID)
 	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{logging.UploadIDFieldKey: uploadID}))
@@ -46,7 +47,7 @@ func (controller *DeleteObject) Handle(w http.ResponseWriter, req *http.Request,
 		return
 	}
 
-	o.Incr("delete_object")
+	o.Incr("delete_object", o.Principal, o.Repository.Name, o.Reference)
 	lg := o.Log(req).WithField("key", o.Path)
 	err := o.Catalog.DeleteEntry(req.Context(), o.Repository.Name, o.Reference, o.Path)
 	switch {

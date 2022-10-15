@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -74,6 +75,8 @@ var (
 	groupsToKeep       arrayFlags
 	usersToKeep        arrayFlags
 	policiesToKeep     arrayFlags
+
+	testsToSkipRegex *regexp.Regexp
 )
 
 func arrayFlagsToMap(arr arrayFlags) map[interface{}]bool {
@@ -262,6 +265,7 @@ func TestMain(m *testing.M) {
 	adminAccessKeyID := flag.String("admin-access-key-id", DefaultAdminAccessKeyId, "lakeFS Admin access key ID")
 	adminSecretAccessKey := flag.String("admin-secret-access-key", DefaultAdminSecretAccessKey, "lakeFS Admin secret access key")
 	cleanupEnv := flag.Bool("cleanup-env-pre-run", false, "Clean repositories, groups, users and polices before running esti tests")
+	testsToSkip := flag.String("skip", "", "Tests to skip in a regex format")
 	flag.Var(&repositoriesToKeep, "repository-to-keep", "Repositories to keep in case of pre-run cleanup")
 	flag.Var(&groupsToKeep, "group-to-keep", "Groups to keep in case of pre-run cleanup")
 	flag.Var(&usersToKeep, "user-to-keep", "Users to keep in case of pre-run cleanup")
@@ -309,6 +313,19 @@ func TestMain(m *testing.M) {
 
 	defer func() { _ = server.s.Close() }()
 
+	if *testsToSkip != "" {
+		testsToSkipRegex, err = regexp.Compile(*testsToSkip)
+		if err != nil {
+			log.Fatalf("Skip pattern '%s' failed to compile: %s", *testsToSkip, err)
+		}
+	}
+
 	logger.Info("Setup succeeded, running the tests")
 	os.Exit(m.Run())
+}
+
+func SkipTestIfAskedTo(t *testing.T) {
+	if testsToSkipRegex != nil && testsToSkipRegex.MatchString(t.Name()) {
+		t.SkipNow()
+	}
 }

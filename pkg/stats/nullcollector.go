@@ -4,7 +4,7 @@ type NullCollector struct{}
 
 func (m *NullCollector) CollectMetadata(_ *Metadata) {}
 
-func (m *NullCollector) CollectEvent(_, _ string) {}
+func (m *NullCollector) CollectEvent(_ Event) {}
 
 func (m *NullCollector) SetInstallationID(_ string) {}
 

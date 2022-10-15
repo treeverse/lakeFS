@@ -21,6 +21,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-test/deep"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/require"
@@ -639,17 +640,44 @@ func TestController_CommitHandler(t *testing.T) {
 func TestController_CreateRepositoryHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
+
 	t.Run("create repo success", func(t *testing.T) {
+		const repoName = "my-new-repo"
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    api.StringPtr("main"),
-			Name:             "my-new-repo",
+			Name:             repoName,
 			StorageNamespace: onBlock(deps, "foo-bucket-1"),
 		})
 		verifyResponseOK(t, resp, err)
 
-		repository := resp.JSON201
-		if repository.Id != "my-new-repo" {
-			t.Fatalf("got unexpected repo when creating my-new-repo: %s", repository.Id)
+		response := resp.JSON201
+		if response == nil {
+			t.Fatal("CreateRepository got bad response")
+		}
+		if response.Id != repoName {
+			t.Fatalf("CreateRepository id=%s, expected=%s", response.Id, repoName)
+		}
+	})
+
+	t.Run("create bare repo success", func(t *testing.T) {
+		const repoName = "my-new-repo-bare"
+		bareRepo := true
+		resp, err := clt.CreateRepositoryWithResponse(ctx,
+			&api.CreateRepositoryParams{
+				Bare: &bareRepo,
+			}, api.CreateRepositoryJSONRequestBody{
+				DefaultBranch:    api.StringPtr("main"),
+				Name:             repoName,
+				StorageNamespace: onBlock(deps, "foo-bucket-1"),
+			})
+		verifyResponseOK(t, resp, err)
+
+		response := resp.JSON201
+		if response == nil {
+			t.Fatal("CreateRepository (bare) got bad response")
+		}
+		if response.Id != repoName {
+			t.Fatalf("CreateRepository bare id=%s, expected=%s", response.Id, repoName)
 		}
 	})
 
@@ -1814,8 +1842,11 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		// delete objects
 		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, api.DeleteObjectsJSONRequestBody{Paths: paths})
 		verifyResponseOK(t, delResp, err)
-		if delResp.StatusCode() != http.StatusNoContent {
-			t.Errorf("DeleteObjects should return 204 (no content) for successful delete, got %d", delResp.StatusCode())
+		if delResp.JSON200 == nil {
+			t.Errorf("DeleteObjects should return 200 for successful delete, got status code %d", delResp.StatusCode())
+		}
+		if len(delResp.JSON200.Errors) > 0 {
+			t.Errorf("DeleteObjects (round 2) should have no errors, got %v", delResp.JSON200.Errors)
 		}
 
 		// check objects no longer there
@@ -1829,6 +1860,16 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 			if statResp.JSON404 == nil {
 				t.Fatalf("expected file to be gone now for '%s'", p)
 			}
+		}
+
+		// delete objects again - make sure we do not fail or get any error
+		delResp2, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, api.DeleteObjectsJSONRequestBody{Paths: paths})
+		verifyResponseOK(t, delResp2, err)
+		if delResp2.JSON200 == nil {
+			t.Errorf("DeleteObjects (round 2) should return 200 for successful delete, got status code %d", delResp2.StatusCode())
+		}
+		if len(delResp2.JSON200.Errors) > 0 {
+			t.Errorf("DeleteObjects (round 2) should have no errors, got %s", spew.Sdump(delResp2.JSON200.Errors))
 		}
 	})
 
@@ -2484,6 +2525,96 @@ func TestController_ExpandTemplate(t *testing.T) {
 		}
 		if parsed["message"] != "expansion failed" {
 			t.Errorf("Expected \"expansion failed\" message, got %+v", parsed)
+		}
+	})
+}
+
+func TestController_UpdatePolicy(t *testing.T) {
+	clt, _ := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	// test policy
+	now := api.Int64Ptr(time.Now().Unix())
+	const existingPolicyID = "TestUpdatePolicy"
+	response, err := clt.CreatePolicyWithResponse(ctx, api.CreatePolicyJSONRequestBody{
+		CreationDate: now,
+		Id:           existingPolicyID,
+		Statement: []api.Statement{
+			{
+				Action: []string{
+					"fs:Read*",
+					"fs:List*",
+				},
+				Effect:   "deny",
+				Resource: "*",
+			},
+		},
+	})
+	testutil.Must(t, err)
+	if response.JSON201 == nil {
+		t.Fatal("Failed to create test policy", response.Status())
+	}
+
+	t.Run("unknown", func(t *testing.T) {
+		const policyID = "UnknownPolicy"
+		updatePolicyResponse, err := clt.UpdatePolicyWithResponse(ctx, policyID, api.UpdatePolicyJSONRequestBody{
+			CreationDate: now,
+			Id:           policyID,
+			Statement: []api.Statement{
+				{
+					Action: []string{
+						"fs:Read*",
+						"fs:List*",
+					},
+					Effect:   "allow",
+					Resource: "*",
+				},
+			},
+		})
+		testutil.Must(t, err)
+		if updatePolicyResponse.JSON404 == nil {
+			t.Errorf("Update unknown policy should fail with 404: %s", updatePolicyResponse.Status())
+		}
+	})
+
+	t.Run("change_effect", func(t *testing.T) {
+		updatePolicyResponse, err := clt.UpdatePolicyWithResponse(ctx, existingPolicyID, api.UpdatePolicyJSONRequestBody{
+			CreationDate: now,
+			Id:           existingPolicyID,
+			Statement: []api.Statement{
+				{
+					Action: []string{
+						"fs:Read*",
+						"fs:List*",
+					},
+					Effect:   "allow",
+					Resource: "*",
+				},
+			},
+		})
+		testutil.Must(t, err)
+		if updatePolicyResponse.JSON200 == nil {
+			t.Errorf("Update policy failed: %s", updatePolicyResponse.Status())
+		}
+	})
+
+	t.Run("change_policy_id", func(t *testing.T) {
+		updatePolicyResponse, err := clt.UpdatePolicyWithResponse(ctx, "SomethingElse", api.UpdatePolicyJSONRequestBody{
+			CreationDate: now,
+			Id:           existingPolicyID,
+			Statement: []api.Statement{
+				{
+					Action: []string{
+						"fs:Read*",
+					},
+					Effect:   "allow",
+					Resource: "*",
+				},
+			},
+		})
+		testutil.Must(t, err)
+		if updatePolicyResponse.JSON400 == nil {
+			t.Errorf("Update policy with different id should fail with 400: %s", updatePolicyResponse.Status())
 		}
 	})
 }

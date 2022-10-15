@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 
 import {AuthLayout} from "../../../../lib/components/auth/layout";
-import {UserHeader} from "../../../../lib/components/auth/nav";
+import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {auth} from "../../../../lib/api";
 import {CredentialsShowModal, CredentialsTable} from "../../../../lib/components/auth/credentials";
 import useUser from "../../../../lib/hooks/user";
@@ -46,7 +46,7 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
 
     return (
         <>
-            <UserHeader userId={userId} page={'credentials'}/>
+            <UserHeaderWithContext userId={userId} page={'credentials'}/>
 
             <ActionsBar>
                 <ActionGroup orientation="left">

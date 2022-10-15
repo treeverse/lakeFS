@@ -65,6 +65,9 @@ var authUsersList = &cobra.Command{
 			Amount: api.PaginationAmountPtr(amount),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		users := resp.JSON200.Results
 		rows := make([][]interface{}, len(users))
@@ -89,6 +92,9 @@ var authUsersCreate = &cobra.Command{
 			Id: id,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
 		user := resp.JSON201
 		Write(userCreatedTemplate, user)
 	},
@@ -127,6 +133,9 @@ var authUsersGroupsList = &cobra.Command{
 			Amount: api.PaginationAmountPtr(amount),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		groups := resp.JSON200.Results
 		rows := make([][]interface{}, len(groups))
@@ -162,6 +171,9 @@ var authUsersPoliciesList = &cobra.Command{
 			Effective: &effective,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		policies := resp.JSON200.Results
 		rows := make([][]interface{}, 0)
@@ -170,7 +182,6 @@ var authUsersPoliciesList = &cobra.Command{
 				ts := time.Unix(*policy.CreationDate, 0).String()
 				rows = append(rows, []interface{}{policy.Id, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
 			}
-
 		}
 
 		pagination := resp.JSON200.Pagination
@@ -221,11 +232,17 @@ var authUsersCredentialsCreate = &cobra.Command{
 		if id == "" {
 			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			if resp.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
 			id = resp.JSON200.User.Id
 		}
 
 		resp, err := clt.CreateCredentialsWithResponse(cmd.Context(), id)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		credentials := resp.JSON201
 		Write(credentialsCreatedTemplate, credentials)
@@ -243,6 +260,9 @@ var authUsersCredentialsDelete = &cobra.Command{
 		if id == "" {
 			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			if resp.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
 			id = resp.JSON200.User.Id
 		}
 		resp, err := clt.DeleteCredentialsWithResponse(cmd.Context(), id, accessKeyID)
@@ -264,6 +284,9 @@ var authUsersCredentialsList = &cobra.Command{
 		if id == "" {
 			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			if resp.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
 			id = resp.JSON200.User.Id
 		}
 
@@ -272,6 +295,9 @@ var authUsersCredentialsList = &cobra.Command{
 			Amount: api.PaginationAmountPtr(amount),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		credentials := resp.JSON200.Results
 		rows := make([][]interface{}, len(credentials))
@@ -304,6 +330,9 @@ var authGroupsList = &cobra.Command{
 			Amount: api.PaginationAmountPtr(amount),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		groups := resp.JSON200.Results
 		rows := make([][]interface{}, len(groups))
@@ -328,6 +357,9 @@ var authGroupsCreate = &cobra.Command{
 			Id: id,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
 		group := resp.JSON201
 		Write(groupCreatedTemplate, group)
 	},
@@ -366,6 +398,9 @@ var authGroupsListMembers = &cobra.Command{
 			Amount: api.PaginationAmountPtr(amount),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		users := resp.JSON200.Results
 		rows := make([][]interface{}, len(users))
@@ -426,6 +461,9 @@ var authGroupsPoliciesList = &cobra.Command{
 			Amount: api.PaginationAmountPtr(amount),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		policies := resp.JSON200.Results
 		rows := make([][]interface{}, 0)
@@ -434,7 +472,6 @@ var authGroupsPoliciesList = &cobra.Command{
 				ts := time.Unix(*policy.CreationDate, 0).String()
 				rows = append(rows, []interface{}{policy.Id, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
 			}
-
 		}
 
 		pagination := resp.JSON200.Pagination
@@ -492,6 +529,9 @@ var authPoliciesList = &cobra.Command{
 			Amount: api.PaginationAmountPtr(amount),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		policies := resp.JSON200.Results
 		rows := make([][]interface{}, len(policies))
@@ -536,6 +576,9 @@ var authPoliciesCreate = &cobra.Command{
 			Statement: doc.Statement,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		createdPolicy := resp.JSON201
 		Write(policyCreatedTemplate, struct {
@@ -563,6 +606,9 @@ var authPoliciesShow = &cobra.Command{
 
 		resp, err := clt.GetPolicyWithResponse(cmd.Context(), id)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		policy := *resp.JSON200
 		Write(policyDetailsTemplate, struct {

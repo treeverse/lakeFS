@@ -2,7 +2,7 @@ import build.BuildType
 
 lazy val baseName = "lakefs-spark"
 
-lazy val projectVersion = "0.2.3"
+lazy val projectVersion = "0.5.0"
 ThisBuild / isSnapshot := false
 
 // Spark versions 2.4.7 and 3.0.1 use different Scala versions.  Changing this is a deep
@@ -70,12 +70,26 @@ def generateCoreProject(buildType: BuildType) =
         // Runtime 7.6, and note that it changes in 8.3 :-(
         "org.xerial.snappy" % "snappy-java" % "1.1.8.4",
         "org.scalactic" %% "scalactic" % "3.2.9",
+        "dev.failsafe" % "failsafe" % "3.2.4",
+        "org.apache.hadoop" % "hadoop-distcp" % buildType.hadoopVersion,
+        "org.scalatestplus" %% "mockito-3-4" % "3.2.9.0" % "test",
         "org.scalatest" %% "scalatest" % "3.2.9" % "test",
         "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.10" % "test",
         "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
-        "com.lihaoyi" %% "os-lib" % "0.7.8" % "test"
+        "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
+        // Test with an up-to-date fasterxml.
+         "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2" % "test",
+        "com.storm-enroute" %% "scalameter" % "0.18" % "test"
       ),
+      testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
       Test / logBuffered := false,
+      // Uncomment to get accurate benchmarks with just "sbt test".
+      // Otherwise tell sbt to
+      //     "testOnly io.treeverse.clients.ReadSSTableBenchmark"
+      // (or similar).
+      //
+      //     Test / parallelExecution := false,
+
       // Uncomment to get (very) full stacktraces in test:
       //      Test / testOptions += Tests.Argument("-oF"),
       target := file(s"target/core-${buildType.name}/")

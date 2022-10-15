@@ -45,10 +45,14 @@ var superuserCmd = &cobra.Command{
 
 		logger := logging.Default()
 		ctx := cmd.Context()
-		kvParams := cfg.GetKVParams()
+		kvParams, err := cfg.GetKVParams()
+		if err != nil {
+			fmt.Printf("KV params: %s\n", err)
+			os.Exit(1)
+		}
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
-			fmt.Printf("failed to open KV store: %s\n", err)
+			fmt.Printf("Failed to open KV store: %s\n", err)
 			os.Exit(1)
 		}
 		storeMessage := &kv.StoreMessage{Store: kvStore}
@@ -71,12 +75,12 @@ var superuserCmd = &cobra.Command{
 		}
 
 		ctx, cancelFn := context.WithCancel(ctx)
-		stats := stats.NewBufferedCollector(metadata.InstallationID, cfg)
-		stats.Run(ctx)
-		defer stats.Close()
+		collector := stats.NewBufferedCollector(metadata.InstallationID, cfg, stats.WithLogger(logger))
+		collector.Run(ctx)
+		defer collector.Close()
 
-		stats.CollectMetadata(metadata)
-		stats.CollectEvent("global", "superuser")
+		collector.CollectMetadata(metadata)
+		collector.CollectEvent(stats.Event{Class: "global", Name: "superuser"})
 
 		fmt.Printf("credentials:\n  access_key_id: %s\n  secret_access_key: %s\n",
 			credentials.AccessKeyID, credentials.SecretAccessKey)

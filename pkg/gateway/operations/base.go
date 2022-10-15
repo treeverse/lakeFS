@@ -38,7 +38,7 @@ const (
 	OperationIDOperationNotFound    OperationID = "not_found"
 )
 
-type ActionIncr func(string)
+type ActionIncr func(action, repository, ref, userID string)
 
 type Operation struct {
 	OperationID       OperationID
