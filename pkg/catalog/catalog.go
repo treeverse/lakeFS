@@ -128,6 +128,7 @@ const (
 	ListEntriesLimitMax      = 10000
 	sharedWorkers            = 15
 	pendingTasksPerWorker    = 3
+	workersMaxDrainDuration  = 5 * time.Second
 )
 
 var ErrUnknownDiffType = errors.New("unknown graveler difference type")
@@ -1699,7 +1700,7 @@ func (c *Catalog) Close() error {
 			_ = multierror.Append(errs, err)
 		}
 	}
-	c.workPool.StopAndWaitFor(5 * time.Second)
+	c.workPool.StopAndWaitFor(workersMaxDrainDuration)
 	return errs
 }
 
