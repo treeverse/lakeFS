@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/hashicorp/go-multierror"
 	"io"
 	"math"
 	"mime/multipart"
@@ -24,6 +23,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-test/deep"
+	"github.com/hashicorp/go-multierror"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -226,20 +226,23 @@ func testCommitEntries(t *testing.T, ctx context.Context, cat catalog.Interface,
 	return commit.Reference
 }
 
-func TestController_LogCommitsHandler(t *testing.T) {
+func TestController_LogCommitsMissingBranch(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
-	t.Run("missing branch", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "ns1"), "main")
-		testutil.Must(t, err)
+	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "ns1"), "main")
+	testutil.Must(t, err)
 
-		resp, err := clt.LogCommitsWithResponse(ctx, "repo1", "otherbranch", &api.LogCommitsParams{})
-		testutil.Must(t, err)
-		if resp.JSON404 == nil {
-			t.Fatalf("expected error getting a branch that doesn't exist")
-		}
-	})
+	resp, err := clt.LogCommitsWithResponse(ctx, "repo1", "otherbranch", &api.LogCommitsParams{})
+	testutil.Must(t, err)
+	if resp.JSON404 == nil {
+		t.Fatalf("expected error getting a branch that doesn't exist")
+	}
+}
+
+func TestController_LogCommitsHandler(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
 
 	tests := []struct {
 		name            string
@@ -364,6 +367,132 @@ func TestController_LogCommitsParallelHandler(t *testing.T) {
 
 	err = g.Wait()
 	require.Nil(t, err)
+}
+
+func TestController_LogCommitsPredefinedData(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	// prepare test data
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	testutil.Must(t, err)
+	const prefix = "foo/bar"
+	const totalCommits = 10
+	for i := 0; i < totalCommits; i++ {
+		n := strconv.Itoa(i + 1)
+		p := prefix + n
+		err := deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
+		testutil.MustDo(t, "create entry "+p, err)
+		_, err = deps.catalog.Commit(ctx, repo, "main", "commit"+n, "some_user", nil, nil, nil)
+		testutil.MustDo(t, "commit "+p, err)
+	}
+
+	tests := []struct {
+		name            string
+		amount          int
+		limit           bool
+		objects         []string
+		prefixes        []string
+		expectedCommits []string
+		expectedMore    bool
+	}{
+		{
+			name:            "log",
+			expectedCommits: []string{"commit10", "commit9", "commit8", "commit7", "commit6", "commit5", "commit4", "commit3", "commit2", "commit1", "Repository created"},
+			expectedMore:    false,
+		},
+		{
+			name:            "limit",
+			limit:           true,
+			expectedCommits: []string{"commit10"},
+			expectedMore:    false,
+		},
+		{
+			name:            "amount",
+			amount:          3,
+			expectedCommits: []string{"commit10", "commit9", "commit8"},
+			expectedMore:    true,
+		},
+		{
+			name:            "limit-object",
+			limit:           true,
+			objects:         []string{"foo/bar7"},
+			expectedCommits: []string{"commit7"},
+			expectedMore:    false,
+		},
+		{
+			name:            "limit-object-not-found",
+			limit:           true,
+			objects:         []string{"foo/bar99"},
+			expectedCommits: []string{},
+			expectedMore:    false,
+		},
+		{
+			name:            "log-with-objects",
+			objects:         []string{"foo/bar7", "foo/bar3", "foo/bar9"},
+			expectedCommits: []string{"commit9", "commit7", "commit3"},
+			expectedMore:    false,
+		},
+		{
+			name:            "log-with-objects-amount",
+			amount:          2,
+			objects:         []string{"foo/bar7", "foo/bar3", "foo/bar9"},
+			expectedCommits: []string{"commit9", "commit7"},
+			expectedMore:    true,
+		},
+		{
+			name:            "log-with-objects-no-commits",
+			objects:         []string{"you-won't-find-me"},
+			expectedCommits: []string{},
+			expectedMore:    false,
+		},
+		{
+			name:            "log-single-object",
+			amount:          1,
+			objects:         []string{"foo/bar10"},
+			expectedCommits: []string{"commit10"},
+			expectedMore:    true,
+		},
+		{
+			name:            "log-with-prefixes",
+			prefixes:        []string{"foo/bar1"},
+			expectedCommits: []string{"commit10", "commit1"},
+			expectedMore:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			params := &api.LogCommitsParams{}
+			if tt.objects != nil {
+				params.Objects = &tt.objects
+			}
+			if tt.prefixes != nil {
+				params.Prefixes = &tt.prefixes
+			}
+			if tt.limit {
+				params.Limit = &tt.limit
+				params.Amount = api.PaginationAmountPtr(1)
+			}
+			if tt.amount > 0 {
+				params.Amount = api.PaginationAmountPtr(tt.amount)
+			}
+
+			resp, err := clt.LogCommitsWithResponse(ctx, repo, "main", params)
+			verifyResponseOK(t, resp, err)
+			commitsLog := resp.JSON200.Results
+			// compare by commit messages
+			commitMessages := make([]string, 0)
+			for _, commit := range commitsLog {
+				commitMessages = append(commitMessages, commit.Message)
+			}
+			if diff := deep.Equal(commitMessages, tt.expectedCommits); diff != nil {
+				t.Fatalf("Commit log expected messages: %s", diff)
+			}
+		})
+	}
 }
 
 func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
