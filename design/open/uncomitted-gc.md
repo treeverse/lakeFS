@@ -41,8 +41,8 @@ For the purpose of this document we will use the following terms:
 1. `Storage Inventory File` - File created by the Storage Provider Inventory Job containing list of all repository objects at the given time
 2. `Uncommitted Inventory File` - File containing the list of uncommitted objects at the given time - created by lakeFS
 3. `Committed Objects List` - List of repository's committed objects from a given point of time (or genesis) TODO: clarify point of time committed vs uncommitted
-4. `Uncommitted Objects List` - List of repository's uncommitted objects at the given time
-5. `Repository Inventory File` - File containing the list of all repository objects (committed + uncommitted) at the given point in time
+4. `Uncommitted Objects Files` - List of repository's uncommitted objects at the given time created by a pseudo commits 
+5. `Repository Inventory Files` - File containing the list of all repository objects (committed + uncommitted) at the given point in time
 6. `Last Commit` - The newest commit scanned by the last GC run
 
 ### Required changes by lakeFS
@@ -64,8 +64,8 @@ Will run when `Uncommitted Inventory File` doesn't exist and will scan the entir
 
 #### Step 1. Build lakeFS inventory file (lakeFS API)
 
-1. Create `Committed Objects List` from genesis
-2. Create `Uncommitted Objects List`
+1. Create `Uncommitted Objects List`
+2. Create `Committed Objects List` from genesis
 3. Write `Uncommitted Inventory File` using the given list - this will be used by future GC run using `Optimized Run`.
 4. Write `Repository Inventory File` using the given lists
 
