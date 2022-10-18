@@ -16,12 +16,6 @@ redirect_from: ../roadmap.html
 ---
 ## Ecosystem
 
-### Repository Templates: Easily use lakeFS with your data stack <span>High Priority</span>{: .label .label-blue }
-
-A wizard will walk you through launching a repository tailored for your use case.
-Integrate with Spark, Hive Metastore and your other tools.
-
-[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3411){: target="_blank" class="btn" }
 
 ### Table format support
 
@@ -33,12 +27,33 @@ Modern table formats such as Delta Lake, Hudi, and Iceberg rely on a set of mani
 In those cases, a merge operation might have to be aware of the structure of the data: 
 generate a new manifest or re-order the log in order for the output to make sense.
 Additionally, the definition of a conflict is also a bit different: 
-simply looking at object names to determine whether or not a conflict occured might not be good enough.
+simply looking at object names to determine whether or not a conflict occurred might not be good enough.
 
 With that in mind, we plan to make the diff and merge operations pluggable. 
 lakeFS already supports injecting custom behavior using hooks. Ideally, we can support this by introducing `on-diff` and `on-merge` hooks that allow implementing hooks in different languages, possibly utilizing existing code and libraries to aid with understanding these formats.
 
 Once this is done, one may implement:
+
+#### Iceberg support <span>High Priority</span>{: .label .label-blue }
+
+A table in Iceberg points to a single metadata file, containing a "location" property. Iceberg uses this location to store:
+1. Manifests describing where the data is stored.
+2. The actual data.
+
+Once a table is created, the location property doesn't change. Therefore, a branch creation in lakeFS in meaningless, since new data added to this branch will be added to the main branch. There are some workarounds for this, but it is our priority to create an excellent integration with Iceberg.
+
+[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3381){: target="_blank" class="btn" }
+
+#### Metastore integration hooks
+
+Allow lakeFS users that query and manipulate data using Hive Metastore to automate the integration between both components.
+
+1. Creating a branch/tag with a predefined naming convention will result in automatic creation of metastore tables (for a predefined set of table names)
+1. Deleting a branch/tag with a predefined naming convention will result in automatic deletion of metastore tables (for a predefined set of table names)
+1. Merging a branch into another branch will result in metastore changes between branches being applied to the metastore for modified tables defined on the destination branch
+
+[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3069){: target="_blank" class="btn" }
+
 
 #### Delta Lake merges and diffs across branches
 
@@ -52,16 +67,6 @@ A much better user experience would be to allow merging this log into a new unif
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3380){: target="_blank" class="btn" }
 
 
-#### Iceberg support <span>High Priority</span>{: .label .label-blue }
-
-A table in Iceberg points to a single metadata file, containing a "location" property. Iceberg uses this location to store:
-1. Manifests describing where the data is stored.
-2. The actual data.
-
-Once a table is created, the location property doesn't change. Therefore, a branch creation in lakeFS in meaningless, since new data added to this branch will be added to the main branch. There are some workarounds for this, but it is our priority to create an excellent integration with Iceberg.
-
-[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3381){: target="_blank" class="btn" }
-
 ### Hadoop 3 support in all lakeFS clients <span>High Priority</span>{: .label .label-blue }
 
 We intend to test, verify and document the version support matrix for our Hadoop-based clients:
@@ -72,7 +77,7 @@ We intend to test, verify and document the version support matrix for our Hadoop
 In particular, all features will support Hadoop versions 3.x.
 
 
-### Native Spark OutputCommitter
+### Native Spark OutputCommitter <span>High Priority</span>{: .label .label-blue }
 
 We plan to add a Hadoop OutputCommitter that uses existing lakeFS operations for atomic commits that are efficient and safely concurrent.
 
@@ -86,16 +91,15 @@ This comes with several benefits:
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/blob/master/design/open/spark-outputcommitter/committer.md){: target="_blank" class="btn" }
 
 
-### Native connector: Trino
+### HadoopFS: Support Azure Blob Storage
 
-Currently, the Trino integration works well using the [lakeFS S3 Gateway](architecture.md#s3-gateway). 
+Extend the lakeFS HadoopFilesystem to support working directly with Azure Blob Storage.
 
-While easy to integrate and useful out-of-the-box, due to the S3 protocol, it means that the data itself must pass through the lakeFS server.
+### Sync a lakeFS reference (or part of it) with a local directory
 
-For larger installations, a native integration where lakeFS handles metadata and returns locations in the underlying object store that Trino can then access directly would allow reducing the operational overhead and increasing the scalability of lakeFS.
-This would be done in a similar way to the [Native Spark integration](../integrations/spark.md) using the [Hadoop Filesystem implementation](../integrations/spark.md#access-lakefs-using-the-lakefs-specific-hadoop-filesystem).
+Support working locally with data stored on lakeFS from a specific reference.
 
-[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/2357){: target="_blank" class="btn" }
+[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/4095){: target="_blank" class="btn" }
 
 ### Improved streaming support for Apache Kafka
 
@@ -119,31 +123,26 @@ Ideally, lakeFS should provide tools to automate this, with native support for [
 
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/2358){: target="_blank" class="btn" }
 
-### User management using OIDC providers <span>High Priority</span>{: .label .label-blue }
+### Native connector: Trino
 
-Allow admins to manage their users externally using any OIDC-compatible provider.
+Currently, the Trino integration works well using the [lakeFS S3 Gateway](architecture.md#s3-gateway). 
 
-### Reproducible data images
-Make it easy for users to compose data coming from different sources (lakeFS repositories & references, external object store locations) as input for processing jobs and data science experiments.
+While easy to integrate and useful out-of-the-box, due to the S3 protocol, it means that the data itself must pass through the lakeFS server.
 
-[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/pull/3657){: target="_blank" class="btn" }
+For larger installations, a native integration where lakeFS handles metadata and returns locations in the underlying object store that Trino can then access directly would allow reducing the operational overhead and increasing the scalability of lakeFS.
+This would be done in a similar way to the [Native Spark integration](../integrations/spark.md) using the [Hadoop Filesystem implementation](../integrations/spark.md#access-lakefs-using-the-lakefs-specific-hadoop-filesystem).
+
+[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/2357){: target="_blank" class="btn" }
 
 ## Versioning Capabilities
 
-### Support asynchronous hooks <span>High Priority</span>{: .label .label-blue }
+### Garbage collection for uncommitted stale objects <span>High Priority</span>{: .label .label-blue }
 
-Support running hooks that might possibly take many minutes to complete. 
-This is useful for things such as data quality checks - where we might want to do big queries or scans to ensure the data being merged adheres to certain business rules.
+Support deleting objects that don't belong to any commit and were deleted on the target branch.
 
-Currently, `pre-commit` and `pre-merge` hooks in lakeFS are tied to the lifecycle of the API request that triggers the said commit or merge operation.
-In order to support long running hooks, there are enhancements to make to lakeFS APIs in order to support an asynchronous commit and merge operations that are no longer tied to the HTTP request that triggered them.
+This is commonly used for objects that were staged and then deleted or moved.
 
-### Support Garbage Collection on Azure <span>High Priority</span>{: .label .label-blue }
-
-The lakeFS [Garbage Collection](https://docs.lakefs.io/reference/garbage-collection.html) capability hard-deletes objects deleted from branches, helping users reduce costs and 
-comply with data privacy policies. Currently, lakeFS only supports Garbage Collection of S3 objects managed by lakeFS. Extending the support to Azure will allow lakeFS users that use Azure as their underlying storage to use this feature.
-
-[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3271){: target="_blank" class="btn" }
+[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/pull/4015){: target="_blank" class="btn" }
 
 ### Garbage Collection on Google Cloud Platform
 
@@ -152,8 +151,27 @@ comply with data privacy policies. Currently, lakeFS only supports Garbage Colle
 
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3626){: target="_blank" class="btn" }
 
-### Collaborate on your data
 
-Use lakeFS to comment, review and request changes before your data reaches consumers.
+### Incremental Garbage Collection <span>High Priority</span>{: .label .label-blue }
 
-[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/pull/3741){: target="_blank" class="btn" }
+Support running the Garbage Collection Spark job incrementally: take into account commits and references scanned and collected on previous runs to avoid traversing the entire graph on each execution.
+
+### Support long running hooks
+
+Support running hooks that might possibly take many minutes to complete. 
+This is useful for things such as data quality checks - where we might want to do big queries or scans to ensure the data being merged adheres to certain business rules.
+
+Currently, `pre-commit` and `pre-merge` hooks in lakeFS are tied to the lifecycle of the API request that triggers the said commit or merge operation.
+In order to support long running hooks, there are enhancements to make to lakeFS APIs in order to support an asynchronous commit and merge operations that are no longer tied to the HTTP request that triggered them.
+
+
+[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3020){: target="_blank" class="btn" }
+
+
+### Git Integration
+
+Support an integration between a lakeFS repository and a Git repository. 
+Allow versioning data assets along with the code that was used to modify/generate them.
+
+[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/2073){: target="_blank" class="btn" }
+

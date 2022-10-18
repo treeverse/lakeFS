@@ -2766,5 +2766,6 @@ Name | Type | Description  | Notes
 **200** | policy |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 

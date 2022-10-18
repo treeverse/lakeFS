@@ -2,10 +2,12 @@ package dynamodb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -207,7 +209,7 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 	if err != nil {
 		dynamoFailures.WithLabelValues(operation).Inc()
-		return nil, fmt.Errorf("get item: %w", err)
+		return nil, fmt.Errorf("get item: %w", handleClientError(err))
 	}
 	if result.ConsumedCapacity != nil {
 		dynamoConsumedCapacity.WithLabelValues(operation).Add(*result.ConsumedCapacity.CapacityUnits)
@@ -283,8 +285,9 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		if _, ok := err.(*dynamodb.ConditionalCheckFailedException); ok && usePredicate {
 			return kv.ErrPredicateFailed
 		}
+
 		dynamoFailures.WithLabelValues(operation).Inc()
-		return fmt.Errorf("put item: %w", err)
+		return fmt.Errorf("put item: %w", handleClientError(err))
 	}
 	if resp.ConsumedCapacity != nil {
 		dynamoConsumedCapacity.WithLabelValues(operation).Add(*resp.ConsumedCapacity.CapacityUnits)
@@ -310,7 +313,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 	if err != nil {
 		dynamoFailures.WithLabelValues(operation).Inc()
-		return fmt.Errorf("delete item: %w", err)
+		return fmt.Errorf("delete item: %w", handleClientError(err))
 	}
 	if resp.ConsumedCapacity != nil {
 		dynamoConsumedCapacity.WithLabelValues(operation).Add(*resp.ConsumedCapacity.CapacityUnits)
@@ -361,7 +364,7 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, 
 	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 	if err != nil {
 		dynamoFailures.WithLabelValues(operation).Inc()
-		return nil, fmt.Errorf("query: %w ", err)
+		return nil, fmt.Errorf("query: %w ", handleClientError(err))
 	}
 	dynamoConsumedCapacity.WithLabelValues(operation).Add(*queryOutput.ConsumedCapacity.CapacityUnits)
 
@@ -374,6 +377,14 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, 
 		currEntryIdx: 0,
 		err:          nil,
 	}, nil
+}
+
+func handleClientError(err error) error {
+	var reqErr awserr.Error
+	if errors.As(err, &reqErr) && errors.Is(reqErr.OrigErr(), context.Canceled) {
+		return reqErr.OrigErr()
+	}
+	return err
 }
 
 func (s *Store) Close() {}

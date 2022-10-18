@@ -75,7 +75,7 @@ func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) st
 		if policy.DisplayName == "" {
 			policy.DisplayName = model.CreateID()
 		}
-		err := s.WritePolicy(ctx, policy)
+		err := s.WritePolicy(ctx, policy, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -502,7 +502,7 @@ func createInitialDataSet(t *testing.T, ctx context.Context, svc auth.Service, u
 
 	numPolicies := len(policyNames)
 	for i, policyName := range policyNames {
-		if err := svc.WritePolicy(ctx, &model.Policy{DisplayName: policyName, Statement: userPoliciesForTesting[0].Statement}); err != nil {
+		if err := svc.WritePolicy(ctx, &model.Policy{DisplayName: policyName, Statement: userPoliciesForTesting[0].Statement}, false); err != nil {
 			t.Fatalf("WritePolicy(%s): %s", policyName, err)
 		}
 		if i < numPolicies/2 {
@@ -1684,6 +1684,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 		firstStatementAction   []string
 		responseName           string
 		expectedErr            error
+		overwrite              bool
 	}{
 		{
 			name:                   "successful",
@@ -1705,13 +1706,32 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 			expectedErr:            model.ErrValidationError, // TODO(Guys): change this once we change this to the right error
 		},
 		{
-			name:                   "policy_exists",
+			name:                   "create_policy_exists",
 			policyName:             "existingPolicy",
 			firstStatementAction:   []string{"action"},
 			firstStatementEffect:   "effect",
 			firstStatementResource: "resource",
 			responseStatusCode:     http.StatusConflict,
 			expectedErr:            auth.ErrAlreadyExists,
+		},
+		{
+			name:                   "update_policy_exists",
+			policyName:             "existingPolicy",
+			firstStatementAction:   []string{"action"},
+			firstStatementEffect:   "effect",
+			firstStatementResource: "resource",
+			responseStatusCode:     http.StatusOK,
+			overwrite:              true,
+		},
+		{
+			name:                   "update_policy_not_exists",
+			policyName:             "NewPolicy",
+			firstStatementAction:   []string{"action"},
+			firstStatementEffect:   "effect",
+			firstStatementResource: "resource",
+			responseStatusCode:     http.StatusNotFound,
+			expectedErr:            auth.ErrNotFound,
+			overwrite:              true,
 		},
 		{
 			name:                   "internal_error",
@@ -1726,24 +1746,46 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			creationTime := time.Unix(123456789, 0)
-			response := &auth.CreatePolicyResponse{
-				HTTPResponse: &http.Response{
-					StatusCode: tt.responseStatusCode,
-				},
-				JSON201: &auth.Policy{
-					Name: tt.responseName,
-				},
+
+			if tt.overwrite {
+				response := &auth.UpdatePolicyResponse{
+					HTTPResponse: &http.Response{
+						StatusCode: tt.responseStatusCode,
+					},
+					JSON200: &auth.Policy{
+						Name: tt.responseName,
+					},
+				}
+				mockClient.EXPECT().UpdatePolicyWithResponse(gomock.Any(), tt.policyName, gomock.Eq(auth.UpdatePolicyJSONRequestBody{
+					CreationDate: swag.Int64(creationTime.Unix()),
+					Name:         tt.policyName,
+					Statement: []auth.Statement{{
+						Action:   tt.firstStatementAction,
+						Effect:   tt.firstStatementEffect,
+						Resource: tt.firstStatementResource,
+					},
+					},
+				})).MaxTimes(1).Return(response, nil)
+			} else {
+				response := &auth.CreatePolicyResponse{
+					HTTPResponse: &http.Response{
+						StatusCode: tt.responseStatusCode,
+					},
+					JSON201: &auth.Policy{
+						Name: tt.responseName,
+					},
+				}
+				mockClient.EXPECT().CreatePolicyWithResponse(gomock.Any(), gomock.Eq(auth.CreatePolicyJSONRequestBody{
+					CreationDate: swag.Int64(creationTime.Unix()),
+					Name:         tt.policyName,
+					Statement: []auth.Statement{{
+						Action:   tt.firstStatementAction,
+						Effect:   tt.firstStatementEffect,
+						Resource: tt.firstStatementResource,
+					},
+					},
+				})).MaxTimes(1).Return(response, nil)
 			}
-			mockClient.EXPECT().CreatePolicyWithResponse(gomock.Any(), gomock.Eq(auth.CreatePolicyJSONRequestBody{
-				CreationDate: swag.Int64(creationTime.Unix()),
-				Name:         tt.policyName,
-				Statement: []auth.Statement{{
-					Action:   tt.firstStatementAction,
-					Effect:   tt.firstStatementEffect,
-					Resource: tt.firstStatementResource,
-				},
-				},
-			})).MaxTimes(1).Return(response, nil)
 			ctx := context.Background()
 			err := s.WritePolicy(ctx, &model.Policy{
 				DisplayName: tt.policyName,
@@ -1753,7 +1795,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 					Effect:   tt.firstStatementEffect,
 					Resource: tt.firstStatementResource,
 				}},
-			})
+			}, tt.overwrite)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("CreatePolicy: expected err: %v got: %v", tt.expectedErr, err)
 			}

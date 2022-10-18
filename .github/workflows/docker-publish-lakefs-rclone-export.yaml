@@ -25,9 +25,9 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event.inputs.tag }}" != "" ]; then
-            echo "::set-output name=tag::$(echo ${{ github.event.inputs.tag }} | sed s/^v//)"
+            echo "tag=$(echo ${{ github.event.inputs.tag }} | sed s/^v//)" >> $GITHUB_ENV
           else
-            echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//)"
+            echo "tag=$(echo ${GITHUB_REF##*/} | sed s/^v//)" >> $GITHUB_ENV
           fi
         id: version
 

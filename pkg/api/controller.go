@@ -712,7 +712,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 		Statement:   stmts,
 	}
 
-	err := c.Auth.WritePolicy(ctx, p)
+	err := c.Auth.WritePolicy(ctx, p, false)
 	if c.handleAPIError(ctx, w, err) {
 		return
 	}
@@ -775,6 +775,12 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body U
 	}) {
 		return
 	}
+	// verify requested policy match the policy document id
+	if policyID != body.Id {
+		writeError(w, http.StatusBadRequest, "can't update policy id")
+		return
+	}
+
 	ctx := r.Context()
 	c.LogAction(ctx, "update_policy", r, "", "", "")
 
@@ -792,7 +798,7 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body U
 		DisplayName: policyID,
 		Statement:   stmts,
 	}
-	err := c.Auth.WritePolicy(ctx, p)
+	err := c.Auth.WritePolicy(ctx, p, true)
 	if c.handleAPIError(ctx, w, err) {
 		return
 	}

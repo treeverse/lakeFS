@@ -5,7 +5,6 @@ import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse
 import io.treeverse.clients.LakeFSContext._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs._
-import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
@@ -18,14 +17,6 @@ import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneOffset}
 import java.util.UUID
-
-class ConfigMapper(val hcValues: Broadcast[Array[(String, String)]]) extends Serializable {
-  @transient lazy val configuration = {
-    val conf = new Configuration()
-    hcValues.value.foreach({ case (k, v) => conf.set(k, v) })
-    conf
-  }
-}
 
 trait RangeGetter extends Serializable {
 
