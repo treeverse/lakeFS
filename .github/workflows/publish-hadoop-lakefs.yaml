@@ -105,6 +105,10 @@ jobs:
         working-directory: clients/hadoopfs
         run: mvn -P${{ steps.hadoop_profile.outputs.hadoopProfile }} s3-storage-wagon:s3-upload@upload-jar -DpublicRepository=true
 
+      - name: Package - assembly
+        working-directory: clients/hadoopfs
+        run: mvn package -P${{ steps.hadoop_profile.outputs.hadoopProfile }},assembly -DskipTests
+
       - name: Upload S3 - assembly
         working-directory: clients/hadoopfs
-        run: mvn -P${{ steps.hadoop_profile.outputs.hadoopProfile }},assembly package s3-storage-wagon:s3-upload@upload-jar -DpublicRepository=true -DskipTests
+        run: mvn -P${{ steps.hadoop_profile.outputs.hadoopProfile }},assembly s3-storage-wagon:s3-upload@upload-jar -DpublicRepository=true -DskipTests
