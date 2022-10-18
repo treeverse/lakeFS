@@ -9,8 +9,8 @@
 		<img src="https://github.com/treeverse/lakeFS/workflows/Go/badge.svg?branch=master" alt="Go tests status" /></a>
 	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster++" >
 		<img src="https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master" alt="Node tests status" /></a>
-	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3ANessie">
-		<img src="https://github.com/treeverse/lakeFS/workflows/Nessie/badge.svg" alt="nessie integration tests status" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3AEsti">
+		<img src="https://github.com/treeverse/lakeFS/workflows/Esti/badge.svg" alt="Integration tests status" /></a>
 	<a href="https://artifacthub.io/packages/search?repo=lakefs">
 		<img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/lakefs" alt="Artifact HUB" /></a>
 	<a href="CODE_OF_CONDUCT.md">
@@ -29,81 +29,69 @@ lakeFS supports AWS S3, Azure Blob Storage, and Google Cloud Storage as its unde
 
 For more information, see the [official lakeFS documentation](https://docs.lakefs.io).
 
+
 ## Capabilities
 
-**In Development**
+### In Development
 
 * **Experiment** - try new tools, upgrade versions, and evaluate code changes in isolation. You can get an isolated snapshot to run and compare experiments by creating a new branch of the data, while others are not exposed.
 * **Debug** - checkout specific commits in a repository’s commit history to materialize consistent, historical versions of your data. 
 * **Collaborate** - leverage isolated branches managed by metadata (not copies of files) to work in parallel.
 
-**During Deployment**
+### During Deployment
 
 * **Version Control** - deploy data safely with CI/CD workflows borrowed from software engineering best practices. Ingest new data onto an isolated branch, perform data validations, then add to production through a merge operation.
 * **Test** - define pre-merge and pre-commit hooks to run tests that enforce schema and validate properties of the data to catch issues before they reach production.
 
-**In Production**
+### In Production
 
 * **Roll Back** - recover from errors by instantly reverting data to a former, consistent snapshot of the data lake. Choose any commit in a repository’s commit history to revert in one atomic action.
 * **Troubleshoot** - investigate production errors by starting with a snapshot of the inputs to the failed process. 
 * **Cross-collection Consistency** - provide consumers multiple synchronized collections of data in one atomic, revertable action. 
 
 
-
 ## Getting Started
 
-#### Docker (MacOS, Linux)
+### Using Docker
 
-1. Ensure you have Docker & Docker Compose installed on your computer.
+_Use this section to learn about lakeFS. For a production-suitable deployment, see the [docs](https://docs.lakefs.io/deploy/)._
+
+1. Ensure you have Docker installed on your computer.
 
 2. Run the following command:
 
    ```bash
-   curl https://compose.lakefs.io | docker-compose -f - up
+   docker run --pull always --name lakefs -p 8000:8000 treeverse/lakefs run --local-settings
    ```
 
-3. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup) in your web browser to set up an initial admin user.  You will use this user to log in and send API requests.
+3. Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your web browser to set up an initial admin user.  You will use this user to log in and send API requests.
 
+### Other quickstart methods
 
-#### Docker (Windows)
+You can try lakeFS:
 
-1. Ensure you have Docker installed.
+* Without installing, using the [lakeFS Playground](https://demo.lakefs.io).
+* [On Kubernetes](https://docs.lakefs.io/quickstart/more_quickstart_options.html#on-kubernetes-with-helm).
+* By [running the binary directly](https://docs.lakefs.io/quickstart/more_quickstart_options.html#using-the-binary).
 
-2. Run the following command in PowerShell:
+### Setting up a repository
 
-   ```shell script
-   Invoke-WebRequest https://compose.lakefs.io | Select-Object -ExpandProperty Content | docker-compose -f - up
-   ``` 
-
-3. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup) in your web browser to set up an initial admin user, used to login and send API requests.
-
-#### Download the Binary
-
-Alternatively, you can download the lakeFS binaries and run them directly.
-
-Binaries are available at [https://github.com/treeverse/lakeFS/releases](https://github.com/treeverse/lakeFS/releases).
-
-
-#### Setting up a repository
-
-Please follow the [Guide to Get Started](https://docs.lakefs.io/quickstart/repository) to set up your local lakeFS installation.
-
-For more detailed information on how to set up lakeFS, please visit the [lakeFS documentation](https://docs.lakefs.io).
+Once lakeFS is installed, you are ready to [create your first repository](https://docs.lakefs.io/quickstart/repository)!
 
 ## Community
 
 Stay up to date and get lakeFS support via:
 
-- [Slack](https://lakefs.io/slack) (to get help from our team and other users).
-- [Twitter](https://twitter.com/lakeFS) (follow for updates and news)
-- [YouTube](https://lakefs.io/youtube) (learn from video tutorials)
-- [Contact us](https://lakefs.io/contact-us/) (for anything)
+- Share your lakeFS experience and get support on [our Slack](https://go.lakefs.io/JoinSlack).
+- Follow us and join the conversation on [Twitter](https://twitter.com/lakeFS).
+- Learn from video tutorials on [our YouTube channel](https://lakefs.io/youtube).
+- Feel free to [contact us](https://lakefs.io/contact-us/) about anything else.
 
 ## More information
 
-- [lakeFS documentation](https://docs.lakefs.io)
-- If you would like to contribute, check out our [contributing guide](https://docs.lakefs.io/contributing).
-- [Roadmap](https://docs.lakefs.io/understand/roadmap.html)
+- Read the [documentation](https://docs.lakefs.io).
+- See the [contributing guide](https://docs.lakefs.io/contributing).
+- Take a look at our [roadmap](https://docs.lakefs.io/understand/roadmap.html) to peek into the future of lakeFS.
 
 ## Licensing
 

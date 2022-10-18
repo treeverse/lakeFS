@@ -6,6 +6,7 @@ docs/ActionRun.md
 docs/ActionRunList.md
 docs/ActionsApi.md
 docs/AuthApi.md
+docs/AuthCapabilities.md
 docs/AuthenticationToken.md
 docs/BranchCreation.md
 docs/BranchProtectionRule.md
@@ -22,6 +23,7 @@ docs/CurrentUser.md
 docs/Diff.md
 docs/DiffList.md
 docs/Error.md
+docs/ForgotPasswordRequest.md
 docs/GarbageCollectionPrepareRequest.md
 docs/GarbageCollectionPrepareResponse.md
 docs/GarbageCollectionRule.md
@@ -32,11 +34,16 @@ docs/GroupList.md
 docs/HealthCheckApi.md
 docs/HookRun.md
 docs/HookRunList.md
+docs/ImportApi.md
+docs/ImportPagination.md
+docs/IngestRangeCreationResponse.md
 docs/InlineObject1.md
 docs/LoginInformation.md
 docs/Merge.md
 docs/MergeResult.md
 docs/MergeResultSummary.md
+docs/MetaRangeCreation.md
+docs/MetaRangeCreationResponse.md
 docs/MetadataApi.md
 docs/ObjectError.md
 docs/ObjectErrorList.md
@@ -49,6 +56,7 @@ docs/Pagination.md
 docs/PathList.md
 docs/Policy.md
 docs/PolicyList.md
+docs/RangeMetadata.md
 docs/Ref.md
 docs/RefList.md
 docs/RefsApi.md
@@ -62,6 +70,7 @@ docs/RetentionApi.md
 docs/RevertCreation.md
 docs/Setup.md
 docs/SetupState.md
+docs/StageRangeCreation.md
 docs/StagingApi.md
 docs/StagingLocation.md
 docs/StagingMetadata.md
@@ -70,7 +79,9 @@ docs/StorageConfig.md
 docs/StorageURI.md
 docs/TagCreation.md
 docs/TagsApi.md
+docs/TemplatesApi.md
 docs/UnderlyingObjectProperties.md
+docs/UpdatePasswordByToken.md
 docs/User.md
 docs/UserCreation.md
 docs/UserList.md
@@ -83,6 +94,7 @@ lakefs_client/api/branches_api.py
 lakefs_client/api/commits_api.py
 lakefs_client/api/config_api.py
 lakefs_client/api/health_check_api.py
+lakefs_client/api/import_api.py
 lakefs_client/api/metadata_api.py
 lakefs_client/api/objects_api.py
 lakefs_client/api/refs_api.py
@@ -90,6 +102,7 @@ lakefs_client/api/repositories_api.py
 lakefs_client/api/retention_api.py
 lakefs_client/api/staging_api.py
 lakefs_client/api/tags_api.py
+lakefs_client/api/templates_api.py
 lakefs_client/api_client.py
 lakefs_client/apis/__init__.py
 lakefs_client/configuration.py
@@ -98,6 +111,7 @@ lakefs_client/model/__init__.py
 lakefs_client/model/access_key_credentials.py
 lakefs_client/model/action_run.py
 lakefs_client/model/action_run_list.py
+lakefs_client/model/auth_capabilities.py
 lakefs_client/model/authentication_token.py
 lakefs_client/model/branch_creation.py
 lakefs_client/model/branch_protection_rule.py
@@ -111,6 +125,7 @@ lakefs_client/model/current_user.py
 lakefs_client/model/diff.py
 lakefs_client/model/diff_list.py
 lakefs_client/model/error.py
+lakefs_client/model/forgot_password_request.py
 lakefs_client/model/garbage_collection_prepare_request.py
 lakefs_client/model/garbage_collection_prepare_response.py
 lakefs_client/model/garbage_collection_rule.py
@@ -120,11 +135,15 @@ lakefs_client/model/group_creation.py
 lakefs_client/model/group_list.py
 lakefs_client/model/hook_run.py
 lakefs_client/model/hook_run_list.py
+lakefs_client/model/import_pagination.py
+lakefs_client/model/ingest_range_creation_response.py
 lakefs_client/model/inline_object1.py
 lakefs_client/model/login_information.py
 lakefs_client/model/merge.py
 lakefs_client/model/merge_result.py
 lakefs_client/model/merge_result_summary.py
+lakefs_client/model/meta_range_creation.py
+lakefs_client/model/meta_range_creation_response.py
 lakefs_client/model/object_error.py
 lakefs_client/model/object_error_list.py
 lakefs_client/model/object_stage_creation.py
@@ -135,6 +154,7 @@ lakefs_client/model/pagination.py
 lakefs_client/model/path_list.py
 lakefs_client/model/policy.py
 lakefs_client/model/policy_list.py
+lakefs_client/model/range_metadata.py
 lakefs_client/model/ref.py
 lakefs_client/model/ref_list.py
 lakefs_client/model/refs_dump.py
@@ -145,6 +165,7 @@ lakefs_client/model/reset_creation.py
 lakefs_client/model/revert_creation.py
 lakefs_client/model/setup.py
 lakefs_client/model/setup_state.py
+lakefs_client/model/stage_range_creation.py
 lakefs_client/model/staging_location.py
 lakefs_client/model/staging_metadata.py
 lakefs_client/model/statement.py
@@ -152,6 +173,7 @@ lakefs_client/model/storage_config.py
 lakefs_client/model/storage_uri.py
 lakefs_client/model/tag_creation.py
 lakefs_client/model/underlying_object_properties.py
+lakefs_client/model/update_password_by_token.py
 lakefs_client/model/user.py
 lakefs_client/model/user_creation.py
 lakefs_client/model/user_list.py
@@ -169,6 +191,7 @@ test/test_action_run.py
 test/test_action_run_list.py
 test/test_actions_api.py
 test/test_auth_api.py
+test/test_auth_capabilities.py
 test/test_authentication_token.py
 test/test_branch_creation.py
 test/test_branch_protection_rule.py
@@ -185,6 +208,7 @@ test/test_current_user.py
 test/test_diff.py
 test/test_diff_list.py
 test/test_error.py
+test/test_forgot_password_request.py
 test/test_garbage_collection_prepare_request.py
 test/test_garbage_collection_prepare_response.py
 test/test_garbage_collection_rule.py
@@ -195,11 +219,16 @@ test/test_group_list.py
 test/test_health_check_api.py
 test/test_hook_run.py
 test/test_hook_run_list.py
+test/test_import_api.py
+test/test_import_pagination.py
+test/test_ingest_range_creation_response.py
 test/test_inline_object1.py
 test/test_login_information.py
 test/test_merge.py
 test/test_merge_result.py
 test/test_merge_result_summary.py
+test/test_meta_range_creation.py
+test/test_meta_range_creation_response.py
 test/test_metadata_api.py
 test/test_object_error.py
 test/test_object_error_list.py
@@ -212,6 +241,7 @@ test/test_pagination.py
 test/test_path_list.py
 test/test_policy.py
 test/test_policy_list.py
+test/test_range_metadata.py
 test/test_ref.py
 test/test_ref_list.py
 test/test_refs_api.py
@@ -225,6 +255,7 @@ test/test_retention_api.py
 test/test_revert_creation.py
 test/test_setup.py
 test/test_setup_state.py
+test/test_stage_range_creation.py
 test/test_staging_api.py
 test/test_staging_location.py
 test/test_staging_metadata.py
@@ -233,7 +264,9 @@ test/test_storage_config.py
 test/test_storage_uri.py
 test/test_tag_creation.py
 test/test_tags_api.py
+test/test_templates_api.py
 test/test_underlying_object_properties.py
+test/test_update_password_by_token.py
 test/test_user.py
 test/test_user_creation.py
 test/test_user_list.py

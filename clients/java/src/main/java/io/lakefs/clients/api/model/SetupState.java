@@ -80,6 +80,14 @@ public class SetupState {
   @SerializedName(SERIALIZED_NAME_STATE)
   private StateEnum state;
 
+  public static final String SERIALIZED_NAME_OIDC_ENABLED = "oidc_enabled";
+  @SerializedName(SERIALIZED_NAME_OIDC_ENABLED)
+  private Boolean oidcEnabled;
+
+  public static final String SERIALIZED_NAME_OIDC_DEFAULT_LOGIN = "oidc_default_login";
+  @SerializedName(SERIALIZED_NAME_OIDC_DEFAULT_LOGIN)
+  private Boolean oidcDefaultLogin;
+
 
   public SetupState state(StateEnum state) {
     
@@ -104,6 +112,52 @@ public class SetupState {
   }
 
 
+  public SetupState oidcEnabled(Boolean oidcEnabled) {
+    
+    this.oidcEnabled = oidcEnabled;
+    return this;
+  }
+
+   /**
+   * Get oidcEnabled
+   * @return oidcEnabled
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public Boolean getOidcEnabled() {
+    return oidcEnabled;
+  }
+
+
+  public void setOidcEnabled(Boolean oidcEnabled) {
+    this.oidcEnabled = oidcEnabled;
+  }
+
+
+  public SetupState oidcDefaultLogin(Boolean oidcDefaultLogin) {
+    
+    this.oidcDefaultLogin = oidcDefaultLogin;
+    return this;
+  }
+
+   /**
+   * Get oidcDefaultLogin
+   * @return oidcDefaultLogin
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public Boolean getOidcDefaultLogin() {
+    return oidcDefaultLogin;
+  }
+
+
+  public void setOidcDefaultLogin(Boolean oidcDefaultLogin) {
+    this.oidcDefaultLogin = oidcDefaultLogin;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -113,12 +167,14 @@ public class SetupState {
       return false;
     }
     SetupState setupState = (SetupState) o;
-    return Objects.equals(this.state, setupState.state);
+    return Objects.equals(this.state, setupState.state) &&
+        Objects.equals(this.oidcEnabled, setupState.oidcEnabled) &&
+        Objects.equals(this.oidcDefaultLogin, setupState.oidcDefaultLogin);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(state);
+    return Objects.hash(state, oidcEnabled, oidcDefaultLogin);
   }
 
   @Override
@@ -126,6 +182,8 @@ public class SetupState {
     StringBuilder sb = new StringBuilder();
     sb.append("class SetupState {\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
+    sb.append("    oidcEnabled: ").append(toIndentedString(oidcEnabled)).append("\n");
+    sb.append("    oidcDefaultLogin: ").append(toIndentedString(oidcDefaultLogin)).append("\n");
     sb.append("}");
     return sb.toString();
   }

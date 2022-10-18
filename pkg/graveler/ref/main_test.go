@@ -1,16 +1,18 @@
 package ref_test
 
 import (
+	"context"
 	"flag"
 	"os"
 	"testing"
 
 	"github.com/ory/dockertest/v3"
-
 	"github.com/treeverse/lakefs/pkg/batch"
-	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/ident"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -20,22 +22,20 @@ var (
 	databaseURI string
 )
 
-func testRefManager(t testing.TB) *ref.Manager {
+func testRefManager(t testing.TB) (graveler.RefManager, kv.StoreMessage) {
 	t.Helper()
-	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
-	return ref.NewPGRefManager(batch.NopExecutor(), conn, ident.NewHexAddressProvider())
+	ctx := context.Background()
+	kvStore := kvtest.GetStore(ctx, t)
+	storeMessage := kv.StoreMessage{Store: kvStore}
+	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, ident.NewHexAddressProvider()), storeMessage
 }
 
-func testRefManagerWithDB(t testing.TB) (*ref.Manager, db.Database) {
+func testRefManagerWithKVAndAddressProvider(t testing.TB, addressProvider ident.AddressProvider) (graveler.RefManager, kv.StoreMessage) {
 	t.Helper()
-	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
-	return ref.NewPGRefManager(batch.NopExecutor(), conn, ident.NewHexAddressProvider()), conn
-}
-
-func testRefManagerWithAddressProvider(t testing.TB, addressProvider ident.AddressProvider) (*ref.Manager, db.Database) {
-	t.Helper()
-	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
-	return ref.NewPGRefManager(batch.NopExecutor(), conn, addressProvider), conn
+	ctx := context.Background()
+	kvStore := kvtest.GetStore(ctx, t)
+	storeMessage := kv.StoreMessage{Store: kvStore}
+	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, addressProvider), storeMessage
 }
 
 func TestMain(m *testing.M) {

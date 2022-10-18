@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -26,14 +25,21 @@ type Sender interface {
 type TimeFn func() time.Time
 
 type HTTPSender struct {
-	timeFunc TimeFn
-	addr     string
+	addr        string
+	sendTimeout time.Duration
+	timeFunc    TimeFn
+	client      http.Client
 }
 
-func NewHTTPSender(addr string, timeFunc TimeFn) *HTTPSender {
+func NewHTTPSender(addr string, timeout time.Duration, timeFunc TimeFn) *HTTPSender {
+	client := http.Client{
+		Timeout: timeout,
+	}
 	return &HTTPSender{
-		timeFunc: timeFunc,
-		addr:     addr,
+		addr:        addr,
+		sendTimeout: timeout,
+		timeFunc:    timeFunc,
+		client:      client,
 	}
 }
 
@@ -41,7 +47,7 @@ func (s *HTTPSender) UpdateMetadata(ctx context.Context, m Metadata) error {
 	if len(m.InstallationID) == 0 {
 		return ErrNoInstallationID
 	}
-	serialized, err := json.MarshalIndent(m, "", "  ")
+	serialized, err := json.Marshal(m)
 	if err != nil {
 		return fmt.Errorf("failed to serialize account metadata: %w", err)
 	}
@@ -68,17 +74,16 @@ func (s *HTTPSender) SendEvent(ctx context.Context, installationID, processID st
 		Time:           s.timeFunc().Format(time.RFC3339),
 		Metrics:        metrics,
 	}
-	serialized, err := json.MarshalIndent(event, "", "  ")
+	serialized, err := json.Marshal(event)
 	if err != nil {
 		return fmt.Errorf("could not serialize event: %s: %w", err, ErrSendError)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, s.addr+"/events", bytes.NewBuffer(serialized))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.addr+"/events", bytes.NewBuffer(serialized))
 	if err != nil {
 		return fmt.Errorf("could not create HTTP request: %s: %w", err, ErrSendError)
 	}
-	req = req.WithContext(ctx)
-	res, err := http.DefaultClient.Do(req)
+	res, err := s.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("could not make HTTP request: %s: %w", err, ErrSendError)
 	}
@@ -91,28 +96,28 @@ func (s *HTTPSender) SendEvent(ctx context.Context, installationID, processID st
 	return nil
 }
 
-type dummySender struct{}
+type dummySender struct {
+	Log logging.Logger
+}
 
 func (s *dummySender) SendEvent(_ context.Context, installationID, processID string, metrics []Metric) error {
-	if logging.Default().IsTracing() {
-		logging.Default().WithFields(logging.Fields{
-			"installation_id": installationID,
-			"process_id":      processID,
-			"metrics":         spew.Sdump(metrics),
-		}).Trace("dummy sender received metrics")
+	if s.Log == nil || !s.Log.IsTracing() {
+		return nil
 	}
+	s.Log.WithFields(logging.Fields{
+		"installation_id": installationID,
+		"process_id":      processID,
+		"metrics":         fmt.Sprintf("%+v", metrics),
+	}).Trace("dummy sender received metrics")
 	return nil
 }
 
-func (s *dummySender) UpdateMetadata(ctx context.Context, m Metadata) error {
-	if logging.Default().IsTracing() {
-		logging.Default().WithFields(logging.Fields{
-			"metadata": spew.Sdump(m),
-		}).Trace("dummy sender received metadata")
+func (s *dummySender) UpdateMetadata(_ context.Context, m Metadata) error {
+	if s.Log == nil || !s.Log.IsTracing() {
+		return nil
 	}
+	s.Log.WithFields(logging.Fields{
+		"metadata": fmt.Sprintf("%+v", m),
+	}).Trace("dummy sender received metadata")
 	return nil
-}
-
-func NewDummySender() Sender {
-	return &dummySender{}
 }

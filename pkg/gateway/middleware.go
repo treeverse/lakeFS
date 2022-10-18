@@ -16,13 +16,13 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/operations"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
-	"github.com/treeverse/lakefs/pkg/gateway/simulator"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
-func AuthenticationHandler(authService simulator.GatewayAuthService, next http.Handler) http.Handler {
+func AuthenticationHandler(authService auth.GatewayService, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
@@ -55,7 +55,8 @@ func AuthenticationHandler(authService simulator.GatewayAuthService, next http.H
 			_ = o.EncodeError(w, req, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
 			return
 		}
-		user, err := authService.GetUserByID(ctx, creds.UserID)
+
+		user, err := authService.GetUser(ctx, creds.Username)
 		if err != nil {
 			logger.WithError(err).Warn("could not get user for credentials key")
 			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
@@ -102,6 +103,7 @@ func stripPort(host string) string {
 func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
+		client := httputil.GetRequestLakeFSClient(req)
 		o := &operations.Operation{
 			Region:            sc.region,
 			FQDN:              getBareDomain(stripPort(req.Host), sc.bareDomains),
@@ -109,12 +111,24 @@ func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 			MultipartsTracker: sc.multipartsTracker,
 			BlockStore:        sc.blockStore,
 			Auth:              sc.authService,
-			Incr: func(action string) {
+			Incr: func(action, userID, repository, ref string) {
 				logging.FromContext(ctx).
-					WithField("action", action).
-					WithField("message_type", "action").
+					WithFields(logging.Fields{
+						"action":       action,
+						"message_type": "action",
+						"repository":   repository,
+						"ref":          ref,
+						"user_id":      userID,
+					}).
 					Debug("performing S3 action")
-				sc.stats.CollectEvent("s3_gateway", action)
+				sc.stats.CollectEvent(stats.Event{
+					Class:      "s3_gateway",
+					Name:       action,
+					Repository: repository,
+					Ref:        ref,
+					UserID:     userID,
+					Client:     client,
+				})
 			},
 		}
 		next.ServeHTTP(w, req.WithContext(context.WithValue(ctx, ContextKeyOperation, o)))
@@ -127,12 +141,12 @@ func DurationHandler(next http.Handler) http.Handler {
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		start := time.Now()
 		mrw := httputil.NewMetricResponseWriter(w)
-		next.ServeHTTP(w, req)
+		next.ServeHTTP(mrw, req)
 		requestHistograms.WithLabelValues(string(o.OperationID), strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 	})
 }
 
-func EnrichWithRepositoryOrFallback(c catalog.Interface, authService simulator.GatewayAuthService, fallbackProxy http.Handler, next http.Handler) http.Handler {
+func EnrichWithRepositoryOrFallback(c catalog.Interface, authService auth.GatewayService, fallbackProxy http.Handler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		repoID := ctx.Value(ContextKeyRepositoryID).(string)
@@ -148,7 +162,8 @@ func EnrichWithRepositoryOrFallback(c catalog.Interface, authService simulator.G
 			authResp, authErr := authService.Authorize(ctx, &auth.AuthorizationRequest{
 				Username: username,
 				RequiredPermissions: permissions.Node{
-					Permission: permissions.Permission{Action: permissions.ListRepositoriesAction, Resource: "*"}},
+					Permission: permissions.Permission{Action: permissions.ListRepositoriesAction, Resource: "*"},
+				},
 			})
 			if authErr != nil || authResp.Error != nil || !authResp.Allowed {
 				_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
@@ -175,10 +190,10 @@ func OperationLookupHandler(next http.Handler) http.Handler {
 		ctx := req.Context()
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		repoID := ctx.Value(ContextKeyRepositoryID).(string)
-		var operationID operations.OperationID
+		o.OperationID = operations.OperationIDOperationNotFound
 		if repoID == "" {
 			if req.Method == http.MethodGet {
-				operationID = operations.OperationIDListBuckets
+				o.OperationID = operations.OperationIDListBuckets
 			} else {
 				_ = o.EncodeError(w, req, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
 				return
@@ -189,20 +204,19 @@ func OperationLookupHandler(next http.Handler) http.Handler {
 			switch {
 			case ref != "" && pth != "":
 				req = req.WithContext(ctx)
-				operationID = pathBasedOperationID(req.Method)
+				o.OperationID = pathBasedOperationID(req.Method)
 			case ref == "" && pth == "":
-				operationID = repositoryBasedOperationID(req.Method)
+				o.OperationID = repositoryBasedOperationID(req.Method)
 			default:
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
 		}
-		o.OperationID = operationID
 		next.ServeHTTP(w, req)
 	})
 }
 
-// memberFold returns true if a is equal case-folded to a member of bs.
+// memberFold returns true if 'a' is equal case-folded to a member of bs.
 func memberFold(a string, bs []string) bool {
 	for _, b := range bs {
 		if strings.EqualFold(a, b) {
@@ -231,7 +245,7 @@ func ParseRequestParts(host string, urlPath string, bareDomains []string) Reques
 	// 3. none of the above, path based
 	if memberFold(httputil.HostOnly(host), ourHosts) {
 		// path style: extract repo from first part
-		p = strings.SplitN(urlPath, path.Separator, 3)
+		p = strings.SplitN(urlPath, path.Separator, 3) //nolint: gomnd
 		parts.Repository = p[0]
 		if len(p) >= 1 {
 			p = p[1:]
@@ -248,13 +262,13 @@ func ParseRequestParts(host string, urlPath string, bareDomains []string) Reques
 			}
 		}
 		if parts.MatchedHost {
-			p = strings.SplitN(urlPath, path.Separator, 2)
+			p = strings.SplitN(urlPath, path.Separator, 2) //nolint: gomnd
 		}
 	}
 
 	if !parts.MatchedHost {
 		// assume path based for domains we don't explicitly know
-		p = strings.SplitN(urlPath, path.Separator, 3)
+		p = strings.SplitN(urlPath, path.Separator, 3) //nolint: gomnd
 		parts.Repository = p[0]
 		if len(p) >= 1 {
 			p = p[1:]

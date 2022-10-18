@@ -29,3 +29,4 @@ lakefs_client/client.py
 Gemfile.lock
 Gemfile
 _config.yml
+templates/

@@ -83,6 +83,7 @@ class UserCreation(ModelNormal):
         """
         return {
             'id': (str,),  # noqa: E501
+            'invite_user': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -92,6 +93,7 @@ class UserCreation(ModelNormal):
 
     attribute_map = {
         'id': 'id',  # noqa: E501
+        'invite_user': 'invite_user',  # noqa: E501
     }
 
     read_only_vars = {
@@ -105,7 +107,7 @@ class UserCreation(ModelNormal):
         """UserCreation - a model defined in OpenAPI
 
         Args:
-            id (str):
+            id (str): a unique identifier for the user. In password-based authentication, this is the email.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -138,6 +140,7 @@ class UserCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            invite_user (bool): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -190,7 +193,7 @@ class UserCreation(ModelNormal):
         """UserCreation - a model defined in OpenAPI
 
         Args:
-            id (str):
+            id (str): a unique identifier for the user. In password-based authentication, this is the email.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -223,6 +226,7 @@ class UserCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            invite_user (bool): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

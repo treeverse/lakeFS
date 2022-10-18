@@ -22,10 +22,11 @@ type objectCommitData struct {
 }
 
 var annotateCmd = &cobra.Command{
-	Use:     "annotate <path uri>",
-	Short:   "List entries under a given path, annotating each with the latest modifying commit",
-	Aliases: []string{"blame"},
-	Args:    cobra.ExactArgs(1),
+	Use:               "annotate <path uri>",
+	Short:             "List entries under a given path, annotating each with the latest modifying commit",
+	Aliases:           []string{"blame"},
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
 		recursive, _ := cmd.Flags().GetBool("recursive")
@@ -34,11 +35,15 @@ var annotateCmd = &cobra.Command{
 		context := cmd.Context()
 		resp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, &api.ListObjectsParams{Prefix: &pfx})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 		var listObjectsDelimiter api.PaginationDelimiter
 		if !recursive {
 			listObjectsDelimiter = PathDelimiter
 		}
 		var from string
+		limit := true
 		for {
 			params := &api.ListObjectsParams{
 				Prefix:    &pfx,
@@ -47,9 +52,13 @@ var annotateCmd = &cobra.Command{
 			}
 			listObjectsResp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, params)
 			DieOnErrorOrUnexpectedStatusCode(listObjectsResp, err, http.StatusOK)
+			if resp.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
 			for _, obj := range listObjectsResp.JSON200.Results {
 				logCommitsParams := &api.LogCommitsParams{
 					Amount: api.PaginationAmountPtr(1),
+					Limit:  &limit,
 				}
 				if recursive {
 					logCommitsParams.Objects = &[]string{obj.Path}
@@ -57,7 +66,10 @@ var annotateCmd = &cobra.Command{
 					logCommitsParams.Prefixes = &[]string{obj.Path}
 				}
 				logCommitsResp, err := client.LogCommitsWithResponse(context, pathURI.Repository, pathURI.Ref, logCommitsParams)
-				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+				DieOnErrorOrUnexpectedStatusCode(logCommitsResp, err, http.StatusOK)
+				if resp.JSON200 == nil {
+					Die("Bad response from server", 1)
+				}
 				data := objectCommitData{
 					Object: obj.Path,
 				}
@@ -84,7 +96,7 @@ func stringTrimLen(str string, size int) string {
 }
 
 func splitOnNewLine(str string) string {
-	return strings.SplitN(str, "\\n", 2)[0]
+	return strings.SplitN(str, "\\n", 2)[0] //nolint: gomnd
 }
 
 //nolint:gochecknoinits

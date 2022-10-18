@@ -24,29 +24,31 @@ import (
 	"golang.org/x/term"
 )
 
-var isTerminal = true
-var noColorRequested = false
-var verboseMode = false
+var (
+	isTerminal       = true
+	noColorRequested = false
+	verboseMode      = false
+)
 
 // ErrInvalidValueInList is an error returned when a parameter of type list contains an empty string
 var ErrInvalidValueInList = errors.New("empty string in list")
 
 var accessKeyRegexp = regexp.MustCompile(`^AKIA[I|J][A-Z0-9]{14}Q$`)
 
-// const values used by lakectl commands
 const (
 	PathDelimiter = "/"
 )
 
 const (
-	LakectlInteractive        = "LAKECTL_INTERACTIVE"
-	LakectlInteractiveDisable = "no"
-	DeathMessage              = "{{.Error|red}}\nError executing command.\n"
-	DeathMessageWithFields    = "{{.Message|red}}\n{{.Status}}\n"
+	LakectlInteractive     = "LAKECTL_INTERACTIVE"
+	DeathMessage           = "{{.Error|red}}\nError executing command.\n"
+	DeathMessageWithFields = "{{.Message|red}}\n{{.Status}}\n"
 )
 
-const internalPageSize = 1000          // when retreiving all records, use this page size under the hood
-const defaultAmountArgumentValue = 100 // when no amount is specified, use this value for the argument
+const (
+	internalPageSize           = 1000 // when retrieving all records, use this page size under the hood
+	defaultAmountArgumentValue = 100  // when no amount is specified, use this value for the argument
+)
 
 const resourceListTemplate = `{{.Table | table -}}
 {{.Pagination | paginate }}
@@ -54,8 +56,15 @@ const resourceListTemplate = `{{.Table | table -}}
 
 //nolint:gochecknoinits
 func init() {
-	// disable colors if we're not attached to interactive TTY
-	if !term.IsTerminal(int(os.Stdout.Fd())) || os.Getenv(LakectlInteractive) == LakectlInteractiveDisable || noColorRequested {
+	// disable colors if we're not attached to interactive TTY.
+	// when environment variable is set we use it to control interactive mode
+	// otherwise we will try to detect based on the standard output
+	interactiveVal := os.Getenv(LakectlInteractive)
+	if interactiveVal != "" {
+		if interactive, err := strconv.ParseBool(interactiveVal); err == nil && !interactive {
+			DisableColors()
+		}
+	} else if !term.IsTerminal(int(os.Stdout.Fd())) {
 		DisableColors()
 	}
 }
@@ -238,11 +247,7 @@ func DieOnErrorOrUnexpectedStatusCode(response interface{}, err error, expectedS
 		Die("could not get status code from response", 1)
 	}
 	if statusCode != expectedStatusCode {
-		// redirected to not found page
-		if statusCode == http.StatusFound {
-			Die("got not-found error, probably wrong endpoint url", 1)
-		}
-		Die("got unexpected status code: "+strconv.Itoa(statusCode)+", expected: "+strconv.Itoa(expectedStatusCode), 1)
+		DieFmt("got unexpected status code: %d, expected: %d", statusCode, expectedStatusCode)
 	}
 }
 
@@ -296,6 +301,17 @@ func MustParseRefURI(name, s string) *uri.URI {
 	}
 	if !u.IsRef() {
 		DieFmt("Invalid %s: %s", name, uri.ErrInvalidRefURI)
+	}
+	return u
+}
+
+func MustParseBranchURI(name, s string) *uri.URI {
+	u, err := uri.ParseWithBaseURI(s, baseURI)
+	if err != nil {
+		DieFmt("Invalid '%s': %s", name, err)
+	}
+	if !u.IsBranch() {
+		DieFmt("Invalid %s: %s", name, uri.ErrInvalidBranchURI)
 	}
 	return u
 }

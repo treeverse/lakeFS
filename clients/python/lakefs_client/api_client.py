@@ -77,7 +77,7 @@ class ApiClient(object):
             self.default_headers[header_name] = header_value
         self.cookie = cookie
         # Set default User-Agent.
-        self.user_agent = 'OpenAPI-Generator/0.1.0-SNAPSHOT/python'
+        self.user_agent = 'lakefs-python-sdk/0.1.0-SNAPSHOT'
 
     def __enter__(self):
         return self

@@ -35,7 +35,7 @@ const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
 
     let content;
     if (loading) content = <Loading/>;
-    else if (!!error) content=  <Error error={error}/>;
+    else if (error) content=  <Error error={error}/>;
     else content = (
             <>
                 {attachError && <Error error={attachError}/>}
@@ -114,7 +114,7 @@ const GroupPoliciesContainer = () => {
     const { groupId } = router.params;
     return (!groupId) ? <></> : <GroupPoliciesList
         groupId={groupId}
-        after={(!!after) ? after : ""}
+        after={(after) ? after : ""}
         onPaginate={after => router.push({pathname: '/auth/groups/:groupId/policies', params: {groupId}, query: {after}})}
     />;
 };

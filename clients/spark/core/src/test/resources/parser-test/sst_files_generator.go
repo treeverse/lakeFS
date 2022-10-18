@@ -65,7 +65,10 @@ func writeSstWithBadMagic() {
 	if err != nil {
 		panic(err)
 	}
-	os.Truncate(testFileName+".sst", fi.Size()-MagicLengthBytes/2)
+	err = os.Truncate(testFileName+".sst", fi.Size()-MagicLengthBytes/2)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func writeEmptyFile() {
@@ -278,7 +281,7 @@ func createTestInputFiles(keys []string, genValue func() (string, error), size i
 			panic(err)
 		}
 		if err := writer.Set([]byte(k), []byte(v)); err != nil {
-			panic(fmt.Errorf("setting key and value: %w, into %w", err, sstFileName))
+			panic(fmt.Errorf("setting key and value: %w, into %s", err, sstFileName))
 		}
 		expectedContents = append(expectedContents, Entry{Key: k, Value: v})
 	}

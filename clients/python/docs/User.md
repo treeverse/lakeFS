@@ -4,7 +4,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**id** | **str** |  | 
+**id** | **str** | a unique identifier for the user. In password-based authentication, this is the email. | 
 **creation_date** | **int** | Unix Epoch in seconds | 
 **friendly_name** | **str** |  | [optional] 
 **email** | **str** |  | [optional] 

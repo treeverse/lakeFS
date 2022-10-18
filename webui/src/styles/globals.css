@@ -22,8 +22,20 @@
   padding-top: 7px;
 }
 
-.card.login-widget,.card.setup-widget {
+.card.login-widget {
+  width: 400px;
+}
+
+.card.login-widget .btn {
+  width: 100%;
+}
+
+.card.login-widget,.card.setup-widget, .reset-pwd-widget, .request-reset-pwd-widget {
   margin-top: 130px;
+}
+
+.card.create-invited-user-widget {
+  margin-bottom: 10px;
 }
 
 .action-bar {
@@ -177,6 +189,16 @@
   font-weight: bold;
 }
 
+.table .leaf-entry-row .objects-diff .unchanged {
+  color: var(--color-fg-conflict);
+  font-weight: bold;
+}
+
+.table .leaf-entry-row .objects-diff .conflict {
+  color: var(--color-fg-conflict);
+  font-weight: bold;
+}
+
 .table .leaf-entry-row .objects-diff .diff-size {
   font-weight: bold;
 }
@@ -302,29 +324,18 @@
 }
 
 .table .change-entry-row .change-entry-row-actions .btn-link,
-.table .tree-entry-row .change-entry-row-actions .btn-link,
-.actions-runs-list .table tbody tr td .clipboard-copy button,
-.actions-runs-list .table tbody tr td .run-filter .link {
+.table .tree-entry-row .change-entry-row-actions .btn-link {
   visibility: hidden;
   font-size: 0.7rem;
 }
 .table .change-entry-row:hover .change-entry-row-actions .btn-link,
 .table .tree-entry-row:hover .change-entry-row-actions .btn-link,
-.table .tree-entry-row:focus .change-entry-row-actions .btn-link,
-.actions-runs-list .table tbody tr:hover td .clipboard-copy button ,
-.actions-runs-list .table tbody tr:focus td .clipboard-copy button ,
-.actions-runs-list .table tbody tr:hover td .run-filter .link ,
-.actions-runs-list .table tbody tr:focus td .run-filter .link {
+.table .tree-entry-row:focus .change-entry-row-actions .btn-link {
   visibility: visible;
   display: inline-block;
 }
 
-.tree-container .alert {
-  /*margin: 20px;*/
-}
-
 .tree-container {
-  margin-bottom: 30px;
   font-size: .9rem;
 }
 
@@ -350,10 +361,6 @@
 
 .tree-container .table td {
   word-break: break-word;
-}
-
-.paginator  {
-  /*text-align: center;*/
 }
 
 .commit-metadata {
@@ -448,4 +455,114 @@ td .form-group {
 .change-summary-icon {
   margin-left: 0.125rem;
   padding: .1rem;
+}
+
+.reset-req-sent {
+  align-items: center;
+  text-align: center;
+  margin-top: 50%;
+  font-size: 18px;
+}
+
+.invited-welcome-msg {
+  align-items: center;
+  padding-top: 200px;
+  padding-bottom: 0px;
+}
+
+.invited-welcome-msg .title {
+  text-align: left;
+  padding-bottom: 30px;
+  font-size: 30px;
+  font-weight: bold;
+  color: #2ce5b5;
+}
+
+.invited-welcome-msg .body {
+  text-align: left;
+  font-size: 20px;
+  padding-bottom: 40px;
+}
+
+.action-bar .btn {
+  border: transparent;
+}
+
+.action-bar .btn.create-user {
+  background-color: #258c82;
+}
+
+.action-bar .btn.cancel-create-user {
+  background-color: #7e7e7e;
+}
+
+.after-setup-btn {
+  width: 250px;
+  margin-top: 7px;
+  background-color: #0fa276;
+  border: 0;
+}
+.after-setup-btn:hover {
+  background-color: #4e555b;
+}
+
+.after-setup-card code {
+  color: #4e555b;
+}
+
+.copy-button {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 5px 0;
+}
+
+.import-num-objects {
+  display: inline-flex;
+  color: green;
+}
+
+.import-text {
+  display: flex;
+  justify-content: center
+}
+
+.import-success {
+  color: green;
+  display: flex;
+  justify-content: center;
+  font-size: 160%
+}
+
+.wizard-progress-bar {
+  margin-bottom: 25px;
+}
+
+.wizard-step-header {
+  display: flex;
+  justify-content: left;
+  margin-bottom: 20px;
+  margin-top: 40px;
+}
+
+.code-container {
+  border-radius: 10px;
+  border: 1px solid #dadada;
+  background-color: #FBFBFB;
+}
+
+.readme-card {
+  margin-top: 0;
+}
+
+.readme-heading {
+  background-color: inherit;
+}
+
+.form-label {
+  white-space: nowrap;
+}
+
+.download-button {
+  margin-right: 8px;
 }

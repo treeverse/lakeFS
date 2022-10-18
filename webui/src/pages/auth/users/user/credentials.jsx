@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 
 import {AuthLayout} from "../../../../lib/components/auth/layout";
-import {UserHeader} from "../../../../lib/components/auth/nav";
+import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {auth} from "../../../../lib/api";
 import {CredentialsShowModal, CredentialsTable} from "../../../../lib/components/auth/credentials";
 import useUser from "../../../../lib/hooks/user";
@@ -36,7 +36,7 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
                 {createError && <Error error={createError}/>}
                 <CredentialsTable
                     userId={userId}
-                    currentAccessKey={(!!user) ? user.accessKeyId : ""}
+                    currentAccessKey={(user) ? user.accessKeyId : ""}
                     refresh={refresh}
                     after={after}
                     onPaginate={onPaginate}
@@ -46,7 +46,7 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
 
     return (
         <>
-            <UserHeader userId={userId} page={'credentials'}/>
+            <UserHeaderWithContext userId={userId} page={'credentials'}/>
 
             <ActionsBar>
                 <ActionGroup orientation="left">
@@ -87,7 +87,7 @@ const UserCredentialsContainer = () => {
     const { userId } = router.params;
     return (!userId) ? <></> : <UserCredentialsList
         userId={userId}
-        after={(!!after) ? after : ""}
+        after={(after) ? after : ""}
         onPaginate={after => router.push({pathname: '/auth/users/:userId/credentials', query: {after}, params: {userId}})}
     />;
 };

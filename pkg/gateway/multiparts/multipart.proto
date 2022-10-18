@@ -1,0 +1,16 @@
+syntax = "proto3";
+option go_package = "github.com/treeverse/lakefs/gateway/multiparts";
+
+import "google/protobuf/timestamp.proto";
+
+package io.treeverse.lakefs.multiparts;
+
+// message data model for multiparts.MultipartUpload struct
+message MultipartUploadData {
+  string upload_id = 1;
+  string path = 2;
+  google.protobuf.Timestamp creation_date = 3;
+  string physical_address = 4;
+  map<string, string> metadata = 5;
+  string content_type = 6;
+}

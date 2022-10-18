@@ -1,0 +1,12 @@
+name: Test Pre Merge
+description: a test action description
+on:
+  pre-merge:
+    branches:
+      - main
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for pre-merge works
+    properties:
+      url: "{{.URL}}/pre-merge"

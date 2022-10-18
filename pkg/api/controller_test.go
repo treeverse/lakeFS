@@ -3,6 +3,7 @@ package api_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -19,12 +21,14 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-test/deep"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/catalog/testutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -216,16 +220,16 @@ func testCommitEntries(t *testing.T, ctx context.Context, cat catalog.Interface,
 			})
 		testutil.MustDo(t, "create entry "+p, err)
 	}
-	commit, err := cat.Commit(ctx, params.repo, params.branch, "commit"+params.commitName, params.user, nil, nil)
+	commit, err := cat.Commit(ctx, params.repo, params.branch, "commit"+params.commitName, params.user, nil, nil, nil)
 	testutil.MustDo(t, "commit", err)
 	return commit.Reference
 }
 
-func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
+func TestController_LogCommitsHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
-	t.Run("get missing branch", func(t *testing.T) {
+	t.Run("missing branch", func(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "ns1"), "main")
 		testutil.Must(t, err)
 
@@ -236,7 +240,7 @@ func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
 		}
 	})
 
-	t.Run("get branch log", func(t *testing.T) {
+	t.Run("log", func(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "repo2", onBlock(deps, "ns1"), "main")
 		testutil.Must(t, err)
 
@@ -246,7 +250,7 @@ func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
 			p := "foo/bar" + n
 			err := deps.catalog.CreateEntry(ctx, "repo2", "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
 			testutil.MustDo(t, "create entry "+p, err)
-			_, err = deps.catalog.Commit(ctx, "repo2", "main", "commit"+n, "some_user", nil, nil)
+			_, err = deps.catalog.Commit(ctx, "repo2", "main", "commit"+n, "some_user", nil, nil, nil)
 			testutil.MustDo(t, "commit "+p, err)
 		}
 		resp, err := clt.LogCommitsWithResponse(ctx, "repo2", "main", &api.LogCommitsParams{})
@@ -257,6 +261,42 @@ func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
 		commitsLog := resp.JSON200.Results
 		if len(commitsLog) != expectedCommits {
 			t.Fatalf("Log %d commits, expected %d", len(commitsLog), expectedCommits)
+		}
+	})
+
+	t.Run("limit", func(t *testing.T) {
+		const repoID = "repo3"
+		_, err := deps.catalog.CreateRepository(ctx, repoID, onBlock(deps, "ns2"), "main")
+		testutil.Must(t, err)
+
+		const commitsLen = 2
+		for i := 0; i < commitsLen; i++ {
+			n := strconv.Itoa(i + 1)
+			p := "foo/bar" + n
+			err := deps.catalog.CreateEntry(ctx, repoID, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
+			testutil.MustDo(t, "create entry "+p, err)
+			_, err = deps.catalog.Commit(ctx, repoID, "main", "commit"+n, "some_user", nil, nil, nil)
+			testutil.MustDo(t, "commit "+p, err)
+		}
+		limit := true
+		resp, err := clt.LogCommitsWithResponse(ctx, repoID, "main", &api.LogCommitsParams{
+			Amount: api.PaginationAmountPtr(commitsLen - 1),
+			Limit:  &limit,
+		})
+		verifyResponseOK(t, resp, err)
+
+		// repo is created with a commit
+		if resp.JSON200 == nil {
+			t.Fatal("LogCommits expected valid response")
+		}
+		commitsLog := resp.JSON200.Results
+		// expect exact number of commits without more
+		const expectedCommits = commitsLen - 1
+		if len(commitsLog) != expectedCommits {
+			t.Fatalf("Log %d commits, expected %d", len(commitsLog), expectedCommits)
+		}
+		if resp.JSON200.Pagination.HasMore {
+			t.Fatalf("Log HasMore %t, expected false", resp.JSON200.Pagination.HasMore)
 		}
 	})
 }
@@ -469,7 +509,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main")
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, "foo1", "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
-		commit1, err := deps.catalog.Commit(ctx, "foo1", "main", "some message", DefaultUserID, nil, nil)
+		commit1, err := deps.catalog.Commit(ctx, "foo1", "main", "some message", DefaultUserID, nil, nil, nil)
 		testutil.Must(t, err)
 		reference1, err := deps.catalog.GetBranchReference(ctx, "foo1", "main")
 		if err != nil {
@@ -493,7 +533,8 @@ func TestController_CommitHandler(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("commit non-existent commit", func(t *testing.T) {
-		resp, err := clt.CommitWithResponse(ctx, "foo1", "main", api.CommitJSONRequestBody{
+		repo := testUniqueRepoName()
+		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
 		})
 		testutil.Must(t, err)
@@ -507,21 +548,85 @@ func TestController_CommitHandler(t *testing.T) {
 	})
 
 	t.Run("commit success", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main")
-		testutil.MustDo(t, "create repo foo1", err)
-		testutil.MustDo(t, "commit bar on foo1", deps.catalog.CreateEntry(ctx, "foo1", "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
-		resp, err := clt.CommitWithResponse(ctx, "foo1", "main", api.CommitJSONRequestBody{
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
+		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
 		})
 		verifyResponseOK(t, resp, err)
 	})
 
+	t.Run("commit success with source metarange", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
+
+		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
+		testutil.Must(t, err)
+		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
+			Message: "some message",
+		})
+		verifyResponseOK(t, resp, err)
+
+		resp, err = clt.CommitWithResponse(ctx, repo, "foo-branch", &api.CommitParams{SourceMetarange: &resp.JSON201.MetaRangeId}, api.CommitJSONRequestBody{
+			Message: "some message",
+		})
+		verifyResponseOK(t, resp, err)
+	})
+
+	t.Run("commit failure with source metarange and dirty branch", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
+
+		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
+		testutil.Must(t, err)
+
+		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
+			Message: "some message",
+		})
+		verifyResponseOK(t, resp, err)
+
+		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "foo-branch", catalog.DBEntry{Path: "foo/bar/2", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		resp, err = clt.CommitWithResponse(ctx, repo, "foo-branch", &api.CommitParams{SourceMetarange: &resp.JSON201.MetaRangeId}, api.CommitJSONRequestBody{
+			Message: "some message",
+		})
+
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
+		require.NotNil(t, resp.JSON400)
+		require.Contains(t, resp.JSON400.Message, graveler.ErrCommitMetaRangeDirtyBranch.Error())
+	})
+
+	t.Run("commit failure empty branch", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
+
+		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
+		testutil.Must(t, err)
+
+		resp, err := clt.CommitWithResponse(ctx, repo, "foo-branch", &api.CommitParams{}, api.CommitJSONRequestBody{
+			Message: "some message",
+		})
+
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
+		require.NotNil(t, resp.JSON400)
+		require.Contains(t, resp.JSON400.Message, graveler.ErrNoChanges.Error())
+	})
+
 	t.Run("commit success - with creation date", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "foo2", onBlock(deps, "foo2"), "main")
-		testutil.MustDo(t, "create repo foo2", err)
-		testutil.MustDo(t, "commit bar on foo2", deps.catalog.CreateEntry(ctx, "foo2", "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
+		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		date := int64(1642626109)
-		resp, err := clt.CommitWithResponse(ctx, "foo2", "main", api.CommitJSONRequestBody{
+		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
 			Date:    &date,
 		})
@@ -535,17 +640,44 @@ func TestController_CommitHandler(t *testing.T) {
 func TestController_CreateRepositoryHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
+
 	t.Run("create repo success", func(t *testing.T) {
+		const repoName = "my-new-repo"
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    api.StringPtr("main"),
-			Name:             "my-new-repo",
+			Name:             repoName,
 			StorageNamespace: onBlock(deps, "foo-bucket-1"),
 		})
 		verifyResponseOK(t, resp, err)
 
-		repository := resp.JSON201
-		if repository.Id != "my-new-repo" {
-			t.Fatalf("got unexpected repo when creating my-new-repo: %s", repository.Id)
+		response := resp.JSON201
+		if response == nil {
+			t.Fatal("CreateRepository got bad response")
+		}
+		if response.Id != repoName {
+			t.Fatalf("CreateRepository id=%s, expected=%s", response.Id, repoName)
+		}
+	})
+
+	t.Run("create bare repo success", func(t *testing.T) {
+		const repoName = "my-new-repo-bare"
+		bareRepo := true
+		resp, err := clt.CreateRepositoryWithResponse(ctx,
+			&api.CreateRepositoryParams{
+				Bare: &bareRepo,
+			}, api.CreateRepositoryJSONRequestBody{
+				DefaultBranch:    api.StringPtr("main"),
+				Name:             repoName,
+				StorageNamespace: onBlock(deps, "foo-bucket-1"),
+			})
+		verifyResponseOK(t, resp, err)
+
+		response := resp.JSON201
+		if response == nil {
+			t.Fatal("CreateRepository (bare) got bad response")
+		}
+		if response.Id != repoName {
+			t.Fatalf("CreateRepository bare id=%s, expected=%s", response.Id, repoName)
 		}
 	})
 
@@ -661,7 +793,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 
 		// create first dummy commit on main so that we can create branches from it
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo2", "main", catalog.DBEntry{Path: "a/b"}))
-		_, err = deps.catalog.Commit(ctx, "repo2", "main", "first commit", "test", nil, nil)
+		_, err = deps.catalog.Commit(ctx, "repo2", "main", "first commit", "test", nil, nil, nil)
 		testutil.Must(t, err)
 
 		for i := 0; i < 7; i++ {
@@ -715,7 +847,7 @@ func TestController_ListTagsHandler(t *testing.T) {
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
 	testutil.Must(t, err)
 	testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", "main", catalog.DBEntry{Path: "obj1"}))
-	commitLog, err := deps.catalog.Commit(ctx, "repo1", "main", "first commit", "test", nil, nil)
+	commitLog, err := deps.catalog.Commit(ctx, "repo1", "main", "first commit", "test", nil, nil, nil)
 	testutil.Must(t, err)
 	const createTagLen = 7
 	var createdTags []api.Ref
@@ -795,7 +927,7 @@ func TestController_GetBranchHandler(t *testing.T) {
 		testutil.Must(t, err)
 		// create first dummy commit on main so that we can create branches from it
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b"}))
-		_, err = deps.catalog.Commit(ctx, "repo1", testBranch, "first commit", "test", nil, nil)
+		_, err = deps.catalog.Commit(ctx, "repo1", testBranch, "first commit", "test", nil, nil, nil)
 		testutil.Must(t, err)
 
 		resp, err := clt.GetBranchWithResponse(ctx, "repo1", testBranch)
@@ -829,7 +961,6 @@ func TestController_GetBranchHandler(t *testing.T) {
 
 func TestController_BranchesDiffBranchHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
-
 	ctx := context.Background()
 	const testBranch = "main"
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), testBranch)
@@ -838,6 +969,10 @@ func TestController_BranchesDiffBranchHandler(t *testing.T) {
 	}
 
 	t.Run("diff branch no changes", func(t *testing.T) {
+		// create an entry and remove it
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b/c"}))
+		testutil.Must(t, deps.catalog.DeleteEntry(ctx, "repo1", testBranch, "a/b/c"))
+
 		resp, err := clt.DiffBranchWithResponse(ctx, "repo1", testBranch, &api.DiffBranchParams{})
 		verifyResponseOK(t, resp, err)
 		changes := len(resp.JSON200.Results)
@@ -848,6 +983,8 @@ func TestController_BranchesDiffBranchHandler(t *testing.T) {
 
 	t.Run("diff branch with writes", func(t *testing.T) {
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b"}))
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b/c"}))
+		testutil.Must(t, deps.catalog.DeleteEntry(ctx, "repo1", testBranch, "a/b/c"))
 		resp, err := clt.DiffBranchWithResponse(ctx, "repo1", testBranch, &api.DiffBranchParams{})
 		verifyResponseOK(t, resp, err)
 		results := resp.JSON200.Results
@@ -878,7 +1015,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", "main", catalog.DBEntry{Path: "a/b"}))
-		_, err = deps.catalog.Commit(ctx, "repo1", "main", "first commit", "test", nil, nil)
+		_, err = deps.catalog.Commit(ctx, "repo1", "main", "first commit", "test", nil, nil, nil)
 		testutil.Must(t, err)
 
 		const newBranchName = "main2"
@@ -897,7 +1034,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		uploadResp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(content), "repo1", newBranchName)
 		verifyResponseOK(t, uploadResp, err)
 
-		if _, err := deps.catalog.Commit(ctx, "repo1", "main2", "commit 1", "some_user", nil, nil); err != nil {
+		if _, err := deps.catalog.Commit(ctx, "repo1", "main2", "commit 1", "some_user", nil, nil, nil); err != nil {
 			t.Fatalf("failed to commit 'repo1': %s", err)
 		}
 		resp2, err := clt.DiffRefsWithResponse(ctx, "repo1", "main", newBranchName, &api.DiffRefsParams{})
@@ -1068,7 +1205,7 @@ func TestController_UploadObject(t *testing.T) {
 		}
 
 		// commit
-		_, err = deps.catalog.Commit(ctx, "my-new-repo", "another-branch", "a commit!", "user1", nil, nil)
+		_, err = deps.catalog.Commit(ctx, "my-new-repo", "another-branch", "a commit!", "user1", nil, nil, nil)
 		testutil.Must(t, err)
 
 		// overwrite after commit
@@ -1110,7 +1247,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "main")
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "my-new-repo", "main", catalog.DBEntry{Path: "a/b"}))
-		_, err = deps.catalog.Commit(ctx, "my-new-repo", "main", "first commit", "test", nil, nil)
+		_, err = deps.catalog.Commit(ctx, "my-new-repo", "main", "first commit", "test", nil, nil, nil)
 		testutil.Must(t, err)
 
 		_, err = deps.catalog.CreateBranch(ctx, "my-new-repo", "main2", "main")
@@ -1147,6 +1284,137 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		if resp.JSON404 == nil {
 			t.Fatal("DeleteBranch expected not found")
 		}
+	})
+}
+
+func TestController_IngestRangeHandler(t *testing.T) {
+	const (
+		fromSourceURI           = "https://valid.uri"
+		uriPrefix               = "take/from/here"
+		fromSourceURIWithPrefix = fromSourceURI + "/" + uriPrefix
+		after                   = "some/key/to/start/after"
+		prepend                 = "some/logical/prefix"
+	)
+
+	continuationToken := "opaque"
+
+	setup := func(t *testing.T, count int, expectedErr error) (api.ClientWithResponsesInterface, *testutils.FakeWalker) {
+		t.Helper()
+		ctx := context.Background()
+
+		w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, expectedErr)
+		clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
+
+		// setup test data
+		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
+		testutil.Must(t, err)
+
+		return clt, w
+	}
+
+	t.Run("successful ingestion no pagination", func(t *testing.T) {
+		ctx := context.Background()
+		count := 1000
+		clt, w := setup(t, count, nil)
+
+		resp, err := clt.IngestRangeWithResponse(ctx, "repo1", api.IngestRangeJSONRequestBody{
+			After:             after,
+			FromSourceURI:     fromSourceURIWithPrefix,
+			Prepend:           prepend,
+			ContinuationToken: &continuationToken,
+		})
+
+		verifyResponseOK(t, resp, err)
+		require.NotNil(t, resp.JSON201.Range)
+		require.NotNil(t, resp.JSON201.Pagination)
+		require.Equal(t, count, resp.JSON201.Range.Count)
+		require.Equal(t, strings.Replace(w.Entries[0].FullKey, uriPrefix, prepend, 1), resp.JSON201.Range.MinKey)
+		require.Equal(t, strings.Replace(w.Entries[count-1].FullKey, uriPrefix, prepend, 1), resp.JSON201.Range.MaxKey)
+		require.False(t, resp.JSON201.Pagination.HasMore)
+		require.Empty(t, resp.JSON201.Pagination.LastKey)
+		require.Empty(t, resp.JSON201.Pagination.ContinuationToken)
+	})
+
+	t.Run("successful ingestion with pagination", func(t *testing.T) {
+		// force splitting the range before
+		ctx := context.Background()
+		count := 200_000
+		clt, w := setup(t, count, nil)
+
+		resp, err := clt.IngestRangeWithResponse(ctx, "repo1", api.IngestRangeJSONRequestBody{
+			After:             after,
+			FromSourceURI:     fromSourceURIWithPrefix,
+			Prepend:           prepend,
+			ContinuationToken: &continuationToken,
+		})
+
+		verifyResponseOK(t, resp, err)
+		require.NotNil(t, resp.JSON201.Range)
+		require.NotNil(t, resp.JSON201.Pagination)
+		require.Less(t, resp.JSON201.Range.Count, count)
+		require.Equal(t, strings.Replace(w.Entries[0].FullKey, uriPrefix, prepend, 1), resp.JSON201.Range.MinKey)
+		require.Equal(t, strings.Replace(w.Entries[resp.JSON201.Range.Count-1].FullKey, uriPrefix, prepend, 1), resp.JSON201.Range.MaxKey)
+		require.True(t, resp.JSON201.Pagination.HasMore)
+		require.Equal(t, w.Entries[resp.JSON201.Range.Count-1].FullKey, resp.JSON201.Pagination.LastKey)
+		require.Equal(t, testutils.ContinuationTokenOpaque, *resp.JSON201.Pagination.ContinuationToken)
+	})
+
+	t.Run("error during walk", func(t *testing.T) {
+		// force splitting the range before
+		ctx := context.Background()
+		count := 10
+		expectedErr := errors.New("failed reading for object store")
+		clt, _ := setup(t, count, expectedErr)
+
+		resp, err := clt.IngestRangeWithResponse(ctx, "repo1", api.IngestRangeJSONRequestBody{
+			After:             after,
+			FromSourceURI:     fromSourceURIWithPrefix,
+			Prepend:           prepend,
+			ContinuationToken: &continuationToken,
+		})
+
+		require.NoError(t, err)
+		require.Equal(t, http.StatusInternalServerError, resp.StatusCode())
+		require.Contains(t, string(resp.Body), expectedErr.Error())
+	})
+}
+
+func TestController_WriteMetaRangeHandler(t *testing.T) {
+	ctx := context.Background()
+	clt, deps := setupClientWithAdmin(t)
+	repo := testUniqueRepoName()
+	// setup test data
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	testutil.Must(t, err)
+
+	t.Run("successful metarange creation", func(t *testing.T) {
+		resp, err := clt.CreateMetaRangeWithResponse(ctx, repo, api.CreateMetaRangeJSONRequestBody{
+			Ranges: []api.RangeMetadata{
+				{Count: 11355, EstimatedSize: 123465897, Id: "FirstRangeID", MaxKey: "1", MinKey: "2"},
+				{Count: 13123, EstimatedSize: 123465897, Id: "SecondRangeID", MaxKey: "3", MinKey: "4"},
+				{Count: 10123, EstimatedSize: 123465897, Id: "ThirdRangeID", MaxKey: "5", MinKey: "6"},
+			},
+		})
+
+		verifyResponseOK(t, resp, err)
+		require.NotNil(t, resp.JSON201)
+		require.NotNil(t, resp.JSON201.Id)
+		require.NotEmpty(t, *resp.JSON201.Id)
+
+		respMR, err := clt.GetMetaRangeWithResponse(ctx, repo, *resp.JSON201.Id)
+		verifyResponseOK(t, respMR, err)
+		require.NotNil(t, respMR.JSON200)
+		require.NotEmpty(t, respMR.JSON200.Location)
+	})
+
+	t.Run("missing ranges", func(t *testing.T) {
+		resp, err := clt.CreateMetaRangeWithResponse(ctx, repo, api.CreateMetaRangeJSONRequestBody{
+			Ranges: []api.RangeMetadata{},
+		})
+
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON400)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
 	})
 }
 
@@ -1574,8 +1842,11 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		// delete objects
 		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, api.DeleteObjectsJSONRequestBody{Paths: paths})
 		verifyResponseOK(t, delResp, err)
-		if delResp.StatusCode() != http.StatusNoContent {
-			t.Errorf("DeleteObjects should return 204 (no content) for successful delete, got %d", delResp.StatusCode())
+		if delResp.JSON200 == nil {
+			t.Errorf("DeleteObjects should return 200 for successful delete, got status code %d", delResp.StatusCode())
+		}
+		if len(delResp.JSON200.Errors) > 0 {
+			t.Errorf("DeleteObjects (round 2) should have no errors, got %v", delResp.JSON200.Errors)
 		}
 
 		// check objects no longer there
@@ -1589,6 +1860,16 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 			if statResp.JSON404 == nil {
 				t.Fatalf("expected file to be gone now for '%s'", p)
 			}
+		}
+
+		// delete objects again - make sure we do not fail or get any error
+		delResp2, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, api.DeleteObjectsJSONRequestBody{Paths: paths})
+		verifyResponseOK(t, delResp2, err)
+		if delResp2.JSON200 == nil {
+			t.Errorf("DeleteObjects (round 2) should return 200 for successful delete, got status code %d", delResp2.StatusCode())
+		}
+		if len(delResp2.JSON200.Errors) > 0 {
+			t.Errorf("DeleteObjects (round 2) should have no errors, got %s", spew.Sdump(delResp2.JSON200.Errors))
 		}
 	})
 
@@ -1823,28 +2104,28 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 			if foundCreds.AccessKeyId != creds.AccessKeyId {
 				t.Fatalf("Access key ID '%s', expected '%s'", foundCreds.AccessKeyId, creds.AccessKeyId)
 			}
-			if len(deps.collector.metadata) != 1 {
+			if len(deps.collector.Metadata) != 1 {
 				t.Fatal("Failed to collect metadata")
 			}
-			if deps.collector.metadata[0].InstallationID == "" {
+			if deps.collector.Metadata[0].InstallationID == "" {
 				t.Fatal("Empty installationID")
 			}
-			if len(deps.collector.metadata[0].Entries) < 5 {
-				t.Fatalf("There should be at least 5 metadata entries: %s", deps.collector.metadata[0].Entries)
+			if len(deps.collector.Metadata[0].Entries) < 5 {
+				t.Fatalf("There should be at least 5 metadata entries: %s", deps.collector.Metadata[0].Entries)
 			}
 
 			hasBlockStoreType := false
-			for _, ent := range deps.collector.metadata[0].Entries {
+			for _, ent := range deps.collector.Metadata[0].Entries {
 				if ent.Name == stats.BlockstoreTypeKey {
 					hasBlockStoreType = true
 					if ent.Value == "" {
-						t.Fatalf("Blockstorage key exists but with empty value: %s", deps.collector.metadata[0].Entries)
+						t.Fatalf("Blockstorage key exists but with empty value: %s", deps.collector.Metadata[0].Entries)
 					}
 					break
 				}
 			}
 			if !hasBlockStoreType {
-				t.Fatalf("missing blockstorage key: %s", deps.collector.metadata[0].Entries)
+				t.Fatalf("missing blockstorage key: %s", deps.collector.Metadata[0].Entries)
 			}
 
 			// on successful setup - make sure we can't re-setup
@@ -1896,7 +2177,7 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 	uploadResp, err := uploadObjectHelper(t, ctx, clt, "_lakefs_actions/pre_commit.yaml", strings.NewReader(actionContent), "repo9", "main")
 	verifyResponseOK(t, uploadResp, err)
 	// commit
-	respCommit, err := clt.CommitWithResponse(ctx, "repo9", "main", api.CommitJSONRequestBody{
+	respCommit, err := clt.CommitWithResponse(ctx, "repo9", "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 		Message: "pre-commit action",
 	})
 	verifyResponseOK(t, respCommit, err)
@@ -1913,7 +2194,7 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 		content := fmt.Sprintf("content-%d", i)
 		uploadResp, err := uploadObjectHelper(t, ctx, clt, content, strings.NewReader(content), "repo9", "work")
 		verifyResponseOK(t, uploadResp, err)
-		respCommit, err := clt.CommitWithResponse(ctx, "repo9", "work", api.CommitJSONRequestBody{Message: content})
+		respCommit, err := clt.CommitWithResponse(ctx, "repo9", "work", &api.CommitParams{}, api.CommitJSONRequestBody{Message: content})
 		verifyResponseOK(t, respCommit, err)
 		commitIDs = append(commitIDs, respCommit.JSON201.Id)
 	}
@@ -1939,6 +2220,17 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 		if runsCount != contentCount {
 			t.Fatalf("ListRepositoryRuns() on `work` branch got %d results, expected %d", runsCount, contentCount)
 		}
+	})
+
+	t.Run("on branch and commit", func(t *testing.T) {
+		respList, err := clt.ListRepositoryRunsWithResponse(ctx, "repo9", &api.ListRepositoryRunsParams{
+			Branch: api.StringPtr("someBranch"),
+			Commit: api.StringPtr("someCommit"),
+			Amount: api.PaginationAmountPtr(100),
+		})
+		require.NoError(t, err)
+		require.NotNil(t, respList)
+		require.Equal(t, http.StatusBadRequest, respList.StatusCode())
 	})
 
 	t.Run("on deleted branch", func(t *testing.T) {
@@ -1977,7 +2269,7 @@ func TestController_MergeDiffWithParent(t *testing.T) {
 	resp, err := uploadObjectHelper(t, ctx, clt, "file1", strings.NewReader(content), repoName, "work")
 	verifyResponseOK(t, resp, err)
 
-	commitResp, err := clt.CommitWithResponse(ctx, repoName, "work", api.CommitJSONRequestBody{Message: "file 1 commit to work"})
+	commitResp, err := clt.CommitWithResponse(ctx, repoName, "work", &api.CommitParams{}, api.CommitJSONRequestBody{Message: "file 1 commit to work"})
 	verifyResponseOK(t, commitResp, err)
 
 	mergeResp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "work", "main", api.MergeIntoBranchJSONRequestBody{
@@ -2008,7 +2300,7 @@ func TestController_MergeIntoExplicitBranch(t *testing.T) {
 	testutil.Must(t, err)
 	err = deps.catalog.CreateEntry(ctx, repo, "branch1", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"})
 	testutil.Must(t, err)
-	_, err = deps.catalog.Commit(ctx, repo, "branch1", "some message", DefaultUserID, nil, nil)
+	_, err = deps.catalog.Commit(ctx, repo, "branch1", "some message", DefaultUserID, nil, nil, nil)
 	testutil.Must(t, err)
 
 	// test branch with mods
@@ -2039,7 +2331,7 @@ func TestController_CreateTag(t *testing.T) {
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
-	commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil)
+	commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
 	testutil.Must(t, err)
 
 	t.Run("ref", func(t *testing.T) {
@@ -2114,7 +2406,7 @@ func TestController_Revert(t *testing.T) {
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
-	_, err = deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil)
+	_, err = deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
 	testutil.Must(t, err)
 
 	t.Run("ref", func(t *testing.T) {
@@ -2139,6 +2431,190 @@ func TestController_Revert(t *testing.T) {
 		testutil.Must(t, err)
 		if revertResp.JSONDefault == nil {
 			t.Errorf("Revert to explicit staging should fail with error, got %v", revertResp)
+		}
+	})
+}
+
+func TestController_RevertConflict(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+	// setup env
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	testutil.Must(t, err)
+	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
+	firstCommit, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
+	testutil.Must(t, err)
+	testutil.MustDo(t, "overriding entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum2"}))
+	_, err = deps.catalog.Commit(ctx, repo, "main", "some other message", DefaultUserID, nil, nil, nil)
+	testutil.Must(t, err)
+
+	resp, err := clt.RevertBranchWithResponse(ctx, repo, "main", api.RevertBranchJSONRequestBody{Ref: firstCommit.Reference})
+	testutil.Must(t, err)
+	if resp.HTTPResponse.StatusCode != http.StatusConflict {
+		t.Errorf("Revert with a conflict should fail with status %d got %d", http.StatusConflict, resp.HTTPResponse.StatusCode)
+	}
+}
+
+func TestController_ExpandTemplate(t *testing.T) {
+	clt, _ := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	t.Run("not-found", func(t *testing.T) {
+		resp, err := clt.ExpandTemplateWithResponse(ctx, "no/template/here", &api.ExpandTemplateParams{})
+		testutil.Must(t, err)
+		if resp.HTTPResponse.StatusCode != http.StatusNotFound {
+			t.Errorf("Expanding a nonexistent template should fail with status %d got %d\n\t%s\n\t%+v", http.StatusNotFound, resp.HTTPResponse.StatusCode, string(resp.Body), resp)
+		}
+	})
+
+	t.Run("spark.conf", func(t *testing.T) {
+		const lfsURL = "https://lakefs.example.test"
+		expected := []struct {
+			name    string
+			pattern string
+		}{
+			{"impl", `spark\.hadoop\.fs\.s3a\.impl=org\.apache\.hadoop\.fs\.s3a\.S3AFileSystem`},
+			{"access.key", `spark\.hadoop\.fs\.s3a\.access.key=AKIA.*`},
+			{"secret.key", `spark\.hadoop\.fs\.s3a\.secret.key=`},
+			{"s3a_endpoint", `spark\.hadoop\.fs\.s3a\.endpoint=` + lfsURL},
+		}
+
+		// OpenAPI places additional query params in the wrong
+		// place.  Use a request editor to place them directly as a
+		// query string.
+		resp, err := clt.ExpandTemplateWithResponse(ctx, "spark.submit.conf.tt", &api.ExpandTemplateParams{},
+			func(_ context.Context, req *http.Request) error {
+				values := req.URL.Query()
+				values.Add("lakefs_url", lfsURL)
+				req.URL.RawQuery = values.Encode()
+				return nil
+			})
+		testutil.Must(t, err)
+		if resp.HTTPResponse.StatusCode != http.StatusOK {
+			t.Errorf("Expansion failed with status %d\n\t%s\n\t%+v", resp.HTTPResponse.StatusCode, string(resp.Body), resp)
+		}
+
+		contentType := resp.HTTPResponse.Header.Values("Content-Type")
+		if len(contentType) != 1 {
+			t.Errorf("Expansion returned %d content types: %v", len(contentType), contentType)
+		}
+		if contentType[0] != "application/x-conf" {
+			t.Errorf("Expansion returned content type %s not application/x-conf", contentType[0])
+		}
+
+		for _, e := range expected {
+			re := regexp.MustCompile(e.pattern)
+			if !re.Match(resp.Body) {
+				t.Errorf("Expansion result has no %s: /%s/\n\t%s", e.name, e.pattern, string(resp.Body))
+			}
+		}
+	})
+
+	t.Run("fail", func(t *testing.T) {
+		resp, err := clt.ExpandTemplateWithResponse(ctx, "fail.tt", &api.ExpandTemplateParams{})
+		testutil.Must(t, err)
+		if resp.HTTPResponse.StatusCode != http.StatusInternalServerError {
+			t.Errorf("Expansion should fail with status %d got %d\n\t%s\n\t%+v", http.StatusInternalServerError, resp.HTTPResponse.StatusCode, string(resp.Body), resp)
+		}
+
+		parsed := make(map[string]string, 0)
+		err = json.Unmarshal(resp.Body, &parsed)
+		if err != nil {
+			t.Errorf("Unmarshal body: %s", err)
+		}
+		if parsed["message"] != "expansion failed" {
+			t.Errorf("Expected \"expansion failed\" message, got %+v", parsed)
+		}
+	})
+}
+
+func TestController_UpdatePolicy(t *testing.T) {
+	clt, _ := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	// test policy
+	now := api.Int64Ptr(time.Now().Unix())
+	const existingPolicyID = "TestUpdatePolicy"
+	response, err := clt.CreatePolicyWithResponse(ctx, api.CreatePolicyJSONRequestBody{
+		CreationDate: now,
+		Id:           existingPolicyID,
+		Statement: []api.Statement{
+			{
+				Action: []string{
+					"fs:Read*",
+					"fs:List*",
+				},
+				Effect:   "deny",
+				Resource: "*",
+			},
+		},
+	})
+	testutil.Must(t, err)
+	if response.JSON201 == nil {
+		t.Fatal("Failed to create test policy", response.Status())
+	}
+
+	t.Run("unknown", func(t *testing.T) {
+		const policyID = "UnknownPolicy"
+		updatePolicyResponse, err := clt.UpdatePolicyWithResponse(ctx, policyID, api.UpdatePolicyJSONRequestBody{
+			CreationDate: now,
+			Id:           policyID,
+			Statement: []api.Statement{
+				{
+					Action: []string{
+						"fs:Read*",
+						"fs:List*",
+					},
+					Effect:   "allow",
+					Resource: "*",
+				},
+			},
+		})
+		testutil.Must(t, err)
+		if updatePolicyResponse.JSON404 == nil {
+			t.Errorf("Update unknown policy should fail with 404: %s", updatePolicyResponse.Status())
+		}
+	})
+
+	t.Run("change_effect", func(t *testing.T) {
+		updatePolicyResponse, err := clt.UpdatePolicyWithResponse(ctx, existingPolicyID, api.UpdatePolicyJSONRequestBody{
+			CreationDate: now,
+			Id:           existingPolicyID,
+			Statement: []api.Statement{
+				{
+					Action: []string{
+						"fs:Read*",
+						"fs:List*",
+					},
+					Effect:   "allow",
+					Resource: "*",
+				},
+			},
+		})
+		testutil.Must(t, err)
+		if updatePolicyResponse.JSON200 == nil {
+			t.Errorf("Update policy failed: %s", updatePolicyResponse.Status())
+		}
+	})
+
+	t.Run("change_policy_id", func(t *testing.T) {
+		updatePolicyResponse, err := clt.UpdatePolicyWithResponse(ctx, "SomethingElse", api.UpdatePolicyJSONRequestBody{
+			CreationDate: now,
+			Id:           existingPolicyID,
+			Statement: []api.Statement{
+				{
+					Action: []string{
+						"fs:Read*",
+					},
+					Effect:   "allow",
+					Resource: "*",
+				},
+			},
+		})
+		testutil.Must(t, err)
+		if updatePolicyResponse.JSON400 == nil {
+			t.Errorf("Update policy with different id should fail with 400: %s", updatePolicyResponse.Status())
 		}
 	})
 }

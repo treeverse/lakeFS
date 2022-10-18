@@ -6,29 +6,34 @@ import (
 	"time"
 
 	"github.com/go-test/deep"
+	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/mock"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func TestTagIterator(t *testing.T) {
-	r, db := testRefManagerWithDB(t)
+func TestKVTagIterator(t *testing.T) {
+	r, kvstore := testRefManager(t)
 	tags := []graveler.TagID{"a", "aa", "b", "c", "e", "d", "f", "g"}
 	ctx := context.Background()
-	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://foo",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, ""))
+	})
+	testutil.Must(t, err)
 
 	// prepare data
 	for _, b := range tags {
-		err := r.CreateTag(ctx, "repo1", b, "c1")
+		err := r.CreateTag(ctx, repository, b, "c1")
 		testutil.Must(t, err)
 	}
 
 	t.Run("listing all tags", func(t *testing.T) {
-		iter := ref.NewTagIterator(ctx, db, "repo1", 3)
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, repository)
+		testutil.Must(t, err)
 		ids := make([]graveler.TagID, 0)
 		for iter.Next() {
 			b := iter.Value()
@@ -45,7 +50,8 @@ func TestTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags using prefix", func(t *testing.T) {
-		iter := ref.NewTagIterator(ctx, db, "repo1", 3)
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, repository)
+		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
 		for iter.Next() {
@@ -63,7 +69,8 @@ func TestTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags SeekGE", func(t *testing.T) {
-		iter := ref.NewTagIterator(ctx, db, "repo1", 3)
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, repository)
+		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
 		for iter.Next() {
@@ -94,4 +101,60 @@ func TestTagIterator(t *testing.T) {
 			t.Fatalf("got wrong list of tags")
 		}
 	})
+
+	t.Run("empty value SeekGE", func(t *testing.T) {
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, repository)
+		testutil.Must(t, err)
+		iter.SeekGE("b")
+
+		if iter.Value() != nil {
+			t.Fatalf("expected nil value after seekGE")
+		}
+	})
+}
+
+func TestKVTagIterator_CloseTwice(t *testing.T) {
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	entIt := mock.NewMockEntriesIterator(ctrl)
+	entIt.EXPECT().Close().Times(1)
+	store := mock.NewMockStore(ctrl)
+	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
+	msgStore := kv.StoreMessage{Store: store}
+	repo := &graveler.RepositoryRecord{
+		RepositoryID: "repo",
+		Repository: &graveler.Repository{
+			InstanceUID: "rid",
+		},
+	}
+	it, err := ref.NewKVTagIterator(ctx, &msgStore, repo)
+	if err != nil {
+		t.Fatal("TestKVTagIterator failed", err)
+	}
+	it.Close()
+	// Make sure calling Close again do not crash
+	it.Close()
+}
+
+func TestKVTagIterator_NextClosed(t *testing.T) {
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	entIt := mock.NewMockEntriesIterator(ctrl)
+	entIt.EXPECT().Close().Times(1)
+	store := mock.NewMockStore(ctrl)
+	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
+	msgStore := kv.StoreMessage{Store: store}
+	repo := &graveler.RepositoryRecord{
+		RepositoryID: "repo",
+		Repository: &graveler.Repository{
+			InstanceUID: "rid",
+		},
+	}
+	it, err := ref.NewKVTagIterator(ctx, &msgStore, repo)
+	if err != nil {
+		t.Fatal("TestKVTagIterator failed", err)
+	}
+	it.Close()
+	// Make sure calling Next should not crash
+	it.Next()
 }

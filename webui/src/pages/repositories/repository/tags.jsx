@@ -30,6 +30,7 @@ import { Link } from "../../../lib/components/nav";
 import { useRouter } from "../../../lib/hooks/router";
 import {ConfirmationButton} from "../../../lib/components/modals";
 import Alert from "react-bootstrap/Alert";
+import {RepoError} from "./error";
 
 
 const TagWidget = ({ repo, tag, onDelete }) => {
@@ -126,7 +127,7 @@ const CreateTagButton = ({ repo, variant = "success", onCreate = null, children 
 
     return (
         <>
-            <Modal show={show} onHide={hide}>
+            <Modal show={show} onHide={hide} enforceFocus={false}>
                 <Modal.Header closeButton>
                     Create Tag
                 </Modal.Header>
@@ -184,7 +185,7 @@ const TagList = ({ repo, after, onPaginate }) => {
     let content;
 
     if (loading) content = <Loading />;
-    else if (!!error) content = <Error error={error} />;
+    else if (error) content = <Error error={error} />;
     else content = ( results && !!results.length  ?
         <>
             <Card>
@@ -213,7 +214,7 @@ const TagList = ({ repo, after, onPaginate }) => {
                 </ActionsBar>
                 {content}
                 <div className={"mt-2"}>
-                    A tag is an immutable pointer to a single commit. <a href="https://docs.lakefs.io/reference/object-model.html#identifying-commits" target="_blank" rel="noopener noreferrer">Learn more.</a>
+                    A tag is an immutable pointer to a single commit. <a href="https://docs.lakefs.io/understand/object-model.html#identifying-commits" target="_blank" rel="noopener noreferrer">Learn more.</a>
                 </div>
             </div>
         </>
@@ -225,19 +226,19 @@ const TagsContainer = () => {
     const router = useRouter()
     const { repo, loading, error } = useRefs();
     const { after } = router.query;
-    const routerPfx = (!!router.query.prefix) ? router.query.prefix : "";
+    const routerPfx = (router.query.prefix) ? router.query.prefix : "";
 
     if (loading) return <Loading />;
-    if (!!error) return <Error error={error} />;
+    if (error) return <RepoError error={error} />;
 
     return (
         <TagList
             repo={repo}
-            after={(!!after) ? after : ""}
+            after={(after) ? after : ""}
             prefix={routerPfx}
             onPaginate={after => {
                 const query = { after };
-                if (!!router.query.prefix) query.prefix = router.query.prefix;
+                if (router.query.prefix) query.prefix = router.query.prefix;
                 router.push({ pathname: '/repositories/:repoId/tags', params: { repoId: repo.id }, query });
             }} />
     );

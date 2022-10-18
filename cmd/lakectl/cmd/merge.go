@@ -10,12 +10,14 @@ import (
 const (
 	mergeCmdMinArgs = 2
 	mergeCmdMaxArgs = 2
+
+	mergeCreateTemplate = `Merged "{{.Merge.FromRef|yellow}}" into "{{.Merge.ToRef|yellow}}" to get "{{.Result.Reference|green}}".
+`
 )
 
-var mergeCreateTemplate = `Merged "{{.Merge.FromRef|yellow}}" into "{{.Merge.ToRef|yellow}}" to get "{{.Result.Reference|green}}".`
-
 type FromTo struct {
-	FromRef, ToRef string
+	FromRef string
+	ToRef   string
 }
 
 // mergeCmd represents the merge command
@@ -24,6 +26,12 @@ var mergeCmd = &cobra.Command{
 	Short: "Merge & commit changes from source branch into destination branch",
 	Long:  "Merge & commit changes from source branch into destination branch",
 	Args:  cobra.RangeArgs(mergeCmdMinArgs, mergeCmdMaxArgs),
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if len(args) >= mergeCmdMaxArgs {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		return validRepositoryToComplete(cmd.Context(), toComplete)
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		sourceRef := MustParseRefURI("source ref", args[0])
@@ -43,12 +51,18 @@ var mergeCmd = &cobra.Command{
 			Die("Conflict found.", 1)
 		}
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		Write(mergeCreateTemplate, struct {
 			Merge  FromTo
 			Result *api.MergeResult
 		}{
-			Merge:  FromTo{FromRef: sourceRef.Ref, ToRef: destinationRef.Ref},
+			Merge: FromTo{
+				FromRef: sourceRef.Ref,
+				ToRef:   destinationRef.Ref,
+			},
 			Result: resp.JSON200,
 		})
 	},

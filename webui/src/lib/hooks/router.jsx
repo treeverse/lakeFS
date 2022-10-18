@@ -12,7 +12,7 @@ export const useQuery = () => {
 export const buildURL = (url) => {
     if (typeof url === 'string') return url;
     // otherwise, assume query, params and pathname
-    const path = generatePath(url.pathname, (!!url.params) ? url.params : {})
+    const path = generatePath(url.pathname, (url.params) ? url.params : {})
     if (!url.query) return path;
     const query = new URLSearchParams(url.query).toString();
     return `${path}?${query}`;
@@ -27,6 +27,7 @@ export const useRouter = () => {
         query,
         params,
         route: location.pathname,
+        history: history,
         push: (url) => history.push(buildURL(url))
     };
 };

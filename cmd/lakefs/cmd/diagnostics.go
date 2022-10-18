@@ -7,8 +7,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/diagnostics"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 // diagnosticsCmd represents the diagnostics command
@@ -20,30 +21,41 @@ var diagnosticsCmd = &cobra.Command{
 		ctx := cmd.Context()
 		output, _ := cmd.Flags().GetString("output")
 
-		dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
-		defer dbPool.Close()
-		adapter, err := factory.BuildBlockAdapter(ctx, nil, cfg)
+		kvParams, err := cfg.GetKVParams()
+		if err != nil {
+			log.Fatalf("Get KV params: %s", err)
+		}
+		kvStore, err := kv.Open(ctx, kvParams)
+		if err != nil {
+			log.Fatalf("Failed to open KV store: %s", err)
+		}
+		defer kvStore.Close()
+		storeMessage := &kv.StoreMessage{
+			Store: kvStore,
+		}
+
+		adapter, err := factory.BuildBlockAdapter(ctx, &stats.NullCollector{}, cfg)
 		if err != nil {
 			log.Printf("Failed to create block adapter: %s", err)
 		}
 		c, err := catalog.New(ctx, catalog.Config{
-			Config: cfg,
-			DB:     dbPool,
+			Config:  cfg,
+			KVStore: storeMessage,
 		})
 		if err != nil {
-			log.Printf("Failed to create c: %s", err)
+			log.Fatalf("Failed to create catalog: %s", err)
 		}
 		defer func() { _ = c.Close() }()
-		pyrmaidParams, err := cfg.GetCommittedTierFSParams(adapter)
+		pyramidParams, err := cfg.GetCommittedTierFSParams(adapter)
 		if err != nil {
-			log.Printf("Failed to get pyramid params: %s", err)
+			log.Fatalf("Failed to get pyramid params: %s", err)
 		}
 
-		collector := diagnostics.NewCollector(dbPool, c, pyrmaidParams, adapter)
+		collector := diagnostics.NewCollector(c, pyramidParams, adapter)
 
 		f, err := os.Create(output)
 		if err != nil {
-			log.Fatalf("Create zip file '%s' failed - %s", output, err)
+			log.Fatalf("Create zip file '%s' failed: %s", output, err)
 		}
 		defer func() { _ = f.Close() }()
 

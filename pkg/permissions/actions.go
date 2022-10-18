@@ -15,6 +15,7 @@ const (
 	ReadRepositoryAction     = "fs:ReadRepository"
 	CreateRepositoryAction   = "fs:CreateRepository"
 	AttachStorageNamespace   = "fs:AttachStorageNamespace"
+	ImportFromStorage        = "fs:ImportFromStorage"
 	DeleteRepositoryAction   = "fs:DeleteRepository"
 	ListRepositoriesAction   = "fs:ListRepositories"
 	ReadObjectAction         = "fs:ReadObject"
@@ -22,6 +23,7 @@ const (
 	DeleteObjectAction       = "fs:DeleteObject"
 	ListObjectsAction        = "fs:ListObjects"
 	CreateCommitAction       = "fs:CreateCommit"
+	CreateMetaRangeAction    = "fs:CreateMetaRange"
 	ReadCommitAction         = "fs:ReadCommit"
 	ListCommitsAction        = "fs:ListCommits"
 	CreateBranchAction       = "fs:CreateBranch"
@@ -52,10 +54,10 @@ const (
 	ListPoliciesAction      = "auth:ListPolicies"
 	AttachPolicyAction      = "auth:AttachPolicy"
 	DetachPolicyAction      = "auth:DetachPolicy"
-	ReadCredentialsAction   = "auth:ReadCredentials"
-	CreateCredentialsAction = "auth:CreateCredentials"
-	DeleteCredentialsAction = "auth:DeleteCredentials"
-	ListCredentialsAction   = "auth:ListCredentials"
+	ReadCredentialsAction   = "auth:ReadCredentials"   //nolint:gosec
+	CreateCredentialsAction = "auth:CreateCredentials" //nolint:gosec
+	DeleteCredentialsAction = "auth:DeleteCredentials" //nolint:gosec
+	ListCredentialsAction   = "auth:ListCredentials"   //nolint:gosec
 
 	ReadActionsAction = "ci:ReadAction"
 

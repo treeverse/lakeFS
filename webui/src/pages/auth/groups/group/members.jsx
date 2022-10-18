@@ -37,7 +37,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
 
     let content;
     if (loading) content = <Loading/>;
-    else if (!!error) content=  <Error error={error}/>;
+    else if (error) content=  <Error error={error}/>;
     else content = (
             <>
                 {attachError && <Error error={attachError}/>}
@@ -45,7 +45,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                 <DataTable
                     keyFn={user => user.id}
                     rowFn={user => [
-                        <Link href={{pathname: '/auth/users/:userId', params: {userId: user.id}}}>{user.id}</Link>,
+                        <Link href={{pathname: '/auth/users/:userId', params: {userId: user.id}}}>{user.email || user.id}</Link>,
                         <FormattedDate dateValue={user.creation_date}/>
                     ]}
                     headers={['User ID', 'Created At']}
@@ -54,7 +54,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                         buttonFn: user => <ConfirmationButton
                             size="sm"
                             variant="outline-danger"
-                            msg={<span>Are you sure you{'\''}d like to remove user <strong>{user.id}</strong> from group <strong>{groupId}</strong>?</span>}
+                            msg={<span>Are you sure you{'\''}d like to remove user <strong>{user.email || user.id}</strong> from group <strong>{groupId}</strong>?</span>}
                             onConfirm={() => {
                                 auth.removeUserFromGroup(user.id, groupId)
                                     .catch(error => alert(error))
@@ -114,7 +114,7 @@ const GroupMembersContainer = () => {
     const { groupId } = router.params;
     return groupId && <GroupMemberList
         groupId={groupId}
-        after={(!!after) ? after : ""}
+        after={(after) ? after : ""}
         onPaginate={after => router.push({pathname: '/auth/groups/:groupId/members', params: {groupId},query: {after}})}
     />;
 };

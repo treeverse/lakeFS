@@ -6,26 +6,32 @@ import (
 	"time"
 
 	"github.com/go-test/deep"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/mock"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func TestRepositoryIterator(t *testing.T) {
-	r, db := testRefManagerWithDB(t)
+func TestKVRepositoryIterator(t *testing.T) {
+	r, store := testRefManager(t)
 	repos := []graveler.RepositoryID{"a", "aa", "b", "c", "e", "d", "f"}
 
 	// prepare data
 	for _, repoId := range repos {
-		testutil.Must(t, r.CreateRepository(context.Background(), repoId, graveler.Repository{
+		_, err := r.CreateRepository(context.Background(), repoId, graveler.Repository{
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",
-		}, ""))
+		})
+		testutil.Must(t, err)
 	}
 
 	t.Run("listing all repos", func(t *testing.T) {
-		iter := ref.NewRepositoryIterator(context.Background(), db, 3)
+		iter, err := ref.NewKVRepositoryIterator(context.Background(), &store)
+		require.NoError(t, err)
 		repoIds := make([]graveler.RepositoryID, 0)
 		for iter.Next() {
 			repo := iter.Value()
@@ -42,7 +48,8 @@ func TestRepositoryIterator(t *testing.T) {
 	})
 
 	t.Run("listing repos from prefix", func(t *testing.T) {
-		iter := ref.NewRepositoryIterator(context.Background(), db, 3)
+		iter, err := ref.NewKVRepositoryIterator(context.Background(), &store)
+		require.NoError(t, err)
 		iter.SeekGE("b")
 		repoIds := make([]graveler.RepositoryID, 0)
 		for iter.Next() {
@@ -60,7 +67,8 @@ func TestRepositoryIterator(t *testing.T) {
 	})
 
 	t.Run("listing repos SeekGE", func(t *testing.T) {
-		iter := ref.NewRepositoryIterator(context.Background(), db, 3)
+		iter, err := ref.NewKVRepositoryIterator(context.Background(), &store)
+		require.NoError(t, err)
 		iter.SeekGE("b")
 		repoIds := make([]graveler.RepositoryID, 0)
 		for iter.Next() {
@@ -92,4 +100,38 @@ func TestRepositoryIterator(t *testing.T) {
 			t.Fatalf("got wrong list of repo IDs: %v", diffs)
 		}
 	})
+}
+
+func TestKVRepositoryIterator_CloseTwice(t *testing.T) {
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	entIt := mock.NewMockEntriesIterator(ctrl)
+	entIt.EXPECT().Close().Times(1)
+	store := mock.NewMockStore(ctrl)
+	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
+	msgStore := kv.StoreMessage{Store: store}
+	it, err := ref.NewKVRepositoryIterator(ctx, &msgStore)
+	if err != nil {
+		t.Fatal("NewKVRepositoryIterator failed", err)
+	}
+	it.Close()
+	// Make sure calling Close again do not crash
+	it.Close()
+}
+
+func TestKVRepositoryIterator_NextClosed(t *testing.T) {
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	entIt := mock.NewMockEntriesIterator(ctrl)
+	entIt.EXPECT().Close().Times(1)
+	store := mock.NewMockStore(ctrl)
+	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
+	msgStore := kv.StoreMessage{Store: store}
+	it, err := ref.NewKVRepositoryIterator(ctx, &msgStore)
+	if err != nil {
+		t.Fatal("NewKVRepositoryIterator failed", err)
+	}
+	it.Close()
+	// Make sure calling Next should not crash
+	it.Next()
 }

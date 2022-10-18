@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -9,56 +10,58 @@ import (
 
 	gomime "github.com/cubewise-code/go-mime"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/treeverse/lakefs/pkg/api/params"
 	gwerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/operations"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
 	"github.com/treeverse/lakefs/webui"
 )
 
-// NotFoundResponseWriter handle page not found to redirect later the response
-// source: https://stackoverflow.com/questions/47285119/how-to-custom-handle-a-file-not-being-found-when-using-go-static-file-server
-type NotFoundResponseWriter struct {
-	http.ResponseWriter
-	Status int
-}
+const (
+	uiIndexDoc    = "index.html"
+	uiIndexMarker = "<!--Snippets-->"
+)
 
-func (w *NotFoundResponseWriter) WriteHeader(status int) {
-	w.Status = status
-	if status != http.StatusNotFound {
-		w.ResponseWriter.WriteHeader(status)
-	}
-}
-
-func (w *NotFoundResponseWriter) Write(p []byte) (int, error) {
-	if w.Status != http.StatusNotFound {
-		return w.ResponseWriter.Write(p)
-	}
-	// Lie that we have successfully written it
-	return len(p), nil
-}
-
-func NewUIHandler(gatewayDomains []string) http.Handler {
+func NewUIHandler(gatewayDomains []string, snippets []params.CodeSnippet) http.Handler {
 	content, err := fs.Sub(webui.Content, "dist")
 	if err != nil {
 		// embedded UI content is missing
 		panic(err)
 	}
-	nocacheContent := middleware.NoCache(
-		http.StripPrefix("/",
-			http.FileServer(
-				http.FS(content))))
-	return NewHandlerWithDefault(nocacheContent, gatewayDomains)
+	injectedContent, err := NewInjectIndexFS(content, uiIndexDoc, uiIndexMarker, snippets)
+	if err != nil {
+		// failed to inject snippets to index.html
+		panic(err)
+	}
+	fileSystem := http.FS(injectedContent)
+	nocacheContent := middleware.NoCache(http.StripPrefix("/", http.FileServer(fileSystem)))
+	return NewHandlerWithDefault(fileSystem, nocacheContent, gatewayDomains)
 }
 
-func NewHandlerWithDefault(handler http.Handler, gatewayDomains []string) http.Handler {
+func NewS3GatewayEndpointErrorHandler(gatewayDomains []string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if isGatewayRequest(r) {
-			// s3 signed request reaching the ui handler, return an error response instead of the default path
-			err := gwerrors.Codes[gwerrors.ERRLakeFSWrongEndpoint]
-			err.Description = fmt.Sprintf("%s (%v)", err.Description, gatewayDomains)
-			o := operations.Operation{}
-			o.EncodeError(w, r, err)
+			handleGatewayRequest(w, r, gatewayDomains)
 			return
+		}
+
+		// For other requests, return generic not found error
+		w.WriteHeader(http.StatusNotFound)
+	})
+}
+
+func NewHandlerWithDefault(fileSystem http.FileSystem, handler http.Handler, gatewayDomains []string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if isGatewayRequest(r) {
+			handleGatewayRequest(w, r, gatewayDomains)
+			return
+		}
+
+		// serve root content in case of file not found
+		// the client side react browser router handles the rendering
+		_, err := fileSystem.Open(r.URL.Path)
+		if errors.Is(err, fs.ErrNotExist) {
+			r.URL.Path = "/"
 		}
 
 		// consistent content-type
@@ -68,14 +71,16 @@ func NewHandlerWithDefault(handler http.Handler, gatewayDomains []string) http.H
 		}
 
 		// handle request, capture page not found for redirect later
-		notFoundWriter := &NotFoundResponseWriter{ResponseWriter: w}
-		handler.ServeHTTP(notFoundWriter, r)
-
-		// redirect to root on page not found
-		if notFoundWriter.Status == http.StatusNotFound {
-			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
-		}
+		handler.ServeHTTP(w, r)
 	})
+}
+
+func handleGatewayRequest(w http.ResponseWriter, r *http.Request, gatewayDomains []string) {
+	// s3 signed request reaching the ui handler, return an error response instead of the default path
+	err := gwerrors.Codes[gwerrors.ERRLakeFSWrongEndpoint]
+	err.Description = fmt.Sprintf("%s (%v)", err.Description, gatewayDomains)
+	o := operations.Operation{}
+	o.EncodeError(w, r, err)
 }
 
 func isGatewayRequest(r *http.Request) bool {

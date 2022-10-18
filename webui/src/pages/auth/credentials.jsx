@@ -18,7 +18,7 @@ import {useRouter} from "../../lib/hooks/router";
 const CredentialsContainer = () => {
     const router = useRouter();
     const { user } = useUser();
-    const userId = (!!user) ? user.id : "";
+    const userId = (user) ? user.id : "";
     const [refreshToken, setRefreshToken] = useState(false);
     const [createError, setCreateError] = useState(null);
     const [createdKey, setCreatedKey] = useState(null);
@@ -70,7 +70,7 @@ const CredentialsContainer = () => {
                 userId={user.id}
                 currentAccessKey={user.accessKeyId}
                 refresh={refreshToken}
-                after={(!!after) ? after : ""}
+                after={(after) ? after : ""}
                 onPaginate={after => router.push({
                     pathname: '/auth/credentials',
                     query: {after}

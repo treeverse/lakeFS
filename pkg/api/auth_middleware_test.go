@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+	"github.com/gorilla/securecookie"
+	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
@@ -89,12 +91,18 @@ func TestAuthMiddleware(t *testing.T) {
 		}
 	})
 
-	t.Run("valid jwt cookie", func(t *testing.T) {
+	t.Run("valid gorilla session", func(t *testing.T) {
 		ctx := context.Background()
 		apiToken := testGenerateApiToken(ctx, t, clt, cred)
-		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", api.JWTCookieName, apiToken)
+		values := map[interface{}]interface{}{api.TokenSessionKeyName: apiToken}
+		store := sessions.NewCookieStore([]byte("some secret"))
+		encoded, err := securecookie.EncodeMulti(api.InternalAuthSessionName, values, store.Codecs...)
 		if err != nil {
-			t.Fatal("basic auth security provider", err)
+			t.Fatal("Failed to encode cookie value for session: ", err)
+		}
+		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", api.InternalAuthSessionName, encoded)
+		if err != nil {
+			t.Fatal("gorilla session security provider", err)
 		}
 		authClient, err := api.NewClientWithResponses(apiEndpoint, api.WithRequestEditorFn(authProvider.Intercept))
 		if err != nil {
@@ -109,12 +117,18 @@ func TestAuthMiddleware(t *testing.T) {
 		}
 	})
 
-	t.Run("invalid jwt cookie", func(t *testing.T) {
+	t.Run("invalid gorilla cookie", func(t *testing.T) {
 		ctx := context.Background()
 		apiToken := testGenerateBadAPIToken(t, deps.authService)
-		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", api.JWTCookieName, apiToken)
+		values := map[interface{}]interface{}{api.TokenSessionKeyName: apiToken}
+		store := sessions.NewCookieStore([]byte("some secret"))
+		encoded, err := securecookie.EncodeMulti(api.InternalAuthSessionName, values, store.Codecs...)
 		if err != nil {
-			t.Fatal("basic auth security provider", err)
+			t.Fatal("Failed to encode cookie value for session: ", err)
+		}
+		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", api.InternalAuthSessionName, encoded)
+		if err != nil {
+			t.Fatal("gorilla session security provider", err)
 		}
 		authClient, err := api.NewClientWithResponses(apiEndpoint, api.WithRequestEditorFn(authProvider.Intercept))
 		if err != nil {
@@ -133,7 +147,7 @@ func TestAuthMiddleware(t *testing.T) {
 	})
 }
 
-func testGenerateApiToken(ctx context.Context, t testing.TB, clt api.ClientWithResponsesInterface, cred *model.Credential) string {
+func testGenerateApiToken(ctx context.Context, t testing.TB, clt api.ClientWithResponsesInterface, cred *model.BaseCredential) string {
 	t.Helper()
 	loginReq := api.LoginJSONRequestBody{
 		AccessKeyId:     cred.AccessKeyID,
@@ -153,8 +167,9 @@ func testGenerateBadAPIToken(t testing.TB, authService auth.Service) string {
 	secret := authService.SecretStore().SharedSecret()
 	now := time.Now()
 	expires := now.Add(time.Hour)
+	userID := "2906"
 	// Generate a JWT for a nonexistent user.  It will fail authentication.
-	tokenString, err := api.GenerateJWT(secret, 2906, now, expires)
+	tokenString, err := api.GenerateJWTLogin(secret, userID, now, expires)
 	if err != nil {
 		t.Fatal("Generate (bad) JWT token:", err)
 	}

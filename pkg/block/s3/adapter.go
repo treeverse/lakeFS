@@ -28,8 +28,6 @@ const (
 
 	// Chunks smaller than that are only allowed for the last chunk upload
 	minChunkSize = 8 * 1024
-
-	ExpireObjectS3Tag = "lakefs_expire_object"
 )
 
 var (
@@ -62,7 +60,6 @@ func resolveNamespacePrefix(opts block.WalkOpts) (block.QualifiedPrefix, error) 
 type Adapter struct {
 	clients               *ClientCache
 	httpClient            *http.Client
-	uploadIDTranslator    block.UploadIDTranslator
 	streamingChunkSize    int
 	streamingChunkTimeout time.Duration
 	respServer            string
@@ -87,12 +84,6 @@ func WithStreamingChunkTimeout(d time.Duration) func(a *Adapter) {
 	}
 }
 
-func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
-	return func(a *Adapter) {
-		a.uploadIDTranslator = t
-	}
-}
-
 func WithStatsCollector(s stats.Collector) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.clients.SetStatsCollector(s)
@@ -108,8 +99,7 @@ func WithDiscoverBucketRegion(b bool) func(a *Adapter) {
 func NewAdapter(awsSession *session.Session, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		clients:               NewClientCache(awsSession),
-		httpClient:            http.DefaultClient,
-		uploadIDTranslator:    &block.NoOpTranslator{},
+		httpClient:            awsSession.Config.HTTPClient,
 		streamingChunkSize:    DefaultStreamingChunkSize,
 		streamingChunkTimeout: DefaultStreamingChunkTimeout,
 	}
@@ -156,7 +146,6 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	if err != nil {
 		return nil, err
 	}
-	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	uploadPartObject := s3.UploadPartInput{
 		Bucket:     aws.String(qualifiedKey.StorageNamespace),
 		Key:        aws.String(qualifiedKey.Key),
@@ -229,7 +218,7 @@ func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, s
 	if err != nil {
 		log.WithError(err).
 			WithField("url", sdkRequest.HTTPRequest.URL.String()).
-			Error("error making request request")
+			Error("error making request")
 		return nil, err
 	}
 
@@ -436,7 +425,6 @@ func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.
 		return nil, err
 	}
 
-	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	uploadPartCopyObject := s3.UploadPartCopyInput{
 		Bucket:     aws.String(qualifiedKey.StorageNamespace),
 		Key:        aws.String(qualifiedKey.Key),
@@ -530,13 +518,11 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 		return nil, err
 	}
 	uploadID := *resp.UploadId
-	uploadID = a.uploadIDTranslator.SetUploadID(uploadID)
 	a.log(ctx).WithFields(logging.Fields{
-		"upload_id":            *resp.UploadId,
-		"translated_upload_id": uploadID,
-		"qualified_ns":         qualifiedKey.StorageNamespace,
-		"qualified_key":        qualifiedKey.Key,
-		"key":                  obj.Identifier,
+		"upload_id":     *resp.UploadId,
+		"qualified_ns":  qualifiedKey.StorageNamespace,
+		"qualified_key": qualifiedKey.Key,
+		"key":           obj.Identifier,
 	}).Debug("created multipart upload")
 	return &block.CreateMultiPartUploadResponse{
 		UploadID:         uploadID,
@@ -551,7 +537,6 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 	if err != nil {
 		return err
 	}
-	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	input := &s3.AbortMultipartUploadInput{
 		Bucket:   aws.String(qualifiedKey.StorageNamespace),
 		Key:      aws.String(qualifiedKey.Key),
@@ -559,7 +544,6 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 	}
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
 	_, err = client.AbortMultipartUploadWithContext(ctx, input)
-	a.uploadIDTranslator.RemoveUploadID(uploadID)
 	a.log(ctx).WithFields(logging.Fields{
 		"upload_id":     uploadID,
 		"qualified_ns":  qualifiedKey.StorageNamespace,
@@ -587,19 +571,17 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	if err != nil {
 		return nil, err
 	}
-	translatedUploadID := a.uploadIDTranslator.TranslateUploadID(uploadID)
 	input := &s3.CompleteMultipartUploadInput{
 		Bucket:          aws.String(qualifiedKey.StorageNamespace),
 		Key:             aws.String(qualifiedKey.Key),
-		UploadId:        aws.String(translatedUploadID),
+		UploadId:        aws.String(uploadID),
 		MultipartUpload: convertFromBlockMultipartUploadCompletion(multipartList),
 	}
 	lg := a.log(ctx).WithFields(logging.Fields{
-		"upload_id":            uploadID,
-		"translated_upload_id": translatedUploadID,
-		"qualified_ns":         qualifiedKey.StorageNamespace,
-		"qualified_key":        qualifiedKey.Key,
-		"key":                  obj.Identifier,
+		"upload_id":     uploadID,
+		"qualified_ns":  qualifiedKey.StorageNamespace,
+		"qualified_key": qualifiedKey.Key,
+		"key":           obj.Identifier,
 	})
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
 	req, resp := client.CompleteMultipartUploadRequest(input)
@@ -610,7 +592,6 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 		return nil, err
 	}
 	lg.Debug("completed multipart upload")
-	a.uploadIDTranslator.RemoveUploadID(translatedUploadID)
 	headInput := &s3.HeadObjectInput{Bucket: &qualifiedKey.StorageNamespace, Key: &qualifiedKey.Key}
 	headResp, err := client.HeadObjectWithContext(ctx, headInput)
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
+	"github.com/sirupsen/logrus"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -19,7 +20,7 @@ type LogLine struct {
 	Msg    string
 }
 type MemLogger struct {
-	Log    []*LogLine
+	log    []*LogLine
 	fields logging.Fields
 }
 
@@ -81,6 +82,11 @@ func (m *MemLogger) Panic(args ...interface{}) {
 	m.logLine("PANIC", args...)
 }
 
+func (m *MemLogger) Log(level logrus.Level, args ...interface{}) {
+	m.logLine(level.String(), args...)
+
+}
+
 func (m *MemLogger) Tracef(format string, args ...interface{}) {
 	m.logLine("TRACE", fmt.Sprintf(format, args...))
 }
@@ -113,12 +119,16 @@ func (m *MemLogger) Panicf(format string, args ...interface{}) {
 	m.logLine("PANIC", fmt.Sprintf(format, args...))
 }
 
+func (m *MemLogger) Logf(level logrus.Level, format string, args ...interface{}) {
+	m.logLine(level.String(), fmt.Sprintf(format, args...))
+}
+
 func (m *MemLogger) IsTracing() bool {
 	return true
 }
 
 func (m *MemLogger) logLine(level string, args ...interface{}) {
-	m.Log = append(m.Log, &LogLine{
+	m.log = append(m.log, &LogLine{
 		Fields: m.fields,
 		Level:  level,
 		Msg:    fmt.Sprint(args...),
@@ -135,9 +145,10 @@ func TestAuditChecker_PassVersionOnRequest(t *testing.T) {
 	defer svr.Close()
 
 	ctx := context.Background()
+	installationID := "a-sample-installation-id"
 	for _, version := range []string{"v1", "v1.2", "v2.0.1"} {
 		t.Run(version, func(t *testing.T) {
-			auditChecker := NewAuditChecker(svr.URL, version)
+			auditChecker := NewAuditChecker(svr.URL, version, installationID)
 			_, err := auditChecker.Check(ctx)
 			if err != nil {
 				t.Errorf("Check() error = %v", err)
@@ -185,9 +196,10 @@ func TestAuditChecker_Check(t *testing.T) {
 		{name: "failed", alerts: []Alert{}, statusCode: http.StatusInternalServerError, wantErr: true},
 	}
 	ctx := context.Background()
+	installationID := "a-sample-installation-id"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := NewAuditChecker(svr.URL, "v1")
+			a := NewAuditChecker(svr.URL, "v1", installationID)
 			responseAlerts = tt.alerts
 			responseStatusCode = tt.statusCode
 			got, err := a.Check(ctx)
@@ -202,6 +214,29 @@ func TestAuditChecker_Check(t *testing.T) {
 			}
 			if diff := deep.Equal(got.Alerts, tt.alerts); diff != nil {
 				t.Error("Check() found difference in expected alerts", diff)
+			}
+		})
+	}
+}
+
+func TestAuditChecker_Anonymization(t *testing.T) {
+	const upgradeURL = "https://no.place.like/home"
+
+	tests := []struct {
+		name               string
+		installationID     string
+		respInstallationID string
+	}{
+		{name: "none", installationID: "", respInstallationID: ""},
+		{name: "anonymized", installationID: "a-sample-installation-id", respInstallationID: "ddb767d9f0aeb9c9c0e7643d71d16d4d"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := NewAuditChecker(upgradeURL, "v1", tt.installationID)
+
+			if tt.respInstallationID != a.AnonymizedInstallationID {
+				t.Errorf("Check() anonymized installation ID: %s (%s), expected %s", tt.respInstallationID, tt.installationID, a.AnonymizedInstallationID)
 			}
 		})
 	}
@@ -230,13 +265,14 @@ func TestAuditChecker_CheckAndLog(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	checker := NewAuditChecker(svr.URL, "v1.0")
+	installationID := "a-sample-installation-id"
+	checker := NewAuditChecker(svr.URL, "v1.0", installationID)
 	ctx := context.Background()
 	memLog := &MemLogger{}
 	checker.CheckAndLog(ctx, memLog)
 
 	// verify we logged the right information
-	if diff := deep.Equal(memLog.Log[0], &LogLine{
+	if diff := deep.Equal(memLog.log[0], &LogLine{
 		Fields: logging.Fields{
 			"id":                responseAlert.ID,
 			"affected_versions": responseAlert.AffectedVersions,

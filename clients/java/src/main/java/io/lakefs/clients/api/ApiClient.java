@@ -87,8 +87,9 @@ public class ApiClient {
 
         // Setup authentications (key: authentication name, value: authentication).
         authentications.put("basic_auth", new HttpBasicAuth());
-        authentications.put("cookie_auth", new ApiKeyAuth("cookie", "access_token"));
+        authentications.put("cookie_auth", new ApiKeyAuth("cookie", "internal_auth_session"));
         authentications.put("jwt_token", new HttpBearerAuth("bearer"));
+        authentications.put("oidc_auth", new ApiKeyAuth("cookie", "oidc_auth_session"));
         // Prevent the authentications from being modified.
         authentications = Collections.unmodifiableMap(authentications);
     }
@@ -103,8 +104,9 @@ public class ApiClient {
 
         // Setup authentications (key: authentication name, value: authentication).
         authentications.put("basic_auth", new HttpBasicAuth());
-        authentications.put("cookie_auth", new ApiKeyAuth("cookie", "access_token"));
+        authentications.put("cookie_auth", new ApiKeyAuth("cookie", "internal_auth_session"));
         authentications.put("jwt_token", new HttpBearerAuth("bearer"));
+        authentications.put("oidc_auth", new ApiKeyAuth("cookie", "oidc_auth_session"));
         // Prevent the authentications from being modified.
         authentications = Collections.unmodifiableMap(authentications);
     }
@@ -129,7 +131,7 @@ public class ApiClient {
         json = new JSON();
 
         // Set default User-Agent.
-        setUserAgent("OpenAPI-Generator/0.1.0-SNAPSHOT/java");
+        setUserAgent("lakefs-java-sdk/0.1.0-SNAPSHOT");
 
         authentications = new HashMap<String, Authentication>();
     }

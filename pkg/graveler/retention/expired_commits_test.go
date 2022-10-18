@@ -260,6 +260,9 @@ func TestExpiredCommits(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			refManagerMock := mock.NewMockRefManager(ctrl)
 			ctx := context.Background()
+			repositoryRecord := &graveler.RepositoryRecord{
+				RepositoryID: "test",
+			}
 			garbageCollectionRules := &graveler.GarbageCollectionRules{DefaultRetentionDays: 5, BranchRetentionDays: make(map[string]int32)}
 			var branches []*graveler.BranchRecord
 			for head, retentionDays := range tst.headsRetentionDays {
@@ -281,7 +284,7 @@ func TestExpiredCommits(t *testing.T) {
 				id := graveler.CommitID(commitID)
 				commitMap[id] = &graveler.Commit{Message: commitID, Parents: testCommit.parents, CreationDate: now.AddDate(0, 0, -testCommit.daysPassed), Version: graveler.CurrentCommitVersion}
 				if !previouslyExpired[id] {
-					refManagerMock.EXPECT().GetCommit(ctx, graveler.RepositoryID("test"), id).Return(commitMap[id], nil).MaxTimes(2)
+					refManagerMock.EXPECT().GetCommit(ctx, repositoryRecord, id).Return(commitMap[id], nil).MaxTimes(2)
 				}
 			}
 			previouslyExpiredCommitIDs := make([]graveler.CommitID, len(tst.previouslyExpired))
@@ -291,8 +294,8 @@ func TestExpiredCommits(t *testing.T) {
 			gcCommits, err := GetGarbageCollectionCommits(ctx, NewGCStartingPointIterator(
 				testutil.NewFakeCommitIterator(findMainAncestryLeaves(now, tst.headsRetentionDays, tst.commits)),
 				testutil.NewFakeBranchIterator(branches)), &RepositoryCommitGetter{
-				refManager:   refManagerMock,
-				repositoryID: "test",
+				refManager: refManagerMock,
+				repository: repositoryRecord,
 			}, garbageCollectionRules, previouslyExpiredCommitIDs)
 			if err != nil {
 				t.Fatalf("failed to find expired commits: %v", err)

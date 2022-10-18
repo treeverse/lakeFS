@@ -8,12 +8,11 @@ info:
 servers:
   - url: "/api/v1"
     description: lakeFS server endpoint
-
 security:
   - jwt_token: []
   - basic_auth: []
   - cookie_auth: []
-
+  - oidc_auth: []
 components:
   securitySchemes:
     basic_auth:
@@ -26,8 +25,11 @@ components:
     cookie_auth:
       type: apiKey
       in: cookie
-      name: access_token
-
+      name: internal_auth_session
+    oidc_auth:
+      type: apiKey
+      in: cookie
+      name: oidc_auth_session
   parameters:
     PaginationPrefix:
       in: query
@@ -121,6 +123,22 @@ components:
           type: integer
           minimum: 0
           description: Maximal number of entries per page
+
+    ImportPagination:
+      type: object
+      required:
+        - has_more
+        - last_key
+      properties:
+        has_more:
+          type: boolean
+          description: More keys to be ingested.
+        continuation_token:
+          type: string
+          description: Opaque. Token used to import the next range.
+        last_key:
+          type: string
+          description: Last object store key that was ingested.
 
     Repository:
       type: object
@@ -531,6 +549,7 @@ components:
       properties:
         id:
           type: string
+          description: a unique identifier for the user. In password-based authentication, this is the email.
         creation_date:
           type: integer
           format: int64
@@ -548,11 +567,22 @@ components:
         user:
           $ref: "#/components/schemas/User"
 
+    ForgotPasswordRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+
     UserCreation:
       type: object
       properties:
         id:
           type: string
+          description: a unique identifier for the user. In password-based authentication, this is the email.
+        invite_user:
+          type: boolean
       required:
         - id
     SetupState:
@@ -561,6 +591,10 @@ components:
         state:
           type: string
           enum: [initialized, not_initialized]
+        oidc_enabled:
+          type: boolean
+        oidc_default_login:
+          type: boolean
     AccessKeyCredentials:
       type: object
       properties:
@@ -590,6 +624,24 @@ components:
           $ref: "#/components/schemas/AccessKeyCredentials"
       required:
         - username
+
+
+    UpdatePasswordByToken:
+      type: object
+      properties:
+        token:
+          description: token used for authentication
+          type: string
+        newPassword:
+          description: new password to update
+          type: string
+        email:
+          description: optional user email to match the token for verification
+          type: string
+      required:
+        - token
+        - newPassword
+
 
     Credentials:
       type: object
@@ -658,6 +710,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Group"
+
+    AuthCapabilities:
+      type: object
+      properties:
+        invite_user:
+          type: boolean
+        forgot_password:
+          type: boolean
 
     UserList:
       type: object
@@ -953,6 +1013,83 @@ components:
       required:
         - pattern
 
+    StageRangeCreation:
+      type: object
+      required:
+        - fromSourceURI
+        - after
+        - prepend
+      properties:
+        fromSourceURI:
+          type: string
+          description: The source location of the ingested files. Must match the lakeFS installation blockstore type.
+          example: s3://my-bucket/production/collections/
+        after:
+          type: string
+          description: Only objects after this key would be ingested.
+          example: production/collections/some/file.parquet
+        prepend:
+          type: string
+          description: A prefix to prepend to ingested objects.
+          example: collections/
+        continuation_token:
+          type: string
+          description: Opaque. Client should pass the continuation_token received from server to continue creation ranges from the same key.
+
+    RangeMetadata:
+      type: object
+      required:
+         - id
+         - min_key
+         - max_key
+         - count
+         - estimated_size
+      properties:
+        id:
+          type: string
+          description: ID of the range.
+          example: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
+        min_key:
+          type: string
+          description: First key in the range.
+          example: production/collections/some/file_1.parquet
+        max_key:
+          type: string
+          description: Last key in the range.
+          example: production/collections/some/file_8229.parquet
+        count:
+          type: integer
+          description: Number of records in the range.
+        estimated_size:
+          type: integer
+          description: Estimated size of the range in bytes
+
+    IngestRangeCreationResponse:
+      type: object
+      properties:
+        range:
+          $ref: '#/components/schemas/RangeMetadata'
+        pagination:
+          $ref: '#/components/schemas/ImportPagination'
+
+    MetaRangeCreation:
+      type: object
+      properties:
+        ranges:
+          type: array
+          items:
+            $ref: '#/components/schemas/RangeMetadata'
+          minItems: 1
+      required:
+        - ranges
+
+    MetaRangeCreationResponse:
+      type: object
+      properties:
+        id:
+          description: The id of the created metarange
+          type: string
+
 paths:
   /setup_lakefs:
     get:
@@ -1018,6 +1155,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/CurrentUser"
 
+  /oidc/callback:
+    get:
+      tags:
+        - auth
+      operationId: oauthCallback
+      security: []
+      responses:
+        302:
+          description: successfully got token
+        401:
+          description: failed to exchange authorization code for token
+        default:
+          $ref: "#/components/responses/ServerError"
   /auth/login:
     post:
       tags:
@@ -1047,19 +1197,67 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-  /auth/logout:
-    post:
+  /auth/password:
+      post:
+        tags:
+          - auth
+        operationId: updatePassword
+        summary: Update user password by reset_password token
+        security:
+          - cookie_auth: []
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdatePasswordByToken"
+        responses:
+          201:
+            description: successful reset
+          401:
+            $ref: "#/components/responses/Unauthorized"
+          default:
+            $ref: "#/components/responses/ServerError"
+
+  /auth/password/forgot:
+      post:
+        tags:
+          - auth
+        operationId: forgotPassword
+        summary: forgot password request initiates the password reset process
+        security: []
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForgotPasswordRequest"
+        responses:
+          204:
+            description: No content
+          400:
+            description: bad request
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/Error"
+          default:
+            $ref: "#/components/responses/ServerError"
+
+  /auth/capabilities:
+    get:
       tags:
         - auth
-      operationId: logout
-      summary: logs out a cookie-authenticated user
-      security:
-        - cookie_auth: []
+      operationId: getAuthCapabilities
+      summary: list authentication capabilities supported
+      security: []
       responses:
         200:
-          description: successful logout
-        401:
-          $ref: "#/components/responses/Unauthorized"
+          description: auth capabilities
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthCapabilities"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1109,6 +1307,8 @@ paths:
                 $ref: "#/components/schemas/Error"
         401:
           $ref: "#/components/responses/Unauthorized"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1276,10 +1476,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Policy"
-        401:
-          $ref: "#/components/responses/Unauthorized"
         400:
           $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1330,6 +1532,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -2040,6 +2244,11 @@ paths:
             type: array
             items:
               type: string
+        - in: query
+          name: limit
+          description: limit the number of items in return to 'amount'. Without further indication on actual number of items.
+          schema:
+            type: boolean
       responses:
         200:
           description: commit log
@@ -2091,6 +2300,13 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
     post:
+      parameters:
+        - in: query
+          name: source_metarange
+          required: false
+          description: The source metarange to commit. Branch must not have uncommitted changes.
+          schema:
+            type: string
       tags:
         - commits
       operationId: commit
@@ -2218,6 +2434,12 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        409:
+          description: Conflict Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2495,7 +2717,7 @@ paths:
           $ref: "#/components/responses/ServerError"
 
     put:
-      tags: 
+      tags:
        - staging
       operationId: linkPhysicalAddress
       summary: associate staging on this physical address with a path
@@ -2535,6 +2757,76 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StagingLocation"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/branches/metaranges:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+        tags:
+          - import
+        operationId: createMetaRange
+        summary: create a lakeFS metarange file from the given ranges
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaRangeCreation"
+        responses:
+          201:
+            description: metarange metadata
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/MetaRangeCreationResponse"
+          400:
+            $ref: "#/components/responses/ValidationError"
+          401:
+            $ref: "#/components/responses/Unauthorized"
+          404:
+            $ref: "#/components/responses/NotFound"
+          default:
+            $ref: "#/components/responses/ServerError"
+
+
+  /repositories/{repository}/branches/ranges:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+         - import
+      operationId: ingestRange
+      summary: create a lakeFS range file from the source uri
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StageRangeCreation"
+      responses:
+        201:
+          description: range metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestRangeCreationResponse"
+
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2674,8 +2966,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ObjectErrorList"
-        204:
-          description: all requested objects successfully deleted
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2705,7 +2995,7 @@ paths:
       - in: query
         name: user_metadata
         required: false
-        schema: 
+        schema:
           type: boolean
           default: true
     get:
@@ -2783,7 +3073,7 @@ paths:
       - in: query
         name: user_metadata
         required: false
-        schema: 
+        schema:
           type: boolean
           default: true
       - $ref: "#/components/parameters/PaginationAfter"
@@ -3098,6 +3388,19 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - retention
+      operationId: delete garbage collection rules
+      responses:
+        204:
+          description: deleted garbage collection rules successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/gc/prepare_commits:
     parameters:
@@ -3239,3 +3542,40 @@ paths:
                 $ref: "#/components/schemas/StorageConfig"
         401:
           $ref: "#/components/responses/Unauthorized"
+  /templates/{template_location}:
+    get:
+      tags:
+        - templates
+      operationId: expandTemplate
+      description: fetch and expand template
+      parameters:
+        - in: path
+          name: template_location
+          required: true
+          schema:
+            type: string
+          description: URL of the template; must be relative (to a URL configured on the server).
+          example: spark.submit.conf.tt
+        - in: query
+          name: params
+          schema:
+            type: object
+            additionalProperties:
+              type: string
+            example:
+              lakefs_url: https://lakefs.example.com
+          style: form
+          explode: true
+      responses:
+        200:
+          description: expanded template
+          content:
+            "*/*":
+              schema:
+                format: binary
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"

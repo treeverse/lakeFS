@@ -46,6 +46,7 @@ const initialAPIState = {
     loading: true,
     error: null,
     response: null,
+    responseHeaders: null,
 };
 
 export const useAPI = (promise, deps = []) => {
@@ -61,7 +62,7 @@ export const useAPI = (promise, deps = []) => {
             }
             router.push({
                 pathname: loginPathname,
-                query: {next: router.route},
+                query: {next: router.route, redirected: true},
             });
             setLogin(false);
         }

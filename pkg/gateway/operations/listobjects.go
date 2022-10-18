@@ -30,7 +30,8 @@ func (controller *ListObjects) RequiredPermissions(req *http.Request, repoID str
 		return permissions.Node{
 			Permission: permissions.Permission{
 				Action:   permissions.ListBranchesAction,
-				Resource: permissions.RepoArn(repoID)},
+				Resource: permissions.RepoArn(repoID),
+			},
 		}, nil
 	}
 
@@ -38,7 +39,8 @@ func (controller *ListObjects) RequiredPermissions(req *http.Request, repoID str
 	return permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ListObjectsAction,
-			Resource: permissions.RepoArn(repoID)},
+			Resource: permissions.RepoArn(repoID),
+		},
 	}, nil
 }
 
@@ -106,15 +108,6 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 	}
 
 	maxKeys := controller.getMaxKeys(req, o)
-
-	// see if this is a recursive call`
-	if len(delimiter) >= 1 {
-		if delimiter != path.Separator {
-			// we only support "/" as a delimiter
-			_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
-			return
-		}
-	}
 
 	var results []*catalog.DBEntry
 	var hasMore bool
@@ -236,11 +229,6 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 	delimiter := params.Get("delimiter")
 	descend := true
 	if len(delimiter) >= 1 {
-		if delimiter != path.Separator {
-			// we only support "/" as a delimiter
-			_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
-			return
-		}
 		descend = false
 	}
 
@@ -362,7 +350,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 }
 
 func (controller *ListObjects) Handle(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
-	o.Incr("list_objects")
+	o.Incr("list_objects", o.Principal, o.Repository.Name, "")
 	// parse request parameters
 	// GET /example?list-type=2&prefix=main%2F&delimiter=%2F&encoding-type=url HTTP/1.1
 

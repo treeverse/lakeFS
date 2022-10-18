@@ -14,7 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
-	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -39,9 +38,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	viper.SetDefault("setup_lakefs_timeout", defaultSetupTimeout)
 	viper.SetDefault("endpoint_url", "http://localhost:8000")
 	viper.SetDefault("s3_endpoint", "s3.local.lakefs.io:8000")
-	viper.SetDefault("access_key_id", "")
-	viper.SetDefault("secret_access_key", "")
-	viper.SetDefault("storage_namespace", fmt.Sprintf("s3://%s/%s", params.StorageNS, xid.New().String()))
+	viper.SetDefault("storage_namespace", fmt.Sprintf("s3://%s", params.StorageNS))
 	viper.SetDefault("blockstore_type", block.BlockstoreTypeS3)
 	viper.SetDefault("version", "dev")
 	viper.SetDefault("lakectl_dir", "..")
@@ -97,6 +94,9 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 		credentialsWithSecret := res.JSON200
 		viper.Set("access_key_id", credentialsWithSecret.AccessKeyId)
 		viper.Set("secret_access_key", credentialsWithSecret.SecretAccessKey)
+	} else {
+		viper.Set("access_key_id", params.AdminAccessKeyID)
+		viper.Set("secret_access_key", params.AdminSecretAccessKey)
 	}
 
 	client, err = NewClientFromCreds(logger, viper.GetString("access_key_id"), viper.GetString("secret_access_key"), endpointURL)
@@ -105,23 +105,31 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	}
 
 	s3Endpoint := viper.GetString("s3_endpoint")
+	key := viper.GetString("access_key_id")
+	secret := viper.GetString("secret_access_key")
+	svc := SetupTestS3Client(s3Endpoint, key, secret)
+	return logger, client, svc
+}
+
+func SetupTestS3Client(endpoint, key, secret string) *s3.S3 {
 	awsSession := session.Must(session.NewSession())
+	forcePathStyleS3Client := viper.GetBool("force_path_style")
 	svc := s3.New(awsSession,
 		aws.NewConfig().
 			WithRegion("us-east-1").
-			WithEndpoint(s3Endpoint).
+			WithEndpoint(endpoint).
+			WithS3ForcePathStyle(forcePathStyleS3Client).
 			WithDisableSSL(true).
 			WithCredentials(credentials.NewCredentials(
 				&credentials.StaticProvider{
 					Value: credentials.Value{
-						AccessKeyID:     viper.GetString("access_key_id"),
-						SecretAccessKey: viper.GetString("secret_access_key"),
+						AccessKeyID:     key,
+						SecretAccessKey: secret,
 					}})))
-
-	return logger, client, svc
+	return svc
 }
 
-// Parses the given endpoint string
+// ParseEndpointURL parses the given endpoint string
 func ParseEndpointURL(logger logging.Logger, endpointURL string) string {
 	u, err := url.Parse(endpointURL)
 	if err != nil {
@@ -134,7 +142,7 @@ func ParseEndpointURL(logger logging.Logger, endpointURL string) string {
 	return endpointURL
 }
 
-// Creates a client using the credentials of a user
+// NewClientFromCreds creates a client using the credentials of a user
 func NewClientFromCreds(logger logging.Logger, accessKeyID string, secretAccessKey string, endpointURL string) (*api.ClientWithResponses, error) {
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
 	if err != nil {

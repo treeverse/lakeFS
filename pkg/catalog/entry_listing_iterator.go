@@ -15,8 +15,12 @@ type entryListingIterator struct {
 }
 
 func NewEntryListingIterator(it EntryIterator, prefix Path, delimiter Path) EntryListingIterator {
+	if len(prefix) > 0 {
+		it = NewPrefixIterator(it, prefix)
+	}
+
 	eli := &entryListingIterator{
-		it:        NewPrefixIterator(it, prefix),
+		it:        it,
 		prefix:    prefix.String(),
 		delimiter: delimiter.String(),
 	}
@@ -76,7 +80,7 @@ func (e *entryListingIterator) nextWithDelimiter() bool {
 	relevantPath := v.Path[len(e.prefix):]
 	delimiterIndex := strings.Index(relevantPath.String(), e.delimiter)
 	if delimiterIndex == -1 {
-		// listing for non common prefix with value
+		// listing for non-common prefix with value
 		e.value = &EntryListing{Path: v.Path, Entry: v.Entry}
 	} else {
 		// listing for common prefix key

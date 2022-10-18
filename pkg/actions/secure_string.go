@@ -26,7 +26,7 @@ func (s SecureString) String() string {
 
 var envVarRegex = regexp.MustCompile(`{{ ?ENV\..*? ?}}`)
 
-// Creates a new SecureString, reading env var if needed.
+// NewSecureString creates a new SecureString, reading env var if needed.
 func NewSecureString(s string) (SecureString, error) {
 	matches := 0
 	var err error
@@ -36,7 +36,7 @@ func NewSecureString(s string) (SecureString, error) {
 		}
 		matches++
 		raw := strings.Trim(origin, "{} ")
-		parts := strings.SplitN(raw, ".", 2)
+		parts := strings.SplitN(raw, ".", 2) //nolint: gomnd
 		if len(parts) != 2 || parts[0] != "ENV" {
 			return origin
 		}

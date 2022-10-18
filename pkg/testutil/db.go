@@ -2,36 +2,46 @@ package testutil
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/ory/dockertest/v3"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/gs"
 	"github.com/treeverse/lakefs/pkg/block/mem"
+	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	lakefsS3 "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/db"
-	"github.com/treeverse/lakefs/pkg/db/params"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 const (
+	DBName                    = "lakefs_db"
 	DBContainerTimeoutSeconds = 60 * 30 // 30 minutes
 
 	EnvKeyUseBlockAdapter = "USE_BLOCK_ADAPTER"
 	envKeyAwsKeyID        = "AWS_ACCESS_KEY_ID"
 	envKeyAwsSecretKey    = "AWS_SECRET_ACCESS_KEY" //nolint:gosec
 	envKeyAwsRegion       = "AWS_DEFAULT_REGION"
+
+	testMigrateValue = "This is a test value"
+	testPartitionKey = "This is a test partition key"
 )
 
 var keepDB = flag.Bool("keep-db", false, "keep test DB instance running")
@@ -62,7 +72,7 @@ func GetDBInstance(pool *dockertest.Pool) (string, func()) {
 	resource, err := pool.Run("postgres", "11", []string{
 		"POSTGRES_USER=lakefs",
 		"POSTGRES_PASSWORD=lakefs",
-		"POSTGRES_DB=lakefs_db",
+		fmt.Sprintf("POSTGRES_DB=%s", DBName),
 	})
 	if err != nil {
 		log.Fatalf("Could not start postgresql: %s", err)
@@ -103,7 +113,7 @@ func GetDBInstance(pool *dockertest.Pool) (string, func()) {
 
 func formatPostgresResourceURI(resource *dockertest.Resource) string {
 	dbParams := map[string]string{
-		"POSTGRES_DB":       "lakefs_db",
+		"POSTGRES_DB":       DBName,
 		"POSTGRES_USER":     "lakefs",
 		"POSTGRES_PASSWORD": "lakefs",
 		"POSTGRES_PORT":     resource.GetPort("5432/tcp"),
@@ -142,61 +152,6 @@ type GetDBOptions struct {
 
 type GetDBOption func(options *GetDBOptions)
 
-func WithGetDBApplyDDL(apply bool) GetDBOption {
-	return func(options *GetDBOptions) {
-		options.ApplyDDL = apply
-	}
-}
-
-func GetDB(t testing.TB, uri string, opts ...GetDBOption) (db.Database, string) {
-	ctx := context.Background()
-	options := &GetDBOptions{
-		ApplyDDL: true,
-	}
-	for _, opt := range opts {
-		opt(options)
-	}
-
-	// generate uuid as schema name
-	generatedSchema := fmt.Sprintf("schema_%s",
-		strings.ReplaceAll(uuid.New().String(), "-", ""))
-
-	// create connection
-	connURI := fmt.Sprintf("%s&search_path=%s,public", uri, generatedSchema)
-	pool, err := pgxpool.Connect(ctx, connURI)
-	if err != nil {
-		t.Fatalf("could not connect to PostgreSQL: %s", err)
-	}
-	err = db.Ping(ctx, pool)
-	if err != nil {
-		pool.Close()
-		t.Fatalf("could not ping PostgreSQL: %s", err)
-	}
-
-	t.Cleanup(func() {
-		pool.Close()
-	})
-
-	database := db.NewPgxDatabase(pool)
-	_, err = database.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return tx.Exec("CREATE SCHEMA IF NOT EXISTS " + generatedSchema)
-	})
-	if err != nil {
-		t.Fatalf("could not create schema: %v", err)
-	}
-
-	if options.ApplyDDL {
-		// do the actual migration
-		err := db.MigrateUp(params.Database{ConnectionString: connURI})
-		if err != nil {
-			t.Fatal("could not create schema:", err)
-		}
-	}
-
-	// return DB
-	return database, connURI
-}
-
 func Must(t testing.TB, err error) {
 	t.Helper()
 	if err != nil {
@@ -211,7 +166,7 @@ func MustDo(t testing.TB, what string, err error) {
 	}
 }
 
-func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, blockstoreType string) block.Adapter {
+func NewBlockAdapterByType(t testing.TB, blockstoreType string) block.Adapter {
 	switch blockstoreType {
 	case block.BlockstoreTypeGS:
 		ctx := context.Background()
@@ -219,7 +174,7 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 		if err != nil {
 			t.Fatal("Google Storage new client", err)
 		}
-		return gs.NewAdapter(client, gs.WithTranslator(translator))
+		return gs.NewAdapter(client)
 
 	case block.BlockstoreTypeS3:
 		awsRegion, regionOk := os.LookupEnv(envKeyAwsRegion)
@@ -237,9 +192,104 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 			cfg.Credentials = credentials.NewSharedCredentials("", "default")
 		}
 		sess := session.Must(session.NewSession(cfg))
-		return lakefsS3.NewAdapter(sess, lakefsS3.WithTranslator(translator))
+		return lakefsS3.NewAdapter(sess)
 
 	default:
-		return mem.New(mem.WithTranslator(translator))
+		return mem.New()
+	}
+}
+
+// migrate functions for test scenarios
+
+func MigrateEmpty(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterConfig, _ io.Writer) error {
+	return nil
+}
+
+func MigrateBasic(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterConfig, writer io.Writer) error {
+	buildTestData(1, 5, writer) //nolint:gomnd
+	return nil
+}
+
+func MigrateNoHeader(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterConfig, writer io.Writer) error {
+	jd := json.NewEncoder(writer)
+
+	for i := 1; i < 5; i++ {
+		err := jd.Encode(kv.Entry{
+			PartitionKey: []byte(strconv.Itoa(i)),
+			Key:          []byte(strconv.Itoa(i)),
+			Value:        []byte(fmt.Sprint(i, ". ", testMigrateValue)),
+		})
+		if err != nil {
+			log.Fatal("Failed to encode struct")
+		}
+	}
+	return nil
+}
+
+func MigrateBadEntry(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterConfig, writer io.Writer) error {
+	jd := json.NewEncoder(writer)
+
+	err := jd.Encode(kv.Entry{
+		Key:   []byte("test"),
+		Value: nil,
+	})
+	if err != nil {
+		log.Fatal("Failed to encode struct")
+	}
+	return nil
+}
+
+func MigrateParallel(_ context.Context, _ *pgxpool.Pool, _ blockparams.AdapterConfig, writer io.Writer) error {
+	const index = 6                 // Magic number WA
+	buildTestData(index, 5, writer) //nolint:gomnd
+	return nil
+}
+
+func ValidateKV(ctx context.Context, t *testing.T, store kv.Store, entries int) {
+	for i := 1; i <= entries; i++ {
+		expectedVal := fmt.Sprint(i, ". ", testMigrateValue)
+		res, err := store.Get(ctx, []byte(testPartitionKey), []byte(strconv.Itoa(i)))
+		require.NoError(t, err)
+		require.Equal(t, expectedVal, string(res.Value))
+	}
+}
+
+func CleanupKV(ctx context.Context, t *testing.T, store kv.Store) {
+	t.Helper()
+
+	scan, err := store.Scan(ctx, []byte(testPartitionKey), []byte{0})
+	MustDo(t, "scan store", err)
+	defer scan.Close()
+
+	for scan.Next() {
+		ent := scan.Entry()
+		MustDo(t, "Clean store", store.Delete(ctx, ent.PartitionKey, ent.Key))
+	}
+
+	// Zero KV version
+	MustDo(t, "Reset migration", kv.SetDBSchemaVersion(ctx, store, 0))
+}
+
+func buildTestData(startIdx, count int, writer io.Writer) {
+	jd := json.NewEncoder(writer)
+
+	err := jd.Encode(kv.Header{
+		LakeFSVersion:   version.Version,
+		PackageName:     "test_package_name",
+		DBSchemaVersion: kv.InitialMigrateVersion,
+		CreatedAt:       time.Now(),
+	})
+	if err != nil {
+		log.Fatal("Failed to encode struct")
+	}
+	for i := startIdx; i < startIdx+count; i++ {
+		err = jd.Encode(kv.Entry{
+			PartitionKey: []byte(testPartitionKey),
+			Key:          []byte(strconv.Itoa(i)),
+			Value:        []byte(fmt.Sprint(i, ". ", testMigrateValue)),
+		})
+		if err != nil {
+			log.Fatal("Failed to encode struct")
+		}
 	}
 }

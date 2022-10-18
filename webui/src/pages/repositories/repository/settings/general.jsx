@@ -60,8 +60,8 @@ const SettingsContainer = () => {
     const [ deletionError, setDeletionError ] = useState(null);
 
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>;
-    if (!!deletionError) return <Error error={deletionError}/>;
+    if (error) return <Error error={error}/>;
+    if (deletionError) return <Error error={deletionError}/>;
 
     return (
         <div className="mt-3 mb-5">
@@ -72,7 +72,7 @@ const SettingsContainer = () => {
 
             <Container>
                 <Row>
-                    <Form.Label column md={{span:2}} className="mb-3">
+                    <Form.Label column md={{span:3}} className="mb-3">
                         Repository name
                     </Form.Label>
                     <Col md={{span:4}}>
@@ -80,7 +80,7 @@ const SettingsContainer = () => {
                     </Col>
                 </Row>
                 <Row>
-                    <Form.Label column md={{span:2}} className="mb-3">
+                    <Form.Label column md={{span:3}} className="mb-3">
                         Storage namespace
                     </Form.Label>
                     <Col md={{span:4}}>
@@ -88,7 +88,7 @@ const SettingsContainer = () => {
                     </Col>
                 </Row>
                 <Row>
-                    <Form.Label column md={{span:2}} className="mb-3">
+                    <Form.Label column md={{span:3}} className="mb-3">
                         Default branch
                     </Form.Label>
                     <Col md={{span:4}}>
@@ -98,7 +98,7 @@ const SettingsContainer = () => {
             </Container>
 
             <Button variant="danger" className="mt-3" onClick={() => setShowDeleteModal(!showingDeleteModal)}>
-                <TrashIcon/> Delete this repository
+                <TrashIcon/> Delete Repository
             </Button>
 
             <DeleteRepositoryModal

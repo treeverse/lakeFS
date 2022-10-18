@@ -4,13 +4,13 @@ import (
 	"github.com/cockroachdb/pebble/sstable"
 )
 
-// staticCollector is an sstable.TablePropertyCollector that adds a map's values to the user
+// staticCollector is a sstable.TablePropertyCollector that adds a map's values to the user
 // property map.
 type staticCollector struct {
 	m map[string]string
 }
 
-func (*staticCollector) Add(key sstable.InternalKey, value []byte) error {
+func (*staticCollector) Add(_ sstable.InternalKey, _ []byte) error {
 	return nil
 }
 

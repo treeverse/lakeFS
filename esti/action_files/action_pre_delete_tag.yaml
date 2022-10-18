@@ -1,0 +1,10 @@
+name: Test Pre Delete Tag
+description: a test action description
+on:
+  pre-delete-tag:
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for pre-delete tag works
+    properties:
+      url: "{{.URL}}/pre-delete-tag"

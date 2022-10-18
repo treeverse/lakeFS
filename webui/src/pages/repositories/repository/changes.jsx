@@ -27,6 +27,7 @@ import {formatAlertText} from "../../../lib/components/repository/errors";
 import {TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
+import {RepoError} from "./error";
 
 
 const CommitButton = ({repo, onCommit, enabled = false}) => {
@@ -186,7 +187,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
         setInternalRefresh(!internalRefresh)
     }
 
-    if (!!error) return <Error error={error}/>
+    if (error) return <Error error={error}/>
     if (loading) return <Loading/>
 
     let onRevert = async (entry) => {
@@ -209,7 +210,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
         }
     }
 
-   const actionErrorDisplay = (!!actionError) ?
+   const actionErrorDisplay = (actionError) ?
         <Error error={actionError} onDismiss={() => setActionError(null)}/> : <></>
 
     return (
@@ -219,7 +220,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
                     <RefDropdown
                         emptyText={'Select Branch'}
                         repo={repo}
-                        selected={(!!reference) ? reference : null}
+                        selected={(reference) ? reference : null}
                         withCommits={false}
                         withWorkspace={false}
                         withTags={false}
@@ -305,11 +306,11 @@ const ChangesContainer = () => {
     const {prefix} = router.query
 
     if (loading) return <Loading/>
-    if (!!error) return <Error error={error}/>
+    if (error) return <RepoError error={error}/>
 
     return (
         <ChangesBrowser
-            prefix={(!!prefix) ? prefix : ""}
+            prefix={(prefix) ? prefix : ""}
             repo={repo}
             reference={reference}
             onSelectRef={ref => router.push({

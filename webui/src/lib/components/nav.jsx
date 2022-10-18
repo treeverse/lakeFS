@@ -1,9 +1,10 @@
 import React from "react";
-import { Link as RouterLink } from "react-router-dom";
+import {Link as RouterLink} from "react-router-dom";
 
 import Nav from "react-bootstrap/Nav";
 
 import {buildURL} from "../hooks/router";
+import {Tabs} from "@mui/material";
 
 
 function isModifiedEvent(event) {
@@ -11,8 +12,8 @@ function isModifiedEvent(event) {
 }
 
 const wrapComponent = (component) => {
-    const linkWrapper = React.forwardRef(({ navigate, onClick, ...rest}, forwardedRef) => {
-        const { target } = rest;
+    const linkWrapper = React.forwardRef(({navigate, onClick, ...rest}, forwardedRef) => {
+        const {target} = rest;
         const props = {
             ...rest,
             ref: forwardedRef,
@@ -43,17 +44,17 @@ const wrapComponent = (component) => {
 
 export const Link = (props) => {
     const dontPassTheseProps = ['href', 'to', 'children', 'components'];
-    const linkProps = {to: (!!props.href) ? buildURL(props.href) : props.href};
+    const linkProps = {to: (props.href) ? buildURL(props.href) : props.href};
     Object.getOwnPropertyNames(props)
         .filter(k => dontPassTheseProps.indexOf(k) === -1)
         .forEach(k => linkProps[k] = props[k]);
-    if (!!props.component)
+    if (props.component)
         linkProps.component = wrapComponent(props.component);
 
     return React.createElement(RouterLink, linkProps, props.children);
 }
 
-export const NavItem = ({ href, active, children }) => {
+export const NavItem = ({href, active, children}) => {
     return (
         <Nav.Item>
             <Link href={href} component={Nav.Link} active={active}>
@@ -62,3 +63,26 @@ export const NavItem = ({ href, active, children }) => {
         </Nav.Item>
     );
 };
+
+export const TabsWrapper = ({
+                                isCentered,
+                                children,
+                                defaultTabIndex,
+                                handleTabChange,
+                                ariaLabel = '',
+                                textColor = 'primary',
+                                indicatorColor = 'primary'
+                            }) => {
+    return (
+        <Tabs
+            value={defaultTabIndex}
+            onChange={handleTabChange}
+            textColor={textColor}
+            indicatorColor={indicatorColor}
+            aria-label={ariaLabel}
+            centered={isCentered}
+        >
+            {children}
+        </Tabs>
+    );
+}

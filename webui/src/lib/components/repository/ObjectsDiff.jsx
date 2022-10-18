@@ -1,9 +1,10 @@
 import React from "react";
 import {useAPI} from "../../hooks/api";
 import {objects} from "../../api";
-import ReactDiffViewer, {DiffMethod} from "react-diff-viewer";
+import ReactDiffViewer, {DiffMethod} from "@mockingjay-io/react-diff-viewer";
 import {Error, Loading} from "../controls";
 import {humanSize} from "./tree";
+import Alert from "react-bootstrap/Alert";
 
 const maxDiffSizeBytes = 120 << 10;
 const supportedReadableFormats = ["txt", "csv", "tsv"];
@@ -14,6 +15,7 @@ export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
     let right;
     switch (diffType) {
         case 'changed':
+        case 'conflict':
             left = useAPI(async () => objects.getStat(repoId, leftRef, path),
                 [repoId, leftRef, path]);
             right = useAPI(async () => objects.getStat(repoId, rightRef, path),
@@ -27,9 +29,6 @@ export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
             left = useAPI(async () => objects.getStat(repoId, leftRef, path),
                 [repoId, leftRef, path]);
             break;
-        case 'conflict':
-            return <Error error={"Conflict in " + path + "; fix conflicts and then view content diff."}/>;
-            break;
         default:
             return <Error error={"Unsupported diff type " + diffType}/>;
     }
@@ -41,7 +40,7 @@ export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
     const leftStat = left && left.response;
     const rightStat = right && right.response;
     if (!readable) {
-        return <StatDiff left={leftStat} right={rightStat} diffType={diffType}/>;
+        return <NoContentDiff left={leftStat} right={rightStat} diffType={diffType}/>;
     }
     const objectTooBig = (leftStat && leftStat.size_bytes > maxDiffSizeBytes) || (rightStat && rightStat.size_bytes > maxDiffSizeBytes);
     if (objectTooBig) {
@@ -61,6 +60,13 @@ function readableObject(path) {
         }
     }
     return false;
+}
+
+const NoContentDiff = ({left, right, diffType}) => {
+    return <div>
+        <span><StatDiff left={left} right={right} diffType={diffType}/></span>
+        <span><Alert variant="warning">Unsupported format for content diff</Alert></span>
+    </div>;
 }
 
 const ContentDiff = ({repoId, path, leftRef, rightRef, leftSize, rightSize, diffType}) => {
@@ -94,6 +100,8 @@ function validateDiffInput(left, right, diffType) {
         case 'removed':
             if (!left) return <Error error={"Invalid diff input: left hand-side is missing"}/>;
             break;
+        case 'conflict':
+            break;
         default:
             return <Error error={"Unknown diff type: " + diffType}/>;
     }
@@ -116,15 +124,28 @@ const DiffSizeReport = ({leftSize, rightSize, diffType}) => {
     let size;
     switch (diffType) {
         case 'changed':
-            const sizeDiff = leftSize - rightSize;
-            if (sizeDiff < 0) {
-                size = -sizeDiff;
+            size = leftSize - rightSize;
+            if (size === 0) {
+                return <div>
+                    <span className="unchanged">identical file size</span>
+                </div>;
+            }
+            if (size < 0) {
+                size = -size;
                 label = "added";
             } else {
-                size = sizeDiff;
                 label = "removed";
             }
             break;
+        case 'conflict': // conflict will compare left and right. further details: https://github.com/treeverse/lakeFS/issues/3269
+                return <div>
+                    <span className={label}>{label} </span>
+                    <span>both source and destination file were changed.</span>
+                    <span className={"diff-size"}> Source: {humanSize(leftSize)}</span>
+                    <span> in size, </span>
+                    <span className={"diff-size"}> Destination: {humanSize(rightSize)}</span>
+                    <span> in size</span>
+                </div>;
         case 'added':
             size = rightSize;
             break;
@@ -134,6 +155,8 @@ const DiffSizeReport = ({leftSize, rightSize, diffType}) => {
         default:
             return <Error error={"Unknown diff type: " + diffType}/>;
     }
+
+
     return <div>
         <span className={label}>{label} </span>
         <span className={"diff-size"}>{humanSize(size)}</span>

@@ -11,24 +11,28 @@ import Alert from "react-bootstrap/Alert";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
 import {TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/changes";
-import {ConfirmationButton} from "../../../lib/components/modals";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {appendMoreResults} from "./changes";
 import {RefTypeBranch, RefTypeCommit} from "../../../constants";
-
+import Button from "react-bootstrap/Button";
+import {
+    FormControl,
+    FormHelperText,
+    InputLabel, MenuItem,
+    Select
+} from "@mui/material";
+import Modal from "react-bootstrap/Modal";
+import {RepoError} from "./error";
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
-    const [mergeError, setMergeError] = useState(null);
-    const [merging, setMerging] = useState(false);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
 
     const refresh = () => {
         setResultsState({prefix: prefix, results:[], pagination:{}})
         setInternalRefresh(!internalRefresh)
-        setMergeError(null)
     }
 
     const delimiter = "/"
@@ -59,7 +63,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     }
 
     if (loading) content = <Loading/>
-    else if (!!error) content = <Error error={error}/>
+    else if (error) content = <Error error={error}/>
     else if (compareReference.id === reference.id) content = (
         <Alert variant="warning">
             <Alert.Heading>There isn’t anything to compare.</Alert.Heading>
@@ -102,7 +106,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                     let leftCommittedRef = reference.id;
                                     let rightCommittedRef = compareReference.id;
                                     if (reference.type === RefTypeBranch) {
-                                        leftCommittedRef +=  + "@";
+                                        leftCommittedRef += "@";
                                     }
                                     if (compareReference.type === RefTypeBranch) {
                                         rightCommittedRef += "@";
@@ -137,7 +141,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                     <RefDropdown
                         prefix={'Base '}
                         repo={repo}
-                        selected={(!!reference) ? reference : null}
+                        selected={(reference) ? reference : null}
                         withCommits={true}
                         withWorkspace={false}
                         selectRef={onSelectRef}/>
@@ -148,7 +152,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                         prefix={'Compared to '}
                         emptyText={'Compare with...'}
                         repo={repo}
-                        selected={(!!compareReference) ? compareReference : null}
+                        selected={(compareReference) ? compareReference : null}
                         withCommits={true}
                         withWorkspace={false}
                         selectRef={onSelectCompare}/>
@@ -159,36 +163,98 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                     <RefreshButton onClick={refresh}/>
 
                     {(compareReference.type === RefTypeBranch && reference.type === RefTypeBranch) &&
-                    <ConfirmationButton
-                        variant="success"
-                        disabled={((compareReference.id === reference.id) || merging || emptyDiff)}
-                        msg={`Are you sure you'd like to merge '${compareReference.id}' into '${reference.id}'?`}
-                        tooltip={`merge '${compareReference.id}' into '${reference.id}'`}
-                        onConfirm={hide => {
-                            setMerging(true)
-                            hide()
-                            refs.merge(repo.id, compareReference.id, reference.id)
-                                .then(() => {
-                                    setMergeError(null)
-                                    setMerging(false)
-                                    refresh()
-                                })
-                                .catch(err => {
-                                    setMergeError(err)
-                                    setMerging(false)
-                                })
-                        }}>
-                        <GitMergeIcon/> {(merging) ? 'Merging...' : 'Merge'}
-                    </ConfirmationButton>
+                        <MergeButton
+                            repo={repo}
+                            disabled={((compareReference.id === reference.id) || emptyDiff)}
+                            source={compareReference.id}
+                            dest={reference.id}
+                            onDone={refresh}
+                        />
                     }
                 </ActionGroup>
             </ActionsBar>
 
-            {mergeError && <Error error={mergeError}/>}
             {content}
         </>
     );
 };
+
+const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
+    const initialMerge = {
+        merging: false,
+        show: false,
+        err: null,
+        strategy: "none",
+    }
+    const [mergeState, setMergeState] = useState(initialMerge);
+
+    const onStrategyChange = (event) => {
+        setMergeState({merging: mergeState.merging, err: mergeState.err, show: mergeState.show, strategy: event.target.value});
+    }
+    const hide = () => {
+        if (mergeState.merging) return;
+        setMergeState(initialMerge);
+    }
+
+    const onSubmit = async () => {
+        let strategy = mergeState.strategy;
+        if (strategy === "none") {
+            strategy = "";
+        }
+        setMergeState({merging: true, show: mergeState.show, err: mergeState.err, strategy: mergeState.strategy})
+        try {
+            await refs.merge(repo.id, source, dest, strategy);
+            setMergeState({merging: mergeState.merging, show: mergeState.show, err: null, strategy: mergeState.strategy})
+            onDone();
+            hide();
+        } catch (err) {
+            setMergeState({merging: mergeState.merging, show: mergeState.show, err: err, strategy: mergeState.strategy})
+        }
+    }
+
+    return (
+        <>
+            <Modal show={mergeState.show} onHide={hide} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>Merge branch {source} into {dest}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <FormControl sx={{ m: 1, minWidth: 120 }}>
+                        <InputLabel id="demo-select-small">Strategy</InputLabel>
+                        <Select
+                            labelId="demo-select-small"
+                            id="demo-simple-select-helper"
+                            value={mergeState.strategy}
+                            label="Strategy"
+                            onChange={onStrategyChange}
+                        >
+                            <MenuItem value={"none"}>Default</MenuItem>
+                            <MenuItem value={"source-wins"}>source-wins</MenuItem>
+                            <MenuItem value={"dest-wins"}>dest-wins</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <FormHelperText>In case of a merge conflict, this option will force the merge process
+                        to automatically favor changes from <b>{dest}</b> (&rdquo;dest-wins&rdquo;) or
+                        from <b>{source}</b> (&rdquo;source-wins&rdquo;). In case no selection is made,
+                        the merge process will fail in case of a conflict.</FormHelperText>
+                    {(mergeState.err) ? (<Error error={mergeState.err}/>) : (<></>)}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" disabled={mergeState.merging} onClick={hide}>
+                        Cancel
+                    </Button>
+                    <Button variant="success" disabled={mergeState.merging} onClick={onSubmit}>
+                        {(mergeState.merging) ? 'Merging...' : 'Merge'}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+            <Button variant="success" disabled={disabled} onClick={() => setMergeState({merging: mergeState.merging,
+                err: mergeState.err, show: true, strategy: mergeState.strategy})}>
+                <GitMergeIcon/> Merge
+            </Button>
+        </>
+    );
+}
 
 
 const CompareContainer = () => {
@@ -198,7 +264,7 @@ const CompareContainer = () => {
     const { prefix } = router.query;
 
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>;
+    if (error) return <RepoError error={error}/>;
 
     const route = query => router.push({pathname: `/repositories/:repoId/compare`, params: {repoId: repo.id}, query: {
         ...query,
@@ -207,7 +273,7 @@ const CompareContainer = () => {
     return (
         <CompareList
             repo={repo}
-            prefix={(!!prefix) ? prefix : ""}
+            prefix={(prefix) ? prefix : ""}
             reference={reference}
             onSelectRef={reference => route(compare ? {ref: reference.id, compare: compare.id} : {ref: reference.id})}
             compareReference={compare}

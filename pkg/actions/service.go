@@ -12,14 +12,33 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type Service struct {
-	DB       db.Database
+const (
+	PartitionKey = "actions"
+	reposPrefix  = "repos"
+	runsPrefix   = "runs"
+	tasksPrefix  = "tasks"
+	branchPrefix = "branches"
+	commitPrefix = "commits"
+)
+
+var (
+	ErrNotFound = errors.New("not found")
+	ErrNilValue = errors.New("nil value")
+)
+
+// StoreService is an implementation of actions.Service that saves
+// the run data to the blockstore and to the actions.Store (which is a
+// fancy name for a DB - kv style or postgres directly)
+type StoreService struct {
+	Store    Store
+	idGen    IDGenerator
 	Source   Source
 	Writer   OutputWriter
 	ctx      context.Context
@@ -45,10 +64,10 @@ type RunResult struct {
 	BranchID  string    `db:"branch_id" json:"branch_id"`
 	SourceRef string    `db:"source_ref" json:"source_ref"`
 	EventType string    `db:"event_type" json:"event_type"`
+	CommitID  string    `db:"commit_id" json:"commit_id,omitempty"`
 	StartTime time.Time `db:"start_time" json:"start_time"`
 	EndTime   time.Time `db:"end_time" json:"end_time"`
 	Passed    bool      `db:"passed" json:"passed"`
-	CommitID  string    `db:"commit_id" json:"commit_id,omitempty"`
 }
 
 type TaskResult struct {
@@ -70,31 +89,103 @@ func (r *TaskResult) LogPath() string {
 	return FormatHookOutputPath(r.RunID, r.HookRunID)
 }
 
-type RunResultIterator interface {
-	Next() bool
-	Value() *RunResult
-	Err() error
-	Close()
+func RunResultFromProto(pb *RunResultData) *RunResult {
+	return &RunResult{
+		RunID:     pb.RunId,
+		BranchID:  pb.BranchId,
+		SourceRef: pb.SourceRef,
+		EventType: pb.EventType,
+		CommitID:  pb.CommitId,
+		StartTime: pb.StartTime.AsTime(),
+		EndTime:   pb.EndTime.AsTime(),
+		Passed:    pb.Passed,
+	}
 }
 
-type TaskResultIterator interface {
-	Next() bool
-	Value() *TaskResult
-	Err() error
-	Close()
+func protoFromRunResult(m *RunResult) *RunResultData {
+	return &RunResultData{
+		RunId:     m.RunID,
+		BranchId:  m.BranchID,
+		CommitId:  m.CommitID,
+		SourceRef: m.SourceRef,
+		EventType: m.EventType,
+		StartTime: timestamppb.New(m.StartTime),
+		EndTime:   timestamppb.New(m.EndTime),
+		Passed:    m.Passed,
+	}
 }
 
-const defaultFetchSize = 1024
+func taskResultFromProto(pb *TaskResultData) *TaskResult {
+	return &TaskResult{
+		RunID:      pb.RunId,
+		HookRunID:  pb.HookRunId,
+		HookID:     pb.HookId,
+		ActionName: pb.ActionName,
+		StartTime:  pb.StartTime.AsTime(),
+		EndTime:    pb.EndTime.AsTime(),
+		Passed:     pb.Passed,
+	}
+}
 
-var ErrNotFound = errors.New("not found")
+func protoFromTaskResult(m *TaskResult) *TaskResultData {
+	return &TaskResultData{
+		RunId:      m.RunID,
+		HookRunId:  m.HookRunID,
+		HookId:     m.HookID,
+		ActionName: m.ActionName,
+		StartTime:  timestamppb.New(m.StartTime),
+		EndTime:    timestamppb.New(m.EndTime),
+		Passed:     m.Passed,
+	}
+}
 
-func NewService(ctx context.Context, db db.Database, source Source, writer OutputWriter, stats stats.Collector, runHooks bool) *Service {
+func baseActionsPath(repoID string) string {
+	return kv.FormatPath(reposPrefix, repoID)
+}
+
+func TasksPath(repoID, runID string) string {
+	return kv.FormatPath(baseActionsPath(repoID), tasksPrefix, runID)
+}
+
+func RunPath(repoID, runID string) []byte {
+	return []byte(kv.FormatPath(baseActionsPath(repoID), runsPrefix, runID))
+}
+
+func byBranchPath(repoID, branchID string) string {
+	return kv.FormatPath(baseActionsPath(repoID), branchPrefix, branchID)
+}
+
+func byCommitPath(repoID, commitID string) string {
+	return kv.FormatPath(baseActionsPath(repoID), commitPrefix, commitID)
+}
+
+func RunByBranchPath(repoID, branchID, runID string) []byte {
+	return []byte(kv.FormatPath(byBranchPath(repoID, branchID), runID))
+}
+
+func RunByCommitPath(repoID, commitID, runID string) []byte {
+	return []byte(kv.FormatPath(byCommitPath(repoID, commitID), runID))
+}
+
+type Service interface {
+	Stop()
+	Run(ctx context.Context, record graveler.HookRecord) error
+	UpdateCommitID(ctx context.Context, repositoryID string, storageNamespace string, runID string, commitID string) error
+	GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error)
+	GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*TaskResult, error)
+	ListRunResults(ctx context.Context, repositoryID string, branchID, commitID string, after string) (RunResultIterator, error)
+	ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (TaskResultIterator, error)
+	graveler.HooksHandler
+}
+
+func NewService(ctx context.Context, store Store, source Source, writer OutputWriter, idGen IDGenerator, stats stats.Collector, runHooks bool) *StoreService {
 	ctx, cancel := context.WithCancel(ctx)
-	return &Service{
-		DB:       db,
+	return &StoreService{
+		Store:    store,
 		Source:   source,
 		Writer:   writer,
 		ctx:      ctx,
+		idGen:    idGen,
 		cancel:   cancel,
 		wg:       sync.WaitGroup{},
 		stats:    stats,
@@ -102,26 +193,26 @@ func NewService(ctx context.Context, db db.Database, source Source, writer Outpu
 	}
 }
 
-func (s *Service) Stop() {
+func (s *StoreService) Stop() {
 	s.cancel()
 	s.wg.Wait()
 }
 
-func (s *Service) asyncRun(record graveler.HookRecord) {
+func (s *StoreService) asyncRun(record graveler.HookRecord) {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
 
 		// passing the global context for cancelling all runs when lakeFS shuts down
 		if err := s.Run(s.ctx, record); err != nil {
-			logging.Default().WithField("record", record).
+			logging.Default().WithError(err).WithField("record", record).
 				Info("Async run of hook failed")
 		}
 	}()
 }
 
 // Run load and run actions based on the event information
-func (s *Service) Run(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) Run(ctx context.Context, record graveler.HookRecord) error {
 	if !s.runHooks {
 		logging.Default().WithField("record", record).Info("Hooks are disabled, skipping hooks execution")
 		return nil
@@ -155,7 +246,7 @@ func (s *Service) Run(ctx context.Context, record graveler.HookRecord) error {
 	return runErr
 }
 
-func (s *Service) loadMatchedActions(ctx context.Context, record graveler.HookRecord, spec MatchSpec) ([]*Action, error) {
+func (s *StoreService) loadMatchedActions(ctx context.Context, record graveler.HookRecord, spec MatchSpec) ([]*Action, error) {
 	actions, err := LoadActions(ctx, s.Source, record)
 	if err != nil {
 		return nil, err
@@ -163,7 +254,7 @@ func (s *Service) loadMatchedActions(ctx context.Context, record graveler.HookRe
 	return MatchedActions(actions, spec)
 }
 
-func (s *Service) allocateTasks(runID string, actions []*Action) ([][]*Task, error) {
+func (s *StoreService) allocateTasks(runID string, actions []*Action) ([][]*Task, error) {
 	var tasks [][]*Task
 	for actionIdx, action := range actions {
 		var actionTasks []*Task
@@ -189,7 +280,7 @@ func (s *Service) allocateTasks(runID string, actions []*Action) ([][]*Task, err
 	return tasks, nil
 }
 
-func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
+func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
 	var g multierror.Group
 	for _, actionTasks := range tasks {
 		actionTasks := actionTasks // pin
@@ -203,16 +294,28 @@ func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, task
 					ActionName:       task.Action.Name,
 					HookID:           task.HookID,
 				}
+				buf := bytes.Buffer{}
 				task.StartTime = time.Now().UTC()
-				task.Err = task.Hook.Run(ctx, record, hookOutputWriter)
+
+				task.Err = task.Hook.Run(ctx, record, &buf)
 				task.EndTime = time.Now().UTC()
 
-				s.stats.CollectEvent("actions_service", string(record.EventType))
+				s.stats.CollectEvent(stats.Event{Class: "actions_service", Name: string(record.EventType)})
 
 				if task.Err != nil {
-					// wrap error with more information and return
+					_, _ = fmt.Fprintf(&buf, "Error: %s\n", task.Err)
+					// wrap error with more information
 					task.Err = fmt.Errorf("hook run id '%s' failed on action '%s' hook '%s': %w",
 						task.HookRunID, task.Action.Name, task.HookID, task.Err)
+				}
+
+				err := hookOutputWriter.OutputWrite(ctx, &buf, int64(buf.Len()))
+				if err != nil {
+					return fmt.Errorf("failed to write action log. Run id '%s' action '%s' hook '%s': %w",
+						task.HookRunID, task.Action.Name, task.HookID, err)
+				}
+				if task.Err != nil {
+					// stop execution of tasks and return error
 					return task.Err
 				}
 			}
@@ -222,7 +325,7 @@ func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, task
 	return g.Wait().ErrorOrNil()
 }
 
-func (s *Service) saveRunInformation(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
+func (s *StoreService) saveRunInformation(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
 	if len(tasks) == 0 {
 		return nil
 	}
@@ -237,7 +340,7 @@ func (s *Service) saveRunInformation(ctx context.Context, record graveler.HookRe
 	return s.saveRunManifestObjectStore(ctx, manifest, record.StorageNamespace.String(), record.RunID)
 }
 
-func (s *Service) saveRunManifestObjectStore(ctx context.Context, manifest RunManifest, storageNamespace string, runID string) error {
+func (s *StoreService) saveRunManifestObjectStore(ctx context.Context, manifest RunManifest, storageNamespace string, runID string) error {
 	manifestJSON, err := json.Marshal(manifest)
 	if err != nil {
 		return fmt.Errorf("marshal run manifest: %w", err)
@@ -248,29 +351,8 @@ func (s *Service) saveRunManifestObjectStore(ctx context.Context, manifest RunMa
 	return s.Writer.OutputWrite(ctx, storageNamespace, runManifestPath, manifestReader, manifestSize)
 }
 
-func (s *Service) saveRunManifestDB(ctx context.Context, repositoryID graveler.RepositoryID, manifest RunManifest) error {
-	_, err := s.DB.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		// insert run information
-		run := manifest.Run
-		_, err := tx.Exec(`INSERT INTO actions_runs(repository_id, run_id, event_type, start_time, end_time, branch_id, source_ref, commit_id, passed)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-			repositoryID, run.RunID, run.EventType, run.StartTime, run.EndTime, run.BranchID, run.SourceRef, run.CommitID, run.Passed)
-		if err != nil {
-			return nil, fmt.Errorf("insert run information %s: %w", run.RunID, err)
-		}
-
-		// insert each task information
-		for _, hookRun := range manifest.HooksRun {
-			_, err = tx.Exec(`INSERT INTO actions_run_hooks(repository_id, run_id, hook_run_id, action_name, hook_id, start_time, end_time, passed)
-				VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-				repositoryID, hookRun.RunID, hookRun.HookRunID, hookRun.ActionName, hookRun.HookID, hookRun.StartTime, hookRun.EndTime, hookRun.Passed)
-			if err != nil {
-				return nil, fmt.Errorf("insert run hook information %s/%s: %w", hookRun.RunID, hookRun.HookRunID, err)
-			}
-		}
-		return nil, nil
-	})
-	return err
+func (s *StoreService) saveRunManifestDB(ctx context.Context, repositoryID graveler.RepositoryID, manifest RunManifest) error {
+	return s.Store.saveRunManifest(ctx, repositoryID, manifest)
 }
 
 func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) RunManifest {
@@ -286,11 +368,8 @@ func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) RunM
 	}
 	for _, actionTasks := range tasks {
 		for _, task := range actionTasks {
-			// skip scan when task didn't run
-			if task.StartTime.IsZero() {
-				break
-			}
 			// record hook run information
+			taskStarted := !task.StartTime.IsZero()
 			manifest.HooksRun = append(manifest.HooksRun, TaskResult{
 				RunID:      task.RunID,
 				HookRunID:  task.HookRunID,
@@ -298,17 +377,17 @@ func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) RunM
 				ActionName: task.Action.Name,
 				StartTime:  task.StartTime,
 				EndTime:    task.EndTime,
-				Passed:     task.Err == nil,
+				Passed:     taskStarted && task.Err == nil, // mark skipped tasks as failed
 			})
-			// keep min run start time
-			if manifest.Run.StartTime.IsZero() || task.StartTime.Before(manifest.Run.StartTime) {
+			// keep min run start time using non-skipped tasks
+			if manifest.Run.StartTime.IsZero() || (taskStarted && task.StartTime.Before(manifest.Run.StartTime)) {
 				manifest.Run.StartTime = task.StartTime
 			}
 			// keep max run end time
 			if manifest.Run.EndTime.IsZero() || task.EndTime.After(manifest.Run.EndTime) {
 				manifest.Run.EndTime = task.EndTime
 			}
-			// did we failed
+			// did we fail
 			manifest.Run.Passed = manifest.Run.Passed && task.Err == nil
 		}
 	}
@@ -317,117 +396,40 @@ func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) RunM
 }
 
 // UpdateCommitID assume record is a post event, we use the PreRunID to update the commit_id and save the run manifest again
-func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, storageNamespace string, runID string, commitID string) error {
-	if runID == "" {
-		return fmt.Errorf("run id: %w", ErrNotFound)
+func (s *StoreService) UpdateCommitID(ctx context.Context, repositoryID string, storageNamespace string, runID string, commitID string) error {
+	manifest, err := s.Store.UpdateCommitID(ctx, repositoryID, runID, commitID)
+	if err != nil {
+		return fmt.Errorf("updating commit ID: %w", err)
 	}
-
-	// update database and re-read the run manifest
-	var manifest *RunManifest
-	_, err := s.DB.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		// update commit id
-		res, err := tx.Exec(`UPDATE actions_runs SET commit_id=$3 WHERE repository_id=$1 AND run_id=$2`,
-			repositoryID, runID, commitID)
-		if err != nil {
-			return nil, fmt.Errorf("update run commit_id: %w", err)
-		}
-		// return if nothing was updated
-		if res.RowsAffected() == 0 {
-			return nil, nil
-		}
-
-		// read run information
-		runResult, err := s.getRunResultTx(tx, repositoryID, runID)
-		if err != nil {
-			return nil, err
-		}
-		manifest = &RunManifest{Run: *runResult}
-
-		// read tasks information
-		err = tx.Select(&manifest.HooksRun, `SELECT run_id, hook_run_id, hook_id, action_name, start_time, end_time, passed
-			FROM actions_run_hooks 
-			WHERE repository_id=$1 AND run_id=$2`,
-			repositoryID, runID)
-		if err != nil {
-			return nil, fmt.Errorf("get tasks result: %w", err)
-		}
-		return nil, nil
-	})
-	if errors.Is(err, db.ErrNotFound) {
-		return ErrNotFound
-	}
-	if err != nil || manifest == nil {
-		return err
+	if manifest == nil {
+		return nil
 	}
 
 	// update manifest
 	return s.saveRunManifestObjectStore(ctx, *manifest, storageNamespace, runID)
 }
 
-func (s *Service) GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {
-	res, err := s.DB.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return s.getRunResultTx(tx, repositoryID, runID)
-	}, db.ReadOnly())
-	if errors.Is(err, db.ErrNotFound) {
-		return nil, fmt.Errorf("run id %s: %w", runID, ErrNotFound)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return res.(*RunResult), nil
+func (s *StoreService) GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {
+	return s.Store.GetRunResult(ctx, repositoryID, runID)
 }
 
-func (s *Service) getRunResultTx(tx db.Tx, repositoryID string, runID string) (*RunResult, error) {
-	result := &RunResult{
-		RunID: runID,
-	}
-	err := tx.Get(result, `SELECT event_type, branch_id, source_ref, start_time, end_time, passed, commit_id
-			FROM actions_runs
-			WHERE repository_id=$1 AND run_id=$2`,
-		repositoryID, runID)
-	if err != nil {
-		return nil, fmt.Errorf("get run result: %w", err)
-	}
-	return result, nil
+func (s *StoreService) GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*TaskResult, error) {
+	return s.Store.GetTaskResult(ctx, repositoryID, runID, hookRunID)
 }
 
-func (s *Service) GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*TaskResult, error) {
-	res, err := s.DB.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		result := &TaskResult{
-			RunID:     runID,
-			HookRunID: hookRunID,
-		}
-		err := tx.Get(result, `SELECT hook_id, action_name, start_time, end_time, passed
-			FROM actions_run_hooks 
-			WHERE repository_id=$1 AND run_id=$2 AND hook_run_id=$3`,
-			repositoryID, runID, hookRunID)
-		if err != nil {
-			return nil, fmt.Errorf("get task result: %w", err)
-		}
-		return result, nil
-	}, db.ReadOnly())
-	if errors.Is(err, db.ErrNotFound) {
-		return nil, fmt.Errorf("hook run id %s/%s: %w", runID, hookRunID, ErrNotFound)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return res.(*TaskResult), nil
+func (s *StoreService) ListRunResults(ctx context.Context, repositoryID string, branchID, commitID string, after string) (RunResultIterator, error) {
+	return s.Store.ListRunResults(ctx, repositoryID, branchID, commitID, after)
 }
 
-func (s *Service) ListRunResults(ctx context.Context, repositoryID string, branchID, commitID string, after string) (RunResultIterator, error) {
-	return NewDBRunResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, branchID, commitID, after), nil
+func (s *StoreService) ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (TaskResultIterator, error) {
+	return s.Store.ListRunTaskResults(ctx, repositoryID, runID, after)
 }
 
-func (s *Service) ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (TaskResultIterator, error) {
-	return NewDBTaskResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, runID, after), nil
-}
-
-func (s *Service) PreCommitHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PreCommitHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *Service) PostCommitHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PostCommitHook(ctx context.Context, record graveler.HookRecord) error {
 	// update pre-commit with commit ID if needed
 	err := s.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.PreRunID, record.CommitID.String())
 	if err != nil {
@@ -438,11 +440,11 @@ func (s *Service) PostCommitHook(ctx context.Context, record graveler.HookRecord
 	return nil
 }
 
-func (s *Service) PreMergeHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PreMergeHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *Service) PostMergeHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PostMergeHook(ctx context.Context, record graveler.HookRecord) error {
 	// update pre-merge with commit ID if needed
 	err := s.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.PreRunID, record.CommitID.String())
 	if err != nil {
@@ -451,6 +453,42 @@ func (s *Service) PostMergeHook(ctx context.Context, record graveler.HookRecord)
 
 	s.asyncRun(record)
 	return nil
+}
+
+func (s *StoreService) PreCreateTagHook(ctx context.Context, record graveler.HookRecord) error {
+	return s.Run(ctx, record)
+}
+
+func (s *StoreService) PostCreateTagHook(_ context.Context, record graveler.HookRecord) {
+	s.asyncRun(record)
+}
+
+func (s *StoreService) PreDeleteTagHook(ctx context.Context, record graveler.HookRecord) error {
+	return s.Run(ctx, record)
+}
+
+func (s *StoreService) PostDeleteTagHook(_ context.Context, record graveler.HookRecord) {
+	s.asyncRun(record)
+}
+
+func (s *StoreService) PreCreateBranchHook(ctx context.Context, record graveler.HookRecord) error {
+	return s.Run(ctx, record)
+}
+
+func (s *StoreService) PostCreateBranchHook(_ context.Context, record graveler.HookRecord) {
+	s.asyncRun(record)
+}
+
+func (s *StoreService) PreDeleteBranchHook(ctx context.Context, record graveler.HookRecord) error {
+	return s.Run(ctx, record)
+}
+
+func (s *StoreService) PostDeleteBranchHook(_ context.Context, record graveler.HookRecord) {
+	s.asyncRun(record)
+}
+
+func (s *StoreService) NewRunID() string {
+	return s.idGen.NewRunID()
 }
 
 func NewHookRunID(actionIdx, hookIdx int) string {

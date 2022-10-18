@@ -76,6 +76,7 @@ func TestMain(m *testing.M) {
 	}
 	var cleanup func()
 	databaseURI, cleanup = runDBInstance(pool)
+
 	code := -1
 	defer func() {
 		cleanup()

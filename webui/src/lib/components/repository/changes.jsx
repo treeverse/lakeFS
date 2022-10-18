@@ -92,7 +92,7 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
     }, [repo.id, reference.id, internalRefresh, afterUpdated, entry.path, delimiter, dirExpanded])
 
     const results = resultsState.results
-    if (!!error)
+    if (error)
         return <Error error={error}/>
 
     if (loading && results.length === 0)
@@ -143,13 +143,17 @@ export const TreeEntryRow = ({entry, relativeTo = "", leaf = false, dirExpanded,
         pathSection = <Link href={onNavigate(entry)}>{pathSection}</Link>
     }
     const rowActions = []
-    if (onClickExpandDiff && entry.type !== 'conflict') {
+    if (onClickExpandDiff) {
         rowActions.push(new RowAction(<FileDiffIcon/>, diffExpanded ? "Hide changes" : "Show changes", diffExpanded, onClickExpandDiff))
     }
     if (!leaf) {
         rowActions.push(new RowAction(<GraphIcon/>, showSummary ? "Hide summary" : "Calculate change summary", showSummary, () => setShowSummary(!showSummary)))
     }
-    rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", false, () => {setShowRevertConfirm(true)}))
+    if (onRevert) {
+        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", false, () => {
+            setShowRevertConfirm(true)
+        }))
+    }
     return (
         <tr className={rowClass}>
             <td className="pl-4 col-auto p-2">{diffIndicator}</td>
@@ -181,9 +185,7 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
     return (
         <tr key={"row-" + path}
             className={"tree-entry-row diff-more"}
-            onClick={(_ => {
-                setAfterUpdated(nextPage)
-            })}
+            onClick={() => setAfterUpdated(nextPage)}
         >
             <td className="diff-indicator"/>
             <td className="tree-path">

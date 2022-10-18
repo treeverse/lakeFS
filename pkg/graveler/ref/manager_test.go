@@ -13,13 +13,15 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/ident"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 func TestManager_GetRepository(t *testing.T) {
-	r := testRefManager(t)
+	r, _ := testRefManager(t)
 	t.Run("repo_doesnt_exist", func(t *testing.T) {
 		_, err := r.GetRepository(context.Background(), "example-repo")
 		if !errors.Is(err, graveler.ErrRepositoryNotFound) {
@@ -30,21 +32,22 @@ func TestManager_GetRepository(t *testing.T) {
 		repoID := graveler.RepositoryID("example-repo")
 		branchID := graveler.BranchID("weird-branch")
 
-		testutil.Must(t, r.CreateRepository(context.Background(), repoID, graveler.Repository{
+		repository, err := r.CreateRepository(context.Background(), repoID, graveler.Repository{
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  branchID,
-		}, ""))
+		})
+		testutil.Must(t, err)
 
 		repo, err := r.GetRepository(context.Background(), repoID)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		if repo.DefaultBranchID != "weird-branch" {
-			t.Fatalf("got unexpected branch ID: %s", repo.DefaultBranchID)
+		if repo.DefaultBranchID != repository.DefaultBranchID {
+			t.Fatalf("got '%s' branch ID, expected '%s'", repo.DefaultBranchID, repository.DefaultBranchID)
 		}
-		branch, err := r.GetBranch(context.Background(), repoID, branchID)
+		branch, err := r.GetBranch(context.Background(), repo, branchID)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -52,7 +55,7 @@ func TestManager_GetRepository(t *testing.T) {
 			t.Fatal("empty first commit - first commit wasn't created")
 		}
 
-		commit, err := r.GetCommit(context.Background(), repoID, branch.CommitID)
+		commit, err := r.GetCommit(context.Background(), repo, branch.CommitID)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -66,14 +69,15 @@ func TestManager_GetRepository(t *testing.T) {
 }
 
 func TestManager_ListRepositories(t *testing.T) {
-	r := testRefManager(t)
-	repos := []graveler.RepositoryID{"a", "aa", "b", "c", "e", "d"}
-	for _, repoId := range repos {
-		testutil.Must(t, r.CreateRepository(context.Background(), repoId, graveler.Repository{
+	r, _ := testRefManager(t)
+	repoIDs := []graveler.RepositoryID{"a", "aa", "b", "c", "e", "d"}
+	for _, repoId := range repoIDs {
+		_, err := r.CreateRepository(context.Background(), repoId, graveler.Repository{
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",
-		}, ""))
+		})
+		testutil.Must(t, err)
 	}
 
 	t.Run("listing all repos", func(t *testing.T) {
@@ -81,6 +85,7 @@ func TestManager_ListRepositories(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
+		defer iter.Close()
 
 		repoIds := make([]graveler.RepositoryID, 0)
 		for iter.Next() {
@@ -90,7 +95,6 @@ func TestManager_ListRepositories(t *testing.T) {
 		if iter.Err() != nil {
 			t.Fatalf("unexpected error: %v", iter.Err())
 		}
-		iter.Close()
 
 		if !reflect.DeepEqual(repoIds, []graveler.RepositoryID{"a", "aa", "b", "c", "d", "e"}) {
 			t.Fatalf("got wrong list of repo IDs")
@@ -102,6 +106,7 @@ func TestManager_ListRepositories(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
+		defer iter.Close()
 		iter.SeekGE("aaa")
 
 		repoIds := make([]graveler.RepositoryID, 0)
@@ -112,7 +117,6 @@ func TestManager_ListRepositories(t *testing.T) {
 		if iter.Err() != nil {
 			t.Fatalf("unexpected error: %v", iter.Err())
 		}
-		iter.Close()
 
 		if !reflect.DeepEqual(repoIds, []graveler.RepositoryID{"b", "c", "d", "e"}) {
 			t.Fatalf("got wrong list of repo IDs")
@@ -121,18 +125,36 @@ func TestManager_ListRepositories(t *testing.T) {
 }
 
 func TestManager_DeleteRepository(t *testing.T) {
-	r := testRefManager(t)
+	r, _ := testRefManager(t)
+	ctx := context.Background()
+	repoID := graveler.RepositoryID("example-repo")
+
 	t.Run("repo_exists", func(t *testing.T) {
-		testutil.Must(t, r.CreateRepository(context.Background(), "example-repo", graveler.Repository{
+		repository, err := r.CreateRepository(ctx, repoID, graveler.Repository{
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "weird-branch",
-		}, ""))
+		})
+		testutil.Must(t, err)
 
-		_, err := r.GetRepository(context.Background(), "example-repo")
+		_, err = r.GetRepository(context.Background(), "example-repo")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
+
+		// Create repository entities and ensure their deletion afterwards
+		testutil.Must(t, r.CreateTag(ctx, repository, "v1.0", "c1"))
+		testutil.Must(t, r.CreateBranch(ctx, repository, "f1", graveler.Branch{CommitID: "c1", StagingToken: "s1"}))
+		c := graveler.Commit{
+			Committer:    "user1",
+			Message:      "message1",
+			MetaRangeID:  "deadbeef123",
+			CreationDate: time.Now(),
+			Parents:      graveler.CommitParents{"deadbeef1", "deadbeef12"},
+			Metadata:     graveler.Metadata{"foo": "bar"},
+		}
+		_, err = r.AddCommit(ctx, repository, c)
+		testutil.Must(t, err)
 
 		err = r.DeleteRepository(context.Background(), "example-repo")
 		if err != nil {
@@ -142,6 +164,18 @@ func TestManager_DeleteRepository(t *testing.T) {
 		_, err = r.GetRepository(context.Background(), "example-repo")
 		if !errors.Is(err, graveler.ErrRepositoryNotFound) {
 			t.Fatalf("expected ErrRepositoryNotFound, got: %v", err)
+		}
+
+		// Create after delete
+		_, err = r.CreateRepository(ctx, repoID, graveler.Repository{
+			StorageNamespace: "s3://foo",
+			CreationDate:     time.Now(),
+			DefaultBranchID:  "weird-branch",
+		})
+		testutil.Must(t, err)
+		_, err = r.GetRepository(context.Background(), "example-repo")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 	})
 
@@ -154,14 +188,16 @@ func TestManager_DeleteRepository(t *testing.T) {
 }
 
 func TestManager_GetBranch(t *testing.T) {
-	r := testRefManager(t)
+	r, _ := testRefManager(t)
+	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
+
 	t.Run("get_branch_exists", func(t *testing.T) {
-		testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
-			StorageNamespace: "s3://",
-			CreationDate:     time.Now(),
-			DefaultBranchID:  "main",
-		}, ""))
-		branch, err := r.GetBranch(context.Background(), "repo1", "main")
+		branch, err := r.GetBranch(context.Background(), repository, "main")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -171,7 +207,7 @@ func TestManager_GetBranch(t *testing.T) {
 	})
 
 	t.Run("get_branch_doesnt_exists", func(t *testing.T) {
-		_, err := r.GetBranch(context.Background(), "repo1", "mainnnnn")
+		_, err := r.GetBranch(context.Background(), repository, "mainnnnn")
 		if !errors.Is(err, graveler.ErrBranchNotFound) {
 			t.Fatalf("expected ErrBranchNotFound, got error: %v", err)
 		}
@@ -179,18 +215,19 @@ func TestManager_GetBranch(t *testing.T) {
 }
 
 func TestManager_CreateBranch(t *testing.T) {
-	r := testRefManager(t)
+	r, _ := testRefManager(t)
 	ctx := context.Background()
-	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, ""))
+	})
+	testutil.Must(t, err)
 
-	err := r.CreateBranch(ctx, "repo1", "f1", graveler.Branch{CommitID: "c1", StagingToken: "s1"})
+	err = r.CreateBranch(ctx, repository, "f1", graveler.Branch{CommitID: "c1", StagingToken: "s1"})
 	testutil.MustDo(t, "create branch f1", err)
 
-	br, err := r.GetBranch(ctx, "repo1", "f1")
+	br, err := r.GetBranch(ctx, repository, "f1")
 	testutil.MustDo(t, "get f1 branch", err)
 	if br == nil {
 		t.Fatal("get branch got nil")
@@ -200,18 +237,18 @@ func TestManager_CreateBranch(t *testing.T) {
 	}
 
 	// check we can't create existing
-	err = r.CreateBranch(ctx, "repo1", "f1", graveler.Branch{CommitID: "c2", StagingToken: "s2"})
+	err = r.CreateBranch(ctx, repository, "f1", graveler.Branch{CommitID: "c2", StagingToken: "s2"})
 	if !errors.Is(err, graveler.ErrBranchExists) {
 		t.Fatalf("CreateBranch() err = %s, expected already exists", err)
 	}
 	// overwrite by delete and create
-	err = r.DeleteBranch(ctx, "repo1", "f1")
+	err = r.DeleteBranch(ctx, repository, "f1")
 	testutil.MustDo(t, "delete branch f1", err)
 
-	err = r.CreateBranch(ctx, "repo1", "f1", graveler.Branch{CommitID: "c2", StagingToken: "s2"})
+	err = r.CreateBranch(ctx, repository, "f1", graveler.Branch{CommitID: "c2", StagingToken: "s2"})
 	testutil.MustDo(t, "create branch f1", err)
 
-	br, err = r.GetBranch(ctx, "repo1", "f1")
+	br, err = r.GetBranch(ctx, repository, "f1")
 	testutil.MustDo(t, "get f1 branch", err)
 
 	if br == nil {
@@ -223,18 +260,19 @@ func TestManager_CreateBranch(t *testing.T) {
 }
 
 func TestManager_SetBranch(t *testing.T) {
-	r := testRefManager(t)
-	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+	r, _ := testRefManager(t)
+	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, ""))
+	})
+	testutil.Must(t, err)
 
-	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", graveler.Branch{
+	testutil.Must(t, r.SetBranch(context.Background(), repository, "branch2", graveler.Branch{
 		CommitID: "c2",
 	}))
 
-	b, err := r.GetBranch(context.Background(), "repo1", "branch2")
+	b, err := r.GetBranch(context.Background(), repository, "branch2")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -244,11 +282,11 @@ func TestManager_SetBranch(t *testing.T) {
 	}
 
 	// overwrite
-	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", graveler.Branch{
+	testutil.Must(t, r.SetBranch(context.Background(), repository, "branch2", graveler.Branch{
 		CommitID: "c3",
 	}))
 
-	b, err = r.GetBranch(context.Background(), "repo1", "branch2")
+	b, err = r.GetBranch(context.Background(), repository, "branch2")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -256,48 +294,120 @@ func TestManager_SetBranch(t *testing.T) {
 	if b.CommitID != "c3" {
 		t.Fatalf("unexpected commit for branch2: %s - expected: c3", b.CommitID)
 	}
-
 }
 
-func TestManager_DeleteBranch(t *testing.T) {
-	r := testRefManager(t)
+func TestManager_BranchUpdate(t *testing.T) {
 	ctx := context.Background()
-	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+	r, _ := testRefManager(t)
+	const (
+		repoID    = "repo1"
+		branchID  = "branch1"
+		commitID1 = "c1"
+		commitID2 = "c2"
+	)
+	repository, err := r.CreateRepository(context.Background(), repoID, graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, ""))
+	})
+	testutil.Must(t, err)
+	tests := []struct {
+		name           string
+		f              graveler.BranchUpdateFunc
+		err            error
+		expectedCommit string
+	}{
+		{
+			name: "success_branch_update",
+			f: func(*graveler.Branch) (*graveler.Branch, error) {
+				newBranch := &graveler.Branch{
+					CommitID:     commitID2,
+					StagingToken: "",
+					SealedTokens: nil,
+				}
+				return newBranch, nil
+			},
+			expectedCommit: commitID2,
+		},
+		{
+			name: "failed_branch_update_due_to_branch_change",
+			f: func(*graveler.Branch) (*graveler.Branch, error) {
+				b := graveler.Branch{
+					CommitID: "Another commit during validation",
+				}
+				_ = r.SetBranch(ctx, repository, branchID, b)
+				return &b, nil
+			},
+			err:            kv.ErrPredicateFailed,
+			expectedCommit: "Another commit during validation",
+		},
+		{
+			name: "failed_branch_update_on_validation",
+			f: func(*graveler.Branch) (*graveler.Branch, error) {
+				return nil, graveler.ErrInvalid
+			},
+			err:            graveler.ErrInvalid,
+			expectedCommit: commitID1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testutil.Must(t, r.SetBranch(context.Background(), repository, branchID, graveler.Branch{
+				CommitID: commitID1,
+			}))
 
-	testutil.Must(t, r.SetBranch(ctx, "repo1", "branch2", graveler.Branch{
+			err := r.BranchUpdate(ctx, repository, branchID, tt.f)
+			require.ErrorIs(t, err, tt.err)
+
+			b, err := r.GetBranch(context.Background(), repository, branchID)
+			require.NoError(t, err)
+			require.Equal(t, tt.expectedCommit, b.CommitID.String())
+		})
+	}
+}
+
+func TestManager_DeleteBranch(t *testing.T) {
+	r, _ := testRefManager(t)
+	ctx := context.Background()
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
+
+	testutil.Must(t, r.SetBranch(ctx, repository, "branch2", graveler.Branch{
 		CommitID: "c2",
 	}))
 
-	testutil.Must(t, r.DeleteBranch(ctx, "repo1", "branch2"))
+	testutil.Must(t, r.DeleteBranch(ctx, repository, "branch2"))
 
-	_, err := r.GetBranch(ctx, "repo1", "branch2")
+	_, err = r.GetBranch(ctx, repository, "branch2")
 	if !errors.Is(err, graveler.ErrBranchNotFound) {
 		t.Fatalf("Expected ErrBranchNotFound, got error: %v", err)
 	}
 }
 
 func TestManager_ListBranches(t *testing.T) {
-	r := testRefManager(t)
-	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+	r, _ := testRefManager(t)
+	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, ""))
+	})
+	testutil.Must(t, err)
 
 	for _, b := range []graveler.BranchID{"a", "aa", "c", "b", "z", "f"} {
-		testutil.Must(t, r.SetBranch(context.Background(), "repo1", b, graveler.Branch{
+		testutil.Must(t, r.SetBranch(context.Background(), repository, b, graveler.Branch{
 			CommitID: "c2",
 		}))
 	}
 
-	iter, err := r.ListBranches(context.Background(), "repo1")
+	iter, err := r.ListBranches(context.Background(), repository)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	defer iter.Close()
 
 	var bs []graveler.BranchID
 	for iter.Next() {
@@ -313,18 +423,19 @@ func TestManager_ListBranches(t *testing.T) {
 }
 
 func TestManager_GetTag(t *testing.T) {
-	r := testRefManager(t)
+	r, _ := testRefManager(t)
+	ctx := context.Background()
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.MustDo(t, "create repo", err)
+
 	t.Run("exists", func(t *testing.T) {
-		ctx := context.Background()
-		err := r.CreateRepository(ctx, "repo1", graveler.Repository{
-			StorageNamespace: "s3://",
-			CreationDate:     time.Now(),
-			DefaultBranchID:  "main",
-		}, "")
-		testutil.MustDo(t, "create repo", err)
-		err = r.CreateTag(ctx, "repo1", "v1.0", "c1")
+		err := r.CreateTag(ctx, repository, "v1.0", "c1")
 		testutil.MustDo(t, "set tag", err)
-		commitID, err := r.GetTag(context.Background(), "repo1", "v1.0")
+		commitID, err := r.GetTag(context.Background(), repository, "v1.0")
 		testutil.MustDo(t, "get existing tag", err)
 		if commitID == nil {
 			t.Fatal("get tag, missing commit id")
@@ -335,7 +446,7 @@ func TestManager_GetTag(t *testing.T) {
 	})
 
 	t.Run("not_exists", func(t *testing.T) {
-		commitID, err := r.GetTag(context.Background(), "repo1", "v1.bad")
+		commitID, err := r.GetTag(context.Background(), repository, "v1.bad")
 		if !errors.Is(err, graveler.ErrNotFound) {
 			t.Fatalf("expected ErrNotFound, got error: %v", err)
 		}
@@ -346,18 +457,19 @@ func TestManager_GetTag(t *testing.T) {
 }
 
 func TestManager_CreateTag(t *testing.T) {
-	r := testRefManager(t)
+	r, _ := testRefManager(t)
 	ctx := context.Background()
-	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, ""))
+	})
+	testutil.Must(t, err)
 
-	err := r.CreateTag(ctx, "repo1", "v2", "c2")
+	err = r.CreateTag(ctx, repository, "v2", "c2")
 	testutil.MustDo(t, "create tag v2", err)
 
-	commit, err := r.GetTag(ctx, "repo1", "v2")
+	commit, err := r.GetTag(ctx, repository, "v2")
 	testutil.MustDo(t, "get v2 tag", err)
 	if commit == nil {
 		t.Fatal("get tag got nil")
@@ -367,18 +479,18 @@ func TestManager_CreateTag(t *testing.T) {
 	}
 
 	// check we can't create existing
-	err = r.CreateTag(ctx, "repo1", "v2", "c5")
+	err = r.CreateTag(ctx, repository, "v2", "c5")
 	if !errors.Is(err, graveler.ErrTagAlreadyExists) {
 		t.Fatalf("CreateTag() err = %s, expected already exists", err)
 	}
 	// overwrite by delete and create
-	err = r.DeleteTag(ctx, "repo1", "v2")
+	err = r.DeleteTag(ctx, repository, "v2")
 	testutil.MustDo(t, "delete tag v2", err)
 
-	err = r.CreateTag(ctx, "repo1", "v2", "c3")
+	err = r.CreateTag(ctx, repository, "v2", "c3")
 	testutil.MustDo(t, "re-create tag v2", err)
 
-	commit, err = r.GetTag(ctx, "repo1", "v2")
+	commit, err = r.GetTag(ctx, repository, "v2")
 	testutil.MustDo(t, "get tag v2", err)
 	if commit == nil {
 		t.Fatal("get tag got nil")
@@ -389,19 +501,17 @@ func TestManager_CreateTag(t *testing.T) {
 }
 
 func TestManager_DeleteTag(t *testing.T) {
-	r := testRefManager(t)
+	r, _ := testRefManager(t)
 	ctx := context.Background()
-	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, ""))
-
-	testutil.Must(t, r.CreateTag(ctx, "repo1", "v1", "c2"))
-
-	testutil.Must(t, r.DeleteTag(ctx, "repo1", "v1"))
-
-	commitID, err := r.GetTag(ctx, "repo1", "v1")
+	})
+	testutil.Must(t, err)
+	testutil.Must(t, r.CreateTag(ctx, repository, "v1", "c2"))
+	testutil.Must(t, r.DeleteTag(ctx, repository, "v1"))
+	commitID, err := r.GetTag(ctx, repository, "v1")
 	if !errors.Is(err, graveler.ErrNotFound) {
 		t.Fatal("unexpected error:", err)
 	}
@@ -411,13 +521,14 @@ func TestManager_DeleteTag(t *testing.T) {
 }
 
 func TestManager_ListTags(t *testing.T) {
-	r := testRefManager(t)
+	r, _ := testRefManager(t)
 	ctx := context.Background()
-	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, ""))
+	})
+	testutil.Must(t, err)
 
 	var commitsTagged []graveler.CommitID
 	tags := []string{"tag-a", "tag-b", "the-end", "v1", "v1.1"}
@@ -425,14 +536,15 @@ func TestManager_ListTags(t *testing.T) {
 	for i, tag := range tags {
 		commitID := graveler.CommitID(fmt.Sprintf("c%d", i))
 		commitsTagged = append(commitsTagged, commitID)
-		err := r.CreateTag(ctx, "repo1", graveler.TagID(tag), commitID)
+		err := r.CreateTag(ctx, repository, graveler.TagID(tag), commitID)
 		testutil.MustDo(t, "set tag "+tag, err)
 	}
 
-	iter, err := r.ListTags(ctx, "repo1")
+	iter, err := r.ListTags(ctx, repository)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
+	defer iter.Close()
 	var commits []graveler.CommitID
 	for iter.Next() {
 		commits = append(commits, iter.Value().CommitID)
@@ -445,13 +557,14 @@ func TestManager_ListTags(t *testing.T) {
 }
 
 func TestManager_AddCommit(t *testing.T) {
-	r := testRefManager(t)
+	r, _ := testRefManager(t)
 	ctx := context.Background()
-	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, ""))
+	})
+	testutil.Must(t, err)
 
 	ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z00:00")
 	c := graveler.Commit{
@@ -463,7 +576,7 @@ func TestManager_AddCommit(t *testing.T) {
 		Metadata:     graveler.Metadata{"foo": "bar"},
 	}
 
-	cid, err := r.AddCommit(ctx, "repo1", c)
+	cid, err := r.AddCommit(ctx, repository, c)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -473,7 +586,7 @@ func TestManager_AddCommit(t *testing.T) {
 		t.Fatalf("Commit ID '%s', expected '%s'", cid, expectedCommitID)
 	}
 
-	commit, err := r.GetCommit(ctx, "repo1", cid)
+	commit, err := r.GetCommit(ctx, repository, cid)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -488,12 +601,13 @@ func TestManager_AddCommit(t *testing.T) {
 }
 
 func TestManager_Log(t *testing.T) {
-	r := testRefManager(t)
-	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+	r, _ := testRefManager(t)
+	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, ""))
+	})
+	testutil.Must(t, err)
 
 	ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
 	var previous graveler.CommitID
@@ -509,7 +623,7 @@ func TestManager_Log(t *testing.T) {
 		if previous != "" {
 			c.Parents = append(c.Parents, previous)
 		}
-		cid, err := r.AddCommit(context.Background(), "repo1", c)
+		cid, err := r.AddCommit(context.Background(), repository, c)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -517,10 +631,11 @@ func TestManager_Log(t *testing.T) {
 		ts = ts.Add(time.Second)
 	}
 
-	iter, err := r.Log(context.Background(), "repo1", previous)
+	iter, err := r.Log(context.Background(), repository, previous)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	defer iter.Close()
 
 	ids := make([]graveler.CommitID, 0)
 	for iter.Next() {
@@ -559,13 +674,13 @@ func TestManager_Log(t *testing.T) {
 }
 
 func TestManager_LogGraph(t *testing.T) {
-	r := testRefManager(t)
+	r, _ := testRefManager(t)
 	ctx := context.Background()
-	err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, "")
+	})
 	testutil.MustDo(t, "Create repository", err)
 
 	/*
@@ -587,7 +702,7 @@ func TestManager_LogGraph(t *testing.T) {
 			Parents:      parents,
 			Metadata:     graveler.Metadata{"foo": "bar"},
 		}
-		cid, err := r.AddCommit(ctx, "repo1", c)
+		cid, err := r.AddCommit(ctx, repository, c)
 		testutil.MustDo(t, "Add commit "+id, err)
 		return cid
 	}
@@ -605,7 +720,7 @@ func TestManager_LogGraph(t *testing.T) {
 	}
 
 	// iterate over the commits
-	it, err := r.Log(ctx, "repo1", c8)
+	it, err := r.Log(ctx, repository, c8)
 	if err != nil {
 		t.Fatal("Error during create Log iterator", err)
 	}
@@ -659,8 +774,8 @@ func TestConsistentCommitIdentity(t *testing.T) {
 	}
 
 	// Should NOT be changed (unless you really know what you're doing):
-	// If this is failing and you're tempted to change this value,
-	// then you probably introducing a breaking change to commit's identity.
+	// If this is failing, and you're tempted to change this value,
+	// then you are probably introducing a breaking change to commits identity.
 	// All previous references to commits (if not migrated) may be lost.
 	const expected = "f1a106bbeb12d3eb54418d6000f4507501d289d0d0879dcce6f4d31425587df1"
 
@@ -678,14 +793,13 @@ func TestManager_GetCommitByPrefix(t *testing.T) {
 	identityToFakeIdentity := make(map[string]string)
 
 	provider := &fakeAddressProvider{identityToFakeIdentity: identityToFakeIdentity}
-	r, _ := testRefManagerWithAddressProvider(t, provider)
-
+	r, _ := testRefManagerWithKVAndAddressProvider(t, provider)
 	ctx := context.Background()
-	err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, "")
+	})
 	testutil.MustDo(t, "Create repository", err)
 	for _, commitID := range commitIDs {
 		c := graveler.Commit{Committer: "user1",
@@ -696,7 +810,7 @@ func TestManager_GetCommitByPrefix(t *testing.T) {
 			Metadata:     graveler.Metadata{"foo": "bar"},
 		}
 		identityToFakeIdentity[hex.EncodeToString(c.Identity())] = commitID
-		_, err := r.AddCommit(ctx, "repo1", c)
+		_, err := r.AddCommit(ctx, repository, c)
 		testutil.MustDo(t, "add commit", err)
 		if err != nil {
 			t.Fatalf("unexpected error on adding commit: %v", err)
@@ -726,7 +840,7 @@ func TestManager_GetCommitByPrefix(t *testing.T) {
 	}
 	for _, tst := range tests {
 		t.Run(tst.Prefix, func(t *testing.T) {
-			c, err := r.GetCommitByPrefix(ctx, "repo1", graveler.CommitID(tst.Prefix))
+			c, err := r.GetCommitByPrefix(ctx, repository, graveler.CommitID(tst.Prefix))
 			if !errors.Is(err, tst.ExpectedErr) {
 				t.Fatalf("expected error %v, got=%v", tst.ExpectedErr, err)
 			}
@@ -740,63 +854,15 @@ func TestManager_GetCommitByPrefix(t *testing.T) {
 	}
 }
 
-func TestManager_FillGenerations(t *testing.T) {
-	r := testRefManager(t)
-	ctx := context.Background()
-	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
-		StorageNamespace: "s3://",
-		CreationDate:     time.Now(),
-		DefaultBranchID:  "main",
-	}, ""))
-	nextCommitNumber := 0
-	addNextCommit := func(parents ...graveler.CommitID) graveler.CommitID {
-		nextCommitNumber++
-		id := "c" + strconv.Itoa(nextCommitNumber)
-		c := graveler.Commit{
-			Message: id,
-			Parents: parents,
-		}
-		cid, err := r.AddCommit(ctx, "repo1", c)
-		testutil.MustDo(t, "Add commit "+id, err)
-		return cid
-	}
-	c1 := addNextCommit()
-	c2 := addNextCommit(c1)
-	c3 := addNextCommit(c1)
-	c4 := addNextCommit(c2)
-	c5 := addNextCommit(c3)
-	c6 := addNextCommit(c5)
-	c7 := addNextCommit(c4)
-	c8 := addNextCommit(c6, c1)
-	/*
-	 1----2----4---7
-	 | \
-	 |  3----5----6
-	 |             \
-	 ---------------8
-	*/
-	commits := []graveler.CommitID{c1, c2, c3, c4, c5, c6, c7, c8}
-	expectedGenerations := []int{1, 2, 2, 3, 3, 4, 4, 5}
-	err := r.FillGenerations(ctx, "repo1")
-	testutil.MustDo(t, "fill generations", err)
-	for i, commitID := range commits {
-		commitIdx := i + 1
-		commit, err := r.GetCommit(ctx, "repo1", commitID)
-		testutil.MustDo(t, fmt.Sprintf("get commit c%d", commitIdx), err)
-		if commit.Generation != expectedGenerations[i] {
-			t.Errorf("wrong gen for c%d. expected=%d, got=%d", commitIdx, expectedGenerations[i], commit.Generation)
-		}
-	}
-}
-
 func TestManager_ListCommits(t *testing.T) {
-	r := testRefManager(t)
+	r, _ := testRefManager(t)
 	ctx := context.Background()
-	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, ""))
+	})
+	testutil.Must(t, err)
 	nextCommitNumber := 0
 	addNextCommit := func(parents ...graveler.CommitID) graveler.CommitID {
 		nextCommitNumber++
@@ -805,7 +871,7 @@ func TestManager_ListCommits(t *testing.T) {
 			Message: id,
 			Parents: parents,
 		}
-		cid, err := r.AddCommit(ctx, "repo1", c)
+		cid, err := r.AddCommit(ctx, repository, c)
 		testutil.MustDo(t, "Add commit "+id, err)
 		return cid
 	}
@@ -825,8 +891,9 @@ func TestManager_ListCommits(t *testing.T) {
 	 ---------------8
 	*/
 
-	iter, err := r.ListCommits(ctx, "repo1")
+	iter, err := r.ListCommits(ctx, repository)
 	testutil.MustDo(t, "fill generations", err)
+	defer iter.Close()
 	var lastCommit string
 	var i int
 	for iter.Next() {

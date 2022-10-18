@@ -3,6 +3,7 @@ package actions
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -77,7 +78,7 @@ func NewWebhook(h ActionHook, action *Action) (Hook, error) {
 	}, nil
 }
 
-func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *HookOutputWriter) (err error) {
+func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, buf *bytes.Buffer) (err error) {
 	// post event information as json to webhook endpoint
 	logging.FromContext(ctx).
 		WithField("hook_type", "webhook").
@@ -89,9 +90,8 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 		return err
 	}
 
+	_, _ = fmt.Fprintf(buf, "Request:\n%s %s\n", http.MethodPost, w.URL)
 	reqReader := bytes.NewReader(eventData)
-	buf := bytes.NewBufferString(fmt.Sprintf("Request:\nPOST %s\n", w.URL))
-
 	req, err := http.NewRequest(http.MethodPost, w.URL, reqReader)
 	if err != nil {
 		return err
@@ -103,20 +103,20 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 	for k, vals := range w.QueryParams {
 		for _, v := range vals {
 			q.Add(k, v.val)
-			buf.WriteString(fmt.Sprintf("%s: %s\n", k, v.String()))
+			_, _ = fmt.Fprintf(buf, "%s: %s\n", k, v.String())
 		}
 	}
 
 	buf.WriteString("Headers:\n")
 	for k, v := range w.Headers {
 		req.Header.Add(k, v.val)
-		buf.WriteString(fmt.Sprintf("%s: %s\n", k, v.String()))
+		_, _ = fmt.Fprintf(buf, "%s: %s\n", k, v.String())
 	}
 	req.URL.RawQuery = q.Encode()
 
-	buf.WriteString(fmt.Sprintf("Request Body:\n%s\n\n", eventData))
+	_, _ = fmt.Fprintf(buf, "Request Body:\n%s\n\n", eventData)
 
-	statusCode, err := executeAndLogResponse(ctx, req, buf, writer, w.Timeout)
+	statusCode, err := doHTTPRequestWithLog(ctx, req, buf, w.Timeout)
 	if err != nil {
 		return err
 	}
@@ -128,24 +128,23 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 	return nil
 }
 
-func executeAndLogResponse(ctx context.Context, req *http.Request, buf *bytes.Buffer, writer *HookOutputWriter, timeout time.Duration) (n int, err error) {
+// doHTTPRequestWithLog helper that uses 'doHTTPRequestResponseWithLog' without response parse
+func doHTTPRequestWithLog(ctx context.Context, req *http.Request, buf *bytes.Buffer, timeout time.Duration) (n int, err error) {
+	return doHTTPRequestResponseWithLog(ctx, req, nil, buf, timeout)
+}
+
+// doHTTPRequestResponseWithLog execute a http request with specified timeout. Output variable 'respJSON', if set, used to json decode the response.
+// returns the response status code or -1 on error
+func doHTTPRequestResponseWithLog(ctx context.Context, req *http.Request, respJSON interface{}, buf *bytes.Buffer, timeout time.Duration) (int, error) {
 	req = req.WithContext(ctx)
 
 	client := &http.Client{
 		Timeout: timeout,
 	}
 	start := time.Now()
-
-	defer func() {
-		err2 := writer.OutputWrite(ctx, buf, int64(buf.Len()))
-		if err == nil {
-			err = err2
-		}
-	}()
-
 	resp, err := client.Do(req)
 	elapsed := time.Since(start)
-	buf.WriteString(fmt.Sprintf("\nRequest duration: %s\n", elapsed))
+	_, _ = fmt.Fprintf(buf, "\nRequest duration: %s\n", elapsed)
 	if err != nil {
 		return -1, err
 	}
@@ -157,7 +156,13 @@ func executeAndLogResponse(ctx context.Context, req *http.Request, buf *bytes.Bu
 	if dumpResp, err := httputil.DumpResponse(resp, true); err == nil {
 		buf.Write(dumpResp)
 	} else {
-		buf.WriteString(fmt.Sprintf("Failed dumping response: %s", err))
+		_, _ = fmt.Fprintf(buf, "Failed dumping response: %s", err)
+	}
+	if respJSON != nil {
+		err = json.NewDecoder(resp.Body).Decode(&respJSON)
+		if err != nil {
+			return -1, err
+		}
 	}
 
 	return resp.StatusCode, nil

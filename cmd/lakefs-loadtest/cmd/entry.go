@@ -16,6 +16,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -32,7 +34,6 @@ var entryCmd = &cobra.Command{
 			fmt.Printf("Invalid 'ref': %s", uri.ErrInvalidRefURI)
 			os.Exit(1)
 		}
-		connectionString, _ := cmd.Flags().GetString("db")
 		requests, _ := cmd.Flags().GetInt("requests")
 		concurrency, _ := cmd.Flags().GetInt("concurrency")
 		sampleRatio, _ := cmd.Flags().GetFloat64("sample")
@@ -49,10 +50,6 @@ var entryCmd = &cobra.Command{
 		rand.Seed(time.Now().UTC().UnixNano()) // make it special
 
 		ctx := cmd.Context()
-		database := connectToDB(ctx, connectionString)
-		defer database.Close()
-		lockDB := connectToDB(ctx, connectionString)
-		defer lockDB.Close()
 
 		conf, err := config.NewConfig()
 		if err != nil {
@@ -62,10 +59,21 @@ var entryCmd = &cobra.Command{
 		if err != nil {
 			fmt.Printf("invalid config: %s\n", err)
 		}
+
+		kvParams, err := conf.GetKVParams()
+		if err != nil {
+			logging.Default().WithError(err).Fatal("Get KV params")
+		}
+		kvStore, err := kv.Open(ctx, kvParams)
+		if err != nil {
+			logging.Default().WithError(err).Fatal("failed to open KV store")
+		}
+		defer kvStore.Close()
+		storeMessage := &kv.StoreMessage{Store: kvStore}
+
 		c, err := catalog.New(ctx, catalog.Config{
-			Config: conf,
-			DB:     database,
-			LockDB: lockDB,
+			Config:  conf,
+			KVStore: storeMessage,
 		})
 		if err != nil {
 			fmt.Printf("Cannot create catalog: %s\n", err)

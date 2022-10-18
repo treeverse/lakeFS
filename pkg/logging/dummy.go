@@ -1,6 +1,10 @@
 package logging
 
-import "context"
+import (
+	"context"
+
+	"github.com/sirupsen/logrus"
+)
 
 type DummyLogger struct{}
 
@@ -52,6 +56,10 @@ func (d DummyLogger) Panic(args ...interface{}) {
 
 }
 
+func (d DummyLogger) Log(level logrus.Level, args ...interface{}) {
+
+}
+
 func (d DummyLogger) Tracef(format string, args ...interface{}) {
 
 }
@@ -83,7 +91,9 @@ func (d DummyLogger) Fatalf(format string, args ...interface{}) {
 func (d DummyLogger) Panicf(format string, args ...interface{}) {
 
 }
+func (d DummyLogger) Logf(level logrus.Level, format string, args ...interface{}) {
 
+}
 func (d DummyLogger) IsTracing() bool {
 	return true
 }

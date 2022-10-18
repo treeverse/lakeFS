@@ -30,9 +30,10 @@ Parents: {{.Commit.Parents|join ", "}}
 )
 
 var commitCmd = &cobra.Command{
-	Use:   "commit <branch uri>",
-	Short: "Commit changes on a given branch",
-	Args:  cobra.ExactArgs(1),
+	Use:               "commit <branch uri>",
+	Short:             "Commit changes on a given branch",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		// validate message
 		kvPairs, err := getKV(cmd, metaFlagName)
@@ -61,12 +62,15 @@ var commitCmd = &cobra.Command{
 			AdditionalProperties: kvPairs,
 		}
 		client := getClient()
-		resp, err := client.CommitWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, api.CommitJSONRequestBody{
+		resp, err := client.CommitWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message:  message,
 			Metadata: &metadata,
 			Date:     datePtr,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		commit := resp.JSON201
 		Write(commitCreateTemplate, struct {

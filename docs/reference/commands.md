@@ -46,8 +46,6 @@ A cli tool to explore manage and work with lakeFS
 #### Synopsis
 {:.no_toc}
 
-lakeFS is data lake management solution, allowing Git-like semantics over common object stores
-
 lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment
 
 #### Options
@@ -92,6 +90,25 @@ Abuse a running lakeFS instance. See sub commands for more info.
 
 
 
+### lakectl abuse commit
+
+Commits to the source ref repeatedly
+
+```
+lakectl abuse commit <source ref uri> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int     amount of commits to do (default 100)
+      --gap duration   duration to wait between commits (default 2s)
+  -h, --help           help for commit
+```
+
+
+
 ### lakectl abuse create-branches
 
 Create a lot of branches very quickly.
@@ -132,6 +149,46 @@ lakectl abuse help [command] [flags]
 
 ```
   -h, --help   help for help
+```
+
+
+
+### lakectl abuse link-same-object
+
+Link the same object in parallel.
+
+```
+lakectl abuse link-same-object <source ref uri> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int        amount of link object to do (default 1000000)
+  -h, --help              help for link-same-object
+      --key string        key used for the test (default "linked-object")
+      --parallelism int   amount of link object to do in parallel (default 100)
+```
+
+
+
+### lakectl abuse list
+
+List from the source ref
+
+```
+lakectl abuse list <source ref uri> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int        amount of lists to do (default 1000000)
+  -h, --help              help for list
+      --parallelism int   amount of lists to do in parallel (default 100)
+      --prefix string     prefix to list under (default "abuse/")
 ```
 
 
@@ -403,7 +460,7 @@ lakectl auth groups create [flags]
 
 ```
   -h, --help        help for create
-      --id string   group identifier
+      --id string   Group identifier
 ```
 
 
@@ -421,7 +478,7 @@ lakectl auth groups delete [flags]
 
 ```
   -h, --help        help for delete
-      --id string   group identifier
+      --id string   Group identifier
 ```
 
 
@@ -461,8 +518,8 @@ lakectl auth groups list [flags]
 {:.no_toc}
 
 ```
-      --after string   show results after this value (used for pagination)
       --amount int     how many results to return (default 100)
+      --after string   show results after this value (used for pagination)
   -h, --help           help for list
 ```
 
@@ -494,8 +551,8 @@ lakectl auth groups members add [flags]
 
 ```
   -h, --help          help for add
-      --id string     group identifier
-      --user string   user identifier to add to the group
+      --id string     Group identifier
+      --user string   Username (email for password-based users, default: current user)
 ```
 
 
@@ -535,10 +592,10 @@ lakectl auth groups members list [flags]
 {:.no_toc}
 
 ```
-      --after string   show results after this value (used for pagination)
+      --id string      Group identifier
       --amount int     how many results to return (default 100)
+      --after string   show results after this value (used for pagination)
   -h, --help           help for list
-      --id string      group identifier
 ```
 
 
@@ -556,8 +613,8 @@ lakectl auth groups members remove [flags]
 
 ```
   -h, --help          help for remove
-      --id string     group identifier
-      --user string   user identifier to add to the group
+      --id string     Group identifier
+      --user string   Username (email for password-based users, default: current user)
 ```
 
 
@@ -588,8 +645,8 @@ lakectl auth groups policies attach [flags]
 
 ```
   -h, --help            help for attach
-      --id string       user identifier
-      --policy string   policy identifier
+      --id string       User identifier
+      --policy string   Policy identifier
 ```
 
 
@@ -607,8 +664,8 @@ lakectl auth groups policies detach [flags]
 
 ```
   -h, --help            help for detach
-      --id string       user identifier
-      --policy string   policy identifier
+      --id string       User identifier
+      --policy string   Policy identifier
 ```
 
 
@@ -648,10 +705,10 @@ lakectl auth groups policies list [flags]
 {:.no_toc}
 
 ```
-      --after string   show results after this value (used for pagination)
+      --id string      Group identifier
       --amount int     how many results to return (default 100)
+      --after string   show results after this value (used for pagination)
   -h, --help           help for list
-      --id string      group identifier
 ```
 
 
@@ -705,7 +762,7 @@ lakectl auth policies create [flags]
 
 ```
   -h, --help                        help for create
-      --id string                   policy identifier
+      --id string                   Policy identifier
       --statement-document string   JSON statement document path (or "-" for stdin)
 ```
 
@@ -724,7 +781,7 @@ lakectl auth policies delete [flags]
 
 ```
   -h, --help        help for delete
-      --id string   policy identifier
+      --id string   Policy identifier
 ```
 
 
@@ -764,8 +821,8 @@ lakectl auth policies list [flags]
 {:.no_toc}
 
 ```
-      --after string   show results after this value (used for pagination)
       --amount int     how many results to return (default 100)
+      --after string   show results after this value (used for pagination)
   -h, --help           help for list
 ```
 
@@ -784,7 +841,7 @@ lakectl auth policies show [flags]
 
 ```
   -h, --help        help for show
-      --id string   policy identifier
+      --id string   Policy identifier
 ```
 
 
@@ -815,7 +872,7 @@ lakectl auth users create [flags]
 
 ```
   -h, --help        help for create
-      --id string   user identifier
+      --id string   Username
 ```
 
 
@@ -846,7 +903,7 @@ lakectl auth users credentials create [flags]
 
 ```
   -h, --help        help for create
-      --id string   user identifier (default: current user)
+      --id string   Username (email for password-based users, default: current user)
 ```
 
 
@@ -863,9 +920,9 @@ lakectl auth users credentials delete [flags]
 {:.no_toc}
 
 ```
-      --access-key-id string   access key ID to delete
+      --access-key-id string   Access key ID to delete
   -h, --help                   help for delete
-      --id string              user identifier (default: current user)
+      --id string              Username (email for password-based users, default: current user)
 ```
 
 
@@ -905,10 +962,10 @@ lakectl auth users credentials list [flags]
 {:.no_toc}
 
 ```
-      --after string   show results after this value (used for pagination)
+      --id string      Username (email for password-based users, default: current user)
       --amount int     how many results to return (default 100)
+      --after string   show results after this value (used for pagination)
   -h, --help           help for list
-      --id string      user identifier (default: current user)
 ```
 
 
@@ -926,7 +983,7 @@ lakectl auth users delete [flags]
 
 ```
   -h, --help        help for delete
-      --id string   user identifier
+      --id string   Username (email for password-based users)
 ```
 
 
@@ -979,10 +1036,10 @@ lakectl auth users groups list [flags]
 {:.no_toc}
 
 ```
-      --after string   show results after this value (used for pagination)
+      --id string      Username (email for password-based users)
       --amount int     how many results to return (default 100)
+      --after string   show results after this value (used for pagination)
   -h, --help           help for list
-      --id string      user identifier
 ```
 
 
@@ -1022,8 +1079,8 @@ lakectl auth users list [flags]
 {:.no_toc}
 
 ```
-      --after string   show results after this value (used for pagination)
       --amount int     how many results to return (default 100)
+      --after string   show results after this value (used for pagination)
   -h, --help           help for list
 ```
 
@@ -1055,8 +1112,8 @@ lakectl auth users policies attach [flags]
 
 ```
   -h, --help            help for attach
-      --id string       user identifier
-      --policy string   policy identifier
+      --id string       Username (email for password-based users)
+      --policy string   Policy identifier
 ```
 
 
@@ -1074,8 +1131,8 @@ lakectl auth users policies detach [flags]
 
 ```
   -h, --help            help for detach
-      --id string       user identifier
-      --policy string   policy identifier
+      --id string       Username (email for password-based users)
+      --policy string   Policy identifier
 ```
 
 
@@ -1115,11 +1172,11 @@ lakectl auth users policies list [flags]
 {:.no_toc}
 
 ```
-      --after string   show results after this value (used for pagination)
+      --effective      List all distinct policies attached to the user, including by group memberships
+      --id string      Username (email for password-based users)
       --amount int     how many results to return (default 100)
-      --effective      list all distinct policies attached to the user, even through group memberships
+      --after string   show results after this value (used for pagination)
   -h, --help           help for list
-      --id string      user identifier
 ```
 
 
@@ -1147,7 +1204,14 @@ Create delete and list branches within a lakeFS repository
 Create a new branch in a repository
 
 ```
-lakectl branch create <ref uri> [flags]
+lakectl branch create <branch uri> -s <source ref uri> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl branch create lakefs://example-repo/new-branch -s lakefs://example-repo/main
 ```
 
 #### Options
@@ -1166,6 +1230,13 @@ Delete a branch in a repository, along with its uncommitted changes (CAREFUL)
 
 ```
 lakectl branch delete <branch uri> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl branch delete lakefs://example-repo/example-branch
 ```
 
 #### Options
@@ -1229,18 +1300,25 @@ lakectl branch list lakefs://<repository>
 
 ### lakectl branch reset
 
-Reset changes to specified commit, or reset uncommitted changes - all changes, or by path
+Reset uncommitted changes - all of them, or by path
 
 #### Synopsis
 {:.no_toc}
 
 reset changes.  There are four different ways to reset changes:
   1. reset all uncommitted changes - reset lakefs://myrepo/main 
-  2. reset uncommitted changes under specific path -	reset lakefs://myrepo/main --prefix path
+  2. reset uncommitted changes under specific path - reset lakefs://myrepo/main --prefix path
   3. reset uncommitted changes for specific object - reset lakefs://myrepo/main --object path
 
 ```
-lakectl branch reset <branch uri> [flags]
+lakectl branch reset <branch uri> [--prefix|--object] [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl branch reset lakefs://example-repo/example-branch
 ```
 
 #### Options
@@ -1295,6 +1373,13 @@ Show branch latest commit reference
 
 ```
 lakectl branch show <branch uri> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl branch show lakefs://example-repo/example-branch
 ```
 
 #### Options
@@ -1913,7 +1998,7 @@ lakectl fs upload <path uri> [flags]
 
 ### lakectl gc
 
-Manage garbage collection configuration
+Manage the garbage collection policy
 
 #### Options
 {:.no_toc}
@@ -1924,9 +2009,33 @@ Manage garbage collection configuration
 
 
 
+### lakectl gc delete-config
+
+Deletes the garbage collection policy for the repository
+
+```
+lakectl gc delete-config [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl gc delete-config <repository uri>
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for delete-config
+```
+
+
+
 ### lakectl gc get-config
 
-Show garbage collection configuration JSON
+Show the garbage collection policy for this repository
 
 ```
 lakectl gc get-config [flags]
@@ -1974,12 +2083,12 @@ lakectl gc help [command] [flags]
 
 ### lakectl gc set-config
 
-Set garbage collection configuration JSON
+Set garbage collection policy JSON
 
 #### Synopsis
 {:.no_toc}
 
-Sets the garbage collection configuration JSON.
+Sets the garbage collection policy JSON.
 Example configuration file:
 {
   "default_retention_days": 21,
@@ -2010,7 +2119,7 @@ lakectl gc set-config <repository uri> -f config.json
 {:.no_toc}
 
 ```
-  -f, --filename string   file containing the GC configuration
+  -f, --filename string   file containing the GC policy as JSON
   -h, --help              help for set-config
 ```
 
@@ -2051,11 +2160,12 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
 {:.no_toc}
 
 ```
-  -C, --concurrency int   max concurrent API calls to make to the lakeFS server (default 64)
-      --dry-run           only print the paths to be ingested
-      --from string       prefix to read from (e.g. "s3://bucket/sub/path/"). must not be in a storage namespace
-  -h, --help              help for ingest
-      --to string         lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
+  -C, --concurrency int          max concurrent API calls to make to the lakeFS server (default 64)
+      --dry-run                  only print the paths to be ingested
+      --from string              prefix to read from (e.g. "s3://bucket/sub/path/"). must not be in a storage namespace
+  -h, --help                     help for ingest
+      --s3-endpoint-url string   URL to access S3 storage API (by default, use regular AWS S3 endpoint
+      --to string                lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
 ```
 
 
@@ -2080,6 +2190,7 @@ lakectl log <branch uri> [flags]
       --after string         show results after this value (used for pagination)
       --amount int           number of results to return. By default, all results are returned
   -h, --help                 help for log
+      --limit                limit result just to amount. By default, returns whether more items are available.
       --objects strings      show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together
       --prefixes strings     show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together
       --show-meta-range-id   also show meta range ID

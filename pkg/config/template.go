@@ -1,46 +1,27 @@
 package config
 
 import (
-	"reflect"
-	"strings"
 	"time"
 )
 
-// Strings is a []string that mapstructure can deserialize from a single string or from a list
-// of strings.
-type Strings []string
+type OIDC struct {
+	Enabled        bool `mapstructure:"enabled"`
+	IsDefaultLogin bool `mapstructure:"is_default_login"`
 
-var (
-	ourStringsType  = reflect.TypeOf(Strings{})
-	stringType      = reflect.TypeOf("")
-	stringSliceType = reflect.TypeOf([]string{})
-)
+	// provider details:
+	URL          string `mapstructure:"url"`
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
 
-// decodeStrings is a mapstructure.HookFuncType that decodes a single string value or a slice
-// of strings into Strings.
-func DecodeStrings(fromValue reflect.Value, toValue reflect.Value) (interface{}, error) {
-	if toValue.Type() != ourStringsType {
-		return fromValue.Interface(), nil
-	}
-	if fromValue.Type() == stringSliceType {
-		return Strings(fromValue.Interface().([]string)), nil
-	}
-	if fromValue.Type() == stringType {
-		return Strings(strings.Split(fromValue.String(), ",")), nil
-	}
-	return fromValue.Interface(), nil
-}
+	// configure the OIDC authentication flow:
+	CallbackBaseURL                  string            `mapstructure:"callback_base_url"`
+	AuthorizeEndpointQueryParameters map[string]string `mapstructure:"authorize_endpoint_query_parameters"`
 
-type SecureString string
-
-// String returns an elided version.  It is safe to call for logging.
-func (SecureString) String() string {
-	return "[SECRET]"
-}
-
-// SecureValue returns the actual value of s as a string.
-func (s SecureString) SecureValue() string {
-	return string(s)
+	// configure how users are handled on the lakeFS side:
+	ValidateIDTokenClaims  map[string]string `mapstructure:"validate_id_token_claims"`
+	DefaultInitialGroups   []string          `mapstructure:"default_initial_groups"`
+	InitialGroupsClaimName string            `mapstructure:"initial_groups_claim_name"`
+	FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
 }
 
 // LDAP holds configuration for authenticating on an LDAP server.
@@ -86,15 +67,63 @@ type configuration struct {
 		Output        []string `mapstructure:"output"`
 		FileMaxSizeMB int      `mapstructure:"file_max_size_mb"`
 		FilesKeep     int      `mapstructure:"files_keep"`
+		AuditLogLevel string   `mapstructure:"audit_log_level"`
 		// TraceRequestHeaders work only on 'trace' level, default is false as it may log sensitive data to the log
 		TraceRequestHeaders bool `mapstructure:"trace_request_headers"`
 	}
 
 	Database struct {
-		ConnectionString      SecureString  `mapstructure:"connection_string"`
-		MaxOpenConnections    int32         `mapstructure:"max_open_connections"`
-		MaxIdleConnections    int32         `mapstructure:"max_idle_connections"`
-		ConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
+		// DropTables Development flag to delete tables after successful migration to KV
+		DropTables bool `mapstructure:"drop_tables"`
+		// Type Name of the KV Store driver DB implementation which is available according to the kv package Drivers function
+		Type string `mapstructure:"type"`
+
+		Local *struct {
+			// Path - Local directory path to store the DB files
+			Path string `mapstructure:"path"`
+			// SyncWrites - Sync ensures data written to disk on each write instead of mem cache
+			SyncWrites *bool `mapstructure:"sync_writes"`
+			// PrefetchSize - Number of elements to prefetch while iterating
+			PrefetchSize int `mapstructure:"prefetch_size"`
+			// EnableLogging - Enable store and badger (trace only) logging
+			EnableLogging *bool `mapstructure:"enable_logging"`
+		} `mapstructure:"local"`
+
+		Postgres *struct {
+			ConnectionString      SecureString  `mapstructure:"connection_string"`
+			MaxOpenConnections    int32         `mapstructure:"max_open_connections"`
+			MaxIdleConnections    int32         `mapstructure:"max_idle_connections"`
+			ConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
+		}
+
+		DynamoDB *struct {
+			// The name of the DynamoDB table to be used as KV
+			TableName string `mapstructure:"table_name"`
+
+			// Table provisioned throughput parameters, as described in
+			// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html
+			ReadCapacityUnits  int64 `mapstructure:"read_capacity_units"`
+			WriteCapacityUnits int64 `mapstructure:"write_capacity_units"`
+
+			// Maximal number of items per page during scan operation
+			ScanLimit int64 `mapstructure:"scan_limit"`
+
+			// The endpoint URL of the DynamoDB endpoint
+			// Can be used to redirect to DynamoDB on AWS, local docker etc.
+			Endpoint string `mapstructure:"endpoint"`
+
+			// AWS connection details - region and credentials
+			// This will override any such details that are already exist in the system
+			// While in general, AWS region and credentials are configured in the system for AWS usage,
+			// these can be used to specify fake values, that cna be used to connect to local DynamoDB,
+			// in case there are no credentials configured in the system
+			// This is a client requirement as described in section 4 in
+			// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
+			AwsRegion          string       `mapstructure:"aws_region"`
+			AwsProfile         string       `mapstructure:"aws_profile"`
+			AwsAccessKeyID     SecureString `mapstructure:"aws_access_key_id"`
+			AwsSecretAccessKey SecureString `mapstructure:"aws_secret_access_key"`
+		} `mapstructure:"dynamodb"`
 	}
 
 	Auth struct {
@@ -107,8 +136,14 @@ type configuration struct {
 		Encrypt struct {
 			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
 		}
-
-		LDAP *LDAP
+		API struct {
+			Endpoint        string
+			Token           string
+			SupportsInvites bool `mapstructure:"supports_invites"`
+		}
+		LDAP              *LDAP
+		OIDC              OIDC
+		LogoutRedirectURL string `mapstructure:"logout_redirect_url"`
 	}
 	Blockstore struct {
 		Type                   string `validate:"required"`
@@ -117,14 +152,15 @@ type configuration struct {
 			Path string
 		}
 		S3 *struct {
-			S3AuthInfo            `mapstructure:",squash"`
-			Region                string
-			Endpoint              string
-			StreamingChunkSize    int           `mapstructure:"streaming_chunk_size"`
-			StreamingChunkTimeout time.Duration `mapstructure:"streaming_chunk_timeout"`
-			MaxRetries            int           `mapstructure:"max_retries"`
-			ForcePathStyle        bool          `mapstructure:"force_path_style"`
-			DiscoverBucketRegion  bool          `mapstructure:"discover_bucket_region"`
+			S3AuthInfo                    `mapstructure:",squash"`
+			Region                        string
+			Endpoint                      string
+			StreamingChunkSize            int           `mapstructure:"streaming_chunk_size"`
+			StreamingChunkTimeout         time.Duration `mapstructure:"streaming_chunk_timeout"`
+			MaxRetries                    int           `mapstructure:"max_retries"`
+			ForcePathStyle                bool          `mapstructure:"force_path_style"`
+			DiscoverBucketRegion          bool          `mapstructure:"discover_bucket_region"`
+			SkipVerifyCertificateTestOnly bool          `mapstructure:"skip_verify_certificate_test_only"`
 		}
 		Azure *struct {
 			TryTimeout       time.Duration `mapstructure:"try_timeout"`
@@ -166,9 +202,11 @@ type configuration struct {
 		}
 	}
 	Stats struct {
-		Enabled       bool
-		Address       string
+		Enabled       bool          `mapstructure:"enabled"`
+		Address       string        `mapstructure:"address"`
 		FlushInterval time.Duration `mapstructure:"flush_interval"`
+		FlushSize     int           `mapstructure:"flush_size"`
+		Extended      bool          `mapstructure:"extended"`
 	}
 	Installation struct {
 		FixedID string `mapstructure:"fixed_id"`
@@ -177,4 +215,24 @@ type configuration struct {
 		AuditCheckInterval time.Duration `mapstructure:"audit_check_interval"`
 		AuditCheckURL      string        `mapstructure:"audit_check_url"`
 	} `mapstructure:"security"`
+	Email struct {
+		SMTPHost           string        `mapstructure:"smtp_host"`
+		SMTPPort           int           `mapstructure:"smtp_port"`
+		UseSSL             bool          `mapstructure:"use_ssl"`
+		Username           string        `mapstructure:"username"`
+		Password           string        `mapstructure:"password"`
+		LocalName          string        `mapstructure:"local_name"`
+		Sender             string        `mapstructure:"sender"`
+		LimitEveryDuration time.Duration `mapstructure:"limit_every_duration"`
+		Burst              int           `mapstructure:"burst"`
+		LakefsBaseURL      string        `mapstructure:"lakefs_base_url"`
+	}
+	UI struct {
+		// Enabled - control serving of embedded UI
+		Enabled  bool `mapstructure:"enabled"`
+		Snippets []struct {
+			ID   string `mapstructure:"id"`
+			Code string `mapstructure:"code"`
+		} `mapstructure:"snippets"`
+	} `mapstructure:"ui"`
 }

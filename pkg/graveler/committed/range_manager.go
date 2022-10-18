@@ -90,8 +90,8 @@ type RangeWriter interface {
 	// WriteRecord appends the given record to the Range.
 	WriteRecord(record Record) error
 
-	// SetMetadata associates metadata value (which will be stringified when the writer is
-	// Closed and added to the resulting range ID) with key.
+	// SetMetadata associates metadata value (which will be stringify when the writer is
+	// closed and added to the resulting range ID) with key.
 	SetMetadata(key, value string)
 
 	// GetApproximateSize returns an estimate of the current written size of the Range.
@@ -102,4 +102,7 @@ type RangeWriter interface {
 
 	// Abort terminates the non-closed file and removes all traces.
 	Abort() error
+
+	// ShouldBreakAtKey returns true if should break range after the given key
+	ShouldBreakAtKey(key graveler.Key, params *Params) bool
 }

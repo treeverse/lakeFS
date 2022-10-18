@@ -48,4 +48,12 @@ public class UserCreationTest {
         // TODO: test id
     }
 
+    /**
+     * Test the property 'inviteUser'
+     */
+    @Test
+    public void inviteUserTest() {
+        // TODO: test inviteUser
+    }
+
 }

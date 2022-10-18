@@ -1,7 +1,6 @@
 package io.treeverse.jpebble
 
-import java.nio.channels.FileChannel
-import java.io.Closeable
+import java.io.{Closeable, RandomAccessFile}
 
 /** Interface for reading blocks.  This is for reading storage with some
  *  random-access capabilities.
@@ -22,14 +21,27 @@ trait BlockReadable {
     readBlock(offset, size).iterator
 }
 
-class BlockReadableFileChannel(private val in: FileChannel) extends BlockReadable with Closeable {
-  val size = in.size() // Compute once, the file should anyway be immutable!
+class BlockReadableFile(private val in: RandomAccessFile) extends BlockReadable with Closeable {
+  if (in == null) {
+    throw new IllegalArgumentException("null file");
+  }
 
-  override def length: Long = size
+  lazy val inSize = in.length() // Compute once, the file should anyway be immutable!
 
-  override def readBlock(offset: Long, size: Long) =
-    // TODO(ariels): Cache return values - readonly mmaps are reusable
-    IndexedBytes.create(in.map(FileChannel.MapMode.READ_ONLY, offset, size))
+  override def length = inSize
+
+  override def readBlock(offset: Long, size: Long) = {
+    // TODO(ariels): Cache return values - our RandomAccessFiles are reusable!
+    val buf = new Array[Byte](size.toInt)
+    in.synchronized {
+      in.seek(offset)
+      val bytesRead = in.read(buf)
+      if (bytesRead != size) {
+        throw new java.io.IOException(s"Premature EOF $bytesRead < $size bytes")
+      }
+    }
+    IndexedBytes.create(buf)
+  }
 
   override def close() = in.close()
 }

@@ -22,8 +22,7 @@ func makeNewReader(r fakeReader) func(context.Context, committed.Namespace, comm
 	}
 }
 
-type NoCache struct {
-}
+type NoCache struct{}
 
 func (n *NoCache) Unref() {}
 
@@ -66,7 +65,7 @@ func TestGetEntryCacheFailure(t *testing.T) {
 	ns := "some-ns"
 	sstableID := committed.ID("some-id")
 
-	val, err := sut.GetValue(ctx, committed.Namespace(ns), committed.ID(sstableID), committed.Key("some-key"))
+	val, err := sut.GetValue(ctx, committed.Namespace(ns), sstableID, committed.Key("some-key"))
 	require.Error(t, expectedErr, err)
 	require.Nil(t, val)
 }
@@ -88,7 +87,7 @@ func TestGetEntryNotFound(t *testing.T) {
 	ns := "some-ns"
 	sstableID := committed.ID("some-id")
 
-	val, err := sut.GetValue(ctx, committed.Namespace(ns), committed.ID(sstableID), committed.Key("does-not-exist"))
+	val, err := sut.GetValue(ctx, committed.Namespace(ns), sstableID, committed.Key("does-not-exist"))
 	require.Error(t, err)
 	require.Nil(t, val)
 
@@ -134,8 +133,7 @@ func TestNewPartIteratorSuccess(t *testing.T) {
 	ns := "some-ns"
 	sstableID := committed.ID("some-id")
 
-	iter, err := sut.NewRangeIterator(ctx, committed.Namespace(ns), committed.ID(sstableID))
-
+	iter, err := sut.NewRangeIterator(ctx, committed.Namespace(ns), sstableID)
 	require.NoError(t, err)
 	require.NotNil(t, iter)
 

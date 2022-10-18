@@ -48,7 +48,8 @@ class ObjectsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}/objects',
                 'operation_id': 'delete_object',
@@ -113,7 +114,8 @@ class ObjectsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}/objects/delete',
                 'operation_id': 'delete_objects',
@@ -179,7 +181,8 @@ class ObjectsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/{ref}/objects',
                 'operation_id': 'get_object',
@@ -245,7 +248,8 @@ class ObjectsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/{ref}/objects/underlyingProperties',
                 'operation_id': 'get_underlying_properties',
@@ -310,7 +314,8 @@ class ObjectsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/{ref}/objects/ls',
                 'operation_id': 'list_objects',
@@ -400,7 +405,8 @@ class ObjectsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}/objects',
                 'operation_id': 'stage_object',
@@ -472,7 +478,8 @@ class ObjectsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/{ref}/objects/stat',
                 'operation_id': 'stat_object',
@@ -542,7 +549,8 @@ class ObjectsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}/objects',
                 'operation_id': 'upload_object',

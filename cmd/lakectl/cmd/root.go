@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -11,16 +12,18 @@ import (
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/mitchellh/go-homedir"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/cmd/lakectl/cmd/config"
 	"github.com/treeverse/lakefs/pkg/api"
+	config_types "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
 const (
-	DefaultMaxIdleConnsPerHost = 1000
+	DefaultMaxIdleConnsPerHost = 100
 )
 
 var (
@@ -47,9 +50,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "lakectl",
 	Short: "A cli tool to explore manage and work with lakeFS",
-	Long: `lakeFS is data lake management solution, allowing Git-like semantics over common object stores
-
-lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment`,
+	Long:  `lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		logging.SetLevel(logLevel)
 		logging.SetOutputFormat(logFormat)
@@ -78,7 +79,11 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 			DieFmt("error reading configuration file: %v", cfg.Err())
 		}
 
-		if err := viper.UnmarshalExact(&cfg.Values); err != nil {
+		err := viper.UnmarshalExact(&cfg.Values, viper.DecodeHook(
+			mapstructure.ComposeDecodeHookFunc(
+				config_types.DecodeOnlyString,
+				mapstructure.StringToTimeDurationHookFunc())))
+		if err != nil {
 			DieFmt("error unmarshal configuration: %v", err)
 		}
 	},
@@ -92,6 +97,10 @@ func getClient() *api.ClientWithResponses {
 	// see: https://stackoverflow.com/a/39834253
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
+	httpClient := &http.Client{
+		Transport: transport,
+	}
+
 	accessKeyID := cfg.Values.Credentials.AccessKeyID
 	secretAccessKey := cfg.Values.Credentials.SecretAccessKey
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
@@ -108,17 +117,15 @@ func getClient() *api.ClientWithResponses {
 	if u.Path == "" || u.Path == "/" {
 		serverEndpoint = strings.TrimRight(serverEndpoint, "/") + api.BaseURL
 	}
-	httpClient := &http.Client{
-		// avoid redirect automatically
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
 
 	client, err := api.NewClientWithResponses(
 		serverEndpoint,
-		api.WithRequestEditorFn(basicAuthProvider.Intercept),
 		api.WithHTTPClient(httpClient),
+		api.WithRequestEditorFn(basicAuthProvider.Intercept),
+		api.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+			req.Header.Set("User-Agent", "lakectl/"+version.Version)
+			return nil
+		}),
 	)
 	if err != nil {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)
@@ -135,9 +142,6 @@ func isSeekable(f io.Seeker) bool {
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	if noColorRequested {
-		DisableColors()
-	}
 	err := rootCmd.Execute()
 	if err != nil {
 		DieErr(err)

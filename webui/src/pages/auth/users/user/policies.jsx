@@ -1,7 +1,7 @@
 import React from "react";
 
 import {AuthLayout} from "../../../../lib/components/auth/layout";
-import {UserHeader} from "../../../../lib/components/auth/nav";
+import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {
     ActionGroup,
     ActionsBar,
@@ -33,7 +33,7 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
 
     let content;
     if (loading) content = <Loading/>;
-    else if (!!error) content=  <Error error={error}/>;
+    else if (error) content=  <Error error={error}/>;
     else content = (
             <>
                 {attachError && <Error error={attachError}/>}
@@ -86,7 +86,7 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
 
     return (
         <>
-            <UserHeader userId={userId} page={'policies'}/>
+            <UserHeaderWithContext userId={userId} page={'policies'}/>
 
             <ActionsBar>
                 <ActionGroup orientation="left">
@@ -111,7 +111,7 @@ const UserPoliciesContainer = () => {
     const { userId } = router.params;
     return (!userId) ? <></> : <UserPoliciesList
         userId={userId}
-        after={(!!after) ? after : ""}
+        after={(after) ? after : ""}
         onPaginate={after => router.push({pathname: '/auth/users/:userId/policies', params: {userId}, query: {after}})}
     />;
 };
@@ -119,7 +119,7 @@ const UserPoliciesContainer = () => {
 const UserPoliciesPage = () => {
     return (
         <AuthLayout activeTab="users">
-            <UserPoliciesContainer/>
+            <UserPoliciesContainer />
         </AuthLayout>
     );
 };

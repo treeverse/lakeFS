@@ -31,6 +31,7 @@ import {ConfirmationButton} from "../../../lib/components/modals";
 import Alert from "react-bootstrap/Alert";
 import {Link} from "../../../lib/components/nav";
 import {useRouter} from "../../../lib/hooks/router";
+import {RepoError} from "./error";
 
 const ImportBranchName = 'import-from-inventory';
 
@@ -135,20 +136,21 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, childr
         setShow(true);
     };
 
-    const onSubmit = () => {
+    const onSubmit = async () => {
         setDisabled(true);
         const branchId = textRef.current.value;
         const sourceRef = selectedBranch.id;
-        branches.create(repo.id, branchId, sourceRef)
-            .catch(err => {
-                setError(err);
-            })
-            .then((response) => {
-                setError(false);
-                setDisabled(false);
-                setShow(false);
-                if (onCreate !== null) onCreate(response);
-            });
+
+        try {
+            await branches.create(repo.id, branchId, sourceRef);
+            setError(false);
+            setDisabled(false);
+            setShow(false);
+            onCreate();
+        } catch (err) {
+            setError(err);
+            setDisabled(false);
+        }
     };
 
     return (
@@ -181,7 +183,6 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, childr
                     </Form>
 
                     {!!error && <Error error={error}/>}
-
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" disabled={disabled} onClick={hide}>
@@ -209,7 +210,7 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
     let content;
 
     if (loading) content = <Loading/>;
-    else if (!!error) content = <Error error={error}/>;
+    else if (error) content = <Error error={error}/>;
     else content = (
         <>
             <Card>
@@ -243,24 +244,23 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
     );
 };
 
-
 const BranchesContainer = () => {
     const router = useRouter()
     const { repo, loading, error } = useRefs();
     const { after } = router.query;
-    const routerPfx = (!!router.query.prefix) ? router.query.prefix : "";
+    const routerPfx = (router.query.prefix) ? router.query.prefix : "";
 
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>;
+    if (error) return <RepoError error={error}/>;
 
     return (
         <BranchList
             repo={repo}
-            after={(!!after) ? after : ""}
+            after={(after) ? after : ""}
             prefix={routerPfx}
             onPaginate={after => {
                 const query = {after};
-                if (!!router.query.prefix) query.prefix = router.query.prefix;
+                if (router.query.prefix) query.prefix = router.query.prefix;
                 router.push({pathname: '/repositories/:repoId/branches', params: {repoId: repo.id}, query});
             }}/>
     );

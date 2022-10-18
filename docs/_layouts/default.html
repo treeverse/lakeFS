@@ -87,7 +87,7 @@ layout: table_wrappers
 
             <div class="nav-category nav-version">
                 <label for="selectversion">Version:</label>
-                <select id="selectversion" name="version" onchange="javascript:location.href = '/' + this.value;">
+                <select id="selectversion" name="version" onchange="javascript:location.href = '/' + encodeURI(this.value);">
                     <option value="" selected>Latest</option>
                 </select>
             </div>

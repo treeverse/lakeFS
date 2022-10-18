@@ -3,12 +3,14 @@ package api
 import (
 	"bytes"
 	"context"
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"mime"
 	"net/http"
+	"net/mail"
 	"net/url"
 	"path/filepath"
 	"reflect"
@@ -18,10 +20,13 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/go-openapi/swag"
+	"github.com/gorilla/sessions"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/auth/oidc"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -30,9 +35,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
 )
@@ -47,6 +54,7 @@ const (
 
 	actionStatusCompleted = "completed"
 	actionStatusFailed    = "failed"
+	actionStatusSkipped   = "skipped"
 
 	entryTypeObject       = "object"
 	entryTypeCommonPrefix = "common_prefix"
@@ -77,23 +85,37 @@ type Controller struct {
 	Actions               actionsHandler
 	AuditChecker          AuditChecker
 	Logger                logging.Logger
+	Emailer               *email.Emailer
+	Templater             templater.Service
+	sessionStore          sessions.Store
+	oidcAuthenticator     *oidc.Authenticator
+}
+
+func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, _ *http.Request) {
+	inviteSupported := c.Auth.IsInviteSupported()
+	emailSupported := c.Emailer.Params.SMTPHost != ""
+	writeResponse(w, http.StatusOK, AuthCapabilities{
+		InviteUser:     &inviteSupported,
+		ForgotPassword: &emailSupported,
+	})
 }
 
 func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body DeleteObjectsJSONRequestBody, repository string, branch string) {
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_objects")
+	c.LogAction(ctx, "delete_objects", r, repository, branch, "")
 
 	// limit check
 	if len(body.Paths) > DefaultMaxDeleteObjects {
-		writeError(w, http.StatusInternalServerError, fmt.Errorf("%w, max paths is set to %d",
-			ErrRequestSizeExceeded, DefaultMaxDeleteObjects))
+		err := fmt.Errorf("%w, max paths is set to %d", ErrRequestSizeExceeded, DefaultMaxDeleteObjects)
+		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	// delete all the files and collect responses
-	var errs []ObjectError
+	// errs used to collect errors as part of the response, can't be nil
+	errs := make([]ObjectError, 0)
+	// check if we authorize to delete each object, prepare a list of paths we can delete
+	var pathsToDelete []string
 	for _, objectPath := range body.Paths {
-		// authorize this object deletion
 		if !c.authorize(w, r, permissions.Node{
 			Permission: permissions.Permission{
 				Action:   permissions.DeleteObjectAction,
@@ -105,14 +127,24 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 				StatusCode: http.StatusUnauthorized,
 				Message:    http.StatusText(http.StatusUnauthorized),
 			})
-			continue
+		} else {
+			pathsToDelete = append(pathsToDelete, objectPath)
 		}
+	}
 
+	// batch delete the entries we allow to delete
+	delErr := c.Catalog.DeleteEntries(ctx, repository, branch, pathsToDelete)
+	delErrs := graveler.NewMapDeleteErrors(delErr)
+	for _, objectPath := range pathsToDelete {
+		// set err to the specific error when possible
+		err := delErrs[objectPath]
+		if err == nil {
+			err = delErr
+		}
 		lg := c.Logger.WithField("path", objectPath)
-		err := c.Catalog.DeleteEntry(ctx, repository, branch, objectPath)
 		switch {
-		case errors.Is(err, catalog.ErrNotFound):
-			lg.Debug("tried to delete a non-existent object")
+		case errors.Is(err, catalog.ErrNotFound), errors.Is(err, graveler.ErrNotFound):
+			lg.WithError(err).Debug("tried to delete a non-existent object")
 		case errors.Is(err, graveler.ErrWriteToProtectedBranch):
 			errs = append(errs, ObjectError{
 				Path:       StringPtr(objectPath),
@@ -135,32 +167,41 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 			lg.Debug("object set for deletion")
 		}
 	}
-	// no content in case there are no errors
-	if len(errs) == 0 {
-		writeResponse(w, http.StatusNoContent, nil)
-		return
-	}
-	// status ok with list of errors
+
 	response := ObjectErrorList{
 		Errors: errs,
 	}
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) Logout(w http.ResponseWriter, _ *http.Request) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     JWTCookieName,
-		Value:    "",
-		Path:     "/",
-		HttpOnly: true,
-		Expires:  time.Unix(0, 0),
-		SameSite: http.SameSiteStrictMode,
-	})
+// OauthCallback gets a code generated by an OIDC provider.
+// It exchanges the code for an id token, and saves the claims from the ID token on a session.
+func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	session, _ := c.sessionStore.Get(r, OIDCAuthSessionName)
+	if r.URL.Query().Get("state") != session.Values[StateSessionKey] {
+		http.Redirect(w, r, "/auth/login", http.StatusTemporaryRedirect)
+		return
+	}
 
-	writeResponse(w, http.StatusOK, nil)
+	idTokenClaims, err := c.oidcAuthenticator.GetIDTokenClaims(ctx, r.URL.Query().Get("code"))
+	if err != nil {
+		http.Redirect(w, r, "/auth/login", http.StatusTemporaryRedirect)
+		return
+	}
+	session.Values[IDTokenClaimsSessionKey] = idTokenClaims
+	err = session.Save(r, w)
+	if err != nil {
+		c.Logger.WithError(err).Error("Failed to save OIDC session")
+	}
+	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 }
 
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSONRequestBody) {
+	err := clearSession(w, r, c.sessionStore, OIDCAuthSessionName)
+	if err != nil {
+		c.Logger.WithError(err).Error("failed to perform OIDC logout")
+	}
 	ctx := r.Context()
 	user, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
 	if errors.Is(err, ErrAuthenticatingRequest) {
@@ -171,22 +212,20 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	loginTime := time.Now()
 	expires := loginTime.Add(DefaultLoginExpiration)
 	secret := c.Auth.SecretStore().SharedSecret()
-	// user.Username will be different from username/access_key_id on
-	// LDAP login.  Use the stored value.
-	tokenString, err := GenerateJWT(secret, user.ID, loginTime, expires)
+
+	tokenString, err := GenerateJWTLogin(secret, user.Username, loginTime, expires)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     JWTCookieName,
-		Value:    tokenString,
-		Path:     "/",
-		Expires:  expires,
-		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
-	})
+	internalAuthSession, _ := c.sessionStore.Get(r, InternalAuthSessionName)
+	internalAuthSession.Values[TokenSessionKeyName] = tokenString
+	err = c.sessionStore.Save(r, w, internalAuthSession)
+	if err != nil {
+		c.Logger.WithError(err).Error("Failed to save internal auth session")
+		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		return
+	}
 	response := AuthenticationToken{
 		Token: tokenString,
 	}
@@ -203,7 +242,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "generate_physical_address")
+	c.LogAction(ctx, "generate_physical_address", r, repository, branch, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if errors.Is(err, catalog.ErrNotFound) {
@@ -260,7 +299,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "stage_object")
+	c.LogAction(ctx, "stage_object", r, repository, branch, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if errors.Is(err, catalog.ErrNotFound) {
@@ -341,13 +380,13 @@ func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params L
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "list_groups")
+	c.LogAction(ctx, "list_groups", r, "", "", "")
 	groups, paginator, err := c.Auth.ListGroups(ctx, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -379,14 +418,14 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body Cr
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_group")
+	c.LogAction(ctx, "create_group", r, "", "", "")
 
 	g := &model.Group{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
 	}
 	err := c.Auth.CreateGroup(ctx, g)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	response := Group{
@@ -407,13 +446,13 @@ func (c *Controller) DeleteGroup(w http.ResponseWriter, r *http.Request, groupID
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_group")
+	c.LogAction(ctx, "delete_group", r, "", "", "")
 	err := c.Auth.DeleteGroup(ctx, groupID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "group not found")
 		return
 	}
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
@@ -429,13 +468,13 @@ func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID st
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_group")
+	c.LogAction(ctx, "get_group", r, "", "", "")
 	g, err := c.Auth.GetGroup(ctx, groupID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "group not found")
 		return
 	}
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -456,13 +495,13 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "list_group_users")
+	c.LogAction(ctx, "list_group_users", r, "", "", "")
 	users, paginator, err := c.Auth.ListGroupUsers(ctx, groupID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -478,6 +517,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 		response.Results = append(response.Results, User{
 			Id:           u.Username,
 			CreationDate: u.CreatedAt.Unix(),
+			Email:        u.Email,
 		})
 	}
 	writeResponse(w, http.StatusOK, response)
@@ -494,9 +534,9 @@ func (c *Controller) DeleteGroupMembership(w http.ResponseWriter, r *http.Reques
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "remove_user_from_group")
+	c.LogAction(ctx, "remove_user_from_group", r, "", "", "")
 	err := c.Auth.RemoveUserFromGroup(ctx, userID, groupID)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
@@ -512,9 +552,9 @@ func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "add_user_to_group")
+	c.LogAction(ctx, "add_user_to_group", r, "", "", "")
 	err := c.Auth.AddUserToGroup(ctx, userID, groupID)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusCreated, nil)
@@ -531,13 +571,13 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "list_group_policies")
+	c.LogAction(ctx, "list_group_policies", r, "", "", "")
 	policies, paginator, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -583,9 +623,9 @@ func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "detach_policy_from_group")
+	c.LogAction(ctx, "detach_policy_from_group", r, "", "", "")
 	err := c.Auth.DetachPolicyFromGroup(ctx, policyID, groupID)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
@@ -602,9 +642,9 @@ func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request,
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "attach_policy_to_group")
+	c.LogAction(ctx, "attach_policy_to_group", r, "", "", "")
 	err := c.Auth.AttachPolicyToGroup(ctx, policyID, groupID)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusCreated, nil)
@@ -621,13 +661,13 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "list_policies")
+	c.LogAction(ctx, "list_policies", r, "", "", "")
 	policies, paginator, err := c.Auth.ListPolicies(ctx, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -655,7 +695,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_policy")
+	c.LogAction(ctx, "create_policy", r, "", "", "")
 
 	stmts := make(model.Statements, len(body.Statement))
 	for i, apiStatement := range body.Statement {
@@ -672,8 +712,8 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 		Statement:   stmts,
 	}
 
-	err := c.Auth.WritePolicy(ctx, p)
-	if handleAPIError(w, err) {
+	err := c.Auth.WritePolicy(ctx, p, false)
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -690,13 +730,13 @@ func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policy
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_policy")
+	c.LogAction(ctx, "delete_policy", r, "", "", "")
 	err := c.Auth.DeletePolicy(ctx, policyID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "policy not found")
 		return
 	}
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
@@ -712,13 +752,13 @@ func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID 
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_policy")
+	c.LogAction(ctx, "get_policy", r, "", "", "")
 	p, err := c.Auth.GetPolicy(ctx, policyID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "policy not found")
 		return
 	}
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -735,8 +775,14 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body U
 	}) {
 		return
 	}
+	// verify requested policy match the policy document id
+	if policyID != body.Id {
+		writeError(w, http.StatusBadRequest, "can't update policy id")
+		return
+	}
+
 	ctx := r.Context()
-	c.LogAction(ctx, "update_policy")
+	c.LogAction(ctx, "update_policy", r, "", "", "")
 
 	stmts := make(model.Statements, len(body.Statement))
 	for i, apiStatement := range body.Statement {
@@ -752,8 +798,8 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body U
 		DisplayName: policyID,
 		Statement:   stmts,
 	}
-	err := c.Auth.WritePolicy(ctx, p)
-	if handleAPIError(w, err) {
+	err := c.Auth.WritePolicy(ctx, p, true)
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	response := serializePolicy(p)
@@ -770,13 +816,13 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "list_users")
+	c.LogAction(ctx, "list_users", r, "", "", "")
 	users, paginator, err := c.Auth.ListUsers(ctx, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -798,25 +844,56 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 	writeResponse(w, http.StatusOK, response)
 }
 
+func (c *Controller) generateResetPasswordToken(email string, duration time.Duration) (string, error) {
+	secret := c.Auth.SecretStore().SharedSecret()
+	currentTime := time.Now()
+	return auth.GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(duration))
+}
+
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
+	invite := swag.BoolValue(body.InviteUser)
+	username := body.Id
+	var parsedEmail *string
+	if invite {
+		addr, err := mail.ParseAddress(username)
+		if err != nil {
+			c.Logger.WithError(err).WithField("user_id", username).Warn("failed parsing email")
+			writeError(w, http.StatusBadRequest, "Invalid email format")
+			return
+		}
+		username = strings.ToLower(addr.Address)
+		parsedEmail = &addr.Address
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateUserAction,
-			Resource: permissions.UserArn(body.Id),
+			Resource: permissions.UserArn(username),
 		},
 	}) {
 		return
 	}
+	ctx := r.Context()
+	c.LogAction(ctx, "create_user", r, "", "", "")
+	if invite {
+		err := c.Auth.InviteUser(ctx, *parsedEmail)
+		if c.handleAPIError(ctx, w, err) {
+			c.Logger.WithError(err).WithField("email", *parsedEmail).Warn("failed creating user")
+			return
+		}
+		writeResponse(w, http.StatusCreated, User{Id: *parsedEmail})
+		return
+	}
 	u := &model.User{
 		CreatedAt:    time.Now().UTC(),
-		Username:     body.Id,
+		Username:     username,
 		FriendlyName: nil,
 		Source:       "internal",
+		Email:        parsedEmail,
 	}
-	ctx := r.Context()
-	c.LogAction(ctx, "create_user")
+
 	_, err := c.Auth.CreateUser(ctx, u)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
+		c.Logger.WithError(err).WithField("username", u.Username).Warn("failed creating user")
 		return
 	}
 	response := User{
@@ -837,13 +914,13 @@ func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userID s
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_user")
+	c.LogAction(ctx, "delete_user", r, "", "", "")
 	err := c.Auth.DeleteUser(ctx, userID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "user not found")
 		return
 	}
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
@@ -859,13 +936,13 @@ func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request, userID stri
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_user")
+	c.LogAction(ctx, "get_user", r, "", "", "")
 	u, err := c.Auth.GetUser(ctx, userID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "user not found")
 		return
 	}
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	response := User{
@@ -885,13 +962,13 @@ func (c *Controller) ListUserCredentials(w http.ResponseWriter, r *http.Request,
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "list_user_credentials")
+	c.LogAction(ctx, "list_user_credentials", r, "", "", "")
 	credentials, paginator, err := c.Auth.ListUserCredentials(ctx, userID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -922,9 +999,9 @@ func (c *Controller) CreateCredentials(w http.ResponseWriter, r *http.Request, u
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_credentials")
+	c.LogAction(ctx, "create_credentials", r, "", "", "")
 	credentials, err := c.Auth.CreateCredentials(ctx, userID)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	response := CredentialsWithSecret{
@@ -946,13 +1023,13 @@ func (c *Controller) DeleteCredentials(w http.ResponseWriter, r *http.Request, u
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_credentials")
+	c.LogAction(ctx, "delete_credentials", r, "", "", "")
 	err := c.Auth.DeleteCredentials(ctx, userID, accessKeyID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "credentials not found")
 		return
 	}
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
@@ -968,13 +1045,13 @@ func (c *Controller) GetCredentials(w http.ResponseWriter, r *http.Request, user
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_credentials_for_user")
+	c.LogAction(ctx, "get_credentials_for_user", r, "", "", "")
 	credentials, err := c.Auth.GetCredentialsForUser(ctx, userID, accessKeyID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "credentials not found")
 		return
 	}
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -995,13 +1072,13 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "list_user_groups")
+	c.LogAction(ctx, "list_user_groups", r, "", "", "")
 	groups, paginator, err := c.Auth.ListUserGroups(ctx, userID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -1034,7 +1111,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "list_user_policies")
+	c.LogAction(ctx, "list_user_policies", r, "", "", "")
 	var listPolicies func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 	if params.Effective != nil && *params.Effective {
 		listPolicies = c.Auth.ListEffectivePolicies
@@ -1046,7 +1123,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -1074,9 +1151,9 @@ func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "detach_policy_from_user")
+	c.LogAction(ctx, "detach_policy_from_user", r, "", "", "")
 	err := c.Auth.DetachPolicyFromUser(ctx, policyID, userID)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
@@ -1093,9 +1170,9 @@ func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, 
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "attach_policy_to_user")
+	c.LogAction(ctx, "attach_policy_to_user", r, "", "", "")
 	err := c.Auth.AttachPolicyToUser(ctx, policyID, userID)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusCreated, nil)
@@ -1134,7 +1211,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "list_repos")
+	c.LogAction(ctx, "list_repos", r, "", "", "")
 
 	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), paginationAfter(params.After))
 	if err != nil {
@@ -1166,18 +1243,21 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.CreateRepositoryAction,
-					Resource: permissions.RepoArn(body.Name)},
+					Resource: permissions.RepoArn(body.Name),
+				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.AttachStorageNamespace,
-					Resource: permissions.StorageNamespace(body.StorageNamespace)},
+					Resource: permissions.StorageNamespace(body.StorageNamespace),
+				},
 			},
-		}}) {
+		},
+	}) {
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_repo")
+	c.LogAction(ctx, "create_repo", r, body.Name, "", "")
 
 	defaultBranch := StringValue(body.DefaultBranch)
 	if defaultBranch == "" {
@@ -1191,7 +1271,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			body.Name,
 			body.StorageNamespace,
 			defaultBranch)
-		if handleAPIError(w, err) {
+		if c.handleAPIError(ctx, w, err) {
 			return
 		}
 		response := Repository{
@@ -1200,7 +1280,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			Id:               repo.Name,
 			StorageNamespace: repo.StorageNamespace,
 		}
-		writeResponse(w, http.StatusOK, response)
+		writeResponse(w, http.StatusCreated, response)
 		return
 	}
 
@@ -1233,7 +1313,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 
 	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, body.StorageNamespace, defaultBranch)
 	if err != nil {
-		handleAPIError(w, fmt.Errorf("error creating repository: %w", err))
+		c.handleAPIError(ctx, w, fmt.Errorf("error creating repository: %w", err))
 		return
 	}
 
@@ -1281,14 +1361,9 @@ func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, re
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_repo")
+	c.LogAction(ctx, "delete_repo", r, repository, "", "")
 	err := c.Catalog.DeleteRepository(ctx, repository)
-	if errors.Is(err, catalog.ErrNotFound) {
-		writeError(w, http.StatusNotFound, "repository not found")
-		return
-	}
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
@@ -1304,24 +1379,28 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_repo")
+	c.LogAction(ctx, "get_repo", r, repository, "", "")
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if errors.Is(err, catalog.ErrNotFound) {
-		writeError(w, http.StatusNotFound, "repository not found")
-		return
-	}
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, fmt.Sprintf("error fetching repository: %s", err))
-		return
-	}
+	switch {
+	case err == nil:
+		response := Repository{
+			CreationDate:     repo.CreationDate.Unix(),
+			DefaultBranch:    repo.DefaultBranch,
+			Id:               repo.Name,
+			StorageNamespace: repo.StorageNamespace,
+		}
+		writeResponse(w, http.StatusOK, response)
 
-	response := Repository{
-		CreationDate:     repo.CreationDate.Unix(),
-		DefaultBranch:    repo.DefaultBranch,
-		Id:               repo.Name,
-		StorageNamespace: repo.StorageNamespace,
+	case errors.Is(err, catalog.ErrNotFound),
+		errors.Is(err, catalog.ErrRepositoryNotFound):
+		writeError(w, http.StatusNotFound, "repository not found")
+
+	case errors.Is(err, graveler.ErrRepositoryInDeletion):
+		writeError(w, http.StatusGone, err)
+
+	default:
+		writeError(w, http.StatusInternalServerError, err)
 	}
-	writeResponse(w, http.StatusOK, response)
 }
 
 func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, repository string, params ListRepositoryRunsParams) {
@@ -1334,19 +1413,20 @@ func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "actions_repository_runs")
+	c.LogAction(ctx, "actions_repository_runs", r, repository, "", "")
 
 	_, err := c.Catalog.GetRepository(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
 	branch := StringValue(params.Branch)
 	commitID := StringValue(params.Commit)
 	runsIter, err := c.Actions.ListRunResults(ctx, repository, branch, commitID, paginationAfter(params.After))
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
+	defer runsIter.Close()
 
 	response := ActionRunList{
 		Pagination: Pagination{
@@ -1401,14 +1481,14 @@ func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository s
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "actions_get_run")
+	c.LogAction(ctx, "actions_get_run", r, repository, "", "")
 	_, err := c.Catalog.GetRepository(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
 	runResult, err := c.Actions.GetRunResult(ctx, repository, runID)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -1440,15 +1520,15 @@ func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "actions_list_run_hooks")
+	c.LogAction(ctx, "actions_list_run_hooks", r, repository, "", "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
 	tasksIter, err := c.Actions.ListRunTaskResults(ctx, repo.Name, runID, paginationAfter(params.After))
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	defer tasksIter.Close()
@@ -1469,9 +1549,13 @@ func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, reposi
 			StartTime: val.StartTime,
 			EndTime:   &val.EndTime,
 		}
-		if val.Passed {
+		switch {
+		case val.Passed:
 			hookRun.Status = actionStatusCompleted
-		} else {
+		case val.StartTime.IsZero(): // assumes that database values are only stored after run is finished
+			hookRun.Status = actionStatusSkipped
+			hookRun.EndTime = nil
+		default:
 			hookRun.Status = actionStatusFailed
 		}
 		response.Results = append(response.Results, hookRun)
@@ -1501,15 +1585,20 @@ func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, re
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "actions_run_hook_output")
+	c.LogAction(ctx, "actions_run_hook_output", r, repository, "", "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
 	taskResult, err := c.Actions.GetTaskResult(ctx, repo.Name, runID, hookRunID)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
+		return
+	}
+
+	if taskResult.StartTime.IsZero() { // skipped task
+		writeResponse(w, http.StatusOK, nil)
 		return
 	}
 
@@ -1518,7 +1607,7 @@ func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, re
 		StorageNamespace: repo.StorageNamespace,
 		Identifier:       logPath,
 	}, -1)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	defer func() {
@@ -1544,10 +1633,10 @@ func (c *Controller) ListBranches(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "list_branches")
+	c.LogAction(ctx, "list_branches", r, repository, "", "")
 
 	res, hasMore, err := c.Catalog.ListBranches(ctx, repository, paginationPrefix(params.Prefix), paginationAmount(params.Amount), paginationAfter(params.After))
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -1575,9 +1664,9 @@ func (c *Controller) CreateBranch(w http.ResponseWriter, r *http.Request, body C
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_branch")
+	c.LogAction(ctx, "create_branch", r, repository, body.Name, "")
 	commitLog, err := c.Catalog.CreateBranch(ctx, repository, body.Name, body.Source)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -1594,9 +1683,9 @@ func (c *Controller) DeleteBranch(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_branch")
+	c.LogAction(ctx, "delete_branch", r, repository, branch, "")
 	err := c.Catalog.DeleteBranch(ctx, repository, branch)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
@@ -1612,9 +1701,9 @@ func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repositor
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_branch")
+	c.LogAction(ctx, "get_branch", r, repository, branch, "")
 	reference, err := c.Catalog.GetBranchReference(ctx, repository, branch)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	response := Ref{
@@ -1624,26 +1713,29 @@ func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repositor
 	writeResponse(w, http.StatusOK, response)
 }
 
-func handleAPIError(w http.ResponseWriter, err error) bool {
+func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, err error) bool {
 	switch {
 	case errors.Is(err, catalog.ErrNotFound),
 		errors.Is(err, graveler.ErrNotFound),
 		errors.Is(err, actions.ErrNotFound),
 		errors.Is(err, auth.ErrNotFound),
-		errors.Is(err, db.ErrNotFound):
+		errors.Is(err, kv.ErrNotFound):
 		writeError(w, http.StatusNotFound, err)
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
+		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
 		errors.Is(err, catalog.ErrNoDifferenceWasFound),
 		errors.Is(err, graveler.ErrNoChanges),
 		errors.Is(err, permissions.ErrInvalidServiceName),
 		errors.Is(err, permissions.ErrInvalidAction),
 		errors.Is(err, model.ErrValidationError),
 		errors.Is(err, graveler.ErrInvalidRef),
-		errors.Is(err, graveler.ErrInvalidValue):
+		errors.Is(err, graveler.ErrInvalidValue),
+		errors.Is(err, actions.ErrParamConflict):
 		writeError(w, http.StatusBadRequest, err)
 
-	case errors.Is(err, graveler.ErrNotUnique):
+	case errors.Is(err, graveler.ErrNotUnique),
+		errors.Is(err, graveler.ErrConflictFound):
 		writeError(w, http.StatusConflict, err)
 
 	case errors.Is(err, catalog.ErrFeatureNotSupported):
@@ -1655,10 +1747,14 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 	case errors.Is(err, adapter.ErrDataNotFound):
 		writeError(w, http.StatusGone, "No data")
 
-	case errors.Is(err, db.ErrAlreadyExists):
-		writeError(w, http.StatusBadRequest, "Already exists")
+	case errors.Is(err, auth.ErrAlreadyExists):
+		writeError(w, http.StatusConflict, "Already exists")
+
+	case errors.Is(err, graveler.ErrTooManyTries):
+		writeError(w, http.StatusLocked, "Too many attempts, try again later")
 
 	case err != nil:
+		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
 		writeError(w, http.StatusInternalServerError, err)
 
 	default:
@@ -1678,7 +1774,7 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body Re
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "reset_branch")
+	c.LogAction(ctx, "reset_branch", r, repository, branch, "")
 
 	var err error
 	switch body.Type {
@@ -1691,13 +1787,91 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body Re
 	default:
 		writeError(w, http.StatusNotFound, "reset type not found")
 	}
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
 }
 
-func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJSONRequestBody, repository string, branch string) {
+func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body IngestRangeJSONRequestBody, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ImportFromStorage,
+					Resource: permissions.StorageNamespace(body.FromSourceURI),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.WriteObjectAction,
+					Resource: permissions.ObjectArn(repository, body.Prepend),
+				},
+			},
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "ingest_range", r, repository, "", "")
+
+	contToken := swag.StringValue(body.ContinuationToken)
+	info, mark, err := c.Catalog.WriteRange(r.Context(), repository, body.FromSourceURI, body.Prepend, body.After, contToken)
+	if c.handleAPIError(ctx, w, err) {
+		return
+	}
+
+	writeResponse(w, http.StatusCreated, IngestRangeCreationResponse{
+		Range: &RangeMetadata{
+			Id:            string(info.ID),
+			MinKey:        string(info.MinKey),
+			MaxKey:        string(info.MaxKey),
+			Count:         info.Count,
+			EstimatedSize: int(info.EstimatedRangeSizeBytes),
+		},
+		Pagination: &ImportPagination{
+			HasMore:           mark.HasMore,
+			ContinuationToken: &mark.ContinuationToken,
+			LastKey:           mark.LastKey,
+		},
+	})
+}
+
+func (c *Controller) CreateMetaRange(w http.ResponseWriter, r *http.Request, body CreateMetaRangeJSONRequestBody, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.CreateMetaRangeAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "create_metarange", r, repository, "", "")
+
+	ranges := make([]*graveler.RangeInfo, 0, len(body.Ranges))
+	for _, r := range body.Ranges {
+		ranges = append(ranges, &graveler.RangeInfo{
+			ID:                      graveler.RangeID(r.Id),
+			MinKey:                  graveler.Key(r.MinKey),
+			MaxKey:                  graveler.Key(r.MaxKey),
+			Count:                   r.Count,
+			EstimatedRangeSizeBytes: uint64(r.EstimatedSize),
+		})
+	}
+	info, err := c.Catalog.WriteMetaRange(r.Context(), repository, ranges)
+	if c.handleAPIError(ctx, w, err) {
+		return
+	}
+	writeResponse(w, http.StatusCreated, MetaRangeCreationResponse{
+		Id: StringPtr(string(info.ID)),
+	})
+}
+
+func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJSONRequestBody, repository string, branch string, params CommitParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,
@@ -1707,7 +1881,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_commit")
+	c.LogAction(ctx, "create_commit", r, repository, branch, "")
 	user, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "missing user")
@@ -1718,7 +1892,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 		metadata = body.Metadata.AdditionalProperties
 	}
 	committer := user.Username
-	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, committer, metadata, body.Date)
+	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, committer, metadata, body.Date, params.SourceMetarange)
 	var hookAbortErr *graveler.HookAbortError
 	if errors.As(err, &hookAbortErr) {
 		c.Logger.
@@ -1728,7 +1902,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 		writeError(w, http.StatusPreconditionFailed, err)
 		return
 	}
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	newMetadata := Commit_Metadata{
@@ -1756,7 +1930,7 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "diff_workspace")
+	c.LogAction(ctx, "diff_workspace", r, repository, branch, "")
 
 	diff, hasMore, err := c.Catalog.DiffUncommitted(
 		ctx,
@@ -1767,7 +1941,7 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 		paginationAmount(params.Amount),
 		paginationAfter(params.After),
 	)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -1804,10 +1978,10 @@ func (c *Controller) DeleteObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_object")
+	c.LogAction(ctx, "delete_object", r, repository, branch, "")
 
 	err := c.Catalog.DeleteEntry(ctx, repository, branch, params.Path)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
@@ -1823,16 +1997,16 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "put_object")
+	c.LogAction(ctx, "put_object", r, repository, branch, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
 	// check if branch exists - it is still a possibility, but we don't want to upload large object when the branch was not there in the first place
 	branchExists, err := c.Catalog.BranchExists(ctx, repository, branch)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	if !branchExists {
@@ -1901,7 +2075,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		writeError(w, http.StatusPreconditionFailed, "path already exists")
 		return
 	}
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -1938,10 +2112,10 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "stage_object")
+	c.LogAction(ctx, "stage_object", r, repository, branch, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	// write metadata
@@ -1981,7 +2155,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 	entry := entryBuilder.Build()
 
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	response := ObjectStats{
@@ -2006,7 +2180,7 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body R
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "revert_branch")
+	c.LogAction(ctx, "revert_branch", r, repository, branch, "")
 	user, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "user not found")
@@ -2018,7 +2192,7 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body R
 		Committer:    committer,
 		ParentNumber: body.ParentNumber,
 	})
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
@@ -2034,8 +2208,12 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_commit")
+	c.LogAction(ctx, "get_commit", r, repository, commitID, "")
 	commit, err := c.Catalog.GetCommit(ctx, repository, commitID)
+	if errors.Is(err, catalog.ErrRepositoryNotFound) {
+		writeError(w, http.StatusNotFound, "repository not found")
+		return
+	}
 	if errors.Is(err, catalog.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "commit not found")
 		return
@@ -2070,7 +2248,7 @@ func (c *Controller) GetGarbageCollectionRules(w http.ResponseWriter, r *http.Re
 	}
 	ctx := r.Context()
 	rules, err := c.Catalog.GetGarbageCollectionRules(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	resp := GarbageCollectionRules{}
@@ -2099,7 +2277,24 @@ func (c *Controller) SetGarbageCollectionRules(w http.ResponseWriter, r *http.Re
 		rules.BranchRetentionDays[rule.BranchId] = int32(rule.RetentionDays)
 	}
 	err := c.Catalog.SetGarbageCollectionRules(ctx, repository, rules)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
+		return
+	}
+	writeResponse(w, http.StatusNoContent, nil)
+}
+
+func (c *Controller) DeleteGarbageCollectionRules(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.SetGarbageCollectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	err := c.Catalog.SetGarbageCollectionRules(ctx, repository, nil)
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
@@ -2115,9 +2310,9 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "prepare_garbage_collection_commits")
+	c.LogAction(ctx, "prepare_garbage_collection_commits", r, repository, "", "")
 	gcRUnMetadata, err := c.Catalog.PrepareExpiredCommits(ctx, repository, swag.StringValue(body.PreviousRunId))
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusCreated, GarbageCollectionPrepareResponse{
@@ -2138,7 +2333,7 @@ func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 	}
 	ctx := r.Context()
 	rules, err := c.Catalog.GetBranchProtectionRules(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	resp := make([]*BranchProtectionRule, 0, len(rules.BranchPatternToBlockedActions))
@@ -2161,7 +2356,7 @@ func (c *Controller) DeleteBranchProtectionRule(w http.ResponseWriter, r *http.R
 	}
 	ctx := r.Context()
 	err := c.Catalog.DeleteBranchProtectionRule(ctx, repository, body.Pattern)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
@@ -2180,7 +2375,7 @@ func (c *Controller) CreateBranchProtectionRule(w http.ResponseWriter, r *http.R
 	// For now, all protected branches use the same default set of blocked actions. In the future this set will be user configurable.
 	blockedActions := []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE, graveler.BranchProtectionBlockedAction_COMMIT}
 	err := c.Catalog.CreateBranchProtectionRule(ctx, repository, body.Pattern, blockedActions)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
@@ -2193,28 +2388,31 @@ func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, reposi
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ListObjectsAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ReadRepositoryAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
-		}}) {
+		},
+	}) {
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "metadata_get_metarange")
+	c.LogAction(ctx, "metadata_get_metarange", r, repository, "", "")
 
 	metarange, err := c.Catalog.GetMetaRange(ctx, repository, metaRange)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
 	response := StorageURI{
-		Location: metarange.Address,
+		Location: string(metarange),
 	}
-	w.Header().Set("Location", metarange.Address)
+	w.Header().Set("Location", string(metarange))
 	writeResponse(w, http.StatusOK, response)
 }
 
@@ -2225,27 +2423,30 @@ func (c *Controller) GetRange(w http.ResponseWriter, r *http.Request, repository
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ListObjectsAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ReadRepositoryAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
-		}}) {
+		},
+	}) {
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "metadata_get_range")
+	c.LogAction(ctx, "metadata_get_range", r, repository, "", "")
 
 	rng, err := c.Catalog.GetRange(ctx, repository, pRange)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	response := StorageURI{
-		Location: rng.Address,
+		Location: string(rng),
 	}
-	w.Header().Set("Location", rng.Address)
+	w.Header().Set("Location", string(rng))
 	writeResponse(w, http.StatusOK, response)
 }
 
@@ -2256,41 +2457,45 @@ func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ListTagsAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ListBranchesAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ListCommitsAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
-		}}) {
+		},
+	}) {
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "dump_repository_refs")
+	c.LogAction(ctx, "dump_repository_refs", r, repository, "", "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
 	// dump all types:
 	tagsID, err := c.Catalog.DumpTags(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
 	branchesID, err := c.Catalog.DumpBranches(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	commitsID, err := c.Catalog.DumpCommits(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -2324,26 +2529,30 @@ func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body Re
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.CreateTagAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.CreateBranchAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.CreateCommitAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
-		}}) {
+		},
+	}) {
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "restore_repository_refs")
+	c.LogAction(ctx, "restore_repository_refs", r, repository, "", "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -2351,7 +2560,7 @@ func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body Re
 	_, _, err = c.Catalog.ListCommits(ctx, repo.Name, repo.DefaultBranch, catalog.LogParams{
 		PathList:      make([]catalog.PathRecord, 0),
 		FromReference: "",
-		Limit:         1,
+		Amount:        1,
 	})
 	if !errors.Is(err, graveler.ErrNotFound) {
 		writeError(w, http.StatusBadRequest, "can only restore into a bare repository")
@@ -2360,17 +2569,17 @@ func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body Re
 
 	// load commits
 	err = c.Catalog.LoadCommits(ctx, repo.Name, body.CommitsMetaRangeId)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
 	err = c.Catalog.LoadBranches(ctx, repo.Name, body.BranchesMetaRangeId)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
 	err = c.Catalog.LoadTags(ctx, repo.Name, body.TagsMetaRangeId)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 }
@@ -2385,11 +2594,11 @@ func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, r
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_symlink")
+	c.LogAction(ctx, "create_symlink", r, repository, branch, "")
 
 	// read repo
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -2408,7 +2617,7 @@ func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, r
 			after,
 			"",
 			-1)
-		if handleAPIError(w, err) {
+		if c.handleAPIError(ctx, w, err) {
 			return
 		}
 		// loop all entries enter to map[path] physicalAddress
@@ -2473,7 +2682,7 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "diff_refs")
+	c.LogAction(ctx, "diff_refs", r, repository, rightRef, leftRef)
 	diffFunc := c.Catalog.Compare // default diff type is three-dot
 	if params.Type != nil && *params.Type == "two_dot" {
 		diffFunc = c.Catalog.Diff
@@ -2486,7 +2695,7 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 		Delimiter:        paginationDelimiter(params.Delimiter),
 		AdditionalFields: nil,
 	})
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	results := make([]Diff, 0, len(diff))
@@ -2534,15 +2743,16 @@ func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, re
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_branch_commit_log")
+	c.LogAction(ctx, "get_branch_commit_log", r, repository, ref, "")
 
 	// get commit log
 	commitLog, hasMore, err := c.Catalog.ListCommits(ctx, repository, ref, catalog.LogParams{
 		PathList:      resolvePathList(params.Objects, params.Prefixes),
 		FromReference: paginationAfter(params.After),
-		Limit:         paginationAmount(params.Amount),
+		Amount:        paginationAmount(params.Amount),
+		Limit:         swag.BoolValue(params.Limit),
 	})
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -2579,16 +2789,16 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_object")
+	c.LogAction(ctx, "get_object", r, repository, ref, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
 	// read the FS entry
 	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	c.Logger.Tracef("get repo %s ref %s path %s: %+v", repository, ref, params.Path, entry)
@@ -2599,7 +2809,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 
 	// setup response
 	reader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}, entry.Size)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	defer func() {
@@ -2612,7 +2822,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	w.Header().Set("Last-Modified", lastModified)
 	cd := mime.FormatMediaType("attachment", map[string]string{"filename": filepath.Base(entry.Path)})
 	w.Header().Set("Content-Disposition", cd)
-	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Type", entry.ContentType)
 	_, err = io.Copy(w, reader)
 	if err != nil {
 		c.Logger.
@@ -2635,7 +2845,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "list_objects")
+	c.LogAction(ctx, "list_objects", r, repository, ref, "")
 
 	res, hasMore, err := c.Catalog.ListEntries(
 		ctx,
@@ -2646,12 +2856,12 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 		paginationDelimiter(params.Delimiter),
 		paginationAmount(params.Amount),
 	)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -2713,20 +2923,20 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "stat_object")
+	c.LogAction(ctx, "stat_object", r, repository, ref, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
 	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
 	qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -2759,16 +2969,16 @@ func (c *Controller) GetUnderlyingProperties(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "object_underlying_properties")
+	c.LogAction(ctx, "object_underlying_properties", r, repository, ref, "")
 
 	// read repo
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
 	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{})
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -2795,7 +3005,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "merge_branches")
+	c.LogAction(ctx, "merge_branches", r, repository, destinationBranch, sourceRef)
 	user, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "user not found")
@@ -2822,7 +3032,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		writeResponse(w, http.StatusConflict, MergeResult{Reference: res})
 		return
 	}
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusOK, MergeResult{Reference: res})
@@ -2838,10 +3048,10 @@ func (c *Controller) ListTags(w http.ResponseWriter, r *http.Request, repository
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "list_tags")
+	c.LogAction(ctx, "list_tags", r, repository, "", "")
 
 	res, hasMore, err := c.Catalog.ListTags(ctx, repository, paginationPrefix(params.Prefix), paginationAmount(params.Amount), paginationAfter(params.After))
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 
@@ -2869,10 +3079,10 @@ func (c *Controller) CreateTag(w http.ResponseWriter, r *http.Request, body Crea
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_tag")
+	c.LogAction(ctx, "create_tag", r, repository, body.Id, "")
 
 	commitID, err := c.Catalog.CreateTag(ctx, repository, body.Id, body.Ref)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	response := Ref{
@@ -2892,9 +3102,9 @@ func (c *Controller) DeleteTag(w http.ResponseWriter, r *http.Request, repositor
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_tag")
+	c.LogAction(ctx, "delete_tag", r, repository, tag, "")
 	err := c.Catalog.DeleteTag(ctx, repository, tag)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusNoContent, nil)
@@ -2910,9 +3120,9 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository s
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_tag")
+	c.LogAction(ctx, "get_tag", r, repository, tag, "")
 	reference, err := c.Catalog.GetTag(ctx, repository, tag)
-	if handleAPIError(w, err) {
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	response := Ref{
@@ -2930,10 +3140,15 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	state := setupStateNotInitialized
-	if initialized {
+	if initialized || c.Config.IsAuthTypeAPI() {
 		state = setupStateInitialized
 	}
-	response := SetupState{State: swag.String(state)}
+	oidcConfig := c.Config.GetAuthOIDCConfiguration()
+	response := SetupState{
+		State:            swag.String(state),
+		OidcEnabled:      swag.Bool(oidcConfig.Enabled),
+		OidcDefaultLogin: swag.Bool(oidcConfig.IsDefaultLogin),
+	}
 	writeResponse(w, http.StatusOK, response)
 }
 
@@ -2962,6 +3177,11 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 		return
 	}
 
+	if c.Config.IsAuthTypeAPI() {
+		// nothing to do - users are managed elsewhere
+		writeResponse(w, http.StatusOK, CredentialsWithSecret{})
+		return
+	}
 	var cred *model.Credential
 	if body.Key == nil {
 		cred, err = auth.CreateInitialAdminUser(ctx, c.Auth, c.MetadataManager, body.Username)
@@ -2976,7 +3196,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 	meta := stats.NewMetadata(ctx, c.Logger, c.BlockAdapter.BlockstoreType(), c.MetadataManager, c.CloudMetadataProvider)
 	c.Collector.SetInstallationID(meta.InstallationID)
 	c.Collector.CollectMetadata(meta)
-	c.Collector.CollectEvent("global", "init")
+	c.Collector.CollectEvent(stats.Event{Class: "global", Name: "init", UserID: body.Username, Client: httputil.GetRequestLakeFSClient(r)})
 
 	response := CredentialsWithSecret{
 		AccessKeyId:     cred.AccessKeyID,
@@ -3002,6 +3222,120 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		User: user,
 	}
 	writeResponse(w, http.StatusOK, response)
+}
+
+func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string) error {
+	user, err := c.Auth.GetUserByEmail(ctx, emailAddr)
+	if err != nil {
+		return err
+	}
+	emailAddr = StringValue(user.Email)
+	token, err := c.generateResetPasswordToken(emailAddr, DefaultResetPasswordExpiration)
+	if err != nil {
+		c.Logger.WithError(err).WithField("email_address", emailAddr).Error("reset password - failed generating token")
+		return err
+	}
+	params := map[string]string{
+		"token": token,
+	}
+	err = c.Emailer.SendResetPasswordEmail([]string{emailAddr}, params)
+	if err != nil {
+		c.Logger.WithError(err).WithField("email_address", emailAddr).Error("reset password - failed sending email")
+		return err
+	}
+	c.Logger.WithField("email", emailAddr).Info("reset password email sent")
+	return nil
+}
+
+func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body ForgotPasswordJSONRequestBody) {
+	addr, err := mail.ParseAddress(body.Email)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid email")
+		return
+	}
+	err = c.resetPasswordRequest(r.Context(), addr.Address)
+	if err != nil {
+		c.Logger.WithError(err).WithField("email", body.Email).Debug("failed sending reset password email")
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body UpdatePasswordJSONRequestBody) {
+	claims, err := VerifyResetPasswordToken(r.Context(), c.Auth, body.Token)
+	if err != nil {
+		c.Logger.WithError(err).WithField("token", body.Token).Debug("failed to verify token")
+		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+
+	// verify provided email matched the token
+	requestEmail := StringValue(body.Email)
+	if requestEmail != "" && requestEmail != claims.Subject {
+		c.Logger.WithError(err).WithFields(logging.Fields{
+			"token":         body.Token,
+			"request_email": requestEmail,
+		}).Debug("requested email doesn't match the email provided in verified token")
+	}
+
+	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Subject)
+	if err != nil {
+		c.Logger.WithError(err).WithField("email", claims.Subject).Warn("failed to retrieve user by email")
+		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		return
+	}
+	err = c.Auth.HashAndUpdatePassword(r.Context(), user.Username, body.NewPassword)
+	if err != nil {
+		c.Logger.WithError(err).WithField("username", user.Username).Debug("failed to update password")
+		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, templateLocation string, p ExpandTemplateParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadObjectAction,
+			Resource: permissions.TemplateArn(templateLocation),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+
+	u, ok := ctx.Value(UserContextKey).(*model.User)
+	if !ok {
+		writeError(w, http.StatusInternalServerError, "request performed with no user")
+	}
+
+	// Override bug in OpenAPI generated code: parameters do not show up
+	// in p.Params.AdditionalProperties, so force them in there.
+	if len(p.Params.AdditionalProperties) == 0 && len(r.URL.Query()) > 0 {
+		p.Params.AdditionalProperties = make(map[string]string, len(r.Header))
+		for k, v := range r.URL.Query() {
+			p.Params.AdditionalProperties[k] = v[0]
+		}
+	}
+
+	c.LogAction(ctx, "expand_template", r, "", "", "")
+	err := c.Templater.Expand(ctx, w, u, templateLocation, p.Params.AdditionalProperties)
+	if err != nil {
+		c.Logger.WithError(err).WithField("location", templateLocation).Error("Template expansion failed")
+	}
+
+	if errors.Is(err, templater.ErrNotAuthorized) {
+		writeError(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+		return
+	}
+	if errors.Is(err, templater.ErrNotFound) {
+		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "expansion failed")
+		return
+	}
+	// Response already written during expansion.
 }
 
 func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
@@ -3081,6 +3415,7 @@ func writeResponse(w http.ResponseWriter, code int, response interface{}) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(code)
 	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
@@ -3166,7 +3501,12 @@ func NewController(
 	actions actionsHandler,
 	auditChecker AuditChecker,
 	logger logging.Logger,
+	emailer *email.Emailer,
+	templater templater.Service,
+	oidcAuthenticator *oidc.Authenticator,
+	sessionStore sessions.Store,
 ) *Controller {
+	gob.Register(oidc.Claims{})
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,
@@ -3180,15 +3520,37 @@ func NewController(
 		Actions:               actions,
 		AuditChecker:          auditChecker,
 		Logger:                logger,
+		Emailer:               emailer,
+		Templater:             templater,
+		sessionStore:          sessionStore,
+		oidcAuthenticator:     oidcAuthenticator,
 	}
 }
 
-func (c *Controller) LogAction(ctx context.Context, action string) {
-	c.Logger.WithContext(ctx).
-		WithField("action", action).
-		WithField("message_type", "action").
-		Debug("performing API action")
-	c.Collector.CollectEvent("api_server", action)
+func (c *Controller) LogAction(ctx context.Context, action string, r *http.Request, repository, ref, sourceRef string) {
+	client := httputil.GetRequestLakeFSClient(r)
+	ev := stats.Event{
+		Class:      "api_server",
+		Name:       action,
+		Repository: repository,
+		Ref:        ref,
+		SourceRef:  sourceRef,
+		Client:     client,
+	}
+	user, ok := ctx.Value(UserContextKey).(*model.User)
+	if ok {
+		ev.UserID = user.Username
+	}
+	c.Logger.WithContext(ctx).WithFields(logging.Fields{
+		"class":      ev.Class,
+		"name":       ev.Name,
+		"repository": ev.Repository,
+		"ref":        ev.Ref,
+		"source_ref": ev.SourceRef,
+		"user_id":    ev.UserID,
+		"client":     ev.Client,
+	}).Debug("performing API action")
+	c.Collector.CollectEvent(ev)
 }
 
 func paginationFor(hasMore bool, results interface{}, fieldName string) Pagination {

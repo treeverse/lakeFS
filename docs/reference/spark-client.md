@@ -1,43 +1,65 @@
 ---
 layout: default
 title: Spark Client
-description: lakeFS spark client performs operations on lakeFS committed metadata stored in the object store. 
+description: The lakeFS Spark client performs operations on lakeFS committed metadata stored in the object store. 
 parent: Reference
-nav_exclude: true
 has_children: false
 ---
 
 
 # lakeFS Spark Client
 
-Utilize the power of Spark to interact with the metadata on lakeFS. Possible use-cases include:
+Utilize the power of Spark to interact with the metadata on lakeFS. Possible use cases include:
 
-* Create a DataFrame for listing the objects in a specific commit or branch.
-* Compute changes between two commits.
-* Export your data for consumption outside lakeFS.
-* Bulk operations on underlying storage.
+* Creating a DataFrame for listing the objects in a specific commit or branch.
+* Computing changes between two commits.
+* Exporting your data for consumption outside lakeFS.
+* Bulk operations on the underlying storage.
 
 ## Getting Started
 
 Start Spark Shell / PySpark with the `--packages` flag:
 
-Spark 3.0.1:
+<div class="tabs">
+  <ul>
+    <li><a href="#packages-2">Spark 2.x</a></li>
+	<li><a href="#packages-3-hadoop2">Spark 3.x</a></li>
+	<li><a href="#packages-3-hadoop3">Spark 3.x on Hadoop 3.x</a></li>
+  </ul>
+  <div markdown="1" id="packages-2">
+  This client is compiled for Spark 2.4.7 and tested with it, but can work for higher versions.
 
-```bash
-spark-shell --packages io.lakefs:lakefs-spark-client-301_2.12:0.1.6
-```
+  ```bash
+  spark-shell --packages io.lakefs:lakefs-spark-client-247_2.11:0.5.0
+  ```
+  
+  Alternatively an assembled jar is available on S3, at
+  `s3://treeverse-clients-us-east/lakefs-spark-client-247/0.5.0/lakefs-spark-client-247-assembly-0.5.0.jar`
+  </div>
 
-Spark 2.4.7:
+  <div markdown="1" id="packages-3-hadoop2">
+  This client is compiled for Spark 3.0.1 with Hadoop 2 and tested with it, but can work for
+  higher versions.
 
-```bash
-spark-shell --packages io.lakefs:lakefs-spark-client-247_2.11:0.1.6
-```
+  ```bash
+  spark-shell --packages io.lakefs:lakefs-spark-client-301_2.12:0.5.0
+  ```
+  
+  Alternatively an assembled jar is available on S3, at
+  `s3://treeverse-clients-us-east/lakefs-spark-client-301/0.5.0/lakefs-spark-client-301-assembly-0.5.0.jar`
+  </div> 
 
-Alternatively, the Jars are publicly available on S3:
+  <div markdown="1" id="packages-3-hadoop3">
+  This client is compiled for Spark 3.1.2 with Hadoop 3.2.1, but can work for other Spark
+  versions and higher Hadoop versions.
+  
+  ```bash
+  spark-shell --packages io.lakefs:lakefs-spark-client-312-hadoop3-assembly_2.12:0.5.0
+  ```
 
-* Spark 3.0.1: `s3://treeverse-clients-us-east/lakefs-spark-client-301_2.12/0.1.0/lakefs-spark-client-301_2.12-0.1.6.jar`
-
-* Spark 2.4.7: `s3://treeverse-clients-us-east/lakefs-spark-client-247_2.11/0.1.0/lakefs-spark-client-247_2.11-0.1.6.jar`
+  Alternatively an assembled jar is available on S3, at
+  `s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.5.0/lakefs-spark-client-312-hadoop3-assembly-0.5.0.jar`
+  </div>
 
 ## Configuration
 
@@ -59,6 +81,19 @@ Alternatively, the Jars are publicly available on S3:
    | `spark.hadoop.fs.s3a.access.key` | Access key to use for accessing underlying storage on S3 |
    | `spark.hadoop.fs.s3a.secret.key` | Corresponding secret key to use with S3 access key       |
 
+   ### Assuming role on S3 (Hadoop 3 only)
+
+   The client includes support for assuming a separate role on S3 when
+   running on Hadoop 3. It uses the same configuration used by
+   `S3AFileSystem` to assume the role on S3A. Apache Hadoop AWS
+   documentation has details under "[Working with IAM Assumed
+   Roles][s3a-assumed-role]". You will need to use the following Hadoop
+   configurations:
+   
+   | Configuration                     | Description                                                          |
+   |-----------------------------------|----------------------------------------------------------------------|
+   | `fs.s3a.aws.credentials.provider` | Set to `org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider` |
+   | `fs.s3a.assumed.role.arn`         | Set to the ARN of the role to assume                                 |
 
 ## Examples
 
@@ -97,3 +132,5 @@ Alternatively, the Jars are publicly available on S3:
     */
    ```
 
+
+[s3a-assumed-role]:  https://hadoop.apache.org/docs/stable/hadoop-aws/tools/hadoop-aws/assumed_roles.html#Configuring_Assumed_Roles

@@ -24,22 +24,22 @@ type configuration struct {
 	Metastore struct {
 		Type string `mapstructure:"type"`
 		Hive struct {
-			URI            string `mapstructure:"uri"`
-			DBLocationtURI string `mapstructure:"db_location_uri"`
+			URI           string `mapstructure:"uri"`
+			DBLocationURI string `mapstructure:"db_location_uri"`
 		} `mapstructure:"hive"`
 		Glue struct {
 			// TODO(ariels): Refactor credentials to share with server side.
 			Profile         string `mapstructure:"profile"`
 			CredentialsFile string `mapstructure:"credentials_file"`
-			DBLocationtURI  string `mapstructure:"db_location_uri"`
+			DBLocationURI   string `mapstructure:"db_location_uri"`
 			Credentials     *struct {
 				AccessKeyID     string `mapstructure:"access_key_id"`
 				AccessSecretKey string `mapstructure:"access_secret_key"`
 				SessionToken    string `mapstructure:"session_token"`
 			} `mapstructure:"credentials"`
 
-			Region    string `mapstructure:"region"`
-			CatalogID string `mapstructure:"catalog_id"`
+			Region    string            `mapstructure:"region"`
+			CatalogID config.OnlyString `mapstructure:"catalog_id"`
 		}
 		// setting FixSparkPlaceholder to true will change spark placeholder with the actual location. for more information see https://github.com/treeverse/lakeFS/issues/2213
 		FixSparkPlaceholder bool `mapstructure:"fix_spark_placeholder"`
@@ -47,7 +47,7 @@ type configuration struct {
 }
 
 // Config is the currently-loaded configuration.  Its error state supports being able to run
-// `lakectl config' without a valid configuration.
+// 'lakectl config' without a valid configuration.
 type Config struct {
 	Values configuration
 	err    error
@@ -122,18 +122,19 @@ func (c *Config) GetMetastoreHiveURI() string {
 }
 
 func (c *Config) GetMetastoreGlueCatalogID() string {
-	return c.Values.Metastore.Glue.CatalogID
+	return string(c.Values.Metastore.Glue.CatalogID)
 }
+
 func (c *Config) GetMetastoreType() string {
 	return c.Values.Metastore.Type
 }
 
 func (c *Config) GetHiveDBLocationURI() string {
-	return c.Values.Metastore.Hive.DBLocationtURI
+	return c.Values.Metastore.Hive.DBLocationURI
 }
 
 func (c *Config) GetGlueDBLocationURI() string {
-	return c.Values.Metastore.Glue.DBLocationtURI
+	return c.Values.Metastore.Glue.DBLocationURI
 }
 
 func (c *Config) GetFixSparkPlaceholder() bool {

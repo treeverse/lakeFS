@@ -324,7 +324,7 @@ func TestNextRange(t *testing.T) {
 		if !it.Next() { // move to k6
 			t.Fatalf("expected it.Next() to return true (err %v)", it.Err())
 		}
-		record, rng = it.Value()
+		record, _ = it.Value()
 		if record == nil || string(record.Key) != "k6" {
 			t.Errorf("expected record with key=k6, got record %v", record)
 		}

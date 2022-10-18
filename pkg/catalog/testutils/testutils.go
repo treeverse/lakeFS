@@ -2,9 +2,18 @@ package testutils
 
 import (
 	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"math/rand"
+	"net/url"
+	"sort"
+	"time"
 
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/ingest/store"
+	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 type FakeValueIterator struct {
@@ -99,3 +108,115 @@ func (f *FakeEntryIterator) Err() error {
 }
 
 func (f *FakeEntryIterator) Close() {}
+
+type FakeFactory struct {
+	Walker *FakeWalker
+}
+
+func (f FakeFactory) GetWalker(_ context.Context, op store.WalkerOptions) (*store.WalkerWrapper, error) {
+	u, _ := url.Parse(op.StorageURI)
+	return store.NewWrapper(f.Walker, u), nil
+}
+
+func NewFakeWalker(count, max int, uriPrefix, expectedAfter, expectedContinuationToken, expectedFromSourceURIWithPrefix string, err error) *FakeWalker {
+	w := &FakeWalker{
+		Max:                             max,
+		uriPrefix:                       uriPrefix,
+		expectedAfter:                   expectedAfter,
+		expectedContinuationToken:       expectedContinuationToken,
+		expectedFromSourceURIWithPrefix: expectedFromSourceURIWithPrefix,
+		err:                             err,
+	}
+	w.createEntries(count)
+	return w
+}
+
+type FakeWalker struct {
+	Entries                         []store.ObjectStoreEntry
+	curr                            int
+	Max                             int
+	uriPrefix                       string
+	expectedAfter                   string
+	expectedContinuationToken       string
+	expectedFromSourceURIWithPrefix string
+	err                             error
+}
+
+const (
+	randomKeyLength = 64
+	entrySize       = 132
+)
+
+func (w *FakeWalker) createEntries(count int) {
+	ents := make([]store.ObjectStoreEntry, count)
+
+	// Use same sequence to overcome Graveler ability to create small ranges.
+	// Calling test functions rely on Graveler to not break on the first 1000 entries.
+	// For example, setting "5" here will cause the test to constantly fail.
+	// Fix Bug #3384
+	const seed = 6
+	//nolint:gosec
+	randGen := rand.New(rand.NewSource(seed))
+	for i := 0; i < count; i++ {
+		relativeKey := testutil.RandomString(randGen, randomKeyLength)
+		fullkey := w.uriPrefix + "/" + relativeKey
+		ents[i] = store.ObjectStoreEntry{
+			RelativeKey: relativeKey,
+			FullKey:     fullkey,
+			Address:     w.expectedFromSourceURIWithPrefix + "/" + relativeKey,
+			ETag:        "some_etag",
+			Mtime:       time.Time{},
+			Size:        entrySize,
+		}
+	}
+	sort.Slice(ents, func(i, j int) bool {
+		return ents[i].RelativeKey < ents[j].RelativeKey
+	})
+	w.Entries = ents
+}
+
+var (
+	errUnexpectedValue = errors.New("unexpected value")
+)
+
+func (w *FakeWalker) Walk(_ context.Context, storageURI *url.URL, op store.WalkOptions, walkFn func(e store.ObjectStoreEntry) error) error {
+	if w.expectedAfter != op.After {
+		return fmt.Errorf("(after) expected %s, got %s: %w", w.expectedAfter, op.After, errUnexpectedValue)
+	}
+	if w.expectedContinuationToken != op.ContinuationToken {
+		return fmt.Errorf("(continuationToken) expected %s, got %s: %w", w.expectedContinuationToken, op.ContinuationToken, errUnexpectedValue)
+	}
+	if w.expectedFromSourceURIWithPrefix != storageURI.String() {
+		return fmt.Errorf("(fromSourceURIWithPrefix) expected %s, got %s: %w", w.expectedFromSourceURIWithPrefix, storageURI.String(), errUnexpectedValue)
+	}
+	if w.err != nil {
+		return w.err
+	}
+
+	for i, e := range w.Entries {
+		w.curr = i
+		if err := walkFn(e); err != nil {
+			if i < w.Max {
+				return fmt.Errorf("didn't expect walk err: %w", err)
+			}
+			if i >= w.Max && !errors.Is(err, catalog.ErrItClosed) {
+				return fmt.Errorf("expected error; expected (%s), got: %w", catalog.ErrItClosed, err)
+			}
+		}
+	}
+	return nil
+}
+
+const ContinuationTokenOpaque = "FakeContToken"
+
+func (w *FakeWalker) Marker() store.Mark {
+	token := ""
+	if w.curr < len(w.Entries)-1 {
+		token = ContinuationTokenOpaque
+	}
+	return store.Mark{
+		LastKey:           w.Entries[w.curr].FullKey,
+		HasMore:           w.curr < len(w.Entries)-1,
+		ContinuationToken: token,
+	}
+}

@@ -11,7 +11,7 @@ Method | HTTP request | Description
 
 <a name="commit"></a>
 # **commit**
-> Commit commit(repository, branch, commitCreation)
+> Commit commit(repository, branch, commitCreation, sourceMetarange)
 
 create commit
 
@@ -45,12 +45,19 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
+    // Configure API key authorization: oidc_auth
+    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
+    oidc_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //oidc_auth.setApiKeyPrefix("Token");
+
     CommitsApi apiInstance = new CommitsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
     CommitCreation commitCreation = new CommitCreation(); // CommitCreation | 
+    String sourceMetarange = "sourceMetarange_example"; // String | The source metarange to commit. Branch must not have uncommitted changes.
     try {
-      Commit result = apiInstance.commit(repository, branch, commitCreation);
+      Commit result = apiInstance.commit(repository, branch, commitCreation, sourceMetarange);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling CommitsApi#commit");
@@ -70,6 +77,7 @@ Name | Type | Description  | Notes
  **repository** | **String**|  |
  **branch** | **String**|  |
  **commitCreation** | [**CommitCreation**](CommitCreation.md)|  |
+ **sourceMetarange** | **String**| The source metarange to commit. Branch must not have uncommitted changes. | [optional]
 
 ### Return type
 
@@ -77,7 +85,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -130,6 +138,12 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
+    // Configure API key authorization: oidc_auth
+    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
+    oidc_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //oidc_auth.setApiKeyPrefix("Token");
+
     CommitsApi apiInstance = new CommitsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String commitId = "commitId_example"; // String | 
@@ -160,7 +174,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -211,6 +225,12 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
+    // Configure API key authorization: oidc_auth
+    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
+    oidc_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //oidc_auth.setApiKeyPrefix("Token");
+
     CommitsApi apiInstance = new CommitsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
@@ -245,7 +265,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 

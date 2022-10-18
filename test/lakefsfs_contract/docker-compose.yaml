@@ -43,7 +43,8 @@ services:
     environment:
       - LAKEFS_GATEWAYS_S3_DOMAIN_NAME
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
-      - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
+      - LAKEFS_DATABASE_TYPE=postgres
+      - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
       - LAKEFS_LOGGING_LEVEL=DEBUG
       - LAKEFS_STATS_ENABLED=false
       - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs

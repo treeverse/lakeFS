@@ -3,9 +3,11 @@ package httputil
 import (
 	"context"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -13,6 +15,7 @@ type contextKey string
 
 const (
 	RequestIDContextKey contextKey = "request_id"
+	AuditLogEndMessage  string     = "HTTP call ended"
 )
 
 type ResponseRecordingWriter struct {
@@ -50,7 +53,7 @@ func RequestID(r *http.Request) (*http.Request, string) {
 	return r, reqID
 }
 
-func DebugLoggingMiddleware(requestIDHeaderName string, fields logging.Fields) func(next http.Handler) http.Handler {
+func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields, middlewareLogLevel string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			startTime := time.Now()
@@ -63,6 +66,7 @@ func DebugLoggingMiddleware(requestIDHeaderName string, fields logging.Fields) f
 				logging.MethodFieldKey:    r.Method,
 				logging.HostFieldKey:      r.Host,
 				logging.RequestIDFieldKey: reqID,
+				logging.LogAudit:          "API",
 			}
 			for k, v := range fields {
 				requestFields[k] = v
@@ -71,18 +75,26 @@ func DebugLoggingMiddleware(requestIDHeaderName string, fields logging.Fields) f
 			writer.Header().Set(requestIDHeaderName, reqID)
 			next.ServeHTTP(writer, r) // handle the request
 
-			logging.FromContext(r.Context()).WithFields(logging.Fields{
+			loggingFields := logging.Fields{
 				"took":        time.Since(startTime),
 				"status_code": writer.StatusCode,
 				"sent_bytes":  writer.ResponseSize,
-			}).Debug("HTTP call ended")
+			}
+
+			logLevel := strings.ToLower(middlewareLogLevel)
+			if logLevel == "null" || logLevel == "none" {
+				logging.FromContext(r.Context()).WithFields(loggingFields).Debug(AuditLogEndMessage)
+			} else {
+				level, _ := logrus.ParseLevel(logLevel)
+				logging.FromContext(r.Context()).WithFields(loggingFields).Log(level, AuditLogEndMessage)
+			}
 		})
 	}
 }
 
-func LoggingMiddleware(requestIDHeaderName string, fields logging.Fields, traceRequestHeaders bool) func(next http.Handler) http.Handler {
-	if logging.Level() == "trace" {
+func LoggingMiddleware(requestIDHeaderName string, fields logging.Fields, loggingMiddlewareLevel string, traceRequestHeaders bool) func(next http.Handler) http.Handler {
+	if strings.ToLower(loggingMiddlewareLevel) == "trace" {
 		return TracingMiddleware(requestIDHeaderName, fields, traceRequestHeaders)
 	}
-	return DebugLoggingMiddleware(requestIDHeaderName, fields)
+	return DefaultLoggingMiddleware(requestIDHeaderName, fields, loggingMiddlewareLevel)
 }

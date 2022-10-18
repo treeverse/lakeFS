@@ -33,10 +33,10 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
 
     const results = resultsState.results
 
-    if (!!error) return <Error error={error}/>
+    if (error) return <Error error={error}/>
     if (loading) return <Loading/>
 
-    const actionErrorDisplay = (!!actionError) ?
+    const actionErrorDisplay = (actionError) ?
         <Error error={actionError} onDismiss={() => setActionError(null)}/> : <></>
 
     return (
@@ -173,7 +173,7 @@ const CommitInfo = ({ repo, commit }) => {
                     {moment.unix(commit.creation_date).format("MM/DD/YYYY HH:mm:ss")} ({moment.unix(commit.creation_date).fromNow()})
                 </td>
             </tr>
-            {(!!commit.parents) ? (
+            {(commit.parents) ? (
             <tr>
                 <td>
                     <strong>Parents</strong></td>
@@ -196,7 +196,7 @@ const CommitView = ({ repo, commitId, onNavigate, view, prefix }) => {
     }, [repo.id, commitId]);
 
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>;
+    if (error) return <Error error={error}/>;
 
     const commit = response;
 
@@ -223,7 +223,7 @@ const CommitView = ({ repo, commitId, onNavigate, view, prefix }) => {
             <div className="mt-4">
                 <ChangeList
                     prefix={prefix}
-                    view={(!!view) ? view : ""}
+                    view={(view) ? view : ""}
                     repo={repo}
                     commit={commit}
                     onNavigate={onNavigate}
@@ -240,12 +240,12 @@ const CommitContainer = () => {
     const { commitId } = router.params;
 
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>;
+    if (error) return <Error error={error}/>;
 
     return (
         <CommitView
             repo={repo}
-            prefix={(!!prefix) ? prefix : ""}
+            prefix={(prefix) ? prefix : ""}
             commitId={commitId}
             onNavigate={(entry) => {
                 return {

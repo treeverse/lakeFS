@@ -239,8 +239,7 @@ func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomain string) 
 	*/
 
 	// Prefer the raw path if it exists -- *this* is what SigV2 signs
-	url := a.r.URL
-	rawPath := url.EscapedPath()
+	rawPath := a.r.URL.EscapedPath()
 
 	path := buildPath(a.r.Host, bareDomain, rawPath)
 	stringToSign := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)

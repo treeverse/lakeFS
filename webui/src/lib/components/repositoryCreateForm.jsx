@@ -1,11 +1,11 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import {TooltipButton, Warnings} from "../../lib/components/controls";
+import {Warnings} from "../../lib/components/controls";
 import {InfoIcon} from "@primer/octicons-react";
 import Tooltip from "react-bootstrap/Tooltip";
 import {OverlayTrigger} from "react-bootstrap";
@@ -54,6 +54,13 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
     const storageNamespaceValidityRegexStr = config ? config.blockstore_namespace_ValidityRegex : DEFAULT_BLOCKSTORE_VALIDITY_REGEX;
     const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr);
     const storageNamespaceExample = config ? config.blockstore_namespace_example : DEFAULT_BLOCKSTORE_EXAMPLE;
+
+    useEffect(() => {
+        if (repoNameField.current) {
+            repoNameField.current.focus();
+        }
+    }, []);
+
     return (
         <Form onSubmit={(e) => {
             e.preventDefault();
@@ -66,27 +73,27 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
                 default_branch: defaultBranchField.current.value
             });
         }}>
-	    {config?.warnings && <Warnings warnings={config.warnings}/>}
+        {config?.warnings && <Warnings warnings={config.warnings}/>}
 
             <Form.Group as={Row} controlId="id">
                 <Form.Label column sm={fieldNameOffset}>Repository ID</Form.Label>
                 <Col sm={sm}>
-                    <Form.Control type="text" autoFocus ref={repoNameField} onChange={onRepoNameChange}/>
+                    <Form.Control type="text" ref={repoNameField} onChange={onRepoNameChange}/>
                     {repoValid === false &&
                     <Form.Text className="text-danger">
-                        Min 2 characters. Only lowercase alphanumeric characters and {'\'-\''} allowed.
+                        Min 3 characters. Only lowercase alphanumeric characters and {'\'-\''} allowed.
                     </Form.Text>
                     }
                 </Col>
             </Form.Group>
             <Form.Group as={Row}>
                 <Form.Label column sm={fieldNameOffset}>
-                    Storage Namespace&nbsp;
+                    <span>Storage Namespace&nbsp;
                     <OverlayTrigger placement="bottom" overlay={<Tooltip style={{"font-size": "s"}}>What should I type here?</Tooltip>}>
-                        <a href="https://docs.lakefs.io/reference/object-model.html#concepts-unique-to-lakefs" target={"_blank"} rel="noopener noreferrer">
-                            <InfoIcon/>
+                        <a href="https://docs.lakefs.io/setup/create-repo.html#create-the-repository" target={"_blank"} tabIndex="-1" rel="noopener noreferrer">
+                            <InfoIcon />
                         </a>
-                    </OverlayTrigger>
+                    </OverlayTrigger></span>
                 </Form.Label>
                 <Col sm={sm}>
                     <Form.Control type="text" ref={storageNamespaceField} placeholder={storageNamespaceExample} onChange={checkStorageNamespaceValidity} />

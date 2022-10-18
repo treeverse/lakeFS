@@ -2,13 +2,13 @@
 layout: default
 title: On GCP
 parent: Deploy lakeFS
-description: This guide will help you deploy your production lakeFS environment on GCP
+description: This guide will help you deploy your production lakeFS environment on Google Cloud Platform (GCP).
 nav_order: 30
 ---
 
 # Deploy lakeFS on GCP
 {: .no_toc }
-Expected deployment time: 25min
+Expected deployment time: 25 min
 
 {% include toc.html %}
 
@@ -37,7 +37,9 @@ For example, if you install lakeFS on GKE, you need to deploy the SQL Auth Proxy
    ```yaml
    ---
    database:
-     connection_string: "[DATABASE_CONNECTION_STRING]"
+     type: "postgres"
+     postgres:
+       connection_string: "[DATABASE_CONNECTION_STRING]"
    auth:
      encrypt:
        # replace this with a randomly-generated string:
@@ -64,7 +66,8 @@ command to demonstrate starting lakeFS using Docker:
 docker run \
   --name lakefs \
   -p 8000:8000 \
-  -e LAKEFS_DATABASE_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \
+  -e LAKEFS_DATABASE_TYPE="postgres" \
+  -e LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \
   -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="[ENCRYPTION_SECRET_KEY]" \
   -e LAKEFS_BLOCKSTORE_TYPE="gs" \
   treeverse/lakefs:latest run
@@ -77,7 +80,7 @@ See [Kubernetes Deployment](./k8s.md).
 
 ## Load balancing
 Depending on how you chose to install lakeFS, you should have a load balancer direct requests to the lakeFS server.  
-By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint which you can use for health checks.
+By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint that you can use for health checks.
 
 ## Next Steps
 Your next step is to [prepare your storage](../setup/storage/index.md). If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md).

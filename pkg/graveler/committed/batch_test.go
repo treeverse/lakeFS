@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/treeverse/lakefs/pkg/graveler"
+
 	"github.com/go-test/deep"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,9 +32,8 @@ type closeResult struct {
 }
 
 var (
-	ErrNotImplemented = errors.New("not implemented")
-	ErrAlreadyClosed  = errors.New("closed more than once")
-	ErrUnexpected     = errors.New("unexpected call")
+	ErrAlreadyClosed = errors.New("closed more than once")
+	ErrUnexpected    = errors.New("unexpected call")
 )
 
 func (f *FakeRangeWriter) Err() error {
@@ -74,6 +75,8 @@ func (f *FakeRangeWriter) SetMetadata(key, value string) {
 }
 
 func (*FakeRangeWriter) GetApproximateSize() uint64 { return 0 }
+
+func (*FakeRangeWriter) ShouldBreakAtKey(graveler.Key, *committed.Params) bool { return false }
 
 func (f *FakeRangeWriter) Close() (*committed.WriteResult, error) {
 	if f.closed {
@@ -120,7 +123,7 @@ func TestBatchWriterFailed(t *testing.T) {
 
 func TestBatchCloserMultipleWaitCalls(t *testing.T) {
 	writer := NewFakeRangeWriter(&committed.WriteResult{
-		RangeID: committed.ID("last"),
+		RangeID: "last",
 		First:   committed.Key("row_1"),
 		Last:    committed.Key("row_2"),
 		Count:   4321,

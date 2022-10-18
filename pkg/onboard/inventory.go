@@ -30,7 +30,7 @@ type Iterator interface {
 	Get() ImportObject
 }
 
-// onboard.InventoryIterator reads from block.InventoryIterator and converts the objects to ImportObject
+// InventoryIterator reads from block.InventoryIterator and converts the objects to ImportObject
 type InventoryIterator struct {
 	block.InventoryIterator
 }

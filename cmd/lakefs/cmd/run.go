@@ -5,39 +5,44 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
-	"github.com/dlmiddlecote/sqlstats"
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-ldap/ldap/v3"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
+	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
-	"github.com/treeverse/lakefs/pkg/gateway/simulator"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/kv"
+	_ "github.com/treeverse/lakefs/pkg/kv/dynamodb"
+	_ "github.com/treeverse/lakefs/pkg/kv/local"
+	"github.com/treeverse/lakefs/pkg/kv/params"
+	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/version"
+	"github.com/treeverse/lakefs/templates"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -103,59 +108,70 @@ var runCmd = &cobra.Command{
 		ctx := cmd.Context()
 		logger.WithField("version", version.Version).Info("lakeFS run")
 
-		// validate service names and turn on the right flags
-		dbParams := cfg.GetDatabaseParams()
-		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
-		defer dbPool.Close()
-		if err := db.ValidateSchemaUpToDate(ctx, dbPool, dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
-			logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
-		} else if errors.Is(err, migrate.ErrNilVersion) {
-			logger.Debug("No migration, setup required")
-		} else if err != nil {
-			logger.WithError(err).Warn("Failed on schema validation")
-		}
-
-		lockdbPool := db.BuildDatabaseConnection(ctx, dbParams)
-		defer lockdbPool.Close()
-
-		registerPrometheusCollector(dbPool)
-		migrator := db.NewDatabaseMigrator(dbParams)
-
-		c, err := catalog.New(ctx, catalog.Config{
-			Config: cfg,
-			DB:     dbPool,
-			LockDB: lockdbPool,
-		})
+		kvParams, err := cfg.GetKVParams()
 		if err != nil {
-			logger.WithError(err).Fatal("failed to create catalog")
+			logger.WithError(err).Fatal("Get KV params")
 		}
-		defer func() { _ = c.Close() }()
+		kvStore, err := kv.Open(ctx, enableKVParamsMetrics(kvParams))
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to open KV store")
+		}
+		defer kvStore.Close()
 
-		multipartsTracker := multiparts.NewTracker(dbPool)
+		_, err = kv.ValidateSchemaVersion(ctx, kvStore)
+		if err != nil && !errors.Is(err, kv.ErrNotFound) {
+			logger.WithError(err).Fatal("Failure on schema validation")
+		}
 
-		// init authentication
-		authService := auth.NewDBAuthService(
-			dbPool,
-			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-			cfg.GetAuthCacheConfig())
-		authenticator := auth.ChainAuthenticator{
-			auth.NewBuiltinAuthenticator(authService),
-			auth.NewEmailAuthenticator(authService),
+		emailParams, _ := cfg.GetEmailParams()
+		emailer, err := email.NewEmailer(emailParams)
+		if err != nil {
+			logger.WithError(err).Fatal("Emailer has not been properly configured, check the values in sender field")
 		}
-		ldapConfig := cfg.GetLDAPConfiguration()
-		if ldapConfig != nil {
-			authenticator = append(authenticator, newLDAPAuthenticator(ldapConfig, authService))
+
+		migrator := kv.NewDatabaseMigrator(kvParams)
+		storeMessage := &kv.StoreMessage{Store: kvStore}
+		multipartsTracker := multiparts.NewTracker(*storeMessage)
+		actionsStore := actions.NewActionsKVStore(*storeMessage)
+		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
+		idGen := &actions.DecreasingIDGenerator{}
+
+		// initialize auth service
+		var authService auth.Service
+		if cfg.IsAuthTypeAPI() {
+			var apiEmailer *email.Emailer
+			if !cfg.GetAuthAPISupportsInvites() {
+				// invites not supported by API - delegate it to emailer
+				apiEmailer = emailer
+			}
+			authService, err = auth.NewAPIAuthService(
+				cfg.GetAuthAPIEndpoint(),
+				cfg.GetAuthAPIToken(),
+				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+				cfg.GetAuthCacheConfig(), nil, apiEmailer)
+			if err != nil {
+				logger.WithError(err).Fatal("failed to create authentication service")
+			}
+		} else {
+			authService = auth.NewKVAuthService(
+				storeMessage,
+				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+				emailer,
+				cfg.GetAuthCacheConfig(),
+				logger.WithField("service", "auth_service"),
+			)
 		}
-		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
+
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		blockstoreType := cfg.GetBlockstoreType()
 		if blockstoreType == "local" || blockstoreType == "mem" {
-			printLocalWarning(os.Stderr, blockstoreType)
-			logger.WithField("adapter_type", blockstoreType).
-				Error("Block adapter NOT SUPPORTED for production use")
+			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
+			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
 		}
+
 		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
-		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
+		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg, stats.WithLogger(logger))
+
 		// init block store
 		blockStore, err := factory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
 		if err != nil {
@@ -165,25 +181,44 @@ var runCmd = &cobra.Command{
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
 
-		// wire actions
+		c, err := catalog.New(ctx, catalog.Config{
+			Config:  cfg,
+			KVStore: storeMessage,
+		})
+		if err != nil {
+			logger.WithError(err).Fatal("failed to create catalog")
+		}
+		defer func() { _ = c.Close() }()
+
+		templater := templater.NewService(templates.Content, cfg, authService)
+
 		actionsService := actions.NewService(
 			ctx,
-			dbPool,
+			actionsStore,
 			catalog.NewActionsSource(c),
 			catalog.NewActionsOutputWriter(c.BlockAdapter),
+			idGen,
 			bufferedCollector,
 			cfg.GetActionsEnabled(),
 		)
-		c.SetHooksHandler(actionsService)
-		defer actionsService.Stop()
 
-		auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
+		// wire actions into entry catalog
+		defer actionsService.Stop()
+		c.SetHooksHandler(actionsService)
+
+		middlewareAuthenticator := auth.ChainAuthenticator{
+			auth.NewBuiltinAuthenticator(authService),
+		}
+		ldapConfig := cfg.GetLDAPConfiguration()
+		if ldapConfig != nil {
+			middlewareAuthenticator = append(middlewareAuthenticator, newLDAPAuthenticator(ldapConfig, authService))
+		}
+		controllerAuthenticator := append(middlewareAuthenticator, auth.NewEmailAuthenticator(authService))
+
+		auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL(), metadata.InstallationID)
 		defer auditChecker.Close()
 		if version.Version != version.UnreleasedVersion {
-			const maxSecondsToJitter = 12 * 60 * 60                                // 12h in seconds
-			jitter := time.Duration(rand.Int63n(maxSecondsToJitter)) * time.Second //nolint:gosec
-			interval := cfg.GetSecurityAuditCheckInterval() + jitter
-			auditChecker.StartPeriodicCheck(ctx, interval, logger)
+			auditChecker.StartPeriodicCheck(ctx, cfg.GetSecurityAuditCheckInterval(), logger)
 		}
 
 		allowForeign, err := cmd.Flags().GetBool(mismatchedReposFlagName)
@@ -203,10 +238,30 @@ var runCmd = &cobra.Command{
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
+		oidcConfig := cfg.GetAuthOIDCConfiguration()
+		var oauthConfig *oauth2.Config
+		var oidcProvider *oidc.Provider
+		if oidcConfig.Enabled {
+			oidcProvider, err = oidc.NewProvider(
+				cmd.Context(),
+				oidcConfig.URL,
+			)
+			if err != nil {
+				logger.WithError(err).Fatal("Failed to initialize OIDC provider")
+			}
+			oauthConfig = &oauth2.Config{
+				ClientID:     oidcConfig.ClientID,
+				ClientSecret: oidcConfig.ClientSecret,
+				RedirectURL:  strings.TrimSuffix(oidcConfig.CallbackBaseURL, "/") + api.BaseURL + "/oidc/callback",
+				Endpoint:     oidcProvider.Endpoint(),
+				Scopes:       []string{oidc.ScopeOpenID, "profile"},
+			}
+		}
 		apiHandler := api.Serve(
 			cfg,
 			c,
-			authenticator,
+			middlewareAuthenticator,
+			controllerAuthenticator,
 			authService,
 			blockStore,
 			authMetadataManager,
@@ -216,7 +271,12 @@ var runCmd = &cobra.Command{
 			actionsService,
 			auditChecker,
 			logger.WithField("service", "api_gateway"),
+			emailer,
+			templater,
 			cfg.GetS3GatewayDomainNames(),
+			cfg.GetUISnippets(),
+			oidcProvider,
+			oauthConfig,
 		)
 
 		// init gateway server
@@ -228,6 +288,15 @@ var runCmd = &cobra.Command{
 				logger.WithError(err).Fatal("Failed to parse s3 fallback URL")
 			}
 		}
+
+		lakefsBaseURL := emailParams.LakefsBaseURL
+		if lakefsBaseURL != "" {
+			_, err := url.Parse(lakefsBaseURL)
+			if err != nil {
+				logger.WithError(err).Warn(fmt.Sprintf("Failed to parse lakefs base url for email, check the value in %s", config.LakefsEmailBaseURLKey))
+			}
+		}
+
 		s3gatewayHandler := gateway.NewHandler(
 			cfg.GetS3GatewayRegion(),
 			c,
@@ -237,13 +306,14 @@ var runCmd = &cobra.Command{
 			cfg.GetS3GatewayDomainNames(),
 			bufferedCollector,
 			s3FallbackURL,
+			cfg.GetAuditLogLevel(),
 			cfg.GetLoggingTraceRequestHeaders(),
 		)
 		ctx, cancelFn := context.WithCancel(cmd.Context())
 		bufferedCollector.Run(ctx)
 		defer bufferedCollector.Close()
 
-		bufferedCollector.CollectEvent("global", "run")
+		bufferedCollector.CollectEvent(stats.Event{Class: "global", Name: "run"})
 
 		logging.Default().WithField("listen_address", cfg.GetListenAddress()).Info("starting HTTP server")
 		server := &http.Server{
@@ -277,7 +347,7 @@ var runCmd = &cobra.Command{
 }
 
 // checkRepos iterates on all repos and validates that their settings are correct.
-func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager *auth.DBMetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
+func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager auth.MetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
 	initialized, err := authMetadataManager.IsInitialized(ctx)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to check if lakeFS is initialized")
@@ -341,7 +411,7 @@ func checkMetadataPrefix(ctx context.Context, repo *catalog.Repository, logger l
 
 // checkForeignRepo checks whether a repo storage namespace matches the block adapter.
 // A foreign repo is a repository which namespace doesn't match the current block adapter.
-// A foreign repo might exists if the lakeFS instance configuration changed after a repository was
+// A foreign repo might exist if the lakeFS instance configuration changed after a repository was
 // already created. The behaviour of lakeFS for foreign repos is undefined and should be blocked.
 func checkForeignRepo(repoStorageType block.StorageType, logger logging.Logger, adapterStorageType, repoName string) {
 	if adapterStorageType != repoStorageType.BlockstoreType() {
@@ -381,23 +451,14 @@ func printWelcome(w io.Writer) {
 	_, _ = fmt.Fprintf(w, "Version %s\n\n", version.Version)
 }
 
-var localWarningBanner = `
+const localWarningBanner = `
 WARNING!
 
-Using the "%s" block adapter.  This is suitable only for testing, but not
-for production.
+Using %s.  This is suitable only for testing! It is NOT SUPPORTED for production.
 `
 
-func printLocalWarning(w io.Writer, adapter string) {
-	_, _ = fmt.Fprintf(w, localWarningBanner, adapter)
-}
-
-func registerPrometheusCollector(db sqlstats.StatsGetter) {
-	collector := sqlstats.NewStatsCollector("lakefs", db)
-	err := prometheus.Register(collector)
-	if err != nil {
-		logging.Default().WithError(err).Error("failed to register db stats collector")
-	}
+func printLocalWarning(w io.Writer, msg string) {
+	_, _ = fmt.Fprintf(w, localWarningBanner, msg)
 }
 
 func gracefulShutdown(ctx context.Context, quit <-chan os.Signal, done chan<- bool, servers ...Shutter) {
@@ -417,8 +478,19 @@ func gracefulShutdown(ctx context.Context, quit <-chan os.Signal, done chan<- bo
 			fmt.Printf("Error while shutting down service (%d): %s\n", i, err)
 		}
 	}
-	simulator.ShutdownRecorder()
 	close(done)
+}
+
+// enableKVParamsMetrics reutrns a copy of params.KV with postgres metrics enabled.
+func enableKVParamsMetrics(p params.KV) params.KV {
+	if p.Postgres == nil || p.Postgres.Metrics {
+		return p
+	}
+	// make a copy of postgres settings and set metrics on
+	pg := *p.Postgres
+	pg.Metrics = true
+	p.Postgres = &pg
+	return p
 }
 
 //nolint:gochecknoinits

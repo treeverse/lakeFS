@@ -16,17 +16,22 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
+	"github.com/treeverse/lakefs/pkg/auth/email"
 	authmodel "github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
-	"github.com/treeverse/lakefs/pkg/db"
-	dbparams "github.com/treeverse/lakefs/pkg/db/params"
+	"github.com/treeverse/lakefs/pkg/ingest/store"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvtest"
+	"github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/version"
+	"github.com/treeverse/lakefs/templates"
 )
 
 const (
@@ -36,25 +41,32 @@ const (
 type dependencies struct {
 	blocks      block.Adapter
 	catalog     catalog.Interface
-	authService *auth.DBAuthService
-	collector   *nullCollector
+	authService auth.Service
+	collector   *memCollector
 }
 
-type nullCollector struct {
-	metadata []*stats.Metadata
+// memCollector in-memory collector stores events and metadata sent
+type memCollector struct {
+	Events         []*stats.Event
+	Metadata       []*stats.Metadata
+	InstallationID string
 }
 
-func (m *nullCollector) CollectMetadata(metadata *stats.Metadata) {
-	m.metadata = append(m.metadata, metadata)
+func (m *memCollector) CollectEvent(ev stats.Event) {
+	m.Events = append(m.Events, &ev)
 }
 
-func (m *nullCollector) CollectEvent(_, _ string) {}
+func (m *memCollector) CollectMetadata(metadata *stats.Metadata) {
+	m.Metadata = append(m.Metadata, metadata)
+}
 
-func (m *nullCollector) SetInstallationID(_ string) {}
+func (m *memCollector) SetInstallationID(installationID string) {
+	m.InstallationID = installationID
+}
 
-func (m *nullCollector) Close() {}
+func (m *memCollector) Close() {}
 
-func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.Credential {
+func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.BaseCredential {
 	t.Helper()
 	res, err := clt.SetupWithResponse(context.Background(), api.SetupJSONRequestBody{
 		Username: "admin",
@@ -63,68 +75,70 @@ func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) 
 	if res.JSON200 == nil {
 		t.Fatal("Failed run setup env", res.HTTPResponse.StatusCode, res.HTTPResponse.Status)
 	}
-	return &authmodel.Credential{
+	return &authmodel.BaseCredential{
 		IssuedDate:      time.Unix(res.JSON200.CreationDate, 0),
 		AccessKeyID:     res.JSON200.AccessKeyId,
 		SecretAccessKey: res.JSON200.SecretAccessKey,
 	}
 }
 
-func setupHandler(t testing.TB, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
+func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) (http.Handler, *dependencies) {
 	t.Helper()
 	ctx := context.Background()
-	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
+	viper.Set("database.type", mem.DriverName)
+
+	collector := &memCollector{}
+
 	cfg, err := config.NewConfig()
 	testutil.MustDo(t, "config", err)
+	kvStore := kvtest.GetStore(ctx, t)
+	kvStoreMessage := &kv.StoreMessage{Store: kvStore}
+	actionsStore := actions.NewActionsKVStore(*kvStoreMessage)
+	idGen := &actions.DecreasingIDGenerator{}
+	authService := auth.NewKVAuthService(kvStoreMessage, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
+		Enabled: false,
+	}, logging.Default())
+	meta := auth.NewKVMetadataManager("serve_test", cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
+
 	// Do not validate invalid config (missing required fields).
 	c, err := catalog.New(ctx, catalog.Config{
-		Config: cfg,
-		DB:     conn,
+		Config:        cfg,
+		KVStore:       kvStoreMessage,
+		WalkerFactory: factory,
 	})
 	testutil.MustDo(t, "build catalog", err)
-
-	collector := &nullCollector{}
 
 	// wire actions
 	actionsService := actions.NewService(
 		ctx,
-		conn,
+		actionsStore,
 		catalog.NewActionsSource(c),
 		catalog.NewActionsOutputWriter(c.BlockAdapter),
+		idGen,
 		collector,
 		true,
 	)
+
 	c.SetHooksHandler(actionsService)
 
-	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
-		Enabled: false,
-	})
 	authenticator := auth.NewBuiltinAuthenticator(authService)
-	meta := auth.NewDBMetadataManager("dev", cfg.GetFixedInstallationID(), conn)
-	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: handlerDatabaseURI})
+	kvParams, err := cfg.GetKVParams()
+	testutil.Must(t, err)
+	migrator := kv.NewDatabaseMigrator(kvParams)
 
 	t.Cleanup(func() {
+		actionsService.Stop()
 		_ = c.Close()
 	})
 
-	auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
+	auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL(), "")
+	emailParams, _ := cfg.GetEmailParams()
+	emailer, err := email.NewEmailer(emailParams)
+	tmpl := templater.NewService(templates.Content, cfg, authService)
 
-	handler := api.Serve(
-		cfg,
-		c,
-		authenticator,
-		authService,
-		c.BlockAdapter,
-		meta,
-		migrator,
-		collector,
-		nil,
-		actionsService,
-		auditChecker,
-		logging.Default(),
-		nil,
-	)
+	testutil.Must(t, err)
+	handler := api.Serve(cfg, c, authenticator, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.Default(), emailer, tmpl, nil, nil, nil, nil)
 
 	return handler, &dependencies{
 		blocks:      c.BlockAdapter,
@@ -132,6 +146,10 @@ func setupHandler(t testing.TB, opts ...testutil.GetDBOption) (http.Handler, *de
 		catalog:     c,
 		collector:   collector,
 	}
+}
+
+func setupHandler(t testing.TB) (http.Handler, *dependencies) {
+	return setupHandlerWithWalkerFactory(t, store.NewFactory(nil))
 }
 
 func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secretAccessKey string) api.ClientWithResponsesInterface {
@@ -174,9 +192,14 @@ func shouldUseServerTimeout() bool {
 	return withServerTimeout
 }
 
-func setupClientWithAdmin(t testing.TB, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
+func setupClientWithAdmin(t testing.TB) (api.ClientWithResponsesInterface, *dependencies) {
 	t.Helper()
-	handler, deps := setupHandler(t, opts...)
+	return setupClientWithAdminAndWalkerFactory(t, store.NewFactory(nil))
+}
+
+func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFactory) (api.ClientWithResponsesInterface, *dependencies) {
+	t.Helper()
+	handler, deps := setupHandlerWithWalkerFactory(t, factory)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	cred := createDefaultAdminUser(t, clt)

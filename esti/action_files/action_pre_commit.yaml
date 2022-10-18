@@ -1,0 +1,12 @@
+name: Test Pre Commit
+description: a test action description
+on:
+  pre-commit:
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for pre-commit works
+    properties:
+      url: "{{.URL}}/pre-commit"
+      query_params:
+        check_env_vars: "{{"{{ ENV.ACTIONS_VAR }}"}}"

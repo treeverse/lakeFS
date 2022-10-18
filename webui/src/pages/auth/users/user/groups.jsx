@@ -1,7 +1,7 @@
 import React from "react";
 
 import {AuthLayout} from "../../../../lib/components/auth/layout";
-import {UserHeader} from "../../../../lib/components/auth/nav";
+import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {
     ActionGroup,
     ActionsBar,
@@ -33,7 +33,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
 
     let content;
     if (loading) content = <Loading/>;
-    else if (!!error) content=  <Error error={error}/>;
+    else if (error) content=  <Error error={error}/>;
     else content = (
         <>
             {attachError && <Error error={attachError}/>}
@@ -85,7 +85,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
 
     return (
         <>
-            <UserHeader userId={userId} page={'groups'}/>
+            <UserHeaderWithContext userId={userId} page={'groups'}/>
 
             <ActionsBar>
                 <ActionGroup orientation="left">
@@ -110,7 +110,7 @@ const UserGroupsContainer = () => {
     const { userId } = router.params;
     return (!userId) ? <></> : <UserGroupsList
         userId={userId}
-        after={(!!after) ? after : ""}
+        after={(after) ? after : ""}
         onPaginate={after => router.push({pathname: '/auth/users/:userId/groups', params: {userId}, query: {after}})}
     />;
 };
@@ -118,7 +118,7 @@ const UserGroupsContainer = () => {
 const UserGroupsPage = () => {
     return (
         <AuthLayout activeTab="users">
-            <UserGroupsContainer/>
+            <UserGroupsContainer />
         </AuthLayout>
     );
 };

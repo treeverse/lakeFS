@@ -1,4 +1,3 @@
-
 import React, {useState} from "react";
 
 import {RepositoryPageLayout} from "../../../../../lib/components/repository/layout";
@@ -89,7 +88,7 @@ const HookLog = ({ repo, run, execution }) => {
     if (expanded) {
         if (loading) {
             content = <pre>Loading...</pre>;
-        } else if (!!error) {
+        } else if (error) {
             content = <Error error={error}/>;
         } else {
             content = <pre>{response}</pre>;
@@ -102,13 +101,15 @@ const HookLog = ({ repo, run, execution }) => {
         const startTs = moment(execution.start_time);
         const diff = moment.duration(endTs.diff(startTs)).asSeconds();
         duration = `(${execution.status} in ${diff}s)`;
+    } else if (execution.status === 'skipped') {
+        duration = '(skipped)'
     }
 
     return (
             <div className="hook-log">
 
                 <p className="mb-3 hook-log-title">
-                    <Button variant="link" onClick={() => {setExpanded(!expanded)}}>
+                    <Button variant="link" onClick={() => {setExpanded(!expanded)}} disabled={execution.status === "skipped"}>
                         {(expanded) ?  <ChevronDownIcon size="small"/> : <ChevronRightIcon size="small"/>}
                     </Button>
                     {' '}
@@ -205,7 +206,7 @@ const RunContainer = ({ repo, runId, onSelectAction, selectedAction }) => {
     }, [repo.id, runId]);
 
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>;
+    if (error) return <Error error={error}/>;
 
     return (
         <ActionBrowser
@@ -225,17 +226,17 @@ const ActionContainer = () => {
     const {loading, error, repo} = useRefs();
 
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>;
+    if (error) return <Error error={error}/>;
 
     const params = {repoId: repo.id, runId};
 
     return <RunContainer
         repo={repo}
         runId={runId}
-        selectedAction={(!!action) ? action : null}
+        selectedAction={(action) ? action : null}
         onSelectAction={action => {
             const query = {};
-            if (!!action) query.action = action;
+            if (action) query.action = action;
             router.push({
                 pathname: '/repositories/:repoId/actions/:runId', query, params
             });

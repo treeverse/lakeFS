@@ -1,7 +1,14 @@
 package io.treeverse.clients.examples
 
-import io.treeverse.clients.{ApiClient, Exporter}
+import io.treeverse.clients.{APIConfigurations, ApiClient, Exporter}
 import org.apache.spark.sql.SparkSession
+import io.treeverse.clients.LakeFSContext.{
+  LAKEFS_CONF_API_ACCESS_KEY_KEY,
+  LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY,
+  LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY,
+  LAKEFS_CONF_API_SECRET_KEY_KEY,
+  LAKEFS_CONF_API_URL_KEY
+}
 
 // This example Export program copies all files from a lakeFS branch in a lakeFS repository
 // to the specified s3 bucket. When the export ends, file structure under the bucket will match
@@ -20,6 +27,8 @@ object Export extends App {
     val endpoint = "http://<LAKEFS_ENDPOINT>/api/v1"
     val accessKey = "<LAKEFS_ACCESS_KEY_ID>"
     val secretKey = "<LAKEFS_SECRET_ACCESS_KEY>"
+    val connectionTimeoutSec = "10"
+    val readTimeoutSec = "10"
 
     val repo = args(0)
     val branch = args(1)
@@ -29,11 +38,15 @@ object Export extends App {
     val spark = SparkSession.builder().appName("I can list").master("local").getOrCreate()
 
     val sc = spark.sparkContext
-    sc.hadoopConfiguration.set("lakefs.api.url", endpoint)
-    sc.hadoopConfiguration.set("lakefs.api.access_key", accessKey)
-    sc.hadoopConfiguration.set("lakefs.api.secret_key", secretKey)
+    sc.hadoopConfiguration.set(LAKEFS_CONF_API_URL_KEY, endpoint)
+    sc.hadoopConfiguration.set(LAKEFS_CONF_API_ACCESS_KEY_KEY, accessKey)
+    sc.hadoopConfiguration.set(LAKEFS_CONF_API_SECRET_KEY_KEY, secretKey)
+    sc.hadoopConfiguration.set(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY, connectionTimeoutSec)
+    sc.hadoopConfiguration.set(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY, readTimeoutSec)
 
-    val apiClient = new ApiClient(endpoint, accessKey, secretKey)
+    val apiClient = ApiClient.get(
+      APIConfigurations(endpoint, accessKey, secretKey, connectionTimeoutSec, readTimeoutSec) /**/
+    )
     val exporter = new Exporter(spark, apiClient, repo, rootLocation)
 
     exporter.exportAllFromBranch(branch)

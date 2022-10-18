@@ -2,26 +2,28 @@ package io.treeverse.jpebble
 
 import org.scalatest._
 import matchers.should._
+import org.scalatest.matchers.must.Matchers.contain
+import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import funspec._
+
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
+import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
+import org.testcontainers.containers.BindMode
 
 import java.io.File
 import java.nio.charset.StandardCharsets
 import org.apache.commons.io.IOUtils
 
 import scala.io.Source
-import org.testcontainers.containers.BindMode
-import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
-import org.scalatest.matchers.must.Matchers.contain
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
 class BlockReadableSpec extends AnyFunSpec with Matchers {
 
   describe("instantiate BlockReadableFileChannel") {
-    describe("with null file channel") {
-      it("should fail with a Null Pointer Exception") {
-        assertThrows[NullPointerException] {
-          new BlockReadableFileChannel(null)
+    describe("with null file") {
+      it("should fail with an IllegalArgumentException") {
+        assertThrows[IllegalArgumentException] {
+          new BlockReadableFile(null)
         }
       }
     }
@@ -227,7 +229,7 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
       sstContents.close()
       out.close()
 
-      val in = new BlockReadableFileChannel(new java.io.FileInputStream(tempFile).getChannel)
+      val in = new BlockReadableFile(new java.io.RandomAccessFile(tempFile, "r"))
       try {
         test(in)
       } finally {
@@ -301,13 +303,12 @@ class CountedIteratorSpec extends AnyFunSpec with Matchers {
 }
 
 class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
-
   override val container: GenericContainer = GenericContainer(
     "golang:1.16.2-alpine",
     classpathResourceMapping = Seq(
-      ("parser-test/sst_files_generator.go", "/local/sst_files_generator.go", BindMode.READ_WRITE),
-      ("parser-test/go.mod", "/local/go.mod", BindMode.READ_WRITE),
-      ("parser-test/go.sum", "/local/go.sum", BindMode.READ_WRITE)
+      FileSystemBind("parser-test/sst_files_generator.go", "/local/sst_files_generator.go", BindMode.READ_WRITE),
+      FileSystemBind("parser-test/go.mod", "/local/go.mod", BindMode.READ_WRITE),
+      FileSystemBind("parser-test/go.sum", "/local/go.sum", BindMode.READ_WRITE)
     ),
     command = Seq("/bin/sh",
                   "-c",
@@ -453,7 +454,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
     val tmpSstFile = copyTestFile(baseFileName, ".sst")
     val tmpJsonFile = copyTestFile(baseFileName, ".json")
 
-    val in = new BlockReadableFileChannel(new java.io.FileInputStream(tmpSstFile).getChannel)
+    val in = new BlockReadableFile(new java.io.RandomAccessFile(tmpSstFile, "r"))
     try {
       val jsonString = os.read(os.Path(tmpJsonFile.getAbsolutePath))
       val data = ujson.read(jsonString)
@@ -469,7 +470,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
       test: (BlockReadable, Seq[(String, String)], Long) => Any
   ) = {
     val tmpFile = copyTestFile(baseFileName, "")
-    val in = new BlockReadableFileChannel(new java.io.FileInputStream(tmpFile).getChannel)
+    val in = new BlockReadableFile(new java.io.RandomAccessFile(tmpFile, "r"))
     try {
       test(in, null, tmpFile.length())
     } finally {

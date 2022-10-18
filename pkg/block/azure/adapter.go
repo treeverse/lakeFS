@@ -140,11 +140,23 @@ func (a *Adapter) getContainerURL(rawURL string) azblob.ContainerURL {
 	return azblob.NewContainerURL(*u, a.pipeline)
 }
 
-func translatePutOpts(opts block.PutOpts) azblob.UploadStreamToBlockBlobOptions {
+func (a *Adapter) translatePutOpts(ctx context.Context, opts block.PutOpts) azblob.UploadStreamToBlockBlobOptions {
 	res := azblob.UploadStreamToBlockBlobOptions{}
-	if opts.StorageClass != nil {
-		res.BlobAccessTier = azblob.AccessTierType(*opts.StorageClass)
+	if opts.StorageClass == nil {
+		return res
 	}
+
+	for _, t := range azblob.PossibleAccessTierTypeValues() {
+		if strings.EqualFold(*opts.StorageClass, string(t)) {
+			res.BlobAccessTier = t
+			break
+		}
+	}
+
+	if res.BlobAccessTier == "" {
+		a.log(ctx).WithField("tier_type", *opts.StorageClass).Warn("Unknown Azure tier type")
+	}
+
 	return res
 }
 
@@ -167,7 +179,7 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 	if err != nil {
 		return err
 	}
-	uploadOpts := translatePutOpts(opts)
+	uploadOpts := a.translatePutOpts(ctx, opts)
 	uploadOpts.TransferManager = transferManager
 	defer transferManager.Close()
 	resp, err := copyFromReader(ctx, reader, blobURL, uploadOpts)

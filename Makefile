@@ -55,7 +55,7 @@ GIT_REF=$(shell git rev-parse --short HEAD --)
 REVISION=$(GIT_REF)$(DIRTY)
 export REVISION
 
-.PHONY: all clean nessie lint test gen help
+.PHONY: all clean esti lint test gen help
 all: build
 
 clean:
@@ -63,11 +63,14 @@ clean:
 		$(LAKECTL_BINARY_NAME) \
 		$(LAKEFS_BINARY_NAME) \
 		$(UI_BUILD_DIR) \
+		$(UI_DIR)/node_modules \
 		pkg/actions/mock \
 		pkg/api/lakefs.gen.go \
+		pkg/auth/client.gen.go \
 		pkg/graveler/sstable/mock \
 	    pkg/graveler/committed/mock \
-	    pkg/graveler/mock
+	    pkg/graveler/mock \
+	    pkg/kv/mock
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
@@ -108,11 +111,13 @@ go-install: go-mod-download ## Install dependencies
 client-python: api/swagger.yml  ## Generate SDK for Python client
 	# remove the build folder as it also holds lakefs_client folder which keeps because we skip it during find
 	rm -rf clients/python/build; cd clients/python && \
-		find . -depth -name lakefs_client -prune -o ! \( -name client.py -or -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore \) -delete
+		find . -depth -name lakefs_client -prune -o ! \( -name client.py -or -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache \) -delete
 	$(OPENAPI_GENERATOR) generate \
 		-i /mnt/$< \
 		-g python \
+		-t /mnt/clients/python/templates \
 		--package-name lakefs_client \
+		--http-user-agent "lakefs-python-sdk/$(PACKAGE_VERSION)" \
 		--git-user-id treeverse --git-repo-id lakeFS \
 		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageName=lakefs_client,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-client,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python \
 		-o /mnt/clients/python
@@ -123,6 +128,7 @@ client-java: api/swagger.yml  ## Generate SDK for Java (and Scala) client
 		-i /mnt/$< \
 		-g java \
 		--invoker-package io.lakefs.clients.api \
+		--http-user-agent "lakefs-java-sdk/$(PACKAGE_VERSION)" \
 		--additional-properties=hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='api-client',artifactDescription='lakeFS OpenAPI Java client',artifactUrl=https://lakefs.io,apiPackage=io.lakefs.clients.api,modelPackage=io.lakefs.clients.api.model,mainPackage=io.lakefs.clients.api,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
 		-o /mnt/clients/java
 
@@ -137,15 +143,19 @@ package: package-python
 
 gen-api: go-install ## Run the swagger code generator
 	$(GOGENERATE) ./pkg/api
+	$(GOGENERATE) ./pkg/auth
 
-.PHONY: gen-mockgen
-gen-mockgen: go-install ## Run the generator for inline commands
-	$(GOGENERATE) ./pkg/graveler/sstable
-	$(GOGENERATE) ./pkg/graveler/committed
-	$(GOGENERATE) ./pkg/graveler
-	$(GOGENERATE) ./pkg/pyramid
-	$(GOGENERATE) ./pkg/onboard
-	$(GOGENERATE) ./pkg/actions
+.PHONY: gen-code
+gen-code: go-install ## Run the generator for inline commands
+	$(GOGENERATE) \
+		./pkg/actions \
+		./pkg/auth \
+		./pkg/graveler \
+		./pkg/graveler/committed \
+		./pkg/graveler/sstable \
+		./pkg/kv \
+		./pkg/onboard \
+		./pkg/pyramid
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
 build: gen docs ## Download dependencies and build the default binary
@@ -154,9 +164,10 @@ build: gen docs ## Download dependencies and build the default binary
 
 lint: go-install  ## Lint code
 	$(GOBINPATH)/golangci-lint run $(GOLANGCI_LINT_FLAGS)
+	npx eslint $(UI_DIR)/src --ext .js,.jsx,.ts,.tsx
 
-nessie: ## run nessie (system testing)
-	$(GOTEST) -v ./nessie --args --system-tests
+esti: ## run esti (system testing)
+	$(GOTEST) -v ./esti --args --system-tests
 
 test: test-go test-hadoopfs  ## Run tests for the project
 
@@ -174,6 +185,9 @@ fast-test:  ## Run tests without race detector (faster)
 
 test-html: test  ## Run tests with HTML for the project
 	$(GOTOOL) cover -html=cover.out
+
+system-tests: # Run system tests locally
+	./esti/scripts/runner.sh -r all
 
 build-docker: build ## Build Docker image file (Docker required)
 	$(DOCKER) build -t treeverse/$(DOCKER_IMAGE):$(DOCKER_TAG) .
@@ -215,17 +229,19 @@ checks-validator: lint validate-fmt validate-proto validate-client-python valida
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
 
-# UI operations
-ui-build: $(UI_DIR)/node_modules  ## Build UI app
+gen-ui: $(UI_DIR)/node_modules  ## Build UI web app
 	cd $(UI_DIR) && $(NPM) run build
-
-gen-ui: ui-build
 
 proto: ## Build proto (Protocol Buffers) files
 	$(PROTOC) --proto_path=pkg/catalog --go_out=pkg/catalog --go_opt=paths=source_relative catalog.proto
 	$(PROTOC) --proto_path=pkg/graveler/committed --go_out=pkg/graveler/committed --go_opt=paths=source_relative committed.proto
 	$(PROTOC) --proto_path=pkg/graveler --go_out=pkg/graveler --go_opt=paths=source_relative graveler.proto
 	$(PROTOC) --proto_path=pkg/graveler/settings --go_out=pkg/graveler/settings --go_opt=paths=source_relative test_settings.proto
+	$(PROTOC) --proto_path=pkg/kv/kvtest --go_out=pkg/kv/kvtest --go_opt=paths=source_relative test_model.proto
+	$(PROTOC) --proto_path=pkg/kv --go_out=pkg/kv --go_opt=paths=source_relative secondary_index.proto
+	$(PROTOC) --proto_path=pkg/gateway/multiparts --go_out=pkg/gateway/multiparts --go_opt=paths=source_relative multipart.proto
+	$(PROTOC) --proto_path=pkg/actions --go_out=pkg/actions --go_opt=paths=source_relative actions.proto
+	$(PROTOC) --proto_path=pkg/auth/model --go_out=pkg/auth/model --go_opt=paths=source_relative model.proto
 
 publish-scala: ## sbt publish spark client jars to nexus and s3 bucket
 	cd clients/spark && sbt assembly && sbt s3Upload && sbt publishSigned
@@ -239,4 +255,4 @@ help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # helpers
-gen: gen-api gen-ui gen-mockgen clients gen-docs
+gen: gen-api gen-ui gen-code clients gen-docs

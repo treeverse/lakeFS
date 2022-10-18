@@ -57,9 +57,10 @@ var runCmd = &cobra.Command{
 			RepoName:         repoName,
 			StorageNamespace: storageNamespace,
 			KeepRepo:         isKeep,
-			Credentials: model.Credential{
+			Credentials: model.Credential{BaseCredential: model.BaseCredential{
 				AccessKeyID:     viper.GetString(ConfigAccessKeyID),
 				SecretAccessKey: viper.GetString(ConfigSecretAccessKey),
+			},
 			},
 			ServerAddress: viper.GetString(ConfigServerEndpointURL),
 		}
@@ -72,7 +73,7 @@ var runCmd = &cobra.Command{
 	},
 }
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits,gomnd
 func init() {
 	rootCmd.AddCommand(runCmd)
 	runCmd.Flags().StringP(RepoNameFlag, "r", "", "Existing lakeFS repo name to use. Leave empty to create a dedicated repo")

@@ -13,11 +13,10 @@ var (
 )
 
 var (
-	ErrInvalid           = errors.New("validation error")
-	ErrInvalidType       = fmt.Errorf("invalid type: %w", ErrInvalid)
-	ErrRequiredValue     = fmt.Errorf("required value: %w", ErrInvalid)
-	ErrInvalidValue      = fmt.Errorf("invalid value: %w", ErrInvalid)
-	ErrPathRequiredValue = fmt.Errorf("missing path: %w", ErrRequiredValue)
+	ErrInvalid       = errors.New("validation error")
+	ErrInvalidType   = fmt.Errorf("invalid type: %w", ErrInvalid)
+	ErrRequiredValue = fmt.Errorf("required value: %w", ErrInvalid)
+	ErrInvalidValue  = fmt.Errorf("invalid value: %w", ErrInvalid)
 )
 
 type ValidateFunc func(v interface{}) error

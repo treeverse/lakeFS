@@ -9,11 +9,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
-var metadataDumpTemplate = `
+const metadataDumpTemplate = `
 {{ .Response | json }}
 `
 
-var refsRestoreSuccess = `
+const refsRestoreSuccess = `
 {{ "All references restored successfully!" | green }}
 `
 
@@ -55,16 +55,20 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 }
 
 var refsDumpCmd = &cobra.Command{
-	Use:    "refs-dump <repository uri>",
-	Short:  "Dumps refs (branches, commits, tags) to the underlying object store",
-	Hidden: true,
-	Args:   cobra.ExactArgs(1),
+	Use:               "refs-dump <repository uri>",
+	Short:             "Dumps refs (branches, commits, tags) to the underlying object store",
+	Hidden:            true,
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		repoURI := MustParseRepoURI("repository", args[0])
 		Fmt("Repository: %s\n", repoURI.String())
 		client := getClient()
 		resp, err := client.DumpRefsWithResponse(cmd.Context(), repoURI.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		Write(metadataDumpTemplate, struct {
 			Response interface{}

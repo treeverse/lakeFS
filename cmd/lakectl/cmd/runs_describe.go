@@ -18,11 +18,12 @@ const actionTaskResultTemplate = `{{ $r := . }}{{ range $idx, $val := .Hooks }}{
 const runsShowRequiredArgs = 2
 
 var runsDescribeCmd = &cobra.Command{
-	Use:     "describe",
-	Short:   "Describe run results",
-	Long:    `Show information about the run and all the hooks that were executed as part of the run`,
-	Example: "lakectl actions runs describe lakefs://<repository> <run_id>",
-	Args:    cobra.ExactArgs(runsShowRequiredArgs),
+	Use:               "describe",
+	Short:             "Describe run results",
+	Long:              `Show information about the run and all the hooks that were executed as part of the run`,
+	Example:           "lakectl actions runs describe lakefs://<repository> <run_id>",
+	Args:              cobra.ExactArgs(runsShowRequiredArgs),
+	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		after := MustString(cmd.Flags().GetString("after"))
@@ -38,6 +39,9 @@ var runsDescribeCmd = &cobra.Command{
 		// run result information
 		runsRes, err := client.GetRunWithResponse(ctx, u.Repository, runID)
 		DieOnErrorOrUnexpectedStatusCode(runsRes, err, http.StatusOK)
+		if runsRes.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
 
 		runResult := runsRes.JSON200
 		Write(actionRunResultTemplate, convertRunResultTable(runResult))
@@ -52,6 +56,9 @@ var runsDescribeCmd = &cobra.Command{
 				Amount: api.PaginationAmountPtr(amountForPagination),
 			})
 			DieOnErrorOrUnexpectedStatusCode(runHooksRes, err, http.StatusOK)
+			if runHooksRes.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
 			pagination = runHooksRes.JSON200.Pagination
 			data := struct {
 				Hooks      []api.HookRun
@@ -111,8 +118,13 @@ func convertHookResultsTables(results []api.HookRun) []*Table {
 	for i, r := range results {
 		hookRunID := text.FgYellow.Sprint(r.HookRunId)
 		statusColor := text.FgRed
-		if r.Status == "completed" {
+		switch r.Status {
+		case "completed":
 			statusColor = text.FgGreen
+		case "skipped":
+			statusColor = text.FgYellow
+		case "failed":
+			statusColor = text.FgRed
 		}
 		status := statusColor.Sprint(r.Status)
 		tables[i] = &Table{

@@ -101,15 +101,19 @@ func ValidateCommitID(v interface{}) error {
 }
 
 func ValidateRepositoryID(v interface{}) error {
-	s, ok := v.(RepositoryID)
-	if !ok {
+	var repositoryID string
+	switch s := v.(type) {
+	case string:
+		repositoryID = s
+	case RepositoryID:
+		repositoryID = s.String()
+	default:
 		panic(ErrInvalidType)
 	}
-
-	if len(s) == 0 {
+	if len(repositoryID) == 0 {
 		return ErrRequiredValue
 	}
-	if !validator.ReValidRepositoryID.MatchString(s.String()) {
+	if !validator.ReValidRepositoryID.MatchString(repositoryID) {
 		return ErrInvalidRepositoryID
 	}
 	return nil
@@ -126,5 +130,3 @@ func ValidateRequiredStrategy(v interface{}) error {
 	}
 	return nil
 }
-
-var ValidateTagIDOptional = validator.MakeValidateOptional(ValidateTagID)

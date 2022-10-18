@@ -15,53 +15,16 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
+	apiparams "github.com/treeverse/lakefs/pkg/api/params"
+	"github.com/treeverse/lakefs/pkg/auth/email"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/block"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	dbparams "github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	pyramidparams "github.com/treeverse/lakefs/pkg/pyramid/params"
-)
-
-const (
-	DefaultBlockStoreLocalPath               = "~/data/lakefs/block"
-	DefaultBlockStoreS3Region                = "us-east-1"
-	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
-	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
-	DefaultBlockStoreS3DiscoverBucketRegion  = true
-
-	DefaultCommittedLocalCacheRangePercent          = 0.9
-	DefaultCommittedLocalCacheMetaRangePercent      = 0.1
-	DefaultCommittedLocalCacheBytes                 = 1 * 1024 * 1024 * 1024
-	DefaultCommittedLocalCacheDir                   = "~/data/lakefs/cache"
-	DefaultCommittedPebbleSSTableCacheSizeBytes     = 400_000_000
-	DefaultCommittedLocalCacheNumUploaders          = 10
-	DefaultCommittedBlockStoragePrefix              = "_lakefs"
-	DefaultCommittedPermanentMinRangeSizeBytes      = 0
-	DefaultCommittedPermanentMaxRangeSizeBytes      = 20 * 1024 * 1024
-	DefaultCommittedPermanentRangeRaggednessEntries = 50_000
-
-	DefaultBlockStoreGSS3Endpoint = "https://storage.googleapis.com"
-
-	DefaultAuthCacheEnabled = true
-	DefaultAuthCacheSize    = 1024
-	DefaultAuthCacheTTL     = 20 * time.Second
-	DefaultAuthCacheJitter  = 3 * time.Second
-
-	DefaultListenAddr          = "0.0.0.0:8000"
-	DefaultS3GatewayDomainName = "s3.local.lakefs.io"
-	DefaultS3GatewayRegion     = "us-east-1"
-	DefaultS3MaxRetries        = 5
-
-	DefaultActionsEnabled = true
-
-	DefaultStatsEnabled       = true
-	DefaultStatsAddr          = "https://stats.treeverse.io"
-	DefaultStatsFlushInterval = time.Second * 30
-
-	DefaultAzureTryTimeout = 10 * time.Minute
-	DefaultAzureAuthMethod = "access-key"
 )
 
 var (
@@ -72,11 +35,23 @@ var (
 	ErrMissingRequiredKeys = fmt.Errorf("%w: missing required keys", ErrBadConfiguration)
 )
 
+// UseLocalConfiguration set to true will add defaults that enable a lakeFS run
+// without any other configuration like DB or blockstore.
+const UseLocalConfiguration = "local-settings"
+
 type Config struct {
 	values configuration
 }
 
 func NewConfig() (*Config, error) {
+	return newConfig(false)
+}
+
+func NewLocalConfig() (*Config, error) {
+	return newConfig(true)
+}
+
+func newConfig(local bool) (*Config, error) {
 	c := &Config{}
 
 	// Inform viper of all expected fields.  Otherwise, it fails to deserialize from the
@@ -86,7 +61,7 @@ func NewConfig() (*Config, error) {
 		viper.SetDefault(key, nil)
 	}
 
-	setDefaults()
+	setDefaults(local)
 	setupLogger()
 
 	err := viper.UnmarshalExact(&c.values, viper.DecodeHook(
@@ -102,115 +77,6 @@ func NewConfig() (*Config, error) {
 	}
 
 	return c, nil
-}
-
-// Default flag keys
-const (
-	ListenAddressKey = "listen_address"
-
-	LoggingFormatKey        = "logging.format"
-	LoggingLevelKey         = "logging.level"
-	LoggingOutputKey        = "logging.output"
-	LoggingFileMaxSizeMBKey = "logging.file_max_size_mb"
-	LoggingFilesKeepKey     = "logging.files_keep"
-
-	ActionsEnabledKey = "actions.enabled"
-
-	AuthCacheEnabledKey = "auth.cache.enabled"
-	AuthCacheSizeKey    = "auth.cache.size"
-	AuthCacheTTLKey     = "auth.cache.ttl"
-	AuthCacheJitterKey  = "auth.cache.jitter"
-
-	BlockstoreTypeKey                    = "blockstore.type"
-	BlockstoreLocalPathKey               = "blockstore.local.path"
-	BlockstoreDefaultNamespacePrefixKey  = "blockstore.default_namespace_prefix"
-	BlockstoreS3RegionKey                = "blockstore.s3.region"
-	BlockstoreS3StreamingChunkSizeKey    = "blockstore.s3.streaming_chunk_size"
-	BlockstoreS3StreamingChunkTimeoutKey = "blockstore.s3.streaming_chunk_timeout"
-	BlockstoreS3MaxRetriesKey            = "blockstore.s3.max_retries"
-	BlockstoreS3DiscoverBucketRegionKey  = "blockstore.s3.discover_bucket_region"
-
-	BlockstoreAzureTryTimeoutKey                = "blockstore.azure.try_timeout"
-	BlockstoreAzureStorageAccountKey            = "blockstore.azure.storage_account"
-	BlockstoreAzureStorageAccessKey             = "blockstore.azure.storage_access_key"
-	BlockstoreAzureAuthMethod                   = "blockstore.azure.auth_method"
-	CommittedLocalCacheSizeBytesKey             = "committed.local_cache.size_bytes"
-	CommittedLocalCacheDirKey                   = "committed.local_cache.dir"
-	CommittedLocalCacheNumUploadersKey          = "committed.local_cache.max_uploaders_per_writer"
-	CommittedLocalCacheRangeProportionKey       = "committed.local_cache.range_proportion"
-	CommittedLocalCacheMetaRangeProportionKey   = "committed.local_cache.metarange_proportion"
-	CommittedBlockStoragePrefixKey              = "committed.block_storage_prefix"
-	CommittedPermanentStorageMinRangeSizeKey    = "committed.permanent.min_range_size_bytes"
-	CommittedPermanentStorageMaxRangeSizeKey    = "committed.permanent.max_range_size_bytes"
-	CommittedPermanentStorageRangeRaggednessKey = "committed.permanent.range_raggedness_entries"
-
-	CommittedPebbleSSTableCacheSizeBytesKey = "committed.sstable.memory.cache_size_bytes"
-
-	GatewaysS3DomainNamesKey = "gateways.s3.domain_name"
-	GatewaysS3RegionKey      = "gateways.s3.region"
-
-	BlockstoreGSS3EndpointKey = "blockstore.gs.s3_endpoint"
-
-	StatsEnabledKey       = "stats.enabled"
-	StatsAddressKey       = "stats.address"
-	StatsFlushIntervalKey = "stats.flush_interval"
-
-	SecurityAuditCheckIntervalKey     = "security.audit_check_interval"
-	DefaultSecurityAuditCheckInterval = 12 * time.Hour
-
-	SecurityAuditCheckURLKey     = "security.audit_check_url"
-	DefaultSecurityAuditCheckURL = "https://audit.lakefs.io/audit"
-)
-
-func setDefaults() {
-	viper.SetDefault(ListenAddressKey, DefaultListenAddr)
-
-	viper.SetDefault(LoggingFormatKey, DefaultLoggingFormat)
-	viper.SetDefault(LoggingLevelKey, DefaultLoggingLevel)
-	viper.SetDefault(LoggingOutputKey, DefaultLoggingOutput)
-	viper.SetDefault(LoggingFilesKeepKey, DefaultLoggingFilesKeepKey)
-
-	viper.SetDefault(ActionsEnabledKey, DefaultActionsEnabled)
-
-	viper.SetDefault(AuthCacheEnabledKey, DefaultAuthCacheEnabled)
-	viper.SetDefault(AuthCacheSizeKey, DefaultAuthCacheSize)
-	viper.SetDefault(AuthCacheTTLKey, DefaultAuthCacheTTL)
-	viper.SetDefault(AuthCacheJitterKey, DefaultAuthCacheJitter)
-
-	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockStoreLocalPath)
-	viper.SetDefault(BlockstoreS3RegionKey, DefaultBlockStoreS3Region)
-	viper.SetDefault(BlockstoreS3StreamingChunkSizeKey, DefaultBlockStoreS3StreamingChunkSize)
-	viper.SetDefault(BlockstoreS3StreamingChunkTimeoutKey, DefaultBlockStoreS3StreamingChunkTimeout)
-	viper.SetDefault(BlockstoreS3MaxRetriesKey, DefaultS3MaxRetries)
-	viper.SetDefault(BlockstoreS3StreamingChunkSizeKey, DefaultBlockStoreS3StreamingChunkSize)
-	viper.SetDefault(BlockstoreS3DiscoverBucketRegionKey, DefaultBlockStoreS3DiscoverBucketRegion)
-
-	viper.SetDefault(CommittedLocalCacheSizeBytesKey, DefaultCommittedLocalCacheBytes)
-	viper.SetDefault(CommittedLocalCacheDirKey, DefaultCommittedLocalCacheDir)
-	viper.SetDefault(CommittedLocalCacheNumUploadersKey, DefaultCommittedLocalCacheNumUploaders)
-	viper.SetDefault(CommittedLocalCacheRangeProportionKey, DefaultCommittedLocalCacheRangePercent)
-	viper.SetDefault(CommittedLocalCacheMetaRangeProportionKey, DefaultCommittedLocalCacheMetaRangePercent)
-
-	viper.SetDefault(CommittedBlockStoragePrefixKey, DefaultCommittedBlockStoragePrefix)
-	viper.SetDefault(CommittedPermanentStorageMinRangeSizeKey, DefaultCommittedPermanentMinRangeSizeBytes)
-	viper.SetDefault(CommittedPermanentStorageMaxRangeSizeKey, DefaultCommittedPermanentMaxRangeSizeBytes)
-	viper.SetDefault(CommittedPermanentStorageRangeRaggednessKey, DefaultCommittedPermanentRangeRaggednessEntries)
-	viper.SetDefault(CommittedPebbleSSTableCacheSizeBytesKey, DefaultCommittedPebbleSSTableCacheSizeBytes)
-
-	viper.SetDefault(GatewaysS3DomainNamesKey, DefaultS3GatewayDomainName)
-	viper.SetDefault(GatewaysS3RegionKey, DefaultS3GatewayRegion)
-
-	viper.SetDefault(BlockstoreGSS3EndpointKey, DefaultBlockStoreGSS3Endpoint)
-
-	viper.SetDefault(StatsEnabledKey, DefaultStatsEnabled)
-	viper.SetDefault(StatsAddressKey, DefaultStatsAddr)
-	viper.SetDefault(StatsFlushIntervalKey, DefaultStatsFlushInterval)
-
-	viper.SetDefault(BlockstoreAzureTryTimeoutKey, DefaultAzureTryTimeout)
-	viper.SetDefault(BlockstoreAzureAuthMethod, DefaultAzureAuthMethod)
-
-	viper.SetDefault(SecurityAuditCheckIntervalKey, DefaultSecurityAuditCheckInterval)
-	viper.SetDefault(SecurityAuditCheckURLKey, DefaultSecurityAuditCheckURL)
 }
 
 func reverse(s string) string {
@@ -252,11 +118,57 @@ func (c *Config) Validate() error {
 
 func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{
-		ConnectionString:      c.values.Database.ConnectionString.SecureValue(),
-		MaxOpenConnections:    c.values.Database.MaxOpenConnections,
-		MaxIdleConnections:    c.values.Database.MaxIdleConnections,
-		ConnectionMaxLifetime: c.values.Database.ConnectionMaxLifetime,
+		Type:       c.values.Database.Type,
+		DropTables: c.values.Database.DropTables,
 	}
+}
+
+func (c *Config) GetKVParams() (kvparams.KV, error) {
+	p := kvparams.KV{
+		Type: c.values.Database.Type,
+	}
+	if c.values.Database.Local != nil {
+		localPath, err := homedir.Expand(c.values.Database.Local.Path)
+		if err != nil {
+			return kvparams.KV{}, fmt.Errorf("parse database local path '%s': %w", c.values.Database.Local.Path, err)
+		}
+		p.Local = &kvparams.Local{
+			Path:         localPath,
+			PrefetchSize: c.values.Database.Local.PrefetchSize,
+		}
+		p.Local.SyncWrites = true
+		if c.values.Database.Local.SyncWrites != nil {
+			p.Local.SyncWrites = *c.values.Database.Local.SyncWrites
+		}
+		p.Local.EnableLogging = false
+		if c.values.Database.Local.EnableLogging != nil {
+			p.Local.EnableLogging = *c.values.Database.Local.EnableLogging
+		}
+	}
+
+	if c.values.Database.Postgres != nil {
+		p.Postgres = &kvparams.Postgres{
+			ConnectionString:      c.values.Database.Postgres.ConnectionString.SecureValue(),
+			MaxIdleConnections:    c.values.Database.Postgres.MaxIdleConnections,
+			MaxOpenConnections:    c.values.Database.Postgres.MaxOpenConnections,
+			ConnectionMaxLifetime: c.values.Database.Postgres.ConnectionMaxLifetime,
+		}
+	}
+
+	if c.values.Database.DynamoDB != nil {
+		p.DynamoDB = &kvparams.DynamoDB{
+			TableName:          c.values.Database.DynamoDB.TableName,
+			ReadCapacityUnits:  c.values.Database.DynamoDB.ReadCapacityUnits,
+			WriteCapacityUnits: c.values.Database.DynamoDB.WriteCapacityUnits,
+			ScanLimit:          c.values.Database.DynamoDB.ScanLimit,
+			Endpoint:           c.values.Database.DynamoDB.Endpoint,
+			AwsRegion:          c.values.Database.DynamoDB.AwsRegion,
+			AwsProfile:         c.values.Database.DynamoDB.AwsProfile,
+			AwsAccessKeyID:     c.values.Database.DynamoDB.AwsAccessKeyID.SecureValue(),
+			AwsSecretAccessKey: c.values.Database.DynamoDB.AwsSecretAccessKey.SecureValue(),
+		}
+	}
+	return p, nil
 }
 
 func (c *Config) GetLDAPConfiguration() *LDAP {
@@ -316,10 +228,11 @@ func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
 	cfg := c.GetAwsConfig()
 
 	return blockparams.S3{
-		AwsConfig:             cfg,
-		StreamingChunkSize:    c.values.Blockstore.S3.StreamingChunkSize,
-		StreamingChunkTimeout: c.values.Blockstore.S3.StreamingChunkTimeout,
-		DiscoverBucketRegion:  c.values.Blockstore.S3.DiscoverBucketRegion,
+		AwsConfig:                     cfg,
+		StreamingChunkSize:            c.values.Blockstore.S3.StreamingChunkSize,
+		StreamingChunkTimeout:         c.values.Blockstore.S3.StreamingChunkTimeout,
+		DiscoverBucketRegion:          c.values.Blockstore.S3.DiscoverBucketRegion,
+		SkipVerifyCertificateTestOnly: c.values.Blockstore.S3.SkipVerifyCertificateTestOnly,
 	}, nil
 }
 
@@ -398,6 +311,29 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 	return c.values.Stats.FlushInterval
 }
 
+func (c *Config) GetStatsFlushSize() int {
+	return c.values.Stats.FlushSize
+}
+
+func (c *Config) GetStatsExtended() bool {
+	return c.values.Stats.Extended
+}
+
+func (c *Config) GetEmailParams() (email.Params, error) {
+	return email.Params{
+		SMTPHost:           c.values.Email.SMTPHost,
+		SMTPPort:           c.values.Email.SMTPPort,
+		UseSSL:             c.values.Email.UseSSL,
+		Username:           c.values.Email.Username,
+		Password:           c.values.Email.Password,
+		LocalName:          c.values.Email.LocalName,
+		Sender:             c.values.Email.Sender,
+		LimitEveryDuration: c.values.Email.LimitEveryDuration,
+		Burst:              c.values.Email.Burst,
+		LakefsBaseURL:      c.values.Email.LakefsBaseURL,
+	}, nil
+}
+
 const floatSumTolerance = 1e-6
 
 // GetCommittedTierFSParams returns parameters for building a tierFS.  Caller must separately
@@ -457,10 +393,53 @@ func (c *Config) GetLoggingTraceRequestHeaders() bool {
 	return c.values.Logging.TraceRequestHeaders
 }
 
+func (c *Config) GetAuditLogLevel() string {
+	return c.values.Logging.AuditLogLevel
+}
+
 func (c *Config) GetSecurityAuditCheckInterval() time.Duration {
 	return c.values.Security.AuditCheckInterval
 }
 
 func (c *Config) GetSecurityAuditCheckURL() string {
 	return c.values.Security.AuditCheckURL
+}
+
+func (c *Config) GetAuthAPIEndpoint() string {
+	return c.values.Auth.API.Endpoint
+}
+
+func (c *Config) IsAuthTypeAPI() bool {
+	return c.values.Auth.API.Endpoint != ""
+}
+
+func (c *Config) GetAuthAPIToken() string {
+	return c.values.Auth.API.Token
+}
+
+func (c *Config) GetAuthAPISupportsInvites() bool {
+	return c.values.Auth.API.SupportsInvites
+}
+
+func (c *Config) GetUISnippets() []apiparams.CodeSnippet {
+	snippets := make([]apiparams.CodeSnippet, 0, len(c.values.UI.Snippets))
+	for _, item := range c.values.UI.Snippets {
+		snippets = append(snippets, apiparams.CodeSnippet{
+			ID:   item.ID,
+			Code: item.Code,
+		})
+	}
+	return snippets
+}
+
+func (c *Config) GetAuthOIDCConfiguration() OIDC {
+	return c.values.Auth.OIDC
+}
+
+func (c *Config) GetAuthLogoutRedirectURL() string {
+	return c.values.Auth.LogoutRedirectURL
+}
+
+func (c *Config) GetUIEnabled() bool {
+	return c.values.UI.Enabled
 }

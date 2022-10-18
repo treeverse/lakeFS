@@ -22,9 +22,9 @@ const SettingsContainer = () => {
     const {response: rules, error: rulesError, loading: rulesLoading} = useAPI(async () => {
         return branchProtectionRules.getRules(repo.id)
     }, [repo, refresh])
-    if (!!error) return <Error error={error}/>;
-    if (!!rulesError) return <Error error={rulesError}/>;
-    if (!!actionError) return <Error error={actionError}/>;
+    if (error) return <Error error={error}/>;
+    if (rulesError) return <Error error={rulesError}/>;
+    if (actionError) return <Error error={actionError}/>;
     return (<>
         <div className="mt-3 mb-5">
             <div className={"section-title"}>
@@ -37,9 +37,10 @@ const SettingsContainer = () => {
                 </h4>
             </div>
             <div>
-                Define branch protection rules to prevent direct changes.
+                Define branch protection rules to prevent direct changes.&nbsp;
+                Changes to protected branches can only be done by merging from other branches.&nbsp;
                 {/* eslint-disable-next-line react/jsx-no-target-blank */}
-                Changes to protected branches can only be done by merging from other branches. <a href="https://docs.lakefs.io/reference/protected_branches.html" target="_blank">Learn more.</a>
+                <a href="https://docs.lakefs.io/reference/protected_branches.html" target="_blank">Learn more.</a>
             </div>
             {loading || rulesLoading ? <div className={"mt-3 ml-1 pr-5"}><Loading/></div> :
                 <div className={"row mt-3 ml-1 pr-5"}>

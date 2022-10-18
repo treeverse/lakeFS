@@ -122,6 +122,20 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
+    def test_forgot_password(self):
+        """Test case for forgot_password
+
+        forgot password request initiates the password reset process  # noqa: E501
+        """
+        pass
+
+    def test_get_auth_capabilities(self):
+        """Test case for get_auth_capabilities
+
+        list authentication capabilities supported  # noqa: E501
+        """
+        pass
+
     def test_get_credentials(self):
         """Test case for get_credentials
 
@@ -220,10 +234,16 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
-    def test_logout(self):
-        """Test case for logout
+    def test_oauth_callback(self):
+        """Test case for oauth_callback
 
-        logs out a cookie-authenticated user  # noqa: E501
+        """
+        pass
+
+    def test_update_password(self):
+        """Test case for update_password
+
+        Update user password by reset_password token  # noqa: E501
         """
         pass
 

@@ -44,6 +44,21 @@ public class RetentionApiTest {
      *          if the Api call fails
      */
     @Test
+    public void deleteGarbageCollectionRulesTest() throws ApiException {
+        String repository = null;
+                api.deleteGarbageCollectionRules(repository);
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
     public void getGarbageCollectionRulesTest() throws ApiException {
         String repository = null;
                 GarbageCollectionRules response = api.getGarbageCollectionRules(repository);

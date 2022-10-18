@@ -10,22 +10,33 @@ import Table from "react-bootstrap/Table";
 import {OverlayTrigger} from "react-bootstrap";
 import {CheckIcon, ClippyIcon, SyncIcon} from "@primer/octicons-react";
 import {Link} from "./nav";
+import {
+    Box,
+    Button as MuiButton,
+    CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    Typography
+} from "@mui/material";
 
 
 const defaultDebounceMs = 300;
 
-export function debounce(func, wait, immediate) {
+export const debounce = (func, wait, immediate) => {
     let timeout;
     return function() {
-        let context = this, args = arguments;
+        let args = arguments;
         let later = function() {
             timeout = null;
-            if (!immediate) func.apply(context, args);
+            if (!immediate) func.apply(null, args);
         };
         let callNow = immediate && !timeout;
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
-        if (callNow) func.apply(context, args);
+        if (callNow) func.apply(null, args);
     };
 }
 
@@ -64,18 +75,18 @@ export const Na = () => {
 };
 
 export const Error = ({error, onDismiss = null, className = null}) => {
-    let msg = error.toString();
+    let content = React.isValidElement(error) ? error : error.toString();
     // handle wrapped errors
     let err = error;
-    while (!!err.error) err = err.error;
-    if (!!err.message) msg = err.message;
+    while (err.error) err = err.error;
+    if (err.message) content = err.message;
     if (onDismiss !== null) {
-        return <Alert className={className} variant="danger" dismissible onClose={onDismiss}>{msg}</Alert>;
+        return <Alert className={className} variant="danger" dismissible onClose={onDismiss}>{content}</Alert>;
     }
     return (
-        <Alert className={className} variant="danger">{msg}</Alert>
+        <Alert className={className} variant="danger">{content}</Alert>
     );
-}
+};
 
 export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => {
     if (typeof dateValue === 'number') {
@@ -108,7 +119,7 @@ export const ActionsBar = ({ children }) => {
     );
 };
 
-const copyTextToClipboard = (text, onSuccess, onError) => {
+export const copyTextToClipboard = async (text, onSuccess, onError) => {
     const textArea = document.createElement('textarea');
 
     //
@@ -157,7 +168,11 @@ const copyTextToClipboard = (text, onSuccess, onError) => {
 
     let err = null;
     try {
-        document.execCommand('copy');
+        if ('clipboard' in navigator) {
+            await navigator.clipboard.writeText(text);
+        } else {
+            document.execCommand('copy', true, text);
+        }
     } catch (e) {
         err = e;
     }
@@ -218,7 +233,7 @@ export const TooltipButton = ({ onClick, variant, children, tooltip, className="
     );
 };
 
-export const ClipboardButton = ({ text, variant, onSuccess, icon = <ClippyIcon/>, onError, tooltip = "Copy to clipboard"}) => {
+export const ClipboardButton = ({ text, variant, onSuccess, icon = <ClippyIcon/>, onError, tooltip = "Copy to clipboard", ...rest}) => {
 
     const [show, setShow] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -240,7 +255,7 @@ export const ClipboardButton = ({ text, variant, onSuccess, icon = <ClippyIcon/>
                     return (<Tooltip {...props}>{tooltip}</Tooltip>)
                 }}
             </Overlay>
-            <Button variant={variant} ref={target} onClick={(e) => {
+            <Button variant={variant} ref={target} onClick={() => {
                 setShow(false)
                 setCopied(true)
                 if (updater !== null) updater()
@@ -248,7 +263,7 @@ export const ClipboardButton = ({ text, variant, onSuccess, icon = <ClippyIcon/>
                     if (target.current !== null) setCopied(false)
                 }, 1000);
                 copyTextToClipboard(text, onSuccess, onError);
-            }}>
+            }} {...rest}>
                 {currentIcon}
             </Button>
         </>
@@ -339,14 +354,52 @@ export const ToggleSwitch = ({  label, id, defaultChecked, onChange }) => {
 export const Warning = (props) =>
 <>
     <Alert variant="warning">
-	&#x26A0; { props.children }
+    &#x26A0; { props.children }
     </Alert>
 </>;
 
 export const Warnings = ({ warnings = [] }) => {
     return <ul className="pl-0 ml-0 warnings">
-	       {warnings.map((warning, i) =>
-		   <Warning key={i}>{warning}</Warning>
-	       )}
-	   </ul>;
+           {warnings.map((warning, i) =>
+           <Warning key={i}>{warning}</Warning>
+           )}
+       </ul>;
+};
+
+export const ProgressSpinner = ({text, changingElement =''}) => {
+    return (
+        <Box sx={{display: 'flex', alignItems: 'center'}}>
+            <Box>
+                <CircularProgress size={50}/>
+            </Box>
+            <Box sx={{p: 4}}>
+                <Typography>{text}{changingElement}</Typography>
+            </Box>
+        </Box>
+    );
+}
+
+export const ExitConfirmationDialog = ({dialogAlert, dialogDescription, onExit, onContinue, isOpen=false}) => {
+    return (
+        <Dialog
+            open={isOpen}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+        >
+            <DialogTitle id="alert-dialog-title">
+                {dialogAlert}
+            </DialogTitle>
+            <DialogContent>
+                <DialogContentText id="alert-dialog-description">
+                    {dialogDescription}
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+                <MuiButton onClick={onContinue} autoFocus>Cancel</MuiButton>
+                <MuiButton onClick={onExit}>
+                    Exit
+                </MuiButton>
+            </DialogActions>
+        </Dialog>
+    )
 };

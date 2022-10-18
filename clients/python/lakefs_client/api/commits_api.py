@@ -45,7 +45,8 @@ class CommitsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}/commits',
                 'operation_id': 'commit',
@@ -57,6 +58,7 @@ class CommitsApi(object):
                     'repository',
                     'branch',
                     'commit_creation',
+                    'source_metarange',
                 ],
                 'required': [
                     'repository',
@@ -82,15 +84,19 @@ class CommitsApi(object):
                         (str,),
                     'commit_creation':
                         (CommitCreation,),
+                    'source_metarange':
+                        (str,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'branch': 'branch',
+                    'source_metarange': 'source_metarange',
                 },
                 'location_map': {
                     'repository': 'path',
                     'branch': 'path',
                     'commit_creation': 'body',
+                    'source_metarange': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -111,7 +117,8 @@ class CommitsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/commits/{commitId}',
                 'operation_id': 'get_commit',
@@ -170,7 +177,8 @@ class CommitsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}/commits',
                 'operation_id': 'log_branch_commits',
@@ -261,6 +269,7 @@ class CommitsApi(object):
             commit_creation (CommitCreation):
 
         Keyword Args:
+            source_metarange (str): The source metarange to commit. Branch must not have uncommitted changes.. [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

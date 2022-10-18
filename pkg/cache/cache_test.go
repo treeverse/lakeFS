@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/cache"
-	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 func TestCache(t *testing.T) {
@@ -33,7 +32,9 @@ func TestCache(t *testing.T) {
 			numCalls++
 			return k * k, nil
 		})
-		testutil.MustDo(t, "GetOrSet", err)
+		if err != nil {
+			t.Fatal("GetOrSet")
+		}
 		if actual.(int) != k*k {
 			t.Errorf("got %v != %d at %d", actual, k*k, k)
 		}
