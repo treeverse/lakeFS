@@ -206,7 +206,7 @@ To export to S3:
         <exclude.tests>io/lakefs/contract/**</exclude.tests>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <name-suffix/>          <!-- Set via profile to rename JAR -->
-        <upload-path>${project.build.finalName}.jar</upload-path>
+        <upload-path>${project.build.finalName}${name-suffix}.jar</upload-path>
     </properties>
     <build>
         <finalName>hadoop-${hadoop.version}-lakefs${name-suffix}-${project.version}</finalName>
