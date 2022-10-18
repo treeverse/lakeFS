@@ -34,7 +34,7 @@ var (
 )
 
 func FormatPath(p ...string) string {
-	return strings.Join(p, string(PathDelimiter))
+	return strings.Join(p, PathDelimiter)
 }
 
 // Driver is the interface to access a kv database as a Store.

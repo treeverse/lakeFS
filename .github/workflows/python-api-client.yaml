@@ -19,9 +19,9 @@ jobs:
       shell: bash
       run: |
         if [ "${{ github.event.inputs.tag }}" != "" ]; then
-          echo "tag=$(echo ${{ github.event.inputs.tag }} | sed s/^v//)" >> $GITHUB_ENV
+          echo "tag=$(echo ${{ github.event.inputs.tag }} | sed s/^v//)" >> $GITHUB_OUTPUT
         else
-          echo "tag=$(echo ${GITHUB_REF##*/} | sed s/^v//)" >> $GITHUB_ENV
+          echo "tag=$(echo ${GITHUB_REF##*/} | sed s/^v//)" >> $GITHUB_OUTPUT
         fi
       id: version
 
@@ -40,9 +40,9 @@ jobs:
       shell: bash
       run: |
         if [ "${{ github.event.inputs.tag }}" != "" ]; then
-          echo "tag=$(echo ${{ github.event.inputs.tag }} | cut -d. -f1-2)" >> $GITHUB_ENV
+          echo "tag=$(echo ${{ github.event.inputs.tag }} | cut -d. -f1-2)" >> $GITHUB_OUTPUT
         else
-          echo "tag=$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" >> $GITHUB_ENV
+          echo "tag=$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" >> $GITHUB_OUTPUT
         fi
       id: docver
     - name: Setup Ruby
