@@ -214,7 +214,7 @@ func (s *StoreService) asyncRun(record graveler.HookRecord) {
 // Run load and run actions based on the event information
 func (s *StoreService) Run(ctx context.Context, record graveler.HookRecord) error {
 	if !s.runHooks {
-		logging.Default().WithField("record", record).Info("Hooks are disabled, skipping hooks execution")
+		logging.Default().WithField("record", record).Debug("Hooks are disabled, skipping hooks execution")
 		return nil
 	}
 
@@ -223,7 +223,7 @@ func (s *StoreService) Run(ctx context.Context, record graveler.HookRecord) erro
 		EventType: record.EventType,
 		BranchID:  record.BranchID,
 	}
-	logging.Default().WithField("record", record).WithField("spec", spec).Info("Filtering actions")
+	logging.Default().WithFields(logging.Fields{"record": record, "spec": spec}).Debug("Filtering actions")
 	actions, err := s.loadMatchedActions(ctx, record, spec)
 	if err != nil || len(actions) == 0 {
 		return err
