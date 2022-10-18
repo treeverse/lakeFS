@@ -57,6 +57,7 @@ func TestDriver(t *testing.T, name string, params kvparams.KV) {
 	t.Run("Store_Delete", func(t *testing.T) { testStoreDelete(t, ms) })
 	t.Run("Store_Scan", func(t *testing.T) { testStoreScan(t, ms) })
 	t.Run("Store_MissingArgument", func(t *testing.T) { testStoreMissingArgument(t, ms) })
+	t.Run("Store_ContextCancelled", func(t *testing.T) { testStoreContextCancelled(t, ms) })
 	t.Run("ScanPrefix", func(t *testing.T) { testScanPrefix(t, ms) })
 	t.Run("DeleteWhileIterating", func(t *testing.T) { testDeleteWhileIterPrefix(t, ms) })
 	t.Run("DeleteWhileIteratingSamePrefix", func(t *testing.T) { testDeleteWhileIterSamePrefix(t, ms) })
@@ -470,6 +471,62 @@ func testStoreMissingArgument(t *testing.T, ms MakeStore) {
 			if !errors.Is(err, kv.ErrMissingPartitionKey) {
 				t.Fatalf("Scan using empty partition key - err=%v, expected %s", err, kv.ErrMissingPartitionKey)
 			}
+		}
+	})
+}
+
+func testStoreContextCancelled(t *testing.T, ms MakeStore) {
+	ctx, cancel := context.WithCancel(context.Background())
+	store := ms(t, ctx)
+	defer store.Close()
+
+	testKey := []byte("test-key-1")
+	testValue1 := []byte("test-value-1")
+	// cancel the context for all requests
+	cancel()
+	t.Run("Set", func(t *testing.T) {
+		// set test key with value1
+		err := store.Set(ctx, []byte(testPartitionKey), testKey, testValue1)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			t.Fatalf("expected context cancellation error, got: %s", err)
+		}
+	})
+
+	t.Run("Get", func(t *testing.T) {
+		res, err := store.Get(ctx, []byte(testPartitionKey), testKey)
+		if err != nil {
+			if !errors.Is(err, context.Canceled) {
+				t.Fatalf("expected context cancellation error, got: %s", err)
+			}
+		} else if res == nil {
+			t.Fatal("cancelled context Get may succeed, but not with nil result")
+		}
+	})
+
+	t.Run("SetIf", func(t *testing.T) {
+		// creating a unique key for this test so that the predicate is nil
+		uniqueSetIfKey := uniqueKey("set-if")
+		err := store.SetIf(ctx, []byte(testPartitionKey), uniqueSetIfKey, testValue1, nil)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			t.Fatalf("expected context cancellation error, got: %s", err)
+		}
+	})
+
+	t.Run("Delete", func(t *testing.T) {
+		err := store.Delete(ctx, []byte(testPartitionKey), testKey)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			t.Fatalf("expected context cancellation error, got: %s", err)
+		}
+	})
+
+	t.Run("Scan", func(t *testing.T) {
+		res, err := store.Scan(ctx, []byte(testPartitionKey), []byte(""))
+		if err != nil {
+			if !errors.Is(err, context.Canceled) {
+				t.Fatalf("expected context cancellation error, got: %s", err)
+			}
+		} else if res == nil {
+			t.Fatal("cancelled context Scan may succeed, but not with nil result")
 		}
 	})
 }
