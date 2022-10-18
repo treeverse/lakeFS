@@ -1,7 +1,6 @@
 package local
 
 import (
-	"context"
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
@@ -10,7 +9,6 @@ import (
 )
 
 type EntriesIterator struct {
-	ctx          context.Context
 	start        []byte
 	partitionKey []byte
 	primed       bool
@@ -21,7 +19,7 @@ type EntriesIterator struct {
 	logger       logging.Logger
 }
 
-func newEntriesIterator(ctx context.Context, logger logging.Logger, db *badger.DB, partitionKey, start []byte, prefetchSize int) *EntriesIterator {
+func newEntriesIterator(logger logging.Logger, db *badger.DB, partitionKey, start []byte, prefetchSize int) *EntriesIterator {
 	prefix := partitionRange(partitionKey)
 	txn := db.NewTransaction(false)
 	opts := badger.DefaultIteratorOptions
@@ -29,7 +27,6 @@ func newEntriesIterator(ctx context.Context, logger logging.Logger, db *badger.D
 	opts.Prefix = prefix
 	iter := txn.NewIterator(opts)
 	return &EntriesIterator{
-		ctx:          ctx,
 		iter:         iter,
 		partitionKey: partitionKey,
 		start:        composeKey(partitionKey, start),
@@ -40,10 +37,6 @@ func newEntriesIterator(ctx context.Context, logger logging.Logger, db *badger.D
 
 func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
-		return false
-	}
-	if e.ctx.Err() != nil {
-		e.err = e.ctx.Err()
 		return false
 	}
 

@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	nanoid "github.com/matoous/go-nanoid/v2"
-	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/kv"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
@@ -488,41 +487,47 @@ func testStoreContextCancelled(t *testing.T, ms MakeStore) {
 	t.Run("Set", func(t *testing.T) {
 		// set test key with value1
 		err := store.Set(ctx, []byte(testPartitionKey), testKey, testValue1)
-		if !errors.Is(err, context.Canceled) {
+		if err != nil && !errors.Is(err, context.Canceled) {
 			t.Fatalf("expected context cancellation error, got: %s", err)
 		}
 	})
 
 	t.Run("Get", func(t *testing.T) {
 		res, err := store.Get(ctx, []byte(testPartitionKey), testKey)
-		if !errors.Is(err, context.Canceled) {
-			t.Fatalf("expected context cancellation error, got: %s", err)
-		}
-		if res != nil {
-			t.Fatalf("get key='%s' value='%s', expected nil", testKey, res)
+		if err != nil {
+			if !errors.Is(err, context.Canceled) {
+				t.Fatalf("expected context cancellation error, got: %s", err)
+			}
+		} else if res == nil {
+			t.Fatal("cancelled context Get may succeed, but not with nil result")
 		}
 	})
 
 	t.Run("SetIf", func(t *testing.T) {
-		err := store.SetIf(ctx, []byte(testPartitionKey), testKey, testValue1, nil)
-		if !errors.Is(err, context.Canceled) {
+		// creating a unique key for this test so that the predicate is nil
+		uniqueSetIfKey := uniqueKey("set-if")
+		err := store.SetIf(ctx, []byte(testPartitionKey), uniqueSetIfKey, testValue1, nil)
+		if err != nil && !errors.Is(err, context.Canceled) {
 			t.Fatalf("expected context cancellation error, got: %s", err)
 		}
 	})
 
 	t.Run("Delete", func(t *testing.T) {
 		err := store.Delete(ctx, []byte(testPartitionKey), testKey)
-		if !errors.Is(err, context.Canceled) {
+		if err != nil && !errors.Is(err, context.Canceled) {
 			t.Fatalf("expected context cancellation error, got: %s", err)
 		}
 	})
 
 	t.Run("Scan", func(t *testing.T) {
 		res, err := store.Scan(ctx, []byte(testPartitionKey), []byte(""))
-		if !errors.Is(err, context.Canceled) {
-			t.Fatalf("expected context cancellation error, got: %s", err)
+		if err != nil {
+			if !errors.Is(err, context.Canceled) {
+				t.Fatalf("expected context cancellation error, got: %s", err)
+			}
+		} else if res == nil {
+			t.Fatal("cancelled context Scan may succeed, but not with nil result")
 		}
-		require.Nil(t, res, "expected nil iterator")
 	})
 }
 
