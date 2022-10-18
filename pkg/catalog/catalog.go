@@ -1138,8 +1138,11 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 			break
 		}
 	}
-	// mark we stopped processing results
+	// mark we stopped processing results and throw if needed all the rest
 	done.Store(true)
+	for range resultCh {
+		// drain results channel
+	}
 
 	// wait until background work is completed
 	if err := mgmtGroup.Wait().ErrorOrNil(); err != nil {
@@ -1204,6 +1207,7 @@ type commitLogJob struct {
 	log   *CommitLog
 }
 
+// commitLogJobHeap heap of commit logs based on order. The minimum element in the tree is the root, at index 0.
 type commitLogJobHeap []*commitLogJob
 
 //goland:noinspection GoMixedReceiverTypes
