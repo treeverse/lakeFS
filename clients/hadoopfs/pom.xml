@@ -242,8 +242,7 @@ To export to S3:
                         </goals>
                         <configuration>
                             <path>target/${upload-path}</path>
-<!--                            <bucket>treeverse-clients-us-east</bucket>-->
-                            <bucket>jon-lakefs-2</bucket>
+                            <bucket>treeverse-clients-us-east</bucket>
                             <region>us-east-1</region>
                             <key>hadoop/${upload-path}</key>
                         </configuration>
