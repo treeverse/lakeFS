@@ -23,7 +23,7 @@ jobs:
           ENABLE_NEXT_JOBS: ${{ secrets.AWS_ACCESS_KEY_ID }}
         run: |
           echo "Enable next jobs based on secrets existence: ${{ env.ENABLE_NEXT_JOBS != '' }}"
-          echo "::set-output name=secretsavailable::${{ env.ENABLE_NEXT_JOBS != '' }}"
+          echo "secretsavailable=${{ env.ENABLE_NEXT_JOBS != '' }}" >> $GITHUB_ENV
 
   gen-code:
     name: Generate code from latest lakeFS app
@@ -112,11 +112,11 @@ jobs:
 
       - name: Extract version
         shell: bash
-        run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
+        run: echo "tag=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_ENV
         id: version
 
       - name: Extract db schema version from ddl migration files
-        run: echo "::set-output name=dbschema_version::$( (cd pkg/ddl/ && ls -d *.up.sql) | sed -nE '$s/^0*([0-9]+).*/\1/p' )"
+        run: echo "dbschema_version=$( (cd pkg/ddl/ && ls -d *.up.sql) | sed -nE '$s/^0*([0-9]+).*/\1/p' )" >> $GITHUB_ENV
         id: schema
 
       - name: Login to Amazon ECR
@@ -192,7 +192,7 @@ jobs:
 
       - name: Extract version
         shell: bash
-        run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
+        run: echo "tag=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_ENV
         id: version
 
       - name: Login to Amazon ECR
@@ -283,7 +283,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run: echo "::set-output name=value::$RANDOM"
+        run: echo "value=$RANDOM" >> $GITHUB_ENV
 
       - name: Test lakeFS multipart upload with Hadoop S3A
         env:
@@ -345,7 +345,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run: echo "::set-output name=value::$RANDOM"
+        run: echo "value=$RANDOM" >> $GITHUB_ENV
 
       - name: Test lakeFS S3 with Spark 2.x
         env:
@@ -405,7 +405,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run: echo "::set-output name=value::$RANDOM"
+        run: echo "value=$RANDOM" >> $GITHUB_ENV
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -488,7 +488,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run: echo "::set-output name=value::$RANDOM"
+        run: echo "value=$RANDOM" >> $GITHUB_ENV
 
       - name: Setup lakeFS for tests
         env:
@@ -529,7 +529,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run: echo "::set-output name=value::$RANDOM"
+        run: echo "value=$RANDOM" >> $GITHUB_ENV
 
       - name: Start lakeFS for Metastore tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -643,7 +643,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run: echo "::set-output name=value::$RANDOM"
+        run: echo "value=$RANDOM" >> $GITHUB_ENV
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -715,7 +715,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run: echo "::set-output name=value::$RANDOM"
+        run: echo "value=$RANDOM" >> $GITHUB_ENV
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -781,7 +781,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run: echo "::set-output name=value::$RANDOM"
+        run: echo "value=$RANDOM" >> $GITHUB_ENV
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -841,7 +841,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run: echo "::set-output name=value::$RANDOM"
+        run: echo "value=$RANDOM" >> $GITHUB_ENV
 
       - name: Test lakeFS with S3 tests KV
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -897,7 +897,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run: echo "::set-output name=value::$RANDOM"
+        run: echo "value=$RANDOM" >> $GITHUB_ENV
 
       - name: Test lakeFS with S3 tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -964,7 +964,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run: echo "::set-output name=value::$RANDOM"
+        run: echo "value=$RANDOM" >> $GITHUB_ENV
 
       - name: Start lakeFS with GS tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -1000,7 +1000,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run: echo "::set-output name=value::$RANDOM"
+        run: echo "value=$RANDOM" >> $GITHUB_ENV
 
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
