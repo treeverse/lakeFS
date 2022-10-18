@@ -196,10 +196,6 @@ To export to S3:
                     </plugin>
                 </plugins>
             </build>
-            <properties>
-                <assembly-suffix>assembly</assembly-suffix>
-                <upload-path>${project.build.finalName}-${assembly-suffix}.jar</upload-path>
-            </properties>
         </profile>
     </profiles>
 
@@ -207,7 +203,6 @@ To export to S3:
         <exclude.tests>io/lakefs/contract/**</exclude.tests>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <name-suffix/>          <!-- Set via profile to rename JAR -->
-        <assembly-suffix/>
         <upload-path>${project.build.finalName}.jar</upload-path>
     </properties>
     <build>
