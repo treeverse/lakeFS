@@ -44,7 +44,7 @@ jobs:
 
       - name: Extract version
         shell: bash
-        run: echo "tag=$(echo ${GITHUB_REF##*/} | sed s/^v//g)" >> $GITHUB_ENV
+        run: echo "tag=$(echo ${GITHUB_REF##*/} | sed s/^v//g)" >> $GITHUB_OUTPUT
         id: version
 
       - name: Set up QEMU
