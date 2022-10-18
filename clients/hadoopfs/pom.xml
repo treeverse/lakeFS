@@ -12,8 +12,8 @@ To publish to Maven Central:
 To export to S3:
     1. Choose Hadoop profile from [hadoop3, hadoop321, hadoop2] -> <hadoopProfile>
     2. mvn package -P<hadoopProfile>
-    3. mvn package -Passembly,<hadoopProfile>
-    4. mvn -P<hadoopProfile> s3-storage-wagon:s3-upload@upload-jar
+    3. mvn -P<hadoopProfile> s3-storage-wagon:s3-upload@upload-jar
+    4. mvn package -Passembly,<hadoopProfile>
     5. mvn -Passembly,<hadoopProfile> s3-storage-wagon:s3-upload@upload-jar
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
