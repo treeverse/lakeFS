@@ -297,20 +297,22 @@ const TreeContainer = ({
 }
 
 const ReadmeContainer = ({repo, reference, path='', refreshDep=''}) => {
+    let readmePath = '';
+
+    if (path) {
+        readmePath = path.endsWith('/') ? `${path}${README_FILE_NAME}` : `${path}/${README_FILE_NAME}`;
+    } else {
+        readmePath = README_FILE_NAME;
+    }
     const {response, error, loading} = useAPI(async () => {
-        if (path) {
-            path = path.endsWith('/') ? `${path}${README_FILE_NAME}` : `${path}/${README_FILE_NAME}`;
-        } else {
-            path = README_FILE_NAME;
-        }
-        return await objects.getWithHeaders(repo.id, reference.id, path);
+        return await objects.getWithHeaders(repo.id, reference.id, readmePath);
     }, [path, refreshDep]);
 
     if (loading || error) {
         return <></>;
     }
 
-    const fileExtension = getFileExtension(path);
+    const fileExtension = getFileExtension(readmePath);
     const contentType = getContentType(response?.headers);
 
     return (
