@@ -196,6 +196,9 @@ To export to S3:
                     </plugin>
                 </plugins>
             </build>
+            <properties>
+                <name-suffix>-assembly</name-suffix>
+            </properties>
         </profile>
     </profiles>
 
