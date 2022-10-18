@@ -32,9 +32,9 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event.inputs.tag }}" != "" ]; then
-            echo "::set-output name=tag::$(echo ${{ github.event.inputs.tag }} | sed s/^v//)"
+            echo "tag=$(echo ${{ github.event.inputs.tag }} | sed s/^v//)" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//)"
+            echo "tag=$(echo ${GITHUB_REF##*/} | sed s/^v//)" >> $GITHUB_OUTPUT
           fi
         id: version
 
@@ -59,20 +59,20 @@ jobs:
       - name: Get Hadoop path from version
         run: |
           if [ "${{ github.event.inputs.hadoop_version }}" == "3" ] || [ "${{ github.event.inputs.hadoop_version }}" == "3.2.1" ]; then
-            echo "::set-output name=hadoopPath::hadoop3"
+            echo "hadoopPath=hadoop3" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=hadoopPath::hadoop2"
+            echo "hadoopPath=hadoop2" >> $GITHUB_OUTPUT
           fi
         id: hadoop_path
 
       - name: Get Hadoop pom name from version
         run: |
           if [ "${{ github.event.inputs.hadoop_version }}" == "3" ]; then
-            echo "::set-output name=hadoopPom::pom-h3.xml"
+            echo "hadoopPom=pom-h3.xml" >> $GITHUB_OUTPUT
           elif [ "${{ github.event.inputs.hadoop_version }}" == "3.2.1" ]; then
-            echo "::set-output name=hadoopPom::pom-h321.xml"
+            echo "hadoopPom=pom-h321.xml" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=hadoopPom::pom.xml"
+            echo "hadoopPom=pom.xml" >> $GITHUB_OUTPUT
           fi
         id: hadoop_pom
 
@@ -89,13 +89,20 @@ jobs:
       - name: Get Hadoop profile from version
         run: |
           if [ "${{ github.event.inputs.hadoop_version }}" == "3" ]; then
-            echo "::set-output name=hadoopProfile::hadoop3"
+            echo "hadoopProfile=hadoop3" >> $GITHUB_OUTPUT
           elif [ "${{ github.event.inputs.hadoop_version }}" == "3.2.1" ]; then
-            echo "::set-output name=hadoopProfile::hadoop321"
+            echo "hadoopProfile=hadoop321" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=hadoopProfile::hadoop2"
+            echo "hadoopProfile=hadoop2" >> $GITHUB_OUTPUT
           fi
         id: hadoop_profile
+
+      - name: Publish
+        working-directory: clients/hadoopfs
+        run: mvn -P${{ steps.hadoop_profile.outputs.hadoopProfile }},release --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh"
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
 
       - name: Package
         working-directory: clients/hadoopfs
@@ -104,6 +111,15 @@ jobs:
       - name: Upload S3
         working-directory: clients/hadoopfs
         run: mvn -P${{ steps.hadoop_profile.outputs.hadoopProfile }} s3-storage-wagon:s3-upload@upload-jar -DpublicRepository=true
+
+      - name: Publish - assembly
+        working-directory: clients/hadoopfs
+        run: |
+          mvn -P${{ steps.hadoop_profile.outputs.hadoopProfile }} clean
+          mvn -P${{ steps.hadoop_profile.outputs.hadoopProfile }},assembly,release --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh" -DskipTests
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
 
       - name: Package - assembly
         working-directory: clients/hadoopfs
