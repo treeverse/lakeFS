@@ -25,7 +25,7 @@ The following are necessary changes in lakeFS in order to implement this proposa
 
 #### Objects Path Conventions
 
-1. Repository objects will be stored under the prefix `<bucket_name>/repos/<repo_uid>`
+1. Repository objects will be stored under the prefix `<storage_namespace>/repos/<repo_uid>/`
 2. Branch objects will be stored under the repo prefix with the path `branches/<branch_id>/`
 3. Each lakeFS instance will create a unique prefix partition (serialized) under the branch path to 
 store the branch objects.  
