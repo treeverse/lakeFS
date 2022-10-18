@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"bytes"
+	"container/heap"
 	"context"
 	"crypto"
 	_ "crypto/sha256"
@@ -1034,6 +1035,10 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 }
 
 func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler.RepositoryRecord, it graveler.CommitIterator, params LogParams) ([]*CommitLog, bool, error) {
+	// verify we are not listing commits without any paths
+	if len(params.PathList) == 0 {
+		return nil, false, fmt.Errorf("%w: list commits without paths", ErrInvalid)
+	}
 	// commit/key to value cache - helps when fetching the same commit/key while processing parent commits
 	const commitLogCacheSize = 1024 * 5
 	commitCache, err := lru.New(commitLogCacheSize)
@@ -1043,90 +1048,106 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 
 	const numReadResults = 3
 	done := atomic.NewBool(false)
-	out := make(chan compareJobResult, numReadResults)
-
-	createdTasks := atomic.NewInt64(-1)
 
 	// Shared workPool for the workers. 2 designated to create the work and receive the result
-	workerGroup, ctx := c.workPool.GroupContext(ctx)
-	var mgmtGroup multierror.Group
 	paths := params.PathList
+
+	// iterate over commits log and push work into work channel
+	outCh := make(chan *commitLogJob, numReadResults)
+	var mgmtGroup multierror.Group
 	mgmtGroup.Go(func() error {
-		num := 0
-		for ; it.Next(); num++ {
-			numm := num
-			vall := it.Value()
-			if done.Load() {
-				break
+		defer close(outCh)
+
+		// workers to check if commit record in path
+		workerGroup, ctx := c.workPool.GroupContext(ctx)
+
+		current := 0
+	readLoop:
+		for it.Next() && !done.Load() {
+			// if context canceled we stop processing
+			select {
+			case <-ctx.Done():
+				break readLoop
+			default:
 			}
+
+			commitRecord := it.Value()
+			// skip merge commits
+			if len(commitRecord.Parents) != NumberOfParentsOfNonMergeCommit {
+				continue
+			}
+
+			// submit work to the pool
+			commitOrder := current
+			current++
 			workerGroup.Submit(func() error {
-				if done.Load() {
-					out <- compareJobResult{num: numm}
-					return nil
+				pathInCommit, err := c.checkPathListInCommit(ctx, repository, commitRecord, paths, commitCache)
+				if err != nil {
+					return err
 				}
-
-				if len(paths) > 0 {
-					// verify that commit includes a change with object/prefix from PathList
-					if len(vall.Parents) != NumberOfParentsOfNonMergeCommit {
-						// skip merge commits
-						out <- compareJobResult{num: numm}
-						return nil
-					}
-					pathInCommit, err := c.checkPathListInCommit(ctx, repository, vall, paths, commitCache)
-					if err != nil {
-						out <- compareJobResult{num: numm, err: err}
-						return err
-					}
-					if !pathInCommit {
-						// no object or prefix found skip commit
-						out <- compareJobResult{num: numm}
-						return nil
-					}
+				job := &commitLogJob{order: commitOrder}
+				if pathInCommit {
+					job.log = convertCommit(commitRecord)
 				}
-
-				out <- compareJobResult{num: numm, log: convertCommit(vall)}
+				outCh <- job
 				return nil
 			})
 		}
-		createdTasks.Store(int64(num))
+		// wait until workers are done and return the first error
+		if err := workerGroup.Wait(); err != nil {
+			return err
+		}
 		return it.Err()
 	})
 
-	results := map[int]*CommitLog{}
+	// process out channel to keep order into results channel by using heap
+	resultCh := make(chan *CommitLog, numReadResults)
+	var jobsHeap commitLogJobHeap
 	mgmtGroup.Go(func() error {
-		for {
-			select {
-			case <-ctx.Done():
-				return nil
-			case res, ok := <-out:
-				if !ok {
-					// compareJobResults is closed, workers finished.
-					return nil
+		defer close(resultCh)
+		// read and sort by heap the result to results channel
+		current := 0
+		for result := range outCh {
+			heap.Push(&jobsHeap, result)
+			for len(jobsHeap) > 0 && jobsHeap[0].order == current {
+				job := heap.Pop(&jobsHeap).(*commitLogJob)
+				if job.log != nil {
+					resultCh <- job.log
 				}
-				if res.err != nil {
-					drain(done, out)
-					return res.err
-				}
-				results[res.num] = res.log
-
-				// scan the results array to see if we got the number of results needed
-				_, foundAll := findAllCommits(results, params, createdTasks)
-				if foundAll {
-					drain(done, out)
-					return nil
-				}
+				current++
 			}
 		}
+		// flush heap content when no more results on output channel
+		for len(jobsHeap) > 0 {
+			job := heap.Pop(&jobsHeap).(*commitLogJob)
+			if job.log != nil {
+				resultCh <- job.log
+			}
+		}
+		return nil
 	})
 
-	if err := mgmtGroup.Wait(); err != nil && !errors.Is(err, context.Canceled) {
-		return nil, false, err
+	// fill enough results, in case of an error the result channel will be closed
+	commits := make([]*CommitLog, 0)
+	for res := range resultCh {
+		commits = append(commits, res)
+		if foundAllCommits(params, commits) {
+			// All results returned until the last commit found
+			// and the number of commits found is as expected.
+			// we have what we need.
+			break
+		}
 	}
-	if err := workerGroup.Wait(); err != nil && !errors.Is(err, context.Canceled) {
-		return nil, false, err
+	// mark we stopped processing results and throw if needed all the rest
+	done.Store(true)
+	for range resultCh {
+		// drain results channel
 	}
 
-	commits, _ := findAllCommits(results, params, createdTasks)
+	// wait until background work is completed
+	if err := mgmtGroup.Wait().ErrorOrNil(); err != nil {
+		return nil, false, err
+	}
 	return logCommitsResult(commits, params)
 }
 
@@ -1181,51 +1202,35 @@ func logCommitsResult(commits []*CommitLog, params LogParams) ([]*CommitLog, boo
 	return commits, hasMore, nil
 }
 
-func drain(done *atomic.Bool, compareJobResults chan compareJobResult) {
-	done.Store(true)
-
-	for {
-		select {
-		case <-compareJobResults:
-			// nothing to do - continue to drain
-		default:
-			return
-		}
-	}
+type commitLogJob struct {
+	order int
+	log   *CommitLog
 }
 
-func findAllCommits(results map[int]*CommitLog, params LogParams, num *atomic.Int64) ([]*CommitLog, bool) {
-	var commits []*CommitLog
-	for i := 0; i < len(results); i++ {
-		log, ok := results[i]
-		if !ok {
-			// we're missing a result - not done yet
-			return nil, false
-		}
-		if log != nil {
-			commits = append(commits, log)
-		}
+// commitLogJobHeap heap of commit logs based on order. The minimum element in the tree is the root, at index 0.
+type commitLogJobHeap []*commitLogJob
 
-		if foundAllCommits(params, commits) {
-			// All results returned until the last commit found
-			// and the number of commits found is as expected.
-			// we have what we need. return commits, true
-			return commits, true
-		}
-	}
+//goland:noinspection GoMixedReceiverTypes
+func (h commitLogJobHeap) Len() int { return len(h) }
 
-	if len(results) == int(num.Load()) {
-		return commits, true
-	}
+//goland:noinspection GoMixedReceiverTypes
+func (h commitLogJobHeap) Less(i, j int) bool { return h[i].order < h[j].order }
 
-	// return the commits found, although they are less than max
-	return commits, false
+//goland:noinspection GoMixedReceiverTypes
+func (h commitLogJobHeap) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
+
+//goland:noinspection GoMixedReceiverTypes
+func (h *commitLogJobHeap) Push(x interface{}) {
+	*h = append(*h, x.(*commitLogJob))
 }
 
-type compareJobResult struct {
-	log *CommitLog
-	num int
-	err error
+//goland:noinspection GoMixedReceiverTypes
+func (h *commitLogJobHeap) Pop() interface{} {
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0 : n-1]
+	return x
 }
 
 // checkPathListInCommit checks whether the given commit contains changes to a list of paths.
