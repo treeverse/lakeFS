@@ -152,8 +152,6 @@ To export to S3:
                                     <goal>shade</goal>
                                 </goals>
                                 <configuration>
-                                    <shadedArtifactAttached>true</shadedArtifactAttached>
-                                    <shadedClassifierName>${assembly-suffix}</shadedClassifierName>
                                     <filters>
                                         <filter>
                                             <artifact>*:*</artifact>
