@@ -27,9 +27,12 @@ The following are necessary changes in lakeFS in order to implement this proposa
 
 1. Repository objects will be stored under the prefix `<storage_namespace>/repos/<repo_uid>/`
 2. For each repository branch, objects will be stored under the repo prefix with the path `branches/<branch_id>/`
-3. Each lakeFS instance will create a unique prefix partition (serialized) under the branch path to 
-store the branch objects.  
-The serialized partition prefix will allow partial scans of the bucket when running the optimized GC
+3. Each lakeFS instance will create a unique prefix partition under the branch path. This will be used by the specific
+lakeFS instance to store the branch's objects. This prefix will be composed of two parts:
+   1. Lexicographically sortable, descending time based serialization
+   2. A unique identifier for the lakeFS instance
+      `<sortable_descending_serialized_uid>_<lakefs_instance_uid>`  
+This serialized partition prefix will allow partial scans of the bucket when running the optimized GC
 4. The lakeFS instance will track the count of objects uploaded to the prefix and create a new partition every < TBD > objects uploaded
 
 The full object path for an object `file1` uploaded to repository `my-repo` on branch `test-branch` will be as follows:  
