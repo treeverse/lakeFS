@@ -336,8 +336,31 @@ The data is now created in lakeFS as new changes in your branch. You can now com
 
 ### Notes for the lakeFS Hadoop FileSystem
 
-* Since data will not be sent to the lakeFS server, using this mode maximizes data security.
+* Since data will not be sent to the lakeFS server, this mode maximizes data security.
+
 * The FileSystem implementation is tested with the latest Spark 2.X (Hadoop 2) and Spark 3.X (Hadoop 3) Bitnami images.
+
+## Using the new OutputCommitter
+
+### Configuration
+
+On Hadoop 2, configure:
+
+```xml
+<?xml version="1.0"?>
+<configuration>
+    <property>
+        <name>spark.sql.sources.outputCommitterClass</name>
+        <value>io.lakefs.committer.LakeFSOutputCommitter</value>
+    </property>
+	<property>
+		<name>spark.sql.parquet.output.committer.class</name>
+		<value>io.lakefs.committer.DummyParquetOutputCommitter</value>
+	</property>
+</configuration>
+```
+
+(You can also set a default output committer using mapred.output.committer.class and possibly setting mapred.mapper.new-api=false.)
 
 ## Case Study: SimilarWeb
 
