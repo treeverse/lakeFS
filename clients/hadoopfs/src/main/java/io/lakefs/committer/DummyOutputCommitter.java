@@ -23,11 +23,10 @@ import java.io.IOException;
 public class DummyOutputCommitter extends FileOutputCommitter {
     private static final Logger LOG = LoggerFactory.getLogger(DummyOutputCommitter.class);
 
-    protected String branch = null;
     protected String outputBranch = null;
     protected Path outputPath = null;
-    protected String workBranch;
-    protected Path workPath;
+    protected String workBranch = null;
+    protected Path workPath = null;
 
     public DummyOutputCommitter(Path outputPath, JobContext context) throws IOException {
         super(outputPath, context);
@@ -50,14 +49,15 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         // TODO(ariels): s/[^-\w]//g on the branch ID, ensuring all chars
         // are allowed.  (Some) users might manage to create a bad task
         // name.
-        this.branch = id.toString();
-        Preconditions.checkNotNull(outputPath, "missing outputPath");
-        createBranch(branch, outputBranch);
+        this.workBranch = id.toString();
+        if (outputPath != null) {
+            createBranch(workBranch, outputBranch);
 
-        ObjectLocation loc = ObjectLocation.pathToObjectLocation(null,outputPath);
-        loc.setRef(this.branch);
-        this.workPath = loc.toFSPath();
-        System.out.printf("TODO: Working path: %s\n", workPath);
+            ObjectLocation loc = ObjectLocation.pathToObjectLocation(null, outputPath);
+            loc.setRef(this.workBranch);
+            this.workPath = loc.toFSPath();
+            System.out.printf("TODO: Working path: %s\n", workPath);
+        }
     }
 
     private void createBranch(String branch, String base) { // TODO(lynn)
@@ -69,19 +69,30 @@ public class DummyOutputCommitter extends FileOutputCommitter {
 
     @Override
     public Path getWorkPath() {
-        System.out.printf("Get working path for %s -> %s\n%s\n", branch, workPath,
+        System.out.printf("Get working path for %s -> %s\n%s\n", workBranch, workPath,
                           ExceptionUtils.getStackTrace(new Throwable()));
         return workPath;
     }
 
     @Override
+    public void setupJob(JobContext context) throws IOException { // TODO(lynn)
+        if (outputPath == null)
+            return;
+        System.out.printf("TODO: Setup job on %s\n", workBranch);
+    }
+
+    @Override
     public void commitJob(JobContext jobContext) throws IOException { // TODO(lynn)
-        System.out.printf("TODO: Commit branch %s to %s\n", branch, outputBranch);
+        if (outputPath == null)
+            return;
+        System.out.printf("TODO: Commit branch %s to %s\n", workBranch, outputBranch);
     }
 
     @Override
     public void abortJob(JobContext jobContext, JobStatus.State status) throws IOException { // TODO(lynn)
-        System.out.printf("TODO: Delete(?) branch %s\n", branch);
+        if (outputPath == null)
+            return;
+        System.out.printf("TODO: Delete(?) branch %s\n", workBranch);
     }
 
     @Override
@@ -93,18 +104,24 @@ public class DummyOutputCommitter extends FileOutputCommitter {
     @Override
     public void setupTask(TaskAttemptContext taskContext)
         throws IOException {    // TODO(lynn)
-        System.out.printf("TODO: Setup task on %s\n", branch);
+        if (outputPath == null)
+            return;
+        System.out.printf("TODO: Setup task on %s\n", workBranch);
     }
 
     @Override
     public void commitTask(TaskAttemptContext taskContext)
         throws IOException {    // TODO(lynn)
-        System.out.printf("TODO: Commit task %s\n", branch);
+        if (outputPath == null)
+            return;
+        System.out.printf("TODO: Commit task %s\n", workBranch);
     }
 
     public void abortTask(TaskAttemptContext taskContext)
         throws IOException {    // TODO(lynn)
-        System.out.printf("TODO: Commit task %s\n", branch);
+        if (outputPath == null)
+            return;
+        System.out.printf("TODO: Commit task %s\n", workBranch);
     }
 
     // TODO(lynn): More methods: isRecoverySupported, isCommitJobRepeatable, recoverTask.
