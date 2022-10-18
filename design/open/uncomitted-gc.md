@@ -26,11 +26,11 @@ The following are necessary changes in lakeFS in order to implement this proposa
 #### Objects Path Conventions
 
 1. Repository objects will be stored under the prefix `<storage_namespace>/repos/<repo_uid>/`
-2. Branch objects will be stored under the repo prefix with the path `branches/<branch_id>/`
+2. For each repository branch, objects will be stored under the repo prefix with the path `branches/<branch_id>/`
 3. Each lakeFS instance will create a unique prefix partition (serialized) under the branch path to 
 store the branch objects.  
 The serialized partition prefix will allow partial scans of the bucket when running the optimized GC
-4. lakeFS will track the count of objects uploaded to the prefix and create a new one every < TBD > objects uploaded
+4. The lakeFS instance will track the count of objects uploaded to the prefix and create a new partition every < TBD > objects uploaded
 
 The full object path for an object `file1` uploaded to repository `my-repo` on branch `test-branch` will be as follows:  
     
@@ -73,16 +73,18 @@ The above-mentioned API will enable doing so for all branch objects (committed a
 
 ### GC Flows
 
+The following describe the GC process run flows in the branch scope:
+
 #### Flow 1: Clean Run
 
 1. Run PrepareUncommittedForGC
 2. Read all addresses from branch commits -> `lakeFS DF`
 3. Read all addresses from branch `GC commit` -> `lakeFS DF`
-4. Read all objects on branch path (can be done in parallel by 'partition') -> `Branch DF`
+4. Read all objects on branch path directly from object store (can be done in parallel by 'partition') -> `Branch DF`
 5. Subtract results `lakeFS DF` from `Branch DF`
 6. Filter files newer than < TOKEN_EXPIRY_TIME > and special paths
 7. The remainder is a list of files which can be safely removed
-8. Finally, save the current run's `GC commit` the last read partition and newest commit id
+8. Finally, save the current run's `GC commit` the last read partition and newest commit id in a designated location on the branch path
 
 #### Flow 2: Optimized Run
 
@@ -91,7 +93,7 @@ Optimized run uses the previous GC run output, to perform a partial scan of the 
 ##### Step 1. Analyze Data and Perform Cleanup for old entries (GC client)
 
 1. Run PrepareUncommittedForGC
-2. Read addresses from branch's new commits (all commits up to the last GC run commit id) -> `lakeFS DF`
+2. Read addresses from branch's new commits (all new commits down to the last GC run commit id) -> `lakeFS DF`
 3. Read addresses from branch `GC commit` -> `lakeFS DF`
 4. Subtract results `lakeFS DF` from previous run's `GC commit`
 5. The result is a list of files that can be safely removed
@@ -99,11 +101,11 @@ Optimized run uses the previous GC run output, to perform a partial scan of the 
 >**Note:** This step handles cases of objects that were uncommitted during previous GC run and are now deleted
 
 ##### Step 2. Analyze Data and Perform Cleanup for new entries (GC client)
-1. Read all objects on branch path up to the previous run's last read partition (can be done in parallel by 'partition') -> `Branch DF`
+1. Read all objects on branch path down to the previous run's last read partition (can be done in parallel by 'partition') -> `Branch DF`
 2. Subtract `lakeFS DF` from `Branch DF`
 3. Filter files newer than < TOKEN_EXPIRY_TIME > and special paths
 4. The remainder is a list of files which can be safely removed
-5. Finally, save the current run's `GC commit` the last read partition and newest commit id
+5. Finally, save the current run's `GC commit` the last read partition and newest commit id in a designated location on the branch path
 
 ## Limitations
 
