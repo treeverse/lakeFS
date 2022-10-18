@@ -11,7 +11,14 @@ redirect_from: ./downloads.html
 
 lakeFS brings software engineering best practices and applies them to data engineering. 
 Concepts such as Dev/Test environments and CI/CD are harder to implement in data engineering, since the data, and not just the code, should be managed.
-lakeFS provides version control over the data lake, and uses git-like semantics to create and access those versions, so every engineer feels at home with lakeFS in a few minutes. 
+lakeFS provides version control over the data lake, and uses git-like semantics to create and access those versions, so every engineer feels at home with lakeFS in a few minutes.
+
+<p class="center">
+    <img src="assets/what_is.png"/>
+</p>
+<p class="center">
+<em>In this reference diagram, lakeFS enables Python applications and Spark jobs with Git-like operations such as branching, committing and rolling back</em>
+</p>
 
 With lakeFS, you can use concepts such as ״branch״ to create an isolated version of the data, ״commit״, to create a reproducible point it time, and “merge” in order to incorporate your changes in one atomic action.
 
