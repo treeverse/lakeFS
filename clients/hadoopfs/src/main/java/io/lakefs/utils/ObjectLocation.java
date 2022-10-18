@@ -1,12 +1,49 @@
-package io.lakefs;
+package io.lakefs.utils;
+
+import io.lakefs.Constants;
 
 import org.apache.hadoop.fs.Path;
 
-class ObjectLocation {
+import javax.annotation.Nonnull;
+import java.net.URI;
+
+public class ObjectLocation {
     private String scheme;
     private String repository;
     private String ref;
     private String path;
+
+    /**
+     * Returns Location with repository, ref and path used by lakeFS based on filesystem path.
+     *
+     * @param path to extract information from.
+     * @return lakeFS Location with repository, ref and path
+     */
+    @Nonnull
+    static public ObjectLocation pathToObjectLocation(Path workingDirectory, Path path) {
+        if (!path.isAbsolute()) {
+            if (workingDirectory == null) {
+                throw new IllegalArgumentException("cannot expand local path with null workingDirectory");
+            }
+            path = new Path(workingDirectory, path);
+        }
+
+        URI uri = path.toUri();
+        ObjectLocation loc = new ObjectLocation();
+        loc.setScheme(uri.getScheme());
+        loc.setRepository(uri.getHost());
+        // extract ref and rest of the path after removing the '/' prefix
+        String s = StringUtils.trimLeadingSlash(uri.getPath());
+        int i = s.indexOf(Constants.SEPARATOR);
+        if (i == -1) {
+            loc.setRef(s);
+            loc.setPath("");
+        } else {
+            loc.setRef(s.substring(0, i));
+            loc.setPath(s.substring(i + 1));
+        }
+        return loc;
+    }
 
     public static String formatPath(String scheme, String repository, String ref, String path) {
         return String.format("%s://%s/%s/%s", scheme, repository, ref, path);
@@ -119,5 +156,9 @@ class ObjectLocation {
 
     public ObjectLocation toDirectory() {
         return new ObjectLocation(scheme, repository, ref, StringUtils.addLeadingSlash(path));
+    }
+
+    public Path toFSPath() {
+        return new Path(this.toString());
     }
 }

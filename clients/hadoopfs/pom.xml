@@ -230,6 +230,22 @@ To export to S3:
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client</artifactId>
+            <version>2.7.7</version> <!-- The common Hadoop version for Spark 2.4.7 and 3.0.1, which lakeFS supports -->
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-mapreduce-client-jobclient</artifactId>
+            <version>2.7.7</version> <!-- The common Hadoop version for Spark 2.4.7 and 3.0.1, which lakeFS supports -->
+        </dependency>
+        <dependency>
+            <groupId>org.apache.parquet</groupId>
+            <artifactId> parquet-hadoop </artifactId>
+            <scope>provided</scope>
+            <version>1.12.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <scope>test</scope>
             <type>test-jar</type>
