@@ -1,11 +1,13 @@
 package io.lakefs.committer;
 
 import io.lakefs.LakeFSFileSystem;
+import io.lakefs.LakeFSClient;
 import io.lakefs.utils.ObjectLocation;
 
 import org.apache.commons.lang.exception.ExceptionUtils; // (for debug prints ONLY)
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.JobStatus;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
@@ -33,7 +35,10 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         // TODO(lynn): Create lakeFS API client.
 
         if (outputPath != null) {
-            FileSystem fs = outputPath.getFileSystem(context.getConfiguration());
+            Configuration conf = context.getConfiguration();
+            FileSystem fs = outputPath.getFileSystem(conf);
+            LakeFSClient lakeFSClient = new LakeFSClient(fs.getScheme(), conf)
+
             Preconditions.checkArgument(fs instanceof LakeFSFileSystem,
                                         "%s not on a LakeFSFileSystem", outputPath);
             ObjectLocation outputLocation = ObjectLocation.pathToObjectLocation(null, outputPath);
