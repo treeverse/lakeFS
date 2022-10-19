@@ -243,10 +243,10 @@ jobs:
           REPOSITORY: lakefsfs-contract-test
       - name: Build and test hadoopfs (hadoop2)
         working-directory: clients/hadoopfs
-        run: mvn clean --quiet --batch-mode --update-snapshots -P'!treeverse-signing',tests-hadoop2 verify
+        run: mvn clean --quiet --batch-mode --update-snapshots -P'!treeverse-signing',contract-tests-hadoop2 verify
       - name: Build and test hadoopfs (hadoop3)
         working-directory: clients/hadoopfs
-        run: mvn clean --quiet --batch-mode --update-snapshots -P'!treeverse-signing',tests-hadoop3 verify
+        run: mvn clean --quiet --batch-mode --update-snapshots -P'!treeverse-signing',contract-tests-hadoop3 verify
       - name: logs on failure
         if: ${{ failure() }}
         continue-on-error: true

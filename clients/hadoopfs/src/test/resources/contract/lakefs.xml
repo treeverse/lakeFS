@@ -107,6 +107,7 @@
         <value>true</value>
     </property>
     <property>
+        <!-- Objects are visible in lakeFS only after closing the output stream -->
         <name>fs.contract.create-visibility-delayed</name>
         <value>true</value>
     </property>

@@ -52,7 +52,7 @@ To export to S3:
 
     <profiles>
         <profile>
-            <id>tests-hadoop2</id>
+            <id>contract-tests-hadoop2</id>
             <properties>
                 <exclude.tests>io/lakefs/contract/hadoop3/**</exclude.tests>
                 <contract_tests.resource_dir>../../test/lakefsfs_contract/</contract_tests.resource_dir>
@@ -67,7 +67,7 @@ To export to S3:
             </build>
         </profile>
         <profile>
-            <id>tests-hadoop3</id>
+            <id>contract-tests-hadoop3</id>
             <properties>
                 <exclude.tests>io/lakefs/contract/hadoop2/**</exclude.tests>
                 <contract_tests.resource_dir>../../test/lakefsfs_contract/</contract_tests.resource_dir>
