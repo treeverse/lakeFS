@@ -11,7 +11,7 @@ To solve this problem two approaches were suggested:
 Several attempts for an online solution have been made, most of which are documented [here](Link-to-hard-delete-proposal).
 This document will describe the **offline** GC process for uncommitted objects.
 
-Garbage collection of uncommitted data will be performed using the same principals of the current GC process.
+Garbage collection of uncommitted data will be performed using the same principles of the current GC process.
 The basis for this is a GC Client (i.e. _Spark_ job) consuming objects information from both lakeFS and the storage adapter, 
 and using this information to determine which objects on the bucket can be deleted.
 
