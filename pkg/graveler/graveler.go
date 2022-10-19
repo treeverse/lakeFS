@@ -28,6 +28,9 @@ const (
 	BranchUpdateMaxTries    = 10
 
 	DeleteKeysMaxSize = 1000
+
+	// BranchWriteMaxTries is the number of times to repeat the set operation if the staging token changed
+	BranchWriteMaxTries = 3
 )
 
 // Basic Types
@@ -1404,11 +1407,8 @@ func (g *KVGraveler) Set(ctx context.Context, repository *RepositoryRecord, bran
 // safeBranchWrite is a helper function that wraps a branch write operation with validation that the staging token
 // didn't change while writing to the branch.
 func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, repository *RepositoryRecord, branchID BranchID, stagingOperation func(branch *Branch) error) error {
-	// setTries is the number of times to repeat the set operation if the staging token changed
-	const setTries = 3
-
 	var try int
-	for try = 0; try < setTries; try++ {
+	for try = 0; try < BranchWriteMaxTries; try++ {
 		branch, err := g.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return err
@@ -1436,7 +1436,7 @@ func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, re
 				Info("Retrying Set")
 		}
 	}
-	if try == setTries {
+	if try == BranchWriteMaxTries {
 		return fmt.Errorf("safe branch write: %w", ErrTooManyTries)
 	}
 	return nil
