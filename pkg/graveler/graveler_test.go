@@ -360,7 +360,8 @@ func TestGraveler_Set(t *testing.T) {
 func TestGravelerSet_Advanced(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	ctx := context.Background()
-	newSetVal := graveler.ValueRecord{Key: []byte("key"), Value: &graveler.Value{Data: []byte("newValue"), Identity: []byte("newIdentity")}}
+	committedMgr := &testutil.CommittedFake{}
+	newSetVal := &graveler.ValueRecord{Key: []byte("key"), Value: &graveler.Value{Data: []byte("newValue"), Identity: []byte("newIdentity")}}
 	// RefManager mock base setup
 	refMgr := mock.NewMockRefManager(ctrl)
 	var getFlow = func() {
@@ -380,118 +381,95 @@ func TestGravelerSet_Advanced(t *testing.T) {
 		refMgr.EXPECT().GetCommit(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, graveler.ErrCommitNotFound)
 	}
 
-	tests := []struct {
-		name                string
-		expectedValueResult graveler.ValueRecord
-		expectedErr         error
-		committedMgr        *testutil.CommittedFake
-		stagingMgr          *testutil.StagingFake
-		refSetup            func()
-	}{
-		{
-			name:         "update failure",
-			committedMgr: &testutil.CommittedFake{},
-			stagingMgr: &testutil.StagingFake{
-				UpdateErr: ErrGravelerUpdate,
-			},
-			refSetup: func() {
-				refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{}, nil)
-				getFlow()
-			},
-			expectedErr: ErrGravelerUpdate,
-		},
-		{
-			name:         "branch deleted after update",
-			committedMgr: &testutil.CommittedFake{},
-			stagingMgr:   &testutil.StagingFake{},
-			refSetup: func() {
-				refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{}, nil)
-				getFlow()
-				refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, graveler.ErrNotFound)
-			},
-			expectedErr: graveler.ErrNotFound,
-		},
-		{
-			name:         "branch token changed after update - one retry",
-			committedMgr: &testutil.CommittedFake{},
-			stagingMgr:   &testutil.StagingFake{},
-			refSetup: func() {
-				// Test safeBranchWrite retries when token changed after update a single time and then succeeds
-				refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{}, nil)
-				getFlow()
-				refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(&graveler.Branch{
-					StagingToken: "new_token",
-				}, nil)
-				getFlow()
-				refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
-					StagingToken: "new_token",
-				}, nil)
-			},
-			expectedValueResult: newSetVal,
-			expectedErr:         nil,
-		},
-		{
-			name:         "branch token changed max retries",
-			committedMgr: &testutil.CommittedFake{},
-			stagingMgr:   &testutil.StagingFake{},
-			refSetup: func() {
-				// Test safeBranchWrite retries when token changed after update, reach the maximal number of retries and then succeed
-				for i := 0; i < graveler.BranchWriteMaxTries-1; i++ {
-					refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
-						StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(i)),
-					}, nil)
-					getFlow()
-					refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
-						StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(i+1)),
-					}, nil)
-				}
-				refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
-					StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(graveler.BranchWriteMaxTries)),
-				}, nil)
-				getFlow()
-				refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
-					StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(graveler.BranchWriteMaxTries)),
-				}, nil)
-			},
-			expectedValueResult: newSetVal,
-			expectedErr:         nil,
-		},
-		{
-			name:         "branch token changed retry exhausted",
-			committedMgr: &testutil.CommittedFake{},
-			stagingMgr:   &testutil.StagingFake{},
-			refSetup: func() {
-				// Test safeBranchWrite retries when token changed after update, exceed the maximal number of retries and expect fail
-				for i := 0; i < graveler.BranchWriteMaxTries; i++ {
-					refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
-						StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(i)),
-					}, nil)
-					getFlow()
-					refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
-						StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(i+1)),
-					}, nil)
-				}
-			},
-			expectedErr: graveler.ErrTooManyTries,
-		},
-	}
+	t.Run("update failure", func(t *testing.T) {
+		stagingMgr := &testutil.StagingFake{
+			UpdateErr: ErrGravelerUpdate,
+		}
+		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{}, nil)
+		getFlow()
+		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
+		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(true))
+		require.ErrorIs(t, err, ErrGravelerUpdate)
+		lastVal := stagingMgr.LastSetValueRecord
+		var expected *graveler.ValueRecord
+		require.Equal(t, expected, lastVal)
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.refSetup != nil {
-				tt.refSetup()
-			}
-			store := newGraveler(t, tt.committedMgr, tt.stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
-			err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(true))
-			require.ErrorIs(t, err, tt.expectedErr)
-			lastVal := tt.stagingMgr.LastSetValueRecord
-			if err == nil {
-				require.Equal(t, tt.expectedValueResult, *lastVal)
-			} else {
-				require.NotEqual(t, &tt.expectedValueResult, lastVal)
-			}
-		})
-	}
+	t.Run("branch deleted after update", func(t *testing.T) {
+		stagingMgr := &testutil.StagingFake{}
+		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{}, nil)
+		getFlow()
+		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, graveler.ErrNotFound)
+		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
+		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(true))
+		require.ErrorIs(t, err, graveler.ErrNotFound)
+		lastVal := stagingMgr.LastSetValueRecord
+		require.Equal(t, newSetVal, lastVal)
+	})
+
+	t.Run("branch token changed after update - one retry", func(t *testing.T) {
+		stagingMgr := &testutil.StagingFake{}
+		// Test safeBranchWrite retries when token changed after update a single time and then succeeds
+		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{}, nil)
+		getFlow()
+		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(&graveler.Branch{
+			StagingToken: "new_token",
+		}, nil)
+		getFlow()
+		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
+			StagingToken: "new_token",
+		}, nil)
+		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
+		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(true))
+		require.Nil(t, err)
+		lastVal := stagingMgr.LastSetValueRecord
+		require.Equal(t, newSetVal, lastVal)
+	})
+
+	t.Run("branch token changed max retries", func(t *testing.T) {
+		stagingMgr := &testutil.StagingFake{}
+		// Test safeBranchWrite retries when token changed after update, reach the maximal number of retries and then succeed
+		for i := 0; i < graveler.BranchWriteMaxTries-1; i++ {
+			refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
+				StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(i)),
+			}, nil)
+			getFlow()
+			refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
+				StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(i+1)),
+			}, nil)
+		}
+		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
+			StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(graveler.BranchWriteMaxTries)),
+		}, nil)
+		getFlow()
+		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
+			StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(graveler.BranchWriteMaxTries)),
+		}, nil)
+		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
+		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(true))
+		require.Nil(t, err)
+		lastVal := stagingMgr.LastSetValueRecord
+		require.Equal(t, newSetVal, lastVal)
+	})
+
+	t.Run("branch token changed retry exhausted", func(t *testing.T) {
+		stagingMgr := &testutil.StagingFake{}
+		// Test safeBranchWrite retries when token changed after update, exceed the maximal number of retries and expect fail
+		for i := 0; i < graveler.BranchWriteMaxTries; i++ {
+			refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
+				StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(i)),
+			}, nil)
+			getFlow()
+			refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
+				StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(i+1)),
+			}, nil)
+		}
+		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
+		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(true))
+		require.ErrorIs(t, err, graveler.ErrTooManyTries)
+		lastVal := stagingMgr.LastSetValueRecord
+		require.Equal(t, newSetVal, lastVal)
+	})
 }
 
 func TestGravelerGet_Advanced(t *testing.T) {
