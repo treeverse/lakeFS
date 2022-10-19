@@ -30,7 +30,7 @@ type Hooks struct {
 	TagID            graveler.TagID
 }
 
-var ErrGravelerUpdate = errors.New("test error")
+var ErrGravelerUpdate = errors.New("test update error")
 
 func (h *Hooks) PreCommitHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
