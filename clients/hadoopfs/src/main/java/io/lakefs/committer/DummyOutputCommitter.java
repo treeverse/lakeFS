@@ -9,6 +9,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.JobContext;
+import org.apache.hadoop.mapreduce.JobID;
 import org.apache.hadoop.mapreduce.JobStatus;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
@@ -25,14 +26,51 @@ import java.io.IOException;
 public class DummyOutputCommitter extends FileOutputCommitter {
     private static final Logger LOG = LoggerFactory.getLogger(DummyOutputCommitter.class);
 
+    /**
+     * Branch of output.  Defined on a task, null if this committer is a
+     * noop.
+     */
     protected String outputBranch = null;
+
+    /**
+     * Branch for this job.  Deleted if the job aborts.  Always defined,
+     * even if this committer is a noop.
+     *
+     * TODO(ariels): Configurably delete even on job success.
+     */
+    protected String jobBranch = null;
+
+    /**
+     * Branch for this task.  Deleted if the task fails.  Always defined,
+     * even if this committer is a noop.
+     *
+     * TODO(ariels): Configurably delete even on job success.
+     */
+    protected String taskBranch;
+
+    /**
+     * Output path (possibly supplied to task).  Defined on a task, null if
+     * this committer is a noop.
+     */
     protected Path outputPath = null;
-    protected String workBranch = null;
+    /**
+     * "Working" path for this task: the same as outputPath, but on
+     * taskBranch rather than on outputBranch.  Defined on a task, null if
+     * this committer is a noop.
+     */
     protected Path workPath = null;
 
     public DummyOutputCommitter(Path outputPath, JobContext context) throws IOException {
         super(outputPath, context);
         // TODO(lynn): Create lakeFS API client.
+
+        JobID id = context.getJobID();
+        // BUG(ariels): Clean up job name.  It is selected by user and might
+        // contain illegal characters.
+        this.jobBranch = context.getJobName().isEmpty() ?
+            id.toString() :
+            String.format("%s-%s", context.getJobName(), id.toString());
+        System.out.printf("TODO: Job branch: %s\n", jobBranch);
 
         if (outputPath != null) {
             Configuration conf = context.getConfiguration();
@@ -53,12 +91,11 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         // TODO(ariels): s/[^-\w]//g on the branch ID, ensuring all chars
         // are allowed.  (Some) users might manage to create a bad task
         // name.
-        this.workBranch = id.toString();
-        if (outputPath != null) {
-            createBranch(workBranch, outputBranch);
+        this.taskBranch = String.format("%s-%s", this.jobBranch, id.toString());
 
+        if (outputPath != null) {
             ObjectLocation loc = ObjectLocation.pathToObjectLocation(null, outputPath);
-            loc.setRef(this.workBranch);
+            loc.setRef(this.taskBranch);
             this.workPath = loc.toFSPath();
             System.out.printf("TODO: Working path: %s\n", workPath);
         }
@@ -73,7 +110,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
 
     @Override
     public Path getWorkPath() {
-        System.out.printf("Get working path for %s -> %s\n%s\n", workBranch, workPath,
+        System.out.printf("Get working path for %s -> %s\n%s\n", taskBranch, workPath,
                           ExceptionUtils.getStackTrace(new Throwable()));
         return workPath;
     }
@@ -82,21 +119,22 @@ public class DummyOutputCommitter extends FileOutputCommitter {
     public void setupJob(JobContext context) throws IOException { // TODO(lynn)
         if (outputPath == null)
             return;
-        System.out.printf("TODO: Setup job on %s\n", workBranch);
+        System.out.printf("TODO: Setup job for %s on %s\n", outputBranch, jobBranch);
+        createBranch(jobBranch, outputBranch);
     }
 
     @Override
     public void commitJob(JobContext jobContext) throws IOException { // TODO(lynn)
         if (outputPath == null)
             return;
-        System.out.printf("TODO: Commit branch %s to %s\n", workBranch, outputBranch);
+        System.out.printf("TODO: Commit job branch %s to %s\n", jobBranch, outputBranch);
     }
 
     @Override
     public void abortJob(JobContext jobContext, JobStatus.State status) throws IOException { // TODO(lynn)
         if (outputPath == null)
             return;
-        System.out.printf("TODO: Delete(?) branch %s\n", workBranch);
+        System.out.printf("TODO: Delete(?) job branch %s\n", jobBranch);
     }
 
     @Override
@@ -110,7 +148,8 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         throws IOException {    // TODO(lynn)
         if (outputPath == null)
             return;
-        System.out.printf("TODO: Setup task on %s\n", workBranch);
+        System.out.printf("TODO: Setup task for %s on %s\n", taskBranch, jobBranch);
+        createBranch(taskBranch, jobBranch);
     }
 
     @Override
@@ -118,14 +157,14 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         throws IOException {    // TODO(lynn)
         if (outputPath == null)
             return;
-        System.out.printf("TODO: Commit task %s\n", workBranch);
+        System.out.printf("TODO: Commit task branch %s to %s\n", taskBranch, jobBranch);
     }
 
     public void abortTask(TaskAttemptContext taskContext)
         throws IOException {    // TODO(lynn)
         if (outputPath == null)
             return;
-        System.out.printf("TODO: Commit task %s\n", workBranch);
+        System.out.printf("TODO: Delete task branch %s\n", taskBranch);
     }
 
     // TODO(lynn): More methods: isRecoverySupported, isCommitJobRepeatable, recoverTask.
