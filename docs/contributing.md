@@ -110,12 +110,27 @@ Documentation of features and changes in behaviour should be included in the pul
 You can create separate pull requests for documentation changes only.
 Documentation site customizations should be performed in accordance with the [Just The Docs Customization](https://just-the-docs.github.io/just-the-docs/docs/customization/) guide, which is applied during the site creation process.
 
+📝  Notice! lakeFS documentation is written using Markdown. make sure to familiarize yourself with the [Markdown Guide](https://www.markdownguide.org/basic-syntax/#heading-best-practices).
+
+### lakeFS Style Guide:
+* Avoid unnecessary tech jargon or vague/wordy constructions - go for a friendly and supportive tone, not condescending. 
+* Stay inclusive and welcoming - use gender-neutral words and pronouns (i.e., they instead of he/she when speaking about an abstract person like a developer).
+* Replace complex expressions with simpler ones - for example, use instead of utilize.
+* Keep it short and sweet - use short sentences of 25-30 words per sentence max. Otherwise, your readers might get lost on the way. 
+* Avoid passive voice and go for active voice instead. Example: This feature can be used to do task X. vs. You can use this feature to do task X. The second one reads much better, right?
+* Including examples helps to explain things. Show, not tell. Use illustrations, images, gifs, code snippets, etc.
+* Establish a visual hierarchy to help people quickly find the information they need. Use text formatting to create levels of title and subtitle (such as h1 to h6 headings in HTML).
+
+### Test your changes localy
 To render the documentation locally and preview changes, use the following command and [browse the documentation locally](http://localhost:4000):
 
 ```sh
 cd docs
 docker run --rm -p 4000:4000 --volume="$PWD:/srv/jekyll:Z" -it jekyll/jekyll:3.8 jekyll serve
 ```
+
+
+
 
 ### CHANGELOG.md
 
