@@ -39,7 +39,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
             FileSystem fs = outputPath.getFileSystem(conf);
             Preconditions.checkArgument(fs instanceof LakeFSFileSystem,
                                         "%s not on a LakeFSFileSystem", outputPath);
-            LakeFSClient lakeFSClient = new LakeFSClient(fs.getScheme(), conf)
+            LakeFSClient lakeFSClient = new LakeFSClient(fs.getScheme(), conf);
             ObjectLocation outputLocation = ObjectLocation.pathToObjectLocation(null, outputPath);
             this.outputBranch = outputLocation.getRef();
             this.outputPath = fs.makeQualified(outputPath);
