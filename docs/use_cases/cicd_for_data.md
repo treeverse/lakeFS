@@ -78,7 +78,7 @@ Follow the steps below to clone the hooks demo repository and to implement CI/CD
 
 Before we get started, make sure [docker](https://docs.docker.com/engine/install/) is installed on your machine.
 
-## Setup Python Flask server
+## Setup Webhooks server
 
 First, as you know, lakeFS webhooks need a remote server to serve the http requests from lakeFS. So let us set up the python flask server for webhooks.
 
@@ -86,9 +86,9 @@ Start with cloning the [lakeFS-hooks](https://github.com/treeverse/lakeFS-hooks)
 
 ```bash
 git clone https://github.com/treeverse/lakeFS-hooks.git && cd lakeFS-hooks/
-docker build -t lakefs-hooks .
+docker build -t <lakefs-hooks-image-name> .
 ```
-Once you have the `lakefs-hooks` image built, you can add this image in the lakeFS everything bagel docker. This ensures that flask server and lakeFS server are running inside the same docker container, and are part of the same docker network. This is to simplify the setup, and is not mandatory to have both the services running in the same container.
+Once you have the `<lakefs-hooks-image-name>` image built, you can add this image in the lakeFS everything bagel docker. This ensures that flask server and lakeFS server are running inside the same docker container, and are part of the same docker network. This is to simplify the setup, and is not mandatory to have both the services running in the same container.
 {: .note .note-info }
 
 ## Setup lakeFS server
@@ -99,5 +99,25 @@ To get a local lakeFS instance running on docker, you can use everything bagel d
 git clone https://github.com/treeverse/lakeFS.git && cd lakeFS/deployments/compose
 ```
 
-The python flask server image we built in the above section needs to be added to everything bagel `docker-compose.yaml` file.
+The python flask server image we built in the above section needs to be added to everything bagel `docker-compose.yaml` file. So add the following contents to the yaml file. For lakeFS instance running on everything bagel, the `lakeFS endpoint`, `access key id` and `secret key` are found in `docker-compose.yaml` file under `lakefs` section.
 
+```bash
+  lakefs-webhooks:
+    image: <lakefs-hooks-image-name>
+    container_name: lakefs-hooks
+    ports:
+      - 5001:5001
+    environment:
+      - LAKEFS_SERVER_ADDRESS=<lakefs_server_endpoint>
+      - LAKEFS_ACCESS_KEY_ID=<lakefs_access_key_id>
+      - LAKEFS_SECRET_ACCESS_KEY=<lakefs_secret_key>
+```
+Start the docker container: ```docker compose up -d```
+
+### Set up your first lakeFS webhook under 10 minutes
+
+To configure and set up a pre-merge lakeFS hook that validates file format of your data on staging branch before promoting it to production, refer to the [sample](https://github.com/treeverse/lakeFS-samples/tree/main/04-data-quality-checks-with-lakeFS-hooks) demo notebook and actions.yaml here. 
+
+To explore different checks and validations on your data, refer to [pre-built hooks config](https://github.com/treeverse/lakeFS-hooks#included-webhooks) by the lakeFS team. 
+
+To understand the comprehensive list of hooks supported by lakeFS, refer to the [documentation](https://github.com/treeverse/lakeFS-hooks).
