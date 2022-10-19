@@ -1457,7 +1457,7 @@ func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, a
 				diffs = append(diffs, Difference{
 					DBEntry: NewDBEntryBuilder().CommonLevel(true).Path(commonPrefix).Build(),
 					// We always return "changed" for common prefixes. Seeing if a common prefix is e.g. deleted is O(N)
-					Type: DifferenceTypeChanged,
+					Type: DifferenceTypePrefixChanged,
 				})
 				if len(diffs) >= limit+1 {
 					break // collected enough results
