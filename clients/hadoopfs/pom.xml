@@ -264,6 +264,13 @@ To export to S3:
             <version>${hadoop.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <scope>test</scope>
+            <type>test-jar</type>
+            <version>${hadoop.version}</version>
+        </dependency>
         <dependency>        <!-- needed for aws-java-sdk in tests(!) -->
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
