@@ -78,6 +78,7 @@ require (
 
 require (
 	github.com/IBM/pgxpoolprometheus v1.0.1
+	github.com/alitto/pond v1.8.2
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
