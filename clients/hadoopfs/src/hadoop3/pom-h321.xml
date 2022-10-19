@@ -3,9 +3,9 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>hadoop-${hadoop.version}-lakefs</artifactId>
+    <artifactId>hadoop-321-lakefs</artifactId>
     <packaging>jar</packaging>
-    <name>hadoop-${hadoop.version}-lakefs${name-suffix}</name>
+    <name>hadoop-321-lakefs${name-suffix}</name>
     <version>${project.parent.version}</version>
 
     <parent>
@@ -17,16 +17,10 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-aws</artifactId>
-            <version>${hadoop.version}</version>
-        </dependency>
-        <dependency>
             <groupId>commons-lang</groupId>
             <artifactId>commons-lang</artifactId>
             <version>2.6</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>

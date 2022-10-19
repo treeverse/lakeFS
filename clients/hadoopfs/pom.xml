@@ -124,7 +124,7 @@ To export to S3:
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <hadoop.version>3.2.2</hadoop.version>
+                <hadoop.version>3.3.2</hadoop.version>
             </properties>
         </profile>
         <profile>
@@ -206,6 +206,7 @@ To export to S3:
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <name-suffix/>          <!-- Set via profile to rename JAR -->
         <upload-path>${project.build.finalName}.jar</upload-path>
+        <hadoop.version>2.7.7</hadoop.version>
     </properties>
     <build>
         <finalName>hadoop-${hadoop.version}-lakefs${name-suffix}-${project.version}</finalName>
@@ -257,7 +258,12 @@ To export to S3:
             <artifactId>api-client</artifactId>
             <version>0.81.0</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-aws</artifactId>
+            <version>${hadoop.version}</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>        <!-- needed for aws-java-sdk in tests(!) -->
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>

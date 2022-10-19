@@ -16,9 +16,9 @@ To export to S3:
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>hadoop-${hadoop.version}-lakefs</artifactId>
+    <artifactId>hadoop-2-lakefs</artifactId>
     <packaging>jar</packaging>
-    <name>hadoop-${hadoop.version}-lakefs${name-suffix}</name>
+    <name>hadoop-2-lakefs${name-suffix}</name>
     <version>${project.parent.version}</version>
 
     <parent>
@@ -40,11 +40,6 @@ To export to S3:
             <artifactId>hadoop-common</artifactId>
             <scope>test</scope>
             <type>test-jar</type>
-            <version>${hadoop.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-aws</artifactId>
             <version>${hadoop.version}</version>
         </dependency>
     </dependencies>
