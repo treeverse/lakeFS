@@ -85,7 +85,7 @@ The following describe the GC process run flows in the branch scope:
 3. Read all addresses from branch `GC commit` -> `lakeFS DF`
 4. Read all objects on branch path directly from object store (can be done in parallel by 'partition') -> `Branch DF`
 5. Subtract results `lakeFS DF` from `Branch DF`
-6. Filter files newer than < TOKEN_EXPIRY_TIME > and special paths
+6. Remove files newer than < TOKEN_EXPIRY_TIME > and special paths
 7. The remainder is a list of files which can be safely removed
 8. Finally, save the current run's `GC commit` the last read partition and newest commit id in a designated location on the branch path
 
