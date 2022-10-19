@@ -9,7 +9,7 @@ has_children: false
 
 ---
 **Note:**
-Currently, Airbyte and lakeFS integration is broken on the latest Airbyte version ([link to issue](https://github.com/airbytehq/airbyte/issues/11871)).  
+Currently, Airbyte and lakeFS integration is broken on the latest Airbyte version ([link to issue #11871](https://github.com/airbytehq/airbyte/issues/11871)).  
 Until this issue is resolved, use the last known working version of Airbyte: [`v0.40.2`](https://github.com/airbytehq/airbyte/releases/tag/v0.40.2)
 Please note that this also affects the use of lakeFS and Airbyte Cloud.
 {: .note}
