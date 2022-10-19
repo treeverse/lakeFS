@@ -112,9 +112,11 @@ The python flask server image we built in the above section needs to be added to
       - LAKEFS_ACCESS_KEY_ID=<lakefs_access_key_id>
       - LAKEFS_SECRET_ACCESS_KEY=<lakefs_secret_key>
 ```
-Start the docker container: ```docker compose up -d```
+Start the docker container to run lakeFS server and hooks server: ```docker compose up -d```
 
-### Set up your first lakeFS webhook under 10 minutes
+Next step is to configure the custom logic for your hooks server and configuring hooks in lakeFS. 
+
+## Set up your first lakeFS webhook under 10 minutes
 
 To configure and set up a pre-merge lakeFS hook that validates file format of your data on staging branch before promoting it to production, refer to the [sample](https://github.com/treeverse/lakeFS-samples/tree/main/04-data-quality-checks-with-lakeFS-hooks) demo notebook and actions.yaml here. 
 
