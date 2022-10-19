@@ -12,7 +12,7 @@ Thank you for your interest in contributing to our project. Whether it's a bug r
 
 Please read through this document before submitting any issues or pull requests to ensure that we have all the necessary information to effectively respond to your bug report or contribution.
 
-Don't know where to start? Reach out on the #dev channel on [our Slack](https://lakefs.io/slack) and we will help you get started. We also recommend this [free series](https://app.egghead.io/playlists/how-to-contribute-to-an-open-source-project-on-github){:target="_blank"} about contributing to OSS projects.
+*Don't know where to start?* Reach out on the #dev channel on [our Slack](https://lakefs.io/slack) and we will help you get started. We also recommend this [free series](https://app.egghead.io/playlists/how-to-contribute-to-an-open-source-project-on-github){:target="_blank"} about contributing to OSS projects.
 {: .note .note-info }
 
 ## Getting Started
@@ -104,18 +104,38 @@ Check back shortly after submitting your pull request to make sure that your cod
 
 A developer from our team will review your pull request, and may request some changes to it. After the request is approved, it will be merged to our main branch.
 
+
+
 ## Documentation
+
+Any contribution to the docs, whether it is in conjunction with a code contribution or as a standalone, is appreciated.
 
 Documentation of features and changes in behaviour should be included in the pull request.
 You can create separate pull requests for documentation changes only.
-Documentation site customizations should be performed in accordance with the [Just The Docs Customization](https://just-the-docs.github.io/just-the-docs/docs/customization/) guide, which is applied during the site creation process.
 
+📝  Notice! lakeFS documentation is written using Markdown. make sure to familiarize yourself with the [Markdown Guide](https://www.markdownguide.org/basic-syntax/#heading-best-practices).
+
+Customizing the lakeFS docs site should follow the following guidelines: [Just The Docs Customization](https://just-the-docs.github.io/just-the-docs/docs/customization/) and style-guide.
+
+### lakeFS Style Guide:
+* Don't use unnecessary tech jargon or vague/wordy constructions - keep it friendly, not condescending.
+* Be inclusive and welcoming - use gender-neutral words and pronouns when talking about abstract people like developers).
+* Replace complex expressions with simpler ones.
+* Keep it short - 25-30 words max per sentence.  Otherwise, your readers might get lost on the way. 
+* Use active voice instead of passive. For example: This feature can be used to do task X. vs. You can use this feature to do task X. The second one reads much better, right?
+* You can explain things better by including examples. Show, not tell. Use illustrations, images, gifs, code snippets, etc.
+* Establish a visual hierarchy to help people quickly find the information they need. Use text formatting to create levels of title and subtitle (such as h1 to h6 headings in HTML).
+
+### Test your changes localy
 To render the documentation locally and preview changes, use the following command and [browse the documentation locally](http://localhost:4000):
 
 ```sh
 cd docs
 docker run --rm -p 4000:4000 --volume="$PWD:/srv/jekyll:Z" -it jekyll/jekyll:3.8 jekyll serve
 ```
+
+
+
 
 ### CHANGELOG.md
 
