@@ -34,19 +34,13 @@ There are two ways you can use lakeFS with Spark:
 
 ## Use the S3 gateway
 
-To use this mode you configure the Spark application to use S3A using the S3-compatible
-endpoint that the lakeFS server provides. Accordingly, all data flows through the lakeFS
-server.
-
-Accessing data in lakeFS from Spark is the same as accessing S3 data from Spark. The only
-changes you need to consider are:
-1. Setting the configurations to access lakeFS,
-1. Accessing objects using the lakeFS S3 path convention.
+lakeFS has an S3-compatible endpoint. Simply point Spark to this endpoint to get started quickly.
+You will use S3-style URIs to access your data, e.g. `s3a://example-repo/example-branch/example-table`.
 
 ### Configuration
 {: .no_toc }
 
-To configure Spark to work with lakeFS, we set S3 Hadoop configuration to the lakeFS endpoint and credentials:
+To configure Spark to work with lakeFS, we set S3A Hadoop configuration to the lakeFS endpoint and credentials:
 
 | Hadoop Configuration          | Value                                        |
 |-------------------------------|----------------------------------------------|
