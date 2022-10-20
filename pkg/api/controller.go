@@ -3637,7 +3637,7 @@ func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms per
 
 func (c *Controller) isNameValid(name string, nameType string) (bool, string) {
 	if strings.Contains(name, "%") {
-		return false, fmt.Sprintf("%s name cannot contain '%'", nameType)
+		return false, fmt.Sprintf("%s name cannot contain '%%'", nameType)
 	}
 	return true, ""
 }
