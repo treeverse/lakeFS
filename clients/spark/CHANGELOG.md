@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.1 - 2022-10-20
+Bug fixes:
+* Make GC backup and restore support expired addresses list including object not in the underlying object store (#4367)
+
 ## v0.5.0 - 2022-10-06
 What's new:
 * A utility for GC backup and restore. It allows users to copy objects that GC plans to delete or restore objects
