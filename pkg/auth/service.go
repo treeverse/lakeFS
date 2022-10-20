@@ -706,7 +706,7 @@ func (s *KVAuthService) ListGroupUsers(ctx context.Context, groupDisplayName str
 	return model.ConvertUsersDataList(msgs), paginator, err
 }
 
-func ValidatePolicy(ctx context.Context, policy *model.Policy, update bool) error {
+func ValidatePolicy(policy *model.Policy) error {
 	if err := model.ValidateAuthEntityID(policy.DisplayName); err != nil {
 		return err
 	}
@@ -727,7 +727,7 @@ func ValidatePolicy(ctx context.Context, policy *model.Policy, update bool) erro
 }
 
 func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.Policy, update bool) error {
-	if err := ValidatePolicy(ctx, policy, update); err != nil {
+	if err := ValidatePolicy(policy); err != nil {
 		return err
 	}
 	policyKey := model.PolicyPath(policy.DisplayName)
