@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -409,6 +410,138 @@ var fsRmCmd = &cobra.Command{
 	},
 }
 
+const DefaultDownloadParallel = 6
+
+var fsDownloadCmd = &cobra.Command{
+	Use:   "download <path uri> [<destination path>]",
+	Short: "Download object(s) from a given repository path",
+	Args:  cobra.RangeArgs(1, 2),
+	Run: func(cmd *cobra.Command, args []string) {
+		pathURI := MustParsePathURI("path", args[0])
+		flagSet := cmd.Flags()
+		direct := MustBool(flagSet.GetBool("direct"))
+		recursive := MustBool(flagSet.GetBool("recursive"))
+		parallel := MustInt(flagSet.GetInt("parallel"))
+
+		if parallel < 1 {
+			DieFmt("Invalid value for parallel (%d), minimum is 1.\n", parallel)
+		}
+
+		// optional destination directory
+		var dest string
+		if len(args) > 1 {
+			dest = args[1]
+			// verify destination path exists
+			if len(dest) > 0 {
+				pathExists(dest)
+			}
+		}
+
+		// list the files
+		client := getClient()
+		downloadCh := make(chan string)
+		sourceURI := api.StringValue(pathURI.Path)
+
+		// recursive assume source is directory
+		if recursive && len(sourceURI) > 0 && !strings.HasSuffix(sourceURI, "/") {
+			sourceURI += "/"
+		}
+		go func() {
+			defer close(downloadCh)
+			if recursive {
+				pfx := api.PaginationPrefix(sourceURI)
+				var from string
+				for {
+					params := &api.ListObjectsParams{
+						Prefix: &pfx,
+						After:  api.PaginationAfterPtr(from),
+					}
+					resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
+					DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+					for _, p := range resp.JSON200.Results {
+						downloadCh <- p.Path
+					}
+
+					pagination := resp.JSON200.Pagination
+					if !pagination.HasMore {
+						break
+					}
+					from = pagination.NextOffset
+				}
+			} else {
+				downloadCh <- api.StringValue(pathURI.Path)
+			}
+		}()
+
+		// download in parallel
+		ctx := cmd.Context()
+		var (
+			wg         sync.WaitGroup
+			errCounter int64
+		)
+		wg.Add(parallel)
+		for i := 0; i < parallel; i++ {
+			go func() {
+				defer wg.Done()
+				for downloadPath := range downloadCh {
+					src := uri.URI{
+						Repository: pathURI.Repository,
+						Ref:        pathURI.Ref,
+						Path:       &downloadPath,
+					}
+					// destination is without the source URI
+					dst := filepath.Join(dest, strings.TrimPrefix(downloadPath, sourceURI))
+					err := downloadHelper(ctx, client, direct, src, dst)
+					if err == nil {
+						fmt.Printf("Download: %s to %s\n", src.String(), dst)
+					} else {
+						_, _ = fmt.Fprintf(os.Stderr, "Download failed: %s to %s - %s\n", src.String(), dst, err)
+						atomic.AddInt64(&errCounter, 1)
+					}
+				}
+			}()
+		}
+
+		// wait for download to complete
+		wg.Wait()
+		// exit with the right status code
+		if atomic.LoadInt64(&errCounter) > 0 {
+			defer os.Exit(1)
+		}
+	},
+}
+
+func downloadHelper(ctx context.Context, client *api.ClientWithResponses, direct bool, src uri.URI, dst string) error {
+	var (
+		err  error
+		body io.ReadCloser
+	)
+	if direct {
+		_, body, err = helpers.ClientDownload(ctx, client, src.Repository, src.Ref, *src.Path)
+	} else {
+		var resp *http.Response
+		resp, err = client.GetObject(ctx, src.Repository, src.Ref, &api.GetObjectParams{Path: *src.Path})
+		if resp != nil {
+			body = resp.Body
+		}
+	}
+	if err != nil {
+		return fmt.Errorf("get object '%s' failed: %w", src.String(), err)
+	}
+	defer func() { _ = body.Close() }()
+
+	// make sure we have dest dir
+	dir := filepath.Dir(dst)
+	_ = os.MkdirAll(dir, 0o755)
+	f, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = f.Close() }()
+	_, err = io.Copy(f, body)
+	return err
+}
+
 // fsCmd represents the fs command
 var fsCmd = &cobra.Command{
 	Use:   "fs",
@@ -424,6 +557,7 @@ func init() {
 	fsCmd.AddCommand(fsUploadCmd)
 	fsCmd.AddCommand(fsStageCmd)
 	fsCmd.AddCommand(fsRmCmd)
+	fsCmd.AddCommand(fsDownloadCmd)
 
 	fsCatCmd.Flags().BoolP("direct", "d", false, "read directly from backing store (faster but requires more credentials)")
 
@@ -447,4 +581,8 @@ func init() {
 
 	fsRmCmd.Flags().BoolP("recursive", "r", false, "recursively delete all objects under the specified path")
 	fsRmCmd.Flags().IntP("concurrency", "C", 50, "max concurrent single delete operations to send to the lakeFS server")
+
+	fsDownloadCmd.Flags().BoolP("direct", "d", false, "read directly from backing store (requires credentials)")
+	fsDownloadCmd.Flags().BoolP("recursive", "r", false, "recursively all objects under path")
+	fsDownloadCmd.Flags().IntP("parallel", "p", DefaultDownloadParallel, "max concurrent downloads")
 }
