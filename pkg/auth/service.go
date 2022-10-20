@@ -727,15 +727,6 @@ func ValidatePolicy(ctx context.Context, policy *model.Policy, update bool) erro
 }
 
 func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.Policy, update bool) error {
-	// If we're not updating an existing policy, i.e. create request,
-	// we need to make sure we don't already have a policy with this name
-	if !update {
-		_, gpErr := s.GetPolicy(ctx, policy.DisplayName)
-		if gpErr == nil {
-			return ErrAlreadyExists
-		}
-	}
-
 	if err := ValidatePolicy(ctx, policy, update); err != nil {
 		return err
 	}
