@@ -21,6 +21,7 @@ import {useRouter} from "../../../lib/hooks/router";
 import {Link} from "../../../lib/components/nav";
 import GroupPage from "./group";
 import {EntityActionModal} from "../../../lib/components/auth/forms";
+import { disallowPercentSign, INVALID_GROUP_NAME_ERROR_MESSAGE } from "../validation";
 
 
 const GroupsContainer = () => {
@@ -91,6 +92,7 @@ const GroupsContainer = () => {
                 title="Create Group"
                 placeholder="Group Name (e.g. 'DataTeam')"
                 actionName={"Create"}
+                validationFunction={disallowPercentSign(INVALID_GROUP_NAME_ERROR_MESSAGE)}
             />
 
             <DataTable

@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useState, useCallback} from "react";
 
 import Button from "react-bootstrap/Button";
 
@@ -21,6 +21,7 @@ import {useRouter} from "../../../lib/hooks/router";
 import {Link} from "../../../lib/components/nav";
 import {Route, Switch} from "react-router-dom";
 import PolicyPage from "./policy";
+import { disallowPercentSign, INVALID_POLICY_ID_ERROR_MESSAGE } from "../validation";
 
 
 const PoliciesContainer = () => {
@@ -28,6 +29,7 @@ const PoliciesContainer = () => {
     const [deleteError, setDeleteError] = useState(null);
     const [showCreate, setShowCreate] = useState(false);
     const [refresh, setRefresh] = useState(false);
+    const [createModalError, setCreateModalError] = useState(null);
 
     const router = useRouter();
     const after = (router.query.after) ? router.query.after : "";
@@ -79,12 +81,20 @@ const PoliciesContainer = () => {
                 onSubmit={(policyId, policyBody) => {
                     return auth.createPolicy(policyId, policyBody).then(() => {
                         setSelected([]);
+                        setCreateModalError(null);
                         setShowCreate(false);
                         setRefresh(!refresh);
+                    }).catch((err) => {
+                        setCreateModalError(err.message);
                     })
+                }}a 
+                onHide={() => {
+                    setCreateModalError(null);
+                    setShowCreate(false)
                 }}
-                onHide={() => setShowCreate(false)}
                 show={showCreate}
+                validationFunction={disallowPercentSign(INVALID_POLICY_ID_ERROR_MESSAGE)}
+                externalError={createModalError}
             />
 
             <DataTable

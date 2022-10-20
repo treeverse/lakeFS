@@ -420,6 +420,13 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body Cr
 	ctx := r.Context()
 	c.LogAction(ctx, "create_group", r, "", "", "")
 
+	// Check that group name is valid
+	valid, msg := c.isNameValid(body.Id, "Group")
+	if !valid {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
+
 	g := &model.Group{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
@@ -697,6 +704,25 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 	ctx := r.Context()
 	c.LogAction(ctx, "create_policy", r, "", "", "")
 
+	// Check that policy ID is valid
+	valid, msg := c.isNameValid(body.Id, "Policy")
+	if !valid {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
+	
+	// Check that we don't already have a policy with this ID
+	_, gpErr := c.Auth.GetPolicy(ctx, body.Id)
+	// if err is nil, it means we got a policy, which means we can't create
+	// a new policy with this ID. Return a 409 Conflict http status code
+	// which means the request conflicts with the current state of the server
+	if gpErr == nil {
+		gpErr = auth.ErrAlreadyExists
+		if c.handleAPIError(ctx, w, gpErr) {
+			return
+		}
+	}
+
 	stmts := make(model.Statements, len(body.Statement))
 	for i, apiStatement := range body.Statement {
 		stmts[i] = model.Statement{
@@ -853,6 +879,14 @@ func (c *Controller) generateResetPasswordToken(email string, duration time.Dura
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
 	invite := swag.BoolValue(body.InviteUser)
 	username := body.Id
+	
+	// Check that username is valid
+	valid, msg := c.isNameValid(username, "User")
+	if !valid {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
+
 	var parsedEmail *string
 	if invite {
 		addr, err := mail.ParseAddress(username)
@@ -3599,4 +3633,11 @@ func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms per
 		return false
 	}
 	return true
+}
+
+func (c *Controller) isNameValid(name string, nameType string) (bool, string) {
+	if strings.Contains(name, "%") {
+		return false, fmt.Sprintf("%s name cannot contain '%'", nameType)
+	}
+	return true, ""
 }
