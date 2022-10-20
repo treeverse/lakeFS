@@ -141,10 +141,6 @@ var kvScanCmd = &cobra.Command{
 		num := 0
 		kvObjs := []kv.KvObject{}
 		for iter.Next() {
-			if iter.Err() != nil {
-				fmt.Fprintf(os.Stderr, "Failed to get next value: %s\n", iter.Err())
-				os.Exit(1)
-			}
 			entry := iter.Entry()
 			if len(until) > 0 && string(entry.Key) > until {
 				break
