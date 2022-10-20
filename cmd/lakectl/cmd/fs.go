@@ -455,6 +455,11 @@ var fsDownloadCmd = &cobra.Command{
 			sourcePath += "/"
 		}
 
+		// prefix to remove from destination
+		prefix := filepath.Dir(sourcePath)
+		if prefix != "" {
+			prefix += "/"
+		}
 		ctx := cmd.Context()
 		// list objects to download
 		go func() {
@@ -482,7 +487,7 @@ var fsDownloadCmd = &cobra.Command{
 						Path:       &downloadPath,
 					}
 					// destination is without the source URI
-					dst := filepath.Join(dest, strings.TrimPrefix(downloadPath, sourcePath))
+					dst := filepath.Join(dest, strings.TrimPrefix(downloadPath, prefix))
 					err := downloadHelper(ctx, client, direct, src, dst)
 					if err == nil {
 						fmt.Printf("Download: %s to %s\n", src.String(), dst)
