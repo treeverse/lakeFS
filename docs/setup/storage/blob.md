@@ -6,6 +6,7 @@ parent: Prepare Your Storage
 grand_parent: Set up lakeFS
 nav_order: 30
 has_children: false
+next:  ["Create your first repository", "../create-repo.html"]
 ---
 
 # Prepare Your Blob Storage Container

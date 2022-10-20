@@ -4,6 +4,7 @@ title: On Azure
 parent: Deploy lakeFS
 description:  This guide will help you deploy your production lakeFS environment on Microsoft Azure.
 nav_order: 20
+next: ["Prepare your storage", "../setup/storage/index.html"]
 ---
 
 # Deploy lakeFS on Azure

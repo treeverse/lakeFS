@@ -5,6 +5,7 @@ parent: Quickstart
 nav_order: 40
 has_children: false
 redirect_from: quickstart/lakefs_cli.html
+next: ["Deploy lakeFS on your cloud", "../deploy/index.html"]
 ---
 
 # Commit the Changes
@@ -87,5 +88,5 @@ Congratulations! You've completed your first commit in lakeFS.
 
 ### Next steps
 
-* Learn how to [deploy lakeFS lakeFS on your cloud](../deploy/index.md).
+* Learn how to [deploy lakeFS on your cloud](../deploy/index.md).
 * [Join us on Slack](https://lakefs.io/slack){:target="_blank"} to introduce yourself, discover best practices and share your own!

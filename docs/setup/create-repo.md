@@ -6,7 +6,8 @@ parent: Set up lakeFS
 nav_order: 10
 has_children: false
 redirect_from:
-   - ../deploying-aws/setup.html
+   - ../deploying-aws/setup.html 
+next:  ["Import data into lakeFS", "./import.html"]    
 ---
 
 # Create a Repository

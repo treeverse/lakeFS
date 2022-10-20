@@ -4,6 +4,7 @@ title: With Kubernetes
 parent: Deploy lakeFS
 description: This guide will help you deploy your production lakeFS environment on Kubernetes using a Helm chart.
 nav_order: 40
+next: ["Prepare your storage", "../setup/storage/index.html"]
 ---
 
 

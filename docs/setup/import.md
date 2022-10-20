@@ -6,6 +6,7 @@ parent: Set up lakeFS
 nav_order: 20
 has_children: false
 redirect_from: ../reference/import.html
+next: ["Learn about lakeFS hooks", "./hooks.html"]
 ---
 # Import data into lakeFS
 {: .no_toc }

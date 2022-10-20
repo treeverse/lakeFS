@@ -9,6 +9,7 @@ redirect_from:
    - ../deploying-aws/install.html
    - ../deploying-aws/db.html
    - ../deploying-aws/lb_dns.html
+next: ["Prepare your storage", "../setup/storage/index.html"] 
 ---
 
 # Deploy lakeFS on AWS
