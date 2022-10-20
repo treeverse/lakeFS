@@ -187,7 +187,7 @@ The data is now created in lakeFS as new changes in your branch. You can now com
 
 ## Use the lakeFS-specific Hadoop FileSystem
 
- If you're using lakeFS on top of S3, this mode will enhance your application's performance.
+If you're using lakeFS on top of S3, this mode will enhance your application's performance.
 In this mode, Spark will read and write objects directly from S3, reducing the load on the lakeFS server.
 It will still access the lakeFS server for metadata operations.
 
