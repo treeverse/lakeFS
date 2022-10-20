@@ -2,7 +2,6 @@ package io.lakefs;
 
 import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import org.apache.commons.lang.NullArgumentException;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -23,7 +22,7 @@ public class MetadataClient {
 
     public MetadataClient(FileSystem fs) {
         if (fs == null) {
-            throw new NullArgumentException("fs");
+            throw new java.lang.IllegalArgumentException();
         }
         this.fs = fs;
     }
