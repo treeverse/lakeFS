@@ -283,11 +283,16 @@ This utility is a Spark application that uses [distCp](https://hadoop.apache.org
 * Backup: copy expired objects from your repository's storage namespace to an external location before running GC in [sweep only mode](#sweep-only-mode).  
 * Restore: copy objects that were hard-deleted by GC from an external location you used for saving your backup into your repository's storage namespace.
 
+### Job options
+
+- This will only work with Hadoop versions > 3.1.3, and so require a Hadoop 3 client.
+- Note that the utility is not fast due to distcp performance limitations. You may prefer backup your whole storage namespace with [AzCopy](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) / [aws cp](https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html) / [rclone](https://rclone.org/).
+
 ### Running GC backup and restore 
 {: .no_toc }
 
 You can run GC backup and restore using `spark-submit` or using your preferred method of running Spark programs. 
-Currently, GC backup and restore is available for Spark 3.1.2 and 3.2.1, but it may work for other versions.  
+Currently, GC backup and restore is available for Spark 3.1.2 and 3.2.1, but it may work for other versions.
 
 First, download the lakeFS Spark client Uber-jar. The Uber-jar can be found on a public S3 location:
 `http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/${CLIENT_VERSION}/lakefs-spark-client-312-hadoop3-assembly-${CLIENT_VERSION}.jar
@@ -313,8 +318,8 @@ Program arguments:
 * _external location for backup_: A storage location outside your lakeFS storage namespace into which you want to save the backup.
 * _storage type_: s3
 
-Run the following command to make run backup process:
-  ```bash
+To start the backup process, run:
+```bash
 spark-submit --class io.treeverse.clients.GCBackupAndRestore \
   -c spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY> \
   -c spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_KEY> \
@@ -332,7 +337,7 @@ Program arguments:
 * _external location for backup_: A storage location outside your lakeFS storage namespace into which you want to save the backup.
 * _storage type_: s3
 
-Run the following command to make run backup process:
+To start the backup process, run:
   ```bash
 spark-submit --class io.treeverse.clients.GCBackupAndRestore \
   -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
@@ -359,8 +364,8 @@ Program arguments:
 * _storage namespace_: The storage namespace of the lakeFS repository you previously ran GC for.
 * _storage type_: s3
 
-Run the following command to make the garbage collector start running:
-  ```bash
+To start the restore process, run:
+```bash
 spark-submit --class io.treeverse.clients.GCBackupAndRestore \
   -c spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY> \
   -c spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_KEY> \
@@ -377,8 +382,7 @@ Program arguments:
 * _storage namespace_: The storage namespace of the lakeFS repository you previously ran GC for.
 * _storage type_: azure
 
-Run the following command to make the restore process start running:
-
+To start the restore process, run:
   ```bash
 spark-submit --class io.treeverse.clients.GCBackupAndRestore \
   -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
