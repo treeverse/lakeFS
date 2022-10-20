@@ -20,9 +20,11 @@ func ClientDownload(ctx context.Context, client api.ClientWithResponsesInterface
 		return nil, nil, fmt.Errorf("stat object: %w", err)
 	}
 	if err := ResponseAsError(resp); err != nil {
-		return nil, nil, fmt.Errorf("get object URI: %w", err)
+		return nil, nil, fmt.Errorf("stat object: %w", err)
 	}
-
+	if resp.JSON200 == nil {
+		return nil, nil, fmt.Errorf("stat object: %w", ErrRequestFailed)
+	}
 	physicalAddress := resp.JSON200.PhysicalAddress
 	parsedAddress, err := url.Parse(physicalAddress)
 	if err != nil {

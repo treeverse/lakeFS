@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -33,6 +34,8 @@ const fsRecursiveTemplate = `Files: {{.Count}}
 Total Size: {{.Bytes}} bytes
 Human Total Size: {{.Bytes|human_bytes}}
 `
+
+var ErrRequestFailed = errors.New("request failed")
 
 var fsStatCmd = &cobra.Command{
 	Use:               "stat <path uri>",
@@ -410,12 +413,17 @@ var fsRmCmd = &cobra.Command{
 	},
 }
 
-const DefaultDownloadParallel = 6
+const (
+	fsDownloadCmdMinArgs = 1
+	fsDownloadCmdMaxArgs = 2
+
+	fsDownloadParallelDefault = 6
+)
 
 var fsDownloadCmd = &cobra.Command{
 	Use:   "download <path uri> [<destination path>]",
 	Short: "Download object(s) from a given repository path",
-	Args:  cobra.RangeArgs(1, 2),
+	Args:  cobra.RangeArgs(fsDownloadCmdMinArgs, fsDownloadCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
 		flagSet := cmd.Flags()
@@ -440,41 +448,25 @@ var fsDownloadCmd = &cobra.Command{
 		// list the files
 		client := getClient()
 		downloadCh := make(chan string)
-		sourceURI := api.StringValue(pathURI.Path)
+		sourcePath := api.StringValue(pathURI.Path)
 
 		// recursive assume source is directory
-		if recursive && len(sourceURI) > 0 && !strings.HasSuffix(sourceURI, "/") {
-			sourceURI += "/"
+		if recursive && len(sourcePath) > 0 && !strings.HasSuffix(sourcePath, "/") {
+			sourcePath += "/"
 		}
+
+		ctx := cmd.Context()
+		// list objects to download
 		go func() {
 			defer close(downloadCh)
 			if recursive {
-				pfx := api.PaginationPrefix(sourceURI)
-				var from string
-				for {
-					params := &api.ListObjectsParams{
-						Prefix: &pfx,
-						After:  api.PaginationAfterPtr(from),
-					}
-					resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
-					DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
-					for _, p := range resp.JSON200.Results {
-						downloadCh <- p.Path
-					}
-
-					pagination := resp.JSON200.Pagination
-					if !pagination.HasMore {
-						break
-					}
-					from = pagination.NextOffset
-				}
+				listRecursiveHelper(ctx, client, pathURI.Repository, pathURI.Ref, sourcePath, downloadCh)
 			} else {
 				downloadCh <- api.StringValue(pathURI.Path)
 			}
 		}()
 
 		// download in parallel
-		ctx := cmd.Context()
 		var (
 			wg         sync.WaitGroup
 			errCounter int64
@@ -490,7 +482,7 @@ var fsDownloadCmd = &cobra.Command{
 						Path:       &downloadPath,
 					}
 					// destination is without the source URI
-					dst := filepath.Join(dest, strings.TrimPrefix(downloadPath, sourceURI))
+					dst := filepath.Join(dest, strings.TrimPrefix(downloadPath, sourcePath))
 					err := downloadHelper(ctx, client, direct, src, dst)
 					if err == nil {
 						fmt.Printf("Download: %s to %s\n", src.String(), dst)
@@ -511,28 +503,39 @@ var fsDownloadCmd = &cobra.Command{
 	},
 }
 
-func downloadHelper(ctx context.Context, client *api.ClientWithResponses, direct bool, src uri.URI, dst string) error {
-	var (
-		err  error
-		body io.ReadCloser
-	)
-	if direct {
-		_, body, err = helpers.ClientDownload(ctx, client, src.Repository, src.Ref, *src.Path)
-	} else {
-		var resp *http.Response
-		resp, err = client.GetObject(ctx, src.Repository, src.Ref, &api.GetObjectParams{Path: *src.Path})
-		if resp != nil {
-			body = resp.Body
+func listRecursiveHelper(ctx context.Context, client *api.ClientWithResponses, repo, ref, prefix string, ch chan string) {
+	pfx := api.PaginationPrefix(prefix)
+	var from string
+	for {
+		params := &api.ListObjectsParams{
+			Prefix: &pfx,
+			After:  api.PaginationAfterPtr(from),
 		}
+		resp, err := client.ListObjectsWithResponse(ctx, repo, ref, params)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		for _, p := range resp.JSON200.Results {
+			ch <- p.Path
+		}
+		pagination := resp.JSON200.Pagination
+		if !pagination.HasMore {
+			break
+		}
+		from = pagination.NextOffset
 	}
-	if err != nil {
-		return fmt.Errorf("get object '%s' failed: %w", src.String(), err)
-	}
-	defer func() { _ = body.Close() }()
+}
 
-	// make sure we have dest dir
+func downloadHelper(ctx context.Context, client *api.ClientWithResponses, direct bool, src uri.URI, dst string) error {
+	body, err := getObjectHelper(ctx, client, direct, src)
+	if err != nil {
+		return err
+	}
+	defer func(body io.ReadCloser) {
+		_ = body.Close()
+	}(body)
+
+	// create destination dir if needed
 	dir := filepath.Dir(dst)
-	_ = os.MkdirAll(dir, 0o755)
+	_ = os.MkdirAll(dir, os.ModePerm)
 	f, err := os.Create(dst)
 	if err != nil {
 		return err
@@ -540,6 +543,27 @@ func downloadHelper(ctx context.Context, client *api.ClientWithResponses, direct
 	defer func() { _ = f.Close() }()
 	_, err = io.Copy(f, body)
 	return err
+}
+
+func getObjectHelper(ctx context.Context, client *api.ClientWithResponses, direct bool, src uri.URI) (io.ReadCloser, error) {
+	if direct {
+		// download directly from storage
+		_, body, err := helpers.ClientDownload(ctx, client, src.Repository, src.Ref, *src.Path)
+		if err != nil {
+			return nil, err
+		}
+		return body, nil
+	}
+	// download from lakefs
+	resp, err := client.GetObject(ctx, src.Repository, src.Ref, &api.GetObjectParams{Path: *src.Path})
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		_ = resp.Body.Close()
+		return nil, fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status)
+	}
+	return resp.Body, nil
 }
 
 // fsCmd represents the fs command
@@ -584,5 +608,5 @@ func init() {
 
 	fsDownloadCmd.Flags().BoolP("direct", "d", false, "read directly from backing store (requires credentials)")
 	fsDownloadCmd.Flags().BoolP("recursive", "r", false, "recursively all objects under path")
-	fsDownloadCmd.Flags().IntP("parallel", "p", DefaultDownloadParallel, "max concurrent downloads")
+	fsDownloadCmd.Flags().IntP("parallel", "p", fsDownloadParallelDefault, "max concurrent downloads")
 }
