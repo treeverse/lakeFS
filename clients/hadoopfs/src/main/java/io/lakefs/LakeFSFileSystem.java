@@ -966,4 +966,12 @@ public class LakeFSFileSystem extends FileSystem {
     private static boolean isDirectory(ObjectStats stat) {
         return stat.getPath().endsWith(SEPARATOR) || stat.getPathType() == ObjectStats.PathTypeEnum.COMMON_PREFIX;
     }
+    public FSDataOutputStream createNonRecursive(Path path, FsPermission permission, EnumSet<CreateFlag> flags, int bufferSize, short replication, long blockSize, Progressable progress) throws IOException {
+        Path parent = path.getParent();
+        if (parent != null && !this.getFileStatus(parent).isDirectory()) {
+            throw new FileAlreadyExistsException("Not a directory: " + parent);
+        } else {
+            return this.create(path, permission, flags.contains(CreateFlag.OVERWRITE), bufferSize, replication, blockSize, progress);
+        }
+    }
 }
