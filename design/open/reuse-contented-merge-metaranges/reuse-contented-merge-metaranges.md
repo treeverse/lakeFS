@@ -89,6 +89,22 @@ share many ranges with the desired result and with the destination:
   the old to new destination need be applied, and we expect many ranges not
   to have such changes.
 
+One example where this assumption holds is when merging a branch that
+branched out a while back.  The first merge will bring in everything that
+has changed in other areas of the repository, so the second and following
+merges should be much smaller.
+
+Another example where we _expect_ this to work well is repeated multi-object
+writes that are powered by merges: These will have frequent merges that
+consist solely of a "directory", which is just consecutive or
+nearly-consecutive files.  Regular writes use a new "directory" and will
+quickly start using separate ranges.  Overwrites write to the same
+"directory" each time, and will continue to race other overwites to that
+directory -- but _not_ with concurrent writes to _other_ directories.  This
+use-case is _currently in progress_ for Spark with the lakeFS
+OutputCommitter, and we will likely perforn it for Iceberg and probably
+Delta.
+
 ### Alternative
 
 Rather than immediately retry a merge that loses a race, lakeFS could return
