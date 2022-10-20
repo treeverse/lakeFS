@@ -207,7 +207,7 @@ interact with your data on lakeFS.
 
    The jar is also available on a public S3 location: `s3://treeverse-clients-us-east/hadoop/hadoop-lakefs-assembly-0.1.8.jar`
 
-2. Configure S3A filesystem to with your S3 credentials (**not** the lakeFS credentials).
+2. Configure S3A filesystem with your S3 credentials (**not** the lakeFS credentials).
    Additionally, supply the `fs.lakefs.*` configurations to allow Spark to access metadata on lakeFS: 
 
    | Hadoop Configuration   | Value                                 |
