@@ -710,18 +710,6 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
-	
-	// Check that we don't already have a policy with this ID
-	_, gpErr := c.Auth.GetPolicy(ctx, body.Id)
-	// if err is nil, it means we got a policy, which means we can't create
-	// a new policy with this ID. Return a 409 Conflict http status code
-	// which means the request conflicts with the current state of the server
-	if gpErr == nil {
-		gpErr = auth.ErrAlreadyExists
-		if c.handleAPIError(ctx, w, gpErr) {
-			return
-		}
-	}
 
 	stmts := make(model.Statements, len(body.Statement))
 	for i, apiStatement := range body.Statement {
@@ -3636,6 +3624,9 @@ func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms per
 }
 
 func (c *Controller) isNameValid(name string, nameType string) (bool, string) {
+	// URLs are % encoded. Allowing % signs in entity names would
+	// limit the ability to use these entity names in the URL for both
+	// client-side routing and API fetch requests 
 	if strings.Contains(name, "%") {
 		return false, fmt.Sprintf("%s name cannot contain '%%'", nameType)
 	}
