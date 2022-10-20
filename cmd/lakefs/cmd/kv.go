@@ -27,10 +27,9 @@ var kvCmd = &cobra.Command{
 }
 
 var kvGetCmd = &cobra.Command{
-	Use:    "get <partition> <path>",
-	Short:  "Return the value for the given path under the given partition",
-	Hidden: true,
-	Args:   cobra.ExactArgs(GetCmdNumArgs),
+	Use:   "get <partition> <path>",
+	Short: "Return the value for the given path under the given partition",
+	Args:  cobra.ExactArgs(GetCmdNumArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
 
@@ -82,10 +81,9 @@ var kvGetCmd = &cobra.Command{
 }
 
 var kvScanCmd = &cobra.Command{
-	Use:    "scan <partition> [<path>]",
-	Short:  "Scan through keys and values under the given partition. An optional path can be specified as a starting point (inclusive)",
-	Hidden: true,
-	Args:   cobra.RangeArgs(ScanCmdMinArgs, ScanCmdMaxArgs),
+	Use:   "scan <partition> [<path>]",
+	Short: "Scan through keys and values under the given partition. An optional path can be specified as a starting point (inclusive)",
+	Args:  cobra.RangeArgs(ScanCmdMinArgs, ScanCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
 
