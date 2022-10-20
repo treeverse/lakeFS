@@ -23,6 +23,7 @@ import {
 } from "../../../lib/components/controls";
 import UserPage from "./user";
 import validator from "validator/es";
+import { disallowPercentSign, INVALID_USER_NAME_ERROR_MESSAGE } from "../validation";
 
 const USER_NOT_FOUND = "unknown";
 export const GetUserEmailByIdContext = createContext();
@@ -85,6 +86,7 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
                 title={canInviteUsers ? "Create Integration User" : "Create User"}
                 placeholder={canInviteUsers ? "Integration Name (e.g. Spark)" : "Username (e.g. 'jane.doe')"}
                 actionName={"Create"}
+                validationFunction={disallowPercentSign(INVALID_USER_NAME_ERROR_MESSAGE)}
             />
 
             <EntityActionModal
