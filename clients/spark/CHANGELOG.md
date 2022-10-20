@@ -3,6 +3,12 @@
 ## v0.5.1 - 2022-10-20
 Bug fixes:
 * Make GC backup and restore support expired addresses list including object not in the underlying object store (#4367)
+* Don't package with hadoop-aws.  This removes many dependency failures and
+  simplifies configuration.  But it also means that for plain Spark
+  distributions such as that provided when downloading from the Apache Spark
+  homepage you will need to add `--packages
+  org.apache.hadoop:hadoop-aws:2.7.7` or `--packages
+  org.apache.hadoop:hadoop-aws:3.2.1` or similar, to add in this package. (#4399)
 
 ## v0.5.0 - 2022-10-06
 What's new:
