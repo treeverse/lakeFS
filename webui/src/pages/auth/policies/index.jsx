@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useCallback} from "react";
+import React, {useEffect, useState} from "react";
 
 import Button from "react-bootstrap/Button";
 
@@ -87,7 +87,7 @@ const PoliciesContainer = () => {
                     }).catch((err) => {
                         setCreateModalError(err.message);
                     })
-                }}a 
+                }}
                 onHide={() => {
                     setCreateModalError(null);
                     setShowCreate(false)
