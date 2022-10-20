@@ -174,7 +174,7 @@ You should run the following command to make the garbage collector start running
 
   ```bash
 spark-submit --class io.treeverse.clients.GarbageCollector \
-  --packages org.apache.hadoop:hadoop-aws:2.7.7 \
+  --packages org.apache.hadoop:hadoop-aws:3.2.1 \
   -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
