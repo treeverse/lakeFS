@@ -6,7 +6,10 @@ import io.lakefs.utils.ObjectLocation;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.BranchesApi;
+import io.lakefs.clients.api.RefsApi;
+import io.lakefs.clients.api.CommitsApi;
 import io.lakefs.clients.api.model.BranchCreation;
+import io.lakefs.clients.api.model.CommitCreation;
 
 import org.apache.commons.lang.exception.ExceptionUtils; // (for debug prints ONLY)
 import org.apache.hadoop.fs.FileSystem;
@@ -158,6 +161,10 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         if (outputPath == null)
             return;
         System.out.printf("TODO: Commit job branch %s to %s\n", jobBranch, outputBranch);
+        CommitsApi commits = lakeFSClient.getCommits();
+        commits.commit(repository, jobBranch, new CommitCreation().message(String.format("commiting Job %s", jobContext.getJobID())));
+        RefsApi refs = lakeFSClient.getRefs();
+        refs.mergeIntoBranch(repository, jobBranch, outputBranch);
     }
 
     @Override
@@ -188,6 +195,10 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         if (outputPath == null)
             return;
         System.out.printf("TODO: Commit task branch %s to %s\n", taskBranch, jobBranch);
+        CommitsApi commits = lakeFSClient.getCommits();
+        commits.commit(repository, taskBranch, new CommitCreation().message(String.format("commiting Task %s", taskContext.getTaskAttemptID())));
+        RefsApi refs = lakeFSClient.getRefs();
+        refs.mergeIntoBranch(repository, taskBranch, jobBranch);
     }
 
     public void abortTask(TaskAttemptContext taskContext)
