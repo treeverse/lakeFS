@@ -95,6 +95,8 @@ This comes with several benefits:
 
 Extend the lakeFS HadoopFilesystem to support working directly with Azure Blob Storage.
 
+[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/4385){: target="_blank" class="btn" }
+
 ### Sync a lakeFS reference (or part of it) with a local directory
 
 Support working locally with data stored on lakeFS from a specific reference.
@@ -155,6 +157,8 @@ comply with data privacy policies. Currently, lakeFS only supports Garbage Colle
 ### Incremental Garbage Collection <span>High Priority</span>{: .label .label-blue }
 
 Support running the Garbage Collection Spark job incrementally: take into account commits and references scanned and collected on previous runs to avoid traversing the entire graph on each execution.
+
+[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/4116){: target="_blank" class="btn" }
 
 ### Support long running hooks
 

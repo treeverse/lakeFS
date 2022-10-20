@@ -7,6 +7,14 @@ nav_order: 57
 has_children: false
 ---
 
+---
+**Note:**
+Currently, Airbyte and lakeFS integration is broken on the latest Airbyte version ([link to issue #11871](https://github.com/airbytehq/airbyte/issues/11871)).  
+Until this issue is resolved, use the last known working version of Airbyte: [`v0.40.2`](https://github.com/airbytehq/airbyte/releases/tag/v0.40.2)
+Please note that this also affects the use of lakeFS and Airbyte Cloud.
+{: .note}
+---
+
 [Airbyte](https://airbyte.io//) is an open-source platform for syncing data from applications, APIs, and databases to
 warehouses, lakes, and other destinations. You can use Airbyte's connectors to get your data pipelines to consolidate
 many input sources.
