@@ -187,10 +187,12 @@ The data is now created in lakeFS as new changes in your branch. You can now com
 
 ## Use the lakeFS-specific Hadoop FileSystem
 
-In this mode, the Spark application will read and write directly from the
-underlying object store, significantly increasing application scalability and performance by
-reducing the load on the lakeFS server. It will still access the lakeFS server for metadata operations.
- 
+ If you're using lakeFS on top of S3, this mode will enhance your application's performance.
+In this mode, Spark will read and write objects directly from S3, reducing the load on the lakeFS server.
+It will still access the lakeFS server for metadata operations.
+
+Since data will not be sent to the lakeFS server, using this mode maximizes data security.  
+
 After configuring the lakeFS Hadoop FileSystem below, use URIs of the form `lakefs://example-repo/ref/path/to/data` to
 interact with your data on lakeFS.
 
