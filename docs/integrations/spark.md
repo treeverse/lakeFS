@@ -35,7 +35,7 @@ There are two ways you can use lakeFS with Spark:
 ## Use the S3 gateway
 
 lakeFS has an S3-compatible endpoint. Simply point Spark to this endpoint to get started quickly.
-You will use S3-style URIs to access your data, e.g. `s3a://example-repo/example-branch/example-table`.
+You will access your data using S3-style URIs, e.g. `s3a://example-repo/example-branch/example-table`.
 
 ### Configuration
 {: .no_toc }
