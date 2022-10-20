@@ -25,31 +25,22 @@ not on the command line or inlined in code where they might be exposed.
 {: .note}
 
 ## Two-tiered Spark support
+{: .no_toc }
 
-lakeFS support in Spark has two tiers:
+There are two ways you can use lakeFS with Spark:
 
-* Access lakeFS using the [S3A gateway](#access-lakefs-using-the-s3a-gateway).
-* Access lakeFS using the [lakeFS-specific Hadoop
-  FileSystem](#access-lakefs-using-the-lakefs-specific-hadoop-filesystem).
+* Using the [S3 gateway](#use-the-s3-gateway): get started quickly!
+* Using the [lakeFS-specific Hadoop FileSystem](#use-the-lakefs-specific-hadoop-filesystem): fully unlock the performance of lakeFS.
 
-Using the S3A gateway is easier to configure and may be more suitable for legacy or
-small-scale applications. Using the lakeFS FileSystem requires a somewhat more complex
-configuration, but offers greatly increased performance.
+## Use the S3 gateway
 
-## Access lakeFS using the S3A gateway
-
-To use this mode you configure the Spark application to use S3A using the S3-compatible
-endpoint that the lakeFS server provides. Accordingly, all data flows through the lakeFS
-server.
-
-Accessing data in lakeFS from Spark is the same as accessing S3 data from Spark. The only
-changes you need to consider are:
-1. Setting the configurations to access lakeFS,
-1. Accessing objects using the lakeFS S3 path convention.
+lakeFS has an S3-compatible endpoint. Simply point Spark to this endpoint to get started quickly.
+You will access your data using S3-style URIs, e.g. `s3a://example-repo/example-branch/example-table`.
 
 ### Configuration
+{: .no_toc }
 
-To configure Spark to work with lakeFS, we set S3 Hadoop configuration to the lakeFS endpoint and credentials:
+To configure Spark to work with lakeFS, we set S3A Hadoop configuration to the lakeFS endpoint and credentials:
 
 | Hadoop Configuration          | Value                                        |
 |-------------------------------|----------------------------------------------|
@@ -163,6 +154,8 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
 With this configuration set, you read S3A paths with `example-repo` as the bucket will use lakeFS, while all other buckets will use AWS S3.
 
 ### Reading Data
+{: .no_toc }
+
 To access objects in lakeFS, you need to use the lakeFS S3 gateway path
 conventions:
 
@@ -183,6 +176,7 @@ val df = spark.read.parquet(dataPath)
 You can now use this DataFrame like you'd normally do.
 
 ### Writing Data
+{: .no_toc }
 
 Now simply write your results back to a lakeFS path:
 ```scala
@@ -191,157 +185,130 @@ df.write.partitionBy("example-column").parquet(s"s3a://${repo}/${branch}/output-
 
 The data is now created in lakeFS as new changes in your branch. You can now commit these changes or revert them.
 
-## Access lakeFS using the lakeFS-specific Hadoop FileSystem
+## Use the lakeFS-specific Hadoop FileSystem
 
-To use this mode, you configure the Spark application to perform metadata operations on the
-lakeFS server and all data operations directly through the same underlying object store that
-lakeFS uses. The lakeFS FileSystem currently supports Spark with Hadoop Apache 2.7 using only the S3A Hadoop FileSystem
-for data access. In this mode, the Spark application will read and write directly from the
-underlying object store, significantly increasing application scalability and performance by
-reducing the load on the lakeFS server.
+If you're using lakeFS on top of S3, this mode will enhance your application's performance.
+In this mode, Spark will read and write objects directly from S3, reducing the load on the lakeFS server.
+It will still access the lakeFS server for metadata operations.
 
-Accessing data in lakeFS from Spark is the same as accessing S3 data from Spark. The only
-changes you need to make are:
+Since data will not be sent to the lakeFS server, using this mode maximizes data security.  
 
-1. Configure Spark to access lakeFS for metadata and S3 or a compatible underlying object
-   store to access data,
-1. Use `lakefs://repo/ref/path/to/data` URIs to read and write data on lakeFS rather than
-   `s3a://...` URIs.
+After configuring the lakeFS Hadoop FileSystem below, use URIs of the form `lakefs://example-repo/ref/path/to/data` to
+interact with your data on lakeFS.
 
 ### Configuration
+{: .no_toc }
 
-To configure Spark to work using the lakeFS Hadoop FileSystem, you will need to load
-the filesystem JARs and then configure both that FileSystem and the underlying data access
-FileSystem.
+1. Install the lakeFS Hadoop FileSystem:
 
-#### Load the FileSystem JARs
+   Add the package to your _spark-submit_ command:
 
-Add the package `io.lakefs:hadoop-lakefs-assembly:<VERSION>` to your Spark command:
+   ```
+   --packages io.lakefs:hadoop-lakefs-assembly:0.1.8
+   ```
 
-```
---packages io.lakefs:hadoop-lakefs-assembly:0.1.6
-```
+   The jar is also available on a public S3 location: `s3://treeverse-clients-us-east/hadoop/hadoop-lakefs-assembly-0.1.8.jar`
 
-The jar is also available on a public S3 location: `s3://treeverse-clients-us-east/hadoop/hadoop-lakefs-assembly-0.1.6.jar`
+2. Configure S3A filesystem with your S3 credentials (**not** the lakeFS credentials).
+   Additionally, supply the `fs.lakefs.*` configurations to allow Spark to access metadata on lakeFS: 
 
-#### Configure the lakeFS FileSystem and the underlying S3A FileSystem
+   | Hadoop Configuration   | Value                                 |
+   |------------------------|---------------------------------------|
+   | `fs.s3a.access.key`    | Set to the AWS S3 access key          |
+   | `fs.s3a.secret.key`    | Set to the AWS S3 secret key          |
+   | `fs.s3a.endpoint`      | Set to the AWS S3-compatible endpoint |
+   | `fs.lakefs.impl`       | `io.lakefs.LakeFSFileSystem`          |
+   | `fs.lakefs.access.key` | Set to the lakeFS access key          |
+   | `fs.lakefs.secret.key` | Set to the lakeFS secret key          |
+   | `fs.lakefs.endpoint`   | Set to the lakeFS API URL             |
 
-Add Hadoop configuration to the underlying storage and additionally to lakeFS credentials.
-When using this mode, do **not** set the S3A endpoint URL to point at lakeFS - it should
-point at the underlying storage.
+   The lakeFS Hadoop FileSystem uses the `fs.s3a.*` properties to directly
+   access S3. If your cluster already has access to your buckets (for example, if you're using an AWS instance profile), then you don't need to configure these properties.
+   permissions.
+   {: .note }
 
-| Hadoop Configuration   | Value                                 |
-|------------------------|---------------------------------------|
-| `fs.s3a.access.key`    | Set to the AWS S3 access key          |
-| `fs.s3a.secret.key`    | Set to the AWS S3 secret key          |
-| `fs.s3a.endpoint`      | Set to the AWS S3-compatible endpoint |
-| `fs.lakefs.impl`       | `io.lakefs.LakeFSFileSystem`          |
-| `fs.lakefs.access.key` | Set to the lakeFS access key          |
-| `fs.lakefs.secret.key` | Set to the lakeFS secret key          |
-| `fs.lakefs.endpoint`   | Set to the lakeFS API URL             |
-
-When using AWS S3 itself, the default configuration works with us-east-1, so you may still
-need to configure `fs.s3a.endpoint`. Amazon provides [S3
-endpoints](https://docs.aws.amazon.com/general/latest/gr/s3.html) you can use.
-
-**Note:** The lakeFS Hadoop FileSystem uses the `fs.s3a.*` properties to directly
-access S3. If your cluster already has access to your buckets (for example, if you're using an AWS instance profile), then you don't need to configure these properties.
-permissions.
-
-Here is how to do it:
-<div class="tabs">
-  <ul>
-    <li><a href="#lakefs-config-tabs-cli">CLI</a></li>
-    <li><a href="#lakefs-config-tabs-code">Scala</a></li>
-    <li><a href="#lakefs-config-tabs-xml">XML Configuration</a></li>
-  </ul> 
-  <div markdown="1" id="lakefs-config-tabs-cli">
-```shell
-spark-shell --conf spark.hadoop.fs.s3a.access.key='AKIAIOSFODNN7EXAMPLE' \
-              --conf spark.hadoop.fs.s3a.secret.key='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY' \
-              --conf spark.hadoop.fs.s3a.endpoint='https://s3.eu-central-1.amazonaws.com' \
-              --conf spark.hadoop.fs.lakefs.impl=io.lakefs.LakeFSFileSystem \
-              --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
-              --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
-              --conf spark.hadoop.fs.lakefs.endpoint=https://lakefs.example.com/api/v1 \
-              --packages io.lakefs:hadoop-lakefs-assembly:0.1.6
-              ...
-```
-  </div>
-  <div markdown="1" id="lakefs-config-tabs-code">
-
-Ensure you load the lakeFS FileSystem into Spark by running it with `--packages` or `--jars`,
-and then run:
-
-```scala
-spark.sparkContext.hadoopConfiguration.set("fs.s3a.access.key", "AKIAIOSFODNN7EXAMPLE")
-spark.sparkContext.hadoopConfiguration.set("fs.s3a.secret.key", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
-spark.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", "https://s3.eu-central-1.amazonaws.com")
-spark.sparkContext.hadoopConfiguration.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem")
-spark.sparkContext.hadoopConfiguration.set("fs.lakefs.access.key", "AKIAlakefs12345EXAMPLE")
-spark.sparkContext.hadoopConfiguration.set("fs.lakefs.secret.key", "abc/lakefs/1234567bPxRfiCYEXAMPLEKEY")
-spark.sparkContext.hadoopConfiguration.set("fs.lakefs.endpoint", "https://lakefs.example.com/api/v1")
-```
-  </div>
-  <div markdown="1" id="lakefs-config-tabs-xml">
-
-Make sure that you load the lakeFS FileSystem into Spark by running it with `--packages` or `--jars`,
-and then add these into a configuration file, e.g., `$SPARK_HOME/conf/hdfs-site.xml`:
-
-```xml
-<?xml version="1.0"?>
-<configuration>
-    <property>
-        <name>fs.s3a.access.key</name>
-        <value>AKIAIOSFODNN7EXAMPLE</value>
-    </property>
-    <property>
-            <name>fs.s3a.secret.key</name>
-            <value>wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY</value>
-    </property>
-    <property>
-        <name>fs.s3a.endpoint</name>
-        <value>https://s3.eu-central-1.amazonaws.com</value>
-    </property>
-    <property>
-        <name>fs.lakefs.impl</name>
-        <value>io.lakefs.LakeFSFileSystem</value>
-    </property>
-    <property>
-        <name>fs.lakefs.access.key</name>
-        <value>AKIAlakefs12345EXAMPLE</value>
-    </property>
-    <property>
-        <name>fs.lakefs.secret.key</name>
-        <value>abc/lakefs/1234567bPxRfiCYEXAMPLEKEY</value>
-    </property>
-    <property>
-        <name>fs.lakefs.endpoint</name>
-        <value>https://lakefs.example.com/api/v1</value>
-    </property>
-</configuration>
-```
-  </div>
-</div>
-
-#### Per-bucket and per-repo configuration
-
-As demonstrated above, S3 allows for per-bucket configuration. You can use this if:
-
-1. You need to use S3A directly to access data in an S3 outside of lakeFS, _and_
-1. different credentials are required to access data inside that bucket.
-
-Refer to the Hadoop AWS guide [Configuring different S3 buckets with Per-Bucket
-Configuration](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Configuring_different_S3_buckets_with_Per-Bucket_Configuration).
-
-There's no need for per-repo configurations in lakeFS when all repositories are on the same
-lakeFS server. If you need to access repositories located on *multiple* lakeFS servers,
-configure multiple prefixes. For instance, you might configure both `fs.lakefs.impl` and
-`fs.lakefs2.impl` to be `io.lakefs.LakeFSFileSystem`, place separate endpoints and credentials
-under `fs.lakefs.*` and `fs.lakefs2.*`, and access the two servers using `lakefs://...` and
-`lakefs2://...` URLs.
+   Here are some configuration examples:
+   <div class="tabs">
+     <ul>
+       <li><a href="#lakefs-config-tabs-cli">CLI</a></li>
+       <li><a href="#lakefs-config-tabs-code">Scala</a></li>
+       <li><a href="#lakefs-config-tabs-xml">XML Configuration</a></li>
+     </ul> 
+     <div markdown="1" id="lakefs-config-tabs-cli">
+   ```shell
+   spark-shell --conf spark.hadoop.fs.s3a.access.key='AKIAIOSFODNN7EXAMPLE' \
+                 --conf spark.hadoop.fs.s3a.secret.key='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY' \
+                 --conf spark.hadoop.fs.s3a.endpoint='https://s3.eu-central-1.amazonaws.com' \
+                 --conf spark.hadoop.fs.lakefs.impl=io.lakefs.LakeFSFileSystem \
+                 --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
+                 --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
+                 --conf spark.hadoop.fs.lakefs.endpoint=https://lakefs.example.com/api/v1 \
+                 --packages io.lakefs:hadoop-lakefs-assembly:0.1.8
+                 ...
+   ```
+     </div>
+     <div markdown="1" id="lakefs-config-tabs-code">
+   
+   Ensure you load the lakeFS FileSystem into Spark by running it with `--packages` or `--jars`,
+   and then run:
+   
+   ```scala
+   spark.sparkContext.hadoopConfiguration.set("fs.s3a.access.key", "AKIAIOSFODNN7EXAMPLE")
+   spark.sparkContext.hadoopConfiguration.set("fs.s3a.secret.key", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
+   spark.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", "https://s3.eu-central-1.amazonaws.com")
+   spark.sparkContext.hadoopConfiguration.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem")
+   spark.sparkContext.hadoopConfiguration.set("fs.lakefs.access.key", "AKIAlakefs12345EXAMPLE")
+   spark.sparkContext.hadoopConfiguration.set("fs.lakefs.secret.key", "abc/lakefs/1234567bPxRfiCYEXAMPLEKEY")
+   spark.sparkContext.hadoopConfiguration.set("fs.lakefs.endpoint", "https://lakefs.example.com/api/v1")
+   ```
+     </div>
+     <div markdown="1" id="lakefs-config-tabs-xml">
+   
+   Make sure that you load the lakeFS FileSystem into Spark by running it with `--packages` or `--jars`,
+   and then add these into a configuration file, e.g., `$SPARK_HOME/conf/hdfs-site.xml`:
+   
+   ```xml
+   <?xml version="1.0"?>
+   <configuration>
+       <property>
+           <name>fs.s3a.access.key</name>
+           <value>AKIAIOSFODNN7EXAMPLE</value>
+       </property>
+       <property>
+               <name>fs.s3a.secret.key</name>
+               <value>wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY</value>
+       </property>
+       <property>
+           <name>fs.s3a.endpoint</name>
+           <value>https://s3.eu-central-1.amazonaws.com</value>
+       </property>
+       <property>
+           <name>fs.lakefs.impl</name>
+           <value>io.lakefs.LakeFSFileSystem</value>
+       </property>
+       <property>
+           <name>fs.lakefs.access.key</name>
+           <value>AKIAlakefs12345EXAMPLE</value>
+       </property>
+       <property>
+           <name>fs.lakefs.secret.key</name>
+           <value>abc/lakefs/1234567bPxRfiCYEXAMPLEKEY</value>
+       </property>
+       <property>
+           <name>fs.lakefs.endpoint</name>
+           <value>https://lakefs.example.com/api/v1</value>
+       </property>
+   </configuration>
+   ```
+     </div>
+   </div>
+   If your bucket is on a region other than us-east-1, you may also need to configure `fs.s3a.endpoint` with the correct region.
+   Amazon provides [S3 endpoints](https://docs.aws.amazon.com/general/latest/gr/s3.html) you can use.
+   {: .note }
 
 ### Reading Data
+{: .no_toc }
+
 To access objects in lakeFS, you need to use the lakeFS path conventions:
 
 ```
@@ -361,6 +328,7 @@ val df = spark.read.parquet(dataPath)
 You can now use this DataFrame like you would normally do.
 
 ### Writing Data
+{: .no_toc }
 
 Now simply write your results back to a lakeFS path:
 ```scala
