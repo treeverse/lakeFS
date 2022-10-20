@@ -11,7 +11,9 @@ has_toc: false
 # QuickStart
 {: .no_toc }
 
-## lakeFS Playground: Try lakeFS without installing
+## Try lakeFS without installing
+
+### lakeFS Playground
 Quickly experience lakeFS firsthand with your own isolated environment in the cloud. You can easily integrate it with your existing tools and see lakeFS in action in an environment similar to your own.
 <p style="margin-top: 20px;">
     <a class="btn btn-green" href="https://demo.lakefs.io/" target="_blank">
@@ -19,7 +21,10 @@ Quickly experience lakeFS firsthand with your own isolated environment in the cl
     </a>
 </p>
 
-## Try lakeFS sample Notebooks
+Watch video regarding lakeFS Playground:
+<iframe width="420" height="315" src="https://www.youtube.com/embed/RBKJGpkN-Yo"></iframe>
+
+### lakeFS sample Notebooks
 This docker container includes Jupyter notebooks to demonstrate multiple use cases and integration of lakeFS with Spark, Python, Delta Lake and Airflow. These notebooks can be used with any types of lakeFS installation including lakeFS Playground.
 <p style="margin-top: 20px;">
     <a class="btn btn-green" href="https://github.com/treeverse/lakeFS-samples/tree/main/03-apache-spark-python-demo" target="_blank">
@@ -27,30 +32,31 @@ This docker container includes Jupyter notebooks to demonstrate multiple use cas
     </a>
 </p>
 
-## lakeFS Cloud Users
-[lakeFS cloud](https://lakefs.io/cloud/) is a fully managed service with no deployment, installing, maintaining and scaling overheads.
+## Run lakeFS in your own environment
 
-[Start your lakeFS Cloud free trial](https://lakefs.cloud/register).
-
-## lakeFS Open Source Users
-
-### Install lakeFS
-
-#### [Install lakeFS using Docker](installing.html)
+### [Install lakeFS in Docker](installing.html)
 This installation is for learning purposes. This installation will not persist your data. Instead, it will spin-up a database in a docker container, which will be discarded later.
 
-#### [lakeFS Docker “Everything Bagel”](installing_everything_bagel.html)
+### [lakeFS Docker “Everything Bagel”](installing_everything_bagel.html)
 This installation is similar to previous option but this environment includes lakeFS and other common data tools like Spark, dbt, Trino, Hive, and Jupyter.
 
-#### [More QuickStart Options](more_quickstart_options.html)
+### [More QuickStart Options](more_quickstart_options.html)
 
 You can try lakeFS:
 
 1. [On Kubernetes](more_quickstart_options.md#on-kubernetes-with-helm).
 1. By [running the binary directly](more_quickstart_options.md#using-the-binary).
 
-### Next Steps
+## Deploy at scale
+
+### lakeFS Open Source Users
 You can [deploy lakeFS in your own environment](../deploy/index.html).
+
+### lakeFS Cloud Users
+[lakeFS cloud](https://lakefs.io/cloud/) is a fully managed service with no deployment, installing, maintaining and scaling overheads.
+
+[Start your lakeFS Cloud free trial](https://lakefs.cloud/register).
+
 
 ## lakeFS Videos
 Watch lakeFS tutorials and webinar recordings on [lakeFS YouTube Channel](https://www.youtube.com/channel/UCZiDUd28ex47BTLuehb1qSA)
