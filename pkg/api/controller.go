@@ -867,7 +867,7 @@ func (c *Controller) generateResetPasswordToken(email string, duration time.Dura
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
 	invite := swag.BoolValue(body.InviteUser)
 	username := body.Id
-	
+
 	// Check that username is valid
 	valid, msg := c.isNameValid(username, "User")
 	if !valid {
@@ -3626,7 +3626,7 @@ func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms per
 func (c *Controller) isNameValid(name string, nameType string) (bool, string) {
 	// URLs are % encoded. Allowing % signs in entity names would
 	// limit the ability to use these entity names in the URL for both
-	// client-side routing and API fetch requests 
+	// client-side routing and API fetch requests
 	if strings.Contains(name, "%") {
 		return false, fmt.Sprintf("%s name cannot contain '%%'", nameType)
 	}
