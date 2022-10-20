@@ -1492,15 +1492,6 @@ func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupDisplayName st
 }
 
 func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy, update bool) error {
-	// If we're not updating an existing policy, i.e. create request,
-	// we need to make sure we don't already have a policy with this name
-	if !update {
-		_, gpErr := a.GetPolicy(ctx, policy.DisplayName)
-		if gpErr == nil {
-			return ErrAlreadyExists
-		}
-	}
-
 	if err := model.ValidateAuthEntityID(policy.DisplayName); err != nil {
 		return err
 	}
