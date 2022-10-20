@@ -12,7 +12,7 @@ Several attempts for an online solution have been made, most of which are docume
 This document will describe the **offline** GC process for uncommitted objects.
 
 Garbage collection of uncommitted data will be performed using the same principles of the current GC process.
-The basis for this is a GC Client (i.e. _Spark_ job) consuming objects information from both lakeFS and the storage adapter, 
+The basis for this is a GC Client (i.e. _Spark_ job) consuming objects information from both lakeFS and directly from the underlying object storage, 
 and using this information to determine which objects on the bucket can be deleted.
 
 For simplicity, in this document we will reduce this problem to the repository and branch level.
