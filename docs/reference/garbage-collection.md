@@ -158,6 +158,7 @@ You should specify the Uber-jar path instead of `<APPLICATION-JAR-PATH>` and run
 
   ```bash
 spark-submit --class io.treeverse.clients.GarbageCollector \
+  --packages org.apache.hadoop:hadoop-aws:2.7.7 \
   -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
@@ -173,6 +174,7 @@ You should run the following command to make the garbage collector start running
 
   ```bash
 spark-submit --class io.treeverse.clients.GarbageCollector \
+  --packages org.apache.hadoop:hadoop-aws:3.2.1 \
   -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
@@ -367,6 +369,7 @@ Program arguments:
 To start the restore process, run:
 ```bash
 spark-submit --class io.treeverse.clients.GCBackupAndRestore \
+  --packages org.apache.hadoop:hadoop-aws:2.7.7 \
   -c spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY> \
   -c spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_KEY> \
   <APPLICATION-JAR-PATH> \
@@ -385,6 +388,7 @@ Program arguments:
 To start the restore process, run:
   ```bash
 spark-submit --class io.treeverse.clients.GCBackupAndRestore \
+  --packages org.apache.hadoop:hadoop-aws:2.7.7 \
   -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
   <APPLICATION-JAR-PATH> \
   objects-to-restore-list-location backup-external-location storage-namespace azure
