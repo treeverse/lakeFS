@@ -27,8 +27,8 @@ var kvCmd = &cobra.Command{
 }
 
 var kvGetCmd = &cobra.Command{
-	Use:    "get <partition key> <key>",
-	Short:  "Return the value for the given key under the given partition",
+	Use:    "get <partition> <path>",
+	Short:  "Return the value for the given path under the given partition",
 	Hidden: true,
 	Args:   cobra.ExactArgs(GetCmdNumArgs),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -54,13 +54,13 @@ var kvGetCmd = &cobra.Command{
 		defer kvStore.Close()
 
 		partitionKey := args[0]
-		key := args[1]
-		val, err := kvStore.Get(ctx, []byte(partitionKey), []byte(key))
+		path := args[1]
+		val, err := kvStore.Get(ctx, []byte(partitionKey), []byte(path))
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to get value for (%s,%s): %s\n", partitionKey, key, err)
+			fmt.Fprintf(os.Stderr, "Failed to get value for (%s,%s): %s\n", partitionKey, path, err)
 			os.Exit(1)
 		}
-		kvObj, err := kv.ToKvObject(partitionKey, key, val.Value)
+		kvObj, err := kv.ToKvObject(partitionKey, path, val.Value)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to parse object from KV value: %s\n", err)
 			os.Exit(1)
@@ -82,8 +82,8 @@ var kvGetCmd = &cobra.Command{
 }
 
 var kvScanCmd = &cobra.Command{
-	Use:    "scan <partition key> [<key>]",
-	Short:  "Scan through keys and values under the given partition. An optional key can be specified as a starting point (inclusive)",
+	Use:    "scan <partition> [<path>]",
+	Short:  "Scan through keys and values under the given partition. An optional path can be specified as a starting point (inclusive)",
 	Hidden: true,
 	Args:   cobra.RangeArgs(ScanCmdMinArgs, ScanCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -109,7 +109,7 @@ var kvScanCmd = &cobra.Command{
 		}
 
 		if len(until) > 0 && until < string(start) {
-			fmt.Fprintf(os.Stderr, "Invalid args: `until` cannot preced `key`")
+			fmt.Fprintf(os.Stderr, "Invalid args: `until` cannot precede `path`")
 		}
 
 		ctx := cmd.Context()
