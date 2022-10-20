@@ -66,7 +66,6 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 				logging.MethodFieldKey:    r.Method,
 				logging.HostFieldKey:      r.Host,
 				logging.RequestIDFieldKey: reqID,
-				logging.LogAudit:          "API",
 			}
 			for k, v := range fields {
 				requestFields[k] = v
@@ -76,9 +75,10 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 			next.ServeHTTP(writer, r) // handle the request
 
 			loggingFields := logging.Fields{
-				"took":        time.Since(startTime),
-				"status_code": writer.StatusCode,
-				"sent_bytes":  writer.ResponseSize,
+				"took":           time.Since(startTime),
+				"status_code":    writer.StatusCode,
+				"sent_bytes":     writer.ResponseSize,
+				logging.LogAudit: true,
 			}
 
 			logLevel := strings.ToLower(middlewareLogLevel)
