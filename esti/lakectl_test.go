@@ -407,11 +407,12 @@ func TestLakectlFsDownload(t *testing.T) {
 	})
 
 	t.Run("single_with_dest", func(t *testing.T) {
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.1 custom", false, "lakectl_fs_download_custom", map[string]string{
+		dest := t.TempDir()
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.1 "+dest, false, "lakectl_fs_download_custom", map[string]string{
 			"REPO":    repoName,
 			"STORAGE": storage,
 			"BRANCH":  mainBranch,
-			"DEST":    "custom",
+			"DEST":    dest,
 			"PATH":    "data/ro",
 			"FILE":    "ro_1k.1",
 		})
@@ -428,11 +429,12 @@ func TestLakectlFsDownload(t *testing.T) {
 	})
 
 	t.Run("recursive_with_dest", func(t *testing.T) {
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs download --recursive --parallel 1 lakefs://"+repoName+"/"+mainBranch+"/data custom2", false, "lakectl_fs_download_recursive_custom", map[string]string{
+		dest := t.TempDir()
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs download --recursive --parallel 1 lakefs://"+repoName+"/"+mainBranch+"/data "+dest, false, "lakectl_fs_download_recursive_custom", map[string]string{
 			"REPO":        repoName,
 			"STORAGE":     storage,
 			"BRANCH":      mainBranch,
-			"DEST":        "custom2",
+			"DEST":        dest,
 			"PATH":        "data",
 			"FILE_PREFIX": "ro/ro_1k",
 		})
