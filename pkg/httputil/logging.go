@@ -78,7 +78,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 				"took":           time.Since(startTime),
 				"status_code":    writer.StatusCode,
 				"sent_bytes":     writer.ResponseSize,
-				logging.LogAudit: "API",
+				logging.LogAudit: true,
 			}
 
 			logLevel := strings.ToLower(middlewareLogLevel)
