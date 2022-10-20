@@ -41,8 +41,7 @@ The full object path for an object `file1` uploaded to repository `my-repo` on b
 
 #### StageObject
 
-1. Allowed only for address outside the repo namespace
-2. Prevent race between staging object and GC job
+The StageObject operation will only be allowed on addresses outside the repository's storage namespace. This way, objects added using this operation are never collected by GC.
 
 #### Get\Link PhysicalAddress 
 
