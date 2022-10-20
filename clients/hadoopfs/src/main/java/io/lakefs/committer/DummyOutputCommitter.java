@@ -4,6 +4,10 @@ import io.lakefs.LakeFSFileSystem;
 import io.lakefs.LakeFSClient;
 import io.lakefs.utils.ObjectLocation;
 
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.BranchesApi;
+import io.lakefs.clients.api.model.BranchCreation;
+
 import org.apache.commons.lang.exception.ExceptionUtils; // (for debug prints ONLY)
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -14,6 +18,7 @@ import org.apache.hadoop.mapreduce.JobStatus;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
+import org.apache.http.HttpStatus;
 
 import com.google.common.base.Preconditions;
 
@@ -26,6 +31,15 @@ import java.io.IOException;
 public class DummyOutputCommitter extends FileOutputCommitter {
     private static final Logger LOG = LoggerFactory.getLogger(DummyOutputCommitter.class);
 
+
+    /**
+     * API client connected to the lakeFS server used on the filesystem.
+     */
+    protected LakeFSClient lakeFSClient = null;
+    /**
+     * Repository for files.
+     */
+    protected String repository = null;
     /**
      * Branch of output.  Defined on a task, null if this committer is a
      * noop.
@@ -77,8 +91,9 @@ public class DummyOutputCommitter extends FileOutputCommitter {
             FileSystem fs = outputPath.getFileSystem(conf);
             Preconditions.checkArgument(fs instanceof LakeFSFileSystem,
                                         "%s not on a LakeFSFileSystem", outputPath);
-            LakeFSClient lakeFSClient = new LakeFSClient(fs.getScheme(), conf);
+            this.lakeFSClient = new LakeFSClient(fs.getScheme(), conf);
             ObjectLocation outputLocation = ObjectLocation.pathToObjectLocation(null, outputPath);
+            this.repository = outputLocation.getRepository();
             this.outputBranch = outputLocation.getRef();
             this.outputPath = fs.makeQualified(outputPath);
         }
@@ -101,8 +116,23 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         }
     }
 
-    private void createBranch(String branch, String base) { // TODO(lynn)
+    private boolean createBranch(String branch, String base) throws IOException {
         System.out.printf("TODO: Create branch %s from %s\n", branch, base);
+        try {
+            BranchesApi branches = lakeFSClient.getBranches();
+            branches.createBranch(repository, new BranchCreation().name(branch).source(base));
+            return true;
+        } catch (ApiException e) {
+            if (e.getCode() == HttpStatus.SC_CONFLICT) {
+                LOG.debug("branch {} already exists", branch);
+                return false;
+                // TODO(ariels): Consider checking the branch originates
+                //     from the expected location.  That will improve error
+                //     handling if Spark ever supplies non-unique job (or
+                //     task) IDs.
+            }
+            throw new IOException(String.format("createBranch %s from %s failed", branch, base), e);
+        }
     }
 
     // TODO(ariels): Need to override getJobAttemptPath,
