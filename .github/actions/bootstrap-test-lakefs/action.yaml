@@ -16,7 +16,7 @@ runs:
   using: "composite"
   steps:
     - name: Retrieve generated code
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: generated-code
         path: /tmp/
