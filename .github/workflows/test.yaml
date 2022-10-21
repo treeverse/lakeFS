@@ -31,6 +31,8 @@ jobs:
         run: make checks-validator
         env:
           GOLANGCI_LINT_FLAGS: --out-format github-actions
+      - name: gitLeaks
+        uses: zricethezav/gitleaks-action@v1.5.0
 
   test-go:
     name: Run Go tests
