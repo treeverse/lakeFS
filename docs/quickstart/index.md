@@ -6,6 +6,7 @@ nav_order: 5
 has_children: true
 redirect_from: "../quickstart.html"
 has_toc: false
+next: ["Try lakeFS without installing", "./try.html"]
 ---
 
 # QuickStart
@@ -32,10 +33,16 @@ This docker container includes Jupyter notebooks to demonstrate multiple use cas
     </a>
 </p>
 
-## Run lakeFS in your own environment
+Watch video to install lakeFS sample Notebooks and to run Spark Demo Notebook:
+<iframe width="420" height="315" src="https://www.youtube.com/embed/fprpDZ96JQo"></iframe>
 
-### [Install lakeFS in Docker](installing.html)
+## Run lakeFS locally
+
+### [Install lakeFS using Docker](installing.html)
 This installation is for learning purposes. This installation will not persist your data. Instead, it will spin-up a database in a docker container, which will be discarded later.
+
+Watch video to install lakeFS using Docker as well as point it to your own object storage:
+<iframe width="420" height="315" src="https://www.youtube.com/embed/CIDrHVFnIJY"></iframe>
 
 ### [lakeFS Docker “Everything Bagel”](installing_everything_bagel.html)
 This installation is similar to previous option but this environment includes lakeFS and other common data tools like Spark, dbt, Trino, Hive, and Jupyter.
@@ -47,13 +54,11 @@ You can try lakeFS:
 1. [On Kubernetes](more_quickstart_options.md#on-kubernetes-with-helm).
 1. By [running the binary directly](more_quickstart_options.md#using-the-binary).
 
-## Deploy at scale
+## Deploy lakeFS at scale
 
-### lakeFS Open Source Users
-You can [deploy lakeFS in your own environment](../deploy/index.html).
+You can [deploy lakeFS in your own environment](../deploy/index.html) or you can use [lakeFS cloud](https://lakefs.io/cloud/).
 
-### lakeFS Cloud Users
-[lakeFS cloud](https://lakefs.io/cloud/) is a fully managed service with no deployment, installing, maintaining and scaling overheads.
+lakeFS cloud is a fully managed service with no deployment, installing, maintaining and scaling overheads.
 
 [Start your lakeFS Cloud free trial](https://lakefs.cloud/register).
 
