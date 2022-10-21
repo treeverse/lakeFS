@@ -439,10 +439,6 @@ var fsDownloadCmd = &cobra.Command{
 		var dest string
 		if len(args) > 1 {
 			dest = args[1]
-			// verify destination path exists
-			if len(dest) > 0 {
-				pathExists(dest)
-			}
 		}
 
 		// list the files
@@ -451,14 +447,14 @@ var fsDownloadCmd = &cobra.Command{
 		sourcePath := api.StringValue(pathURI.Path)
 
 		// recursive assume source is directory
-		if recursive && len(sourcePath) > 0 && !strings.HasSuffix(sourcePath, "/") {
-			sourcePath += "/"
+		if recursive && len(sourcePath) > 0 && !strings.HasSuffix(sourcePath, uri.PathSeparator) {
+			sourcePath += uri.PathSeparator
 		}
 
 		// prefix to remove from destination
 		prefix := filepath.Dir(sourcePath)
 		if prefix != "" {
-			prefix += "/"
+			prefix += uri.PathSeparator
 		}
 		ctx := cmd.Context()
 		// list objects to download
