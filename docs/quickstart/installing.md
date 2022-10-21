@@ -39,11 +39,32 @@ You can try lakeFS:
 
 ## Modifying the local deployment
 
+### Using AWS S3 Storage
 To modify the local deployment, for example, in order to use your local lakeFS against S3 storage (as opposed to the local storage), run the command with local parameters:
    ```bash
 docker run --pull always -p 8000:8000 -e LAKEFS_BLOCKSTORE_TYPE='s3' -e AWS_ACCESS_KEY_ID='YourAccessKeyValue' -e AWS_SECRET_ACCESS_KEY='YourSecretKeyValue'  treeverse/lakefs run --local-settings
    ```
-Note using the ```bash--local-settings``` flag, metadata is being stored locally in the lakeFS container. Therefore, avoid using this flag for production usages.
+### Using Azure Blob Storage
+To modify the local deployment in order to use your local lakeFS against Azure Blob Storage (as opposed to the local storage), run the command with local parameters:
+   ```bash
+docker run --pull always -p 8000:8000 -e LAKEFS_BLOCKSTORE_TYPE='azure' -e LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT='YourAzureStorageAccountName' -e LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY='YourAzureStorageAccessKey' treeverse/lakefs run --local-settings
+   ```
+
+### Using Google Cloud Storage
+To modify the local deployment in order to use your local lakeFS against Google Cloud Storage (as opposed to the local storage), run the command with local parameters:
+   ```bash
+docker run --pull always -p 8000:8000 -e LAKEFS_BLOCKSTORE_TYPE='gs' -e LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON='YourGoogleServiceAccountKeyJSON' treeverse/lakefs run --local-settings
+   ```
+where you will replace ```YourGoogleServiceAccountKeyJSON``` with JSON string that contains your Google service account key.
+
+If you want to use the JSON file that contains your Google service account key instead of JSON string (as in the previous command) then go to the directory where JSON file is stored and run the command with local parameters:
+   ```bash
+docker run --pull always -p 8000:8000 -v $PWD:/myfiles -e LAKEFS_BLOCKSTORE_TYPE='gs' -e LAKEFS_BLOCKSTORE_GS_CREDENTIALS_FILE='/myfiles/YourGoogleServiceAccountKey.json' treeverse/lakefs run --local-settings
+   ```
+This command will mount your present working directory (PWD) within the container and will read the JSON file from your PWD.
+
+
+Note using the ```--local-settings``` flag, metadata is being stored locally in the lakeFS container. Therefore, avoid using this flag for production usages.
 
 ## Next steps
 
