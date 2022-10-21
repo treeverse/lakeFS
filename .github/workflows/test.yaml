@@ -32,7 +32,7 @@ jobs:
         env:
           GOLANGCI_LINT_FLAGS: --out-format github-actions
       - name: gitLeaks
-        uses: zricethezav/gitleaks-action@v1.5.0
+        uses: gitleaks/gitleaks-action@v2
 
   test-go:
     name: Run Go tests
