@@ -5,6 +5,7 @@ description: Installing lakeFS is easy. This section covers how to spin up lakeF
 parent: Quickstart
 nav_order: 10
 has_children: false
+next: ["Create your first repository", "./repository.html"]
 ---
 
 # Install lakeFS
