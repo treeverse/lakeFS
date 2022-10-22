@@ -30,20 +30,21 @@ import (
 var (
 	someSecret = []byte("some secret")
 
-	userPoliciesForTesting = []*model.Policy{{
-		Statement: model.Statements{
-			{
-				Action:   []string{"auth:DeleteUser"},
-				Resource: "arn:lakefs:auth:::user/foobar",
-				Effect:   model.StatementEffectAllow,
-			},
-			{
-				Action:   []string{"auth:*"},
-				Resource: "*",
-				Effect:   model.StatementEffectDeny,
+	userPoliciesForTesting = []*model.Policy{
+		{
+			Statement: model.Statements{
+				{
+					Action:   []string{"auth:DeleteUser"},
+					Resource: "arn:lakefs:auth:::user/foobar",
+					Effect:   model.StatementEffectAllow,
+				},
+				{
+					Action:   []string{"auth:*"},
+					Resource: "*",
+					Effect:   model.StatementEffectDeny,
+				},
 			},
 		},
-	},
 	}
 )
 
@@ -585,7 +586,8 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 			users:              []string{"one"},
 			expectedUserName:   "one",
 			expectedErr:        nil,
-		}, {
+		},
+		{
 			name:               "no_users",
 			responseStatusCode: http.StatusOK,
 			userID:             "2",
@@ -933,7 +935,8 @@ func TestAPIAuthService_GetUserByEmail(t *testing.T) {
 			email:              "one@test.com",
 			expectedUserName:   "one",
 			expectedErr:        nil,
-		}, {
+		},
+		{
 			name:               "no_users",
 			responseStatusCode: http.StatusOK,
 			users:              []string{},
@@ -987,7 +990,6 @@ func TestAPIAuthService_GetUserByEmail(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func NewTestApiService(t *testing.T, withCache bool) (*mock.MockClientWithResponsesInterface, *auth.APIAuthService) {
@@ -1759,11 +1761,12 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 				mockClient.EXPECT().UpdatePolicyWithResponse(gomock.Any(), tt.policyName, gomock.Eq(auth.UpdatePolicyJSONRequestBody{
 					CreationDate: swag.Int64(creationTime.Unix()),
 					Name:         tt.policyName,
-					Statement: []auth.Statement{{
-						Action:   tt.firstStatementAction,
-						Effect:   tt.firstStatementEffect,
-						Resource: tt.firstStatementResource,
-					},
+					Statement: []auth.Statement{
+						{
+							Action:   tt.firstStatementAction,
+							Effect:   tt.firstStatementEffect,
+							Resource: tt.firstStatementResource,
+						},
 					},
 				})).MaxTimes(1).Return(response, nil)
 			} else {
@@ -1778,11 +1781,12 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 				mockClient.EXPECT().CreatePolicyWithResponse(gomock.Any(), gomock.Eq(auth.CreatePolicyJSONRequestBody{
 					CreationDate: swag.Int64(creationTime.Unix()),
 					Name:         tt.policyName,
-					Statement: []auth.Statement{{
-						Action:   tt.firstStatementAction,
-						Effect:   tt.firstStatementEffect,
-						Resource: tt.firstStatementResource,
-					},
+					Statement: []auth.Statement{
+						{
+							Action:   tt.firstStatementAction,
+							Effect:   tt.firstStatementEffect,
+							Resource: tt.firstStatementResource,
+						},
 					},
 				})).MaxTimes(1).Return(response, nil)
 			}
@@ -1872,20 +1876,21 @@ func TestAPIAuthService_GetPolicy(t *testing.T) {
 	}
 }
 
-var authPoliciesForTesting = []auth.Policy{{
-	Statement: []auth.Statement{
-		{
-			Action:   []string{"auth:DeleteUser"},
-			Resource: "arn:lakefs:auth:::user/foobar",
-			Effect:   model.StatementEffectAllow,
-		},
-		{
-			Action:   []string{"auth:*"},
-			Resource: "*",
-			Effect:   model.StatementEffectDeny,
+var authPoliciesForTesting = []auth.Policy{
+	{
+		Statement: []auth.Statement{
+			{
+				Action:   []string{"auth:DeleteUser"},
+				Resource: "arn:lakefs:auth:::user/foobar",
+				Effect:   model.StatementEffectAllow,
+			},
+			{
+				Action:   []string{"auth:*"},
+				Resource: "*",
+				Effect:   model.StatementEffectDeny,
+			},
 		},
 	},
-},
 }
 
 func statementEquals(t *testing.T, authStatement []auth.Statement, modalStatement []model.Statement) {
@@ -1914,6 +1919,7 @@ func policyEquals(t *testing.T, authPolicy auth.Policy, modelPolicy *model.Polic
 	}
 	if modelPolicy == nil {
 		t.Errorf("got nil modelPolicy nil comparing to authPolicy:%s", authPolicy.Name)
+		return
 	}
 	if authPolicy.Name != modelPolicy.DisplayName {
 		t.Errorf("non equal name %s != %s", authPolicy.Name, modelPolicy.DisplayName)
