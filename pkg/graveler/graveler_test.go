@@ -391,8 +391,7 @@ func TestGravelerSet_Advanced(t *testing.T) {
 		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(true))
 		require.ErrorIs(t, err, ErrGravelerUpdate)
 		lastVal := stagingMgr.LastSetValueRecord
-		var expected *graveler.ValueRecord
-		require.Equal(t, expected, lastVal)
+		require.Nil(t, stagingMgr.LastSetValueRecord)
 	})
 
 	t.Run("branch deleted after update", func(t *testing.T) {
