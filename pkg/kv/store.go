@@ -37,7 +37,7 @@ func FormatPath(p ...string) string {
 	return strings.Join(p, PathDelimiter)
 }
 
-// Driver is the interface to access a kv database as a Store.
+// Driver is the interface to access a kv database as a store.
 // Each kv provider implements a Driver.
 type Driver interface {
 	// Open opens access to the database store. Implementations give access to the same storage based on the dsn.
@@ -146,7 +146,7 @@ func UnregisterAllDrivers() {
 	}
 }
 
-// Open lookup driver with 'name' and return Store based on 'dsn' (data source name).
+// Open lookup driver with 'name' and return store based on 'dsn' (data source name).
 // Failed with ErrUnknownDriver in case 'name' is not registered
 func Open(ctx context.Context, params kvparams.KV) (Store, error) {
 	driversMu.RLock()
