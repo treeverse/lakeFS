@@ -114,6 +114,69 @@ func TestS3UploadAndDownload(t *testing.T) {
 	}
 }
 
+func TestS3GetObject(t *testing.T) {
+	SkipTestIfAskedTo(t)
+
+	const (
+		contents = "the quick brown fox jumps over the lazy dog"
+		goodPath = "main/exists"
+		badPath  = "main/does/not/exist"
+	)
+
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	accessKeyID := viper.GetString("access_key_id")
+	secretAccessKey := viper.GetString("secret_access_key")
+	endpoint := viper.GetString("s3_endpoint")
+	endpointSecure := viper.GetBool("s3_endpoint_secure")
+
+	// Upload an object
+	creds := sigs[0].GetCredentials(accessKeyID, secretAccessKey, "")
+	client, err := minio.New(endpoint, &minio.Options{
+		Creds:  creds,
+		Secure: endpointSecure,
+	})
+	if err != nil {
+		t.Fatalf("minio.New: %s", err)
+	}
+
+	_, err = client.PutObject(ctx, repo, goodPath, strings.NewReader(contents), int64(len(contents)), minio.PutObjectOptions{})
+	if err != nil {
+		t.Errorf("client.PutObject(%s, %s): %s", repo, goodPath, err)
+	}
+
+	t.Run("Exists", func(t *testing.T) {
+		res, err := client.GetObject(ctx, repo, goodPath, minio.GetObjectOptions{})
+		if err != nil {
+			t.Errorf("client.GetObject(%s, %s): %s", repo, goodPath, err)
+		}
+		defer res.Close()
+		got, err := io.ReadAll(res)
+		if err != nil {
+			t.Errorf("client.Read: %s", err)
+		}
+		if string(got) != contents {
+			t.Errorf("Got contents \"%s\" but expected \"%s\"", string(got), contents)
+		}
+	})
+	t.Run("Doesn't exist", func(t *testing.T) {
+		res, err := client.GetObject(ctx, repo, badPath, minio.GetObjectOptions{})
+		if err != nil {
+			t.Errorf("client.GetObject(%s, %s): %s", repo, badPath, err)
+		}
+		got, err := io.ReadAll(res)
+		if err == nil {
+			t.Errorf("Successfully read \"%s\" from nonexistent path %s", got, badPath)
+		}
+		s3ErrorResponse := minio.ToErrorResponse(err)
+		if s3ErrorResponse.StatusCode != 404 {
+			t.Errorf("Got %+v [%d] on reading when expecting Not Found [404]",
+				s3ErrorResponse, s3ErrorResponse.StatusCode)
+		}
+	})
+}
+
 func TestS3CopyObject(t *testing.T) {
 	SkipTestIfAskedTo(t)
 	ctx, _, repo := setupTest(t)
