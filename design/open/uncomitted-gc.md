@@ -72,7 +72,7 @@ The StageObject operation will only be allowed on addresses outside the reposito
        the link API and avoid them being deleted by the GC process.
     2. Objects that were uploaded to a physical address issued by the API and were not linked before the token expired will
        eventually be deleted by the GC job.
->**Note:** These changes also solves an existing bug where an issued physical address which was committed can be overwritten by Link
+>**Note:** These changes will also solves the following [issue](https://github.com/treeverse/lakeFS/issues/4438)
 
 #### S3 Gateway CopyObject
 
