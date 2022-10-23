@@ -62,6 +62,7 @@ run_all() {
 
   run_tests "$@"
   RUN_RESULT=$?
+  return $RUN_RESULT		# restore failure (the previous line succeeds in sh)
 }
 
 # Get the options
