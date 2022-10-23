@@ -1872,6 +1872,26 @@ lakectl fs cat <path uri> [flags]
 
 
 
+### lakectl fs download
+
+Download object(s) from a given repository path
+
+```
+lakectl fs download <path uri> [<destination path>] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -d, --direct         read directly from backing store (requires credentials)
+  -h, --help           help for download
+  -p, --parallel int   max concurrent downloads (default 6)
+  -r, --recursive      recursively all objects under path
+```
+
+
+
 ### lakectl fs help
 
 Help about any command
