@@ -18,11 +18,6 @@ var (
 	// upload the object using through the lakeFS server.
 	ErrUnsupportedProtocol = errors.New("unsupported protocol")
 
-	// ErrAuthenticationFailed is the error returned when the client lacks authentication
-	// to access the backing store directly.  Indirect access through the lakeFS server
-	// should still be possible.
-	ErrAuthenticationFailed = errors.New("authentication failed")
-
 	// ErrRequestFailed is an error returned for failing lakeFS server replies.
 	ErrRequestFailed = errors.New("request failed")
 )
