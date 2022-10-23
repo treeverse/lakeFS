@@ -20,19 +20,43 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-var sigs = []struct {
-	Name           string
-	GetCredentials func(id, secret, token string) *credentials.Credentials
-}{
-	{"V2", credentials.NewStaticV2},
-	{"V4", credentials.NewStaticV4},
-}
+type GetCredentials = func(id, secret, token string) *credentials.Credentials
+
+var (
+	sigV2 = credentials.NewStaticV2
+	sigV4 = credentials.NewStaticV4
+	sigs  = []struct {
+		Name           string
+		GetCredentials GetCredentials
+	}{
+		{"V2", sigV2},
+		{"V4", sigV4},
+	}
+)
 
 const (
 	numUploads           = 100
 	randomDataPathLength = 1020
 	prefix               = "main/data/"
 )
+
+func newClient(t *testing.T, getCredentials GetCredentials) *minio.Client {
+	t.Helper()
+	accessKeyID := viper.GetString("access_key_id")
+	secretAccessKey := viper.GetString("secret_access_key")
+	endpoint := viper.GetString("s3_endpoint")
+	endpointSecure := viper.GetBool("s3_endpoint_secure")
+	creds := getCredentials(accessKeyID, secretAccessKey, "")
+
+	client, err := minio.New(endpoint, &minio.Options{
+		Creds:  creds,
+		Secure: endpointSecure,
+	})
+	if err != nil {
+		t.Fatalf("minio.New: %s", err)
+	}
+	return client
+}
 
 func TestS3UploadAndDownload(t *testing.T) {
 	SkipTestIfAskedTo(t)
@@ -41,18 +65,12 @@ func TestS3UploadAndDownload(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
-	accessKeyID := viper.GetString("access_key_id")
-	secretAccessKey := viper.GetString("secret_access_key")
-	endpoint := viper.GetString("s3_endpoint")
-	endpointSecure := viper.GetBool("s3_endpoint_secure")
 	opts := minio.PutObjectOptions{}
 
 	for _, sig := range sigs {
 		t.Run("Sig"+sig.Name, func(t *testing.T) {
 			// Use same sequence of pathnames to test each sig.
 			r := rand.New(rand.NewSource(17))
-
-			creds := sig.GetCredentials(accessKeyID, secretAccessKey, "")
 
 			type Object struct {
 				Path, Content string
@@ -64,13 +82,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 			)
 
 			for i := 0; i < parallelism; i++ {
-				client, err := minio.New(endpoint, &minio.Options{
-					Creds:  creds,
-					Secure: endpointSecure,
-				})
-				if err != nil {
-					t.Fatalf("minio.New: %s", err)
-				}
+				client := newClient(t, sig.GetCredentials)
 
 				wg.Add(1)
 				go func() {
@@ -135,22 +147,10 @@ func TestS3ReadObject(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
-	accessKeyID := viper.GetString("access_key_id")
-	secretAccessKey := viper.GetString("secret_access_key")
-	endpoint := viper.GetString("s3_endpoint")
-	endpointSecure := viper.GetBool("s3_endpoint_secure")
-
 	// Upload an object
-	creds := sigs[0].GetCredentials(accessKeyID, secretAccessKey, "")
-	client, err := minio.New(endpoint, &minio.Options{
-		Creds:  creds,
-		Secure: endpointSecure,
-	})
-	if err != nil {
-		t.Fatalf("minio.New: %s", err)
-	}
+	client := newClient(t, sigV2)
 
-	_, err = client.PutObject(ctx, repo, goodPath, strings.NewReader(contents), int64(len(contents)), minio.PutObjectOptions{})
+	_, err := client.PutObject(ctx, repo, goodPath, strings.NewReader(contents), int64(len(contents)), minio.PutObjectOptions{})
 	if err != nil {
 		t.Errorf("client.PutObject(%s, %s): %s", repo, goodPath, err)
 	}
@@ -225,29 +225,16 @@ func TestS3CopyObject(t *testing.T) {
 	destRepo := createRepositoryByName(ctx, t, destRepoName)
 	defer deleteRepositoryIfAskedTo(context.Background(), destRepoName)
 
-	accessKeyID := viper.GetString("access_key_id")
-	secretAccessKey := viper.GetString("secret_access_key")
-	endpoint := viper.GetString("s3_endpoint")
-	endpointSecure := viper.GetBool("s3_endpoint_secure")
-	opts := minio.PutObjectOptions{}
 	r := rand.New(rand.NewSource(17))
 
-	creds := sigs[0].GetCredentials(accessKeyID, secretAccessKey, "")
-
-	minioClient, err := minio.New(endpoint, &minio.Options{
-		Creds:  creds,
-		Secure: endpointSecure,
-	})
-	if err != nil {
-		t.Fatalf("minio.New: %s", err)
-	}
+	minioClient := newClient(t, sigV2)
 
 	Content := testutil.RandomString(r, randomDataContentLength)
 	SourcePath := prefix + "source-file"
 	DestPath := prefix + "dest-file"
 
-	_, err = minioClient.PutObject(
-		ctx, repo, SourcePath, strings.NewReader(Content), int64(len(Content)), opts)
+	_, err := minioClient.PutObject(
+		ctx, repo, SourcePath, strings.NewReader(Content), int64(len(Content)), minio.PutObjectOptions{})
 	if err != nil {
 		t.Errorf("minio.Client.PutObject(%s): %s", SourcePath, err)
 	}
