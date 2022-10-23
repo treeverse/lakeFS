@@ -155,7 +155,11 @@ func Open(ctx context.Context, params kvparams.KV) (Store, error) {
 	if !ok {
 		return nil, fmt.Errorf("%w: %s", ErrUnknownDriver, params.Type)
 	}
-	return d.Open(ctx, params)
+	store, err := d.Open(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	return newStoreMetricsWrapper(store, params.Type), nil
 }
 
 // Drivers returns a list of registered drive names
