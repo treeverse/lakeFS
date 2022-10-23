@@ -149,18 +149,18 @@ public class DummyOutputCommitter extends FileOutputCommitter {
     }
 
     @Override
-    public void setupJob(JobContext context) throws IOException { // TODO(lynn)
+    public void setupJob(JobContext context) throws IOException {
         if (outputPath == null)
             return;
-        System.out.printf("TODO: Setup job for %s on %s\n", outputBranch, jobBranch);
+        LOG.debug("Setup job for %s on %s\n", outputBranch, jobBranch);
         createBranch(jobBranch, outputBranch);
     }
 
     @Override
-    public void commitJob(JobContext jobContext) throws IOException { // TODO(lynn)
+    public void commitJob(JobContext jobContext) throws IOException {
         if (outputPath == null)
             return;
-        System.out.printf("TODO: Commit job branch %s to %s\n", jobBranch, outputBranch);
+        LOG.debug("Commit job branch %s to %s\n", jobBranch, outputBranch);
         CommitsApi commits = lakeFSClient.getCommits();
         commits.commit(repository, jobBranch, new CommitCreation().message(String.format("commiting Job %s", jobContext.getJobID())));
         RefsApi refs = lakeFSClient.getRefs();
@@ -182,10 +182,10 @@ public class DummyOutputCommitter extends FileOutputCommitter {
 
     @Override
     public void setupTask(TaskAttemptContext taskContext)
-        throws IOException {    // TODO(lynn)
+        throws IOException {
         if (outputPath == null)
             return;
-        System.out.printf("TODO: Setup task for %s on %s\n", taskBranch, jobBranch);
+        LOG.debug("Setup task for %s on %s\n", taskBranch, jobBranch);
         createBranch(taskBranch, jobBranch);
     }
 
@@ -194,9 +194,9 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         throws IOException {    // TODO(lynn)
         if (outputPath == null)
             return;
-        System.out.printf("TODO: Commit task branch %s to %s\n", taskBranch, jobBranch);
+        LOG.debug("Commit task branch %s to %s\n", taskBranch, jobBranch);
         CommitsApi commits = lakeFSClient.getCommits();
-        commits.commit(repository, taskBranch, new CommitCreation().message(String.format("commiting Task %s", taskContext.getTaskAttemptID())));
+        commits.commit(repository, taskBranch, new CommitCreation().message(String.format("committing Task %s", taskContext.getTaskAttemptID())));
         RefsApi refs = lakeFSClient.getRefs();
         refs.mergeIntoBranch(repository, taskBranch, jobBranch);
     }
