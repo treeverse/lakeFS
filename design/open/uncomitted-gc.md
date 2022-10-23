@@ -106,7 +106,7 @@ The following describe the GC process run flows on a repository:
    2. Get all uncommitted data addresses
       1. For each branch
          1. Read all addresses from branch `BranchUncommittedMetarange` -> `Uncommitted DF`
-    >**Note:** To avoid possible bug, uncommitted listing must happen before listing of committed data
+    >**Note:** To avoid possible bug, `Mark uncommitted data` step must complete before listing of committed data
 3. Listing of lakeFS repository committed objects
    1. Get all committed data addresses
       1. Read all addresses from Repository commits -> `Committed DF`
