@@ -30,7 +30,7 @@ not on the command line or inlined in code where they might be exposed.
 There are two ways you can use lakeFS with Spark:
 
 * Using the [S3 gateway](#use-the-s3-gateway): get started quickly!
-* Using the [lakeFS-specific Hadoop FileSystem](#use-the-lakefs-specific-hadoop-filesystem): fully unlock the performance of lakeFS.
+* Using the [lakeFS Hadoop FileSystem](#use-the-lakefs-hadoop-filesystem): fully unlock the performance of lakeFS.
 
 ## Use the S3 gateway
 
@@ -185,13 +185,11 @@ df.write.partitionBy("example-column").parquet(s"s3a://${repo}/${branch}/output-
 
 The data is now created in lakeFS as new changes in your branch. You can now commit these changes or revert them.
 
-## Use the lakeFS-specific Hadoop FileSystem
+## Use the lakeFS Hadoop FileSystem
 
 If you're using lakeFS on top of S3, this mode will enhance your application's performance.
 In this mode, Spark will read and write objects directly from S3, reducing the load on the lakeFS server.
 It will still access the lakeFS server for metadata operations.
-
-Since data will not be sent to the lakeFS server, using this mode maximizes data security.  
 
 After configuring the lakeFS Hadoop FileSystem below, use URIs of the form `lakefs://example-repo/ref/path/to/data` to
 interact with your data on lakeFS.
@@ -209,14 +207,13 @@ interact with your data on lakeFS.
 
    The jar is also available on a public S3 location: `s3://treeverse-clients-us-east/hadoop/hadoop-lakefs-assembly-0.1.8.jar`
 
-2. Configure S3A filesystem with your S3 credentials (**not** the lakeFS credentials).
+2. Configure the S3A filesystem with your S3 credentials (**not** the lakeFS credentials).
    Additionally, supply the `fs.lakefs.*` configurations to allow Spark to access metadata on lakeFS: 
 
    | Hadoop Configuration   | Value                                 |
    |------------------------|---------------------------------------|
    | `fs.s3a.access.key`    | Set to the AWS S3 access key          |
    | `fs.s3a.secret.key`    | Set to the AWS S3 secret key          |
-   | `fs.s3a.endpoint`      | Set to the AWS S3-compatible endpoint |
    | `fs.lakefs.impl`       | `io.lakefs.LakeFSFileSystem`          |
    | `fs.lakefs.access.key` | Set to the lakeFS access key          |
    | `fs.lakefs.secret.key` | Set to the lakeFS secret key          |
@@ -336,6 +333,11 @@ df.write.partitionBy("example-column").parquet(s"lakefs://${repo}/${branch}/outp
 ```
 
 The data is now created in lakeFS as new changes in your branch. You can now commit these changes or revert them.
+
+### Notes for the lakeFS Hadoop FileSystem
+
+* Since data will not be sent to the lakeFS server, using this mode maximizes data security.
+* The FileSystem implementation is tested with the latest Spark 2.X (Hadoop 2) and Spark 3.X (Hadoop 3) Bitnami images.
 
 ## Case Study: SimilarWeb
 
