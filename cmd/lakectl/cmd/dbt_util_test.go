@@ -19,7 +19,7 @@ type DummyCommandExecutor struct {
 	envReturn bool
 }
 
-var errDummyCommandFailed = errors.New("BOOM!")
+var errDummyCommandFailed = errors.New("boom")
 
 func (dce DummyCommandExecutor) ExecuteCommand(cmd *exec.Cmd) ([]byte, error) {
 	sb := strings.Builder{}
