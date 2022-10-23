@@ -97,7 +97,7 @@ The following describe the GC process run flows on a repository:
 #### Flow 1: Clean Run
 
 1. Listing namespace objects
-   1. Read all objects directly from object store (can be done in parallel using the partitions) -> `Store DF`
+   1. List all objects directly from object store (can be done in parallel using the partitions) -> `Store DF`
    2. Skip partitions that are newer than < TOKEN_EXPIRY_TIME >
 2. Listing of lakeFS repository uncommitted objects
    1. Mark uncommitted data
