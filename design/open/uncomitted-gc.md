@@ -11,13 +11,37 @@ To solve this problem two approaches were suggested:
 Several attempts for an online solution have been made, most of which are documented [here](Link-to-hard-delete-proposal).
 This document will describe the **offline** GC process for uncommitted objects.
 
+## Design
+
 Garbage collection of uncommitted data will be performed using the same principles of the current GC process.
-The basis for this is a GC Client (i.e. _Spark_ job) consuming objects information from both lakeFS and directly from the underlying object storage, 
+The basis for this is a GC Client (i.e. _Spark_ job) consuming objects information from both lakeFS and directly from the underlying object storage,
 and using this information to determine which objects on the bucket can be deleted.
 
-For simplicity, in this document we will reduce this problem to the repository and branch level.
+The GC process is composed of 3 main parts:
+1. Listing namespace objects
+2. Listing of lakeFS repository committed objects
+3. Listing of lakeFS repository uncommitted objects
 
-## Design
+Objects that are found in 1 and are not in 2,3 can be then safely deleted by the Garbage Collector.
+
+### 1. Listing namespace objects
+
+Since listing might be a long operation for very large repositories, we want to find a way to optimize it.
+The suggested way is to split the repository structure into fixed size (upper bounded) partitions which will allow scanning each partition 
+concurrently using multiple workers.
+The partitions will also be created in a manner which will allow us to take advantage of a common object storage property, which lists the objects
+in a lexicographical order. Using this property we can implement additional optimizations on the GC process.
+
+![Repository Structure](diagrams/uncommitted-gc-repo-struct.png)
+
+### 2. Listing of lakeFS repository committed objects
+
+Similar to the way GC works today, use repository meta-ranges and ranges to read all committed objects in the repository. 
+
+### 3. Listing of lakeFS repository uncommitted objects
+
+Creating special meta-ranges and ranges using branches' uncommitted data, we can leverage the already existing GC logic to
+quickly read all uncommitted objects in the repository.
 
 ### Required changes by lakeFS
 
@@ -25,19 +49,15 @@ The following are necessary changes in lakeFS in order to implement this proposa
 
 #### Objects Path Conventions
 
-1. Repository objects will be stored under the prefix `<storage_namespace>/repos/<repo_uid>/`
-2. For each repository branch, objects will be stored under the repo prefix with the path `branches/<branch_id>/`
-3. Each lakeFS instance will create a unique prefix partition under the branch path. This will be used by the specific
-lakeFS instance to store the branch's objects. This prefix will be composed of two parts:
-   1. Lexicographically sortable, descending time based serialization
-   2. A unique identifier for the lakeFS instance
-      `<sortable_descending_serialized_uid>_<lakefs_instance_uid>`  
-This serialized partition prefix will allow partial scans of the bucket when running the optimized GC
-4. The lakeFS instance will track the count of objects uploaded to the prefix and create a new partition every < TBD > objects uploaded
+Uncommitted GC must scan the bucket in order to find objects that are not referenced by lakeFS.
+To optimize this process, suggest the following changes:
 
-The full object path for an object `file1` uploaded to repository `my-repo` on branch `test-branch` will be as follows:  
-    
-    <lakeFS_bucket>/repos/my-repo/branches/test-branch/<lakeFS_instance_partition_uid>/<file1_uid>
+1. Divide the repository namespace into time-and-size based partitions
+2. The partitions names will be lexicographically sortable, descending strings which will enables listing the repository
+objects from new to old.
+3. LakeFS will create a new partition on a timely basis (for example: hourly) or when it has written < TBD > objects to it.
+4. Each partition will be written by a single lakeFS instance in order to track partition size.
+5. Tge sorted partitions will enable partial scans of the bucket when running the optimized GC.
 
 #### StageObject
 
@@ -53,25 +73,21 @@ The StageObject operation will only be allowed on addresses outside the reposito
     2. Objects that were uploaded to a physical address issued by the API and were not linked before the token expired will
        eventually be deleted by the GC job.
 
-#### CopyObject
+#### S3 Gateway CopyObject
 
 1. Copy object in the same branch will work the same - creating a new staging entry using the existing entry information.
 2. For objects that are not part of the branch, use the underlying adapter copy operation.
-3. "Move/Rename" operation will need to use the new version of CopyObject instead of StageObject.
 
-With the above changes, bucket data is partitioned by repositories, branches and finally a bounded partition.
-This allows running the GC process at branch level, reduces the data scan size and allows parallelization.
+#### Move/RenameObject
+Clients working through the S3 Gateway can use the CopyObject + DeleteObject to perform a Rename or Move operation.
+For clients using the OpenAPI this could have been done using StageObject + DeleteObject.
+To continue support of this operation, introduce a new API to rename an object which will be scoped to a single branch.
 
 #### PrepareUncommittedForGC
 
 A new API which will create meta-ranges and ranges using the given branch uncommitted data. These files
 will be saved in a designated path used by the GC client to list branch's uncommitted objects.  
-For the purpose of this document we'll call this the `GC commit` (feel free to suggest a better term :) )
-
-#### Reading data from lakeFS
-
-Reading data from lakeFS will be similar to the current GC process - using the SSTable reader to quickly list branch objects.
-The above-mentioned API will enable doing so for all branch objects (committed and uncommitted).
+For the purpose of this document we'll call this the `BranchUncommittedMetarange`
 
 ### GC Flows
 
@@ -79,14 +95,17 @@ The following describe the GC process run flows in the branch scope:
 
 #### Flow 1: Clean Run
 
-1. Run PrepareUncommittedForGC
-2. Read all addresses from branch commits -> `lakeFS DF`
-3. Read all addresses from branch `GC commit` -> `lakeFS DF`
-4. Read all objects on branch path directly from object store (can be done in parallel by 'partition') -> `Branch DF`
-5. Subtract results `lakeFS DF` from `Branch DF`
+1. Run PrepareUncommittedForGC on all branches
+2. Read all addresses from Repository commits -> `Committed DF`
+3. Read all addresses from branch `BranchUncommittedMetarange` -> `Uncommitted DF`
+4. Read all objects directly from object store (can be done in parallel by 'partition') -> `Branch DF`
+5. Subtract results `Committed DF` and `Uncommitted DF` from `Branch DF`
 6. Remove files newer than < TOKEN_EXPIRY_TIME > and special paths
 7. The remainder is a list of files which can be safely removed
-8. Finally, save the current run's `GC commit` the last read partition and newest commit id in a designated location on the branch path
+8. Finally, save the following in a designated location in the repository:
+   1. The current run's `Uncommitted DF` (as a parquet file) 
+   2. The last read partition 
+   3. The GC run start timestamp 
 
 #### Flow 2: Optimized Run
 
@@ -96,8 +115,8 @@ Optimized run uses the previous GC run output, to perform a partial scan of the 
 
 1. Run PrepareUncommittedForGC
 2. Read addresses from branch's new commits (all new commits down to the last GC run commit id) -> `lakeFS DF`
-3. Read addresses from branch `GC commit` -> `lakeFS DF`
-4. Subtract results `lakeFS DF` from previous run's `GC commit`
+3. Read addresses from branch `BranchUncommittedMetarange` -> `lakeFS DF`
+4. Subtract results `lakeFS DF` from previous run's `BranchUncommittedMetarange`
 5. The result is a list of files that can be safely removed
 
 >**Note:** This step handles cases of objects that were uncommitted during previous GC run and are now deleted
@@ -107,12 +126,13 @@ Optimized run uses the previous GC run output, to perform a partial scan of the 
 2. Subtract `lakeFS DF` from `Branch DF`
 3. Filter files newer than < TOKEN_EXPIRY_TIME > and special paths
 4. The remainder is a list of files which can be safely removed
-5. Finally, save the current run's `GC commit` the last read partition and newest commit id in a designated location on the branch path
+5. Finally, save the following in a designated location in the repository:
+    1. The current run's `Uncommitted DF` (as a parquet file)
+    2. The last read partition
+    3. The GC run start timestamp
 
 ## Limitations
 
 * Since this solution relies on the new repository structure, it is not backwards compatible. Therefore, another solution will be required for existing 
 repositories
-* This solution partitions the branch data into segments that allow parallel listing of branch objects. In cases where
-the branch path is extremely large, it might still take a lot of time to perform a clean run.
 * For GC to work optimally, it must be executed on a timely basis. Long periods between runs might result in excessively long runs.
