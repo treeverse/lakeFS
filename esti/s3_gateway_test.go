@@ -114,7 +114,16 @@ func TestS3UploadAndDownload(t *testing.T) {
 	}
 }
 
-func TestS3GetObject(t *testing.T) {
+func verifyObjectInfo(t *testing.T, got minio.ObjectInfo, expectedSize int) {
+	if got.Err != nil {
+		t.Errorf("%s: %s", got.Key, got.Err)
+	}
+	if got.Size != int64(expectedSize) {
+		t.Errorf("Got size %d != expected size %d", got.Size, int64(expectedSize))
+	}
+}
+
+func TestS3ReadObject(t *testing.T) {
 	SkipTestIfAskedTo(t)
 
 	const (
@@ -146,34 +155,64 @@ func TestS3GetObject(t *testing.T) {
 		t.Errorf("client.PutObject(%s, %s): %s", repo, goodPath, err)
 	}
 
-	t.Run("Exists", func(t *testing.T) {
-		res, err := client.GetObject(ctx, repo, goodPath, minio.GetObjectOptions{})
-		if err != nil {
-			t.Errorf("client.GetObject(%s, %s): %s", repo, goodPath, err)
-		}
-		defer res.Close()
-		got, err := io.ReadAll(res)
-		if err != nil {
-			t.Errorf("client.Read: %s", err)
-		}
-		if string(got) != contents {
-			t.Errorf("Got contents \"%s\" but expected \"%s\"", string(got), contents)
-		}
+	t.Run("GetObject", func(t *testing.T) {
+		t.Run("Exists", func(t *testing.T) {
+			res, err := client.GetObject(ctx, repo, goodPath, minio.GetObjectOptions{})
+			if err != nil {
+				t.Errorf("client.GetObject(%s, %s): %s", repo, goodPath, err)
+			}
+			defer res.Close()
+			info, err := res.Stat()
+			if err != nil {
+				t.Errorf("client.GetObject(%s, %s) get: %s", repo, goodPath, err)
+			}
+			verifyObjectInfo(t, info, len(contents))
+			got, err := io.ReadAll(res)
+			if err != nil {
+				t.Errorf("client.Read: %s", err)
+			}
+			if string(got) != contents {
+				t.Errorf("Got contents \"%s\" but expected \"%s\"", string(got), contents)
+			}
+		})
+		t.Run("Doesn't exist", func(t *testing.T) {
+			res, err := client.GetObject(ctx, repo, badPath, minio.GetObjectOptions{})
+			if err != nil {
+				t.Errorf("client.GetObject(%s, %s): %s", repo, badPath, err)
+			}
+			defer res.Close()
+			got, err := io.ReadAll(res)
+			if err == nil {
+				t.Errorf("Successfully read \"%s\" from nonexistent path %s", got, badPath)
+			}
+			s3ErrorResponse := minio.ToErrorResponse(err)
+			if s3ErrorResponse.StatusCode != 404 {
+				t.Errorf("Got %+v [%d] on reading when expecting Not Found [404]",
+					s3ErrorResponse, s3ErrorResponse.StatusCode)
+			}
+		})
 	})
-	t.Run("Doesn't exist", func(t *testing.T) {
-		res, err := client.GetObject(ctx, repo, badPath, minio.GetObjectOptions{})
-		if err != nil {
-			t.Errorf("client.GetObject(%s, %s): %s", repo, badPath, err)
-		}
-		got, err := io.ReadAll(res)
-		if err == nil {
-			t.Errorf("Successfully read \"%s\" from nonexistent path %s", got, badPath)
-		}
-		s3ErrorResponse := minio.ToErrorResponse(err)
-		if s3ErrorResponse.StatusCode != 404 {
-			t.Errorf("Got %+v [%d] on reading when expecting Not Found [404]",
-				s3ErrorResponse, s3ErrorResponse.StatusCode)
-		}
+
+	t.Run("HeadObject", func(t *testing.T) {
+		t.Run("Exists", func(t *testing.T) {
+			info, err := client.StatObject(ctx, repo, goodPath, minio.StatObjectOptions{})
+			if err != nil {
+				t.Errorf("client.StatObject(%s, %s): %s", repo, goodPath, err)
+			}
+			verifyObjectInfo(t, info, len(contents))
+		})
+		t.Run("Doesn't exist", func(t *testing.T) {
+			info, err := client.StatObject(ctx, repo, badPath, minio.StatObjectOptions{})
+			if err == nil {
+				t.Errorf("client.StatObject(%s, %s): expected an error but got %+v", repo, badPath, info)
+			}
+
+			s3ErrorResponse := minio.ToErrorResponse(err)
+			if s3ErrorResponse.StatusCode != 404 {
+				t.Errorf("Got %+v [%d] on reading when expecting Not Found [404]",
+					s3ErrorResponse, s3ErrorResponse.StatusCode)
+			}
+		})
 	})
 }
 
