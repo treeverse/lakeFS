@@ -1,6 +1,7 @@
 package esti
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -375,4 +376,67 @@ func TestLakectlIngestS3(t *testing.T) {
 	RunCmdAndVerifyContainsText(t, Lakectl()+" ingest --from s3://"+lakectlIngestBucket+"/ --to lakefs://"+repoName+"/"+mainBranch+"/", false, expectedIngestOutput, vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_fs_ls_after_ingest", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/ --recursive", false, "lakectl_fs_ls_after_ingest_recursive", vars)
+}
+
+func TestLakectlFsDownload(t *testing.T) {
+	SkipTestIfAskedTo(t)
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+
+	// upload some data
+	const totalObjects = 5
+	for i := 0; i < totalObjects; i++ {
+		vars["FILE_PATH"] = fmt.Sprintf("data/ro/ro_1k.%d", i)
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
+	}
+
+	t.Run("single", func(t *testing.T) {
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, "lakectl_fs_download", map[string]string{
+			"REPO":    repoName,
+			"STORAGE": storage,
+			"BRANCH":  mainBranch,
+			"PATH":    "data/ro",
+			"FILE":    "ro_1k.0",
+		})
+	})
+
+	t.Run("single_with_dest", func(t *testing.T) {
+		dest := t.TempDir()
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.1 "+dest, false, "lakectl_fs_download_custom", map[string]string{
+			"REPO":    repoName,
+			"STORAGE": storage,
+			"BRANCH":  mainBranch,
+			"DEST":    dest,
+			"PATH":    "data/ro",
+			"FILE":    "ro_1k.1",
+		})
+	})
+
+	t.Run("recursive", func(t *testing.T) {
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs download --recursive --parallel 1 lakefs://"+repoName+"/"+mainBranch+"/data", false, "lakectl_fs_download_recursive", map[string]string{
+			"REPO":        repoName,
+			"STORAGE":     storage,
+			"BRANCH":      mainBranch,
+			"PATH":        "data",
+			"FILE_PREFIX": "ro/ro_1k",
+		})
+	})
+
+	t.Run("recursive_with_dest", func(t *testing.T) {
+		dest := t.TempDir()
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs download --recursive --parallel 1 lakefs://"+repoName+"/"+mainBranch+"/data "+dest, false, "lakectl_fs_download_recursive_custom", map[string]string{
+			"REPO":        repoName,
+			"STORAGE":     storage,
+			"BRANCH":      mainBranch,
+			"DEST":        dest,
+			"PATH":        "data",
+			"FILE_PREFIX": "ro/ro_1k",
+		})
+	})
 }
