@@ -96,7 +96,7 @@ object GCBackupAndRestore {
   ): Array[String] = {
 
     val distCpLogsPath =
-      hc.get(DistCpConstants.CONF_LABEL_LOG_PATH, dstNamespaceForHadoopFs + "_distCp/logs/")
+      hc.get(DistCpConstants.CONF_LABEL_LOG_PATH, s"${dstNamespaceForHadoopFs.stripSuffix("/")}/_distCp/logs/")
     // Tune distCp options that control the speed of the file-to-copy list building stage
     val numListstatusThreads =
       hc.get(DistCpConstants.CONF_LABEL_LISTSTATUS_THREADS, DistCpMaxNumListStatusThreads.toString)
@@ -200,7 +200,7 @@ object GCBackupAndRestore {
       ApiClient.translateURI(URI.create(relativeAddressesLocation), storageType).toString
     val dstNamespaceForHadoopFs =
       ApiClient.translateURI(URI.create(dstNamespace), storageType).toString
-    print("translated dstNamespace: " + dstNamespaceForHadoopFs + "\n")
+    println("translated dstNamespace: " + dstNamespaceForHadoopFs)
 
     val objectsRelativePathsDF = spark.read.parquet(relativeAddressesLocationForHadoopFs)
     val objectsAbsolutePathsDF =
@@ -208,16 +208,15 @@ object GCBackupAndRestore {
     // Keep only paths to existing objects, otherwise, distCp will fail copying.
     val existingAbsolutePaths = eliminatePathsOfNonExistingObjects(objectsAbsolutePathsDF, hc)
     val numExistingObjects = existingAbsolutePaths.count()
-    print("count: " + numExistingObjects)
+    println("count: " + numExistingObjects)
     if (numExistingObjects == 0) {
-      print("There are no objects to copy. process will finish without copying objects")
+      println("There are no objects to copy. process will finish without copying objects")
       System.exit(0)
     }
 
     // We assume that there are write permissions to the dst namespace and therefore creating intermediate output there.
-    val absoluteAddressesLocation =
-      dstNamespaceForHadoopFs + "/_gc-backup-restore/absolute_addresses/"
-    print("absoluteAddressesLocation: " + absoluteAddressesLocation + "\n")
+    val absoluteAddressesLocation = s"${dstNamespaceForHadoopFs.stripSuffix("/")}/_gc-backup-restore/absolute_addresses/"
+    println("absoluteAddressesLocation: " + absoluteAddressesLocation)
     // This application uses distCp to copy files. distCp can copy a list of files in a given input text file. therefore,
     // we write the absolute file paths into a text file rather than a parquet.
     existingAbsolutePaths
@@ -227,7 +226,7 @@ object GCBackupAndRestore {
 
     // Spark writes two files under absoluteAddressesLocation, a _SUCCESS file and the actual txt file that has dynamic name.
     val absoluteAddressesTextFilePath = getTextFileLocation(absoluteAddressesLocation, hc)
-    print("txtFilePath: " + absoluteAddressesTextFilePath + "\n")
+    println("txtFilePath: " + absoluteAddressesTextFilePaths)
 
     val distCpCommand =
       constructDistCpCommand(hadoopProps,
