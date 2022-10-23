@@ -337,7 +337,7 @@ The data is now created in lakeFS as new changes in your branch. You can now com
 ### Notes for the lakeFS Hadoop FileSystem
 
 * Since data will not be sent to the lakeFS server, using this mode maximizes data security.
-* The FileSystem implementation is tested with the latest Spark 2.X and Spark 3.X Bitnami images.
+* The FileSystem implementation is tested with the latest Spark 2.X (Hadoop 2) and Spark 3.X (Hadoop 3) Bitnami images.
 
 ## Case Study: SimilarWeb
 
