@@ -1,5 +1,10 @@
 # Hard Delete Uncommitted Data
 
+## Decision
+
+No solution found that covers all scenarios and edge cases in an adequate way. Decided to shelve the effort for finding an
+online solution for now, and concentrate on the offline solution.
+
 ## Motivation
 
 Uncommitted data which is no longer referenced (due to branch deletion, reset branch etc.) is not being deleted by lakeFS.
