@@ -166,7 +166,14 @@ layout: table_wrappers
                     </ul>
                 </div>
                 {% endif %}
+                {% if page.next != nil %}
+                <div style="float: right" class="mt-5">
 
+                    <a type="button" class="btn btn-outline-primary" href="{{ page.next[1] }}">
+                        Next: {{ page.next[0] }} <i class="fa fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+                {% endif %}
 
             </div>
         </div>

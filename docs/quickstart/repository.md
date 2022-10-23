@@ -5,6 +5,7 @@ description: In this guide, we’re going to run an initial setup and then creat
 parent: Quickstart
 nav_order: 20
 has_children: false
+next: ["Add data", "./add_data.html"]
 ---
 
 # Create a Repository
