@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
@@ -14,12 +13,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"github.com/treeverse/lakefs/pkg/testutil"
-)
-
-var (
-	pool        *dockertest.Pool
-	databaseURI string
 )
 
 func testRefManager(t testing.TB) (graveler.RefManager, kv.StoreMessage) {
@@ -27,7 +20,7 @@ func testRefManager(t testing.TB) (graveler.RefManager, kv.StoreMessage) {
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
 	storeMessage := kv.StoreMessage{Store: kvStore}
-	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, ident.NewHexAddressProvider()), storeMessage
+	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, ident.NewHexAddressProvider(), ref.WithRepositoryCache(false)), storeMessage
 }
 
 func testRefManagerWithKVAndAddressProvider(t testing.TB, addressProvider ident.AddressProvider) (graveler.RefManager, kv.StoreMessage) {
@@ -35,7 +28,7 @@ func testRefManagerWithKVAndAddressProvider(t testing.TB, addressProvider ident.
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
 	storeMessage := kv.StoreMessage{Store: kvStore}
-	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, addressProvider), storeMessage
+	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, addressProvider, ref.WithRepositoryCache(false)), storeMessage
 }
 
 func TestMain(m *testing.M) {
@@ -45,15 +38,6 @@ func TestMain(m *testing.M) {
 		logging.SetLevel("panic")
 	}
 
-	// postgres container
-	var err error
-	pool, err = dockertest.NewPool("")
-	if err != nil {
-		logging.Default().Fatalf("Could not connect to Docker: %s", err)
-	}
-	var closer func()
-	databaseURI, closer = testutil.GetDBInstance(pool)
 	code := m.Run()
-	closer() // cleanup
 	os.Exit(code)
 }

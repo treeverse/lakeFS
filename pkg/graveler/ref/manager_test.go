@@ -12,13 +12,46 @@ import (
 	"time"
 
 	"github.com/go-test/deep"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/mock"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
+
+// TestManager_GetRepositoryCache test get repository information with and without cahce.
+// We match the number of calls to the number of times we went to the store.
+func TestManager_GetRepositoryCache(t *testing.T) {
+	tests := []struct {
+		UseCache bool
+		Times    int
+		Calls    int
+	}{
+		{UseCache: false, Times: 3, Calls: 3},
+		{UseCache: true, Calls: 3, Times: 1},
+	}
+	ctx := context.Background()
+	for _, tt := range tests {
+		t.Run("use_cache_"+strconv.FormatBool(tt.UseCache), func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mockStore := mock.NewMockStore(ctrl)
+			storeMessage := kv.StoreMessage{Store: mockStore}
+			mockStore.EXPECT().Get(ctx, []byte("graveler"), []byte("repos/repo1")).Times(tt.Times).Return(&kv.ValueWithPredicate{}, nil)
+			refManager := ref.NewKVRefManager(batch.NopExecutor(), storeMessage, ident.NewHexAddressProvider(), ref.WithRepositoryCache(tt.UseCache))
+			for i := 0; i < tt.Calls; i++ {
+				_, err := refManager.GetRepository(ctx, "repo1")
+				if err != nil {
+					t.Fatalf("Failed to get repository (iteration %d): %s", i, err)
+				}
+			}
+		})
+	}
+}
 
 func TestManager_GetRepository(t *testing.T) {
 	r, _ := testRefManager(t)
@@ -802,7 +835,8 @@ func TestManager_GetCommitByPrefix(t *testing.T) {
 	})
 	testutil.MustDo(t, "Create repository", err)
 	for _, commitID := range commitIDs {
-		c := graveler.Commit{Committer: "user1",
+		c := graveler.Commit{
+			Committer:    "user1",
 			Message:      fmt.Sprintf("id_%s", commitID),
 			MetaRangeID:  "deadbeef123",
 			CreationDate: time.Now(),

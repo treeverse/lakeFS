@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/batch"
+	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -28,6 +29,7 @@ type KVManager struct {
 	kvStore         kv.StoreMessage
 	addressProvider ident.AddressProvider
 	batchExecutor   batch.Batcher
+	repoCache       cache.Cache
 }
 
 func branchFromProto(pb *graveler.BranchData) *graveler.Branch {
@@ -57,11 +59,45 @@ func protoFromBranch(branchID graveler.BranchID, b *graveler.Branch) *graveler.B
 	return branch
 }
 
-func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, addressProvider ident.AddressProvider) *KVManager {
+const (
+	repoCacheSize   = 1000
+	repoCacheExpiry = 5 * time.Second
+)
+
+type ManagerOptions struct {
+	// UseRepositoryCache bool control if cache is used while fetching repository information. Default: true.
+	UseRepositoryCache bool
+}
+
+type KVRefManagerOption func(*ManagerOptions)
+
+func WithRepositoryCache(enable bool) KVRefManagerOption {
+	return func(o *ManagerOptions) {
+		o.UseRepositoryCache = enable
+	}
+}
+
+func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, addressProvider ident.AddressProvider, opts ...KVRefManagerOption) *KVManager {
+	// options used with defaults
+	options := &ManagerOptions{
+		UseRepositoryCache: true,
+	}
+	// apply caller options
+	for _, opt := range opts {
+		opt(options)
+	}
+	// cache
+	var repoCache cache.Cache
+	if options.UseRepositoryCache {
+		repoCache = cache.NewCache(repoCacheSize, repoCacheExpiry, cache.NewJitterFn(repoCacheExpiry/2))
+	} else {
+		repoCache = cache.NoCache
+	}
 	return &KVManager{
 		kvStore:         kvStore,
 		addressProvider: addressProvider,
 		batchExecutor:   executor,
+		repoCache:       repoCache,
 	}
 }
 
@@ -85,19 +121,25 @@ func (m *KVManager) getRepository(ctx context.Context, repositoryID graveler.Rep
 }
 
 func (m *KVManager) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
-	repo, err := m.getRepository(ctx, repositoryID)
+	rec, err := m.repoCache.GetOrSet(repositoryID, func() (interface{}, error) {
+		repo, err := m.getRepository(ctx, repositoryID)
+		if err != nil {
+			return nil, err
+		}
+
+		switch repo.State {
+		case graveler.RepositoryState_ACTIVE:
+			return repo, nil
+		case graveler.RepositoryState_IN_DELETION:
+			return nil, graveler.ErrRepositoryInDeletion
+		default:
+			return nil, fmt.Errorf("invalid repository state (%d) rec: %w", repo.State, graveler.ErrInvalid)
+		}
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	switch repo.State {
-	case graveler.RepositoryState_ACTIVE:
-		return repo, nil
-	case graveler.RepositoryState_IN_DELETION:
-		return nil, graveler.ErrRepositoryInDeletion
-	default:
-		return nil, fmt.Errorf("invalid repository state %v: %w", repo.State, graveler.ErrInvalid)
-	}
+	return rec.(*graveler.RepositoryRecord), nil
 }
 
 func (m *KVManager) createBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) (*graveler.RepositoryRecord, error) {
