@@ -10,6 +10,7 @@ import (
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
@@ -313,7 +314,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 			delimiter,
 			maxKeys,
 		)
-		if errors.Is(err, catalog.ErrNotFound) {
+		if errors.Is(err, catalog.ErrNotFound) || errors.Is(err, graveler.ErrNotFound) {
 			results = make([]*catalog.DBEntry, 0) // no results found
 		} else if err != nil {
 			o.Log(req).WithError(err).WithFields(logging.Fields{
