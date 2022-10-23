@@ -16,17 +16,18 @@ object GCBackupAndRestore {
   val S3AccessKeyName = "fs.s3a.access.key"
   val S3SecretKeyName = "fs.s3a.secret.key"
   val AzureStorageAccountKeyName = "fs.azure.account.key"
-  val DistCpMaxNumListStatusThreads = 40 // max by distCp, https://docs.cloudera.com/HDPDocuments/HDP3/HDP-3.0.1/bk_cloud-data-access/content/distcp-perf-file-listing.html
+  val DistCpMaxNumListStatusThreads =
+    40 // max by distCp, https://docs.cloudera.com/HDPDocuments/HDP3/HDP-3.0.1/bk_cloud-data-access/content/distcp-perf-file-listing.html
 
   lazy val spark = SparkSession.builder().appName("GCBackupAndRestore").getOrCreate()
 
   import spark.implicits._
 
   def constructAbsoluteObjectPaths(
-                                    objectsRelativePathsDF: DataFrame,
-                                    srcNamespace: String,
-                                    storageType: String
-                                  ): Dataset[String] = {
+      objectsRelativePathsDF: DataFrame,
+      srcNamespace: String,
+      storageType: String
+  ): Dataset[String] = {
     var storageNSForFS = ApiClient
       .translateURI(URI.create(srcNamespace), storageType)
       .normalize()
@@ -42,9 +43,9 @@ object GCBackupAndRestore {
   }
 
   def validateAndParseHadoopConfig(
-                                    hc: Configuration,
-                                    storageType: String
-                                  ): Array[(String, String)] = {
+      hc: Configuration,
+      storageType: String
+  ): Array[(String, String)] = {
     storageType match {
       case StorageUtils.StorageTypeS3 =>
         val hadoopProps =
@@ -82,38 +83,35 @@ object GCBackupAndRestore {
     }
   }
 
-
-
-  // control copy speed
-  //  public static final String CONF_LABEL_DIRECT_WRITE = "distcp.direct.write";
-
   // Construct a DistCp command of the form:
   // `hadoop distcp -D<per storage credentials> -f absoluteAddressesTextFilePath dstNamespaceForHadoopFs`
   // example for command format https://docs.lakefs.io/integrations/distcp.html
   // with distCp options from https://hadoop.apache.org/docs/r3.2.1/hadoop-distcp/DistCp.html#Command_Line_Options
   def constructDistCpCommand(
-                              hadoopProps: Array[(String, String)],
-                              absoluteAddressesTextFilePath: String,
-                              dstNamespaceForHadoopFs: String,
-                              hc: Configuration,
-                              numObjectsToCopy: Long
-                            ): Array[String] = {
+      hadoopProps: Array[(String, String)],
+      absoluteAddressesTextFilePath: String,
+      dstNamespaceForHadoopFs: String,
+      hc: Configuration,
+      numObjectsToCopy: Long
+  ): Array[String] = {
 
-    val distCpLogsPath = hc.get(DistCpConstants.CONF_LABEL_LOG_PATH, dstNamespaceForHadoopFs + "_distCp/logs/")
-    print("distCpLogsPath: " + distCpLogsPath + "\n")
-
+    val distCpLogsPath =
+      hc.get(DistCpConstants.CONF_LABEL_LOG_PATH, dstNamespaceForHadoopFs + "_distCp/logs/")
     // Tune distCp options that control the speed of the file-to-copy list building stage
-    val numListstatusThreads = hc.get(DistCpConstants.CONF_LABEL_LISTSTATUS_THREADS, DistCpMaxNumListStatusThreads.toString)
-    print("numListstatusThreads: " + numListstatusThreads + "\n")
-
+    val numListstatusThreads =
+      hc.get(DistCpConstants.CONF_LABEL_LISTSTATUS_THREADS, DistCpMaxNumListStatusThreads.toString)
     // Tune distCp options that control the speed of the copy stage
     // https://docs.cloudera.com/HDPDocuments/HDP3/HDP-3.1.4/bk_cloud-data-access/content/distcp-perf-mappers.html
-    val maxMaps = hc.get(DistCpConstants.CONF_LABEL_MAX_MAPS, max(DistCpConstants.DEFAULT_MAPS, numObjectsToCopy / 1000).toString) //TODO: what is a reasonable number of maps
-    print("maxMaps: " + maxMaps + "\n")
-    val mapsBandwidth = hc.get(DistCpConstants.CONF_LABEL_BANDWIDTH_MB, DistCpConstants.DEFAULT_BANDWIDTH_MB.toString)
-    print("mapsBandwidth: " + mapsBandwidth + "\n")
+    val maxMaps = hc.get(DistCpConstants.CONF_LABEL_MAX_MAPS,
+                         max(DistCpConstants.DEFAULT_MAPS, numObjectsToCopy / 1000).toString
+                        ) //TODO: what is a reasonable number of maps
+    val mapsBandwidth =
+      hc.get(DistCpConstants.CONF_LABEL_BANDWIDTH_MB, DistCpConstants.DEFAULT_BANDWIDTH_MB.toString)
+    println(
+      s"distCpLogsPath: ${distCpLogsPath}, numListstatusThreads: ${numListstatusThreads}, maxMaps: ${maxMaps}, mapsBandwidth: ${mapsBandwidth}"
+    )
 
-    hadoopProps.map((prop) => "-D" + prop._1 + "=" + prop._2) ++
+    hadoopProps.map((prop) => s"-D${prop._1}=${prop._2}") ++
       Seq(
         // enable verbose logging, that log additional info (path, size) in the SKIP/COPY log
         "-v",
@@ -127,7 +125,7 @@ object GCBackupAndRestore {
         mapsBandwidth,
         "-direct", // force using the direct writing option, which is recommended while using distCp with objects storages, and is supported from hadoop 3.1.3
         "-strategy",
-        "dynamic",  // force using the dynamic strategy, which is always recommended for improved distCp performance
+        "dynamic", // force using the dynamic strategy, which is always recommended for improved distCp performance
         // -f option copies the files listed in the file after the -f option
         "-f",
         absoluteAddressesTextFilePath,
@@ -155,20 +153,20 @@ object GCBackupAndRestore {
 
   /** Eliminate objects that don't exist on the underlying object store from the path list.
    *
-   * @param absolutePathsDF a data frame containing object absolute paths
-   * @param hc              hadoop configurations
-   * @return a dataset only including absolute paths of objects that exist on the underlying object store
+   *  @param absolutePathsDF a data frame containing object absolute paths
+   *  @param hc              hadoop configurations
+   *  @return a dataset only including absolute paths of objects that exist on the underlying object store
    */
   def eliminatePathsOfNonExistingObjects(
-                                          absolutePathsDF: Dataset[String],
-                                          hc: Configuration
-                                        ): Dataset[String] = {
+      absolutePathsDF: Dataset[String],
+      hc: Configuration
+  ): Dataset[String] = {
     // Spark operators will need to generate configured FileSystems to check if objects exist.
     // They will not have a JobContext to let them do that. Transmit (all) Hadoop filesystem configuration values to
     // let them generate a (close-enough) Hadoop configuration to build the
     // needed FileSystems.
     val hcValues =
-    spark.sparkContext.broadcast(HadoopUtils.getHadoopConfigurationValues(hc, "fs."))
+      spark.sparkContext.broadcast(HadoopUtils.getHadoopConfigurationValues(hc, "fs."))
     val configMapper = new ConfigMapper(hcValues)
     absolutePathsDF
       .filter(x => {
@@ -179,9 +177,9 @@ object GCBackupAndRestore {
 
   /** Required arguments are the following:
    *  1. address of parquet that includes the relative paths of files to backup or restore, created by a gc run
-   *     2. src: the namespace to backup or restore objects from/to (i.e. repo storage namespace, or an external location compatibly)
-   *     3. backup/restore destination: the namespace to backup or restore objects from/to (i.e. an external location or repo storage namespace compatibly)
-   *     4. Object storage type: "s3" or "azure"
+   *  2. src: the namespace to backup or restore objects from/to (i.e. repo storage namespace, or an external location compatibly)
+   *  3. backup/restore destination: the namespace to backup or restore objects from/to (i.e. an external location or repo storage namespace compatibly)
+   *  4. Object storage type: "s3" or "azure"
    */
   def main(args: Array[String]): Unit = {
     if (args.length != 4) {
@@ -232,7 +230,12 @@ object GCBackupAndRestore {
     print("txtFilePath: " + absoluteAddressesTextFilePath + "\n")
 
     val distCpCommand =
-      constructDistCpCommand(hadoopProps, absoluteAddressesTextFilePath, dstNamespaceForHadoopFs, hc, numExistingObjects)
+      constructDistCpCommand(hadoopProps,
+                             absoluteAddressesTextFilePath,
+                             dstNamespaceForHadoopFs,
+                             hc,
+                             numExistingObjects
+                            )
     DistCp.main(distCpCommand)
   }
 }
