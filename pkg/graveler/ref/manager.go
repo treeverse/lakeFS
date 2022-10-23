@@ -25,6 +25,12 @@ const MaxBatchDelay = time.Millisecond * 3
 // commitIDStringLength string representation length of commit ID - based on hex representation of sha256
 const commitIDStringLength = 64
 
+const (
+	repoCacheSize   = 1000
+	repoCacheExpiry = 5 * time.Second
+	repoCacheJitter = repoCacheExpiry / 2
+)
+
 type KVManager struct {
 	kvStore         kv.StoreMessage
 	addressProvider ident.AddressProvider
@@ -59,11 +65,6 @@ func protoFromBranch(branchID graveler.BranchID, b *graveler.Branch) *graveler.B
 	return branch
 }
 
-const (
-	repoCacheSize   = 1000
-	repoCacheExpiry = 5 * time.Second
-)
-
 type ManagerOptions struct {
 	// UseRepositoryCache bool control if cache is used while fetching repository information. Default: true.
 	UseRepositoryCache bool
@@ -89,7 +90,7 @@ func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, addressPro
 	// cache
 	var repoCache cache.Cache
 	if options.UseRepositoryCache {
-		repoCache = cache.NewCache(repoCacheSize, repoCacheExpiry, cache.NewJitterFn(repoCacheExpiry/2))
+		repoCache = cache.NewCache(repoCacheSize, repoCacheExpiry, cache.NewJitterFn(repoCacheJitter))
 	} else {
 		repoCache = cache.NoCache
 	}
