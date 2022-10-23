@@ -402,8 +402,7 @@ func TestGravelerSet_Advanced(t *testing.T) {
 		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
 		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(true))
 		require.ErrorIs(t, err, graveler.ErrNotFound)
-		lastVal := stagingMgr.LastSetValueRecord
-		require.Equal(t, newSetVal, lastVal)
+		require.Equal(t, newSetVal, stagingMgr.LastSetValueRecord)
 	})
 
 	t.Run("branch token changed after update - one retry", func(t *testing.T) {
