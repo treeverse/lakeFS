@@ -121,5 +121,5 @@ operations related to lakeFS metadata, at scale. Examples include [garbage colle
 
 Thanks to the [S3 Gateway](#s3-gateway), it's possible to interact with lakeFS using Hadoop's S3AFIleSystem, 
 but due to limitations of the S3 API, doing so requires reading and writing data objects through the lakeFS server.
-Using [lakeFSFileSystem](../integrations/spark.md#access-lakefs-using-the-lakefs-specific-hadoop-filesystem) increases Spark ETL jobs performance by executing the metadata operations on the lakeFS server,
+Using [lakeFSFileSystem](../integrations/spark.md#use-the-lakefs-specific-hadoop-filesystem) increases Spark ETL jobs performance by executing the metadata operations on the lakeFS server,
 and all data operations directly through the same underlying object store that lakeFS uses.

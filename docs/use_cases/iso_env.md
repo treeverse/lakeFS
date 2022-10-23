@@ -130,8 +130,8 @@ client = LakeFSClient(configuration)
 ```
 
 lakeFS can be configured to work with Spark in two ways:
-* Access lakeFS using the [S3A gateway](../integrations/spark.md#access-lakefs-using-the-s3a-gateway)
-* Access lakeFS using the [lakeFS-specific Hadoop FileSystem](../integrations/spark.md#access-lakefs-using-the-lakefs-specific-hadoop-filesystem)
+* Access lakeFS using the [S3A gateway](../integrations/spark.md#use-the-s3-gateway)
+* Access lakeFS using the [lakeFS-specific Hadoop FileSystem](../integrations/spark.md#use-the-lakefs-specific-hadoop-filesystem)
 
 ### Upload the sample data to main branch
 
