@@ -364,21 +364,15 @@ func TestGravelerSet_Advanced(t *testing.T) {
 	newSetVal := &graveler.ValueRecord{Key: []byte("key"), Value: &graveler.Value{Data: []byte("newValue"), Identity: []byte("newIdentity")}}
 	// RefManager mock base setup
 	refMgr := mock.NewMockRefManager(ctrl)
-	var getFlow = func() {
-		refMgr.EXPECT().ParseRef(gomock.Any()).Times(1).Return(graveler.RawRef{BaseRef: ""}, nil)
-		refMgr.EXPECT().ResolveRawRef(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.ResolvedRef{
-			Type:                   0,
-			ResolvedBranchModifier: 0,
+refExpect := refMgr.EXPECT()
+	refExpectCommitNotFound := func() {
+		refExpect.ParseRef(gomock.Any()).Times(1).Return(graveler.RawRef{BaseRef: ""}, nil)
+		refExpect.ResolveRawRef(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.ResolvedRef{
 			BranchRecord: graveler.BranchRecord{
-				BranchID: "",
-				Branch: &graveler.Branch{
-					CommitID:     "",
-					StagingToken: "",
-					SealedTokens: nil,
-				},
+				Branch: &graveler.Branch{},
 			},
 		}, nil)
-		refMgr.EXPECT().GetCommit(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, graveler.ErrCommitNotFound)
+		refExpect.GetCommit(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, graveler.ErrCommitNotFound)
 	}
 
 	t.Run("update failure", func(t *testing.T) {
