@@ -914,7 +914,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 }
 
 func TestController_DeleteRepositoryHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+	clt, deps := setupClientWithAdmin(t, WithRepositoryCache(false))
 	ctx := context.Background()
 
 	t.Run("delete repo success", func(t *testing.T) {
@@ -926,7 +926,7 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 
 		_, err = deps.catalog.GetRepository(ctx, "my-new-repo")
 		if !errors.Is(err, catalog.ErrNotFound) {
-			t.Fatalf("expected repo to be gone, instead got error: %s", err)
+			t.Fatalf("expected repo to be gone, instead got error: %v", err)
 		}
 	})
 
@@ -1497,7 +1497,7 @@ func TestController_IngestRangeHandler(t *testing.T) {
 		ctx := context.Background()
 
 		w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, expectedErr)
-		clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
+		clt, deps := setupClientWithAdmin(t, WithWalkerFactory(testutils.FakeFactory{Walker: w}))
 
 		// setup test data
 		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")

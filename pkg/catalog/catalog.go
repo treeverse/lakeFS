@@ -107,9 +107,10 @@ const (
 )
 
 type Config struct {
-	Config        *config.Config
-	KVStore       *kv.StoreMessage
-	WalkerFactory WalkerFactory
+	Config             *config.Config
+	KVStore            *kv.StoreMessage
+	WalkerFactory      WalkerFactory
+	UseRepositoryCache bool
 }
 
 type Catalog struct {
@@ -201,7 +202,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	executor := batch.NewConditionalExecutor(logging.Default())
 	go executor.Run(ctx)
 
-	refManager := ref.NewKVRefManager(executor, *cfg.KVStore, ident.NewHexAddressProvider())
+	refManager := ref.NewKVRefManager(executor, *cfg.KVStore, ident.NewHexAddressProvider(), ref.WithRepositoryCache(cfg.UseRepositoryCache))
 	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
 	settingManager := settings.NewManager(refManager, *cfg.KVStore)
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
