@@ -20,7 +20,7 @@ func testRefManager(t testing.TB) (graveler.RefManager, kv.StoreMessage) {
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
 	storeMessage := kv.StoreMessage{Store: kvStore}
-	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, ident.NewHexAddressProvider(), ref.WithRepositoryCache(false)), storeMessage
+	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, ident.NewHexAddressProvider()), storeMessage
 }
 
 func testRefManagerWithKVAndAddressProvider(t testing.TB, addressProvider ident.AddressProvider) (graveler.RefManager, kv.StoreMessage) {
@@ -28,7 +28,7 @@ func testRefManagerWithKVAndAddressProvider(t testing.TB, addressProvider ident.
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
 	storeMessage := kv.StoreMessage{Store: kvStore}
-	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, addressProvider, ref.WithRepositoryCache(false)), storeMessage
+	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, addressProvider), storeMessage
 }
 
 func TestMain(m *testing.M) {

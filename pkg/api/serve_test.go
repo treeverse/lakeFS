@@ -88,6 +88,76 @@ func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) 
 	}
 }
 
+func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) (http.Handler, *dependencies) {
+	t.Helper()
+	ctx := context.Background()
+	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
+	viper.Set("database.type", mem.DriverName)
+
+	collector := &memCollector{}
+
+	cfg, err := config.NewConfig()
+	testutil.MustDo(t, "config", err)
+	kvStore := kvtest.GetStore(ctx, t)
+	kvStoreMessage := &kv.StoreMessage{Store: kvStore}
+	actionsStore := actions.NewActionsKVStore(*kvStoreMessage)
+	idGen := &actions.DecreasingIDGenerator{}
+	authService := auth.NewKVAuthService(kvStoreMessage, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
+		Enabled: false,
+	}, logging.Default())
+	meta := auth.NewKVMetadataManager("serve_test", cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
+
+	// Do not validate invalid config (missing required fields).
+	c, err := catalog.New(ctx, catalog.Config{
+		Config:        cfg,
+		KVStore:       kvStoreMessage,
+		WalkerFactory: factory,
+	})
+	testutil.MustDo(t, "build catalog", err)
+
+	// wire actions
+	actionsService := actions.NewService(
+		ctx,
+		actionsStore,
+		catalog.NewActionsSource(c),
+		catalog.NewActionsOutputWriter(c.BlockAdapter),
+		idGen,
+		collector,
+		true,
+	)
+
+	c.SetHooksHandler(actionsService)
+
+	authenticator := auth.NewBuiltinAuthenticator(authService)
+	kvParams, err := cfg.GetKVParams()
+	testutil.Must(t, err)
+	migrator := kv.NewDatabaseMigrator(kvParams)
+
+	t.Cleanup(func() {
+		actionsService.Stop()
+		_ = c.Close()
+	})
+
+	auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL(), "")
+	emailParams, _ := cfg.GetEmailParams()
+	emailer, err := email.NewEmailer(emailParams)
+	tmpl := templater.NewService(templates.Content, cfg, authService)
+
+	testutil.Must(t, err)
+	handler := api.Serve(cfg, c, authenticator, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.Default(), emailer, tmpl, nil, nil, nil, nil)
+
+	return handler, &dependencies{
+		blocks:      c.BlockAdapter,
+		authService: authService,
+		catalog:     c,
+		collector:   collector,
+	}
+}
+
+func setupHandler(t testing.TB) (http.Handler, *dependencies) {
+	return setupHandlerWithWalkerFactory(t, store.NewFactory(nil))
+}
+
 func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secretAccessKey string) api.ClientWithResponsesInterface {
 	t.Helper()
 
@@ -128,102 +198,19 @@ func shouldUseServerTimeout() bool {
 	return withServerTimeout
 }
 
-type CatalogConfigOption func(*catalog.Config)
-
-func WithWalkerFactory(walker catalog.WalkerFactory) CatalogConfigOption {
-	return func(c *catalog.Config) {
-		c.WalkerFactory = walker
-	}
-}
-
-func WithRepositoryCache(enabled bool) CatalogConfigOption {
-	return func(c *catalog.Config) {
-		c.UseRepositoryCache = enabled
-	}
-}
-
-func setupClientWithAdmin(t testing.TB, opts ...CatalogConfigOption) (api.ClientWithResponsesInterface, *dependencies) {
+func setupClientWithAdmin(t testing.TB) (api.ClientWithResponsesInterface, *dependencies) {
 	t.Helper()
-	handler, deps := setupHandler(t, opts...)
+	return setupClientWithAdminAndWalkerFactory(t, store.NewFactory(nil))
+}
 
+func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFactory) (api.ClientWithResponsesInterface, *dependencies) {
+	t.Helper()
+	handler, deps := setupHandlerWithWalkerFactory(t, factory)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	cred := createDefaultAdminUser(t, clt)
 	clt = setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.SecretAccessKey)
-
 	return clt, deps
-}
-
-func setupHandler(t testing.TB, opts ...CatalogConfigOption) (http.Handler, *dependencies) {
-	ctx := context.Background()
-	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
-	viper.Set("database.type", mem.DriverName)
-
-	collector := &memCollector{}
-
-	cfg, err := config.NewConfig()
-	testutil.MustDo(t, "config", err)
-
-	kvStore := kvtest.GetStore(ctx, t)
-	kvStoreMessage := &kv.StoreMessage{Store: kvStore}
-	actionsStore := actions.NewActionsKVStore(*kvStoreMessage)
-	idGen := &actions.DecreasingIDGenerator{}
-	authService := auth.NewKVAuthService(kvStoreMessage, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
-		Enabled: false,
-	}, logging.Default())
-	meta := auth.NewKVMetadataManager("serve_test", cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
-
-	catalogConfig := catalog.Config{
-		Config:             cfg,
-		KVStore:            kvStoreMessage,
-		WalkerFactory:      store.NewFactory(nil),
-		UseRepositoryCache: true,
-	}
-	for _, opt := range opts {
-		opt(&catalogConfig)
-	}
-	// Do not validate invalid config (missing required fields).
-	c, err := catalog.New(ctx, catalogConfig)
-	testutil.MustDo(t, "build catalog", err)
-
-	// wire actions
-	actionsService := actions.NewService(
-		ctx,
-		actionsStore,
-		catalog.NewActionsSource(c),
-		catalog.NewActionsOutputWriter(c.BlockAdapter),
-		idGen,
-		collector,
-		true,
-	)
-
-	c.SetHooksHandler(actionsService)
-
-	authenticator := auth.NewBuiltinAuthenticator(authService)
-	kvParams, err := cfg.GetKVParams()
-	testutil.Must(t, err)
-	migrator := kv.NewDatabaseMigrator(kvParams)
-
-	t.Cleanup(func() {
-		actionsService.Stop()
-		_ = c.Close()
-	})
-
-	auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL(), "")
-	emailParams, err := cfg.GetEmailParams()
-	testutil.Must(t, err)
-	mailer, err := email.NewEmailer(emailParams)
-	testutil.Must(t, err)
-	tmpl := templater.NewService(templates.Content, cfg, authService)
-	handler := api.Serve(cfg, c, authenticator, authenticator, authService, c.BlockAdapter, meta, migrator, collector,
-		nil, actionsService, auditChecker, logging.Default(), mailer, tmpl, nil,
-		nil, nil, nil)
-	return handler, &dependencies{
-		blocks:      c.BlockAdapter,
-		authService: authService,
-		catalog:     c,
-		collector:   collector,
-	}
 }
 
 func TestInvalidRoute(t *testing.T) {

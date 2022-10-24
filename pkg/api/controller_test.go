@@ -31,6 +31,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/catalog/testutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -914,7 +915,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 }
 
 func TestController_DeleteRepositoryHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t, WithRepositoryCache(false))
+	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	t.Run("delete repo success", func(t *testing.T) {
@@ -923,6 +924,9 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 
 		resp, err := clt.DeleteRepositoryWithResponse(ctx, "my-new-repo")
 		verifyResponseOK(t, resp, err)
+
+		// wait for cache expiry
+		time.Sleep(ref.RepositoryCacheExpiry + ref.RepositoryCacheJitter + time.Second)
 
 		_, err = deps.catalog.GetRepository(ctx, "my-new-repo")
 		if !errors.Is(err, catalog.ErrNotFound) {
@@ -1497,7 +1501,7 @@ func TestController_IngestRangeHandler(t *testing.T) {
 		ctx := context.Background()
 
 		w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, expectedErr)
-		clt, deps := setupClientWithAdmin(t, WithWalkerFactory(testutils.FakeFactory{Walker: w}))
+		clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
 
 		// setup test data
 		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")

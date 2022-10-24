@@ -24,32 +24,24 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-// TestManager_GetRepositoryCache test get repository information with and without cahce.
-// We match the number of calls to the number of times we went to the store.
+// TestManager_GetRepositoryCache test get repository information while using cache. Match the number of times we
+// call get repository vs number of times we fetch the data.
 func TestManager_GetRepositoryCache(t *testing.T) {
-	tests := []struct {
-		UseCache bool
-		Times    int
-		Calls    int
-	}{
-		{UseCache: false, Times: 3, Calls: 3},
-		{UseCache: true, Calls: 3, Times: 1},
-	}
+	const (
+		times = 1
+		calls = 3
+	)
+	ctrl := gomock.NewController(t)
+	mockStore := mock.NewMockStore(ctrl)
+	storeMessage := kv.StoreMessage{Store: mockStore}
 	ctx := context.Background()
-	for _, tt := range tests {
-		t.Run("use_cache_"+strconv.FormatBool(tt.UseCache), func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			mockStore := mock.NewMockStore(ctrl)
-			storeMessage := kv.StoreMessage{Store: mockStore}
-			mockStore.EXPECT().Get(ctx, []byte("graveler"), []byte("repos/repo1")).Times(tt.Times).Return(&kv.ValueWithPredicate{}, nil)
-			refManager := ref.NewKVRefManager(batch.NopExecutor(), storeMessage, ident.NewHexAddressProvider(), ref.WithRepositoryCache(tt.UseCache))
-			for i := 0; i < tt.Calls; i++ {
-				_, err := refManager.GetRepository(ctx, "repo1")
-				if err != nil {
-					t.Fatalf("Failed to get repository (iteration %d): %s", i, err)
-				}
-			}
-		})
+	mockStore.EXPECT().Get(ctx, []byte("graveler"), []byte("repos/repo1")).Times(times).Return(&kv.ValueWithPredicate{}, nil)
+	refManager := ref.NewKVRefManager(batch.NopExecutor(), storeMessage, ident.NewHexAddressProvider())
+	for i := 0; i < calls; i++ {
+		_, err := refManager.GetRepository(ctx, "repo1")
+		if err != nil {
+			t.Fatalf("Failed to get repository (iteration %d): %s", i, err)
+		}
 	}
 }
 

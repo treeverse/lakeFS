@@ -26,9 +26,9 @@ const MaxBatchDelay = time.Millisecond * 3
 const commitIDStringLength = 64
 
 const (
-	repoCacheSize   = 1000
-	repoCacheExpiry = 5 * time.Second
-	repoCacheJitter = repoCacheExpiry / 2
+	RepositoryCacheSize   = 1000
+	RepositoryCacheExpiry = 5 * time.Second
+	RepositoryCacheJitter = RepositoryCacheExpiry / 2
 )
 
 type KVManager struct {
@@ -65,35 +65,8 @@ func protoFromBranch(branchID graveler.BranchID, b *graveler.Branch) *graveler.B
 	return branch
 }
 
-type ManagerOptions struct {
-	// UseRepositoryCache bool control if cache is used while fetching repository information. Default: true.
-	UseRepositoryCache bool
-}
-
-type KVRefManagerOption func(*ManagerOptions)
-
-func WithRepositoryCache(enable bool) KVRefManagerOption {
-	return func(o *ManagerOptions) {
-		o.UseRepositoryCache = enable
-	}
-}
-
-func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, addressProvider ident.AddressProvider, opts ...KVRefManagerOption) *KVManager {
-	// options used with defaults
-	options := &ManagerOptions{
-		UseRepositoryCache: true,
-	}
-	// apply caller options
-	for _, opt := range opts {
-		opt(options)
-	}
-	// cache
-	var repoCache cache.Cache
-	if options.UseRepositoryCache {
-		repoCache = cache.NewCache(repoCacheSize, repoCacheExpiry, cache.NewJitterFn(repoCacheJitter))
-	} else {
-		repoCache = cache.NoCache
-	}
+func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, addressProvider ident.AddressProvider) *KVManager {
+	repoCache := cache.NewCache(RepositoryCacheSize, RepositoryCacheExpiry, cache.NewJitterFn(RepositoryCacheJitter))
 	return &KVManager{
 		kvStore:         kvStore,
 		addressProvider: addressProvider,
