@@ -27,9 +27,9 @@ Objects that are found in 1 and are not in 2 or 3 can be safely deleted by the G
 ### 1. Listing namespace objects
 
 For large repositories, object listing is a very time-consuming operation - therefore we need to find a way to optimize it.
-The suggested method is to split the repository structure into fixed size (upper bounded) partitions.
-These partitions can then be scanned independently using multiple workers.
-In addition, taking advantage of the common property of the listing operation, which lists objects in a lexicographical order, we can create the partitions in a manner which
+The suggested method is to split the repository structure into fixed size (upper bounded) slices.
+These slices can then be scanned independently using multiple workers.
+In addition, taking advantage of the common property of the listing operation, which lists objects in a lexicographical order, we can create the slices in a manner which
 enables additional optimizations on the GC process (read further for details).
 
 ![Repository Structure](diagrams/uncommitted-gc-repo-struct.png)
@@ -52,11 +52,11 @@ The following are necessary changes in lakeFS in order to implement this proposa
 Uncommitted GC must scan the bucket in order to find objects that are not referenced by lakeFS.
 To optimize this process, suggest the following changes:
 
-1. Divide the repository namespace into time-and-size based partitions.
-2. Partition name will be a time based, reverse sorted unique identifier.
-3. LakeFS will create a new partition on a timely basis (for example: hourly) or when it has written < TBD > objects to the partition.
-4. Each partition will be written by a single lakeFS instance in order to track partition size.
-5. The sorted partitions will enable partial scans of the bucket when running the optimized GC.
+1. Divide the repository namespace into time-and-size based slices.
+2. Slice name will be a time based, reverse sorted unique identifier.
+3. LakeFS will create a new slice on a timely basis (for example: hourly) or when it has written < TBD > objects to the slice.
+4. Each slice will be written by a single lakeFS instance in order to track slice size.
+5. The sorted slices will enable partial scans of the bucket when running the optimized GC.
 
 #### StageObject
 
@@ -97,8 +97,8 @@ The following describe the GC process run flows on a repository:
 #### Flow 1: Clean Run
 
 1. Listing namespace objects
-   1. List all objects directly from object store (can be done in parallel using the partitions) -> `Store DF`
-   2. Skip partitions that are newer than < TOKEN_EXPIRY_TIME >
+   1. List all objects directly from object store (can be done in parallel using the slices) -> `Store DF`
+   2. Skip slices that are newer than < TOKEN_EXPIRY_TIME >
 2. Listing of lakeFS repository uncommitted objects
    1. Mark uncommitted data
       1. List branches
@@ -117,7 +117,7 @@ The following describe the GC process run flows on a repository:
    4. The remainder is a list of files which can be safely removed
 5. Save run information under the GC path
     1. The current run's `Uncommitted DF` (as a parquet file)
-    2. The last read partition
+    2. The last read slice
     3. The GC run start timestamp
 
 #### Flow 2: Optimized Run
@@ -128,7 +128,7 @@ Optimized run uses the previous GC run output, to perform a partial scan of the 
 
 1. Read previous run's information
    1. Previous `Uncommitted DF`
-   2. Last read partition
+   2. Last read slice
    3. Last run's timestamp
 2. Listing of lakeFS repository uncommitted objects  
     See previous for steps
@@ -145,8 +145,8 @@ Optimized run uses the previous GC run output, to perform a partial scan of the 
 
 1. Listing namespace objects (optimized)
    1. Read all objects directly from object store
-   2. Skip partitions that are newer than < TOKEN_EXPIRY_TIME >
-   3. Using the partitions, stop after reading the last partition read by previous GC run -> `Store DF`
+   2. Skip slices that are newer than < TOKEN_EXPIRY_TIME >
+   3. Using the slices, stop after reading the last slice read by previous GC run -> `Store DF`
 2. Find candidates for deletion
    1. Subtract `Committed DF` from `Store DF`
    2. Subtract current `Uncommitted DF` from `Store DF`
@@ -159,4 +159,5 @@ Optimized run uses the previous GC run output, to perform a partial scan of the 
 
 * Since this solution relies on the new repository structure, it is not backwards compatible. Therefore, another solution will be required for existing 
 repositories
-* For GC to work optimally, it must be executed on a timely basis. Long periods between runs might result in excessively long runs.
+* Even with the given optimizations, the GC process is still very much dependent on the amount of changes that were made on the repository
+since the last GC run.
