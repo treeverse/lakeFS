@@ -19,11 +19,11 @@ const (
 
 //nolint:gochecknoinits
 func init() {
-	kv.RegisterDefaultType(&StagedEntryData{})
-	kv.RegisterType(RepoPath(kv.PathNoDelimiterRegexp), &RepositoryData{})
-	kv.RegisterType(BranchPath(kv.PathNoDelimiterRegexp), &BranchData{})
-	kv.RegisterType(CommitPath(kv.PathNoDelimiterRegexp), &CommitData{})
-	kv.RegisterType(TagPath(kv.PathNoDelimiterRegexp), &TagData{})
+	kv.RegisterType("graveler", "repos/*", (&RepositoryData{}).ProtoReflect().Type())
+	kv.RegisterType("*", "branches/*", (&BranchData{}).ProtoReflect().Type())
+	kv.RegisterType("*", "commits/*", (&CommitData{}).ProtoReflect().Type())
+	kv.RegisterType("*", "tags/*", (&TagData{}).ProtoReflect().Type())
+	kv.RegisterType("*", "*", (&StagedEntryData{}).ProtoReflect().Type())
 }
 
 func RepoPath(repoID RepositoryID) string {

@@ -141,10 +141,10 @@ func protoFromTaskResult(m *TaskResult) *TaskResultData {
 
 //nolint:gochecknoinits
 func init() {
-	kv.RegisterType(TasksPath(kv.PathNoDelimiterRegexp, kv.PathNoDelimiterRegexp), &TaskResultData{})
-	kv.RegisterType(string(RunPath(kv.PathNoDelimiterRegexp, kv.PathNoDelimiterRegexp)), &RunResultData{})
-	kv.RegisterType(string(RunByBranchPath(kv.PathNoDelimiterRegexp, kv.PathNoDelimiterRegexp, kv.PathNoDelimiterRegexp)), &kv.SecondaryIndex{})
-	kv.RegisterType(string(RunByCommitPath(kv.PathNoDelimiterRegexp, kv.PathNoDelimiterRegexp, kv.PathNoDelimiterRegexp)), &kv.SecondaryIndex{})
+	kv.RegisterType("*", "repos/*/tasks/*", (&TaskResultData{}).ProtoReflect().Type())
+	kv.RegisterType("*", "repos/*/runs/*", (&RunResultData{}).ProtoReflect().Type())
+	kv.RegisterType("*", "repos/*/branches/*/*", (&kv.SecondaryIndex{}).ProtoReflect().Type())
+	kv.RegisterType("*", "repos/*/commits/*/*", (&kv.SecondaryIndex{}).ProtoReflect().Type())
 }
 
 func baseActionsPath(repoID string) string {

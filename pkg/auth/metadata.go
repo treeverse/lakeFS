@@ -18,8 +18,8 @@ const (
 
 //nolint:gochecknoinits
 func init() {
-	kv.RegisterType(InstallationIDKeyName, nil)
-	kv.RegisterType(SetupTimestampKeyName, nil)
+	kv.RegisterType("auth", InstallationIDKeyName, nil)
+	kv.RegisterType("auth", SetupTimestampKeyName, nil)
 }
 
 type MetadataManager interface {

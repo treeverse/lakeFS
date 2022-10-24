@@ -35,15 +35,15 @@ const (
 
 //nolint:gochecknoinits
 func init() {
-	kv.RegisterType(string(UserPath(kv.PathNoDelimiterRegexp)), &UserData{})
-	kv.RegisterType(string(PolicyPath(kv.PathNoDelimiterRegexp)), &PolicyData{})
-	kv.RegisterType(string(GroupPath(kv.PathNoDelimiterRegexp)), &GroupData{})
-	kv.RegisterType(string(CredentialPath(kv.PathNoDelimiterRegexp, kv.PathNoDelimiterRegexp)), &CredentialData{})
-	kv.RegisterType(string(GroupUserPath(kv.PathNoDelimiterRegexp, kv.PathNoDelimiterRegexp)), &kv.SecondaryIndex{})
-	kv.RegisterType(string(GroupPolicyPath(kv.PathNoDelimiterRegexp, kv.PathNoDelimiterRegexp)), &kv.SecondaryIndex{})
-	kv.RegisterType(string(UserPolicyPath(kv.PathNoDelimiterRegexp, kv.PathNoDelimiterRegexp)), &kv.SecondaryIndex{})
-	kv.RegisterType(string(ExpiredTokenPath(kv.PathNoDelimiterRegexp)), &TokenData{})
-	kv.RegisterType(MetadataKeyPath(kv.PathNoDelimiterRegexp), nil)
+	kv.RegisterType("auth", "users/*", (&UserData{}).ProtoReflect().Type())
+	kv.RegisterType("auth", "policies/*", (&PolicyData{}).ProtoReflect().Type())
+	kv.RegisterType("auth", "groups/*", (&GroupData{}).ProtoReflect().Type())
+	kv.RegisterType("auth", "uCredentials/*/credentials/*", (&CredentialData{}).ProtoReflect().Type())
+	kv.RegisterType("auth", "gUsers/*/users/*", (&kv.SecondaryIndex{}).ProtoReflect().Type())
+	kv.RegisterType("auth", "gPolicies/*/policies/*", (&kv.SecondaryIndex{}).ProtoReflect().Type())
+	kv.RegisterType("auth", "uPolicies/*/policies/*", (&kv.SecondaryIndex{}).ProtoReflect().Type())
+	kv.RegisterType("auth", "expiredTokens/*", (&TokenData{}).ProtoReflect().Type())
+	kv.RegisterType("auth", "installation_metadata/*", nil)
 }
 
 func UserPath(userName string) []byte {
