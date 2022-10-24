@@ -1289,7 +1289,7 @@ func TestController_DiffRefs(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
-	t.Run("create branch and diff refs success - prefix", func(t *testing.T) {
+	t.Run("diff prefix with and without delimiter", func(t *testing.T) {
 		const repoName = "repo7"
 		const newBranchName = "main2"
 		_, err := deps.catalog.CreateRepository(ctx, repoName, onBlock(deps, "foo1"), "main")
@@ -1306,9 +1306,10 @@ func TestController_DiffRefs(t *testing.T) {
 		}
 		const prefix = "some/"
 		const path = "path"
+		const fullPath = prefix + path
 		const content = "hello world!"
 
-		uploadResp, err := uploadObjectHelper(t, ctx, clt, prefix+path, strings.NewReader(content), repoName, newBranchName)
+		uploadResp, err := uploadObjectHelper(t, ctx, clt, fullPath, strings.NewReader(content), repoName, newBranchName)
 		verifyResponseOK(t, uploadResp, err)
 
 		if _, err := deps.catalog.Commit(ctx, repoName, newBranchName, "commit 1", "some_user", nil, nil, nil); err != nil {
@@ -1320,8 +1321,11 @@ func TestController_DiffRefs(t *testing.T) {
 		if len(results) != 1 {
 			t.Fatalf("unexpected length of results: %d", len(results))
 		}
-		if results[0].Path != path && results[0].PathType == "added" {
+		if results[0].Path != fullPath {
 			t.Fatalf("wrong result: %s", results[0].Path)
+		}
+		if results[0].Type != "added" {
+			t.Fatalf("wrong diff type: %s", results[0].Type)
 		}
 
 		delimiter := api.PaginationDelimiter("/")
@@ -1331,8 +1335,11 @@ func TestController_DiffRefs(t *testing.T) {
 		if len(results) != 1 {
 			t.Fatalf("unexpected length of results: %d", len(results))
 		}
-		if results[0].Path != prefix && results[0].PathType == "changes under prefix" {
+		if results[0].Path != prefix {
 			t.Fatalf("wrong result: %s", results[0].Path)
+		}
+		if results[0].Type != "changes under prefix" {
+			t.Fatalf("wrong diff type: %s", results[0].Type)
 		}
 	})
 }
