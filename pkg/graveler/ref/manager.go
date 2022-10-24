@@ -76,18 +76,22 @@ func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, addressPro
 }
 
 func (m *KVManager) getRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
+	data := graveler.RepositoryData{}
+	_, err := m.kvStore.GetMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID)), &data)
+	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			err = graveler.ErrRepositoryNotFound
+		}
+		return nil, err
+	}
+	return graveler.RepoFromProto(&data), nil
+}
+
+func (m *KVManager) getRepositoryBatch(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
 	key := fmt.Sprintf("GetRepository:%s", repositoryID)
 	repository, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
-		data := graveler.RepositoryData{}
-		_, err := m.kvStore.GetMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID)), &data)
-		if err != nil {
-			return nil, err
-		}
-		return graveler.RepoFromProto(&data), nil
+		return m.getRepository(ctx, repositoryID)
 	}))
-	if errors.Is(err, kv.ErrNotFound) {
-		err = graveler.ErrRepositoryNotFound
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +100,7 @@ func (m *KVManager) getRepository(ctx context.Context, repositoryID graveler.Rep
 
 func (m *KVManager) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
 	rec, err := m.repoCache.GetOrSet(repositoryID, func() (interface{}, error) {
-		repo, err := m.getRepository(ctx, repositoryID)
+		repo, err := m.getRepositoryBatch(ctx, repositoryID)
 		if err != nil {
 			return nil, err
 		}
@@ -247,7 +251,7 @@ func (m *KVManager) deleteRepository(ctx context.Context, repo *graveler.Reposit
 }
 
 func (m *KVManager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
-	repo, err := m.GetRepository(ctx, repositoryID)
+	repo, err := m.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
