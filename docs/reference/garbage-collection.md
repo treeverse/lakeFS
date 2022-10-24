@@ -285,36 +285,10 @@ This utility is a Spark application that uses [distCp](https://hadoop.apache.org
 * Backup: copy expired objects from your repository's storage namespace to an external location before running GC in [sweep only mode](#sweep-only-mode).  
 * Restore: copy objects that were hard-deleted by GC from an external location you used for saving your backup into your repository's storage namespace.
 
-- This will only work with Hadoop versions > 3.1.3, and so require a Hadoop 3 client.
-- Note that the utility is not fast due to distcp performance limitations. You may prefer backup your whole storage namespace with [AzCopy](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) / [aws cp](https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html) / [rclone](https://rclone.org/).
-
 ### Job options
 
-This utility enables some distCp [configuration options](https://hadoop.apache.org/docs/r3.2.1/hadoop-distcp/DistCp.html#Command_Line_Options) 
-by default and exposes some configuration options you can modify to tune its performance.
-
-#### Enabled by default 
-{: .no_toc }
-
-* `-v`, to log additional info (path, size) in the SKIP/COPY log
-* `-direct` to write directly to destination paths, recommended when the destination is an object store
-* `-strategy=dynamic` to accelerate distCp performance
-
-#### Configuration options
-{: .no_toc }
-
-* `-log`, to configure the log path
-* `-m`, to set the max number of maps
-* `-bandwidth`, to specify bandwidth per map, in MB/second
-* `-numListstatusThreads`, number of threads to use for building file listing, max 40
-
-To configure the properties, set the following hadoop properties: 
-```properties
--c spark.hadoop.distcp.log.path
--c spark.hadoop.distcp.max.maps
--c spark.hadoop.distcp.map.bandwidth.mb
--c spark.hadoop.distcp.liststatus.threads 
-```
+- This will only work with Hadoop versions > 3.1.3, and so require a Hadoop 3 client.
+- Note that the utility is not fast due to distcp performance limitations. You may prefer backup your whole storage namespace with [AzCopy](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) / [aws cp](https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html) / [rclone](https://rclone.org/).
 
 ### Running GC backup and restore 
 {: .no_toc }
