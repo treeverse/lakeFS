@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.83.4
+
+What's new:
+
+- **Deprecate** `lakefs import` (#4323)
+- Added download capability to `lakectl` (#4418)
+
+Bug fixes:
+
+- Fix README.md file viewer not displaying content according to file extension (#4380)
+- Fix entity creation fails when % is used in entity name (#4414)
+- Fix lakeFS returns code 500 when getting absent object (#4427)
+- Fix blank page when viewing objects in subdirectories (#4449)
+
 ## v0.83.3
 
 What's new:
