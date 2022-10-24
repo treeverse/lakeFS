@@ -186,6 +186,9 @@ func TestManager_DeleteRepository(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
+		// wait for cache expiry
+		time.Sleep(ref.RepositoryCacheExpiry + ref.RepositoryCacheJitter + time.Second)
+
 		_, err = r.GetRepository(context.Background(), "example-repo")
 		if !errors.Is(err, graveler.ErrRepositoryNotFound) {
 			t.Fatalf("expected ErrRepositoryNotFound, got: %v", err)
