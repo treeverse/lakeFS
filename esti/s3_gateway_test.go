@@ -216,6 +216,38 @@ func TestS3ReadObject(t *testing.T) {
 	})
 }
 
+func TestS3HeadBucket(t *testing.T) {
+	SkipTestIfAskedTo(t)
+
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	var badRepo = repo + "-nonexistent"
+
+	// Upload an object
+	client := newClient(t, sigV2)
+
+	t.Run("existing", func(t *testing.T) {
+		ok, err := client.BucketExists(ctx, repo)
+		if err != nil {
+			t.Errorf("BucketExists(%s) failed: %s", repo, err)
+		}
+		if !ok {
+			t.Errorf("Got that good bucket %s does not exist", repo)
+		}
+	})
+
+	t.Run("not existing", func(t *testing.T) {
+		ok, err := client.BucketExists(ctx, badRepo)
+		if err != nil {
+			t.Errorf("BucketExists(%s) failed: %s", badRepo, err)
+		}
+		if ok {
+			t.Errorf("Got that bad bucket %s exists", badRepo)
+		}
+	})
+}
+
 func TestS3CopyObject(t *testing.T) {
 	SkipTestIfAskedTo(t)
 	ctx, _, repo := setupTest(t)
