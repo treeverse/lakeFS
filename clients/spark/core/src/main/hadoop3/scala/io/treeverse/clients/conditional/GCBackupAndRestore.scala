@@ -3,7 +3,6 @@ package io.treeverse.clients
 import org.apache.hadoop.conf.Configuration
 
 import scala.util.control.Breaks._
-import scala.math._
 import org.apache.hadoop.tools.{DistCp, DistCpConstants}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
