@@ -88,7 +88,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         this.jobBranch = context.getJobName().isEmpty() ?
             id.toString() :
             String.format("%s-%s", context.getJobName(), id.toString());
-        System.out.printf("TODO: Job branch: %s\n", jobBranch);
+        LOG.info("Construct OC: Job branch: {}", jobBranch);
 
         if (outputPath != null) {
             Configuration conf = context.getConfiguration();
@@ -116,19 +116,19 @@ public class DummyOutputCommitter extends FileOutputCommitter {
             ObjectLocation loc = ObjectLocation.pathToObjectLocation(null, outputPath);
             loc.setRef(this.taskBranch);
             this.workPath = loc.toFSPath();
-            System.out.printf("TODO: Working path: %s\n", workPath);
+            LOG.trace("Working path: {}", workPath);
         }
     }
 
     private boolean createBranch(String branch, String base) throws IOException {
-        System.out.printf("TODO: Create branch %s from %s\n", branch, base);
+        LOG.info("Create branch {} from {}", branch, base);
         try {
             BranchesApi branches = lakeFSClient.getBranches();
             branches.createBranch(repository, new BranchCreation().name(branch).source(base));
             return true;
         } catch (ApiException e) {
             if (e.getCode() == HttpStatus.SC_CONFLICT) {
-                LOG.debug("branch {} already exists", branch);
+                LOG.info("branch {} already exists", branch);
                 return false;
                 // TODO(ariels): Consider checking the branch originates
                 //     from the expected location.  That will improve error
@@ -144,8 +144,6 @@ public class DummyOutputCommitter extends FileOutputCommitter {
 
     @Override
     public Path getWorkPath() {
-        System.out.printf("Get working path for %s -> %s\n%s\n", taskBranch, workPath,
-                          ExceptionUtils.getStackTrace(new Throwable()));
         return workPath;
     }
 
@@ -153,7 +151,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
     public void setupJob(JobContext context) throws IOException {
         if (outputPath == null)
             return;
-        LOG.debug("Setup job for %s on %s\n", outputBranch, jobBranch);
+        LOG.info("Setup job for {} on {}", outputBranch, jobBranch);
         createBranch(jobBranch, outputBranch);
     }
 
@@ -161,10 +159,10 @@ public class DummyOutputCommitter extends FileOutputCommitter {
     public void commitJob(JobContext jobContext) throws IOException {
         if (outputPath == null)
             return;
-        LOG.debug("Commit job branch %s to %s\n", jobBranch, outputBranch);
+        LOG.info("Commit job branch %s to %s\n", jobBranch, outputBranch);
         try {
             CommitsApi commits = lakeFSClient.getCommits();
-            commits.commit(repository, jobBranch, new CommitCreation().message(String.format("commiting Job %s", jobContext.getJobID())), null);
+            //            commits.commit(repository, jobBranch, new CommitCreation().message(String.format("commiting Job %s", jobContext.getJobID())), null);
             RefsApi refs = lakeFSClient.getRefs();
             refs.mergeIntoBranch(repository, jobBranch, outputBranch, new Merge().message("").strategy("source-wins"));
         } catch (ApiException e) {
@@ -176,7 +174,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
     public void abortJob(JobContext jobContext, JobStatus.State status) throws IOException { // TODO(lynn)
         if (outputPath == null)
             return;
-        System.out.printf("TODO: Delete(?) job branch %s\n", jobBranch);
+        LOG.info("TODO: Delete(?) job branch {}", jobBranch);
     }
 
     @Override
@@ -190,16 +188,17 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         throws IOException {
         if (outputPath == null)
             return;
-        LOG.debug("Setup task for %s on %s\n", taskBranch, jobBranch);
+        LOG.info("Setup task for {} on {}", taskBranch, jobBranch);
+        createBranch(jobBranch, outputBranch);
         createBranch(taskBranch, jobBranch);
     }
 
     @Override
     public void commitTask(TaskAttemptContext taskContext)
-        throws IOException {    // TODO(lynn)
+        throws IOException {
         if (outputPath == null)
             return;
-        LOG.debug("Commit task branch %s to %s\n", taskBranch, jobBranch);
+        LOG.info("Commit task branch %s to %s\n", taskBranch, jobBranch);
         try {
             CommitsApi commits = lakeFSClient.getCommits();
             commits.commit(repository, taskBranch, new CommitCreation().message(String.format("committing Task %s", taskContext.getTaskAttemptID())), null);
@@ -214,7 +213,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         throws IOException {    // TODO(lynn)
         if (outputPath == null)
             return;
-        System.out.printf("TODO: Delete task branch %s\n", taskBranch);
+        LOG.info("TODO: Delete task branch %s", taskBranch);
     }
 
     // TODO(lynn): More methods: isRecoverySupported, isCommitJobRepeatable, recoverTask.
