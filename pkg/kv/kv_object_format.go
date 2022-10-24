@@ -1,69 +1,83 @@
 package kv
 
 import (
-	"regexp"
+	"path/filepath"
+	"sort"
+	"strings"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-var matchers = make(map[string]protoreflect.ProtoMessage)
-var defaultMsg protoreflect.ProtoMessage = nil
-
-type KvObject struct {
+type Record struct {
 	Partition string
 	Key       string
 	Value     interface{}
 }
 
-// Register a pb message type to parse the data, according to a path regex
+type MatchRecord struct {
+	PartitionPattern string
+	PathPattern      string
+	MessageType      protoreflect.MessageType
+}
+
+var recordsMatches []MatchRecord
+
+// RegisterType - Register a pb message type to parse the data, according to a path regex
 // All objects which match the path regex will be parsed as that type
 // A nil type parses the value as a plain string
-func RegisterType(pathRegexp string, pb protoreflect.ProtoMessage) {
-	matchers[pathRegexp] = pb
+func RegisterType(partitionPattern, pathPattern string, mt protoreflect.MessageType) {
+	recordsMatches = append(recordsMatches, MatchRecord{
+		PartitionPattern: partitionPattern,
+		PathPattern:      pathPattern,
+		MessageType:      mt,
+	})
+	sort.Slice(recordsMatches, func(i, j int) bool {
+		p1 := strings.TrimPrefix(recordsMatches[i].PartitionPattern, "*")
+		p2 := strings.TrimPrefix(recordsMatches[j].PartitionPattern, "*")
+		if p1 == p2 {
+			pp1 := strings.TrimPrefix(recordsMatches[i].PathPattern, "*")
+			pp2 := strings.TrimPrefix(recordsMatches[j].PathPattern, "*")
+			return pp1 > pp2
+		}
+		return p1 > p2
+	})
 }
 
-// The pb message type to parse a value, in case the path does not meet
-// any regex of the above. This is done mainly to support paths which
-// have no rules and may cause a conflict with another regex
-// Note that multiple calls ti RegisterDefaultType will override each other
-func RegisterDefaultType(pb protoreflect.ProtoMessage) {
-	defaultMsg = pb
-}
+func NewRecord(partition, path string, rawValue []byte) (*Record, error) {
+	var mt protoreflect.MessageType
+	for _, r := range recordsMatches {
+		partitionMatch, err := filepath.Match(r.PartitionPattern, partition)
+		if err != nil {
+			return nil, err
+		}
+		if !partitionMatch {
+			continue
+		}
 
-func matchPath(path string, pathRegexp string) bool {
-	match, err := regexp.MatchString(PathBeginRegexp+pathRegexp, path)
-	return err == nil && match
-}
-
-func resolveKVPathToMsgType(path string) (protoreflect.ProtoMessage, error) {
-	for pathRegexp, msg := range matchers {
-		if matchPath(path, pathRegexp) {
-			return msg, nil
+		pathMatch, err := filepath.Match(r.PathPattern, path)
+		if err != nil {
+			return nil, err
+		}
+		if pathMatch {
+			mt = r.MessageType
+			break
 		}
 	}
-	if defaultMsg == nil {
-		return nil, ErrNotFound
-	}
-	return defaultMsg, nil
-}
 
-func ToKvObject(partition, path string, rawValue []byte) (*KvObject, error) {
-	msg, err := resolveKVPathToMsgType(path)
-	if err != nil {
-		return nil, err
-	}
-
-	var value interface{} = rawValue
-	if msg != nil {
-		err = proto.Unmarshal(rawValue, msg)
+	var value interface{}
+	if mt == nil {
+		value = rawValue
+	} else {
+		msg := mt.New().Interface()
+		err := proto.Unmarshal(rawValue, msg)
 		if err != nil {
 			return nil, err
 		}
 		value = msg
 	}
 
-	return &KvObject{
+	return &Record{
 		Partition: partition,
 		Key:       path,
 		Value:     value,

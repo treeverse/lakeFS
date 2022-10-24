@@ -59,7 +59,7 @@ var kvGetCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "Failed to get value for (%s,%s): %s\n", partitionKey, path, err)
 			os.Exit(1)
 		}
-		kvObj, err := kv.ToKvObject(partitionKey, path, val.Value)
+		kvObj, err := kv.NewRecord(partitionKey, path, val.Value)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to parse object from KV value: %s\n", err)
 			os.Exit(1)
@@ -137,13 +137,13 @@ var kvScanCmd = &cobra.Command{
 		defer iter.Close()
 
 		num := 0
-		kvObjs := []kv.KvObject{}
+		kvObjs := []kv.Record{}
 		for iter.Next() {
 			entry := iter.Entry()
 			if len(until) > 0 && string(entry.Key) > until {
 				break
 			}
-			kvObj, err := kv.ToKvObject(partitionKey, string(entry.Key), entry.Value)
+			kvObj, err := kv.NewRecord(partitionKey, string(entry.Key), entry.Value)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Failed to parse object from KV value: %s\n", err)
 				os.Exit(1)
