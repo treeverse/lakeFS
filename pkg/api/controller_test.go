@@ -1200,6 +1200,36 @@ func TestController_BranchesDiffBranchHandler(t *testing.T) {
 			t.Fatalf("expected an not found")
 		}
 	})
+
+	t.Run("diff branch with prefix", func(t *testing.T) {
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b"}))
+		_, err = deps.catalog.CreateBranch(ctx, "repo1", "diff_prefix", testBranch)
+		testutil.Must(t, err)
+
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", "diff_prefix", catalog.DBEntry{Path: "a/b/c"}))
+
+		diffResp, err := clt.DiffRefsWithResponse(ctx, "repo1", testBranch, "diff_prefix", &api.DiffRefsParams{})
+		verifyResponseOK(t, diffResp, err)
+		//expectedSize := int64(len(content))
+		//expectedSize := 1
+		//expectedResults := []api.Diff{
+		//	{Path: "file1", PathType: "object", Type: "added", SizeBytes: &expectedSize},
+		//}
+		//if diff := deep.Equal(diffResp.JSON200.Results, expectedResults); diff != nil {
+		//	t.Fatal("Diff results not as expected:", diff)
+		//}
+
+		//resp, err := clt.DiffBranchWithResponse(ctx, "repo1", testBranch, &api.DiffBranchParams{})
+		//verifyResponseOK(t, resp, err)
+		results := diffResp.JSON200.Results
+		if len(results) != 1 {
+			t.Fatalf("expected no resp results, got %d", len(results))
+		}
+
+		if results[0].Path != "a/b/c" && results[0].PathType != "added" {
+			t.Fatalf("got wrong diff object, expected a/b, got %s", results[0].Path)
+		}
+	})
 }
 
 func TestController_CreateBranchHandler(t *testing.T) {
@@ -1281,6 +1311,58 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		}
 		if resp.JSON409 == nil {
 			t.Fatal("CreateBranch expected conflict")
+		}
+	})
+}
+
+func TestController_DiffRefs(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	t.Run("create branch and diff refs success - prefix", func(t *testing.T) {
+		const repoName = "repo7"
+		const newBranchName = "main2"
+		_, err := deps.catalog.CreateRepository(ctx, repoName, onBlock(deps, "foo1"), "main")
+		testutil.Must(t, err)
+
+		resp, err := clt.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
+			Name:   newBranchName,
+			Source: "main",
+		})
+		verifyResponseOK(t, resp, err)
+		reference := string(resp.Body)
+		if len(reference) == 0 {
+			t.Fatalf("branch %s creation got no reference", newBranchName)
+		}
+		const prefix = "some/"
+		const path = "path"
+		const content = "hello world!"
+
+		uploadResp, err := uploadObjectHelper(t, ctx, clt, prefix+path, strings.NewReader(content), repoName, newBranchName)
+		verifyResponseOK(t, uploadResp, err)
+
+		if _, err := deps.catalog.Commit(ctx, repoName, newBranchName, "commit 1", "some_user", nil, nil, nil); err != nil {
+			t.Fatalf("failed to commit 'repo1': %s", err)
+		}
+		resp2, err := clt.DiffRefsWithResponse(ctx, repoName, "main", newBranchName, &api.DiffRefsParams{})
+		verifyResponseOK(t, resp2, err)
+		results := resp2.JSON200.Results
+		if len(results) != 1 {
+			t.Fatalf("unexpected length of results: %d", len(results))
+		}
+		if results[0].Path != path && results[0].PathType == "added" {
+			t.Fatalf("wrong result: %s", results[0].Path)
+		}
+
+		delimiter := api.PaginationDelimiter("/")
+		resp2, err = clt.DiffRefsWithResponse(ctx, repoName, "main", newBranchName, &api.DiffRefsParams{Delimiter: &delimiter})
+		verifyResponseOK(t, resp2, err)
+		results = resp2.JSON200.Results
+		if len(results) != 1 {
+			t.Fatalf("unexpected length of results: %d", len(results))
+		}
+		if results[0].Path != prefix && results[0].PathType == "changes under prefix" {
+			t.Fatalf("wrong result: %s", results[0].Path)
 		}
 	})
 }
