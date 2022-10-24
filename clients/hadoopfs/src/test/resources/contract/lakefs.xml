@@ -106,7 +106,11 @@
         <name>fs.contract.rename-overwrites-dest</name>
         <value>true</value>
     </property>
-
+    <property>
+        <!-- Objects are visible in lakeFS only after closing the output stream -->
+        <name>fs.contract.create-visibility-delayed</name>
+        <value>true</value>
+    </property>
 <!-- s3a v3.1.1 supports rename creation of dest dirs -->
 <!--    <property>-->
 <!--        <name>fs.contract.rename-creates-dest-dirs</name>-->

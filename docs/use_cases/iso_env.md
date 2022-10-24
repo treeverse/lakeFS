@@ -77,7 +77,7 @@ To instantly spin up a lakeFS environment and to work with sample data, use [lak
 
 Before getting started, you will need [docker](https://docs.docker.com/engine/install/) installed on your machine.
 
-{: .note .note-info }
+{: .note}
 Once you have docker installed and a lakeFS instance running, you can access the lakeFS demo notebooks by cloning the [lakeFS-samples](https://github.com/treeverse/lakeFS-samples) git repo.
 
 Follow along the steps below to create dev/test environment with lakeFS.
@@ -130,8 +130,8 @@ client = LakeFSClient(configuration)
 ```
 
 lakeFS can be configured to work with Spark in two ways:
-* Access lakeFS using the [S3A gateway](../integrations/spark.md#access-lakefs-using-the-s3a-gateway)
-* Access lakeFS using the [lakeFS-specific Hadoop FileSystem](../integrations/spark.md#access-lakefs-using-the-lakefs-specific-hadoop-filesystem)
+* Access lakeFS using the [S3A gateway](../integrations/spark.md#use-the-s3-gateway)
+* Access lakeFS using the [lakeFS-specific Hadoop FileSystem](../integrations/spark.md#use-the-lakefs-hadoop-filesystem)
 
 ### Upload the sample data to main branch
 

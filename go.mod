@@ -72,12 +72,13 @@ require (
 require (
 	cloud.google.com/go/compute v1.5.0
 	github.com/coreos/go-oidc/v3 v3.2.0
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65
 )
 
 require (
 	github.com/IBM/pgxpoolprometheus v1.0.1
+	github.com/alitto/pond v1.8.2
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
@@ -150,7 +151,7 @@ require (
 	github.com/bombsimon/wsl/v3 v3.3.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/cespare/xxhash v1.1.0 // indirect
-	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2
 	github.com/charithe/durationcheck v0.0.9 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/cockroachdb/errors v1.8.2 // indirect

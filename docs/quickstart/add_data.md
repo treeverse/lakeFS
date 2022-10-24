@@ -5,6 +5,7 @@ description: In this section, we will learn how to configure and use AWS CLI to 
 parent: Quickstart
 nav_order: 30
 has_children: false
+next: ["Commit the changes", "./first_commit.html"]
 ---
 
 # Add Data

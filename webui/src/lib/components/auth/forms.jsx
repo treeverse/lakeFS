@@ -93,7 +93,7 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
     );
 };
 
-export const EntityActionModal = ({ show, onHide, onAction, title, placeholder, actionName }) => {
+export const EntityActionModal = ({ show, onHide, onAction, title, placeholder, actionName, validationFunction = null }) => {
     const [error, setError] = useState(null);
     const idField = useRef(null);
 
@@ -103,6 +103,13 @@ export const EntityActionModal = ({ show, onHide, onAction, title, placeholder, 
     });
 
     const onSubmit = () => {
+        if (validationFunction) {
+            const validationResult = validationFunction(idField.current.value);
+            if (!validationResult.isValid) {
+                setError(validationResult.errorMessage);
+                return;
+            }
+        }
         onAction(idField.current.value).catch(err => setError(err));
     };
 

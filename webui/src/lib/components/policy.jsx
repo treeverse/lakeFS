@@ -7,7 +7,7 @@ import {FormControl} from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import {Error, FormattedDate} from "./controls";
 
-export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = false, isCreate = false }) => {
+export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = false, isCreate = false, validationFunction = null, externalError = null }) => {
     const [error, setError] = useState(null);
     const idField = useRef(null);
     const bodyField = useRef(null);
@@ -29,6 +29,13 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = fal
     const [savedBody, setSavedBody] = useState(null);
 
     const submit = () => {
+        if (validationFunction) {
+            const validationResult = validationFunction(idField.current.value);
+            if (!validationResult.isValid) {
+                setError(validationResult.errorMessage);
+                return;
+            }
+        }
         const statement = bodyField.current.value;
         try {
             JSON.parse(statement);
@@ -87,6 +94,7 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = fal
                 </Form>
 
                 {(!!error) && <Error className="mt-3" error={error}/>}
+                {(!!externalError) && <Error className="mt-3" error={externalError}/>}
 
             </Modal.Body>
 

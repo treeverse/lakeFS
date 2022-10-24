@@ -6,19 +6,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Utilities tests
-func TestRunShellCommand(t *testing.T) {
-	checkTerminal := "if [ -t 1 ] ; then echo -n terminal; else echo -n pipe; fi"
-
-	output, err := runShellCommand(checkTerminal, true)
-	require.NoError(t, err, "Failed to run shell command in terminal context")
-	require.Equal(t, "terminal", string(output), "terminal was not detected properly")
-
-	output, err = runShellCommand(checkTerminal, false)
-	require.NoError(t, err, "Failed to run shell command out of terminal context")
-	require.Equal(t, "pipe", string(output), "pipe was not detected properly")
-}
-
 func TestExpandVariables(t *testing.T) {
 	type test struct {
 		// In is the input string to expand.

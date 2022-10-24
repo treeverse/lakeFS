@@ -5,9 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -35,17 +37,13 @@ func Lakectl() string {
 	return LakectlWithParams(viper.GetString("access_key_id"), viper.GetString("secret_access_key"), viper.GetString("endpoint_url"))
 }
 
-func runShellCommand(command string, isTerminal bool) ([]byte, error) {
-	fmt.Println("Testing '", command, "'")
-	var cmd *exec.Cmd
-
-	// Assuming linux. Not sure this is correct
-	if isTerminal {
-		cmd = exec.Command("/usr/bin/script", "--return", "--quiet", "-c", command, "/dev/null")
-	} else {
-		cmd = exec.Command("/bin/sh", "-c", command)
-	}
-
+func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, error) {
+	t.Logf("Run shell command '%s'", command)
+	// Assuming linux. Not sure if this is correct
+	cmd := exec.Command("/bin/sh", "-c", command)
+	cmd.Env = append(os.Environ(),
+		"LAKECTL_INTERACTIVE="+strconv.FormatBool(isTerminal),
+	)
 	return cmd.CombinedOutput()
 }
 
@@ -150,10 +148,9 @@ func runCmdAndVerifyWithFile(t *testing.T, cmd, goldenFile string, expectFail, i
 	t.Helper()
 	goldenFile = "golden/" + goldenFile + ".golden"
 
-	switch *update {
-	case true:
+	if *update {
 		updateGoldenFile(t, cmd, isTerminal, goldenFile, vars)
-	default:
+	} else {
 		content, err := ioutil.ReadFile(goldenFile)
 		if err != nil {
 			t.Fatal("Failed to read ", goldenFile, err)
@@ -165,7 +162,7 @@ func runCmdAndVerifyWithFile(t *testing.T, cmd, goldenFile string, expectFail, i
 
 func updateGoldenFile(t *testing.T, cmd string, isTerminal bool, goldenFile string, vars map[string]string) {
 	t.Helper()
-	result, _ := runShellCommand(cmd, isTerminal)
+	result, _ := runShellCommand(t, cmd, isTerminal)
 	s := sanitize(string(result), vars)
 	s, err := embedVariables(s, vars)
 	require.NoError(t, err, "Variable embed failed - %s", err)
@@ -184,7 +181,7 @@ func RunCmdAndVerifyFailure(t *testing.T, cmd string, isTerminal bool, expected 
 }
 
 func runCmd(t *testing.T, cmd string, expectFail bool, isTerminal bool, vars map[string]string) string {
-	result, err := runShellCommand(cmd, isTerminal)
+	result, err := runShellCommand(t, cmd, isTerminal)
 	if expectFail {
 		require.Error(t, err, "Expected error in '%s' command did not occur. Output: %s", cmd, string(result))
 	} else {

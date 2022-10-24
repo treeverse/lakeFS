@@ -12,6 +12,7 @@ import (
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	ghttp "github.com/treeverse/lakefs/pkg/gateway/http"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
@@ -48,7 +49,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		WithError(err).
 		Debug("metadata operation to retrieve object done")
 
-	if errors.Is(err, catalog.ErrNotFound) {
+	if errors.Is(err, catalog.ErrNotFound) || errors.Is(err, graveler.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
 		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return

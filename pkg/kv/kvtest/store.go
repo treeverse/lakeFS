@@ -9,11 +9,11 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/go-multierror"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/kv"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
-	"golang.org/x/sync/errgroup"
 )
 
 type MakeStore func(t testing.TB, ctx context.Context) kv.Store
@@ -793,11 +793,11 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 	readDone := make(map[string]bool)
 	deleteDone := make(map[string]bool)
 
-	errGrp, errCtx := errgroup.WithContext(context.Background())
+	var g multierror.Group
 
 	// Scan and read
-	errGrp.Go(func() error {
-		ei, err := store.Scan(errCtx, []byte(testPartitionKey), readPref)
+	g.Go(func() error {
+		ei, err := store.Scan(ctx, []byte(testPartitionKey), readPref)
 		if err != nil {
 			return fmt.Errorf("unexpected error from store.Scan (read): %w", err)
 		}
@@ -807,7 +807,7 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 			e := ei.Entry()
 			if e != nil {
 				readDone[string(e.Key)] = true
-			} else if ei.Err() != nil {
+			} else if err := ei.Err(); err != nil {
 				return fmt.Errorf("unexpected error during read iteration: %w", err)
 			}
 		}
@@ -815,8 +815,8 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 	})
 
 	// Scan and delete
-	errGrp.Go(func() error {
-		ei, err := store.Scan(errCtx, []byte(testPartitionKey), delPref)
+	g.Go(func() error {
+		ei, err := store.Scan(ctx, []byte(testPartitionKey), delPref)
 		if err != nil {
 			return fmt.Errorf("unexpected error from store.Scan (delete): %w", err)
 		}
@@ -827,7 +827,7 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 			if e == nil {
 				return fmt.Errorf("unexpected nil entry during deletion interation: %w", ei.Err())
 			}
-			err = store.Delete(errCtx, []byte(testPartitionKey), e.Key)
+			err = store.Delete(ctx, []byte(testPartitionKey), e.Key)
 			if err != nil {
 				return fmt.Errorf("unexpected delete failure :%w", err)
 			}
@@ -836,9 +836,8 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 		return nil
 	})
 
-	err = errGrp.Wait()
-	if err != nil {
-		t.Fatal(err)
+	if err := g.Wait(); err != nil {
+		t.Fatal("Wait for scan read and delete", err)
 	}
 
 	verifyDeleteWhileIterResults(t, ctx, store, initialKv, readDone, deleteDone, readPref, delPref)

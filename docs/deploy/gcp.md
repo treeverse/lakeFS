@@ -4,6 +4,7 @@ title: On GCP
 parent: Deploy lakeFS
 description: This guide will help you deploy your production lakeFS environment on Google Cloud Platform (GCP).
 nav_order: 30
+next: ["Prepare your storage", "../setup/storage/index.html"]
 ---
 
 # Deploy lakeFS on GCP

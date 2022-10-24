@@ -271,6 +271,10 @@ lakeFS will add an entry to the Airflow request configuration property (`conf`) 
 The key of the record will be `lakeFS_event` and the value will match the one described [here](#request-body-schema)
 
 ---
+## Get started with your first lakeFS webhook
+
+To configure your first pre-merge webhook with lakeFS in 10 minutes, clone the [lakeFS-samples](https://github.com/treeverse/lakeFS-samples) repository and follow along the steps in the [readme](https://github.com/treeverse/lakeFS-samples/tree/main/04-data-quality-checks-with-lakeFS-hooks#running-data-quality-checks-with-lakefs-hooks).
+
 ## Experimentation
 
 Sometimes it may be easier to start experimenting with lakeFS webhooks, even before you have a running server to receive the calls.

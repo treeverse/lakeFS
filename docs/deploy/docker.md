@@ -4,6 +4,7 @@ title: With Docker
 parent: Deploy lakeFS
 description: This guide will help you deploy your production lakeFS environment with Docker.
 nav_order: 50
+next: ["Prepare your storage", "../setup/storage/index.html"]
 ---
 # Deploy lakeFS on Docker
 {: .no_toc }

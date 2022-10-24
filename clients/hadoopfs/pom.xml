@@ -52,10 +52,26 @@ To export to S3:
 
     <profiles>
         <profile>
-            <id>contract-tests</id>
+            <id>contract-tests-hadoop2</id>
             <properties>
-                <exclude.tests>nothing-to-exclude</exclude.tests>
+                <exclude.tests>io/lakefs/contract/hadoop3/**</exclude.tests>
                 <contract_tests.resource_dir>../../test/lakefsfs_contract/</contract_tests.resource_dir>
+                <hadoop.version>2.7.7</hadoop.version>
+            </properties>
+            <build>
+                <resources>
+                    <resource>
+                        <directory>${contract_tests.resource_dir}</directory>
+                    </resource>
+                </resources>
+            </build>
+        </profile>
+        <profile>
+            <id>contract-tests-hadoop3</id>
+            <properties>
+                <exclude.tests>io/lakefs/contract/hadoop2/**</exclude.tests>
+                <contract_tests.resource_dir>../../test/lakefsfs_contract/</contract_tests.resource_dir>
+                <hadoop.version>3.1.4</hadoop.version>
             </properties>
             <build>
                 <resources>
@@ -169,8 +185,10 @@ To export to S3:
 
     <properties>
         <exclude.tests>io/lakefs/contract/**</exclude.tests>
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <name-suffix/>          <!-- Set via profile to rename JAR -->
+        <hadoop.version>2.7.7</hadoop.version>
     </properties>
     <build>
         <plugins>
@@ -191,6 +209,9 @@ To export to S3:
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
+                    <testExcludes>
+                        <testExclude>${exclude.tests}</testExclude>
+                    </testExcludes>
                 </configuration>
             </plugin>
 
@@ -222,23 +243,36 @@ To export to S3:
             <artifactId>api-client</artifactId>
             <version>0.81.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.12.0</version>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
-            <version>2.7.7</version> <!-- The common Hadoop version for Spark 2.4.7 and 3.0.1, which lakeFS supports -->
+            <version>${hadoop.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <scope>test</scope>
             <type>test-jar</type>
-            <version>2.7.7</version>
+            <version>${hadoop.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-aws</artifactId>
-            <version>2.7.7</version>
+            <version>${hadoop.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.12.0</version>
         </dependency>
 
         <dependency>        <!-- needed for aws-java-sdk in tests(!) -->

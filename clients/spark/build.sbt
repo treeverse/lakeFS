@@ -2,7 +2,7 @@ import build.BuildType
 
 lazy val baseName = "lakefs-spark"
 
-lazy val projectVersion = "0.5.0"
+lazy val projectVersion = "0.5.1"
 ThisBuild / isSnapshot := false
 
 // Spark versions 2.4.7 and 3.0.1 use different Scala versions.  Changing this is a deep
@@ -47,8 +47,8 @@ def generateCoreProject(buildType: BuildType) =
         "commons-codec" % "commons-codec" % "1.15",
         "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
         "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
-        "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion,
-        "org.apache.hadoop" % "hadoop-common" % buildType.hadoopVersion,
+        "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion % "provided",
+        "org.apache.hadoop" % "hadoop-common" % buildType.hadoopVersion % "provided",
         "org.apache.hadoop" % "hadoop-azure" % buildType.hadoopVersion % "provided",
         "com.google.cloud.bigdataoss" % "gcs-connector" % buildType.gcpConnectorVersion,
         "org.scalaj" %% "scalaj-http" % "2.4.2",
