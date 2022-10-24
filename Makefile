@@ -154,7 +154,6 @@ gen-code: go-install ## Run the generator for inline commands
 		./pkg/graveler/committed \
 		./pkg/graveler/sstable \
 		./pkg/kv \
-		./pkg/onboard \
 		./pkg/pyramid
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
