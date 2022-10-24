@@ -106,14 +106,12 @@ object GCBackupAndRestore {
         .toString
     // Tune distCp options that control the speed of the file-to-copy list building stage
     val numListstatusThreads =
-      hc.get(DistCpConstants.CONF_LABEL_LISTSTATUS_THREADS, DistCpMaxNumListStatusThreads.toString)
+      hc.getInt(DistCpConstants.CONF_LABEL_LISTSTATUS_THREADS, DistCpMaxNumListStatusThreads)
     // Tune distCp options that control the speed of the copy stage
     // https://docs.cloudera.com/HDPDocuments/HDP3/HDP-3.1.4/bk_cloud-data-access/content/distcp-perf-mappers.html
-    val maxMaps = hc.get(DistCpConstants.CONF_LABEL_MAX_MAPS,
-                         max(DistCpConstants.DEFAULT_MAPS, numObjectsToCopy / 1000).toString
-                        ) //TODO: what is a reasonable number of maps
+    val maxMaps = hc.getInt(DistCpConstants.CONF_LABEL_MAX_MAPS, DistCpConstants.DEFAULT_MAPS)
     val mapsBandwidth =
-      hc.get(DistCpConstants.CONF_LABEL_BANDWIDTH_MB, DistCpConstants.DEFAULT_BANDWIDTH_MB.toString)
+      hc.getFloat(DistCpConstants.CONF_LABEL_BANDWIDTH_MB, DistCpConstants.DEFAULT_BANDWIDTH_MB)
     println(
       s"distCpLogsPath: ${distCpLogsPath}, distCpLogsPathForFS: ${distCpLogsPathForFS}, numListstatusThreads: ${numListstatusThreads}, maxMaps: ${maxMaps}, mapsBandwidth: ${mapsBandwidth}"
     )
@@ -125,11 +123,11 @@ object GCBackupAndRestore {
         "-log",
         distCpLogsPathForFS,
         "-numListstatusThreads",
-        numListstatusThreads,
+        numListstatusThreads.toString,
         "-m",
-        maxMaps,
+        maxMaps.toString,
         "-bandwidth",
-        mapsBandwidth,
+        mapsBandwidth.toString,
         "-direct", // force using the direct writing option, which is recommended while using distCp with objects storages, and is supported from hadoop 3.1.3
         "-strategy",
         "dynamic", // force using the dynamic strategy, which is always recommended for improved distCp performance
@@ -184,9 +182,9 @@ object GCBackupAndRestore {
 
   /** Required arguments are the following:
    *  1. address of parquet that includes the relative paths of files to backup or restore, created by a gc run
-   *     2. src: the namespace to backup or restore objects from/to (i.e. repo storage namespace, or an external location compatibly)
-   *     3. backup/restore destination: the namespace to backup or restore objects from/to (i.e. an external location or repo storage namespace compatibly)
-   *     4. Object storage type: "s3" or "azure"
+   *  2. src: the namespace to backup or restore objects from/to (i.e. repo storage namespace, or an external location compatibly)
+   *  3. backup/restore destination: the namespace to backup or restore objects from/to (i.e. an external location or repo storage namespace compatibly)
+   *  4. Object storage type: "s3" or "azure"
    */
   def main(args: Array[String]): Unit = {
     if (args.length != 4) {
