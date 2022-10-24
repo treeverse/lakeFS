@@ -234,7 +234,7 @@ const buildPathURL = (params, query) => {
     return {pathname: '/repositories/:repoId/objects', params, query};
 };
 
-export const URINavigator = ({ repo, reference, path, relativeTo = "", pathURLBuilder = buildPathURL, trailingSlash = true, isPathToFile = false }) => {
+export const URINavigator = ({ repo, reference, path, relativeTo = "", pathURLBuilder = buildPathURL, isPathToFile = false }) => {
     const parts = pathParts(path);
     const params = {repoId: repo.id};
 
@@ -259,19 +259,21 @@ export const URINavigator = ({ repo, reference, path, relativeTo = "", pathURLBu
             {parts.map((part, i) => {
                 const path = parts.slice(0, i+1).map(p => p.name).join('/') + '/';
                 const query = {path, ref: reference.id};
-                const edgeElement = isPathToFile ?
+                const edgeElement = isPathToFile && i === parts.length - 1 ?
                     (
                         <span>
                             {part.name}
                         </span>
                     ) :
                     (
-                        <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
+                        <>
+                            <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
+                            <strong>{'/'}</strong>
+                        </>
                     )
                 return (
-                    <span key={i}>
+                    <span key={part.name}>
                         {edgeElement}
-                        { trailingSlash && <strong>{'/'}</strong> }
                     </span>
                 );
             })}

@@ -60,13 +60,14 @@ export const getContentType = (headers) => {
 
 const FileObjectsViewerPage = () => {
     const { objectName, repoId } = useParams();
+    const decodedObjectName = decodeURIComponent(objectName);
     const queryString = useQuery();
     const refId = queryString["ref"];
     const {response, error, loading} = useAPI(async () => {
-        return await objects.getWithHeaders(repoId, refId, objectName);
-    }, [objectName]);
+        return await objects.getWithHeaders(repoId, refId, decodedObjectName);
+    }, [decodedObjectName]);
 
-    const fileExtension = getFileExtension(objectName);
+    const fileExtension = getFileExtension(decodedObjectName);
     const contentType = getContentType(response?.headers);
 
     return (
@@ -76,7 +77,7 @@ const FileObjectsViewerPage = () => {
                 <FileContents 
                     repoId={repoId} 
                     refId={refId}
-                    path={objectName}
+                    path={decodedObjectName}
                     fileExtension={fileExtension}
                     contentType={contentType}
                     rawContent={response?.responseText} 
@@ -122,7 +123,7 @@ export const FileContents = ({repoId, refId, path, loading, error, rawContent, c
     }
 
     const titleComponent = showFullNavigator ?
-        (<URINavigator path={path} repo={repo} reference={reference} trailingSlash={false} isPathToFile={true} />) :
+        (<URINavigator path={path} repo={repo} reference={reference} isPathToFile={true} />) :
         (<span>{path}</span>);
 
     return (
