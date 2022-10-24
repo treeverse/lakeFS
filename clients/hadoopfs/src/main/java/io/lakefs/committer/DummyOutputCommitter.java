@@ -10,6 +10,7 @@ import io.lakefs.clients.api.RefsApi;
 import io.lakefs.clients.api.CommitsApi;
 import io.lakefs.clients.api.model.BranchCreation;
 import io.lakefs.clients.api.model.CommitCreation;
+import io.lakefs.clients.api.model.Merge;
 
 import org.apache.commons.lang.exception.ExceptionUtils; // (for debug prints ONLY)
 import org.apache.hadoop.fs.FileSystem;
@@ -161,10 +162,14 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         if (outputPath == null)
             return;
         LOG.debug("Commit job branch %s to %s\n", jobBranch, outputBranch);
-        CommitsApi commits = lakeFSClient.getCommits();
-        commits.commit(repository, jobBranch, new CommitCreation().message(String.format("commiting Job %s", jobContext.getJobID())));
-        RefsApi refs = lakeFSClient.getRefs();
-        refs.mergeIntoBranch(repository, jobBranch, outputBranch);
+        try {
+            CommitsApi commits = lakeFSClient.getCommits();
+            commits.commit(repository, jobBranch, new CommitCreation().message(String.format("commiting Job %s", jobContext.getJobID())), null);
+            RefsApi refs = lakeFSClient.getRefs();
+            refs.mergeIntoBranch(repository, jobBranch, outputBranch, new Merge().message(""));
+        } catch (ApiException e) {
+            throw new IOException(String.format("commitJob %s failed", jobContext.getJobID()), e);
+        }
     }
 
     @Override
@@ -195,10 +200,14 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         if (outputPath == null)
             return;
         LOG.debug("Commit task branch %s to %s\n", taskBranch, jobBranch);
-        CommitsApi commits = lakeFSClient.getCommits();
-        commits.commit(repository, taskBranch, new CommitCreation().message(String.format("committing Task %s", taskContext.getTaskAttemptID())));
-        RefsApi refs = lakeFSClient.getRefs();
-        refs.mergeIntoBranch(repository, taskBranch, jobBranch);
+        try {
+            CommitsApi commits = lakeFSClient.getCommits();
+            commits.commit(repository, taskBranch, new CommitCreation().message(String.format("committing Task %s", taskContext.getTaskAttemptID())), null);
+            RefsApi refs = lakeFSClient.getRefs();
+            refs.mergeIntoBranch(repository, taskBranch, jobBranch, new Merge().message(""));
+        } catch (ApiException e) {
+            throw new IOException(String.format("commitTask %s failed", taskContext.getTaskAttemptID()), e);
+        }
     }
 
     public void abortTask(TaskAttemptContext taskContext)
