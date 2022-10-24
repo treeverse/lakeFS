@@ -1200,36 +1200,6 @@ func TestController_BranchesDiffBranchHandler(t *testing.T) {
 			t.Fatalf("expected an not found")
 		}
 	})
-
-	t.Run("diff branch with prefix", func(t *testing.T) {
-		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b"}))
-		_, err = deps.catalog.CreateBranch(ctx, "repo1", "diff_prefix", testBranch)
-		testutil.Must(t, err)
-
-		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", "diff_prefix", catalog.DBEntry{Path: "a/b/c"}))
-
-		diffResp, err := clt.DiffRefsWithResponse(ctx, "repo1", testBranch, "diff_prefix", &api.DiffRefsParams{})
-		verifyResponseOK(t, diffResp, err)
-		//expectedSize := int64(len(content))
-		//expectedSize := 1
-		//expectedResults := []api.Diff{
-		//	{Path: "file1", PathType: "object", Type: "added", SizeBytes: &expectedSize},
-		//}
-		//if diff := deep.Equal(diffResp.JSON200.Results, expectedResults); diff != nil {
-		//	t.Fatal("Diff results not as expected:", diff)
-		//}
-
-		//resp, err := clt.DiffBranchWithResponse(ctx, "repo1", testBranch, &api.DiffBranchParams{})
-		//verifyResponseOK(t, resp, err)
-		results := diffResp.JSON200.Results
-		if len(results) != 1 {
-			t.Fatalf("expected no resp results, got %d", len(results))
-		}
-
-		if results[0].Path != "a/b/c" && results[0].PathType != "added" {
-			t.Fatalf("got wrong diff object, expected a/b, got %s", results[0].Path)
-		}
-	})
 }
 
 func TestController_CreateBranchHandler(t *testing.T) {
