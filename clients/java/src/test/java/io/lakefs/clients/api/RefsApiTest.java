@@ -55,8 +55,7 @@ public class RefsApiTest {
         String prefix = null;
         String delimiter = null;
         String type = null;
-        String diffType = null;
-                DiffList response = api.diffRefs(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, diffType);
+                DiffList response = api.diffRefs(repository, leftRef, rightRef, after, amount, prefix, delimiter, type);
         // TODO: test validations
     }
     

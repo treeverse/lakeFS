@@ -2563,10 +2563,6 @@ paths:
         name: type
         schema:
           type: string
-      - in: query
-        name: diff_type
-        schema:
-          type: string
           enum: [two_dot, three_dot]
           default: three_dot
 

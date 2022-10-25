@@ -2792,13 +2792,6 @@ paths:
         name: type
         required: false
         schema:
-          type: string
-        style: form
-      - explode: true
-        in: query
-        name: diff_type
-        required: false
-        schema:
           default: three_dot
           enum:
           - two_dot
