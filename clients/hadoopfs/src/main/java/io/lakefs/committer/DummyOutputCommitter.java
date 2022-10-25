@@ -166,7 +166,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
             CommitsApi commits = lakeFSClient.getCommits();
             commits.commit(repository, jobBranch, new CommitCreation().message(String.format("commiting Job %s", jobContext.getJobID())), null);
             RefsApi refs = lakeFSClient.getRefs();
-            refs.mergeIntoBranch(repository, jobBranch, outputBranch, new Merge().message(""));
+            refs.mergeIntoBranch(repository, jobBranch, outputBranch, new Merge().message("").strategy("source-wins"));
         } catch (ApiException e) {
             throw new IOException(String.format("commitJob %s failed", jobContext.getJobID()), e);
         }
