@@ -31,6 +31,7 @@ The suggested method is to split the repository structure into fixed size (upper
 These slices can then be scanned independently using multiple workers.
 In addition, taking advantage of the common property of the listing operation, which lists objects in a lexicographical order, we can create the slices in a manner which
 enables additional optimizations on the GC process (read further for details).
+To resolve indexing issues with existing repositories that have a flat filesystem, suggested to create these slices under a `data` prefix. 
 
 ![Repository Structure](diagrams/uncommitted-gc-repo-struct.png)
 
