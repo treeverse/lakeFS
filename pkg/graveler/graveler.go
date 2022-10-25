@@ -1014,7 +1014,7 @@ func (g *KVGraveler) UpdateBranch(ctx context.Context, repository *RepositoryRec
 			return nil, err
 		}
 		if !empty {
-			return nil, ErrConflictFound
+			return nil, ErrDirtyBranch
 		}
 
 		tokensToDrop = currBranch.SealedTokens
@@ -1045,7 +1045,7 @@ func (g *KVGraveler) prepareForCommitIDUpdate(ctx context.Context, repository *R
 			return nil, err
 		}
 		if !empty {
-			return nil, ErrConflictFound
+			return nil, ErrDirtyBranch
 		}
 
 		currBranch.SealedTokens = append([]StagingToken{currBranch.StagingToken}, currBranch.SealedTokens...)
@@ -1843,7 +1843,7 @@ func (g *KVGraveler) AddCommitToBranchHead(ctx context.Context, repository *Repo
 			return nil, err
 		}
 		if !empty {
-			return nil, ErrConflictFound
+			return nil, ErrDirtyBranch
 		}
 
 		tokensToDrop = branch.SealedTokens
