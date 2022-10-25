@@ -55,7 +55,7 @@ To optimize this process, suggest the following changes:
 
 1. Divide the repository namespace into time-and-size based slices.
 2. Slice name will be a time based, reverse sorted unique identifier.
-3. LakeFS will create a new slice on a timely basis (for example: hourly) or when it has written < TBD > objects to the slice.
+3. LakeFS will create a new slice on a timely basis (for example: hourly) or when it has written < MAX_SLICE_SIZE > objects to the slice.
 4. Each slice will be written by a single lakeFS instance in order to track slice size.
 5. The sorted slices will enable partial scans of the bucket when running the optimized GC.
 
@@ -116,10 +116,7 @@ The following describe the GC process run flows on a repository:
    2. Subtract uncommitted data from all objects (`Store DF` - `Uncommitted DF`)
    3. Filter files in special paths
    4. The remainder is a list of files which can be safely removed
-5. Save run information under the GC path
-    1. The current run's `Uncommitted DF` (as a parquet file)
-    2. The last read slice
-    3. The GC run start timestamp
+5. Save run data (see: [GC Saved Information](#gc-saved-information)) 
 
 #### Flow 2: Optimized Run
 
@@ -153,8 +150,16 @@ Optimized run uses the previous GC run output, to perform a partial scan of the 
    2. Subtract current `Uncommitted DF` from `Store DF`
    3. Filter files in special paths
    4. The remainder is a list of files which can be safely removed
-3. Save run information under the GC path  
-   See previous for steps
+3. Save run data (see: [GC Saved Information](#gc-saved-information))
+
+### GC Saved Information
+
+For each GC run, save the following information using the GC run id as detailed in this [proposal](https://github.com/treeverse/cloud-controlplane/blob/main/design/accepted/gc-with-run-id.md):
+1. Save metaranges in `_lakefs/gc/run_id/metadata/`
+2. Save `Uncommitted DF` in `_lakefs/gc/run_id/uncommitted.parquet`
+3. Add the following to the GC report:
+   1. Run start time
+   2. Last read slice
 
 ## Limitations
 
