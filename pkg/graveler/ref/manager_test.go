@@ -12,13 +12,51 @@ import (
 	"time"
 
 	"github.com/go-test/deep"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/mock"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
+
+// TestManager_GetRepositoryCache test get repository information while using cache. Match the number of times we
+// call get repository vs number of times we fetch the data.
+func TestManager_GetRepositoryCache(t *testing.T) {
+	const (
+		times = 1
+		calls = 3
+	)
+	ctrl := gomock.NewController(t)
+	mockStore := mock.NewMockStore(ctrl)
+	storeMessage := kv.StoreMessage{Store: mockStore}
+	ctx := context.Background()
+	mockStore.EXPECT().Get(ctx, []byte("graveler"), []byte("repos/repo1")).Times(times).Return(&kv.ValueWithPredicate{}, nil)
+	repoCacheConfig := &ref.RepositoryCacheConfig{
+		Size:   100,
+		Expiry: 2 * time.Second,
+		Jitter: 0,
+	}
+	refManager := ref.NewKVRefManager(batch.NopExecutor(), storeMessage, ident.NewHexAddressProvider(), repoCacheConfig)
+	for i := 0; i < calls; i++ {
+		_, err := refManager.GetRepository(ctx, "repo1")
+		if err != nil {
+			t.Fatalf("Failed to get repository (iteration %d): %s", i, err)
+		}
+	}
+
+	// wait for cache to expire and call again
+	time.Sleep(repoCacheConfig.Expiry + repoCacheConfig.Jitter + time.Second)
+	mockStore.EXPECT().Get(ctx, []byte("graveler"), []byte("repos/repo1")).Times(1).Return(&kv.ValueWithPredicate{}, nil)
+	_, err := refManager.GetRepository(ctx, "repo1")
+	if err != nil {
+		t.Fatalf("Failed to get repository: %s", err)
+	}
+}
 
 func TestManager_GetRepository(t *testing.T) {
 	r, _ := testRefManager(t)
@@ -160,6 +198,9 @@ func TestManager_DeleteRepository(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
+
+		// wait for cache expiry
+		time.Sleep(testRepoCacheConfig.Expiry + testRepoCacheConfig.Jitter + time.Second)
 
 		_, err = r.GetRepository(context.Background(), "example-repo")
 		if !errors.Is(err, graveler.ErrRepositoryNotFound) {
@@ -802,7 +843,8 @@ func TestManager_GetCommitByPrefix(t *testing.T) {
 	})
 	testutil.MustDo(t, "Create repository", err)
 	for _, commitID := range commitIDs {
-		c := graveler.Commit{Committer: "user1",
+		c := graveler.Commit{
+			Committer:    "user1",
 			Message:      fmt.Sprintf("id_%s", commitID),
 			MetaRangeID:  "deadbeef123",
 			CreationDate: time.Now(),

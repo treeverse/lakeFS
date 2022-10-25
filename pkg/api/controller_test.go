@@ -918,20 +918,24 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("delete repo success", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "main")
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
 		testutil.Must(t, err)
 
-		resp, err := clt.DeleteRepositoryWithResponse(ctx, "my-new-repo")
+		resp, err := clt.DeleteRepositoryWithResponse(ctx, repo)
 		verifyResponseOK(t, resp, err)
 
-		_, err = deps.catalog.GetRepository(ctx, "my-new-repo")
-		if !errors.Is(err, catalog.ErrNotFound) {
-			t.Fatalf("expected repo to be gone, instead got error: %s", err)
+		// delete again to expect repository not found
+		resp, err = clt.DeleteRepositoryWithResponse(ctx, repo)
+		testutil.Must(t, err)
+		if resp.JSON404 == nil {
+			t.Fatalf("expected repository to be gone (404), instead got status: %s", resp.Status())
 		}
 	})
 
 	t.Run("delete repo doesnt exist", func(t *testing.T) {
-		resp, err := clt.DeleteRepositoryWithResponse(ctx, "my-other-repo")
+		repo := testUniqueRepoName()
+		resp, err := clt.DeleteRepositoryWithResponse(ctx, repo)
 		testutil.Must(t, err)
 		if resp.StatusCode() == http.StatusOK {
 			t.Fatalf("DeleteRepository should fail on non existing repository, got %d", resp.StatusCode())
