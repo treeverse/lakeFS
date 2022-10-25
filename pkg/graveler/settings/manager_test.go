@@ -214,14 +214,14 @@ func TestEmpty(t *testing.T) {
 	}
 	// when using Update on an unset key, the update function gets an empty setting object to operate on
 	err = m.Update(ctx, repository, "settingKey", emptySettings, func(setting proto.Message) (proto.Message, error) {
-		newSettings := *setting.(*settings.ExampleSettings)
+		newSettings := proto.Clone(setting).(*settings.ExampleSettings)
 
 		if newSettings.ExampleMap == nil {
 			newSettings.ExampleMap = make(map[string]int32)
 		}
 		newSettings.ExampleInt++
 		newSettings.ExampleMap["boo"]++
-		return &newSettings, nil
+		return newSettings, nil
 	})
 	testutil.Must(t, err)
 	gotSettings, err := m.Get(ctx, repository, "settingKey", emptySettings)
