@@ -2,7 +2,7 @@ project_name: lakeFS
 before:
   hooks:
     - go mod download
-    - make gen
+    - make gen VERSION="{{.Version}}"
 release:
   disable: false
   prerelease: true
