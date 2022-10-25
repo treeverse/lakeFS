@@ -98,7 +98,7 @@ var kvScanCmd = &cobra.Command{
 		}
 
 		partitionKey := args[0]
-		var start []byte = nil
+		var start []byte
 		if len(args) > ScanCmdMinArgs {
 			start = []byte(args[1])
 		}
