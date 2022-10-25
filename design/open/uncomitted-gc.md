@@ -162,3 +162,12 @@ Optimized run uses the previous GC run output, to perform a partial scan of the 
 repositories
 * Even with the given optimizations, the GC process is still very much dependent on the amount of changes that were made on the repository
 since the last GC run.
+
+## Performance Requirements
+
+The heaviest operation during the GC process, is the namespace listing. And while we added the above optimizations to mitigate
+this process, the fact remains - we still need to scan the entire namespace (in the Clean Run mode).
+Performing tests against an AWS S3 bucket using a Databricks notebook on a m4.large cluster, we've observed listing of 
+~500,000 objects takes approximately 25 seconds.
+We can estimate that on a repository with ~1B objects, using ~500K object size slices, and using 10 workers - listing will take
+around 1.5 hours.
