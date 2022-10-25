@@ -16,6 +16,19 @@ redirect_from: ../roadmap.html
 ---
 ## Ecosystem
 
+### Native Spark OutputCommitter <span>High Priority</span>{: .label .label-blue }
+
+We plan to add a Hadoop OutputCommitter that uses existing lakeFS operations for atomic commits that are efficient and safely concurrent.
+
+This comes with several benefits:
+
+- Performance: This committer does metadata operations only and doesn't rely on copying data.
+- Atomicity: A commit in lakeFS is guaranteed to either succeed or fail, but will not leave any intermediate state on failure.
+- Traceability: Attaching metadata to each commit means we get quite a lot of information on where data is coming from, how it's generated, etc. This allows building reproducible pipelines in an easier way.
+- Resilience: Since every Spark write is a commit, it's also undoable by reverting it.
+
+[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/blob/master/design/open/spark-outputcommitter/committer.md){: target="_blank" class="btn" }
+
 
 ### Table format support
 
@@ -67,35 +80,22 @@ A much better user experience would be to allow merging this log into a new unif
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3380){: target="_blank" class="btn" }
 
 
-### Hadoop 3 support in all lakeFS clients <span>High Priority</span>{: .label .label-blue }
+### Improved Azure Support
 
-We intend to test, verify and document the version support matrix for our Hadoop-based clients:
-1. [lakeFS Hadoop Filesystem](https://github.com/treeverse/lakeFS/tree/master/clients/hadoopfs)
-2. [Spark metadata client](https://github.com/treeverse/lakeFS/tree/master/clients/spark)
-3. [RouterFS](https://github.com/treeverse/hadoop-router-fs)
-
-In particular, all features will support Hadoop versions 3.x.
-
-
-### Native Spark OutputCommitter <span>High Priority</span>{: .label .label-blue }
-
-We plan to add a Hadoop OutputCommitter that uses existing lakeFS operations for atomic commits that are efficient and safely concurrent.
-
-This comes with several benefits:
-
-- Performance: This committer does metadata operations only and doesn't rely on copying data.
-- Atomicity: A commit in lakeFS is guaranteed to either succeed or fail, but will not leave any intermediate state on failure.
-- Traceability: Attaching metadata to each commit means we get quite a lot of information on where data is coming from, how it's generated, etc. This allows building reproducible pipelines in an easier way.
-- Resilience: Since every Spark write is a commit, it's also undoable by reverting it.
-
-[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/blob/master/design/open/spark-outputcommitter/committer.md){: target="_blank" class="btn" }
-
-
-### HadoopFS: Support Azure Blob Storage
+#### HadoopFS: Support Azure Blob Storage
 
 Extend the lakeFS HadoopFilesystem to support working directly with Azure Blob Storage.
 
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/4385){: target="_blank" class="btn" }
+
+#### Support Azure CosmosDB as backend KV store
+
+Allow Azure users to use a serverless database such as CosmosDB as their backing KV for lakeFS metadata.
+
+This will also allow auto-provisioning of a CosmosDB database and table as part of the Helm installation process, similar to how its done for DynamoDB on AWS.
+
+[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/4458){: target="_blank" class="btn" }
+
 
 ### Sync a lakeFS reference (or part of it) with a local directory
 
