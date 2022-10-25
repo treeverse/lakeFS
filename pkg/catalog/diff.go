@@ -6,6 +6,7 @@ const (
 	DifferenceTypeAdded DifferenceType = iota
 	DifferenceTypeRemoved
 	DifferenceTypeChanged
+	DifferenceTypePrefixChanged
 	DifferenceTypeConflict
 	DifferenceTypeNone
 )
@@ -31,6 +32,8 @@ func (d Difference) String() string {
 		symbol = "~"
 	case DifferenceTypeConflict:
 		symbol = "x"
+	case DifferenceTypePrefixChanged:
+		symbol = "/~"
 	}
 	return symbol + " " + d.Path
 }

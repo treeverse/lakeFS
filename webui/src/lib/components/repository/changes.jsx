@@ -211,6 +211,8 @@ function diffType(entry) {
     switch (entry.type) {
         case 'changed':
             return 'diff-changed';
+        case 'changes under prefix':
+            return 'diff-changed';
         case 'added':
             return 'diff-added';
         case 'removed':
@@ -224,9 +226,9 @@ function diffType(entry) {
 
 function diffIndicatorIcon(entry) {
     if (entry.path_type === 'common_prefix') {
-        return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-prefix"}>Prefix</Tooltip>)}>
+        return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-prefix"}>Changes under prefix</Tooltip>)}>
                         <span>
-                            <FileDirectoryIcon fill={"#d9b63e"}/>
+                            <FileDirectoryIcon/>
                         </span>
                </OverlayTrigger>;
     }

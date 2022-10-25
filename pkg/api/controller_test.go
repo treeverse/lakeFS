@@ -1289,6 +1289,65 @@ func TestController_CreateBranchHandler(t *testing.T) {
 	})
 }
 
+func TestController_DiffRefs(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	t.Run("diff prefix with and without delimiter", func(t *testing.T) {
+		const repoName = "repo7"
+		const newBranchName = "main2"
+		_, err := deps.catalog.CreateRepository(ctx, repoName, onBlock(deps, "foo1"), "main")
+		testutil.Must(t, err)
+
+		resp, err := clt.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
+			Name:   newBranchName,
+			Source: "main",
+		})
+		verifyResponseOK(t, resp, err)
+		reference := string(resp.Body)
+		if len(reference) == 0 {
+			t.Fatalf("branch %s creation got no reference", newBranchName)
+		}
+		const prefix = "some/"
+		const path = "path"
+		const fullPath = prefix + path
+		const content = "hello world!"
+
+		uploadResp, err := uploadObjectHelper(t, ctx, clt, fullPath, strings.NewReader(content), repoName, newBranchName)
+		verifyResponseOK(t, uploadResp, err)
+
+		if _, err := deps.catalog.Commit(ctx, repoName, newBranchName, "commit 1", "some_user", nil, nil, nil); err != nil {
+			t.Fatalf("failed to commit 'repo1': %s", err)
+		}
+		resp2, err := clt.DiffRefsWithResponse(ctx, repoName, "main", newBranchName, &api.DiffRefsParams{})
+		verifyResponseOK(t, resp2, err)
+		results := resp2.JSON200.Results
+		if len(results) != 1 {
+			t.Fatalf("unexpected length of results: %d", len(results))
+		}
+		if results[0].Path != fullPath {
+			t.Fatalf("wrong result: %s", results[0].Path)
+		}
+		if results[0].Type != "added" {
+			t.Fatalf("wrong diff type: %s", results[0].Type)
+		}
+
+		delimiter := api.PaginationDelimiter("/")
+		resp2, err = clt.DiffRefsWithResponse(ctx, repoName, "main", newBranchName, &api.DiffRefsParams{Delimiter: &delimiter})
+		verifyResponseOK(t, resp2, err)
+		results = resp2.JSON200.Results
+		if len(results) != 1 {
+			t.Fatalf("unexpected length of results: %d", len(results))
+		}
+		if results[0].Path != prefix {
+			t.Fatalf("wrong result: %s", results[0].Path)
+		}
+		if results[0].Type != "changes under prefix" {
+			t.Fatalf("wrong diff type: %s", results[0].Type)
+		}
+	})
+}
+
 func uploadObjectHelper(t testing.TB, ctx context.Context, clt api.ClientWithResponsesInterface, path string, reader io.Reader, repo, branch string) (*api.UploadObjectResponse, error) {
 	t.Helper()
 
