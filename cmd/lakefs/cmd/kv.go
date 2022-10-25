@@ -63,12 +63,11 @@ var kvGetCmd = &cobra.Command{
 			return fmt.Errorf("KV record from value: %w", err)
 		}
 
-		var kvObjJSON []byte
+		encoder := json.NewEncoder(os.Stdout)
 		if pretty {
-			kvObjJSON, err = json.MarshalIndent(kvObj, "", "  ")
-		} else {
-			kvObjJSON, err = json.Marshal(kvObj)
+			encoder.SetIndent("", "  ")
 		}
+		err = encoder.Encode(kvObj)
 		if err != nil {
 			return fmt.Errorf("json.Marshal failed: %w", err)
 		}
