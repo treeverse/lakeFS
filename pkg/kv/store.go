@@ -159,7 +159,7 @@ func Open(ctx context.Context, params kvparams.KV) (Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newStoreMetricsWrapper(store, params.Type), nil
+	return storeMetrics(store, params.Type), nil
 }
 
 // Drivers returns a list of registered drive names

@@ -2,13 +2,11 @@ package kv
 
 import (
 	"context"
-	"time"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-var requestHistograms = promauto.NewHistogramVec(
+var requestDuration = promauto.NewHistogramVec(
 	prometheus.HistogramOpts{
 		Name:    "kv_request_duration_seconds",
 		Help:    "request durations for the kv Store",
@@ -18,69 +16,46 @@ var requestHistograms = promauto.NewHistogramVec(
 
 // StoreMetricsWrapper wraps any Store with metrics
 type StoreMetricsWrapper struct {
-	Store     Store
-	storeType string
-}
-
-func (s *StoreMetricsWrapper) wrapWithMetrics(op string, f func()) {
-	start := time.Now()
-	f()
-	requestHistograms.WithLabelValues(s.storeType, op).Observe(time.Since(start).Seconds())
+	Store
+	StoreType string
 }
 
 func (s *StoreMetricsWrapper) Get(ctx context.Context, partitionKey, key []byte) (*ValueWithPredicate, error) {
-	var res *ValueWithPredicate
-	var err error
-
-	s.wrapWithMetrics("Get", func() {
-		res, err = s.Store.Get(ctx, partitionKey, key)
-	})
-	return res, err
+	timer := prometheus.NewTimer(requestDuration.WithLabelValues(s.StoreType, "Get"))
+	defer timer.ObserveDuration()
+	return s.Store.Get(ctx, partitionKey, key)
 }
 
 func (s *StoreMetricsWrapper) Set(ctx context.Context, partitionKey, key, value []byte) error {
-	var err error
-
-	s.wrapWithMetrics("Set", func() {
-		err = s.Store.Set(ctx, partitionKey, key, value)
-	})
-	return err
+	timer := prometheus.NewTimer(requestDuration.WithLabelValues(s.StoreType, "Set"))
+	defer timer.ObserveDuration()
+	return s.Store.Set(ctx, partitionKey, key, value)
 }
 
 func (s *StoreMetricsWrapper) SetIf(ctx context.Context, partitionKey, key, value []byte, valuePredicate Predicate) error {
-	var err error
-
-	s.wrapWithMetrics("SetIf", func() {
-		err = s.Store.SetIf(ctx, partitionKey, key, value, valuePredicate)
-	})
-	return err
+	timer := prometheus.NewTimer(requestDuration.WithLabelValues(s.StoreType, "SetIf"))
+	defer timer.ObserveDuration()
+	return s.Store.SetIf(ctx, partitionKey, key, value, valuePredicate)
 }
 
 func (s *StoreMetricsWrapper) Delete(ctx context.Context, partitionKey, key []byte) error {
-	var err error
-
-	s.wrapWithMetrics("Delete", func() {
-		err = s.Store.Delete(ctx, partitionKey, key)
-	})
-	return err
+	timer := prometheus.NewTimer(requestDuration.WithLabelValues(s.StoreType, "Delete"))
+	defer timer.ObserveDuration()
+	return s.Store.Delete(ctx, partitionKey, key)
 }
 
 func (s *StoreMetricsWrapper) Scan(ctx context.Context, partitionKey, start []byte) (EntriesIterator, error) {
-	var res EntriesIterator
-	var err error
-
-	s.wrapWithMetrics("Scan", func() {
-		res, err = s.Store.Scan(ctx, partitionKey, start)
-	})
-	return res, err
+	timer := prometheus.NewTimer(requestDuration.WithLabelValues(s.StoreType, "Scan"))
+	defer timer.ObserveDuration()
+	return s.Store.Scan(ctx, partitionKey, start)
 }
 
 func (s *StoreMetricsWrapper) Close() {
-	s.wrapWithMetrics("Close", func() {
-		s.Store.Close()
-	})
+	timer := prometheus.NewTimer(requestDuration.WithLabelValues(s.StoreType, "Close"))
+	defer timer.ObserveDuration()
+	s.Store.Close()
 }
 
-func newStoreMetricsWrapper(store Store, storeType string) *StoreMetricsWrapper {
-	return &StoreMetricsWrapper{Store: store, storeType: storeType}
+func storeMetrics(store Store, storeType string) *StoreMetricsWrapper {
+	return &StoreMetricsWrapper{Store: store, StoreType: storeType}
 }
