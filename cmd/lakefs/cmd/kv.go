@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"os"
 
 	_ "github.com/treeverse/lakefs/pkg/actions"
 	_ "github.com/treeverse/lakefs/pkg/auth"
@@ -20,6 +20,8 @@ const (
 	GetCmdNumArgs  = 2
 )
 
+var errInvalidParamValue = errors.New("invalid parameter value")
+
 var kvCmd = &cobra.Command{
 	Use:    "kv",
 	Short:  "Inspect lakeFS' Key-Value Store",
@@ -30,25 +32,23 @@ var kvGetCmd = &cobra.Command{
 	Use:   "get <partition> <path>",
 	Short: "Return the value for the given path under the given partition",
 	Args:  cobra.ExactArgs(GetCmdNumArgs),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg := loadConfig()
 
 		pretty, err := cmd.Flags().GetBool("pretty")
 		if err != nil {
-			os.Exit(1)
+			return err
 		}
 
 		ctx := cmd.Context()
 		kvParams, err := cfg.GetKVParams()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
-			os.Exit(1)
+			return fmt.Errorf("KV params: %w", err)
 		}
 
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to open KV store: %s\n", err)
-			os.Exit(1)
+			return fmt.Errorf("failed to open KV store: %w", err)
 		}
 		defer kvStore.Close()
 
@@ -56,13 +56,11 @@ var kvGetCmd = &cobra.Command{
 		path := args[1]
 		val, err := kvStore.Get(ctx, []byte(partitionKey), []byte(path))
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to get value for (%s,%s): %s\n", partitionKey, path, err)
-			os.Exit(1)
+			return fmt.Errorf("get failed: %w", err)
 		}
 		kvObj, err := kv.NewRecord(partitionKey, path, val.Value)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to parse object from KV value: %s\n", err)
-			os.Exit(1)
+			return fmt.Errorf("KV record from value: %w", err)
 		}
 
 		var kvObjJSON []byte
@@ -72,11 +70,11 @@ var kvGetCmd = &cobra.Command{
 			kvObjJSON, err = json.Marshal(kvObj)
 		}
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "json.Marshal failed: %s\n", err)
-			os.Exit(1)
+			return fmt.Errorf("json.Marshal failed: %w", err)
 		}
 
 		fmt.Println(string(kvObjJSON))
+		return nil
 	},
 }
 
@@ -84,20 +82,20 @@ var kvScanCmd = &cobra.Command{
 	Use:   "scan <partition> [<path>]",
 	Short: "Scan through keys and values under the given partition. An optional path can be specified as a starting point (inclusive)",
 	Args:  cobra.RangeArgs(ScanCmdMinArgs, ScanCmdMaxArgs),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg := loadConfig()
 
 		limit, err := cmd.Flags().GetInt("limit")
 		if err != nil {
-			os.Exit(1)
+			return err
 		}
 		until, err := cmd.Flags().GetString("until")
 		if err != nil {
-			os.Exit(1)
+			return err
 		}
 		pretty, err := cmd.Flags().GetBool("pretty")
 		if err != nil {
-			os.Exit(1)
+			return err
 		}
 
 		partitionKey := args[0]
@@ -107,32 +105,24 @@ var kvScanCmd = &cobra.Command{
 		}
 
 		if len(until) > 0 && until < string(start) {
-			fmt.Fprintf(os.Stderr, "Invalid args: `until` cannot precede `path`")
+			return fmt.Errorf("`until` cannot precede `path`: %w", errInvalidParamValue)
 		}
 
 		ctx := cmd.Context()
 		kvParams, err := cfg.GetKVParams()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
-			os.Exit(1)
+			return fmt.Errorf("KV params: %w", err)
 		}
 
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to open KV store: %s\n", err)
-			os.Exit(1)
+			return fmt.Errorf("failed to open KV store: %w", err)
 		}
 		defer kvStore.Close()
 
 		iter, err := kvStore.Scan(ctx, []byte(partitionKey), start)
 		if err != nil {
-			logMsg := "Failed to scan partition '" + partitionKey + "'"
-			if start != nil {
-				logMsg += " with start key '" + string(start) + "'"
-			}
-			logMsg += ": " + err.Error() + "\n"
-			fmt.Fprint(os.Stderr, logMsg)
-			os.Exit(1)
+			return fmt.Errorf("scan failed: %w", err)
 		}
 		defer iter.Close()
 
@@ -145,8 +135,7 @@ var kvScanCmd = &cobra.Command{
 			}
 			kvObj, err := kv.NewRecord(partitionKey, string(entry.Key), entry.Value)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Failed to parse object from KV value: %s\n", err)
-				os.Exit(1)
+				return fmt.Errorf("KV record from value: %w", err)
 			}
 			kvObjs = append(kvObjs, *kvObj)
 			num++
@@ -155,8 +144,7 @@ var kvScanCmd = &cobra.Command{
 			}
 		}
 		if iter.Err() != nil {
-			fmt.Fprintf(os.Stderr, "Scan operation ended with error: %s", iter.Err())
-			os.Exit(1)
+			return fmt.Errorf("scan operation ended with error: %w", iter.Err())
 		}
 
 		var kvObjsJSON []byte
@@ -166,11 +154,11 @@ var kvScanCmd = &cobra.Command{
 			kvObjsJSON, err = json.Marshal(kvObjs)
 		}
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "json.Marshal failed: %s\n", err)
-			os.Exit(1)
+			return fmt.Errorf("json.Marshal failed: %w", err)
 		}
 
 		fmt.Println(string(kvObjsJSON))
+		return nil
 	},
 }
 
