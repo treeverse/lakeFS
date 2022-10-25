@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 
 	_ "github.com/treeverse/lakefs/pkg/actions"
 	_ "github.com/treeverse/lakefs/pkg/auth"
@@ -72,7 +73,6 @@ var kvGetCmd = &cobra.Command{
 			return fmt.Errorf("json.Marshal failed: %w", err)
 		}
 
-		fmt.Println(string(kvObjJSON))
 		return nil
 	},
 }
@@ -126,7 +126,6 @@ var kvScanCmd = &cobra.Command{
 		defer iter.Close()
 
 		num := 0
-		kvObjs := []kv.Record{}
 		for iter.Next() {
 			entry := iter.Entry()
 			if len(until) > 0 && string(entry.Key) > until {
@@ -136,7 +135,14 @@ var kvScanCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("KV record from value: %w", err)
 			}
-			kvObjs = append(kvObjs, *kvObj)
+			encoder := json.NewEncoder(os.Stdout)
+			if pretty {
+				encoder.SetIndent("", "  ")
+			}
+			err = encoder.Encode(kvObj)
+			if err != nil {
+				return fmt.Errorf("json.Marshal failed: %w", err)
+			}
 			num++
 			if num == limit {
 				break
@@ -145,18 +151,6 @@ var kvScanCmd = &cobra.Command{
 		if iter.Err() != nil {
 			return fmt.Errorf("scan operation ended with error: %w", iter.Err())
 		}
-
-		var kvObjsJSON []byte
-		if pretty {
-			kvObjsJSON, err = json.MarshalIndent(kvObjs, "", "  ")
-		} else {
-			kvObjsJSON, err = json.Marshal(kvObjs)
-		}
-		if err != nil {
-			return fmt.Errorf("json.Marshal failed: %w", err)
-		}
-
-		fmt.Println(string(kvObjsJSON))
 		return nil
 	},
 }
