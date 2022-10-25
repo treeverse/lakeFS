@@ -1,4 +1,4 @@
-import React, {FC, useState, ReactNode, MouseEventHandler, useContext} from "react";
+import React, {FC, useMemo, useState, ReactNode, MouseEventHandler, useContext} from "react";
 
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
@@ -52,7 +52,7 @@ export const ConfirmationModal: FC<ConfirmationModalProps> = ({ show, onHide, ms
 
 export const ConfirmationButtonWithContext: FC<ConfirmationButtonWithContextProps> = ({ userId, msg, onConfirm, variant, modalVariant, size, disabled = false, tooltip = null, children }) => {
     const getUserEmailById = useContext(GetUserEmailByIdContext);
-    const email = getUserEmailById(userId);
+    const email = useMemo(() => getUserEmailById(userId), [userId]);
     
     let msgNode: ReactNode;
     if (typeof msg === "function") {

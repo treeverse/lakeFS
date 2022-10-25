@@ -44,7 +44,7 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
             </>
         );
 
-        const msg = (email) => <span>Create a new Access Key for user <strong>{email}</strong>?</span>;
+        const getMsg = (email) => <span>Create new credentials for user <strong>{email}</strong>?</span>;
     return (
         <>
             <UserHeaderWithContext userId={userId} page={'credentials'}/>
@@ -55,7 +55,7 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
                         userId={userId}
                         variant="success"
                         modalVariant="success"
-                        msg={msg}
+                        msg={getMsg}
                         onConfirm={hide => {
                             createKey()
                                 .then(key => { setCreatedKey(key) })
