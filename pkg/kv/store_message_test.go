@@ -217,7 +217,7 @@ func testStoreMessageDelete(t testing.TB, ctx context.Context, sm kv.StoreMessag
 		t.Fatal("error trying to delete non-existing key", err)
 	}
 
-	// Get deleted key (empty store)
+	// Get deleted key (empty Store)
 	_, err = sm.GetMsg(ctx, modelPartitionKey, m1.Name, m3)
 	require.Error(t, kv.ErrNotFound, err)
 }
@@ -240,7 +240,7 @@ func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage)
 	modelNum := 5
 
 	var testData []testItem
-	// Add test models to store
+	// Add test models to Store
 	for i := 0; i < modelNum; i++ {
 		msgNew := proto.Clone(m).(*kvtest.TestModel)
 		msgNew.TestMap["special"] = int32(i)
@@ -322,7 +322,7 @@ func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.St
 	modelKeyPrefix := "m"
 	modelNum := 3
 
-	// Add test models to store
+	// Add test models to Store
 	for i := 0; i < modelNum; i++ {
 		require.NoError(t, sm.SetMsg(ctx, modelPartitionKey, []byte(kv.FormatPath(modelKeyPrefix, strconv.Itoa(i))), m))
 	}
