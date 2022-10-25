@@ -1,6 +1,8 @@
 package kv
 
 import (
+	"errors"
+	"fmt"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -23,6 +25,8 @@ type MatchRecord struct {
 
 var recordsMatches []MatchRecord
 
+var errPatternAlreadyRegistered = errors.New("pattern already regsitered")
+
 // RegisterType - Register a pb message type to parse the data, according to a path regex
 // All objects which match the path regex will be parsed as that type
 // A nil type parses the value as a plain string
@@ -38,6 +42,9 @@ func RegisterType(partitionPattern, pathPattern string, mt protoreflect.MessageT
 		if p1 == p2 {
 			pp1 := strings.TrimPrefix(recordsMatches[i].PathPattern, "*")
 			pp2 := strings.TrimPrefix(recordsMatches[j].PathPattern, "*")
+			if pp1 == pp2 {
+				panic(fmt.Errorf("partition %s, path%s: %w", partitionPattern, pathPattern, errPatternAlreadyRegistered))
+			}
 			return pp1 > pp2
 		}
 		return p1 > p2
