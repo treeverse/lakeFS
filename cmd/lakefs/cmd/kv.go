@@ -126,6 +126,7 @@ var kvScanCmd = &cobra.Command{
 		defer iter.Close()
 
 		num := 0
+		encoder := json.NewEncoder(os.Stdout)
 		for iter.Next() {
 			entry := iter.Entry()
 			if len(until) > 0 && string(entry.Key) > until {
@@ -135,7 +136,6 @@ var kvScanCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("KV record from value: %w", err)
 			}
-			encoder := json.NewEncoder(os.Stdout)
 			if pretty {
 				encoder.SetIndent("", "  ")
 			}
