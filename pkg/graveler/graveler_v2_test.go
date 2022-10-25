@@ -274,8 +274,7 @@ func TestGravelerMerge(t *testing.T) {
 		test.committedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
 
 		val, err := test.sut.Merge(ctx, repository, branch1ID, graveler.Ref(branch2ID), graveler.CommitParams{}, "")
-
-		require.Equal(t, graveler.ErrConflictFound, err)
+		require.Equal(t, graveler.ErrDirtyBranch, err)
 		require.Equal(t, graveler.CommitID(""), val)
 	})
 
