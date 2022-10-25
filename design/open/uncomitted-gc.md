@@ -170,9 +170,32 @@ since the last GC run.
 
 ## Performance Requirements
 
+TLDR; [Bottom Line](#minimal-performance-bottom-line)
+
 The heaviest operation during the GC process, is the namespace listing. And while we added the above optimizations to mitigate
 this process, the fact remains - we still need to scan the entire namespace (in the Clean Run mode).
 Performing tests against an AWS S3 bucket using a Databricks notebook on a m4.large cluster, we've observed listing of 
 ~500,000 objects takes approximately 25 seconds.
 We can estimate that on a repository with ~1B objects, using ~500K object size slices, and using 10 workers - listing will take
 around 1.5 hours.
+
+Creating metaranges for uncommitted objects of a branch is a metadata operation.
+Both this and reading metaranges and ranges from lakeFS are an order of magnitude smaller than listing the namespace.
+Therefore, the number of branches, commits, and unstaged objects in the repository, do not play a part in the minimal performance estimation.
+
+We are then left with the process of identifying and deleting the candidate objects.
+Identifying the candidates for deletion is a minus operation between data frames, and should be done efficiently and its impact on the total runtime is negligible.
+Deleting objects on S3 can be done in a bulk operation that allows passing up to 1000 objects to the API.
+Taking into account a HTTP timeout of 100 seconds per request, 10 workers and 1M objects to delete - the deletion process
+should take at **most** around 2.5 hours
+
+### Minimal Performance Bottom Line
+
+* On a repository with 1B objects
+* Any number of branches, commits and uncommitted data
+* 1M stale objects to be deleted
+* Severe network latencies
+
+**The entire process should take approximately 4 hours**
+
+
