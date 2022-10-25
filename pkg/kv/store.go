@@ -146,7 +146,7 @@ func UnregisterAllDrivers() {
 	}
 }
 
-// Open lookup driver with 'name' and return store based on 'dsn' (data source name).
+// Open lookup driver by 'type' and return store based on the configuration.
 // Failed with ErrUnknownDriver in case 'name' is not registered
 func Open(ctx context.Context, params kvparams.KV) (Store, error) {
 	driversMu.RLock()
