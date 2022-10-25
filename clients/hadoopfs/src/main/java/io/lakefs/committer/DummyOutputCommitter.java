@@ -10,6 +10,7 @@ import io.lakefs.clients.api.RefsApi;
 import io.lakefs.clients.api.CommitsApi;
 import io.lakefs.clients.api.model.BranchCreation;
 import io.lakefs.clients.api.model.CommitCreation;
+import io.lakefs.clients.api.model.DiffList;
 import io.lakefs.clients.api.model.Merge;
 
 import org.apache.commons.lang.exception.ExceptionUtils; // (for debug prints ONLY)
@@ -155,14 +156,36 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         createBranch(jobBranch, outputBranch);
     }
 
+    protected boolean hasChanges(String branch) throws IOException {
+        try {
+            BranchesApi branches = lakeFSClient.getBranches();
+            DiffList res = branches.diffBranch(repository, branch, null, 1, null, null);
+            return res.getResults().size() > 0;
+        } catch (ApiException e) {
+            throw new IOException(String.format("hasChanges(%s, %s): diffBranch failed", repository, branch), e);
+        }
+    }
+
+    protected boolean hasDiffs(String repository, String from, String to) throws IOException {
+        try {
+            RefsApi refs = lakeFSClient.getRefs();
+            DiffList res = refs.diffRefs(repository, from, to, null, 1, null, null, "two_dot", "two_dot");
+            return res.getResults().size() > 0;
+        } catch (ApiException e) {
+            throw new IOException(String.format("hasDiffs(%s, %s => %s): diff failed", repository, from, to), e);
+        }
+    }
+
     @Override
     public void commitJob(JobContext jobContext) throws IOException {
         if (outputPath == null)
             return;
-        LOG.info("Commit job branch %s to %s\n", jobBranch, outputBranch);
         try {
-            CommitsApi commits = lakeFSClient.getCommits();
-            //            commits.commit(repository, jobBranch, new CommitCreation().message(String.format("commiting Job %s", jobContext.getJobID())), null);
+            if (!hasDiffs(repository, jobBranch, outputBranch)) {
+                LOG.debug("No differences from {} to {}, nothing to merge", jobBranch, outputBranch);
+                return;
+            }
+            LOG.info("Commit job branch {} to {}", jobBranch, outputBranch);
             RefsApi refs = lakeFSClient.getRefs();
             refs.mergeIntoBranch(repository, jobBranch, outputBranch, new Merge().message("").strategy("source-wins"));
         } catch (ApiException e) {
@@ -198,10 +221,20 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         throws IOException {
         if (outputPath == null)
             return;
-        LOG.info("Commit task branch %s to %s\n", taskBranch, jobBranch);
         try {
+            if (!hasChanges(taskBranch)) {
+                LOG.debug("Nothing to commit into {} for {}", taskBranch, jobBranch);
+                return;
+            }
+
+            LOG.info("Commit task branch {} and merge to {}", taskBranch, jobBranch);
             CommitsApi commits = lakeFSClient.getCommits();
             commits.commit(repository, taskBranch, new CommitCreation().message(String.format("committing Task %s", taskContext.getTaskAttemptID())), null);
+
+            if (!hasDiffs(repository, taskBranch, jobBranch)) {
+                LOG.info("Strange, after committing no differences from {} to {}, nothing to merge", taskBranch, jobBranch);
+                return;
+            }
             RefsApi refs = lakeFSClient.getRefs();
             refs.mergeIntoBranch(repository, taskBranch, jobBranch, new Merge().message(""));
         } catch (ApiException e) {
