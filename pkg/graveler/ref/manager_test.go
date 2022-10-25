@@ -43,6 +43,14 @@ func TestManager_GetRepositoryCache(t *testing.T) {
 			t.Fatalf("Failed to get repository (iteration %d): %s", i, err)
 		}
 	}
+
+	// wait for cache to expire and call again
+	time.Sleep(ref.RepositoryCacheExpiry + ref.RepositoryCacheJitter + time.Second)
+	mockStore.EXPECT().Get(ctx, []byte("graveler"), []byte("repos/repo1")).Times(1).Return(&kv.ValueWithPredicate{}, nil)
+	_, err := refManager.GetRepository(ctx, "repo1")
+	if err != nil {
+		t.Fatalf("Failed to get repository: %s", err)
+	}
 }
 
 func TestManager_GetRepository(t *testing.T) {
