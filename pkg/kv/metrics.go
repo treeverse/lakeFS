@@ -2,6 +2,7 @@ package kv
 
 import (
 	"context"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
