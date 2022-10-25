@@ -211,6 +211,8 @@ function diffType(entry) {
     switch (entry.type) {
         case 'changed':
             return 'diff-changed';
+        case 'changes under prefix':
+            return 'diff-changed';
         case 'added':
             return 'diff-added';
         case 'removed':
