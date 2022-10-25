@@ -10,9 +10,9 @@ import (
 )
 
 type Record struct {
-	Partition string
-	Key       string
-	Value     interface{}
+	Partition string      `json:"partition"`
+	Key       string      `json:"key"`
+	Value     interface{} `json:"value"`
 }
 
 type MatchRecord struct {
