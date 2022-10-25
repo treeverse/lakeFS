@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Quickstart
+title: QuickStart
 description: The quickstart. This section provides simple instructions for deploying lakeFS so that you start exploring the technology
 nav_order: 5
 has_children: true
@@ -14,27 +14,9 @@ next: ["Try lakeFS without installing", "./try.html"]
 
 ## Try lakeFS without installing
 
-### lakeFS Playground
-Quickly experience lakeFS firsthand with your own isolated environment in the cloud. You can easily integrate it with your existing tools and see lakeFS in action in an environment similar to your own.
-<p style="margin-top: 20px;">
-    <a class="btn btn-green" href="https://demo.lakefs.io/" target="_blank">
-        Try lakeFS now without installing
-    </a>
-</p>
+{% include_relative includes/try.md %}
 
-Watch video regarding lakeFS Playground:
-<iframe width="420" height="315" src="https://www.youtube.com/embed/RBKJGpkN-Yo"></iframe>
-
-### lakeFS sample Notebooks
-This docker container includes Jupyter notebooks to demonstrate multiple use cases and integration of lakeFS with Spark, Python, Delta Lake and Airflow. These notebooks can be used with any types of lakeFS installation including lakeFS Playground.
-<p style="margin-top: 20px;">
-    <a class="btn btn-green" href="https://github.com/treeverse/lakeFS-samples/tree/main/03-apache-spark-python-demo" target="_blank">
-        Try lakeFS sample Notebooks
-    </a>
-</p>
-
-Watch video to install lakeFS sample Notebooks and to run Spark Demo Notebook:
-<iframe width="420" height="315" src="https://www.youtube.com/embed/fprpDZ96JQo"></iframe>
+Go to [Try lakeFS without installing](try.html) page for additional information.
 
 ## Run lakeFS locally
 
@@ -62,6 +44,8 @@ lakeFS cloud is a fully managed service with no deployment, installing, maintain
 
 [Start your lakeFS Cloud free trial](https://lakefs.cloud/register).
 
+Watch video to setup lakeFS Cloud and point it to your own object storage:
+<iframe width="420" height="315" src="https://www.youtube.com/embed/yMcBIfEuOJw"></iframe>
 
 ## lakeFS Videos
 Watch lakeFS tutorials and webinar recordings on [lakeFS YouTube Channel](https://www.youtube.com/channel/UCZiDUd28ex47BTLuehb1qSA)

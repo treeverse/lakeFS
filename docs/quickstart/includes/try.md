@@ -1,24 +1,21 @@
-## lakeFS Docker "Everything Bagel"
+### lakeFS Playground
+Quickly experience lakeFS firsthand with your own isolated environment in the cloud. You can easily integrate it with your existing tools and see lakeFS in action in an environment similar to your own.
+<p style="margin-top: 20px;">
+    <a class="btn btn-green" href="https://demo.lakefs.io/" target="_blank">
+        Try lakeFS now without installing
+    </a>
+</p>
 
-Get a local lakeFS instance running in a Docker container. This environment includes lakeFS and other common data tools like Spark, dbt, Trino, Hive, and Jupyter.
+Watch video regarding lakeFS Playground:
+<iframe width="420" height="315" src="https://www.youtube.com/embed/RBKJGpkN-Yo"></iframe>
 
-As a prerequisite, Docker is required to be installed on your machine. For download instructions, [click here](https://docs.docker.com/get-docker/)
+### lakeFS sample Notebooks
+This docker container includes Jupyter notebooks to demonstrate multiple use cases and integration of lakeFS with Spark, Python, Delta Lake and Airflow. These notebooks can be used with any types of lakeFS installation including lakeFS Playground.
+<p style="margin-top: 20px;">
+    <a class="btn btn-green" href="https://github.com/treeverse/lakeFS-samples/tree/main/03-apache-spark-python-demo" target="_blank">
+        Try lakeFS sample Notebooks
+    </a>
+</p>
 
-The following commands can be run in your terminal to get the Bagel running:
-
-1. Clone the lakeFS repo: `git clone https://github.com/treeverse/lakeFS.git`
-2. Start the Docker containers: `cd lakeFS/deployments/compose && docker compose up -d`
-
-Once you have your Docker environment running, it is helpful to pull up the UI for lakeFS. To do this navigate to `http://localhost:8000` in your browser. The access key and secret to login are found in the `docker_compose.yml` file in the `lakefs-setup` section.
-
-Once you are logged in, you should see a page that looks like below.
-
-![Setup Done]({{ site.baseurl }}/assets/img/iso-env-example-repo.png)
-
-The first thing to notice is in this environment, lakeFS comes with a repository called `example` already created, and the repo’s default branch is `main`. If your lakeFS installation doesn't have the `example` repo created, you can use the green `Create Repository` button to do so:
-
-![Create Repo]({{ site.baseurl }}/assets/img/iso-env-create-repo.png)
-
-## Next Steps
-
-You can now [install lakeFS on your computer](installing.html), [try without installing](https://demo.lakefs.io), or [deploy it on your cloud account](../deploy/index.html).
+Watch video to install lakeFS sample Notebooks and to run Spark Demo Notebook:
+<iframe width="420" height="315" src="https://www.youtube.com/embed/fprpDZ96JQo"></iframe>

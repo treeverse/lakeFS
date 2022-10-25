@@ -2,7 +2,7 @@
 layout: default
 title: Create a Repository
 description: In this guide, we’re going to run an initial setup and then create a new repository using lakeFS.
-parent: Quickstart
+parent: QuickStart
 nav_order: 20
 has_children: false
 next: ["Add data", "./add_data.html"]
@@ -47,6 +47,9 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
    {: .note .note-info }
 
 1. Click _Create Repository_.
+
+Follow the tutorial video below to create a repository, add data to a repository and merge the changes:
+<iframe width="420" height="315" src="https://www.youtube.com/embed/TnbH9UwoiF8"></iframe>
 
 ### Next steps
 

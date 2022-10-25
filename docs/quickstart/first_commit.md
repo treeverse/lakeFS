@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Commit the Changes
-parent: Quickstart
+parent: QuickStart
 nav_order: 40
 has_children: false
 redirect_from: quickstart/lakefs_cli.html
@@ -85,6 +85,9 @@ lakectl log lakefs://example-repo/main
 ```
 
 Congratulations! You've completed your first commit in lakeFS.
+
+Follow the tutorial video below to create a repository, add data to a repository and merge the changes:
+<iframe width="420" height="315" src="https://www.youtube.com/embed/TnbH9UwoiF8"></iframe>
 
 ### Next steps
 

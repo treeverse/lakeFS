@@ -2,7 +2,7 @@
 layout: default
 title: Install lakeFS
 description: Installing lakeFS is easy. This section covers how to spin up lakeFS using Docker.
-parent: Quickstart
+parent: QuickStart
 nav_order: 10
 has_children: false
 next: ["Create your first repository", "./repository.html"]
@@ -29,6 +29,9 @@ To run a local lakeFS instance using [Docker](https://docs.docker.com/){:target=
 1. Check your installation by opening [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank"} in your web browser.
 
 1. [Create your first repository](repository.md) in lakeFS.
+
+Watch video to install lakeFS using Docker as well as point it to your own object storage:
+<iframe width="420" height="315" src="https://www.youtube.com/embed/CIDrHVFnIJY"></iframe>
 
 ## Other methods
 
