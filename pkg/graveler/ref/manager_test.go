@@ -36,7 +36,12 @@ func TestManager_GetRepositoryCache(t *testing.T) {
 	storeMessage := kv.StoreMessage{Store: mockStore}
 	ctx := context.Background()
 	mockStore.EXPECT().Get(ctx, []byte("graveler"), []byte("repos/repo1")).Times(times).Return(&kv.ValueWithPredicate{}, nil)
-	refManager := ref.NewKVRefManager(batch.NopExecutor(), storeMessage, ident.NewHexAddressProvider())
+	repoCacheConfig := &ref.RepositoryCacheConfig{
+		Size:   100,
+		Expiry: 2 * time.Second,
+		Jitter: 0,
+	}
+	refManager := ref.NewKVRefManager(batch.NopExecutor(), storeMessage, ident.NewHexAddressProvider(), repoCacheConfig)
 	for i := 0; i < calls; i++ {
 		_, err := refManager.GetRepository(ctx, "repo1")
 		if err != nil {
@@ -45,7 +50,7 @@ func TestManager_GetRepositoryCache(t *testing.T) {
 	}
 
 	// wait for cache to expire and call again
-	time.Sleep(ref.RepositoryCacheExpiry + ref.RepositoryCacheJitter + time.Second)
+	time.Sleep(repoCacheConfig.Expiry + repoCacheConfig.Jitter + time.Second)
 	mockStore.EXPECT().Get(ctx, []byte("graveler"), []byte("repos/repo1")).Times(1).Return(&kv.ValueWithPredicate{}, nil)
 	_, err := refManager.GetRepository(ctx, "repo1")
 	if err != nil {
@@ -195,7 +200,7 @@ func TestManager_DeleteRepository(t *testing.T) {
 		}
 
 		// wait for cache expiry
-		time.Sleep(ref.RepositoryCacheExpiry + ref.RepositoryCacheJitter + time.Second)
+		time.Sleep(testRepoCacheConfig.Expiry + testRepoCacheConfig.Jitter + time.Second)
 
 		_, err = r.GetRepository(context.Background(), "example-repo")
 		if !errors.Is(err, graveler.ErrRepositoryNotFound) {

@@ -26,10 +26,16 @@ const MaxBatchDelay = time.Millisecond * 3
 const commitIDStringLength = 64
 
 const (
-	RepositoryCacheSize   = 1000
-	RepositoryCacheExpiry = 5 * time.Second
-	RepositoryCacheJitter = RepositoryCacheExpiry / 2
+	DefaultRepositoryCacheSize   = 1000
+	DefaultRepositoryCacheExpiry = 5 * time.Second
+	DefaultRepositoryCacheJitter = DefaultRepositoryCacheExpiry / 2
 )
+
+type RepositoryCacheConfig struct {
+	Size   int
+	Expiry time.Duration
+	Jitter time.Duration
+}
 
 type KVManager struct {
 	kvStore         kv.StoreMessage
@@ -65,8 +71,15 @@ func protoFromBranch(branchID graveler.BranchID, b *graveler.Branch) *graveler.B
 	return branch
 }
 
-func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, addressProvider ident.AddressProvider) *KVManager {
-	repoCache := cache.NewCache(RepositoryCacheSize, RepositoryCacheExpiry, cache.NewJitterFn(RepositoryCacheJitter))
+func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, addressProvider ident.AddressProvider, repoCacheConfig *RepositoryCacheConfig) *KVManager {
+	if repoCacheConfig == nil {
+		repoCacheConfig = &RepositoryCacheConfig{
+			Size:   DefaultRepositoryCacheSize,
+			Expiry: DefaultRepositoryCacheExpiry,
+			Jitter: DefaultRepositoryCacheJitter,
+		}
+	}
+	repoCache := cache.NewCache(repoCacheConfig.Size, repoCacheConfig.Expiry, cache.NewJitterFn(repoCacheConfig.Jitter))
 	return &KVManager{
 		kvStore:         kvStore,
 		addressProvider: addressProvider,
