@@ -79,7 +79,10 @@ func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, addressPro
 			Jitter: DefaultRepositoryCacheJitter,
 		}
 	}
-	repoCache := cache.NewCache(repoCacheConfig.Size, repoCacheConfig.Expiry, cache.NewJitterFn(repoCacheConfig.Jitter))
+	repoCache := cache.NoCache
+	if repoCacheConfig.Size > 0 {
+		repoCache = cache.NewCache(repoCacheConfig.Size, repoCacheConfig.Expiry, cache.NewJitterFn(repoCacheConfig.Jitter))
+	}
 	return &KVManager{
 		kvStore:         kvStore,
 		addressProvider: addressProvider,
