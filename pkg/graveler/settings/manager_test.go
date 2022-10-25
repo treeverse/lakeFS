@@ -232,13 +232,7 @@ func TestEmpty(t *testing.T) {
 	}
 }
 
-type nopCache struct{}
-
-func (m *nopCache) GetOrSet(_ interface{}, setFn cache.SetFn) (v interface{}, err error) {
-	return setFn()
-}
-
-func prepareTest(t *testing.T, ctx context.Context, cache cache.Cache, branchLockCallback func(context.Context, *graveler.RepositoryRecord, graveler.BranchID, func() (interface{}, error)) (interface{}, error)) (*settings.KVManager, block.Adapter) {
+func prepareTest(t *testing.T, ctx context.Context, refCache cache.Cache, branchLockCallback func(context.Context, *graveler.RepositoryRecord, graveler.BranchID, func() (interface{}, error)) (interface{}, error)) (*settings.KVManager, block.Adapter) {
 	ctrl := gomock.NewController(t)
 	refManager := mock.NewMockRefManager(ctrl)
 
@@ -251,10 +245,10 @@ func prepareTest(t *testing.T, ctx context.Context, cache cache.Cache, branchLoc
 		cb = branchLockCallback
 	}
 	var opts []settings.ManagerOption
-	if cache == nil {
-		cache = &nopCache{}
+	if refCache == nil {
+		refCache = cache.NoCache
 	}
-	opts = append(opts, settings.WithCache(cache))
+	opts = append(opts, settings.WithCache(refCache))
 	branchLock.EXPECT().MetadataUpdater(ctx, gomock.Eq(repository), graveler.BranchID("main"), gomock.Any()).DoAndReturn(cb).AnyTimes()
 	kvStore := kvtest.GetStore(ctx, t)
 	m := settings.NewManager(refManager, kv.StoreMessage{Store: kvStore}, opts...)
