@@ -13,8 +13,10 @@ jobs:
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
+
       - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
+        uses: olafurpg/setup-scala@v13
+
       - name: run tests, validate and package
         working-directory: clients/spark
         run: sbt test scalafmtCheck "scalafix --check" package
