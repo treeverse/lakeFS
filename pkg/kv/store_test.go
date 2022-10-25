@@ -66,14 +66,18 @@ func TestRegister(t *testing.T) {
 		params := kvparams.KV{Type: "md", Postgres: &kvparams.Postgres{ConnectionString: "dsn1"}}
 		s1, err := kv.Open(ctx, params)
 		if err != nil {
-			t.Fatal("expected store 'md'", err)
+			t.Fatal("expected Store 'md'", err)
 		}
-		if store, ok := s1.(*MockStore); !ok {
-			t.Fatal("expected mock store")
+		store1, ok := s1.(*kv.StoreMetricsWrapper)
+		if !ok {
+			t.Fatal("expected StoreMetricsWrapper")
+		}
+		if store, ok := store1.Store.(*MockStore); !ok {
+			t.Fatal("expected mock Store")
 		} else if store.Driver != "md" {
-			t.Fatal("expected store from 'md' driver")
+			t.Fatal("expected Store from 'md' driver")
 		} else if store.Params.Postgres.ConnectionString != params.Postgres.ConnectionString {
-			t.Fatalf("store open with dsn '%s', expected 'dsn1'", store.Params.Postgres.ConnectionString)
+			t.Fatalf("Store open with dsn '%s', expected 'dsn1'", store.Params.Postgres.ConnectionString)
 		}
 		// open missing driver
 		params2 := kvparams.KV{Type: "missing", Postgres: &kvparams.Postgres{ConnectionString: "dsn2"}}
