@@ -20,6 +20,7 @@ func TestValidateTagID(t *testing.T) {
 		{name: "ends with lock", tag: "tag.lock", wantErr: ErrInvalidValue},
 		{name: "space", tag: "a tag", wantErr: ErrInvalidValue},
 		{name: "invalid control", tag: "a\x01tag", wantErr: ErrInvalidValue},
+		{name: "single slash", tag: "more/tags", wantErr: ErrInvalidValue},
 		{name: "double slash", tag: "more//tags", wantErr: ErrInvalidValue},
 		{name: "double dot", tag: "more..tags", wantErr: ErrInvalidValue},
 		{name: "template", tag: "more@{tags}", wantErr: ErrInvalidValue},

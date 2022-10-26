@@ -415,6 +415,16 @@ func (c *Catalog) CreateBranch(ctx context.Context, repositoryID string, branch 
 	if err != nil {
 		return nil, err
 	}
+	if _, err := c.Store.GetCommit(ctx, repository, graveler.CommitID(branchID)); err == nil {
+		return nil, fmt.Errorf("commit ID %s: %w", branchID, graveler.ErrConflictFound)
+	} else if !errors.Is(err, graveler.ErrNotFound) {
+		return nil, err
+	}
+	if _, err := c.Store.GetTag(ctx, repository, graveler.TagID(branchID)); err == nil {
+		return nil, fmt.Errorf("tag ID %s: %w", branchID, graveler.ErrConflictFound)
+	} else if !errors.Is(err, graveler.ErrNotFound) {
+		return nil, err
+	}
 	newBranch, err := c.Store.CreateBranch(ctx, repository, branchID, sourceRef)
 	if err != nil {
 		return nil, err
@@ -581,6 +591,17 @@ func (c *Catalog) CreateTag(ctx context.Context, repositoryID string, tagID stri
 	if err != nil {
 		return "", err
 	}
+	if _, err := c.Store.GetBranch(ctx, repository, graveler.BranchID(tagID)); err == nil {
+		return "", fmt.Errorf("branch name %s: %w", tagID, graveler.ErrConflictFound)
+	} else if !errors.Is(err, graveler.ErrNotFound) {
+		return "", err
+	}
+	if _, err := c.Store.GetCommit(ctx, repository, graveler.CommitID(tagID)); err == nil {
+		return "", fmt.Errorf("commit ID %s: %w", tagID, graveler.ErrConflictFound)
+	} else if !errors.Is(err, graveler.ErrNotFound) {
+		return "", err
+	}
+
 	commitID, err := c.dereferenceCommitID(ctx, repository, graveler.Ref(ref))
 	if err != nil {
 		return "", err
