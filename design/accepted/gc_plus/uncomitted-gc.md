@@ -33,7 +33,7 @@ In addition, taking advantage of the common property of the listing operation, w
 enables additional optimizations on the GC process (read further for details).
 To resolve indexing issues with existing repositories that have a flat filesystem, suggested to create these slices under a `data` prefix. 
 
-![Repository Structure](diagrams/uncommitted-gc-repo-struct.png)
+![Repository Structure](uncommitted-gc-repo-struct.png)
 
 ### 2. Listing of lakeFS repository committed objects
 
