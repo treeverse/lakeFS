@@ -2580,6 +2580,32 @@ func TestController_MergeIntoExplicitBranch(t *testing.T) {
 	}
 }
 
+func TestController_MergeDirtyBranch(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	// setup env
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	testutil.Must(t, err)
+	err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"})
+	testutil.Must(t, err)
+	_, err = deps.catalog.CreateBranch(ctx, repo, "branch1", "main")
+	testutil.Must(t, err)
+	err = deps.catalog.CreateEntry(ctx, repo, "branch1", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum2"})
+	testutil.Must(t, err)
+	_, err = deps.catalog.Commit(ctx, repo, "branch1", "some message", DefaultUserID, nil, nil, nil)
+	testutil.Must(t, err)
+
+	// merge branch1 to main (dirty)
+	resp, err := clt.MergeIntoBranchWithResponse(ctx, repo, "branch1", "main", api.MergeIntoBranchJSONRequestBody{})
+	testutil.MustDo(t, "perform merge into dirty branch", err)
+	const expectedStatusCode = http.StatusBadRequest
+	if resp.JSON400 == nil || resp.JSON400.Message != graveler.ErrDirtyBranch.Error() {
+		t.Errorf("Merge dirty branch should fail with ErrDirtyBranch, got %+v", resp)
+	}
+}
+
 func TestController_CreateTag(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
@@ -2690,6 +2716,22 @@ func TestController_Revert(t *testing.T) {
 			t.Errorf("Revert to explicit staging should fail with error, got %v", revertResp)
 		}
 	})
+
+	t.Run("dirty_branch", func(t *testing.T) {
+		// create branch with entry without commit
+		createBranch, err := deps.catalog.CreateBranch(ctx, repo, "dirty", "main")
+		testutil.Must(t, err)
+		err = deps.catalog.CreateEntry(ctx, repo, "dirty", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum2"})
+		testutil.Must(t, err)
+
+		// revert changes should fail
+		revertResp, err := clt.RevertBranchWithResponse(ctx, repo, "dirty", api.RevertBranchJSONRequestBody{Ref: createBranch.Reference})
+		testutil.Must(t, err)
+		if revertResp.JSON400 == nil || revertResp.JSON400.Message != graveler.ErrDirtyBranch.Error() {
+			t.Errorf("Revert dirty branch should fail with ErrDirtyBranch, got %+v", revertResp)
+		}
+	})
+
 }
 
 func TestController_RevertConflict(t *testing.T) {

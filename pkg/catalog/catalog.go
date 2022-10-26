@@ -1520,10 +1520,6 @@ func (c *Catalog) Merge(ctx context.Context, repositoryID string, destinationBra
 	}
 
 	commitID, err := c.Store.Merge(ctx, repository, destination, source, commitParams, strategy)
-	if errors.Is(err, graveler.ErrConflictFound) {
-		// for compatibility with old Catalog
-		return "", err
-	}
 	if err != nil {
 		return "", err
 	}
