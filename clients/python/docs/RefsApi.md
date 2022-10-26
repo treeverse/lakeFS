@@ -75,8 +75,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
     prefix = "prefix_example" # str | return items prefixed with this value (optional)
     delimiter = "delimiter_example" # str | delimiter used to group common prefixes by (optional)
-    type = "type_example" # str |  (optional)
-    diff_type = "three_dot" # str |  (optional) if omitted the server will use the default value of "three_dot"
+    type = "three_dot" # str |  (optional) if omitted the server will use the default value of "three_dot"
 
     # example passing only required values which don't have defaults set
     try:
@@ -90,7 +89,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # diff references
-        api_response = api_instance.diff_refs(repository, left_ref, right_ref, after=after, amount=amount, prefix=prefix, delimiter=delimiter, type=type, diff_type=diff_type)
+        api_response = api_instance.diff_refs(repository, left_ref, right_ref, after=after, amount=amount, prefix=prefix, delimiter=delimiter, type=type)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling RefsApi->diff_refs: %s\n" % e)
@@ -108,8 +107,7 @@ Name | Type | Description  | Notes
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
  **prefix** | **str**| return items prefixed with this value | [optional]
  **delimiter** | **str**| delimiter used to group common prefixes by | [optional]
- **type** | **str**|  | [optional]
- **diff_type** | **str**|  | [optional] if omitted the server will use the default value of "three_dot"
+ **type** | **str**|  | [optional] if omitted the server will use the default value of "three_dot"
 
 ### Return type
 
