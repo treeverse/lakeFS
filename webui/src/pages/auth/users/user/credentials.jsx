@@ -5,7 +5,7 @@ import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {auth} from "../../../../lib/api";
 import {CredentialsShowModal, CredentialsTable} from "../../../../lib/components/auth/credentials";
 import useUser from "../../../../lib/hooks/user";
-import {ConfirmationButton} from "../../../../lib/components/modals";
+import {ConfirmationButtonWithContext} from "../../../../lib/components/modals";
 import {
     ActionGroup,
     ActionsBar,
@@ -44,23 +44,25 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
             </>
         );
 
+        const getMsg = (email) => <span>Create new credentials for user <strong>{email}</strong>?</span>;
     return (
         <>
             <UserHeaderWithContext userId={userId} page={'credentials'}/>
 
             <ActionsBar>
                 <ActionGroup orientation="left">
-                    <ConfirmationButton
+                    <ConfirmationButtonWithContext
+                        userId={userId}
                         variant="success"
                         modalVariant="success"
-                        msg={<span>Create a new Access Key for user <strong>{userId}</strong>?</span>}
+                        msg={getMsg}
                         onConfirm={hide => {
                             createKey()
                                 .then(key => { setCreatedKey(key) })
                                 .finally(hide)
                         }}>
                         Create Access Key
-                    </ConfirmationButton>
+                    </ConfirmationButtonWithContext>
                 </ActionGroup>
 
                 <ActionGroup orientation="right">
