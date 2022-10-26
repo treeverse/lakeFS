@@ -2,7 +2,6 @@ package logging
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -41,7 +40,7 @@ func TestSetOutputs(t *testing.T) {
 			t.Fatal("Failed to write to log output with two outputs", err)
 		}
 
-		log1Content, err := ioutil.ReadFile(log1)
+		log1Content, err := os.ReadFile(log1)
 		if err != nil {
 			t.Fatal("Failed to read log1 content", err)
 		}
@@ -49,7 +48,7 @@ func TestSetOutputs(t *testing.T) {
 			t.Fatalf("Log1 content '%s', is not as expected: '%s'", string(log1Content), content)
 		}
 
-		log2Content, err := ioutil.ReadFile(log2)
+		log2Content, err := os.ReadFile(log2)
 		if err != nil {
 			t.Fatal("Failed to read log1 content", err)
 		}

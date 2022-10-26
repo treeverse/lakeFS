@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -188,7 +187,7 @@ generate_schema_name.sql
 {%- endmacro %}
 `
 		//nolint:gosec
-		err := ioutil.WriteFile(macroPath, []byte(generateSchemaData), 0o644) //nolint: gomnd
+		err := os.WriteFile(macroPath, []byte(generateSchemaData), 0o644) //nolint: gomnd
 		if err != nil {
 			DieErr(err)
 		}

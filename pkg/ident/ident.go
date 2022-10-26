@@ -47,6 +47,7 @@ const (
 )
 
 // linter is angry because h can be an io.Writer, but we explicitly want a Hash here.
+//
 //nolint:interfacer
 func marshalType(h hash.Hash, addressType AddressType) {
 	_, _ = h.Write([]byte{byte(addressType)})
