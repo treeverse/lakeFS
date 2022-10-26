@@ -140,10 +140,3 @@ func TagFromProto(pb *TagData) *TagRecord {
 		CommitID: CommitID(pb.CommitId),
 	}
 }
-
-func ProtoFromTag(t *TagRecord) *TagData {
-	return &TagData{
-		Id:       string(t.TagID),
-		CommitId: string(t.CommitID),
-	}
-}

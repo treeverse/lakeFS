@@ -3,7 +3,6 @@ package graveler
 import (
 	"strings"
 
-	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/validator"
 )
 
@@ -83,21 +82,6 @@ func ValidateTagID(v interface{}) error {
 func isControlCodeOrSpace(r rune) bool {
 	const space = 0x20
 	return r <= space
-}
-
-func ValidateCommitID(v interface{}) error {
-	s, ok := v.(CommitID)
-	if !ok {
-		panic(ErrInvalidType)
-	}
-
-	if len(s) == 0 {
-		return ErrRequiredValue
-	}
-	if !ident.IsContentAddress(s.String()) {
-		return ErrInvalidCommitID
-	}
-	return nil
 }
 
 func ValidateRepositoryID(v interface{}) error {

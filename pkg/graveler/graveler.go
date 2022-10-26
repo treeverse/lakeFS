@@ -445,11 +445,6 @@ type VersionController interface {
 	// and returns the result ID.
 	WriteMetaRangeByIterator(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*MetaRangeID, error)
 
-	// AddCommitToBranchHead creates a commit in the branch from the given pre-existing tree.
-	// Returns ErrMetaRangeNotFound if the referenced metaRangeID doesn't exist.
-	// Returns ErrCommitNotHeadBranch if the branch is no longer referencing to the parentCommit
-	AddCommitToBranchHead(ctx context.Context, repository *RepositoryRecord, branchID BranchID, commit Commit) (CommitID, error)
-
 	// AddCommit creates a dangling (no referencing branch) commit in the repo from the pre-existing commit.
 	// Returns ErrMetaRangeNotFound if the referenced metaRangeID doesn't exist.
 	AddCommit(ctx context.Context, repository *RepositoryRecord, commit Commit) (CommitID, error)
@@ -1014,7 +1009,7 @@ func (g *KVGraveler) UpdateBranch(ctx context.Context, repository *RepositoryRec
 			return nil, err
 		}
 		if !empty {
-			return nil, ErrConflictFound
+			return nil, ErrDirtyBranch
 		}
 
 		tokensToDrop = currBranch.SealedTokens
@@ -1045,7 +1040,7 @@ func (g *KVGraveler) prepareForCommitIDUpdate(ctx context.Context, repository *R
 			return nil, err
 		}
 		if !empty {
-			return nil, ErrConflictFound
+			return nil, ErrDirtyBranch
 		}
 
 		currBranch.SealedTokens = append([]StagingToken{currBranch.StagingToken}, currBranch.SealedTokens...)
@@ -1800,68 +1795,6 @@ func CommitExists(ctx context.Context, repository *RepositoryRecord, commitID Co
 		return false, fmt.Errorf("getting commit %s: %w", commitID, err)
 	}
 	return false, nil
-}
-
-func (g *KVGraveler) AddCommitToBranchHead(ctx context.Context, repository *RepositoryRecord, branchID BranchID, commit Commit) (CommitID, error) {
-	// parentCommitID should always match the HEAD of the branch.
-	// Empty parentCommitID matches first commit of the branch.
-	parentCommitID, err := validateCommitParent(ctx, repository, commit, g.RefManager)
-	if err != nil {
-		return "", err
-	}
-
-	// verify access to meta range
-	ok, err := g.CommittedManager.Exists(ctx, repository.StorageNamespace, commit.MetaRangeID)
-	if err != nil {
-		return "", fmt.Errorf("commit missing meta range %s: %w", commit.MetaRangeID, err)
-	}
-	if !ok {
-		return "", fmt.Errorf("%w: %s", ErrMetaRangeNotFound, commit.MetaRangeID)
-	}
-
-	// add commit to our ref manager
-	commitID, err := g.RefManager.AddCommit(ctx, repository, commit)
-	if err != nil {
-		return "", fmt.Errorf("adding commit: %w", err)
-	}
-
-	if err := g.prepareForCommitIDUpdate(ctx, repository, branchID); err != nil {
-		return "", err
-	}
-
-	var tokensToDrop []StagingToken
-	// update branch with commit after verify:
-	// 1. commit parent is the current branch head
-	// 2. branch staging is empty
-	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
-		if branch.CommitID != parentCommitID {
-			return nil, ErrCommitNotHeadBranch
-		}
-
-		empty, err := g.isSealedEmpty(ctx, repository, branch)
-		if err != nil {
-			return nil, err
-		}
-		if !empty {
-			return nil, ErrConflictFound
-		}
-
-		tokensToDrop = branch.SealedTokens
-		return &Branch{
-			CommitID:     commitID,
-			StagingToken: branch.StagingToken,
-			SealedTokens: []StagingToken{},
-		}, nil
-	})
-	if err != nil {
-		if errors.Is(err, kv.ErrPredicateFailed) {
-			err = ErrConflictFound
-		}
-		return "", err
-	}
-
-	g.dropTokens(ctx, tokensToDrop...)
-	return commitID, nil
 }
 
 func (g *KVGraveler) AddCommit(ctx context.Context, repository *RepositoryRecord, commit Commit) (CommitID, error) {
