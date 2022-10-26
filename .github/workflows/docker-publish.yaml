@@ -28,8 +28,13 @@ jobs:
           go-version: 1.17.8
         id: go
 
+      - name: Extract version
+        shell: bash
+        run: echo "tag=$(echo ${GITHUB_REF##*/} | sed s/^v//g)" >> $GITHUB_OUTPUT
+        id: version
+
       - name: Generate code
-        run: make gen
+        run: make gen VERSION=${{ steps.version.outputs.tag }}
 
       - name: Checks validator
         run: make checks-validator
@@ -41,11 +46,6 @@ jobs:
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-
-      - name: Extract version
-        shell: bash
-        run: echo "tag=$(echo ${GITHUB_REF##*/} | sed s/^v//g)" >> $GITHUB_OUTPUT
-        id: version
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
