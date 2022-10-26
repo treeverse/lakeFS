@@ -4,7 +4,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
@@ -151,7 +150,7 @@ func runCmdAndVerifyWithFile(t *testing.T, cmd, goldenFile string, expectFail, i
 	if *update {
 		updateGoldenFile(t, cmd, isTerminal, goldenFile, vars)
 	} else {
-		content, err := ioutil.ReadFile(goldenFile)
+		content, err := os.ReadFile(goldenFile)
 		if err != nil {
 			t.Fatal("Failed to read ", goldenFile, err)
 		}
@@ -166,7 +165,7 @@ func updateGoldenFile(t *testing.T, cmd string, isTerminal bool, goldenFile stri
 	s := sanitize(string(result), vars)
 	s, err := embedVariables(s, vars)
 	require.NoError(t, err, "Variable embed failed - %s", err)
-	err = ioutil.WriteFile(goldenFile, []byte(s), 0o600) //nolint: gomnd
+	err = os.WriteFile(goldenFile, []byte(s), 0o600) //nolint: gomnd
 	require.NoError(t, err, "Failed to write file %s", goldenFile)
 }
 

@@ -143,8 +143,8 @@ func TestDbtLsToJson(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			dbtResources, err := cmd.DBTLsToJSON(tt.Args.ProjectRoot, tt.Args.ResourceType, tt.Args.SelectValues, tt.Args.Executor.ExecuteCommand)
-			if (err != nil) && !errors.As(err, &tt.ErrType) {
-				t.Errorf("DBTLsToJSON() error = %v, expected ErrType: %v", err, tt.ErrType)
+			if err != nil && reflect.TypeOf(err) != reflect.TypeOf(tt.ErrType) {
+				t.Errorf("DBTLsToJSON() error type=%T, expected type=%T", err, tt.ErrType)
 				return
 			}
 			if !reflect.DeepEqual(dbtResources, tt.DbtResources) {
