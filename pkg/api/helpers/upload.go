@@ -2,12 +2,12 @@
 package helpers
 
 import (
-	"github.com/treeverse/lakefs/pkg/api"
-
 	"context"
 	"fmt"
 	"io"
 	"net/url"
+
+	"github.com/treeverse/lakefs/pkg/api"
 )
 
 // ClientUpload uploads contents as a file using client-side ("direct") access to underlying

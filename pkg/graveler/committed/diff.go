@@ -114,6 +114,7 @@ func (d *diffIterator) setCurrentRangeBoth() {
 	}
 	d.currentDiff = nil
 }
+
 func (d *diffIterator) setCurrentRangeLeft() {
 	d.currentRange.iter = d.left
 	d.currentRange.value = &d.leftValue

@@ -69,7 +69,8 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 						Identity: []byte("id"),
 						Data:     nil,
 					},
-				}},
+				},
+			},
 		},
 		{
 			name: "only one iterator",
@@ -108,13 +109,13 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 						Identity: []byte("id"),
 						Data:     nil,
 					},
-				}},
+				},
+			},
 		},
 		{
 			name: "only second iterator",
 			fields: fields{
 				iters: []graveler.ValueIterator{
-
 					testutil.NewValueIteratorFake([]graveler.ValueRecord{}),
 					testutil.NewValueIteratorFake([]graveler.ValueRecord{
 						{
@@ -130,7 +131,8 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 								Identity: []byte("id"),
 								Data:     nil,
 							},
-						}}),
+						},
+					}),
 				},
 				p: nil,
 			},
@@ -148,7 +150,8 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 						Identity: []byte("id"),
 						Data:     nil,
 					},
-				}},
+				},
+			},
 		},
 		{
 			name: "one from each",
@@ -189,7 +192,8 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 						Identity: []byte("id"),
 						Data:     nil,
 					},
-				}},
+				},
+			},
 		},
 		{
 			name: "value tombstone",
@@ -227,7 +231,8 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 						Identity: []byte("id"),
 						Data:     nil,
 					},
-				}},
+				},
+			},
 		},
 		{
 			name: "unexpected tombstone",
@@ -333,7 +338,8 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 						Identity: []byte("two"),
 						Data:     nil,
 					},
-				}},
+				},
+			},
 		},
 		{
 			name: "common prefix tombstone with returned tombstones",
@@ -420,7 +426,8 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 						Identity: []byte("two"),
 						Data:     nil,
 					},
-				}},
+				},
+			},
 		},
 		{
 			name: "4 iterators without tombstones",

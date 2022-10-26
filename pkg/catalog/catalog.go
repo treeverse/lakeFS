@@ -1403,7 +1403,8 @@ func (c *Catalog) DiffUncommitted(ctx context.Context, repositoryID, branch, pre
 }
 
 // GetStartPos returns a key that SeekGE will transform to a place start iterating on all elements in
-//    the keys that start with 'prefix' after 'after' and taking 'delimiter' into account
+//
+//	the keys that start with 'prefix' after 'after' and taking 'delimiter' into account
 func GetStartPos(prefix, after, delimiter string) string {
 	if after == "" {
 		// whether we have a delimiter or not, if after is not set, start at prefix
@@ -1492,7 +1493,8 @@ func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, a
 }
 
 func (c *Catalog) Merge(ctx context.Context, repositoryID string, destinationBranch string, sourceRef string,
-	committer string, message string, metadata Metadata, strategy string) (string, error) {
+	committer string, message string, metadata Metadata, strategy string,
+) (string, error) {
 	destination := graveler.BranchID(destinationBranch)
 	source := graveler.Ref(sourceRef)
 	meta := graveler.Metadata(metadata)

@@ -1,7 +1,7 @@
 package auth
 
-//go:generate oapi-codegen -package auth -generate "types,client"  -o client.gen.go ../../api/authorization.yml
-//go:generate mockgen -package=mock -destination=mock/mock_auth_client.go github.com/treeverse/lakefs/pkg/auth ClientWithResponsesInterface
+//go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.5.6 -package auth -generate "types,client"  -o client.gen.go ../../api/authorization.yml
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mock -destination=mock/mock_auth_client.go github.com/treeverse/lakefs/pkg/auth ClientWithResponsesInterface
 
 import (
 	"context"

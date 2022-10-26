@@ -185,7 +185,8 @@ func TestCombinedDiffIterator_Seek(t *testing.T) {
 		{key: "k14", leftValue: "c", rightValue: "", stagingValue: swag.String("c1")},
 		{key: "k15", leftValue: "", rightValue: "d", stagingValue: swag.String("d1")},
 		{key: "k16", leftValue: "a", rightValue: "a", stagingValue: swag.String("")},
-		{key: "k17", leftValue: "b", rightValue: "b1", stagingValue: swag.String("")}}
+		{key: "k17", leftValue: "b", rightValue: "b1", stagingValue: swag.String("")},
+	}
 	expectedDiffs := []*graveler.Diff{
 		diffVal("k05", "b", "b1"),
 		diffVal("k06", "c", ""),

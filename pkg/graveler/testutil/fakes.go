@@ -306,7 +306,8 @@ func (m *RefsFake) ResolveRawRef(_ context.Context, _ *graveler.RepositoryRecord
 				CommitID:     m.CommitID,
 				StagingToken: stagingToken,
 				SealedTokens: sealedTokens,
-			}},
+			},
+		},
 	}, nil
 }
 
@@ -423,6 +424,7 @@ type diffIter struct {
 func NewDiffIter(records []graveler.Diff) *diffIter {
 	return &diffIter{records: records, current: -1}
 }
+
 func (r *diffIter) Next() bool {
 	r.current++
 	return r.current < len(r.records)

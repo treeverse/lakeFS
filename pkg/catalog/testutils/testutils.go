@@ -175,9 +175,7 @@ func (w *FakeWalker) createEntries(count int) {
 	w.Entries = ents
 }
 
-var (
-	errUnexpectedValue = errors.New("unexpected value")
-)
+var errUnexpectedValue = errors.New("unexpected value")
 
 func (w *FakeWalker) Walk(_ context.Context, storageURI *url.URL, op store.WalkOptions, walkFn func(e store.ObjectStoreEntry) error) error {
 	if w.expectedAfter != op.After {

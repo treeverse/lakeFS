@@ -233,8 +233,8 @@ func TestExpiredCommits(t *testing.T) {
 				"d":           newTestCommit(5, "c"),
 				"e":           newTestCommit(5, "b"),
 				"f":           newTestCommit(1, "e"),
-				"g":           newTestCommit(10, "root"), //dangling
-				"h":           newTestCommit(6, "g"),     //dangling
+				"g":           newTestCommit(10, "root"), // dangling
+				"h":           newTestCommit(6, "g"),     // dangling
 			},
 			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
 			previouslyExpired:  []string{"e1"},
