@@ -266,10 +266,6 @@ func (g *FakeGraveler) SetHooksHandler(handler graveler.HooksHandler) {
 	g.hooks = handler
 }
 
-func (g *FakeGraveler) AddCommitToBranchHead(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, commit graveler.Commit) (graveler.CommitID, error) {
-	panic("implement me")
-}
-
 func (g *FakeGraveler) AddCommit(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
 	panic("implement me")
 }
