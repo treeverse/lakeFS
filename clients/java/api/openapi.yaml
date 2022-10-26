@@ -2533,6 +2533,12 @@ paths:
       responses:
         "204":
           description: revert successful
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
         "401":
           content:
             application/json:

@@ -1532,6 +1532,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -2428,6 +2430,8 @@ paths:
       responses:
         204:
           description: revert successful
+        400:
+          $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
