@@ -53,15 +53,17 @@ The following are necessary changes in lakeFS in order to implement this proposa
 Uncommitted GC must scan the bucket in order to find objects that are not referenced by lakeFS.
 To optimize this process, suggest the following changes:
 
-1. Divide the repository namespace into time-and-size based slices.
-2. Slice name will be a time based, reverse sorted unique identifier.
-3. LakeFS will create a new slice on a timely basis (for example: hourly) or when it has written < MAX_SLICE_SIZE > objects to the slice.
-4. Each slice will be written by a single lakeFS instance in order to track slice size.
-5. The sorted slices will enable partial scans of the bucket when running the optimized GC.
+1. Store lakeFS data under `<namespace>/data/` path
+2. Divide the repository data path into time-and-size based slices.
+3. Slice name will be a time based, reverse sorted unique identifier.
+4. LakeFS will create a new slice on a timely basis (for example: hourly) or when it has written < MAX_SLICE_SIZE > objects to the slice.
+5. Each slice will be written by a single lakeFS instance in order to track slice size.
+6. The sorted slices will enable partial scans of the bucket when running the optimized GC.
 
 #### StageObject
 
-The StageObject operation will only be allowed on addresses outside the repository's storage namespace. This way, objects added using this operation are never collected by GC.
+The StageObject operation will only be allowed on addresses outside the repository's storage namespace. This way, 
+objects added using this operation are never collected by GC.
 
 #### [Get/Link]PhysicalAddress 
 
