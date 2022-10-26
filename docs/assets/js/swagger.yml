@@ -1532,6 +1532,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -2559,10 +2561,6 @@ paths:
       - $ref: "#/components/parameters/PaginationDelimiter"
       - in: query
         name: type
-        schema:
-          type: string
-      - in: query
-        name: diff_type
         schema:
           type: string
           enum: [two_dot, three_dot]
