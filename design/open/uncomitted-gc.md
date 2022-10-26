@@ -156,7 +156,7 @@ Optimized run uses the previous GC run output, to perform a partial scan of the 
 
 For each GC run, save the following information using the GC run id as detailed in this [proposal](https://github.com/treeverse/cloud-controlplane/blob/main/design/accepted/gc-with-run-id.md):
 1. Save metaranges in `_lakefs/gc/run_id/metadata/`
-2. Save `Uncommitted DF` in `_lakefs/gc/run_id/uncommitted.parquet`
+2. Save `Uncommitted DF` in `_lakefs/gc/run_id/uncommitted/*.parquet`
 3. Add the following to the GC report:
    1. Run start time
    2. Last read slice
