@@ -3,7 +3,7 @@ package io.treeverse.clients
 import org.apache.hadoop.conf.Configuration
 
 import scala.util.control.Breaks._
-import org.apache.hadoop.tools.DistCp
+import org.apache.hadoop.tools.{DistCp, DistCpConstants}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 
@@ -15,7 +15,11 @@ object GCBackupAndRestore {
   val S3AccessKeyName = "fs.s3a.access.key"
   val S3SecretKeyName = "fs.s3a.secret.key"
   val AzureStorageAccountKeyName = "fs.azure.account.key"
+  val DistCpMaxNumListStatusThreads =
+    40 // max by distCp, https://docs.cloudera.com/HDPDocuments/HDP3/HDP-3.0.1/bk_cloud-data-access/content/distcp-perf-file-listing.html
+
   lazy val spark = SparkSession.builder().appName("GCBackupAndRestore").getOrCreate()
+
   import spark.implicits._
 
   def constructAbsoluteObjectPaths(
@@ -81,13 +85,51 @@ object GCBackupAndRestore {
   // Construct a DistCp command of the form:
   // `hadoop distcp -D<per storage credentials> -f absoluteAddressesTextFilePath dstNamespaceForHadoopFs`
   // example for command format https://docs.lakefs.io/integrations/distcp.html
+  // with distCp options from https://hadoop.apache.org/docs/r3.2.1/hadoop-distcp/DistCp.html#Command_Line_Options
   def constructDistCpCommand(
       hadoopProps: Array[(String, String)],
       absoluteAddressesTextFilePath: String,
-      dstNamespaceForHadoopFs: String
+      dstNamespaceForHadoopFs: String,
+      storageType: String,
+      hc: Configuration,
+      numObjectsToCopy: Long
   ): Array[String] = {
-    hadoopProps.map((prop) => "-D" + prop._1 + "=" + prop._2) ++
+
+    val distCpLogsPath = hc.get(DistCpConstants.CONF_LABEL_LOG_PATH,
+                                s"${dstNamespaceForHadoopFs.stripSuffix("/")}/_distCp/logs/"
+                               )
+    val distCpLogsPathForFS =
+      ApiClient
+        .translateURI(URI.create(distCpLogsPath), storageType)
+        .normalize()
+        .toString
+    // Tune distCp options that control the speed of the file-to-copy list building stage
+    val numListstatusThreads =
+      hc.getInt(DistCpConstants.CONF_LABEL_LISTSTATUS_THREADS, DistCpMaxNumListStatusThreads)
+    // Tune distCp options that control the speed of the copy stage
+    // https://docs.cloudera.com/HDPDocuments/HDP3/HDP-3.1.4/bk_cloud-data-access/content/distcp-perf-mappers.html
+    val maxMaps = hc.getInt(DistCpConstants.CONF_LABEL_MAX_MAPS, DistCpConstants.DEFAULT_MAPS)
+    val mapsBandwidth =
+      hc.getFloat(DistCpConstants.CONF_LABEL_BANDWIDTH_MB, DistCpConstants.DEFAULT_BANDWIDTH_MB)
+    println(
+      s"distCpLogsPath: ${distCpLogsPath}, distCpLogsPathForFS: ${distCpLogsPathForFS}, numListstatusThreads: ${numListstatusThreads}, maxMaps: ${maxMaps}, mapsBandwidth: ${mapsBandwidth}"
+    )
+
+    hadoopProps.map((prop) => s"-D${prop._1}=${prop._2}") ++
       Seq(
+        // enable verbose logging, that log additional info (path, size) in the SKIP/COPY log
+        "-v",
+        "-log",
+        distCpLogsPathForFS,
+        "-numListstatusThreads",
+        numListstatusThreads.toString,
+        "-m",
+        maxMaps.toString,
+        "-bandwidth",
+        mapsBandwidth.toString,
+        "-direct", // force using the direct writing option, which is recommended while using distCp with objects storages, and is supported from hadoop 3.1.3
+        "-strategy",
+        "dynamic", // force using the dynamic strategy, which is always recommended for improved distCp performance
         // -f option copies the files listed in the file after the -f option
         "-f",
         absoluteAddressesTextFilePath,
@@ -114,8 +156,9 @@ object GCBackupAndRestore {
   }
 
   /** Eliminate objects that don't exist on the underlying object store from the path list.
+   *
    *  @param absolutePathsDF a data frame containing object absolute paths
-   *  @param hc hadoop configurations
+   *  @param hc              hadoop configurations
    *  @return a dataset only including absolute paths of objects that exist on the underlying object store
    */
   def eliminatePathsOfNonExistingObjects(
@@ -161,7 +204,7 @@ object GCBackupAndRestore {
       ApiClient.translateURI(URI.create(relativeAddressesLocation), storageType).toString
     val dstNamespaceForHadoopFs =
       ApiClient.translateURI(URI.create(dstNamespace), storageType).toString
-    print("translated dstNamespace: " + dstNamespaceForHadoopFs + "\n")
+    println("translated dstNamespace: " + dstNamespaceForHadoopFs)
 
     val objectsRelativePathsDF = spark.read.parquet(relativeAddressesLocationForHadoopFs)
     val objectsAbsolutePathsDF =
@@ -169,16 +212,16 @@ object GCBackupAndRestore {
     // Keep only paths to existing objects, otherwise, distCp will fail copying.
     val existingAbsolutePaths = eliminatePathsOfNonExistingObjects(objectsAbsolutePathsDF, hc)
     val numExistingObjects = existingAbsolutePaths.count()
-    print("count: " + numExistingObjects)
+    println("count: " + numExistingObjects)
     if (numExistingObjects == 0) {
-      print("There are no objects to copy. process will finish without copying objects")
+      println("There are no objects to copy. process will finish without copying objects")
       System.exit(0)
     }
 
     // We assume that there are write permissions to the dst namespace and therefore creating intermediate output there.
     val absoluteAddressesLocation =
-      dstNamespaceForHadoopFs + "/_gc-backup-restore/absolute_addresses/"
-    print("absoluteAddressesLocation: " + absoluteAddressesLocation + "\n")
+      s"${dstNamespaceForHadoopFs.stripSuffix("/")}/_gc-backup-restore/absolute_addresses/"
+    println("absoluteAddressesLocation: " + absoluteAddressesLocation)
     // This application uses distCp to copy files. distCp can copy a list of files in a given input text file. therefore,
     // we write the absolute file paths into a text file rather than a parquet.
     existingAbsolutePaths
@@ -188,10 +231,16 @@ object GCBackupAndRestore {
 
     // Spark writes two files under absoluteAddressesLocation, a _SUCCESS file and the actual txt file that has dynamic name.
     val absoluteAddressesTextFilePath = getTextFileLocation(absoluteAddressesLocation, hc)
-    print("txtFilePath: " + absoluteAddressesTextFilePath + "\n")
+    println("txtFilePath: " + absoluteAddressesTextFilePath)
 
     val distCpCommand =
-      constructDistCpCommand(hadoopProps, absoluteAddressesTextFilePath, dstNamespaceForHadoopFs)
+      constructDistCpCommand(hadoopProps,
+                             absoluteAddressesTextFilePath,
+                             dstNamespaceForHadoopFs,
+                             storageType,
+                             hc,
+                             numExistingObjects
+                            )
     DistCp.main(distCpCommand)
   }
 }
