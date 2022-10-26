@@ -74,7 +74,6 @@ The following are a list of changes in lakeFS by order of priority, according th
 
 ## Milestone
 
-- Implement lakeFS changes
-- Implement GC changes - Clean Run with the minimal performance requirements met
-- Implement GC changes - Optimized Run
-- Integration testing
+- Implement Clean Run (including all lakeFS change) with minimal performance requirements met
+- Implement GC changes - Optimized Run + mark and sweep
+- Deployment to lakeFS Cloud
