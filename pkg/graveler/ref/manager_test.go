@@ -33,15 +33,27 @@ func TestManager_GetRepositoryCache(t *testing.T) {
 	)
 	ctrl := gomock.NewController(t)
 	mockStore := mock.NewMockStore(ctrl)
-	storeMessage := kv.StoreMessage{Store: mockStore}
+	storeMessage := &kv.StoreMessage{Store: mockStore}
 	ctx := context.Background()
 	mockStore.EXPECT().Get(ctx, []byte("graveler"), []byte("repos/repo1")).Times(times).Return(&kv.ValueWithPredicate{}, nil)
-	repoCacheConfig := &ref.RepositoryCacheConfig{
+	repoCacheConfig := &ref.CacheConfig{
 		Size:   100,
 		Expiry: 2 * time.Second,
 		Jitter: 0,
 	}
-	refManager := ref.NewKVRefManager(batch.NopExecutor(), storeMessage, ident.NewHexAddressProvider(), repoCacheConfig)
+	commitCacheConfig := &ref.CacheConfig{
+		Size:   100,
+		Expiry: 2 * time.Second,
+		Jitter: 0,
+	}
+	cfg := ref.ManagerConfig{
+		Executor:          batch.NopExecutor(),
+		KvStore:           storeMessage,
+		AddressProvider:   ident.NewHexAddressProvider(),
+		RepoCacheConfig:   repoCacheConfig,
+		CommitCacheConfig: commitCacheConfig,
+	}
+	refManager := ref.NewKVRefManager(cfg)
 	for i := 0; i < calls; i++ {
 		_, err := refManager.GetRepository(ctx, "repo1")
 		if err != nil {

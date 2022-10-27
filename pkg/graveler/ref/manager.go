@@ -31,19 +31,24 @@ const (
 	DefaultRepositoryCacheSize   = 1000
 	DefaultRepositoryCacheExpiry = 5 * time.Second
 	DefaultRepositoryCacheJitter = DefaultRepositoryCacheExpiry / 2
+
+	DefaultCommitCacheSize   = 1000
+	DefaultCommitCacheExpiry = 5 * time.Second
+	DefaultCommitCacheJitter = DefaultRepositoryCacheExpiry / 2
 )
 
-type RepositoryCacheConfig struct {
+type CacheConfig struct {
 	Size   int
 	Expiry time.Duration
 	Jitter time.Duration
 }
 
 type KVManager struct {
-	kvStore         kv.StoreMessage
+	kvStore         *kv.StoreMessage
 	addressProvider ident.AddressProvider
 	batchExecutor   batch.Batcher
 	repoCache       cache.Cache
+	commitCache     cache.Cache
 }
 
 func branchFromProto(pb *graveler.BranchData) *graveler.Branch {
@@ -73,9 +78,19 @@ func protoFromBranch(branchID graveler.BranchID, b *graveler.Branch) *graveler.B
 	return branch
 }
 
-func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, addressProvider ident.AddressProvider, repoCacheConfig *RepositoryCacheConfig) *KVManager {
+type ManagerConfig struct {
+	Executor          batch.Batcher
+	KvStore           *kv.StoreMessage
+	AddressProvider   ident.AddressProvider
+	RepoCacheConfig   *CacheConfig
+	CommitCacheConfig *CacheConfig
+}
+
+func NewKVRefManager(cfg ManagerConfig) *KVManager {
+	// repository cache
+	repoCacheConfig := cfg.RepoCacheConfig
 	if repoCacheConfig == nil {
-		repoCacheConfig = &RepositoryCacheConfig{
+		repoCacheConfig = &CacheConfig{
 			Size:   DefaultRepositoryCacheSize,
 			Expiry: DefaultRepositoryCacheExpiry,
 			Jitter: DefaultRepositoryCacheJitter,
@@ -85,11 +100,27 @@ func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, addressPro
 	if repoCacheConfig.Size > 0 {
 		repoCache = cache.NewCache(repoCacheConfig.Size, repoCacheConfig.Expiry, cache.NewJitterFn(repoCacheConfig.Jitter))
 	}
+
+	// commits cache
+	commitCacheConfig := cfg.CommitCacheConfig
+	if commitCacheConfig == nil {
+		commitCacheConfig = &CacheConfig{
+			Size:   DefaultCommitCacheSize,
+			Expiry: DefaultCommitCacheExpiry,
+			Jitter: DefaultCommitCacheJitter,
+		}
+	}
+	commitCache := cache.NoCache
+	if commitCacheConfig.Size > 0 {
+		commitCache = cache.NewCache(commitCacheConfig.Size, commitCacheConfig.Expiry, cache.NewJitterFn(commitCacheConfig.Jitter))
+	}
+
 	return &KVManager{
-		kvStore:         kvStore,
-		addressProvider: addressProvider,
-		batchExecutor:   executor,
+		kvStore:         cfg.KvStore,
+		addressProvider: cfg.AddressProvider,
+		batchExecutor:   cfg.Executor,
 		repoCache:       repoCache,
+		commitCache:     commitCache,
 	}
 }
 
@@ -191,7 +222,7 @@ func (m *KVManager) CreateBareRepository(ctx context.Context, repositoryID grave
 }
 
 func (m *KVManager) ListRepositories(ctx context.Context) (graveler.RepositoryIterator, error) {
-	return NewKVRepositoryIterator(ctx, &m.kvStore)
+	return NewKVRepositoryIterator(ctx, m.kvStore)
 }
 
 func (m *KVManager) updateRepoState(ctx context.Context, repo *graveler.RepositoryRecord, state graveler.RepositoryState) error {
@@ -362,11 +393,11 @@ func (m *KVManager) DeleteBranch(ctx context.Context, repository *graveler.Repos
 }
 
 func (m *KVManager) ListBranches(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.BranchIterator, error) {
-	return NewBranchSimpleIterator(ctx, &m.kvStore, repository)
+	return NewBranchSimpleIterator(ctx, m.kvStore, repository)
 }
 
 func (m *KVManager) GCBranchIterator(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.BranchIterator, error) {
-	return NewBranchByCommitIterator(ctx, &m.kvStore, repository)
+	return NewBranchByCommitIterator(ctx, m.kvStore, repository)
 }
 
 func (m *KVManager) GetTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID) (*graveler.CommitID, error) {
@@ -413,7 +444,7 @@ func (m *KVManager) DeleteTag(ctx context.Context, repository *graveler.Reposito
 }
 
 func (m *KVManager) ListTags(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.TagIterator, error) {
-	return NewKVTagIterator(ctx, &m.kvStore, repository)
+	return NewKVTagIterator(ctx, m.kvStore, repository)
 }
 
 func (m *KVManager) GetCommitByPrefix(ctx context.Context, repository *graveler.RepositoryRecord, prefix graveler.CommitID) (*graveler.Commit, error) {
@@ -423,7 +454,7 @@ func (m *KVManager) GetCommitByPrefix(ctx context.Context, repository *graveler.
 	}
 	key := fmt.Sprintf("GetCommitByPrefix:%s:%s", repository.RepositoryID, prefix)
 	commit, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
-		it, err := NewKVOrderedCommitIterator(ctx, &m.kvStore, repository, false)
+		it, err := NewKVOrderedCommitIterator(ctx, m.kvStore, repository, false)
 		if err != nil {
 			return nil, err
 		}
@@ -456,23 +487,38 @@ func (m *KVManager) GetCommitByPrefix(ctx context.Context, repository *graveler.
 }
 
 func (m *KVManager) GetCommit(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) (*graveler.Commit, error) {
+	key := fmt.Sprintf("%s:%s", repository.RepositoryID, commitID)
+	v, err := m.repoCache.GetOrSet(key, func() (v interface{}, err error) {
+		return m.getCommitBatch(ctx, repository, commitID)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return v.(*graveler.Commit), nil
+}
+
+func (m *KVManager) getCommitBatch(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) (*graveler.Commit, error) {
 	key := fmt.Sprintf("GetCommit:%s:%s", repository.RepositoryID, commitID)
 	commit, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
-		commitKey := graveler.CommitPath(commitID)
-		c := graveler.CommitData{}
-		_, err := m.kvStore.GetMsg(ctx, graveler.RepoPartition(repository), []byte(commitKey), &c)
-		if err != nil {
-			return nil, err
-		}
-		return graveler.CommitFromProto(&c), nil
+		return m.getCommit(commitID, ctx, repository)
 	}))
+	if err != nil {
+		return nil, err
+	}
+	return commit.(*graveler.Commit), nil
+}
+
+func (m *KVManager) getCommit(commitID graveler.CommitID, ctx context.Context, repository *graveler.RepositoryRecord) (interface{}, error) {
+	commitKey := graveler.CommitPath(commitID)
+	c := graveler.CommitData{}
+	_, err := m.kvStore.GetMsg(ctx, graveler.RepoPartition(repository), []byte(commitKey), &c)
 	if errors.Is(err, kv.ErrNotFound) {
 		err = graveler.ErrCommitNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	return commit.(*graveler.Commit), nil
+	return graveler.CommitFromProto(&c), nil
 }
 
 func (m *KVManager) addCommit(ctx context.Context, repoPartition string, commit graveler.Commit) (graveler.CommitID, error) {
@@ -510,9 +556,9 @@ func (m *KVManager) Log(ctx context.Context, repository *graveler.RepositoryReco
 }
 
 func (m *KVManager) ListCommits(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.CommitIterator, error) {
-	return NewKVOrderedCommitIterator(ctx, &m.kvStore, repository, false)
+	return NewKVOrderedCommitIterator(ctx, m.kvStore, repository, false)
 }
 
 func (m *KVManager) GCCommitIterator(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.CommitIterator, error) {
-	return NewKVOrderedCommitIterator(ctx, &m.kvStore, repository, true)
+	return NewKVOrderedCommitIterator(ctx, m.kvStore, repository, true)
 }

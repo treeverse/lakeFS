@@ -16,26 +16,48 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-var testRepoCacheConfig = &ref.RepositoryCacheConfig{
-	Size:   ref.DefaultRepositoryCacheSize,
-	Expiry: 20 * time.Millisecond,
-	Jitter: 0,
-}
+var (
+	testRepoCacheConfig = &ref.CacheConfig{
+		Size:   ref.DefaultRepositoryCacheSize,
+		Expiry: 20 * time.Millisecond,
+		Jitter: 0,
+	}
 
-func testRefManager(t testing.TB) (graveler.RefManager, kv.StoreMessage) {
+	testCommitCacheConfig = &ref.CacheConfig{
+		Size:   ref.DefaultCommitCacheSize,
+		Expiry: 20 * time.Millisecond,
+		Jitter: 0,
+	}
+)
+
+func testRefManager(t testing.TB) (graveler.RefManager, *kv.StoreMessage) {
 	t.Helper()
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
-	storeMessage := kv.StoreMessage{Store: kvStore}
-	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, ident.NewHexAddressProvider(), testRepoCacheConfig), storeMessage
+	storeMessage := &kv.StoreMessage{Store: kvStore}
+	cfg := ref.ManagerConfig{
+		Executor:          batch.NopExecutor(),
+		KvStore:           storeMessage,
+		AddressProvider:   ident.NewHexAddressProvider(),
+		RepoCacheConfig:   testRepoCacheConfig,
+		CommitCacheConfig: testCommitCacheConfig,
+	}
+	return ref.NewKVRefManager(cfg), storeMessage
 }
 
-func testRefManagerWithKVAndAddressProvider(t testing.TB, addressProvider ident.AddressProvider) (graveler.RefManager, kv.StoreMessage) {
+func testRefManagerWithKVAndAddressProvider(t testing.TB, addressProvider ident.AddressProvider) (graveler.RefManager, *kv.StoreMessage) {
 	t.Helper()
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
-	storeMessage := kv.StoreMessage{Store: kvStore}
-	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, addressProvider, testRepoCacheConfig), storeMessage
+	storeMessage := &kv.StoreMessage{Store: kvStore}
+	cfg := ref.ManagerConfig{
+		Executor:          batch.NopExecutor(),
+		KvStore:           storeMessage,
+		AddressProvider:   addressProvider,
+		RepoCacheConfig:   testRepoCacheConfig,
+		CommitCacheConfig: testCommitCacheConfig,
+	}
+	return ref.NewKVRefManager(cfg), storeMessage
 }
 
 func TestMain(m *testing.M) {
