@@ -56,7 +56,7 @@ The following are a list of changes in lakeFS by order of priority, according th
 
 - New logic in GC to support uncommitted garbage collection
   - Create uncommitted metaranges
-  - Ingest uncommitted data from lakeFS
+  - Read uncommitted data from lakeFS
   - Write uncommitted data to the object store (as part of the reports)
   - Implement the optimized run deltas
 - Incorporate uncommitted changes into the current GC flow
