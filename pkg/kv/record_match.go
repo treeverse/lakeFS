@@ -3,7 +3,6 @@ package kv
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -25,52 +24,92 @@ type MatchRecord struct {
 
 var recordsMatches []MatchRecord
 
-var errPatternAlreadyRegistered = errors.New("pattern already regsitered")
+var ErrPatternAlreadyRegistered = errors.New("pattern already registered")
 
 // RegisterType - Register a pb message type to parse the data, according to a path regex
 // All objects which match the path regex will be parsed as that type
 // A nil type parses the value as a plain string
-func RegisterType(partitionPattern, pathPattern string, mt protoreflect.MessageType) {
+func RegisterType(partitionPattern, pathPattern string, mt protoreflect.MessageType) error {
+	// verify we are not trying to add the same record twice
+	for _, rec := range recordsMatches {
+		if rec.PartitionPattern == partitionPattern && rec.PathPattern == pathPattern {
+			return ErrPatternAlreadyRegistered
+		}
+	}
+
+	// add the new record
 	recordsMatches = append(recordsMatches, MatchRecord{
 		PartitionPattern: partitionPattern,
 		PathPattern:      pathPattern,
 		MessageType:      mt,
 	})
+
+	// make sure that we keep the longest pattern first
 	sort.Slice(recordsMatches, func(i, j int) bool {
-		p1 := strings.TrimPrefix(recordsMatches[i].PartitionPattern, "*")
-		p2 := strings.TrimPrefix(recordsMatches[j].PartitionPattern, "*")
-		if p1 == p2 {
-			pp1 := strings.TrimPrefix(recordsMatches[i].PathPattern, "*")
-			pp2 := strings.TrimPrefix(recordsMatches[j].PathPattern, "*")
-			if pp1 == pp2 {
-				panic(fmt.Errorf("partition %s, path%s: %w", partitionPattern, pathPattern, errPatternAlreadyRegistered))
-			}
-			return pp1 > pp2
+		if recordsMatches[i].PartitionPattern == recordsMatches[j].PartitionPattern {
+			return recordsMatches[i].PathPattern > recordsMatches[j].PathPattern
 		}
-		return p1 > p2
+		return recordsMatches[i].PartitionPattern > recordsMatches[j].PartitionPattern
 	})
+	return nil
 }
 
-func NewRecord(partition, path string, rawValue []byte) (*Record, error) {
-	var mt protoreflect.MessageType
+func MustRegisterType(partitionPattern, pathPattern string, mt protoreflect.MessageType) {
+	err := RegisterType(partitionPattern, pathPattern, mt)
+	if err != nil {
+		panic(fmt.Errorf("%w: partition '%s', path '%s'", err, partitionPattern, pathPattern))
+	}
+}
+
+// FindMessageTypeRecord lookup proto message type based on the partition and path.
+//
+//	Can return nil in case the value is not matched
+func FindMessageTypeRecord(partition, path string) protoreflect.MessageType {
 	for _, r := range recordsMatches {
-		partitionMatch, err := filepath.Match(r.PartitionPattern, partition)
-		if err != nil {
-			return nil, err
-		}
+		partitionMatch := patternMatch(r.PartitionPattern, partition)
 		if !partitionMatch {
 			continue
 		}
 
-		pathMatch, err := filepath.Match(r.PathPattern, path)
-		if err != nil {
-			return nil, err
-		}
+		pathMatch := patternMatch(r.PathPattern, path)
 		if pathMatch {
-			mt = r.MessageType
-			break
+			return r.MessageType
 		}
 	}
+	return nil
+}
+
+// patternMatch reports str matches a pattern. The pattern uses '/' as separator of each part. Part can match specific value or any ('*').
+// Match works as prefix match as it will verify the given pattern and return success when pattern is completed no matter of the value holds more parts.
+//
+// Examples:
+//
+//	patternMatch("repo", "repo") // true
+//	patternMatch("repo", "repo/something") // true
+//	patternMatch("repo", "repository") // false
+//	patternMatch("*", "repository") // true
+//	patternMatch("repo/*/branches", "repo") // false
+//	patternMatch("repo/*/branches", "repo/branch1") // false
+//	patternMatch("repo/*/branches", "repo/branch1/branches") // true
+//	patternMatch("repo/*/branches", "repo/branch1/branches/objects") // true
+func patternMatch(pattern string, str string) bool {
+	pp := strings.Split(pattern, "/")
+	v := strings.SplitN(str, "/", len(pp)+1)
+	if len(v) < len(pp) {
+		// value doesn't hold enough parts
+		return false
+	}
+	// match each part to the pattern
+	for i, p := range pp {
+		if p != "*" && p != v[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func NewRecord(partition, path string, rawValue []byte) (*Record, error) {
+	mt := FindMessageTypeRecord(partition, path)
 
 	var value interface{}
 	if mt == nil {
