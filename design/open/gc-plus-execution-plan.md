@@ -61,7 +61,6 @@ The following are a list of changes in lakeFS by order of priority, according th
   - Implement the optimized run deltas
 - Incorporate uncommitted changes into the current GC flow
   - Implement Run ID proposal + [changes](https://github.com/treeverse/lakeFS/issues/4469)
-  - Add uncommitted options to GC rules
   - Add additional metadata to the GC report (last scanned slice)
   - Support mark and sweep for uncommitted 
 
