@@ -34,9 +34,7 @@ func NewBatchCloser(numClosers int) *BatchCloser {
 	return ret
 }
 
-var (
-	ErrMultipleWaitCalls = errors.New("wait has already been called")
-)
+var ErrMultipleWaitCalls = errors.New("wait has already been called")
 
 // CloseWriterAsync adds RangeWriter instance for the BatchCloser to handle.
 // Any writes executed to the writer after this call are not guaranteed to succeed.

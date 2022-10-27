@@ -2186,6 +2186,7 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
   -h, --help                     help for ingest
       --s3-endpoint-url string   URL to access S3 storage API (by default, use regular AWS S3 endpoint
       --to string                lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
+  -v, --verbose                  print stats for each individual object staged
 ```
 
 

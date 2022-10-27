@@ -7,7 +7,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
 )
 
-//nolint: unused
+// nolint: unused
 type ristrettoEviction struct {
 	cache         *ristretto.Cache
 	evictCallback func(rPath params.RelativePath, cost int64)
@@ -21,7 +21,7 @@ const (
 	bufferItems = 64
 )
 
-//nolint: unused,deadcode
+// nolint: unused,deadcode
 func newRistrettoEviction(capacity int64, evict func(rPath params.RelativePath, cost int64)) (params.Eviction, error) {
 	re := &ristrettoEviction{evictCallback: evict}
 

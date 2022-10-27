@@ -62,7 +62,8 @@ func ResolveRawRef(ctx context.Context, store Store, addressProvider ident.Addre
 				BranchRecord: graveler.BranchRecord{
 					Branch: &graveler.Branch{
 						CommitID: rr.CommitID,
-					}},
+					},
+				},
 			}, nil
 
 		case graveler.RefModTypeDollar:
@@ -78,7 +79,8 @@ func ResolveRawRef(ctx context.Context, store Store, addressProvider ident.Addre
 						CommitID:     rr.CommitID,
 						StagingToken: rr.StagingToken,
 						SealedTokens: rr.SealedTokens,
-					}},
+					},
+				},
 			}, nil
 
 		case graveler.RefModTypeTilde:
@@ -119,7 +121,8 @@ func ResolveRawRef(ctx context.Context, store Store, addressProvider ident.Addre
 			BranchID: rr.BranchID,
 			Branch: &graveler.Branch{
 				CommitID: baseCommit,
-			}},
+			},
+		},
 	}, nil
 }
 
@@ -140,7 +143,8 @@ func revResolveAHash(ctx context.Context, store Store, addressProvider ident.Add
 		BranchRecord: graveler.BranchRecord{
 			Branch: &graveler.Branch{
 				CommitID: commitID,
-			}},
+			},
+		},
 	}, nil
 }
 
@@ -161,7 +165,8 @@ func revResolveBranch(ctx context.Context, store Store, _ ident.AddressProvider,
 				CommitID:     branch.CommitID,
 				StagingToken: branch.StagingToken,
 				SealedTokens: branch.SealedTokens,
-			}},
+			},
+		},
 	}, nil
 }
 
@@ -178,6 +183,7 @@ func revResolveTag(ctx context.Context, store Store, _ ident.AddressProvider, re
 		BranchRecord: graveler.BranchRecord{
 			Branch: &graveler.Branch{
 				CommitID: *commitID,
-			}},
+			},
+		},
 	}, nil
 }

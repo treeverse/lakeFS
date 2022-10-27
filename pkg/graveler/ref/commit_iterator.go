@@ -128,7 +128,8 @@ func (ci *CommitIterator) Next() bool {
 }
 
 // SeekGE skip under the point of 'id' commit ID based on a new
-//   The list of commit
+//
+//	The list of commit
 func (ci *CommitIterator) SeekGE(id graveler.CommitID) {
 	ci.err = nil
 	ci.queue = make(commitsPriorityQueue, 0)

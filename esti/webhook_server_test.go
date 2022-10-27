@@ -54,7 +54,8 @@ func startWebhookServer() (*webhookServer, error) {
 	port := listener.Addr().(*net.TCPAddr).Port
 	fmt.Println("Using port:", port)
 	s := &http.Server{
-		Handler: mux,
+		ReadHeaderTimeout: time.Minute,
+		Handler:           mux,
 	}
 	host := os.Getenv("TEST_WEBHOOK_HOST")
 	if host == "" {

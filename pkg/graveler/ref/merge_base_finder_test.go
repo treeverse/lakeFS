@@ -51,7 +51,6 @@ func newReader(kv map[graveler.CommitID]*graveler.Commit) *MockCommitGetter {
 		byCommitID: kv,
 		visited:    map[graveler.CommitID]int{},
 	}
-
 }
 
 func TestFindMergeBase(t *testing.T) {

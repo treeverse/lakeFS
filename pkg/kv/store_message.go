@@ -13,7 +13,8 @@ type StoreMessage struct {
 }
 
 // GetMsg based on 'path' the value will be loaded into 'msg' and return a predicate.
-//   In case 'msg' is nil, a predicate will be returned
+//
+//	In case 'msg' is nil, a predicate will be returned
 func (s *StoreMessage) GetMsg(ctx context.Context, partitionKey string, key []byte, msg protoreflect.ProtoMessage) (Predicate, error) {
 	res, err := s.Get(ctx, []byte(partitionKey), key)
 	if err != nil {

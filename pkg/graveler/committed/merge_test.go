@@ -114,12 +114,13 @@ func createIter(tr *testMetaRange) committed.Iterator {
 func Test_merge(t *testing.T) {
 	tests := testCases{
 		"dest range added before": {
-			baseRange: newTestMetaRange([]testRange{{
-				rng:     committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
-				records: nil,
-			}, {rng: committed.Range{ID: "base:k11-k12", MinKey: committed.Key("k11"), MaxKey: committed.Key("k12"), Count: 2, EstimatedSize: 4444}, records: []testValueRecord{
-				{"k11", "base:k11"}, {"k12", "base:k12"},
-			}},
+			baseRange: newTestMetaRange([]testRange{
+				{
+					rng:     committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
+					records: nil,
+				}, {rng: committed.Range{ID: "base:k11-k12", MinKey: committed.Key("k11"), MaxKey: committed.Key("k12"), Count: 2, EstimatedSize: 4444}, records: []testValueRecord{
+					{"k11", "base:k11"}, {"k12", "base:k12"},
+				}},
 			}),
 			sourceRange: newTestMetaRange([]testRange{{
 				rng:     committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},

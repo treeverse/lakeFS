@@ -82,9 +82,9 @@ func (tfs *TierFS) log(ctx context.Context) logging.Logger {
 
 // handleExistingFiles should only be called during init of the TierFS.
 // It does 2 things:
-// 1. Adds stored files to the eviction control
-// 2. Remove workspace directories and all its content if it
-//	  exists under the namespace dir.
+//  1. Adds stored files to the eviction control
+//  2. Remove workspace directories and all its content if it
+//     exists under the namespace dir.
 func (tfs *TierFS) handleExistingFiles() error {
 	if err := filepath.Walk(tfs.fsLocalBaseDir, func(p string, info os.FileInfo, err error) error {
 		if err != nil {

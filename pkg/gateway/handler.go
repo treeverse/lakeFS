@@ -198,7 +198,6 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 		matchedHost := ctx.Value(ContextKeyMatchedHost).(bool)
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req, repo.Name, refID, path)
-
 		if err != nil {
 			if errors.Is(err, gatewayerrors.ErrInvalidCopySource) {
 				_ = o.EncodeError(w, req, gatewayerrors.ErrInvalidCopySource.ToAPIErr())

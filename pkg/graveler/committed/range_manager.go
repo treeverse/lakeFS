@@ -7,7 +7,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
-//go:generate mockgen -source=range_manager.go -destination=mock/range_manager.go -package=mock
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -source=range_manager.go -destination=mock/range_manager.go -package=mock
 
 // ID is an identifier for a Range
 type ID string
@@ -24,11 +24,13 @@ func (k Key) Copy() Key {
 	return c
 }
 
-type Value []byte
-type Record struct {
-	Key   Key
-	Value Value
-}
+type (
+	Value  []byte
+	Record struct {
+		Key   Key
+		Value Value
+	}
+)
 
 type ValueIterator interface {
 	Next() bool
@@ -38,9 +40,7 @@ type ValueIterator interface {
 	Close()
 }
 
-var (
-	ErrNotFound = errors.New("not found")
-)
+var ErrNotFound = errors.New("not found")
 
 type RangeManager interface {
 	// Exists returns true if id references a Range.

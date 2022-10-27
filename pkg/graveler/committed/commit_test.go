@@ -31,9 +31,11 @@ func TestCommitAdd(t *testing.T) {
 		AddValueRecords(makeV("a", "base:a"), makeV("c", "base:c")).
 		AddRange(&committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("d"), Count: 1}).
 		AddValueRecords(makeV("d", "base:d"))
-	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{*makeV("b", "dest:b"),
+	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{
+		*makeV("b", "dest:b"),
 		*makeV("e", "dest:e"),
-		*makeV("f", "dest:f")})
+		*makeV("f", "dest:f"),
+	})
 
 	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "base:a")))
@@ -62,10 +64,12 @@ func TestCommitChangeWithinBaseRange(t *testing.T) {
 		AddValueRecords(makeV("k1", "base:k1"), makeV("k6", "base:k6")).
 		AddRange(&committed.Range{ID: "last", MinKey: committed.Key("k10"), MaxKey: committed.Key("k13"), Count: 2}).
 		AddValueRecords(makeV("k10", "base:k10"), makeV("k13", "base:k13"))
-	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{*makeV("k2", "dest:k2"),
+	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{
+		*makeV("k2", "dest:k2"),
 		*makeV("k3", "dest:k3"),
 		*makeV("k4", "dest:k4"),
-		*makeV("k5", "dest:k5")})
+		*makeV("k5", "dest:k5"),
+	})
 
 	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("k1", "base:k1")))
@@ -94,8 +98,10 @@ func TestCommitBaseRangesWithinChanges(t *testing.T) {
 		AddValueRecords(makeV("k2", "base:k2"), makeV("k3", "base:k3")).
 		AddRange(&committed.Range{ID: "inner-range-2", MinKey: committed.Key("k4"), MaxKey: committed.Key("k5"), Count: 2}).
 		AddValueRecords(makeV("k4", "base:k4"), makeV("k5", "base:k5"))
-	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{*makeV("k1", "changes:k1"),
-		*makeV("k6", "changes:k6")})
+	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{
+		*makeV("k1", "changes:k1"),
+		*makeV("k6", "changes:k6"),
+	})
 
 	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("k1", "changes:k1")))
@@ -124,8 +130,10 @@ func TestCommitReplace(t *testing.T) {
 		AddValueRecords(makeV("d", "base:d")).
 		AddRange(&committed.Range{ID: "three", MinKey: committed.Key("e"), MaxKey: committed.Key("ez"), Count: 1}).
 		AddValueRecords(makeV("e", "base:e"))
-	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{*makeV("b", "changes:b"),
-		*makeV("e", "changes:e")})
+	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{
+		*makeV("b", "changes:b"),
+		*makeV("e", "changes:e"),
+	})
 
 	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "base:a")))
@@ -155,8 +163,10 @@ func TestCommitDelete(t *testing.T) {
 		AddValueRecords(makeV("d", "base:d")).
 		AddRange(&committed.Range{ID: "three", MinKey: committed.Key("ez"), MaxKey: committed.Key("ez"), Count: 1}).
 		AddValueRecords(makeV("e", "base:e"))
-	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{*makeTombstoneV("b"),
-		*makeTombstoneV("e")})
+	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{
+		*makeTombstoneV("b"),
+		*makeTombstoneV("e"),
+	})
 
 	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "base:a")))
@@ -182,9 +192,11 @@ func TestCommitCopiesLeftoverChanges(t *testing.T) {
 		AddValueRecords(makeV("a", "base:a"), makeV("b", "base:b"), makeV("c", "base:c")).
 		AddRange(&committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("dz"), Count: 1}).
 		AddValueRecords(makeV("d", "base:d"))
-	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{*makeV("b", "changes:b"),
+	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{
+		*makeV("b", "changes:b"),
 		*makeV("e", "changes:e"),
-		*makeV("f", "changes:f")})
+		*makeV("f", "changes:f"),
+	})
 
 	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "base:a")))
@@ -209,9 +221,11 @@ func TestCommitTombstoneNoBase(t *testing.T) {
 
 	base := testutil.NewFakeIterator()
 
-	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{*makeTombstoneV("b"),
+	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{
+		*makeTombstoneV("b"),
 		*makeTombstoneV("e"),
-		*makeTombstoneV("f")})
+		*makeTombstoneV("f"),
+	})
 
 	writer := mock.NewMockMetaRangeWriter(ctrl)
 
@@ -229,9 +243,11 @@ func TestCommitDeleteNonExistingRecord(t *testing.T) {
 	base := testutil.NewFakeIterator().
 		AddRange(&committed.Range{ID: "base:one", MinKey: committed.Key("c"), MaxKey: committed.Key("d"), Count: 2}).
 		AddValueRecords(makeV("c", "base:c"), makeV("d", "base:d"))
-	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{*makeV("a", "changes:a"),
+	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{
+		*makeV("a", "changes:a"),
 		*makeTombstoneV("e"),
-		*makeTombstoneV("f")})
+		*makeTombstoneV("f"),
+	})
 
 	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "changes:a")))
@@ -256,8 +272,10 @@ func TestCommitTombstonesBeforeRange(t *testing.T) {
 		AddRange(&committed.Range{ID: "base:range", MinKey: committed.Key("b"), MaxKey: committed.Key("c"), Count: 2}).
 		AddValueRecords(makeV("b", "base:b"), makeV("c", "base:c"))
 
-	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{*makeTombstoneV("a"),
-		*makeV("d", "changes:d")})
+	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{
+		*makeTombstoneV("a"),
+		*makeV("d", "changes:d"),
+	})
 
 	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("b", "base:b")))

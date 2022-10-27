@@ -9,12 +9,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-var (
-	testParams *kvparams.DynamoDB
-)
+var testParams *kvparams.DynamoDB
 
 func TestMain(m *testing.M) {
-	databaseURI, cleanpFunc, err := testutil.GetDynamoDBInstance()
+	databaseURI, cleanupFunc, err := testutil.GetDynamoDBInstance()
 	if err != nil {
 		log.Fatalf("Could not connect to Docker: %s", err)
 	}
@@ -31,6 +29,6 @@ func TestMain(m *testing.M) {
 	}
 
 	code := m.Run()
-	cleanpFunc()
+	cleanupFunc()
 	os.Exit(code)
 }

@@ -75,7 +75,8 @@ func (d *directory) createFile(path string) (*os.File, error) {
 }
 
 // renameFile will move the src file to dst location and creates all parent dirs if missing.
-//   If we fail, we check if the destination exists, as it is content addressable, and remove the source.
+//
+//	If we fail, we check if the destination exists, as it is content addressable, and remove the source.
 func (d *directory) renameFile(src, dst string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()

@@ -147,7 +147,8 @@ func TestParseRequestParts(t *testing.T) {
 				Path:        "a/b/c/",
 				MatchedHost: true,
 			},
-		}, {
+		},
+		{
 			Name:    "repo_branch_path_virtual_style_3",
 			URLPath: "/bar/a/b/c/",
 			Host:    "foo.lakefs.example.com",
@@ -190,7 +191,8 @@ func TestParseRequestParts(t *testing.T) {
 				Path:        "a/b/c/",
 				MatchedHost: false,
 			},
-		}, {
+		},
+		{
 			Name:    "repo_branch_path_path_style_3",
 			URLPath: "/foo/bar/a/b/c/",
 			Host:    "lakefs.dev",

@@ -1,12 +1,12 @@
 package helpers
 
 import (
-	"github.com/treeverse/lakefs/pkg/api"
-
 	"context"
 	"fmt"
 	"io"
 	"net/url"
+
+	"github.com/treeverse/lakefs/pkg/api"
 )
 
 // ClientDownload downloads a file using client-side ("direct") access to underlying storage.
@@ -37,7 +37,6 @@ func ClientDownload(ctx context.Context, client api.ClientWithResponsesInterface
 	}
 
 	contents, err := adapter.Download(ctx, parsedAddress)
-
 	if err != nil {
 		return nil, nil, fmt.Errorf("read from backing store %v: %w", parsedAddress, err)
 	}

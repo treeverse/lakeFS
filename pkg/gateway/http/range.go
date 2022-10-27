@@ -6,9 +6,7 @@ import (
 	"strings"
 )
 
-var (
-	ErrBadRange = fmt.Errorf("unsatisfiable range")
-)
+var ErrBadRange = fmt.Errorf("unsatisfiable range")
 
 // Range represents an RFC 2616 HTTP Range
 type Range struct {
