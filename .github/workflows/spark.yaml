@@ -17,6 +17,10 @@ jobs:
       - name: Setup Scala
         uses: olafurpg/setup-scala@v13
 
+      - name: validate format
+        working-directory: clients/spark
+        run: sbt scalafmtCheck
+
       - name: run tests, validate and package
         working-directory: clients/spark
-        run: sbt test scalafmtCheck "scalafix --check" package
+        run: sbt test "scalafix --check" package
