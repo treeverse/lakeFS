@@ -103,20 +103,24 @@ func TestCompare(t *testing.T) {
 		},
 		"multiple add and removes": {
 			baseKeys: []string{"k1", "k3"},
-			diffs: []graveler.Diff{testMergeNewDiff(removed, "k1", "i1", "i1"),
+			diffs: []graveler.Diff{
+				testMergeNewDiff(removed, "k1", "i1", "i1"),
 				testMergeNewDiff(added, "k2", "i2", ""),
 				testMergeNewDiff(removed, "k3", "i3", "i3"),
-				testMergeNewDiff(added, "k4", "i4", "")},
+				testMergeNewDiff(added, "k4", "i4", ""),
+			},
 			expectedKeys:       []string{"k1", "k2", "k3", "k4"},
 			expectedIdentities: []string{"i1", "i2", "i3", "i4"},
 			expectedDiffTypes:  []graveler.DiffType{removed, added, removed, added},
 		},
 		"changes on each side": {
 			baseKeys: []string{"k1", "k2", "k3", "k4"},
-			diffs: []graveler.Diff{testMergeNewDiff(changed, "k1", "i1a", "i1"),
+			diffs: []graveler.Diff{
+				testMergeNewDiff(changed, "k1", "i1a", "i1"),
 				testMergeNewDiff(changed, "k2", "i2", "i2a"),
 				testMergeNewDiff(changed, "k3", "i3a", "i3"),
-				testMergeNewDiff(changed, "k4", "i4", "i4a")},
+				testMergeNewDiff(changed, "k4", "i4", "i4a"),
+			},
 			expectedKeys:       []string{"k1", "k3"},
 			expectedIdentities: []string{"i1a", "i3a"},
 			expectedDiffTypes:  []graveler.DiffType{changed, changed},

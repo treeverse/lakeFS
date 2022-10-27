@@ -80,7 +80,6 @@ func TestStartingPointIterator(t *testing.T) {
 				expectedBranchID := ""
 				if _, ok := branchMap[string(val.CommitID)]; ok {
 					expectedBranchID = string(val.CommitID)
-
 				}
 				if string(val.BranchID) != expectedBranchID {
 					t.Fatalf("got unexpected branch_id for commit %s. expected=%s, got=%s", val.CommitID, expectedBranchID, val.BranchID)

@@ -60,7 +60,9 @@ type RefModifier struct {
 }
 
 // RawRef is a parsed Ref that includes 'BaseRef' that holds the branch/tag/hash and a list of
-//   ordered modifiers that applied to the reference.
+//
+//	ordered modifiers that applied to the reference.
+//
 // Example: master~2 will be parsed into {BaseRef:"master", Modifiers:[{Type:RefModTypeTilde, Value:2}]}
 type RawRef struct {
 	BaseRef   string
@@ -91,12 +93,12 @@ const (
 )
 
 // ResolvedRef include resolved information of Ref/RawRef:
-//   Type: Branch / Tag / Commit
-//   BranchID: for type ReferenceTypeBranch will hold the branch ID
-//   ResolvedBranchModifier: branch indicator if resolved to a branch the latest commit, staging or none was specified.
-//   CommitID: the commit ID of the branch head,  tag or specific hash.
-//   StagingToken: empty if ResolvedBranchModifier is ResolvedBranchModifierCommitted.
 //
+//	Type: Branch / Tag / Commit
+//	BranchID: for type ReferenceTypeBranch will hold the branch ID
+//	ResolvedBranchModifier: branch indicator if resolved to a branch the latest commit, staging or none was specified.
+//	CommitID: the commit ID of the branch head,  tag or specific hash.
+//	StagingToken: empty if ResolvedBranchModifier is ResolvedBranchModifierCommitted.
 type ResolvedRef struct {
 	Type                   ReferenceType
 	ResolvedBranchModifier ResolvedBranchModifier
@@ -2268,7 +2270,8 @@ func (g *KVGraveler) DiffUncommitted(ctx context.Context, repository *Repository
 }
 
 // dereferenceCommit will dereference and load the commit record based on 'ref'.
-//   will return an error if 'ref' points to an explicit staging area
+//
+//	will return an error if 'ref' points to an explicit staging area
 func (g *KVGraveler) dereferenceCommit(ctx context.Context, repository *RepositoryRecord, ref Ref) (*CommitRecord, error) {
 	reference, err := g.Dereference(ctx, repository, ref)
 	if err != nil {

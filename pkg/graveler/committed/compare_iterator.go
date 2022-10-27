@@ -71,6 +71,7 @@ func (d *compareIterator) handleConflict() bool {
 	d.val.Type = graveler.DiffTypeConflict
 	return true
 }
+
 func (d *compareIterator) setRangeDiff(r *RangeDiff) {
 	if r != nil {
 		d.rng = r.Copy()
@@ -260,6 +261,7 @@ func (d *compareIterator) Value() (*graveler.Diff, *RangeDiff) {
 	}
 	return d.val, d.rng
 }
+
 func (d *compareIterator) Err() error {
 	return d.err
 }

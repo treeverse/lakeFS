@@ -199,6 +199,7 @@ func (ctx *verificationCtx) canonicalizeHeaders(headers []string) string {
 	}
 	return buf.String()
 }
+
 func (ctx *verificationCtx) trimAll(str string) string {
 	str = strings.TrimSpace(str)
 	inSpace := false

@@ -47,13 +47,15 @@ type Driver interface {
 }
 
 // Predicate value used to update a key base on a previous fetched value.
-//   Store's Get used to pull the key's value with the associated predicate.
-//   Store's SetIf used to set the key's value based on the predicate.
+//
+//	Store's Get used to pull the key's value with the associated predicate.
+//	Store's SetIf used to set the key's value based on the predicate.
 type Predicate interface{}
 
 // ValueWithPredicate value with predicate - Value holds the data and Predicate a value used for conditional set.
-//   Get operation will return this struct, holding the key's information
-//   SetIf operation will use the Predicate for conditional set
+//
+//	Get operation will return this struct, holding the key's information
+//	SetIf operation will use the Predicate for conditional set
 type ValueWithPredicate struct {
 	Value     []byte
 	Predicate Predicate

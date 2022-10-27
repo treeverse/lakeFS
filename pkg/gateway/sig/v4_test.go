@@ -22,16 +22,14 @@ import (
 
 const sigV4NoDomain = ""
 
-var (
-	mockCreds = &model.Credential{BaseCredential: model.BaseCredential{
+var mockCreds = &model.Credential{
+	BaseCredential: model.BaseCredential{
 		AccessKeyID:     "AKIAIOSFODNN7EXAMPLE",
 		SecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 	},
-	}
-)
+}
 
 func TestDoesPolicySignatureMatch(t *testing.T) {
-
 	testCases := []struct {
 		Name               string
 		Header             http.Header
@@ -66,7 +64,6 @@ func TestDoesPolicySignatureMatch(t *testing.T) {
 		{
 			Name: "Amazon single chunk example", //  https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
 			Header: http.Header{
-
 				"X-Amz-Credential":     []string{"AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request"},
 				"X-Amz-Date":           []string{"20130524T000000Z"},
 				"X-Amz-Content-Sha256": []string{"44ce7dd67c959e0d3524ffac1771dfbba87d2b6b4b4e99e42034a8b803f8b072"},
@@ -94,7 +91,6 @@ func TestDoesPolicySignatureMatch(t *testing.T) {
 			req.Header = tc.Header
 			authenticator := sig.NewV4Authenticator(req)
 			_, err := authenticator.Parse()
-
 			if err != nil {
 				if !tc.ExpectedParseError {
 					t.Fatal(err)
@@ -109,7 +105,6 @@ func TestDoesPolicySignatureMatch(t *testing.T) {
 				}
 				return
 			}
-
 		})
 	}
 }
@@ -146,7 +141,6 @@ func TestSingleChunkPut(t *testing.T) {
 	)
 	for _, tc := range tt {
 		t.Run(tc.Name, func(t *testing.T) {
-
 			// build request with amazons sdk
 			creds := credentials.NewStaticCredentials(ID, SECRET, "")
 			signer := v4.NewSigner(creds)
@@ -170,11 +164,12 @@ func TestSingleChunkPut(t *testing.T) {
 				t.Errorf("expect not no error, got %v", err)
 			}
 
-			err = authenticator.Verify(&model.Credential{BaseCredential: model.BaseCredential{
-				AccessKeyID:     ID,
-				SecretAccessKey: SECRET,
-				IssuedDate:      time.Now(),
-			},
+			err = authenticator.Verify(&model.Credential{
+				BaseCredential: model.BaseCredential{
+					AccessKeyID:     ID,
+					SecretAccessKey: SECRET,
+					IssuedDate:      time.Now(),
+				},
 			}, sigV4NoDomain)
 			if err != nil {
 				t.Errorf("expect not no error, got %v", err)
@@ -185,13 +180,11 @@ func TestSingleChunkPut(t *testing.T) {
 			if err != tc.ExpectedReadError {
 				t.Errorf("expect Error %v error, got %s", tc.ExpectedReadError, err)
 			}
-
 		})
 	}
 }
 
 func TestStreaming(t *testing.T) {
-
 	const (
 		method = http.MethodPut
 		host   = "s3.amazonaws.com"
@@ -233,11 +226,12 @@ func TestStreaming(t *testing.T) {
 		t.Errorf("expect not no error, got %v", err)
 	}
 
-	err = authenticator.Verify(&model.Credential{BaseCredential: model.BaseCredential{
-		AccessKeyID:     ID,
-		SecretAccessKey: SECRET,
-		IssuedDate:      time.Now(),
-	},
+	err = authenticator.Verify(&model.Credential{
+		BaseCredential: model.BaseCredential{
+			AccessKeyID:     ID,
+			SecretAccessKey: SECRET,
+			IssuedDate:      time.Now(),
+		},
 	}, sigV4NoDomain)
 	if err != nil {
 		t.Error(err)
@@ -252,7 +246,6 @@ func TestStreaming(t *testing.T) {
 }
 
 func TestStreamingLastByteWrong(t *testing.T) {
-
 	const (
 		method = http.MethodPut
 		ID     = "AKIAIOSFODNN7EXAMPLE"
@@ -291,11 +284,12 @@ func TestStreamingLastByteWrong(t *testing.T) {
 		t.Errorf("expect not no error, got %v", err)
 	}
 
-	err = authenticator.Verify(&model.Credential{BaseCredential: model.BaseCredential{
-		AccessKeyID:     ID,
-		SecretAccessKey: SECRET,
-		IssuedDate:      time.Now(),
-	},
+	err = authenticator.Verify(&model.Credential{
+		BaseCredential: model.BaseCredential{
+			AccessKeyID:     ID,
+			SecretAccessKey: SECRET,
+			IssuedDate:      time.Now(),
+		},
 	}, sigV4NoDomain)
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
@@ -337,11 +331,12 @@ func TestUnsignedPayload(t *testing.T) {
 		t.Errorf("expect not no error, got %v", err)
 	}
 
-	err = authenticator.Verify(&model.Credential{BaseCredential: model.BaseCredential{
-		AccessKeyID:     testID,
-		SecretAccessKey: testSecret,
-		IssuedDate:      time.Now(),
-	},
+	err = authenticator.Verify(&model.Credential{
+		BaseCredential: model.BaseCredential{
+			AccessKeyID:     testID,
+			SecretAccessKey: testSecret,
+			IssuedDate:      time.Now(),
+		},
 	}, sigV4NoDomain)
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)

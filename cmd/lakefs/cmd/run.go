@@ -317,7 +317,8 @@ var runCmd = &cobra.Command{
 
 		logging.Default().WithField("listen_address", cfg.GetListenAddress()).Info("starting HTTP server")
 		server := &http.Server{
-			Addr: cfg.GetListenAddress(),
+			Addr:              cfg.GetListenAddress(),
+			ReadHeaderTimeout: time.Minute,
 			Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 				// If the request has the S3 GW domain (exact or subdomain) - or carries an AWS sig, serve S3GW
 				if httputil.HostMatches(request, cfg.GetS3GatewayDomainNames()) ||

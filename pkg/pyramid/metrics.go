@@ -5,7 +5,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-//nolint: gomnd
+// nolint: gomnd
 const (
 	kb                = float64(1024)
 	fsNameLabel       = "fsName"

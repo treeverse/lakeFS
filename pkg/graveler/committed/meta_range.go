@@ -1,6 +1,6 @@
 package committed
 
-//go:generate mockgen -source=meta_range.go -destination=mock/meta_range.go -package=mock
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -source=meta_range.go -destination=mock/meta_range.go -package=mock
 
 import (
 	"context"
@@ -30,7 +30,9 @@ type Iterator interface {
 // for example:
 //
 // left        [min].R1.[max]                     [min].R3.[max]        [min]...............R5..............[max]
-//        ------------------------------------------------------------------------------------------------
+//
+//	------------------------------------------------------------------------------------------------
+//
 // right                        [min].R2.[max]     [min.....R4....max]  [min].R6.[max] [min].R7.[max]
 //
 // R1 -  will return as diff with header
