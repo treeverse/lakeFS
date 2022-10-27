@@ -1272,12 +1272,51 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		}
 	})
 
-	t.Run("create branch conflict", func(t *testing.T) {
+	t.Run("create branch conflict with branch", func(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "repo6", onBlock(deps, "foo1"), "main")
 		testutil.Must(t, err)
 
 		resp, err := clt.CreateBranchWithResponse(ctx, "repo6", api.CreateBranchJSONRequestBody{
 			Name:   "main",
+			Source: "main",
+		})
+		if err != nil {
+			t.Fatal("CreateBranch failed with error:", err)
+		}
+		if resp.JSON409 == nil {
+			t.Fatal("CreateBranch expected conflict")
+		}
+	})
+
+	t.Run("create branch conflict with tag", func(t *testing.T) {
+		_, err := deps.catalog.CreateRepository(ctx, "repo7", onBlock(deps, "foo1"), "main")
+		testutil.Must(t, err)
+
+		name := "tag123"
+		_, err = deps.catalog.CreateTag(ctx, "repo7", name, "main")
+		testutil.Must(t, err)
+
+		resp, err := clt.CreateBranchWithResponse(ctx, "repo7", api.CreateBranchJSONRequestBody{
+			Name:   name,
+			Source: "main",
+		})
+		if err != nil {
+			t.Fatal("CreateBranch failed with error:", err)
+		}
+		if resp.JSON409 == nil {
+			t.Fatal("CreateBranch expected conflict")
+		}
+	})
+
+	t.Run("create branch conflict with commit", func(t *testing.T) {
+		_, err := deps.catalog.CreateRepository(ctx, "repo8", onBlock(deps, "foo1"), "main")
+		testutil.Must(t, err)
+
+		log, err := deps.catalog.GetCommit(ctx, "repo8", "main")
+		testutil.Must(t, err)
+
+		resp, err := clt.CreateBranchWithResponse(ctx, "repo6", api.CreateBranchJSONRequestBody{
+			Name:   log.Reference,
 			Source: "main",
 		})
 		if err != nil {
@@ -2673,6 +2712,49 @@ func TestController_CreateTag(t *testing.T) {
 		testutil.Must(t, err)
 		if tagResp.JSON404 == nil {
 			t.Errorf("Create tag to unknown ref expected 404, got %v", tagResp)
+		}
+	})
+
+	t.Run("tag_with_conflicting_tag", func(t *testing.T) {
+		tagResp, err := clt.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
+			Id:  "tag7",
+			Ref: "main",
+		})
+		verifyResponseOK(t, tagResp, err)
+		tagTagResp, err := clt.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
+			Id:  "tag7",
+			Ref: "main",
+		})
+		testutil.Must(t, err)
+		if tagTagResp.JSON409 == nil {
+			t.Errorf("Create tag again should conflict, got %v", tagTagResp)
+		}
+	})
+
+	t.Run("tag_with_conflicting_branch", func(t *testing.T) {
+		tagResp, err := clt.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
+			Id:  "main",
+			Ref: "main",
+		})
+
+		testutil.Must(t, err)
+		if tagResp.JSON409 == nil {
+			t.Errorf("Create tag again should conflict, got %v", tagResp)
+		}
+	})
+
+	t.Run("tag_with_conflicting_commit", func(t *testing.T) {
+		commit, err := deps.catalog.GetCommit(ctx, repo, "main")
+		testutil.Must(t, err)
+
+		tagResp, err := clt.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
+			Id:  commit.Reference,
+			Ref: "main",
+		})
+		testutil.Must(t, err)
+
+		if tagResp.JSON409 == nil {
+			t.Errorf("Create tag again should conflict, got %v", tagResp)
 		}
 	})
 }

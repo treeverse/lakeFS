@@ -61,10 +61,10 @@ func ValidateTagID(v interface{}) error {
 	if tagID == "@" {
 		return ErrInvalidTagID
 	}
-	if strings.HasSuffix(tagID, ".") || strings.HasSuffix(tagID, ".lock") || strings.HasSuffix(tagID, "/") {
+	if strings.HasSuffix(tagID, ".") || strings.HasSuffix(tagID, ".lock") {
 		return ErrInvalidTagID
 	}
-	if strings.Contains(tagID, "..") || strings.Contains(tagID, "//") || strings.Contains(tagID, "@{") {
+	if strings.Contains(tagID, "..") || strings.Contains(tagID, "/") || strings.Contains(tagID, "@{") {
 		return ErrInvalidTagID
 	}
 	// Unlike git, we do allow '~'.  That supports migration from our previous ref format where commits started with a tilde.
