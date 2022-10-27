@@ -1492,9 +1492,7 @@ func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, a
 	return diffs, hasMore, nil
 }
 
-func (c *Catalog) Merge(ctx context.Context, repositoryID string, destinationBranch string, sourceRef string,
-	committer string, message string, metadata Metadata, strategy string,
-) (string, error) {
+func (c *Catalog) Merge(ctx context.Context, repositoryID string, destinationBranch string, sourceRef string, committer string, message string, metadata Metadata, strategy string) (string, error) {
 	destination := graveler.BranchID(destinationBranch)
 	source := graveler.Ref(sourceRef)
 	meta := graveler.Metadata(metadata)
