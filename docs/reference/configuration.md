@@ -96,10 +96,11 @@ This reference uses `.` to denote the nesting of values.
 * `auth.oidc.url` `(string : )` - The base URL of your OIDC compatible identity provider.
 * `auth.oidc.callback_base_url` `(string : )` - The scheme, host and port of your lakeFS installation. After authenticating, your identity provider will redirect you to a URL under this base.
 * `auth.oidc.default_initial_groups` `(string[] : [])` - By default, OIDC users will be assigned to these groups
-* `auth.oidc.initial_groups_claim_name` `(string[] : [])` - Use this claim from the ID token to provide the initial group for new users.
+* `auth.oidc.initial_groups_claim_name` `(string[] : [])` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.oidc.default_initial_groups` is also set. 
 * `auth.oidc.friendly_name_claim_name` `(string[] : )` - If specified, the value from the claim with this name will be used as the user's display name.
 * `auth.oidc.authorize_endpoint_query_parameters` `(map[string]string : )` - Add these parameters when calling the provider's `/authorize` endpoint
 * `auth.oidc.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
+* `auth.oidc.additional_scope_claims` `(string[]: [])` - Add these additional scopes/claims to the OIDC user token. `openid` and `profile` are provided already. 
 * `blockstore.type` `(one of ["local", "s3", "gs", "azure", "mem"] : required)`. Block adapter to use. This controls where the underlying data will be stored
 * `blockstore.default_namespace_prefix` `(string : )` - Use this to help your users choose a storage namespace for their repositories. 
    If specified, the storage namespace will be filled with this default value as a prefix when creating a repository from the UI.
