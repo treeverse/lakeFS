@@ -9,9 +9,8 @@ has_children: false
 
 ---
 **Note:**
-Currently, Airbyte and lakeFS integration is broken on the latest Airbyte version ([link to issue #11871](https://github.com/airbytehq/airbyte/issues/11871)).  
-Until this issue is resolved, use the last known working version of Airbyte: [`v0.40.2`](https://github.com/airbytehq/airbyte/releases/tag/v0.40.2)
-Please note that this also affects the use of lakeFS and Airbyte Cloud.
+If using Airbyte OSS, please ensure you are using S3 destination connector version [0.3.17 or higher](https://docs.airbyte.com/integrations/destinations/s3#changelog).   
+Previous connector versions are not supported.
 {: .note}
 ---
 
@@ -30,7 +29,7 @@ The integration between the two open-source projects brings resilience and manag
 connectors to sync data to your S3 buckets by leveraging lakeFS branches and atomic commits and merges.
 
 ## Use cases
-You can take advantage of lakeFS consistency guarantees and [CI/CD capabilities](../using_lakefs/ci.md) when ingesting data to S3 using lakeFS:
+You can take advantage of lakeFS consistency guarantees and [Data Lifecycle Management](../data_lifecycle_management) when ingesting data to S3 using lakeFS:
 
 1. Consolidate many data sources to a single branch and expose them to consumers simultaneously when merging to the `main` branch.
 1. Test incoming data for breaking schema changes using [lakeFS hooks](../setup/hooks.md).
@@ -45,19 +44,14 @@ You can use Airbyte's [S3 Destination](https://airbyte.io/destinations/s3) to up
 ### Configuring lakeFS using the connector
 Set the following parameters when creating a new Destination of type S3:
 
-| Name             | Value                                                        | Example                                                                                                             |
-|------------------|--------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
-| Endpoint         | The lakeFS S3 gateway URL                                    | `https://cute-axolotol.lakefs-demo.io`
-| S3 Bucket Name   | The lakeFS repository where the data will be written         | `example-repo`                                                                                                      |
+| Name             | Value                                                        | Example                                                                                                         |
+|------------------|--------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
+| Endpoint         | The lakeFS S3 gateway URL                                    | `https://cute-axolotol.lakefs-demo.io`                                                                          |
+| S3 Bucket Name   | The lakeFS repository where the data will be written         | `example-repo`                                                                                                  |
 | S3 Bucket Path   | The branch and the path where the data will be written       | `main/data/from/airbyte` Where `main` is the branch name, and `data/from/airbyte` is the path under the branch. |
-| S3 Bucket Region | Not applicable to lakeFS, use `us-east-1`                    | `us-east-1`                                                                                                         |
-| S3 Key ID        | The lakeFS access key id used to authenticate to lakeFS.     | `AKIAlakefs12345EXAMPLE`                                                                                            |
-| S3 Access Key    | The lakeFS secret access key used to authenticate to lakeFS. | `abc/lakefs/1234567bPxRfiCYEXAMPLEKEY`                                                                              |
-
-**Note**
-The S3 Destination connector supports custom S3 endpoints starting with Airbyte's version
-[`v0.26.0-alpha`](https://github.com/airbytehq/airbyte/releases/tag/v0.26.0-alpha) released on Jun 17th 2021
-{: .note}
+| S3 Bucket Region | Not applicable to lakeFS, use `us-east-1`                    | `us-east-1`                                                                                                     |
+| S3 Key ID        | The lakeFS access key id used to authenticate to lakeFS.     | `AKIAlakefs12345EXAMPLE`                                                                                        |
+| S3 Access Key    | The lakeFS secret access key used to authenticate to lakeFS. | `abc/lakefs/1234567bPxRfiCYEXAMPLEKEY`                                                                          |
 
 The UI configuration will look as follows:
 
