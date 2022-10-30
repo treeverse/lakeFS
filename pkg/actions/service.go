@@ -1,6 +1,6 @@
 package actions
 
-//go:generate mockgen -package=mock -destination=mock/mock_actions.go github.com/treeverse/lakefs/pkg/actions Source,OutputWriter
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mock -destination=mock/mock_actions.go github.com/treeverse/lakefs/pkg/actions Source,OutputWriter
 
 import (
 	"bytes"

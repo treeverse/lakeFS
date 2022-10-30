@@ -92,7 +92,7 @@ docs: docs/assets/js/swagger.yml
 docs-serve: ### Serve local docs
 	cd docs; bundle exec jekyll serve
 
-gen-docs: go-install ## Generate CLI docs automatically
+gen-docs: ## Generate CLI docs automatically
 	$(GOCMD) run cmd/lakectl/main.go docs > docs/reference/commands.md
 
 gen-metastore: ## Run Metastore Code generation
@@ -102,8 +102,6 @@ go-mod-download: ## Download module dependencies
 	$(GOCMD) mod download
 
 go-install: go-mod-download ## Install dependencies
-	$(GOCMD) install github.com/deepmap/oapi-codegen/cmd/oapi-codegen
-	$(GOCMD) install github.com/golang/mock/mockgen
 	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
 	$(GOCMD) install google.golang.org/protobuf/cmd/protoc-gen-go
 
@@ -141,12 +139,12 @@ package-python: client-python
 
 package: package-python
 
-gen-api: go-install ## Run the swagger code generator
+gen-api: ## Run the swagger code generator
 	$(GOGENERATE) ./pkg/api
 	$(GOGENERATE) ./pkg/auth
 
 .PHONY: gen-code
-gen-code: go-install ## Run the generator for inline commands
+gen-code: gen-api ## Run the generator for inline commands
 	$(GOGENERATE) \
 		./pkg/actions \
 		./pkg/auth \
@@ -231,7 +229,7 @@ $(UI_DIR)/node_modules:
 gen-ui: $(UI_DIR)/node_modules  ## Build UI web app
 	cd $(UI_DIR) && $(NPM) run build
 
-proto: ## Build proto (Protocol Buffers) files
+proto: go-install ## Build proto (Protocol Buffers) files
 	$(PROTOC) --proto_path=pkg/catalog --go_out=pkg/catalog --go_opt=paths=source_relative catalog.proto
 	$(PROTOC) --proto_path=pkg/graveler/committed --go_out=pkg/graveler/committed --go_opt=paths=source_relative committed.proto
 	$(PROTOC) --proto_path=pkg/graveler --go_out=pkg/graveler --go_opt=paths=source_relative graveler.proto
@@ -254,4 +252,4 @@ help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # helpers
-gen: gen-api gen-ui gen-code clients gen-docs
+gen: gen-ui gen-code clients gen-docs
