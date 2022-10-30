@@ -26,11 +26,14 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.http.HttpStatus;
 
 import com.google.common.base.Preconditions;
-
+import com.google.common.hash.Hashing;
+import com.google.common.hash.HashFunction;
+    
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 // TODO(ariels): For Hadoop 3, it is enough (and better!) to extend PathOutputCommitter.
 public class DummyOutputCommitter extends FileOutputCommitter {
@@ -79,16 +82,30 @@ public class DummyOutputCommitter extends FileOutputCommitter {
      */
     protected Path workPath = null;
 
+    private static HashFunction hash = Hashing.sha256();
+    private static Charset utf8 = Charset.forName("utf8");
+
+    /*
+     * BUG(ariels): This is based on the outputPath, the only thing that
+     *     works.  It will need to be changed for multiwriter -- need to
+     *     depend on a configured algorithm here!
+     */
+    protected String pathToBranch(Path p) {
+        String path = p.toString();
+        // TODO(ariels): Use a more compact encoding (base-36?)
+        String digest = hash.hashString(path, utf8).toString();
+        String pathPrefix = path.length() > 128 ? path.substring(0, 128) : path;
+        return digest + "-" + pathPrefix.replaceAll("[^-_a-zA-Z0-9]", "-");
+    }
+
     public DummyOutputCommitter(Path outputPath, JobContext context) throws IOException {
         super(outputPath, context);
         // TODO(lynn): Create lakeFS API client.
 
         JobID id = context.getJobID();
-        // BUG(ariels): Clean up job name.  It is selected by user and might
-        // contain illegal characters.
-        this.jobBranch = context.getJobName().isEmpty() ?
-            id.toString() :
-            String.format("%s-%s", context.getJobName(), id.toString());
+
+        this.jobBranch = pathToBranch(outputPath);
+
         LOG.info("Construct OC: Job branch: {}", jobBranch);
 
         if (outputPath != null) {
