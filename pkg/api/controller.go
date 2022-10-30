@@ -2326,7 +2326,7 @@ func (c *Controller) DeleteGarbageCollectionRules(w http.ResponseWriter, r *http
 func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *http.Request, body PrepareGarbageCollectionCommitsJSONRequestBody, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.PrepareGarbageCollectionCommitsAction,
+			Action:   permissions.PrepareGarbageCollectionAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {
