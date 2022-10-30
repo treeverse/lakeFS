@@ -3,6 +3,8 @@ package graveler
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -508,6 +510,10 @@ type VersionController interface {
 	// If a previousRunID is specified, commits that were already expired and their ancestors will not be considered as expired/active.
 	// Note: Ancestors of previously expired commits may still be considered if they can be reached from a non-expired commit.
 	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, previousRunID string) (garbageCollectionRunMetadata *GarbageCollectionRunMetadata, err error)
+
+	// SaveGarbageCollectionUncommitted saves the list of uncommitted objects as a parquet file in run id path
+	// Returns the run ID and the location of the saved parquet file
+	SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, runID string, mark GCUncommittedMark) (*GarbageCollectionRunMetadata, *string, error)
 
 	// GetBranchProtectionRules return all branch protection rules for the repository
 	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error)
@@ -1284,6 +1290,76 @@ func (g *KVGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositor
 		CommitsCsvLocation: commitsLocation,
 		AddressLocation:    addressLocation,
 	}, err
+}
+
+type GCUncommittedMark struct {
+	BranchID BranchID `json:"branch"`
+	Key      Key      `json:"key"`
+}
+
+func markToString(mark GCUncommittedMark) (string, error) {
+	var buf bytes.Buffer
+	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
+	err := json.NewEncoder(encoder).Encode(mark)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+func (g *KVGraveler) SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, runID string, mark GCUncommittedMark) (*GarbageCollectionRunMetadata, *string, error) {
+	const maxObjects = 1000000
+	if runID == "" {
+		// TODO: Modify using a run ID generator (https://github.com/treeverse/lakeFS/issues/4469)
+		runID = uuid.New().String()
+	}
+	md := &GarbageCollectionRunMetadata{
+		RunId:               runID,
+		UncommittedLocation: fmt.Sprintf("_lakefs/gc/%s/uncommitted", runID),
+	}
+	bItr, err := g.ListBranches(ctx, repository)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer bItr.Close()
+	bItr.SeekGE(mark.BranchID)
+
+	count := 0
+	for bItr.Next() {
+		b := bItr.Value()
+		itr, err := g.listStagingArea(ctx, b.Branch)
+		if err != nil {
+			itr.Close()
+			return nil, nil, err
+		}
+		itr.SeekGE(mark.Key)
+		for itr.Next() {
+			entry := itr.Value()
+			count += 1
+			// TODO: create uncommitted data
+			if count >= maxObjects {
+				contToken, err := markToString(GCUncommittedMark{
+					BranchID: b.BranchID,
+					Key:      entry.Key,
+				})
+				if err != nil {
+					return nil, nil, err
+				}
+				return md, &contToken, nil
+			}
+			itr.Close()
+			if itr.Err() != nil {
+				return nil, nil, itr.Err()
+			}
+		}
+		itr.Close()
+	}
+	if bItr.Err() != nil {
+		return nil, nil, bItr.Err()
+	}
+
+	// Finished iteration without reaching object limit  - no continuation token
+	return md, nil, nil
 }
 
 func (g *KVGraveler) GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error) {

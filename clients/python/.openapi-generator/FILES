@@ -24,8 +24,11 @@ docs/Diff.md
 docs/DiffList.md
 docs/Error.md
 docs/ForgotPasswordRequest.md
+docs/GCUncommittedPagination.md
 docs/GarbageCollectionPrepareRequest.md
 docs/GarbageCollectionPrepareResponse.md
+docs/GarbageCollectionPrepareUncommittedRequest.md
+docs/GarbageCollectionPrepareUncommittedResponse.md
 docs/GarbageCollectionRule.md
 docs/GarbageCollectionRules.md
 docs/Group.md
@@ -128,8 +131,11 @@ lakefs_client/model/error.py
 lakefs_client/model/forgot_password_request.py
 lakefs_client/model/garbage_collection_prepare_request.py
 lakefs_client/model/garbage_collection_prepare_response.py
+lakefs_client/model/garbage_collection_prepare_uncommitted_request.py
+lakefs_client/model/garbage_collection_prepare_uncommitted_response.py
 lakefs_client/model/garbage_collection_rule.py
 lakefs_client/model/garbage_collection_rules.py
+lakefs_client/model/gc_uncommitted_pagination.py
 lakefs_client/model/group.py
 lakefs_client/model/group_creation.py
 lakefs_client/model/group_list.py
@@ -211,8 +217,11 @@ test/test_error.py
 test/test_forgot_password_request.py
 test/test_garbage_collection_prepare_request.py
 test/test_garbage_collection_prepare_response.py
+test/test_garbage_collection_prepare_uncommitted_request.py
+test/test_garbage_collection_prepare_uncommitted_response.py
 test/test_garbage_collection_rule.py
 test/test_garbage_collection_rules.py
+test/test_gc_uncommitted_pagination.py
 test/test_group.py
 test/test_group_creation.py
 test/test_group_list.py

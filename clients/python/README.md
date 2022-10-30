@@ -190,6 +190,7 @@ Class | Method | HTTP request | Description
 *RetentionApi* | [**delete_garbage_collection_rules**](docs/RetentionApi.md#delete_garbage_collection_rules) | **DELETE** /repositories/{repository}/gc/rules | 
 *RetentionApi* | [**get_garbage_collection_rules**](docs/RetentionApi.md#get_garbage_collection_rules) | **GET** /repositories/{repository}/gc/rules | 
 *RetentionApi* | [**prepare_garbage_collection_commits**](docs/RetentionApi.md#prepare_garbage_collection_commits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active and expired commits for garbage collection
+*RetentionApi* | [**prepare_garbage_collection_uncommitted**](docs/RetentionApi.md#prepare_garbage_collection_uncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommitted | save lists of uncommitted objects for garbage collection
 *RetentionApi* | [**set_garbage_collection_rules**](docs/RetentionApi.md#set_garbage_collection_rules) | **POST** /repositories/{repository}/gc/rules | 
 *StagingApi* | [**get_physical_address**](docs/StagingApi.md#get_physical_address) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
 *StagingApi* | [**link_physical_address**](docs/StagingApi.md#link_physical_address) | **PUT** /repositories/{repository}/branches/{branch}/staging/backing | associate staging on this physical address with a path
@@ -220,8 +221,11 @@ Class | Method | HTTP request | Description
  - [DiffList](docs/DiffList.md)
  - [Error](docs/Error.md)
  - [ForgotPasswordRequest](docs/ForgotPasswordRequest.md)
+ - [GCUncommittedPagination](docs/GCUncommittedPagination.md)
  - [GarbageCollectionPrepareRequest](docs/GarbageCollectionPrepareRequest.md)
  - [GarbageCollectionPrepareResponse](docs/GarbageCollectionPrepareResponse.md)
+ - [GarbageCollectionPrepareUncommittedRequest](docs/GarbageCollectionPrepareUncommittedRequest.md)
+ - [GarbageCollectionPrepareUncommittedResponse](docs/GarbageCollectionPrepareUncommittedResponse.md)
  - [GarbageCollectionRule](docs/GarbageCollectionRule.md)
  - [GarbageCollectionRules](docs/GarbageCollectionRules.md)
  - [Group](docs/Group.md)

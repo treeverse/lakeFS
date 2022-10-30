@@ -133,6 +133,7 @@ type Interface interface {
 	GetGarbageCollectionRules(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRules, error)
 	SetGarbageCollectionRules(ctx context.Context, repositoryID string, rules *graveler.GarbageCollectionRules) error
 	PrepareExpiredCommits(ctx context.Context, repositoryID string, previousRunID string) (*graveler.GarbageCollectionRunMetadata, error)
+	PrepareGCUncommitted(ctx context.Context, repositoryID, runID, branches string) (*graveler.GarbageCollectionRunMetadata, *string, error)
 
 	GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, error)
 	DeleteBranchProtectionRule(ctx context.Context, repositoryID string, pattern string) error

@@ -978,6 +978,51 @@ components:
         - gc_commits_location
         - gc_addresses_location
 
+    GCUncommittedPagination:
+      type: object
+      required:
+        - has_more
+        - last_key
+      properties:
+        has_more:
+          type: boolean
+          description: More keys to be ingested.
+        continuation_token:
+          type: string
+          description: Opaque. Token used to for GC uncommitted next branches.
+        last_key:
+          type: string
+          description: Last object store key that was ingested.
+
+    GarbageCollectionPrepareUncommittedRequest:
+      type: object
+      properties:
+        run_id:
+          type: string
+          description: run id of the GC job, will create a new id if not provided
+          example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
+        continuation_token:
+          type: string
+          description: Opaque. Client should pass the continuation_token received from server to continue creation of uncommitted data from the same key.
+
+    GarbageCollectionPrepareUncommittedResponse:
+      type: object
+      properties:
+        run_id:
+          type: string
+          description: a unique identifier generated for this GC job
+          example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
+        gc_uncommitted_location:
+          type: string
+          description: location of the resulting uncommitted objects parquet file
+          example: s3://my-storage-namespace/_lakefs/gc/<run_id>/
+        pagination:
+          $ref: '#/components/schemas/GCUncommittedPagination'
+      required:
+        - run_id
+        - gc_uncommitted_location
+        - pagination
+
     GarbageCollectionRule:
       type: object
       properties:
@@ -3424,6 +3469,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GarbageCollectionPrepareResponse"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+  /repositories/{repository}/gc/prepare_uncommitted:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GarbageCollectionPrepareUncommittedRequest"
+      tags:
+        - retention
+      operationId: prepareGarbageCollectionUncommitted
+      summary: save lists of uncommitted objects for garbage collection
+      responses:
+        201:
+          description: paths to uncommitted datasets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarbageCollectionPrepareUncommittedResponse"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:

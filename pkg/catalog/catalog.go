@@ -6,6 +6,8 @@ import (
 	"context"
 	"crypto"
 	_ "crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -1709,6 +1711,25 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string
 		return nil, err
 	}
 	return c.Store.SaveGarbageCollectionCommits(ctx, repository, previousRunID)
+}
+
+func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID, runID, contToken string) (*graveler.GarbageCollectionRunMetadata, *string, error) {
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+	}); err != nil {
+		return nil, nil, err
+	}
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var mark graveler.GCUncommittedMark
+	err = json.NewDecoder(base64.NewDecoder(base64.StdEncoding, strings.NewReader(contToken))).Decode(&mark)
+	if err != nil {
+		return nil, nil, err
+	}
+	return c.Store.SaveGarbageCollectionUncommitted(ctx, repository, runID, mark)
 }
 
 func (c *Catalog) Close() error {

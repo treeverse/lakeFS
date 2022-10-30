@@ -2345,6 +2345,37 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	})
 }
 
+// PrepareGarbageCollectionUncommitted Creates parquet file containing list of uncommitted objects from branches
+// Performs action in bulks and returns a pagination key for continuation
+func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter,
+	r *http.Request,
+	body PrepareGarbageCollectionUncommittedJSONRequestBody,
+	repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.PrepareGarbageCollectionCommitsAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	contToken := swag.StringValue(body.ContinuationToken)
+	gcRUnMetadata, newToken, err := c.Catalog.PrepareGCUncommitted(ctx, repository, swag.StringValue(body.RunId), contToken)
+	if c.handleAPIError(ctx, w, err) {
+		return
+	}
+	writeResponse(w, http.StatusCreated, GarbageCollectionPrepareUncommittedResponse{
+		GcUncommittedLocation: gcRUnMetadata.UncommittedLocation,
+		Pagination: GCUncommittedPagination{
+			ContinuationToken: newToken,
+			HasMore:           false,
+			LastKey:           "",
+		},
+		RunId: gcRUnMetadata.RunId,
+	})
+}
+
 func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Request, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{

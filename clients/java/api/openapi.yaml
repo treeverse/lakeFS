@@ -4253,6 +4253,52 @@ paths:
       - retention
       x-contentType: application/json
       x-accepts: application/json
+  /repositories/{repository}/gc/prepare_uncommitted:
+    post:
+      operationId: prepareGarbageCollectionUncommitted
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GarbageCollectionPrepareUncommittedRequest'
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GarbageCollectionPrepareUncommittedResponse'
+          description: paths to uncommitted datasets
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: save lists of uncommitted objects for garbage collection
+      tags:
+      - retention
+      x-contentType: application/json
+      x-accepts: application/json
   /repositories/{repository}/branch_protection:
     delete:
       operationId: deleteBranchProtectionRule
@@ -5841,6 +5887,63 @@ components:
       required:
       - gc_addresses_location
       - gc_commits_location
+      - run_id
+      type: object
+    GCUncommittedPagination:
+      example:
+        continuation_token: continuation_token
+        has_more: true
+        last_key: last_key
+      properties:
+        has_more:
+          description: More keys to be ingested.
+          type: boolean
+        continuation_token:
+          description: Opaque. Token used to for GC uncommitted next branches.
+          type: string
+        last_key:
+          description: Last object store key that was ingested.
+          type: string
+      required:
+      - has_more
+      - last_key
+      type: object
+    GarbageCollectionPrepareUncommittedRequest:
+      example:
+        continuation_token: continuation_token
+        run_id: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
+      properties:
+        run_id:
+          description: run id of the GC job, will create a new id if not provided
+          example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
+          type: string
+        continuation_token:
+          description: Opaque. Client should pass the continuation_token received
+            from server to continue creation of uncommitted data from the same key.
+          type: string
+      type: object
+    GarbageCollectionPrepareUncommittedResponse:
+      example:
+        run_id: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
+        pagination:
+          continuation_token: continuation_token
+          has_more: true
+          last_key: last_key
+        gc_uncommitted_location: s3://my-storage-namespace/_lakefs/gc/<run_id>/
+      properties:
+        run_id:
+          description: a unique identifier generated for this GC job
+          example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
+          type: string
+        gc_uncommitted_location:
+          description: location of the resulting uncommitted objects parquet file
+          example: s3://my-storage-namespace/_lakefs/gc/<run_id>/
+          type: string
+        pagination:
+          $ref: '#/components/schemas/GCUncommittedPagination'
+      required:
+      - gc_uncommitted_location
+      - pagination
       - run_id
       type: object
     GarbageCollectionRule:

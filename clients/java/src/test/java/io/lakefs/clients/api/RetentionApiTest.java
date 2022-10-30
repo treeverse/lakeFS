@@ -17,6 +17,8 @@ import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.GarbageCollectionPrepareRequest;
 import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse;
+import io.lakefs.clients.api.model.GarbageCollectionPrepareUncommittedRequest;
+import io.lakefs.clients.api.model.GarbageCollectionPrepareUncommittedResponse;
 import io.lakefs.clients.api.model.GarbageCollectionRules;
 import org.junit.Test;
 import org.junit.Ignore;
@@ -78,6 +80,22 @@ public class RetentionApiTest {
         String repository = null;
         GarbageCollectionPrepareRequest garbageCollectionPrepareRequest = null;
                 GarbageCollectionPrepareResponse response = api.prepareGarbageCollectionCommits(repository, garbageCollectionPrepareRequest);
+        // TODO: test validations
+    }
+    
+    /**
+     * save lists of uncommitted objects for garbage collection
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void prepareGarbageCollectionUncommittedTest() throws ApiException {
+        String repository = null;
+        GarbageCollectionPrepareUncommittedRequest garbageCollectionPrepareUncommittedRequest = null;
+                GarbageCollectionPrepareUncommittedResponse response = api.prepareGarbageCollectionUncommitted(repository, garbageCollectionPrepareUncommittedRequest);
         // TODO: test validations
     }
     
