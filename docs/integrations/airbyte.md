@@ -9,7 +9,7 @@ has_children: false
 
 ---
 **Note:**
-If using Airbyte OSS, please ensure you are using S3 destination connector version 0.3.17 or higher.   
+If using Airbyte OSS, please ensure you are using S3 destination connector version [0.3.17 or higher](https://docs.airbyte.com/integrations/destinations/s3#changelog).   
 Previous connector versions are not supported.
 {: .note}
 ---
@@ -29,7 +29,7 @@ The integration between the two open-source projects brings resilience and manag
 connectors to sync data to your S3 buckets by leveraging lakeFS branches and atomic commits and merges.
 
 ## Use cases
-You can take advantage of lakeFS consistency guarantees and [CI/CD capabilities](../data_lifecycle_management) when ingesting data to S3 using lakeFS:
+You can take advantage of lakeFS consistency guarantees and [Data Lifecycle Management](../data_lifecycle_management) when ingesting data to S3 using lakeFS:
 
 1. Consolidate many data sources to a single branch and expose them to consumers simultaneously when merging to the `main` branch.
 1. Test incoming data for breaking schema changes using [lakeFS hooks](../setup/hooks.md).
