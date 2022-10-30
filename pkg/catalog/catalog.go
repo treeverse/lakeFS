@@ -19,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
+	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/branch"
@@ -110,6 +111,13 @@ type Config struct {
 	Config        *config.Config
 	KVStore       *kv.StoreMessage
 	WalkerFactory WalkerFactory
+	CacheFactory  CacheFactory
+}
+
+// CacheFactory provides an abstraction for creating cache.
+// Use in tests to override
+type CacheFactory interface {
+	GetCache() cache.Cache
 }
 
 type Catalog struct {
@@ -204,6 +212,10 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	refManager := ref.NewKVRefManager(executor, *cfg.KVStore, ident.NewHexAddressProvider(), nil)
 	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
 	settingManager := settings.NewManager(refManager, *cfg.KVStore)
+	if cfg.CacheFactory != nil {
+		settingManager.WithCache(cfg.CacheFactory.GetCache())
+	}
+
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
 	stagingManager := staging.NewManager(ctx, *cfg.KVStore)
 	gStore := graveler.NewKVGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)

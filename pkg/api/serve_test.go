@@ -21,6 +21,7 @@ import (
 	authmodel "github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
@@ -88,6 +89,12 @@ func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) 
 	}
 }
 
+type cacheFactory struct{}
+
+func (f *cacheFactory) GetCache() cache.Cache {
+	return cache.NoCache
+}
+
 func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) (http.Handler, *dependencies) {
 	t.Helper()
 	ctx := context.Background()
@@ -112,6 +119,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		Config:        cfg,
 		KVStore:       kvStoreMessage,
 		WalkerFactory: factory,
+		CacheFactory:  &cacheFactory{},
 	})
 	testutil.MustDo(t, "build catalog", err)
 
