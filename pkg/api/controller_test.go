@@ -2814,6 +2814,33 @@ func TestController_Revert(t *testing.T) {
 		}
 	})
 
+	t.Run("revert_no_parent", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		// setup data - repo with one object committed
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.Must(t, err)
+		err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "merge/foo/bar1", PhysicalAddress: "merge1bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"})
+		testutil.Must(t, err)
+		_, err = deps.catalog.Commit(ctx, repo, "main", "first", DefaultUserID, nil, nil, nil)
+		testutil.Must(t, err)
+		// create branch with one entry committed
+		_, err = deps.catalog.CreateBranch(ctx, repo, "branch1", "main")
+		testutil.Must(t, err)
+		err = deps.catalog.CreateEntry(ctx, repo, "branch1", catalog.DBEntry{Path: "merge/foo/bar2", PhysicalAddress: "merge2bar2addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum2"})
+		testutil.Must(t, err)
+		_, err = deps.catalog.Commit(ctx, repo, "branch1", "second", DefaultUserID, nil, nil, nil)
+		testutil.Must(t, err)
+		// merge branch1 to main
+		mergeRef, err := deps.catalog.Merge(ctx, repo, "main", "branch1", DefaultUserID, "merge to main", nil, "")
+		testutil.Must(t, err)
+
+		// revert changes should fail
+		revertResp, err := clt.RevertBranchWithResponse(ctx, repo, "main", api.RevertBranchJSONRequestBody{Ref: mergeRef})
+		testutil.Must(t, err)
+		if revertResp.JSON409 == nil || revertResp.JSON409.Message != graveler.ErrRevertMergeNoParent.Error() {
+			t.Errorf("Revert dirty merge no parent specified was expected, got %+v", revertResp)
+		}
+	})
 }
 
 func TestController_RevertConflict(t *testing.T) {
