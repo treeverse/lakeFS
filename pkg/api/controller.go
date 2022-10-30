@@ -1757,7 +1757,8 @@ func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, 
 		writeError(w, http.StatusBadRequest, err)
 
 	case errors.Is(err, graveler.ErrNotUnique),
-		errors.Is(err, graveler.ErrConflictFound):
+		errors.Is(err, graveler.ErrConflictFound),
+		errors.Is(err, graveler.ErrRevertMergeNoParent):
 		writeError(w, http.StatusConflict, err)
 
 	case errors.Is(err, catalog.ErrFeatureNotSupported):
