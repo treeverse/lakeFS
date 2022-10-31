@@ -1896,7 +1896,8 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	buf.WriteString("this is file content made up of bytes")
-	blob, err := upload.WriteBlob(context.Background(), deps.blocks, "ns1", buf, 37, block.PutOpts{StorageClass: &expensiveString})
+	address := upload.DefaultPathProvider.NewPath()
+	blob, err := upload.WriteBlob(context.Background(), deps.blocks, "ns1", address, buf, 37, block.PutOpts{StorageClass: &expensiveString})
 	if err != nil {
 		t.Fatal(err)
 	}

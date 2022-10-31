@@ -1,7 +1,6 @@
 package operations
 
 import (
-	"encoding/hex"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -10,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
@@ -51,11 +49,10 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNoSuchBucket))
 		return
 	}
-	uuidBytes := [16]byte(uuid.New())
-	objName := hex.EncodeToString(uuidBytes[:])
+	address := o.PathProvider.NewPath()
 	storageClass := StorageClassFromHeader(req.Header)
 	opts := block.CreateMultiPartUploadOpts{StorageClass: storageClass}
-	resp, err := o.BlockStore.CreateMultiPartUpload(req.Context(), block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName}, req, opts)
+	resp, err := o.BlockStore.CreateMultiPartUpload(req.Context(), block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: address}, req, opts)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not create multipart upload")
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
@@ -65,7 +62,7 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 		UploadID:        resp.UploadID,
 		Path:            o.Path,
 		CreationDate:    time.Now(),
-		PhysicalAddress: objName,
+		PhysicalAddress: address,
 		Metadata:        map[string]string(amzMetaAsMetadata(req)),
 		ContentType:     req.Header.Get("Content-Type"),
 	}

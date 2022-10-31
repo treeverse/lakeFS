@@ -40,6 +40,10 @@ const (
 
 type ActionIncr func(action, repository, ref, userID string)
 
+type UploadPathProvider interface {
+	NewPath() string
+}
+
 type Operation struct {
 	OperationID       OperationID
 	Region            string
@@ -50,6 +54,7 @@ type Operation struct {
 	Auth              auth.GatewayService
 	Incr              ActionIncr
 	MatchedHost       bool
+	PathProvider      UploadPathProvider
 }
 
 func StorageClassFromHeader(header http.Header) *string {

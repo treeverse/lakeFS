@@ -56,9 +56,10 @@ type ServerContext struct {
 	blockStore        block.Adapter
 	authService       auth.GatewayService
 	stats             stats.Collector
+	pathProvider      operations.UploadPathProvider
 }
 
-func NewHandler(region string, catalog catalog.Interface, multipartsTracker multiparts.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool) http.Handler {
+func NewHandler(region string, catalog catalog.Interface, multipartsTracker multiparts.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider operations.UploadPathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool) http.Handler {
 	var fallbackHandler http.Handler
 	if fallbackURL != nil {
 		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)
@@ -81,6 +82,7 @@ func NewHandler(region string, catalog catalog.Interface, multipartsTracker mult
 		blockStore:        blockStore,
 		authService:       authService,
 		stats:             stats,
+		pathProvider:      pathProvider,
 	}
 
 	// setup routes

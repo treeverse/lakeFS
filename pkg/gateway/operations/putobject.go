@@ -304,7 +304,8 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("put_object", o.Principal, o.Repository.Name, o.Reference)
 	storageClass := StorageClassFromHeader(req.Header)
 	opts := block.PutOpts{StorageClass: storageClass}
-	blob, err := upload.WriteBlob(req.Context(), o.BlockStore, o.Repository.StorageNamespace, req.Body, req.ContentLength, opts)
+	address := o.PathProvider.NewPath()
+	blob, err := upload.WriteBlob(req.Context(), o.BlockStore, o.Repository.StorageNamespace, address, req.Body, req.ContentLength, opts)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write request body to block adapter")
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))

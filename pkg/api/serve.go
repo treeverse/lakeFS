@@ -59,6 +59,7 @@ func Serve(
 	snippets []params.CodeSnippet,
 	oidcProvider *oidc.Provider,
 	oauthConfig *oauth2.Config,
+	pathProvider UploadPathProvider,
 ) http.Handler {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := GetSwagger()
@@ -99,6 +100,7 @@ func Serve(
 		templater,
 		oidcAuthenticator,
 		sessionStore,
+		pathProvider,
 	)
 	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
 
