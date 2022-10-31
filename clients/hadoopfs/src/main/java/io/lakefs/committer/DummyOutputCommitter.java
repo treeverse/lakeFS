@@ -39,7 +39,7 @@ import java.nio.charset.Charset;
 public class DummyOutputCommitter extends FileOutputCommitter {
     private static final Logger LOG = LoggerFactory.getLogger(DummyOutputCommitter.class);
 
-    private static final String branchNamePrefix = "lakeFS-OC-";
+    private static final String branchNamePrefix = "lakeFS-OC";
 
     /**
      * API client connected to the lakeFS server used on the filesystem.
@@ -159,6 +159,16 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         }
     }
 
+    private void deleteBranch(String branch) throws IOException {
+        LOG.info("Cleanup branch {}", branch);
+        try {
+            BranchesApi branches = lakeFSClient.getBranches();
+            branches.deleteBranch(repository, branch);
+        } catch (ApiException e) {
+            throw new IOException(String.format("deleteBranch %s failed", branch), e);
+        }
+    }
+
     // TODO(ariels): Need to override getJobAttemptPath,
     // getPendingJobAttemptPath (which is *static*, what do we do???!?)
 
@@ -235,6 +245,11 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         createBranch(taskBranch, jobBranch);
     }
 
+    private void cleanupTask() throws IOException {
+        // TODO(ariels): Configure whether to clean up these branches.
+        deleteBranch(taskBranch);
+    }
+
     @Override
     public void commitTask(TaskAttemptContext taskContext)
         throws IOException {
@@ -259,13 +274,24 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         } catch (ApiException e) {
             throw new IOException(String.format("commitTask %s failed", taskContext.getTaskAttemptID()), e);
         }
+        try {
+            deleteBranch(taskBranch);
+        } catch (IOException e) {
+            LOG.warn("Failed to delete task branch {} after merge (keep going)", taskBranch, e);
+        }
     }
 
+    @Override
     public void abortTask(TaskAttemptContext taskContext)
         throws IOException {    // TODO(lynn)
         if (outputPath == null)
             return;
-        LOG.info("TODO: Delete task branch %s", taskBranch);
+        try {
+            LOG.info("TODO: Delete task branch %s", taskBranch);
+            deleteBranch(taskBranch);
+        } catch (IOException e) {
+            LOG.warn("Failed to delete task branch {} while aborting (keep going)", taskBranch, e);
+        }
     }
 
     // TODO(lynn): More methods: isRecoverySupported, isCommitJobRepeatable, recoverTask.
