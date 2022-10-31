@@ -60,16 +60,12 @@ public class DummyOutputCommitter extends FileOutputCommitter {
     /**
      * Branch for this job.  Deleted if the job aborts.  Always defined,
      * even if this committer is a noop.
-     *
-     * TODO(ariels): Configurably delete even on job success.
      */
     protected String jobBranch = null;
 
     /**
      * Branch for this task.  Deleted if the task fails.  Always defined,
      * even if this committer is a noop.
-     *
-     * TODO(ariels): Configurably delete even on job success.
      */
     protected String taskBranch;
 
@@ -231,7 +227,6 @@ public class DummyOutputCommitter extends FileOutputCommitter {
             throw new IOException(String.format("commitJob %s failed", jobContext.getJobID()), e);
         }
         try {
-            // TODO(ariels): Configurable!
             cleanupJob();
         } catch (IOException e) {
             LOG.warn("Failed to delete task branch {} after merge (keep going)", taskBranch, e);
@@ -305,7 +300,6 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         if (outputPath == null)
             return;
         try {
-            LOG.info("TODO: Delete task branch %s", taskBranch);
             cleanupTask();
         } catch (IOException e) {
             LOG.warn("Failed to delete task branch {} while aborting (keep going)", taskBranch, e);
