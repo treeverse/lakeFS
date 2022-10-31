@@ -3,6 +3,8 @@ package graveler_test
 import (
 	"context"
 	"errors"
+	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog/testutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/mock"
+	"github.com/treeverse/lakefs/pkg/graveler/testutil"
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
@@ -546,4 +549,133 @@ func TestGravelerCommit_v2(t *testing.T) {
 		require.True(t, errors.Is(err, graveler.ErrTooManyTries))
 		require.Equal(t, val, graveler.CommitID(""))
 	})
+}
+
+func TestKVGraveler_GetGarbageCollectionUncommitted(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name       string
+		numBranch  int
+		numRecords int
+		offset     int
+	}{
+		{
+			name:       "no branches",
+			numBranch:  0,
+			numRecords: 0,
+		},
+		{
+			name:       "no objects",
+			numBranch:  3,
+			numRecords: 0,
+		},
+		{
+			name:       "Sanity",
+			numBranch:  5,
+			numRecords: 3,
+		},
+		{
+			name:       "Max objects",
+			numBranch:  1000,
+			numRecords: 1000,
+		},
+		{
+			name:       "Exceed max objects",
+			numBranch:  1000,
+			numRecords: 4321,
+		},
+		{
+			name:       "With mark",
+			numBranch:  1000,
+			numRecords: 2000,
+			offset:     2053,
+		},
+		{
+			name:       "WithMark after max",
+			numBranch:  1000,
+			numRecords: 2000,
+			offset:     graveler.GCMaxUncommittedObjects + 1234,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			test := createTestScenario(t, tt.numBranch, tt.numRecords, tt.offset)
+			mark := graveler.GCUncommittedMark{
+				BranchID: "",
+				Key:      []byte(""),
+			}
+			if tt.offset != 0 {
+				branchID := fmt.Sprintf("branch%04d", tt.offset/tt.numRecords)
+				mark.BranchID = graveler.BranchID(branchID)
+				mark.Key = graveler.Key(fmt.Sprintf("%s_record%04d", branchID, tt.offset%tt.numRecords))
+			}
+
+			list, NewMark, err := test.sut.GetGarbageCollectionUncommitted(ctx, repository, mark)
+			require.NoError(t, err)
+			totalRecords := tt.numRecords*tt.numBranch - tt.offset
+			totalExpected := math.Min(float64(totalRecords), graveler.GCMaxUncommittedObjects)
+			require.Equal(t, int(totalExpected), len(list))
+			if totalRecords <= graveler.GCMaxUncommittedObjects {
+				require.Nil(t, NewMark)
+			} else {
+				branch := (graveler.GCMaxUncommittedObjects + tt.offset) / tt.numRecords
+				recordID := (graveler.GCMaxUncommittedObjects + tt.offset) % tt.numRecords
+				branchID := graveler.BranchID(fmt.Sprintf("branch%04d", branch))
+				require.Equal(t, branchID, NewMark.BranchID)
+				key := fmt.Sprintf("%s_record%04d", branchID, recordID)
+				require.Equal(t, key, string(NewMark.Key))
+			}
+			verifyData(t, list, tt.numRecords, tt.offset)
+		})
+	}
+}
+
+func createTestScenario(t *testing.T, numBranches, numRecords, offset int) *gravelerTest {
+	t.Helper()
+	test := initGravelerTest(t)
+	records := make([][]*graveler.ValueRecord, numBranches)
+	var branches []*graveler.BranchRecord
+	for i := 0; i < numBranches; i++ {
+		branchID := graveler.BranchID(fmt.Sprintf("branch%04d", i))
+		token := graveler.StagingToken(fmt.Sprintf("%s_st%04d", branchID, i))
+		branches = append(branches, &graveler.BranchRecord{BranchID: branchID, Branch: &graveler.Branch{StagingToken: token}})
+
+		records[i] = make([]*graveler.ValueRecord, numRecords)
+		for j := 0; j < numRecords; j++ {
+			records[i][j] = &graveler.ValueRecord{
+				Key:   []byte(fmt.Sprintf("%s_record%04d", branchID, j)),
+				Value: nil,
+			}
+		}
+	}
+	test.refManager.EXPECT().ListBranches(gomock.Any(), repository).Return(testutil.NewFakeBranchIterator(branches), nil)
+	total := numBranches*numRecords - offset
+	branchOffset := 0
+	if numRecords > 0 {
+		branchOffset = offset / numRecords
+		total = int(math.Min(float64(total/numRecords), float64(graveler.GCMaxUncommittedObjects/numRecords+1)))
+		if offset > graveler.GCMaxUncommittedObjects {
+			total += 1
+		}
+	} else {
+		total = numBranches
+	}
+
+	for i := 0; i < total; i++ {
+		test.stagingManager.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(testutils.NewFakeValueIterator(records[i+branchOffset]), nil)
+	}
+
+	return test
+}
+
+func verifyData(t *testing.T, list []*graveler.ValueRecord, numRecords, offset int) {
+	for i := 0; i < len(list); i++ {
+		if i >= graveler.GCMaxUncommittedObjects {
+			return
+		}
+		branchID := (i + offset) / numRecords
+		recordID := (i + offset) % numRecords
+		require.Equal(t, fmt.Sprintf("branch%04d_record%04d", branchID, recordID), string(list[i].Key))
+	}
 }

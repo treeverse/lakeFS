@@ -50,8 +50,9 @@ message GarbageCollectionRules {
 
 message GarbageCollectionRunMetadata {
   string run_id = 1;
-  string Commits_csv_location = 2;
-  string Address_location = 3;
+  string commits_csv_location = 2;
+  string address_location = 3;
+  string uncommitted_location = 4;
 }
 
 enum BranchProtectionBlockedAction {

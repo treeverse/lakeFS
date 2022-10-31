@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/google/uuid"
@@ -17,9 +18,10 @@ import (
 )
 
 const (
-	configFileSuffixTemplate    = "%s/retention/gc/rules/config.json"
-	addressesFilePrefixTemplate = "%s/retention/gc/addresses/"
-	commitsFileSuffixTemplate   = "%s/retention/gc/commits/run_id=%s/commits.csv"
+	configFileSuffixTemplate      = "%s/retention/gc/rules/config.json"
+	addressesFilePrefixTemplate   = "%s/retention/gc/addresses/"
+	commitsFileSuffixTemplate     = "%s/retention/gc/commits/run_id=%s/commits.csv"
+	uncommittedFilePrefixTemplate = "%s/retention/gc/%s/uncommitted/"
 )
 
 type GarbageCollectionManager struct {
@@ -44,6 +46,41 @@ func (m *GarbageCollectionManager) GetAddressesLocation(sn graveler.StorageNames
 		return "", err
 	}
 	return qk.Format(), nil
+}
+
+func (m *GarbageCollectionManager) GetUncommittedLocation(runID string, sn graveler.StorageNamespace) (string, error) {
+	key := fmt.Sprintf(uncommittedFilePrefixTemplate, m.committedBlockStoragePrefix, runID)
+	qk, err := block.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)
+	if err != nil {
+		return "", err
+	}
+	return qk.Format(), nil
+}
+
+func (m *GarbageCollectionManager) SaveGarbageCollectionUncommitted(ctx context.Context, repository *graveler.RepositoryRecord, filename, runID string) error {
+	location, err := m.GetUncommittedLocation(runID, repository.StorageNamespace)
+	if err != nil {
+		return err
+	}
+
+	fd, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	stat, err := fd.Stat()
+	if err != nil {
+		return err
+	}
+
+	identifier := fmt.Sprintf("%s%s", location, filename)
+	err = m.blockAdapter.Put(ctx, block.ObjectPointer{
+		Identifier:     identifier,
+		IdentifierType: block.IdentifierTypeFull,
+	}, stat.Size(), fd, block.PutOpts{})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 type RepositoryCommitGetter struct {

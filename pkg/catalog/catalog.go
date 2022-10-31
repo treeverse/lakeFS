@@ -6,6 +6,8 @@ import (
 	"context"
 	"crypto"
 	_ "crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -14,6 +16,7 @@ import (
 
 	"github.com/alitto/pond"
 	"github.com/cockroachdb/pebble"
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 	lru "github.com/hnlq715/golang-lru"
 	"github.com/treeverse/lakefs/pkg/batch"
@@ -35,6 +38,9 @@ import (
 	"github.com/treeverse/lakefs/pkg/pyramid"
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
 	"github.com/treeverse/lakefs/pkg/validator"
+	"github.com/xitongsys/parquet-go-source/local"
+	"github.com/xitongsys/parquet-go/parquet"
+	"github.com/xitongsys/parquet-go/writer"
 	"go.uber.org/atomic"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -1718,6 +1724,99 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string
 		return nil, err
 	}
 	return c.Store.SaveGarbageCollectionCommits(ctx, repository, previousRunID)
+}
+
+func createParquetFile(entries []DBEntry) (string, error) {
+	// TODO: Modify using a run ID generator (https://github.com/treeverse/lakeFS/issues/4469)
+	filename := uuid.New().String()
+	fw, err := local.NewLocalFileWriter(filename)
+	if err != nil {
+		return "", err
+	}
+	defer fw.Close()
+	pw, err := writer.NewParquetWriter(fw, new(DBEntry), int64(len(entries)))
+	if err != nil {
+		return "", err
+	}
+	// Compression type
+	pw.CompressionType = parquet.CompressionCodec_GZIP
+	for _, entry := range entries {
+		if err = pw.Write(entry); err != nil {
+			return "", err
+		}
+	}
+	if err = pw.WriteStop(); err != nil {
+		return "", err
+	}
+	_, err = fw.Seek(0, 0)
+	if err != nil {
+		return "", err
+	}
+	return filename, nil
+}
+
+func markToString(mark *graveler.GCUncommittedMark) (*string, error) {
+	if mark == nil {
+		return nil, nil
+	}
+	var buf bytes.Buffer
+	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
+	err := json.NewEncoder(encoder).Encode(mark)
+	if err != nil {
+		return nil, err
+	}
+	result := buf.String()
+	return &result, nil
+}
+
+func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID, runID, contToken string) (*graveler.GarbageCollectionRunMetadata, *string, error) {
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+	}); err != nil {
+		return nil, nil, err
+	}
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	mark := graveler.GCUncommittedMark{
+		BranchID: "",
+		Key:      []byte(""),
+	}
+	if contToken != "" {
+		err = json.NewDecoder(base64.NewDecoder(base64.StdEncoding, strings.NewReader(contToken))).Decode(&mark)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	values, newMark, err := c.Store.GetGarbageCollectionUncommitted(ctx, repository, mark)
+	if err != nil {
+		return nil, nil, err
+	}
+	newToken, err := markToString(newMark)
+	if err != nil {
+		return nil, nil, err
+	}
+	var catalogEntries []DBEntry
+	for _, value := range values {
+		entry, err := ValueToEntry(value.Value)
+		if err != nil {
+			return nil, nil, err
+		}
+		catalogEntries = append(catalogEntries, newCatalogEntryFromEntry(false, "", entry))
+	}
+
+	filename, err := createParquetFile(catalogEntries)
+	if err != nil {
+		return nil, nil, err
+	}
+	md, err := c.Store.SaveGarbageCollectionUncommitted(ctx, repository, filename, runID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return md, newToken, nil
 }
 
 func (c *Catalog) Close() error {

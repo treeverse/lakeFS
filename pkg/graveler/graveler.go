@@ -31,6 +31,8 @@ const (
 
 	// BranchWriteMaxTries is the number of times to repeat the set operation if the staging token changed
 	BranchWriteMaxTries = 3
+
+	GCMaxUncommittedObjects = 1000000
 )
 
 // Basic Types
@@ -508,6 +510,13 @@ type VersionController interface {
 	// If a previousRunID is specified, commits that were already expired and their ancestors will not be considered as expired/active.
 	// Note: Ancestors of previously expired commits may still be considered if they can be reached from a non-expired commit.
 	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, previousRunID string) (garbageCollectionRunMetadata *GarbageCollectionRunMetadata, err error)
+
+	// GetGarbageCollectionUncommitted Returns a list of at most GCMaxUncommittedObjects uncommitted objects, and a continuation token in the form of GCUncommittedMark if needed.
+	GetGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, mark GCUncommittedMark) ([]*ValueRecord, *GCUncommittedMark, error)
+
+	// SaveGarbageCollectionUncommitted Uploads parquet file of uncommitted objects to the repository in the run ID path. Return the GC run's metadata
+	// including the run ID and the location of the saved parquet file
+	SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename, runID string) (*GarbageCollectionRunMetadata, error)
 
 	// GetBranchProtectionRules return all branch protection rules for the repository
 	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error)
@@ -1283,6 +1292,66 @@ func (g *KVGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositor
 		RunId:              runID,
 		CommitsCsvLocation: commitsLocation,
 		AddressLocation:    addressLocation,
+	}, err
+}
+
+type GCUncommittedMark struct {
+	BranchID BranchID `json:"branch"`
+	Key      Key      `json:"key"`
+}
+
+func (g *KVGraveler) GetGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, mark GCUncommittedMark) ([]*ValueRecord, *GCUncommittedMark, error) {
+	var entries []*ValueRecord
+	bItr, err := g.ListBranches(ctx, repository)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer bItr.Close()
+	bItr.SeekGE(mark.BranchID)
+
+	count := 0
+	for bItr.Next() {
+		b := bItr.Value()
+		itr, err := g.listStagingArea(ctx, b.Branch)
+		if err != nil {
+			bItr.Close()
+			return nil, nil, err
+		}
+		itr.SeekGE(mark.Key)
+		for itr.Next() {
+			count += 1
+			entry := itr.Value()
+			if count > GCMaxUncommittedObjects {
+				contToken := GCUncommittedMark{
+					BranchID: b.BranchID,
+					Key:      entry.Key,
+				}
+				return entries, &contToken, nil
+			}
+			entries = append(entries, entry)
+			itr.Close()
+			if itr.Err() != nil {
+				return nil, nil, itr.Err()
+			}
+		}
+		itr.Close()
+	}
+	return entries, nil, bItr.Err()
+}
+
+func (g *KVGraveler) SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename, runID string) (*GarbageCollectionRunMetadata, error) {
+	err := g.garbageCollectionManager.SaveGarbageCollectionUncommitted(ctx, repository, filename, runID)
+	if err != nil {
+		return nil, err
+	}
+	uncommittedLocation, err := g.garbageCollectionManager.GetUncommittedLocation(runID, repository.StorageNamespace)
+	if err != nil {
+		return nil, err
+	}
+
+	return &GarbageCollectionRunMetadata{
+		RunId:               runID,
+		UncommittedLocation: uncommittedLocation,
 	}, err
 }
 
@@ -2730,6 +2799,8 @@ type GarbageCollectionManager interface {
 	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, rules *GarbageCollectionRules, previouslyExpiredCommits []CommitID) (string, error)
 	GetRunExpiredCommits(ctx context.Context, storageNamespace StorageNamespace, runID string) ([]CommitID, error)
 	GetCommitsCSVLocation(runID string, sn StorageNamespace) (string, error)
+	SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename, runID string) error
+	GetUncommittedLocation(runID string, sn StorageNamespace) (string, error)
 	GetAddressesLocation(sn StorageNamespace) (string, error)
 }
 
