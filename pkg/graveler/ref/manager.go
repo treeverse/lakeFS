@@ -33,7 +33,7 @@ const (
 	DefaultRepositoryCacheJitter = DefaultRepositoryCacheExpiry / 2
 
 	DefaultCommitCacheSize   = 1000
-	DefaultCommitCacheExpiry = 5 * time.Second
+	DefaultCommitCacheExpiry = 30 * time.Second
 	DefaultCommitCacheJitter = DefaultRepositoryCacheExpiry / 2
 )
 
@@ -42,6 +42,20 @@ type CacheConfig struct {
 	Expiry time.Duration
 	Jitter time.Duration
 }
+
+var (
+	DefaultRepositoryCacheConfig = &CacheConfig{
+		Size:   DefaultRepositoryCacheSize,
+		Expiry: DefaultRepositoryCacheExpiry,
+		Jitter: DefaultRepositoryCacheJitter,
+	}
+
+	DefaultCommitCacheConfig = &CacheConfig{
+		Size:   DefaultCommitCacheSize,
+		Expiry: DefaultCommitCacheExpiry,
+		Jitter: DefaultCommitCacheJitter,
+	}
+)
 
 type KVManager struct {
 	kvStore         *kv.StoreMessage
@@ -87,34 +101,8 @@ type ManagerConfig struct {
 }
 
 func NewKVRefManager(cfg ManagerConfig) *KVManager {
-	// repository cache
-	repoCacheConfig := cfg.RepoCacheConfig
-	if repoCacheConfig == nil {
-		repoCacheConfig = &CacheConfig{
-			Size:   DefaultRepositoryCacheSize,
-			Expiry: DefaultRepositoryCacheExpiry,
-			Jitter: DefaultRepositoryCacheJitter,
-		}
-	}
-	repoCache := cache.NoCache
-	if repoCacheConfig.Size > 0 {
-		repoCache = cache.NewCache(repoCacheConfig.Size, repoCacheConfig.Expiry, cache.NewJitterFn(repoCacheConfig.Jitter))
-	}
-
-	// commits cache
-	commitCacheConfig := cfg.CommitCacheConfig
-	if commitCacheConfig == nil {
-		commitCacheConfig = &CacheConfig{
-			Size:   DefaultCommitCacheSize,
-			Expiry: DefaultCommitCacheExpiry,
-			Jitter: DefaultCommitCacheJitter,
-		}
-	}
-	commitCache := cache.NoCache
-	if commitCacheConfig.Size > 0 {
-		commitCache = cache.NewCache(commitCacheConfig.Size, commitCacheConfig.Expiry, cache.NewJitterFn(commitCacheConfig.Jitter))
-	}
-
+	repoCache := newCache(cfg.RepoCacheConfig, DefaultRepositoryCacheConfig)
+	commitCache := newCache(cfg.CommitCacheConfig, DefaultCommitCacheConfig)
 	return &KVManager{
 		kvStore:         cfg.KvStore,
 		addressProvider: cfg.AddressProvider,
@@ -561,4 +549,15 @@ func (m *KVManager) ListCommits(ctx context.Context, repository *graveler.Reposi
 
 func (m *KVManager) GCCommitIterator(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.CommitIterator, error) {
 	return NewKVOrderedCommitIterator(ctx, m.kvStore, repository, true)
+}
+
+func newCache(cfg *CacheConfig, def *CacheConfig) cache.Cache {
+	if cfg == nil {
+		cfg = def
+	}
+	c := cache.NoCache
+	if cfg.Size > 0 {
+		c = cache.NewCache(cfg.Size, cfg.Expiry, cache.NewJitterFn(cfg.Jitter))
+	}
+	return c
 }
