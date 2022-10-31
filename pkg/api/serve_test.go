@@ -21,8 +21,10 @@ import (
 	authmodel "github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/graveler/settings"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
@@ -109,9 +111,10 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 
 	// Do not validate invalid config (missing required fields).
 	c, err := catalog.New(ctx, catalog.Config{
-		Config:        cfg,
-		KVStore:       kvStoreMessage,
-		WalkerFactory: factory,
+		Config:                cfg,
+		KVStore:               kvStoreMessage,
+		WalkerFactory:         factory,
+		SettingsManagerOption: settings.WithCache(cache.NoCache),
 	})
 	testutil.MustDo(t, "build catalog", err)
 
