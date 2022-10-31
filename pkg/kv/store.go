@@ -1,6 +1,6 @@
 package kv
 
-//go:generate mockgen -source=store.go -destination=mock/store.go -package=mock
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -source=store.go -destination=mock/store.go -package=mock
 
 import (
 	"context"

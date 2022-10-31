@@ -1,6 +1,6 @@
 package pyramid
 
-//go:generate mockgen -source=pyramid.go -destination=mock/pyramid.go -package=mock
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -source=pyramid.go -destination=mock/pyramid.go -package=mock
 
 import (
 	"context"
