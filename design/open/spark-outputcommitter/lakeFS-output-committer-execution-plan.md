@@ -1,34 +1,4 @@
 # LakeFS Output Committer - Execution Plan
-<<<<<<< HEAD
-[LakeFS Output Committer Proposal](https://github.com/treeverse/lakeFS/blob/master/design/open/spark-outputcommitter/committer.md)
-
-## Overview
-Implementing lakeFS Output Committer meaning implementing the class [FileOutputCommitter](https://hadoop.apache.org/docs/stable/api/org/apache/hadoop/mapreduce/lib/output/FileOutputCommitter.html) and using lakeFS client to create/merge branches as part of setup and commit job/tasks (this is the [sample flow](https://github.com/treeverse/lakeFS/blob/master/design/open/spark-outputcommitter/committer.md#sample-flow))
-
-### Milestone 1
-The first milestone is focused on writing a file with single mode (probably text) and one file format (probably append).
-At this stage we'll implement `commit`, `setup`, `abort` class methods.
-
-### Milestone 2
-This milstone is focused on writing all file formats, in all modes. Also, implement the relevant remaining class methods.
-
-The relevant file formats are:
-* Text
-* CSV
-* Parquet *
-* ORC
-* JSON
-
-The relevant modes are:
-* ErrorIfExists (default)
-* Append
-* Overwrite
-* Ignore
-
-### Milestone 3
-This milstone is focused on multiwriter support, first for overwrite save mode and then for other save modes.
-
-### Other
 
 [LakeFS Output Committer Proposal](https://github.com/treeverse/lakeFS/blob/master/design/open/spark-outputcommitter/committer.md)
 
@@ -45,8 +15,8 @@ Moreover, as part of this milestone we'll add testing (the way need to be determ
 ### Milestone 2
 
 This milestone is focused on:
- - writing a file in overwrite mode + testing ([#4517](https://github.com/treeverse/lakeFS/issues/4517), [#4528](https://github.com/treeverse/lakeFS/issues/4528))
- - writing a file in parquet file format + testing ([#4518](https://github.com/treeverse/lakeFS/issues/4518), [#4527](https://github.com/treeverse/lakeFS/issues/4527))
+- writing a file in overwrite mode + testing ([#4517](https://github.com/treeverse/lakeFS/issues/4517), [#4528](https://github.com/treeverse/lakeFS/issues/4528))
+- writing a file in parquet file format + testing ([#4518](https://github.com/treeverse/lakeFS/issues/4518), [#4527](https://github.com/treeverse/lakeFS/issues/4527))
 
 These should be two separate tasks.
 
