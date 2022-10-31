@@ -194,7 +194,7 @@ object Main {
       if (rawLocation.startsWith(s3Prefix)) "s3a://" + rawLocation.substring(s3Prefix.length)
       else rawLocation
     val apiClient = ApiClient.get(
-      APIConfigurations(endpoint, accessKey, secretKey, connectionTimeout, readTimeout)
+      APIConfigurations(endpoint, accessKey, secretKey, connectionTimeout, readTimeout, "exporter")
     )
     val exporter = new Exporter(spark, apiClient, conf.repo(), rootLocation)
 

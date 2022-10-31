@@ -157,7 +157,8 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
         conf.get(LAKEFS_CONF_API_ACCESS_KEY_KEY),
         conf.get(LAKEFS_CONF_API_SECRET_KEY_KEY),
         conf.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY),
-        conf.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY)
+        conf.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY),
+        "input_format"
       )
     )
     val metaRangeURL = apiClient.getMetaRangeURL(repoName, commitID)
@@ -200,7 +201,8 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
         conf.get(LAKEFS_CONF_API_ACCESS_KEY_KEY),
         conf.get(LAKEFS_CONF_API_SECRET_KEY_KEY),
         conf.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY),
-        conf.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY)
+        conf.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY),
+        "input_format"
       )
     )
     if (StringUtils.isBlank(storageNamespace)) {

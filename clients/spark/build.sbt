@@ -22,10 +22,13 @@ def settingsToCompileIn(dir: String, flavour: String = "") = {
     Compile / PB.includePaths += (Compile / resourceDirectory).value,
     Compile / PB.protoSources += (Compile / resourceDirectory).value
   )
-  lazy val flavourSettings = if (flavour != "")
-    Seq(Compile / unmanagedSourceDirectories += (ThisBuild / baseDirectory).value /dir / "src" / "main" / flavour / "scala")
-  else
-    Seq()
+  lazy val flavourSettings =
+    if (flavour != "")
+      Seq(
+        Compile / unmanagedSourceDirectories += (ThisBuild / baseDirectory).value / dir / "src" / "main" / flavour / "scala"
+      )
+    else
+      Seq()
   allSettings ++ flavourSettings
 }
 
@@ -78,7 +81,7 @@ def generateCoreProject(buildType: BuildType) =
         "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
         "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
         // Test with an up-to-date fasterxml.
-         "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2" % "test",
+        "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2" % "test",
         "com.storm-enroute" %% "scalameter" % "0.18" % "test"
       ),
       testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
@@ -92,9 +95,11 @@ def generateCoreProject(buildType: BuildType) =
 
       // Uncomment to get (very) full stacktraces in test:
       //      Test / testOptions += Tests.Argument("-oF"),
-      target := file(s"target/core-${buildType.name}/")
+      target := file(s"target/core-${buildType.name}/"),
+      buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+      buildInfoPackage := "io.treeverse.clients"
     )
-    .enablePlugins(S3Plugin)
+    .enablePlugins(S3Plugin, BuildInfoPlugin)
 
 def generateExamplesProject(buildType: BuildType) =
   Project(s"${baseName}-examples-${buildType.name}", file(s"examples"))
@@ -121,7 +126,14 @@ lazy val spark3Type =
 
 // EMR-6.5.0 beta, managed GC
 lazy val spark312Type =
-  new BuildType("312-hadoop3", scala212Version, "3.1.2", "0.10.11", "3.2.1", "hadoop3", "hadoop3-2.0.1")
+  new BuildType("312-hadoop3",
+                scala212Version,
+                "3.1.2",
+                "0.10.11",
+                "3.2.1",
+                "hadoop3",
+                "hadoop3-2.0.1"
+               )
 
 lazy val core2 = generateCoreProject(spark2Type)
 lazy val core3 = generateCoreProject(spark3Type)
@@ -130,14 +142,15 @@ lazy val examples2 = generateExamplesProject(spark2Type).dependsOn(core2)
 lazy val examples3 = generateExamplesProject(spark3Type).dependsOn(core3)
 lazy val examples312 = generateExamplesProject(spark312Type).dependsOn(core312)
 
-lazy val root = (project in file(".")).aggregate(core2, core3, core312, examples2, examples3, examples312)
+lazy val root =
+  (project in file(".")).aggregate(core2, core3, core312, examples2, examples3, examples312)
 
 // We are using the default sbt assembly merge strategy https://github.com/sbt/sbt-assembly#merge-strategy with a change
 // to the general case: use MergeStrategy.first instead of MergeStrategy.deduplicate.
 lazy val assemblySettings = Seq(
   assembly / assemblyMergeStrategy := {
     case PathList("META-INF", xs @ _*) =>
-      (xs map {_.toLowerCase}) match {
+      (xs map { _.toLowerCase }) match {
         case ("manifest.mf" :: Nil) | ("index.list" :: Nil) | ("dependencies" :: Nil) =>
           MergeStrategy.discard
         case ps @ (x :: xs) if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") =>

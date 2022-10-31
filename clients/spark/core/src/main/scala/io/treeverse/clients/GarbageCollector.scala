@@ -269,7 +269,8 @@ object GarbageCollector {
           .toEpochSecond(ZoneOffset.UTC)
       )
     }
-    val apiConf = APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout)
+    val apiConf =
+      APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout, "gc")
     val apiClient = ApiClient.get(apiConf)
     val storageType = apiClient.getBlockstoreType()
 
