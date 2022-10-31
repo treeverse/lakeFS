@@ -24,6 +24,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/graveler/settings"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
@@ -89,12 +90,6 @@ func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) 
 	}
 }
 
-type cacheFactory struct{}
-
-func (f *cacheFactory) GetCache() cache.Cache {
-	return cache.NoCache
-}
-
 func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) (http.Handler, *dependencies) {
 	t.Helper()
 	ctx := context.Background()
@@ -116,10 +111,10 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 
 	// Do not validate invalid config (missing required fields).
 	c, err := catalog.New(ctx, catalog.Config{
-		Config:        cfg,
-		KVStore:       kvStoreMessage,
-		WalkerFactory: factory,
-		CacheFactory:  &cacheFactory{},
+		Config:                cfg,
+		KVStore:               kvStoreMessage,
+		WalkerFactory:         factory,
+		SettingsManagerOption: settings.WithCache(cache.NoCache),
 	})
 	testutil.MustDo(t, "build catalog", err)
 
