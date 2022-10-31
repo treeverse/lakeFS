@@ -979,7 +979,7 @@ func (g *KVGraveler) CreateBranch(ctx context.Context, repository *RepositoryRec
 		RunID:            postRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePostCreateBranch,
-		SourceRef:        ref,
+		SourceRef:        newBranch.CommitID.Ref(),
 		RepositoryID:     repository.RepositoryID,
 		BranchID:         branchID,
 		CommitID:         reference.CommitID,
