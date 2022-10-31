@@ -30,17 +30,6 @@ The vision of lakeFS is bringing this functionality across all the data sources 
 {: .pb-5 }
 
 
-## New! lakeFS Playground
-
-Experience lakeFS firsthand with your own isolated environment.
-You can easily integrate it with your existing tools and see lakeFS in action in an environment similar to your own.
-
-<p style="margin-top: 40px;">
-    <a class="btn btn-green" href="https://demo.lakefs.io/" target="_blank">
-        Try lakeFS now without installing
-    </a>
-</p>
-
 ## How do I use lakeFS?
 
 lakeFS maintains compatibility with the S3 API to minimize adoption
