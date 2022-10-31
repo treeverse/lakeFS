@@ -220,6 +220,13 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         } catch (ApiException e) {
             throw new IOException(String.format("commitJob %s failed", jobContext.getJobID()), e);
         }
+        try {
+            // TODO(ariels): Configurable!
+            deleteBranch(jobBranch);
+        } catch (IOException e) {
+            LOG.warn("Failed to delete task branch {} after merge (keep going)", taskBranch, e);
+        }
+
     }
 
     @Override
