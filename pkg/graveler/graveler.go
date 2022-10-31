@@ -18,7 +18,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-//go:generate mockgen -source=graveler.go -destination=mock/graveler.go -package=mock
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -source=graveler.go -destination=mock/graveler.go -package=mock
 
 const (
 	MergeStrategySrcWins  = "source-wins"

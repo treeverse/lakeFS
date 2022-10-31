@@ -1,6 +1,6 @@
 package committed
 
-//go:generate mockgen -source=batch_write_closer.go -destination=mock/batch_write_closer.go -package=mock
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -source=batch_write_closer.go -destination=mock/batch_write_closer.go -package=mock
 
 // BatchWriterCloser collects Range writers and handles the asynchronous
 // flushing and closing of the writers.
