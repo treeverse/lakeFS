@@ -31,7 +31,7 @@ public class LakeFSClient {
             throw new IOException("Missing lakeFS secret key");
         }
 
-        ApiClient apiClient = io.lakefs.clients.api.Configuration.getDefaultApiClient();
+        ApiClient apiClient = new ApiClient();
         String endpoint = FSConfiguration.get(conf, scheme, Constants.ENDPOINT_KEY_SUFFIX, Constants.DEFAULT_CLIENT_ENDPOINT);
         if (endpoint.endsWith(Constants.SEPARATOR)) {
             endpoint = endpoint.substring(0, endpoint.length() - 1);
@@ -41,6 +41,10 @@ public class LakeFSClient {
         HttpBasicAuth basicAuth = (HttpBasicAuth) apiClient.getAuthentication(BASIC_AUTH);
         basicAuth.setUsername(accessKey);
         basicAuth.setPassword(secretKey);
+
+        // BUG(ariels): Configurable timeouts!
+        apiClient.setConnectTimeout(15000 /* msec */);
+        apiClient.setReadTimeout(15000 /* msec */);
 
         this.objects = new ObjectsApi(apiClient);
         this.staging = new StagingApi(apiClient);
