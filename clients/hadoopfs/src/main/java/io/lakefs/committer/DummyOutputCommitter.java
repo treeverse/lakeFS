@@ -96,7 +96,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         // TODO(ariels): Use a more compact encoding (base-36?)
         String digest = hash.hashString(path, utf8).toString();
         String pathPrefix = path.length() > 128 ? path.substring(0, 128) : path;
-        pathPrefix = pathPrefix.replaceAll("[^-_a-zA-Z0-9]", "-")
+        pathPrefix = pathPrefix.replaceAll("[^-_a-zA-Z0-9]", "-");
         return String.format("%s-%s-%s", branchNamePrefix, digest, pathPrefix);
     }
 
