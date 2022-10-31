@@ -107,9 +107,10 @@ const (
 )
 
 type Config struct {
-	Config        *config.Config
-	KVStore       *kv.StoreMessage
-	WalkerFactory WalkerFactory
+	Config                *config.Config
+	KVStore               *kv.StoreMessage
+	WalkerFactory         WalkerFactory
+	SettingsManagerOption settings.ManagerOption
 }
 
 type Catalog struct {
@@ -204,6 +205,10 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	refManager := ref.NewKVRefManager(executor, *cfg.KVStore, ident.NewHexAddressProvider(), nil)
 	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
 	settingManager := settings.NewManager(refManager, *cfg.KVStore)
+	if cfg.SettingsManagerOption != nil {
+		cfg.SettingsManagerOption(settingManager)
+	}
+
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
 	stagingManager := staging.NewManager(ctx, *cfg.KVStore)
 	gStore := graveler.NewKVGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)

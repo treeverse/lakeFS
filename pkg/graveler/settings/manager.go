@@ -17,7 +17,7 @@ import (
 
 const (
 	cacheSize          = 100_000
-	defaultCacheExpiry = 1 * time.Second
+	defaultCacheExpiry = 3 * time.Second
 )
 
 type cacheKey struct {
@@ -100,10 +100,17 @@ func (m *KVManager) Get(ctx context.Context, repository *graveler.RepositoryReco
 		Key:          key,
 	}
 	setting, err := m.cache.GetOrSet(k, func() (v interface{}, err error) {
-		return m.GetLatest(ctx, repository, key, settingTemplate)
+		setting, err := m.GetLatest(ctx, repository, key, settingTemplate)
+		if errors.Is(err, graveler.ErrNotFound) {
+			return nil, nil
+		}
+		return setting, err
 	})
 	if err != nil {
 		return nil, err
+	}
+	if setting == nil {
+		return nil, graveler.ErrNotFound
 	}
 	return setting.(proto.Message), nil
 }
