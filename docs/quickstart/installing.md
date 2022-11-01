@@ -1,7 +1,7 @@
 ---
 layout: default
-title: Install lakeFS
-description: Installing lakeFS is easy. This section covers how to spin up lakeFS using Docker.
+title: Run lakeFS Locally
+description: Running lakeFS locally is easy and quick. This section covers how to spin up lakeFS using Docker.
 parent: Quickstart
 nav_order: 10
 has_children: false
@@ -65,6 +65,10 @@ This command will mount your present working directory (PWD) within the containe
 
 
 Note using the ```--local-settings``` flag, metadata is being stored locally in the lakeFS container. Therefore, avoid using this flag for production usages.
+
+Follow the  video below to quickly spin up a local lakeFS environment.
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/CIDrHVFnIJY"></iframe>
 
 ## Next steps
 
