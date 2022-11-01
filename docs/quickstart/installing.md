@@ -8,7 +8,7 @@ has_children: false
 next: ["Create your first repository", "./repository.html"]
 ---
 
-# Install lakeFS
+# Run lakeFS Locally
 {: .no_toc }
 
 {% include learn_only.html %} 
