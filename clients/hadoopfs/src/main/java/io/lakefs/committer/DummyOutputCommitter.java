@@ -182,6 +182,10 @@ public class DummyOutputCommitter extends FileOutputCommitter {
     public void setupJob(JobContext context) throws IOException {
         if (outputPath == null)
             return;
+        if (conf.getBoolean(Constants.OC_ENSURE_CLEAN_OUTPUT_BRANCH, true) &&
+            hasChanges(outputBranch)) {
+            throw new IOException(String.format("Uncommitted changes on output branch %s, merge will fail", outputBranch));
+        }
         LOG.info("Setup job for {} on {}", outputBranch, jobBranch);
         createBranch(jobBranch, outputBranch);
     }
