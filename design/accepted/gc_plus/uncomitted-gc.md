@@ -41,8 +41,8 @@ Similar to the way GC works today, use repository meta-ranges and ranges to read
 
 ### 3. Listing of lakeFS repository uncommitted objects
 
-Creating special meta-ranges and ranges using branches' uncommitted data, we can leverage the already existing GC logic to
-quickly read all uncommitted objects in the repository.
+Expose a new API in lakeFS which writes repository uncommitted objects information into a parquet file in a dedicated path
+in the repository namespace
 
 ### Required changes by lakeFS
 
@@ -79,19 +79,26 @@ objects added using this operation are never collected by GC.
 
 #### S3 Gateway CopyObject
 
-1. Copy object in the same branch will work the same - creating a new staging entry using the existing entry information.
-2. For objects that are not part of the branch, use the underlying adapter copy operation.
+When performing a shallow copy - track copied objects in ref-store.
+GC will read the copied objects information from the ref-store, and will add them to the list of uncommitted.
+lakeFS will periodically clear the copied list according to timestamp.
+
+1. Copy of staged object in the same branch will perform a shallow copy as described above
+2. All other copy operations will use the underlying adapter copy operation.
 
 #### Move/RenameObject
 Clients working through the S3 Gateway can use the CopyObject + DeleteObject to perform a Rename or Move operation.
 For clients using the OpenAPI this could have been done using StageObject + DeleteObject.
 To continue support of this operation, introduce a new API to rename an object which will be scoped to a single branch.
+Rename will add copied objects in ref-store similarly to CopyObject 
 
 #### PrepareUncommittedForGC
 
-A new API which will create meta-ranges and ranges for a given branch using its uncommitted data. These files
-will be saved in a designated path used by the GC client to list branch's uncommitted objects.  
-For the purpose of this document we'll call this the `BranchUncommittedMetarange`
+A new API which will create parquet files from uncommitted object information (address + creation date). These files
+will be saved to `_lakefs/gc/run_id/uncommitted/*.parquet` and used by the GC client to list repository's uncommitted objects.
+At the end of this flow - read copied objects information from ref-store and add it to the uncommitted data.
+For the purpose of this document we'll call this the `UncommittedData`
+
 
 ### GC Flows
 
@@ -107,8 +114,7 @@ The following describe the GC process run flows on a repository:
       1. List branches
       2. Run _PrepareUncommittedForGC_ on all branches
    2. Get all uncommitted data addresses
-      1. For each branch
-         1. Read all addresses from branch `BranchUncommittedMetarange` -> `Uncommitted DF`
+         1. Read all addresses from `UncommittedData` -> `Uncommitted DF`
     >**Note:** To avoid possible bug, `Mark uncommitted data` step must complete before listing of committed data
 3. Listing of lakeFS repository committed objects
    1. Get all committed data addresses
@@ -122,7 +128,7 @@ The following describe the GC process run flows on a repository:
 
 #### Flow 2: Optimized Run
 
-Optimized run uses the previous GC run output, to perform a partial scan of the branch to remove uncommitted garbage.
+Optimized run uses the previous GC run output, to perform a partial scan of the repository to remove uncommitted garbage.
 
 ##### Step 1. Analyze Data and Perform Cleanup for old entries (GC client)
 
@@ -133,7 +139,7 @@ Optimized run uses the previous GC run output, to perform a partial scan of the 
 2. Listing of lakeFS repository uncommitted objects  
     See previous for steps
 3. Listing of lakeFS repository committed objects (optimized)
-   1. Read addresses from branch's new commits (all new commits down to the last GC run timestamp) -> `Committed DF`
+   1. Read addresses from repository's new commits (all new commits down to the last GC run timestamp) -> `Committed DF`
 4. Find candidates for deletion
    1. Subtract `Committed DF` from previous run's `Uncommitted DF`
    2. Subtract current `Uncommitted DF` from previous run's `Uncommitted DF`
@@ -157,9 +163,8 @@ Optimized run uses the previous GC run output, to perform a partial scan of the 
 ### GC Saved Information
 
 For each GC run, save the following information using the GC run id as detailed in this [proposal](https://github.com/treeverse/cloud-controlplane/blob/main/design/accepted/gc-with-run-id.md):
-1. Save metaranges in `_lakefs/gc/run_id/metadata/`
-2. Save `Uncommitted DF` in `_lakefs/gc/run_id/uncommitted/*.parquet`
-3. Add the following to the GC report:
+1. Save `Uncommitted DF` in `_lakefs/gc/run_id/uncommitted/*.parquet` (Done by _PrepareUncommittedForGC_)
+2. Add the following to the GC report:
    1. Run start time
    2. Last read slice
 
