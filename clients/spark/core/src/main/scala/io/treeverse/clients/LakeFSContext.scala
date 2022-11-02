@@ -110,7 +110,7 @@ object LakeFSContext {
   /** Returns all entries in all ranges of the given commit, as an RDD.
    *  If no commit is given, returns all entries in all ranges of the entire repository.
    *  The same entry may be found in multiple ranges.
-   *  @deprecated use [[LakeFSContext.newRDD(SparkSession,LakeFSJobParams)]] instead.
+   *  @deprecated use [[LakeFSContext.newRDD(SparkContext,LakeFSJobParams)]] instead.
    */
   def newRDD(
       sc: SparkContext,
