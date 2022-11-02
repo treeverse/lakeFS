@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-20.04
     outputs:
       tag: ${{ steps.version.outputs.tag }}
-#    steps:
+    steps:
 #      - name: Checkout
 #        uses: actions/checkout@v3
 #
