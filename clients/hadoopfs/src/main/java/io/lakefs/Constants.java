@@ -13,6 +13,7 @@ public class Constants {
     public static final String OC_DELETE_JOB_BRANCH = "committer.delete_job_branch";
     public static final String OC_DELETE_TASK_BRANCH = "committer.delete_task_branch";
     public static final String OC_ENSURE_CLEAN_OUTPUT_BRANCH = "committer.ensure_clean_output_branch";
+    public static final String OC_SUCCESSFUL_JOB_OUTPUT_DIR_MARKER = "committer.marksuccessfuljobs";
 
     public static final int DEFAULT_LIST_AMOUNT = 1000;
     public static final String SEPARATOR = "/";
