@@ -30,7 +30,7 @@ func TestKVRepositoryIterator(t *testing.T) {
 	}
 
 	t.Run("listing all repos", func(t *testing.T) {
-		iter, err := ref.NewKVRepositoryIterator(context.Background(), &store)
+		iter, err := ref.NewKVRepositoryIterator(context.Background(), store)
 		require.NoError(t, err)
 		repoIds := make([]graveler.RepositoryID, 0)
 		for iter.Next() {
@@ -48,7 +48,7 @@ func TestKVRepositoryIterator(t *testing.T) {
 	})
 
 	t.Run("listing repos from prefix", func(t *testing.T) {
-		iter, err := ref.NewKVRepositoryIterator(context.Background(), &store)
+		iter, err := ref.NewKVRepositoryIterator(context.Background(), store)
 		require.NoError(t, err)
 		iter.SeekGE("b")
 		repoIds := make([]graveler.RepositoryID, 0)
@@ -67,7 +67,7 @@ func TestKVRepositoryIterator(t *testing.T) {
 	})
 
 	t.Run("listing repos SeekGE", func(t *testing.T) {
-		iter, err := ref.NewKVRepositoryIterator(context.Background(), &store)
+		iter, err := ref.NewKVRepositoryIterator(context.Background(), store)
 		require.NoError(t, err)
 		iter.SeekGE("b")
 		repoIds := make([]graveler.RepositoryID, 0)
