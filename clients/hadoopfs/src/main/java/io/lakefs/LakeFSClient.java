@@ -35,7 +35,7 @@ public class LakeFSClient {
             endpoint = endpoint.substring(0, endpoint.length() - 1);
         }
         apiClient.setBasePath(endpoint);
-
+        apiClient.addDefaultHeader("X-Lakefs-Client", "lakefs-hadoopfs/" + getClass().getPackage().getImplementationVersion());
         HttpBasicAuth basicAuth = (HttpBasicAuth) apiClient.getAuthentication(BASIC_AUTH);
         basicAuth.setUsername(accessKey);
         basicAuth.setPassword(secretKey);
