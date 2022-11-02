@@ -47,13 +47,13 @@ jobs:
           # applies to "run" steps), so copy the compiled metaclient to a
           # known location.
         run: |
-          mkdir -p /tmp/export
+          mkdir -p ./export
 
       - uses: keithweaver/aws-s3-github-action@v1.0.0
         with:
           command: cp
           source: s3://treeverse-clients-us-east/lakefs-spark-client-301/0.5.1/lakefs-spark-client-301-assembly-0.5.1.jar
-          destination: /tmp/export/spark-assembly.jar
+          destination: ./export/spark-assembly.jar
           aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws_region: us-east-1
@@ -61,7 +61,7 @@ jobs:
         with:
           command: cp
           source: s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.5.1/lakefs-spark-client-312-hadoop3-assembly-0.5.1.jar
-          destination: /tmp/export/spark-assembly-hadoop3.jar
+          destination: ./export/spark-assembly-hadoop3.jar
           aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws_region: us-east-1
@@ -70,7 +70,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: metaclient-3x
-          path: /tmp/export/
+          path: ./export/
           if-no-files-found: error
           retention-days: 7
 
