@@ -27,7 +27,6 @@ jobs:
 
   deploy-image:
     name: Build and push Docker image
-    needs: [check-secrets, gen-code]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     runs-on: ubuntu-20.04
     outputs:
