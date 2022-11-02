@@ -121,7 +121,7 @@ class ApiClient private (conf: APIConfigurations) {
   val client = new api.ApiClient
   client.addDefaultHeader(
     "X-Lakefs-Client",
-    s"metaclient/${if (conf.source.nonEmpty) conf.source + "/" else ""}${BuildInfo.version}"
+    s"metaclient/${BuildInfo.version}${if (conf.source.nonEmpty) "/" + conf.source else ""}"
   )
   client.setUsername(conf.accessKey)
   client.setPassword(conf.secretKey)

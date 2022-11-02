@@ -51,7 +51,7 @@ object Export extends App {
                         connectionTimeoutSec,
                         readTimeoutSec,
                         "exporter"
-                       ) /**/
+                       )
     )
     val exporter = new Exporter(spark, apiClient, repo, rootLocation)
 
