@@ -8,7 +8,7 @@ import (
 	"github.com/rs/xid"
 )
 
-// PathProvider capture the requirements from PathPartitionProvider implementation to return a new path
+// PathProvider captures the requirements from PathPartitionProvider implementation to return a new path
 type PathProvider interface {
 	NewPath() string
 }
@@ -27,11 +27,11 @@ type PathPartitionProvider struct {
 }
 
 const (
-	DefaultDataSize     = 50000
+	DefaultMaxDataSize  = 50000
 	DefaultDataInterval = time.Hour
 	DefaultDataPrefix   = "data"
 
-	// unixYear4000 epoch value for Saturday, January 1, 4000 12:00:00 AM
+	// unixYear4000 epoch value for Saturday, January 1, 4000 12:00:00 AM. No not change the value as it is used to have reverse order for time based unique ID (xid).
 	unixYear4000 = 64060588800
 )
 
@@ -77,7 +77,7 @@ func WithPathProviderTellTime(t TimeNow) PathProviderOption {
 
 func NewPathPartitionProvider(opts ...PathProviderOption) *PathPartitionProvider {
 	cfg := &PathProviderConfig{
-		Size:     DefaultDataSize,
+		Size:     DefaultMaxDataSize,
 		Interval: DefaultDataInterval,
 		Prefix:   DefaultDataPrefix,
 		TellTime: DefaultTimeNow,
