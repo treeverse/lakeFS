@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 
 // TODO(ariels): For Hadoop 3, it is enough (and better!) to extend PathOutputCommitter.
@@ -94,7 +95,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
     protected String pathToBranch(Path p) {
         String path = p.toString();
         // TODO(ariels): Use a more compact encoding (base-36?)
-        String digest = hash.hashString(path, utf8).toString();
+        String digest = new BigInteger(hash.hashString(path, utf8).asBytes()).toString(36);
         String pathPrefix = path.length() > 128 ? path.substring(0, 128) : path;
         pathPrefix = pathPrefix.replaceAll("[^-_a-zA-Z0-9]", "-");
         return String.format("%s-%s-%s", branchNamePrefix, digest, pathPrefix);
