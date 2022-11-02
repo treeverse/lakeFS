@@ -39,7 +39,7 @@ class Exporter(
     val df =
       LakeFSContext.newDF(
         spark,
-        LakeFSJobParams.forCommit(repoName, commitID, Exporter.EXPORTER_APP_NAME)
+        LakeFSJobParams.forCommit(repoName, commitID, Exporter.EXPORTER_SOURCE_NAME)
       )
 
     val tableName = randPrefix() + "_commit"
@@ -102,11 +102,11 @@ class Exporter(
 
     val newDF = LakeFSContext.newDF(
       spark,
-      LakeFSJobParams.forCommit(repoName, commitID, Exporter.EXPORTER_APP_NAME)
+      LakeFSJobParams.forCommit(repoName, commitID, Exporter.EXPORTER_SOURCE_NAME)
     )
     val prevDF = LakeFSContext.newDF(
       spark,
-      LakeFSJobParams.forCommit(repoName, prevCommitID, Exporter.EXPORTER_APP_NAME)
+      LakeFSJobParams.forCommit(repoName, prevCommitID, Exporter.EXPORTER_SOURCE_NAME)
     )
 
     val newTableName = randPrefix() + "_new_commit"
@@ -172,7 +172,7 @@ class Exporter(
 
 object Exporter {
   final val defaultParallelism = 10
-  final val EXPORTER_APP_NAME = "exporter"
+  final val EXPORTER_SOURCE_NAME = "exporter"
 }
 
 /** Main exports lakeFS object to an object-store location.
@@ -209,7 +209,7 @@ object Main {
                         secretKey,
                         connectionTimeout,
                         readTimeout,
-                        Exporter.EXPORTER_APP_NAME
+                        Exporter.EXPORTER_SOURCE_NAME
                        )
     )
     val exporter = new Exporter(spark, apiClient, conf.repo(), rootLocation)

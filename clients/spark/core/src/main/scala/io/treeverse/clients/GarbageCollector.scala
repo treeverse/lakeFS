@@ -188,6 +188,8 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
 }
 
 object GarbageCollector {
+  final val GARBAGE_COLLECTOR_SOURCE_NAME = "gc"
+
   lazy val spark = SparkSession.builder().appName("GarbageCollector").getOrCreate()
 
   /** @return a serializable summary of values in hc starting with prefix.
@@ -270,7 +272,13 @@ object GarbageCollector {
       )
     }
     val apiConf =
-      APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout, "gc")
+      APIConfigurations(apiURL,
+                        accessKey,
+                        secretKey,
+                        connectionTimeout,
+                        readTimeout,
+                        GARBAGE_COLLECTOR_SOURCE_NAME
+                       )
     val apiClient = ApiClient.get(apiConf)
     val storageType = apiClient.getBlockstoreType()
 
