@@ -37,7 +37,7 @@ services:
         - tester.env
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   spark:
-    image: docker.io/bitnami/spark:${SPARK_TAG:-3}
+    image: bde2020/spark-master:${SPARK_TAG:-3.2.1}-hadoop3.2
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_HOST=spark
@@ -60,7 +60,7 @@ services:
       - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
   spark-worker:
-    image: bde2020/spark-master:${SPARK_TAG:-3.2.1}-hadoop3.2
+    image: bde2020/spark-worker:${SPARK_TAG:-3.2.1}-hadoop3.2
     ports:
       - 8081
     environment:
@@ -85,7 +85,7 @@ services:
       - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
   spark-submit:
-    image: bde2020/spark-worker:${SPARK_TAG:-3.2.1}-hadoop3.2
+    image: bde2020/spark-submit:${SPARK_TAG:-3.2.1}-hadoop3.2
     profiles: ["command"]
     volumes:
       - ./:/local
