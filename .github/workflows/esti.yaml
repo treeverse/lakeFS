@@ -76,7 +76,7 @@ jobs:
 
   metadata-client-gc-spark3:
     name: Test lakeFS metadata client GC with Spark 3.x
-    needs: [deploy-image, build-spark3-metadata-client]
+    needs: [check-secrets, deploy-image, build-spark3-metadata-client]
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -152,7 +152,7 @@ jobs:
 
   metadata-client-gc-spark3-hadoop3-on-azure:
     name: Test lakeFS metadata client GC with Spark 3.x and Hadoop 3 on Azure
-    needs: [deploy-image, build-spark3-metadata-client]
+    needs: [check-secrets, deploy-image, build-spark3-metadata-client]
     runs-on: ubuntu-20.04
     strategy:
       matrix:
