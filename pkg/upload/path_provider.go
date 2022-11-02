@@ -31,7 +31,7 @@ const (
 	DefaultDataInterval = time.Hour
 	DefaultDataPrefix   = "data"
 
-	// unixYear4000 epoch value for Saturday, January 1, 4000 12:00:00 AM. No not change the value as it is used to have reverse order for time based unique ID (xid).
+	// unixYear4000 epoch value for Saturday, January 1, 4000 12:00:00 AM. Changing this value is a breaking change as it is used to have reverse order for time based unique ID (xid).
 	unixYear4000 = 64060588800
 )
 
