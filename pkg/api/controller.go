@@ -3434,7 +3434,7 @@ func writeCanceledOrServerErrorWithMsg(w http.ResponseWriter, err error, v inter
 	if err == nil {
 		panic("Unexpected error handling with no error")
 	}
-	if err == context.Canceled {
+	if errors.Is(err, context.Canceled) {
 		writeError(w, HttpStatusRequestCanceled, "Request was cancelled")
 	} else {
 		writeError(w, http.StatusInternalServerError, v)
@@ -3630,7 +3630,7 @@ func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms per
 		RequiredPermissions: perms,
 	})
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeCanceledOrServerError(w, err)
 		return false
 	}
 	if resp.Error != nil {
