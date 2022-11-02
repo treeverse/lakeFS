@@ -38,7 +38,7 @@ func TestManager_GetRepositoryCache(t *testing.T) {
 	mockStore.EXPECT().Get(ctx, []byte("graveler"), []byte("repos/repo1")).Times(times).Return(&kv.ValueWithPredicate{}, nil)
 	cacheConfig := &ref.CacheConfig{
 		Size:   100,
-		Expiry: 2 * time.Second,
+		Expiry: 20 * time.Millisecond,
 		Jitter: 0,
 	}
 	cfg := ref.ManagerConfig{
@@ -86,7 +86,7 @@ func TestManager_GetCommitCache(t *testing.T) {
 
 	cacheConfig := &ref.CacheConfig{
 		Size:   100,
-		Expiry: 2 * time.Second,
+		Expiry: 20 * time.Millisecond,
 		Jitter: 0,
 	}
 	cfg := ref.ManagerConfig{
