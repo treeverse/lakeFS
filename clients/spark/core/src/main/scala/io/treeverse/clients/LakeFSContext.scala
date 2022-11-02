@@ -40,10 +40,10 @@ object LakeFSJobParams {
  *  @param sourceName a string describing the application using the client. Will be sent as part of the X-Lakefs-Client header.
  */
 class LakeFSJobParams private (
-    val repoName: String = null,
-    val storageNamespace: String = null,
-    val commitID: String = null,
-    val sourceName: String = null
+    val repoName: String = "",
+    val storageNamespace: String = "",
+    val commitID: String = "",
+    val sourceName: String = ""
 ) {
   if (StringUtils.isEmpty(repoName) == StringUtils.isEmpty(storageNamespace)) {
     throw new InvalidJobConfException("Exactly one of repoName or storageNamespace must be set")
