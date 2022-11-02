@@ -46,7 +46,6 @@ jobs:
           # upload-artifact cannot take a working-directory option (that only
           # applies to "run" steps), so copy the compiled metaclient to a
           # known location.
-        working-directory: clients/spark
         run: |
           mkdir -p /tmp/export
 
