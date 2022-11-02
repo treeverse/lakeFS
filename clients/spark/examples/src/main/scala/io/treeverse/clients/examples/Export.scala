@@ -50,7 +50,7 @@ object Export extends App {
                         secretKey,
                         connectionTimeoutSec,
                         readTimeoutSec,
-                        Exporter.EXPORTER_APP_NAME
+                        Exporter.EXPORTER_SOURCE_NAME
                        )
     )
     val exporter = new Exporter(spark, apiClient, repo, rootLocation)
