@@ -111,6 +111,7 @@ void (empty response body)
 **204** | branch protection rule created successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -228,6 +229,7 @@ Name | Type | Description  | Notes
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **409** | Resource Conflicts With Target |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -330,6 +332,7 @@ void (empty response body)
 **204** | branch protection rule deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -428,6 +431,7 @@ void (empty response body)
 **204** | repository deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -528,6 +532,7 @@ Name | Type | Description  | Notes
 **200** | branch protection rules |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -628,6 +633,8 @@ Name | Type | Description  | Notes
 **200** | repository |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**410** | repository in deletion |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -732,6 +739,7 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | repository list |  -  |
 **401** | Unauthorized |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

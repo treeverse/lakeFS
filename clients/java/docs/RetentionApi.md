@@ -92,6 +92,7 @@ null (empty response body)
 **204** | deleted garbage collection rules successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getGarbageCollectionRules"></a>
@@ -177,6 +178,7 @@ Name | Type | Description  | Notes
 **200** | gc rule list |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="prepareGarbageCollectionCommits"></a>
@@ -264,6 +266,7 @@ Name | Type | Description  | Notes
 **201** | paths to commit dataset |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="setGarbageCollectionRules"></a>
@@ -350,5 +353,6 @@ null (empty response body)
 **204** | set garbage collection rules successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 

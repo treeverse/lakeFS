@@ -94,6 +94,7 @@ Name | Type | Description  | Notes
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="ingestRange"></a>
@@ -182,5 +183,6 @@ Name | Type | Description  | Notes
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 

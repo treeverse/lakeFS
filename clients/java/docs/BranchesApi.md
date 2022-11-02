@@ -100,6 +100,7 @@ Name | Type | Description  | Notes
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **409** | Resource Conflicts With Target |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="deleteBranch"></a>
@@ -186,6 +187,7 @@ null (empty response body)
 **204** | branch deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="diffBranch"></a>
@@ -281,6 +283,7 @@ Name | Type | Description  | Notes
 **200** | diff of branch uncommitted changes |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getBranch"></a>
@@ -368,6 +371,7 @@ Name | Type | Description  | Notes
 **200** | branch |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="listBranches"></a>
@@ -459,6 +463,7 @@ Name | Type | Description  | Notes
 **200** | branch list |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="resetBranch"></a>
@@ -547,6 +552,7 @@ null (empty response body)
 **204** | reset successful |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="revertBranch"></a>
@@ -637,5 +643,6 @@ null (empty response body)
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **409** | Conflict Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 

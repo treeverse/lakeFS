@@ -100,6 +100,7 @@ Name | Type | Description  | Notes
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **412** | Precondition Failed (e.g. a pre-commit hook returned a failure) |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getCommit"></a>
@@ -187,6 +188,7 @@ Name | Type | Description  | Notes
 **200** | commit |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="logBranchCommits"></a>
@@ -278,5 +280,6 @@ Name | Type | Description  | Notes
 **200** | commit log |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 

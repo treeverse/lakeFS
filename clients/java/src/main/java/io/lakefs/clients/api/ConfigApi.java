@@ -174,6 +174,7 @@ public class ConfigApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> lakeFS setup state </td><td>  -  </td></tr>
+        <tr><td> 499 </td><td> Request Canceled </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -225,6 +226,7 @@ public class ConfigApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> lakeFS setup state </td><td>  -  </td></tr>
+        <tr><td> 499 </td><td> Request Canceled </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -242,6 +244,7 @@ public class ConfigApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> lakeFS setup state </td><td>  -  </td></tr>
+        <tr><td> 499 </td><td> Request Canceled </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -261,6 +264,7 @@ public class ConfigApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> lakeFS setup state </td><td>  -  </td></tr>
+        <tr><td> 499 </td><td> Request Canceled </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -389,6 +393,7 @@ public class ConfigApi {
         <tr><td> 200 </td><td> user created successfully </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> setup was already called </td><td>  -  </td></tr>
+        <tr><td> 499 </td><td> Request Canceled </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -448,6 +453,7 @@ public class ConfigApi {
         <tr><td> 200 </td><td> user created successfully </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> setup was already called </td><td>  -  </td></tr>
+        <tr><td> 499 </td><td> Request Canceled </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -468,6 +474,7 @@ public class ConfigApi {
         <tr><td> 200 </td><td> user created successfully </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> setup was already called </td><td>  -  </td></tr>
+        <tr><td> 499 </td><td> Request Canceled </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -490,6 +497,7 @@ public class ConfigApi {
         <tr><td> 200 </td><td> user created successfully </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> setup was already called </td><td>  -  </td></tr>
+        <tr><td> 499 </td><td> Request Canceled </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */

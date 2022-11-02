@@ -97,6 +97,7 @@ null (empty response body)
 **204** | branch protection rule created successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="createRepository"></a>
@@ -185,6 +186,7 @@ Name | Type | Description  | Notes
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **409** | Resource Conflicts With Target |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="deleteBranchProtectionRule"></a>
@@ -271,6 +273,7 @@ null (empty response body)
 **204** | branch protection rule deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="deleteRepository"></a>
@@ -355,6 +358,7 @@ null (empty response body)
 **204** | repository deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getBranchProtectionRules"></a>
@@ -440,6 +444,7 @@ Name | Type | Description  | Notes
 **200** | branch protection rules |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getRepository"></a>
@@ -525,6 +530,8 @@ Name | Type | Description  | Notes
 **200** | repository |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**410** | repository in deletion |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="listRepositories"></a>
@@ -613,5 +620,6 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | repository list |  -  |
 **401** | Unauthorized |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 

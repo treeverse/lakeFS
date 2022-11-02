@@ -146,6 +146,7 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | lakeFS setup state |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getStorageConfig"></a>
@@ -290,5 +291,6 @@ No authorization required
 **200** | user created successfully |  -  |
 **400** | bad request |  -  |
 **409** | setup was already called |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 

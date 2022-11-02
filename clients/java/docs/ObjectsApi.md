@@ -100,6 +100,7 @@ null (empty response body)
 **204** | object deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="deleteObjects"></a>
@@ -279,6 +280,7 @@ Name | Type | Description  | Notes
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **410** | object expired |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getUnderlyingProperties"></a>
@@ -368,6 +370,7 @@ Name | Type | Description  | Notes
 **200** | object metadata on underlying storage |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="listObjects"></a>
@@ -465,6 +468,7 @@ Name | Type | Description  | Notes
 **200** | object listing |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="stageObject"></a>
@@ -557,6 +561,7 @@ Name | Type | Description  | Notes
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="statObject"></a>
@@ -649,6 +654,7 @@ Name | Type | Description  | Notes
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **410** | object gone (but partial metadata may be available) |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="uploadObject"></a>
@@ -746,5 +752,6 @@ Name | Type | Description  | Notes
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **412** | Precondition Failed |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 

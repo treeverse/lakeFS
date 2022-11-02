@@ -63,6 +63,8 @@ const (
 	setupStateNotInitialized = "not_initialized"
 
 	DefaultMaxDeleteObjects = 1000
+
+	HttpStatusRequestCanceled = 499
 )
 
 type actionsHandler interface {
@@ -250,7 +252,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeCanceledOrServerError(w, err)
 		return
 	}
 
@@ -260,7 +262,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeCanceledOrServerError(w, err)
 		return
 	}
 
@@ -307,7 +309,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeCanceledOrServerError(w, err)
 		return
 	}
 	// write metadata
@@ -350,7 +352,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeCanceledOrServerError(w, err)
 		return
 	}
 
@@ -1237,7 +1239,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 
 	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), paginationAfter(params.After))
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, fmt.Sprintf("error listing repositories: %s", err))
+		writeCanceledOrServerErrorWithMsg(w, err, fmt.Sprintf("error listing repositories: %s", err))
 		return
 	}
 	results := make([]Repository, 0, len(repos))
@@ -1421,7 +1423,7 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 		writeError(w, http.StatusGone, err)
 
 	default:
-		writeError(w, http.StatusInternalServerError, err)
+		writeCanceledOrServerError(w, err)
 	}
 }
 
@@ -1776,6 +1778,9 @@ func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, 
 	case errors.Is(err, graveler.ErrTooManyTries):
 		writeError(w, http.StatusLocked, "Too many attempts, try again later")
 
+	case errors.Is(err, context.Canceled):
+		writeError(w, HttpStatusRequestCanceled, "Request was canceled")
+
 	case err != nil:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
 		writeError(w, http.StatusInternalServerError, err)
@@ -2053,7 +2058,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 			return
 		}
 		if !errors.Is(err, catalog.ErrNotFound) {
-			writeError(w, http.StatusInternalServerError, err)
+			writeCanceledOrServerError(w, err)
 			return
 		}
 		allowOverwrite = false
@@ -2073,7 +2078,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	contentType := handler.Header.Get("Content-Type")
 	blob, err := upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, file, handler.Size, block.PutOpts{StorageClass: params.StorageClass})
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeCanceledOrServerError(w, err)
 		return
 	}
 
@@ -2242,7 +2247,7 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeCanceledOrServerError(w, err)
 		return
 	}
 	metadata := Commit_Metadata{
@@ -3159,7 +3164,7 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	initialized, err := c.MetadataManager.IsInitialized(ctx)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeCanceledOrServerError(w, err)
 		return
 	}
 	state := setupStateNotInitialized
@@ -3185,7 +3190,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 	ctx := r.Context()
 	initialized, err := c.MetadataManager.IsInitialized(ctx)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeCanceledOrServerError(w, err)
 		return
 	}
 	if initialized {
@@ -3196,7 +3201,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 	// migrate the database if needed
 	err = c.Migrator.Migrate(ctx)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeCanceledOrServerError(w, err)
 		return
 	}
 
@@ -3212,7 +3217,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 		cred, err = auth.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeCanceledOrServerError(w, err)
 		return
 	}
 
@@ -3303,13 +3308,13 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Subject)
 	if err != nil {
 		c.Logger.WithError(err).WithField("email", claims.Subject).Warn("failed to retrieve user by email")
-		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		writeCanceledOrServerErrorWithMsg(w, err, http.StatusText(http.StatusNotFound))
 		return
 	}
 	err = c.Auth.HashAndUpdatePassword(r.Context(), user.Username, body.NewPassword)
 	if err != nil {
 		c.Logger.WithError(err).WithField("username", user.Username).Debug("failed to update password")
-		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		writeCanceledOrServerErrorWithMsg(w, err, http.StatusText(http.StatusInternalServerError))
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -3355,7 +3360,7 @@ func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, temp
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "expansion failed")
+		writeCanceledOrServerErrorWithMsg(w, err, "expansion failed")
 		return
 	}
 	// Response already written during expansion.
@@ -3423,6 +3428,21 @@ func PaginationAmountPtr(a int) *PaginationAmount {
 func PaginationAfterPtr(a string) *PaginationAfter {
 	after := PaginationAfter(a)
 	return &after
+}
+
+func writeCanceledOrServerErrorWithMsg(w http.ResponseWriter, err error, v interface{}) {
+	if err == nil {
+		panic("Unexpected error handling with no error")
+	}
+	if err == context.Canceled {
+		writeError(w, HttpStatusRequestCanceled, "Request was cancelled")
+	} else {
+		writeError(w, http.StatusInternalServerError, v)
+	}
+}
+
+func writeCanceledOrServerError(w http.ResponseWriter, err error) {
+	writeCanceledOrServerErrorWithMsg(w, err, err)
 }
 
 func writeError(w http.ResponseWriter, code int, v interface{}) {

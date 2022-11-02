@@ -22,6 +22,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/SetupState'
           description: lakeFS setup state
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -60,6 +66,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: setup was already called
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -162,6 +174,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -270,6 +288,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -312,6 +336,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -349,6 +379,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -388,6 +424,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -442,6 +484,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -478,6 +526,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -515,6 +569,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -554,6 +614,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -608,6 +674,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -651,6 +723,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -688,6 +766,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -727,6 +811,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -778,6 +868,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -840,6 +936,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -883,6 +985,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -925,6 +1033,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -992,6 +1106,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1031,6 +1151,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1074,6 +1200,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1120,6 +1252,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1187,6 +1325,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1264,6 +1408,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1307,6 +1457,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1349,6 +1505,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1416,6 +1578,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1459,6 +1627,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1501,6 +1675,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1555,6 +1735,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1609,6 +1795,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1646,6 +1838,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1685,6 +1883,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "410":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: repository in deletion
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1731,6 +1941,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1779,6 +1995,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1847,6 +2069,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1904,6 +2132,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1948,6 +2182,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -1994,6 +2234,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -2061,6 +2307,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -2118,6 +2370,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -2214,6 +2472,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -2282,6 +2546,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -2351,18 +2621,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
         "412":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Precondition Failed (e.g. a pre-commit hook returned a failure)
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
       summary: create commit
       tags:
       - commits
@@ -2401,6 +2677,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -2447,6 +2729,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -2495,6 +2783,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -2557,6 +2851,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Conflict Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -2637,6 +2937,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: precondition failed (e.g. a pre-merge hook returned a failure)
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -2720,6 +3026,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -2823,6 +3135,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -2870,6 +3188,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -2949,18 +3273,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
         "410":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: object expired
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
       summary: get object content
       tags:
       - objects
@@ -3010,6 +3340,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -3091,6 +3427,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/StagingLocation'
           description: conflict with a commit, try here
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -3144,6 +3486,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -3197,6 +3545,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -3249,6 +3603,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -3344,6 +3704,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Precondition Failed
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -3411,6 +3777,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -3530,14 +3902,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "410":
+          description: object gone (but partial metadata may be available)
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-        "410":
-          description: object gone (but partial metadata may be available)
       summary: get object metadata
       tags:
       - objects
@@ -3588,6 +3966,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -3679,6 +4063,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -3734,6 +4124,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -3807,6 +4203,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -3854,6 +4256,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -3920,6 +4328,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -3975,6 +4389,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -4029,6 +4449,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -4083,6 +4509,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -4119,6 +4551,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -4157,6 +4595,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -4197,6 +4641,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -4242,6 +4692,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -4291,6 +4747,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -4332,6 +4794,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -4373,6 +4841,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -4479,6 +4953,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request Canceled
         default:
           content:
             application/json:
@@ -4578,6 +5058,12 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
       description: Validation Error
+    Canceled:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      description: Request Canceled
   schemas:
     Pagination:
       example:

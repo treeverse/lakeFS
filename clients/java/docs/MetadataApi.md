@@ -96,6 +96,7 @@ Name | Type | Description  | Notes
 **201** | location created |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getMetaRange"></a>
@@ -183,6 +184,7 @@ Name | Type | Description  | Notes
 **200** | meta-range URI |  * Location - redirect to S3 <br>  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getRange"></a>
@@ -270,5 +272,6 @@ Name | Type | Description  | Notes
 **200** | range URI |  * Location - redirect to S3 <br>  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 

@@ -123,6 +123,7 @@ null (empty response body)
 **201** | membership added successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="attachPolicyToGroup"></a>
@@ -209,6 +210,7 @@ null (empty response body)
 **201** | policy attached successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="attachPolicyToUser"></a>
@@ -295,6 +297,7 @@ null (empty response body)
 **201** | policy attached successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="createCredentials"></a>
@@ -380,6 +383,7 @@ Name | Type | Description  | Notes
 **201** | credentials |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="createGroup"></a>
@@ -465,6 +469,7 @@ Name | Type | Description  | Notes
 **201** | group |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="createPolicy"></a>
@@ -551,6 +556,7 @@ Name | Type | Description  | Notes
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **409** | Resource Conflicts With Target |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="createUser"></a>
@@ -637,6 +643,7 @@ Name | Type | Description  | Notes
 **400** | validation error |  -  |
 **401** | Unauthorized |  -  |
 **409** | Resource Conflicts With Target |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="deleteCredentials"></a>
@@ -723,6 +730,7 @@ null (empty response body)
 **204** | credentials deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="deleteGroup"></a>
@@ -807,6 +815,7 @@ null (empty response body)
 **204** | group deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="deleteGroupMembership"></a>
@@ -893,6 +902,7 @@ null (empty response body)
 **204** | membership deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="deletePolicy"></a>
@@ -977,6 +987,7 @@ null (empty response body)
 **204** | policy deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="deleteUser"></a>
@@ -1061,6 +1072,7 @@ null (empty response body)
 **204** | user deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="detachPolicyFromGroup"></a>
@@ -1147,6 +1159,7 @@ null (empty response body)
 **204** | policy detached successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="detachPolicyFromUser"></a>
@@ -1233,6 +1246,7 @@ null (empty response body)
 **204** | policy detached successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="forgotPassword"></a>
@@ -1438,6 +1452,7 @@ Name | Type | Description  | Notes
 **200** | credentials |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getCurrentUser"></a>
@@ -1601,6 +1616,7 @@ Name | Type | Description  | Notes
 **200** | group |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getPolicy"></a>
@@ -1686,6 +1702,7 @@ Name | Type | Description  | Notes
 **200** | policy |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getUser"></a>
@@ -1771,6 +1788,7 @@ Name | Type | Description  | Notes
 **200** | user |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="listGroupMembers"></a>
@@ -1861,6 +1879,7 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | group memeber list |  -  |
 **401** | Unauthorized |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="listGroupPolicies"></a>
@@ -1952,6 +1971,7 @@ Name | Type | Description  | Notes
 **200** | policy list |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="listGroups"></a>
@@ -2040,6 +2060,7 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | group list |  -  |
 **401** | Unauthorized |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="listPolicies"></a>
@@ -2128,6 +2149,7 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | policy list |  -  |
 **401** | Unauthorized |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="listUserCredentials"></a>
@@ -2219,6 +2241,7 @@ Name | Type | Description  | Notes
 **200** | credential list |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="listUserGroups"></a>
@@ -2310,6 +2333,7 @@ Name | Type | Description  | Notes
 **200** | group list |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="listUserPolicies"></a>
@@ -2403,6 +2427,7 @@ Name | Type | Description  | Notes
 **200** | policy list |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="listUsers"></a>
@@ -2491,6 +2516,7 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | user list |  -  |
 **401** | Unauthorized |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="login"></a>
@@ -2679,6 +2705,7 @@ null (empty response body)
 |-------------|-------------|------------------|
 **201** | successful reset |  -  |
 **401** | Unauthorized |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="updatePolicy"></a>
@@ -2767,5 +2794,6 @@ Name | Type | Description  | Notes
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 

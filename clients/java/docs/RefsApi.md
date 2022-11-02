@@ -108,6 +108,7 @@ Name | Type | Description  | Notes
 **200** | diff between refs |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="dumpRefs"></a>
@@ -194,6 +195,7 @@ Name | Type | Description  | Notes
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="logCommits"></a>
@@ -291,6 +293,7 @@ Name | Type | Description  | Notes
 **200** | commit log |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="mergeIntoBranch"></a>
@@ -385,6 +388,7 @@ Name | Type | Description  | Notes
 **404** | Resource Not Found |  -  |
 **409** | conflict |  -  |
 **412** | precondition failed (e.g. a pre-merge hook returned a failure) |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="restoreRefs"></a>
@@ -472,5 +476,6 @@ null (empty response body)
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**499** | Request Canceled |  -  |
 **0** | Internal Server Error |  -  |
 
