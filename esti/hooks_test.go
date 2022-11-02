@@ -277,7 +277,7 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string) {
 	appendRes(postCreateBranchEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    postCreateBranchEvent.EventTime,
-		SourceRef:    mainBranch,
+		SourceRef:    commitID,
 		EventType:    "post-create-branch",
 		ActionName:   "Test Post Create Branch",
 		HookID:       "test_webhook",
