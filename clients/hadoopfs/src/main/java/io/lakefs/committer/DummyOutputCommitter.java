@@ -182,7 +182,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
     public void setupJob(JobContext context) throws IOException {
         if (outputPath == null)
             return;
-        if (conf.getBoolean(Constants.OC_ENSURE_CLEAN_OUTPUT_BRANCH, true) &&
+        if (FSConfiguration.getBoolean(conf, outputPath.toUri().getScheme(), Constants.OC_ENSURE_CLEAN_OUTPUT_BRANCH, true) &&
             hasChanges(outputBranch)) {
             throw new IOException(String.format("Uncommitted changes on output branch %s, merge will fail", outputBranch));
         }
