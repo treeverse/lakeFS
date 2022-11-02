@@ -33,7 +33,7 @@ func TestBranchSimpleIterator(t *testing.T) {
 	}
 
 	t.Run("listing all branches", func(t *testing.T) {
-		iter, err := ref.NewBranchSimpleIterator(ctx, &kvStore, repo)
+		iter, err := ref.NewBranchSimpleIterator(ctx, kvStore, repo)
 		require.NoError(t, err)
 		ids := make([]graveler.BranchID, 0)
 		for iter.Next() {
@@ -51,7 +51,7 @@ func TestBranchSimpleIterator(t *testing.T) {
 	})
 
 	t.Run("listing branches SeekGE", func(t *testing.T) {
-		iter, err := ref.NewBranchSimpleIterator(ctx, &kvStore, repo)
+		iter, err := ref.NewBranchSimpleIterator(ctx, kvStore, repo)
 		require.NoError(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.BranchID, 0)
@@ -110,7 +110,7 @@ func TestBranchByCommitIterator(t *testing.T) {
 	}
 
 	t.Run("listing all branches", func(t *testing.T) {
-		iter, err := ref.NewBranchByCommitIterator(ctx, &kvStore, repo)
+		iter, err := ref.NewBranchByCommitIterator(ctx, kvStore, repo)
 		require.NoError(t, err)
 		ids := []graveler.CommitID{"mainCommitNotFound"}
 		for iter.Next() {

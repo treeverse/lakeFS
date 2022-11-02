@@ -202,7 +202,11 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	executor := batch.NewConditionalExecutor(logging.Default())
 	go executor.Run(ctx)
 
-	refManager := ref.NewKVRefManager(executor, *cfg.KVStore, ident.NewHexAddressProvider(), nil)
+	refManager := ref.NewKVRefManager(ref.ManagerConfig{
+		Executor:        executor,
+		KvStore:         cfg.KVStore,
+		AddressProvider: ident.NewHexAddressProvider(),
+	})
 	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
 	settingManager := settings.NewManager(refManager, *cfg.KVStore)
 	if cfg.SettingsManagerOption != nil {

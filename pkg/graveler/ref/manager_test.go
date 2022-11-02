@@ -33,15 +33,22 @@ func TestManager_GetRepositoryCache(t *testing.T) {
 	)
 	ctrl := gomock.NewController(t)
 	mockStore := mock.NewMockStore(ctrl)
-	storeMessage := kv.StoreMessage{Store: mockStore}
+	storeMessage := &kv.StoreMessage{Store: mockStore}
 	ctx := context.Background()
 	mockStore.EXPECT().Get(ctx, []byte("graveler"), []byte("repos/repo1")).Times(times).Return(&kv.ValueWithPredicate{}, nil)
-	repoCacheConfig := &ref.RepositoryCacheConfig{
+	cacheConfig := &ref.CacheConfig{
 		Size:   100,
-		Expiry: 2 * time.Second,
+		Expiry: 20 * time.Millisecond,
 		Jitter: 0,
 	}
-	refManager := ref.NewKVRefManager(batch.NopExecutor(), storeMessage, ident.NewHexAddressProvider(), repoCacheConfig)
+	cfg := ref.ManagerConfig{
+		Executor:          batch.NopExecutor(),
+		KvStore:           storeMessage,
+		AddressProvider:   ident.NewHexAddressProvider(),
+		RepoCacheConfig:   cacheConfig,
+		CommitCacheConfig: cacheConfig,
+	}
+	refManager := ref.NewKVRefManager(cfg)
 	for i := 0; i < calls; i++ {
 		_, err := refManager.GetRepository(ctx, "repo1")
 		if err != nil {
@@ -50,9 +57,66 @@ func TestManager_GetRepositoryCache(t *testing.T) {
 	}
 
 	// wait for cache to expire and call again
-	time.Sleep(repoCacheConfig.Expiry + repoCacheConfig.Jitter + time.Second)
+	time.Sleep(cacheConfig.Expiry + cacheConfig.Jitter + time.Second)
 	mockStore.EXPECT().Get(ctx, []byte("graveler"), []byte("repos/repo1")).Times(1).Return(&kv.ValueWithPredicate{}, nil)
 	_, err := refManager.GetRepository(ctx, "repo1")
+	if err != nil {
+		t.Fatalf("Failed to get repository: %s", err)
+	}
+}
+
+// TestManager_GetCommitCache test gets commit record while using cache. We match the number of times we call get repository vs number of times we fetch the data.
+func TestManager_GetCommitCache(t *testing.T) {
+	const (
+		times = 1
+		calls = 3
+	)
+	ctrl := gomock.NewController(t)
+	mockStore := mock.NewMockStore(ctrl)
+	storeMessage := &kv.StoreMessage{Store: mockStore}
+	ctx := context.Background()
+
+	const commitID = "8a3e3f677ed588ab1e19b6cdb050cbce383f9f1166200e7b7252932ceb61189c"
+	const repoID = "repo2"
+	const repoInstanceID = "iuid"
+	mockStore.EXPECT().
+		Get(ctx, []byte(repoID+"-"+repoInstanceID), []byte("commits/"+commitID)).
+		Times(times).
+		Return(&kv.ValueWithPredicate{}, nil)
+
+	cacheConfig := &ref.CacheConfig{
+		Size:   100,
+		Expiry: 20 * time.Millisecond,
+		Jitter: 0,
+	}
+	cfg := ref.ManagerConfig{
+		Executor:          batch.NopExecutor(),
+		KvStore:           storeMessage,
+		AddressProvider:   ident.NewHexAddressProvider(),
+		RepoCacheConfig:   cacheConfig,
+		CommitCacheConfig: cacheConfig,
+	}
+	refManager := ref.NewKVRefManager(cfg)
+	for i := 0; i < calls; i++ {
+		_, err := refManager.GetCommit(ctx, &graveler.RepositoryRecord{
+			RepositoryID: repoID,
+			Repository:   &graveler.Repository{InstanceUID: repoInstanceID},
+		}, commitID)
+		if err != nil {
+			t.Fatalf("Failed to get commit (iteration %d): %s", i, err)
+		}
+	}
+
+	// wait for cache to expire and call again
+	time.Sleep(cacheConfig.Expiry + cacheConfig.Jitter + time.Second)
+	mockStore.EXPECT().
+		Get(ctx, []byte(repoID+"-"+repoInstanceID), []byte("commits/"+commitID)).
+		Times(times).
+		Return(&kv.ValueWithPredicate{}, nil)
+	_, err := refManager.GetCommit(ctx, &graveler.RepositoryRecord{
+		RepositoryID: repoID,
+		Repository:   &graveler.Repository{InstanceUID: repoInstanceID},
+	}, commitID)
 	if err != nil {
 		t.Fatalf("Failed to get repository: %s", err)
 	}
