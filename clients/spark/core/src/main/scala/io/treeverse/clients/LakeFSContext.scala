@@ -77,7 +77,7 @@ object LakeFSContext {
   val DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = 50
   val DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = 200
 
-  private def newRDD(
+  def newRDD(
       sc: SparkContext,
       params: LakeFSJobParams
   ): RDD[(Array[Byte], WithIdentifier[Entry])] = {
