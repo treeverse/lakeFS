@@ -15,21 +15,21 @@ object LakeFSJobParams {
 
   /** Use these parameters to list all entries for a specific commit in a repository.
    */
-  def forCommit(repoName: String, commitID: String, sourceName: String = null): LakeFSJobParams = {
+  def forCommit(repoName: String, commitID: String, sourceName: String = ""): LakeFSJobParams = {
     new LakeFSJobParams(repoName = repoName, commitID = commitID, sourceName = sourceName)
   }
 
   /** Use these parameters to list all entries for in all ranges found in the storage namespace.
    *  The same entry may be listed multiple times if it is found in multiple ranges.
    */
-  def forStorageNamespace(storageNamespace: String, sourceName: String = null): LakeFSJobParams = {
+  def forStorageNamespace(storageNamespace: String, sourceName: String = ""): LakeFSJobParams = {
     new LakeFSJobParams(storageNamespace = storageNamespace, sourceName = sourceName)
   }
 
   /** Use these parameters to list all entries for in all ranges found in the repository.
    *  The same entry may be listed multiple times if it is found in multiple ranges.
    */
-  def forRepository(repoName: String, sourceName: String = null): LakeFSJobParams = {
+  def forRepository(repoName: String, sourceName: String = ""): LakeFSJobParams = {
     new LakeFSJobParams(repoName = repoName, sourceName = sourceName)
   }
 }
