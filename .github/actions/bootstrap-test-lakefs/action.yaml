@@ -15,11 +15,14 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Retrieve generated code
-      uses: actions/download-artifact@v3
+    - uses: keithweaver/aws-s3-github-action@v1.0.0
       with:
-        name: generated-code
-        path: /tmp/
+        command: cp
+        source: s3://yoni-test3/jars/generated.tar.gz
+        destination: /tmp/generated.tar.gz
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_region: us-east-1
     - name: Unpack generated code
       shell: bash
       run: tar -xf /tmp/generated.tar.gz
