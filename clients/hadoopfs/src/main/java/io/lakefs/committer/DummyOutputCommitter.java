@@ -1,5 +1,7 @@
 package io.lakefs.committer;
 
+import io.lakefs.Constants;
+import io.lakefs.FSConfiguration;
 import io.lakefs.LakeFSFileSystem;
 import io.lakefs.LakeFSClient;
 import io.lakefs.utils.ObjectLocation;
@@ -40,7 +42,7 @@ import java.nio.charset.Charset;
 public class DummyOutputCommitter extends FileOutputCommitter {
     private static final Logger LOG = LoggerFactory.getLogger(DummyOutputCommitter.class);
 
-    private static final String branchNamePrefix = "lakeFS-OC-";
+    private static final String branchNamePrefix = "lakeFS-OC";
 
     /**
      * API client connected to the lakeFS server used on the filesystem.
@@ -59,16 +61,12 @@ public class DummyOutputCommitter extends FileOutputCommitter {
     /**
      * Branch for this job.  Deleted if the job aborts.  Always defined,
      * even if this committer is a noop.
-     *
-     * TODO(ariels): Configurably delete even on job success.
      */
     protected String jobBranch = null;
 
     /**
      * Branch for this task.  Deleted if the task fails.  Always defined,
      * even if this committer is a noop.
-     *
-     * TODO(ariels): Configurably delete even on job success.
      */
     protected String taskBranch;
 
@@ -83,6 +81,8 @@ public class DummyOutputCommitter extends FileOutputCommitter {
      * this committer is a noop.
      */
     protected Path workPath = null;
+
+    protected Configuration conf;
 
     private static HashFunction hash = Hashing.sha256();
     private static Charset utf8 = Charset.forName("utf8");
@@ -103,7 +103,8 @@ public class DummyOutputCommitter extends FileOutputCommitter {
 
     public DummyOutputCommitter(Path outputPath, JobContext context) throws IOException {
         super(outputPath, context);
-        // TODO(lynn): Create lakeFS API client.
+
+        this.conf = context.getConfiguration();
 
         JobID id = context.getJobID();
 
@@ -112,7 +113,6 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         LOG.info("Construct OC: Job branch: {}", jobBranch);
 
         if (outputPath != null) {
-            Configuration conf = context.getConfiguration();
             FileSystem fs = outputPath.getFileSystem(conf);
             Preconditions.checkArgument(fs instanceof LakeFSFileSystem,
                                         "%s not on a LakeFSFileSystem", outputPath);
@@ -160,6 +160,16 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         }
     }
 
+    private void deleteBranch(String branch) throws IOException {
+        LOG.info("Cleanup branch {}", branch);
+        try {
+            BranchesApi branches = lakeFSClient.getBranches();
+            branches.deleteBranch(repository, branch);
+        } catch (ApiException e) {
+            throw new IOException(String.format("deleteBranch %s failed", branch), e);
+        }
+    }
+
     // TODO(ariels): Need to override getJobAttemptPath,
     // getPendingJobAttemptPath (which is *static*, what do we do???!?)
 
@@ -196,6 +206,12 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         }
     }
 
+    private void cleanupJob() throws IOException {
+        if (FSConfiguration.getBoolean(conf, outputPath.toUri().getScheme(), Constants.OC_DELETE_JOB_BRANCH, true)) {
+            deleteBranch(jobBranch);
+        }
+    }
+
     @Override
     public void commitJob(JobContext jobContext) throws IOException {
         if (outputPath == null)
@@ -211,13 +227,19 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         } catch (ApiException e) {
             throw new IOException(String.format("commitJob %s failed", jobContext.getJobID()), e);
         }
+        try {
+            cleanupJob();
+        } catch (IOException e) {
+            LOG.warn("Failed to delete task branch {} after merge (keep going)", taskBranch, e);
+        }
+
     }
 
     @Override
     public void abortJob(JobContext jobContext, JobStatus.State status) throws IOException { // TODO(lynn)
         if (outputPath == null)
             return;
-        LOG.info("TODO: Delete(?) job branch {}", jobBranch);
+        cleanupJob();
     }
 
     @Override
@@ -234,6 +256,12 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         LOG.info("Setup task for {} on {}", taskBranch, jobBranch);
         createBranch(jobBranch, outputBranch);
         createBranch(taskBranch, jobBranch);
+    }
+
+    private void cleanupTask() throws IOException {
+        if (FSConfiguration.getBoolean(conf, outputPath.toUri().getScheme(), Constants.OC_DELETE_TASK_BRANCH, true)) {
+            deleteBranch(taskBranch);
+        }
     }
 
     @Override
@@ -260,13 +288,23 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         } catch (ApiException e) {
             throw new IOException(String.format("commitTask %s failed", taskContext.getTaskAttemptID()), e);
         }
+        try {
+            cleanupTask();
+        } catch (IOException e) {
+            LOG.warn("Failed to delete task branch {} after merge (keep going)", taskBranch, e);
+        }
     }
 
+    @Override
     public void abortTask(TaskAttemptContext taskContext)
         throws IOException {    // TODO(lynn)
         if (outputPath == null)
             return;
-        LOG.info("TODO: Delete task branch %s", taskBranch);
+        try {
+            cleanupTask();
+        } catch (IOException e) {
+            LOG.warn("Failed to delete task branch {} while aborting (keep going)", taskBranch, e);
+        }
     }
 
     // TODO(lynn): More methods: isRecoverySupported, isCommitJobRepeatable, recoverTask.
