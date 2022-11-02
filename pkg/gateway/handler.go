@@ -20,6 +20,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/upload"
 )
 
 type contextKey string
@@ -56,10 +57,10 @@ type ServerContext struct {
 	blockStore        block.Adapter
 	authService       auth.GatewayService
 	stats             stats.Collector
-	pathProvider      operations.UploadPathProvider
+	pathProvider      upload.PathProvider
 }
 
-func NewHandler(region string, catalog catalog.Interface, multipartsTracker multiparts.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider operations.UploadPathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool) http.Handler {
+func NewHandler(region string, catalog catalog.Interface, multipartsTracker multiparts.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool) http.Handler {
 	var fallbackHandler http.Handler
 	if fallbackURL != nil {
 		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)

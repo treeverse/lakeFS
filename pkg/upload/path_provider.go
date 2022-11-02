@@ -8,9 +8,14 @@ import (
 	"github.com/rs/xid"
 )
 
-// PathProvider provides path by request to upload data. The provided path is built from '<prefix>/<partition>/<unique id>'.
+// PathProvider capture the requirements from PathPartitionProvider implementation to return a new path
+type PathProvider interface {
+	NewPath() string
+}
+
+// PathPartitionProvider provides path by request to upload data. The provided path is built from '<prefix>/<partition>/<unique id>'.
 // The partition is updated every interval or when the number of IDs generated passes the specified size.
-type PathProvider struct {
+type PathPartitionProvider struct {
 	mu  sync.Mutex
 	cfg *PathProviderConfig
 	// timestamp used to calculate the time based ID value
@@ -23,7 +28,7 @@ type PathProvider struct {
 
 const (
 	DefaultDataSize     = 50000
-	DefaultDataInterval = 5 * time.Minute
+	DefaultDataInterval = time.Hour
 	DefaultDataPrefix   = "data"
 
 	// unixYear4000 epoch value for Saturday, January 1, 4000 12:00:00 AM
@@ -33,7 +38,7 @@ const (
 type TimeNow func() time.Time
 
 var (
-	DefaultPathProvider = NewPathProvider()
+	DefaultPathProvider = NewPathPartitionProvider()
 	DefaultTimeNow      = time.Now
 )
 
@@ -70,7 +75,7 @@ func WithPathProviderTellTime(t TimeNow) PathProviderOption {
 	}
 }
 
-func NewPathProvider(opts ...PathProviderOption) *PathProvider {
+func NewPathPartitionProvider(opts ...PathProviderOption) *PathPartitionProvider {
 	cfg := &PathProviderConfig{
 		Size:     DefaultDataSize,
 		Interval: DefaultDataInterval,
@@ -81,7 +86,7 @@ func NewPathProvider(opts ...PathProviderOption) *PathProvider {
 		opt(cfg)
 	}
 	now := cfg.TellTime()
-	return &PathProvider{
+	return &PathPartitionProvider{
 		cfg:       cfg,
 		timestamp: now,
 		count:     0,
@@ -90,7 +95,7 @@ func NewPathProvider(opts ...PathProviderOption) *PathProvider {
 }
 
 // NewPath returns a new upload path based on the current partition.
-func (i *PathProvider) NewPath() string {
+func (i *PathPartitionProvider) NewPath() string {
 	part := i.partitionForID()
 	name := xid.New().String()
 	return path.Join(i.cfg.Prefix, part, name)
@@ -98,7 +103,7 @@ func (i *PathProvider) NewPath() string {
 
 // partitionForID return the current partition to use. It will update the partition value before return in case we
 // crossed the size or internal (time) configured.
-func (i *PathProvider) partitionForID() string {
+func (i *PathPartitionProvider) partitionForID() string {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	i.count++

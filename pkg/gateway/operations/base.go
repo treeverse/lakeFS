@@ -16,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
+	"github.com/treeverse/lakefs/pkg/upload"
 )
 
 const StorageClassHeader = "x-amz-storage-class"
@@ -40,10 +41,6 @@ const (
 
 type ActionIncr func(action, repository, ref, userID string)
 
-type UploadPathProvider interface {
-	NewPath() string
-}
-
 type Operation struct {
 	OperationID       OperationID
 	Region            string
@@ -54,7 +51,7 @@ type Operation struct {
 	Auth              auth.GatewayService
 	Incr              ActionIncr
 	MatchedHost       bool
-	PathProvider      UploadPathProvider
+	PathProvider      upload.PathProvider
 }
 
 func StorageClassFromHeader(header http.Header) *string {

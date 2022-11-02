@@ -71,10 +71,6 @@ type actionsHandler interface {
 	ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (actions.TaskResultIterator, error)
 }
 
-type UploadPathProvider interface {
-	NewPath() string
-}
-
 type Controller struct {
 	Config                *config.Config
 	Catalog               catalog.Interface
@@ -92,7 +88,7 @@ type Controller struct {
 	Templater             templater.Service
 	sessionStore          sessions.Store
 	oidcAuthenticator     *oidc.Authenticator
-	PathProvider          UploadPathProvider
+	PathProvider          upload.PathProvider
 }
 
 func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, _ *http.Request) {
@@ -3523,7 +3519,7 @@ func NewController(
 	templater templater.Service,
 	oidcAuthenticator *oidc.Authenticator,
 	sessionStore sessions.Store,
-	pathProvider UploadPathProvider,
+	pathProvider upload.PathProvider,
 ) *Controller {
 	gob.Register(oidc.Claims{})
 	return &Controller{

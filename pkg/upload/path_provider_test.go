@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestPathProvider(t *testing.T) {
+func TestPathPartitionProvider(t *testing.T) {
 	t.Run("by_time", func(t *testing.T) {
 		const (
 			times    = 3
@@ -16,7 +16,7 @@ func TestPathProvider(t *testing.T) {
 		)
 		tm := time.Now()
 		tellTime := func() time.Time { return tm }
-		provider := NewPathProvider(
+		provider := NewPathPartitionProvider(
 			WithPathProviderPrefix(prefix),
 			WithPathProviderSize(size),
 			WithPathProviderInterval(interval),
@@ -41,7 +41,7 @@ func TestPathProvider(t *testing.T) {
 		)
 		tm := time.Now()
 		tellTime := func() time.Time { return tm }
-		provider := NewPathProvider(
+		provider := NewPathPartitionProvider(
 			WithPathProviderPrefix(prefix),
 			WithPathProviderSize(size),
 			WithPathProviderInterval(interval),
