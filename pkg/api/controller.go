@@ -64,7 +64,7 @@ const (
 
 	DefaultMaxDeleteObjects = 1000
 
-	HttpStatusRequestCanceled = 499
+	HTTPStatusRequestCanceled = 499
 )
 
 type actionsHandler interface {
@@ -1779,7 +1779,7 @@ func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, 
 		writeError(w, http.StatusLocked, "Too many attempts, try again later")
 
 	case errors.Is(err, context.Canceled):
-		writeError(w, HttpStatusRequestCanceled, "Request was canceled")
+		writeError(w, HTTPStatusRequestCanceled, "Request was canceled")
 
 	case err != nil:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
@@ -3435,7 +3435,7 @@ func writeCanceledOrServerErrorWithMsg(w http.ResponseWriter, err error, v inter
 		panic("Unexpected error handling with no error")
 	}
 	if errors.Is(err, context.Canceled) {
-		writeError(w, HttpStatusRequestCanceled, "Request was cancelled")
+		writeError(w, HTTPStatusRequestCanceled, "Request was cancelled")
 	} else {
 		writeError(w, http.StatusInternalServerError, v)
 	}
