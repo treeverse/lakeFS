@@ -1,14 +1,14 @@
 ---
 layout: default
-title: Run lakeFS Locally
-description: Running lakeFS locally is easy and quick. This section covers how to spin up lakeFS using Docker.
+title: Install lakeFS
+description: Installing lakeFS is easy. This section covers how to spin up lakeFS using Docker.
 parent: Quickstart
 nav_order: 10
 has_children: false
 next: ["Create your first repository", "./repository.html"]
 ---
 
-# Run lakeFS Locally
+# Install lakeFS
 {: .no_toc }
 
 {% include learn_only.html %} 
@@ -37,7 +37,7 @@ You can try lakeFS:
 1. [On Kubernetes](more_quickstart_options.md#on-kubernetes-with-helm).
 1. By [running the binary directly](more_quickstart_options.md#using-the-binary).
 
-## Modifying the local deployment
+## Modifying the local deployment to run against your cloud data
 
 ### Using AWS S3 Storage
 To modify the local deployment, for example, in order to use your local lakeFS against S3 storage (as opposed to the local storage), run the command with local parameters:
