@@ -77,6 +77,13 @@ objects added using this operation are never collected by GC.
        eventually be deleted by the GC job.
 >**Note:** These changes will also solves the following [issue](https://github.com/treeverse/lakeFS/issues/4438)
 
+#### Track copied objects in ref-store
+
+lakeFS will track copy operations of uncommitted objects and store them in the ref-store for a limited duration.
+GC will use this information as part of the uncommitted data to avoid a race between the GC job and rename operation.
+lakeFS will periodically scan these entries and remove copy entries from the ref-store after such time that will 
+allow correct execution of the GC process.  
+
 #### S3 Gateway CopyObject
 
 When performing a shallow copy - track copied objects in ref-store.
@@ -98,7 +105,7 @@ A new API which will create parquet files from uncommitted object information (a
 will be saved to `_lakefs/gc/run_id/uncommitted/*.parquet` and used by the GC client to list repository's uncommitted objects.
 At the end of this flow - read copied objects information from ref-store and add it to the uncommitted data.
 For the purpose of this document we'll call this the `UncommittedData`
-
+>**Note:** Copied object information must be read AFTER all uncommitted data was collected
 
 ### GC Flows
 
