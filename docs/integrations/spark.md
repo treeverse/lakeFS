@@ -24,17 +24,22 @@ Similarly, properties defining lakeFS credentials should be configured in secure
 not on the command line or inlined in code where they might be exposed.
 {: .note}
 
-## Two-tiered Spark support
+## Multi-tiered Spark support
 
-lakeFS support in Spark has two tiers:
+lakeFS support in Spark has three tiers:
 
 * Access lakeFS using the [S3A gateway](#access-lakefs-using-the-s3a-gateway).
 * Access lakeFS using the [lakeFS-specific Hadoop
   FileSystem](#access-lakefs-using-the-lakefs-specific-hadoop-filesystem).
+* (**BETA!**) Access lakeFS using lake lakeFS-specific Hadoop FileSystem and
+  write using the [lakeFS Output
+  Committer](#write-using-the-lakefs-output-committer).
 
-Using the S3A gateway is easier to configure and may be more suitable for legacy or
-small-scale applications. Using the lakeFS FileSystem requires a somewhat more complex
-configuration, but offers greatly increased performance.
+Using the S3A gateway is easier to configure and may be more suitable for
+legacy or small-scale applications. Using the lakeFS FileSystem requires a
+somewhat more complex configuration, but offers greatly increased
+performance.  The lakeFS Output Committer add-on to the lakeFS FileSystem is
+in beta.  It provides atomic writes and increases write performance.
 
 ## Access lakeFS using the S3A gateway
 
@@ -369,7 +374,10 @@ df.write.partitionBy("example-column").parquet(s"lakefs://${repo}/${branch}/outp
 
 The data is now created in lakeFS as new changes in your branch. You can now commit these changes or revert them.
 
-## Using the new OutputCommitter
+## Using the lakeFS OutputCommitter
+
+This feature is currently **in beta**.  It provides atomic writes and
+increases write performance.
 
 ### Configuration
 
@@ -389,7 +397,32 @@ On Hadoop 2, configure:
 </configuration>
 ```
 
-(You can also set a default output committer using mapred.output.committer.class and possibly setting mapred.mapper.new-api=false.)
+The lakeFS output committer holds Hadoop working objects on temporary
+branches and merges them back to the output branch when done.  Objects
+appear atomically: it is not possible for another task to see the output
+path with any set of objects except the entire desired output set.
+
+#### Additional options
+
+* For old Hadoop versions you might set a default output committer using
+  `mapred.output.committer.class`, and possibly setting
+  `mapred.mapper.new-api=false`.
+* The lakeFS output committer adds a `_SUCCESS` file to the output path,
+  much like FileOutputCommitter and other Hadoop output committers.  You
+  might not require this file, for instance by waiting for a merge to occur
+  to the output branch.  Control its generation using the
+  `spark.hadoop.fs.lakefs.committer.marksuccessfuljobs` option:
+  * If `auto` (the default), copy whatever FileOutputCommitter is configured
+    to do using
+    `spark.hadoop.mapreduce.fileoutputcommitter.marksuccessfuljobs`.  That
+    option itself defaults to `true`, so by default the lakeFS output
+    committer writes the file.
+  * If `false`, do _not_ write the file.
+  * If `true` or otherwise, write the file.
+* By default the temporary job branch and the temporary tasks branches are
+  deleted.  Configure `committer.delete_job_branch` and/or
+  `committer.delete_task_branch` to `false` to prevent this deletion.  This
+  may be useful for debugging.
 
 ## Case Study: SimilarWeb
 
