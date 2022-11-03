@@ -78,7 +78,7 @@ def generateCoreProject(buildType: BuildType) =
         "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
         "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
         // Test with an up-to-date fasterxml.
-         "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2" % "test",
+        "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2" % "test",
         "com.storm-enroute" %% "scalameter" % "0.18" % "test"
       ),
       testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
@@ -92,9 +92,11 @@ def generateCoreProject(buildType: BuildType) =
 
       // Uncomment to get (very) full stacktraces in test:
       //      Test / testOptions += Tests.Argument("-oF"),
-      target := file(s"target/core-${buildType.name}/")
+      target := file(s"target/core-${buildType.name}/"),
+      buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+      buildInfoPackage := "io.treeverse.clients"
     )
-    .enablePlugins(S3Plugin)
+    .enablePlugins(S3Plugin, BuildInfoPlugin)
 
 def generateExamplesProject(buildType: BuildType) =
   Project(s"${baseName}-examples-${buildType.name}", file(s"examples"))

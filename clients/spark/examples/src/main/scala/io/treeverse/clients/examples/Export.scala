@@ -45,7 +45,13 @@ object Export extends App {
     sc.hadoopConfiguration.set(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY, readTimeoutSec)
 
     val apiClient = ApiClient.get(
-      APIConfigurations(endpoint, accessKey, secretKey, connectionTimeoutSec, readTimeoutSec) /**/
+      APIConfigurations(endpoint,
+                        accessKey,
+                        secretKey,
+                        connectionTimeoutSec,
+                        readTimeoutSec,
+                        Exporter.EXPORTER_SOURCE_NAME
+                       )
     )
     val exporter = new Exporter(spark, apiClient, repo, rootLocation)
 

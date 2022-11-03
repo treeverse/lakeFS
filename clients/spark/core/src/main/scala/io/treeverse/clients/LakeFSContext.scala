@@ -11,6 +11,45 @@ import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 
 import java.util.concurrent.TimeUnit
 
+object LakeFSJobParams {
+
+  /** Use these parameters to list all entries for a specific commit in a repository.
+   */
+  def forCommit(repoName: String, commitID: String, sourceName: String = ""): LakeFSJobParams = {
+    new LakeFSJobParams(repoName = repoName, commitID = commitID, sourceName = sourceName)
+  }
+
+  /** Use these parameters to list all entries for in all ranges found in the storage namespace.
+   *  The same entry may be listed multiple times if it is found in multiple ranges.
+   */
+  def forStorageNamespace(storageNamespace: String, sourceName: String = ""): LakeFSJobParams = {
+    new LakeFSJobParams(storageNamespace = storageNamespace, sourceName = sourceName)
+  }
+
+  /** Use these parameters to list all entries for in all ranges found in the repository.
+   *  The same entry may be listed multiple times if it is found in multiple ranges.
+   */
+  def forRepository(repoName: String, sourceName: String = ""): LakeFSJobParams = {
+    new LakeFSJobParams(repoName = repoName, sourceName = sourceName)
+  }
+}
+
+/** @param repoName the repository to list entries for. Mutually exclusive with `storageNamespace`.
+ *  @param storageNamespace the storage namespace to list entries from. Mutually exclusive with `repoName`.
+ *  @param commitID the commit to list entries for. If empty, list all entries in the repository.
+ *  @param sourceName a string describing the application using the client. Will be sent as part of the X-Lakefs-Client header.
+ */
+class LakeFSJobParams private (
+    val repoName: String = "",
+    val storageNamespace: String = "",
+    val commitID: String = "",
+    val sourceName: String = ""
+) {
+  if (StringUtils.isEmpty(repoName) == StringUtils.isEmpty(storageNamespace)) {
+    throw new InvalidJobConfException("Exactly one of repoName or storageNamespace must be set")
+  }
+}
+
 object LakeFSContext {
   val LAKEFS_CONF_API_URL_KEY = "lakefs.api.url"
   val LAKEFS_CONF_API_ACCESS_KEY_KEY = "lakefs.api.access_key"
@@ -20,6 +59,8 @@ object LakeFSContext {
   val LAKEFS_CONF_JOB_REPO_NAME_KEY = "lakefs.job.repo_name"
   val LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY = "lakefs.job.storage_namespace"
   val LAKEFS_CONF_JOB_COMMIT_ID_KEY = "lakefs.job.commit_id"
+  val LAKEFS_CONF_JOB_SOURCE_NAME_KEY = "lakefs.job.source_name"
+
   val LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = "lakefs.gc.range.num_partitions"
   val LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = "lakefs.gc.address.num_partitions"
   val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY = "lakefs.debug.gc.max_commit_iso_datetime"
@@ -36,17 +77,18 @@ object LakeFSContext {
   val DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = 50
   val DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = 200
 
-  private def newRDD(
+  def newRDD(
       sc: SparkContext,
-      repoName: String,
-      storageNamespace: String,
-      commitID: String,
-      inputFormatClass: Class[_ <: LakeFSBaseInputFormat]
+      params: LakeFSJobParams
   ): RDD[(Array[Byte], WithIdentifier[Entry])] = {
+    val inputFormatClass =
+      if (StringUtils.isNotBlank(params.commitID)) classOf[LakeFSCommitInputFormat]
+      else classOf[LakeFSAllRangesInputFormat]
+
     val conf = new Configuration(sc.hadoopConfiguration)
-    conf.set(LAKEFS_CONF_JOB_REPO_NAME_KEY, repoName)
-    conf.set(LAKEFS_CONF_JOB_COMMIT_ID_KEY, commitID)
-    conf.set(LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY, storageNamespace)
+    conf.set(LAKEFS_CONF_JOB_REPO_NAME_KEY, params.repoName)
+    conf.set(LAKEFS_CONF_JOB_COMMIT_ID_KEY, params.commitID)
+    conf.set(LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY, params.storageNamespace)
     if (StringUtils.isBlank(conf.get(LAKEFS_CONF_API_URL_KEY))) {
       throw new InvalidJobConfException(s"$LAKEFS_CONF_API_URL_KEY must not be empty")
     }
@@ -56,6 +98,7 @@ object LakeFSContext {
     if (StringUtils.isBlank(conf.get(LAKEFS_CONF_API_SECRET_KEY_KEY))) {
       throw new InvalidJobConfException(s"$LAKEFS_CONF_API_SECRET_KEY_KEY must not be empty")
     }
+    conf.set(LAKEFS_CONF_JOB_SOURCE_NAME_KEY, params.sourceName)
     sc.newAPIHadoopRDD(
       conf,
       inputFormatClass,
@@ -67,6 +110,7 @@ object LakeFSContext {
   /** Returns all entries in all ranges of the given commit, as an RDD.
    *  If no commit is given, returns all entries in all ranges of the entire repository.
    *  The same entry may be found in multiple ranges.
+   *  @deprecated use [[LakeFSContext.newRDD(SparkContext,LakeFSJobParams)]] instead.
    */
   def newRDD(
       sc: SparkContext,
@@ -77,28 +121,24 @@ object LakeFSContext {
       if (StringUtils.isNotBlank(commitID)) classOf[LakeFSCommitInputFormat]
       else classOf[LakeFSAllRangesInputFormat]
 
-    newRDD(sc, repoName, "", commitID, inputFormatClass)
+    newRDD(sc, LakeFSJobParams.forCommit(repoName, commitID))
   }
 
-  private def newDF(
+  def newDF(
       spark: SparkSession,
-      repoName: String,
-      storageNamespace: String,
-      commitID: String,
-      inputFormatClass: Class[_ <: LakeFSBaseInputFormat]
+      params: LakeFSJobParams
   ): DataFrame = {
     val rdd =
-      newRDD(spark.sparkContext, repoName, storageNamespace, commitID, inputFormatClass).map {
-        case (k, v) =>
-          val entry = v.message
-          Row(
-            new String(k),
-            entry.address,
-            entry.eTag,
-            new java.sql.Timestamp(TimeUnit.SECONDS.toMillis(entry.getLastModified.seconds)),
-            entry.size,
-            new String(v.rangeID)
-          )
+      newRDD(spark.sparkContext, params).map { case (k, v) =>
+        val entry = v.message
+        Row(
+          new String(k),
+          entry.address,
+          entry.eTag,
+          new java.sql.Timestamp(TimeUnit.SECONDS.toMillis(entry.getLastModified.seconds)),
+          entry.size,
+          new String(v.rangeID)
+        )
       }
     val schema = new StructType()
       .add(StructField("key", StringType))
@@ -114,17 +154,19 @@ object LakeFSContext {
    *  The same entry may be found in multiple ranges.
    *
    *  The storage namespace is expected to be a URI accessible by Hadoop.
+   *  @deprecated use [[LakeFSContext.newDF(SparkContext,LakeFSJobParams)]] instead.
    */
   def newDF(
       spark: SparkSession,
       storageNamespace: String
   ): DataFrame = {
-    newDF(spark, "", storageNamespace, "", classOf[LakeFSAllRangesInputFormat])
+    newDF(spark, LakeFSJobParams.forStorageNamespace(storageNamespace))
   }
 
   /** Returns all entries in all ranges of the given commit, as a DataFrame.
    *  If no commit is given, returns all entries in all ranges of the entire repository.
    *  The same entry may be found in multiple ranges.
+   *  @deprecated use [[LakeFSContext.newDF(SparkSession,LakeFSJobParams)]] instead.
    */
   def newDF(
       spark: SparkSession,
@@ -134,6 +176,6 @@ object LakeFSContext {
     val inputFormatClass =
       if (StringUtils.isNotBlank(commitID)) classOf[LakeFSCommitInputFormat]
       else classOf[LakeFSAllRangesInputFormat]
-    newDF(spark, repoName, "", commitID, inputFormatClass)
+    newDF(spark, LakeFSJobParams.forCommit(repoName, commitID))
   }
 }

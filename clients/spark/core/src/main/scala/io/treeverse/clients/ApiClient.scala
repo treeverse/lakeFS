@@ -46,7 +46,8 @@ private object ApiClient {
                           conf.accessKey,
                           conf.secretKey,
                           conf.connectionTimeoutSec,
-                          conf.readTimeoutSec
+                          conf.readTimeoutSec,
+                          conf.source
                          )
       )
     }
@@ -90,12 +91,15 @@ private object ApiClient {
   }
 }
 
+/** @param source a string describing the application using the client. Will be sent as part of the X-Lakefs-Client header.
+ */
 case class APIConfigurations(
     apiUrl: String,
     accessKey: String,
     secretKey: String,
     connectionTimeoutSec: String = "",
-    readTimeoutSec: String = ""
+    readTimeoutSec: String = "",
+    source: String = ""
 ) {
   val FROM_SEC_TO_MILLISEC = 1000
 
@@ -115,6 +119,10 @@ case class APIConfigurations(
 class ApiClient private (conf: APIConfigurations) {
 
   val client = new api.ApiClient
+  client.addDefaultHeader(
+    "X-Lakefs-Client",
+    s"lakefs-metaclient/${BuildInfo.version}${if (conf.source.nonEmpty) "/" + conf.source else ""}"
+  )
   client.setUsername(conf.accessKey)
   client.setPassword(conf.secretKey)
   client.setBasePath(conf.apiUrl.stripSuffix("/"))
