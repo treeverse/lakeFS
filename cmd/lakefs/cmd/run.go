@@ -250,12 +250,15 @@ var runCmd = &cobra.Command{
 			if err != nil {
 				logger.WithError(err).Fatal("Failed to initialize OIDC provider")
 			}
+			scopes := []string{oidc.ScopeOpenID, "profile"}
+
+			scopes = append(scopes, oidcConfig.AdditionalScopeClaims...)
 			oauthConfig = &oauth2.Config{
 				ClientID:     oidcConfig.ClientID,
 				ClientSecret: oidcConfig.ClientSecret,
 				RedirectURL:  strings.TrimSuffix(oidcConfig.CallbackBaseURL, "/") + api.BaseURL + "/oidc/callback",
 				Endpoint:     oidcProvider.Endpoint(),
-				Scopes:       []string{oidc.ScopeOpenID, "profile"},
+				Scopes:       scopes,
 			}
 		}
 		apiHandler := api.Serve(
