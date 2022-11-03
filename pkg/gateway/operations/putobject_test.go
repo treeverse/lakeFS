@@ -45,7 +45,8 @@ func TestReadBlob(t *testing.T) {
 			reader := bytes.NewReader(data)
 			adapter := newMockAdapter()
 			opts := block.PutOpts{StorageClass: tc.storageClass}
-			blob, err := upload.WriteBlob(context.Background(), adapter, bucketName, reader, tc.size, opts)
+			address := upload.DefaultPathProvider.NewPath()
+			blob, err := upload.WriteBlob(context.Background(), adapter, bucketName, address, reader, tc.size, opts)
 			if err != nil {
 				t.Fatal(err)
 			}

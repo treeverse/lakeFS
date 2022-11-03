@@ -21,7 +21,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
-	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/email"
@@ -89,6 +88,7 @@ type Controller struct {
 	Templater             templater.Service
 	sessionStore          sessions.Store
 	oidcAuthenticator     *oidc.Authenticator
+	PathProvider          upload.PathProvider
 }
 
 func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, _ *http.Request) {
@@ -264,18 +264,8 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	// Generate a name.
-	name, err := nanoid.New()
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	tokenPart := ""
-	if token != nil {
-		tokenPart = *token + "/"
-	}
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, fmt.Sprintf("data/%s%s", tokenPart, name), block.IdentifierTypeRelative)
+	address := c.PathProvider.NewPath()
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -2071,7 +2061,8 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	}
 	defer func() { _ = file.Close() }()
 	contentType := handler.Header.Get("Content-Type")
-	blob, err := upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, file, handler.Size, block.PutOpts{StorageClass: params.StorageClass})
+	address := c.PathProvider.NewPath()
+	blob, err := upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, address, file, handler.Size, block.PutOpts{StorageClass: params.StorageClass})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -3528,6 +3519,7 @@ func NewController(
 	templater templater.Service,
 	oidcAuthenticator *oidc.Authenticator,
 	sessionStore sessions.Store,
+	pathProvider upload.PathProvider,
 ) *Controller {
 	gob.Register(oidc.Claims{})
 	return &Controller{
@@ -3547,6 +3539,7 @@ func NewController(
 		Templater:             templater,
 		sessionStore:          sessionStore,
 		oidcAuthenticator:     oidcAuthenticator,
+		PathProvider:          pathProvider,
 	}
 }
 

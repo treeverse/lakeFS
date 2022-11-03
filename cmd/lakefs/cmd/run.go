@@ -40,6 +40,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
+	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
 	"github.com/treeverse/lakefs/templates"
 	"golang.org/x/oauth2"
@@ -277,6 +278,7 @@ var runCmd = &cobra.Command{
 			cfg.GetUISnippets(),
 			oidcProvider,
 			oauthConfig,
+			upload.DefaultPathProvider,
 		)
 
 		// init gateway server
@@ -305,6 +307,7 @@ var runCmd = &cobra.Command{
 			authService,
 			cfg.GetS3GatewayDomainNames(),
 			bufferedCollector,
+			upload.DefaultPathProvider,
 			s3FallbackURL,
 			cfg.GetAuditLogLevel(),
 			cfg.GetLoggingTraceRequestHeaders(),

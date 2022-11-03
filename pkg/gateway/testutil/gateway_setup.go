@@ -22,6 +22,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/treeverse/lakefs/pkg/upload"
 )
 
 type Dependencies struct {
@@ -62,8 +63,19 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, _ string, repoN
 	_, err = c.CreateRepository(ctx, repoName, storageNamespace, "main")
 	testutil.Must(t, err)
 
-	handler := gateway.NewHandler(authService.Region, c, multipartsTracker, blockAdapter, authService, []string{authService.BareDomain},
-		&stats.NullCollector{}, nil, config.DefaultAuditLogLevel, true)
+	handler := gateway.NewHandler(
+		authService.Region,
+		c,
+		multipartsTracker,
+		blockAdapter,
+		authService,
+		[]string{authService.BareDomain},
+		&stats.NullCollector{},
+		upload.DefaultPathProvider,
+		nil,
+		config.DefaultAuditLogLevel,
+		true,
+	)
 
 	return handler, &Dependencies{
 		blocks:  blockAdapter,
