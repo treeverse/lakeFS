@@ -11,6 +11,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -1727,8 +1729,7 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string
 }
 
 func createParquetFile(entries []DBEntry) (string, error) {
-	// TODO: Modify using a run ID generator (https://github.com/treeverse/lakeFS/issues/4469)
-	filename := uuid.New().String()
+	filename := path.Join(os.TempDir(), uuid.New().String())
 	fw, err := local.NewLocalFileWriter(filename)
 	if err != nil {
 		return "", err
@@ -1769,6 +1770,7 @@ func markToString(mark *graveler.GCUncommittedMark) (*string, error) {
 	return &result, nil
 }
 
+// TODO: Modify using a run ID generator (https://github.com/treeverse/lakeFS/issues/4469)
 func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID, runID, contToken string) (*graveler.GarbageCollectionRunMetadata, *string, error) {
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},

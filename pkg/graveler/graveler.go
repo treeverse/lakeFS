@@ -1314,13 +1314,19 @@ func (g *KVGraveler) GetGarbageCollectionUncommitted(ctx context.Context, reposi
 		b := bItr.Value()
 		itr, err := g.listStagingArea(ctx, b.Branch)
 		if err != nil {
-			bItr.Close()
 			return nil, nil, err
 		}
-		itr.SeekGE(mark.Key)
+		if mark.BranchID == b.BranchID { // SeekGE on first branch
+			itr.SeekGE(mark.Key)
+		}
+
 		for itr.Next() {
 			count += 1
 			entry := itr.Value()
+			itr.Close()
+			if itr.Err() != nil {
+				return nil, nil, itr.Err()
+			}
 			if count > GCMaxUncommittedObjects {
 				contToken := GCUncommittedMark{
 					BranchID: b.BranchID,
@@ -1329,14 +1335,16 @@ func (g *KVGraveler) GetGarbageCollectionUncommitted(ctx context.Context, reposi
 				return entries, &contToken, nil
 			}
 			entries = append(entries, entry)
-			itr.Close()
-			if itr.Err() != nil {
-				return nil, nil, itr.Err()
-			}
+		}
+		if itr.Err() != nil {
+			return nil, nil, itr.Err()
 		}
 		itr.Close()
 	}
-	return entries, nil, bItr.Err()
+	if bItr.Err() != nil {
+		return nil, nil, bItr.Err()
+	}
+	return entries, nil, nil
 }
 
 func (g *KVGraveler) SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename, runID string) (*GarbageCollectionRunMetadata, error) {
@@ -1352,7 +1360,7 @@ func (g *KVGraveler) SaveGarbageCollectionUncommitted(ctx context.Context, repos
 	return &GarbageCollectionRunMetadata{
 		RunId:               runID,
 		UncommittedLocation: uncommittedLocation,
-	}, err
+	}, nil
 }
 
 func (g *KVGraveler) GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error) {
