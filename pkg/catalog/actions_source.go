@@ -38,7 +38,7 @@ func NewActionsSource(catalog *Catalog) *ActionsSource {
 }
 
 func (s *ActionsSource) List(ctx context.Context, record graveler.HookRecord) ([]string, error) {
-	key := fmt.Sprintf("list_%s_%s", record.RepositoryID.String(), record.SourceRef.String())
+	key := fmt.Sprintf("%s:%s", record.RepositoryID.String(), record.SourceRef.String())
 	names, err := s.cache.GetOrSet(key, func() (interface{}, error) {
 		return s.list(ctx, record)
 	})
@@ -68,7 +68,7 @@ func (s *ActionsSource) list(ctx context.Context, record graveler.HookRecord) ([
 }
 
 func (s *ActionsSource) Load(ctx context.Context, record graveler.HookRecord, name string) ([]byte, error) {
-	key := fmt.Sprintf("load_%s_%s_%s", record.RepositoryID.String(), record.SourceRef.String(), name)
+	key := fmt.Sprintf("%s:%s:%s", record.RepositoryID.String(), record.SourceRef.String(), name)
 	names, err := s.cache.GetOrSet(key, func() (interface{}, error) {
 		return s.load(ctx, record, name)
 	})
