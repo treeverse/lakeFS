@@ -2,6 +2,7 @@ package io.treeverse.clients.examples
 
 import io.treeverse.clients.LakeFSContext
 import org.apache.spark.sql.SparkSession
+import io.treeverse.clients.LakeFSJobParams
 
 object List extends App {
   private def dirs(path: String): Seq[String] =
@@ -21,7 +22,7 @@ object List extends App {
     val repo = args(0)
     val ref = args(1)
     val outputPath = args(2)
-    val files = LakeFSContext.newRDD(sc, repo, ref)
+    val files = LakeFSContext.newRDD(sc, LakeFSJobParams.forCommit(repo, ref, "list_example"))
 
     val size = files
       .flatMap({ case (key, entry) => dirs(new String(key)).map(d => (d, entry.message.size)) })

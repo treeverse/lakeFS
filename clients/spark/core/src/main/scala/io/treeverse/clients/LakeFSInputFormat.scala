@@ -151,13 +151,15 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
     val conf = job.getConfiguration
     val repoName = conf.get(LAKEFS_CONF_JOB_REPO_NAME_KEY)
     val commitID = conf.get(LAKEFS_CONF_JOB_COMMIT_ID_KEY)
+    val sourceName = conf.get(LAKEFS_CONF_JOB_SOURCE_NAME_KEY)
     val apiClient = ApiClient.get(
       APIConfigurations(
         conf.get(LAKEFS_CONF_API_URL_KEY),
         conf.get(LAKEFS_CONF_API_ACCESS_KEY_KEY),
         conf.get(LAKEFS_CONF_API_SECRET_KEY_KEY),
         conf.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY),
-        conf.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY)
+        conf.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY),
+        conf.get(LAKEFS_CONF_JOB_SOURCE_NAME_KEY, "input_format")
       )
     )
     val metaRangeURL = apiClient.getMetaRangeURL(repoName, commitID)
@@ -200,7 +202,8 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
         conf.get(LAKEFS_CONF_API_ACCESS_KEY_KEY),
         conf.get(LAKEFS_CONF_API_SECRET_KEY_KEY),
         conf.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY),
-        conf.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY)
+        conf.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY),
+        conf.get(LAKEFS_CONF_JOB_SOURCE_NAME_KEY, "input_format")
       )
     )
     if (StringUtils.isBlank(storageNamespace)) {

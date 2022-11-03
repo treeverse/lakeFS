@@ -17,7 +17,6 @@ import io.treeverse.clients.LakeFSContext.{
   LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY,
   LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY
 }
-
 class Exporter(
     spark: SparkSession,
     apiClient: ApiClient,
@@ -37,7 +36,11 @@ class Exporter(
 
   def exportAllFromCommit(commitID: String): Unit = {
     val ns = apiClient.getStorageNamespace(repoName, StorageClientType.HadoopFS)
-    val df = LakeFSContext.newDF(spark, repoName, commitID)
+    val df =
+      LakeFSContext.newDF(
+        spark,
+        LakeFSJobParams.forCommit(repoName, commitID, Exporter.EXPORTER_SOURCE_NAME)
+      )
 
     val tableName = randPrefix() + "_commit"
     df.createOrReplaceTempView(tableName)
@@ -97,8 +100,14 @@ class Exporter(
     val commitID = apiClient.getBranchHEADCommit(repoName, branch)
     val ns = apiClient.getStorageNamespace(repoName, StorageClientType.HadoopFS)
 
-    val newDF = LakeFSContext.newDF(spark, repoName, commitID)
-    val prevDF = LakeFSContext.newDF(spark, repoName, prevCommitID)
+    val newDF = LakeFSContext.newDF(
+      spark,
+      LakeFSJobParams.forCommit(repoName, commitID, Exporter.EXPORTER_SOURCE_NAME)
+    )
+    val prevDF = LakeFSContext.newDF(
+      spark,
+      LakeFSJobParams.forCommit(repoName, prevCommitID, Exporter.EXPORTER_SOURCE_NAME)
+    )
 
     val newTableName = randPrefix() + "_new_commit"
     val prevTableName = randPrefix() + "_prev_commit"
@@ -163,6 +172,7 @@ class Exporter(
 
 object Exporter {
   final val defaultParallelism = 10
+  final val EXPORTER_SOURCE_NAME = "exporter"
 }
 
 /** Main exports lakeFS object to an object-store location.
@@ -194,7 +204,13 @@ object Main {
       if (rawLocation.startsWith(s3Prefix)) "s3a://" + rawLocation.substring(s3Prefix.length)
       else rawLocation
     val apiClient = ApiClient.get(
-      APIConfigurations(endpoint, accessKey, secretKey, connectionTimeout, readTimeout)
+      APIConfigurations(endpoint,
+                        accessKey,
+                        secretKey,
+                        connectionTimeout,
+                        readTimeout,
+                        Exporter.EXPORTER_SOURCE_NAME
+                       )
     )
     val exporter = new Exporter(spark, apiClient, conf.repo(), rootLocation)
 
