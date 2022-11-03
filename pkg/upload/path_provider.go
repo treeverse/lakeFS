@@ -27,9 +27,9 @@ type PathPartitionProvider struct {
 }
 
 const (
-	DefaultMaxDataSize  = 50000
-	DefaultDataInterval = time.Hour
-	DefaultDataPrefix   = "data"
+	DefaultDataPartitionSize = 50000
+	DefaultDataInterval      = time.Hour
+	DefaultDataPrefix        = "data"
 
 	// unixYear4000 epoch value for Saturday, January 1, 4000 12:00:00 AM. Changing this value is a breaking change as it is used to have reverse order for time based unique ID (xid).
 	unixYear4000 = 64060588800
@@ -77,7 +77,7 @@ func WithPathProviderTellTime(t TimeNow) PathProviderOption {
 
 func NewPathPartitionProvider(opts ...PathProviderOption) *PathPartitionProvider {
 	cfg := &PathProviderConfig{
-		Size:     DefaultMaxDataSize,
+		Size:     DefaultDataPartitionSize,
 		Interval: DefaultDataInterval,
 		Prefix:   DefaultDataPrefix,
 		TellTime: DefaultTimeNow,
