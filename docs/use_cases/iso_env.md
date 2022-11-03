@@ -189,3 +189,6 @@ Data duplication introduce errors into our data analytics, BI and machine learni
 On the `main` branch however, there is still just the original data - untouched by our spark code. This shows the utility of branch-based isolated environments with lakeFS.
 
 You can safely continue working with the data from main which is unharmed due to lakeFS isolation capabilities.
+
+## Case Study: Enigma
+Learn how Enigma increased Data Engineers efficiency using lakeFS’ branching to [achieve islated development and staging environments](https://enigma.com/blog/post/improving-our-research-velocity-with-lakefs).
