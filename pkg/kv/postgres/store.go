@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/IBM/pgxpoolprometheus"
 	"github.com/georgysavva/scany/pgxscan"
@@ -42,35 +41,13 @@ const (
 
 	// DefaultPartitions Changing the below value means repartitioning and probably a migration.
 	// Change it only if you really know what you're doing.
-	DefaultPartitions = 100
-
-	DefaultMaxOpenConnections    = 25
-	DefaultMaxIdleConnections    = 25
-	DefaultConnectionMaxLifetime = 5 * time.Minute
-	DefaultScanPageSize          = 1000
+	DefaultPartitions   = 100
+	DefaultScanPageSize = 1000
 )
 
 //nolint:gochecknoinits
 func init() {
 	kv.Register(DriverName, &Driver{})
-}
-
-func normalizeDBParams(p *kvparams.Postgres) {
-	if p.MaxOpenConnections == 0 {
-		p.MaxOpenConnections = DefaultMaxOpenConnections
-	}
-
-	if p.MaxIdleConnections == 0 {
-		p.MaxIdleConnections = DefaultMaxIdleConnections
-	}
-
-	if p.ConnectionMaxLifetime == 0 {
-		p.ConnectionMaxLifetime = DefaultConnectionMaxLifetime
-	}
-
-	if p.ScanPageSize == 0 {
-		p.ScanPageSize = DefaultScanPageSize
-	}
 }
 
 func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, error) {
@@ -131,7 +108,6 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 }
 
 func newPgxpoolConfig(kvParams kvparams.KV) (*pgxpool.Config, error) {
-	normalizeDBParams(kvParams.Postgres)
 	config, err := pgxpool.ParseConfig(kvParams.Postgres.ConnectionString)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrDriverConfiguration, err)
@@ -162,7 +138,9 @@ func parseStoreConfig(runtimeParams map[string]string, pgParams *kvparams.Postgr
 	}
 
 	p.SanitizedTableName = pgx.Identifier{p.TableName}.Sanitize()
-	p.ScanPageSize = int(pgParams.ScanPageSize)
+	if pgParams.ScanPageSize > 0 {
+		p.ScanPageSize = pgParams.ScanPageSize
+	}
 	return p
 }
 

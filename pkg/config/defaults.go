@@ -10,8 +10,29 @@ const (
 	DatabaseTypeKey     = "database.type"
 	DefaultDatabaseType = "local"
 
-	DatabaseKVLocalPath        = "database.local.path"
-	DefaultDatabaseLocalKVPath = "~/lakefs/metadata"
+	DatabaseLocalPathKey     = "database.local.path"
+	DefaultDatabaseLocalPath = "~/lakefs/metadata"
+
+	DatabaseLocalPrefetchSizeKey     = "database.local.prefetch_size"
+	DefaultDatabaseLocalPrefetchSize = 256
+
+	DatabaseDynamodbTableNameKey     = "database.dynamodb.table_name"
+	DefaultDatabaseDynamodbTableName = "kvstore"
+
+	DatabaseDynamodbReadCapacityUnitsKey     = "database.dynamodb.read_capacity_units"
+	DefaultDatabaseDynamodbReadCapacityUnits = 1000
+
+	DatabaseDynamodbWriteCapacityUnitsKey     = "database.dynamodb.write_capacity_units"
+	DefaultDatabaseDynamodbWriteCapacityUnits = 1000
+
+	DatabasePostgresMaxOpenConnectionsKey     = "database.postgres.max_open_connections"
+	DefaultDatabasePostgresMaxOpenConnections = 25
+
+	DatabasePostgresMaxIdleConnectionsKey     = "database.postgres.max_idle_connections"
+	DefaultDatabasePostgresMaxIdleConnections = 25
+
+	PostgresConnectionMaxLifetimeKey     = "database.postgres.connection_max_lifetime"
+	DefaultPostgresConnectionMaxLifetime = "5m"
 
 	BlockstoreTypeKey     = "blockstore.type"
 	DefaultBlockstoreType = "local"
@@ -134,17 +155,10 @@ const (
 	UIEnabledKey = "ui.enabled"
 )
 
-func setDefaultLocalConfig() {
-	viper.SetDefault(DatabaseTypeKey, DefaultDatabaseType)
-	viper.SetDefault(DatabaseKVLocalPath, DefaultDatabaseLocalKVPath)
-	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockstoreLocalPath)
-	viper.SetDefault(AuthEncryptSecretKey, DefaultAuthEncryptSecretKey)
-	viper.SetDefault(BlockstoreTypeKey, DefaultBlockstoreType)
-}
-
 func setDefaults(local bool) {
 	if local {
-		setDefaultLocalConfig()
+		viper.SetDefault(DatabaseTypeKey, DefaultDatabaseType)
+		viper.SetDefault(AuthEncryptSecretKey, DefaultAuthEncryptSecretKey)
 	}
 
 	viper.SetDefault(ListenAddressKey, DefaultListenAddr)
@@ -206,4 +220,18 @@ func setDefaults(local bool) {
 	viper.SetDefault(LakefsEmailBaseURLKey, DefaultLakefsEmailBaseURL)
 
 	viper.SetDefault(UIEnabledKey, DefaultUIEnabled)
+
+	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockstoreLocalPath)
+
+	viper.SetDefault(DatabaseLocalPathKey, DefaultDatabaseLocalPath)
+	viper.SetDefault(DatabaseLocalPrefetchSizeKey, DefaultDatabaseLocalPrefetchSize)
+
+	viper.SetDefault(DatabaseDynamodbTableNameKey, DefaultDatabaseDynamodbTableName)
+
+	viper.SetDefault(DatabaseDynamodbReadCapacityUnitsKey, DefaultDatabaseDynamodbReadCapacityUnits)
+	viper.SetDefault(DatabaseDynamodbWriteCapacityUnitsKey, DefaultDatabaseDynamodbWriteCapacityUnits)
+
+	viper.SetDefault(DatabasePostgresMaxOpenConnectionsKey, DefaultDatabasePostgresMaxOpenConnections)
+	viper.SetDefault(DatabasePostgresMaxIdleConnectionsKey, DefaultDatabasePostgresMaxIdleConnections)
+	viper.SetDefault(PostgresConnectionMaxLifetimeKey, DefaultPostgresConnectionMaxLifetime)
 }
