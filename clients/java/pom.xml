@@ -22,7 +22,7 @@
     <licenses>
         <license>
             <name>apache2</name>
-            <url>http://www.apache.org/licenses/</url>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
