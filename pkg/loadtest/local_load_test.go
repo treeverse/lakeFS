@@ -24,6 +24,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
@@ -146,6 +147,7 @@ func TestLocalLoad(t *testing.T) {
 				nil,
 				nil,
 				nil,
+				upload.DefaultPathProvider,
 			)
 
 			ts := httptest.NewServer(handler)

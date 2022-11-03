@@ -25,6 +25,7 @@ import (
 	"github.com/go-test/deep"
 	"github.com/hashicorp/go-multierror"
 	nanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/rs/xid"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -1896,7 +1897,8 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	buf.WriteString("this is file content made up of bytes")
-	blob, err := upload.WriteBlob(context.Background(), deps.blocks, "ns1", buf, 37, block.PutOpts{StorageClass: &expensiveString})
+	address := upload.DefaultPathProvider.NewPath()
+	blob, err := upload.WriteBlob(context.Background(), deps.blocks, "ns1", address, buf, 37, block.PutOpts{StorageClass: &expensiveString})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3023,6 +3025,61 @@ func TestController_UpdatePolicy(t *testing.T) {
 		testutil.Must(t, err)
 		if updatePolicyResponse.JSON400 == nil {
 			t.Errorf("Update policy with different id should fail with 400: %s", updatePolicyResponse.Status())
+		}
+	})
+}
+
+func TestController_GetPhysicalAddress_(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	t.Run("physical_address_format", func(t *testing.T) {
+		const (
+			repo   = "repo1"
+			ns     = "s3://foo-bucket1"
+			branch = "main"
+		)
+		_, err := deps.catalog.CreateRepository(ctx, repo, ns, branch)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var prevPartitionTime time.Time
+		const links = 5
+		for i := 0; i < links; i++ {
+			params := &api.GetPhysicalAddressParams{
+				Path: "get-path/obj" + strconv.Itoa(i),
+			}
+			resp, err := clt.GetPhysicalAddressWithResponse(ctx, repo, branch, params)
+			if err != nil {
+				t.Fatalf("GetPhysicalAddressWithResponse %s, failed: %s", params.Path, err)
+			}
+			if resp.JSON200 == nil {
+				t.Fatalf("GetPhysicalAddressWithResponse %s, non JSON 200 response: %s", params.Path, resp.Status())
+			}
+
+			address := api.StringValue(resp.JSON200.PhysicalAddress)
+			t.Log(address)
+
+			const expectedPrefix = ns + "/" + upload.DefaultDataPrefix + "/"
+			if !strings.HasPrefix(address, expectedPrefix) {
+				t.Fatalf("GetPhysicalAddressWithResponse address=%s, expected prefix=%s", address, expectedPrefix)
+			}
+			const expectedParts = 3
+			objPath := address[len(ns)+1:]
+			parts := strings.Split(objPath, "/")
+			if len(parts) != expectedParts {
+				t.Fatalf("GetPhysicalAddressWithResponse path=%s, expected %d parts", objPath, expectedParts)
+			}
+			partitionID, err := xid.FromString(parts[1])
+			if err != nil {
+				t.Fatalf("GetPhysicalAddressWithResponse unknown partition format (path=%s): %s", objPath, err)
+			}
+			partitionTime := partitionID.Time()
+			if i > 0 && partitionTime.After(prevPartitionTime) {
+				t.Fatalf("GetPhysicalAddressWithResponse partition time '%s', should be equal or smaller than previous '%s'", partitionTime, prevPartitionTime)
+			}
+			prevPartitionTime = partitionTime
 		}
 	})
 }

@@ -19,6 +19,22 @@ import (
 // lakectl tests utility functions
 var update = flag.Bool("update", false, "update golden files with results")
 
+var (
+	errValueNotUnique   = errors.New("value not unique in mapping")
+	errVariableNotFound = errors.New("variable not found")
+)
+
+var (
+	reTimestamp       = regexp.MustCompile(`timestamp: \d+\n`)
+	reTime            = regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [-+]\d{4} \w{1,3}`)
+	reCommitID        = regexp.MustCompile(`[\d|a-f]{64}`)
+	reShortCommitID   = regexp.MustCompile(`[\d|a-f]{16}`)
+	reChecksum        = regexp.MustCompile(`[\d|a-f]{32}`)
+	reEndpoint        = regexp.MustCompile(`https?://\w+(:\d+)?/api/v\d+/`)
+	rePhysicalAddress = regexp.MustCompile(`/data/[0-9a-v]{20}/[0-9a-v]{20}`)
+	reVariable        = regexp.MustCompile(`\$\{([^${}]+)}`)
+)
+
 func lakectlLocation() string {
 	return viper.GetString("lakectl_dir") + "/lakectl"
 }
@@ -46,31 +62,25 @@ func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, err
 	return cmd.CombinedOutput()
 }
 
-var varRegexp = regexp.MustCompile(`\$\{([^${}]+)\}`)
-
-var errVariableNotFound = errors.New("variable not found")
-
 // expandVariables receives a string with (possibly) variables in the form of {VAR_NAME}, and
 // a var-name -> value mapping. It attempts to replace all occurrences of all variables with
 // the corresponding values from the map. If all variables in the string has their mapping
 // expandVariables is successful and returns the result string. If at least one variable does
 // not have a mapping, expandVariables fails and returns error
 func expandVariables(s string, vars map[string]string) (string, error) {
-	s = varRegexp.ReplaceAllStringFunc(s, func(varReference string) string {
+	s = reVariable.ReplaceAllStringFunc(s, func(varReference string) string {
 		if val, ok := vars[varReference[2:len(varReference)-1]]; ok {
 			return val
 		}
 		return varReference
 	})
 
-	if missingVar := varRegexp.FindString(s); missingVar != "" {
+	if missingVar := reVariable.FindString(s); missingVar != "" {
 		return "", fmt.Errorf("%w, %s", errVariableNotFound, missingVar)
 	}
 
 	return s, nil
 }
-
-var errValueNotUnique = errors.New("value not unique in mapping")
 
 // embedVariables replaces run-specific values from a string with generic, normalized
 // variables, that can later be expanded by expandVariables.
@@ -200,37 +210,31 @@ func runCmdAndVerifyResult(t *testing.T, cmd string, expectFail bool, isTerminal
 	require.Equal(t, expanded, sanitizedResult, "Unexpected output for %s command", cmd)
 }
 
-var (
-	timeStampRegexp     = regexp.MustCompile(`timestamp: \d+\n`)
-	timeRegexp          = regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [-+]\d{4} \w{1,3}`)
-	commitIDRegExp      = regexp.MustCompile(`[\d|a-f]{64}`)
-	shortCommitIDRegExp = regexp.MustCompile(`[\d|a-f]{16}`)
-	checksumRegExp      = regexp.MustCompile(`[\d|a-f]{32}`)
-	endpointRegExp      = regexp.MustCompile(`http(s)?:\/\/([a-z])+(\:[0-9]{2,4})?\/api\/v[0-9].`)
-)
-
 func normalizeProgramTimestamp(output string) string {
-	s := timeStampRegexp.ReplaceAllString(output, "timestamp: <TIMESTAMP>")
-	return timeRegexp.ReplaceAllString(s, "<DATE> <TIME> <TZ>")
+	s := reTimestamp.ReplaceAllString(output, "timestamp: <TIMESTAMP>")
+	return reTime.ReplaceAllString(s, "<DATE> <TIME> <TZ>")
 }
 
 func normalizeRandomObjectKey(output string, objectPrefix string) string {
-	objectKeyRegExp := regexp.MustCompile(objectPrefix + `/[\d|a-f]{32}`)
-	return objectKeyRegExp.ReplaceAllString(output, objectPrefix+"/<OBJECT_KEY>")
+	objectPrefix = strings.TrimPrefix(objectPrefix, "/")
+	for _, match := range rePhysicalAddress.FindAllString(output, -1) {
+		output = strings.Replace(output, objectPrefix+match, objectPrefix+"/<OBJECT_KEY>", 1)
+	}
+	return output
 }
 
 func normalizeCommitID(output string) string {
-	return commitIDRegExp.ReplaceAllString(output, "<COMMIT_ID>")
+	return reCommitID.ReplaceAllString(output, "<COMMIT_ID>")
 }
 
 func normalizeShortCommitID(output string) string {
-	return shortCommitIDRegExp.ReplaceAllString(output, "<COMMIT_ID_16>")
+	return reShortCommitID.ReplaceAllString(output, "<COMMIT_ID_16>")
 }
 
 func normalizeChecksum(output string) string {
-	return checksumRegExp.ReplaceAllString(output, "<CHECKSUM>")
+	return reChecksum.ReplaceAllString(output, "<CHECKSUM>")
 }
 
 func normalizeEndpoint(output string, endpoint string) string {
-	return endpointRegExp.ReplaceAllString(output, endpoint)
+	return reEndpoint.ReplaceAllString(output, endpoint)
 }

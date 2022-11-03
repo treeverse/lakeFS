@@ -33,6 +33,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
 	"github.com/treeverse/lakefs/templates"
 )
@@ -147,7 +148,28 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	tmpl := templater.NewService(templates.Content, cfg, authService)
 
 	testutil.Must(t, err)
-	handler := api.Serve(cfg, c, authenticator, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.Default(), emailer, tmpl, nil, nil, nil, nil)
+	handler := api.Serve(
+		cfg,
+		c,
+		authenticator,
+		authenticator,
+		authService,
+		c.BlockAdapter,
+		meta,
+		migrator,
+		collector,
+		nil,
+		actionsService,
+		auditChecker,
+		logging.Default(),
+		emailer,
+		tmpl,
+		nil,
+		nil,
+		nil,
+		nil,
+		upload.DefaultPathProvider,
+	)
 
 	return handler, &dependencies{
 		blocks:      c.BlockAdapter,

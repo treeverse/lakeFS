@@ -28,6 +28,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
+	"github.com/treeverse/lakefs/pkg/upload"
 	"golang.org/x/oauth2"
 )
 
@@ -59,6 +60,7 @@ func Serve(
 	snippets []params.CodeSnippet,
 	oidcProvider *oidc.Provider,
 	oauthConfig *oauth2.Config,
+	pathProvider upload.PathProvider,
 ) http.Handler {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := GetSwagger()
@@ -99,6 +101,7 @@ func Serve(
 		templater,
 		oidcAuthenticator,
 		sessionStore,
+		pathProvider,
 	)
 	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
 
