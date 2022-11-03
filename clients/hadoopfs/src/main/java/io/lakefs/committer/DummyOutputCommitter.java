@@ -83,6 +83,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
     protected Path workPath = null;
 
     protected Configuration conf;
+    protected FileSystem fs;
 
     private static HashFunction hash = Hashing.sha256();
     private static Charset utf8 = Charset.forName("utf8");
@@ -113,7 +114,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         LOG.info("Construct OC: Job branch: {}", jobBranch);
 
         if (outputPath != null) {
-            FileSystem fs = outputPath.getFileSystem(conf);
+            fs = outputPath.getFileSystem(conf);
             Preconditions.checkArgument(fs instanceof LakeFSFileSystem,
                                         "%s not on a LakeFSFileSystem", outputPath);
             this.lakeFSClient = new LakeFSClient(fs.getScheme(), conf);
@@ -134,11 +135,15 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         this.taskBranch = String.format("%s-%s", this.jobBranch, id.toString());
 
         if (outputPath != null) {
-            ObjectLocation loc = ObjectLocation.pathToObjectLocation(null, outputPath);
-            loc.setRef(this.taskBranch);
-            this.workPath = loc.toFSPath();
+            this.workPath = changePathBranch(outputPath, this.taskBranch);
             LOG.trace("Working path: {}", workPath);
         }
+    }
+
+    private Path changePathBranch(Path path, String branch) {
+        ObjectLocation loc = ObjectLocation.pathToObjectLocation(null, path);
+        loc.setRef(branch);
+        return loc.toFSPath();
     }
 
     private boolean createBranch(String branch, String base) throws IOException {
@@ -216,11 +221,32 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         }
     }
 
+    private boolean needsSuccessFile() {
+        String markSuccessfulJobs = FSConfiguration.get(conf, outputPath.toUri().getScheme(), Constants.OC_SUCCESSFUL_JOB_OUTPUT_DIR_MARKER, "auto");
+        if (markSuccessfulJobs.equals("auto")) {
+            return conf.getBoolean(FileOutputCommitter.SUCCESSFUL_JOB_OUTPUT_DIR_MARKER, true);
+        }
+        if (markSuccessfulJobs.equalsIgnoreCase("false")) {
+            return false;
+        }
+        return true;
+    }
+
     @Override
     public void commitJob(JobContext jobContext) throws IOException {
         if (outputPath == null)
             return;
         try {
+            boolean changes = false;
+
+            if (needsSuccessFile()) {
+                Path markerPath = new Path(changePathBranch(outputPath, jobBranch),
+                                           FileOutputCommitter.SUCCEEDED_FILE_NAME);
+                fs.create(markerPath, true).close();
+
+                CommitsApi commits = lakeFSClient.getCommits();
+                commits.commit(repository, jobBranch, new CommitCreation().message(String.format("Add success marker for job %s", jobContext.getJobID())), null);
+            }
             if (!hasDiffs(repository, jobBranch, outputBranch)) {
                 LOG.debug("No differences from {} to {}, nothing to merge", jobBranch, outputBranch);
                 return;
