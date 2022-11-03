@@ -38,6 +38,7 @@ services:
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   spark:
     image: bde2020/spark-master:${SPARK_TAG:-3.2.1}-hadoop3.2
+    container_name: spark-master
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_HOST=spark
@@ -52,7 +53,8 @@ services:
     env_file:
         - tester.env
     ports:
-      - 18080:8080
+      - "8080:8080"
+      - "7077:7077"
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
       - "example.s3.docker.lakefs.io:10.5.0.55"
@@ -62,9 +64,12 @@ services:
   spark-worker:
     image: bde2020/spark-worker:${SPARK_TAG:-3.2.1}-hadoop3.2
     ports:
-      - 8081
+      - "8081:8081"
+    depends_on:
+      - spark
     environment:
       - SPARK_MODE=worker
+      - SPARK_MASTER=spark://spark-master:7077
       - SPARK_MASTER_URL=spark://spark:7077
       - SPARK_WORKER_MEMORY=1G
       - SPARK_WORKER_CORES=2
@@ -85,6 +90,8 @@ services:
       - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
   spark-submit:
+    depends_on:
+      - spark
     image: bde2020/spark-submit:${SPARK_TAG:-3.2.1}-hadoop3.2
     profiles: ["command"]
     volumes:
@@ -92,6 +99,7 @@ services:
     env_file:
       - tester.env
     environment:
+      - SPARK_MASTER=spark://spark:7077
       - input
       - output
       - s3input
