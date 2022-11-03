@@ -226,7 +226,10 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         if (markSuccessfulJobs.equals("auto")) {
             return conf.getBoolean(FileOutputCommitter.SUCCESSFUL_JOB_OUTPUT_DIR_MARKER, true);
         }
-        return Boolean.parseBoolean(markSuccessfulJobs);
+        if (markSuccessfulJobs.equalsIgnoreCase("false")) {
+            return false;
+        }
+        return true;
     }
 
     @Override
