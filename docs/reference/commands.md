@@ -2170,7 +2170,7 @@ lakectl help [command] [flags]
 
 ### lakectl import
 
-Import objects from an external source into a lakeFS
+Import data from external source to an imported branch (with optional merge)
 
 ```
 lakectl import --from <object store URI> --to <lakeFS path URI> [--merge] [flags]

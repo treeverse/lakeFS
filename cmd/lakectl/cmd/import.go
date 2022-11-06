@@ -22,7 +22,7 @@ Parents: {{.Commit.Parents|join ", "}}
 
 var importCmd = &cobra.Command{
 	Use:   "import --from <object store URI> --to <lakeFS path URI> [--merge]",
-	Short: "Import objects from an external source into a lakeFS",
+	Short: "Import data from external source to an imported branch (with optional merge)",
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := cmd.Flags()
 		merge := MustBool(flags.GetBool("merge"))
