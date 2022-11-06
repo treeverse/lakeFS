@@ -1732,19 +1732,10 @@ type GCUncommittedMark struct {
 	Key      graveler.Key      `json:"key"`
 }
 
-type UncommittedParquetObject struct {
-	PhysicalAddress string `parquet:"name=physical_address, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
-	CreationDate    int64  `parquet:"name=creation_date, type=INT64, convertedtype=INT_64"`
-}
-
-func gcContToken(branchID graveler.BranchID, key graveler.Key) (string, error) {
+func (m *GCUncommittedMark) String() (string, error) {
 	var buf bytes.Buffer
-	mark := GCUncommittedMark{
-		branchID,
-		key,
-	}
 	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
-	err := json.NewEncoder(encoder).Encode(mark)
+	err := json.NewEncoder(encoder).Encode(m)
 	if err != nil {
 		return "", err
 	}
@@ -1752,7 +1743,12 @@ func gcContToken(branchID graveler.BranchID, key graveler.Key) (string, error) {
 	return result, nil
 }
 
-func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, fd *os.File, mark GCUncommittedMark) (*string, error) {
+type UncommittedParquetObject struct {
+	PhysicalAddress string `parquet:"name=physical_address, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	CreationDate    int64  `parquet:"name=creation_date, type=INT64, convertedtype=INT_64"`
+}
+
+func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, fd *os.File, mark GCUncommittedMark) (*GCUncommittedMark, error) {
 	const parallelNum = 1                                                                        // Number of goroutines to handle marshaling of data
 	pw, err := writer.NewParquetWriterFromWriter(fd, new(UncommittedParquetObject), parallelNum) // TODO: Play with np count
 	if err != nil {
@@ -1811,11 +1807,10 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 					if err != nil {
 						return nil, err
 					}
-					newToken, err := gcContToken(b.BranchID, key)
-					if err != nil {
-						return nil, err
-					}
-					return &newToken, nil
+					return &GCUncommittedMark{
+						BranchID: b.BranchID,
+						Key:      key,
+					}, nil
 				}
 			}
 			if err = pw.Write(UncommittedParquetObject{
@@ -1841,7 +1836,7 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 }
 
 // TODO: Modify using a run ID generator (https://github.com/treeverse/lakeFS/issues/4469)
-func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID, runID, contToken string) (*graveler.GarbageCollectionRunMetadata, *string, error) {
+func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID, runID string, contToken *GCUncommittedMark) (*graveler.GarbageCollectionRunMetadata, *GCUncommittedMark, error) {
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
@@ -1852,16 +1847,13 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID, runID,
 		return nil, nil, err
 	}
 
-	mark := GCUncommittedMark{
-		BranchID: "",
-		Key:      []byte(""),
-	}
-	if contToken != "" {
-		err = json.NewDecoder(base64.NewDecoder(base64.StdEncoding, strings.NewReader(contToken))).Decode(&mark)
-		if err != nil {
-			return nil, nil, err
+	if contToken == nil {
+		contToken = &GCUncommittedMark{
+			BranchID: "",
+			Key:      []byte(""),
 		}
 	}
+
 	filename := path.Join(os.TempDir(), uuid.New().String())
 	fd, err := os.Create(filename)
 	if err != nil {
@@ -1870,7 +1862,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID, runID,
 	defer os.Remove(filename)
 	defer fd.Close()
 	// Write parquet to local storage
-	newToken, err := c.writeUncommittedLocal(ctx, repository, fd, mark)
+	newToken, err := c.writeUncommittedLocal(ctx, repository, fd, *contToken)
 	if err != nil {
 		return nil, nil, err
 	}

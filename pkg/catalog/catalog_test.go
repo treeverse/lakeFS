@@ -575,11 +575,11 @@ func TestKVGraveler_GetGarbageCollectionUncommitted(t *testing.T) {
 				Store: g.Sut,
 			}
 
-			_, contToken, err := c.PrepareGCUncommitted(ctx, repoID.String(), "NewRunID", "")
+			_, contToken, err := c.PrepareGCUncommitted(ctx, repoID.String(), "NewRunID", nil)
 			require.NoError(t, err)
 
 			for contToken != nil {
-				_, contToken, err = c.PrepareGCUncommitted(ctx, repoID.String(), "NewRunID", *contToken)
+				_, contToken, err = c.PrepareGCUncommitted(ctx, repoID.String(), "NewRunID", contToken)
 				require.NoError(t, err)
 			}
 			verifyData(t, tt.numBranch, tt.numRecords, testFolder)
