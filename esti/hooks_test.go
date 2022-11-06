@@ -277,7 +277,7 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string) {
 	appendRes(postCreateBranchEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    postCreateBranchEvent.EventTime,
-		SourceRef:    commitID,
+		SourceRef:    mainBranch,
 		EventType:    "post-create-branch",
 		ActionName:   "Test Post Create Branch",
 		HookID:       "test_webhook",
@@ -461,8 +461,8 @@ func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch strin
 		require.Equal(t, http.StatusCreated, resp.StatusCode())
 	}
 
-	// wait 10 seconds to let the actions cache expire.
-	time.Sleep(10 * time.Second)
+	// wait 8 seconds to let the actions cache expire.
+	time.Sleep(8 * time.Second)
 }
 
 type webhookEventInfo struct {

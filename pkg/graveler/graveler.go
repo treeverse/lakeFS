@@ -979,7 +979,7 @@ func (g *KVGraveler) CreateBranch(ctx context.Context, repository *RepositoryRec
 		RunID:            postRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePostCreateBranch,
-		SourceRef:        newBranch.CommitID.Ref(),
+		SourceRef:        ref,
 		RepositoryID:     repository.RepositoryID,
 		BranchID:         branchID,
 		CommitID:         reference.CommitID,
@@ -2224,10 +2224,11 @@ func (g *KVGraveler) Merge(ctx context.Context, repository *RepositoryRecord, de
 		RepositoryID:     repository.RepositoryID,
 		StorageNamespace: storageNamespace,
 		BranchID:         destination,
-		SourceRef:        commitID.Ref(),
-		Commit:           commit,
-		CommitID:         commitID,
-		PreRunID:         preRunID,
+
+		SourceRef: commitID.Ref(),
+		Commit:    commit,
+		CommitID:  commitID,
+		PreRunID:  preRunID,
 	})
 	if err != nil {
 		g.log.
