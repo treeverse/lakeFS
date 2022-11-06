@@ -31,8 +31,6 @@ const (
 
 	// BranchWriteMaxTries is the number of times to repeat the set operation if the staging token changed
 	BranchWriteMaxTries = 3
-
-	GCMaxUncommittedObjects = 1000000
 )
 
 // Basic Types
@@ -393,6 +391,9 @@ type KeyValueStore interface {
 
 	// List lists values on repository / ref
 	List(ctx context.Context, repository *RepositoryRecord, ref Ref) (ValueIterator, error)
+
+	// ListStaging returns ValueIterator for branch staging area. Exposed to be used by catalog in PrepareGCUncommitted
+	ListStaging(ctx context.Context, branch *Branch) (ValueIterator, error)
 }
 
 type VersionController interface {
@@ -510,9 +511,6 @@ type VersionController interface {
 	// If a previousRunID is specified, commits that were already expired and their ancestors will not be considered as expired/active.
 	// Note: Ancestors of previously expired commits may still be considered if they can be reached from a non-expired commit.
 	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, previousRunID string) (garbageCollectionRunMetadata *GarbageCollectionRunMetadata, err error)
-
-	// GetGarbageCollectionUncommitted Returns a list of at most GCMaxUncommittedObjects uncommitted objects, and a continuation token in the form of GCUncommittedMark if needed.
-	GetGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, mark GCUncommittedMark) ([]*ValueRecord, *GCUncommittedMark, error)
 
 	// SaveGarbageCollectionUncommitted Uploads parquet file of uncommitted objects to the repository in the run ID path. Return the GC run's metadata
 	// including the run ID and the location of the saved parquet file
@@ -1295,58 +1293,6 @@ func (g *KVGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositor
 	}, err
 }
 
-type GCUncommittedMark struct {
-	BranchID BranchID `json:"branch"`
-	Key      Key      `json:"key"`
-}
-
-func (g *KVGraveler) GetGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, mark GCUncommittedMark) ([]*ValueRecord, *GCUncommittedMark, error) {
-	var entries []*ValueRecord
-	bItr, err := g.ListBranches(ctx, repository)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer bItr.Close()
-	bItr.SeekGE(mark.BranchID)
-
-	count := 0
-	for bItr.Next() {
-		b := bItr.Value()
-		itr, err := g.listStagingArea(ctx, b.Branch)
-		if err != nil {
-			return nil, nil, err
-		}
-		if mark.BranchID == b.BranchID { // SeekGE on first branch
-			itr.SeekGE(mark.Key)
-		}
-
-		for itr.Next() {
-			count += 1
-			entry := itr.Value()
-			itr.Close()
-			if itr.Err() != nil {
-				return nil, nil, itr.Err()
-			}
-			if count > GCMaxUncommittedObjects {
-				contToken := GCUncommittedMark{
-					BranchID: b.BranchID,
-					Key:      entry.Key,
-				}
-				return entries, &contToken, nil
-			}
-			entries = append(entries, entry)
-		}
-		if itr.Err() != nil {
-			return nil, nil, itr.Err()
-		}
-		itr.Close()
-	}
-	if bItr.Err() != nil {
-		return nil, nil, bItr.Err()
-	}
-	return entries, nil, nil
-}
-
 func (g *KVGraveler) SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename, runID string) (*GarbageCollectionRunMetadata, error) {
 	err := g.garbageCollectionManager.SaveGarbageCollectionUncommitted(ctx, repository, filename, runID)
 	if err != nil {
@@ -1601,6 +1547,11 @@ func (g *KVGraveler) deleteUnsafe(ctx context.Context, repository *RepositoryRec
 
 	// found in committed, set tombstone
 	return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
+}
+
+// ListStaging Exposing listStagingArea to catalog for PrepareGCUncommitted
+func (g *KVGraveler) ListStaging(ctx context.Context, branch *Branch) (ValueIterator, error) {
+	return g.listStagingArea(ctx, branch)
 }
 
 // listStagingArea Returns an iterator which is an aggregation of all changes on all the branch's staging area (staging + sealed)

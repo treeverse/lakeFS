@@ -25,8 +25,8 @@ type Repository struct {
 type DBEntry struct {
 	CommonLevel     bool
 	Path            string
-	PhysicalAddress string    `parquet:"name=physical_address, type=UTF8, encoding=PLAIN_DICTIONARY"`
-	CreationDate    time.Time `parquet:"name=creation_date, type=TIMESTAMP, encoding=PLAIN_DICTIONARY"`
+	PhysicalAddress string
+	CreationDate    time.Time
 	Size            int64
 	Checksum        string
 	Metadata        Metadata

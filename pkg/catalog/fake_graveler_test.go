@@ -113,6 +113,10 @@ func (g *FakeGraveler) DeleteBatch(ctx context.Context, repository *graveler.Rep
 	return nil
 }
 
+func (g *FakeGraveler) ListStaging(_ context.Context, _ *graveler.Branch) (graveler.ValueIterator, error) {
+	panic("implement me")
+}
+
 func (g *FakeGraveler) List(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.Ref) (graveler.ValueIterator, error) {
 	if g.Err != nil {
 		return nil, g.Err
