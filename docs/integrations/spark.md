@@ -381,7 +381,8 @@ path with any set of objects except the entire desired output set.
 
 #### Additional options
 
-* For old Hadoop versions you might set a default output committer using
+* If you need to use Hadoop with the older mapred API rather than the
+  mapreduce API, you might set a default output committer using
   `mapred.output.committer.class`, and possibly setting
   `mapred.mapper.new-api=false`.
 * The lakeFS output committer adds a `_SUCCESS` file to the output path,
