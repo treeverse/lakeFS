@@ -38,7 +38,7 @@ services:
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   spark:
     image: bde2020/spark-master:${SPARK_TAG:-3.2.1}-hadoop3.2
-    container_name: spark-master
+    container_name: spark
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_HOST=spark
@@ -69,7 +69,7 @@ services:
       - spark
     environment:
       - SPARK_MODE=worker
-      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_MASTER=spark://spark:7077
       - SPARK_MASTER_URL=spark://spark:7077
       - SPARK_WORKER_MEMORY=1G
       - SPARK_WORKER_CORES=2
