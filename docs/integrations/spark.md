@@ -356,6 +356,11 @@ This feature is currently **in beta**.  It provides atomic writes and
 increases write performance.
 >>>>>>> dda7c4ac7 (Document all configuration options and clarify lakeFS OC is beta)
 
+The lakeFS output committer uses temporary lakeFS branches to hold Hadoop
+working objects.  It merges them back to the output branch when done.  So
+objects appear atomically: it is not possible for another task to see the
+output path with any set of objects except the entire desired output set.
+
 ### Configuration
 
 On Hadoop 2, configure:
@@ -373,11 +378,6 @@ On Hadoop 2, configure:
 	</property>
 </configuration>
 ```
-
-The lakeFS output committer holds Hadoop working objects on temporary
-branches and merges them back to the output branch when done.  Objects
-appear atomically: it is not possible for another task to see the output
-path with any set of objects except the entire desired output set.
 
 #### Additional options
 
