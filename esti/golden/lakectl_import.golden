@@ -1,0 +1,5 @@
+Imported ${OBJECTS} object(s) into "${IMPORTED_BRANCH}" completed.
+Commit ID: <COMMIT_ID>
+Message: Import objects
+Timestamp: <DATE> <TIME> <TZ>
+Parents: <COMMIT_ID>
