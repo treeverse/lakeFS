@@ -13,7 +13,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
-const importSummaryTemplate = `Imported {{ .Objects | yellow }} object(s) into "{{.Branch}}" completed.
+const importSummaryTemplate = `Import of {{ .Objects | yellow }} object(s) into "{{.Branch}}" completed.
+MetaRange ID: {{.MetaRangeID|yellow}}
 Commit ID: {{.Commit.Id|yellow}}
 Message: {{.Commit.Message}}
 Timestamp: {{.Commit.CreationDate|date}}
@@ -41,7 +42,7 @@ var importCmd = &cobra.Command{
 		verifySourceMatchConfiguredStorage(ctx, client, from)
 
 		// verify target branch exists before we try to create and import into the associated imported branch
-		if err, ok := isBranchExists(ctx, client, toURI.Repository, toURI.Ref); err != nil {
+		if err, ok := branchExists(ctx, client, toURI.Repository, toURI.Ref); err != nil {
 			DieErr(err)
 		} else if !ok {
 			DieFmt("Target branch '%s', does not exists!", toURI.Ref)
@@ -107,13 +108,15 @@ var importCmd = &cobra.Command{
 			Die("Bad response from server", 1)
 		}
 		Write(importSummaryTemplate, struct {
-			Objects int
-			Branch  string
-			Commit  *api.Commit
+			Objects     int
+			MetaRangeID string
+			Branch      string
+			Commit      *api.Commit
 		}{
-			Objects: sum,
-			Branch:  importedBranchID,
-			Commit:  commitResp.JSON201,
+			Objects:     sum,
+			MetaRangeID: api.StringValue(metaRangeResp.JSON201.Id),
+			Branch:      importedBranchID,
+			Commit:      commitResp.JSON201,
 		})
 
 		// merge to target branch if needed
@@ -186,7 +189,7 @@ func mergeImportedBranch(ctx context.Context, client *api.ClientWithResponses, r
 	})
 }
 
-func isBranchExists(ctx context.Context, client *api.ClientWithResponses, repository string, branch string) (error, bool) {
+func branchExists(ctx context.Context, client *api.ClientWithResponses, repository string, branch string) (error, bool) {
 	resp, err := client.GetBranchWithResponse(ctx, repository, branch)
 	if err != nil {
 		return err, false
@@ -201,7 +204,7 @@ func isBranchExists(ctx context.Context, client *api.ClientWithResponses, reposi
 }
 
 func ensureBranchExists(ctx context.Context, client *api.ClientWithResponses, repository, branch, sourceBranch string) {
-	if err, ok := isBranchExists(ctx, client, repository, branch); err != nil {
+	if err, ok := branchExists(ctx, client, repository, branch); err != nil {
 		DieErr(err)
 	} else if ok {
 		return
