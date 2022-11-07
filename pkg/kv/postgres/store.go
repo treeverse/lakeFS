@@ -112,9 +112,15 @@ func newPgxpoolConfig(kvParams kvparams.KV) (*pgxpool.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrDriverConfiguration, err)
 	}
-	config.MaxConns = kvParams.Postgres.MaxOpenConnections
-	config.MinConns = kvParams.Postgres.MaxIdleConnections
-	config.MaxConnLifetime = kvParams.Postgres.ConnectionMaxLifetime
+	if kvParams.Postgres.MaxOpenConnections > 0 {
+		config.MaxConns = kvParams.Postgres.MaxOpenConnections
+	}
+	if kvParams.Postgres.MaxIdleConnections > 0 {
+		config.MinConns = kvParams.Postgres.MaxIdleConnections
+	}
+	if kvParams.Postgres.ConnectionMaxLifetime > 0 {
+		config.MaxConnLifetime = kvParams.Postgres.ConnectionMaxLifetime
+	}
 	return config, err
 }
 
