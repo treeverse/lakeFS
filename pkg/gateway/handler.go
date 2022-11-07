@@ -13,7 +13,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
-	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
+	"github.com/treeverse/lakefs/pkg/gateway/multipart"
 	"github.com/treeverse/lakefs/pkg/gateway/operations"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
 	"github.com/treeverse/lakefs/pkg/httputil"
@@ -50,17 +50,17 @@ type handler struct {
 }
 
 type ServerContext struct {
-	region            string
-	bareDomains       []string
-	catalog           catalog.Interface
-	multipartsTracker multiparts.Tracker
-	blockStore        block.Adapter
-	authService       auth.GatewayService
-	stats             stats.Collector
-	pathProvider      upload.PathProvider
+	region           string
+	bareDomains      []string
+	catalog          catalog.Interface
+	multipartTracker multipart.Tracker
+	blockStore       block.Adapter
+	authService      auth.GatewayService
+	stats            stats.Collector
+	pathProvider     upload.PathProvider
 }
 
-func NewHandler(region string, catalog catalog.Interface, multipartsTracker multiparts.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool) http.Handler {
+func NewHandler(region string, catalog catalog.Interface, multipartTracker multipart.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool) http.Handler {
 	var fallbackHandler http.Handler
 	if fallbackURL != nil {
 		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)
@@ -76,14 +76,14 @@ func NewHandler(region string, catalog catalog.Interface, multipartsTracker mult
 		})
 	}
 	sc := &ServerContext{
-		catalog:           catalog,
-		multipartsTracker: multipartsTracker,
-		region:            region,
-		bareDomains:       bareDomains,
-		blockStore:        blockStore,
-		authService:       authService,
-		stats:             stats,
-		pathProvider:      pathProvider,
+		catalog:          catalog,
+		multipartTracker: multipartTracker,
+		region:           region,
+		bareDomains:      bareDomains,
+		blockStore:       blockStore,
+		authService:      authService,
+		stats:            stats,
+		pathProvider:     pathProvider,
 	}
 
 	// setup routes

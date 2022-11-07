@@ -26,7 +26,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/mem"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	lakefsS3 "github.com/treeverse/lakefs/pkg/block/s3"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/version"
 )
@@ -143,7 +142,7 @@ func verifyDBConnectionString(uri string) error {
 		return err
 	}
 	defer pool.Close()
-	return db.Ping(ctx, pool)
+	return PingPG(ctx, pool)
 }
 
 type GetDBOptions struct {
@@ -292,4 +291,17 @@ func buildTestData(startIdx, count int, writer io.Writer) {
 			log.Fatal("Failed to encode struct")
 		}
 	}
+}
+
+func PingPG(ctx context.Context, pool *pgxpool.Pool) error {
+	conn, err := pool.Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("acquire to ping: %w", err)
+	}
+	defer conn.Release()
+	err = conn.Conn().Ping(ctx)
+	if err != nil {
+		return fmt.Errorf("ping: %w", err)
+	}
+	return nil
 }

@@ -29,7 +29,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/gateway"
-	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
+	"github.com/treeverse/lakefs/pkg/gateway/multipart"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -132,9 +132,9 @@ var runCmd = &cobra.Command{
 
 		migrator := kv.NewDatabaseMigrator(kvParams)
 		storeMessage := &kv.StoreMessage{Store: kvStore}
-		multipartsTracker := multiparts.NewTracker(*storeMessage)
+		multipartTracker := multipart.NewTracker(*storeMessage)
 		actionsStore := actions.NewActionsKVStore(*storeMessage)
-		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseParams().Type, kvStore)
+		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseType(), kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
 		// initialize auth service
@@ -305,7 +305,7 @@ var runCmd = &cobra.Command{
 		s3gatewayHandler := gateway.NewHandler(
 			cfg.GetS3GatewayRegion(),
 			c,
-			multipartsTracker,
+			multipartTracker,
 			blockStore,
 			authService,
 			cfg.GetS3GatewayDomainNames(),

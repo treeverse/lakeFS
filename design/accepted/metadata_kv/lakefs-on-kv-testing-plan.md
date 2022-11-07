@@ -40,7 +40,7 @@ This document aims to describe the requirements for the testing infrastructure a
   * Need to consider various scales
 ## Per Package DB Testing
 
-### ```pkg/gateway/multiparts```
+### ```pkg/gateway/multipart```
 * DB is used to track the start and end of a multipart upload. All DB accesses are done via `mutltiparts.Tracker`. Entries are created once, read-accesses multiple times and deleted upon completion
 * Currently unit tests cover correctness of DB accesses in both good and error paths.
 * 83.8% coverage
@@ -108,10 +108,10 @@ It can be leveraged, however, to extend the cover of '''pkg/graveler/ref''' and 
 * Data level migration tests infrastructure
   * Migrate data from Table to KV, extract both and compare
     * Data extraction should be done by listing all objects in the DB, using a designated 'get' function, and compare
-  * Implement ~~dumpers for `gateway_multiprts`~~ `GetAll` for `multiparts.Tracker`, to return a list of `MultipartUpload`
+  * Implement ~~dumpers for `gateway_multiprts`~~ `GetAll` for `multipart.Tracker`, to return a list of `MultipartUpload`
   * Implement comparison of `MultipartUploads` list. Lists are considered identical if objects are identical, but **not necessarily** at the same order
-  * Implement unit tests for `pkg/gateway/multiparts`
-    * Add multipart uploads using `multiparts.Tracker.Create` with Table DB (KV Feature Flag off)
+  * Implement unit tests for `pkg/gateway/multipart`
+    * Add multipart uploads using `multipart.Tracker.Create` with Table DB (KV Feature Flag off)
       * Create an entry with key representing each off the supported storages:
         * azure, google, s3, local, mem & transient
       * Read all entries using `GetAll` above (Table DB)
@@ -119,10 +119,10 @@ It can be leveraged, however, to extend the cover of '''pkg/graveler/ref''' and 
       * Read all entries using `GetAll` (KV Store)
       * Compare the lists and expect equality (up to order)
 * Infrastructure for running migration during a system test execution
-  * System test to run migration during multiparts upload
-  * Currently there is a single simple multiparts system test (single file, 7 parts) - this is also an opportunity to expand that
+  * System test to run migration during multipart upload
+  * Currently there is a single simple multipart system test (single file, 7 parts) - this is also an opportunity to expand that
 * KV Store unit tests 
-* `multiparts.Tracker` benchmark to run on both Table DB and KV Store (use feature flag to toggle) and verify there is no degradation
+* `multipart.Tracker` benchmark to run on both Table DB and KV Store (use feature flag to toggle) and verify there is no degradation
   * Define sequence(s) of actions to perform (Create/Get/Delete etc.)
   * Run each sequence with feature flag off and on
   * Compare results and fail if KV performance is more than [TBD]% slower

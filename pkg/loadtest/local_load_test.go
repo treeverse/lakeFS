@@ -74,7 +74,7 @@ func TestLocalLoad(t *testing.T) {
 			name:           "KV service test",
 			actionsService: GetKVActionsService,
 			authService:    GetKVAuthService(t, ctx),
-			meta:           GetKVMetadataManager(t, ctx, conf.GetFixedInstallationID(), conf.GetDatabaseParams().Type),
+			meta:           GetKVMetadataManager(t, ctx, conf.GetFixedInstallationID(), conf.GetDatabaseType()),
 			kvEnabled:      true,
 		},
 	}

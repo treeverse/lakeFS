@@ -1,4 +1,4 @@
-package multiparts
+package multipart
 
 import (
 	"context"
@@ -10,13 +10,11 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const (
-	multipartsPartitionKey = "multiparts"
-)
+const storePartitionKey = "multiparts"
 
 type Metadata map[string]string
 
-type MultipartUpload struct {
+type Upload struct {
 	// UploadID A unique identifier for the uploaded part
 	UploadID string `db:"upload_id"`
 	// Path Multipart path in repository
@@ -32,8 +30,8 @@ type MultipartUpload struct {
 }
 
 type Tracker interface {
-	Create(ctx context.Context, multipart MultipartUpload) error
-	Get(ctx context.Context, uploadID string) (*MultipartUpload, error)
+	Create(ctx context.Context, multipart Upload) error
+	Get(ctx context.Context, uploadID string) (*Upload, error)
 	Delete(ctx context.Context, uploadID string) error
 }
 
@@ -52,8 +50,8 @@ func NewTracker(ms kv.StoreMessage) Tracker {
 	}
 }
 
-func multipartFromProto(pb *MultipartUploadData) *MultipartUpload {
-	return &MultipartUpload{
+func multipartFromProto(pb *UploadData) *Upload {
+	return &Upload{
 		UploadID:        pb.UploadId,
 		Path:            pb.Path,
 		CreationDate:    pb.CreationDate.AsTime(),
@@ -63,8 +61,8 @@ func multipartFromProto(pb *MultipartUploadData) *MultipartUpload {
 	}
 }
 
-func protoFromMultipart(m *MultipartUpload) *MultipartUploadData {
-	return &MultipartUploadData{
+func protoFromMultipart(m *Upload) *UploadData {
+	return &UploadData{
 		UploadId:        m.UploadID,
 		Path:            m.Path,
 		CreationDate:    timestamppb.New(m.CreationDate),
@@ -74,19 +72,19 @@ func protoFromMultipart(m *MultipartUpload) *MultipartUploadData {
 	}
 }
 
-func (m *tracker) Create(ctx context.Context, multipart MultipartUpload) error {
+func (m *tracker) Create(ctx context.Context, multipart Upload) error {
 	if multipart.UploadID == "" {
 		return ErrInvalidUploadID
 	}
-	return m.store.SetMsgIf(ctx, multipartsPartitionKey, []byte(multipart.UploadID), protoFromMultipart(&multipart), nil)
+	return m.store.SetMsgIf(ctx, storePartitionKey, []byte(multipart.UploadID), protoFromMultipart(&multipart), nil)
 }
 
-func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, error) {
+func (m *tracker) Get(ctx context.Context, uploadID string) (*Upload, error) {
 	if uploadID == "" {
 		return nil, ErrInvalidUploadID
 	}
-	data := &MultipartUploadData{}
-	_, err := m.store.GetMsg(ctx, multipartsPartitionKey, []byte(uploadID), data)
+	data := &UploadData{}
+	_, err := m.store.GetMsg(ctx, storePartitionKey, []byte(uploadID), data)
 	if err != nil {
 		return nil, err
 	}
@@ -99,12 +97,12 @@ func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 	}
 	store := m.store.Store
 	key := []byte(uploadID)
-	if _, err := store.Get(ctx, []byte(multipartsPartitionKey), key); err != nil {
+	if _, err := store.Get(ctx, []byte(storePartitionKey), key); err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			return fmt.Errorf("%w uploadID=%s", ErrMultipartUploadNotFound, uploadID)
 		}
 		return err
 	}
 
-	return store.Delete(ctx, []byte(multipartsPartitionKey), key)
+	return store.Delete(ctx, []byte(storePartitionKey), key)
 }

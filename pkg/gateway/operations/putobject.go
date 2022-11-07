@@ -193,7 +193,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 	}))
 
 	// handle the upload/copy itself
-	multiPart, err := o.MultipartsTracker.Get(req.Context(), uploadID)
+	multiPart, err := o.MultipartTracker.Get(req.Context(), uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read  multipart record")
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))

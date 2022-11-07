@@ -20,7 +20,6 @@ import (
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/block"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
-	dbparams "github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -116,11 +115,8 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) GetDatabaseParams() dbparams.Database {
-	return dbparams.Database{
-		Type:       c.values.Database.Type,
-		DropTables: c.values.Database.DropTables,
-	}
+func (c *Config) GetDatabaseType() string {
+	return c.values.Database.Type
 }
 
 func (c *Config) GetKVParams() (kvparams.KV, error) {
