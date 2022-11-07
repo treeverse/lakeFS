@@ -68,7 +68,7 @@ jobs:
           make -j3 gen-api gen-ui VERSION=${{ steps.version.outputs.tag }}
           tar -cf /tmp/generated.tar.gz .
       - name: Store generated code
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: generated-code
           path: /tmp/generated.tar.gz
