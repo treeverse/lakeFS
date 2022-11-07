@@ -16,7 +16,7 @@ interface RendererComponentBase {
 export type RendererComponent = RequireAtLeastOne<RendererComponentBase, 'content' | 'contentBlob'>;
 
 export const MarkdownRenderer: FC<RendererComponent> = ({ content }) => {
-    if (typeof content === "string") {
+    if (content) {
         return (
             <ReactMarkdown remarkPlugins={[remarkGfm, remarkHtml]} linkTarget={"_blank"}>
                 {content}
@@ -27,7 +27,7 @@ export const MarkdownRenderer: FC<RendererComponent> = ({ content }) => {
 };
 
 export const IpynbRenderer: FC<RendererComponent> = ({ content }) => {
-    if (typeof content === "string") {
+    if (content) {
         return (
             <NbRenderer
                 ipynb={JSON.parse(content)}
