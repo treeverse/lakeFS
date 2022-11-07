@@ -632,8 +632,11 @@ class Objects {
             throw new Error(await extractError(response));
         }
 
+        const responseBlob = await response.blob();
+        const responseText = await responseBlob.text();
         return {
-            responseText: await response.text(),
+            responseText,
+            responseBlob,
             headers: response.headers,
         }
     }
