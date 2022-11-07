@@ -27,6 +27,13 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.http.HttpStatus;
 
+//import dev.failsafe.CheckedPredicate;
+import dev.failsafe.Failsafe;
+import dev.failsafe.FailsafeException;
+import dev.failsafe.FailsafeExecutor;
+import dev.failsafe.RetryPolicy;
+import dev.failsafe.function.CheckedPredicate;
+
 import com.google.common.base.Preconditions;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashFunction;
@@ -37,6 +44,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
+import java.time.temporal.ChronoUnit;
 
 // TODO(ariels): For Hadoop 3, it is enough (and better!) to extend PathOutputCommitter.
 public class DummyOutputCommitter extends FileOutputCommitter {
@@ -48,10 +56,17 @@ public class DummyOutputCommitter extends FileOutputCommitter {
      * API client connected to the lakeFS server used on the filesystem.
      */
     protected LakeFSClient lakeFSClient = null;
+
+    /**
+     * Retry policy for important long-running operations such as commits and merges.
+     */
+    protected final FailsafeExecutor<Object> longRunning;
+
     /**
      * Repository for files.
      */
     protected String repository = null;
+
     /**
      * Branch of output.  Defined on a task, null if this committer is a
      * noop.
@@ -106,6 +121,24 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         super(outputPath, context);
 
         this.conf = context.getConfiguration();
+
+        RetryPolicy<Object> retryPolicy = RetryPolicy.builder()
+            .handleIf(new CheckedPredicate<ApiException>(){
+                    public boolean test(ApiException e) {
+                        switch (e.getCode()) {
+                        case HttpStatus.SC_LOCKED: // too many retries
+                        case HttpStatus.SC_INTERNAL_SERVER_ERROR: // random unknown failure
+                            return true;
+                        default:
+                            return false;
+                        }
+                    }
+                })
+            .withMaxAttempts(5)
+            .withJitter(0.5)
+            .withBackoff(1, 45, ChronoUnit.SECONDS)
+            .build();
+        this.longRunning = Failsafe.with(retryPolicy);
 
         JobID id = context.getJobID();
 
@@ -245,7 +278,8 @@ public class DummyOutputCommitter extends FileOutputCommitter {
                 fs.create(markerPath, true).close();
 
                 CommitsApi commits = lakeFSClient.getCommits();
-                commits.commit(repository, jobBranch, new CommitCreation().message(String.format("Add success marker for job %s", jobContext.getJobID())), null);
+                longRunning.run(() ->
+                                commits.commit(repository, jobBranch, new CommitCreation().message(String.format("Add success marker for job %s", jobContext.getJobID())), null));
             }
             if (!hasDiffs(repository, jobBranch, outputBranch)) {
                 LOG.debug("No differences from {} to {}, nothing to merge", jobBranch, outputBranch);
@@ -253,9 +287,10 @@ public class DummyOutputCommitter extends FileOutputCommitter {
             }
             LOG.info("Commit job branch {} to {}", jobBranch, outputBranch);
             RefsApi refs = lakeFSClient.getRefs();
-            refs.mergeIntoBranch(repository, jobBranch, outputBranch, new Merge().message("").strategy("source-wins"));
-        } catch (ApiException e) {
-            throw new IOException(String.format("commitJob %s failed", jobContext.getJobID()), e);
+            longRunning.run(() ->
+                            refs.mergeIntoBranch(repository, jobBranch, outputBranch, new Merge().message("").strategy("source-wins")));
+        } catch (FailsafeException e) {
+            throw new IOException(String.format("commitJob %s failed", jobContext.getJobID()), e.getCause());
         }
         try {
             cleanupJob();
@@ -307,6 +342,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
 
             LOG.info("Commit task branch {} and merge to {}", taskBranch, jobBranch);
             CommitsApi commits = lakeFSClient.getCommits();
+            // Uncontended commit, do not retry.
             commits.commit(repository, taskBranch, new CommitCreation().message(String.format("committing Task %s", taskContext.getTaskAttemptID())), null);
 
             if (!hasDiffs(repository, taskBranch, jobBranch)) {
@@ -314,7 +350,10 @@ public class DummyOutputCommitter extends FileOutputCommitter {
                 return;
             }
             RefsApi refs = lakeFSClient.getRefs();
-            refs.mergeIntoBranch(repository, taskBranch, jobBranch, new Merge().message(""));
+            longRunning.run(() ->
+                            refs.mergeIntoBranch(repository, taskBranch, jobBranch, new Merge().message("")));
+        } catch (FailsafeException e) {
+            throw new IOException(String.format("commitTask %s failed (retried)", taskContext.getTaskAttemptID()), e);
         } catch (ApiException e) {
             throw new IOException(String.format("commitTask %s failed", taskContext.getTaskAttemptID()), e);
         }
