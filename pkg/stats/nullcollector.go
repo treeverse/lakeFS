@@ -8,4 +8,6 @@ func (m *NullCollector) CollectEvent(_ Event) {}
 
 func (m *NullCollector) SetInstallationID(_ string) {}
 
+func (m *NullCollector) CollectCommPrefs(_ string, _, _ bool) {}
+
 func (m *NullCollector) Close() {}

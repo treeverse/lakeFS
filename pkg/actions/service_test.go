@@ -48,6 +48,7 @@ func (c *ActionStatsMockCollector) CollectEvent(ev stats.Event) {
 
 func (c *ActionStatsMockCollector) CollectMetadata(_ *stats.Metadata) {}
 func (c *ActionStatsMockCollector) SetInstallationID(_ string)        {}
+func (c *ActionStatsMockCollector) CollectCommPrefs(_ string, _, _ bool) {}
 func (c *ActionStatsMockCollector) Close()                            {}
 
 type getService func(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service

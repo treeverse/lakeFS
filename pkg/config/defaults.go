@@ -95,6 +95,8 @@ const (
 	DefaultStatsFlushInterval = time.Second * 30
 	DefaultStatsFlushSize     = 100
 
+	DefaultEmailSubscriptionEnabled = true
+
 	DefaultEmailLimitEveryDuration = time.Minute
 	DefaultEmailBurst              = 10
 	DefaultLakefsEmailBaseURL      = "http://localhost:8000"
@@ -143,6 +145,8 @@ const (
 	StatsAddressKey       = "stats.address"
 	StatsFlushIntervalKey = "stats.flush_interval"
 	StatsFlushSizeKey     = "stats.flush_size"
+
+	EmailSubscriptionEnabledKey = "email_subscription.enabled"
 
 	SecurityAuditCheckIntervalKey     = "security.audit_check_interval"
 	DefaultSecurityAuditCheckInterval = 24 * time.Hour
@@ -212,6 +216,8 @@ func setDefaults(local bool) {
 	viper.SetDefault(StatsAddressKey, DefaultStatsAddr)
 	viper.SetDefault(StatsFlushIntervalKey, DefaultStatsFlushInterval)
 	viper.SetDefault(StatsFlushSizeKey, DefaultStatsFlushSize)
+
+	viper.SetDefault(EmailSubscriptionEnabledKey, DefaultEmailSubscriptionEnabled)
 
 	viper.SetDefault(BlockstoreAzureTryTimeoutKey, DefaultBlockstoreAzureTryTimeout)
 	viper.SetDefault(BlockstoreAzureAuthMethod, DefaultBlockstoreAzureAuthMethod)

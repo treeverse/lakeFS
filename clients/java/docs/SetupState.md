@@ -19,6 +19,7 @@ Name | Value
 ---- | -----
 INITIALIZED | &quot;initialized&quot;
 NOT_INITIALIZED | &quot;not_initialized&quot;
+COMM_PREFS_DONE | &quot;comm_prefs_done&quot;
 
 
 

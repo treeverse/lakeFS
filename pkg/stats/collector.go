@@ -27,6 +27,7 @@ const (
 type Collector interface {
 	CollectEvent(ev Event)
 	CollectMetadata(accountMetadata *Metadata)
+	CollectCommPrefs(email string, featureUpdates, securityUpdates bool)
 	SetInstallationID(installationID string)
 
 	// Close must be called to ensure the delivery of pending stats
@@ -73,6 +74,12 @@ type InputEvent struct {
 	ProcessID      string   `json:"process_id"`
 	Time           string   `json:"time"`
 	Metrics        []Metric `json:"metrics"`
+}
+
+type CommPrefsData struct {
+	Email			string `json:"email"`
+	FeatureUpdates 	bool `json:"featureUpdates"`
+	SecurityUpdates bool `json:"securityUpdates"`
 }
 
 type keyIndex map[Event]uint64
@@ -335,6 +342,15 @@ func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
 	err := s.sender.UpdateMetadata(ctx, *accountMetadata)
 	if err != nil {
 		s.log.WithError(err).WithField("service", "stats_collector").Debug("could not update metadata")
+	}
+}
+
+func (s *BufferedCollector) CollectCommPrefs(email string, featureUpdates, securityUpdates bool) {
+	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
+	defer cancel()
+	err := s.sender.UpdateCommPrefs(ctx, email, featureUpdates, securityUpdates)
+	if err != nil {
+		s.log.WithError(err).WithField("service", "stats_collector").Debug("could not update comm prefs")
 	}
 }
 

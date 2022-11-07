@@ -212,6 +212,9 @@ type configuration struct {
 		FlushSize     int           `mapstructure:"flush_size"`
 		Extended      bool          `mapstructure:"extended"`
 	}
+	EmailSubscription struct {
+		Enabled	bool `mapstructure:"enabled"`
+	} `mapstructure:"email_subscription"`
 	Installation struct {
 		FixedID string `mapstructure:"fixed_id"`
 	}

@@ -20,6 +20,7 @@ var (
 type Sender interface {
 	SendEvent(ctx context.Context, installationID, processID string, m []Metric) error
 	UpdateMetadata(ctx context.Context, m Metadata) error
+	UpdateCommPrefs(ctx context.Context, email string, featureUpdates, securityUpdates bool) error
 }
 
 type TimeFn func() time.Time
@@ -96,6 +97,34 @@ func (s *HTTPSender) SendEvent(ctx context.Context, installationID, processID st
 	return nil
 }
 
+func (s *HTTPSender) UpdateCommPrefs(ctx context.Context, email string, featureUpdates, securityUpdates bool) error {
+	commPrefs := &CommPrefsData{
+		Email: email,
+		FeatureUpdates: featureUpdates,
+		SecurityUpdates: securityUpdates,
+	}
+	serialized, err := json.Marshal(commPrefs)
+	if err != nil {
+		return fmt.Errorf("could not serialize comm prefs: %s: %w", err, ErrSendError)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.addr+"/comm_prefs", bytes.NewBuffer(serialized))
+	if err != nil {
+		return fmt.Errorf("could not create HTTP request: %s: %w", err, ErrSendError) 
+	}
+	res, err := s.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("could not make HTTP request: %s: %w", err, ErrSendError)
+	}
+	defer func () {
+		_ = res.Body.Close()
+	}()
+	if res.StatusCode != http.StatusCreated {
+		return fmt.Errorf("bad status code received. status=%d: %w", res.StatusCode, ErrSendError)
+	}
+	return nil
+}
+
 type dummySender struct {
 	Log logging.Logger
 }
@@ -119,5 +148,17 @@ func (s *dummySender) UpdateMetadata(_ context.Context, m Metadata) error {
 	s.Log.WithFields(logging.Fields{
 		"metadata": fmt.Sprintf("%+v", m),
 	}).Trace("dummy sender received metadata")
+	return nil
+}
+
+func (s *dummySender) UpdateCommPrefs(ctx context.Context, email string, featureUpdates, securityUpdates bool) error {
+	if s.Log == nil || !s.Log.IsTracing() {
+		return nil
+	}
+	s.Log.WithFields(logging.Fields{
+		"email": email,
+		"featureUpdates": featureUpdates,
+		"securityUpdates": securityUpdates,
+	}).Trace("dummy sender received comm prefs")
 	return nil
 }

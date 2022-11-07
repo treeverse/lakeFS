@@ -73,6 +73,8 @@ func (m *memCollector) SetInstallationID(installationID string) {
 	m.InstallationID = installationID
 }
 
+func (m *memCollector) CollectCommPrefs(email string, featureUpdates, securityUpdates bool) {}
+
 func (m *memCollector) Close() {}
 
 func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.BaseCredential {

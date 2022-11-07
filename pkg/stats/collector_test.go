@@ -25,6 +25,10 @@ func (s *mockSender) UpdateMetadata(ctx context.Context, m stats.Metadata) error
 	return nil
 }
 
+func (s *mockSender) UpdateCommPrefs(ctx context.Context, email string, featureUpdates, securityUpdates bool) error {
+	return nil
+}
+
 type mockTicker struct {
 	tc chan time.Time
 }
