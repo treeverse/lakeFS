@@ -59,7 +59,6 @@ func TestHooksSuccess(t *testing.T) {
 
 	t.Run("commit merge test", func(t *testing.T) {
 		testCommitMerge(t, ctx, repo)
-
 	})
 	t.Run("create delete branch test", func(t *testing.T) {
 		testCreateDeleteBranch(t, ctx, repo)
@@ -461,6 +460,9 @@ func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch strin
 		require.NoError(t, err)
 		require.Equal(t, http.StatusCreated, resp.StatusCode())
 	}
+
+	// wait 8 seconds to let the actions cache expire.
+	time.Sleep(8 * time.Second)
 }
 
 type webhookEventInfo struct {
