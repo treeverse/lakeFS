@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
@@ -13,15 +15,40 @@ const repositoryLocation = "_lakefs_actions/"
 
 type ActionsSource struct {
 	catalog *Catalog
+	cache   cache.Cache
+}
+
+const (
+	DefaultActionsCacheSize   = 100
+	DefaultActionsCacheExpiry = 5 * time.Second
+	DefaultActionsCacheJitter = DefaultActionsCacheExpiry / 2
+)
+
+type ActionsCacheConfig struct {
+	Size   int
+	Expiry time.Duration
+	Jitter time.Duration
 }
 
 func NewActionsSource(catalog *Catalog) *ActionsSource {
 	return &ActionsSource{
 		catalog: catalog,
+		cache:   cache.NewCache(DefaultActionsCacheSize, DefaultActionsCacheExpiry, cache.NewJitterFn(DefaultActionsCacheJitter)),
 	}
 }
 
 func (s *ActionsSource) List(ctx context.Context, record graveler.HookRecord) ([]string, error) {
+	key := fmt.Sprintf("%s:%s", record.RepositoryID.String(), record.SourceRef.String())
+	names, err := s.cache.GetOrSet(key, func() (interface{}, error) {
+		return s.list(ctx, record)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return names.([]string), nil
+}
+
+func (s *ActionsSource) list(ctx context.Context, record graveler.HookRecord) ([]string, error) {
 	const amount = 1000
 	var after string
 	hasMore := true
@@ -41,6 +68,17 @@ func (s *ActionsSource) List(ctx context.Context, record graveler.HookRecord) ([
 }
 
 func (s *ActionsSource) Load(ctx context.Context, record graveler.HookRecord, name string) ([]byte, error) {
+	key := fmt.Sprintf("%s:%s:%s", record.RepositoryID.String(), record.SourceRef.String(), name)
+	names, err := s.cache.GetOrSet(key, func() (interface{}, error) {
+		return s.load(ctx, record, name)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return names.([]byte), nil
+}
+
+func (s *ActionsSource) load(ctx context.Context, record graveler.HookRecord, name string) ([]byte, error) {
 	// get name's address
 	repositoryID := record.RepositoryID
 	ent, err := s.catalog.GetEntry(ctx, repositoryID.String(), record.SourceRef.String(), name, GetEntryParams{})
