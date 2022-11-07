@@ -43,8 +43,8 @@ public class LakeFSClient {
         basicAuth.setPassword(secretKey);
 
         // BUG(ariels): Configurable timeouts!
-        apiClient.setConnectTimeout(15000 /* msec */);
-        apiClient.setReadTimeout(15000 /* msec */);
+        apiClient.setConnectTimeout(60000 /* msec */);
+        apiClient.setReadTimeout(60000 /* msec */);
 
         this.objects = new ObjectsApi(apiClient);
         this.staging = new StagingApi(apiClient);
