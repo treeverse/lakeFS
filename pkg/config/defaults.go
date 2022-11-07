@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	DatabaseTypeKey     = "database.type"
-	DefaultDatabaseType = "local"
+	DatabaseTypeKey   = "database.type"
+	LocalDatabaseType = "local"
 
 	DatabaseLocalPathKey     = "database.local.path"
 	DefaultDatabaseLocalPath = "~/lakefs/metadata"
@@ -109,8 +109,8 @@ const (
 	LoggingFilesKeepKey     = "logging.files_keep"
 	LoggingAuditLogLevel    = "logging.audit_log_level"
 
-	AuthEncryptSecretKey        = "auth.encrypt.secret_key"            // #nosec
-	DefaultAuthEncryptSecretKey = "THIS_MUST_BE_CHANGED_IN_PRODUCTION" // #nosec
+	AuthEncryptSecretKey      = "auth.encrypt.secret_key"            // #nosec
+	LocalAuthEncryptSecretKey = "THIS_MUST_BE_CHANGED_IN_PRODUCTION" // #nosec
 
 	ActionsEnabledKey = "actions.enabled"
 
@@ -157,8 +157,8 @@ const (
 
 func setDefaults(local bool) {
 	if local {
-		viper.SetDefault(DatabaseTypeKey, DefaultDatabaseType)
-		viper.SetDefault(AuthEncryptSecretKey, DefaultAuthEncryptSecretKey)
+		viper.SetDefault(DatabaseTypeKey, LocalDatabaseType)
+		viper.SetDefault(AuthEncryptSecretKey, LocalAuthEncryptSecretKey)
 	}
 
 	viper.SetDefault(ListenAddressKey, DefaultListenAddr)
