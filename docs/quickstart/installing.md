@@ -37,7 +37,7 @@ You can try lakeFS:
 1. [On Kubernetes](more_quickstart_options.md#on-kubernetes-with-helm).
 1. By [running the binary directly](more_quickstart_options.md#using-the-binary).
 
-## Modifying the local deployment
+## Modifying the local deployment to run against your cloud data
 
 ### Using AWS S3 Storage
 To modify the local deployment, for example, in order to use your local lakeFS against S3 storage (as opposed to the local storage), run the command with local parameters:
@@ -65,6 +65,10 @@ This command will mount your present working directory (PWD) within the containe
 
 
 Note using the ```--local-settings``` flag, metadata is being stored locally in the lakeFS container. Therefore, avoid using this flag for production usages.
+
+Follow the video below to quickly spin up a local lakeFS environment.
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/CIDrHVFnIJY"></iframe>
 
 ## Next steps
 
