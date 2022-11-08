@@ -72,21 +72,21 @@ func (u *UncommittedIterator) Next() bool {
 		return false
 	}
 
-	if u.entryItr != nil {
-		if u.entryItr.Next() {
-			u.entry = &UncommittedRecord{
-				branchID: u.branchItr.Value().BranchID,
-			}
-			u.entry.EntryRecord = u.entryItr.Value()
-			return true
-		} else {
-			u.entryItr.Close()
-			if u.entryItr.Err() != nil {
-				return false
-			}
-		}
+	if u.entryItr == nil {
+		return u.next()
 	}
-	return u.next()
+	if u.entryItr.Next() {
+		u.entry = &UncommittedRecord{
+			branchID: u.branchItr.Value().BranchID,
+		}
+		u.entry.EntryRecord = u.entryItr.Value()
+		return true
+	} 
+	u.entryItr.Close()
+	if u.entryItr.Err() != nil {
+		return false
+	}
+	
 }
 
 func (u *UncommittedIterator) SeekGE(branchID graveler.BranchID, id Path) {
