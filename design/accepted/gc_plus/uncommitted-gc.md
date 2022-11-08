@@ -41,8 +41,8 @@ Similar to the way GC works today, use repository meta-ranges and ranges to read
 
 ### 3. Listing of lakeFS repository uncommitted objects
 
-Expose a new API in lakeFS which writes repository uncommitted objects information into a parquet file in a dedicated path
-in the repository namespace
+Expose a new API in lakeFS which writes repository uncommitted objects information into data formatted files and save them in a 
+dedicated path in the repository namespace
 
 ### Required changes by lakeFS
 
@@ -93,16 +93,15 @@ lakeFS will periodically clear the copied list according to timestamp.
 1. Copy of staged object in the same branch will perform a shallow copy as described above
 2. All other copy operations will use the underlying adapter copy operation.
 
-#### Move/RenameObject
+#### CopyObject API
 Clients working through the S3 Gateway can use the CopyObject + DeleteObject to perform a Rename or Move operation.
 For clients using the OpenAPI this could have been done using StageObject + DeleteObject.
-To continue support of this operation, introduce a new API to rename an object which will be scoped to a single branch.
-Rename will add copied objects in ref-store similarly to CopyObject 
+To continue support of this operation, introduce a new API to Copy an object similarly to the S3 Gateway functionality
 
 #### PrepareUncommittedForGC
 
-A new API which will create parquet files from uncommitted object information (address + creation date). These files
-will be saved to `_lakefs/gc/run_id/uncommitted/*.parquet` and used by the GC client to list repository's uncommitted objects.
+A new API which will create files from uncommitted object information (address + creation date). These files
+will be saved to `_lakefs/gc/run_id/uncommitted/` and used by the GC client to list repository's uncommitted objects.
 At the end of this flow - read copied objects information from ref-store and add it to the uncommitted data.
 For the purpose of this document we'll call this the `UncommittedData`
 >**Note:** Copied object information must be read AFTER all uncommitted data was collected
@@ -170,7 +169,7 @@ Optimized run uses the previous GC run output, to perform a partial scan of the 
 ### GC Saved Information
 
 For each GC run, save the following information using the GC run id as detailed in this [proposal](https://github.com/treeverse/cloud-controlplane/blob/main/design/accepted/gc-with-run-id.md):
-1. Save `Uncommitted DF` in `_lakefs/gc/run_id/uncommitted/*.parquet` (Done by _PrepareUncommittedForGC_)
+1. Save `Uncommitted DF` in `_lakefs/gc/run_id/uncommitted/` (Done by _PrepareUncommittedForGC_)
 2. Add the following to the GC report:
    1. Run start time
    2. Last read slice
