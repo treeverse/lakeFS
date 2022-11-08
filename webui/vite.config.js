@@ -1,6 +1,9 @@
-import reactRefresh from '@vitejs/plugin-react-refresh';
+import react from '@vitejs/plugin-react';
 import eslintPlugin from 'vite-plugin-eslint';
 import replace from '@rollup/plugin-replace';
+import dns from "dns";
+
+dns.setDefaultResultOrder('verbatim');
 
 // https://vitejs.dev/config/
 export default ({ command }) => {
@@ -13,7 +16,7 @@ export default ({ command }) => {
             __buildVersion: process.env.VERSION || 'dev',
           }
       }),
-      reactRefresh(),
+      react(),
       eslintPlugin({
         include: ['src/**/*.jsx', 'src/**/*.js', 'src/**/*.ts', 'src/**/*.tsx']
       })
@@ -21,7 +24,7 @@ export default ({ command }) => {
     publicDir: './pub',
     build: {
       sourcemap: true
-    }
+    },
   };
 
   // in development
@@ -29,19 +32,20 @@ export default ({ command }) => {
     return {
       ...baseConfig,
       server: {
+        port: 3000,
         proxy: {
           '/api': {
-            target: 'http://localhost:8000',
+            target: 'https://master-sloth.lakefs-demo.io',
             changeOrigin: true,
             secure: false
           },
           '/oidc/login': {
-            target: 'http://localhost:8000',
+            target: 'https://master-sloth.lakefs-demo.io',
             changeOrigin: false,
             secure: false
           },
           '/logout': {
-            target: 'http://localhost:8000',
+            target: 'https://master-sloth.lakefs-demo.io',
             changeOrigin: false,
             secure: false
           }
