@@ -32,6 +32,7 @@ func NewUncommittedIterator(ctx context.Context, store Store, repository *gravel
 	}, nil
 }
 
+// nextStaging reads the next branch staging area into entryItr
 func (u *UncommittedIterator) nextStaging() bool {
 	if u.entryItr != nil {
 		u.entryItr.Close()
@@ -45,6 +46,8 @@ func (u *UncommittedIterator) nextStaging() bool {
 	return true
 }
 
+// next Sets iterators to provide the next entry. Handles dependency between branch and value iterators.
+// Sets value and returns true if next entry available - false otherwise
 func (u *UncommittedIterator) next() bool {
 	u.entry = nil // will stay nil as long as no new value found
 	for u.entry == nil {
@@ -67,6 +70,7 @@ func (u *UncommittedIterator) next() bool {
 	return false
 }
 
+// Next returns the next entry - if entryItr is still valid - gets the next value from it otherwise call u.next
 func (u *UncommittedIterator) Next() bool {
 	if u.Err() != nil {
 		return false
@@ -100,8 +104,10 @@ func (u *UncommittedIterator) SeekGE(branchID graveler.BranchID, id Path) {
 			u.nextStaging()
 		}
 	}
-	if u.nextStaging() {
-		u.entryItr.SeekGE(id)
+	if u.entryItr == nil {
+		if u.nextStaging() {
+			u.entryItr.SeekGE(id)
+		}
 	}
 }
 
