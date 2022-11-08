@@ -353,12 +353,12 @@ func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.St
 
 func BenchmarkDrivers(b *testing.B) {
 	ctx := context.Background()
-	var err error
+
 	pool, err := dockertest.NewPool("")
 	if err != nil {
 		log.Fatalf("Could not connect to Docker: %s", err)
 	}
-	var closer func()
+
 	databaseURI, closer := testutil.GetDBInstance(pool)
 	defer closer()
 

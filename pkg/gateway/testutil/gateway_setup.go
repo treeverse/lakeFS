@@ -14,7 +14,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/gateway"
-	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
+	"github.com/treeverse/lakefs/pkg/gateway/multipart"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
@@ -31,14 +31,14 @@ type Dependencies struct {
 	catalog *catalog.Catalog
 }
 
-func GetBasicHandler(t *testing.T, authService *FakeAuthService, _ string, repoName string) (http.Handler, *Dependencies) {
+func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string) (http.Handler, *Dependencies) {
 	ctx := context.Background()
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 
 	store := kvtest.MakeStoreByName("mem", kvparams.KV{})(t, context.Background())
 	defer store.Close()
 	storeMessage := &kv.StoreMessage{Store: store}
-	multipartsTracker := multiparts.NewTracker(*storeMessage)
+	multipartTracker := multipart.NewTracker(*storeMessage)
 
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
@@ -66,7 +66,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, _ string, repoN
 	handler := gateway.NewHandler(
 		authService.Region,
 		c,
-		multipartsTracker,
+		multipartTracker,
 		blockAdapter,
 		authService,
 		[]string{authService.BareDomain},

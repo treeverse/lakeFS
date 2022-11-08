@@ -105,12 +105,12 @@ func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 		ctx := req.Context()
 		client := httputil.GetRequestLakeFSClient(req)
 		o := &operations.Operation{
-			Region:            sc.region,
-			FQDN:              getBareDomain(stripPort(req.Host), sc.bareDomains),
-			Catalog:           sc.catalog,
-			MultipartsTracker: sc.multipartsTracker,
-			BlockStore:        sc.blockStore,
-			Auth:              sc.authService,
+			Region:           sc.region,
+			FQDN:             getBareDomain(stripPort(req.Host), sc.bareDomains),
+			Catalog:          sc.catalog,
+			MultipartTracker: sc.multipartTracker,
+			BlockStore:       sc.blockStore,
+			Auth:             sc.authService,
 			Incr: func(action, userID, repository, ref string) {
 				logging.FromContext(ctx).
 					WithFields(logging.Fields{
