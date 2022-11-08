@@ -535,7 +535,7 @@ var (
 	}
 )
 
-func TestKVGraveler_GetGarbageCollectionUncommitted(t *testing.T) {
+func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		name          string
@@ -574,13 +574,20 @@ func TestKVGraveler_GetGarbageCollectionUncommitted(t *testing.T) {
 			c := &catalog.Catalog{
 				Store: g.Sut,
 			}
+			var (
+				runID *string
+				//md *graveler.GarbageCollectionRunMetadata
+				mark *catalog.GCUncommittedMark
+			)
 
-			_, contToken, err := c.PrepareGCUncommitted(ctx, repoID.String(), "NewRunID", nil)
+			md, mark, err := c.PrepareGCUncommitted(ctx, repoID.String(), runID, mark)
 			require.NoError(t, err)
 
-			for contToken != nil {
-				_, contToken, err = c.PrepareGCUncommitted(ctx, repoID.String(), "NewRunID", contToken)
+			for mark != nil {
+				runID = &md.RunId
+				md, mark, err = c.PrepareGCUncommitted(ctx, repoID.String(), runID, mark)
 				require.NoError(t, err)
+				require.Equal(t, *runID, md.RunId)
 			}
 			verifyData(t, tt.numBranch, tt.numRecords, testFolder)
 		})
@@ -625,6 +632,7 @@ func createTestScenario(t *testing.T, numBranches, numRecords, expectedCalls int
 			}
 		}
 	}
+	test.GarbageCollectionManager.EXPECT().NewID().Times(expectedCalls).Return("TestRunID")
 	test.RefManager.EXPECT().GetRepository(gomock.Any(), repoID).Times(expectedCalls).Return(repository, nil)
 	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).Times(expectedCalls).Return(testutil.NewFakeBranchIterator(branches), nil)
 
@@ -666,4 +674,20 @@ func verifyData(t *testing.T, numBranches, numRecords int, testFolder string) {
 		totalCount += int(count)
 	}
 	require.Equal(t, totalCount, numBranches*numRecords)
+}
+
+func TestCatalog_PrepareGCUncommittedNegative(t *testing.T) {
+	test := testutil.InitGravelerTest(t)
+	c := &catalog.Catalog{
+		Store: test.Sut,
+	}
+
+	mark := catalog.GCUncommittedMark{
+		BranchID: "SomeBranch",
+		Key:      []byte("SomeKey"),
+	}
+	test.RefManager.EXPECT().GetRepository(gomock.Any(), repoID).Return(repository, nil)
+
+	_, _, err := c.PrepareGCUncommitted(context.Background(), repoID.String(), nil, &mark)
+	require.ErrorIs(t, err, catalog.ErrConflictFound)
 }

@@ -9,8 +9,10 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -22,6 +24,9 @@ const (
 	addressesFilePrefixTemplate   = "%s/retention/gc/addresses/"
 	commitsFileSuffixTemplate     = "%s/retention/gc/commits/run_id=%s/commits.csv"
 	uncommittedFilePrefixTemplate = "%s/retention/gc/%s/uncommitted/"
+
+	// unixYear4000 epoch value for Saturday, January 1, 4000 12:00:00 AM. Changing this value is a breaking change as it is used to have reverse order for time based unique ID (xid).
+	unixYear4000 = 64060588800
 )
 
 type GarbageCollectionManager struct {
@@ -237,4 +242,14 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 		return "", err
 	}
 	return runID, nil
+}
+
+func (m *GarbageCollectionManager) NewID() string {
+	return newDescendingID(time.Now()).String()
+}
+
+// TODO: Unify implementations of descending IDs
+func newDescendingID(tm time.Time) xid.ID {
+	t := time.Unix(unixYear4000-tm.Unix(), 0).UTC()
+	return xid.NewWithTime(t)
 }

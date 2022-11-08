@@ -514,7 +514,7 @@ type VersionController interface {
 
 	// SaveGarbageCollectionUncommitted Uploads parquet file of uncommitted objects to the repository in the run ID path. Return the GC run's metadata
 	// including the run ID and the location of the saved parquet file
-	SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename, runID string) (*GarbageCollectionRunMetadata, error)
+	SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename string, runID *string) (*GarbageCollectionRunMetadata, error)
 
 	// GetBranchProtectionRules return all branch protection rules for the repository
 	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error)
@@ -1293,18 +1293,22 @@ func (g *KVGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositor
 	}, err
 }
 
-func (g *KVGraveler) SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename, runID string) (*GarbageCollectionRunMetadata, error) {
-	err := g.garbageCollectionManager.SaveGarbageCollectionUncommitted(ctx, repository, filename, runID)
+func (g *KVGraveler) SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename string, runID *string) (*GarbageCollectionRunMetadata, error) {
+	rID := g.garbageCollectionManager.NewID()
+	if runID != nil {
+		rID = *runID
+	}
+	err := g.garbageCollectionManager.SaveGarbageCollectionUncommitted(ctx, repository, filename, rID)
 	if err != nil {
 		return nil, err
 	}
-	uncommittedLocation, err := g.garbageCollectionManager.GetUncommittedLocation(runID, repository.StorageNamespace)
+	uncommittedLocation, err := g.garbageCollectionManager.GetUncommittedLocation(rID, repository.StorageNamespace)
 	if err != nil {
 		return nil, err
 	}
 
 	return &GarbageCollectionRunMetadata{
-		RunId:               runID,
+		RunId:               rID,
 		UncommittedLocation: uncommittedLocation,
 	}, nil
 }
@@ -2761,6 +2765,7 @@ type GarbageCollectionManager interface {
 	SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename, runID string) error
 	GetUncommittedLocation(runID string, sn StorageNamespace) (string, error)
 	GetAddressesLocation(sn StorageNamespace) (string, error)
+	NewID() string
 }
 
 type ProtectedBranchesManager interface {

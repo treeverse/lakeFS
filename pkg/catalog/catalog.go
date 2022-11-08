@@ -1727,12 +1727,13 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string
 	return c.Store.SaveGarbageCollectionCommits(ctx, repository, previousRunID)
 }
 
+// GCUncommittedMark Marks the *next* item to be scanned by the paginated call to PrepareGCUncommitted
 type GCUncommittedMark struct {
 	BranchID graveler.BranchID `json:"branch"`
 	Key      graveler.Key      `json:"key"`
 }
 
-func (m *GCUncommittedMark) String() (string, error) {
+func (m *GCUncommittedMark) Encode() (string, error) {
 	var buf bytes.Buffer
 	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
 	err := json.NewEncoder(encoder).Encode(m)
@@ -1759,7 +1760,7 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 
 	const GCMaxUncommittedFileSize = 20 * 1024 * 1024 // 20 MB
 	const periodicCheckSize = 100000
-	fileSizeExceeded := func() (bool, error) {
+	fileSizeExceeded := func(fd *os.File) (bool, error) {
 		stat, err := fd.Stat()
 		if err != nil {
 			return false, err
@@ -1790,9 +1791,10 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 			if count%periodicCheckSize == 0 {
 				err := pw.Flush(true)
 				if err != nil {
+					eIt.Close()
 					return nil, err
 				}
-				done, err := fileSizeExceeded()
+				done, err := fileSizeExceeded(fd)
 				if err != nil {
 					eIt.Close()
 					return nil, err
@@ -1823,20 +1825,23 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 		}
 		eIt.Close()
 		if eIt.Err() != nil {
-			return nil, err
+			return nil, eIt.Err()
 		}
+	}
+
+	if bIt.Err() != nil {
+		return nil, bIt.Err()
 	}
 	err = pw.WriteStop()
 	if err != nil {
 		return nil, err
 	}
 
-	// Finished reading all staging area - not continuation token
+	// Finished reading all staging area - no continuation token
 	return nil, nil
 }
 
-// TODO: Modify using a run ID generator (https://github.com/treeverse/lakeFS/issues/4469)
-func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID, runID string, contToken *GCUncommittedMark) (*graveler.GarbageCollectionRunMetadata, *GCUncommittedMark, error) {
+func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string, runID *string, mark *GCUncommittedMark) (*graveler.GarbageCollectionRunMetadata, *GCUncommittedMark, error) {
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
@@ -1847,11 +1852,13 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID, runID 
 		return nil, nil, err
 	}
 
-	if contToken == nil {
-		contToken = &GCUncommittedMark{
+	if mark == nil {
+		mark = &GCUncommittedMark{
 			BranchID: "",
 			Key:      []byte(""),
 		}
+	} else if runID == nil {
+		return nil, nil, fmt.Errorf("must provide run ID with mark: %w", ErrConflictFound)
 	}
 
 	filename := path.Join(os.TempDir(), uuid.New().String())
@@ -1862,7 +1869,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID, runID 
 	defer os.Remove(filename)
 	defer fd.Close()
 	// Write parquet to local storage
-	newToken, err := c.writeUncommittedLocal(ctx, repository, fd, *contToken)
+	newMark, err := c.writeUncommittedLocal(ctx, repository, fd, *mark)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1873,7 +1880,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID, runID 
 		return nil, nil, err
 	}
 
-	return md, newToken, nil
+	return md, newMark, nil
 }
 
 func (c *Catalog) Close() error {
