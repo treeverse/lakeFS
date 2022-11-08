@@ -1,12 +1,13 @@
 ---
 layout: default
 title: Sizing Guide
-parent: Understanding lakeFS
+parent: How-To
 description: This section provides a detailed sizing guide for deploying lakeFS.
-nav_order: 30
+nav_order: 10000  # always last
 has_children: false
 redirect_from:
     - ../architecture/sizing-guide.html
+    - ../understand/sizing-guide.html
 ---
 # Sizing guide
 {: .no_toc }
@@ -27,7 +28,7 @@ For high throughput, additional CPUs help scale requests across different cores.
 "Expensive" operations such as large diff or commit operations can take advantage of multiple cores. 
 
 ### Network
-If using the data APIs such as the [S3 Gateway](architecture.md#s3-gateway), 
+If using the data APIs such as the [S3 Gateway](../understand/architecture.md#s3-gateway), 
 lakeFS will require enough network bandwidth to support the planned concurrent network upload/download operations.
 For most cloud providers, more powerful machines (i.e., more expensive and usually containing more CPU cores) also provide increased network bandwidth.
 
@@ -86,7 +87,7 @@ PostgreSQL CPU cores help scale concurrent requests. 1 CPU core for every 5,000 
 <div markdown="1" id="dynamodb-ram">
 lakeFS will create a table on the DB, with the default on-demand setting. No need to specify how much read and write throughput you expect your application to perform, as DynamoDB instantly accommodates your workloads as they ramp up or down.
 
-You can customize the table settings to provisioned capacity which allows you to manage and optimize your costs by allocating read/write capacity in advance (see [Benchmarks](https://docs.lakefs.io/understand/sizing-guide.html#benchmarks))
+You can customize the table settings to provisioned capacity which allows you to manage and optimize your costs by allocating read/write capacity in advance (see [Benchmarks](#benchmarks))
 
 **RAM**  
 Managed by AWS.
@@ -118,7 +119,7 @@ the amount of changes introduced per commit usually stays relatively stable whil
 This means lakeFS will provide predictable performance:
 committing 100 changes will take roughly the same amount of time whether the resulting commit contains 500 or 500 million objects.
 
-See [Data Model](versioning-internals.md) for more information.
+See [Data Model](../understand/versioning-internals.md) for more information.
 
 Scaling throughput depends very much on the amount of CPU cores available to lakeFS.
 In many cases, it's easier to scale lakeFS across a fleet of smaller cloud instances (or containers)
@@ -517,7 +518,7 @@ Here are a few notable metrics to keep track of when sizing lakeFS:
 
 `api_request_duration_seconds` - Histogram of latency per operation type.
 
-`gateway_request_duration_seconds` - Histogram of latency per [S3 Gateway](architecture.md#s3-gateway) operation.
+`gateway_request_duration_seconds` - Histogram of latency per [S3 Gateway](../understand/architecture.md#s3-gateway) operation.
 
 <div class="tabs">
   <ul>
@@ -547,7 +548,7 @@ Data being managed by lakeFS is both structured tabular data,
 as well as unstructured sensor and image data used for training. 
 Assuming a team of 20-50 researchers, with a dataset size of 500 TiB across 20M objects.
 
-**Environment:** lakeFS will be deployed on [Kubernetes](../deploy/k8s.md) 
+**Environment:** lakeFS will be deployed on [Kubernetes](../deploy/aws.md#eks) 
 managed by [AWS EKS](https://aws.amazon.com/eks/){: target="_blank" } 
 with PostgreSQL on [AWS RDS Aurora](https://aws.amazon.com/rds/aurora/postgresql-features/){: target="_blank" }
 
@@ -576,7 +577,7 @@ Airflow DAGs start by creating a branch for isolation and for CI/CD.
 Data being managed by lakeFS is structured, tabular data. The total dataset size is 10 PiB, spanning across 500M objects. 
 The expected throughput is 10k reads/second + 2k writes per second across 100 concurrent branches.
 
-**Environment:** lakeFS will be deployed on [Kubernetes](../deploy/k8s.md) 
+**Environment:** lakeFS will be deployed on [Kubernetes](../deploy/aws.md#eks) 
 managed by [AWS EKS](https://aws.amazon.com/eks/){: target="_blank" } 
 with PostgreSQL on [AWS RDS](https://aws.amazon.com/rds/aurora/postgresql-features/){: target="_blank" }
 
