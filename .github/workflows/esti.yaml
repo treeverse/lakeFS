@@ -265,8 +265,11 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v3
 
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt-hotspot'
+          java-version: '8'
+          cache: 'sbt'
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -323,8 +326,11 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v3
 
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt-hotspot'
+          java-version: '8'
+          cache: 'sbt'
 
       - name: Package Spark App
         working-directory: test/spark/app
@@ -399,8 +405,11 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v3
 
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt-hotspot'
+          java-version: '8'
+          cache: 'sbt'
 
       - name: Package Spark App
         working-directory: test/spark/app
@@ -589,8 +598,11 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v3
 
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt-hotspot'
+          java-version: '8'
+          cache: 'sbt'
 
       - name: Package Metaclient
         working-directory: clients/spark
