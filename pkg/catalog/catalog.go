@@ -1832,6 +1832,7 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 	return nil, nil
 }
 
+// TODO (niro): Add check in controller that runID is provided if mark != nil
 func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string, runID *string, mark *GCUncommittedMark) (*graveler.GarbageCollectionRunMetadata, *GCUncommittedMark, error) {
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
@@ -1841,10 +1842,6 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, nil, err
-	}
-
-	if mark != nil && runID == nil {
-		return nil, nil, fmt.Errorf("must provide run ID with mark: %w", ErrConflictFound)
 	}
 
 	filename := path.Join(os.TempDir(), uuid.New().String())

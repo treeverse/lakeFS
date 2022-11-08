@@ -675,19 +675,3 @@ func verifyData(t *testing.T, numBranches, numRecords int, testFolder string) {
 	}
 	require.Equal(t, totalCount, numBranches*numRecords)
 }
-
-func TestCatalog_PrepareGCUncommittedNegative(t *testing.T) {
-	test := testutil.InitGravelerTest(t)
-	c := &catalog.Catalog{
-		Store: test.Sut,
-	}
-
-	mark := catalog.GCUncommittedMark{
-		BranchID: "SomeBranch",
-		Path:     "SomeKey",
-	}
-	test.RefManager.EXPECT().GetRepository(gomock.Any(), repoID).Return(repository, nil)
-
-	_, _, err := c.PrepareGCUncommitted(context.Background(), repoID.String(), nil, &mark)
-	require.ErrorIs(t, err, catalog.ErrConflictFound)
-}
