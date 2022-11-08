@@ -3,7 +3,7 @@ layout: default
 title: Delta Lake
 description: This section explains how to use Delta Lake with lakeFS.
 parent: Integrations
-nav_order: 62
+nav_order: 20
 has_children: false
 ---
 

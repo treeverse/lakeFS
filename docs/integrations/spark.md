@@ -3,7 +3,7 @@ layout: default
 title: Spark
 description: Accessing data in lakeFS from Apache Spark works the same as accessing S3 data from Apache Spark.
 parent: Integrations
-nav_order: 20
+nav_order: 10
 has_children: false
 redirect_from: ../using/spark.html
 ---
