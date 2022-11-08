@@ -34,8 +34,8 @@ const (
 	PostgresConnectionMaxLifetimeKey     = "database.postgres.connection_max_lifetime"
 	DefaultPostgresConnectionMaxLifetime = "5m"
 
-	BlockstoreTypeKey     = "blockstore.type"
-	DefaultBlockstoreType = "local"
+	BlockstoreTypeKey   = "blockstore.type"
+	LocalBlockstoreType = "local"
 
 	BlockstoreLocalPathKey     = "blockstore.local.path"
 	DefaultBlockstoreLocalPath = "~/lakefs/data/block"
@@ -159,6 +159,7 @@ func setDefaults(local bool) {
 	if local {
 		viper.SetDefault(DatabaseTypeKey, LocalDatabaseType)
 		viper.SetDefault(AuthEncryptSecretKey, LocalAuthEncryptSecretKey)
+		viper.SetDefault(BlockstoreTypeKey, LocalBlockstoreType)
 	}
 
 	viper.SetDefault(ListenAddressKey, DefaultListenAddr)
@@ -180,7 +181,6 @@ func setDefaults(local bool) {
 	viper.SetDefault(AuthLogoutRedirectURL, DefaultAuthLogoutRedirectURL)
 
 	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockstoreLocalPath)
-	viper.SetDefault(BlockstoreTypeKey, DefaultBlockstoreType)
 	viper.SetDefault(BlockstoreS3RegionKey, DefaultBlockstoreS3Region)
 	viper.SetDefault(BlockstoreS3StreamingChunkSizeKey, DefaultBlockstoreS3StreamingChunkSize)
 	viper.SetDefault(BlockstoreS3StreamingChunkTimeoutKey, DefaultBlockstoreS3StreamingChunkTimeout)
