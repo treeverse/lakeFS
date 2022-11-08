@@ -5,20 +5,18 @@ description: The lakeFS API is OpenAPI 3.0-compliant, allowing the generation of
 parent: Integrations
 nav_order: 50
 has_children: false
-redirect_from: ../using/python.html
+redirect_from: 
+  - ../using/python.html
+  - ../using/boto.html
+  - ./boto.html
 ---
-
-# Calling the lakeFS API from Python
-{: .no_toc }
-
-The [lakeFS API](../reference/api.md){: target="_blank" } is OpenAPI 3.0-compliant, allowing the generation of clients from multiple languages or directly accessed by any HTTP client.
-
-For Python, this example uses [lakeFS's python package](https://pypi.org/project/lakefs-client/){: target="_blank" }.
-The lakefs-client pacakge was created by [OpenAPI Generator](https://openapi-generator.tech){: target="_blank" } using our OpenAPI definition served by a lakeFS server.
 
 {% include toc.html %}
 
-## Install lakeFS Python Client API
+
+## Using lakeFS Python SDK
+
+### Installing
 
 Install the Python client using pip:
 
@@ -30,7 +28,7 @@ pip install 'lakefs_client==<lakeFS version>'
 The package is available from version >= 0.34.0.
 
 
-## Working with the Client API
+### Working with the Client API
 
 Here's how to instantiate a client:
 
@@ -48,11 +46,11 @@ configuration.host = 'http://localhost:8000'
 client = LakeFSClient(configuration)
 ``` 
 
-## Using the generated client
+### Using the generated client
 
 Now that you have a client object, you can use it to interact with the API.
 
-### Creating a repository
+#### Creating a repository
 
 ```python
 repo = models.RepositoryCreation(name='example-repo', storage_namespace='s3://storage-bucket/repos/example-repo', default_branch='main')
@@ -64,7 +62,7 @@ client.repositories.create_repository(repo)
 #  'storage_namespace': 's3://storage-bucket/repos/example-repo'}
 ```
 
-### Creating a branch, uploading files, committing changes
+#### Creating a branch, uploading files, committing changes
 
 List the repository branches:
 
@@ -137,7 +135,7 @@ client.branches.diff_branch(repository='example-repo', branch='experiment-aggreg
 # []
 ```
 
-### Merging changes from a branch into main 
+#### Merging changes from a branch into main 
 
 Let's diff between your branch and the main branch:
 
@@ -165,11 +163,86 @@ client.refs.diff_refs(repository='example-repo', left_ref='main', right_ref='exp
 # []
 ```
 
-## Python Client documentation
+### Python Client documentation
 
 For the documentation of lakeFS’s Python package, see [https://pydocs.lakefs.io](https://pydocs.lakefs.io)
 
 
-## Full API reference
+### Full API reference
 
 For a full reference of the lakeFS API, see [lakeFS API](../reference/api.md)
+
+## Using Boto
+
+💡 To use Boto with lakeFS alongside S3, check out [Boto S3 Router](https://github.com/treeverse/boto-s3-router){:target="_blank"}. It will route
+requests to either S3 or lakeFS according to the provided bucket name.
+{: .note }
+
+lakeFS exposes an S3-compatible API, so you can use Boto to interact with your objects on lakeFS.
+
+### Creating a Boto client
+
+Create a Boto3 S3 client with your lakeFS endpoint and key-pair:
+```python
+import boto3
+s3 = boto3.client('s3',
+    endpoint_url='https://lakefs.example.com',
+    aws_access_key_id='AKIAIOSFODNN7EXAMPLE',
+    aws_secret_access_key='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')
+```
+
+The client is now configured to operate on your lakeFS installation.
+
+### Usage Examples
+
+#### Put an object into lakeFS
+
+Use a branch name and a path to put an object in lakeFS:
+
+```python
+with open('/local/path/to/file_0', 'rb') as f:
+    s3.put_object(Body=f, Bucket='example-repo', Key='main/example-file.parquet')
+```
+
+You can now commit this change using the lakeFS UI or CLI.
+
+#### List objects
+
+List the branch objects starting with a prefix:
+ 
+```python
+list_resp = s3.list_objects_v2(Bucket='example-repo', Prefix='main/example-prefix')
+for obj in list_resp['Contents']:
+    print(obj['Key'])
+```
+
+Or, use a lakeFS commit ID to list objects for a specific commit:
+ 
+```python
+list_resp = s3.list_objects_v2(Bucket='example-repo', Prefix='c7a632d74f/example-prefix')
+for obj in list_resp['Contents']:
+    print(obj['Key'])
+```
+
+#### Get object metadata
+
+Get object metadata using branch and path:
+```python
+s3.head_object(Bucket='example-repo', Key='main/example-file.parquet')
+# output:
+# {'ResponseMetadata': {'RequestId': '72A9EBD1210E90FA',
+#  'HostId': '',
+#  'HTTPStatusCode': 200,
+#  'HTTPHeaders': {'accept-ranges': 'bytes',
+#   'content-length': '1024',
+#   'etag': '"2398bc5880e535c61f7624ad6f138d62"',
+#   'last-modified': 'Sun, 24 May 2020 10:42:24 GMT',
+#   'x-amz-request-id': '72A9EBD1210E90FA',
+#   'date': 'Sun, 24 May 2020 10:45:42 GMT'},
+#  'RetryAttempts': 0},
+# 'AcceptRanges': 'bytes',
+# 'LastModified': datetime.datetime(2020, 5, 24, 10, 42, 24, tzinfo=tzutc()),
+# 'ContentLength': 1024,
+# 'ETag': '"2398bc5880e535c61f7624ad6f138d62"',
+# 'Metadata': {}}
+``` 
