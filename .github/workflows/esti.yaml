@@ -67,7 +67,7 @@ jobs:
       - name: Generate code
         run: |
           make -j3 gen-api gen-ui VERSION=${{ steps.version.outputs.tag }}
-          git ls-files -z -o --exclude-standard | xargs -0 tar -cf /tmp/generated.tar.gz
+          git ls-files -z -o --exclude-standard | xargs -0 tar -cf /tmp/generated.tar.gz --files-from -
 
       - name: Store generated code
         uses: actions/upload-artifact@v3
