@@ -566,3 +566,7 @@ td .form-group {
 .download-button {
   margin-right: 8px;
 }
+
+.object-viewer-buttons {
+  width: 8%;
+}
