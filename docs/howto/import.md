@@ -2,17 +2,17 @@
 layout: default
 title: Import data into lakeFS 
 description: Import existing data into a lakeFS repository
-parent: Set up lakeFS
-nav_order: 20
+parent: How-To
+nav_order: 10
 has_children: false
-redirect_from: ../reference/import.html
-next: ["Learn about lakeFS hooks", "./hooks.html"]
+redirect_from: 
+  - ../setup/import.html
 ---
+
 # Import data into lakeFS
 {: .no_toc }
 
 {% include toc.html %}
-
 
 ## Zero-copy import
 
