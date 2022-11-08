@@ -25,6 +25,7 @@ import {Paginator} from "../pagination";
 import {Link} from "../nav";
 import {RefTypeBranch, RefTypeCommit} from "../../../constants";
 
+const PREVIEW_SIZE_LIMIT = 4194304; // 4MB in bytes
 
 export const humanSize = (bytes) => {
     if (!bytes) return '0.0 B';
@@ -114,6 +115,10 @@ const EntryRow = ({repo, reference, path, entry, onDelete, showActions}) => {
         const filePathQuery = {
             ref: query.ref,
         };
+
+        if (entry.size_bytes > PREVIEW_SIZE_LIMIT) {
+            filePathQuery["big"] = true;
+        }
 
         button = (<Link href={{pathname: '/repositories/:repoId/objects/:objectName', query: filePathQuery, params: filePathParams}}>{buttonText}</Link>);
     }
@@ -270,7 +275,7 @@ export const URINavigator = ({ repo, reference, path, relativeTo = "", pathURLBu
                             <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
                             <strong>{'/'}</strong>
                         </>
-                    )
+                    );
                 return (
                     <span key={part.name}>
                         {edgeElement}
