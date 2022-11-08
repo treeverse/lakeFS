@@ -5,10 +5,10 @@
 What's new:
 
 - Add kv metrics (#4442)
+- Add prefix change indicator - (API breaking change) (#4403)
 
 Bug fixes:
 
-- [API breaking change] add prefix change indicator (#4403)
 - Fix UI report version as dev (#4465)
 - Fix username not enriched in new credentials modal (#4454)
 - Fix: remove unused diff_type from diffRefs operation (#4462)
