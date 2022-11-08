@@ -684,7 +684,7 @@ func TestCatalog_PrepareGCUncommittedNegative(t *testing.T) {
 
 	mark := catalog.GCUncommittedMark{
 		BranchID: "SomeBranch",
-		Key:      []byte("SomeKey"),
+		Path:     "SomeKey",
 	}
 	test.RefManager.EXPECT().GetRepository(gomock.Any(), repoID).Return(repository, nil)
 

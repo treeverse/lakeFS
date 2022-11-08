@@ -1730,7 +1730,7 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string
 // GCUncommittedMark Marks the *next* item to be scanned by the paginated call to PrepareGCUncommitted
 type GCUncommittedMark struct {
 	BranchID graveler.BranchID `json:"branch"`
-	Key      graveler.Key      `json:"key"`
+	Path     Path              `json:"path"`
 }
 
 func (m *GCUncommittedMark) Encode() (string, error) {
@@ -1749,7 +1749,7 @@ type UncommittedParquetObject struct {
 	CreationDate    int64  `parquet:"name=creation_date, type=INT64, convertedtype=INT_64"`
 }
 
-func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, fd *os.File, mark GCUncommittedMark) (*GCUncommittedMark, error) {
+func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, fd *os.File, mark *GCUncommittedMark) (*GCUncommittedMark, error) {
 	const parallelNum = 1                                                                        // Number of goroutines to handle marshaling of data
 	pw, err := writer.NewParquetWriterFromWriter(fd, new(UncommittedParquetObject), parallelNum) // TODO: Play with np count
 	if err != nil {
@@ -1759,6 +1759,14 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 	pw.CompressionType = parquet.CompressionCodec_GZIP
 
 	const GCMaxUncommittedFileSize = 20 * 1024 * 1024 // 20 MB
+	// Calculation of size deviation by periodicCheckSize value
+	// "data" prefix = 4 bytes
+	// partition id = 20 bytes (xid)
+	// object name = 20 bytes (xid)
+	// timestamp (int64) = 8 bytes
+	//
+	// Total per entry ~52 bytes
+	// Deviation with periodicCheckSize = 100000 will be around 5 MB
 	const periodicCheckSize = 100000
 	fileSizeExceeded := func(fd *os.File) (bool, error) {
 		stat, err := fd.Stat()
@@ -1769,68 +1777,51 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 	}
 
 	count := 0
-	bIt, err := c.Store.ListBranches(ctx, repository)
+	itr, err := NewUncommittedIterator(ctx, c.Store, repository)
 	if err != nil {
 		return nil, err
 	}
-	defer bIt.Close()
-	bIt.SeekGE(mark.BranchID)
-	for bIt.Next() {
-		b := bIt.Value()
-		vIt, err := c.Store.ListStaging(ctx, b.Branch)
-		if err != nil {
-			return nil, err
-		}
-		if b.BranchID == mark.BranchID {
-			vIt.SeekGE(mark.Key)
-		}
-		eIt := NewValueToEntryIterator(vIt)
-		for eIt.Next() {
-			entry := eIt.Value()
-			count += 1
-			if count%periodicCheckSize == 0 {
-				err := pw.Flush(true)
-				if err != nil {
-					eIt.Close()
-					return nil, err
-				}
-				done, err := fileSizeExceeded(fd)
-				if err != nil {
-					eIt.Close()
-					return nil, err
-				}
-				if done {
-					key := vIt.Value().Key
-					eIt.Close()
-					if eIt.Err() != nil {
-						return nil, eIt.Err()
-					}
-					err = pw.WriteStop()
-					if err != nil {
-						return nil, err
-					}
-					return &GCUncommittedMark{
-						BranchID: b.BranchID,
-						Key:      key,
-					}, nil
-				}
-			}
-			if err = pw.Write(UncommittedParquetObject{
-				PhysicalAddress: entry.Address,
-				CreationDate:    entry.LastModified.AsTime().Unix(),
-			}); err != nil {
-				eIt.Close()
-				return nil, err
-			}
-		}
-		eIt.Close()
-		if eIt.Err() != nil {
-			return nil, eIt.Err()
-		}
+	defer itr.Close()
+
+	if mark != nil {
+		itr.SeekGE(mark.BranchID, mark.Path)
 	}
 
-	if bIt.Err() != nil {
-		return nil, bIt.Err()
+	for itr.Next() {
+		entry := itr.Value()
+		count += 1
+		if count%periodicCheckSize == 0 {
+			err := pw.Flush(true)
+			if err != nil {
+				return nil, err
+			}
+			done, err := fileSizeExceeded(fd)
+			if err != nil {
+				return nil, err
+			}
+			if done {
+				if itr.Err() != nil {
+					return nil, itr.Err()
+				}
+				err = pw.WriteStop()
+				if err != nil {
+					return nil, err
+				}
+				return &GCUncommittedMark{
+					BranchID: entry.branchID,
+					Path:     entry.Path,
+				}, nil
+			}
+		}
+		if err = pw.Write(UncommittedParquetObject{
+			PhysicalAddress: entry.Address,
+			CreationDate:    entry.LastModified.AsTime().Unix(),
+		}); err != nil {
+			return nil, err
+		}
+	}
+	if itr.Err() != nil {
+		return nil, itr.Err()
 	}
 	err = pw.WriteStop()
 	if err != nil {
@@ -1852,12 +1843,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 		return nil, nil, err
 	}
 
-	if mark == nil {
-		mark = &GCUncommittedMark{
-			BranchID: "",
-			Key:      []byte(""),
-		}
-	} else if runID == nil {
+	if mark != nil && runID == nil {
 		return nil, nil, fmt.Errorf("must provide run ID with mark: %w", ErrConflictFound)
 	}
 
@@ -1869,7 +1855,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	defer os.Remove(filename)
 	defer fd.Close()
 	// Write parquet to local storage
-	newMark, err := c.writeUncommittedLocal(ctx, repository, fd, *mark)
+	newMark, err := c.writeUncommittedLocal(ctx, repository, fd, mark)
 	if err != nil {
 		return nil, nil, err
 	}

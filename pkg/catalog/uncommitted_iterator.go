@@ -1,0 +1,127 @@
+package catalog
+
+import (
+	"context"
+
+	"github.com/treeverse/lakefs/pkg/graveler"
+)
+
+type UncommittedIterator struct {
+	store     Store
+	ctx       context.Context
+	err       error
+	branchItr graveler.BranchIterator
+	entryItr  *valueEntryIterator
+	entry     *UncommittedRecord
+}
+
+type UncommittedRecord struct {
+	branchID graveler.BranchID
+	*EntryRecord
+}
+
+func NewUncommittedIterator(ctx context.Context, store Store, repository *graveler.RepositoryRecord) (*UncommittedIterator, error) {
+	bItr, err := store.ListBranches(ctx, repository)
+	if err != nil {
+		return nil, err
+	}
+	return &UncommittedIterator{
+		store:     store,
+		ctx:       ctx,
+		branchItr: bItr,
+	}, nil
+}
+
+func (u *UncommittedIterator) nextStaging() bool {
+	if u.entryItr != nil {
+		u.entryItr.Close()
+	}
+	vItr, err := u.store.ListStaging(u.ctx, u.branchItr.Value().Branch)
+	if err != nil {
+		u.err = err
+		return false
+	}
+	u.entryItr = NewValueToEntryIterator(vItr)
+	return true
+}
+
+func (u *UncommittedIterator) next() bool {
+	u.entry = nil // will stay nil as long as no new value found
+	for u.entry == nil {
+		if u.branchItr.Next() && u.nextStaging() {
+			if u.entryItr.Next() {
+				u.entry = &UncommittedRecord{
+					branchID: u.branchItr.Value().BranchID,
+				}
+				u.entry.EntryRecord = u.entryItr.Value()
+				return true
+			}
+			u.entryItr.Close()
+			if u.entryItr.Err() != nil {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+	return false
+}
+
+func (u *UncommittedIterator) Next() bool {
+	if u.Err() != nil {
+		return false
+	}
+
+	if u.entryItr != nil {
+		if u.entryItr.Next() {
+			u.entry = &UncommittedRecord{
+				branchID: u.branchItr.Value().BranchID,
+			}
+			u.entry.EntryRecord = u.entryItr.Value()
+			return true
+		} else {
+			u.entryItr.Close()
+			if u.entryItr.Err() != nil {
+				return false
+			}
+		}
+	}
+	return u.next()
+}
+
+func (u *UncommittedIterator) SeekGE(branchID graveler.BranchID, id Path) {
+	if u.Err() != nil {
+		return
+	}
+	u.entry = nil
+	if branchID != u.branchItr.Value().BranchID {
+		u.branchItr.SeekGE(branchID)
+		if u.branchItr.Next() {
+			u.nextStaging()
+		}
+	}
+	if u.nextStaging() {
+		u.entryItr.SeekGE(id)
+	}
+}
+
+func (u *UncommittedIterator) Value() *UncommittedRecord {
+	return u.entry
+}
+
+func (u *UncommittedIterator) Err() error {
+	if u.entryItr != nil && u.entryItr.Err() != nil {
+		return u.entryItr.Err()
+	}
+	if u.branchItr.Err() != nil {
+		return u.branchItr.Err()
+	}
+	return u.err
+}
+
+func (u *UncommittedIterator) Close() {
+	u.branchItr.Close()
+	if u.entryItr != nil {
+		u.entryItr.Close()
+	}
+}
