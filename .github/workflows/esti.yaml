@@ -63,10 +63,12 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16.17.1'
+
       - name: Generate code
         run: |
           make -j3 gen-api gen-ui VERSION=${{ steps.version.outputs.tag }}
-          tar -cf /tmp/generated.tar.gz .
+          git ls-files -z -o --exclude-standard | xargs -0 tar -cf /tmp/generated.tar.gz
+
       - name: Store generated code
         uses: actions/upload-artifact@v3
         with:
