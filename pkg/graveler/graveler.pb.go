@@ -7,13 +7,12 @@
 package graveler
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	proto "github.com/golang/protobuf/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -503,9 +502,12 @@ type GarbageCollectionRunMetadata struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	RunId               string `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
-	CommitsCsvLocation  string `protobuf:"bytes,2,opt,name=commits_csv_location,json=commitsCsvLocation,proto3" json:"commits_csv_location,omitempty"`
-	AddressLocation     string `protobuf:"bytes,3,opt,name=address_location,json=addressLocation,proto3" json:"address_location,omitempty"`
+	RunId string `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	// Location of expired commits CSV file on object store
+	CommitsCsvLocation string `protobuf:"bytes,2,opt,name=commits_csv_location,json=commitsCsvLocation,proto3" json:"commits_csv_location,omitempty"`
+	// Location of where to write expired addresses on object store
+	AddressLocation string `protobuf:"bytes,3,opt,name=address_location,json=addressLocation,proto3" json:"address_location,omitempty"`
+	// Location of uncommitted objects parquet file on object store
 	UncommittedLocation string `protobuf:"bytes,4,opt,name=uncommitted_location,json=uncommittedLocation,proto3" json:"uncommitted_location,omitempty"`
 }
 
