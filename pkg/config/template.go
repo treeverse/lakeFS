@@ -77,7 +77,7 @@ type configuration struct {
 		// DropTables Development flag to delete tables after successful migration to KV
 		DropTables bool `mapstructure:"drop_tables"`
 		// Type Name of the KV Store driver DB implementation which is available according to the kv package Drivers function
-		Type string `mapstructure:"type"`
+		Type string `mapstructure:"type" validate:"required"`
 
 		Local *struct {
 			// Path - Local directory path to store the DB files
