@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.84.0
+
+What's new:
+
+- Add kv metrics (#4442)
+- Add prefix change indicator - (API breaking change) (#4403)
+
+Bug fixes:
+
+- Fix UI report version as dev (#4465)
+- Fix username not enriched in new credentials modal (#4454)
+- Fix: remove unused diff_type from diffRefs operation (#4462)
+- Fix dirty branch error for operations on uncommitted data instead of conflict (#4463)
+- Fix status code return on revert merge without parent (#4498)
+- Cache commit on Graveler ref manager (#4497)
+- Upload data new structure for uploaded data physical addresses (#4530)
+- Feature/configure additional OIDC scopes (#4533)
+- Python lakefs-client library does not have a license (#4452)
+- Fix large file and png preview issues (#4569)
+
 ## v0.83.4
 
 What's new:
