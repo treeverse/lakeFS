@@ -1,4 +1,4 @@
-import React, { FC } from "react";
+import React, { FC, useEffect } from "react";
 import remarkGfm from 'remark-gfm'
 import remarkHtml from 'remark-html'
 import ReactMarkdown from 'react-markdown';
@@ -41,9 +41,17 @@ export const IpynbRenderer: FC<RendererComponent> = ({ content }) => {
 };
 
 export const ImageRenderer: FC<RendererComponent> = ({ contentBlob }) => {
+    let blobUrl: string;
+    useEffect(() => () => {
+        if (blobUrl) {
+            URL.revokeObjectURL(blobUrl);
+        }
+    }, []);
+
     if (contentBlob) {
+        blobUrl = URL.createObjectURL(contentBlob)
         return (
-            <img src={URL.createObjectURL(contentBlob)} />
+            <img src={blobUrl} />
         );
     }
     return null;
