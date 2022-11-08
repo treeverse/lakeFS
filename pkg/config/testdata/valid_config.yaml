@@ -5,6 +5,7 @@ logging:
   output: "-"
 
 database:
+  type: postgres
   postgres:
     connection_string: test:///dev/null
     max_open_connections: 12
