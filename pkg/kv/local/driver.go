@@ -12,9 +12,7 @@ import (
 )
 
 const (
-	DriverName           = "local"
-	DefaultDirectoryPath = "~/lakefs/metadata"
-	DefaultPrefetchSize  = 256
+	DriverName = "local"
 )
 
 var (
@@ -24,21 +22,11 @@ var (
 
 type Driver struct{}
 
-func normalizeDBParams(p *kvparams.Local) {
-	if len(p.Path) == 0 {
-		p.Path = DefaultDirectoryPath
-	}
-	if p.PrefetchSize <= 0 {
-		p.PrefetchSize = DefaultPrefetchSize
-	}
-}
-
 func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, error) {
 	params := kvParams.Local
 	if params == nil {
 		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
 	}
-	normalizeDBParams(params)
 
 	driverLock.Lock()
 	defer driverLock.Unlock()

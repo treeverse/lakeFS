@@ -27,7 +27,7 @@ type Postgres struct {
 	MaxOpenConnections    int32
 	MaxIdleConnections    int32
 	ConnectionMaxLifetime time.Duration
-	ScanPageSize          int32
+	ScanPageSize          int
 	Metrics               bool
 }
 

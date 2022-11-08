@@ -7,14 +7,35 @@ import (
 )
 
 const (
-	DatabaseTypeKey     = "database.type"
-	DefaultDatabaseType = "local"
+	DatabaseTypeKey   = "database.type"
+	LocalDatabaseType = "local"
 
-	DatabaseKVLocalPath        = "database.local.path"
-	DefaultDatabaseLocalKVPath = "~/lakefs/metadata"
+	DatabaseLocalPathKey     = "database.local.path"
+	DefaultDatabaseLocalPath = "~/lakefs/metadata"
 
-	BlockstoreTypeKey     = "blockstore.type"
-	DefaultBlockstoreType = "local"
+	DatabaseLocalPrefetchSizeKey     = "database.local.prefetch_size"
+	DefaultDatabaseLocalPrefetchSize = 256
+
+	DatabaseDynamodbTableNameKey     = "database.dynamodb.table_name"
+	DefaultDatabaseDynamodbTableName = "kvstore"
+
+	DatabaseDynamodbReadCapacityUnitsKey     = "database.dynamodb.read_capacity_units"
+	DefaultDatabaseDynamodbReadCapacityUnits = 1000
+
+	DatabaseDynamodbWriteCapacityUnitsKey     = "database.dynamodb.write_capacity_units"
+	DefaultDatabaseDynamodbWriteCapacityUnits = 1000
+
+	DatabasePostgresMaxOpenConnectionsKey     = "database.postgres.max_open_connections"
+	DefaultDatabasePostgresMaxOpenConnections = 25
+
+	DatabasePostgresMaxIdleConnectionsKey     = "database.postgres.max_idle_connections"
+	DefaultDatabasePostgresMaxIdleConnections = 25
+
+	PostgresConnectionMaxLifetimeKey     = "database.postgres.connection_max_lifetime"
+	DefaultPostgresConnectionMaxLifetime = "5m"
+
+	BlockstoreTypeKey   = "blockstore.type"
+	LocalBlockstoreType = "local"
 
 	BlockstoreLocalPathKey     = "blockstore.local.path"
 	DefaultBlockstoreLocalPath = "~/lakefs/data/block"
@@ -88,8 +109,8 @@ const (
 	LoggingFilesKeepKey     = "logging.files_keep"
 	LoggingAuditLogLevel    = "logging.audit_log_level"
 
-	AuthEncryptSecretKey        = "auth.encrypt.secret_key"            // #nosec
-	DefaultAuthEncryptSecretKey = "THIS_MUST_BE_CHANGED_IN_PRODUCTION" // #nosec
+	AuthEncryptSecretKey      = "auth.encrypt.secret_key"            // #nosec
+	LocalAuthEncryptSecretKey = "THIS_MUST_BE_CHANGED_IN_PRODUCTION" // #nosec
 
 	ActionsEnabledKey = "actions.enabled"
 
@@ -134,17 +155,11 @@ const (
 	UIEnabledKey = "ui.enabled"
 )
 
-func setDefaultLocalConfig() {
-	viper.SetDefault(DatabaseTypeKey, DefaultDatabaseType)
-	viper.SetDefault(DatabaseKVLocalPath, DefaultDatabaseLocalKVPath)
-	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockstoreLocalPath)
-	viper.SetDefault(AuthEncryptSecretKey, DefaultAuthEncryptSecretKey)
-	viper.SetDefault(BlockstoreTypeKey, DefaultBlockstoreType)
-}
-
 func setDefaults(local bool) {
 	if local {
-		setDefaultLocalConfig()
+		viper.SetDefault(DatabaseTypeKey, LocalDatabaseType)
+		viper.SetDefault(AuthEncryptSecretKey, LocalAuthEncryptSecretKey)
+		viper.SetDefault(BlockstoreTypeKey, LocalBlockstoreType)
 	}
 
 	viper.SetDefault(ListenAddressKey, DefaultListenAddr)
@@ -166,7 +181,6 @@ func setDefaults(local bool) {
 	viper.SetDefault(AuthLogoutRedirectURL, DefaultAuthLogoutRedirectURL)
 
 	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockstoreLocalPath)
-	viper.SetDefault(BlockstoreTypeKey, DefaultBlockstoreType)
 	viper.SetDefault(BlockstoreS3RegionKey, DefaultBlockstoreS3Region)
 	viper.SetDefault(BlockstoreS3StreamingChunkSizeKey, DefaultBlockstoreS3StreamingChunkSize)
 	viper.SetDefault(BlockstoreS3StreamingChunkTimeoutKey, DefaultBlockstoreS3StreamingChunkTimeout)
@@ -206,4 +220,18 @@ func setDefaults(local bool) {
 	viper.SetDefault(LakefsEmailBaseURLKey, DefaultLakefsEmailBaseURL)
 
 	viper.SetDefault(UIEnabledKey, DefaultUIEnabled)
+
+	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockstoreLocalPath)
+
+	viper.SetDefault(DatabaseLocalPathKey, DefaultDatabaseLocalPath)
+	viper.SetDefault(DatabaseLocalPrefetchSizeKey, DefaultDatabaseLocalPrefetchSize)
+
+	viper.SetDefault(DatabaseDynamodbTableNameKey, DefaultDatabaseDynamodbTableName)
+
+	viper.SetDefault(DatabaseDynamodbReadCapacityUnitsKey, DefaultDatabaseDynamodbReadCapacityUnits)
+	viper.SetDefault(DatabaseDynamodbWriteCapacityUnitsKey, DefaultDatabaseDynamodbWriteCapacityUnits)
+
+	viper.SetDefault(DatabasePostgresMaxOpenConnectionsKey, DefaultDatabasePostgresMaxOpenConnections)
+	viper.SetDefault(DatabasePostgresMaxIdleConnectionsKey, DefaultDatabasePostgresMaxIdleConnections)
+	viper.SetDefault(PostgresConnectionMaxLifetimeKey, DefaultPostgresConnectionMaxLifetime)
 }

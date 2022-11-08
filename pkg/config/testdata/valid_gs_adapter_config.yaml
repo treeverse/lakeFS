@@ -1,4 +1,7 @@
 ---
+database:
+  type: local
+
 logging:
   format: text
   level: NONE

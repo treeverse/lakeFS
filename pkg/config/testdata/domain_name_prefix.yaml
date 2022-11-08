@@ -1,4 +1,10 @@
 ---
+database:
+  type: local
+
+blockstore:
+  type: local
+
 gateways:
   s3:
     domain_name:
