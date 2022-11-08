@@ -23,7 +23,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -48,7 +47,7 @@ func Serve(
 	authService auth.Service,
 	blockAdapter block.Adapter,
 	metadataManager auth.MetadataManager,
-	migrator db.Migrator,
+	migrator Migrator,
 	collector stats.Collector,
 	cloudMetadataProvider cloud.MetadataProvider,
 	actions actionsHandler,

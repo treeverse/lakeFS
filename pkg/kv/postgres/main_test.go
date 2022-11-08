@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/ory/dockertest/v3"
-	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 const (
@@ -56,7 +56,7 @@ func runDBInstance(dockerPool *dockertest.Pool) (string, func()) {
 		if err != nil {
 			return err
 		}
-		return db.Ping(ctx, pgPool)
+		return testutil.PingPG(ctx, pgPool)
 	})
 	if err != nil {
 		panic("could not connect to postgres: " + err.Error())

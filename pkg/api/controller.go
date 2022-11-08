@@ -31,7 +31,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -71,6 +70,10 @@ type actionsHandler interface {
 	ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (actions.TaskResultIterator, error)
 }
 
+type Migrator interface {
+	Migrate(ctx context.Context) error
+}
+
 type Controller struct {
 	Config                *config.Config
 	Catalog               catalog.Interface
@@ -78,7 +81,7 @@ type Controller struct {
 	Auth                  auth.Service
 	BlockAdapter          block.Adapter
 	MetadataManager       auth.MetadataManager
-	Migrator              db.Migrator
+	Migrator              Migrator
 	Collector             stats.Collector
 	CloudMetadataProvider cloud.MetadataProvider
 	Actions               actionsHandler
@@ -3509,7 +3512,7 @@ func NewController(
 	authService auth.Service,
 	blockAdapter block.Adapter,
 	metadataManager auth.MetadataManager,
-	migrator db.Migrator,
+	migrator Migrator,
 	collector stats.Collector,
 	cloudMetadataProvider cloud.MetadataProvider,
 	actions actionsHandler,

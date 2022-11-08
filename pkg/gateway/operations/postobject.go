@@ -11,7 +11,7 @@ import (
 
 	"github.com/treeverse/lakefs/pkg/block"
 	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
-	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
+	"github.com/treeverse/lakefs/pkg/gateway/multipart"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -58,7 +58,7 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
-	mpu := multiparts.MultipartUpload{
+	mpu := multipart.Upload{
 		UploadID:        resp.UploadID,
 		Path:            o.Path,
 		CreationDate:    time.Now(),
@@ -66,7 +66,7 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 		Metadata:        map[string]string(amzMetaAsMetadata(req)),
 		ContentType:     req.Header.Get("Content-Type"),
 	}
-	err = o.MultipartsTracker.Create(req.Context(), mpu)
+	err = o.MultipartTracker.Create(req.Context(), mpu)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write multipart upload to DB")
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
@@ -84,7 +84,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	o.Incr("complete_mpu", o.Principal, o.Repository.Name, o.Reference)
 	uploadID := req.URL.Query().Get(CompleteMultipartUploadQueryParam)
 	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{logging.UploadIDFieldKey: uploadID}))
-	multiPart, err := o.MultipartsTracker.Get(req.Context(), uploadID)
+	multiPart, err := o.MultipartTracker.Get(req.Context(), uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read multipart record")
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
@@ -125,7 +125,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
-	err = o.MultipartsTracker.Delete(req.Context(), uploadID)
+	err = o.MultipartTracker.Delete(req.Context(), uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Warn("could not delete multipart record")
 	}

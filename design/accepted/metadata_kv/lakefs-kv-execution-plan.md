@@ -31,7 +31,7 @@ The folloiwng steps will be required for each pacakge that uses the 'db' layer:
         - authorization information: users, group, policy, credentials and etc
     pkg/actions
         - actions information: runs, hooks, status
-    pkg/gateway/multiparts
+    pkg/gateway/multipart
         - tracking gateway multipart requests
 
     pkg/graveler/ref

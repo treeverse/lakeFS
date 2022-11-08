@@ -12,7 +12,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
-	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
+	"github.com/treeverse/lakefs/pkg/gateway/multipart"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
@@ -42,16 +42,16 @@ const (
 type ActionIncr func(action, repository, ref, userID string)
 
 type Operation struct {
-	OperationID       OperationID
-	Region            string
-	FQDN              string
-	Catalog           catalog.Interface
-	MultipartsTracker multiparts.Tracker
-	BlockStore        block.Adapter
-	Auth              auth.GatewayService
-	Incr              ActionIncr
-	MatchedHost       bool
-	PathProvider      upload.PathProvider
+	OperationID      OperationID
+	Region           string
+	FQDN             string
+	Catalog          catalog.Interface
+	MultipartTracker multipart.Tracker
+	BlockStore       block.Adapter
+	Auth             auth.GatewayService
+	Incr             ActionIncr
+	MatchedHost      bool
+	PathProvider     upload.PathProvider
 }
 
 func StorageClassFromHeader(header http.Header) *string {
