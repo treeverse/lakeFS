@@ -77,7 +77,7 @@ func completeMultipart(ctx context.Context, parts []block.MultipartPart, contain
 	if err != nil {
 		return nil, err
 	}
-	size, err := getMultiparSize(ctx, container, objName, metaBlockIDs, retryOptions)
+	size, err := getMultipartSize(ctx, container, objName, metaBlockIDs, retryOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func getMultipartIDs(ctx context.Context, container azblob.ContainerURL, objName
 	return ids, nil
 }
 
-func getMultiparSize(ctx context.Context, container azblob.ContainerURL, objName string, base64BlockIDs []string, retryOptions azblob.RetryReaderOptions) (int, error) {
+func getMultipartSize(ctx context.Context, container azblob.ContainerURL, objName string, base64BlockIDs []string, retryOptions azblob.RetryReaderOptions) (int, error) {
 	blobURL := container.NewBlockBlobURL(objName + sizeSuffix)
 	_, err := blobURL.CommitBlockList(ctx, base64BlockIDs, azblob.BlobHTTPHeaders{}, azblob.Metadata{}, azblob.BlobAccessConditions{}, "", azblob.BlobTagsMap{}, azblob.ClientProvidedKeyOptions{})
 	if err != nil {
