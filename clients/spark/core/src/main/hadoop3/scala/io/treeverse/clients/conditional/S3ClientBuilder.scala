@@ -1,6 +1,8 @@
 package io.treeverse.clients.conditional
 
+import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
+import io.treeverse.clients.StorageUtils
 import com.amazonaws.ClientConfiguration
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.{Logger, LoggerFactory}
@@ -36,15 +38,27 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
         )
       } else None
 
+    initializeClient(configuration, credentialsProvider, region, bucket)
+  }
+
+  private def initializeClient(config: ClientConfiguration,
+                               credentialsProvider: Option[AWSCredentialsProvider],
+                               region: String,
+                               bucket: String): AmazonS3 = {
     val builder = AmazonS3ClientBuilder
       .standard()
-      .withClientConfiguration(configuration)
+      .withClientConfiguration(config)
       .withRegion(region)
     val builderWithCredentials = credentialsProvider match {
       case Some(cp) => builder.withCredentials(cp)
-      case None     => builder
+      case None => builder
     }
 
-    builderWithCredentials.build
+    val client = builderWithCredentials.build
+    val bucketRegion = StorageUtils.S3.getAWSS3Region(client, bucket)
+    if (bucketRegion.equals(region)) {
+      return client
+    }
+    builder.withRegion(bucketRegion).build
   }
 }
