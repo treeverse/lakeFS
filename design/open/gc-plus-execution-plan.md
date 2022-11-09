@@ -18,35 +18,41 @@ All tasks are tracked under the [GC+ label](https://github.com/treeverse/lakeFS/
 The following are a list of changes in lakeFS by order of priority, according the dependency constraints 
 
 1. Implement PrepareUncommittedForGC API
-   - Creates metaranges and ranges for a selected branch's staging area, and writes them to a designated GC path
+   - Creates uncommitted objects list files and save them in a designated GC path on the object store
    - After this is done, we can implement new uncommitted logic in GC
 
 2. Modify [Get/Link]PhysicalAddress
     - Issue validation token on GetPhysicalAddress with an expiry time and add it to valid token list
     - LinkPhysicalAddress will validate token and remove it from valid token list
 
-3. Implement Move/RenameObject API
+3. Add tracking of copied objects in ref-store
+    - On each copy operation - add an entry to the copied object table in ref-store
+    - Periodically delete entry or during defined operations (commit/ delete/reset branch)
+
+4. Implement CopyObject API
+    - Read staging token from branch
     - Get entry from branch
-    - Stage new entry using old entry data and new path 
-    - Perform delete for old entry (write tombstone)
+    - If entry is staged
+      - Update copy table
+      - Create a shallow copy
+    - If entry is committed or on different branches - perform a full copy using the underlying storage adapter copy method
+    - Stage new entry using old entry data and new path
 
-4. Modify Gateway CopyObject API
-    - For copy operations on different branches, change CopyObject behavior to perform "full copy" using the underlying 
-   storage adapter's Copy method.
+5. Modify Gateway CopyObject API
+    - See details above
 
-5. Modify lakeFSFS renameObject method
-    - Use CopyObject + DeleteObject when working via Gateway
-    - Use RenameObject when working with OpenAPI
+6. Modify lakeFSFS renameObject method
+    - Use CopyObject + DeleteObject when working via Gateway or OpenAPI
 
-6. lakeFS clients
+7. lakeFS clients
     - Any action required on clients?
     - Do we need to make them version aware?
     - Should we issue a notification to upgrade clients?
 
-7. Modify StageObject API
+8. Modify StageObject API
     - Return error if given address is inside repository namespace
 
-8. Implement new repository structure
+9. Implement new repository structure
     - Root prefix for new lakeFS data - `data/`
     - Use slice naming conventions as defined in proposal to create object path
     - Track object upload count
@@ -55,14 +61,13 @@ The following are a list of changes in lakeFS by order of priority, according th
 ## Changes on GC
 
 - New logic in GC to support uncommitted garbage collection
-  - Create uncommitted metaranges
+  - Prepare uncommitted for GC
   - Read uncommitted data from lakeFS
-  - Write uncommitted data to the object store (as part of the reports)
   - Implement the optimized run deltas
-- Incorporate uncommitted changes into the current GC flow
-  - Implement Run ID proposal + [changes](https://github.com/treeverse/lakeFS/issues/4469)
-  - Add additional metadata to the GC report (last scanned slice)
+- Incorporate uncommitted changes into the current GC flow 
+  - Changes required for committed data to support uncommitted flow 
   - Support mark and sweep for uncommitted 
+  - integrate uncommitted and committed GC flows 
 
 ## Testing
 
