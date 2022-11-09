@@ -77,7 +77,11 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionUncommitted(ctx context.
 		return err
 	}
 
-	identifier := fmt.Sprintf("%s%s", location, filename)
+	identifier := location
+	if !strings.HasSuffix(location, "/") {
+		identifier += "/"
+	}
+	identifier += filename
 	err = m.blockAdapter.Put(ctx, block.ObjectPointer{
 		Identifier:     identifier,
 		IdentifierType: block.IdentifierTypeFull,

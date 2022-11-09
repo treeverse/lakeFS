@@ -574,19 +574,17 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			c := &catalog.Catalog{
 				Store: g.Sut,
 			}
-			var (
-				runID *string
-				mark  *catalog.GCUncommittedMark
-			)
+			var result *catalog.PrepareGCUncommittedInfo
+			runID := ""
 
-			md, mark, err := c.PrepareGCUncommitted(ctx, repoID.String(), runID, mark)
+			result, err := c.PrepareGCUncommitted(ctx, repoID.String(), runID, nil)
 			require.NoError(t, err)
 
-			for mark != nil {
-				runID = &md.RunId
-				md, mark, err = c.PrepareGCUncommitted(ctx, repoID.String(), runID, mark)
+			for result.Mark != nil {
+				runID = result.Metadata.RunId
+				result, err = c.PrepareGCUncommitted(ctx, repoID.String(), runID, result.Mark)
 				require.NoError(t, err)
-				require.Equal(t, *runID, md.RunId)
+				require.Equal(t, runID, result.Metadata.RunId)
 			}
 			verifyData(t, tt.numBranch, tt.numRecords, testFolder)
 		})
@@ -631,7 +629,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 			}
 		}
 	}
-	test.GarbageCollectionManager.EXPECT().NewID().Times(expectedCalls).Return("TestRunID")
+	test.GarbageCollectionManager.EXPECT().NewID().Return("TestRunID")
 	test.RefManager.EXPECT().GetRepository(gomock.Any(), repoID).Times(expectedCalls).Return(repository, nil)
 	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).Times(expectedCalls).Return(testutil.NewFakeBranchIterator(branches), nil)
 

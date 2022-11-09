@@ -51,19 +51,19 @@ func (u *UncommittedIterator) nextStaging() bool {
 func (u *UncommittedIterator) next() bool {
 	u.entry = nil // will stay nil as long as no new value found
 	for u.entry == nil {
-		if u.branchItr.Next() && u.nextStaging() {
-			if u.entryItr.Next() {
-				u.entry = &UncommittedRecord{
-					branchID: u.branchItr.Value().BranchID,
-				}
-				u.entry.EntryRecord = u.entryItr.Value()
-				return true
+		if !u.branchItr.Next() || !u.nextStaging() {
+			return false
+		}
+		if u.entryItr.Next() {
+			u.entry = &UncommittedRecord{
+				branchID: u.branchItr.Value().BranchID,
 			}
-			u.entryItr.Close()
-			if u.entryItr.Err() != nil {
-				return false
-			}
-		} else {
+			u.entry.EntryRecord = u.entryItr.Value()
+			return true
+		}
+		err := u.entryItr.Err()
+		u.entryItr.Close()
+		if err != nil {
 			return false
 		}
 	}
@@ -76,19 +76,20 @@ func (u *UncommittedIterator) Next() bool {
 		return false
 	}
 
-	if u.entryItr != nil {
-		if u.entryItr.Next() {
-			u.entry = &UncommittedRecord{
-				branchID: u.branchItr.Value().BranchID,
-			}
-			u.entry.EntryRecord = u.entryItr.Value()
-			return true
-		} else {
-			u.entryItr.Close()
-			if u.entryItr.Err() != nil {
-				return false
-			}
+	if u.entryItr == nil {
+		return u.next()
+	}
+	if u.entryItr.Next() {
+		u.entry = &UncommittedRecord{
+			branchID: u.branchItr.Value().BranchID,
 		}
+		u.entry.EntryRecord = u.entryItr.Value()
+		return true
+	}
+	err := u.entryItr.Err()
+	u.entryItr.Close()
+	if err != nil {
+		return false
 	}
 	return u.next()
 }
@@ -112,6 +113,9 @@ func (u *UncommittedIterator) SeekGE(branchID graveler.BranchID, id Path) {
 }
 
 func (u *UncommittedIterator) Value() *UncommittedRecord {
+	if u.Err() != nil {
+		return nil
+	}
 	return u.entry
 }
 

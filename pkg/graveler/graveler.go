@@ -514,7 +514,7 @@ type VersionController interface {
 
 	// SaveGarbageCollectionUncommitted Uploads parquet file of uncommitted objects to the repository in the run ID path. Return the GC run's metadata
 	// including the run ID and the location of the saved parquet file
-	SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename string, runID *string) (*GarbageCollectionRunMetadata, error)
+	SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename, runID string) (*GarbageCollectionRunMetadata, error)
 
 	// GetBranchProtectionRules return all branch protection rules for the repository
 	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error)
@@ -1293,25 +1293,22 @@ func (g *KVGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositor
 	}, err
 }
 
-func (g *KVGraveler) SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename string, runID *string) (*GarbageCollectionRunMetadata, error) {
-	var rID string
-	if runID != nil {
-		rID = *runID
-	} else {
-		rID = g.garbageCollectionManager.NewID()
+func (g *KVGraveler) SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename, runID string) (*GarbageCollectionRunMetadata, error) {
+	if runID == "" {
+		runID = g.garbageCollectionManager.NewID()
 	}
 
-	err := g.garbageCollectionManager.SaveGarbageCollectionUncommitted(ctx, repository, filename, rID)
+	err := g.garbageCollectionManager.SaveGarbageCollectionUncommitted(ctx, repository, filename, runID)
 	if err != nil {
 		return nil, err
 	}
-	uncommittedLocation, err := g.garbageCollectionManager.GetUncommittedLocation(rID, repository.StorageNamespace)
+	uncommittedLocation, err := g.garbageCollectionManager.GetUncommittedLocation(runID, repository.StorageNamespace)
 	if err != nil {
 		return nil, err
 	}
 
 	return &GarbageCollectionRunMetadata{
-		RunId:               rID,
+		RunId:               runID,
 		UncommittedLocation: uncommittedLocation,
 	}, nil
 }

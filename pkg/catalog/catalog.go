@@ -12,13 +12,11 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"strings"
 	"time"
 
 	"github.com/alitto/pond"
 	"github.com/cockroachdb/pebble"
-	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 	lru "github.com/hnlq715/golang-lru"
 	"github.com/treeverse/lakefs/pkg/batch"
@@ -1744,12 +1742,17 @@ func (m *GCUncommittedMark) Encode() (string, error) {
 	return result, nil
 }
 
+type PrepareGCUncommittedInfo struct {
+	Mark     *GCUncommittedMark
+	Metadata *graveler.GarbageCollectionRunMetadata
+}
+
 type UncommittedParquetObject struct {
 	PhysicalAddress string `parquet:"name=physical_address, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
 	CreationDate    int64  `parquet:"name=creation_date, type=INT64, convertedtype=INT_64"`
 }
 
-func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, fd *os.File, mark *GCUncommittedMark) (*GCUncommittedMark, error) {
+func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, w UncommittedWriter, mark *GCUncommittedMark) (*GCUncommittedMark, error) {
 	const (
 		parallelNum              = 1                // Number of goroutines to handle marshaling of data
 		GCMaxUncommittedFileSize = 20 * 1024 * 1024 // 20 MB
@@ -1764,20 +1767,12 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 		periodicCheckSize = 100000
 	)
 
-	pw, err := writer.NewParquetWriterFromWriter(fd, new(UncommittedParquetObject), parallelNum) // TODO: Play with np count
+	pw, err := writer.NewParquetWriterFromWriter(&w, new(UncommittedParquetObject), parallelNum) // TODO: Play with np count
 	if err != nil {
 		return nil, err
 	}
 	// Compression type
 	pw.CompressionType = parquet.CompressionCodec_GZIP
-
-	fileSizeExceeded := func(fd *os.File) (bool, error) {
-		stat, err := fd.Stat()
-		if err != nil {
-			return false, err
-		}
-		return stat.Size() > GCMaxUncommittedFileSize, nil
-	}
 
 	count := 0
 	itr, err := NewUncommittedIterator(ctx, c.Store, repository)
@@ -1798,11 +1793,8 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 			if err != nil {
 				return nil, err
 			}
-			done, err := fileSizeExceeded(fd)
-			if err != nil {
-				return nil, err
-			}
-			if done {
+
+			if w.Size() > GCMaxUncommittedFileSize {
 				if itr.Err() != nil {
 					return nil, itr.Err()
 				}
@@ -1836,37 +1828,42 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 }
 
 // TODO (niro): Add check in controller that runID is provided if mark != nil
-func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string, runID *string, mark *GCUncommittedMark) (*graveler.GarbageCollectionRunMetadata, *GCUncommittedMark, error) {
+func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string, runID string, mark *GCUncommittedMark) (*PrepareGCUncommittedInfo, error) {
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	filename := path.Join(os.TempDir(), uuid.New().String())
-	fd, err := os.Create(filename)
+	fd, err := os.CreateTemp("", "")
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	defer os.Remove(filename)
-	defer fd.Close()
+	defer func() {
+		fd.Close()
+		os.Remove(fd.Name())
+	}()
+
 	// Write parquet to local storage
-	newMark, err := c.writeUncommittedLocal(ctx, repository, fd, mark)
+	newMark, err := c.writeUncommittedLocal(ctx, repository, NewUncommittedWriter(fd), mark)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Upload parquet file to object store
-	md, err := c.Store.SaveGarbageCollectionUncommitted(ctx, repository, filename, runID)
+	md, err := c.Store.SaveGarbageCollectionUncommitted(ctx, repository, fd.Name(), runID)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return md, newMark, nil
+	return &PrepareGCUncommittedInfo{
+		Mark:     newMark,
+		Metadata: md,
+	}, nil
 }
 
 func (c *Catalog) Close() error {
@@ -1948,4 +1945,27 @@ func newDifferenceFromEntryDiff(v *EntryDiff) (Difference, error) {
 	diff.DBEntry = newCatalogEntryFromEntry(false, v.Path.String(), v.Entry)
 	diff.Type, err = catalogDiffType(v.Type)
 	return diff, err
+}
+
+func NewUncommittedWriter(writer io.Writer) UncommittedWriter {
+	return UncommittedWriter{
+		writer: writer,
+	}
+}
+
+// UncommittedWriter wraps io.Writer and tracks the total size of writes done on this writer
+// Used to get the current file size written without expensive calls to Flush and Stat
+type UncommittedWriter struct {
+	size   int64
+	writer io.Writer
+}
+
+func (w *UncommittedWriter) Write(p []byte) (n int, err error) {
+	n, err = w.writer.Write(p)
+	w.size += int64(n)
+	return n, err
+}
+
+func (w *UncommittedWriter) Size() int64 {
+	return w.size
 }
