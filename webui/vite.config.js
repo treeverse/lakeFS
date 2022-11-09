@@ -1,9 +1,6 @@
 import react from '@vitejs/plugin-react';
 import eslintPlugin from 'vite-plugin-eslint';
 import replace from '@rollup/plugin-replace';
-import dns from "dns";
-
-dns.setDefaultResultOrder('verbatim');
 
 // https://vitejs.dev/config/
 export default ({ command }) => {
