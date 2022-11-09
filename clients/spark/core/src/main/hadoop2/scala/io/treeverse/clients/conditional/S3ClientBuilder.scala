@@ -33,17 +33,19 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
     initializeClient(configuration, credentialsProvider, region, bucket)
   }
 
-  private def initializeClient(config: ClientConfiguration,
-                               credentialsProvider: Option[AWSCredentialsProvider],
-                               region: String,
-                               bucket: String): AmazonS3 = {
+  private def initializeClient(
+      config: ClientConfiguration,
+      credentialsProvider: Option[AWSCredentialsProvider],
+      region: String,
+      bucket: String
+  ): AmazonS3 = {
     val builder = AmazonS3ClientBuilder
       .standard()
       .withClientConfiguration(config)
       .withRegion(region)
     val builderWithCredentials = credentialsProvider match {
       case Some(cp) => builder.withCredentials(cp)
-      case None => builder
+      case None     => builder
     }
 
     val client = builderWithCredentials.build
