@@ -2168,6 +2168,29 @@ lakectl help [command] [flags]
 
 
 
+### lakectl import
+
+Import data from external source to an imported branch (with optional merge)
+
+```
+lakectl import --from <object store URI> --to <lakeFS path URI> [--merge] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --from string      prefix to read from (e.g. "s3://bucket/sub/path/"). must not be in a storage namespace
+  -h, --help             help for import
+      --merge            merge imported branch into target branch
+  -m, --message string   commit message (default "Import objects")
+      --meta strings     key value pair in the form of key=value
+      --no-progress      switch off the progress output
+      --to string        lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
+```
+
+
+
 ### lakectl ingest
 
 Ingest objects from an external source into a lakeFS branch (without actually copying them)
