@@ -1,6 +1,7 @@
 package io.treeverse.clients.conditional
 
 import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.services.s3.model.HeadBucketRequest
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import io.treeverse.clients.StorageUtils
 import com.amazonaws.ClientConfiguration
@@ -57,10 +58,20 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
     }
 
     val client = builderWithCredentials.build
-    val bucketRegion = StorageUtils.S3.getAWSS3Region(client, bucket)
-    if (bucketRegion.equals(region)) {
+
+    if (validateClientCorrectness(client, bucket)) {
       return client
     }
+    val bucketRegion = StorageUtils.S3.getAWSS3Region(client, bucket)
     builder.withRegion(bucketRegion).build
+  }
+
+  private def validateClientCorrectness(client: AmazonS3, bucket: String): Boolean = {
+    try {
+      client.headBucket(new HeadBucketRequest(bucket))
+      true
+    } catch {
+      case _: Exception => false
+    }
   }
 }
