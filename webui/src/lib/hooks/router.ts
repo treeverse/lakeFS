@@ -5,13 +5,13 @@ import {
   generatePath,
 } from "react-router-dom";
 
-export const useQuery = <T extends Partial<T>>(): T => {
+export const useQuery = <T>(): Partial<T> => {
   const location = useLocation();
   const result: Record<string, string> = {};
   for (const [key, value] of new URLSearchParams(location.search).entries()) {
     result[key] = value;
   }
-  return result as T;
+  return result as Partial<T>;
 };
 
 interface URLDetails {
@@ -22,6 +22,7 @@ interface URLDetails {
 
 type URLBuilderInput = URLDetails | string;
 
+// TODO(elad): Return URL
 export const buildURL = (url: URLBuilderInput): string => {
   if (typeof url === "string") return url;
   // otherwise, assume query, params and pathname
