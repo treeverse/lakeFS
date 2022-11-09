@@ -1294,10 +1294,13 @@ func (g *KVGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositor
 }
 
 func (g *KVGraveler) SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename string, runID *string) (*GarbageCollectionRunMetadata, error) {
-	rID := g.garbageCollectionManager.NewID()
+	var rID string
 	if runID != nil {
 		rID = *runID
+	} else {
+		rID = g.garbageCollectionManager.NewID()
 	}
+
 	err := g.garbageCollectionManager.SaveGarbageCollectionUncommitted(ctx, repository, filename, rID)
 	if err != nil {
 		return nil, err

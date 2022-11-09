@@ -1750,7 +1750,20 @@ type UncommittedParquetObject struct {
 }
 
 func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, fd *os.File, mark *GCUncommittedMark) (*GCUncommittedMark, error) {
-	const parallelNum = 1                                                                        // Number of goroutines to handle marshaling of data
+	const (
+		parallelNum              = 1                // Number of goroutines to handle marshaling of data
+		GCMaxUncommittedFileSize = 20 * 1024 * 1024 // 20 MB
+		// Calculation of size deviation by periodicCheckSize value
+		// "data" prefix = 4 bytes
+		// partition id = 20 bytes (xid)
+		// object name = 20 bytes (xid)
+		// timestamp (int64) = 8 bytes
+		//
+		// Total per entry ~52 bytes
+		// Deviation with periodicCheckSize = 100000 will be around 5 MB
+		periodicCheckSize = 100000
+	)
+
 	pw, err := writer.NewParquetWriterFromWriter(fd, new(UncommittedParquetObject), parallelNum) // TODO: Play with np count
 	if err != nil {
 		return nil, err
@@ -1758,16 +1771,6 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 	// Compression type
 	pw.CompressionType = parquet.CompressionCodec_GZIP
 
-	const GCMaxUncommittedFileSize = 20 * 1024 * 1024 // 20 MB
-	// Calculation of size deviation by periodicCheckSize value
-	// "data" prefix = 4 bytes
-	// partition id = 20 bytes (xid)
-	// object name = 20 bytes (xid)
-	// timestamp (int64) = 8 bytes
-	//
-	// Total per entry ~52 bytes
-	// Deviation with periodicCheckSize = 100000 will be around 5 MB
-	const periodicCheckSize = 100000
 	fileSizeExceeded := func(fd *os.File) (bool, error) {
 		stat, err := fd.Stat()
 		if err != nil {

@@ -570,14 +570,13 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g, testFolder := createTestScenario(t, tt.numBranch, tt.numRecords, tt.expectedCalls)
+			g, testFolder := createPrepareUncommittedTestScenario(t, tt.numBranch, tt.numRecords, tt.expectedCalls)
 			c := &catalog.Catalog{
 				Store: g.Sut,
 			}
 			var (
 				runID *string
-				//md *graveler.GarbageCollectionRunMetadata
-				mark *catalog.GCUncommittedMark
+				mark  *catalog.GCUncommittedMark
 			)
 
 			md, mark, err := c.PrepareGCUncommitted(ctx, repoID.String(), runID, mark)
@@ -594,7 +593,7 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 	}
 }
 
-func createTestScenario(t *testing.T, numBranches, numRecords, expectedCalls int) (*testutil.GravelerTest, string) {
+func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords, expectedCalls int) (*testutil.GravelerTest, string) {
 	t.Helper()
 	testFolder, err := os.MkdirTemp("", xid.New().String())
 	require.NoError(t, err)
