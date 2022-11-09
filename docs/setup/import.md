@@ -87,11 +87,7 @@ lakectl import \
 </div>
 </div>
 
-Note that `lakectl import` will create or use `_<my-branch>_imported` branch (name is based on my-branch name).
-The objects will be imported and commit to this branch.
-
-
-Passing `--merge` flag will perform a merge from `_<my-branch>_imported` branch to `<my-branch>` branch, after a successful import.
+The imported objects will be committed to `_my-branch_imported` branch. If the branch does not exist, it will be created. The flag `--merge` will merge the branch `_my-branch_imported` to  `my-branch` after a successful import.
 
 
 #### Using the `lakectl ingest` command
