@@ -50,7 +50,7 @@ Once the import is completed, you can merge the changes from the import branch t
 
 The `lakectl` cli supports _import_ and _ingest_ commands to import objects from an external source.
 
-- The _import_ command uses the same way as the UI import the lakeFS access to import (zero copy) and commit the changes on `_<branch_name>_imported` branch with optional flag to also merge the changes to `<branch_name>`.
+- The _import_ command acts the same as the UI import wizard. It imports (zero copy) and commits the changes on `_<branch_name>_imported` branch with an optional flag to also merge the changes to `<branch_name>`.
 - The _Ingest_ is done by listing the source bucket (and optional prefix) from the client, and creating pointers to the returned objects in lakeFS. The objects will be staged on the branch.
 
 
