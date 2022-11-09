@@ -25,7 +25,7 @@ func TestGarbageCollectionManager_GetUncommittedLocation(t *testing.T) {
 	namespace := "test-namespace"
 	repo := "my-repo"
 	ns := graveler.StorageNamespace(fmt.Sprintf("%s://%s/%s", block.BlockstoreTypeMem, namespace, repo))
-	path := fmt.Sprintf("%s/%s/retention/gc/%s/uncommitted/", ns, prefix, runID)
+	path := fmt.Sprintf("%s/%s/retention/gc/uncommitted/%s/uncommitted/", ns, prefix, runID)
 	gc := retention.NewGarbageCollectionManager(blockAdapter, refMgr, prefix)
 	location, err := gc.GetUncommittedLocation(runID, ns)
 	require.NoError(t, err)
