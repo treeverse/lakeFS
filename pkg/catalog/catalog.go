@@ -44,12 +44,26 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// hashAlg is the hashing algorithm to use to generate graveler identifiers.  Changing it
-// causes all old identifiers to change, so while existing installations will continue to
-// function they will be unable to re-use any existing objects.
-const hashAlg = crypto.SHA256
+const (
+	// hashAlg is the hashing algorithm to use to generate graveler identifiers.  Changing it
+	// causes all old identifiers to change, so while existing installations will continue to
+	// function they will be unable to re-use any existing objects.
+	hashAlg = crypto.SHA256
 
-const NumberOfParentsOfNonMergeCommit = 1
+	NumberOfParentsOfNonMergeCommit = 1
+
+	gcParquetParallelNum     = 1                // Number of goroutines to handle marshaling of data
+	gcMaxUncommittedFileSize = 20 * 1024 * 1024 // 20 MB
+	// Calculation of size deviation by gcPeriodicCheckSize value
+	// "data" prefix = 4 bytes
+	// partition id = 20 bytes (xid)
+	// object name = 20 bytes (xid)
+	// timestamp (int64) = 8 bytes
+	//
+	// Total per entry ~52 bytes
+	// Deviation with gcPeriodicCheckSize = 100000 will be around 5 MB
+	gcPeriodicCheckSize = 100000
+)
 
 type Path string
 
@@ -1752,26 +1766,11 @@ type UncommittedParquetObject struct {
 	CreationDate    int64  `parquet:"name=creation_date, type=INT64, convertedtype=INT_64"`
 }
 
-func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, w UncommittedWriter, mark *GCUncommittedMark) (*GCUncommittedMark, error) {
-	const (
-		parallelNum              = 1                // Number of goroutines to handle marshaling of data
-		GCMaxUncommittedFileSize = 20 * 1024 * 1024 // 20 MB
-		// Calculation of size deviation by periodicCheckSize value
-		// "data" prefix = 4 bytes
-		// partition id = 20 bytes (xid)
-		// object name = 20 bytes (xid)
-		// timestamp (int64) = 8 bytes
-		//
-		// Total per entry ~52 bytes
-		// Deviation with periodicCheckSize = 100000 will be around 5 MB
-		periodicCheckSize = 100000
-	)
-
-	pw, err := writer.NewParquetWriterFromWriter(&w, new(UncommittedParquetObject), parallelNum) // TODO: Play with np count
+func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, w *UncommittedWriter, mark *GCUncommittedMark) (*GCUncommittedMark, error) {
+	pw, err := writer.NewParquetWriterFromWriter(w, new(UncommittedParquetObject), gcParquetParallelNum) // TODO: Play with np count
 	if err != nil {
 		return nil, err
 	}
-	// Compression type
 	pw.CompressionType = parquet.CompressionCodec_GZIP
 
 	count := 0
@@ -1788,13 +1787,13 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 	for itr.Next() {
 		entry := itr.Value()
 		count += 1
-		if count%periodicCheckSize == 0 {
+		if count%gcPeriodicCheckSize == 0 {
 			err := pw.Flush(true)
 			if err != nil {
 				return nil, err
 			}
 
-			if w.Size() > GCMaxUncommittedFileSize {
+			if w.Size() > gcMaxUncommittedFileSize {
 				if itr.Err() != nil {
 					return nil, itr.Err()
 				}
@@ -1947,8 +1946,8 @@ func newDifferenceFromEntryDiff(v *EntryDiff) (Difference, error) {
 	return diff, err
 }
 
-func NewUncommittedWriter(writer io.Writer) UncommittedWriter {
-	return UncommittedWriter{
+func NewUncommittedWriter(writer io.Writer) *UncommittedWriter {
+	return &UncommittedWriter{
 		writer: writer,
 	}
 }

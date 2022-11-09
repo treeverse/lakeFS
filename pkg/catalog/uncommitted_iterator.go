@@ -61,13 +61,13 @@ func (u *UncommittedIterator) next() bool {
 			u.entry.EntryRecord = u.entryItr.Value()
 			return true
 		}
-		err := u.entryItr.Err()
+		u.err = u.entryItr.Err()
 		u.entryItr.Close()
-		if err != nil {
+		if u.err != nil {
 			return false
 		}
 	}
-	return false
+	return false // not reachable
 }
 
 // Next returns the next entry - if entryItr is still valid - gets the next value from it otherwise call u.next
@@ -86,9 +86,9 @@ func (u *UncommittedIterator) Next() bool {
 		u.entry.EntryRecord = u.entryItr.Value()
 		return true
 	}
-	err := u.entryItr.Err()
+	u.err = u.entryItr.Err()
 	u.entryItr.Close()
-	if err != nil {
+	if u.err != nil {
 		return false
 	}
 	return u.next()

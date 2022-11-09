@@ -77,16 +77,14 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionUncommitted(ctx context.
 		return err
 	}
 
-	identifier := location
 	if !strings.HasSuffix(location, "/") {
-		identifier += "/"
+		location += "/"
 	}
-	identifier += filename
-	err = m.blockAdapter.Put(ctx, block.ObjectPointer{
-		Identifier:     identifier,
+	location += filename
+	return m.blockAdapter.Put(ctx, block.ObjectPointer{
+		Identifier:     location,
 		IdentifierType: block.IdentifierTypeFull,
 	}, stat.Size(), fd, block.PutOpts{})
-	return err
 }
 
 type RepositoryCommitGetter struct {
