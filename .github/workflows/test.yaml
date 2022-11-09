@@ -85,4 +85,6 @@ jobs:
             ${{ runner.os }}-
 
       - name: Run tests
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
         run: make test-go
