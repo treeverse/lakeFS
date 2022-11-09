@@ -16,10 +16,10 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v3
         with:
-          fetch-depth: '1'
+          fetch-depth: "1"
       - uses: actions/setup-node@v3
         with:
-          node-version: '16.17.1'
+          node-version: "16.17.1"
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
@@ -31,6 +31,7 @@ jobs:
         run: make checks-validator
         env:
           GOLANGCI_LINT_FLAGS: --out-format github-actions
+          NODE_OPTIONS: "--max-old-space-size=4096"
 
   test-go:
     name: Run Go tests
@@ -41,7 +42,7 @@ jobs:
       - name: Setup UI
         uses: actions/setup-node@v3
         with:
-          node-version: '16.17.1'
+          node-version: "16.17.1"
       - name: Cache node_modules # TODO(ariels): Share with UI build
         uses: actions/cache@v3
         env:
@@ -49,8 +50,7 @@ jobs:
         with:
           path: node_modules/
           key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('webui/package-lock.json') }}
-          restore-keys:
-            ${{ runner.os }}-build-${{ env.cache-name }}-
+          restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
       - name: Install UI dependencies
@@ -78,8 +78,7 @@ jobs:
             ${{ env.GOMODCACHE }}
             ${{ env.GOCACHE }}
           key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('go.mod', 'go.sum') }}
-          restore-keys:
-            ${{ runner.os }}-build-${{ env.cache-name }}-
+          restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
 
