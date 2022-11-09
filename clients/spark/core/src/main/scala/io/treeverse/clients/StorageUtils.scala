@@ -1,8 +1,5 @@
 package io.treeverse.clients
 
-import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.s3.model.Region
-
 import java.net.URI
 import java.nio.charset.Charset
 
@@ -82,17 +79,6 @@ object StorageUtils {
 
       if (keys.isEmpty) return Seq.empty
       keys.map(x => snPrefix.concat(x))
-    }
-
-    def getAWSS3Region(client: AmazonS3, bucket: String): String = {
-      val bucketRegion = client.getBucketLocation(bucket)
-      val region = Region.fromValue(bucketRegion)
-      // The comparison `region.equals(Region.US_Standard))` is required due to AWS's backward compatibility:
-      // https://github.com/aws/aws-sdk-java/issues/1470.
-      // "us-east-1" was previously called "US Standard". This resulted in a return value of "US" when
-      // calling `client.getBucketLocation(bucket)`.
-      if (region.equals(Region.US_Standard)) "us-east-1"
-      else region.toString
     }
   }
 }

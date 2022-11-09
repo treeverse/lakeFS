@@ -1,10 +1,9 @@
 package io.treeverse.clients.conditional
 
-import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.services.s3.model.HeadBucketRequest
-import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
-import io.treeverse.clients.StorageUtils
 import com.amazonaws.ClientConfiguration
+import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.services.s3.model.{HeadBucketRequest, Region}
+import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -62,7 +61,7 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
     if (validateClientCorrectness(client, bucket)) {
       return client
     }
-    val bucketRegion = StorageUtils.S3.getAWSS3Region(client, bucket)
+    val bucketRegion = getAWSS3Region(client, bucket)
     builder.withRegion(bucketRegion).build
   }
 
@@ -73,5 +72,16 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
     } catch {
       case _: Exception => false
     }
+  }
+
+  private def getAWSS3Region(client: AmazonS3, bucket: String): String = {
+    val bucketRegion = client.getBucketLocation(bucket)
+    val region = Region.fromValue(bucketRegion)
+    // The comparison `region.equals(Region.US_Standard))` is required due to AWS's backward compatibility:
+    // https://github.com/aws/aws-sdk-java/issues/1470.
+    // "us-east-1" was previously called "US Standard". This resulted in a return value of "US" when
+    // calling `client.getBucketLocation(bucket)`.
+    if (region.equals(Region.US_Standard)) "us-east-1"
+    else region.toString
   }
 }
