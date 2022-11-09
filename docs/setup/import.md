@@ -26,7 +26,7 @@ and in the same region of your destination bucket.
 lakeFS supports two ways to ingest objects from the object store without copying the data:
 
 1. [Importing using the lakeFS UI](#importing-using-the-lakefs-ui) - A UI dialog to trigger an import to a designated import branch. It creates a commit from all imported objects.
-1. [Importing using lakectl cli](#importing-using-lakectl-cli) - You can use a the [`lakectl` CLI command](../reference/commands.md#lakectl) to create uncommitted objects in a branch. It will make sequential calls between the CLI and the server.
+1. [Importing using lakectl cli](#importing-using-lakectl-cli) - You can use the [`lakectl` CLI command](../reference/commands.md#lakectl) to create uncommitted objects in a branch. It will make sequential calls between the CLI and the server.
 
 #### Using the import wizard
 
@@ -34,7 +34,7 @@ Clicking the Import button from any branch will open the following dialog:
 
 ![Import dialog example configured with S3](../assets/img/UI-Import-Dialog.png)
 
-If it's the first import to the selected branch, it will create the import branch named `<branch_name>_imported`.
+If it's the first import to the selected branch, it will create the import branch named `_<branch_name>_imported`.
 lakeFS will import all objects from the Source URI to the import branch under the given prefix.
 
 The UI will update periodically with the amount of objects imported. How long it takes depends on the amount of objects to be imported but will roughly be a few thousand objects per second.
@@ -48,17 +48,57 @@ Once the import is completed, you can merge the changes from the import branch t
 
 ### Importing using lakectl cli
 
-The `lakectl` command supports ingesting objects from an external source.
-This is done by listing the source bucket (and optional prefix), and creating pointers to the returned objects in lakeFS.
+The `lakectl` cli supports _import_ and _ingest_ commands to import objects from an external source.
 
-#### Prerequisites
+- The _import_ command acts the same as the UI import wizard. It imports (zero copy) and commits the changes on `_<branch_name>_imported` branch with an optional flag to also merge the changes to `<branch_name>`.
+- The _Ingest_ is listing the source bucket (and optional prefix) from the client, and creating pointers to the returned objects in lakeFS. The objects will be staged on the branch.
 
-1. The user calling `lakectl ingest` has permissions to list the objects at the source object store.
-2. _recommended_: The lakeFS installation has read permissions to the objects being ingested (to support downloading them directly from the lakeFS server)
-3. The source path is **not** a storage namespace used by lakeFS. For example, if `lakefs://my-repo` created with storage namespace `s3://my-bucket`, then `s3://my-bucket/*` cannot be an ingestion source.
+
+#### Using the `lakectl import` command
+
+##### Usage
+
+<div class="tabs">
+<ul>
+  <li><a href="#import-tabs-1">AWS S3 or S3 API Compatible storage</a></li>
+  <li><a href="#import-tabs-2">Azure Blob</a></li>
+  <li><a href="#import-tabs-3">Google Cloud Storage</a></li>
+</ul>
+<div markdown="1" id="import-tabs-1">
+```shell
+lakectl import \
+  --from s3://bucket/optional/prefix/ \
+  --to lakefs://my-repo/my-branch/optional/path/
+```
+</div>
+<div markdown="1" id="import-tabs-2">
+```shell
+lakectl import \
+   --from https://storageAccountName.blob.core.windows.net/container/optional/prefix/ \
+   --to lakefs://my-repo/my-branch/optional/path/
+```
+</div>
+<div markdown="1" id="import-tabs-3">
+```shell
+lakectl import \
+   --from gs://bucket/optional/prefix/ \
+   --to lakefs://my-repo/my-branch/optional/path/
+```
+</div>
+</div>
+
+The imported objects will be committed to `_my-branch_imported` branch. If the branch does not exist, it will be created. The flag `--merge` will merge the branch `_my-branch_imported` to  `my-branch` after a successful import.
 
 
 #### Using the `lakectl ingest` command
+
+##### Prerequisites
+
+1. The user calling `lakectl ingest` has permissions to list the objects at the source object store.
+2. _Recommended_: The lakeFS installation has read permissions to the objects being ingested (to support downloading them directly from the lakeFS server)
+3. The source path is **not** a storage namespace used by lakeFS. For example, if `lakefs://my-repo` created with storage namespace `s3://my-bucket`, then `s3://my-bucket/*` cannot be an ingestion source.
+
+##### Usage
 
 <div class="tabs">
 <ul>
