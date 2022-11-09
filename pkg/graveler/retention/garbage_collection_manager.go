@@ -82,10 +82,7 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionUncommitted(ctx context.
 		Identifier:     identifier,
 		IdentifierType: block.IdentifierTypeFull,
 	}, stat.Size(), fd, block.PutOpts{})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 type RepositoryCommitGetter struct {
