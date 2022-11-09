@@ -101,7 +101,7 @@ To continue support of this operation, introduce a new API to Copy an object sim
 #### PrepareUncommittedForGC
 
 A new API which will create files from uncommitted object information (address + creation date). These files
-will be saved to `_lakefs/gc/run_id/uncommitted/` and used by the GC client to list repository's uncommitted objects.
+will be saved to `_lakefs/retention/gc/uncommitted/run_id/uncommitted/` and used by the GC client to list repository's uncommitted objects.
 At the end of this flow - read copied objects information from ref-store and add it to the uncommitted data.
 For the purpose of this document we'll call this the `UncommittedData`
 >**Note:** Copied object information must be read AFTER all uncommitted data was collected
@@ -169,10 +169,11 @@ Optimized run uses the previous GC run output, to perform a partial scan of the 
 ### GC Saved Information
 
 For each GC run, save the following information using the GC run id as detailed in this [proposal](https://github.com/treeverse/cloud-controlplane/blob/main/design/accepted/gc-with-run-id.md):
-1. Save `Uncommitted DF` in `_lakefs/gc/run_id/uncommitted/` (Done by _PrepareUncommittedForGC_)
-2. Add the following to the GC report:
+1. Save `Uncommitted DF` in `_lakefs/retention/gc/uncommitted/run_id/uncommitted/` (Done by _PrepareUncommittedForGC_)
+2. Create and add the following to the GC report:
    1. Run start time
    2. Last read slice
+   3. Write report to `_lakefs/retention/gc/uncommitted/run_id/`
 
 ## Limitations
 
