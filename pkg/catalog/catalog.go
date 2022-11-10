@@ -19,6 +19,7 @@ import (
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
 	lru "github.com/hnlq715/golang-lru"
+	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
@@ -1758,7 +1759,7 @@ func (m *GCUncommittedMark) Encode() (string, error) {
 
 type PrepareGCUncommittedInfo struct {
 	Mark     *GCUncommittedMark
-	Metadata *graveler.GarbageCollectionRunMetadata
+	Metadata graveler.GarbageCollectionRunMetadata
 }
 
 type UncommittedParquetObject struct {
@@ -1766,17 +1767,18 @@ type UncommittedParquetObject struct {
 	CreationDate    int64  `parquet:"name=creation_date, type=INT64, convertedtype=INT_64"`
 }
 
-func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, w *UncommittedWriter, mark *GCUncommittedMark) (*GCUncommittedMark, error) {
+func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, w *UncommittedWriter, mark *GCUncommittedMark) (*GCUncommittedMark, bool, error) {
+	hasData := false
 	pw, err := writer.NewParquetWriterFromWriter(w, new(UncommittedParquetObject), gcParquetParallelNum) // TODO: Play with np count
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	pw.CompressionType = parquet.CompressionCodec_GZIP
 
 	count := 0
 	itr, err := NewUncommittedIterator(ctx, c.Store, repository)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	defer itr.Close()
 
@@ -1790,40 +1792,57 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 		if count%gcPeriodicCheckSize == 0 {
 			err := pw.Flush(true)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 
 			if w.Size() > gcMaxUncommittedFileSize {
 				if itr.Err() != nil {
-					return nil, itr.Err()
+					return nil, false, itr.Err()
 				}
 				err = pw.WriteStop()
 				if err != nil {
-					return nil, err
+					return nil, false, err
 				}
 				return &GCUncommittedMark{
 					BranchID: entry.branchID,
 					Path:     entry.Path,
-				}, nil
+				}, true, nil
 			}
 		}
 		if err = pw.Write(UncommittedParquetObject{
 			PhysicalAddress: entry.Address,
 			CreationDate:    entry.LastModified.AsTime().Unix(),
 		}); err != nil {
-			return nil, err
+			return nil, false, err
 		}
+		hasData = true
 	}
 	if itr.Err() != nil {
-		return nil, itr.Err()
+		return nil, false, itr.Err()
 	}
 	err = pw.WriteStop()
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	// Finished reading all staging area - no continuation token
-	return nil, nil
+	return nil, hasData, nil
+}
+
+func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, location string, fd *os.File, size int64) error {
+	_, err := fd.Seek(0, 0)
+	if err != nil {
+		return err
+	}
+	if !strings.HasSuffix(location, "/") {
+		location += "/"
+	}
+	location += xid.New().String()
+	return c.BlockAdapter.Put(ctx, block.ObjectPointer{
+		StorageNamespace: ns.String(),
+		Identifier:       location,
+		IdentifierType:   block.IdentifierTypeRelative,
+	}, size, fd, block.PutOpts{})
 }
 
 // TODO (niro): Add check in controller that runID is provided if mark != nil
@@ -1838,6 +1857,10 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 		return nil, err
 	}
 
+	if runID == "" {
+		runID = c.Store.GCNewRunID()
+	}
+
 	fd, err := os.CreateTemp("", "")
 	if err != nil {
 		return nil, err
@@ -1847,21 +1870,39 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 		os.Remove(fd.Name())
 	}()
 
+	uw := NewUncommittedWriter(fd)
+
 	// Write parquet to local storage
-	newMark, err := c.writeUncommittedLocal(ctx, repository, NewUncommittedWriter(fd), mark)
+	newMark, hasData, err := c.writeUncommittedLocal(ctx, repository, uw, mark)
 	if err != nil {
 		return nil, err
 	}
 
+	if !hasData { // On empty file - skip upload
+		return &PrepareGCUncommittedInfo{
+			Metadata: graveler.GarbageCollectionRunMetadata{
+				RunId:               runID,
+				UncommittedLocation: "",
+			},
+		}, nil
+	}
+
 	// Upload parquet file to object store
-	md, err := c.Store.SaveGarbageCollectionUncommitted(ctx, repository, fd.Name(), runID)
+	uncommittedLocation, err := c.Store.GCGetUncommittedLocation(repository, runID)
+	if err != nil {
+		return nil, err
+	}
+	err = c.uploadFile(ctx, repository.StorageNamespace, uncommittedLocation, fd, uw.Size())
 	if err != nil {
 		return nil, err
 	}
 
 	return &PrepareGCUncommittedInfo{
-		Mark:     newMark,
-		Metadata: md,
+		Mark: newMark,
+		Metadata: graveler.GarbageCollectionRunMetadata{
+			RunId:               runID,
+			UncommittedLocation: uncommittedLocation,
+		},
 	}, nil
 }
 

@@ -3,7 +3,7 @@ package catalog_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path"
 	"testing"
@@ -13,10 +13,12 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/catalog/testutils"
+	cUtils "github.com/treeverse/lakefs/pkg/catalog/testutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/graveler/testutil"
+	gUtils "github.com/treeverse/lakefs/pkg/graveler/testutil"
+	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/xitongsys/parquet-go-source/local"
 	"github.com/xitongsys/parquet-go/reader"
 	"google.golang.org/protobuf/proto"
@@ -181,7 +183,7 @@ func TestCatalog_BranchExists(t *testing.T) {
 		t.Run(tt.Branch, func(t *testing.T) {
 			// setup Catalog
 			gravelerMock := &catalog.FakeGraveler{
-				BranchIteratorFactory: testutil.NewFakeBranchIteratorFactory(gravelerData),
+				BranchIteratorFactory: gUtils.NewFakeBranchIteratorFactory(gravelerData),
 			}
 			c := &catalog.Catalog{
 				Store: gravelerMock,
@@ -283,7 +285,7 @@ func TestCatalog_ListBranches(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup Catalog
 			gravelerMock := &catalog.FakeGraveler{
-				BranchIteratorFactory: testutil.NewFakeBranchIteratorFactory(gravelerData),
+				BranchIteratorFactory: gUtils.NewFakeBranchIteratorFactory(gravelerData),
 			}
 			c := &catalog.Catalog{
 				Store: gravelerMock,
@@ -570,9 +572,11 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g, testFolder := createPrepareUncommittedTestScenario(t, tt.numBranch, tt.numRecords, tt.expectedCalls)
+			g := createPrepareUncommittedTestScenario(t, tt.numBranch, tt.numRecords, tt.expectedCalls)
+			blockAdapter := testutil.NewBlockAdapterByType(t, block.BlockstoreTypeMem)
 			c := &catalog.Catalog{
-				Store: g.Sut,
+				Store:        g.Sut,
+				BlockAdapter: blockAdapter,
 			}
 			var result *catalog.PrepareGCUncommittedInfo
 			runID := ""
@@ -586,12 +590,12 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, runID, result.Metadata.RunId)
 			}
-			verifyData(t, tt.numBranch, tt.numRecords, testFolder)
+			verifyData(t, ctx, tt.numBranch, tt.numRecords, result.Metadata.RunId, c)
 		})
 	}
 }
 
-func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords, expectedCalls int) (*testutil.GravelerTest, string) {
+func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords, expectedCalls int) *gUtils.GravelerTest {
 	t.Helper()
 	testFolder, err := os.MkdirTemp("", xid.New().String())
 	require.NoError(t, err)
@@ -599,7 +603,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 		os.RemoveAll(testFolder)
 	})
 
-	test := testutil.InitGravelerTest(t)
+	test := gUtils.InitGravelerTest(t)
 	records := make([][]*graveler.ValueRecord, numBranches)
 	var branches []*graveler.BranchRecord
 	for i := 0; i < numBranches; i++ {
@@ -631,32 +635,59 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 	}
 	test.GarbageCollectionManager.EXPECT().NewID().Return("TestRunID")
 	test.RefManager.EXPECT().GetRepository(gomock.Any(), repoID).Times(expectedCalls).Return(repository, nil)
-	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).Times(expectedCalls).Return(testutil.NewFakeBranchIterator(branches), nil)
+	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).Times(expectedCalls).Return(gUtils.NewFakeBranchIterator(branches), nil)
 
 	for i := 0; i < len(branches); i++ {
-		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, gomock.Any()).AnyTimes().Return(testutils.NewFakeValueIterator(records[i]), nil)
+		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, gomock.Any()).AnyTimes().Return(cUtils.NewFakeValueIterator(records[i]), nil)
 	}
-	test.GarbageCollectionManager.EXPECT().SaveGarbageCollectionUncommitted(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(expectedCalls).Do(
-		func(ctx context.Context, repository *graveler.RepositoryRecord, filename, runID string) {
-			err = os.Rename(filename, path.Join(testFolder, xid.New().String()))
-			require.NoError(t, err)
+	if numRecords*numBranches > 0 {
+		test.GarbageCollectionManager.EXPECT().GetUncommittedLocation(gomock.Any(), gomock.Any()).Times(expectedCalls).DoAndReturn(func(runID string, sn graveler.StorageNamespace) (string, error) {
+			return fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID), nil
 		})
-	test.GarbageCollectionManager.EXPECT().GetUncommittedLocation(gomock.Any(), gomock.Any()).Times(expectedCalls)
+	}
 
-	return test, testFolder
+	return test
 }
 
-func verifyData(t *testing.T, numBranches, numRecords int, testFolder string) {
-	files, err := ioutil.ReadDir(testFolder)
-	require.NoError(t, err)
-
+func verifyData(t *testing.T, ctx context.Context, numBranches, numRecords int, runID string, c *catalog.Catalog) {
 	totalCount := 0
-	for _, f := range files {
-		fr, err := local.NewLocalFileReader(path.Join(testFolder, f.Name()))
-		require.NoError(t, err)
+	location := fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID)
+
+	err := c.BlockAdapter.Walk(context.Background(), block.WalkOpts{
+		StorageNamespace: repository.Repository.StorageNamespace.String(),
+		Prefix:           location,
+	}, func(id string) error {
+		fd, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{
+			Identifier:     id,
+			IdentifierType: block.IdentifierTypeFull,
+		}, 0)
+		if err != nil {
+			return err
+		}
+		filename := path.Join(os.TempDir(), xid.New().String())
+		fr, err := local.NewLocalFileWriter(filename)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			fr.Close()
+			os.Remove(filename)
+		}()
+
+		_, err = io.Copy(fr, fd)
+		if err != nil {
+			return err
+		}
+
+		_, err = fr.Seek(0, 0)
+		if err != nil {
+			return err
+		}
 
 		pr, err := reader.NewParquetReader(fr, new(catalog.UncommittedParquetObject), 4)
-		require.NoError(t, err)
+		if err != nil {
+			return err
+		}
 
 		count := pr.GetNumRows()
 		u := make([]*catalog.UncommittedParquetObject, count)
@@ -669,6 +700,10 @@ func verifyData(t *testing.T, numBranches, numRecords int, testFolder string) {
 			require.Equal(t, fmt.Sprintf("branch%04d_record%04d", branchID, recordID), record.PhysicalAddress)
 		}
 		totalCount += int(count)
-	}
+
+		return nil
+	})
+
+	require.NoError(t, err)
 	require.Equal(t, totalCount, numBranches*numRecords)
 }

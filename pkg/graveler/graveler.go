@@ -512,9 +512,10 @@ type VersionController interface {
 	// Note: Ancestors of previously expired commits may still be considered if they can be reached from a non-expired commit.
 	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, previousRunID string) (garbageCollectionRunMetadata *GarbageCollectionRunMetadata, err error)
 
-	// SaveGarbageCollectionUncommitted Uploads parquet file of uncommitted objects to the repository in the run ID path. Return the GC run's metadata
-	// including the run ID and the location of the saved parquet file
-	SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename, runID string) (*GarbageCollectionRunMetadata, error)
+	// GCGetUncommittedLocation returns location of saved uncommitted files per runID
+	GCGetUncommittedLocation(repository *RepositoryRecord, runID string) (string, error)
+
+	GCNewRunID() string
 
 	// GetBranchProtectionRules return all branch protection rules for the repository
 	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error)
@@ -1293,24 +1294,12 @@ func (g *KVGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositor
 	}, err
 }
 
-func (g *KVGraveler) SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename, runID string) (*GarbageCollectionRunMetadata, error) {
-	if runID == "" {
-		runID = g.garbageCollectionManager.NewID()
-	}
+func (g *KVGraveler) GCGetUncommittedLocation(repository *RepositoryRecord, runID string) (string, error) {
+	return g.garbageCollectionManager.GetUncommittedLocation(runID, repository.StorageNamespace)
+}
 
-	err := g.garbageCollectionManager.SaveGarbageCollectionUncommitted(ctx, repository, filename, runID)
-	if err != nil {
-		return nil, err
-	}
-	uncommittedLocation, err := g.garbageCollectionManager.GetUncommittedLocation(runID, repository.StorageNamespace)
-	if err != nil {
-		return nil, err
-	}
-
-	return &GarbageCollectionRunMetadata{
-		RunId:               runID,
-		UncommittedLocation: uncommittedLocation,
-	}, nil
+func (g *KVGraveler) GCNewRunID() string {
+	return g.garbageCollectionManager.NewID()
 }
 
 func (g *KVGraveler) GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error) {
