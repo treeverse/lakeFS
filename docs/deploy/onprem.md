@@ -117,7 +117,7 @@ You can install lakeFS on Kubernetes using a [Helm chart](https://github.com/tre
 
 To install lakeFS with Helm:
 
-1. Copy the Helm values file relevant for Azure Blob:
+1. Copy the Helm values file relevant for S3-Compatible storage (MinIO in this example):
    
    ```yaml
    secrets:
