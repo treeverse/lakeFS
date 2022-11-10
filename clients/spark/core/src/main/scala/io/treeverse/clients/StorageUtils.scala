@@ -1,9 +1,10 @@
 package io.treeverse.clients
 
-import com.amazonaws.ClientConfiguration
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.services.s3.model.{HeadBucketRequest, Region}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
+import com.amazonaws.{AmazonServiceException, ClientConfiguration}
+import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
 import java.nio.charset.Charset
@@ -61,6 +62,7 @@ object StorageUtils {
   object S3 {
     val S3MaxBulkSize = 1000
     val S3NumRetries = 1000
+    val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
     def concatKeysToStorageNamespace(keys: Seq[String], storageNamespace: String): Seq[String] = {
       val addSuffixSlash =
@@ -115,7 +117,9 @@ object StorageUtils {
         client.headBucket(new HeadBucketRequest(bucket))
         true
       } catch {
-        case _: Exception => false
+        case e: AmazonServiceException =>
+          logger.info("Bucket \"{}\" isn't reachable with error: {}", bucket: Any, e.getMessage: Any)
+          false
       }
     }
 
