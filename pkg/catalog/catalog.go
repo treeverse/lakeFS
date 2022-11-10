@@ -1744,6 +1744,7 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string
 type GCUncommittedMark struct {
 	BranchID graveler.BranchID `json:"branch"`
 	Path     Path              `json:"path"`
+	RunID    string            `json:"run_id"`
 }
 
 func (m *GCUncommittedMark) Encode() (string, error) {
@@ -1767,7 +1768,7 @@ type UncommittedParquetObject struct {
 	CreationDate    int64  `parquet:"name=creation_date, type=INT64, convertedtype=INT_64"`
 }
 
-func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, w *UncommittedWriter, mark *GCUncommittedMark) (*GCUncommittedMark, bool, error) {
+func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, w *UncommittedWriter, mark *GCUncommittedMark, runID string) (*GCUncommittedMark, bool, error) {
 	hasData := false
 	pw, err := writer.NewParquetWriterFromWriter(w, new(UncommittedParquetObject), gcParquetParallelNum) // TODO: Play with np count
 	if err != nil {
@@ -1806,6 +1807,7 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 				return &GCUncommittedMark{
 					BranchID: entry.branchID,
 					Path:     entry.Path,
+					RunID:    runID,
 				}, true, nil
 			}
 		}
@@ -1846,7 +1848,7 @@ func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, 
 }
 
 // TODO (niro): Add check in controller that runID is provided if mark != nil
-func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string, runID string, mark *GCUncommittedMark) (*PrepareGCUncommittedInfo, error) {
+func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string, mark *GCUncommittedMark) (*PrepareGCUncommittedInfo, error) {
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
@@ -1857,8 +1859,11 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 		return nil, err
 	}
 
-	if runID == "" {
+	var runID string
+	if mark == nil {
 		runID = c.Store.GCNewRunID()
+	} else {
+		runID = mark.RunID
 	}
 
 	fd, err := os.CreateTemp("", "")
@@ -1873,7 +1878,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	uw := NewUncommittedWriter(fd)
 
 	// Write parquet to local storage
-	newMark, hasData, err := c.writeUncommittedLocal(ctx, repository, uw, mark)
+	newMark, hasData, err := c.writeUncommittedLocal(ctx, repository, uw, mark, runID)
 	if err != nil {
 		return nil, err
 	}

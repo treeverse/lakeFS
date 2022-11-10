@@ -579,14 +579,15 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 				BlockAdapter: blockAdapter,
 			}
 			var result *catalog.PrepareGCUncommittedInfo
-			runID := ""
 
-			result, err := c.PrepareGCUncommitted(ctx, repoID.String(), runID, nil)
+			result, err := c.PrepareGCUncommitted(ctx, repoID.String(), nil)
 			require.NoError(t, err)
 
 			for result.Mark != nil {
-				runID = result.Metadata.RunId
-				result, err = c.PrepareGCUncommitted(ctx, repoID.String(), runID, result.Mark)
+				time.Sleep(1 * time.Second)
+				runID := result.Metadata.RunId
+				require.Equal(t, runID, result.Mark.RunID)
+				result, err = c.PrepareGCUncommitted(ctx, repoID.String(), result.Mark)
 				require.NoError(t, err)
 				require.Equal(t, runID, result.Metadata.RunId)
 			}
