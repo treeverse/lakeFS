@@ -1,6 +1,6 @@
 # Uncommitted Garbage Collection - Execution Plan
 
-Uncommitted Garbage Collection [Proposal](link-to-proposal)
+Uncommitted Garbage Collection [Proposal](https://github.com/treeverse/lakeFS/blob/master/design/accepted/gc_plus/uncommitted-gc.md)
 
 ## Overview
 
