@@ -1,13 +1,27 @@
-package catalog
+package catalog_test
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"os"
+	"path"
 	"testing"
 	"time"
 
 	"github.com/go-test/deep"
+	"github.com/golang/mock/gomock"
+	"github.com/rs/xid"
+	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/catalog"
+	cUtils "github.com/treeverse/lakefs/pkg/catalog/testutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/graveler/testutil"
+	gUtils "github.com/treeverse/lakefs/pkg/graveler/testutil"
+	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/xitongsys/parquet-go-source/local"
+	"github.com/xitongsys/parquet-go/reader"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -46,7 +60,7 @@ func TestGetStartPos(t *testing.T) {
 
 	for _, cas := range cases {
 		t.Run(cas.Name, func(t *testing.T) {
-			got := GetStartPos(cas.Prefix, cas.After, cas.Delimiter)
+			got := catalog.GetStartPos(cas.Prefix, cas.After, cas.Delimiter)
 			if got != cas.Expected {
 				t.Fatalf("expected %s got %s", cas.Expected, got)
 			}
@@ -69,7 +83,7 @@ func TestCatalog_ListRepositories(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        args
-		want        []*Repository
+		want        []*catalog.Repository
 		wantHasMore bool
 		wantErr     bool
 	}{
@@ -79,7 +93,7 @@ func TestCatalog_ListRepositories(t *testing.T) {
 				limit: -1,
 				after: "",
 			},
-			want: []*Repository{
+			want: []*catalog.Repository{
 				{Name: "repo1", StorageNamespace: "storage1", DefaultBranch: "main1", CreationDate: now},
 				{Name: "repo2", StorageNamespace: "storage2", DefaultBranch: "main2", CreationDate: now},
 				{Name: "repo3", StorageNamespace: "storage3", DefaultBranch: "main3", CreationDate: now},
@@ -93,7 +107,7 @@ func TestCatalog_ListRepositories(t *testing.T) {
 				limit: 1,
 				after: "",
 			},
-			want: []*Repository{
+			want: []*catalog.Repository{
 				{Name: "repo1", StorageNamespace: "storage1", DefaultBranch: "main1", CreationDate: now},
 			},
 			wantHasMore: true,
@@ -105,7 +119,7 @@ func TestCatalog_ListRepositories(t *testing.T) {
 				limit: 1,
 				after: "repo1",
 			},
-			want: []*Repository{
+			want: []*catalog.Repository{
 				{Name: "repo2", StorageNamespace: "storage2", DefaultBranch: "main2", CreationDate: now},
 			},
 			wantHasMore: true,
@@ -117,7 +131,7 @@ func TestCatalog_ListRepositories(t *testing.T) {
 				limit: 10,
 				after: "repo1",
 			},
-			want: []*Repository{
+			want: []*catalog.Repository{
 				{Name: "repo2", StorageNamespace: "storage2", DefaultBranch: "main2", CreationDate: now},
 				{Name: "repo3", StorageNamespace: "storage3", DefaultBranch: "main3", CreationDate: now},
 			},
@@ -129,10 +143,10 @@ func TestCatalog_ListRepositories(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup Catalog
-			gravelerMock := &FakeGraveler{
-				RepositoryIteratorFactory: NewFakeRepositoryIteratorFactory(gravelerData),
+			gravelerMock := &catalog.FakeGraveler{
+				RepositoryIteratorFactory: catalog.NewFakeRepositoryIteratorFactory(gravelerData),
 			}
-			c := &Catalog{
+			c := &catalog.Catalog{
 				Store: gravelerMock,
 			}
 			// test method
@@ -168,10 +182,10 @@ func TestCatalog_BranchExists(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Branch, func(t *testing.T) {
 			// setup Catalog
-			gravelerMock := &FakeGraveler{
-				BranchIteratorFactory: testutil.NewFakeBranchIteratorFactory(gravelerData),
+			gravelerMock := &catalog.FakeGraveler{
+				BranchIteratorFactory: gUtils.NewFakeBranchIteratorFactory(gravelerData),
 			}
-			c := &Catalog{
+			c := &catalog.Catalog{
 				Store: gravelerMock,
 			}
 			// test method
@@ -206,14 +220,14 @@ func TestCatalog_ListBranches(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        args
-		want        []*Branch
+		want        []*catalog.Branch
 		wantHasMore bool
 		wantErr     bool
 	}{
 		{
 			name: "all",
 			args: args{limit: -1},
-			want: []*Branch{
+			want: []*catalog.Branch{
 				{Name: "branch1", Reference: "commit1"},
 				{Name: "branch2", Reference: "commit2"},
 				{Name: "branch3", Reference: "commit3"},
@@ -224,7 +238,7 @@ func TestCatalog_ListBranches(t *testing.T) {
 		{
 			name: "exact",
 			args: args{limit: 3},
-			want: []*Branch{
+			want: []*catalog.Branch{
 				{Name: "branch1", Reference: "commit1"},
 				{Name: "branch2", Reference: "commit2"},
 				{Name: "branch3", Reference: "commit3"},
@@ -235,7 +249,7 @@ func TestCatalog_ListBranches(t *testing.T) {
 		{
 			name: "first",
 			args: args{limit: 1},
-			want: []*Branch{
+			want: []*catalog.Branch{
 				{Name: "branch1", Reference: "commit1"},
 			},
 			wantHasMore: true,
@@ -244,7 +258,7 @@ func TestCatalog_ListBranches(t *testing.T) {
 		{
 			name: "second",
 			args: args{limit: 1, after: "branch1"},
-			want: []*Branch{
+			want: []*catalog.Branch{
 				{Name: "branch2", Reference: "commit2"},
 			},
 			wantHasMore: true,
@@ -253,7 +267,7 @@ func TestCatalog_ListBranches(t *testing.T) {
 		{
 			name: "last2",
 			args: args{limit: 10, after: "branch1"},
-			want: []*Branch{
+			want: []*catalog.Branch{
 				{Name: "branch2", Reference: "commit2"},
 				{Name: "branch3", Reference: "commit3"},
 			},
@@ -270,10 +284,10 @@ func TestCatalog_ListBranches(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup Catalog
-			gravelerMock := &FakeGraveler{
-				BranchIteratorFactory: testutil.NewFakeBranchIteratorFactory(gravelerData),
+			gravelerMock := &catalog.FakeGraveler{
+				BranchIteratorFactory: gUtils.NewFakeBranchIteratorFactory(gravelerData),
 			}
-			c := &Catalog{
+			c := &catalog.Catalog{
 				Store: gravelerMock,
 			}
 			// test method
@@ -305,14 +319,14 @@ func TestCatalog_ListTags(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        args
-		want        []*Tag
+		want        []*catalog.Tag
 		wantHasMore bool
 		wantErr     bool
 	}{
 		{
 			name: "all",
 			args: args{limit: -1},
-			want: []*Tag{
+			want: []*catalog.Tag{
 				{ID: "t1", CommitID: "c1"},
 				{ID: "t2", CommitID: "c2"},
 				{ID: "t3", CommitID: "c3"},
@@ -323,7 +337,7 @@ func TestCatalog_ListTags(t *testing.T) {
 		{
 			name: "exact",
 			args: args{limit: 3},
-			want: []*Tag{
+			want: []*catalog.Tag{
 				{ID: "t1", CommitID: "c1"},
 				{ID: "t2", CommitID: "c2"},
 				{ID: "t3", CommitID: "c3"},
@@ -334,7 +348,7 @@ func TestCatalog_ListTags(t *testing.T) {
 		{
 			name: "first",
 			args: args{limit: 1},
-			want: []*Tag{
+			want: []*catalog.Tag{
 				{ID: "t1", CommitID: "c1"},
 			},
 			wantHasMore: true,
@@ -343,7 +357,7 @@ func TestCatalog_ListTags(t *testing.T) {
 		{
 			name: "second",
 			args: args{limit: 1, after: "t1"},
-			want: []*Tag{
+			want: []*catalog.Tag{
 				{ID: "t2", CommitID: "c2"},
 			},
 			wantHasMore: true,
@@ -352,7 +366,7 @@ func TestCatalog_ListTags(t *testing.T) {
 		{
 			name: "last2",
 			args: args{limit: 10, after: "t1"},
-			want: []*Tag{
+			want: []*catalog.Tag{
 				{ID: "t2", CommitID: "c2"},
 				{ID: "t3", CommitID: "c3"},
 			},
@@ -368,10 +382,10 @@ func TestCatalog_ListTags(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gravelerMock := &FakeGraveler{
-				TagIteratorFactory: NewFakeTagIteratorFactory(gravelerData),
+			gravelerMock := &catalog.FakeGraveler{
+				TagIteratorFactory: catalog.NewFakeTagIteratorFactory(gravelerData),
 			}
-			c := &Catalog{
+			c := &catalog.Catalog{
 				Store: gravelerMock,
 			}
 			ctx := context.Background()
@@ -393,11 +407,11 @@ func TestCatalog_ListEntries(t *testing.T) {
 	// prepare branch data
 	now := time.Now()
 	gravelerData := []*graveler.ValueRecord{
-		{Key: graveler.Key("file1"), Value: MustEntryToValue(&Entry{Address: "file1", LastModified: timestamppb.New(now), Size: 1, ETag: "01"})},
-		{Key: graveler.Key("file2"), Value: MustEntryToValue(&Entry{Address: "file2", LastModified: timestamppb.New(now), Size: 2, ETag: "02"})},
-		{Key: graveler.Key("file3"), Value: MustEntryToValue(&Entry{Address: "file3", LastModified: timestamppb.New(now), Size: 3, ETag: "03"})},
-		{Key: graveler.Key("h/file1"), Value: MustEntryToValue(&Entry{Address: "h/file1", LastModified: timestamppb.New(now), Size: 1, ETag: "01"})},
-		{Key: graveler.Key("h/file2"), Value: MustEntryToValue(&Entry{Address: "h/file2", LastModified: timestamppb.New(now), Size: 2, ETag: "02"})},
+		{Key: graveler.Key("file1"), Value: catalog.MustEntryToValue(&catalog.Entry{Address: "file1", LastModified: timestamppb.New(now), Size: 1, ETag: "01"})},
+		{Key: graveler.Key("file2"), Value: catalog.MustEntryToValue(&catalog.Entry{Address: "file2", LastModified: timestamppb.New(now), Size: 2, ETag: "02"})},
+		{Key: graveler.Key("file3"), Value: catalog.MustEntryToValue(&catalog.Entry{Address: "file3", LastModified: timestamppb.New(now), Size: 3, ETag: "03"})},
+		{Key: graveler.Key("h/file1"), Value: catalog.MustEntryToValue(&catalog.Entry{Address: "h/file1", LastModified: timestamppb.New(now), Size: 1, ETag: "01"})},
+		{Key: graveler.Key("h/file2"), Value: catalog.MustEntryToValue(&catalog.Entry{Address: "h/file2", LastModified: timestamppb.New(now), Size: 2, ETag: "02"})},
 	}
 	type args struct {
 		prefix    string
@@ -408,14 +422,14 @@ func TestCatalog_ListEntries(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        args
-		want        []*DBEntry
+		want        []*catalog.DBEntry
 		wantHasMore bool
 		wantErr     bool
 	}{
 		{
 			name: "all no delimiter",
 			args: args{limit: -1},
-			want: []*DBEntry{
+			want: []*catalog.DBEntry{
 				{Path: "file1", PhysicalAddress: "file1", CreationDate: now, Size: 1, Checksum: "01", ContentType: "application/octet-stream"},
 				{Path: "file2", PhysicalAddress: "file2", CreationDate: now, Size: 2, Checksum: "02", ContentType: "application/octet-stream"},
 				{Path: "file3", PhysicalAddress: "file3", CreationDate: now, Size: 3, Checksum: "03", ContentType: "application/octet-stream"},
@@ -428,7 +442,7 @@ func TestCatalog_ListEntries(t *testing.T) {
 		{
 			name: "first no delimiter",
 			args: args{limit: 1},
-			want: []*DBEntry{
+			want: []*catalog.DBEntry{
 				{Path: "file1", PhysicalAddress: "file1", CreationDate: now, Size: 1, Checksum: "01", ContentType: "application/octet-stream"},
 			},
 			wantHasMore: true,
@@ -437,7 +451,7 @@ func TestCatalog_ListEntries(t *testing.T) {
 		{
 			name: "second no delimiter",
 			args: args{limit: 1, after: "file1"},
-			want: []*DBEntry{
+			want: []*catalog.DBEntry{
 				{Path: "file2", PhysicalAddress: "file2", CreationDate: now, Size: 2, Checksum: "02", ContentType: "application/octet-stream"},
 			},
 			wantHasMore: true,
@@ -446,7 +460,7 @@ func TestCatalog_ListEntries(t *testing.T) {
 		{
 			name: "last two no delimiter",
 			args: args{limit: 10, after: "file3"},
-			want: []*DBEntry{
+			want: []*catalog.DBEntry{
 				{Path: "h/file1", PhysicalAddress: "h/file1", CreationDate: now, Size: 1, Checksum: "01", ContentType: "application/octet-stream"},
 				{Path: "h/file2", PhysicalAddress: "h/file2", CreationDate: now, Size: 2, Checksum: "02", ContentType: "application/octet-stream"},
 			},
@@ -457,7 +471,7 @@ func TestCatalog_ListEntries(t *testing.T) {
 		{
 			name: "all with delimiter",
 			args: args{limit: -1, delimiter: "/"},
-			want: []*DBEntry{
+			want: []*catalog.DBEntry{
 				{Path: "file1", PhysicalAddress: "file1", CreationDate: now, Size: 1, Checksum: "01", ContentType: "application/octet-stream"},
 				{Path: "file2", PhysicalAddress: "file2", CreationDate: now, Size: 2, Checksum: "02", ContentType: "application/octet-stream"},
 				{Path: "file3", PhysicalAddress: "file3", CreationDate: now, Size: 3, Checksum: "03", ContentType: "application/octet-stream"},
@@ -469,7 +483,7 @@ func TestCatalog_ListEntries(t *testing.T) {
 		{
 			name: "first with delimiter",
 			args: args{limit: 1, delimiter: "/"},
-			want: []*DBEntry{
+			want: []*catalog.DBEntry{
 				{Path: "file1", PhysicalAddress: "file1", CreationDate: now, Size: 1, Checksum: "01", ContentType: "application/octet-stream"},
 			},
 			wantHasMore: true,
@@ -478,7 +492,7 @@ func TestCatalog_ListEntries(t *testing.T) {
 		{
 			name: "last with delimiter",
 			args: args{limit: 1, after: "file3", delimiter: "/"},
-			want: []*DBEntry{
+			want: []*catalog.DBEntry{
 				{Path: "h/", CommonLevel: true},
 			},
 			wantHasMore: false,
@@ -488,10 +502,10 @@ func TestCatalog_ListEntries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup Catalog
-			gravelerMock := &FakeGraveler{
-				ListIteratorFactory: NewFakeValueIteratorFactory(gravelerData),
+			gravelerMock := &catalog.FakeGraveler{
+				ListIteratorFactory: catalog.NewFakeValueIteratorFactory(gravelerData),
 			}
-			c := &Catalog{
+			c := &catalog.Catalog{
 				Store: gravelerMock,
 			}
 			// test method
@@ -509,4 +523,188 @@ func TestCatalog_ListEntries(t *testing.T) {
 			}
 		})
 	}
+}
+
+var (
+	repoID     = graveler.RepositoryID("repo1")
+	repository = &graveler.RepositoryRecord{
+		RepositoryID: repoID,
+		Repository: &graveler.Repository{
+			StorageNamespace: "mock-sn",
+			CreationDate:     time.Now(),
+			DefaultBranchID:  "main",
+		},
+	}
+)
+
+func TestCatalog_PrepareGCUncommitted(t *testing.T) {
+	ctx := context.Background()
+	tests := []struct {
+		name          string
+		numBranch     int
+		numRecords    int
+		expectedCalls int
+	}{
+		{
+			name:          "no branches",
+			numBranch:     0,
+			numRecords:    0,
+			expectedCalls: 1,
+		},
+		{
+			name:          "no objects",
+			numBranch:     3,
+			numRecords:    0,
+			expectedCalls: 1,
+		},
+		{
+			name:          "Sanity",
+			numBranch:     5,
+			numRecords:    3,
+			expectedCalls: 1,
+		},
+		{
+			name:          "Tokenized",
+			numBranch:     1000,
+			numRecords:    5000,
+			expectedCalls: 2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := createPrepareUncommittedTestScenario(t, tt.numBranch, tt.numRecords, tt.expectedCalls)
+			blockAdapter := testutil.NewBlockAdapterByType(t, block.BlockstoreTypeMem)
+			c := &catalog.Catalog{
+				Store:        g.Sut,
+				BlockAdapter: blockAdapter,
+			}
+			var result *catalog.PrepareGCUncommittedInfo
+
+			result, err := c.PrepareGCUncommitted(ctx, repoID.String(), nil)
+			require.NoError(t, err)
+
+			for result.Mark != nil {
+				time.Sleep(1 * time.Second)
+				runID := result.Metadata.RunId
+				require.Equal(t, runID, result.Mark.RunID)
+				result, err = c.PrepareGCUncommitted(ctx, repoID.String(), result.Mark)
+				require.NoError(t, err)
+				require.Equal(t, runID, result.Metadata.RunId)
+			}
+			verifyData(t, ctx, tt.numBranch, tt.numRecords, result.Metadata.RunId, c)
+		})
+	}
+}
+
+func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords, expectedCalls int) *gUtils.GravelerTest {
+	t.Helper()
+	testFolder, err := os.MkdirTemp("", xid.New().String())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		os.RemoveAll(testFolder)
+	})
+
+	test := gUtils.InitGravelerTest(t)
+	records := make([][]*graveler.ValueRecord, numBranches)
+	var branches []*graveler.BranchRecord
+	for i := 0; i < numBranches; i++ {
+		branchID := graveler.BranchID(fmt.Sprintf("branch%04d", i))
+		token := graveler.StagingToken(fmt.Sprintf("%s_st%04d", branchID, i))
+		branches = append(branches, &graveler.BranchRecord{BranchID: branchID, Branch: &graveler.Branch{StagingToken: token}})
+
+		records[i] = make([]*graveler.ValueRecord, numRecords)
+		for j := 0; j < numRecords; j++ {
+			e := catalog.Entry{
+				Address:      fmt.Sprintf("%s_record%04d", branchID, j),
+				LastModified: timestamppb.New(time.Now()),
+				Size:         0,
+				ETag:         "",
+				Metadata:     nil,
+				AddressType:  0,
+				ContentType:  "",
+			}
+			v, err := proto.Marshal(&e)
+			require.NoError(t, err)
+			records[i][j] = &graveler.ValueRecord{
+				Key: []byte(e.Address),
+				Value: &graveler.Value{
+					Identity: []byte("dont care"),
+					Data:     v,
+				},
+			}
+		}
+	}
+	test.GarbageCollectionManager.EXPECT().NewID().Return("TestRunID")
+	test.RefManager.EXPECT().GetRepository(gomock.Any(), repoID).Times(expectedCalls).Return(repository, nil)
+	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).Times(expectedCalls).Return(gUtils.NewFakeBranchIterator(branches), nil)
+
+	for i := 0; i < len(branches); i++ {
+		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, gomock.Any()).AnyTimes().Return(cUtils.NewFakeValueIterator(records[i]), nil)
+	}
+	if numRecords*numBranches > 0 {
+		test.GarbageCollectionManager.EXPECT().GetUncommittedLocation(gomock.Any(), gomock.Any()).Times(expectedCalls).DoAndReturn(func(runID string, sn graveler.StorageNamespace) (string, error) {
+			return fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID), nil
+		})
+	}
+
+	return test
+}
+
+func verifyData(t *testing.T, ctx context.Context, numBranches, numRecords int, runID string, c *catalog.Catalog) {
+	totalCount := 0
+	location := fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID)
+
+	err := c.BlockAdapter.Walk(context.Background(), block.WalkOpts{
+		StorageNamespace: repository.Repository.StorageNamespace.String(),
+		Prefix:           location,
+	}, func(id string) error {
+		fd, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{
+			Identifier:     id,
+			IdentifierType: block.IdentifierTypeFull,
+		}, 0)
+		if err != nil {
+			return err
+		}
+		filename := path.Join(os.TempDir(), xid.New().String())
+		fr, err := local.NewLocalFileWriter(filename)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			fr.Close()
+			os.Remove(filename)
+		}()
+
+		_, err = io.Copy(fr, fd)
+		if err != nil {
+			return err
+		}
+
+		_, err = fr.Seek(0, 0)
+		if err != nil {
+			return err
+		}
+
+		pr, err := reader.NewParquetReader(fr, new(catalog.UncommittedParquetObject), 4)
+		if err != nil {
+			return err
+		}
+
+		count := pr.GetNumRows()
+		u := make([]*catalog.UncommittedParquetObject, count)
+		err = pr.Read(&u)
+		pr.ReadStop()
+		fr.Close()
+		for i, record := range u {
+			branchID := (i + totalCount) / numRecords
+			recordID := (i + totalCount) % numRecords
+			require.Equal(t, fmt.Sprintf("branch%04d_record%04d", branchID, recordID), record.PhysicalAddress)
+		}
+		totalCount += int(count)
+
+		return nil
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, totalCount, numBranches*numRecords)
 }

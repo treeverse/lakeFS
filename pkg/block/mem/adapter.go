@@ -73,6 +73,10 @@ func New(opts ...func(a *Adapter)) *Adapter {
 }
 
 func getKey(obj block.ObjectPointer) string {
+	// TODO (niro): Fix mem storage path resolution
+	if obj.IdentifierType == block.IdentifierTypeFull {
+		return obj.Identifier
+	}
 	return fmt.Sprintf("%s:%s", obj.StorageNamespace, obj.Identifier)
 }
 
@@ -96,7 +100,8 @@ func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reade
 func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
-	data, ok := a.data[getKey(obj)]
+	key := getKey(obj)
+	data, ok := a.data[key]
 	if !ok {
 		return nil, ErrNoDataForKey
 	}

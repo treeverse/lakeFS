@@ -7,9 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -17,9 +20,14 @@ import (
 )
 
 const (
-	configFileSuffixTemplate    = "%s/retention/gc/rules/config.json"
-	addressesFilePrefixTemplate = "%s/retention/gc/addresses/"
-	commitsFileSuffixTemplate   = "%s/retention/gc/commits/run_id=%s/commits.csv"
+	configFileSuffixTemplate      = "%s/retention/gc/rules/config.json"
+	addressesFilePrefixTemplate   = "%s/retention/gc/addresses/"
+	commitsFileSuffixTemplate     = "%s/retention/gc/commits/run_id=%s/commits.csv"
+	uncommittedPrefixTemplate     = "%s/retention/gc/uncommitted/"
+	uncommittedFilePrefixTemplate = uncommittedPrefixTemplate + "%s/uncommitted/"
+
+	// unixYear4000 epoch value for Saturday, January 1, 4000 12:00:00 AM. Changing this value is a breaking change as it is used to have reverse order for time based unique ID (xid).
+	unixYear4000 = 64060588800
 )
 
 type GarbageCollectionManager struct {
@@ -44,6 +52,40 @@ func (m *GarbageCollectionManager) GetAddressesLocation(sn graveler.StorageNames
 		return "", err
 	}
 	return qk.Format(), nil
+}
+
+func (m *GarbageCollectionManager) GetUncommittedLocation(runID string, sn graveler.StorageNamespace) (string, error) {
+	key := fmt.Sprintf(uncommittedFilePrefixTemplate, m.committedBlockStoragePrefix, runID)
+	qk, err := block.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)
+	if err != nil {
+		return "", err
+	}
+	return qk.Format(), nil
+}
+
+func (m *GarbageCollectionManager) SaveGarbageCollectionUncommitted(ctx context.Context, repository *graveler.RepositoryRecord, filename, runID string) error {
+	location, err := m.GetUncommittedLocation(runID, repository.StorageNamespace)
+	if err != nil {
+		return err
+	}
+
+	fd, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	stat, err := fd.Stat()
+	if err != nil {
+		return err
+	}
+
+	if !strings.HasSuffix(location, "/") {
+		location += "/"
+	}
+	location += filename
+	return m.blockAdapter.Put(ctx, block.ObjectPointer{
+		Identifier:     location,
+		IdentifierType: block.IdentifierTypeFull,
+	}, stat.Size(), fd, block.PutOpts{})
 }
 
 type RepositoryCommitGetter struct {
@@ -200,4 +242,14 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 		return "", err
 	}
 	return runID, nil
+}
+
+func (m *GarbageCollectionManager) NewID() string {
+	return newDescendingID(time.Now()).String()
+}
+
+// TODO: Unify implementations of descending IDs
+func newDescendingID(tm time.Time) xid.ID {
+	t := time.Unix(unixYear4000-tm.Unix(), 0).UTC()
+	return xid.NewWithTime(t)
 }
