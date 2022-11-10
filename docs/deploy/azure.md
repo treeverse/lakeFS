@@ -152,3 +152,7 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
 
 </div>
 </div>
+
+
+
+{% include_relative includes/setup.md %}

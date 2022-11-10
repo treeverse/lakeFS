@@ -3,7 +3,7 @@ layout: default
 title: GCP
 parent: Deploy and Setup lakeFS
 description: This section will guide you through deploying and setting up a production-suitable lakeFS environment on Google Cloud Platform (GCP).
-nav_order: 50
+nav_order: 40
 redirect_from:
    - ../setup/storage/gcs.html 
 next:  ["Import data into your installation", "../howto/import.html"]
@@ -143,3 +143,7 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
 
 </div>
 </div>
+
+
+
+{% include_relative includes/setup.md %}

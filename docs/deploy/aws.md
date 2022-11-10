@@ -14,7 +14,6 @@ next:  ["Import data into your installation", "../howto/import.html"]
 ---
 
 # Deploy lakeFS on AWS
-
 {: .no_toc }
 
 
@@ -25,7 +24,7 @@ next:  ["Import data into your installation", "../howto/import.html"]
 
 {% include_relative includes/prerequisites.md %}
 
-### Setting up DynamoDB
+## Setting up DynamoDB
 
 By default, lakeFS will create the required DynamoDB table if it does not already exist. You'll have to give the IAM role used by lakeFS the following permissions:
 
@@ -68,7 +67,7 @@ By default, lakeFS will create the required DynamoDB table if it does not alread
 💡 You can also use lakeFS with PostgreSQL instead of DynamoDB! See the [configuration reference](../reference/configuration.md) for more information.
 {: .note }
 
-### Setting up a lakeFS Server
+## Setting up a lakeFS Server
 
 <div class="tabs">
   <ul>
@@ -152,7 +151,7 @@ To install lakeFS with Helm:
 If you can't provide such access, configure lakeFS with an AWS key-pair.
 {: .note .note-warning }
 
-## Load balancing
+### Load balancing
 To configure a load balancer to direct requests to the lakeFS servers you can use the `LoadBalancer` Service type or a Kubernetes Ingress.
 By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that you can use for health checks.
 
@@ -270,4 +269,4 @@ to directly access your S3 bucket while performing metadata operations through l
 }
 ```
 
-Now that you have an up and running environment, check out the [How-To](../howto/) section to learn more!
+{% include_relative includes/setup.md %}

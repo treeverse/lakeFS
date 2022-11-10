@@ -2,8 +2,8 @@
 layout: default
 title: On-Prem
 parent: Deploy and Setup lakeFS
-description: This section will guide you through deploying and setting up a production-suitable lakeFS environment on premise
-nav_order: 40
+description: This section will guide you through deploying and setting up a production-suitable lakeFS environment on premise (or on other cloud providers)
+nav_order: 50
 redirect_from:
    - ./k8s.html
    - ./docker.html 
@@ -20,10 +20,16 @@ next:  ["Import data into your installation", "../howto/import.html"]
 
 {% include_relative includes/prerequisites.md %}
 
+## Prerequisites
+
+To use lakeFS, you'll need to have access to an S3-compatible object store such as [MinIO](https://min.io)
+
+For more information on how to set up MinIO, see the [official deployment guide](https://min.io/docs/minio/container/operations/installation.html){: target="_blank" }
+
 ## Setting up a database
 
 lakeFS requires a PostgreSQL database to synchronize actions on your repositories.
-This section assumes that you already have a PostgreSQL database accessible.
+This section assumes that you already have a PostgreSQL >= 11.0 database accessible.
 
 
 ## Setting up a lakeFS Server
@@ -165,3 +171,5 @@ To install lakeFS with Helm:
    
 </div>
 </div>
+
+{% include_relative includes/setup.md %}
