@@ -188,16 +188,16 @@ TLDR; [Bottom Line](#minimal-performance-bottom-line)
 
 The heaviest operation during the GC process, is the namespace listing. And while we added the above optimizations to mitigate
 this process, the fact remains - we still need to scan the entire namespace (in the Clean Run mode).
-Performing tests against an AWS S3 bucket using a Databricks notebook on a m4.large cluster, we've observed listing of 
-~500,000 objects takes approximately 25 seconds.
-We can estimate that on a repository with ~1B objects, using ~500K object size slices, and using 10 workers - listing will take
-around 1.5 hours.
+As per this proposal, we've created an experiment, creating 20M objects in an AWS S3 bucket divided into 2000 prefixes (slices), 10,000 objects in each prefix.
+Performing a test against the bucket using a Databricks notebook on a c4.2xlarge cluster, with 16 workers we've managed to list the entire bucket in approximately 1 min.
 
-Creating metaranges for uncommitted objects of a branch is a metadata operation.
-Both this and reading metaranges and ranges from lakeFS are an order of magnitude smaller than listing the namespace.
-Therefore, the number of branches, commits, and unstaged objects in the repository, do not play a part in the minimal performance estimation.
+Prepare Uncommitted for GC:
+For 5M uncommitted objects on 1000 branches, the object lists are divided into 3 files, as we are targeting the file size to be approximately 20MB.
+It takes approximately 30 seconds to write the files, and uploading them to S3 will take ~1 min. using a 10 Mbps connection.
 
-We are then left with the process of identifying and deleting the candidate objects.
+Reading committed and uncommitted data from lakeFS is very much dependent on the repository properties. Tests performed on very large repository with
+~120K range files (with ~50M distinct entries) and ~3000 commits resulted in listing of committed data taking ~15 minutes.
+
 Identifying the candidates for deletion is a minus operation between data frames, and should be done efficiently and its impact on the total runtime is negligible.
 Deleting objects on S3 can be done in a bulk operation that allows passing up to 1000 objects to the API.
 Taking into account a HTTP timeout of 100 seconds per request, 10 workers and 1M objects to delete - the deletion process
@@ -205,11 +205,11 @@ should take at **most** around 2.5 hours
 
 ### Minimal Performance Bottom Line
 
-* On a repository with 1B objects
-* Any number of branches, commits and uncommitted data
+* On a repository with 20M objects
+* 1000 branches, 3000 commits and 5M uncommitted objects
 * 1M stale objects to be deleted
 * Severe network latencies
 
-**The entire process should take approximately 4 hours**
+**The entire process should take approximately 3 hours**
 
 
