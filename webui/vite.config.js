@@ -19,9 +19,6 @@ export default ({ command }) => {
       })
     ],
     publicDir: './pub',
-    build: {
-      sourcemap: true
-    },
   };
 
   // in development
@@ -47,7 +44,10 @@ export default ({ command }) => {
             secure: false
           }
         }
-      }
+      },
+      build: {
+        sourcemap: 'inline',
+      },
     };
   } 
   // while building
