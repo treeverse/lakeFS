@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.9
+
+Bump jackson-databind library dependency.
+
 ## 0.1.8
 
 The FileSystem implementation can now work with any Hadoop version.
