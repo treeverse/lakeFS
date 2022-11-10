@@ -151,3 +151,16 @@ Followed up by multi-branch merge!
 ### Merge task *commit* and not its branch
 
 Avoid touching the staging area.
+
+### Merge task branches during commitJob
+
+commitJob is nonconcurrent, so has no races.  Task branch names all share
+the job branch name as prefix.  commitTask does nothing, abortTask deletes
+its task branch.  To commitJob we _list_ all task branches (everything with
+prefix job branch) and merge them all into the job branch.
+
+#### Speedup: concurrent merges
+
+commitJob can merge concurrently _between_ the task branches and onto the
+job branch.  These concurrent merges do not conflict, they use distinct
+destination branches.
