@@ -1,5 +1,10 @@
 package io.treeverse.clients
 
+import com.amazonaws.ClientConfiguration
+import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.services.s3.model.{HeadBucketRequest, Region}
+import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
+
 import java.net.URI
 import java.nio.charset.Charset
 
@@ -79,6 +84,50 @@ object StorageUtils {
 
       if (keys.isEmpty) return Seq.empty
       keys.map(x => snPrefix.concat(x))
+    }
+
+    def initializeS3Client(
+        configuration: ClientConfiguration,
+        credentialsProvider: Option[AWSCredentialsProvider],
+        region: String,
+        bucket: String
+    ): AmazonS3 = {
+      val builder = AmazonS3ClientBuilder
+        .standard()
+        .withClientConfiguration(configuration)
+        .withRegion(region)
+      val builderWithCredentials = credentialsProvider match {
+        case Some(cp) => builder.withCredentials(cp)
+        case None     => builder
+      }
+
+      val client = builderWithCredentials.build
+
+      if (validateClientCorrectness(client, bucket)) {
+        return client
+      }
+      val bucketRegion = getAWSS3Region(client, bucket)
+      builder.withRegion(bucketRegion).build
+    }
+
+    private def validateClientCorrectness(client: AmazonS3, bucket: String): Boolean = {
+      try {
+        client.headBucket(new HeadBucketRequest(bucket))
+        true
+      } catch {
+        case _: Exception => false
+      }
+    }
+
+    private def getAWSS3Region(client: AmazonS3, bucket: String): String = {
+      val bucketRegion = client.getBucketLocation(bucket)
+      val region = Region.fromValue(bucketRegion)
+      // The comparison `region.equals(Region.US_Standard))` is required due to AWS's backward compatibility:
+      // https://github.com/aws/aws-sdk-java/issues/1470.
+      // "us-east-1" was previously called "US Standard". This resulted in a return value of "US" when
+      // calling `client.getBucketLocation(bucket)`.
+      if (region.equals(Region.US_Standard)) "us-east-1"
+      else region.toString
     }
   }
 }
