@@ -56,6 +56,8 @@ docs/Pagination.md
 docs/PathList.md
 docs/Policy.md
 docs/PolicyList.md
+docs/PrepareGCUncommittedRequest.md
+docs/PrepareGCUncommittedResponse.md
 docs/RangeMetadata.md
 docs/Ref.md
 docs/RefList.md
@@ -154,6 +156,8 @@ lakefs_client/model/pagination.py
 lakefs_client/model/path_list.py
 lakefs_client/model/policy.py
 lakefs_client/model/policy_list.py
+lakefs_client/model/prepare_gc_uncommitted_request.py
+lakefs_client/model/prepare_gc_uncommitted_response.py
 lakefs_client/model/range_metadata.py
 lakefs_client/model/ref.py
 lakefs_client/model/ref_list.py
@@ -241,6 +245,8 @@ test/test_pagination.py
 test/test_path_list.py
 test/test_policy.py
 test/test_policy_list.py
+test/test_prepare_gc_uncommitted_request.py
+test/test_prepare_gc_uncommitted_response.py
 test/test_range_metadata.py
 test/test_ref.py
 test/test_ref_list.py

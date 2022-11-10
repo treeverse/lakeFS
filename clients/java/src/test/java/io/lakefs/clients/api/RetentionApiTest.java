@@ -18,6 +18,8 @@ import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.GarbageCollectionPrepareRequest;
 import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse;
 import io.lakefs.clients.api.model.GarbageCollectionRules;
+import io.lakefs.clients.api.model.PrepareGCUncommittedRequest;
+import io.lakefs.clients.api.model.PrepareGCUncommittedResponse;
 import org.junit.Test;
 import org.junit.Ignore;
 
@@ -78,6 +80,22 @@ public class RetentionApiTest {
         String repository = null;
         GarbageCollectionPrepareRequest garbageCollectionPrepareRequest = null;
                 GarbageCollectionPrepareResponse response = api.prepareGarbageCollectionCommits(repository, garbageCollectionPrepareRequest);
+        // TODO: test validations
+    }
+    
+    /**
+     * save repository uncommitted metadata for garbage collection
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void prepareGarbageCollectionUncommittedTest() throws ApiException {
+        String repository = null;
+        PrepareGCUncommittedRequest prepareGCUncommittedRequest = null;
+                PrepareGCUncommittedResponse response = api.prepareGarbageCollectionUncommitted(repository, prepareGCUncommittedRequest);
         // TODO: test validations
     }
     
