@@ -16,37 +16,37 @@ const (
 type Metadata map[string]string
 
 type Repository struct {
-	Name             string    `db:"name"`
-	StorageNamespace string    `db:"storage_namespace"`
-	DefaultBranch    string    `db:"default_branch"`
-	CreationDate     time.Time `db:"creation_date"`
+	Name             string
+	StorageNamespace string
+	DefaultBranch    string
+	CreationDate     time.Time
 }
 
 type DBEntry struct {
 	CommonLevel     bool
-	Path            string      `db:"path"`
-	PhysicalAddress string      `db:"physical_address"`
-	CreationDate    time.Time   `db:"creation_date"`
-	Size            int64       `db:"size"`
-	Checksum        string      `db:"checksum"`
-	Metadata        Metadata    `db:"metadata"`
-	Expired         bool        `db:"is_expired"`
-	AddressType     AddressType `db:"address_type"`
-	ContentType     string      `db:"content_type"`
+	Path            string
+	PhysicalAddress string
+	CreationDate    time.Time
+	Size            int64
+	Checksum        string
+	Metadata        Metadata
+	Expired         bool
+	AddressType     AddressType
+	ContentType     string
 }
 
 type CommitLog struct {
 	Reference    string
-	Committer    string    `db:"committer"`
-	Message      string    `db:"message"`
-	CreationDate time.Time `db:"creation_date"`
-	Metadata     Metadata  `db:"metadata"`
-	MetaRangeID  string    `db:"meta_range_id"`
+	Committer    string
+	Message      string
+	CreationDate time.Time
+	Metadata     Metadata
+	MetaRangeID  string
 	Parents      []string
 }
 
 type Branch struct {
-	Name      string `db:"name"`
+	Name      string
 	Reference string
 }
 

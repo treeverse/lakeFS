@@ -391,6 +391,9 @@ type KeyValueStore interface {
 
 	// List lists values on repository / ref
 	List(ctx context.Context, repository *RepositoryRecord, ref Ref) (ValueIterator, error)
+
+	// ListStaging returns ValueIterator for branch staging area. Exposed to be used by catalog in PrepareGCUncommitted
+	ListStaging(ctx context.Context, branch *Branch) (ValueIterator, error)
 }
 
 type VersionController interface {
@@ -508,6 +511,11 @@ type VersionController interface {
 	// If a previousRunID is specified, commits that were already expired and their ancestors will not be considered as expired/active.
 	// Note: Ancestors of previously expired commits may still be considered if they can be reached from a non-expired commit.
 	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, previousRunID string) (garbageCollectionRunMetadata *GarbageCollectionRunMetadata, err error)
+
+	// GCGetUncommittedLocation returns location of saved uncommitted files per runID
+	GCGetUncommittedLocation(repository *RepositoryRecord, runID string) (string, error)
+
+	GCNewRunID() string
 
 	// GetBranchProtectionRules return all branch protection rules for the repository
 	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error)
@@ -1286,6 +1294,14 @@ func (g *KVGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositor
 	}, err
 }
 
+func (g *KVGraveler) GCGetUncommittedLocation(repository *RepositoryRecord, runID string) (string, error) {
+	return g.garbageCollectionManager.GetUncommittedLocation(runID, repository.StorageNamespace)
+}
+
+func (g *KVGraveler) GCNewRunID() string {
+	return g.garbageCollectionManager.NewID()
+}
+
 func (g *KVGraveler) GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error) {
 	return g.protectedBranchesManager.GetRules(ctx, repository)
 }
@@ -1524,6 +1540,11 @@ func (g *KVGraveler) deleteUnsafe(ctx context.Context, repository *RepositoryRec
 
 	// found in committed, set tombstone
 	return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
+}
+
+// ListStaging Exposing listStagingArea to catalog for PrepareGCUncommitted
+func (g *KVGraveler) ListStaging(ctx context.Context, branch *Branch) (ValueIterator, error) {
+	return g.listStagingArea(ctx, branch)
 }
 
 // listStagingArea Returns an iterator which is an aggregation of all changes on all the branch's staging area (staging + sealed)
@@ -2730,7 +2751,10 @@ type GarbageCollectionManager interface {
 	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, rules *GarbageCollectionRules, previouslyExpiredCommits []CommitID) (string, error)
 	GetRunExpiredCommits(ctx context.Context, storageNamespace StorageNamespace, runID string) ([]CommitID, error)
 	GetCommitsCSVLocation(runID string, sn StorageNamespace) (string, error)
+	SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename, runID string) error
+	GetUncommittedLocation(runID string, sn StorageNamespace) (string, error)
 	GetAddressesLocation(sn StorageNamespace) (string, error)
+	NewID() string
 }
 
 type ProtectedBranchesManager interface {

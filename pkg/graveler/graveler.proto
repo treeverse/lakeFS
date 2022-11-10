@@ -50,8 +50,12 @@ message GarbageCollectionRules {
 
 message GarbageCollectionRunMetadata {
   string run_id = 1;
-  string Commits_csv_location = 2;
-  string Address_location = 3;
+  // Location of expired commits CSV file on object store
+  string commits_csv_location = 2;
+  // Location of where to write expired addresses on object store
+  string address_location = 3;
+  // Location of uncommitted objects parquet file on object store
+  string uncommitted_location = 4;
 }
 
 enum BranchProtectionBlockedAction {
