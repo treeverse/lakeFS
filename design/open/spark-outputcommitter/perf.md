@@ -164,3 +164,10 @@ prefix job branch) and merge them all into the job branch.
 commitJob can merge concurrently _between_ the task branches and onto the
 job branch.  These concurrent merges do not conflict, they use distinct
 destination branches.
+
+### Objects on job branch, successful tasks on another branch
+
+Write all objects directly to the job branch.  Store successful /
+unsuccessful tasks status _on another branch_.  During commitJob take the
+objects belonging to the successful branches, delete the others, and commit
+and merge.
