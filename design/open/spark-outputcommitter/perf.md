@@ -139,3 +139,15 @@ Consider speeding up implementation of the algorithm suggested in [#4057].
 
 Use unlinked objects on S3 as task temporaries.  Requires modifying
 LakeFSFileSystem or building something on top of it.  (Design forthcoming).
+
+#### Alternative: move objects from task branch to job branch
+
+### Don't do multiple merges as part of task but only at end of jobs
+
+Followed up by multi-branch merge!
+
+### Try to merge tasks one into another to reduce contention
+
+### Merge task *commit* and not its branch
+
+Avoid touching the staging area.
