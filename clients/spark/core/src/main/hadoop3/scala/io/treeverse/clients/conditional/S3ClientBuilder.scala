@@ -5,7 +5,6 @@ import io.treeverse.clients.StorageUtils
 import com.amazonaws.services.s3.AmazonS3
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.{Logger, LoggerFactory}
-import com.amazonaws.auth.AWSCredentialsProvider
 
 object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
   val logger: Logger = LoggerFactory.getLogger(getClass.toString + "[hadoop3]")
