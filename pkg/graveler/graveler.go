@@ -24,7 +24,7 @@ const (
 	MergeStrategySrcWins  = "source-wins"
 	MergeStrategyDestWins = "dest-wins"
 
-	BranchUpdateMaxInterval = 5 * time.Second
+	BranchUpdateMaxInterval = 30 * time.Second
 	BranchUpdateMaxTries    = 10
 
 	DeleteKeysMaxSize = 1000
@@ -1773,7 +1773,14 @@ func (g *KVGraveler) Commit(ctx context.Context, repository *RepositoryRecord, b
 }
 
 func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID, f BranchUpdateFunc) error {
-	bo := backoff.NewExponentialBackOff()
+	bo := &backoff.ExponentialBackOff{
+		InitialInterval:     3 * time.Second,
+		RandomizationFactor: 0.6,
+		Multiplier:          1.2,
+		MaxInterval:         15 * time.Second,
+		MaxElapsedTime:      backoff.DefaultMaxElapsedTime,
+		Stop:                backoff.Stop,
+	}
 	bo.MaxInterval = BranchUpdateMaxInterval
 
 	try := 1
