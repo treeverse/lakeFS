@@ -118,7 +118,10 @@ object StorageUtils {
         true
       } catch {
         case e: AmazonServiceException =>
-          logger.info("Bucket \"{}\" isn't reachable with error: {}", bucket: Any, e.getMessage: Any)
+          logger.info("Bucket \"{}\" isn't reachable with error: {}",
+                      bucket: Any,
+                      e.getMessage: Any
+                     )
           false
       }
     }
