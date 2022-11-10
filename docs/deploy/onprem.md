@@ -7,6 +7,8 @@ nav_order: 50
 redirect_from:
    - ./k8s.html
    - ./docker.html 
+   - ../integrations/minio.html
+   - ../using/minio.html
 next:  ["Import data into your installation", "../howto/import.html"]
 ---
 

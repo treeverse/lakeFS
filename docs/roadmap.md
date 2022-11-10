@@ -1,11 +1,11 @@
 ---
 layout: default
 title: Roadmap
-parent: Understanding lakeFS
 description: New features and improvements lined-up for lakeFS. Become part of building the lakeFS roadmap.
-nav_order: 40
+nav_order: 86
 has_children: false
-redirect_from: ../roadmap.html
+redirect_from: 
+  - ../understand/roadmap.html
 ---
 
 # Roadmap

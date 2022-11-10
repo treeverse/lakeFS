@@ -1,12 +1,15 @@
 ---
 layout: default
-title: KV in a Nutshell
-parent: Understanding lakeFS
+title: Internal database structure
+parent: How it Works
+grand_parent: Understanding lakeFS
 description: Brief introduction to lakeFS over KV
-nav_order: 25
+nav_order: 20
 has_children: false
+redirect_from:
+  - ../kv-in-a-nutshell.html
 ---
-# lakeFS with Key Value Store
+# Internal database structure
 {: .no_toc }
 
 {% include toc.html %}

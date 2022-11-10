@@ -1,10 +1,12 @@
 ---
 layout: default
-title: Protected Branches
+title: Protect Branches
 description: Branch protection rules prevent direct changes from being applied to your important branches.
-parent: Reference
-nav_order: 4
+parent: How-To
+nav_order: 60
 has_children: false
+redirect_from: 
+  - ../reference/protected_branches.html
 ---
 
 # Branch Protection Rules
@@ -44,6 +46,7 @@ To add a new rule, click the _Add_ button. In the dialog, enter the branch name 
 ![Adding a branch protection rule](../assets/img/add_branch_protection_rule.png)
 
 ### Deleting a rule
+
 To delete a rule, click the _Delete_ button next to it.
 
 ![Deleting a branch protection rule](../assets/img/delete_branch_protection_rule.png)

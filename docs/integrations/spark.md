@@ -9,6 +9,10 @@ redirect_from:
   - ../using/spark.html
   - ../using/databricks.html
   - ./databricks.html
+  - ./emr.html
+  - ../using/emr.html
+  - ./glue_etl.html
+  - ../using/glue_etl.html
 ---
 
 # Using lakeFS with Spark
@@ -192,7 +196,7 @@ spark.hadoop.fs.s3a.secret.key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 spark.hadoop.fs.s3a.impl shaded.databricks.org.apache.hadoop.fs.s3a.S3AFileSystem
 spark.hadoop.fs.lakefs.endpoint https://lakefs.example.com/api/v1
 ```
-  
+
   </div>
 </div>
    

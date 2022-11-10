@@ -2,9 +2,10 @@
 layout: default
 title: Garbage Collection
 description: Clean up unnecessary objects using the garbage collection feature in lakeFS.
-parent: Reference
-nav_order: 25
+parent: How-To
+nav_order: 20
 has_children: false
+redirect_from: ../reference/garbage-collection.html
 ---
 
 # Garbage Collection
@@ -63,7 +64,7 @@ The garbage collection process proceeds in three main phases:
   the garbage collection job looks at the HEAD of the branch that many days
   ago; every commit at or since that HEAD must be retained.
 
-  ![mermaid diagram](gc-sample-commits.png)
+  ![mermaid diagram](/assets/img/gc-sample-commits.png)
   
   Continuing the example, branch `main` retains for 21 days and branch `dev`
   for 7. When running GC on 2022-03-31:

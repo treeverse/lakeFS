@@ -2,10 +2,12 @@
 layout: default
 title: Upgrade lakeFS
 description: A guide to upgrading lakeFS to the latest version.
-parent: Reference
-nav_order: 50
+parent: How-To
+nav_order: 30
 has_children: false
-redirect_from: ../deploying-aws/upgrade.html
+redirect_from: 
+  - ../deploying-aws/upgrade.html
+  - ../reference/upgrade.html
 ---
 
 # Upgrading lakeFS

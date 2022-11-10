@@ -1,10 +1,13 @@
 ---
 layout: default
-title: lakeFS Glossary
+title: Glossary
 description: Glossary of all terms related to lakeFS technical internals and the architecture.
-parent: Reference
-nav_order: 52
+parent: Understanding lakeFS
+nav_order: 60
 has_children: false
+redirect_from:
+    - ../reference/glossary.html
+    - /glossary.html
 ---
 
 # Glossary

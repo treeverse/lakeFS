@@ -1,12 +1,18 @@
 ---
 layout: default
 title: Versioning Internals
-parent: Understanding lakeFS
+parent: How it Works
+grand_parent: Understanding lakeFS
 description: This section explains how versioning works in lakeFS.
-nav_order: 22
+nav_order: 10
 has_children: false
-redirect_from: ["../architecture/data-model.html","../understand/data-model.html"]
+redirect_from: 
+  - ../architecture/data-model.html
+  - ../understand/data-model.html
+  - ../versioning-internals.html
 --- 
+
+
 # Versioning Internals
 {: .no_toc }
 
