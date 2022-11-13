@@ -652,7 +652,7 @@ public class RefsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public MergeResult mergeIntoBranch(String repository, String sourceRef, String destinationBranch, Merge merge) throws ApiException {
+1    public MergeResult mergeIntoBranch(String repository, String sourceRef, String destinationBranch, Merge merge) throws ApiException {
         ApiResponse<MergeResult> localVarResp = mergeIntoBranchWithHttpInfo(repository, sourceRef, destinationBranch, merge);
         return localVarResp.getData();
     }

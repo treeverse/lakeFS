@@ -4,20 +4,26 @@ import io.lakefs.Constants;
 import io.lakefs.FSConfiguration;
 import io.lakefs.LakeFSFileSystem;
 import io.lakefs.LakeFSClient;
+import io.lakefs.utils.BranchDiffsIterator;
 import io.lakefs.utils.ObjectLocation;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.BranchesApi;
-import io.lakefs.clients.api.RefsApi;
 import io.lakefs.clients.api.CommitsApi;
+import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.api.RefsApi;
 import io.lakefs.clients.api.model.BranchCreation;
 import io.lakefs.clients.api.model.CommitCreation;
+import io.lakefs.clients.api.model.Diff;
 import io.lakefs.clients.api.model.DiffList;
 import io.lakefs.clients.api.model.Merge;
+import io.lakefs.clients.api.model.ObjectStageCreation;
+import io.lakefs.clients.api.model.ObjectStats;
 
 import org.apache.commons.lang.exception.ExceptionUtils; // (for debug prints ONLY)
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.JobID;
@@ -276,11 +282,12 @@ public class DummyOutputCommitter extends FileOutputCommitter {
                 Path markerPath = new Path(changePathBranch(outputPath, jobBranch),
                                            FileOutputCommitter.SUCCEEDED_FILE_NAME);
                 fs.create(markerPath, true).close();
-
-                CommitsApi commits = lakeFSClient.getCommits();
-                longRunning.run(() ->
-                                commits.commit(repository, jobBranch, new CommitCreation().message(String.format("Add success marker for job %s", jobContext.getJobID())), null));
             }
+            
+            CommitsApi commits = lakeFSClient.getCommits();
+            longRunning.run(() ->
+                            commits.commit(repository, jobBranch, new CommitCreation().message(String.format("Commit job %s", jobContext.getJobID())), null));
+
             if (!hasDiffs(repository, jobBranch, outputBranch)) {
                 LOG.debug("No differences from {} to {}, nothing to merge", jobBranch, outputBranch);
                 return;
@@ -329,34 +336,56 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         }
     }
 
+    /**
+     * Copy all uncommitted objects from fromBranch to toBranch.  Uses only
+     * metadata APIs.
+     */
+    private void copyUncommitted(String fromBranch, String toBranch) throws IOException {
+        try {
+            BranchesApi branches = lakeFSClient.getBranches();
+            ObjectsApi objects = lakeFSClient.getObjects();
+            RemoteIterator<Diff> uncommittedIt = new BranchDiffsIterator(branches, repository, fromBranch, "", null);
+            while (uncommittedIt.hasNext()) {
+                Diff diff = uncommittedIt.next();
+                if (diff.getType() != Diff.TypeEnum.ADDED) {
+                    LOG.warn("Branch {} with unexpected object diff {} -- ignored", fromBranch, diff);
+                    continue;
+                }
+                if (diff.getPathType() != Diff.PathTypeEnum.OBJECT) {
+                    LOG.warn("Branch {} diff listing with unexpected type {} -- ignored", fromBranch, diff);
+                    continue;
+                }
+                ObjectStats stats = objects.statObject(repository, fromBranch, diff.getPath(), true);
+                ObjectStageCreation req = new ObjectStageCreation()
+                    .physicalAddress(stats.getPhysicalAddress())
+                    .checksum(stats.getChecksum())
+                    .sizeBytes(stats.getSizeBytes())
+                    .mtime(stats.getMtime())
+                    .metadata(stats.getMetadata())
+                    .contentType(stats.getContentType());
+                objects.stageObject(repository, toBranch, diff.getPath(), req);
+                LOG.info("[DEBUG] copyUncommitted {}: {} -> {} ({})",
+                         diff.getPath(), fromBranch, toBranch, stats.getPhysicalAddress());
+            }
+        } catch (ApiException e) {
+            throw new IOException(String.format("copyUncommitted %s -> %s failed", fromBranch, toBranch), e);
+        }
+    }
+
     @Override
     public void commitTask(TaskAttemptContext taskContext)
         throws IOException {
         if (outputPath == null)
             return;
-        try {
-            if (!hasChanges(taskBranch)) {
-                LOG.debug("Nothing to commit into {} for {}", taskBranch, jobBranch);
-                return;
-            }
-
-            LOG.info("Commit task branch {} and merge to {}", taskBranch, jobBranch);
-            CommitsApi commits = lakeFSClient.getCommits();
-            // Uncontended commit, do not retry.
-            commits.commit(repository, taskBranch, new CommitCreation().message(String.format("committing Task %s", taskContext.getTaskAttemptID())), null);
-
-            if (!hasDiffs(repository, taskBranch, jobBranch)) {
-                LOG.info("Strange, after committing no differences from {} to {}, nothing to merge", taskBranch, jobBranch);
-                return;
-            }
-            RefsApi refs = lakeFSClient.getRefs();
-            longRunning.run(() ->
-                            refs.mergeIntoBranch(repository, taskBranch, jobBranch, new Merge().message("")));
-        } catch (FailsafeException e) {
-            throw new IOException(String.format("commitTask %s failed (retried)", taskContext.getTaskAttemptID()), e);
-        } catch (ApiException e) {
-            throw new IOException(String.format("commitTask %s failed", taskContext.getTaskAttemptID()), e);
+        if (!hasChanges(taskBranch)) {
+            LOG.debug("Nothing to commit into {} for {}", taskBranch, jobBranch);
+            return;
         }
+
+        LOG.info("Transfer generated objects from branch {} and to branch {}", taskBranch, jobBranch);
+
+        copyUncommitted(taskBranch, jobBranch);
+
         try {
             cleanupTask();
         } catch (IOException e) {
