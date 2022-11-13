@@ -19,6 +19,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
@@ -95,29 +97,6 @@ type Controller struct {
 	PathProvider          upload.PathProvider
 }
 
-func decodeGCUncommittedMark(mark string) (*catalog.GCUncommittedMark, error) {
-	data, err := base64.StdEncoding.DecodeString(mark)
-	if err != nil {
-		return nil, err
-	}
-	var result catalog.GCUncommittedMark
-	err = json.Unmarshal(data, &result)
-	if err != nil {
-		return nil, err
-	}
-	return &result, nil
-}
-
-func encodeGCUncommittedMark(mark *catalog.GCUncommittedMark) (string, error) {
-	var buf bytes.Buffer
-	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
-	err := json.NewEncoder(encoder).Encode(mark)
-	if err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
-
 func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, r *http.Request, body PrepareGarbageCollectionUncommittedJSONRequestBody, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -130,19 +109,14 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 	ctx := r.Context()
 	c.LogAction(ctx, "prepare_garbage_collection_uncommitted", r, repository, "", "")
 
-	// TODO(barak): move this code the a Decode func in catalog
-	var mark *catalog.GCUncommittedMark
 	continuationToken := StringValue(body.ContinuationToken)
-	if continuationToken != "" {
-		var err error
-		mark, err = decodeGCUncommittedMark(continuationToken)
-		if err != nil {
-			c.Logger.WithError(err).
-				WithFields(logging.Fields{"repository": repository, "continuation_token": continuationToken}).
-				Error("Failed to decode gc uncommitted continuation token")
-			writeError(w, http.StatusBadRequest, "invalid continuation token")
-			return
-		}
+	mark, err := decodeGCUncommittedMark(continuationToken)
+	if err != nil {
+		c.Logger.WithError(err).
+			WithFields(logging.Fields{"repository": repository, "continuation_token": continuationToken}).
+			Error("Failed to decode gc uncommitted continuation token")
+		writeError(w, http.StatusBadRequest, "invalid continuation token")
+		return
 	}
 
 	uncommittedInfo, err := c.Catalog.PrepareGCUncommitted(ctx, repository, mark)
@@ -154,29 +128,22 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 		return
 	}
 
-	// continuation token
-	var nextContinuationToken *string
-	if uncommittedInfo.Mark != nil {
-		nextMark, err := encodeGCUncommittedMark(uncommittedInfo.Mark)
-		if err != nil {
-			c.Logger.WithError(err).
-				WithFields(logging.Fields{
-					"repository": repository,
-					"mark_path":  uncommittedInfo.Mark.Path,
-					"branch_id":  uncommittedInfo.Mark.BranchID,
-					"run_id":     uncommittedInfo.Mark,
-				}).
-				Error("Failed encoding uncommitted gc mark")
-			writeError(w, http.StatusInternalServerError, "failed to encode uncommitted mark")
-			return
-		}
-		nextContinuationToken = &nextMark
+	nextContinuationToken, err := encodeGCUncommittedMark(uncommittedInfo.Mark)
+	if err != nil {
+		c.Logger.WithError(err).
+			WithFields(logging.Fields{
+				"repository": repository,
+				"mark":       spew.Sdump(uncommittedInfo.Mark),
+			}).
+			Error("Failed encoding uncommitted gc mark")
+		writeError(w, http.StatusInternalServerError, "failed to encode uncommitted mark")
+		return
 	}
 
 	writeResponse(w, http.StatusCreated, PrepareGCUncommittedResponse{
-		RunId:             uncommittedInfo.Metadata.RunId,
-		Location:          uncommittedInfo.Metadata.UncommittedLocation,
-		ContinuationToken: nextContinuationToken,
+		RunId:                 uncommittedInfo.Metadata.RunId,
+		GcUncommittedLocation: uncommittedInfo.Metadata.UncommittedLocation,
+		ContinuationToken:     nextContinuationToken,
 	})
 }
 
@@ -2414,14 +2381,14 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "prepare_garbage_collection_commits", r, repository, "", "")
-	gcRUnMetadata, err := c.Catalog.PrepareExpiredCommits(ctx, repository, StringValue(body.PreviousRunId))
+	gcRunMetadata, err := c.Catalog.PrepareExpiredCommits(ctx, repository, StringValue(body.PreviousRunId))
 	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusCreated, GarbageCollectionPrepareResponse{
-		GcCommitsLocation:   gcRUnMetadata.CommitsCsvLocation,
-		GcAddressesLocation: gcRUnMetadata.AddressLocation,
-		RunId:               gcRUnMetadata.RunId,
+		GcCommitsLocation:   gcRunMetadata.CommitsCsvLocation,
+		GcAddressesLocation: gcRunMetadata.AddressLocation,
+		RunId:               gcRunMetadata.RunId,
 	})
 }
 
@@ -3714,4 +3681,34 @@ func (c *Controller) isNameValid(name string, nameType string) (bool, string) {
 		return false, fmt.Sprintf("%s name cannot contain '%%'", nameType)
 	}
 	return true, ""
+}
+
+func decodeGCUncommittedMark(mark string) (*catalog.GCUncommittedMark, error) {
+	if mark == "" {
+		return nil, nil
+	}
+	data, err := base64.StdEncoding.DecodeString(mark)
+	if err != nil {
+		return nil, err
+	}
+	var result catalog.GCUncommittedMark
+	err = json.Unmarshal(data, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func encodeGCUncommittedMark(mark *catalog.GCUncommittedMark) (*string, error) {
+	if mark == nil {
+		return nil, nil
+	}
+	var buf bytes.Buffer
+	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
+	err := json.NewEncoder(encoder).Encode(mark)
+	if err != nil {
+		return nil, err
+	}
+	token := buf.String()
+	return &token, nil
 }

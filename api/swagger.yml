@@ -992,13 +992,14 @@ components:
       properties:
         run_id:
           type: string
-        location:
+        gc_uncommitted_location:
           type: string
+          description: location of uncommitted information data
         continuation_token:
           type: string
       required:
         - run_id
-        - location
+        - gc_uncommitted_location
 
 
     GarbageCollectionRule:

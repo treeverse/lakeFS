@@ -1858,8 +1858,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}
 	defer func() {
 		_ = fd.Close()
-		err := os.Remove(fd.Name())
-		if err != nil {
+		if err := os.Remove(fd.Name()); err != nil {
 			c.log.WithField("filename", fd.Name()).Warn("Failed to delete temporary gc uncommitted data file")
 		}
 	}()
