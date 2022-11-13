@@ -19,12 +19,6 @@ object UncommittedGarbageCollector {
   def main(args: Array[String]) {
     val repo = args(0)
     val hc = spark.sparkContext.hadoopConfiguration
-    // val apiURL = sys.env.get("LAKEFS_CONF_API_URL").get // TODO remove commented lines
-    // val accessKey = sys.env.get("LAKEFS_CONF_API_ACCESS_KEY").get
-    // val secretKey = sys.env.get("LAKEFS_CONF_API_SECRET_KEY").get
-    // hc.set(LAKEFS_CONF_API_URL_KEY, apiURL)
-    // hc.set(LAKEFS_CONF_API_ACCESS_KEY_KEY, accessKey)
-    // hc.set(LAKEFS_CONF_API_SECRET_KEY_KEY, secretKey)
     val apiURL = hc.get(LAKEFS_CONF_API_URL_KEY)
     val accessKey = hc.get(LAKEFS_CONF_API_ACCESS_KEY_KEY)
     val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
