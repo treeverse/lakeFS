@@ -42,8 +42,3 @@ It will upload the data to the object store and then stage only the metadata to 
 
 ## Zero-copy
 lakeFS provides a zero-copy mechanism to data. Therefore, instead of copying the data, we can check out to a new branch. It will lower the storage cost and minimize expensive operations.
-
-
-
-
-
