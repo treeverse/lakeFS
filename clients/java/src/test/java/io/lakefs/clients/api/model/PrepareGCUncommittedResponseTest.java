@@ -49,11 +49,11 @@ public class PrepareGCUncommittedResponseTest {
     }
 
     /**
-     * Test the property 'location'
+     * Test the property 'gcUncommittedLocation'
      */
     @Test
-    public void locationTest() {
-        // TODO: test location
+    public void gcUncommittedLocationTest() {
+        // TODO: test gcUncommittedLocation
     }
 
     /**

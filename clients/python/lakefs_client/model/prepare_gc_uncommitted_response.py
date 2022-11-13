@@ -83,7 +83,7 @@ class PrepareGCUncommittedResponse(ModelNormal):
         """
         return {
             'run_id': (str,),  # noqa: E501
-            'location': (str,),  # noqa: E501
+            'gc_uncommitted_location': (str,),  # noqa: E501
             'continuation_token': (str,),  # noqa: E501
         }
 
@@ -94,7 +94,7 @@ class PrepareGCUncommittedResponse(ModelNormal):
 
     attribute_map = {
         'run_id': 'run_id',  # noqa: E501
-        'location': 'location',  # noqa: E501
+        'gc_uncommitted_location': 'gc_uncommitted_location',  # noqa: E501
         'continuation_token': 'continuation_token',  # noqa: E501
     }
 
@@ -105,12 +105,12 @@ class PrepareGCUncommittedResponse(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, run_id, location, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, run_id, gc_uncommitted_location, *args, **kwargs):  # noqa: E501
         """PrepareGCUncommittedResponse - a model defined in OpenAPI
 
         Args:
             run_id (str):
-            location (str):
+            gc_uncommitted_location (str): location of uncommitted information data
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -172,7 +172,7 @@ class PrepareGCUncommittedResponse(ModelNormal):
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
         self.run_id = run_id
-        self.location = location
+        self.gc_uncommitted_location = gc_uncommitted_location
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -193,12 +193,12 @@ class PrepareGCUncommittedResponse(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, run_id, location, *args, **kwargs):  # noqa: E501
+    def __init__(self, run_id, gc_uncommitted_location, *args, **kwargs):  # noqa: E501
         """PrepareGCUncommittedResponse - a model defined in OpenAPI
 
         Args:
             run_id (str):
-            location (str):
+            gc_uncommitted_location (str): location of uncommitted information data
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -258,7 +258,7 @@ class PrepareGCUncommittedResponse(ModelNormal):
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
         self.run_id = run_id
-        self.location = location
+        self.gc_uncommitted_location = gc_uncommitted_location
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

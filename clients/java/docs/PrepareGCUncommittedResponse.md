@@ -8,7 +8,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **runId** | **String** |  | 
-**location** | **String** |  | 
+**gcUncommittedLocation** | **String** | location of uncommitted information data | 
 **continuationToken** | **String** |  |  [optional]
 
 

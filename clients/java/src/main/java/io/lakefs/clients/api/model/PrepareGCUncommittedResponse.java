@@ -33,9 +33,9 @@ public class PrepareGCUncommittedResponse {
   @SerializedName(SERIALIZED_NAME_RUN_ID)
   private String runId;
 
-  public static final String SERIALIZED_NAME_LOCATION = "location";
-  @SerializedName(SERIALIZED_NAME_LOCATION)
-  private String location;
+  public static final String SERIALIZED_NAME_GC_UNCOMMITTED_LOCATION = "gc_uncommitted_location";
+  @SerializedName(SERIALIZED_NAME_GC_UNCOMMITTED_LOCATION)
+  private String gcUncommittedLocation;
 
   public static final String SERIALIZED_NAME_CONTINUATION_TOKEN = "continuation_token";
   @SerializedName(SERIALIZED_NAME_CONTINUATION_TOKEN)
@@ -65,26 +65,26 @@ public class PrepareGCUncommittedResponse {
   }
 
 
-  public PrepareGCUncommittedResponse location(String location) {
+  public PrepareGCUncommittedResponse gcUncommittedLocation(String gcUncommittedLocation) {
     
-    this.location = location;
+    this.gcUncommittedLocation = gcUncommittedLocation;
     return this;
   }
 
    /**
-   * Get location
-   * @return location
+   * location of uncommitted information data
+   * @return gcUncommittedLocation
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @ApiModelProperty(required = true, value = "location of uncommitted information data")
 
-  public String getLocation() {
-    return location;
+  public String getGcUncommittedLocation() {
+    return gcUncommittedLocation;
   }
 
 
-  public void setLocation(String location) {
-    this.location = location;
+  public void setGcUncommittedLocation(String gcUncommittedLocation) {
+    this.gcUncommittedLocation = gcUncommittedLocation;
   }
 
 
@@ -121,13 +121,13 @@ public class PrepareGCUncommittedResponse {
     }
     PrepareGCUncommittedResponse prepareGCUncommittedResponse = (PrepareGCUncommittedResponse) o;
     return Objects.equals(this.runId, prepareGCUncommittedResponse.runId) &&
-        Objects.equals(this.location, prepareGCUncommittedResponse.location) &&
+        Objects.equals(this.gcUncommittedLocation, prepareGCUncommittedResponse.gcUncommittedLocation) &&
         Objects.equals(this.continuationToken, prepareGCUncommittedResponse.continuationToken);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(runId, location, continuationToken);
+    return Objects.hash(runId, gcUncommittedLocation, continuationToken);
   }
 
   @Override
@@ -135,7 +135,7 @@ public class PrepareGCUncommittedResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class PrepareGCUncommittedResponse {\n");
     sb.append("    runId: ").append(toIndentedString(runId)).append("\n");
-    sb.append("    location: ").append(toIndentedString(location)).append("\n");
+    sb.append("    gcUncommittedLocation: ").append(toIndentedString(gcUncommittedLocation)).append("\n");
     sb.append("    continuationToken: ").append(toIndentedString(continuationToken)).append("\n");
     sb.append("}");
     return sb.toString();

@@ -5909,16 +5909,17 @@ components:
       example:
         continuation_token: continuation_token
         run_id: run_id
-        location: location
+        gc_uncommitted_location: gc_uncommitted_location
       properties:
         run_id:
           type: string
-        location:
+        gc_uncommitted_location:
+          description: location of uncommitted information data
           type: string
         continuation_token:
           type: string
       required:
-      - location
+      - gc_uncommitted_location
       - run_id
       type: object
     GarbageCollectionRule:

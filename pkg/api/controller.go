@@ -19,9 +19,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/actions"
