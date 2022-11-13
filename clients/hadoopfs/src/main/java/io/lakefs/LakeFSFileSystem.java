@@ -185,7 +185,7 @@ public class LakeFSFileSystem extends FileSystem {
                 BlockLocation[] locations = status.isFile()
                         ? getFileBlockLocations(status, 0, status.getLen())
                         : new BlockLocation[0];
-                return new LocatedFileStatus(status, locations);
+                return new LakeFSLocatedFileStatus(status, locations);
             }
         };
     }

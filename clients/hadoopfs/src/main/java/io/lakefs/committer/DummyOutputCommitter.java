@@ -4,6 +4,8 @@ import io.lakefs.Constants;
 import io.lakefs.FSConfiguration;
 import io.lakefs.LakeFSFileSystem;
 import io.lakefs.LakeFSClient;
+import io.lakefs.LakeFSFileStatus;
+import io.lakefs.LakeFSLocatedFileStatus;
 import io.lakefs.utils.BranchDiffsIterator;
 import io.lakefs.utils.ObjectLocation;
 
@@ -22,6 +24,7 @@ import io.lakefs.clients.api.model.ObjectStats;
 
 import org.apache.commons.lang.exception.ExceptionUtils; // (for debug prints ONLY)
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.conf.Configuration;
@@ -51,6 +54,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.time.temporal.ChronoUnit;
+import java.util.regex.Pattern;
 
 // TODO(ariels): For Hadoop 3, it is enough (and better!) to extend PathOutputCommitter.
 public class DummyOutputCommitter extends FileOutputCommitter {
@@ -67,6 +71,11 @@ public class DummyOutputCommitter extends FileOutputCommitter {
      * Retry policy for important long-running operations such as commits and merges.
      */
     protected final FailsafeExecutor<Object> longRunning;
+
+    /**
+     * true if writing a _task_.
+     */
+    protected boolean isTask = false;
 
     /**
      * Repository for files.
@@ -86,16 +95,21 @@ public class DummyOutputCommitter extends FileOutputCommitter {
     protected String jobBranch = null;
 
     /**
-     * Branch for this task.  Deleted if the task fails.  Always defined,
-     * even if this committer is a noop.
-     */
-    protected String taskBranch;
-
-    /**
      * Output path (possibly supplied to task).  Defined on a task, null if
      * this committer is a noop.
      */
     protected Path outputPath = null;
+
+    /**
+     * Job path prefix.
+     */
+    protected Path jobPath = null;
+
+    /**
+     * Directory prefix used beneath job output path for this task.
+     */
+    protected String taskDirPrefix = null;
+
     /**
      * "Working" path for this task: the same as outputPath, but on
      * taskBranch rather than on outputBranch.  Defined on a task, null if
@@ -116,7 +130,6 @@ public class DummyOutputCommitter extends FileOutputCommitter {
      */
     protected String pathToBranch(Path p) {
         String path = p.toString();
-        // TODO(ariels): Use a more compact encoding (base-36?)
         String digest = new BigInteger(hash.hashString(path, utf8).asBytes()).toString(36);
         String pathPrefix = path.length() > 128 ? path.substring(0, 128) : path;
         pathPrefix = pathPrefix.replaceAll("[^-_a-zA-Z0-9]", "-");
@@ -161,20 +174,19 @@ public class DummyOutputCommitter extends FileOutputCommitter {
             this.repository = outputLocation.getRepository();
             this.outputBranch = outputLocation.getRef();
             this.outputPath = fs.makeQualified(outputPath);
+            this.jobPath = changePathBranch(outputPath, this.jobBranch);
         }
     }
 
     public DummyOutputCommitter(Path outputPath, TaskAttemptContext context) throws IOException {
         this(outputPath, (JobContext)context);
 
+        isTask = true;
         TaskAttemptID id = context.getTaskAttemptID();
-        // TODO(ariels): s/[^-\w]//g on the branch ID, ensuring all chars
-        // are allowed.  (Some) users might manage to create a bad task
-        // name.
-        this.taskBranch = String.format("%s-%s", this.jobBranch, id.toString());
 
         if (outputPath != null) {
-            this.workPath = changePathBranch(outputPath, this.taskBranch);
+            this.taskDirPrefix = "_temporary/" + id.toString();
+            this.workPath = new Path(this.jobPath, this.taskDirPrefix);
             LOG.trace("Working path: {}", workPath);
         }
     }
@@ -213,9 +225,6 @@ public class DummyOutputCommitter extends FileOutputCommitter {
             throw new IOException(String.format("deleteBranch %s failed", branch), e);
         }
     }
-
-    // TODO(ariels): Need to override getJobAttemptPath,
-    // getPendingJobAttemptPath (which is *static*, what do we do???!?)
 
     @Override
     public Path getWorkPath() {
@@ -302,21 +311,19 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         try {
             cleanupJob();
         } catch (IOException e) {
-            LOG.warn("Failed to delete task branch {} after merge (keep going)", taskBranch, e);
+            LOG.warn("Failed to cleanup job {} after merge", jobBranch, e);
         }
-
     }
 
     @Override
-    public void abortJob(JobContext jobContext, JobStatus.State status) throws IOException { // TODO(lynn)
+    public void abortJob(JobContext jobContext, JobStatus.State status) throws IOException {
         if (outputPath == null)
             return;
         cleanupJob();
     }
 
     @Override
-    public boolean needsTaskCommit(TaskAttemptContext taskContext)
-        throws IOException {    // TODO(lynn)
+    public boolean needsTaskCommit(TaskAttemptContext taskContext) throws IOException {
         return true;
     }
 
@@ -325,50 +332,49 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         throws IOException {
         if (outputPath == null)
             return;
-        LOG.info("Setup task for {} on {}", taskBranch, jobBranch);
         createBranch(jobBranch, outputBranch);
-        createBranch(taskBranch, jobBranch);
     }
 
     private void cleanupTask() throws IOException {
+        // TODO(ariels): Rename this option!
         if (FSConfiguration.getBoolean(conf, outputPath.toUri().getScheme(), Constants.OC_DELETE_TASK_BRANCH, true)) {
-            deleteBranch(taskBranch);
+            fs.delete(getWorkPath(), true);
         }
     }
 
     /**
-     * Copy all uncommitted objects from fromBranch to toBranch.  Uses only
-     * metadata APIs.
+     * Copy all objects created by task in workPath to their ultimate
+     * location.  Uses only metadata APIs.
      */
-    private void copyUncommitted(String fromBranch, String toBranch) throws IOException {
+    private void copyFromWork() throws IOException {
         try {
-            BranchesApi branches = lakeFSClient.getBranches();
             ObjectsApi objects = lakeFSClient.getObjects();
-            RemoteIterator<Diff> uncommittedIt = new BranchDiffsIterator(branches, repository, fromBranch, "", null);
-            while (uncommittedIt.hasNext()) {
-                Diff diff = uncommittedIt.next();
-                if (diff.getType() != Diff.TypeEnum.ADDED) {
-                    LOG.warn("Branch {} with unexpected object diff {} -- ignored", fromBranch, diff);
-                    continue;
-                }
-                if (diff.getPathType() != Diff.PathTypeEnum.OBJECT) {
-                    LOG.warn("Branch {} diff listing with unexpected type {} -- ignored", fromBranch, diff);
-                    continue;
-                }
-                ObjectStats stats = objects.statObject(repository, fromBranch, diff.getPath(), true);
+            // TODO(ariels): Just list directly using the lakeFS API, we
+            // need more data anyway and listFiles seems to statObject all
+            // the time for no apparent reason.
+            RemoteIterator<LocatedFileStatus> objectIt = fs.listFiles(getWorkPath(), true);
+            while (objectIt.hasNext()) {
+                LakeFSLocatedFileStatus locatedStatus = (LakeFSLocatedFileStatus)objectIt.next();
+                LakeFSFileStatus stats = locatedStatus.getStatus();
+
+                ObjectLocation loc = ObjectLocation.pathToObjectLocation(null, locatedStatus.getPath());
                 ObjectStageCreation req = new ObjectStageCreation()
                     .physicalAddress(stats.getPhysicalAddress())
                     .checksum(stats.getChecksum())
-                    .sizeBytes(stats.getSizeBytes())
-                    .mtime(stats.getMtime())
-                    .metadata(stats.getMetadata())
-                    .contentType(stats.getContentType());
-                objects.stageObject(repository, toBranch, diff.getPath(), req);
-                LOG.info("[DEBUG] copyUncommitted {}: {} -> {} ({})",
-                         diff.getPath(), fromBranch, toBranch, stats.getPhysicalAddress());
+                    .sizeBytes(0L /*locatedStatus.getSizeBytes()*/)
+                    .mtime(0L /*locatedStatus.getMtime()*/)
+                    // BUG(ariels): Copy metadata and contentType!
+                    //.metadata(stats.getMetadata())
+                    //.contentType(stats.getContentType());
+                    ;
+                String newPath = loc.getPath().replaceFirst(Pattern.quote(taskDirPrefix + "/"), "");
+                ObjectLocation newLoc = new ObjectLocation(loc.getScheme(), loc.getRepository(), loc.getRef(), newPath);
+                objects.stageObject(repository, jobBranch, newPath.toString(), req);
+                LOG.info("[DEBUG] copyUncommitted: {} -> {} ({})",
+                         locatedStatus.getPath(), newPath, stats.getPhysicalAddress());
             }
         } catch (ApiException e) {
-            throw new IOException(String.format("copyUncommitted %s -> %s failed", fromBranch, toBranch), e);
+            throw new IOException(String.format("copyFromWork %s on %s failed", taskDirPrefix, jobBranch), e);
         }
     }
 
@@ -377,19 +383,13 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         throws IOException {
         if (outputPath == null)
             return;
-        if (!hasChanges(taskBranch)) {
-            LOG.debug("Nothing to commit into {} for {}", taskBranch, jobBranch);
-            return;
-        }
 
-        LOG.info("Transfer generated objects from branch {} and to branch {}", taskBranch, jobBranch);
-
-        copyUncommitted(taskBranch, jobBranch);
+        copyFromWork();         // Critical, commit fails if this fails.
 
         try {
             cleanupTask();
         } catch (IOException e) {
-            LOG.warn("Failed to delete task branch {} after merge (keep going)", taskBranch, e);
+            LOG.warn("Failed to clean up task temporary directory {} after merge (keep going)", taskDirPrefix, e);
         }
     }
 
@@ -401,7 +401,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         try {
             cleanupTask();
         } catch (IOException e) {
-            LOG.warn("Failed to delete task branch {} while aborting (keep going)", taskBranch, e);
+            LOG.warn("Failed to delete task temporary directory {} while aborting (keep going)", taskDirPrefix, e);
         }
     }
 
