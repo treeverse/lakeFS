@@ -169,5 +169,5 @@ destination branches.
 
 Write all objects directly to the job branch.  Store successful /
 unsuccessful tasks status _on another branch_.  During commitJob take the
-objects belonging to the successful branches, delete the others, and commit
-and merge.
+objects belonging to the branches of successful tasks, delete the others,
+and commit and merge.
