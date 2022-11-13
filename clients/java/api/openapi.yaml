@@ -4256,6 +4256,58 @@ paths:
       - retention
       x-contentType: application/json
       x-accepts: application/json
+  /repositories/{repository}/gc/prepare_uncommited:
+    post:
+      operationId: prepareGarbageCollectionUncommitted
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrepareGCUncommittedRequest'
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrepareGCUncommittedResponse'
+          description: paths to commit dataset
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: save repository uncommitted metadata for garbage collection
+      tags:
+      - retention
+      x-contentType: application/json
+      x-accepts: application/json
   /repositories/{repository}/branch_protection:
     delete:
       operationId: deleteBranchProtectionRule
@@ -5844,6 +5896,30 @@ components:
       required:
       - gc_addresses_location
       - gc_commits_location
+      - run_id
+      type: object
+    PrepareGCUncommittedRequest:
+      example:
+        continuation_token: continuation_token
+      properties:
+        continuation_token:
+          type: string
+      type: object
+    PrepareGCUncommittedResponse:
+      example:
+        continuation_token: continuation_token
+        run_id: run_id
+        gc_uncommitted_location: gc_uncommitted_location
+      properties:
+        run_id:
+          type: string
+        gc_uncommitted_location:
+          description: location of uncommitted information data
+          type: string
+        continuation_token:
+          type: string
+      required:
+      - gc_uncommitted_location
       - run_id
       type: object
     GarbageCollectionRule:

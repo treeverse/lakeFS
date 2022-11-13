@@ -981,6 +981,27 @@ components:
         - gc_commits_location
         - gc_addresses_location
 
+    PrepareGCUncommittedRequest:
+      type: object
+      properties:
+        continuation_token:
+          type: string
+
+    PrepareGCUncommittedResponse:
+      type: object
+      properties:
+        run_id:
+          type: string
+        gc_uncommitted_location:
+          type: string
+          description: location of uncommitted information data
+        continuation_token:
+          type: string
+      required:
+        - run_id
+        - gc_uncommitted_location
+
+
     GarbageCollectionRule:
       type: object
       properties:
@@ -3346,6 +3367,7 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
+
   /repositories/{repository}/gc/rules:
     parameters:
       - in: path
@@ -3433,6 +3455,40 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/gc/prepare_uncommited:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrepareGCUncommittedRequest"
+      tags:
+        - retention
+      operationId: prepareGarbageCollectionUncommitted
+      summary: save repository uncommitted metadata for garbage collection
+      responses:
+        201:
+          description: paths to commit dataset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrepareGCUncommittedResponse"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /repositories/{repository}/branch_protection:
     parameters:
       - in: path
