@@ -31,6 +31,8 @@ import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.GarbageCollectionPrepareRequest;
 import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse;
 import io.lakefs.clients.api.model.GarbageCollectionRules;
+import io.lakefs.clients.api.model.PrepareGCUncommittedRequest;
+import io.lakefs.clients.api.model.PrepareGCUncommittedResponse;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -426,6 +428,138 @@ public class RetentionApi {
 
         okhttp3.Call localVarCall = prepareGarbageCollectionCommitsValidateBeforeCall(repository, garbageCollectionPrepareRequest, _callback);
         Type localVarReturnType = new TypeToken<GarbageCollectionPrepareResponse>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for prepareGarbageCollectionUncommitted
+     * @param repository  (required)
+     * @param prepareGCUncommittedRequest  (optional)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> paths to commit dataset </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call prepareGarbageCollectionUncommittedCall(String repository, PrepareGCUncommittedRequest prepareGCUncommittedRequest, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = prepareGCUncommittedRequest;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/gc/prepare_uncommited"
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call prepareGarbageCollectionUncommittedValidateBeforeCall(String repository, PrepareGCUncommittedRequest prepareGCUncommittedRequest, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling prepareGarbageCollectionUncommitted(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = prepareGarbageCollectionUncommittedCall(repository, prepareGCUncommittedRequest, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * save repository uncommitted metadata for garbage collection
+     * 
+     * @param repository  (required)
+     * @param prepareGCUncommittedRequest  (optional)
+     * @return PrepareGCUncommittedResponse
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> paths to commit dataset </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public PrepareGCUncommittedResponse prepareGarbageCollectionUncommitted(String repository, PrepareGCUncommittedRequest prepareGCUncommittedRequest) throws ApiException {
+        ApiResponse<PrepareGCUncommittedResponse> localVarResp = prepareGarbageCollectionUncommittedWithHttpInfo(repository, prepareGCUncommittedRequest);
+        return localVarResp.getData();
+    }
+
+    /**
+     * save repository uncommitted metadata for garbage collection
+     * 
+     * @param repository  (required)
+     * @param prepareGCUncommittedRequest  (optional)
+     * @return ApiResponse&lt;PrepareGCUncommittedResponse&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> paths to commit dataset </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<PrepareGCUncommittedResponse> prepareGarbageCollectionUncommittedWithHttpInfo(String repository, PrepareGCUncommittedRequest prepareGCUncommittedRequest) throws ApiException {
+        okhttp3.Call localVarCall = prepareGarbageCollectionUncommittedValidateBeforeCall(repository, prepareGCUncommittedRequest, null);
+        Type localVarReturnType = new TypeToken<PrepareGCUncommittedResponse>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * save repository uncommitted metadata for garbage collection (asynchronously)
+     * 
+     * @param repository  (required)
+     * @param prepareGCUncommittedRequest  (optional)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> paths to commit dataset </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call prepareGarbageCollectionUncommittedAsync(String repository, PrepareGCUncommittedRequest prepareGCUncommittedRequest, final ApiCallback<PrepareGCUncommittedResponse> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = prepareGarbageCollectionUncommittedValidateBeforeCall(repository, prepareGCUncommittedRequest, _callback);
+        Type localVarReturnType = new TypeToken<PrepareGCUncommittedResponse>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }

@@ -6,8 +6,6 @@ import (
 	"context"
 	"crypto"
 	_ "crypto/sha256"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -306,7 +304,7 @@ func (c *Catalog) getRepository(ctx context.Context, repository string) (*gravel
 	repo, err := c.Store.GetRepository(ctx, repositoryID)
 	if err != nil {
 		if errors.Is(err, graveler.ErrRepositoryNotFound) {
-			err = ErrRepositoryNotFound
+			return nil, ErrRepositoryNotFound
 		}
 		return nil, err
 	}
@@ -1747,17 +1745,6 @@ type GCUncommittedMark struct {
 	RunID    string            `json:"run_id"`
 }
 
-func (m *GCUncommittedMark) Encode() (string, error) {
-	var buf bytes.Buffer
-	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
-	err := json.NewEncoder(encoder).Encode(m)
-	if err != nil {
-		return "", err
-	}
-	result := buf.String()
-	return result, nil
-}
-
 type PrepareGCUncommittedInfo struct {
 	Mark     *GCUncommittedMark
 	Metadata graveler.GarbageCollectionRunMetadata
@@ -1847,7 +1834,6 @@ func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, 
 	}, size, fd, block.PutOpts{})
 }
 
-// TODO (niro): Add check in controller that runID is provided if mark != nil
 func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string, mark *GCUncommittedMark) (*PrepareGCUncommittedInfo, error) {
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
@@ -1871,8 +1857,10 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 		return nil, err
 	}
 	defer func() {
-		fd.Close()
-		os.Remove(fd.Name())
+		_ = fd.Close()
+		if err := os.Remove(fd.Name()); err != nil {
+			c.log.WithField("filename", fd.Name()).Warn("Failed to delete temporary gc uncommitted data file")
+		}
 	}()
 
 	uw := NewUncommittedWriter(fd)

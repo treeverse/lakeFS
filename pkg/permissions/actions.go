@@ -61,9 +61,10 @@ const (
 
 	ReadActionsAction = "ci:ReadAction"
 
-	PrepareGarbageCollectionCommitsAction = "retention:PrepareGarbageCollectionCommits"
-	GetGarbageCollectionRulesAction       = "retention:GetGarbageCollectionRules"
-	SetGarbageCollectionRulesAction       = "retention:SetGarbageCollectionRules"
+	PrepareGarbageCollectionCommitsAction     = "retention:PrepareGarbageCollectionCommits"
+	GetGarbageCollectionRulesAction           = "retention:GetGarbageCollectionRules"
+	SetGarbageCollectionRulesAction           = "retention:SetGarbageCollectionRules"
+	PrepareGarbageCollectionUncommittedAction = "retention:PrepareGarbageCollectionUncommitted"
 
 	GetBranchProtectionRulesAction = "branches:GetBranchProtectionRules"
 	SetBranchProtectionRulesAction = "branches:SetBranchProtectionRules"

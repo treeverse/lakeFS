@@ -43,6 +43,13 @@ class TestRetentionApi(unittest.TestCase):
         """
         pass
 
+    def test_prepare_garbage_collection_uncommitted(self):
+        """Test case for prepare_garbage_collection_uncommitted
+
+        save repository uncommitted metadata for garbage collection  # noqa: E501
+        """
+        pass
+
     def test_set_garbage_collection_rules(self):
         """Test case for set_garbage_collection_rules
 
