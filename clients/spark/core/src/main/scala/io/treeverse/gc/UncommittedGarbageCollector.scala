@@ -10,9 +10,7 @@ import org.apache.spark.sql.SparkSession
 object UncommittedGarbageCollector {
   final val UNCOMMITTED_GC_SOURCE_NAME = "uncommitted_gc"
 
-  // lazy val spark = SparkSession.builder().appName("UncommittedGarbageCollector").getOrCreate()
-  lazy val spark =
-    SparkSession.builder().master("local[8]").appName("UncommittedGarbageCollector").getOrCreate()
+  lazy val spark = SparkSession.builder().appName("UncommittedGarbageCollector").getOrCreate()
 
   def getDataLocation(storageNamespace: String): String = {
     return s"${storageNamespace}/"
