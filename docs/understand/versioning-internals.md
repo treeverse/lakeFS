@@ -100,7 +100,5 @@ Luckily, this is also much smaller set of metadata compared to the committed met
 References and uncommitted metadata are currently stored on a key-value store (See [supported databases](../reference/configuration.md)) for consistency guarantees.
 
 
-# Performance 
-
 
 
