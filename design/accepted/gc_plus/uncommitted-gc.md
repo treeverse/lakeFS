@@ -68,13 +68,13 @@ objects added using this operation are never collected by GC.
 #### [Get/Link]PhysicalAddress 
 
 1. GetPhysicalAddress to return a validation token along with the address (or embedded as part of the address).
-2. The token will be valid for a specified amount of time and for a single use.
-3. lakeFS will need to track issued tokens/addresses, and delete them when tokens are expired/used
-4. LinkPhysicalAddress to verify token valid before creating an entry.
+2. The token will be valid for a specified amount of time.
+3. LinkPhysicalAddress to verify token valid before creating an entry.
     1. Doing so will allow us to use this time interval to filter objects that might have been uploaded and waiting for
        the link API and avoid them being deleted by the GC process.
     2. Objects that were uploaded to a physical address issued by the API and were not linked before the token expired will
        eventually be deleted by the GC job.
+    3. Multiple entries on different branches may point to the same physical object, as long as they do that within the time frame.
 >**Note:** These changes will also solves the following [issue](https://github.com/treeverse/lakeFS/issues/4438)
 
 #### Track copied objects in ref-store
