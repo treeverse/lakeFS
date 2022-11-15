@@ -145,7 +145,7 @@ type configuration struct {
 		LDAP              *LDAP
 		OIDC              OIDC
 		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
-		LoginExpiration   time.Duration `mapstructure:"login_expiration"`
+		LoginDuration     time.Duration `mapstructure:"login_duration"`
 	}
 	Blockstore struct {
 		Type                   string `validate:"required"`
