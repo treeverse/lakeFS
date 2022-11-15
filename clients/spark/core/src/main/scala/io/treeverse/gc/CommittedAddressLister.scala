@@ -17,11 +17,14 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
       normalizedStorageNamespace = "/"
     }
     val params =
-      LakeFSJobParams.forStorageNamespace(s"${normalizedStorageNamespace}", "uncommitted_gc")
+      LakeFSJobParams.forStorageNamespace(s"${normalizedStorageNamespace}",
+                                          UncommittedGarbageCollector.UNCOMMITTED_GC_SOURCE_NAME
+                                         )
     var df = LakeFSContext.newDF(spark, params)
     df = df
       .select("address")
       .withColumn("absolute_address", concat(lit(normalizedStorageNamespace), df("address")))
+    // TODO push down a filter to the input format, to filter out absolute addresses!
     df = df
       .select(df("absolute_address").as("address"))
       .distinct

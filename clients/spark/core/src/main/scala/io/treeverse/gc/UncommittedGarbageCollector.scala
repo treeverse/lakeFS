@@ -6,6 +6,9 @@ import io.treeverse.clients.LakeFSContext._
 import io.treeverse.clients.StorageClientType
 import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.DataFrame
+import java.util.Date
+import org.apache.commons.lang3.time.DateUtils
 
 object UncommittedGarbageCollector {
   final val UNCOMMITTED_GC_SOURCE_NAME = "uncommitted_gc"
@@ -14,6 +17,29 @@ object UncommittedGarbageCollector {
 
   def getDataLocation(storageNamespace: String): String = {
     return s"${storageNamespace}/"
+  }
+  def getAddressesToDelete(
+      apiClient: ApiClient,
+      repoName: String,
+      uncommittedDF: DataFrame,
+      excludedDF: DataFrame,
+      before: Date
+  ): DataFrame = {
+    var storageNamespace = apiClient.getStorageNamespace(repoName, StorageClientType.HadoopFS)
+    if (!storageNamespace.endsWith("/")) {
+      storageNamespace += "/"
+    }
+    val dataLocation = getDataLocation(storageNamespace)
+    val dataPath = new Path(dataLocation)
+    var dataDF = new NaiveDataLister().listData(spark, dataPath)
+    dataDF = dataDF.filter(dataDF("last_modified") < before.getTime()).select("address")
+    val nsFS = new Path(storageNamespace).getFileSystem(spark.sparkContext.hadoopConfiguration)
+    val committedDF =
+      new NaiveCommittedAddressLister().listCommittedAddresses(spark, storageNamespace)
+    dataDF
+      .except(excludedDF)
+      .except(committedDF)
+      .except(uncommittedDF)
   }
 
   def main(args: Array[String]) {
@@ -51,6 +77,13 @@ object UncommittedGarbageCollector {
     val nsFS = new Path(storageNamespace).getFileSystem(spark.sparkContext.hadoopConfiguration)
     val uncommittedDF =
       spark.read.parquet(uncommittedLocation).select("address") // TODO use actual uncommitted data
-    dataDF.except(committedDF).except(uncommittedDF).write.parquet(outputLocation)
+    val addressesToDelete =
+      getAddressesToDelete(apiClient,
+                           repo,
+                           uncommittedDF,
+                           spark.emptyDataFrame,
+                           DateUtils.addHours(new Date(), -6)
+                          )
+    addressesToDelete.write.parquet(outputLocation)
   }
 }

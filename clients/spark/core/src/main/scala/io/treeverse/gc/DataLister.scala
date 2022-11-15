@@ -4,6 +4,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SparkSession
 import scala.collection.mutable.ListBuffer
+import java.util.Date
 
 /** List all the files under a given path.
  */
@@ -16,10 +17,11 @@ class NaiveDataLister extends DataLister {
     import spark.implicits._
     val fs = path.getFileSystem(spark.sparkContext.hadoopConfiguration)
     val dataIt = fs.listFiles(path, false)
-    val dataList = new ListBuffer[String]()
+    val dataList = new ListBuffer[(String, Long)]()
     while (dataIt.hasNext) {
-      dataList += dataIt.next().getPath.toString
+      val fileStatus = dataIt.next()
+      dataList += ((fileStatus.getPath.toString, fileStatus.getModificationTime()))
     }
-    dataList.toDF("path")
+    dataList.toDF("address", "last_modified")
   }
 }
