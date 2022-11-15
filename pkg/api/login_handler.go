@@ -19,7 +19,6 @@ type LoginResponseData struct {
 }
 
 const (
-	DefaultLoginExpiration         = 7 * 24 * time.Hour
 	DefaultResetPasswordExpiration = 20 * time.Minute
 	InternalAuthSessionName        = "internal_auth_session"
 	TokenSessionKeyName            = "token"

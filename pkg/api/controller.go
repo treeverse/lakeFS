@@ -265,7 +265,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	}
 
 	loginTime := time.Now()
-	expires := loginTime.Add(DefaultLoginExpiration)
+	expires := loginTime.Add(c.Config.GetLoginExpiration())
 	secret := c.Auth.SecretStore().SharedSecret()
 
 	tokenString, err := GenerateJWTLogin(secret, user.Username, loginTime, expires)
@@ -282,7 +282,8 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 		return
 	}
 	response := AuthenticationToken{
-		Token: tokenString,
+		Token:           tokenString,
+		TokenExpiration: Int64Ptr(expires.Unix()),
 	}
 	writeResponse(w, http.StatusOK, response)
 }

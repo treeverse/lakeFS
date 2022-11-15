@@ -439,3 +439,7 @@ func (c *Config) GetAuthLogoutRedirectURL() string {
 func (c *Config) GetUIEnabled() bool {
 	return c.values.UI.Enabled
 }
+
+func (c *Config) GetLoginExpiration() time.Duration {
+	return c.values.Auth.LoginExpiration
+}

@@ -83,6 +83,7 @@ class AuthenticationToken(ModelNormal):
         """
         return {
             'token': (str,),  # noqa: E501
+            'token_expiration': (int,),  # noqa: E501
         }
 
     @cached_property
@@ -92,6 +93,7 @@ class AuthenticationToken(ModelNormal):
 
     attribute_map = {
         'token': 'token',  # noqa: E501
+        'token_expiration': 'token_expiration',  # noqa: E501
     }
 
     read_only_vars = {
@@ -138,6 +140,7 @@ class AuthenticationToken(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            token_expiration (int): Unix Epoch in seconds. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -223,6 +226,7 @@ class AuthenticationToken(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            token_expiration (int): Unix Epoch in seconds. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
