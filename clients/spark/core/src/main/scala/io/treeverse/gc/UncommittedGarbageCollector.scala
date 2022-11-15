@@ -9,6 +9,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.DataFrame
 import java.util.Date
 import org.apache.commons.lang3.time.DateUtils
+import org.apache.spark.sql.functions._
 
 object UncommittedGarbageCollector {
   final val UNCOMMITTED_GC_SOURCE_NAME = "uncommitted_gc"
@@ -59,29 +60,15 @@ object UncommittedGarbageCollector {
                         UncommittedGarbageCollector.UNCOMMITTED_GC_SOURCE_NAME
                        )
     val apiClient = ApiClient.get(apiConf)
-
-    var storageNamespace = apiClient.getStorageNamespace(repo, StorageClientType.HadoopFS)
-    if (!storageNamespace.endsWith("/")) {
-      storageNamespace += "/"
-    }
-    val dataLocation = getDataLocation(storageNamespace)
     val uncommittedLocation = args(2) // TODO use actual uncommitted location
     val outputLocation = args(1)
-
-    val dataPath = new Path(dataLocation)
-    val dataLister = new NaiveDataLister()
-
-    val dataDF = dataLister.listData(spark, dataPath)
-    val committedDF =
-      new NaiveCommittedAddressLister().listCommittedAddresses(spark, storageNamespace)
-    val nsFS = new Path(storageNamespace).getFileSystem(spark.sparkContext.hadoopConfiguration)
     val uncommittedDF =
       spark.read.parquet(uncommittedLocation).select("address") // TODO use actual uncommitted data
     val addressesToDelete =
       getAddressesToDelete(apiClient,
                            repo,
                            uncommittedDF,
-                           spark.emptyDataFrame,
+                           spark.emptyDataFrame.withColumn("address", lit("")),
                            DateUtils.addHours(new Date(), -6)
                           )
     addressesToDelete.write.parquet(outputLocation)
