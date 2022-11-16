@@ -1,4 +1,4 @@
-import reactRefresh from '@vitejs/plugin-react-refresh';
+import react from '@vitejs/plugin-react';
 import eslintPlugin from 'vite-plugin-eslint';
 import replace from '@rollup/plugin-replace';
 
@@ -13,15 +13,12 @@ export default ({ command }) => {
             __buildVersion: process.env.VERSION || 'dev',
           }
       }),
-      reactRefresh(),
+      react(),
       eslintPlugin({
         include: ['src/**/*.jsx', 'src/**/*.js', 'src/**/*.ts', 'src/**/*.tsx']
       })
     ],
     publicDir: './pub',
-    build: {
-      sourcemap: true
-    }
   };
 
   // in development
@@ -29,6 +26,7 @@ export default ({ command }) => {
     return {
       ...baseConfig,
       server: {
+        port: 3000,
         proxy: {
           '/api': {
             target: 'http://localhost:8000',
@@ -46,7 +44,10 @@ export default ({ command }) => {
             secure: false
           }
         }
-      }
+      },
+      build: {
+        sourcemap: 'inline',
+      },
     };
   } 
   // while building
