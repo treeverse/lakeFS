@@ -48,4 +48,12 @@ public class AuthenticationTokenTest {
         // TODO: test token
     }
 
+    /**
+     * Test the property 'tokenExpiration'
+     */
+    @Test
+    public void tokenExpirationTest() {
+        // TODO: test tokenExpiration
+    }
+
 }

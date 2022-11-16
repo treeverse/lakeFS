@@ -754,6 +754,10 @@ components:
         token:
           description: a JWT token that could be used to authenticate requests
           type: string
+        token_expiration:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds
 
     GroupCreation:
       type: object

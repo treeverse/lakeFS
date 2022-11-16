@@ -5529,11 +5529,16 @@ components:
       type: object
     AuthenticationToken:
       example:
+        token_expiration: 0
         token: token
       properties:
         token:
           description: a JWT token that could be used to authenticate requests
           type: string
+        token_expiration:
+          description: Unix Epoch in seconds
+          format: int64
+          type: integer
       required:
       - token
       type: object
