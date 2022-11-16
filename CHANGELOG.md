@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.85.0
+
+What's new:
+
+- lakectl import - hold the same import functionality 'Import' from the UI (#4558)
+- Setting KV drivers defaults the part of the configuration defaults (#4553)
+- Login API returns the token's expiry with the token (#4597)
+- Build Web UI using Vite 3.2.3 (#4576)
+
 ## v0.84.0
 
 What's new:
