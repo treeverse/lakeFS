@@ -10,14 +10,15 @@ import (
 
 type FakeGraveler struct {
 	graveler.VersionController
-	KeyValue                  map[string]*graveler.Value
-	Err                       error
-	ListIteratorFactory       func() graveler.ValueIterator
-	DiffIteratorFactory       func() graveler.DiffIterator
-	RepositoryIteratorFactory func() graveler.RepositoryIterator
-	BranchIteratorFactory     func() graveler.BranchIterator
-	TagIteratorFactory        func() graveler.TagIterator
-	hooks                     graveler.HooksHandler
+	KeyValue                   map[string]*graveler.Value
+	Err                        error
+	ListIteratorFactory        func() graveler.ValueIterator
+	ListStagingIteratorFactory func(token graveler.StagingToken) graveler.ValueIterator
+	DiffIteratorFactory        func() graveler.DiffIterator
+	RepositoryIteratorFactory  func() graveler.RepositoryIterator
+	BranchIteratorFactory      func() graveler.BranchIterator
+	TagIteratorFactory         func() graveler.TagIterator
+	hooks                      graveler.HooksHandler
 }
 
 func (g *FakeGraveler) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
@@ -113,8 +114,11 @@ func (g *FakeGraveler) DeleteBatch(ctx context.Context, repository *graveler.Rep
 	return nil
 }
 
-func (g *FakeGraveler) ListStaging(_ context.Context, _ *graveler.Branch) (graveler.ValueIterator, error) {
-	panic("implement me")
+func (g *FakeGraveler) ListStaging(_ context.Context, b *graveler.Branch) (graveler.ValueIterator, error) {
+	if g.Err != nil {
+		return nil, g.Err
+	}
+	return g.ListStagingIteratorFactory(b.StagingToken), nil
 }
 
 func (g *FakeGraveler) List(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.Ref) (graveler.ValueIterator, error) {
@@ -294,6 +298,16 @@ type FakeValueIterator struct {
 
 func NewFakeValueIterator(data []*graveler.ValueRecord) *FakeValueIterator {
 	return &FakeValueIterator{Data: data, Index: -1}
+}
+
+func NewFakeStagingIteratorFactory(data map[graveler.StagingToken][]*graveler.ValueRecord) func(token graveler.StagingToken) graveler.ValueIterator {
+	return func(token graveler.StagingToken) graveler.ValueIterator {
+		v, ok := data[token]
+		if !ok {
+			return NewFakeValueIterator([]*graveler.ValueRecord{})
+		}
+		return NewFakeValueIterator(v)
+	}
 }
 
 func NewFakeValueIteratorFactory(data []*graveler.ValueRecord) func() graveler.ValueIterator {

@@ -83,4 +83,5 @@ func (e *EntriesIterator) Err() error {
 func (e *EntriesIterator) Close() {
 	e.iter.Close()
 	e.txn.Discard()
+	e.err = kv.ErrClosedEntries
 }
