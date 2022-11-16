@@ -20,6 +20,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
+const (
+	TokenSessionKeyName     = "token"
+	InternalAuthSessionName = "internal_auth_session"
+)
+
 // extractSecurityRequirements using Swagger returns an array of security requirements set for the request.
 func extractSecurityRequirements(router routers.Router, r *http.Request) (openapi3.SecurityRequirements, error) {
 	// Find route

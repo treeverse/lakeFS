@@ -82,6 +82,7 @@ const (
 
 	DefaultAuthOIDCInitialGroupsClaimName = "initial_groups"
 	DefaultAuthLogoutRedirectURL          = "/auth/login"
+	DefaultAuthLoginDuration              = 7 * 24 * time.Hour
 
 	DefaultListenAddr          = "0.0.0.0:8000"
 	DefaultS3GatewayDomainName = "s3.local.lakefs.io"
@@ -121,6 +122,7 @@ const (
 
 	AuthOIDCInitialGroupsClaimName = "auth.oidc.initial_groups_claim_name"
 	AuthLogoutRedirectURL          = "auth.logout_redirect_url"
+	AuthLoginDuration              = "auth.login_duration"
 
 	CommittedLocalCacheSizeBytesKey             = "committed.local_cache.size_bytes"
 	CommittedLocalCacheDirKey                   = "committed.local_cache.dir"
@@ -179,6 +181,7 @@ func setDefaults(local bool) {
 
 	viper.SetDefault(AuthOIDCInitialGroupsClaimName, DefaultAuthOIDCInitialGroupsClaimName)
 	viper.SetDefault(AuthLogoutRedirectURL, DefaultAuthLogoutRedirectURL)
+	viper.SetDefault(AuthLoginDuration, DefaultAuthLoginDuration)
 
 	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockstoreLocalPath)
 	viper.SetDefault(BlockstoreS3RegionKey, DefaultBlockstoreS3Region)

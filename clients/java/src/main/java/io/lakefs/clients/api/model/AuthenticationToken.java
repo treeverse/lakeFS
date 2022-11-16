@@ -33,6 +33,10 @@ public class AuthenticationToken {
   @SerializedName(SERIALIZED_NAME_TOKEN)
   private String token;
 
+  public static final String SERIALIZED_NAME_TOKEN_EXPIRATION = "token_expiration";
+  @SerializedName(SERIALIZED_NAME_TOKEN_EXPIRATION)
+  private Long tokenExpiration;
+
 
   public AuthenticationToken token(String token) {
     
@@ -57,6 +61,29 @@ public class AuthenticationToken {
   }
 
 
+  public AuthenticationToken tokenExpiration(Long tokenExpiration) {
+    
+    this.tokenExpiration = tokenExpiration;
+    return this;
+  }
+
+   /**
+   * Unix Epoch in seconds
+   * @return tokenExpiration
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Unix Epoch in seconds")
+
+  public Long getTokenExpiration() {
+    return tokenExpiration;
+  }
+
+
+  public void setTokenExpiration(Long tokenExpiration) {
+    this.tokenExpiration = tokenExpiration;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -66,12 +93,13 @@ public class AuthenticationToken {
       return false;
     }
     AuthenticationToken authenticationToken = (AuthenticationToken) o;
-    return Objects.equals(this.token, authenticationToken.token);
+    return Objects.equals(this.token, authenticationToken.token) &&
+        Objects.equals(this.tokenExpiration, authenticationToken.tokenExpiration);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(token);
+    return Objects.hash(token, tokenExpiration);
   }
 
   @Override
@@ -79,6 +107,7 @@ public class AuthenticationToken {
     StringBuilder sb = new StringBuilder();
     sb.append("class AuthenticationToken {\n");
     sb.append("    token: ").append(toIndentedString(token)).append("\n");
+    sb.append("    tokenExpiration: ").append(toIndentedString(tokenExpiration)).append("\n");
     sb.append("}");
     return sb.toString();
   }
