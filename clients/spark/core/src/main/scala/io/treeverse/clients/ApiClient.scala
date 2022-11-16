@@ -23,7 +23,7 @@ object StorageClientType extends Enumeration {
   val SDKClient, HadoopFS = Value
 }
 
-private object ApiClient {
+object ApiClient {
   val NUM_CACHED_API_CLIENTS = 30
   val TIMEOUT_NOT_SET = -1
 
