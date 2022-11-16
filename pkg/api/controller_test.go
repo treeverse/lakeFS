@@ -21,23 +21,20 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/auth"
-
-	"github.com/go-openapi/swag"
-
-	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/config"
-
 	"github.com/davecgh/go-spew/spew"
+	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/hashicorp/go-multierror"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/rs/xid"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/catalog/testutils"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -214,52 +211,6 @@ func TestController_GetRepoHandler(t *testing.T) {
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
 	})
 }
-
-// func TestController_GetRepoHandler(t *testing.T) {
-// 	clt, deps := setupClientWithAdmin(t)
-// 	ctx := context.Background()
-// 	clt.LoginWithResponse()
-// 	t.Run("get missing repo", func(t *testing.T) {
-// 		resp, err := clt.GetRepositoryWithResponse(ctx, "foo1")
-// 		testutil.Must(t, err)
-// 		if resp == nil {
-// 			t.Fatal("GetRepository missing response")
-// 		}
-// 		if resp.JSON404 == nil {
-// 			t.Fatal("get missing repository should return 404, got:", resp.HTTPResponse)
-// 		}
-// 	})
-//
-// 	t.Run("get existing repo", func(t *testing.T) {
-// 		const testBranchName = "non-default"
-// 		_, err := deps.catalog.CreateRepository(context.Background(), "foo1", onBlock(deps, "foo1"), testBranchName)
-// 		testutil.Must(t, err)
-//
-// 		resp, err := clt.GetRepositoryWithResponse(ctx, "foo1")
-// 		verifyResponseOK(t, resp, err)
-//
-// 		repository := resp.JSON200
-// 		if repository.DefaultBranch != testBranchName {
-// 			t.Fatalf("unexpected branch name %s, expected %s", repository.DefaultBranch, testBranchName)
-// 		}
-// 	})
-//
-// 	t.Run("use same storage namespace twice", func(t *testing.T) {
-// 		name := testUniqueRepoName()
-// 		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
-// 			Name:             name,
-// 			StorageNamespace: onBlock(deps, name),
-// 		})
-// 		verifyResponseOK(t, resp, err)
-//
-// 		resp, err = clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
-// 			Name:             name + "_2",
-// 			StorageNamespace: onBlock(deps, name),
-// 		})
-// 		require.NoError(t, err)
-// 		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
-// 	})
-// }
 
 func testCommitEntries(t *testing.T, ctx context.Context, cat catalog.Interface, deps *dependencies, params commitEntriesParams) string {
 	t.Helper()
