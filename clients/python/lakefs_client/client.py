@@ -1,8 +1,10 @@
 from urllib3.util import parse_url, Url
+import sys
+import inspect
+import keyword
 
 import lakefs_client
-from lakefs_client.apis import ActionsApi, AuthApi, BranchesApi, CommitsApi, ConfigApi, HealthCheckApi, MetadataApi, \
-    ObjectsApi, RefsApi, RepositoriesApi, StagingApi, TagsApi
+import lakefs_client.apis
 
 class _WrappedApiClient(lakefs_client.ApiClient):
     """ApiClient that fixes some weirdnesses."""
@@ -27,18 +29,16 @@ class LakeFSClient:
             configuration = LakeFSClient._ensure_endpoint(configuration)
         self._api = _WrappedApiClient(configuration=configuration, header_name=header_name,
                                           header_value=header_value, cookie=cookie, pool_threads=pool_threads)
-        self.actions = ActionsApi(self._api)
-        self.auth = AuthApi(self._api)
-        self.branches = BranchesApi(self._api)
-        self.commits = CommitsApi(self._api)
-        self.config = ConfigApi(self._api)
-        self.health = HealthCheckApi(self._api)
-        self.metadata = MetadataApi(self._api)
-        self.objects = ObjectsApi(self._api)
-        self.refs = RefsApi(self._api)
-        self.repositories = RepositoriesApi(self._api)
-        self.staging = StagingApi(self._api)
-        self.tags = TagsApi(self._api)
+        # for each api set attribute with instance set with the client
+        for k in inspect.getmembers(sys.modules['lakefs_client.apis'], inspect.isclass):
+            name = k[0].lower()
+            if not name.endswith('api'):
+                continue
+            attr_name = name[0:len(name)-3]
+            api_instance = k[1](self._api)
+            if attr_name not in keyword.kwlist:
+                setattr(self, attr_name, api_instance)
+            setattr(self, attr_name + '_api', api_instance)
 
     @staticmethod
     def _ensure_endpoint(configuration):
