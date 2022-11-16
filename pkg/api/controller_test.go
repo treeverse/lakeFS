@@ -21,6 +21,13 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/auth"
+
+	"github.com/go-openapi/swag"
+
+	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/pkg/config"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-test/deep"
 	"github.com/hashicorp/go-multierror"
@@ -166,7 +173,6 @@ func TestController_ListRepositoriesHandler(t *testing.T) {
 func TestController_GetRepoHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
-
 	t.Run("get missing repo", func(t *testing.T) {
 		resp, err := clt.GetRepositoryWithResponse(ctx, "foo1")
 		testutil.Must(t, err)
@@ -208,6 +214,52 @@ func TestController_GetRepoHandler(t *testing.T) {
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
 	})
 }
+
+// func TestController_GetRepoHandler(t *testing.T) {
+// 	clt, deps := setupClientWithAdmin(t)
+// 	ctx := context.Background()
+// 	clt.LoginWithResponse()
+// 	t.Run("get missing repo", func(t *testing.T) {
+// 		resp, err := clt.GetRepositoryWithResponse(ctx, "foo1")
+// 		testutil.Must(t, err)
+// 		if resp == nil {
+// 			t.Fatal("GetRepository missing response")
+// 		}
+// 		if resp.JSON404 == nil {
+// 			t.Fatal("get missing repository should return 404, got:", resp.HTTPResponse)
+// 		}
+// 	})
+//
+// 	t.Run("get existing repo", func(t *testing.T) {
+// 		const testBranchName = "non-default"
+// 		_, err := deps.catalog.CreateRepository(context.Background(), "foo1", onBlock(deps, "foo1"), testBranchName)
+// 		testutil.Must(t, err)
+//
+// 		resp, err := clt.GetRepositoryWithResponse(ctx, "foo1")
+// 		verifyResponseOK(t, resp, err)
+//
+// 		repository := resp.JSON200
+// 		if repository.DefaultBranch != testBranchName {
+// 			t.Fatalf("unexpected branch name %s, expected %s", repository.DefaultBranch, testBranchName)
+// 		}
+// 	})
+//
+// 	t.Run("use same storage namespace twice", func(t *testing.T) {
+// 		name := testUniqueRepoName()
+// 		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+// 			Name:             name,
+// 			StorageNamespace: onBlock(deps, name),
+// 		})
+// 		verifyResponseOK(t, resp, err)
+//
+// 		resp, err = clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+// 			Name:             name + "_2",
+// 			StorageNamespace: onBlock(deps, name),
+// 		})
+// 		require.NoError(t, err)
+// 		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
+// 	})
+// }
 
 func testCommitEntries(t *testing.T, ctx context.Context, cat catalog.Interface, deps *dependencies, params commitEntriesParams) string {
 	t.Helper()
@@ -2438,6 +2490,48 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestLogin(t *testing.T) {
+	const configureDuration = "48h"
+	viper.Set(config.AuthLoginDuration, configureDuration)
+
+	handler, deps := setupHandler(t)
+	server := setupServer(t, handler)
+	clt := setupClientByEndpoint(t, server.URL, "", "")
+	cred := createDefaultAdminUser(t, clt)
+
+	resp, err := clt.LoginWithResponse(context.Background(), api.LoginJSONRequestBody{
+		AccessKeyId:     cred.AccessKeyID,
+		SecretAccessKey: cred.SecretAccessKey,
+	})
+	if err != nil {
+		t.Errorf("Error login with response %v", err)
+	}
+	if resp.StatusCode() != http.StatusOK {
+		t.Fatalf("expected response from status 200 got %d", resp.StatusCode())
+	}
+	res := resp.JSON200
+	claims, err := auth.VerifyToken(deps.authService.SecretStore().SharedSecret(), res.Token)
+	testutil.Must(t, err)
+	resultExpiry := swag.Int64Value(res.TokenExpiration)
+	if claims.ExpiresAt != resultExpiry {
+		t.Errorf("token expiry (%d) not equal to expiry result (%d)", claims.ExpiresAt, resultExpiry)
+	}
+
+	// login duration
+	loginDuration, err := time.ParseDuration(configureDuration)
+	testutil.Must(t, err)
+	tokenDuration := time.Duration(claims.ExpiresAt-claims.IssuedAt) * time.Second
+	if (tokenDuration - loginDuration).Abs() > time.Minute {
+		t.Errorf("token duration should be around %v got %v", loginDuration, tokenDuration)
+	}
+
+	// validate issued at
+	issueSince := time.Since(time.Unix(claims.IssuedAt, 0))
+	if issueSince > 5*time.Minute && issueSince < 0 {
+		t.Errorf("issue since %s expected last five minutes", issueSince)
 	}
 }
 

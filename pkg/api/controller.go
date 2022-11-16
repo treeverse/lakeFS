@@ -63,6 +63,8 @@ const (
 	setupStateNotInitialized = "not_initialized"
 
 	DefaultMaxDeleteObjects = 1000
+
+	DefaultResetPasswordExpiration = 20 * time.Minute
 )
 
 type actionsHandler interface {
@@ -265,7 +267,8 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	}
 
 	loginTime := time.Now()
-	expires := loginTime.Add(c.Config.GetLoginDuration())
+	duration := c.Config.GetLoginDuration()
+	expires := loginTime.Add(duration)
 	secret := c.Auth.SecretStore().SharedSecret()
 
 	tokenString, err := GenerateJWTLogin(secret, user.Username, loginTime, expires)
