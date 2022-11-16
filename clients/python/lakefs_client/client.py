@@ -29,13 +29,12 @@ class LakeFSClient:
             configuration = LakeFSClient._ensure_endpoint(configuration)
         self._api = _WrappedApiClient(configuration=configuration, header_name=header_name,
                                           header_value=header_value, cookie=cookie, pool_threads=pool_threads)
-        # for each api set attribute with instance set with the client
-        for k in inspect.getmembers(sys.modules['lakefs_client.apis'], inspect.isclass):
-            name = k[0].lower()
+        for key, value in inspect.getmembers(sys.modules['lakefs_client.apis'], inspect.isclass):
+            name = key.lower()
             if not name.endswith('api'):
                 continue
+            api_instance = value(self._api)
             attr_name = name[0:len(name)-3]
-            api_instance = k[1](self._api)
             if attr_name not in keyword.kwlist:
                 setattr(self, attr_name, api_instance)
             setattr(self, attr_name + '_api', api_instance)
