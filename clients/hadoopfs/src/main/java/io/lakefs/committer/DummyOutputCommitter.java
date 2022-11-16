@@ -5,6 +5,7 @@ import io.lakefs.FSConfiguration;
 import io.lakefs.LakeFSFileSystem;
 import io.lakefs.LakeFSClient;
 import io.lakefs.utils.ObjectLocation;
+import io.lakefs.utils.Matcher;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.BranchesApi;
@@ -14,6 +15,9 @@ import io.lakefs.clients.api.model.BranchCreation;
 import io.lakefs.clients.api.model.CommitCreation;
 import io.lakefs.clients.api.model.DiffList;
 import io.lakefs.clients.api.model.Merge;
+import io.lakefs.clients.api.model.Pagination;
+import io.lakefs.clients.api.model.Ref;
+import io.lakefs.clients.api.model.RefList;
 
 import org.apache.commons.lang.exception.ExceptionUtils; // (for debug prints ONLY)
 import org.apache.hadoop.fs.FileSystem;
@@ -45,6 +49,8 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 
 // TODO(ariels): For Hadoop 3, it is enough (and better!) to extend PathOutputCommitter.
 public class DummyOutputCommitter extends FileOutputCommitter {
@@ -265,12 +271,98 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         return true;
     }
 
+    protected List<String> listTaskBranches() throws IOException {
+        try {
+            List<String> ret = new ArrayList<>();
+            BranchesApi branches = lakeFSClient.getBranches();
+            String after = null;
+            for (;;) {              // Break in loop
+                RefList list = branches.listBranches(repository, jobBranch + "-", after, Constants.DEFAULT_LIST_AMOUNT);
+                for (Ref ref : list.getResults()) {
+                    ret.add(ref.getId());
+                }
+                LOG.debug("Task branches: %s", ret.toString());
+                Pagination pagination = list.getPagination();
+                if (!pagination.getHasMore()) {
+                    break;
+                }
+                after = pagination.getNextOffset();
+            }
+            return ret;
+        } catch (ApiException e) {
+            throw new IOException(String.format("list task branches for %s-", jobBranch), e);
+        }
+    }
+
+    /**
+     * Merge all task branches into one another, then merge the last one
+     * into the job branch.  Merge order does not matter because tasks only
+     * add distinct files to their branches.
+     *
+     * Task branches are merged in parallel while avoiding conflict.
+     */
+    protected void mergeTaskBranches() throws IOException {
+        List<String> taskBranches = listTaskBranches();
+
+        Matcher matcher = new Matcher(taskBranches.size());
+        int parallelism = conf.getInt(Constants.OC_MERGE_PARALLELISM, Constants.DEFAULT_MERGE_PARALLELISM);
+        // TODO(ariels): Use OkHttp Calls directly to control lakeFS-side
+        //     parallelism without having to add client-side threads.
+        Thread[] thread = new Thread[parallelism];
+
+        // TODO(ariels): All these use a single API client.  Is that even concurrent?
+        RefsApi refs = lakeFSClient.getRefs();
+        for (int i = 0; i < parallelism; i++) {
+            final int ii = i;
+            thread[i] = new Thread(() -> {
+                    for (;;) {
+                        Matcher.MergeData md;
+                        try {
+                            md = matcher.take();
+                            if (md == null) {
+                                break;
+                            }
+                        } catch (Matcher.FailedException e) {
+                            // Only thrown when no further merges will be
+                            // instructed -- report and exit.
+                            LOG.warn("Exiting merging thread on matcher failure", e);
+                            break;
+                        }
+                        try {
+                            String fromBranch = taskBranches.get(md.from);
+                            String toBranch = taskBranches.get(md.to);
+                            String message = String.format("%d: Merge %s -> %s", ii, fromBranch, toBranch);
+
+                            longRunning.run(() ->
+                                            refs.mergeIntoBranch(repository, fromBranch, toBranch,
+                                                                 new Merge().message(message)));
+                            md.onDone.run();
+                        } catch (Exception e) {
+                            md.onFail.accept(e);
+                        }
+                    }
+                });
+            thread[i].start();
+        }
+        try {
+            int last = matcher.waitForEnd();
+            String lastBranch = taskBranches.get(last);
+            LOG.info("Merge result task branch %s into %s", lastBranch, jobBranch);
+            longRunning.run(() ->
+                            refs.mergeIntoBranch(repository, lastBranch, jobBranch, new Merge().message("Merge successful task branches")));
+        } catch (Matcher.FailedException|InterruptedException e)  {
+            throw new IOException(String.format("Merge result task branch into %s", jobBranch), e);
+        }
+    }
+
     @Override
     public void commitJob(JobContext jobContext) throws IOException {
         if (outputPath == null)
             return;
         try {
             boolean changes = false;
+
+            mergeTaskBranches();
 
             if (needsSuccessFile()) {
                 Path markerPath = new Path(changePathBranch(outputPath, jobBranch),
