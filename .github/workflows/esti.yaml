@@ -55,16 +55,17 @@ jobs:
             ${{ env.GOMODCACHE }}
             ${{ env.GOCACHE }}
           key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('go.mod', 'go.sum') }}
-          restore-keys:
-            ${{ runner.os }}-build-${{ env.cache-name }}-
+          restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
 
       - uses: actions/setup-node@v3
         with:
-          node-version: '16.17.1'
+          node-version: "16.17.1"
 
       - name: Generate code
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
         run: |
           make -j3 gen-api gen-ui VERSION=${{ steps.version.outputs.tag }}
           tar -cf /tmp/generated.tar.gz .
@@ -89,7 +90,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v3
         with:
-          node-version: '16.17.1'
+          node-version: "16.17.1"
 
       - name: Setup Go
         uses: actions/setup-go@v3
@@ -162,7 +163,7 @@ jobs:
           docker push ${ghr_build_tag#-t }
           if [[ -n ${ghr_ref_tag} ]]; then docker push ${ghr_ref_tag#-t }; fi
         env:
-          DOCKER_BUILDKIT: '1'
+          DOCKER_BUILDKIT: "1"
 
       - name: Push to Amazon ECR
         run: |
@@ -210,7 +211,7 @@ jobs:
           docker build deployments/tools/export -t $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
           docker push $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
         env:
-          DOCKER_BUILDKIT: '1'
+          DOCKER_BUILDKIT: "1"
 
   hadoopfs-tests:
     name: Test lakeFS Hadoop FileSystem
@@ -269,9 +270,9 @@ jobs:
 
       - uses: actions/setup-java@v3
         with:
-          distribution: 'adopt-hotspot'
-          java-version: '8'
-          cache: 'sbt'
+          distribution: "adopt-hotspot"
+          java-version: "8"
+          cache: "sbt"
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -330,9 +331,9 @@ jobs:
 
       - uses: actions/setup-java@v3
         with:
-          distribution: 'adopt-hotspot'
-          java-version: '8'
-          cache: 'sbt'
+          distribution: "adopt-hotspot"
+          java-version: "8"
+          cache: "sbt"
 
       - name: Package Spark App
         working-directory: test/spark/app
@@ -409,9 +410,9 @@ jobs:
 
       - uses: actions/setup-java@v3
         with:
-          distribution: 'adopt-hotspot'
-          java-version: '8'
-          cache: 'sbt'
+          distribution: "adopt-hotspot"
+          java-version: "8"
+          cache: "sbt"
 
       - name: Package Spark App
         working-directory: test/spark/app
@@ -602,9 +603,9 @@ jobs:
 
       - uses: actions/setup-java@v3
         with:
-          distribution: 'adopt-hotspot'
-          java-version: '8'
-          cache: 'sbt'
+          distribution: "adopt-hotspot"
+          java-version: "8"
+          cache: "sbt"
 
       - name: Package Metaclient
         working-directory: clients/spark
@@ -936,8 +937,8 @@ jobs:
 
       - name: Check files in S3 bucket
         run: |
-            FILES_COUNT=`aws s3 ls s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }} --recursive | wc -l`
-            [ $FILES_COUNT -gt 5 ]
+          FILES_COUNT=`aws s3 ls s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }} --recursive | wc -l`
+          [ $FILES_COUNT -gt 5 ]
 
       - name: lakeFS Logs on s3 failure
         if: ${{ failure() }}
@@ -948,9 +949,9 @@ jobs:
         if: ${{ always() }}
         working-directory: esti/ops
         run: |
-            if docker-compose ps -q postgres; then
-              docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
-            fi
+          if docker-compose ps -q postgres; then
+            docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
+          fi
 
       - name: Run lakeFS S3 to use with local API key
         env:
