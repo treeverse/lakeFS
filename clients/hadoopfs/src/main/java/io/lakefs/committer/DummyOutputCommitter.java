@@ -6,7 +6,7 @@ import io.lakefs.LakeFSFileSystem;
 import io.lakefs.LakeFSClient;
 import io.lakefs.LakeFSFileStatus;
 import io.lakefs.LakeFSLocatedFileStatus;
-import io.lakefs.utils.BranchDiffsIterator;
+import io.lakefs.utils.ListObjectsIterator;
 import io.lakefs.utils.ObjectLocation;
 
 import io.lakefs.clients.api.ApiException;
@@ -291,20 +291,28 @@ public class DummyOutputCommitter extends FileOutputCommitter {
                 Path markerPath = new Path(changePathBranch(outputPath, jobBranch),
                                            FileOutputCommitter.SUCCEEDED_FILE_NAME);
                 fs.create(markerPath, true).close();
+                changes = true;
             }
-            
-            CommitsApi commits = lakeFSClient.getCommits();
-            longRunning.run(() ->
-                            commits.commit(repository, jobBranch, new CommitCreation().message(String.format("Commit job %s", jobContext.getJobID())), null));
 
-            if (!hasDiffs(repository, jobBranch, outputBranch)) {
+            if (!changes) {
+                changes = hasChanges(jobBranch);
+            }
+
+            if (changes) {
+                CommitsApi commits = lakeFSClient.getCommits();
+                longRunning.run(() ->
+                                commits.commit(repository, jobBranch, new CommitCreation().message(String.format("Commit job %s", jobContext.getJobID())), null));
+            }
+
+            if (hasDiffs(repository, jobBranch, outputBranch)) {
+                LOG.info("Commit job branch {} to {}", jobBranch, outputBranch);
+                RefsApi refs = lakeFSClient.getRefs();
+                longRunning.run(() ->
+                                refs.mergeIntoBranch(repository, jobBranch, outputBranch, new Merge().message("").strategy("source-wins")));
+            } else {
                 LOG.debug("No differences from {} to {}, nothing to merge", jobBranch, outputBranch);
                 return;
             }
-            LOG.info("Commit job branch {} to {}", jobBranch, outputBranch);
-            RefsApi refs = lakeFSClient.getRefs();
-            longRunning.run(() ->
-                            refs.mergeIntoBranch(repository, jobBranch, outputBranch, new Merge().message("").strategy("source-wins")));
         } catch (FailsafeException e) {
             throw new IOException(String.format("commitJob %s failed", jobContext.getJobID()), e.getCause());
         }
@@ -332,7 +340,6 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         throws IOException {
         if (outputPath == null)
             return;
-        createBranch(jobBranch, outputBranch);
     }
 
     private void cleanupTask() throws IOException {
@@ -349,29 +356,23 @@ public class DummyOutputCommitter extends FileOutputCommitter {
     private void copyFromWork() throws IOException {
         try {
             ObjectsApi objects = lakeFSClient.getObjects();
-            // TODO(ariels): Just list directly using the lakeFS API, we
-            // need more data anyway and listFiles seems to statObject all
-            // the time for no apparent reason.
-            RemoteIterator<LocatedFileStatus> objectIt = fs.listFiles(getWorkPath(), true);
+            ObjectLocation workLoc = ObjectLocation.pathToObjectLocation(null, getWorkPath());
+            RemoteIterator<ObjectStats> objectIt = new ListObjectsIterator(objects, workLoc.getRepository(), workLoc.getRef(), workLoc.getPath(), null);
             while (objectIt.hasNext()) {
-                LakeFSLocatedFileStatus locatedStatus = (LakeFSLocatedFileStatus)objectIt.next();
-                LakeFSFileStatus stats = locatedStatus.getStatus();
+                ObjectStats stats = objectIt.next();
 
-                ObjectLocation loc = ObjectLocation.pathToObjectLocation(null, locatedStatus.getPath());
                 ObjectStageCreation req = new ObjectStageCreation()
                     .physicalAddress(stats.getPhysicalAddress())
                     .checksum(stats.getChecksum())
-                    .sizeBytes(0L /*locatedStatus.getSizeBytes()*/)
-                    .mtime(0L /*locatedStatus.getMtime()*/)
-                    // BUG(ariels): Copy metadata and contentType!
-                    //.metadata(stats.getMetadata())
-                    //.contentType(stats.getContentType());
-                    ;
-                String newPath = loc.getPath().replaceFirst(Pattern.quote(taskDirPrefix + "/"), "");
-                ObjectLocation newLoc = new ObjectLocation(loc.getScheme(), loc.getRepository(), loc.getRef(), newPath);
-                objects.stageObject(repository, jobBranch, newPath.toString(), req);
+                    .sizeBytes(stats.getSizeBytes())
+                    .mtime(stats.getMtime())
+                    // TODO(nopcoder): Does this include content-type?
+                    .metadata(stats.getMetadata());
+                String newPath = stats.getPath().replaceFirst(Pattern.quote(taskDirPrefix + "/"), "");
+                objects.stageObject(repository, jobBranch, newPath, req);
                 LOG.info("[DEBUG] copyUncommitted: {} -> {} ({})",
-                         locatedStatus.getPath(), newPath, stats.getPhysicalAddress());
+                         stats.getPath(), newPath, stats.getPhysicalAddress());
+                objects.deleteObject(workLoc.getRepository(), workLoc.getRef(), stats.getPath());
             }
         } catch (ApiException e) {
             throw new IOException(String.format("copyFromWork %s on %s failed", taskDirPrefix, jobBranch), e);
