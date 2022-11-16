@@ -302,6 +302,8 @@ public class DummyOutputCommitter extends FileOutputCommitter {
      * Task branches are merged in parallel while avoiding conflict.
      */
     protected void mergeTaskBranches() throws IOException {
+        boolean deleteTaskBranches = FSConfiguration.getBoolean(conf, outputPath.toUri().getScheme(), Constants.OC_DELETE_TASK_BRANCH, true);
+
         List<String> taskBranches = listTaskBranches();
 
         Matcher matcher = new Matcher(taskBranches.size());
@@ -336,6 +338,10 @@ public class DummyOutputCommitter extends FileOutputCommitter {
                             longRunning.run(() ->
                                             refs.mergeIntoBranch(repository, fromBranch, toBranch,
                                                                  new Merge().message(message)));
+                            if (deleteTaskBranches) {
+                                deleteBranch(fromBranch);
+                            }
+
                             md.onDone.run();
                         } catch (Exception e) {
                             md.onFail.accept(e);
@@ -350,6 +356,9 @@ public class DummyOutputCommitter extends FileOutputCommitter {
             LOG.info("Merge result task branch %s into %s", lastBranch, jobBranch);
             longRunning.run(() ->
                             refs.mergeIntoBranch(repository, lastBranch, jobBranch, new Merge().message("Merge successful task branches")));
+            if (deleteTaskBranches) {
+                deleteBranch(lastBranch);
+            }
         } catch (Matcher.FailedException|InterruptedException e)  {
             throw new IOException(String.format("Merge result task branch into %s", jobBranch), e);
         }
@@ -415,7 +424,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         createBranch(taskBranch, jobBranch);
     }
 
-    private void cleanupTask() throws IOException {
+    private void deleteTaskBranch() throws IOException {
         if (FSConfiguration.getBoolean(conf, outputPath.toUri().getScheme(), Constants.OC_DELETE_TASK_BRANCH, true)) {
             deleteBranch(taskBranch);
         }
@@ -432,27 +441,21 @@ public class DummyOutputCommitter extends FileOutputCommitter {
                 return;
             }
 
-            LOG.info("Commit task branch {} and merge to {}", taskBranch, jobBranch);
+            LOG.info("Commit task branch {}", taskBranch);
             CommitsApi commits = lakeFSClient.getCommits();
             // Uncontended commit, do not retry.
             commits.commit(repository, taskBranch, new CommitCreation().message(String.format("committing Task %s", taskContext.getTaskAttemptID())), null);
 
             if (!hasDiffs(repository, taskBranch, jobBranch)) {
                 LOG.info("Strange, after committing no differences from {} to {}, nothing to merge", taskBranch, jobBranch);
-                return;
+                deleteTaskBranch();
             }
-            RefsApi refs = lakeFSClient.getRefs();
-            longRunning.run(() ->
-                            refs.mergeIntoBranch(repository, taskBranch, jobBranch, new Merge().message("")));
+
+            // CommitJob will merge task branch.
         } catch (FailsafeException e) {
             throw new IOException(String.format("commitTask %s failed (retried)", taskContext.getTaskAttemptID()), e);
         } catch (ApiException e) {
             throw new IOException(String.format("commitTask %s failed", taskContext.getTaskAttemptID()), e);
-        }
-        try {
-            cleanupTask();
-        } catch (IOException e) {
-            LOG.warn("Failed to delete task branch {} after merge (keep going)", taskBranch, e);
         }
     }
 
@@ -462,7 +465,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         if (outputPath == null)
             return;
         try {
-            cleanupTask();
+            deleteTaskBranch();
         } catch (IOException e) {
             LOG.warn("Failed to delete task branch {} while aborting (keep going)", taskBranch, e);
         }
