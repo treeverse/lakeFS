@@ -46,56 +46,9 @@ public class ActionRun {
   @SerializedName(SERIALIZED_NAME_END_TIME)
   private OffsetDateTime endTime;
 
-  /**
-   * Gets or Sets eventType
-   */
-  @JsonAdapter(EventTypeEnum.Adapter.class)
-  public enum EventTypeEnum {
-    COMMIT("pre_commit"),
-    
-    MERGE("pre_merge");
-
-    private String value;
-
-    EventTypeEnum(String value) {
-      this.value = value;
-    }
-
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    public static EventTypeEnum fromValue(String value) {
-      for (EventTypeEnum b : EventTypeEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-
-    public static class Adapter extends TypeAdapter<EventTypeEnum> {
-      @Override
-      public void write(final JsonWriter jsonWriter, final EventTypeEnum enumeration) throws IOException {
-        jsonWriter.value(enumeration.getValue());
-      }
-
-      @Override
-      public EventTypeEnum read(final JsonReader jsonReader) throws IOException {
-        String value =  jsonReader.nextString();
-        return EventTypeEnum.fromValue(value);
-      }
-    }
-  }
-
   public static final String SERIALIZED_NAME_EVENT_TYPE = "event_type";
   @SerializedName(SERIALIZED_NAME_EVENT_TYPE)
-  private EventTypeEnum eventType;
+  private String eventType;
 
   /**
    * Gets or Sets status
@@ -245,7 +198,7 @@ public class ActionRun {
   }
 
 
-  public ActionRun eventType(EventTypeEnum eventType) {
+  public ActionRun eventType(String eventType) {
     
     this.eventType = eventType;
     return this;
@@ -258,12 +211,12 @@ public class ActionRun {
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
-  public EventTypeEnum getEventType() {
+  public String getEventType() {
     return eventType;
   }
 
 
-  public void setEventType(EventTypeEnum eventType) {
+  public void setEventType(String eventType) {
     this.eventType = eventType;
   }
 
