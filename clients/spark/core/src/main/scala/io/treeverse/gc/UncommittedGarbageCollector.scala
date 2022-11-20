@@ -30,11 +30,17 @@ object UncommittedGarbageCollector {
     if (!storageNamespace.endsWith("/")) {
       storageNamespace += "/"
     }
+    val sc = spark.sparkContext
     val dataLocation = getDataLocation(storageNamespace)
     val dataPath = new Path(dataLocation)
-    var dataDF = new NaiveDataLister().listData(spark, dataPath)
+    val configMapper = new ConfigMapper(
+      sc.broadcast(
+        HadoopUtils.getHadoopConfigurationValues(sc.hadoopConfiguration, "fs.", "lakefs.")
+      )
+    )
+    var dataDF = new NaiveDataLister().listData(configMapper, dataPath)
     dataDF = dataDF.filter(dataDF("last_modified") < before.getTime()).select("address")
-    val nsFS = new Path(storageNamespace).getFileSystem(spark.sparkContext.hadoopConfiguration)
+    val nsFS = new Path(storageNamespace).getFileSystem(sc.hadoopConfiguration)
     val committedDF =
       new NaiveCommittedAddressLister().listCommittedAddresses(spark, storageNamespace)
     dataDF
