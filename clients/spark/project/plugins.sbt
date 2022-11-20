@@ -5,3 +5,4 @@ addSbtPlugin("cf.janga" % "sbts3" % "0.10.5")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.29")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.0")
 addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.11.0")
+addDependencyTreePlugin
