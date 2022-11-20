@@ -58,7 +58,7 @@ class ParallelDataListerSpec
         slices.count should be(10)
         slices.sort("slice_id").head.getString(0) should be("slice01")
         df.head.getString(0) should be("slice01/object01")
-        df.tail(1).head.getString(0) should be("slice10/object10")
+        df.sort(asc("address")).head.getString(0) should be("slice10/object10")
       })
     }
   }
