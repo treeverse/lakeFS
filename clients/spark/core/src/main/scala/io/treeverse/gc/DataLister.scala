@@ -51,7 +51,7 @@ class ParallelDataLister extends DataLister with Serializable {
     import spark.implicits._
     val fs = path.getFileSystem(spark.sparkContext.hadoopConfiguration)
     val slices = listPath(configMapper, path.toString)
-    val pathStr = path.getName
+    val pathStr = path.toString
     val objectsUDF = udf((sliceId: String) => {
       listPath(configMapper, pathStr + sliceId)
         .map(s => (s.path, s.lastModified))
