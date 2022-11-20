@@ -10,6 +10,8 @@ import org.apache.spark.sql.DataFrame
 import java.util.Date
 import org.apache.commons.lang3.time.DateUtils
 import org.apache.spark.sql.functions._
+import io.treeverse.clients.ConfigMapper
+import io.treeverse.clients.HadoopUtils
 
 object UncommittedGarbageCollector {
   final val UNCOMMITTED_GC_SOURCE_NAME = "uncommitted_gc"
