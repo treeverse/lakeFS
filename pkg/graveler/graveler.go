@@ -859,8 +859,9 @@ type KVGraveler struct {
 	StagingManager           StagingManager
 	protectedBranchesManager ProtectedBranchesManager
 	garbageCollectionManager GarbageCollectionManager
-	// loggerBase enriched with context to be used for logging.  It
-	// should not be used in any operation where context is available.
+	// logger *without context* to be used for logging.  It should be
+	// avoided in favour of g.log(ctx) in any operation where context is
+	// available.
 	logger logging.Logger
 }
 
