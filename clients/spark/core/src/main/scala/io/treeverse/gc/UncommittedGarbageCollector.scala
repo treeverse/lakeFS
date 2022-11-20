@@ -62,8 +62,9 @@ object UncommittedGarbageCollector {
     val apiClient = ApiClient.get(apiConf)
     val uncommittedLocation = args(2) // TODO use actual uncommitted location
     val outputLocation = args(1)
-    val uncommittedDF =
-      spark.read.parquet(uncommittedLocation).select("address") // TODO use actual uncommitted data
+    val uncommittedGCRunInfo =
+      new DummyUncommittedAddressLister(uncommittedLocation).listUncommittedAddresses(spark, repo)
+    val uncommittedDF = spark.read.parquet(uncommittedGCRunInfo.uncommitedLocation)
     val addressesToDelete =
       getAddressesToDelete(apiClient,
                            repo,
