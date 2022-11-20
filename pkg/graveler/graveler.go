@@ -859,7 +859,10 @@ type KVGraveler struct {
 	StagingManager           StagingManager
 	protectedBranchesManager ProtectedBranchesManager
 	garbageCollectionManager GarbageCollectionManager
-	log                      logging.Logger
+	// logger *without context* to be used for logging.  It should be
+	// avoided in favour of g.log(ctx) in any operation where context is
+	// available.
+	logger logging.Logger
 }
 
 func NewKVGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager) *KVGraveler {
@@ -870,9 +873,12 @@ func NewKVGraveler(committedManager CommittedManager, stagingManager StagingMana
 		StagingManager:           stagingManager,
 		protectedBranchesManager: protectedBranchesManager,
 		garbageCollectionManager: gcManager,
-
-		log: logging.Default().WithField("service_name", "graveler_graveler"),
+		logger:                   logging.Default().WithField("service_name", "graveler_graveler"),
 	}
+}
+
+func (g *KVGraveler) log(ctx context.Context) logging.Logger {
+	return g.logger.WithContext(ctx)
 }
 
 func (g *KVGraveler) GetRepository(ctx context.Context, repositoryID RepositoryID) (*RepositoryRecord, error) {
@@ -1414,7 +1420,7 @@ func (g *KVGraveler) Set(ctx context.Context, repository *RepositoryRecord, bran
 		})
 	}
 
-	return g.safeBranchWrite(ctx, g.log.WithField("key", key).WithField("operation", "set"), repository, branchID, setFunc)
+	return g.safeBranchWrite(ctx, g.log(ctx).WithField("key", key).WithField("operation", "set"), repository, branchID, setFunc)
 }
 
 // safeBranchWrite is a helper function that wraps a branch write operation with validation that the staging token
@@ -1464,7 +1470,7 @@ func (g *KVGraveler) Delete(ctx context.Context, repository *RepositoryRecord, b
 		return ErrWriteToProtectedBranch
 	}
 
-	return g.safeBranchWrite(ctx, g.log.WithField("key", key).WithField("operation", "delete"),
+	return g.safeBranchWrite(ctx, g.log(ctx).WithField("key", key).WithField("operation", "delete"),
 		repository, branchID, func(branch *Branch) error {
 			return g.deleteUnsafe(ctx, repository, branch, key, nil)
 		})
@@ -1484,7 +1490,7 @@ func (g *KVGraveler) DeleteBatch(ctx context.Context, repository *RepositoryReco
 		return fmt.Errorf("keys length (%d) passed the maximum allowed(%d): %w", len(keys), DeleteKeysMaxSize, ErrInvalidValue)
 	}
 	var m *multierror.Error
-	err = g.safeBranchWrite(ctx, g.log.WithField("operation", "delete_keys"),
+	err = g.safeBranchWrite(ctx, g.log(ctx).WithField("operation", "delete_keys"),
 		repository, branchID, func(branch *Branch) error {
 			var cachedMetaRangeID MetaRangeID // used to cache the committed branch metarange ID
 			for _, key := range keys {
@@ -1758,7 +1764,7 @@ func (g *KVGraveler) Commit(ctx context.Context, repository *RepositoryRecord, b
 		PreRunID:         preRunID,
 	})
 	if err != nil {
-		g.log.WithError(err).
+		g.log(ctx).WithError(err).
 			WithField("run_id", postRunID).
 			WithField("pre_run_id", preRunID).
 			Error("Post-commit hook failed")
@@ -1775,7 +1781,7 @@ func (g *KVGraveler) retryBranchUpdate(ctx context.Context, repository *Reposito
 		// TODO(eden) issue 3586 - if the branch commit id hasn't changed, update the fields instead of fail
 		err := g.RefManager.BranchUpdate(ctx, repository, branchID, f)
 		if errors.Is(err, kv.ErrPredicateFailed) && try < BranchUpdateMaxTries {
-			g.log.WithField("try", try).
+			g.log(ctx).WithField("try", try).
 				WithField("branchID", branchID).
 				Info("Retrying update branch")
 			try += 1
@@ -1911,7 +1917,7 @@ func (g *KVGraveler) dropTokens(ctx context.Context, tokens ...StagingToken) {
 	for _, token := range tokens {
 		err := g.StagingManager.DropAsync(ctx, token)
 		if err != nil {
-			logging.Default().WithError(err).WithField("staging_token", token).Error("Failed to drop staging token")
+			logging.FromContext(ctx).WithError(err).WithField("staging_token", token).Error("Failed to drop staging token")
 		}
 	}
 }
@@ -2173,7 +2179,7 @@ func (g *KVGraveler) Merge(ctx context.Context, repository *RepositoryRecord, de
 		if err != nil {
 			return nil, err
 		}
-		g.log.WithFields(logging.Fields{
+		g.log(ctx).WithFields(logging.Fields{
 			"repository":             source,
 			"source":                 source,
 			"destination":            destination,
@@ -2252,7 +2258,7 @@ func (g *KVGraveler) Merge(ctx context.Context, repository *RepositoryRecord, de
 		PreRunID:  preRunID,
 	})
 	if err != nil {
-		g.log.
+		g.log(ctx).
 			WithError(err).
 			WithField("run_id", postRunID).
 			WithField("pre_run_id", preRunID).

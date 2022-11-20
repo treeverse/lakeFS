@@ -205,7 +205,7 @@ func (s *StoreService) asyncRun(record graveler.HookRecord) {
 
 		// passing the global context for cancelling all runs when lakeFS shuts down
 		if err := s.Run(s.ctx, record); err != nil {
-			logging.Default().WithError(err).WithField("record", record).
+			logging.FromContext(s.ctx).WithError(err).WithField("record", record).
 				Info("Async run of hook failed")
 		}
 	}()
@@ -214,7 +214,7 @@ func (s *StoreService) asyncRun(record graveler.HookRecord) {
 // Run load and run actions based on the event information
 func (s *StoreService) Run(ctx context.Context, record graveler.HookRecord) error {
 	if !s.runHooks {
-		logging.Default().WithField("record", record).Debug("Hooks are disabled, skipping hooks execution")
+		logging.FromContext(ctx).WithField("record", record).Debug("Hooks are disabled, skipping hooks execution")
 		return nil
 	}
 
@@ -223,7 +223,7 @@ func (s *StoreService) Run(ctx context.Context, record graveler.HookRecord) erro
 		EventType: record.EventType,
 		BranchID:  record.BranchID,
 	}
-	logging.Default().WithFields(logging.Fields{"record": record, "spec": spec}).Debug("Filtering actions")
+	logging.FromContext(ctx).WithFields(logging.Fields{"record": record, "spec": spec}).Debug("Filtering actions")
 	actions, err := s.loadMatchedActions(ctx, record, spec)
 	if err != nil || len(actions) == 0 {
 		return err
