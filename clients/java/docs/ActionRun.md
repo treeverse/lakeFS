@@ -11,18 +11,9 @@ Name | Type | Description | Notes
 **branch** | **String** |  | 
 **startTime** | **OffsetDateTime** |  | 
 **endTime** | **OffsetDateTime** |  |  [optional]
-**eventType** | [**EventTypeEnum**](#EventTypeEnum) |  | 
+**eventType** | **String** |  | 
 **status** | [**StatusEnum**](#StatusEnum) |  | 
 **commitId** | **String** |  | 
-
-
-
-## Enum: EventTypeEnum
-
-Name | Value
----- | -----
-COMMIT | &quot;pre_commit&quot;
-MERGE | &quot;pre_merge&quot;
 
 
 
