@@ -16,7 +16,7 @@ jobs:
     name: Check if secrets are available.
     outputs:
       secretsavailable: ${{ steps.enablejobs.outputs.secretsavailable }}
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
     steps:
       - id: enablejobs
         env:
