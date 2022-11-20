@@ -13,8 +13,8 @@ import (
 const (
 	IDTokenClaimsSessionKey = "id_token_claims"
 	StateSessionKey         = "state"
-
-	stateLength = 22
+	OIDCAuthSessionName     = "oidc_auth_session"
+	stateLength             = 22
 )
 
 // NewOIDCLoginPageHandler returns a handler to redirect the user the OIDC provider's login page.

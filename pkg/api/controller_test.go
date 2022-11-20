@@ -22,15 +22,19 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/hashicorp/go-multierror"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/rs/xid"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/catalog/testutils"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -166,7 +170,6 @@ func TestController_ListRepositoriesHandler(t *testing.T) {
 func TestController_GetRepoHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
-
 	t.Run("get missing repo", func(t *testing.T) {
 		resp, err := clt.GetRepositoryWithResponse(ctx, "foo1")
 		testutil.Must(t, err)
@@ -2438,6 +2441,48 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestLogin(t *testing.T) {
+	const configureDuration = "48h"
+	viper.Set(config.AuthLoginDuration, configureDuration)
+
+	handler, deps := setupHandler(t)
+	server := setupServer(t, handler)
+	clt := setupClientByEndpoint(t, server.URL, "", "")
+	cred := createDefaultAdminUser(t, clt)
+
+	resp, err := clt.LoginWithResponse(context.Background(), api.LoginJSONRequestBody{
+		AccessKeyId:     cred.AccessKeyID,
+		SecretAccessKey: cred.SecretAccessKey,
+	})
+	if err != nil {
+		t.Errorf("Error login with response %v", err)
+	}
+	if resp.StatusCode() != http.StatusOK {
+		t.Fatalf("expected response from status 200 got %d", resp.StatusCode())
+	}
+	res := resp.JSON200
+	claims, err := auth.VerifyToken(deps.authService.SecretStore().SharedSecret(), res.Token)
+	testutil.Must(t, err)
+	resultExpiry := swag.Int64Value(res.TokenExpiration)
+	if claims.ExpiresAt != resultExpiry {
+		t.Errorf("token expiry (%d) not equal to expiry result (%d)", claims.ExpiresAt, resultExpiry)
+	}
+
+	// login duration
+	loginDuration, err := time.ParseDuration(configureDuration)
+	testutil.Must(t, err)
+	tokenDuration := time.Duration(claims.ExpiresAt-claims.IssuedAt) * time.Second
+	if (tokenDuration - loginDuration).Abs() > time.Minute {
+		t.Errorf("token duration should be around %v got %v", loginDuration, tokenDuration)
+	}
+
+	// validate issued at
+	issueSince := time.Since(time.Unix(claims.IssuedAt, 0))
+	if issueSince > 5*time.Minute && issueSince < 0 {
+		t.Errorf("issue since %s expected last five minutes", issueSince)
 	}
 }
 
