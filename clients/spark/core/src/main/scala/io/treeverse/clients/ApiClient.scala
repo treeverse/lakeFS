@@ -1,19 +1,29 @@
 package io.treeverse.clients
 
-import com.google.common.cache.{Cache, CacheBuilder, CacheLoader, LoadingCache}
+import com.google.common.cache.Cache
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
+import dev.failsafe.Failsafe
+import dev.failsafe.FailsafeException
+import dev.failsafe.FailsafeExecutor
+import dev.failsafe.Policy
+import dev.failsafe.RetryPolicy
 import dev.failsafe.function.CheckedSupplier
-import dev.failsafe.{Failsafe, FailsafeException, FailsafeExecutor, Policy, RetryPolicy}
 import io.lakefs.clients.api
+import io.lakefs.clients.api.ConfigApi
+import io.lakefs.clients.api.RetentionApi
 import io.lakefs.clients.api.model._
-import io.lakefs.clients.api.{ConfigApi, RetentionApi}
 import io.treeverse.clients.ApiClient.TIMEOUT_NOT_SET
 import io.treeverse.clients.StorageClientType.StorageClientType
-import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
+import io.treeverse.clients.StorageUtils.StorageTypeAzure
+import io.treeverse.clients.StorageUtils.StorageTypeS3
 
 import java.net.URI
 import java.time.Duration
 import java.time.temporal.ChronoUnit
-import java.util.concurrent.{Callable, TimeUnit}
+import java.util.concurrent.Callable
+import java.util.concurrent.TimeUnit
 import scala.collection.JavaConverters._
 
 // The different types of storage clients the metadata client uses to access the object store.
@@ -170,6 +180,20 @@ class ApiClient private (conf: APIConfigurations) {
 
   def getStorageNamespace(repoName: String, storageClientType: StorageClientType): String = {
     storageNamespaceCache.get(StorageNamespaceCacheKey(repoName, storageClientType))
+  }
+
+  def prepareGarbageCollectionUncommitted(
+      repoName: String,
+      continuationToken: String
+  ): PrepareGCUncommittedResponse = {
+    val prepareGcUncommitted =
+      new dev.failsafe.function.CheckedSupplier[PrepareGCUncommittedResponse]() {
+        def get(): PrepareGCUncommittedResponse = retentionApi.prepareGarbageCollectionUncommitted(
+          repoName,
+          new PrepareGCUncommittedRequest().continuationToken(continuationToken)
+        )
+      }
+    retryWrapper.wrapWithRetry(prepareGcUncommitted)
   }
 
   def prepareGarbageCollectionCommits(
