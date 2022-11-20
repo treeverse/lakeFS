@@ -270,7 +270,7 @@ jobs:
 
       - uses: actions/setup-java@v3
         with:
-          distribution: "adopt-hotspot"
+          distribution: "temurin"
           java-version: "8"
           cache: "sbt"
 
@@ -331,7 +331,7 @@ jobs:
 
       - uses: actions/setup-java@v3
         with:
-          distribution: "adopt-hotspot"
+          distribution: "temurin"
           java-version: "8"
           cache: "sbt"
 
@@ -410,7 +410,7 @@ jobs:
 
       - uses: actions/setup-java@v3
         with:
-          distribution: "adopt-hotspot"
+          distribution: "temurin"
           java-version: "8"
           cache: "sbt"
 
@@ -603,7 +603,7 @@ jobs:
 
       - uses: actions/setup-java@v3
         with:
-          distribution: "adopt-hotspot"
+          distribution: "temurin"
           java-version: "8"
           cache: "sbt"
 
