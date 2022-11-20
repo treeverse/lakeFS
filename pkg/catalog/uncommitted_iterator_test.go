@@ -94,6 +94,7 @@ func TestUncommittedIterator(t *testing.T) {
 			require.NoError(t, err)
 			count := 0
 			for itr.Next() {
+				require.Equal(t, uncommittedBranchRecords[count%len(uncommittedBranchRecords)].Key.String(), itr.Value().Path.String())
 				count += 1
 			}
 			expectedCount := len(tt.records) * len(uncommittedBranchRecords)
@@ -222,13 +223,17 @@ func TestUncommittedIterator_SeekGE(t *testing.T) {
 			itr.SeekGE("b3", catalog.Path(uncommittedBranchRecords[skipNum].Key))
 			require.NoError(t, err)
 			count := 0
+			offset := 0
+			if len(tt.records["bst3"]) > 0 {
+				offset = skipNum
+			}
 			for itr.Next() {
+				require.Equal(t, uncommittedBranchRecords[(count+offset)%len(uncommittedBranchRecords)].Key.String(), itr.Value().Path.String())
 				count += 1
 			}
 			expectedCount := tt.expectedCount
-			if len(tt.records["bst3"]) > 0 {
-				expectedCount -= skipNum
-			}
+			expectedCount -= offset
+
 			require.Equal(t, expectedCount, count)
 			require.NoError(t, itr.Err())
 			require.False(t, itr.Next())
@@ -236,8 +241,6 @@ func TestUncommittedIterator_SeekGE(t *testing.T) {
 			itr.SeekGE("b3", catalog.Path(uncommittedBranchRecords[skipNum].Key))
 			require.NoError(t, itr.Err())
 			itr.Close()
-			require.NoError(t, itr.Err())
-			itr.SeekGE("b3", catalog.Path(uncommittedBranchRecords[skipNum].Key))
 			require.NoError(t, itr.Err())
 		})
 	}
