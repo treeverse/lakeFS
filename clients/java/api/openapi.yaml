@@ -5689,7 +5689,7 @@ components:
       example:
         start_time: 2000-01-23T04:56:07.000+00:00
         run_id: run_id
-        event_type: pre_commit
+        event_type: event_type
         end_time: 2000-01-23T04:56:07.000+00:00
         branch: branch
         commit_id: commit_id
@@ -5706,9 +5706,6 @@ components:
           format: date-time
           type: string
         event_type:
-          enum:
-          - pre_commit
-          - pre_merge
           type: string
         status:
           enum:
@@ -5735,14 +5732,14 @@ components:
         results:
         - start_time: 2000-01-23T04:56:07.000+00:00
           run_id: run_id
-          event_type: pre_commit
+          event_type: event_type
           end_time: 2000-01-23T04:56:07.000+00:00
           branch: branch
           commit_id: commit_id
           status: failed
         - start_time: 2000-01-23T04:56:07.000+00:00
           run_id: run_id
-          event_type: pre_commit
+          event_type: event_type
           end_time: 2000-01-23T04:56:07.000+00:00
           branch: branch
           commit_id: commit_id
