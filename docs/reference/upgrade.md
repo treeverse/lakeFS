@@ -10,6 +10,10 @@ redirect_from: ../deploying-aws/upgrade.html
 
 # Upgrading lakeFS
 {: .no_toc }
+
+Note: For a fully managed lakeFS service with guaranteed SLAs, try https://lakefs.cloud
+{: .note }
+
 Upgrading lakeFS from a previous version usually just requires re-deploying with the latest image (or downloading the latest version if you're using the binary).
 If you're upgrading, check whether the [release](https://github.com/treeverse/lakeFS/releases) requires a migration.
 

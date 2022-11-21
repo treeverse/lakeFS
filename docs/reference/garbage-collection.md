@@ -10,6 +10,9 @@ has_children: false
 # Garbage Collection
 {: .no_toc }
 
+Note: For managed garbage collection on top of a hosted lakeFS service with guaranteed SLAs, try https://lakefs.cloud
+{: .note }
+
 By default, lakeFS keeps all your objects forever. This allows you to travel back in time to previous versions of your data.
 However, sometimes you may want to hard-delete your objects - namely, delete them from the underlying storage. 
 Reasons for this include cost-reduction and privacy policies.
