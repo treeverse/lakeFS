@@ -2882,14 +2882,16 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 
 	// setup response
 	var reader io.ReadCloser
+	pointer := block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}
 
 	// handle partial response if byte range supplied
 	if params.Range != nil {
 		rng, err := httputil.ParseRange(*params.Range, entry.Size)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid byte range")
+			return
 		}
-		reader, err = c.BlockAdapter.GetRange(ctx, block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}, rng.StartOffset, rng.EndOffset)
+		reader, err = c.BlockAdapter.GetRange(ctx, pointer, rng.StartOffset, rng.EndOffset)
 		if c.handleAPIError(ctx, w, err) {
 			return
 		}
@@ -2900,7 +2902,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", rng.EndOffset-rng.StartOffset+1))
 	} else {
-		reader, err = c.BlockAdapter.Get(ctx, block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}, entry.Size)
+		reader, err = c.BlockAdapter.Get(ctx, pointer, entry.Size)
 		if c.handleAPIError(ctx, w, err) {
 			return
 		}

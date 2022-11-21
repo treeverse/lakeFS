@@ -2,8 +2,9 @@ package httputil_test
 
 import (
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/httputil"
 	"testing"
+
+	"github.com/treeverse/lakefs/pkg/httputil"
 )
 
 func TestParseRange(t *testing.T) {
