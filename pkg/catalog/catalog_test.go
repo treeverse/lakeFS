@@ -584,7 +584,6 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			require.NoError(t, err)
 
 			for result.Mark != nil {
-				time.Sleep(1 * time.Second)
 				runID := result.Metadata.RunId
 				require.Equal(t, runID, result.Mark.RunID)
 				result, err = c.PrepareGCUncommitted(ctx, repoID.String(), result.Mark)

@@ -280,8 +280,15 @@ func (a *Adapter) Walk(_ context.Context, walkOpt block.WalkOpts, walkFn block.W
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
-	fullPrefix := getPrefix(walkOpt)
+	// Walk function should be performed in a lexicographical order
+	keys := make([]string, 0)
 	for k := range a.data {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	fullPrefix := getPrefix(walkOpt)
+	for _, k := range keys {
 		if strings.HasPrefix(k, fullPrefix) {
 			if err := walkFn(k); err != nil {
 				return err
