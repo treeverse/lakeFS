@@ -2737,6 +2737,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        416:
+          description: Requested Range Not Satisfiable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /repositories/{repository}/branches/{branch}/staging/backing:
     parameters:

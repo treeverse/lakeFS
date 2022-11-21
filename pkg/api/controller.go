@@ -2888,7 +2888,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	if params.Range != nil {
 		rng, err := httputil.ParseRange(*params.Range, entry.Size)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid byte range")
+			writeError(w, http.StatusRequestedRangeNotSatisfiable, "Requested Range Not Satisfiable")
 			return
 		}
 		reader, err = c.BlockAdapter.GetRange(ctx, pointer, rng.StartOffset, rng.EndOffset)

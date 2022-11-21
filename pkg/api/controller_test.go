@@ -1949,6 +1949,48 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("get object byte range", func(t *testing.T) {
+		rng := "bytes=0-9"
+		resp, err := clt.GetObjectWithResponse(ctx, "repo1", "main", &api.GetObjectParams{
+			Path:  "foo/bar",
+			Range: &rng,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.HTTPResponse.StatusCode != http.StatusPartialContent {
+			t.Fatalf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusPartialContent)
+		}
+
+		if resp.HTTPResponse.ContentLength != 10 {
+			t.Fatalf("expected 10 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
+		}
+
+		etag := resp.HTTPResponse.Header.Get("ETag")
+		if etag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
+			t.Fatalf("got unexpected etag: %s", etag)
+		}
+
+		body := string(resp.Body)
+		if body != "this is fi" {
+			t.Fatalf("got unexpected body: '%s'", body)
+		}
+	})
+
+	t.Run("get object bad byte range", func(t *testing.T) {
+		rng := "bytes=380-390"
+		resp, err := clt.GetObjectWithResponse(ctx, "repo1", "main", &api.GetObjectParams{
+			Path:  "foo/bar",
+			Range: &rng,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.HTTPResponse.StatusCode != http.StatusRequestedRangeNotSatisfiable {
+			t.Fatalf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusRequestedRangeNotSatisfiable)
+		}
+	})
+
 	t.Run("get properties", func(t *testing.T) {
 		resp, err := clt.GetUnderlyingPropertiesWithResponse(ctx, "repo1", "main", &api.GetUnderlyingPropertiesParams{Path: "foo/bar"})
 		if err != nil {

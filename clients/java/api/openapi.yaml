@@ -3009,6 +3009,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: object expired
+        "416":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Requested Range Not Satisfiable
       summary: get object content
       tags:
       - objects

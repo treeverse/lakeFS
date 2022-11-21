@@ -282,6 +282,7 @@ Name | Type | Description  | Notes
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **410** | object expired |  -  |
+**416** | Requested Range Not Satisfiable |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getUnderlyingProperties"></a>
