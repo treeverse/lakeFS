@@ -1559,6 +1559,10 @@ func (c *Catalog) Merge(ctx context.Context, repositoryID string, destinationBra
 	}); err != nil {
 		return "", err
 	}
+
+	// disabling batching for this flow. See #3935 for more details
+	ctx = context.WithValue(ctx, batch.SkipBatchContextKey, struct{}{})
+
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return "", err
