@@ -20,21 +20,21 @@ Moreover, a commit should represent a meaningful point in your data's lifecycle,
 As a rule of thumb, try to keep your commits smaller than 1M objects.
 
 ## Avoid concurrent commits/merges
-Concurrent commits/merges on the same branch may result in a race and may need a retry if one fails.
-Therefore, it is suggested to avoid committing/merging on the same branch from multiple sources concurrently.
+Just like in Git, branch history is composed by commits and is linear by nature. 
+Concurrent commits/merges on the same branch result in a race. The first operation will finish successfully while the rest will retry.
 
 ## Use zero-copy import
 To import object into lakeFS, either a single time or regularly, lakeFS offers a [zero-copy import](https://docs.lakefs.io/setup/import.html#zero-copy-import) feature.
 Use this feature to import a large number of objects to lakeFS, instead of simply copying them into your repository.
-This feature will create a reference to the existing objects on your bucket and avoid the copy.
+This feature will create a reference to the existing objects on your bucket and avoids the copy.
 
 ## Read data using the commit ID
 In cases where you are only interested in reading committed data, use a commit ID (or a tag ID) in your path (e.g: `lakefs://repo/a1b2c3`).
-When accessing data using the branch name (e.g. `lakefs://repo/main`) lakeFS will also try to fetch uncommitted data, which may result in reduced performance.
+When accessing data using the branch name (e.g. `lakefs://repo/main/path`) lakeFS will also try to fetch uncommitted data, which may result in reduced performance.
 For more information, see [how uncommitted data is managed in lakeFS](https://docs.lakefs.io/understand/versioning-internals.html#representing-references-and-uncommitted-metadata)
 
 ## Operate directly on the storage
-Sometimes, storage operations can become a bottleneck. For example, when your data pipelines uploads very big objects.
+Sometimes, storage operations can become a bottleneck. For example, when your data pipelines upload many big objects.
 In such cases, it can be beneficial to perform only versioning operations on lakeFS, while performing storage reads/writes directly on the object store.
 lakeFS offers multiple ways to do that:
 * The [`lakectl upload --direct`](https://docs.lakefs.io/reference/commands.html#lakectl-fs-upload) command (or [download](https://docs.lakefs.io/reference/commands.html#lakectl-fs-download)).
