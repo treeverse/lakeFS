@@ -16,7 +16,7 @@ jobs:
     name: Check if secrets are available.
     outputs:
       secretsavailable: ${{ steps.enablejobs.outputs.secretsavailable }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     steps:
       - id: enablejobs
         env:
@@ -27,7 +27,7 @@ jobs:
 
   gen-code:
     name: Generate code from latest lakeFS app
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
@@ -80,7 +80,7 @@ jobs:
     name: Build and push Docker image
     needs: [check-secrets, gen-code]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     outputs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
@@ -180,7 +180,7 @@ jobs:
     name: Build and push rclone export Docker image
     needs: check-secrets
     if: needs.check-secrets.outputs.secretsavailable == 'true'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     outputs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
@@ -216,7 +216,7 @@ jobs:
   hadoopfs-tests:
     name: Test lakeFS Hadoop FileSystem
     needs: deploy-image
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
@@ -259,7 +259,7 @@ jobs:
   hadoopfs-s3a-mpu:
     name: Test lakeFS multipart upload with Hadoop S3A
     needs: deploy-image
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
@@ -320,7 +320,7 @@ jobs:
   spark2:
     name: Test lakeFS with Spark 2.x
     needs: deploy-image
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
@@ -399,7 +399,7 @@ jobs:
   spark3:
     name: Test lakeFS with Spark 3.x
     needs: deploy-image
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
@@ -479,7 +479,7 @@ jobs:
   export:
     name: Test lakeFS rclone export functionality
     needs: [deploy-image, deploy-rclone-export-image]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     env:
       LAKEFS_TAG: ${{ needs.deploy-image.outputs.tag }}
       EXPORT_TAG: ${{ needs.deploy-rclone-export-image.outputs.tag }}
@@ -528,7 +528,7 @@ jobs:
   metastore-client-with-trino:
     name: Test metastore client commands using trino and dbt
     needs: [gen-code, deploy-image]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
@@ -592,7 +592,7 @@ jobs:
 
   build-spark3-metadata-client:
     name: Build metadata client for Spark 3.x
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     needs: check-secrets
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -634,7 +634,7 @@ jobs:
   metadata-client-gc-spark3:
     name: Test lakeFS metadata client GC with Spark 3.x
     needs: [deploy-image, build-spark3-metadata-client]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     strategy:
       matrix:
         spark:
@@ -710,7 +710,7 @@ jobs:
   metadata-client-gc-spark3-hadoop3-on-azure:
     name: Test lakeFS metadata client GC with Spark 3.x and Hadoop 3 on Azure
     needs: [deploy-image, build-spark3-metadata-client]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     strategy:
       matrix:
         spark:
@@ -772,7 +772,7 @@ jobs:
   metadata-client-export-spark3:
     name: Test lakeFS metadata client export with Spark 3.x
     needs: [deploy-image, build-spark3-metadata-client]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     strategy:
       matrix:
         spark:
@@ -845,7 +845,7 @@ jobs:
   run-system-aws-s3-kv-dynamodb:
     name: Run latest lakeFS app on AWS S3 DynamoDB KV
     needs: [gen-code, deploy-image]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       # Setting Account_ID as a secret as a way to avoid specifying it here
@@ -902,7 +902,7 @@ jobs:
   run-system-aws-s3:
     name: Run latest lakeFS app on AWS S3
     needs: [gen-code, deploy-image]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       # Setting Account_ID as a secret as a way to avoid specifying it here
@@ -969,7 +969,7 @@ jobs:
   run-system-gcp-gs:
     name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
     needs: [gen-code, deploy-image]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       # Setting Account_ID as a secret as a way to avoid specifying it here
@@ -1005,7 +1005,7 @@ jobs:
   run-system-azure-abfs:
     name: Run latest lakeFS app on Azure with Azure blobstore
     needs: [gen-code, deploy-image]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-16-cores
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       # Setting Account_ID as a secret as a way to avoid specifying it here
