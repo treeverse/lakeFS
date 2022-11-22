@@ -2,7 +2,7 @@
 layout: default 
 title: Add Data
 description: In this section, we will learn how to configure and use AWS CLI to manage data with the lakeFS Server.
-parent: QuickStart
+parent: Tutorials
 nav_order: 30
 has_children: false
 next: ["Commit the changes", "./first_commit.html"]
@@ -48,9 +48,6 @@ Since lakeFS exposes an S3-compatible API, you can use the AWS CLI to operate on
 1. Back in the lakeFS UI, you can see your file in the *Uncommitted Changes* tab:
 
    ![Object Added]({{ site.baseurl }}/assets/img/object_added.png)
-
-Follow the tutorial video below to create a repository, add data to a repository and merge the changes:
-<iframe width="420" height="315" src="https://www.youtube.com/embed/TnbH9UwoiF8"></iframe>
 
 ### Next steps
 

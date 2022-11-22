@@ -1,14 +1,14 @@
 ---
 layout: default
-title: Install lakeFS
-description: Installing lakeFS is easy. This section covers how to spin up lakeFS using Docker.
+title: Run lakeFS Locally
+description: Running lakeFS is easy. This section covers how to spin up lakeFS using Docker.
 parent: QuickStart
 nav_order: 10
 has_children: false
-next: ["Create your first repository", "./repository.html"]
+next: ["More QuickStart Options", "./more_quickstart_options.html"]
 ---
 
-# Install lakeFS
+# Run lakeFS Locally
 {: .no_toc }
 
 {% include learn_only.html %} 
@@ -32,13 +32,6 @@ To run a local lakeFS instance using [Docker](https://docs.docker.com/){:target=
 
 Watch video to install lakeFS using Docker as well as point it to your own object storage:
 <iframe width="420" height="315" src="https://www.youtube.com/embed/CIDrHVFnIJY"></iframe>
-
-## Other methods
-
-You can try lakeFS:
-
-1. [On Kubernetes](more_quickstart_options.md#on-kubernetes-with-helm).
-1. By [running the binary directly](more_quickstart_options.md#using-the-binary).
 
 ## Modifying the local deployment
 
@@ -71,4 +64,4 @@ Note using the ```--local-settings``` flag, metadata is being stored locally in 
 
 ## Next steps
 
-Now that your lakeFS is running, try [creating a repository](repository.md).
+Now that your lakeFS is running, you can head to the [tutorials](tutorials.html) section.

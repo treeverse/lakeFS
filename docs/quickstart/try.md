@@ -1,24 +1,27 @@
 ---
 layout: default
-title: Try without installing
-description: Learn how to use lakeFS using the CLI from your browser, without installing anything
+title: Try lakeFS without installing
+description: Learn how to use lakeFS, without installing anything
 parent: QuickStart
 nav_order: 1
 has_children: false
-next: ["Install lakeFS using Docker", "./installing.html"]
+next: ["Run lakeFS Locally", "./installing.html"]
 ---
 
 # Try lakeFS without installing
 {: .no_toc}
 
-{% include_relative includes/try.md %}
+## lakeFS Playground
+Quickly experience lakeFS firsthand with your own isolated environment in the cloud. You can easily integrate it with your existing tools and see lakeFS in action in an environment similar to your own.
+<p style="margin-top: 20px;">
+    <a class="btn btn-green" href="https://demo.lakefs.io/" target="_blank">
+        Try lakeFS now without installing
+    </a>
+</p>
 
-Watch video to run Delta Lake Demo Notebook:
-<iframe width="420" height="315" src="https://www.youtube.com/embed/knbiXy6mWNg"></iframe>
-
-Watch video to run Airflow Demo Notebook:
-<iframe width="420" height="315" src="https://www.youtube.com/embed/HuQQUvmVjhU"></iframe>
+Watch video regarding lakeFS Playground:
+<iframe width="420" height="315" src="https://www.youtube.com/embed/RBKJGpkN-Yo"></iframe>
 
 ## Next Steps
 
-You can now try [creating a repository](repository.md) or [install lakeFS using Docker](installing.html).
+Now that your lakeFS Playground is running, you can head to the [tutorials](tutorials.html) section.
