@@ -193,7 +193,7 @@ Name | Type | Description  | Notes
 
 <a name="getObject"></a>
 # **getObject**
-> File getObject(repository, ref, path)
+> File getObject(repository, ref, path, range)
 
 get object content
 
@@ -237,8 +237,9 @@ public class Example {
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
     String path = "path_example"; // String | relative to the ref
+    String range = "bytes=0-1023"; // String | Byte range to retrieve
     try {
-      File result = apiInstance.getObject(repository, ref, path);
+      File result = apiInstance.getObject(repository, ref, path, range);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#getObject");
@@ -258,6 +259,7 @@ Name | Type | Description  | Notes
  **repository** | **String**|  |
  **ref** | **String**| a reference (could be either a branch or a commit ID) |
  **path** | **String**| relative to the ref |
+ **range** | **String**| Byte range to retrieve | [optional]
 
 ### Return type
 
@@ -276,9 +278,11 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | object content |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  * Content-Disposition -  <br>  |
+**206** | partial object content |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  * Content-Disposition -  <br>  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **410** | object expired |  -  |
+**416** | Requested Range Not Satisfiable |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getUnderlyingProperties"></a>
