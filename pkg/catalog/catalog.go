@@ -1834,7 +1834,7 @@ func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, 
 	return c.BlockAdapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: ns.String(),
 		Identifier:       location,
-		IdentifierType:   block.IdentifierTypeRelative,
+		IdentifierType:   block.IdentifierTypeFull,
 	}, size, fd, block.PutOpts{})
 }
 
