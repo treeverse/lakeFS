@@ -16,7 +16,7 @@ jobs:
     name: Check if secrets are available.
     outputs:
       secretsavailable: ${{ steps.enablejobs.outputs.secretsavailable }}
-    runs-on: ubuntu-latest-16-cores
+    runs-on: ubuntu-20.04
     steps:
       - id: enablejobs
         env:
@@ -67,7 +67,9 @@ jobs:
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
         run: |
-          make -j3 gen-api gen-ui VERSION=${{ steps.version.outputs.tag }}
+          make -j3 gen-api VERSION=${{ steps.version.outputs.tag }}
+          mkdir webui/dist
+          touch webui/dist/index.html
           tar -cf /tmp/generated.tar.gz .
 
       - name: Store generated code
