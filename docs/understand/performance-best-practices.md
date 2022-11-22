@@ -29,7 +29,10 @@ Use this feature to import a large number of objects to lakeFS, instead of simpl
 This feature will create a reference to the existing objects on your bucket and avoids the copy.
 
 ## Read data using the commit ID
-In cases where you are only interested in reading committed data, use a commit ID (or a tag ID) in your path (e.g: `lakefs://repo/a1b2c3`).
+In cases where you are only interested in reading committed data: 
+* Use a commit ID (or a tag ID) in your path (e.g: `lakefs://repo/a1b2c3`).
+* Add `@` before the path  `lakefs://repo/main@/path`.
+
 When accessing data using the branch name (e.g. `lakefs://repo/main/path`) lakeFS will also try to fetch uncommitted data, which may result in reduced performance.
 For more information, see [how uncommitted data is managed in lakeFS](https://docs.lakefs.io/understand/versioning-internals.html#representing-references-and-uncommitted-metadata)
 
