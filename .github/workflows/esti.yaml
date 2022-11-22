@@ -82,7 +82,7 @@ jobs:
     name: Build and push Docker image
     needs: [check-secrets, gen-code]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
-    runs-on: ubuntu-latest-16-cores
+    runs-on: ubuntu-latest-8-cores
     outputs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
@@ -636,7 +636,7 @@ jobs:
   metadata-client-gc-spark3:
     name: Test lakeFS metadata client GC with Spark 3.x
     needs: [deploy-image, build-spark3-metadata-client]
-    runs-on: ubuntu-latest-16-cores
+    runs-on: ubuntu-latest-8-cores
     strategy:
       matrix:
         spark:
@@ -712,7 +712,7 @@ jobs:
   metadata-client-gc-spark3-hadoop3-on-azure:
     name: Test lakeFS metadata client GC with Spark 3.x and Hadoop 3 on Azure
     needs: [deploy-image, build-spark3-metadata-client]
-    runs-on: ubuntu-latest-16-cores
+    runs-on: ubuntu-latest-8-cores
     strategy:
       matrix:
         spark:
