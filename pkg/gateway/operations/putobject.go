@@ -11,7 +11,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
-	ghttp "github.com/treeverse/lakefs/pkg/gateway/http"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -222,7 +221,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 		var resp *block.UploadPartResponse
 		if rang := req.Header.Get(CopySourceRangeHeader); rang != "" {
 			// if this is a copy part with a byte range:
-			parsedRange, parseErr := ghttp.ParseRange(rang, ent.Size)
+			parsedRange, parseErr := httputil.ParseRange(rang, ent.Size)
 			if parseErr != nil {
 				// invalid range will silently fallback to copying the entire object. ¯\_(ツ)_/¯
 				resp, err = o.BlockStore.UploadCopyPart(req.Context(), src, dst, uploadID, partNumber)

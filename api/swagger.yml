@@ -2669,6 +2669,15 @@ paths:
         - objects
       operationId: getObject
       summary: get object content
+      parameters:
+        - in: header
+          name: Range
+          description: Byte range to retrieve
+          example: "bytes=0-1023"
+          required: false
+          schema:
+            type: string
+            pattern: '^bytes=((\d*-\d*,? ?)+)$'
       responses:
         200:
           description: object content
@@ -2691,6 +2700,31 @@ paths:
             Content-Disposition:
               schema:
                 type: string
+        206:
+          description: partial object content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Length:
+              schema:
+                type: integer
+                format: int64
+            Content-Range:
+              schema:
+                type: string
+                pattern: '^bytes=((\d*-\d*,? ?)+)$'
+            Last-Modified:
+              schema:
+                type: string
+            ETag:
+              schema:
+                type: string
+            Content-Disposition:
+              schema:
+                type: string
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2699,6 +2733,12 @@ paths:
           $ref: "#/components/responses/ServerError"
         410:
           description: object expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        416:
+          description: Requested Range Not Satisfiable
           content:
             application/json:
               schema:

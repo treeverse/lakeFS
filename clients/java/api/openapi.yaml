@@ -2910,6 +2910,16 @@ paths:
         schema:
           type: string
         style: form
+      - description: Byte range to retrieve
+        example: bytes=0-1023
+        explode: false
+        in: header
+        name: Range
+        required: false
+        schema:
+          pattern: ^bytes=((\d*-\d*,? ?)+)$
+          type: string
+        style: simple
       responses:
         "200":
           content:
@@ -2924,6 +2934,41 @@ paths:
               schema:
                 format: int64
                 type: integer
+              style: simple
+            Last-Modified:
+              explode: false
+              schema:
+                type: string
+              style: simple
+            ETag:
+              explode: false
+              schema:
+                type: string
+              style: simple
+            Content-Disposition:
+              explode: false
+              schema:
+                type: string
+              style: simple
+        "206":
+          content:
+            application/octet-stream:
+              schema:
+                format: binary
+                type: string
+          description: partial object content
+          headers:
+            Content-Length:
+              explode: false
+              schema:
+                format: int64
+                type: integer
+              style: simple
+            Content-Range:
+              explode: false
+              schema:
+                pattern: ^bytes=((\d*-\d*,? ?)+)$
+                type: string
               style: simple
             Last-Modified:
               explode: false
@@ -2964,6 +3009,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: object expired
+        "416":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Requested Range Not Satisfiable
       summary: get object content
       tags:
       - objects

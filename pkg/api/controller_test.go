@@ -1932,31 +1932,73 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		if resp.HTTPResponse.StatusCode != http.StatusOK {
-			t.Fatalf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusOK)
+			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusOK)
 		}
 
 		if resp.HTTPResponse.ContentLength != 37 {
-			t.Fatalf("expected 37 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
+			t.Errorf("expected 37 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
 		}
 		etag := resp.HTTPResponse.Header.Get("ETag")
 		if etag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
-			t.Fatalf("got unexpected etag: %s", etag)
+			t.Errorf("got unexpected etag: %s", etag)
 		}
 
 		body := string(resp.Body)
 		if body != "this is file content made up of bytes" {
-			t.Fatalf("got unexpected body: '%s'", body)
+			t.Errorf("got unexpected body: '%s'", body)
+		}
+	})
+
+	t.Run("get object byte range", func(t *testing.T) {
+		rng := "bytes=0-9"
+		resp, err := clt.GetObjectWithResponse(ctx, "repo1", "main", &api.GetObjectParams{
+			Path:  "foo/bar",
+			Range: &rng,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.HTTPResponse.StatusCode != http.StatusPartialContent {
+			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusPartialContent)
+		}
+
+		if resp.HTTPResponse.ContentLength != 10 {
+			t.Errorf("expected 10 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
+		}
+
+		etag := resp.HTTPResponse.Header.Get("ETag")
+		if etag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
+			t.Errorf("got unexpected etag: %s", etag)
+		}
+
+		body := string(resp.Body)
+		if body != "this is fi" {
+			t.Errorf("got unexpected body: '%s'", body)
+		}
+	})
+
+	t.Run("get object bad byte range", func(t *testing.T) {
+		rng := "bytes=380-390"
+		resp, err := clt.GetObjectWithResponse(ctx, "repo1", "main", &api.GetObjectParams{
+			Path:  "foo/bar",
+			Range: &rng,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.HTTPResponse.StatusCode != http.StatusRequestedRangeNotSatisfiable {
+			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusRequestedRangeNotSatisfiable)
 		}
 	})
 
 	t.Run("get properties", func(t *testing.T) {
 		resp, err := clt.GetUnderlyingPropertiesWithResponse(ctx, "repo1", "main", &api.GetUnderlyingPropertiesParams{Path: "foo/bar"})
 		if err != nil {
-			t.Fatalf("expected to get underlying properties, got %v", err)
+			t.Errorf("expected to get underlying properties, got %v", err)
 		}
 		properties := resp.JSON200
 		if properties == nil {
-			t.Fatalf("expected to get underlying properties, status code %d", resp.HTTPResponse.StatusCode)
+			t.Errorf("expected to get underlying properties, status code %d", resp.HTTPResponse.StatusCode)
 		}
 
 		if api.StringValue(properties.StorageClass) != expensiveString {
