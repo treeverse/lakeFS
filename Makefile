@@ -168,11 +168,9 @@ esti: ## run esti (system testing)
 
 test: test-go test-hadoopfs  ## Run tests for the project
 
-make-ui-dir:
+test-go: gen-code			# Run parallelism > num_cores: most of our slow tests are *not* CPU-bound.
 	mkdir ./webui/dist
 	touch ./webui/dist/index.html
-
-test-go: make-ui-dir gen-code clients			# Run parallelism > num_cores: most of our slow tests are *not* CPU-bound.
 	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast -parallel="$(GOTEST_PARALLELISM)" $(GO_TEST_MODULES)
 
 test-hadoopfs:
