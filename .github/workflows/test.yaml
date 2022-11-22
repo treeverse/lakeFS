@@ -66,4 +66,7 @@ jobs:
       - name: Run tests
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
-        run: make test-go
+        run: |
+          mkdir ./webui/dist
+          touch ./webui/dist/index.html         
+          make test-go
