@@ -88,31 +88,43 @@ object StorageUtils {
       keys.map(x => snPrefix.concat(x))
     }
 
-    def initializeS3Client(
+    def createAndValidateS3Client(
         configuration: ClientConfiguration,
         credentialsProvider: Option[AWSCredentialsProvider],
+        awsS3ClientBuilder: AmazonS3ClientBuilder,
         region: String,
         bucket: String
     ): AmazonS3 = {
-      val builder = AmazonS3ClientBuilder
-        .standard()
+
+      require(awsS3ClientBuilder != null)
+      require(bucket.nonEmpty)
+
+      var client = initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, region)
+
+      if (!validateClientAndBucketRegionsMatch(client, bucket)) {
+        val bucketRegion = getAWSS3Region(client, bucket)
+        client = initializeS3Client(configuration, credentialsProvider, AmazonS3ClientBuilder.standard(), bucketRegion)
+      }
+      client
+    }
+
+    private def initializeS3Client(
+        configuration: ClientConfiguration,
+        credentialsProvider: Option[AWSCredentialsProvider],
+        awsS3ClientBuilder: AmazonS3ClientBuilder,
+        region: String
+    ): AmazonS3 = {
+      val builder = awsS3ClientBuilder
         .withClientConfiguration(configuration)
         .withRegion(region)
       val builderWithCredentials = credentialsProvider match {
         case Some(cp) => builder.withCredentials(cp)
         case None     => builder
       }
-
-      val client = builderWithCredentials.build
-
-      if (validateClientCorrectness(client, bucket)) {
-        return client
-      }
-      val bucketRegion = getAWSS3Region(client, bucket)
-      builder.withRegion(bucketRegion).build
+      builderWithCredentials.build
     }
 
-    private def validateClientCorrectness(client: AmazonS3, bucket: String): Boolean = {
+    private def validateClientAndBucketRegionsMatch(client: AmazonS3, bucket: String): Boolean = {
       try {
         client.headBucket(new HeadBucketRequest(bucket))
         true
