@@ -80,10 +80,6 @@ func getKey(obj block.ObjectPointer) string {
 	return fmt.Sprintf("%s:%s", obj.StorageNamespace, obj.Identifier)
 }
 
-func getPrefix(lsOpts block.WalkOpts) string {
-	return fmt.Sprintf("%s:%s", lsOpts.StorageNamespace, lsOpts.Prefix)
-}
-
 func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
