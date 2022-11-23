@@ -15,7 +15,7 @@ func transformDifferenceTypeToString(d catalog.DifferenceType) string {
 	case catalog.DifferenceTypeConflict:
 		return "conflict"
 	case catalog.DifferenceTypePrefixChanged:
-		return "changes under prefix"
+		return "prefix_changed"
 	default:
 		return ""
 	}

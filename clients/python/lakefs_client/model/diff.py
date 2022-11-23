@@ -61,6 +61,7 @@ class Diff(ModelNormal):
             'REMOVED': "removed",
             'CHANGED': "changed",
             'CONFLICT': "conflict",
+            'PREFIX_CHANGED': "prefix_changed",
         },
         ('path_type',): {
             'COMMON_PREFIX': "common_prefix",

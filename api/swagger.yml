@@ -343,7 +343,7 @@ components:
       properties:
         type:
           type: string
-          enum: [ added, removed, changed, conflict ]
+          enum: [ added, removed, changed, conflict, prefix_changed ]
         path:
           type: string
         path_type:
