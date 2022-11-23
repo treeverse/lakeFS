@@ -99,11 +99,16 @@ object StorageUtils {
       require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
 
-      var client = initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, region)
+      var client =
+        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, region)
 
       if (!validateClientAndBucketRegionsMatch(client, bucket)) {
         val bucketRegion = getAWSS3Region(client, bucket)
-        client = initializeS3Client(configuration, credentialsProvider, AmazonS3ClientBuilder.standard(), bucketRegion)
+        client = initializeS3Client(configuration,
+                                    credentialsProvider,
+                                    AmazonS3ClientBuilder.standard(),
+                                    bucketRegion
+                                   )
       }
       client
     }

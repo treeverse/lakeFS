@@ -29,6 +29,11 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
         )
       } else None
 
-    createAndValidateS3Client(configuration, credentialsProvider, AmazonS3ClientBuilder.standard(), region, bucket)
+    createAndValidateS3Client(configuration,
+                              credentialsProvider,
+                              AmazonS3ClientBuilder.standard(),
+                              region,
+                              bucket
+                             )
   }
 }
