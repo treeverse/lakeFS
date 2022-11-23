@@ -5009,6 +5009,7 @@ components:
           - removed
           - changed
           - conflict
+          - prefix_changed
           type: string
         path:
           type: string
