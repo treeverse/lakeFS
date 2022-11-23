@@ -302,12 +302,13 @@ public class DummyOutputCommitter extends FileOutputCommitter {
      * Task branches are merged in parallel while avoiding conflict.
      */
     protected void mergeTaskBranches() throws IOException {
+        String scheme = outputPath.toUri().getScheme();
         boolean deleteTaskBranches = FSConfiguration.getBoolean(conf, outputPath.toUri().getScheme(), Constants.OC_DELETE_TASK_BRANCH, true);
 
         List<String> taskBranches = listTaskBranches();
 
         Matcher matcher = new Matcher(taskBranches.size());
-        int parallelism = conf.getInt(Constants.OC_MERGE_PARALLELISM, Constants.DEFAULT_MERGE_PARALLELISM);
+        int parallelism = FSConfiguration.getInt(conf, scheme, Constants.OC_MERGE_PARALLELISM, Constants.DEFAULT_MERGE_PARALLELISM);
         // TODO(ariels): Use OkHttp Calls directly to control lakeFS-side
         //     parallelism without having to add client-side threads.
         Thread[] thread = new Thread[parallelism];
@@ -335,6 +336,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
                             String toBranch = taskBranches.get(md.to);
                             String message = String.format("%d: Merge %s -> %s", ii, fromBranch, toBranch);
 
+                            LOG.debug("Merge task branch {} into {}", fromBranch, toBranch);
                             longRunning.run(() ->
                                             refs.mergeIntoBranch(repository, fromBranch, toBranch,
                                                                  new Merge().message(message)));
@@ -353,7 +355,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         try {
             int last = matcher.waitForEnd();
             String lastBranch = taskBranches.get(last);
-            LOG.info("Merge result task branch %s into %s", lastBranch, jobBranch);
+            LOG.info("Merge result task branch {} into {}", lastBranch, jobBranch);
             longRunning.run(() ->
                             refs.mergeIntoBranch(repository, lastBranch, jobBranch, new Merge().message("Merge successful task branches")));
             if (deleteTaskBranches) {
