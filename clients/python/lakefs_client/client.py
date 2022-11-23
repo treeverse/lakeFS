@@ -1,10 +1,11 @@
 from urllib3.util import parse_url, Url
 import sys
 import inspect
-import keyword
 
 import lakefs_client
 import lakefs_client.apis
+
+_API_CLASS_SUFFIX = "api"
 
 class _WrappedApiClient(lakefs_client.ApiClient):
     """ApiClient that fixes some weirdnesses."""
@@ -31,12 +32,11 @@ class LakeFSClient:
                                           header_value=header_value, cookie=cookie, pool_threads=pool_threads)
         for key, value in inspect.getmembers(sys.modules['lakefs_client.apis'], inspect.isclass):
             name = key.lower()
-            if not name.endswith('api'):
+            if not name.endswith(_API_CLASS_SUFFIX):
                 continue
             api_instance = value(self._api)
-            attr_name = name[0:len(name)-3]
-            if attr_name not in keyword.kwlist:
-                setattr(self, attr_name, api_instance)
+            attr_name = name[:-len(_API_CLASS_SUFFIX)]
+            setattr(self, attr_name, api_instance)
             setattr(self, attr_name + '_api', api_instance)
 
     @staticmethod
