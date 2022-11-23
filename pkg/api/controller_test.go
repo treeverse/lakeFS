@@ -1385,7 +1385,7 @@ func TestController_DiffRefs(t *testing.T) {
 		if results[0].Path != prefix {
 			t.Fatalf("wrong result: %s", results[0].Path)
 		}
-		if results[0].Type != "changes under prefix" {
+		if results[0].Type != "prefix_changed" {
 			t.Fatalf("wrong diff type: %s", results[0].Type)
 		}
 	})

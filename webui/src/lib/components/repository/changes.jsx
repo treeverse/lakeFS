@@ -210,8 +210,7 @@ function extractPathText(entry, relativeTo) {
 function diffType(entry) {
     switch (entry.type) {
         case 'changed':
-            return 'diff-changed';
-        case 'changes under prefix':
+        case 'prefix_changed':
             return 'diff-changed';
         case 'added':
             return 'diff-added';
