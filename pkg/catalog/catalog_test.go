@@ -705,5 +705,5 @@ func verifyData(t *testing.T, ctx context.Context, numBranches, numRecords int, 
 	})
 
 	require.NoError(t, err)
-	require.Equal(t, totalCount, numBranches*numRecords)
+	require.Equal(t, numBranches*numRecords, totalCount)
 }

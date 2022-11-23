@@ -287,9 +287,8 @@ func (a *Adapter) Walk(_ context.Context, walkOpt block.WalkOpts, walkFn block.W
 	}
 	sort.Strings(keys)
 
-	fullPrefix := getPrefix(walkOpt)
 	for _, k := range keys {
-		if strings.HasPrefix(k, fullPrefix) {
+		if strings.HasPrefix(k, walkOpt.Prefix) {
 			if err := walkFn(k); err != nil {
 				return err
 			}
