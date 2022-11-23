@@ -607,6 +607,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 	records := make([][]*graveler.ValueRecord, numBranches)
 	var branches []*graveler.BranchRecord
 	for i := 0; i < numBranches; i++ {
+		fmt.Println("writing branch data", i)
 		branchID := graveler.BranchID(fmt.Sprintf("branch%04d", i))
 		token := graveler.StagingToken(fmt.Sprintf("%s_st%04d", branchID, i))
 		branches = append(branches, &graveler.BranchRecord{BranchID: branchID, Branch: &graveler.Branch{StagingToken: token}})
