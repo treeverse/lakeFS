@@ -77,7 +77,7 @@ def generateCoreProject(buildType: BuildType) =
         "org.apache.hadoop" % "hadoop-distcp" % buildType.hadoopVersion,
         "org.scalatestplus" %% "mockito-4-6" % "3.2.14.0" % "test",
         // https://mvnrepository.com/artifact/com.squareup.okhttp3/mockwebserver
-        "com.squareup.okhttp3" % "mockwebserver" % "4.10.0" % Test,
+        "com.squareup.okhttp3" % "mockwebserver" % "4.10.0" % "test",
         "org.scalatest" %% "scalatest" % "3.2.9" % "test",
         "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.10" % "test",
         "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
