@@ -77,8 +77,6 @@ object UncommittedGarbageCollector {
       uncommittedDF = uncommittedDF.select(uncommittedDF("physical_address").as("address"))
       runID = uncommittedGCRunInfo.runID
 
-      val uncommittedDF = spark.read.parquet(uncommittedGCRunInfo.uncommittedLocation)
-
       val committedDF =
         new NaiveCommittedAddressLister().listCommittedAddresses(spark, storageNamespace)
       addressesToDelete = dataDF
