@@ -565,8 +565,8 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 		},
 		{
 			name:          "Tokenized",
-			numBranch:     1000,
-			numRecords:    5000,
+			numBranch:     500,
+			numRecords:    500,
 			expectedCalls: 2,
 		},
 	}
@@ -575,8 +575,9 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			g := createPrepareUncommittedTestScenario(t, tt.numBranch, tt.numRecords, tt.expectedCalls)
 			blockAdapter := testutil.NewBlockAdapterByType(t, block.BlockstoreTypeMem)
 			c := &catalog.Catalog{
-				Store:        g.Sut,
-				BlockAdapter: blockAdapter,
+				Store:                    g.Sut,
+				BlockAdapter:             blockAdapter,
+				GCMaxUncommittedFileSize: 500 * 1024,
 			}
 			var result *catalog.PrepareGCUncommittedInfo
 
@@ -705,5 +706,5 @@ func verifyData(t *testing.T, ctx context.Context, numBranches, numRecords int, 
 	})
 
 	require.NoError(t, err)
-	require.Equal(t, totalCount, numBranches*numRecords)
+	require.Equal(t, numBranches*numRecords, totalCount)
 }

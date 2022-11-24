@@ -512,7 +512,7 @@ type VersionController interface {
 	// Note: Ancestors of previously expired commits may still be considered if they can be reached from a non-expired commit.
 	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, previousRunID string) (garbageCollectionRunMetadata *GarbageCollectionRunMetadata, err error)
 
-	// GCGetUncommittedLocation returns location of saved uncommitted files per runID
+	// GCGetUncommittedLocation returns full uri of the stroage location of saved uncommitted files per runID
 	GCGetUncommittedLocation(repository *RepositoryRecord, runID string) (string, error)
 
 	GCNewRunID() string
