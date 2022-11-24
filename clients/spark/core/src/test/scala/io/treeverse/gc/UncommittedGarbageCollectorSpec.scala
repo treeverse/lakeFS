@@ -38,10 +38,7 @@ class UncommittedGarbageCollectorSpec
         val lastSlice = "someSlice"
         val markID = "someMarkID"
         val success = true
-        val data = Seq(Row("file1"), Row("file2"))
-        val rdd = spark.sparkContext.parallelize(data)
-        val schema = new StructType().add("address", StringType)
-        val df = spark.createDataFrame(rdd, schema)
+        val df = Array("file1", "file2").toDF("address")
 
         UncommittedGarbageCollector.writeReports(dir.toString + "/",
                                                  runID,
