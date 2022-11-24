@@ -80,10 +80,6 @@ func getKey(obj block.ObjectPointer) string {
 	return fmt.Sprintf("%s:%s", obj.StorageNamespace, obj.Identifier)
 }
 
-func getPrefix(lsOpts block.WalkOpts) string {
-	return fmt.Sprintf("%s:%s", lsOpts.StorageNamespace, lsOpts.Prefix)
-}
-
 func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -287,9 +283,8 @@ func (a *Adapter) Walk(_ context.Context, walkOpt block.WalkOpts, walkFn block.W
 	}
 	sort.Strings(keys)
 
-	fullPrefix := getPrefix(walkOpt)
 	for _, k := range keys {
-		if strings.HasPrefix(k, fullPrefix) {
+		if strings.HasPrefix(k, walkOpt.Prefix) {
 			if err := walkFn(k); err != nil {
 				return err
 			}

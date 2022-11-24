@@ -51,8 +51,9 @@ const (
 
 	NumberOfParentsOfNonMergeCommit = 1
 
-	gcParquetParallelNum     = 1                // Number of goroutines to handle marshaling of data
-	gcMaxUncommittedFileSize = 20 * 1024 * 1024 // 20 MB
+	gcParquetParallelNum            = 1                // Number of goroutines to handle marshaling of data
+	defaultGCMaxUncommittedFileSize = 20 * 1024 * 1024 // 20 MB
+
 	// Calculation of size deviation by gcPeriodicCheckSize value
 	// "data" prefix = 4 bytes
 	// partition id = 20 bytes (xid)
@@ -129,15 +130,19 @@ type Config struct {
 	KVStore               *kv.StoreMessage
 	WalkerFactory         WalkerFactory
 	SettingsManagerOption settings.ManagerOption
+
+	// The maximum file size for uncommitted dump created during PrepareUncommittedGC
+	GCMaxUncommittedFileSize int
 }
 
 type Catalog struct {
-	BlockAdapter  block.Adapter
-	Store         Store
-	log           logging.Logger
-	walkerFactory WalkerFactory
-	managers      []io.Closer
-	workPool      *pond.WorkerPool
+	BlockAdapter             block.Adapter
+	Store                    Store
+	log                      logging.Logger
+	walkerFactory            WalkerFactory
+	managers                 []io.Closer
+	workPool                 *pond.WorkerPool
+	GCMaxUncommittedFileSize int
 }
 
 const (
@@ -171,6 +176,9 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}
 	if cfg.WalkerFactory == nil {
 		cfg.WalkerFactory = store.NewFactory(cfg.Config)
+	}
+	if cfg.GCMaxUncommittedFileSize == 0 {
+		cfg.GCMaxUncommittedFileSize = defaultGCMaxUncommittedFileSize
 	}
 
 	tierFSParams, err := cfg.Config.GetCommittedTierFSParams(adapter)
@@ -238,12 +246,13 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
 	workPool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))
 	return &Catalog{
-		BlockAdapter:  tierFSParams.Adapter,
-		Store:         gStore,
-		log:           logging.Default().WithField("service_name", "entry_catalog"),
-		walkerFactory: cfg.WalkerFactory,
-		workPool:      workPool,
-		managers:      []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
+		BlockAdapter:             tierFSParams.Adapter,
+		Store:                    gStore,
+		log:                      logging.Default().WithField("service_name", "entry_catalog"),
+		walkerFactory:            cfg.WalkerFactory,
+		workPool:                 workPool,
+		managers:                 []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
+		GCMaxUncommittedFileSize: cfg.GCMaxUncommittedFileSize,
 	}, nil
 }
 
@@ -1787,7 +1796,7 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 				return nil, false, err
 			}
 
-			if w.Size() > gcMaxUncommittedFileSize {
+			if w.Size() > int64(c.GCMaxUncommittedFileSize) {
 				if itr.Err() != nil {
 					return nil, false, itr.Err()
 				}
@@ -1834,7 +1843,7 @@ func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, 
 	return c.BlockAdapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: ns.String(),
 		Identifier:       location,
-		IdentifierType:   block.IdentifierTypeRelative,
+		IdentifierType:   block.IdentifierTypeFull,
 	}, size, fd, block.PutOpts{})
 }
 
