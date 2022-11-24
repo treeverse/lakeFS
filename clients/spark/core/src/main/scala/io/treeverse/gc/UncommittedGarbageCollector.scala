@@ -103,12 +103,12 @@ object UncommittedGarbageCollector {
   }
 
   def writeReports(
-                    storageNamespace: String,
-                    runID: String,
-                    firstSlice: String,
-                    startTime: java.time.Instant,
-                    success: Boolean,
-                    removed: DataFrame
+      storageNamespace: String,
+      runID: String,
+      firstSlice: String,
+      startTime: java.time.Instant,
+      success: Boolean,
+      removed: DataFrame
   ): Unit = {
     val reportDst = s"${storageNamespace}_lakefs/retention/gc/uncommitted/$runID"
     writeJsonSummary(reportDst, runID, firstSlice, startTime, success, removed.count())
