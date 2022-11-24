@@ -5,7 +5,7 @@ import io.treeverse.clients.ApiClient
 import io.treeverse.clients.LakeFSContext._
 import io.treeverse.clients.StorageClientType
 import org.apache.hadoop.fs.Path
-import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
+import org.apache.spark.sql.{DataFrame, SparkSession}
 
 import java.util.Date
 import java.time.format.DateTimeFormatter
@@ -22,16 +22,9 @@ object UncommittedGarbageCollector {
   lazy val spark: SparkSession =
     SparkSession.builder().appName("UncommittedGarbageCollector").getOrCreate()
 
-  def getDataLocation(storageNamespace: String, prefix: String): String = {
-    if (prefix == "") {
-      return s"$storageNamespace/"
-    }
-    s"$storageNamespace/$prefix/"
-  }
-
-  def listObjects(storageNamespace: String, prefix: String, before: Date): DataFrame = {
+  def listObjects(storageNamespace: String, before: Date): DataFrame = {
     val sc = spark.sparkContext
-    val dataLocation = getDataLocation(storageNamespace, prefix)
+    val dataLocation = storageNamespace + "data" // TODO(niro): handle better
     val dataPath = new Path(dataLocation)
     val configMapper = new ConfigMapper(
       sc.broadcast(
@@ -43,24 +36,9 @@ object UncommittedGarbageCollector {
     dataDF
   }
 
-  def getAddressesToDelete(
-      storageNamespace: String,
-      dataDF: DataFrame,
-      uncommittedDF: DataFrame,
-      excludedDF: DataFrame
-  ): DataFrame = {
-
-    val committedDF =
-      new NaiveCommittedAddressLister().listCommittedAddresses(spark, storageNamespace)
-    dataDF
-      .except(excludedDF)
-      .except(committedDF)
-      .except(uncommittedDF)
-  }
-
   def main(args: Array[String]): Unit = {
     var runID = ""
-    var lastSlice = ""
+    var firstSlice = ""
     var success = true
     var addressesToDelete = spark.emptyDataFrame.withColumn("address", lit(""))
     val repo = args(0)
@@ -70,7 +48,7 @@ object UncommittedGarbageCollector {
     val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
     val connectionTimeout = hc.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY)
     val readTimeout = hc.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY)
-    val startTime = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
+    val startTime = java.time.Clock.systemUTC.instant()
     val apiConf =
       APIConfigurations(apiURL,
                         accessKey,
@@ -86,7 +64,7 @@ object UncommittedGarbageCollector {
     }
 
     try {
-      val dataDF = listObjects(storageNamespace, "data", DateUtils.addHours(new Date(), -6))
+      val dataDF = listObjects(storageNamespace, DateUtils.addHours(new Date(), -6))
       val uncommittedGCRunInfo =
         new APIUncommittedAddressLister(apiClient).listUncommittedAddresses(spark, repo)
       var uncommittedDF =
@@ -101,57 +79,50 @@ object UncommittedGarbageCollector {
 
       val uncommittedDF = spark.read.parquet(uncommittedGCRunInfo.uncommittedLocation)
 
-      addressesToDelete = getAddressesToDelete(
-        storageNamespace,
-        dataDF,
-        uncommittedDF,
-        spark.emptyDataFrame.withColumn("address", lit(""))
-      )
-      lastSlice = dataDF.select(col("address")).first().toString()
+      val committedDF =
+        new NaiveCommittedAddressLister().listCommittedAddresses(spark, storageNamespace)
+      addressesToDelete = dataDF
+        .except(spark.emptyDataFrame.withColumn("address", lit("")))
+        .except(committedDF)
+        .except(uncommittedDF)
+      val firstFile = dataDF.select(col("address")).first().toString()
+      firstSlice = firstFile.substring(0, firstFile.lastIndexOf("/"))
     } catch {
-      case _: Throwable => success = false
+      case e: Throwable =>
+        success = false
+        throw e
     } finally {
-      val markID = "mark-id" // TODO (niro): Add mark ID
       writeReports(
         storageNamespace,
         runID,
-        markID,
-        lastSlice,
+        firstSlice,
         startTime,
         success,
         addressesToDelete
       )
-
       spark.close()
     }
   }
 
   def writeReports(
-      storageNamespace: String,
-      runID: String,
-      markID: String,
-      lastSlice: String,
-      startTime: String,
-      success: Boolean,
-      removed: DataFrame
+                    storageNamespace: String,
+                    runID: String,
+                    firstSlice: String,
+                    startTime: java.time.Instant,
+                    success: Boolean,
+                    removed: DataFrame
   ): Unit = {
     val reportDst = s"${storageNamespace}_lakefs/retention/gc/uncommitted/$runID"
-    writeJsonSummary(reportDst, runID, lastSlice, startTime, success, removed.count())
+    writeJsonSummary(reportDst, runID, firstSlice, startTime, success, removed.count())
 
-    removed
-      .withColumn(MARK_ID_KEY, lit(markID))
-      .withColumn(RUN_ID_KEY, lit(runID))
-      .write
-      .partitionBy(MARK_ID_KEY, RUN_ID_KEY)
-      .mode(SaveMode.Overwrite)
-      .parquet(s"$reportDst/deleted.parquet")
+    removed.write.parquet(s"$reportDst/deleted")
   }
 
   private def writeJsonSummary(
       dst: String,
       runID: String,
-      lastSlice: String,
-      startTime: String,
+      firstSlice: String,
+      startTime: java.time.Instant,
       success: Boolean,
       numDeletedObjects: Long
   ): Unit = {
@@ -160,8 +131,8 @@ object UncommittedGarbageCollector {
     val jsonSummary = JObject(
       "run_id" -> runID,
       "success" -> success,
-      "last_slice" -> lastSlice,
-      "start_time" -> startTime,
+      "first_slice" -> firstSlice,
+      "start_time" -> DateTimeFormatter.ISO_INSTANT.format(startTime),
       "num_deleted_objects" -> numDeletedObjects
     )
 
