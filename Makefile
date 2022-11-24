@@ -168,8 +168,8 @@ esti: ## run esti (system testing)
 
 test: test-go test-hadoopfs  ## Run tests for the project
 
-test-go: gen			# Run parallelism > num_cores: most of our slow tests are *not* CPU-bound.
-	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast --parallel="$(GOTEST_PARALLELISM)" $(GO_TEST_MODULES)
+test-go: gen-code			# Run parallelism > num_cores: most of our slow tests are *not* CPU-bound.
+	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast -parallel="$(GOTEST_PARALLELISM)" $(GO_TEST_MODULES)
 
 test-hadoopfs:
 	cd clients/hadoopfs && mvn test
