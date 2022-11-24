@@ -70,13 +70,15 @@ object UncommittedGarbageCollector {
     val apiClient = ApiClient.get(apiConf)
     val outputLocation = args(1)
 
-    val uncommittedGCRunInfo = new APIUncommittedAddressLister(apiClient).listUncommittedAddresses(spark, repo)
-    var uncommittedDF = if (uncommittedGCRunInfo.uncommitedLocation != "")
-      spark.read.parquet(uncommittedGCRunInfo.uncommitedLocation)
-    else {
-      // in case of no uncommitted entries
-      spark.emptyDataFrame.withColumn("physical_address", lit(""))
-    }
+    val uncommittedGCRunInfo =
+      new APIUncommittedAddressLister(apiClient).listUncommittedAddresses(spark, repo)
+    var uncommittedDF =
+      if (uncommittedGCRunInfo.uncommitedLocation != "")
+        spark.read.parquet(uncommittedGCRunInfo.uncommitedLocation)
+      else {
+        // in case of no uncommitted entries
+        spark.emptyDataFrame.withColumn("physical_address", lit(""))
+      }
     uncommittedDF = uncommittedDF.select(uncommittedDF("physical_address").as("address"))
 
     val addressesToDelete =
