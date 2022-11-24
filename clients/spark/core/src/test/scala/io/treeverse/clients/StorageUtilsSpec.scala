@@ -116,7 +116,6 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
 
   private def extractBucketFromRecordedRequest(request: RecordedRequest): String = {
     val splitRequestLine = request.getRequestLine.split('/')
-    println(splitRequestLine.length)
     splitRequestLine(splitRequestLine.length - 3)
   }
 
