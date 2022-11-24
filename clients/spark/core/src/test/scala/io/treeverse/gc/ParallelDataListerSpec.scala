@@ -5,7 +5,6 @@ import org.apache.commons.io.FileUtils
 import org.apache.hadoop.fs.LocalFileSystem
 import org.apache.hadoop.fs.Path
 import org.scalatest._
-import org.scalatestplus.mockito.MockitoSugar
 
 import java.io.File
 import java.nio.file.Files
@@ -20,8 +19,7 @@ class ParallelDataListerSpec
     extends AnyFunSpec
     with SparkSessionSetup
     with should.Matchers
-    with BeforeAndAfter
-    with MockitoSugar {
+    with BeforeAndAfter {
   describe(".listData") {
     var dir: java.nio.file.Path = null
 
