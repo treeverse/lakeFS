@@ -31,7 +31,7 @@ class UncommittedGarbageCollectorSpec
       FileUtils.deleteDirectory(dir.toFile)
     }
 
-    it("check report valid") {
+    it("should write a valid report") {
       withSparkSession(spark => {
         val runID = java.util.UUID.randomUUID.toString
         val startTime = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
