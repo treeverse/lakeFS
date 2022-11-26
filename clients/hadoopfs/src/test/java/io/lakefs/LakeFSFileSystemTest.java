@@ -1,5 +1,10 @@
 package io.lakefs;
 
+import io.lakefs.clients.api.*;
+import io.lakefs.clients.api.model.*;
+import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
+import io.lakefs.utils.ObjectLocation;
+
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -10,9 +15,6 @@ import com.amazonaws.services.s3.model.*;
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import io.lakefs.clients.api.*;
-import io.lakefs.clients.api.model.*;
-import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileAlreadyExistsException;

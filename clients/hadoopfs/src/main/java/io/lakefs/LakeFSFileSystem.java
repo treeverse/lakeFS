@@ -3,6 +3,8 @@ package io.lakefs;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import io.lakefs.clients.api.*;
 import io.lakefs.clients.api.model.*;
+import io.lakefs.utils.ObjectLocation;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -853,25 +855,7 @@ public class LakeFSFileSystem extends FileSystem {
      */
     @Nonnull
     public ObjectLocation pathToObjectLocation(Path path) {
-        if (!path.isAbsolute()) {
-            path = new Path(this.workingDirectory, path);
-        }
-
-        URI uri = path.toUri();
-        ObjectLocation loc = new ObjectLocation();
-        loc.setScheme(uri.getScheme());
-        loc.setRepository(uri.getHost());
-        // extract ref and rest of the path after removing the '/' prefix
-        String s = StringUtils.trimLeadingSlash(uri.getPath());
-        int i = s.indexOf(Constants.SEPARATOR);
-        if (i == -1) {
-            loc.setRef(s);
-            loc.setPath("");
-        } else {
-            loc.setRef(s.substring(0, i));
-            loc.setPath(s.substring(i + 1));
-        }
-        return loc;
+        return ObjectLocation.pathToObjectLocation(this.workingDirectory, path);
     }
 
     class ListingIterator implements RemoteIterator<LakeFSFileStatus> {
