@@ -16,6 +16,7 @@ public class ObjectLocation {
     /**
      * Returns Location with repository, ref and path used by lakeFS based on filesystem path.
      *
+     * @param workingDirectory used if path is local.
      * @param path to extract information from.
      * @return lakeFS Location with repository, ref and path
      */
@@ -23,7 +24,7 @@ public class ObjectLocation {
     static public ObjectLocation pathToObjectLocation(Path workingDirectory, Path path) {
         if (!path.isAbsolute()) {
             if (workingDirectory == null) {
-                throw new IllegalArgumentException("cannot expand local path with null workingDirectory");
+                throw new IllegalArgumentException(String.format("cannot expand local path %s with null workingDirectory", path));
             }
             path = new Path(workingDirectory, path);
         }
@@ -45,8 +46,21 @@ public class ObjectLocation {
         return loc;
     }
 
+    /**
+     * Returns Location with repository, ref and path used by lakeFS based on filesystem path.
+     *
+     * @param path to extract information from.
+     * @return lakeFS Location with repository, ref and path
+     */
+    @Nonnull
+    static public ObjectLocation pathToObjectLocation(Path path) {
+        return pathToObjectLocation(null, path);
+    }
+
     public static String formatPath(String scheme, String repository, String ref, String path) {
-        return String.format("%s://%s/%s/%s", scheme, repository, ref, path);
+        String ret = formatPath(scheme, repository, ref);
+        if (path != null) ret = ret + "/" + path;
+        return ret;
     }
 
 
@@ -76,6 +90,10 @@ public class ObjectLocation {
         this.repository = repository;
         this.ref = ref;
         this.path = path;
+    }
+
+    public ObjectLocation clone() {
+        return new ObjectLocation(scheme, repository, ref, path);
     }
 
     public ObjectLocation getParent() {
