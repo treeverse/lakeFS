@@ -1768,12 +1768,6 @@ type UncommittedParquetObject struct {
 	CreationDate    int64  `parquet:"name=creation_date, type=INT64, convertedtype=INT_64"`
 }
 
-// isValidEntry Returns False if entry is tombstone or if address is outside of repository namespace
-func isValidEntry(entry *UncommittedRecord) bool {
-
-	return entry.Entry != nil && entry.Entry.AddressType == Entry_RELATIVE
-}
-
 func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, w *UncommittedWriter, mark *GCUncommittedMark, runID string) (*GCUncommittedMark, bool, error) {
 	hasData := false
 	pw, err := writer.NewParquetWriterFromWriter(w, new(UncommittedParquetObject), gcParquetParallelNum) // TODO: Play with np count
@@ -1795,7 +1789,8 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 
 	for itr.Next() {
 		entry := itr.Value()
-		if !isValidEntry(entry) {
+		// Skip if entry is tombstone or if address is outside of repository namespace
+		if entry.Entry == nil || entry.Entry.AddressType != Entry_RELATIVE {
 			continue
 		}
 
