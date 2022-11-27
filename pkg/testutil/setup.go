@@ -42,6 +42,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	viper.SetDefault("blockstore_type", block.BlockstoreTypeS3)
 	viper.SetDefault("version", "dev")
 	viper.SetDefault("lakectl_dir", "..")
+	viper.SetDefault("email_subscription.enabled", false)
 
 	viper.AddConfigPath(".")
 	viper.SetEnvPrefix(strings.ToUpper(params.Name))
