@@ -58,7 +58,7 @@ class ParallelDataLister extends DataLister with Serializable {
       .map(_.path)
       .toDF("slice_id")
       .withColumn("udf", explode(objectsUDF(col("slice_id"))))
-      .withColumn("base_address",  concat(col("slice_id"), lit("/"), col("udf._1")))
+      .withColumn("base_address", concat(col("slice_id"), lit("/"), col("udf._1")))
       .withColumn("last_modified", col("udf._2"))
       .select("base_address", "last_modified")
     objectsDF
