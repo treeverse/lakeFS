@@ -13,11 +13,11 @@ import org.apache.hadoop.fs.FileStatus
  */
 abstract class DataLister {
   @transient lazy val spark: SparkSession = SparkSession.active
-  def listData(configMapper: ConfigMapper, path: Path, prefix: String): DataFrame
+  def listData(configMapper: ConfigMapper, path: Path): DataFrame
 }
 
 class NaiveDataLister extends DataLister {
-  override def listData(configMapper: ConfigMapper, path: Path, prefix: String): DataFrame = {
+  override def listData(configMapper: ConfigMapper, path: Path): DataFrame = {
     import spark.implicits._
     val fs = path.getFileSystem(configMapper.configuration)
     val dataIt = fs.listFiles(path, false)
@@ -46,7 +46,7 @@ class ParallelDataLister extends DataLister with Serializable {
       .toList
   }
 
-  override def listData(configMapper: ConfigMapper, path: Path, prefix: String): DataFrame = {
+  override def listData(configMapper: ConfigMapper, path: Path): DataFrame = {
     import spark.implicits._
     val slices = listPath(configMapper, path.toString)
     val pathStr = path.toString
@@ -58,12 +58,9 @@ class ParallelDataLister extends DataLister with Serializable {
       .map(_.path)
       .toDF("slice_id")
       .withColumn("udf", explode(objectsUDF(col("slice_id"))))
-      .withColumn("address",
-                  concat(lit(prefix), lit("/"), col("slice_id"), lit("/"), col("udf._1"))
-                 )
+      .withColumn("base_address",  concat(col("slice_id"), lit("/"), col("udf._1")))
       .withColumn("last_modified", col("udf._2"))
-      .select("address", "last_modified")
-      .toDF("address", "last_modified")
+      .select("base_address", "last_modified")
     objectsDF
   }
 }

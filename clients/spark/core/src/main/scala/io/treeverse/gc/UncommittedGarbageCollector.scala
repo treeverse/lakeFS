@@ -40,15 +40,21 @@ object UncommittedGarbageCollector {
       )
     )
     // Read objects from data path (new repository structure)
-    var dataDF = new ParallelDataLister().listData(configMapper, dataPath, dataPrefix)
+    var dataDF = new ParallelDataLister().listData(configMapper, dataPath)
+    dataDF = dataDF.withColumn(
+      "address",
+      concat(lit(dataPrefix), lit("/"), col("slice_id"), lit("/"), col("base_address"))
+    ).select("address", "last_modified")
 
     // Read objects from namespace root, for old structured repositories
     val oldDataPath = new Path(storageNamespace)
     // TODO (niro): implement parallel lister for old repositories (https://github.com/treeverse/lakeFS/issues/4620)
-    val oldDataDF = new NaiveDataLister().listData(configMapper, oldDataPath, "")
+    val oldDataDF = new NaiveDataLister().listData(configMapper, oldDataPath)
     dataDF.union(oldDataDF)
 
     dataDF = dataDF.filter(dataDF("last_modified") < before.getTime).select("address")
+    // TODO (niro): Check if really needed and consider passing it as part of uncommittedGCRunInfo
+    dataDF = dataDF.filter(dataDF("address").startsWith("_lakefs"))
     dataDF
   }
 
@@ -101,7 +107,6 @@ object UncommittedGarbageCollector {
         new NaiveCommittedAddressLister().listCommittedAddresses(spark, storageNamespace)
 
       addressesToDelete = dataDF
-        .except(spark.emptyDataFrame.withColumn("address", lit("")))
         .except(committedDF)
         .except(uncommittedDF)
       val firstFile = dataDF.select(col("address")).first().toString()
