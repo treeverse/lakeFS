@@ -42,7 +42,6 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	viper.SetDefault("blockstore_type", block.BlockstoreTypeS3)
 	viper.SetDefault("version", "dev")
 	viper.SetDefault("lakectl_dir", "..")
-	viper.SetDefault("email_subscription.enabled", false)
 
 	viper.AddConfigPath(".")
 	viper.SetEnvPrefix(strings.ToUpper(params.Name))
@@ -74,6 +73,15 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	setupLakeFS := viper.GetBool("setup_lakefs")
 	if setupLakeFS {
 		// first setup of lakeFS
+		emptyEmail := ""
+		_, err := client.SetupCommPrefsWithResponse(context.Background(), api.SetupCommPrefsJSONRequestBody{
+			Email:           &emptyEmail,
+			FeatureUpdates:  false,
+			SecurityUpdates: false,
+		})
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to setup lakeFS")
+		}
 		adminUserName := params.Name
 		requestBody := api.SetupJSONRequestBody{
 			Username: adminUserName,
