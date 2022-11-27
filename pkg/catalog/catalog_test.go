@@ -612,7 +612,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 		token := graveler.StagingToken(fmt.Sprintf("%s_st%04d", branchID, i))
 		branches = append(branches, &graveler.BranchRecord{BranchID: branchID, Branch: &graveler.Branch{StagingToken: token}})
 
-		records[i] = make([]*graveler.ValueRecord, numRecords)
+		records[i] = make([]*graveler.ValueRecord, numRecords+2)
 		for j := 0; j < numRecords; j++ {
 			e := catalog.Entry{
 				Address:      fmt.Sprintf("%s_record%04d", branchID, j),
@@ -620,7 +620,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 				Size:         0,
 				ETag:         "",
 				Metadata:     nil,
-				AddressType:  0,
+				AddressType:  catalog.Entry_RELATIVE,
 				ContentType:  "",
 			}
 			v, err := proto.Marshal(&e)
@@ -632,6 +632,30 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 					Data:     v,
 				},
 			}
+		}
+		// Add tombstone
+		records[i][numRecords] = &graveler.ValueRecord{
+			Key:   []byte("AtombstoneFile"),
+			Value: nil,
+		}
+		// Add external address
+		e := catalog.Entry{
+			Address:      fmt.Sprintf("external/address/object"),
+			LastModified: timestamppb.New(time.Now()),
+			Size:         0,
+			ETag:         "",
+			Metadata:     nil,
+			AddressType:  catalog.Entry_FULL,
+			ContentType:  "",
+		}
+		v, err := proto.Marshal(&e)
+		require.NoError(t, err)
+		records[i][numRecords+1] = &graveler.ValueRecord{
+			Key: []byte(e.Address),
+			Value: &graveler.Value{
+				Identity: []byte("dont care"),
+				Data:     v,
+			},
 		}
 	}
 	test.GarbageCollectionManager.EXPECT().NewID().Return("TestRunID")

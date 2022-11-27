@@ -1789,6 +1789,11 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 
 	for itr.Next() {
 		entry := itr.Value()
+		// Skip if entry is tombstone or if address is outside of repository namespace
+		if entry.Entry == nil || entry.Entry.AddressType != Entry_RELATIVE {
+			continue
+		}
+
 		count += 1
 		if count%gcPeriodicCheckSize == 0 {
 			err := pw.Flush(true)
