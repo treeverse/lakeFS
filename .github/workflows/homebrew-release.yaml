@@ -15,6 +15,7 @@ jobs:
           formula-name: lakefs
           tag-name: v0.86.0
           download-url: https://github.com/treeverse/lakeFS/archive/v0.86.0.tar.gz
-          create-pullrequest: true 
+          #create-pullrequest: true 
+          homebrew-tap: Homebrew/homebrew-core
         env:
           COMMITTER_TOKEN: ${{ secrets.HOMEBREW_COMMITTER_TOKEN }}
