@@ -66,6 +66,9 @@ object LakeFSContext {
   val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY = "lakefs.debug.gc.max_commit_iso_datetime"
   val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY = "lakefs.debug.gc.max_commit_epoch_seconds"
   val LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY = "lakefs.debug.gc.reproduce_run_id"
+
+  //  Objects that are written during the skip period are not collected
+  val LAKEFS_CONF_DEBUG_GC_UNCOMMITTED_SKIP_SECONDS_KEY = "lakefs.debug.gc.uncommitted_skip_seconds"
   val LAKEFS_CONF_GC_DO_MARK = "lakefs.gc.do_mark"
   val LAKEFS_CONF_GC_DO_SWEEP = "lakefs.gc.do_sweep"
   val LAKEFS_CONF_GC_MARK_ID = "lakefs.gc.mark_id"

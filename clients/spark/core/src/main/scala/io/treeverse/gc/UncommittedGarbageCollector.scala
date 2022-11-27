@@ -72,7 +72,16 @@ object UncommittedGarbageCollector {
     val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
     val connectionTimeout = hc.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY)
     val readTimeout = hc.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY)
+    val skipSecondsStr = hc.get(LAKEFS_CONF_DEBUG_GC_UNCOMMITTED_SKIP_SECONDS_KEY)
+    val skipSeconds = {
+      if (skipSecondsStr != null && skipSecondsStr.nonEmpty && skipSecondsStr.toInt > 0) {
+        skipSecondsStr.toInt
+      } else
+        DEFAULT_GC_UNCOMMITTED_SKIP_SECONDS
+    }
+    val cuttoffTime = DateUtils.addSeconds(new Date(), -skipSeconds)
     val startTime = java.time.Clock.systemUTC.instant()
+
     val apiConf =
       APIConfigurations(apiURL,
                         accessKey,
@@ -89,7 +98,7 @@ object UncommittedGarbageCollector {
 
     try {
       // Read objects directly from object storage
-      val dataDF = listObjects(storageNamespace, DateUtils.addHours(new Date(), -6))
+      val dataDF = listObjects(storageNamespace, cuttoffTime)
 
       // Process uncommitted
       val uncommittedGCRunInfo =
@@ -101,6 +110,8 @@ object UncommittedGarbageCollector {
           // in case of no uncommitted entries
           spark.emptyDataFrame.withColumn("physical_address", lit(""))
         }
+
+      // TODO: should filter by time too
       uncommittedDF = uncommittedDF.select(uncommittedDF("physical_address").as("address"))
       runID = uncommittedGCRunInfo.runID
 
@@ -129,6 +140,9 @@ object UncommittedGarbageCollector {
       spark.close()
     }
   }
+
+  // By default, objects that are written in the last 6 hours are not collected
+  private val DEFAULT_GC_UNCOMMITTED_SKIP_SECONDS = 6 * 60 * 60
 
   def writeReports(
       storageNamespace: String,
