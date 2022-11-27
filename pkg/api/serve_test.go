@@ -253,6 +253,7 @@ func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFa
 	handler, deps := setupHandlerWithWalkerFactory(t, factory)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
+	_ = setupCommPrefs(t, clt)
 	cred := createDefaultAdminUser(t, clt)
 	clt = setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.SecretAccessKey)
 	return clt, deps
@@ -262,6 +263,7 @@ func TestInvalidRoute(t *testing.T) {
 	handler, _ := setupHandler(t)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
+	_ = setupCommPrefs(t, clt)
 	cred := createDefaultAdminUser(t, clt)
 
 	// setup client with invalid endpoint base url

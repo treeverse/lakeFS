@@ -2493,6 +2493,7 @@ func TestLogin(t *testing.T) {
 	handler, deps := setupHandler(t)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
+	_ = setupCommPrefs(t, clt)
 	cred := createDefaultAdminUser(t, clt)
 
 	resp, err := clt.LoginWithResponse(context.Background(), api.LoginJSONRequestBody{
