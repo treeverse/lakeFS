@@ -98,10 +98,9 @@ The garbage collection process proceeds in three main phases:
 
 Some objects will _not_ be collected regardless of configured GC rules:
 * Any object that is accessible from any branch's HEAD.
-* Any object that was _uploaded but never committed_ cannot be collected.  See
-  [#1933](https://github.com/treeverse/lakeFS/issues/1933) for more details.
 * Objects stored outside the repository's [storage namespace](../understand/glossary.md#storage-namespace).
   For example, objects imported using the lakeFS import UI are not collected.
+* Uncommitted objects, see [below](#Beta:-Deleting-uncommitted-objects),
 
 ## Configuring GC rules
 
@@ -319,7 +318,7 @@ spark.hadoop.distcp.map.bandwidth.mb
 spark.hadoop.distcp.liststatus.threads 
 ```
 
-### Running GC backup and restore 
+### Running GC backup and restore
 {: .no_toc }
 
 You can run GC backup and restore using `spark-submit` or using your preferred method of running Spark programs. 
@@ -422,3 +421,72 @@ spark-submit --class io.treeverse.clients.GCBackupAndRestore \
   objects-to-restore-list-location backup-external-location storage-namespace azure
   ```
 </div>
+
+## Beta: Deleting uncommitted objects
+
+Deletion of objects that were never committed was always a difficulty for lakeFS, see
+[#1933](https://github.com/treeverse/lakeFS/issues/1933) for more details. Examples for 
+objects that will be collected as part of the uncommitted GC job:
+1. Objects that were uploaded to lakeFS and deleted.
+2. Objects that were uploaded to lakeFS and were overridden.
+
+The uncommitted GC will not clean:
+1. Committed objects. For committed objects cleanup see [above](#what-gets-collected)
+2. Everything mentioned in [what does not get collected](#what-does-_not_-get-collected)
+
+To run the uncommitted GC job run:
+  ```bash
+spark-submit \
+    --conf spark.hadoop.lakefs.api.url<LAKEFS_ENDPOINT> \
+    --conf spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY_ID> \
+    --conf spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_ACCESS_KEY> \
+    --conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY_ID> \
+    --conf spark.hadoop.lakefs.api.secret_key=<LAKEFS__SECRET_ACCESS_KEY> \
+    --class io.treeverse.gc.UncommittedGarbageCollector \
+    --packages org.apache.hadoop:hadoop-aws:2.7.7,\
+          lakefs-spark-client-<VERSION>-assembly-<TODO>.jar \
+    <REPO_NAME> <TODO_OUTPUT_LOCATION>
+```
+
+#### Uncommitted GC job options
+
+Similar to the described [above](#gc-job-options).
+
+#### Backup and restore 
+
+<TODO> - will it work?
+
+#### Limitations
+{: .no_toc }
+
+The uncommitted GC job has several limitations in its Beta version: 
+1. No writes to lakeFS during the execution of the job. Objects written to lakeFS
+during the job run may or may not be detected by the job. It's advised to avoid any
+write operation while the job is running, like `UploadObject`, `CopyObject`, `StageObject`, 
+`LinkPhysicalAddress` or any other non-read operation.
+2. Only available for S3 repositories at the moment.
+3. Scale may be limited, see performance results below.
+
+#### Next steps
+
+The uncommitted GC is under development, next releases will include:
+
+1. Incorporation of committed & uncommitted GC into a single job. We understand the friction
+of having 2 garbage collection jobs for a lakeFS installation and working to creating a
+single job for it.
+2. Support for non-S3 repositories.
+3. Removing the limitation of a read-only lakeFS during the job run.
+4. Performance improvements: 
+   1. better parallelization of the storage namespace traversal.
+   2. Optimized Run: GC will only iterate over objects that were written to the
+repository since the last GC run. For more information see the [proposal](https://github.com/treeverse/lakeFS/blob/master/design/accepted/gc_plus/uncommitted-gc.md#flow-2-optimized-run).
+
+#### Performance
+{: .no_toc }
+
+The uncommitted GC job was tested on a repository with <> branches, 
+<> uncommitted objects and <> commits.
+Storage namespace number of objects prior to the cleanup was <> objects.
+The job ran on a Spark cluster with <> workers of size <>.
+The job finished at <> deleting <> objects.
+
