@@ -22,12 +22,11 @@ object UncommittedGarbageCollector {
   lazy val spark: SparkSession =
     SparkSession.builder().appName("UncommittedGarbageCollector").getOrCreate()
 
-  /**
-   * list repository objects directly from object store.
-   * Reads the objects from both old repository structure and new repository structure
-   * @param storageNamespace The storageNamespace to read from
-   * @param before Exclude objects which last_modified date is newer than before Date
-   * @return DF listing all objects under given storageNamespace
+  /** list repository objects directly from object store.
+   *  Reads the objects from both old repository structure and new repository structure
+   *  @param storageNamespace The storageNamespace to read from
+   *  @param before Exclude objects which last_modified date is newer than before Date
+   *  @return DF listing all objects under given storageNamespace
    */
   def listObjects(storageNamespace: String, before: Date): DataFrame = {
     // TODO(niro): parallelize reads from root and data paths
