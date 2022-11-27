@@ -16,6 +16,12 @@ const (
 	SetupTimestampKeyName = "setup_timestamp"
 )
 
+//nolint:gochecknoinits
+func init() {
+	kv.MustRegisterType("auth", InstallationIDKeyName, nil)
+	kv.MustRegisterType("auth", SetupTimestampKeyName, nil)
+}
+
 type MetadataManager interface {
 	IsInitialized(ctx context.Context) (bool, error)
 	UpdateSetupTimestamp(context.Context, time.Time) error
