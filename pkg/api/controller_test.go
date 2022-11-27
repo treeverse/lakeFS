@@ -2412,11 +2412,11 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 			ctx := context.Background()
 			emptyEmail := ""
 			_, _ = clt.SetupCommPrefsWithResponse(ctx, api.SetupCommPrefsJSONRequestBody{
-				Email: &emptyEmail,
-				FeatureUpdates: false,
+				Email:           &emptyEmail,
+				FeatureUpdates:  false,
 				SecurityUpdates: false,
 			})
-			
+
 			resp, err := clt.SetupWithResponse(ctx, api.SetupJSONRequestBody{
 				Username: "admin",
 				Key:      c.key,
