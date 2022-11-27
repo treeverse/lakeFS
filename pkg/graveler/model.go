@@ -17,6 +17,15 @@ const (
 	settingsPrefix         = "settings"
 )
 
+//nolint:gochecknoinits
+func init() {
+	kv.RegisterDefaultType(&StagedEntryData{})
+	kv.RegisterType(RepoPath(kv.PathNoDelimiterRegexp), &RepositoryData{})
+	kv.RegisterType(BranchPath(kv.PathNoDelimiterRegexp), &BranchData{})
+	kv.RegisterType(CommitPath(kv.PathNoDelimiterRegexp), &CommitData{})
+	kv.RegisterType(TagPath(kv.PathNoDelimiterRegexp), &TagData{})
+}
+
 func RepoPath(repoID RepositoryID) string {
 	return kv.FormatPath(reposPrefix, repoID.String())
 }

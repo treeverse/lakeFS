@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -16,6 +17,8 @@ import (
 const (
 	InitialMigrateVersion = 1
 	PathDelimiter         = "/"
+	PathBeginRegexp       = "^"
+	PathNoDelimiterRegexp = "[^" + PathDelimiter + "]+"
 	MetadataPartitionKey  = "kv-internal-metadata"
 )
 
@@ -37,8 +40,12 @@ func FormatPath(p ...string) string {
 	return strings.Join(p, PathDelimiter)
 }
 
-// Driver is the interface to access a kv database as a store.
-// Each kv provider implements a Driver.
+func MatchPath(path string, pathRegexp string) bool {
+	match, err := regexp.MatchString(PathBeginRegexp+pathRegexp, path)
+	return err == nil && match
+}
+
+// Driver is the interface to access a kv database as a Store. Each kv provider implements a Driver.
 type Driver interface {
 	// Open opens access to the database store. Implementations give access to the same storage based on the dsn.
 	// Implementation can return the same Storage instance based on dsn or new one as long as it provides access to
