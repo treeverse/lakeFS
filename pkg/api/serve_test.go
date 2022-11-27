@@ -82,8 +82,8 @@ func setupCommPrefs(t testing.TB, clt api.ClientWithResponsesInterface) *api.Nex
 	t.Helper()
 	emptyEmail := ""
 	res, err := clt.SetupCommPrefsWithResponse(context.Background(), api.SetupCommPrefsJSONRequestBody{
-		Email: &emptyEmail,
-		FeatureUpdates: false,
+		Email:           &emptyEmail,
+		FeatureUpdates:  false,
 		SecurityUpdates: false,
 	})
 	testutil.Must(t, err)
