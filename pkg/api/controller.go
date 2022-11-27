@@ -3342,14 +3342,13 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 		return
 	}
 
-	
 	// save comm prefs to metadata, for future in-app preferences/unsubscribe functionality
 	commPrefs := auth.CommPrefs{
-		UserEmail: *body.Email,
-		FeatureUpdates: body.FeatureUpdates,
+		UserEmail:       *body.Email,
+		FeatureUpdates:  body.FeatureUpdates,
 		SecurityUpdates: body.SecurityUpdates,
 	}
-	
+
 	installationID, err := c.MetadataManager.UpdateCommPrefs(ctx, commPrefs)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)

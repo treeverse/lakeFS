@@ -213,7 +213,7 @@ type configuration struct {
 		Extended      bool          `mapstructure:"extended"`
 	}
 	EmailSubscription struct {
-		Enabled	bool `mapstructure:"enabled"`
+		Enabled bool `mapstructure:"enabled"`
 	} `mapstructure:"email_subscription"`
 	Installation struct {
 		FixedID string `mapstructure:"fixed_id"`

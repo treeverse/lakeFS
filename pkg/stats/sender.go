@@ -99,9 +99,9 @@ func (s *HTTPSender) SendEvent(ctx context.Context, installationID, processID st
 
 func (s *HTTPSender) UpdateCommPrefs(ctx context.Context, email, installationID string, featureUpdates, securityUpdates bool) error {
 	commPrefs := &CommPrefsData{
-		InstallationID: installationID,
-		Email: email,
-		FeatureUpdates: featureUpdates,
+		InstallationID:  installationID,
+		Email:           email,
+		FeatureUpdates:  featureUpdates,
 		SecurityUpdates: securityUpdates,
 	}
 	serialized, err := json.Marshal(commPrefs)
@@ -111,7 +111,7 @@ func (s *HTTPSender) UpdateCommPrefs(ctx context.Context, email, installationID 
 
 	req, err := http.NewRequest(http.MethodPost, s.addr+"/comm_prefs", bytes.NewBuffer(serialized))
 	if err != nil {
-		return fmt.Errorf("could not create HTTP request: %s: %w", err, ErrSendError) 
+		return fmt.Errorf("could not create HTTP request: %s: %w", err, ErrSendError)
 	}
 	req = req.WithContext(ctx)
 	res, err := http.DefaultClient.Do(req)
@@ -156,8 +156,8 @@ func (s *dummySender) UpdateCommPrefs(ctx context.Context, email, installationID
 		return nil
 	}
 	s.Log.WithFields(logging.Fields{
-		"email": email,
-		"featureUpdates": featureUpdates,
+		"email":           email,
+		"featureUpdates":  featureUpdates,
 		"securityUpdates": securityUpdates,
 	}).Trace("dummy sender received comm prefs")
 	return nil

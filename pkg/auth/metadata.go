@@ -14,19 +14,20 @@ import (
 )
 
 const (
-	InstallationIDKeyName 		= "installation_id"
-	SetupTimestampKeyName 		= "setup_timestamp"
-	CommPrefsSetKeyName			= "comm_prefs_set"
-	EmailKeyName			  	= "hashed_user_email"
-	FeatureUpdatesKeyName		= "feature_updates"
-	SecurityUpdatesKeyName		= "security_updates"
+	InstallationIDKeyName  = "installation_id"
+	SetupTimestampKeyName  = "setup_timestamp"
+	CommPrefsSetKeyName    = "comm_prefs_set"
+	EmailKeyName           = "hashed_user_email"
+	FeatureUpdatesKeyName  = "feature_updates"
+	SecurityUpdatesKeyName = "security_updates"
 )
 
 type SetupStateName string
+
 const (
-	SetupStateInitialized 		SetupStateName   = "initialized"
-	SetupStateNotInitialized 	SetupStateName = "not_initialized"
-	SetupStateCommPrefsDone 	SetupStateName  = "comm_prefs_done"
+	SetupStateInitialized    SetupStateName = "initialized"
+	SetupStateNotInitialized SetupStateName = "not_initialized"
+	SetupStateCommPrefsDone  SetupStateName = "comm_prefs_done"
 )
 
 //nolint:gochecknoinits
@@ -52,8 +53,8 @@ type KVMetadataManager struct {
 }
 
 type CommPrefs struct {
-	UserEmail string
-	FeatureUpdates	bool
+	UserEmail       string
+	FeatureUpdates  bool
 	SecurityUpdates bool
 }
 
@@ -120,8 +121,8 @@ func (m *KVMetadataManager) GetCommPrefs(ctx context.Context) (CommPrefs, error)
 	}
 
 	return CommPrefs{
-		UserEmail: string(email.Value),
-		FeatureUpdates: hasFeatureUpdates,
+		UserEmail:       string(email.Value),
+		FeatureUpdates:  hasFeatureUpdates,
 		SecurityUpdates: hasSecurityUpdates,
 	}, nil
 }
@@ -189,12 +190,12 @@ func (m *KVMetadataManager) UpdateCommPrefs(ctx context.Context, commPrefs CommP
 			return "", err
 		}
 	}
-	
+
 	return m.installationID, m.writeMetadata(ctx, map[string]string{
-		EmailKeyName: encodedEmail,
-		FeatureUpdatesKeyName: strconv.FormatBool(commPrefs.FeatureUpdates),
+		EmailKeyName:           encodedEmail,
+		FeatureUpdatesKeyName:  strconv.FormatBool(commPrefs.FeatureUpdates),
 		SecurityUpdatesKeyName: strconv.FormatBool(commPrefs.SecurityUpdates),
-		CommPrefsSetKeyName: strconv.FormatBool(true),
+		CommPrefsSetKeyName:    strconv.FormatBool(true),
 	})
 }
 

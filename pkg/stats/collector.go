@@ -77,10 +77,10 @@ type InputEvent struct {
 }
 
 type CommPrefsData struct {
-	InstallationID	string `json:"installation_id"`
-	Email			string `json:"email"`
-	FeatureUpdates 	bool `json:"featureUpdates"`
-	SecurityUpdates bool `json:"securityUpdates"`
+	InstallationID  string `json:"installation_id"`
+	Email           string `json:"email"`
+	FeatureUpdates  bool   `json:"featureUpdates"`
+	SecurityUpdates bool   `json:"securityUpdates"`
 }
 
 type keyIndex map[Event]uint64
