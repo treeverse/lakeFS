@@ -21,7 +21,8 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
     new BasicAWSCredentials("ACCESS_KEY", "SECRET_KEY")
   )
 
-  private var awsS3ClientBuilder: AmazonS3ClientBuilder = null
+  private val awsS3ClientBuilder: AmazonS3ClientBuilder =
+    AmazonS3ClientBuilder.standard().withPathStyleAccessEnabled(true)
   private var server: MockWebServer = null
   private var clientConfiguration: ClientConfiguration = null
 
@@ -32,9 +33,7 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
   before {
     server = new MockWebServer
     server.start()
-    awsS3ClientBuilder = AmazonS3ClientBuilder.standard().withPathStyleAccessEnabled(true)
-    val baseUrl = server.url("/")
-    clientConfiguration = generateS3ClientConfigurations(baseUrl)
+    clientConfiguration = generateS3ClientConfigurations(server.url("/"))
   }
 
   after {
@@ -116,6 +115,9 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
 
   private def extractBucketFromRecordedRequest(request: RecordedRequest): String = {
     val splitRequestLine = request.getRequestLine.split('/')
+    if (splitRequestLine.length < 3) {
+      return ""
+    }
     splitRequestLine(splitRequestLine.length - 3)
   }
 
