@@ -17,7 +17,6 @@ func TestFindMessageTypeRecord(t *testing.T) {
 		partition string
 		path      string
 		want      protoreflect.MessageType
-		wantErr   bool
 	}{
 		{name: "RepositoryData", partition: "graveler", path: "repos/test-repo", want: (&graveler.RepositoryData{}).ProtoReflect().Type()},
 		{name: "BranchData", partition: "test", path: "branches/test-branch", want: (&graveler.BranchData{}).ProtoReflect().Type()},
@@ -40,11 +39,7 @@ func TestFindMessageTypeRecord(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := kv.FindMessageTypeRecord(tt.partition, tt.path)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("FindMessageTypeRecord() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got := kv.FindMessageTypeRecord(tt.partition, tt.path)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("FindMessageTypeRecord() got = %v, want %v", got, tt.want)
 			}
