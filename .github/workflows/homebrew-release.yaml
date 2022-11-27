@@ -17,4 +17,4 @@ jobs:
           download-url: https://github.com/treeverse/lakeFS/archive/v0.86.0.tar.gz
           create-pullrequest: true 
         env:
-          COMMITTER_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
+          COMMITTER_TOKEN: ${{ secrets.HOMEBREW_COMMITTER_TOKEN }}
