@@ -18,9 +18,7 @@ $(() => {
         .dialog({
         resizable: false,
         autoOpen: false,
-        // position: {my: 'bottom', at: 'bottom', of: window}
     });
-    // $('#feedback-dialog').parent().parent().css(
     $('#feedback-dialog').parent().css({
         position: "fixed",
         justifyContent: "center",
