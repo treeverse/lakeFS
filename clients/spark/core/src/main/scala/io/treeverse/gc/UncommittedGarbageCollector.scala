@@ -41,10 +41,12 @@ object UncommittedGarbageCollector {
     )
     // Read objects from data path (new repository structure)
     var dataDF = new ParallelDataLister().listData(configMapper, dataPath)
-    dataDF = dataDF.withColumn(
-      "address",
-      concat(lit(dataPrefix), lit("/"), col("slice_id"), lit("/"), col("base_address"))
-    ).select("address", "last_modified")
+    dataDF = dataDF
+      .withColumn(
+        "address",
+        concat(lit(dataPrefix), lit("/"), col("slice_id"), lit("/"), col("base_address"))
+      )
+      .select("address", "last_modified")
 
     // Read objects from namespace root, for old structured repositories
     val oldDataPath = new Path(storageNamespace)
