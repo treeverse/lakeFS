@@ -66,9 +66,7 @@ We propose to leverage the atomic capabilities of lakeFS to write a specific
 OutputCommitter for lakeFSFS.  In the initial version, it will branch out,
 prepare the desired output, and merge back in as part of the HOC commit.[^1]
 Aborting will be done by dropping the branch (or repurposing it if the same
-job ID is requested again).  Regular lakeFS retention can handle dropping
-data objects; we might want to add file patterns to retention to allow
-temporary objects to be dropped rapidly.
+job ID is requested again).
 
 [^1]: A merge is a type of commit, of course, so in this model HOC commits
 	*are* lakeFS commits!
@@ -138,10 +136,7 @@ overwrite modes: an entire previous table will be deleted on write.
   occur on the subtree.
 * **In-place updates** work: the old objects are deleted and replaced by new
   objects.  This is true regardess of partitioning etc.
-* **Multiple writers** are detected and the first to HOC-commit succeeds.
-  But all the others fail: they deleted the same previous files, or created
-  a conflicting file (at least their `_SUCCESS` indicator).  So their lakeFS
-  merge fails due to a conflict with the first (successful) merge.
+* **Multiple writers** are not currently supported.
 * (Conflicting) **non-OutputCommitter writes are detected** and clearly
   handled.  As long as other writes create _one_ object with an overlapping
   name the merge will fail.  So LakeFSOutputCommitter can achieve its
@@ -194,13 +189,34 @@ Ignore.
 
 ### Multiple writers
 
-We can support multiple concurrent writers and allow all writers to succeed
-(keeping the results of the last writer).
+We need to support multiple concurrent writers and allow all writers to
+succeed (keeping the results of the last writer).  Supporting multiple
+concurrent writers will require resolving two issues.
 
-We add a "merge-if" operation to lakeFS: atomically merge branch B into
-branch A if branch A is at a given lakeFS commit.
+#### Branch name to use
 
-Now change LakeFSOutputCommitter to loop during HOC commit:
+Find a useful predictable job branch name to use.  Some Spark writers call
+the output committer `*Job` operations with different job IDs that the
+`*Task` operations.  That's why we don't use the job ID to identify their
+branch.  But it raises the question of what we _can_ use.
+
+In practice _other_ committers manage to identify this case somehow.
+Further discovery will be needed here.  I suspect maybe they just use a
+different writer.
+
+#### Add safe concurrent merge semantics to lakeFS.
+
+One committer has to win in all merges.  The issue is that if multiple
+concurrent writes added objects with _different_ names and more than one
+succeeds, the last branch to merge will have left the destination before
+another write and will not know the names of all the objects that it needs
+to delete.  This may lead to leftovers from previously successful concurrent
+writes.
+
+To handle this we add a "merge-if" operation to lakeFS: atomically merge
+branch B into branch A if branch A is at a given lakeFS commit.
+
+Now change LakeFSOutputCommitter to loop during job commit:
 
 * Attempt to merge the task branch into the source branch _if the source
   branch has not moved_.
@@ -210,10 +226,10 @@ Now change LakeFSOutputCommitter to loop during HOC commit:
 	use a new "merge but *never* copy from source branch" strategy).
   - Go back and attempt another merge.
 
-This is essentially (noncooperative!) locking of output paths on top of
-lakeFS, with no additional DB.  We can even add cooperation by means of
-various locking hints, _informing_ multiple jobs about attempting to update
-the same paths but keeping things safe regardless.
+This is essentially (noncooperative but optimistic!) locking of output paths
+on top of lakeFS, with no additional DB.  We can even add cooperation by
+means of various locking hints, _informing_ multiple jobs about attempting
+to update the same paths but keeping things safe regardless.
 
 [^2]: 	Whenever there is a conflict, we want the task branch (which will become
     the "latest writer" after a successful HOC commit) to win.
