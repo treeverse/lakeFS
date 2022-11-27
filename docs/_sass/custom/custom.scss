@@ -947,3 +947,37 @@ div.highlighter-rouge{
 		border-color: transparent transparent $aqua-marine transparent;
 	}
 }
+
+.ui-dialog-titlebar {
+	display: none;
+}
+
+.page-helpful-btn {
+	background: none!important;
+	border: none;
+	padding: 0!important;
+	cursor: pointer;
+	&:focus-visible {
+		outline: none;
+	}
+}
+
+#is-helpful-ty {
+	display: none;
+}
+
+.ui-widget-content a {
+	color: $teal-green !important;
+}
+
+#feedback-dialog {
+	.x-btn {
+		&:focus-visible {
+
+			outline: none;
+		}
+		position: fixed;
+		top: 3px;
+		right: 5px;
+	}
+}
