@@ -89,16 +89,47 @@ overwrite modes: an entire previous table will be deleted on write.
 
   Successive steps are controlled by Spark/Hadoop to output, and correspond
   to the Hadoop OutputCommitter protocol.
-* **Setup (job/task TBD)**: Create a new branch for this job/task.  Its name
-  is predictable from the job ID and/or task ID, so can be easily found
-  again.  In "overwrite" mode, immediately delete the entire subtree of the
-  intended output path, and possibly delete branches of previous tasks.
-  This handles cases where the names of the objects written by the output
-  format change, for instance because of repartitioning to a smaller (or
-  different) number of partitions or because of nondeterminism in the names
-  of the objects.
-* **Write objects**: Everything is written to its correct path on the branch.
-* **[HOC] Commit**: Merge back to the original branch.
+* **Setup job**: Create a new branch for this job.  Its name is predictable
+  from the output path[^2] and contains the output path.  Because it is
+  predictable tasks will be able to find and use that branch.  This occurs
+  once.
+
+  Because the branch can depend only on the output path, this scheme will
+  **not** work for multi-writer synchronization.  We shall have to find some
+  other way of connecting tasks to their write job at that stage.
+
+  In "overwrite" mode, immediately delete the entire subtree of the intended
+  output path, and possibly delete branches of previous tasks.  This handles
+  cases where the names of the objects written by the output format change,
+  for instance because of repartitioning to a smaller (or different) number
+  of partitions or because of nondeterminism in the names of the objects.
+* **Setup task**: Identify the job branch, and set the working directory to
+  `<JOB_BRANCH>/<PATH>/_temporary/<TASK_ID>/`.  This occurs once for each
+  output task attempt, so at least once for each file partition.
+* Tasks therefore write to a task-specific temporary prefix of the output
+  path, on the job branch.
+* **Commit task**: Copy files from the task working directory to their
+  intended location on the job branch `<JOB_BRANCH>/<PATH>/`.  Use either
+  the upcoming "copy object" API (if supported) or the existing "stage
+  object" API.  This adds another link to a staged object, so it is
+  supported as a metadata-only operation.  It occurs once for each
+  successful task, so once for each file partition.
+* **Commit job**:
+  1. Delete all objects in working directories under
+	 `<JOB_BRANCH>/<PATH>/_temporary/`.  All successful task objects were
+	 committed by their tasks and are retained under `<JOB_BRANCH>/<PATH>/`;
+	 all failed task objects are deleted here.  So no temporary objects
+	 remain and all desired objects exist under `<JOB_BRANCH>/<PATH>/`.
+  1. Commit all staged objects.
+  1. Merge the job branch back to the output branch, determining the mode to
+     use by the Hadoop SaveMode.
+
+  This occurs once, but obviously the deletion phase deletes one object for
+  each task attempt.
+
+[^2] We _cannot_ use the job ID to identify the job branch: Spark can create
+  tasks for the same actual write job that use a different job context and
+  ID!
 
 ## Properties
 
