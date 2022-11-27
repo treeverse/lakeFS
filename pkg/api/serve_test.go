@@ -78,6 +78,23 @@ func (m *memCollector) CollectCommPrefs(email, installationID string, featureUpd
 
 func (m *memCollector) Close() {}
 
+func setupCommPrefs(t testing.TB, clt api.ClientWithResponsesInterface) *api.NextStep {
+	t.Helper()
+	emptyEmail := ""
+	res, err := clt.SetupCommPrefsWithResponse(context.Background(), api.SetupCommPrefsJSONRequestBody{
+		Email: &emptyEmail,
+		FeatureUpdates: false,
+		SecurityUpdates: false,
+	})
+	testutil.Must(t, err)
+	if res.JSON200 == nil {
+		t.Fatal("Failed to setup comm prefs", res.HTTPResponse.StatusCode, res.HTTPResponse.Status)
+	}
+	return &api.NextStep{
+		NextStep: "comm_prefs_done",
+	}
+}
+
 func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.BaseCredential {
 	t.Helper()
 	res, err := clt.SetupWithResponse(context.Background(), api.SetupJSONRequestBody{
