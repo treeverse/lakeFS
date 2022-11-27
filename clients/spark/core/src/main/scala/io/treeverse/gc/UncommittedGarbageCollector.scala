@@ -32,7 +32,8 @@ object UncommittedGarbageCollector {
   def listObjects(storageNamespace: String, before: Date): DataFrame = {
     // TODO(niro): parallelize reads from root and data paths
     val sc = spark.sparkContext
-    val dataLocation = storageNamespace + "data" // TODO(niro): handle better
+    val dataPrefix = "data"
+    val dataLocation = storageNamespace + dataPrefix // TODO(niro): handle better
     val dataPath = new Path(dataLocation)
     val configMapper = new ConfigMapper(
       sc.broadcast(
@@ -40,12 +41,12 @@ object UncommittedGarbageCollector {
       )
     )
     // Read objects from data path (new repository structure)
-    var dataDF = new ParallelDataLister().listData(configMapper, dataPath)
+    var dataDF = new ParallelDataLister().listData(configMapper, dataPath, dataPrefix)
 
     // Read objects from namespace root, for old structured repositories
     val oldDataPath = new Path(storageNamespace)
     // TODO (niro): implement parallel lister for old repositories (https://github.com/treeverse/lakeFS/issues/4620)
-    val oldDataDF = new NaiveDataLister().listData(configMapper, oldDataPath)
+    val oldDataDF = new NaiveDataLister().listData(configMapper, oldDataPath, "")
     dataDF.union(oldDataDF)
 
     dataDF = dataDF.filter(dataDF("last_modified") < before.getTime).select("address")
