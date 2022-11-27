@@ -147,7 +147,8 @@ Assume the number of write partitions $N$ may be several thousands.
    StageObject limited to support precisely this one use that we need, and
    that will continue to be supported!
 1. To attain high performance, we will need this inventory of operations to
-   be fast:
+   be fast.  Expect each task to write a single object (I have not found any
+   counterexample), so each $\Theta(N)$ is really more like $N$.
 
    * These operations occur for each write job, so only once or twice:
      CreateBranch (1), DiffRefs (1, limited to 1 output), DiffBranch (1,
@@ -157,6 +158,13 @@ Assume the number of write partitions $N$ may be several thousands.
      of course as large as possible (1000): ListObjects, DeleteObjects.
    * These are single calls that run in time $\Theta(N)$: Commit,
      MergeIntoBranch.
+   * Each task has to list and copy each result object.  So these are $N$
+     calls to ListObjects that return in total $\Theta(N)$ objects
+     (typically this will be a single object!), and precisely $N$ CopyObject
+     or StageObject calls
+   * Additionally, the Spark writing tasks make lakeFSFS itself perform
+     multiple lakeFS API calls.  Expect $N$ ListObjects with size 1, $\Theta(N)$
+     StatObject, and $\Theta(N)$ PutObject.
 
 ## Properties
 
