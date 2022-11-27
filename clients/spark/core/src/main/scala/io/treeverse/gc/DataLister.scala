@@ -12,7 +12,7 @@ import org.apache.hadoop.fs.FileStatus
 /** List all the files under a given path.
  */
 trait DataLister {
-  @transient lazy val spark = SparkSession.active
+  @transient lazy val spark: SparkSession = SparkSession.active
 
   def listData(configMapper: ConfigMapper, path: Path): DataFrame
 }
@@ -25,7 +25,7 @@ class NaiveDataLister extends DataLister {
     val dataList = new ListBuffer[(String, Long)]()
     while (dataIt.hasNext) {
       val fileStatus = dataIt.next()
-      dataList += ((fileStatus.getPath.toString, fileStatus.getModificationTime()))
+      dataList += ((fileStatus.getPath.getName, fileStatus.getModificationTime))
     }
     dataList.toDF("address", "last_modified")
   }
@@ -49,7 +49,6 @@ class ParallelDataLister extends DataLister with Serializable {
 
   override def listData(configMapper: ConfigMapper, path: Path): DataFrame = {
     import spark.implicits._
-    val fs = path.getFileSystem(spark.sparkContext.hadoopConfiguration)
     val slices = listPath(configMapper, path.toString)
     val pathStr = path.toString
     val objectsUDF = udf((sliceId: String) => {

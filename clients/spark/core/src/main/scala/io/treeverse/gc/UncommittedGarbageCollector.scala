@@ -22,7 +22,15 @@ object UncommittedGarbageCollector {
   lazy val spark: SparkSession =
     SparkSession.builder().appName("UncommittedGarbageCollector").getOrCreate()
 
+  /**
+   * list repository objects directly from object store.
+   * Reads the objects from both old repository structure and new repository structure
+   * @param storageNamespace The storageNamespace to read from
+   * @param before Exclude objects which last_modified date is newer than before Date
+   * @return DF listing all objects under given storageNamespace
+   */
   def listObjects(storageNamespace: String, before: Date): DataFrame = {
+    // TODO(niro): parallelize reads from root and data paths
     val sc = spark.sparkContext
     val dataLocation = storageNamespace + "data" // TODO(niro): handle better
     val dataPath = new Path(dataLocation)
@@ -31,7 +39,15 @@ object UncommittedGarbageCollector {
         HadoopUtils.getHadoopConfigurationValues(sc.hadoopConfiguration, "fs.", "lakefs.")
       )
     )
-    var dataDF = new NaiveDataLister().listData(configMapper, dataPath)
+    // Read objects from data path (new repository structure)
+    var dataDF = new ParallelDataLister().listData(configMapper, dataPath)
+
+    // Read objects from namespace root, for old structured repositories
+    val oldDataPath = new Path(storageNamespace)
+    // TODO (niro): implement parallel lister for old repositories (https://github.com/treeverse/lakeFS/issues/4620)
+    val oldDataDF = new NaiveDataLister().listData(configMapper, oldDataPath)
+    dataDF.union(oldDataDF)
+
     dataDF = dataDF.filter(dataDF("last_modified") < before.getTime).select("address")
     dataDF
   }
@@ -64,7 +80,10 @@ object UncommittedGarbageCollector {
     }
 
     try {
+      // Read objects directly from object storage
       val dataDF = listObjects(storageNamespace, DateUtils.addHours(new Date(), -6))
+
+      // Process uncommitted
       val uncommittedGCRunInfo =
         new APIUncommittedAddressLister(apiClient).listUncommittedAddresses(spark, repo)
       var uncommittedDF =
@@ -77,8 +96,10 @@ object UncommittedGarbageCollector {
       uncommittedDF = uncommittedDF.select(uncommittedDF("physical_address").as("address"))
       runID = uncommittedGCRunInfo.runID
 
+      // Process committed
       val committedDF =
         new NaiveCommittedAddressLister().listCommittedAddresses(spark, storageNamespace)
+
       addressesToDelete = dataDF
         .except(spark.emptyDataFrame.withColumn("address", lit("")))
         .except(committedDF)
