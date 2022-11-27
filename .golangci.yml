@@ -1,7 +1,7 @@
 run:
   tests: false
   skip-dirs:
-    - pkg/metastore/give/gen-go
+    - pkg/metastore/hive/gen-go
   timeout: 5m
 
 linters:
