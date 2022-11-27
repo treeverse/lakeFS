@@ -20,7 +20,7 @@ var (
 type Sender interface {
 	SendEvent(ctx context.Context, installationID, processID string, m []Metric) error
 	UpdateMetadata(ctx context.Context, m Metadata) error
-	UpdateCommPrefs(ctx context.Context, email string, featureUpdates, securityUpdates bool) error
+	UpdateCommPrefs(ctx context.Context, email, installationID string, featureUpdates, securityUpdates bool) error
 }
 
 type TimeFn func() time.Time
@@ -97,8 +97,9 @@ func (s *HTTPSender) SendEvent(ctx context.Context, installationID, processID st
 	return nil
 }
 
-func (s *HTTPSender) UpdateCommPrefs(ctx context.Context, email string, featureUpdates, securityUpdates bool) error {
+func (s *HTTPSender) UpdateCommPrefs(ctx context.Context, email, installationID string, featureUpdates, securityUpdates bool) error {
 	commPrefs := &CommPrefsData{
+		InstallationID: installationID,
 		Email: email,
 		FeatureUpdates: featureUpdates,
 		SecurityUpdates: securityUpdates,
@@ -108,17 +109,16 @@ func (s *HTTPSender) UpdateCommPrefs(ctx context.Context, email string, featureU
 		return fmt.Errorf("could not serialize comm prefs: %s: %w", err, ErrSendError)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.addr+"/comm_prefs", bytes.NewBuffer(serialized))
+	req, err := http.NewRequest(http.MethodPost, s.addr+"/comm_prefs", bytes.NewBuffer(serialized))
 	if err != nil {
 		return fmt.Errorf("could not create HTTP request: %s: %w", err, ErrSendError) 
 	}
-	res, err := s.client.Do(req)
+	req = req.WithContext(ctx)
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("could not make HTTP request: %s: %w", err, ErrSendError)
 	}
-	defer func () {
-		_ = res.Body.Close()
-	}()
+	_ = res.Body.Close()
 	if res.StatusCode != http.StatusCreated {
 		return fmt.Errorf("bad status code received. status=%d: %w", res.StatusCode, ErrSendError)
 	}
@@ -151,7 +151,7 @@ func (s *dummySender) UpdateMetadata(_ context.Context, m Metadata) error {
 	return nil
 }
 
-func (s *dummySender) UpdateCommPrefs(ctx context.Context, email string, featureUpdates, securityUpdates bool) error {
+func (s *dummySender) UpdateCommPrefs(ctx context.Context, email, installationID string, featureUpdates, securityUpdates bool) error {
 	if s.Log == nil || !s.Log.IsTracing() {
 		return nil
 	}

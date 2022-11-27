@@ -31,7 +31,7 @@ const SetupContents = () => {
         try {
             const response = await setup.lakeFS(usernameRef.current.value);
             setSetupError(null);
-            setSetupData(response?.nextStep);
+            setSetupData(response);
         } catch (error) {
             setSetupError(error);
             setSetupData(null);

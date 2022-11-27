@@ -19,7 +19,7 @@ export const CommunicationPreferencesSetup: FC<CommunicationPreferencesSetupProp
 }) => {
     const [userEmail, setUserEmail] = useState<string>("");
     const [updatesCheck, setUpdatesCheck] = useState<boolean>(false);
-    const [securityCheck, setSecurityCheck] = useState<boolean>(true);
+    const [securityCheck, setSecurityCheck] = useState<boolean>(false);
 
     const submitHandler = useCallback((e) => {
         onSubmit(userEmail, updatesCheck, securityCheck);
@@ -57,12 +57,12 @@ export const CommunicationPreferencesSetup: FC<CommunicationPreferencesSetupProp
 
                             <Form.Group controlId="updates-check" className="mt-4">
                                 <Form.Label>News & feature updates</Form.Label>
-                                <Form.Check type="checkbox" checked={updatesCheck} onChange={handleUpdatesChange} label="Receive news and feature updates" />
+                                <Form.Check type="checkbox" checked={updatesCheck} onChange={handleUpdatesChange} label="I'd like to receive news and feature updates" />
                             </Form.Group>
 
                             <Form.Group controlId="security-check" className="mt-4">
                                 <Form.Label>Security updates</Form.Label>
-                                <Form.Check type="checkbox" checked={securityCheck} onChange={handleSecurityChange} label="Receive security updates" />
+                                <Form.Check type="checkbox" checked={securityCheck} onChange={handleSecurityChange} label="I'd like to receive security updates" />
                             </Form.Group>
 
                             {!!setupError && <Error error={setupError}/>}

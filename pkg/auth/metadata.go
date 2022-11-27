@@ -38,7 +38,8 @@ func init() {
 type MetadataManager interface {
 	IsInitialized(ctx context.Context) (bool, error)
 	GetSetupState(ctx context.Context, emailSubscriptionEnabled bool) (SetupStateName, error)
-	UpdateCommPrefs(ctx context.Context, commPrefs CommPrefs) error
+	UpdateCommPrefs(ctx context.Context, commPrefs CommPrefs) (string, error)
+	UpdateSkipCommPrefs(ctx context.Context) error
 	UpdateSetupTimestamp(context.Context, time.Time) error
 	Write(context.Context) (map[string]string, error)
 }
@@ -179,20 +180,26 @@ func (m *KVMetadataManager) UpdateSetupTimestamp(ctx context.Context, ts time.Ti
 	})
 }
 
-func (m *KVMetadataManager) UpdateCommPrefs(ctx context.Context, commPrefs CommPrefs) error {
+func (m *KVMetadataManager) UpdateCommPrefs(ctx context.Context, commPrefs CommPrefs) (string, error) {
 	encodedEmail := ""
 	var err error
 	if commPrefs.UserEmail != "" {
 		encodedEmail = b64.StdEncoding.EncodeToString([]byte(commPrefs.UserEmail))
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 	
-	return m.writeMetadata(ctx, map[string]string{
+	return m.installationID, m.writeMetadata(ctx, map[string]string{
 		EmailKeyName: encodedEmail,
 		FeatureUpdatesKeyName: strconv.FormatBool(commPrefs.FeatureUpdates),
 		SecurityUpdatesKeyName: strconv.FormatBool(commPrefs.SecurityUpdates),
+		CommPrefsSetKeyName: strconv.FormatBool(true),
+	})
+}
+
+func (m *KVMetadataManager) UpdateSkipCommPrefs(ctx context.Context) error {
+	return m.writeMetadata(ctx, map[string]string{
 		CommPrefsSetKeyName: strconv.FormatBool(true),
 	})
 }

@@ -3327,26 +3327,37 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 	response := NextStep{
 		NextStep: string(auth.SetupStateCommPrefsDone),
 	}
-	// user chose not to provide their email address, move on to the next step
+	// user chose not to provide their email address,
+	// update that this step is skipped, and move on to the next step
 	if len(*body.Email) == 0 {
+		_ = c.MetadataManager.UpdateSkipCommPrefs(ctx)
 		writeResponse(w, http.StatusOK, response)
 		return
 	}
+
+	// validate email. if the user typed some value into the input, they might have a typo
+	// we assume the intent was to provide a valid email, so we'll return an error
+	if _, err := mail.ParseAddress(*body.Email); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid email address")
+		return
+	}
+
 	
-	// save comm prefs to metadata, for in-app preferences/unsubscribe functionality
+	// save comm prefs to metadata, for future in-app preferences/unsubscribe functionality
 	commPrefs := auth.CommPrefs{
 		UserEmail: *body.Email,
 		FeatureUpdates: body.FeatureUpdates,
 		SecurityUpdates: body.SecurityUpdates,
 	}
-	err = c.MetadataManager.UpdateCommPrefs(ctx, commPrefs)
+	
+	installationID, err := c.MetadataManager.UpdateCommPrefs(ctx, commPrefs)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
 
 	// collect comm prefs
-	c.Collector.CollectCommPrefs(commPrefs.UserEmail, commPrefs.FeatureUpdates, commPrefs.SecurityUpdates)
+	c.Collector.CollectCommPrefs(commPrefs.UserEmail, installationID, commPrefs.FeatureUpdates, commPrefs.SecurityUpdates)
 
 	writeResponse(w, http.StatusOK, response)
 }
