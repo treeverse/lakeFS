@@ -1,6 +1,6 @@
 package io.treeverse.gc
 
-import io.lakefs.clients.api.model.{PrepareGCUncommittedResponse}
+import io.lakefs.clients.api.model.PrepareGCUncommittedResponse
 import io.treeverse.clients.{ApiClient, SparkSessionSetup}
 import org.scalatest.funspec._
 import org.scalatest.matchers._
@@ -31,7 +31,7 @@ class UncommittedAddressListerSpec
         val info = new APIUncommittedAddressLister(mockClient)
           .listUncommittedAddresses(spark, repo)
         info.runID should be(runID)
-        info.uncommitedLocation should be(uncommittedLocation)
+        info.uncommittedLocation should be(uncommittedLocation)
       })
     }
 
@@ -55,7 +55,7 @@ class UncommittedAddressListerSpec
         val info = new APIUncommittedAddressLister(mockClient)
           .listUncommittedAddresses(spark, repo)
         info.runID should be(runID)
-        info.uncommitedLocation should be(uncommittedLocation)
+        info.uncommittedLocation should be(uncommittedLocation)
       })
     }
 
