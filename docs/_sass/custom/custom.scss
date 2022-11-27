@@ -953,10 +953,11 @@ div.highlighter-rouge{
 }
 
 .page-helpful-btn {
-	background: none!important;
+	background: none !important;
 	border: none;
-	padding: 0!important;
+	padding: 0 !important;
 	cursor: pointer;
+
 	&:focus-visible {
 		outline: none;
 	}
@@ -973,7 +974,6 @@ div.highlighter-rouge{
 #feedback-dialog {
 	.x-btn {
 		&:focus-visible {
-
 			outline: none;
 		}
 		position: fixed;
