@@ -1,9 +1,9 @@
 on:
-  workflow_dispatch:
-    inputs:
-      tag-name:
-        description: 'The git tag name to bump the formula to'
-        required: true
+  push:
+  pull_request:
+    branches:
+      - develop
+      - staging
 
 jobs:
   homebrew:
@@ -13,8 +13,8 @@ jobs:
       - uses: mislav/bump-homebrew-formula-action@v2.1
         with:
           formula-name: lakefs
-          tag-name: ${{ github.event.inputs.tag-name }}
-          download-url: https://github.com/treeverse/lakeFS/archive/${{ github.event.inputs.tag-name }}.tar.gz
+          tag-name: v0.86.0
+          download-url: https://github.com/treeverse/lakeFS/archive/v0.86.0.tar.gz
           create-pullrequest: true 
         env:
           COMMITTER_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
