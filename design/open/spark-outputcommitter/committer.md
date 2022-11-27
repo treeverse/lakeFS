@@ -129,6 +129,35 @@ overwrite modes: an entire previous table will be deleted on write.
   tasks for the same actual write job that use a different job context and
   ID!
 
+### Requirements from (lakeFS server) Versioning Engine
+
+Assume the number of write partitions $N$ may be several thousands.
+
+1. Support for metadata-only copies.  We want to be able to add another link
+   to an existing object.  We guarantee that that object will be uncommitted
+   and on the same branch.
+
+   As part of GC+, the StageObject API on the lakeFS server is going away,
+   and a new CopyObject API will appear.
+
+   To reduce dependencies, we will use the new API if it is available,
+   otherwise fall back on the old API.  This is safe because lakeFS versions
+   without the upcoming CopyObject can safely StageObject the same object
+   twice.  As an alternative, we would be more than happy to have
+   StageObject limited to support precisely this one use that we need, and
+   that will continue to be supported!
+1. To attain high performance, we will need this inventory of operations to
+   be fast:
+
+   * These operations occur for each write job, so only once or twice:
+     CreateBranch (1), DiffRefs (1, limited to 1 output), DiffBranch (1,
+     limited to 1 output), PutObject (<=1).
+   * These are a small number of batched calls, but in total run in time
+     proportional to the number of partitions, $\Theta(N)$.  Each batch is
+     of course as large as possible (1000): ListObjects, DeleteObjects.
+   * These are single calls that run in time $\Theta(N)$: Commit,
+     MergeIntoBranch.
+
 ## Properties
 
 * The merge is performed by lakeFS so it is **atomic**.
