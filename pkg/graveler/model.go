@@ -17,6 +17,15 @@ const (
 	settingsPrefix         = "settings"
 )
 
+//nolint:gochecknoinits
+func init() {
+	kv.MustRegisterType("graveler", "repos", (&RepositoryData{}).ProtoReflect().Type())
+	kv.MustRegisterType("*", "branches", (&BranchData{}).ProtoReflect().Type())
+	kv.MustRegisterType("*", "commits", (&CommitData{}).ProtoReflect().Type())
+	kv.MustRegisterType("*", "tags", (&TagData{}).ProtoReflect().Type())
+	kv.MustRegisterType("*", "*", (&StagedEntryData{}).ProtoReflect().Type())
+}
+
 func RepoPath(repoID RepositoryID) string {
 	return kv.FormatPath(reposPrefix, repoID.String())
 }
