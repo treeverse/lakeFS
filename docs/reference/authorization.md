@@ -386,4 +386,4 @@ Policies: `["FSReadAll", "AuthManageOwnCredentials"]`
 
 ### SOC2 Compliance
 
-For a scalable managed lakeFS service with guaranteed SLAs, which is SOC 2 Compliant try https://lakefs.cloud
+For a scalable managed lakeFS service with guaranteed SLAs, which is SOC 2 Compliant try [lakeFS cloud](https://lakefs.cloud)
