@@ -33,12 +33,14 @@ class NaiveDataLister extends DataLister {
 class FileDescriptor(val path: String, val lastModified: Long) extends Serializable
 
 class ParallelDataLister extends DataLister with Serializable {
-  def listPath(
+    def listPath(
       configMapper: ConfigMapper,
-      path: String
+      p: Path
   ): List[FileDescriptor] = {
-    val p = new Path(path)
     val fs = p.getFileSystem(configMapper.configuration)
+    if (!fs.exists(p)) {
+      return List[FileDescriptor]()
+    }
     fs.listStatus(p)
       .map((status: FileStatus) =>
         new FileDescriptor(status.getPath.getName, status.getModificationTime)
@@ -48,10 +50,10 @@ class ParallelDataLister extends DataLister with Serializable {
 
   override def listData(configMapper: ConfigMapper, path: Path): DataFrame = {
     import spark.implicits._
-    val slices = listPath(configMapper, path.toString)
-    val pathStr = path.toString
+    val slices = listPath(configMapper, path)
     val objectsUDF = udf((sliceId: String) => {
-      listPath(configMapper, pathStr + '/' + sliceId)
+      val slicePath = new Path(path, sliceId)
+      listPath(configMapper, slicePath)
         .map(s => (s.path, s.lastModified))
     })
     val objectsDF = slices
