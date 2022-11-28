@@ -109,6 +109,7 @@ object UncommittedGarbageCollector {
       addressesToDelete = dataDF
         .except(committedDF)
         .except(uncommittedDF)
+      // TODO (niro): not working - need to find the most efficient way to save the first slice
       val firstFile = dataDF.select(col("address")).first().toString()
       firstSlice = firstFile.substring(0, firstFile.lastIndexOf("/"))
     } catch {
