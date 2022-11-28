@@ -346,10 +346,10 @@ func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
 	}
 }
 
-func (s *BufferedCollector) CollectCommPrefs(email, installationID string, featureUpdates, securityUpdates bool) {
+func (s *BufferedCollector) CollectCommPrefs(commPrefs *CommPrefsData) {
 	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
 	defer cancel()
-	err := s.sender.UpdateCommPrefs(ctx, email, installationID, featureUpdates, securityUpdates)
+	err := s.sender.UpdateCommPrefs(ctx, commPrefs)
 	if err != nil {
 		s.log.WithError(err).WithField("service", "stats_collector").Info("could not update comm prefs")
 	}

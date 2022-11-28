@@ -20,7 +20,7 @@ var (
 type Sender interface {
 	SendEvent(ctx context.Context, installationID, processID string, m []Metric) error
 	UpdateMetadata(ctx context.Context, m Metadata) error
-	UpdateCommPrefs(ctx context.Context, email, installationID string, featureUpdates, securityUpdates bool) error
+	UpdateCommPrefs(ctx context.Context, commPrefs *CommPrefsData) error
 }
 
 type TimeFn func() time.Time
@@ -97,13 +97,7 @@ func (s *HTTPSender) SendEvent(ctx context.Context, installationID, processID st
 	return nil
 }
 
-func (s *HTTPSender) UpdateCommPrefs(ctx context.Context, email, installationID string, featureUpdates, securityUpdates bool) error {
-	commPrefs := &CommPrefsData{
-		InstallationID:  installationID,
-		Email:           email,
-		FeatureUpdates:  featureUpdates,
-		SecurityUpdates: securityUpdates,
-	}
+func (s *HTTPSender) UpdateCommPrefs(ctx context.Context, commPrefs *CommPrefsData) error {
 	serialized, err := json.Marshal(commPrefs)
 	if err != nil {
 		return fmt.Errorf("could not serialize comm prefs: %s: %w", err, ErrSendError)
@@ -151,14 +145,15 @@ func (s *dummySender) UpdateMetadata(_ context.Context, m Metadata) error {
 	return nil
 }
 
-func (s *dummySender) UpdateCommPrefs(ctx context.Context, email, installationID string, featureUpdates, securityUpdates bool) error {
+func (s *dummySender) UpdateCommPrefs(ctx context.Context, commPrefs *CommPrefsData) error {
 	if s.Log == nil || !s.Log.IsTracing() {
 		return nil
 	}
 	s.Log.WithFields(logging.Fields{
-		"email":           email,
-		"featureUpdates":  featureUpdates,
-		"securityUpdates": securityUpdates,
+		"email":           commPrefs.Email,
+		"featureUpdates":  commPrefs.FeatureUpdates,
+		"securityUpdates": commPrefs.SecurityUpdates,
+		"installationID": commPrefs.InstallationID,
 	}).Trace("dummy sender received comm prefs")
 	return nil
 }
