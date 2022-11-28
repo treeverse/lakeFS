@@ -56,6 +56,7 @@ type CommPrefs struct {
 	UserEmail       string
 	FeatureUpdates  bool
 	SecurityUpdates bool
+	InstallationID  string
 }
 
 func NewKVMetadataManager(version, fixedInstallationID, kvType string, store kv.Store) *KVMetadataManager {
