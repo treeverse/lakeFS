@@ -40,7 +40,9 @@ public class Diff {
     
     CHANGED("changed"),
     
-    CONFLICT("conflict");
+    CONFLICT("conflict"),
+    
+    PREFIX_CHANGED("prefix_changed");
 
     private String value;
 

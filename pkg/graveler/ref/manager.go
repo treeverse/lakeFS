@@ -476,7 +476,7 @@ func (m *KVManager) GetCommitByPrefix(ctx context.Context, repository *graveler.
 
 func (m *KVManager) GetCommit(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) (*graveler.Commit, error) {
 	key := fmt.Sprintf("%s:%s", repository.RepositoryID, commitID)
-	v, err := m.repoCache.GetOrSet(key, func() (v interface{}, err error) {
+	v, err := m.commitCache.GetOrSet(key, func() (v interface{}, err error) {
 		return m.getCommitBatch(ctx, repository, commitID)
 	})
 	if err != nil {

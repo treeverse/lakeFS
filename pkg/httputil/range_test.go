@@ -1,10 +1,10 @@
-package http_test
+package httputil_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/treeverse/lakefs/pkg/gateway/http"
+	"github.com/treeverse/lakefs/pkg/httputil"
 )
 
 func TestParseRange(t *testing.T) {
@@ -33,7 +33,7 @@ func TestParseRange(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(fmt.Sprintf("%s_length_%d", c.Spec, c.Length), func(t *testing.T) {
-			r, err := http.ParseRange(c.Spec, int64(c.Length))
+			r, err := httputil.ParseRange(c.Spec, int64(c.Length))
 			if (err != nil) != c.ExpectedError {
 				t.Fatalf("got err=%s, expected error %t", err, c.ExpectedError)
 			}

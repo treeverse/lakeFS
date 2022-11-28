@@ -86,7 +86,8 @@ public class ObjectsApiTest {
         String repository = null;
         String ref = null;
         String path = null;
-                File response = api.getObject(repository, ref, path);
+        String range = null;
+                File response = api.getObject(repository, ref, path, range);
         // TODO: test validations
     }
     

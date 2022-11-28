@@ -565,8 +565,8 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 		},
 		{
 			name:          "Tokenized",
-			numBranch:     1000,
-			numRecords:    5000,
+			numBranch:     500,
+			numRecords:    500,
 			expectedCalls: 2,
 		},
 	}
@@ -575,8 +575,9 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			g := createPrepareUncommittedTestScenario(t, tt.numBranch, tt.numRecords, tt.expectedCalls)
 			blockAdapter := testutil.NewBlockAdapterByType(t, block.BlockstoreTypeMem)
 			c := &catalog.Catalog{
-				Store:        g.Sut,
-				BlockAdapter: blockAdapter,
+				Store:                    g.Sut,
+				BlockAdapter:             blockAdapter,
+				GCMaxUncommittedFileSize: 500 * 1024,
 			}
 			var result *catalog.PrepareGCUncommittedInfo
 
@@ -584,7 +585,6 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			require.NoError(t, err)
 
 			for result.Mark != nil {
-				time.Sleep(1 * time.Second)
 				runID := result.Metadata.RunId
 				require.Equal(t, runID, result.Mark.RunID)
 				result, err = c.PrepareGCUncommitted(ctx, repoID.String(), result.Mark)
@@ -612,7 +612,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 		token := graveler.StagingToken(fmt.Sprintf("%s_st%04d", branchID, i))
 		branches = append(branches, &graveler.BranchRecord{BranchID: branchID, Branch: &graveler.Branch{StagingToken: token}})
 
-		records[i] = make([]*graveler.ValueRecord, numRecords)
+		records[i] = make([]*graveler.ValueRecord, numRecords+2)
 		for j := 0; j < numRecords; j++ {
 			e := catalog.Entry{
 				Address:      fmt.Sprintf("%s_record%04d", branchID, j),
@@ -620,7 +620,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 				Size:         0,
 				ETag:         "",
 				Metadata:     nil,
-				AddressType:  0,
+				AddressType:  catalog.Entry_RELATIVE,
 				ContentType:  "",
 			}
 			v, err := proto.Marshal(&e)
@@ -632,6 +632,30 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 					Data:     v,
 				},
 			}
+		}
+		// Add tombstone
+		records[i][numRecords] = &graveler.ValueRecord{
+			Key:   []byte("AtombstoneFile"),
+			Value: nil,
+		}
+		// Add external address
+		e := catalog.Entry{
+			Address:      fmt.Sprintf("external/address/object"),
+			LastModified: timestamppb.New(time.Now()),
+			Size:         0,
+			ETag:         "",
+			Metadata:     nil,
+			AddressType:  catalog.Entry_FULL,
+			ContentType:  "",
+		}
+		v, err := proto.Marshal(&e)
+		require.NoError(t, err)
+		records[i][numRecords+1] = &graveler.ValueRecord{
+			Key: []byte(e.Address),
+			Value: &graveler.Value{
+				Identity: []byte("dont care"),
+				Data:     v,
+			},
 		}
 	}
 	test.GarbageCollectionManager.EXPECT().NewID().Return("TestRunID")
@@ -706,5 +730,5 @@ func verifyData(t *testing.T, ctx context.Context, numBranches, numRecords int, 
 	})
 
 	require.NoError(t, err)
-	require.Equal(t, totalCount, numBranches*numRecords)
+	require.Equal(t, numBranches*numRecords, totalCount)
 }

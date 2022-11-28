@@ -43,7 +43,7 @@ def generateCoreProject(buildType: BuildType) =
         scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
       ),
       libraryDependencies ++= Seq(
-        "io.lakefs" % "api-client" % "0.56.0",
+        "io.lakefs" % "api-client" % "0.85.0-RC1",
         "commons-codec" % "commons-codec" % "1.15",
         "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
         "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
@@ -52,7 +52,7 @@ def generateCoreProject(buildType: BuildType) =
         "org.apache.hadoop" % "hadoop-azure" % buildType.hadoopVersion % "provided",
         "com.google.cloud.bigdataoss" % "gcs-connector" % buildType.gcpConnectorVersion,
         "org.scalaj" %% "scalaj-http" % "2.4.2",
-        "org.json4s" %% "json4s-native" % "3.7.0-M8",
+        "org.json4s" %% "json4s-native" % "3.5.5",
         "com.google.guava" % "guava" % "16.0.1",
         "com.google.guava" % "failureaccess" % "1.0.1",
         "org.rogach" %% "scallop" % "4.0.3",
@@ -243,6 +243,12 @@ ThisBuild / developers := List(
     name = "Itai Admi",
     email = "itai.admi@treeverse.io",
     url = url("https://github.com/itaiad200")
+  ),
+  Developer(
+    id = "niro",
+    name = "Nir Ozery",
+    email = "nir.ozery@treeverse.io",
+    url = url("https://github.com/N-o-Z")
   )
 )
 

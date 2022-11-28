@@ -194,6 +194,7 @@ class ObjectsApi(object):
                     'repository',
                     'ref',
                     'path',
+                    'range',
                 ],
                 'required': [
                     'repository',
@@ -205,10 +206,17 @@ class ObjectsApi(object):
                 'enum': [
                 ],
                 'validation': [
+                    'range',
                 ]
             },
             root_map={
                 'validations': {
+                    ('range',): {
+
+                        'regex': {
+                            'pattern': r'^bytes=((\d*-\d*,? ?)+)$',  # noqa: E501
+                        },
+                    },
                 },
                 'allowed_values': {
                 },
@@ -219,16 +227,20 @@ class ObjectsApi(object):
                         (str,),
                     'path':
                         (str,),
+                    'range':
+                        (str,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'ref': 'ref',
                     'path': 'path',
+                    'range': 'Range',
                 },
                 'location_map': {
                     'repository': 'path',
                     'ref': 'path',
                     'path': 'query',
+                    'range': 'header',
                 },
                 'collection_format_map': {
                 }
@@ -801,6 +813,7 @@ class ObjectsApi(object):
             path (str): relative to the ref
 
         Keyword Args:
+            range (str): Byte range to retrieve. [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

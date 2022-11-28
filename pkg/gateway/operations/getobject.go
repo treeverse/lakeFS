@@ -10,7 +10,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
-	ghttp "github.com/treeverse/lakefs/pkg/gateway/http"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
@@ -71,11 +70,11 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	// range query
 	var expected int64
 	var data io.ReadCloser
-	var rng ghttp.Range
+	var rng httputil.Range
 	// range query
 	rangeSpec := req.Header.Get("Range")
 	if len(rangeSpec) > 0 {
-		rng, err = ghttp.ParseRange(rangeSpec, entry.Size)
+		rng, err = httputil.ParseRange(rangeSpec, entry.Size)
 		if err != nil {
 			o.Log(req).WithError(err).WithField("range", rangeSpec).Debug("invalid range spec")
 		}

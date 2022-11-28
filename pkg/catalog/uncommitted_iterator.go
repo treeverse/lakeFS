@@ -12,6 +12,7 @@ type UncommittedIterator struct {
 	err       error
 	branchItr graveler.BranchIterator
 	entryItr  *valueEntryIterator
+	branch    *graveler.BranchRecord
 	entry     *UncommittedRecord
 }
 
@@ -37,7 +38,8 @@ func (u *UncommittedIterator) nextStaging() bool {
 	if u.entryItr != nil {
 		u.entryItr.Close()
 	}
-	vItr, err := u.store.ListStaging(u.ctx, u.branchItr.Value().Branch)
+	u.branch = u.branchItr.Value()
+	vItr, err := u.store.ListStaging(u.ctx, u.branch.Branch)
 	if err != nil {
 		u.err = err
 		return false
@@ -99,14 +101,9 @@ func (u *UncommittedIterator) SeekGE(branchID graveler.BranchID, id Path) {
 		return
 	}
 	u.entry = nil
-	if branchID != u.branchItr.Value().BranchID {
+	if u.branch == nil || branchID != u.branch.BranchID {
 		u.branchItr.SeekGE(branchID)
-		if u.branchItr.Next() {
-			u.nextStaging()
-		}
-	}
-	if u.entryItr == nil {
-		if u.nextStaging() {
+		if u.branchItr.Next() && u.nextStaging() {
 			u.entryItr.SeekGE(id)
 		}
 	}

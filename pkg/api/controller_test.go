@@ -22,15 +22,19 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/hashicorp/go-multierror"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/rs/xid"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/catalog/testutils"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -166,7 +170,6 @@ func TestController_ListRepositoriesHandler(t *testing.T) {
 func TestController_GetRepoHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
-
 	t.Run("get missing repo", func(t *testing.T) {
 		resp, err := clt.GetRepositoryWithResponse(ctx, "foo1")
 		testutil.Must(t, err)
@@ -1382,7 +1385,7 @@ func TestController_DiffRefs(t *testing.T) {
 		if results[0].Path != prefix {
 			t.Fatalf("wrong result: %s", results[0].Path)
 		}
-		if results[0].Type != "changes under prefix" {
+		if results[0].Type != "prefix_changed" {
 			t.Fatalf("wrong diff type: %s", results[0].Type)
 		}
 	})
@@ -1929,31 +1932,73 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		if resp.HTTPResponse.StatusCode != http.StatusOK {
-			t.Fatalf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusOK)
+			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusOK)
 		}
 
 		if resp.HTTPResponse.ContentLength != 37 {
-			t.Fatalf("expected 37 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
+			t.Errorf("expected 37 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
 		}
 		etag := resp.HTTPResponse.Header.Get("ETag")
 		if etag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
-			t.Fatalf("got unexpected etag: %s", etag)
+			t.Errorf("got unexpected etag: %s", etag)
 		}
 
 		body := string(resp.Body)
 		if body != "this is file content made up of bytes" {
-			t.Fatalf("got unexpected body: '%s'", body)
+			t.Errorf("got unexpected body: '%s'", body)
+		}
+	})
+
+	t.Run("get object byte range", func(t *testing.T) {
+		rng := "bytes=0-9"
+		resp, err := clt.GetObjectWithResponse(ctx, "repo1", "main", &api.GetObjectParams{
+			Path:  "foo/bar",
+			Range: &rng,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.HTTPResponse.StatusCode != http.StatusPartialContent {
+			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusPartialContent)
+		}
+
+		if resp.HTTPResponse.ContentLength != 10 {
+			t.Errorf("expected 10 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
+		}
+
+		etag := resp.HTTPResponse.Header.Get("ETag")
+		if etag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
+			t.Errorf("got unexpected etag: %s", etag)
+		}
+
+		body := string(resp.Body)
+		if body != "this is fi" {
+			t.Errorf("got unexpected body: '%s'", body)
+		}
+	})
+
+	t.Run("get object bad byte range", func(t *testing.T) {
+		rng := "bytes=380-390"
+		resp, err := clt.GetObjectWithResponse(ctx, "repo1", "main", &api.GetObjectParams{
+			Path:  "foo/bar",
+			Range: &rng,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.HTTPResponse.StatusCode != http.StatusRequestedRangeNotSatisfiable {
+			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusRequestedRangeNotSatisfiable)
 		}
 	})
 
 	t.Run("get properties", func(t *testing.T) {
 		resp, err := clt.GetUnderlyingPropertiesWithResponse(ctx, "repo1", "main", &api.GetUnderlyingPropertiesParams{Path: "foo/bar"})
 		if err != nil {
-			t.Fatalf("expected to get underlying properties, got %v", err)
+			t.Errorf("expected to get underlying properties, got %v", err)
 		}
 		properties := resp.JSON200
 		if properties == nil {
-			t.Fatalf("expected to get underlying properties, status code %d", resp.HTTPResponse.StatusCode)
+			t.Errorf("expected to get underlying properties, status code %d", resp.HTTPResponse.StatusCode)
 		}
 
 		if api.StringValue(properties.StorageClass) != expensiveString {
@@ -2438,6 +2483,48 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestLogin(t *testing.T) {
+	const configureDuration = "48h"
+	viper.Set(config.AuthLoginDuration, configureDuration)
+
+	handler, deps := setupHandler(t)
+	server := setupServer(t, handler)
+	clt := setupClientByEndpoint(t, server.URL, "", "")
+	cred := createDefaultAdminUser(t, clt)
+
+	resp, err := clt.LoginWithResponse(context.Background(), api.LoginJSONRequestBody{
+		AccessKeyId:     cred.AccessKeyID,
+		SecretAccessKey: cred.SecretAccessKey,
+	})
+	if err != nil {
+		t.Errorf("Error login with response %v", err)
+	}
+	if resp.StatusCode() != http.StatusOK {
+		t.Fatalf("expected response from status 200 got %d", resp.StatusCode())
+	}
+	res := resp.JSON200
+	claims, err := auth.VerifyToken(deps.authService.SecretStore().SharedSecret(), res.Token)
+	testutil.Must(t, err)
+	resultExpiry := swag.Int64Value(res.TokenExpiration)
+	if claims.ExpiresAt != resultExpiry {
+		t.Errorf("token expiry (%d) not equal to expiry result (%d)", claims.ExpiresAt, resultExpiry)
+	}
+
+	// login duration
+	loginDuration, err := time.ParseDuration(configureDuration)
+	testutil.Must(t, err)
+	tokenDuration := time.Duration(claims.ExpiresAt-claims.IssuedAt) * time.Second
+	if (tokenDuration - loginDuration).Abs() > time.Minute {
+		t.Errorf("token duration should be around %v got %v", loginDuration, tokenDuration)
+	}
+
+	// validate issued at
+	issueSince := time.Since(time.Unix(claims.IssuedAt, 0))
+	if issueSince > 5*time.Minute && issueSince < 0 {
+		t.Errorf("issue since %s expected last five minutes", issueSince)
 	}
 }
 
