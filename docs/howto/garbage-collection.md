@@ -461,9 +461,10 @@ Similar to the described [above](#gc-job-options).
 
 The uncommitted GC job has several limitations in its Beta version: 
 1. No writes to lakeFS during the execution of the job. Objects written to lakeFS
-during the job run may or may not be detected by the job. It's advised to avoid any
-write operation while the job is running, like `UploadObject`, `CopyObject`, `StageObject`, 
-`LinkPhysicalAddress` or any other non-read operation.
+during the job run may or may not be detected by the job. It can lead to unexpected behaviour 
+including the deletion of newly written data. Avoid any write operation while the job is 
+running, like `UploadObject`, `CopyObject`, `StageObject`, `LinkPhysicalAddress` or 
+any other non-read operation.
 2. Only available for S3 repositories at the moment.
 3. Scale may be limited, see performance results below.
 
@@ -474,12 +475,12 @@ The uncommitted GC is under development, next releases will include:
 1. Incorporation of committed & uncommitted GC into a single job. We understand the friction
 of having 2 garbage collection jobs for a lakeFS installation and working to creating a
 single job for it.
-2. Support for non-S3 repositories.
-3. Removing the limitation of a read-only lakeFS during the job run.
-4. Performance improvements: 
+2. Removing the limitation of a read-only lakeFS during the job run.
+3. Performance improvements: 
    1. better parallelization of the storage namespace traversal.
    2. Optimized Run: GC will only iterate over objects that were written to the
 repository since the last GC run. For more information see the [proposal](https://github.com/treeverse/lakeFS/blob/master/design/accepted/gc_plus/uncommitted-gc.md#flow-2-optimized-run).
+4. Support for non-S3 repositories.
 
 #### Performance
 {: .no_toc }
