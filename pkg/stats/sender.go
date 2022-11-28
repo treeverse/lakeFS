@@ -153,7 +153,7 @@ func (s *dummySender) UpdateCommPrefs(ctx context.Context, commPrefs *CommPrefsD
 		"email":           commPrefs.Email,
 		"featureUpdates":  commPrefs.FeatureUpdates,
 		"securityUpdates": commPrefs.SecurityUpdates,
-		"installationID": commPrefs.InstallationID,
+		"installationID":  commPrefs.InstallationID,
 	}).Trace("dummy sender received comm prefs")
 	return nil
 }
