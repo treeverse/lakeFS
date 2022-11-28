@@ -24,7 +24,7 @@ next:  ["Import data into your installation", "../howto/import.html"]
 
 {% include_relative includes/prerequisites.md %}
 
-## Setting up DynamoDB
+## Grant DynamoDB permissions to lakeFS
 
 By default, lakeFS will create the required DynamoDB table if it does not already exist. You'll have to give the IAM role used by lakeFS the following permissions:
 
@@ -67,7 +67,7 @@ By default, lakeFS will create the required DynamoDB table if it does not alread
 💡 You can also use lakeFS with PostgreSQL instead of DynamoDB! See the [configuration reference](../reference/configuration.md) for more information.
 {: .note }
 
-## Setting up a lakeFS Server
+## Run the lakeFS server
 
 <div class="tabs">
   <ul>
@@ -152,6 +152,8 @@ If you can't provide such access, configure lakeFS with an AWS key-pair.
 {: .note .note-warning }
 
 ### Load balancing
+{: .no_toc }
+
 To configure a load balancer to direct requests to the lakeFS servers you can use the `LoadBalancer` Service type or a Kubernetes Ingress.
 By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that you can use for health checks.
 
@@ -165,51 +167,108 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
   </div>
 </div>
 
-## Setup your S3 bucket
+## Prepare your S3 bucket
 
 1. From the S3 Administration console, choose _Create Bucket_.
-1. Use the following as your bucket policy, filling in the placeholders:
-
-```json
-{
-   "Id": "lakeFSPolicy",
-   "Version": "2012-10-17",
-   "Statement": [
-      {
-         "Sid": "lakeFSObjects",
-         "Action": [
-            "s3:GetObject",
-            "s3:PutObject",
-            "s3:AbortMultipartUpload",
-            "s3:ListMultipartUploadParts"
-         ],
-         "Effect": "Allow",
-         "Resource": ["arn:aws:s3:::<BUCKET_NAME_AND_PREFIX>/*"],
-         "Principal": {
-            "AWS": ["arn:aws:iam::<ACCOUNT_ID>:role/<IAM_ROLE>"]
+2. Use the following as your bucket policy, filling in the placeholders:
+   <div class="tabs">
+      <ul>
+         <li><a href="#bucket-policy-standard">Standard Permissions</a></li>
+         <li><a href="#bucket-policy-minimal">Minimal Permissions (Advanced)</a></li>
+      </ul>
+      <div markdown="1" id="bucket-policy-standard">
+         
+      ```json 
+   {
+      "Id": "lakeFSPolicy",
+      "Version": "2012-10-17",
+      "Statement": [
+         {
+            "Sid": "lakeFSObjects",
+            "Action": [
+               "s3:GetObject",
+               "s3:PutObject",
+               "s3:AbortMultipartUpload",
+               "s3:ListMultipartUploadParts"
+            ],
+            "Effect": "Allow",
+            "Resource": ["arn:aws:s3:::[BUCKET_NAME_AND_PREFIX]/*"],
+            "Principal": {
+               "AWS": ["arn:aws:iam::[ACCOUNT_ID]:role/[IAM_ROLE]"]
+            }
+         },
+         {
+            "Sid": "lakeFSBucket",
+            "Action": [
+               "s3:ListBucket",
+               "s3:GetBucketLocation",
+               "s3:ListBucketMultipartUploads"
+            ],
+            "Effect": "Allow",
+            "Resource": ["arn:aws:s3:::[BUCKET]"],
+            "Principal": {
+               "AWS": ["arn:aws:iam::[ACCOUNT_ID]:role/[IAM_ROLE]"]
+            }
          }
-      },
-      {
-         "Sid": "lakeFSBucket",
-         "Action": [
-            "s3:ListBucket",
-            "s3:GetBucketLocation",
-            "s3:ListBucketMultipartUploads"
-         ],
-         "Effect": "Allow",
-         "Resource": ["arn:aws:s3:::<BUCKET>"],
-         "Principal": {
-            "AWS": ["arn:aws:iam::<ACCOUNT_ID>:role/<IAM_ROLE>"]
-         }
-      }
-   ]
-}
-```
-* Replace `<BUCKET_NAME>`, `<ACCOUNT_ID>` and `<IAM_ROLE>` with values relevant to your environment.
-* `<BUCKET_NAME_AND_PREFIX>` can be the bucket name. If you want to minimize the bucket policy permissions, use the bucket name together with a prefix (e.g. `example-bucket/a/b/c`).
-   This way, lakeFS will be able to create repositories only under this specific path (see: [Storage Namespace](../understand/model.md#repository)).
-* lakeFS will try to assume the role `<IAM_ROLE>`.
+      ]
+   }
+      ```
 
+      * Replace `[BUCKET_NAME]`, `[ACCOUNT_ID]` and `[IAM_ROLE]` with values relevant to your environment.
+      * `[BUCKET_NAME_AND_PREFIX]` can be the bucket name. If you want to minimize the bucket policy permissions, use the bucket name together with a prefix (e.g. `example-bucket/a/b/c`).
+        This way, lakeFS will be able to create repositories only under this specific path (see: [Storage Namespace](../understand/model.md#repository)).
+      * lakeFS will try to assume the role `[IAM_ROLE]`.
+   </div>
+   <div markdown="1" id="bucket-policy-minimal">
+   This permission is useful if you are using the [lakeFS Hadoop FileSystem Spark integration](../integrations/spark.md#use-the-lakefs-hadoop-filesystem).
+   Since this FileSystem performs many operations directly on the storage, lakeFS requires less permissive permissions, resulting in increased security.
+   
+   lakeFS always requires permissions to access the `_lakefs` prefix under your storage namespace, in which metadata
+   is stored ([learn more](../understand/versioning-internals.md#constructing-a-consistent-view-of-the-keyspace-ie-a-commit)).  
+   By setting this policy you'll be able to perform only metadata operations through lakeFS, meaning that you'll **not** be able
+   to use lakeFS to upload or download objects. Specifically you won't be able to:
+      * Upload objects using the lakeFS GUI
+      * Upload objects through Spark using the S3 gateway
+      * Run `lakectl fs` commands (unless using the `--direct` flag)
+   
+   
+   ```json
+   {
+     "Id": "[POLICY_ID]",
+     "Version": "2012-10-17",
+     "Statement": [
+   {
+     "Sid": "lakeFSObjects",
+     "Action": [
+        "s3:GetObject",
+        "s3:PutObject"
+     ],
+     "Effect": "Allow",
+     "Resource": [
+        "arn:aws:s3:::[STORAGE_NAMESPACE]/_lakefs/*"
+     ],
+     "Principal": {
+       "AWS": ["arn:aws:iam::[ACCOUNT_ID]:role/[IAM_ROLE]"]
+     }
+   },
+    {
+       "Sid": "lakeFSBucket",
+       "Action": [
+          "s3:ListBucket",
+          "s3:GetBucketLocation"
+       ],
+       "Effect": "Allow",
+       "Resource": ["arn:aws:s3:::[BUCKET]"],
+       "Principal": {
+          "AWS": ["arn:aws:iam::[ACCOUNT_ID]:role/[IAM_ROLE]"]
+       }
+    }
+     ]
+   }
+   ```
+
+   </div>
+   </div>
 
 ### Alternative: use an AWS user
 
@@ -218,55 +277,6 @@ lakeFS can authenticate with your AWS account using an AWS user, using an access
  "Principal": {
    "AWS": ["arn:aws:iam::<ACCOUNT_ID>:user/<IAM_USER>"]
  }
-```
-
-### Advanced: minimal permissions
-
-lakeFS requires permissions to access the `_lakefs` prefix under your storage namespace, in which the metadata
-objects are stored ([learn more](../understand/versioning-internals.md#constructing-a-consistent-view-of-the-keyspace-ie-a-commit)).  
-By setting this policy you'll be able to perform only metadata operations through lakeFS, meaning that you'll **not** be able
-to use lakeFS to upload or download objects. Specifically you won't be able to:
-* Upload objects using the lakeFS GUI
-* Upload objects through Spark using the S3 gateway
-* Run `lakectl fs` commands (unless using the `--direct` flag)
-
-This permission is useful if you upload/download objects to/from your bucket using external tools.
-For example, you can use the [lakeFS Hadoop FileSystem Spark integration](../integrations/spark.md#use-the-lakefs-hadoop-filesystem)
-to directly access your S3 bucket while performing metadata operations through lakeFS on the objects in that bucket.
-
-```json
-{
-  "Id": "<POLICY_ID>",
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "lakeFSObjects",
-      "Action": [
-         "s3:GetObject",
-         "s3:PutObject"
-      ],
-      "Effect": "Allow",
-      "Resource": [
-         "arn:aws:s3:::<STORAGE_NAMESPACE>/_lakefs/*"
-      ],
-      "Principal": {
-        "AWS": ["arn:aws:iam::<ACCOUNT_ID>:role/<IAM_ROLE>"]
-      }
-    },
-     {
-        "Sid": "lakeFSBucket",
-        "Action": [
-           "s3:ListBucket",
-           "s3:GetBucketLocation"
-        ],
-        "Effect": "Allow",
-        "Resource": ["arn:aws:s3:::<BUCKET>"],
-        "Principal": {
-           "AWS": ["arn:aws:iam::<ACCOUNT_ID>:role/<IAM_ROLE>"]
-        }
-     }
-  ]
-}
 ```
 
 {% include_relative includes/setup.md %}

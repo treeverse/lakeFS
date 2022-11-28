@@ -19,7 +19,7 @@ next:  ["Import data into your installation", "../howto/import.html"]
 
 {% include_relative includes/prerequisites.md %}
 
-## Setting up a Database
+## Create a Database
 
 lakeFS requires a PostgreSQL database to synchronize actions on your repositories.
 We will show you how to create a database on Google Cloud SQL, but you can use any PostgreSQL database as long as it's accessible by your lakeFS installation.
@@ -33,7 +33,7 @@ If you already have a database, take note of the connection string and skip to t
    the [SQL Auth Proxy](https://cloud.google.com/sql/docs/postgres/sql-proxy).
 
 
-## Setting up a lakeFS Server
+## Run the lakeFS Server
 
 <div class="tabs">
   <ul>

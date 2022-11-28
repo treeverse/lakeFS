@@ -19,7 +19,7 @@ next:  ["Import data into your installation", "../howto/import.html"]
 
 {% include_relative includes/prerequisites.md %}
 
-## Setting up a database
+## Create a database
 
 lakeFS requires a PostgreSQL database to synchronize actions in your repositories.
 We will show you how to create a database on Azure Database, but you can use any PostgreSQL database as long as it's accessible by your lakeFS installation.
@@ -32,7 +32,7 @@ If you already have a database, take note of the connection string and skip to t
    ![Azure postgres Connection String]({{ site.baseurl }}/assets/img/azure_postgres_conn.png)
 1. Make sure your Access control roles allow you to connect to the database instance.
 
-## Setting up a lakeFS Server
+## Run the lakeFS server
 
 <div class="tabs">
   <ul>
@@ -141,6 +141,8 @@ To install lakeFS with Helm:
 
 
 ## Load balancing
+{: .no_toc }
+
 To configure a load balancer to direct requests to the lakeFS servers you can use the `LoadBalancer` Service type or a Kubernetes Ingress.
 By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that you can use for health checks.
 
