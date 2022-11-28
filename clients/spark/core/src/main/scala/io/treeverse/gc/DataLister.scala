@@ -33,7 +33,7 @@ class NaiveDataLister extends DataLister {
 class FileDescriptor(val path: String, val lastModified: Long) extends Serializable
 
 class ParallelDataLister extends DataLister with Serializable {
-    def listPath(
+  def listPath(
       configMapper: ConfigMapper,
       p: Path
   ): List[FileDescriptor] = {
