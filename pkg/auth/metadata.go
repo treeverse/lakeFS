@@ -17,7 +17,7 @@ const (
 	InstallationIDKeyName  = "installation_id"
 	SetupTimestampKeyName  = "setup_timestamp"
 	CommPrefsSetKeyName    = "comm_prefs_set"
-	EmailKeyName           = "hashed_user_email"
+	EmailKeyName           = "encoded_user_email"
 	FeatureUpdatesKeyName  = "feature_updates"
 	SecurityUpdatesKeyName = "security_updates"
 )
