@@ -1,7 +1,4 @@
-
-
-
-## Run the initial setup
+## Create the admin user
 
 When you first open the lakeFS UI, you will be asked to create an initial admin user.
 
@@ -14,15 +11,12 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
    
    <img src="/assets/img/setup_done.png" alt="Setup Done">
 
-1. Follow the link and go to the login screen:
-
-   <img src="/assets/img/login.png" alt="Login">
-
+1. Follow the link and go to the login screen. Use the credentials from the previous step to log in.
 
 ## Create your first repository
 
 1. Use the credentials from the previous step to log in
-1. Click *Create Repository*.
+1. Click *Create Repository* and choose *Blank Repository*.
    
    <img src="/assets/img/create-repo-no-sn.png" alt="Create Repo"/>
    

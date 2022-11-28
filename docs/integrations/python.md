@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Python
-description: The lakeFS API is OpenAPI 3.0-compliant, allowing the generation of clients from Python and many other languages.
+description: Use Python to interact with your objects on lakeFS
 parent: Integrations
 nav_order: 50
 has_children: false
@@ -13,8 +13,13 @@ redirect_from:
 
 {% include toc.html %}
 
+## Boto vs. lakeFS SDK
 
-## Using lakeFS Python SDK
+To interact with lakeFS from Python:
+* [Use Boto](#using-boto) to perform **object operations** through the lakeFS S3 gateway.
+* [Use the lakeFS SDK](#using-the-lakefs-sdk) to perform **versioning** and other lakeFS-specific operations.
+
+## Using the lakeFS SDK
 
 ### Installing
 
@@ -25,10 +30,7 @@ Install the Python client using pip:
 pip install 'lakefs_client==<lakeFS version>'
 ```
 
-The package is available from version >= 0.34.0.
-
-
-### Working with the Client API
+### Initializing
 
 Here's how to instantiate a client:
 
@@ -46,11 +48,12 @@ configuration.host = 'http://localhost:8000'
 client = LakeFSClient(configuration)
 ``` 
 
-### Using the generated client
+### Usage Examples
 
 Now that you have a client object, you can use it to interact with the API.
 
 #### Creating a repository
+{: .no_toc }
 
 ```python
 repo = models.RepositoryCreation(name='example-repo', storage_namespace='s3://storage-bucket/repos/example-repo', default_branch='main')
@@ -63,6 +66,7 @@ client.repositories.create_repository(repo)
 ```
 
 #### Creating a branch, uploading files, committing changes
+{: .no_toc }
 
 List the repository branches:
 
@@ -136,6 +140,7 @@ client.branches.diff_branch(repository='example-repo', branch='experiment-aggreg
 ```
 
 #### Merging changes from a branch into main 
+{: .no_toc }
 
 Let's diff between your branch and the main branch:
 
@@ -164,11 +169,13 @@ client.refs.diff_refs(repository='example-repo', left_ref='main', right_ref='exp
 ```
 
 ### Python Client documentation
+{: .no_toc }
 
 For the documentation of lakeFS’s Python package, see [https://pydocs.lakefs.io](https://pydocs.lakefs.io)
 
 
 ### Full API reference
+{: .no_toc }
 
 For a full reference of the lakeFS API, see [lakeFS API](../reference/api.md)
 
@@ -180,7 +187,7 @@ requests to either S3 or lakeFS according to the provided bucket name.
 
 lakeFS exposes an S3-compatible API, so you can use Boto to interact with your objects on lakeFS.
 
-### Creating a Boto client
+### Initializing
 
 Create a Boto3 S3 client with your lakeFS endpoint and key-pair:
 ```python
@@ -196,6 +203,7 @@ The client is now configured to operate on your lakeFS installation.
 ### Usage Examples
 
 #### Put an object into lakeFS
+{: .no_toc }
 
 Use a branch name and a path to put an object in lakeFS:
 
@@ -207,6 +215,7 @@ with open('/local/path/to/file_0', 'rb') as f:
 You can now commit this change using the lakeFS UI or CLI.
 
 #### List objects
+{: .no_toc }
 
 List the branch objects starting with a prefix:
  
@@ -225,6 +234,7 @@ for obj in list_resp['Contents']:
 ```
 
 #### Get object metadata
+{: .no_toc }
 
 Get object metadata using branch and path:
 ```python
