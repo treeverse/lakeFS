@@ -7,7 +7,7 @@ nav_order: 50
 has_children: false
 ---
 
-# CI/CD for data lakes
+# CI/CD for Data
 
 ## Why do I need CI/CD?
 
@@ -17,7 +17,7 @@ Thus, to ensure the quality and reliability at each stage of the data lifecycle,
 
 Everytime there is an update to production data, the best practice would be to run CI tests and then promote(deploy) the data to production. 
 
-## How do I implement CI/CD for data lakes with lakeFS?
+## How do I implement CI/CD for data with lakeFS?
 
 lakeFS makes implementing CI/CD pipelines for data simpler. lakeFS provides a feature called hooks that allow automation of checks and validations of data on lakeFS branches. These checks can be triggered by certain data operations like committing, merging, etc. 
 
