@@ -15,6 +15,9 @@ redirect_from:
 
 {% include toc.html %}
 
+Note: For a scalable managed lakeFS service with guaranteed SLAs, try [lakeFS cloud](https://lakefs.cloud)
+{: .note }
+
 ## System Requirements
 
 ### Operating Systems and ISA
