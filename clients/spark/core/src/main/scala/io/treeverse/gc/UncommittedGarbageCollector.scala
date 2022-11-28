@@ -44,7 +44,7 @@ object UncommittedGarbageCollector {
     dataDF = dataDF
       .withColumn(
         "address",
-        concat(lit(dataPrefix), lit("/"), col("slice_id"), lit("/"), col("base_address"))
+        concat(lit(dataPrefix), lit("/"), col("base_address"))
       )
       .select("address", "last_modified")
 
