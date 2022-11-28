@@ -350,9 +350,9 @@ func (s *BufferedCollector) CollectCommPrefs(email, installationID string, featu
 	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
 	defer cancel()
 	commPrefs := &CommPrefsData{
-		Email: email,
-		InstallationID: installationID,
-		FeatureUpdates: featureUpdates,
+		Email:           email,
+		InstallationID:  installationID,
+		FeatureUpdates:  featureUpdates,
 		SecurityUpdates: securityUpdates,
 	}
 	err := s.sender.UpdateCommPrefs(ctx, commPrefs)
