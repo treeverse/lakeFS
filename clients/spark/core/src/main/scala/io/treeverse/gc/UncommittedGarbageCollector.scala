@@ -31,9 +31,10 @@ object UncommittedGarbageCollector {
   def listObjects(storageNamespace: String, before: Date): DataFrame = {
     // TODO(niro): parallelize reads from root and data paths
     val sc = spark.sparkContext
+    val oldDataPath = new Path(storageNamespace)
     val dataPrefix = "data"
-    val dataLocation = storageNamespace + dataPrefix // TODO(niro): handle better
-    val dataPath = new Path(dataLocation)
+    val dataPath = new Path(storageNamespace, dataPrefix) // TODO(niro): handle better
+
     val configMapper = new ConfigMapper(
       sc.broadcast(
         HadoopUtils.getHadoopConfigurationValues(sc.hadoopConfiguration, "fs.", "lakefs.")
@@ -49,14 +50,12 @@ object UncommittedGarbageCollector {
       .select("address", "last_modified")
 
     // Read objects from namespace root, for old structured repositories
-    val oldDataPath = new Path(storageNamespace)
+
     // TODO (niro): implement parallel lister for old repositories (https://github.com/treeverse/lakeFS/issues/4620)
     val oldDataDF = new NaiveDataLister().listData(configMapper, oldDataPath)
-    dataDF.union(oldDataDF)
+    dataDF =
+      dataDF.union(oldDataDF).filter(dataDF("last_modified") < before.getTime).select("address")
 
-    dataDF = dataDF.filter(dataDF("last_modified") < before.getTime).select("address")
-    // TODO (niro): Check if really needed and consider passing it as part of uncommittedGCRunInfo
-    dataDF = dataDF.filter(dataDF("address").startsWith("_lakefs"))
     dataDF
   }
 
@@ -111,6 +110,7 @@ object UncommittedGarbageCollector {
       addressesToDelete = dataDF
         .except(committedDF)
         .except(uncommittedDF)
+      // TODO (niro): not working - need to find the most efficient way to save the first slice
       val firstFile = dataDF.select(col("address")).first().toString()
       firstSlice = firstFile.substring(0, firstFile.lastIndexOf("/"))
     } catch {

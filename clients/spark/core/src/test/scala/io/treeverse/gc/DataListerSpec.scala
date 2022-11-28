@@ -55,9 +55,10 @@ class ParallelDataListerSpec
             new ParallelDataLister().listData(configMapper, path).sort("base_address")
           df.count should be(100)
           val slices =
-            df.select(substring(col("base_address"), 0, 7).as("slice_id")).select("slice_id").distinct
+            df.select(substring(col("base_address"), 0, 7).as("slice_id"))
+              .select("slice_id")
+              .distinct
           slices.count should be(10)
-          slices.show()
           slices.sort("slice_id").head.getString(0) should be("slice01")
           df.head.getString(0) should be("slice01/object01")
           df.sort(desc("base_address")).head.getString(0) should be("slice10/object10")
