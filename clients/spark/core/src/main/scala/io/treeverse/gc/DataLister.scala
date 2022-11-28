@@ -51,7 +51,7 @@ class ParallelDataLister extends DataLister with Serializable {
     val slices = listPath(configMapper, path.toString)
     val pathStr = path.toString
     val objectsUDF = udf((sliceId: String) => {
-      listPath(configMapper, pathStr + sliceId)
+      listPath(configMapper,  pathStr + '/' + sliceId)
         .map(s => (s.path, s.lastModified))
     })
     val objectsDF = slices
