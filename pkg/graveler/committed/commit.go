@@ -77,13 +77,7 @@ func (a *committer) applyAllChanges(iter graveler.ValueIterator) (int, error) {
 		default:
 		}
 		iterValue := iter.Value()
-		if iterValue.IsTombstone() {
-			// internal error but no data lost: deletion requested of a
-			// file that was not there.
-			if a.logger.IsTracing() {
-				a.logger.WithField("id", string(iterValue.Identity)).Warn("[I] unmatched delete")
-			}
-		} else {
+		if !iterValue.IsTombstone() {
 			if a.logger.IsTracing() {
 				a.logger.WithFields(logging.Fields{
 					"key": string(iterValue.Key),

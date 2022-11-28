@@ -22,6 +22,7 @@ ADDED | &quot;added&quot;
 REMOVED | &quot;removed&quot;
 CHANGED | &quot;changed&quot;
 CONFLICT | &quot;conflict&quot;
+PREFIX_CHANGED | &quot;prefix_changed&quot;
 
 
 

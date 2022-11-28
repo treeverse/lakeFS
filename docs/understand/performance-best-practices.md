@@ -1,0 +1,52 @@
+---
+layout: default
+title: Performance Best Practices
+parent: Understanding lakeFS
+description: This section suggests performance best practices to work with lakeFS.
+nav_order: 26
+has_children: false
+--- 
+# Performance Best Practices
+{: .no_toc }
+
+{% include toc.html %}
+
+## Overview
+Use this guide to achieve the best performance with lakeFS.
+
+## Avoid huge commits
+If you're having issues with slow commits, consider performing smaller commits. The more objects in the commit, the longer the commit will take to complete.
+Moreover, a commit should represent a meaningful point in your data's lifecycle, so limiting the commit size will create a more comprehensible commit history.
+As a rule of thumb, try to keep your commits smaller than 1M objects.
+
+## Avoid concurrent commits/merges
+Just like in Git, branch history is composed by commits and is linear by nature. 
+Concurrent commits/merges on the same branch result in a race. The first operation will finish successfully while the rest will retry.
+
+## Use zero-copy import
+To import object into lakeFS, either a single time or regularly, lakeFS offers a [zero-copy import](https://docs.lakefs.io/setup/import.html#zero-copy-import) feature.
+Use this feature to import a large number of objects to lakeFS, instead of simply copying them into your repository.
+This feature will create a reference to the existing objects on your bucket and avoids the copy.
+
+## Read data using the commit ID
+In cases where you are only interested in reading committed data: 
+* Use a commit ID (or a tag ID) in your path (e.g: `lakefs://repo/a1b2c3`).
+* Add `@` before the path  `lakefs://repo/main@/path`.
+
+When accessing data using the branch name (e.g. `lakefs://repo/main/path`) lakeFS will also try to fetch uncommitted data, which may result in reduced performance.
+For more information, see [how uncommitted data is managed in lakeFS](https://docs.lakefs.io/understand/versioning-internals.html#representing-references-and-uncommitted-metadata)
+
+## Operate directly on the storage
+Sometimes, storage operations can become a bottleneck. For example, when your data pipelines upload many big objects.
+In such cases, it can be beneficial to perform only versioning operations on lakeFS, while performing storage reads/writes directly on the object store.
+lakeFS offers multiple ways to do that:
+* The [`lakectl upload --direct`](https://docs.lakefs.io/reference/commands.html#lakectl-fs-upload) command (or [download](https://docs.lakefs.io/reference/commands.html#lakectl-fs-download)).
+* The lakeFS [Hadoop Filesystem](https://docs.lakefs.io/integrations/spark.html#use-the-lakefs-hadoop-filesystem).
+* The [staging API](https://docs.lakefs.io/reference/api.html#/objects/stageObject) which can be used to add lakeFS references to objects after having written them to the storage.
+
+Accessing the object store directly is a faster way to interact with your data.
+
+## Zero-copy
+lakeFS provides a zero-copy mechanism to data. Instead of copying the data, we can check out to a new branch. 
+Creating a new branch will take constant time as the new branch points to the same data as its parent.
+It will also lower the storage cost.

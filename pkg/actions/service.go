@@ -139,6 +139,14 @@ func protoFromTaskResult(m *TaskResult) *TaskResultData {
 	}
 }
 
+//nolint:gochecknoinits
+func init() {
+	kv.MustRegisterType("*", kv.FormatPath("repos", "*", "tasks"), (&TaskResultData{}).ProtoReflect().Type())
+	kv.MustRegisterType("*", kv.FormatPath("repos", "*", "runs"), (&RunResultData{}).ProtoReflect().Type())
+	kv.MustRegisterType("*", kv.FormatPath("repos", "*", "branches"), (&kv.SecondaryIndex{}).ProtoReflect().Type())
+	kv.MustRegisterType("*", kv.FormatPath("repos", "*", "commits"), (&kv.SecondaryIndex{}).ProtoReflect().Type())
+}
+
 func baseActionsPath(repoID string) string {
 	return kv.FormatPath(reposPrefix, repoID)
 }

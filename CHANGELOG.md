@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.86.0
+
+What's new:
+
+- Add byte range support to OpenAPI (server, spec and generated clients) (#4623)
+
+Bug fixes:
+- Fix unmatch-delete log line (#4643)
+- Change API event_type from enum to string (#4613)
+- Fix diff refs api to return prefix_changed (#4639)
+
 ## v0.85.0
 
 What's new:

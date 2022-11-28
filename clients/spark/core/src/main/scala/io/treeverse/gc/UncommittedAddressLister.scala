@@ -9,7 +9,7 @@ trait UncommittedAddressLister {
   def listUncommittedAddresses(spark: SparkSession, repo: String): UncommittedGCRunInfo
 }
 
-class UncommittedGCRunInfo(val uncommitedLocation: String, val runID: String)
+class UncommittedGCRunInfo(val uncommittedLocation: String, val runID: String)
 
 class DummyUncommittedAddressLister(parquetLocation: String) extends UncommittedAddressLister {
   override def listUncommittedAddresses(spark: SparkSession, repo: String): UncommittedGCRunInfo = {
@@ -25,7 +25,7 @@ class APIUncommittedAddressLister(apiClient: ApiClient) extends UncommittedAddre
       resp = apiClient.prepareGarbageCollectionUncommitted(repo, continuationToken)
       continuationToken = resp.getContinuationToken()
     } while (StringUtils.isNotBlank(continuationToken))
-    val runID = resp.getRunId() // TODO use runID somewhere
+    val runID = resp.getRunId()
     val uncommittedLocation = resp.getGcUncommittedLocation()
     new UncommittedGCRunInfo(uncommittedLocation, runID)
   }

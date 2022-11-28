@@ -1,8 +1,11 @@
 from urllib3.util import parse_url, Url
+import sys
+import inspect
 
 import lakefs_client
-from lakefs_client.apis import ActionsApi, AuthApi, BranchesApi, CommitsApi, ConfigApi, HealthCheckApi, MetadataApi, \
-    ObjectsApi, RefsApi, RepositoriesApi, StagingApi, TagsApi
+import lakefs_client.apis
+
+_API_CLASS_SUFFIX = "api"
 
 class _WrappedApiClient(lakefs_client.ApiClient):
     """ApiClient that fixes some weirdnesses."""
@@ -27,18 +30,14 @@ class LakeFSClient:
             configuration = LakeFSClient._ensure_endpoint(configuration)
         self._api = _WrappedApiClient(configuration=configuration, header_name=header_name,
                                           header_value=header_value, cookie=cookie, pool_threads=pool_threads)
-        self.actions = ActionsApi(self._api)
-        self.auth = AuthApi(self._api)
-        self.branches = BranchesApi(self._api)
-        self.commits = CommitsApi(self._api)
-        self.config = ConfigApi(self._api)
-        self.health = HealthCheckApi(self._api)
-        self.metadata = MetadataApi(self._api)
-        self.objects = ObjectsApi(self._api)
-        self.refs = RefsApi(self._api)
-        self.repositories = RepositoriesApi(self._api)
-        self.staging = StagingApi(self._api)
-        self.tags = TagsApi(self._api)
+        for key, value in inspect.getmembers(sys.modules['lakefs_client.apis'], inspect.isclass):
+            name = key.lower()
+            if not name.endswith(_API_CLASS_SUFFIX):
+                continue
+            api_instance = value(self._api)
+            attr_name = name[:-len(_API_CLASS_SUFFIX)]
+            setattr(self, attr_name, api_instance)
+            setattr(self, attr_name + '_api', api_instance)
 
     @staticmethod
     def _ensure_endpoint(configuration):

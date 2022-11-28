@@ -1,21 +1,26 @@
 ---
 layout: default
-title: On Azure
-parent: Deploy lakeFS
-description:  This guide will help you deploy your production lakeFS environment on Microsoft Azure.
+title: Azure
+parent: Deploy and Setup lakeFS
+description: This section will guide you through deploying and setting up a production-suitable lakeFS environment on Microsoft Azure
 nav_order: 20
-next: ["Prepare your storage", "../setup/storage/index.html"]
+redirect_from:
+   - ../setup/storage/blob.html 
+next:  ["Import data into your installation", "../howto/import.html"]
 ---
 
 # Deploy lakeFS on Azure
 {: .no_toc }
-Expected deployment time: 25 min
+
+⏰ Expected deployment time: 25 min
+{: .note }
 
 {% include toc.html %}
 
 {% include_relative includes/prerequisites.md %}
 
-## Creating the Database on Azure Database
+## Create a database
+
 lakeFS requires a PostgreSQL database to synchronize actions in your repositories.
 We will show you how to create a database on Azure Database, but you can use any PostgreSQL database as long as it's accessible by your lakeFS installation.
 
@@ -27,21 +32,32 @@ If you already have a database, take note of the connection string and skip to t
    ![Azure postgres Connection String]({{ site.baseurl }}/assets/img/azure_postgres_conn.png)
 1. Make sure your Access control roles allow you to connect to the database instance.
 
-## Installation Options
+## Run the lakeFS server
 
-### On Azure VM
-1. Save the following configuration file as `config.yaml`:
+<div class="tabs">
+  <ul>
+    <li><a href="#vm">Azure VM</a></li>
+    <li><a href="#docker">Docker</a></li>
+    <li><a href="#aks">AKS</a></li>
+  </ul>
+  <div markdown="1" id="vm">
 
+Connect to your VM instance using SSH:
+
+1. Create a `config.yaml` on your VM, with the following parameters:
+  
    ```yaml
    ---
    database:
      type: "postgres"
      postgres:
        connection_string: "[DATABASE_CONNECTION_STRING]"
+  
    auth:
      encrypt:
-       # replace this with a randomly-generated string:
+       # replace this with a randomly-generated string. Make sure to keep it safe!
        secret_key: "[ENCRYPTION_SECRET_KEY]"
+   
    blockstore:
      type: azure
      azure:
@@ -50,17 +66,20 @@ If you already have a database, take note of the connection string and skip to t
          # storage_account: [your storage account]
          # storage_access_key: [your access key]
    ```
-   
-1. [Download the binary](../index.md#downloads) to the Azure Virtual Machine.
-1. Run the `lakefs` binary on the machine:
-   ```bash
+1. [Download the binary](../index.md#downloads) to the VM.
+1. Run the `lakefs` binary:
+  
+   ```sh
    lakefs --config config.yaml run
    ```
-   **Note:** It is preferable to run the binary as a service using systemd or your operating system's facilities.
-1. To support Azure AD authentication go to `Identity` tab and switch `Status` toggle to on, then add the `Storage Blob Data Contributor' role on the container you created.
 
-### On Azure Container instances
-To support container-based environments like Azure Container Instances, you can configure lakeFS using environment variables. Here is a `docker run`
+**Note:** It's preferable to run the binary as a service using systemd or your operating system's facilities.
+{: .note }
+
+</div>
+<div markdown="2" id="docker">
+
+To support container-based environments, you can configure lakeFS using environment variables. Here is a `docker run`
 command to demonstrate starting lakeFS using Docker:
 
 ```sh
@@ -78,12 +97,64 @@ docker run \
 
 See the [reference](../reference/configuration.md#using-environment-variables) for a complete list of environment variables.
 
-### On AKS
-See [Kubernetes Deployment](./k8s.md).
+
+</div>
+<div markdown="2" id="aks">
+
+You can install lakeFS on Kubernetes using a [Helm chart](https://github.com/treeverse/charts/tree/master/charts/lakefs).
+
+To install lakeFS with Helm:
+
+1. Copy the Helm values file relevant for Azure Blob:
+   
+   ```yaml
+   secrets:
+       # replace this with the connection string of the database you created in a previous step:
+       databaseConnectionString: [DATABASE_CONNECTION_STRING]
+       # replace this with a randomly-generated string
+       authEncryptSecretKey: [ENCRYPTION_SECRET_KEY]
+   lakefsConfig: |
+       blockstore:
+         type: azure
+         azure:
+           auth_method: msi # msi for active directory, access-key for access key 
+       #  If you chose to authenticate via access key, unmark the following rows and insert the values from the previous step 
+       #  storage_account: [your storage account]
+       #  storage_access_key: [your access key]
+   ```
+1. Fill in the missing values and save the file as `conf-values.yaml`. For more configuration options, see our Helm chart [README](https://github.com/treeverse/charts/blob/master/charts/lakefs/README.md#custom-configuration){:target="_blank"}.
+
+   The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://docs.lakefs.io/reference/configuration.html) but without sensitive information.
+   Sensitive information like `databaseConnectionString` is given through separate parameters, and the chart will inject it into Kubernetes secrets.
+   {: .note }
+
+1. In the directory where you created `conf-values.yaml`, run the following commands:
+
+   ```bash
+   # Add the lakeFS repository
+   helm repo add lakefs https://charts.lakefs.io
+   # Deploy lakeFS
+   helm install my-lakefs lakefs/lakefs -f conf-values.yaml
+   ```
+
+   *my-lakefs* is the [Helm Release](https://helm.sh/docs/intro/using_helm/#three-big-concepts) name.
+
 
 ## Load balancing
-Depending on how you chose to install lakeFS, you should have a load balancer direct requests to the lakeFS server.  
-By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint which you can use for health checks.
+{: .no_toc }
 
-## Next Steps
-Your next step is to [prepare your storage](../setup/storage/index.md). If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md).
+To configure a load balancer to direct requests to the lakeFS servers you can use the `LoadBalancer` Service type or a Kubernetes Ingress.
+By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that you can use for health checks.
+
+💡 The NGINX Ingress Controller by default limits the client body size to 1 MiB.
+Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway](../understand/architecture.md#s3-gateway) or 
+a simple PUT request using the [OpenAPI Server](../understand/architecture.md#openapi-server).
+Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://docs.min.io/docs/setup-nginx-proxy-with-minio.html).
+{: .note }
+
+</div>
+</div>
+
+
+
+{% include_relative includes/setup.md %}
