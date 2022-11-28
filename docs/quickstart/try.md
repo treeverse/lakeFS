@@ -12,5 +12,5 @@ has_children: false
 
 {% include_relative includes/try.md %}
 
-Note: For a fully managed lakeFS service with guaranteed SLAs, try https://lakefs.cloud
+Note: For a fully managed lakeFS service with guaranteed SLAs, try [lakeFS cloud](https://lakefs.cloud)
 {: .note }
