@@ -10,7 +10,7 @@ has_children: false
 # Garbage Collection
 {: .no_toc }
 
-Note: For managed garbage collection on top of a hosted lakeFS service with guaranteed SLAs, try https://lakefs.cloud
+Note: For managed garbage collection on top of a hosted lakeFS service with guaranteed SLAs, try [lakeFS cloud](https://lakefs.cloud)
 {: .note }
 
 By default, lakeFS keeps all your objects forever. This allows you to travel back in time to previous versions of your data.
