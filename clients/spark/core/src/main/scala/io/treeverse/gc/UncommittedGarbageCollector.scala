@@ -53,8 +53,7 @@ object UncommittedGarbageCollector {
 
     // TODO (niro): implement parallel lister for old repositories (https://github.com/treeverse/lakeFS/issues/4620)
     val oldDataDF = new NaiveDataLister().listData(configMapper, oldDataPath)
-    dataDF =
-      dataDF.union(oldDataDF).filter(dataDF("last_modified") < before.getTime).select("address")
+    dataDF = dataDF.union(oldDataDF).filter(col("last_modified") < before.getTime).select("address")
 
     dataDF
   }
