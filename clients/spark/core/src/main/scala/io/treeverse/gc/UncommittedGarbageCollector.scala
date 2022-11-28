@@ -55,8 +55,6 @@ object UncommittedGarbageCollector {
     dataDF =
       dataDF.union(oldDataDF).filter(dataDF("last_modified") < before.getTime).select("address")
 
-    // TODO (niro): Check if really needed and consider passing it as part of uncommittedGCRunInfo
-    dataDF = dataDF.filter(!dataDF("address").startsWith("_lakefs"))
     dataDF
   }
 
