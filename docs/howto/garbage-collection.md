@@ -452,10 +452,6 @@ spark-submit \
 
 Similar to the described [above](#gc-job-options).
 
-#### Backup and restore 
-
-<TODO> - will it work?
-
 #### Limitations
 {: .no_toc }
 
@@ -480,7 +476,8 @@ single job for it.
    1. better parallelization of the storage namespace traversal.
    2. Optimized Run: GC will only iterate over objects that were written to the
 repository since the last GC run. For more information see the [proposal](https://github.com/treeverse/lakeFS/blob/master/design/accepted/gc_plus/uncommitted-gc.md#flow-2-optimized-run).
-4. Support for non-S3 repositories.
+4. Backup & Restore, just like for [committed data](#gc-backup-and-restore).
+5. Support for non-S3 repositories.
 
 #### Performance
 {: .no_toc }
