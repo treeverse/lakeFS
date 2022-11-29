@@ -28,7 +28,7 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
     df = df
       // TODO (niro): Revert substring after https://github.com/treeverse/lakeFS/issues/4699
       .select(df("absolute_address"),
-              substring_index(col("absolute_address"), "/", -3).as("address")
+              substring_index(col("absolute_address"), normalizedStorageNamespace, -1).as("address")
              )
       .distinct
     df
