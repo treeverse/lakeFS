@@ -9,23 +9,28 @@ import org.slf4j.{Logger, LoggerFactory}
 import java.net.URI
 import java.nio.charset.Charset
 
+trait ObjectPathConstructor {
+
+  /** Constructs object paths in a storage namespace.
+   *
+   *  @param keys keys to construct paths for
+   *  @param storageNamespace the storage namespace to concat
+   *  @param keepNsSchemeAndHost whether to keep a storage namespace of the form "s3://bucket/foo/" or remove its URI
+   *                            scheme and host leaving it in the form "/foo/"
+   *  @return object paths in a storage namespace
+   */
+  def concatKeysToStorageNamespace(
+      keys: Seq[String],
+      storageNamespace: String,
+      keepNsSchemeAndHost: Boolean = true
+  ): Seq[String]
+}
+
 object StorageUtils {
   val StorageTypeS3 = "s3"
   val StorageTypeAzure = "azure"
 
-  def concatKeysToStorageNamespace(
-      keys: Seq[String],
-      storageNamespace: String,
-      storageType: String
-  ): Seq[String] = {
-    storageType match {
-      case StorageTypeS3    => S3.concatKeysToStorageNamespace(keys, storageNamespace)
-      case StorageTypeAzure => AzureBlob.concatKeysToStorageNamespace(keys, storageNamespace)
-      case _ => throw new IllegalArgumentException("Unknown storage type " + storageType)
-    }
-  }
-
-  object AzureBlob {
+  object AzureBlob extends ObjectPathConstructor {
     val StorageAccountKeyPropertyPattern =
       "fs.azure.account.key.<storageAccountName>.dfs.core.windows.net"
     val StorageAccNamePlaceHolder = "<storageAccountName>"
@@ -47,7 +52,11 @@ object StorageUtils {
       storageNsURI.getHost.split('.')(0)
     }
 
-    def concatKeysToStorageNamespace(keys: Seq[String], storageNamespace: String): Seq[String] = {
+    override def concatKeysToStorageNamespace(
+        keys: Seq[String],
+        storageNamespace: String,
+        keepNsSchemeAndHost: Boolean
+    ): Seq[String] = {
       val addSuffixSlash =
         if (storageNamespace.endsWith("/")) storageNamespace else storageNamespace.concat("/")
 
@@ -59,28 +68,23 @@ object StorageUtils {
     }
   }
 
-  object S3 {
+  object S3 extends ObjectPathConstructor {
     val S3MaxBulkSize = 1000
     val S3NumRetries = 1000
     val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
-    def concatKeysToStorageNamespace(keys: Seq[String], storageNamespace: String): Seq[String] = {
-      val addSuffixSlash =
-        if (storageNamespace.endsWith("/")) storageNamespace else storageNamespace.concat("/")
-      val snPrefix =
-        if (addSuffixSlash.startsWith("/")) addSuffixSlash.substring(1) else addSuffixSlash
-
-      if (keys.isEmpty) return Seq.empty
-      keys.map(x => snPrefix.concat(x))
-    }
-
-    def concatKeysToStorageNamespacePrefix(
+    override def concatKeysToStorageNamespace(
         keys: Seq[String],
-        storageNamespace: String
+        storageNamespace: String,
+        keepNsSchemeAndHost: Boolean
     ): Seq[String] = {
-      val uri = new URI(storageNamespace)
-      val key = uri.getPath
-      val addSuffixSlash = if (key.endsWith("/")) key else key.concat("/")
+      var sanitizedNS = storageNamespace
+      if (!keepNsSchemeAndHost) {
+        val uri = new URI(storageNamespace)
+        sanitizedNS = uri.getPath
+      }
+      val addSuffixSlash =
+        if (sanitizedNS.endsWith("/")) sanitizedNS else sanitizedNS.concat("/")
       val snPrefix =
         if (addSuffixSlash.startsWith("/")) addSuffixSlash.substring(1) else addSuffixSlash
 

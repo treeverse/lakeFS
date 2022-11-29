@@ -75,7 +75,7 @@ object BulkRemoverFactory {
       println(
         "storageNamespace: " + storageNamespace
       ) // example storage namespace s3://bucket/repoDir/
-      StorageUtils.S3.concatKeysToStorageNamespacePrefix(keys, storageNamespace)
+      StorageUtils.S3.concatKeysToStorageNamespace(keys, storageNamespace, false)
     }
 
     override def getMaxBulkSize(): Int = {
