@@ -93,7 +93,7 @@ docs-serve: ### Serve local docs
 	cd docs; bundle exec jekyll serve
 
 gen-docs: ## Generate CLI docs automatically
-	$(GOCMD) run cmd/lakectl/main.go docs > docs/reference/commands.md
+	$(GOCMD) run cmd/lakectl/main.go docs > docs/reference/cli.md
 
 gen-metastore: ## Run Metastore Code generation
 	@thrift -r --gen go --gen go:package_prefix=github.com/treeverse/lakefs/pkg/metastore/hive/gen-go/ -o pkg/metastore/hive pkg/metastore/hive/hive_metastore.thrift
@@ -168,8 +168,8 @@ esti: ## run esti (system testing)
 
 test: test-go test-hadoopfs  ## Run tests for the project
 
-test-go: gen			# Run parallelism > num_cores: most of our slow tests are *not* CPU-bound.
-	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast --parallel="$(GOTEST_PARALLELISM)" $(GO_TEST_MODULES)
+test-go: gen-code			# Run parallelism > num_cores: most of our slow tests are *not* CPU-bound.
+	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast -parallel="$(GOTEST_PARALLELISM)" $(GO_TEST_MODULES)
 
 test-hadoopfs:
 	cd clients/hadoopfs && mvn test

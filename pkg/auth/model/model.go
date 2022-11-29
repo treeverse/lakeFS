@@ -33,6 +33,19 @@ const (
 	metadataPrefix         = "installation_metadata"
 )
 
+//nolint:gochecknoinits
+func init() {
+	kv.MustRegisterType("auth", "users", (&UserData{}).ProtoReflect().Type())
+	kv.MustRegisterType("auth", "policies", (&PolicyData{}).ProtoReflect().Type())
+	kv.MustRegisterType("auth", "groups", (&GroupData{}).ProtoReflect().Type())
+	kv.MustRegisterType("auth", kv.FormatPath("uCredentials", "*", "credentials"), (&CredentialData{}).ProtoReflect().Type())
+	kv.MustRegisterType("auth", kv.FormatPath("gUsers", "*", "users"), (&kv.SecondaryIndex{}).ProtoReflect().Type())
+	kv.MustRegisterType("auth", kv.FormatPath("gPolicies", "*", "policies"), (&kv.SecondaryIndex{}).ProtoReflect().Type())
+	kv.MustRegisterType("auth", kv.FormatPath("uPolicies", "*", "policies"), (&kv.SecondaryIndex{}).ProtoReflect().Type())
+	kv.MustRegisterType("auth", "expiredTokens", (&TokenData{}).ProtoReflect().Type())
+	kv.MustRegisterType("auth", "installation_metadata", nil)
+}
+
 func UserPath(userName string) []byte {
 	return []byte(kv.FormatPath(usersPrefix, userName))
 }

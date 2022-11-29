@@ -55,6 +55,8 @@ from lakefs_client.model.pagination import Pagination
 from lakefs_client.model.path_list import PathList
 from lakefs_client.model.policy import Policy
 from lakefs_client.model.policy_list import PolicyList
+from lakefs_client.model.prepare_gc_uncommitted_request import PrepareGCUncommittedRequest
+from lakefs_client.model.prepare_gc_uncommitted_response import PrepareGCUncommittedResponse
 from lakefs_client.model.range_metadata import RangeMetadata
 from lakefs_client.model.ref import Ref
 from lakefs_client.model.ref_list import RefList

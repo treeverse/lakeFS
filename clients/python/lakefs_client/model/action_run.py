@@ -56,10 +56,6 @@ class ActionRun(ModelNormal):
     """
 
     allowed_values = {
-        ('event_type',): {
-            'COMMIT': "pre_commit",
-            'MERGE': "pre_merge",
-        },
         ('status',): {
             'FAILED': "failed",
             'COMPLETED': "completed",

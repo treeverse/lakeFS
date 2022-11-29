@@ -1,4 +1,4 @@
-import React, {useRef, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 
 import {UploadIcon} from "@primer/octicons-react";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
@@ -339,7 +339,7 @@ const ObjectsBrowser = ({config, configError}) => {
     const [refreshToken, setRefreshToken] = useState(false);
     const refresh = () => setRefreshToken(!refreshToken);
 
-    if (loading) return <Loading/>;
+    if (loading || !config) return <Loading/>;
     if (error || configError) return <RepoError error={error || configError}/>;
 
     return (
@@ -427,14 +427,23 @@ const ObjectsBrowser = ({config, configError}) => {
 };
 
 const RepositoryObjectsPage = () => {
+    const [configRes, setConfigRes] = useState(null);
     const {response, error: err, loading} = useAPI(() => {
         return config.getStorageConfig();
     });
+
+    useEffect(() => {
+        if (response) {
+            setConfigRes(response);
+        }
+    }, [response, setConfigRes]);
+
+
     return (
         <RefContextProvider>
             <RepositoryPageLayout activePage={'objects'}>
                 {loading && <Loading/>}
-                <ObjectsBrowser config={response} configError={err}/>
+                <ObjectsBrowser config={configRes} configError={err}/>
             </RepositoryPageLayout>
         </RefContextProvider>
     );

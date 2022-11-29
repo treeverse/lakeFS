@@ -73,11 +73,11 @@ func New(opts ...func(a *Adapter)) *Adapter {
 }
 
 func getKey(obj block.ObjectPointer) string {
+	// TODO (niro): Fix mem storage path resolution
+	if obj.IdentifierType == block.IdentifierTypeFull {
+		return obj.Identifier
+	}
 	return fmt.Sprintf("%s:%s", obj.StorageNamespace, obj.Identifier)
-}
-
-func getPrefix(lsOpts block.WalkOpts) string {
-	return fmt.Sprintf("%s:%s", lsOpts.StorageNamespace, lsOpts.Prefix)
 }
 
 func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {
@@ -96,7 +96,8 @@ func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reade
 func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
-	data, ok := a.data[getKey(obj)]
+	key := getKey(obj)
+	data, ok := a.data[key]
 	if !ok {
 		return nil, ErrNoDataForKey
 	}
@@ -275,9 +276,15 @@ func (a *Adapter) Walk(_ context.Context, walkOpt block.WalkOpts, walkFn block.W
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
-	fullPrefix := getPrefix(walkOpt)
+	// Walk function should be performed in a lexicographical order
+	keys := make([]string, 0)
 	for k := range a.data {
-		if strings.HasPrefix(k, fullPrefix) {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		if strings.HasPrefix(k, walkOpt.Prefix) {
 			if err := walkFn(k); err != nil {
 				return err
 			}

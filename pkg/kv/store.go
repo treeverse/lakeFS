@@ -37,8 +37,7 @@ func FormatPath(p ...string) string {
 	return strings.Join(p, PathDelimiter)
 }
 
-// Driver is the interface to access a kv database as a store.
-// Each kv provider implements a Driver.
+// Driver is the interface to access a kv database as a Store. Each kv provider implements a Driver.
 type Driver interface {
 	// Open opens access to the database store. Implementations give access to the same storage based on the dsn.
 	// Implementation can return the same Storage instance based on dsn or new one as long as it provides access to

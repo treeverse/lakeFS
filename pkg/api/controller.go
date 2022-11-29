@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/gob"
 	"encoding/json"
 	"errors"
@@ -19,6 +20,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -61,6 +63,8 @@ const (
 	setupStateNotInitialized = "not_initialized"
 
 	DefaultMaxDeleteObjects = 1000
+
+	DefaultResetPasswordExpiration = 20 * time.Minute
 )
 
 type actionsHandler interface {
@@ -92,6 +96,56 @@ type Controller struct {
 	sessionStore          sessions.Store
 	oidcAuthenticator     *oidc.Authenticator
 	PathProvider          upload.PathProvider
+}
+
+func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, r *http.Request, body PrepareGarbageCollectionUncommittedJSONRequestBody, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.PrepareGarbageCollectionUncommittedAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "prepare_garbage_collection_uncommitted", r, repository, "", "")
+
+	continuationToken := StringValue(body.ContinuationToken)
+	mark, err := decodeGCUncommittedMark(continuationToken)
+	if err != nil {
+		c.Logger.WithError(err).
+			WithFields(logging.Fields{"repository": repository, "continuation_token": continuationToken}).
+			Error("Failed to decode gc uncommitted continuation token")
+		writeError(w, http.StatusBadRequest, "invalid continuation token")
+		return
+	}
+
+	uncommittedInfo, err := c.Catalog.PrepareGCUncommitted(ctx, repository, mark)
+	if err != nil {
+		c.Logger.WithError(err).
+			WithFields(logging.Fields{"repository": repository, "continuation_token": continuationToken}).
+			Error("PrepareGCUncommitted failed")
+		c.handleAPIError(ctx, w, err)
+		return
+	}
+
+	nextContinuationToken, err := encodeGCUncommittedMark(uncommittedInfo.Mark)
+	if err != nil {
+		c.Logger.WithError(err).
+			WithFields(logging.Fields{
+				"repository": repository,
+				"mark":       spew.Sdump(uncommittedInfo.Mark),
+			}).
+			Error("Failed encoding uncommitted gc mark")
+		writeError(w, http.StatusInternalServerError, "failed to encode uncommitted mark")
+		return
+	}
+
+	writeResponse(w, http.StatusCreated, PrepareGCUncommittedResponse{
+		RunId:                 uncommittedInfo.Metadata.RunId,
+		GcUncommittedLocation: uncommittedInfo.Metadata.UncommittedLocation,
+		ContinuationToken:     nextContinuationToken,
+	})
 }
 
 func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, _ *http.Request) {
@@ -213,7 +267,8 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	}
 
 	loginTime := time.Now()
-	expires := loginTime.Add(DefaultLoginExpiration)
+	duration := c.Config.GetLoginDuration()
+	expires := loginTime.Add(duration)
 	secret := c.Auth.SecretStore().SharedSecret()
 
 	tokenString, err := GenerateJWTLogin(secret, user.Username, loginTime, expires)
@@ -230,7 +285,8 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 		return
 	}
 	response := AuthenticationToken{
-		Token: tokenString,
+		Token:           tokenString,
+		TokenExpiration: Int64Ptr(expires.Unix()),
 	}
 	writeResponse(w, http.StatusOK, response)
 }
@@ -1833,7 +1889,7 @@ func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body In
 	ctx := r.Context()
 	c.LogAction(ctx, "ingest_range", r, repository, "", "")
 
-	contToken := swag.StringValue(body.ContinuationToken)
+	contToken := StringValue(body.ContinuationToken)
 	info, mark, err := c.Catalog.WriteRange(r.Context(), repository, body.FromSourceURI, body.Prepend, body.After, contToken)
 	if c.handleAPIError(ctx, w, err) {
 		return
@@ -2328,14 +2384,14 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "prepare_garbage_collection_commits", r, repository, "", "")
-	gcRUnMetadata, err := c.Catalog.PrepareExpiredCommits(ctx, repository, swag.StringValue(body.PreviousRunId))
+	gcRunMetadata, err := c.Catalog.PrepareExpiredCommits(ctx, repository, StringValue(body.PreviousRunId))
 	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	writeResponse(w, http.StatusCreated, GarbageCollectionPrepareResponse{
-		GcCommitsLocation:   gcRUnMetadata.CommitsCsvLocation,
-		GcAddressesLocation: gcRUnMetadata.AddressLocation,
-		RunId:               gcRUnMetadata.RunId,
+		GcCommitsLocation:   gcRunMetadata.CommitsCsvLocation,
+		GcAddressesLocation: gcRunMetadata.AddressLocation,
+		RunId:               gcRunMetadata.RunId,
 	})
 }
 
@@ -2825,14 +2881,37 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	}
 
 	// setup response
-	reader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}, entry.Size)
-	if c.handleAPIError(ctx, w, err) {
-		return
+	var reader io.ReadCloser
+	pointer := block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}
+
+	// handle partial response if byte range supplied
+	if params.Range != nil {
+		rng, err := httputil.ParseRange(*params.Range, entry.Size)
+		if err != nil {
+			writeError(w, http.StatusRequestedRangeNotSatisfiable, "Requested Range Not Satisfiable")
+			return
+		}
+		reader, err = c.BlockAdapter.GetRange(ctx, pointer, rng.StartOffset, rng.EndOffset)
+		if c.handleAPIError(ctx, w, err) {
+			return
+		}
+		defer func() {
+			_ = reader.Close()
+		}()
+		w.WriteHeader(http.StatusPartialContent)
+		w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", rng.EndOffset-rng.StartOffset+1))
+	} else {
+		reader, err = c.BlockAdapter.Get(ctx, pointer, entry.Size)
+		if c.handleAPIError(ctx, w, err) {
+			return
+		}
+		defer func() {
+			_ = reader.Close()
+		}()
+		w.Header().Set("Content-Length", fmt.Sprint(entry.Size))
 	}
-	defer func() {
-		_ = reader.Close()
-	}()
-	w.Header().Set("Content-Length", fmt.Sprint(entry.Size))
+
 	etag := httputil.ETag(entry.Checksum)
 	w.Header().Set("ETag", etag)
 	lastModified := httputil.HeaderTimestamp(entry.CreationDate)
@@ -3628,4 +3707,34 @@ func (c *Controller) isNameValid(name string, nameType string) (bool, string) {
 		return false, fmt.Sprintf("%s name cannot contain '%%'", nameType)
 	}
 	return true, ""
+}
+
+func decodeGCUncommittedMark(mark string) (*catalog.GCUncommittedMark, error) {
+	if mark == "" {
+		return nil, nil
+	}
+	data, err := base64.StdEncoding.DecodeString(mark)
+	if err != nil {
+		return nil, err
+	}
+	var result catalog.GCUncommittedMark
+	err = json.Unmarshal(data, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func encodeGCUncommittedMark(mark *catalog.GCUncommittedMark) (*string, error) {
+	if mark == nil {
+		return nil, nil
+	}
+	var buf bytes.Buffer
+	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
+	err := json.NewEncoder(encoder).Encode(mark)
+	if err != nil {
+		return nil, err
+	}
+	token := buf.String()
+	return &token, nil
 }

@@ -440,3 +440,26 @@ func TestLakectlFsDownload(t *testing.T) {
 		})
 	})
 }
+
+func TestLakectlImport(t *testing.T) {
+	SkipTestIfAskedTo(t)
+
+	// TODO(barak): generalize test to work all supported object stores
+	skipOnSchemaMismatch(t, IngestTestBucketPath)
+
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":            repoName,
+		"STORAGE":         storage,
+		"BRANCH":          mainBranch,
+		"IMPORTED_BRANCH": "_" + mainBranch + "_imported",
+		"OBJECTS":         "10",
+	}
+
+	const from = "s3://lakectl-ingest-test-data"
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" import --no-progress --from "+from+" --to lakefs://"+repoName+"/"+mainBranch+"/to/", false, "lakectl_import", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" import --no-progress --from "+from+" --to lakefs://"+repoName+"/"+mainBranch+"/too/ --message \"import too\"", false, "lakectl_import_with_message", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" import --no-progress --from "+from+" --to lakefs://"+repoName+"/"+mainBranch+"/another/import/ --merge", false, "lakectl_import_and_merge", vars)
+}

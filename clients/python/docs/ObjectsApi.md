@@ -284,11 +284,21 @@ with lakefs_client.ApiClient(configuration) as api_client:
     repository = "repository_example" # str | 
     ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
     path = "path_example" # str | relative to the ref
+    range = "bytes=0-1023" # str | Byte range to retrieve (optional)
 
     # example passing only required values which don't have defaults set
     try:
         # get object content
         api_response = api_instance.get_object(repository, ref, path)
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling ObjectsApi->get_object: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # get object content
+        api_response = api_instance.get_object(repository, ref, path, range=range)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->get_object: %s\n" % e)
@@ -302,6 +312,7 @@ Name | Type | Description  | Notes
  **repository** | **str**|  |
  **ref** | **str**| a reference (could be either a branch or a commit ID) |
  **path** | **str**| relative to the ref |
+ **range** | **str**| Byte range to retrieve | [optional]
 
 ### Return type
 
@@ -322,9 +333,11 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | object content |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  * Content-Disposition -  <br>  |
+**206** | partial object content |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  * Content-Disposition -  <br>  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **410** | object expired |  -  |
+**416** | Requested Range Not Satisfiable |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

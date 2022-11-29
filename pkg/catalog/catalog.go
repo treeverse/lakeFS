@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
 	lru "github.com/hnlq715/golang-lru"
+	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
@@ -35,16 +37,33 @@ import (
 	"github.com/treeverse/lakefs/pkg/pyramid"
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
 	"github.com/treeverse/lakefs/pkg/validator"
+	"github.com/xitongsys/parquet-go/parquet"
+	"github.com/xitongsys/parquet-go/writer"
 	"go.uber.org/atomic"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// hashAlg is the hashing algorithm to use to generate graveler identifiers.  Changing it
-// causes all old identifiers to change, so while existing installations will continue to
-// function they will be unable to re-use any existing objects.
-const hashAlg = crypto.SHA256
+const (
+	// hashAlg is the hashing algorithm to use to generate graveler identifiers.  Changing it
+	// causes all old identifiers to change, so while existing installations will continue to
+	// function they will be unable to re-use any existing objects.
+	hashAlg = crypto.SHA256
 
-const NumberOfParentsOfNonMergeCommit = 1
+	NumberOfParentsOfNonMergeCommit = 1
+
+	gcParquetParallelNum            = 1                // Number of goroutines to handle marshaling of data
+	defaultGCMaxUncommittedFileSize = 20 * 1024 * 1024 // 20 MB
+
+	// Calculation of size deviation by gcPeriodicCheckSize value
+	// "data" prefix = 4 bytes
+	// partition id = 20 bytes (xid)
+	// object name = 20 bytes (xid)
+	// timestamp (int64) = 8 bytes
+	//
+	// Total per entry ~52 bytes
+	// Deviation with gcPeriodicCheckSize = 100000 will be around 5 MB
+	gcPeriodicCheckSize = 100000
+)
 
 type Path string
 
@@ -111,15 +130,19 @@ type Config struct {
 	KVStore               *kv.StoreMessage
 	WalkerFactory         WalkerFactory
 	SettingsManagerOption settings.ManagerOption
+
+	// The maximum file size for uncommitted dump created during PrepareUncommittedGC
+	GCMaxUncommittedFileSize int
 }
 
 type Catalog struct {
-	BlockAdapter  block.Adapter
-	Store         Store
-	log           logging.Logger
-	walkerFactory WalkerFactory
-	managers      []io.Closer
-	workPool      *pond.WorkerPool
+	BlockAdapter             block.Adapter
+	Store                    Store
+	log                      logging.Logger
+	walkerFactory            WalkerFactory
+	managers                 []io.Closer
+	workPool                 *pond.WorkerPool
+	GCMaxUncommittedFileSize int
 }
 
 const (
@@ -153,6 +176,9 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}
 	if cfg.WalkerFactory == nil {
 		cfg.WalkerFactory = store.NewFactory(cfg.Config)
+	}
+	if cfg.GCMaxUncommittedFileSize == 0 {
+		cfg.GCMaxUncommittedFileSize = defaultGCMaxUncommittedFileSize
 	}
 
 	tierFSParams, err := cfg.Config.GetCommittedTierFSParams(adapter)
@@ -220,12 +246,13 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
 	workPool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))
 	return &Catalog{
-		BlockAdapter:  tierFSParams.Adapter,
-		Store:         gStore,
-		log:           logging.Default().WithField("service_name", "entry_catalog"),
-		walkerFactory: cfg.WalkerFactory,
-		workPool:      workPool,
-		managers:      []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
+		BlockAdapter:             tierFSParams.Adapter,
+		Store:                    gStore,
+		log:                      logging.Default().WithField("service_name", "entry_catalog"),
+		walkerFactory:            cfg.WalkerFactory,
+		workPool:                 workPool,
+		managers:                 []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
+		GCMaxUncommittedFileSize: cfg.GCMaxUncommittedFileSize,
 	}, nil
 }
 
@@ -286,7 +313,7 @@ func (c *Catalog) getRepository(ctx context.Context, repository string) (*gravel
 	repo, err := c.Store.GetRepository(ctx, repositoryID)
 	if err != nil {
 		if errors.Is(err, graveler.ErrRepositoryNotFound) {
-			err = ErrRepositoryNotFound
+			return nil, ErrRepositoryNotFound
 		}
 		return nil, err
 	}
@@ -1541,6 +1568,10 @@ func (c *Catalog) Merge(ctx context.Context, repositoryID string, destinationBra
 	}); err != nil {
 		return "", err
 	}
+
+	// disabling batching for this flow. See #3935 for more details
+	ctx = context.WithValue(ctx, batch.SkipBatchContextKey, struct{}{})
+
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return "", err
@@ -1720,6 +1751,172 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string
 	return c.Store.SaveGarbageCollectionCommits(ctx, repository, previousRunID)
 }
 
+// GCUncommittedMark Marks the *next* item to be scanned by the paginated call to PrepareGCUncommitted
+type GCUncommittedMark struct {
+	BranchID graveler.BranchID `json:"branch"`
+	Path     Path              `json:"path"`
+	RunID    string            `json:"run_id"`
+}
+
+type PrepareGCUncommittedInfo struct {
+	Mark     *GCUncommittedMark
+	Metadata graveler.GarbageCollectionRunMetadata
+}
+
+type UncommittedParquetObject struct {
+	PhysicalAddress string `parquet:"name=physical_address, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	CreationDate    int64  `parquet:"name=creation_date, type=INT64, convertedtype=INT_64"`
+}
+
+func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, w *UncommittedWriter, mark *GCUncommittedMark, runID string) (*GCUncommittedMark, bool, error) {
+	hasData := false
+	pw, err := writer.NewParquetWriterFromWriter(w, new(UncommittedParquetObject), gcParquetParallelNum) // TODO: Play with np count
+	if err != nil {
+		return nil, false, err
+	}
+	pw.CompressionType = parquet.CompressionCodec_GZIP
+
+	count := 0
+	itr, err := NewUncommittedIterator(ctx, c.Store, repository)
+	if err != nil {
+		return nil, false, err
+	}
+	defer itr.Close()
+
+	if mark != nil {
+		itr.SeekGE(mark.BranchID, mark.Path)
+	}
+
+	for itr.Next() {
+		entry := itr.Value()
+		// Skip if entry is tombstone or if address is outside of repository namespace
+		if entry.Entry == nil || entry.Entry.AddressType != Entry_RELATIVE {
+			continue
+		}
+
+		count += 1
+		if count%gcPeriodicCheckSize == 0 {
+			err := pw.Flush(true)
+			if err != nil {
+				return nil, false, err
+			}
+
+			if w.Size() > int64(c.GCMaxUncommittedFileSize) {
+				if itr.Err() != nil {
+					return nil, false, itr.Err()
+				}
+				err = pw.WriteStop()
+				if err != nil {
+					return nil, false, err
+				}
+				return &GCUncommittedMark{
+					BranchID: entry.branchID,
+					Path:     entry.Path,
+					RunID:    runID,
+				}, true, nil
+			}
+		}
+		if err = pw.Write(UncommittedParquetObject{
+			PhysicalAddress: entry.Address,
+			CreationDate:    entry.LastModified.AsTime().Unix(),
+		}); err != nil {
+			return nil, false, err
+		}
+		hasData = true
+	}
+	if itr.Err() != nil {
+		return nil, false, itr.Err()
+	}
+	err = pw.WriteStop()
+	if err != nil {
+		return nil, false, err
+	}
+
+	// Finished reading all staging area - no continuation token
+	return nil, hasData, nil
+}
+
+func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, location string, fd *os.File, size int64) error {
+	_, err := fd.Seek(0, 0)
+	if err != nil {
+		return err
+	}
+	if !strings.HasSuffix(location, "/") {
+		location += "/"
+	}
+	location += xid.New().String()
+	return c.BlockAdapter.Put(ctx, block.ObjectPointer{
+		StorageNamespace: ns.String(),
+		Identifier:       location,
+		IdentifierType:   block.IdentifierTypeFull,
+	}, size, fd, block.PutOpts{})
+}
+
+func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string, mark *GCUncommittedMark) (*PrepareGCUncommittedInfo, error) {
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+	}); err != nil {
+		return nil, err
+	}
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	var runID string
+	if mark == nil {
+		runID = c.Store.GCNewRunID()
+	} else {
+		runID = mark.RunID
+	}
+
+	fd, err := os.CreateTemp("", "")
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = fd.Close()
+		if err := os.Remove(fd.Name()); err != nil {
+			c.log.WithField("filename", fd.Name()).Warn("Failed to delete temporary gc uncommitted data file")
+		}
+	}()
+
+	uw := NewUncommittedWriter(fd)
+
+	// Write parquet to local storage
+	newMark, hasData, err := c.writeUncommittedLocal(ctx, repository, uw, mark, runID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !hasData { // On empty file - skip upload
+		return &PrepareGCUncommittedInfo{
+			Metadata: graveler.GarbageCollectionRunMetadata{
+				RunId:               runID,
+				UncommittedLocation: "",
+			},
+		}, nil
+	}
+
+	// Upload parquet file to object store
+	uncommittedLocation, err := c.Store.GCGetUncommittedLocation(repository, runID)
+	if err != nil {
+		return nil, err
+	}
+	err = c.uploadFile(ctx, repository.StorageNamespace, uncommittedLocation, fd, uw.Size())
+	if err != nil {
+		return nil, err
+	}
+
+	return &PrepareGCUncommittedInfo{
+		Mark: newMark,
+		Metadata: graveler.GarbageCollectionRunMetadata{
+			RunId:               runID,
+			UncommittedLocation: uncommittedLocation,
+		},
+	}, nil
+}
+
 func (c *Catalog) Close() error {
 	var errs error
 	for _, manager := range c.managers {
@@ -1799,4 +1996,27 @@ func newDifferenceFromEntryDiff(v *EntryDiff) (Difference, error) {
 	diff.DBEntry = newCatalogEntryFromEntry(false, v.Path.String(), v.Entry)
 	diff.Type, err = catalogDiffType(v.Type)
 	return diff, err
+}
+
+func NewUncommittedWriter(writer io.Writer) *UncommittedWriter {
+	return &UncommittedWriter{
+		writer: writer,
+	}
+}
+
+// UncommittedWriter wraps io.Writer and tracks the total size of writes done on this writer
+// Used to get the current file size written without expensive calls to Flush and Stat
+type UncommittedWriter struct {
+	size   int64
+	writer io.Writer
+}
+
+func (w *UncommittedWriter) Write(p []byte) (n int, err error) {
+	n, err = w.writer.Write(p)
+	w.size += int64(n)
+	return n, err
+}
+
+func (w *UncommittedWriter) Size() int64 {
+	return w.size
 }

@@ -66,6 +66,10 @@ object LakeFSContext {
   val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY = "lakefs.debug.gc.max_commit_iso_datetime"
   val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY = "lakefs.debug.gc.max_commit_epoch_seconds"
   val LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY = "lakefs.debug.gc.reproduce_run_id"
+
+  //  Objects that are written during this duration are not collected
+  val LAKEFS_CONF_DEBUG_GC_UNCOMMITTED_MIN_AGE_SECONDS_KEY =
+    "lakefs.debug.gc.uncommitted_min_age_seconds"
   val LAKEFS_CONF_GC_DO_MARK = "lakefs.gc.do_mark"
   val LAKEFS_CONF_GC_DO_SWEEP = "lakefs.gc.do_sweep"
   val LAKEFS_CONF_GC_MARK_ID = "lakefs.gc.mark_id"
@@ -76,6 +80,9 @@ object LakeFSContext {
   val COMMITS_LOCATION_KEY = "commits_location"
   val DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = 50
   val DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = 200
+
+  // By default, objects that are written in the last 6 hours are not collected
+  val DEFAULT_GC_UNCOMMITTED_MIN_AGE_SECONDS = 6 * 60 * 60
 
   def newRDD(
       sc: SparkContext,

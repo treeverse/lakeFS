@@ -12,10 +12,16 @@ import (
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/local"
+	adapterTest "github.com/treeverse/lakefs/pkg/block/test"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 const testStorageNamespace = "local://test"
+
+func TestLocalAdapter(t *testing.T) {
+	var params []func(*local.Adapter)
+	adapterTest.TestAdapter(t, block.BlockstoreTypeLocal, params)
+}
 
 func makeAdapter(t *testing.T) *local.Adapter {
 	t.Helper()

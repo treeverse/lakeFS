@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.86.0
+
+What's new:
+
+- Add byte range support to OpenAPI (server, spec and generated clients) (#4623)
+
+Bug fixes:
+- Fix unmatch-delete log line (#4643)
+- Change API event_type from enum to string (#4613)
+- Fix diff refs api to return prefix_changed (#4639)
+
+## v0.85.0
+
+What's new:
+
+- lakectl import - hold the same import functionality 'Import' from the UI (#4558)
+- Setting KV drivers defaults the part of the configuration defaults (#4553)
+- Login API returns the token's expiry with the token (#4597)
+- Build Web UI using Vite 3.2.3 (#4576)
+
 ## v0.84.0
 
 What's new:

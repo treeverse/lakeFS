@@ -25,3 +25,9 @@ func NewLogoutHandler(sessionStore sessions.Store, logger logging.Logger, logout
 		http.Redirect(w, r, logoutRedirectURL, http.StatusTemporaryRedirect)
 	}
 }
+
+func clearSession(w http.ResponseWriter, r *http.Request, sessionStore sessions.Store, sessionName string) error {
+	session, _ := sessionStore.Get(r, sessionName)
+	session.Options.MaxAge = -1
+	return session.Save(r, w)
+}

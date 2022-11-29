@@ -100,8 +100,8 @@ export const getContentType = (headers: Headers): string | null => {
 const FileObjectsViewerPage = () => {
     const { objectName, repoId } = useParams<ObjectViewerPathParams>();
     const decodedObjectName = decodeURIComponent(objectName);
-    const queryString = (useQuery() as ObjectViewerQueryString);
-    const refId = queryString["ref"];
+    const queryString = useQuery<ObjectViewerQueryString>();
+    const refId = queryString["ref"] ?? "";
     const isBigFile = queryString["big"] === "true";
     const {response, error, loading} = useAPI(async () => {
         if (!isBigFile) {
