@@ -17,7 +17,7 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
       normalizedStorageNamespace = "/"
     }
     val params =
-      LakeFSJobParams.forStorageNamespace(s"${normalizedStorageNamespace}",
+      LakeFSJobParams.forStorageNamespace(s"$normalizedStorageNamespace",
                                           UncommittedGarbageCollector.UNCOMMITTED_GC_SOURCE_NAME
                                          )
     var df = LakeFSContext.newDF(spark, params)
@@ -26,7 +26,10 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
       .withColumn("absolute_address", concat(lit(normalizedStorageNamespace), df("address")))
     // TODO push down a filter to the input format, to filter out absolute addresses!
     df = df
-      .select(df("absolute_address").as("address"))
+      // TODO (niro): Revert substring after https://github.com/treeverse/lakeFS/issues/4699
+      .select(df("absolute_address"),
+              substring_index(col("absolute_address"), normalizedStorageNamespace, -1).as("address")
+             )
       .distinct
     df
   }
