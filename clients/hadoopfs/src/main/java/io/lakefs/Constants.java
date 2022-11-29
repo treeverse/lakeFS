@@ -19,4 +19,6 @@ public class Constants {
     public static final String SEPARATOR = "/";
 
     public static final long DEFAULT_BLOCK_SIZE = 32 * FileUtils.ONE_MB;
+
+    public static final String OC_METRIC_DURATION_PREFIX = "lakefs_api_duration_";
 }
