@@ -39,6 +39,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -57,6 +58,8 @@ import java.util.Collections;
 import java.util.List;
 
 public class LakeFSOutputCommitterTest {
+    Logger logger = LoggerFactory.getLogger("LakeFSOutputCommitterTest");
+
     protected AmazonS3 s3Client;
 
     protected String s3Base;
@@ -118,38 +121,43 @@ public class LakeFSOutputCommitterTest {
         this.spark = SparkSession.builder().config(sparkConf).getOrCreate();
     }
 
-
+    @Ignore
     @Test
     public void testWriteTextfile() throws ApiException, IOException {
         String output = "lakefs://example/main/some_df";
 
-        StructType structType = new StructType();
-        structType = structType.add("A", DataTypes.StringType, false);
+        StructType structType = new StructType().add("A", DataTypes.StringType, false);
 
-        List<Row> nums = new ArrayList<Row>();
-        nums.add(RowFactory.create("value1"));
-        nums.add(RowFactory.create("value2"));
+        List<Row> nums = ImmutableList.of(
+                RowFactory.create("value1"),
+                RowFactory.create("value2"));
         Dataset<Row> df = spark.createDataFrame(nums, structType);
 
         ArrayList<String> failed = new ArrayList<String>();
 
         // TODO(Lynn): Add relevant file formats
-        ArrayList<String> fileFormats = new ArrayList<String>(Arrays.asList("text"));
+        List<String> fileFormats = Arrays.asList("text");
         for (String fileFormat : fileFormats) {
             try {
                 // save data in selected format
                 String outputPath = String.format("%s.%s", output, fileFormat);
+                logger.info(String.format("writing file in format %s to path %s", fileFormat, outputPath));
                 df.write().format(fileFormat).save(outputPath);
 
                 // read the data we just wrote
+                logger.info(String.format("reading file in format %s", fileFormat));
                 Dataset<Row> df_read = spark.read().format(fileFormat).load(outputPath);
                 Dataset<Row> diff = df.exceptAll(df_read);
-                Assert.assertTrue(diff.isEmpty());
+                Assert.assertTrue("all rows written were read", diff.isEmpty());
+                diff = df_read.exceptAll(df);
+                Assert.assertTrue("all rows read were written", diff.isEmpty());
+
             } catch (Exception e) {
+                logger.error(String.format("Format %s unexpected exception: %s", fileFormat, e));
                 failed.add(fileFormat);
             }
         }
 
-        Assert.assertEquals(0, failed.size());
+        Assert.assertEquals("Failed list is not empty: %s" , 0, failed.size());
     }
 }
