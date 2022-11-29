@@ -104,7 +104,9 @@ object StorageUtils {
 
       if (!validateClientAndBucketRegionsMatch(client, bucket)) {
         val bucketRegion = getAWSS3Region(client, bucket)
-        logger.info(s"""Bucket "$bucket" is not in region "$region", discovered it in region "$bucketRegion""")
+        logger.info(
+          s"""Bucket "$bucket" is not in region "$region", discovered it in region "$bucketRegion"""
+        )
         client = initializeS3Client(configuration,
                                     credentialsProvider,
                                     AmazonS3ClientBuilder.standard(),
