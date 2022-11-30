@@ -1,29 +1,33 @@
 package io.treeverse.gc
 
-import io.treeverse.clients.APIConfigurations
-import io.treeverse.clients.ApiClient
 import io.treeverse.clients.LakeFSContext._
-import io.treeverse.clients.StorageClientType
+import io.treeverse.clients._
+import org.apache.commons.lang3.time.DateUtils
 import org.apache.hadoop.fs.Path
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
-
-import java.util.Date
-import java.time.format.DateTimeFormatter
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
-import org.apache.commons.lang3.time.DateUtils
-import org.apache.spark.sql.functions._
-import io.treeverse.clients.ConfigMapper
-import io.treeverse.clients.HadoopUtils
+
+import java.time.format.DateTimeFormatter
+import java.util.Date
 
 object UncommittedGarbageCollector {
   final val UNCOMMITTED_GC_SOURCE_NAME = "uncommitted_gc"
+
   lazy val spark: SparkSession =
-    SparkSession.builder().appName("UncommittedGarbageCollector").getOrCreate()
+    SparkSession
+      .builder()
+      .appName("UncommittedGarbageCollector")
+      .getOrCreate()
+
+  // exclude list of old data location
+  private val excludeFromOldData = Seq("dummy")
 
   /** list repository objects directly from object store.
    *  Reads the objects from both old repository structure and new repository structure
+   *
    *  @param storageNamespace The storageNamespace to read from
    *  @param before Exclude objects which last_modified date is newer than before Date
    *  @return DF listing all objects under given storageNamespace
@@ -52,7 +56,9 @@ object UncommittedGarbageCollector {
     // Read objects from namespace root, for old structured repositories
 
     // TODO (niro): implement parallel lister for old repositories (https://github.com/treeverse/lakeFS/issues/4620)
-    val oldDataDF = new NaiveDataLister().listData(configMapper, oldDataPath)
+    val oldDataDF = new NaiveDataLister()
+      .listData(configMapper, oldDataPath)
+      .filter(!col("address").isin(excludeFromOldData: _*))
     dataDF = dataDF.union(oldDataDF).filter(col("last_modified") < before.getTime).select("address")
 
     dataDF
@@ -101,10 +107,11 @@ object UncommittedGarbageCollector {
       // Process uncommitted
       val uncommittedGCRunInfo =
         new APIUncommittedAddressLister(apiClient).listUncommittedAddresses(spark, repo)
+
       var uncommittedDF =
-        if (uncommittedGCRunInfo.uncommittedLocation != "")
+        if (uncommittedGCRunInfo.uncommittedLocation != "") {
           spark.read.parquet(uncommittedGCRunInfo.uncommittedLocation)
-        else {
+        } else {
           // in case of no uncommitted entries
           spark.emptyDataFrame.withColumn("physical_address", lit(""))
         }
@@ -113,28 +120,33 @@ object UncommittedGarbageCollector {
       runID = uncommittedGCRunInfo.runID
 
       // Process committed
-      val committedDF =
-        new NaiveCommittedAddressLister().listCommittedAddresses(spark, storageNamespace)
+      val committedDF = new NaiveCommittedAddressLister()
+        .listCommittedAddresses(spark, storageNamespace)
 
       addressesToDelete = dataDF
         .except(committedDF)
         .except(uncommittedDF)
+
       // TODO (niro): not working - need to find the most efficient way to save the first slice
-      val firstFile = dataDF.select(col("address")).first().toString()
-      firstSlice = firstFile.substring(0, firstFile.lastIndexOf("/"))
+      if (!dataDF.isEmpty) {
+        val firstFile = dataDF.select(col("address")).first().toString()
+        firstSlice = firstFile.substring(0, firstFile.lastIndexOf("/"))
+      }
     } catch {
       case e: Throwable =>
         success = false
         throw e
     } finally {
-      writeReports(
-        storageNamespace,
-        runID,
-        firstSlice,
-        startTime,
-        success,
-        addressesToDelete
-      )
+      if (runID.nonEmpty) {
+        writeReports(
+          storageNamespace,
+          runID,
+          firstSlice,
+          startTime,
+          success,
+          addressesToDelete
+        )
+      }
       spark.close()
     }
   }
