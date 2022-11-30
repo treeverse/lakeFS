@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.2 - 2022-11-29
+Bug fixes:
+* Identify the region of the S3 bucket if it's not reachable and update the initialized S3 client using that region.
+
 ## v0.5.1 - 2022-10-20
 Bug fixes:
 * Make GC backup and restore support expired addresses list including object not in the underlying object store (#4367)
