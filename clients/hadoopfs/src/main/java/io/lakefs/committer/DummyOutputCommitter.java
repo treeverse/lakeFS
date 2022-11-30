@@ -26,6 +26,7 @@ import org.apache.hadoop.mapreduce.JobStatus;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
+import org.apache.hadoop.metrics2.lib.DefaultMetricsSystem;
 import org.apache.http.HttpStatus;
 
 import com.google.common.base.Preconditions;
@@ -44,6 +45,8 @@ public class DummyOutputCommitter extends FileOutputCommitter {
     private static final Logger LOG = LoggerFactory.getLogger(DummyOutputCommitter.class);
 
     private static final String branchNamePrefix = "lakeFS-OC";
+
+    private static final Metrics metrics = new Metrics(DefaultMetricsSystem.instance(), "lakefs_oc");
 
     /**
      * API client connected to the lakeFS server used on the filesystem.
@@ -196,6 +199,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
 
     @Override
     public void setupJob(JobContext context) throws IOException {
+        metrics.inc("job_setup");
         if (outputPath == null)
             return;
         if (FSConfiguration.getBoolean(conf, outputPath.toUri().getScheme(), Constants.OC_ENSURE_CLEAN_OUTPUT_BRANCH, true) &&
@@ -245,8 +249,10 @@ public class DummyOutputCommitter extends FileOutputCommitter {
 
     @Override
     public void commitJob(JobContext jobContext) throws IOException {
+        metrics.inc("job_commit");
         if (outputPath == null)
             return;
+        long startTimeNS = System.nanoTime();
         try {
             boolean changes = false;
 
@@ -283,11 +289,14 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         } catch (IOException e) {
             LOG.warn("Failed to delete job branch {} after merge (keep going)", jobBranch, e);
         }
-
+        long durationNS = System.nanoTime() - startTimeNS;
+        LOG.info("Commit job branch {} took {}s", jobBranch, ((double)durationNS) / 1e9);
     }
 
     @Override
-    public void abortJob(JobContext jobContext, JobStatus.State status) throws IOException { // TODO(lynn)
+    public void abortJob(JobContext jobContext, JobStatus.State status) throws IOException {
+        metrics.inc("job_abort");
+
         if (outputPath == null)
             return;
         cleanupJob();
@@ -303,8 +312,9 @@ public class DummyOutputCommitter extends FileOutputCommitter {
     public void setupTask(TaskAttemptContext taskContext) throws IOException {}
 
     @Override
-    public void commitTask(TaskAttemptContext taskContext)
-        throws IOException {
+    public void commitTask(TaskAttemptContext taskContext) throws IOException {
+        metrics.inc("task_commit");
+
         if (outputPath == null)
             return;
         try {
