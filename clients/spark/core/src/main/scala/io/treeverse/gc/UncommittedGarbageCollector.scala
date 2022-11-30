@@ -85,7 +85,7 @@ object UncommittedGarbageCollector {
 
     val shouldMark = hc.getBoolean(LAKEFS_CONF_GC_DO_MARK, true)
     val shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, true)
-    val markID = hc.get(LAKEFS_CONF_GC_MARK_ID, UUID.randomUUID().toString)
+    val markID = hc.get(LAKEFS_CONF_GC_MARK_ID, "")
 
     GarbageCollector.validateRunModeConfigs(hc.getBoolean(LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, false),
       shouldMark,
@@ -129,7 +129,7 @@ object UncommittedGarbageCollector {
 
         // Process committed
         val committedDF =
-          new NaiveCommittedAddressLister().listCommittedAddresses(spark, storageNamespace)
+          new NaiveCommittedAddressLister().listCommittedAddresses(spark, storageNamespace).select("address")
 
         addressesToDelete = dataDF
           .except(committedDF)
@@ -143,20 +143,12 @@ object UncommittedGarbageCollector {
           if (markID != "") { // get the expired addresses from the mark id run
             addressesToDelete = readMarkedAddresses(storageNamespace, markID)
           }
-          if (!shouldMark) { //todo
-            runID = "sweep" + markID
-          }
 
-//          val region = if (args.length == 2) args(1) else null
-          val region = "us-east-2"
-          // The remove operation uses an SDK client to directly access the underlying storage, and therefore does not need
-          // a translated storage namespace that triggers processing by Hadoop FileSystems.
+          val region = if (args.length == 2) args(1) else null
           var storageNSForSdkClient = apiClient.getStorageNamespace(repo, StorageClientType.SDKClient)
           if (!storageNSForSdkClient.endsWith("/")) {
             storageNSForSdkClient += "/"
           }
-
-          // delete??
           val hcValues = spark.sparkContext.broadcast(HadoopUtils.getHadoopConfigurationValues(hc, "fs.", "lakefs."))
           val configMapper = new ConfigMapper(hcValues)
 
@@ -201,11 +193,11 @@ object UncommittedGarbageCollector {
 
   private def reportPath(storageNamespace: String, runID: String): String = {
     val report = s"${storageNamespace}_lakefs/retention/gc/uncommitted/$runID"
-    return report
+    report
   }
 
   private def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
-    // if last run error ??
+    // TODO - check if this run succeeded
     val path = reportPath(storageNamespace, markID)
     spark.read.parquet(s"$path/marked")
   }
