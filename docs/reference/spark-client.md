@@ -4,10 +4,11 @@ title: Spark Client
 description: The lakeFS Spark client performs operations on lakeFS committed metadata stored in the object store. 
 parent: Reference
 has_children: false
+nav_order: 40
 ---
 
 
-# lakeFS Spark Client
+# lakeFS Spark Client Reference
 
 Utilize the power of Spark to interact with the metadata on lakeFS. Possible use cases include:
 

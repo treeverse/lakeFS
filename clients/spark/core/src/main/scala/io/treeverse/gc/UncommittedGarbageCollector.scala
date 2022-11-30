@@ -24,17 +24,39 @@ object UncommittedGarbageCollector {
   lazy val spark: SparkSession =
     SparkSession.builder().appName("UncommittedGarbageCollector").getOrCreate()
 
+  /** list repository objects directly from object store.
+   *  Reads the objects from both old repository structure and new repository structure
+   *  @param storageNamespace The storageNamespace to read from
+   *  @param before Exclude objects which last_modified date is newer than before Date
+   *  @return DF listing all objects under given storageNamespace
+   */
   def listObjects(storageNamespace: String, before: Date): DataFrame = {
+    // TODO(niro): parallelize reads from root and data paths
     val sc = spark.sparkContext
-    val dataLocation = storageNamespace + "data" // TODO(niro): handle better
-    val dataPath = new Path(dataLocation)
+    val oldDataPath = new Path(storageNamespace)
+    val dataPrefix = "data"
+    val dataPath = new Path(storageNamespace, dataPrefix) // TODO(niro): handle better
+
     val configMapper = new ConfigMapper(
       sc.broadcast(
         HadoopUtils.getHadoopConfigurationValues(sc.hadoopConfiguration, "fs.", "lakefs.")
       )
     )
-    var dataDF = new NaiveDataLister().listData(configMapper, dataPath)
-    dataDF = dataDF.filter(dataDF("last_modified") < before.getTime).select("address")
+    // Read objects from data path (new repository structure)
+    var dataDF = new ParallelDataLister().listData(configMapper, dataPath)
+    dataDF = dataDF
+      .withColumn(
+        "address",
+        concat(lit(dataPrefix), lit("/"), col("base_address"))
+      )
+      .select("address", "last_modified")
+
+    // Read objects from namespace root, for old structured repositories
+
+    // TODO (niro): implement parallel lister for old repositories (https://github.com/treeverse/lakeFS/issues/4620)
+    val oldDataDF = new NaiveDataLister().listData(configMapper, oldDataPath)
+    dataDF = dataDF.union(oldDataDF).filter(col("last_modified") < before.getTime).select("address")
+
     dataDF
   }
 
@@ -51,6 +73,14 @@ object UncommittedGarbageCollector {
     val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
     val connectionTimeout = hc.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY)
     val readTimeout = hc.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY)
+    val minAgeStr = hc.get(LAKEFS_CONF_DEBUG_GC_UNCOMMITTED_MIN_AGE_SECONDS_KEY)
+    val minAgeSeconds = {
+      if (minAgeStr != null && minAgeStr.nonEmpty && minAgeStr.toInt > 0) {
+        minAgeStr.toInt
+      } else
+        DEFAULT_GC_UNCOMMITTED_MIN_AGE_SECONDS
+    }
+    val cutoffTime = DateUtils.addSeconds(new Date(), -minAgeSeconds)
     val startTime = java.time.Clock.systemUTC.instant()
 
     val shouldMark = hc.getBoolean(LAKEFS_CONF_GC_DO_MARK, true)
@@ -80,7 +110,10 @@ object UncommittedGarbageCollector {
 
     try {
       if (shouldMark) {
-        val dataDF = listObjects(storageNamespace, DateUtils.addHours(new Date(), -6))
+        // Read objects directly from object storage
+        val dataDF = listObjects(storageNamespace, cutoffTime)
+
+        // Process uncommitted
         val uncommittedGCRunInfo =
           new APIUncommittedAddressLister(apiClient).listUncommittedAddresses(spark, repo)
         var uncommittedDF =
@@ -90,19 +123,21 @@ object UncommittedGarbageCollector {
             // in case of no uncommitted entries
             spark.emptyDataFrame.withColumn("physical_address", lit(""))
           }
+
         uncommittedDF = uncommittedDF.select(uncommittedDF("physical_address").as("address"))
         runID = uncommittedGCRunInfo.runID
 
+        // Process committed
         val committedDF =
           new NaiveCommittedAddressLister().listCommittedAddresses(spark, storageNamespace)
+
         addressesToDelete = dataDF
-          .except(spark.emptyDataFrame.withColumn("address", lit("")))
           .except(committedDF)
           .except(uncommittedDF)
-//        val firstFile = dataDF.select(col("address")).first().toString()
-//        firstSlice = firstFile.substring(0, firstFile.lastIndexOf("/"))
+        // TODO (niro): not working - need to find the most efficient way to save the first slice
+        val firstFile = dataDF.select(col("address")).first().toString()
+        firstSlice = firstFile.substring(0, firstFile.lastIndexOf("/"))
       }
-
       removed = {
         if (shouldSweep) {
           if (markID != "") { // get the expired addresses from the mark id run
