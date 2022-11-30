@@ -31,9 +31,10 @@ object UncommittedGarbageCollector {
   def listObjects(storageNamespace: String, before: Date): DataFrame = {
     // TODO(niro): parallelize reads from root and data paths
     val sc = spark.sparkContext
+    val oldDataPath = new Path(storageNamespace)
     val dataPrefix = "data"
-    val dataLocation = storageNamespace + dataPrefix // TODO(niro): handle better
-    val dataPath = new Path(dataLocation)
+    val dataPath = new Path(storageNamespace, dataPrefix) // TODO(niro): handle better
+
     val configMapper = new ConfigMapper(
       sc.broadcast(
         HadoopUtils.getHadoopConfigurationValues(sc.hadoopConfiguration, "fs.", "lakefs.")
@@ -49,14 +50,11 @@ object UncommittedGarbageCollector {
       .select("address", "last_modified")
 
     // Read objects from namespace root, for old structured repositories
-    val oldDataPath = new Path(storageNamespace)
+
     // TODO (niro): implement parallel lister for old repositories (https://github.com/treeverse/lakeFS/issues/4620)
     val oldDataDF = new NaiveDataLister().listData(configMapper, oldDataPath)
-    dataDF.union(oldDataDF)
+    dataDF = dataDF.union(oldDataDF).filter(col("last_modified") < before.getTime).select("address")
 
-    dataDF = dataDF.filter(dataDF("last_modified") < before.getTime).select("address")
-    // TODO (niro): Check if really needed and consider passing it as part of uncommittedGCRunInfo
-    dataDF = dataDF.filter(dataDF("address").startsWith("_lakefs"))
     dataDF
   }
 
@@ -72,7 +70,16 @@ object UncommittedGarbageCollector {
     val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
     val connectionTimeout = hc.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY)
     val readTimeout = hc.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY)
+    val minAgeStr = hc.get(LAKEFS_CONF_DEBUG_GC_UNCOMMITTED_MIN_AGE_SECONDS_KEY)
+    val minAgeSeconds = {
+      if (minAgeStr != null && minAgeStr.nonEmpty && minAgeStr.toInt > 0) {
+        minAgeStr.toInt
+      } else
+        DEFAULT_GC_UNCOMMITTED_MIN_AGE_SECONDS
+    }
+    val cutoffTime = DateUtils.addSeconds(new Date(), -minAgeSeconds)
     val startTime = java.time.Clock.systemUTC.instant()
+
     val apiConf =
       APIConfigurations(apiURL,
                         accessKey,
@@ -89,7 +96,7 @@ object UncommittedGarbageCollector {
 
     try {
       // Read objects directly from object storage
-      val dataDF = listObjects(storageNamespace, DateUtils.addHours(new Date(), -6))
+      val dataDF = listObjects(storageNamespace, cutoffTime)
 
       // Process uncommitted
       val uncommittedGCRunInfo =
@@ -101,6 +108,7 @@ object UncommittedGarbageCollector {
           // in case of no uncommitted entries
           spark.emptyDataFrame.withColumn("physical_address", lit(""))
         }
+
       uncommittedDF = uncommittedDF.select(uncommittedDF("physical_address").as("address"))
       runID = uncommittedGCRunInfo.runID
 
@@ -111,6 +119,7 @@ object UncommittedGarbageCollector {
       addressesToDelete = dataDF
         .except(committedDF)
         .except(uncommittedDF)
+      // TODO (niro): not working - need to find the most efficient way to save the first slice
       val firstFile = dataDF.select(col("address")).first().toString()
       firstSlice = firstFile.substring(0, firstFile.lastIndexOf("/"))
     } catch {

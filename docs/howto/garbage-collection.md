@@ -11,6 +11,9 @@ redirect_from: ../reference/garbage-collection.html
 # Garbage Collection
 {: .no_toc }
 
+Note: For managed garbage collection on top of a hosted lakeFS service with guaranteed SLAs, try [lakeFS cloud](https://lakefs.cloud)
+{: .note }
+
 By default, lakeFS keeps all your objects forever. This allows you to travel back in time to previous versions of your data.
 However, sometimes you may want to hard-delete your objects - namely, delete them from the underlying storage. 
 Reasons for this include cost-reduction and privacy policies.
@@ -180,7 +183,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
-  s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.5.1/lakefs-spark-client-312-hadoop3-assembly-0.5.1.jar \
+  s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.5.2/lakefs-spark-client-312-hadoop3-assembly-0.5.2.jar \
   example-repo
   ```
 
@@ -300,7 +303,7 @@ Currently, GC backup and restore is available for Spark 3.1.2 and 3.2.1, but it 
 First, download the lakeFS Spark client Uber-jar. The Uber-jar can be found on a public S3 location:
 `http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/${CLIENT_VERSION}/lakefs-spark-client-312-hadoop3-assembly-${CLIENT_VERSION}.jar
 `
-**Note** GC backup and restore is available from version 0.5.1 of lakeFS Spark client.
+**Note** GC backup and restore is available from version 0.5.2 of lakeFS Spark client.
 
 Running instructions:
 

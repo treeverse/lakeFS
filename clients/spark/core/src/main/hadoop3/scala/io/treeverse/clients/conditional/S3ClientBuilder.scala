@@ -1,7 +1,8 @@
 package io.treeverse.clients.conditional
 
-import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws.ClientConfiguration
+import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
+import io.treeverse.clients.StorageUtils.S3.createAndValidateS3Client
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -36,15 +37,11 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
         )
       } else None
 
-    val builder = AmazonS3ClientBuilder
-      .standard()
-      .withClientConfiguration(configuration)
-      .withRegion(region)
-    val builderWithCredentials = credentialsProvider match {
-      case Some(cp) => builder.withCredentials(cp)
-      case None     => builder
-    }
-
-    builderWithCredentials.build
+    createAndValidateS3Client(configuration,
+                              credentialsProvider,
+                              AmazonS3ClientBuilder.standard(),
+                              region,
+                              bucket
+                             )
   }
 }
