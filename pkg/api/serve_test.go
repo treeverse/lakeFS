@@ -80,9 +80,9 @@ func (m *memCollector) Close() {}
 
 func setupCommPrefs(t testing.TB, clt api.ClientWithResponsesInterface) *api.NextStep {
 	t.Helper()
-	emptyEmail := ""
+	mockEmail := "test@acme.co"
 	res, err := clt.SetupCommPrefsWithResponse(context.Background(), api.SetupCommPrefsJSONRequestBody{
-		Email:           &emptyEmail,
+		Email:           &mockEmail,
 		FeatureUpdates:  false,
 		SecurityUpdates: false,
 	})
