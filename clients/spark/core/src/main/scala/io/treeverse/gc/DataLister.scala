@@ -31,7 +31,9 @@ class NaiveDataLister extends DataLister {
 
 class FileDescriptor(val path: String, val lastModified: Long) extends Serializable
 
-class convertFileStatusRemoteIterator(val remoteIterator: RemoteIterator[LocatedFileStatus]) extends Iterator[FileDescriptor] with Serializable {
+class convertFileStatusRemoteIterator(val remoteIterator: RemoteIterator[LocatedFileStatus])
+    extends Iterator[FileDescriptor]
+    with Serializable {
   override def hasNext: Boolean = remoteIterator.hasNext
 
   override def next(): FileDescriptor = {
@@ -57,8 +59,7 @@ class ParallelDataLister extends DataLister with Serializable {
     val slices = listPath(configMapper, path)
     val objectsUDF = udf((sliceId: String) => {
       val slicePath = new Path(path, sliceId)
-      listPath(configMapper, slicePath)
-        .toSeq
+      listPath(configMapper, slicePath).toSeq
         .map(s => (s.path, s.lastModified))
     })
     val objectsDF = slices
