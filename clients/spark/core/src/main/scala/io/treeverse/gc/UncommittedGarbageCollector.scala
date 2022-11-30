@@ -9,13 +9,12 @@ import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-import java.util.Date
-import java.time.format.DateTimeFormatter
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
 
-
+import java.util.Date
+import java.time.format.DateTimeFormatter
 
 object UncommittedGarbageCollector {
   final val UNCOMMITTED_GC_SOURCE_NAME = "uncommitted_gc"
@@ -210,7 +209,7 @@ object UncommittedGarbageCollector {
   }
 
   private def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
-    // TODO - check if this run succeeded
+    // TODO(eden) - check if this run succeeded
     val path = reportPath(storageNamespace, markID)
     spark.read.parquet(s"$path/marked")
   }
