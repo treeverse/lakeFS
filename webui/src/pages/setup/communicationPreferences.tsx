@@ -45,7 +45,7 @@ export const CommunicationPreferencesSetup: FC<CommunicationPreferencesSetupProp
                     <Card.Header>Communication Preferences</Card.Header>
                     <Card.Body>
                         <Card.Text>
-                            Please provide your email below.
+                            Please provide your email below. <br />
                             We recommend at least signing up for security updates. <br />
                             You may unsubscribe from either or both at any time.
                         </Card.Text>

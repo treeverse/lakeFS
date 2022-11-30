@@ -3327,7 +3327,7 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 	response := NextStep{
 		NextStep: string(auth.SetupStateCommPrefsDone),
 	}
-	
+
 	if *body.Email == "" {
 		writeResponse(w, http.StatusBadRequest, "email is required")
 		return
