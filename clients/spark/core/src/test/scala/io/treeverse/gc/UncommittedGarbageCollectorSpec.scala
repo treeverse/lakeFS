@@ -3,7 +3,7 @@ package io.treeverse.gc
 import io.treeverse.clients.SparkSessionSetup
 import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.time.DateUtils
-import org.apache.spark.sql.{Dataset, Row}
+import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.functions.col
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funspec.AnyFunSpec
@@ -11,8 +11,7 @@ import org.scalatest.matchers.should
 import org.scalatestplus.mockito.MockitoSugar
 
 import java.io.File
-import java.nio.file.Files
-import java.nio.file.Path
+import java.nio.file.{Files, Path}
 import java.time.format.DateTimeFormatter
 import java.util.Date
 
@@ -43,7 +42,7 @@ class UncommittedGarbageCollectorSpec
         val objectID = f"object$j%02d"
         val file = new File(p.toFile, objectID)
         file.createNewFile()
-        ds = ds :+ (file.toString.substring(dir.toString.length + 1))
+        ds = ds :+ file.toString.substring(dir.toString.length + 1)
 
       }
       ds
@@ -65,7 +64,7 @@ class UncommittedGarbageCollectorSpec
       ds
     }
 
-    def compareDS[T](actual: Dataset[T], expected: Dataset[T]) = {
+    def assertDSEqual[T](actual: Dataset[T], expected: Dataset[T]) = {
       val actualSet = actual.collect.toSet
       val expectedSet = expected.collect.toSet
       actualSet should be(expectedSet)
@@ -97,7 +96,7 @@ class UncommittedGarbageCollectorSpec
           dataDF.count() should be(10)
           val actual = dataDF.select("address").map(_.getString(0)).collect.toSeq.toDS()
           val expected = data.toDS()
-          compareDS(actual, expected)
+          assertDSEqual(actual, expected)
         })
       }
 
@@ -113,23 +112,38 @@ class UncommittedGarbageCollectorSpec
           dataDF.count() should be(100)
           val actual = dataDF.select("address").map(_.getString(0)).collect.toSeq.toDS()
           val expected = data.toDS()
-          compareDS(actual, expected)
+          assertDSEqual(actual, expected)
         })
       }
-    }
 
-    it("should return elements on all paths") {
-      withSparkSession(spark => {
-        import spark.implicits._
-        val data = createSliceData(dir.resolve("")) ::: createData("data")
+      it("should return elements on all paths") {
+        withSparkSession(spark => {
+          import spark.implicits._
+          val data = createSliceData(dir.resolve("")) ::: createData("data")
 
-        val dataDF =
-          UncommittedGarbageCollector.listObjects(dir.toString, DateUtils.addHours(new Date(), +1))
-        dataDF.count() should be(110)
-        val actual = dataDF.select("address").map(_.getString(0)).collect.toSeq.toDS()
-        val expected = data.toDS()
-        compareDS(actual, expected)
-      })
+          val dataDF =
+            UncommittedGarbageCollector.listObjects(dir.toString,
+                                                    DateUtils.addHours(new Date(), +1)
+                                                   )
+          dataDF.count() should be(110)
+          val actual = dataDF.select("address").map(_.getString(0)).collect.toSeq.toDS()
+          val expected = data.toDS()
+          assertDSEqual(actual, expected)
+        })
+      }
+
+      it("should not list objects with timestamp > before") {
+        withSparkSession(_ => {
+          createSliceData(dir.resolve(""))
+          createData("data")
+
+          val dataDF =
+            UncommittedGarbageCollector.listObjects(dir.toString,
+                                                    DateUtils.addHours(new Date(), -1)
+                                                   )
+          dataDF.count() should be(0)
+        })
+      }
     }
 
     describe(".writeReports") {
