@@ -3327,11 +3327,9 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 	response := NextStep{
 		NextStep: string(auth.SetupStateCommPrefsDone),
 	}
-	// user chose not to provide their email address,
-	// update that this step is skipped, and move on to the next step
+	
 	if *body.Email == "" {
-		_ = c.MetadataManager.UpdateSkipCommPrefs(ctx)
-		writeResponse(w, http.StatusOK, response)
+		writeResponse(w, http.StatusBadRequest, "email is required")
 		return
 	}
 

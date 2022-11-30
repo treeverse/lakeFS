@@ -41,6 +41,10 @@ const SetupContents = () => {
     }, [setDisabled, setSetupError, setSetupData, setup]);
 
     const onSubmitCommunicationPreferences = useCallback(async (userEmail, updatesChecked, securityChecked) => {
+        if (!userEmail) {
+            setSetupError("Email is require.");
+            return;
+        }
         setDisabled(true);
         try {
             const response = await setup.commPrefs(userEmail, updatesChecked, securityChecked);

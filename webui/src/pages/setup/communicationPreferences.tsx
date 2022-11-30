@@ -45,13 +45,13 @@ export const CommunicationPreferencesSetup: FC<CommunicationPreferencesSetupProp
                     <Card.Header>Communication Preferences</Card.Header>
                     <Card.Body>
                         <Card.Text>
-                            Providing your email address is optional.
+                            Please provide your email below.
                             We recommend at least signing up for security updates. <br />
                             You may unsubscribe from either or both at any time.
                         </Card.Text>
                         <Form onSubmit={submitHandler}>
                             <Form.Group controlId="user-email" className="mt-4">
-                                <Form.Label>Email (optional)</Form.Label>
+                                <Form.Label>Email <span className="required-field-label">*</span></Form.Label>
                                 <Form.Control type="email" placeholder="name@company.com" value={userEmail}  onChange={handleEmailChange} autoFocus/>
                             </Form.Group>
 
