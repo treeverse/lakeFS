@@ -1,21 +1,17 @@
 package io.treeverse.gc
 
-import io.treeverse.clients.APIConfigurations
-import io.treeverse.clients.ApiClient
 import io.treeverse.clients.LakeFSContext._
-import io.treeverse.clients.StorageClientType
+import io.treeverse.clients._
+import org.apache.commons.lang3.time.DateUtils
 import org.apache.hadoop.fs.Path
-import org.apache.spark.sql.{Column, DataFrame, SparkSession}
-
-import java.util.Date
-import java.time.format.DateTimeFormatter
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
-import org.apache.commons.lang3.time.DateUtils
-import org.apache.spark.sql.functions._
-import io.treeverse.clients.ConfigMapper
-import io.treeverse.clients.HadoopUtils
+
+import java.time.format.DateTimeFormatter
+import java.util.Date
 
 object UncommittedGarbageCollector {
   final val UNCOMMITTED_GC_SOURCE_NAME = "uncommitted_gc"
