@@ -215,7 +215,7 @@ object GarbageCollector {
   /** This function validates that at least one of the mark or sweep flags is true, and that if only sweep is true, then a mark ID is provided.
    *  If 'lakefs.debug.gc.no_delete' is passed or if the above is not true, the function will stop the execution of the GC and exit.
    */
-  private def validateRunModeConfigs(
+  def validateRunModeConfigs(
       noDeleteFlag: Boolean,
       shouldMark: Boolean,
       shouldSweep: Boolean,

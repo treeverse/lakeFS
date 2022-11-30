@@ -44,6 +44,7 @@ class UncommittedGarbageCollectorSpec
                                                    firstSlice,
                                                    startTime,
                                                    success,
+                                                   df,
                                                    df
                                                   )
 
