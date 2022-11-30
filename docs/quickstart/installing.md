@@ -6,6 +6,7 @@ parent: Quickstart
 nav_order: 10
 has_children: false
 next: ["Create your first repository", "./repository.html"]
+redirect_from: ./quickstart/
 ---
 
 # Install lakeFS
@@ -34,6 +35,7 @@ To run a local lakeFS instance using [Docker](https://docs.docker.com/){:target=
 
 You can try lakeFS:
 
+1. With the [lakeFS Playground](more_quickstart_options.md#with-the-lakefs-playground).
 1. [On Kubernetes](more_quickstart_options.md#on-kubernetes-with-helm).
 1. By [running the binary directly](more_quickstart_options.md#using-the-binary).
 

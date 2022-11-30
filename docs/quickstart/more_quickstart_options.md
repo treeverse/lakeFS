@@ -14,6 +14,12 @@ has_children: false
 
 {% include toc.html %}
 
+## With the lakeFS Playground
+
+Spin up a lakeFS installation in seconds. Your installation will be available for 7 days.
+
+[Take me to the playground](https://demo.lakefs.io){: target="_blank" class="btn btn-green" }
+
 ## On Kubernetes with Helm
 
 1. Install lakeFS on a Kubernetes cluster using Helm:
