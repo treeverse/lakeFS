@@ -121,6 +121,32 @@ layout: table_wrappers
 
     </div>
     <div class="main" id="top">
+         <div class="feedback-container">
+            <div id="is-helpful-ty">
+                <div class="text-epsilon">Thank you for your feedback.</div>
+                <div class="mt-2 text-epsilon">
+                    <a href="https://lakefs.io/slack" target="_blank">Join the community</a> to get more help.
+                </div>
+            </div>
+            <div class="feedback-buttons">
+                <span class="tooltip">
+                    <button class="page-helpful-btn" id="page-helpful-yes">
+                        <i class="far fa-lg fa-thumbs-up"></i>
+                    </button>
+                    <span class="tooltiptext">
+                        This page is <b>helpful</b>
+                    </span>
+                </span>
+                <span class="tooltip">
+                    <button class="page-helpful-btn" id="page-helpful-no">
+                        <i class="far fa-lg fa-thumbs-down"></i>
+                    </button>
+                    <span class="tooltiptext">
+                        This page is <b>not helpful</b>
+                    </span>
+                </span>
+            </div>
+        </div>
         <div id="main-header" class="main-header">
             {% include header_menu.html %}
         </div>

@@ -952,32 +952,42 @@ div.highlighter-rouge{
 	display: none;
 }
 
-.page-helpful-btn {
-	background: none !important;
-	border: none;
-	padding: 0 !important;
-	cursor: pointer;
-
-	&:focus-visible {
-		outline: none;
+.feedback-container {
+	@media (max-width: 1024px) {
+		display: none;
+	}
+	position: sticky;
+	top: 180px;
+	.feedback-buttons {
+		position: absolute;
+		right: 70px;
+		margin-bottom: 20px;
+		top: -55px;
+		.tooltiptext {
+			font-size: small;
+			width: 150px;
+			margin-left: -75px;
+			text-align: center;
+		}
+		.page-helpful-btn {
+			background: none !important;
+			border-radius: 50%;
+			border: solid $teal-green 2px;
+			color: $teal-green;
+			height: 40px;
+			width: 40px;
+			margin: 0 3px;
+			cursor: pointer;
+			&:focus-visible {
+				outline: none;
+			}
+		}
 	}
 }
 
 #is-helpful-ty {
 	display: none;
-}
-
-.ui-widget-content a {
-	color: $teal-green !important;
-}
-
-#feedback-dialog {
-	.x-btn {
-		&:focus-visible {
-			outline: none;
-		}
-		position: fixed;
-		top: 3px;
-		right: 5px;
+	a {
+		color: $teal-green !important;
 	}
 }
