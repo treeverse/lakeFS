@@ -39,6 +39,9 @@ You can try lakeFS:
 1. [On Kubernetes](more_quickstart_options.md#on-kubernetes-with-helm).
 1. By [running the binary directly](more_quickstart_options.md#using-the-binary).
 
+Feeling ready for production? [Deploy lakeFS on your cloud account](../deploy/index.md).
+{: .note }
+
 ## Modifying the local deployment to run against your cloud data
 
 ### Using AWS S3 Storage
