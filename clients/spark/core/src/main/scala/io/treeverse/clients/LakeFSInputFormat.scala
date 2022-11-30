@@ -221,8 +221,13 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
       null
     )
     val fs = FileSystem.get(lakeFSMetadataURI, conf)
-    val it = fs.listFiles(new Path(lakeFSMetadataURI.toString), false)
     val splits = new ListBuffer[InputSplit]()
+    val metadataPath = new Path(lakeFSMetadataURI.toString)
+    if (!fs.exists(metadataPath)) {
+      return splits.asJava
+    }
+
+    val it = fs.listFiles(metadataPath, false)
     while (it.hasNext) {
       val file = it.next()
       splits += new GravelerSplit(
@@ -233,6 +238,6 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
       )
     }
     logger.debug(s"Returning ${splits.size} splits")
-    return splits.asJava
+    splits.asJava
   }
 }
