@@ -39,8 +39,8 @@ import java.math.BigInteger;
 import java.nio.charset.Charset;
 
 // TODO(ariels): For Hadoop 3, it is enough (and better!) to extend PathOutputCommitter.
-public class DummyOutputCommitter extends FileOutputCommitter {
-    private static final Logger LOG = LoggerFactory.getLogger(DummyOutputCommitter.class);
+public class LakeFSOutputCommitter extends FileOutputCommitter {
+    private static final Logger LOG = LoggerFactory.getLogger(LakeFSOutputCommitter.class);
 
     private static final String branchNamePrefix = "lakeFS-OC";
 
@@ -102,7 +102,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         return String.format("%s-%s-%s", branchNamePrefix, digest, pathPrefix);
     }
 
-    public DummyOutputCommitter(Path outputPath, JobContext context) throws IOException {
+    public LakeFSOutputCommitter(Path outputPath, JobContext context) throws IOException {
         super(outputPath, context);
 
         this.conf = context.getConfiguration();
@@ -125,7 +125,7 @@ public class DummyOutputCommitter extends FileOutputCommitter {
         }
     }
 
-    public DummyOutputCommitter(Path outputPath, TaskAttemptContext context) throws IOException {
+    public LakeFSOutputCommitter(Path outputPath, TaskAttemptContext context) throws IOException {
         this(outputPath, (JobContext)context);
 
         TaskAttemptID id = context.getTaskAttemptID();
