@@ -807,31 +807,72 @@ public class LakeFSFileSystem extends FileSystem {
             return isBranchExists(objectLoc.getRepository(), objectLoc.getRef());
         }
 
-        // check if file exists
         ObjectsApi objects = lfsClient.getObjects();
+        /*
+         * path "exists" in Hadoop if one of these holds:
+         *
+         *    - path exists on lakeFS (regular file)
+         *    - path + "/" exists (directory marker)
+         *    - path + "/" + <something> exists (a nonempty directory that has no
+         *      directory marker for some reason; perhaps it was not created by
+         *      Spark).
+         */
+
+        String directoryPath = objectLoc.toDirectory().getPath();
+        // List a small number of objects after path.  If either path or
+        // path + "/" + <something> are there, then path exists.  Pick the
+        // number of objects so that it costs about the same to list that
+        // many objects as it does to list 1.
         try {
-            objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), false);
-            return true;
+            ObjectStatsList osl = objects.listObjects(objectLoc.getRepository(), objectLoc.getRef(), false, "", 123 /* TODO(ariels): configure! */, "", objectLoc.getPath());
+            List<ObjectStats> l = osl.getResults();
+            if (l.isEmpty()) {
+                // No object with any name that starts with objectLoc.
+                return false;
+            }
+            ObjectStats first = l.get(0);
+            if (first.getPath().equals(objectLoc.getPath())) {
+                // objectLoc itself points at the object, it's a regular object!
+                return true;
+            }
+            for (ObjectStats stat : l) {
+                if (stat.getPath().startsWith(directoryPath)) {
+                    // path exists as a directory containing this object.
+                    // Also handles the case where this object is a directory marker.
+                    return true;
+                }
+                if (stat.getPath().compareTo(directoryPath) > 0) {
+                    // This object is after path + "/" and does not start
+                    // with it: there can be no object under path + "/".
+                    return false;
+                }
+            }
+            if (!osl.getPagination().getHasMore()) {
+                // Scanned all files with prefix path and did not find
+                // anything with path or path + "/".
+                return false;
+            }
         } catch (ApiException e) {
-            if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
-                throw new IOException("statObject", e);
+            if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
+                // Repository or ref do not exist.
+                return false;
+            } else {
+                throw new IOException("exists", e);
             }
         }
 
-        // check if directory marker directory exists
-        try {
-            objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath() + SEPARATOR, false);
-            return true;
-        } catch (ApiException e) {
-            if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
-                throw new IOException("statObject", e);
-            }
-        }
+        // The initial listing did not even reach path+"/".  We know path
+        // does not exist (it would have been first in that listing), so
+        // just check if path+"/" or something below it exist.
 
-        // use listing to check if directory exists
-        ListingIterator iterator = new ListingIterator(path, true, 1);
-        iterator.setRemoveDirectory(false);
-        return iterator.hasNext();
+        try {
+            ObjectStatsList osl = objects.listObjects(objectLoc.getRepository(), objectLoc.getRef(), false, "", 1, "", directoryPath);
+            List<ObjectStats> l = osl.getResults();
+            return ! l.isEmpty();
+        } catch (ApiException e) {
+            // Repo and ref exist!
+            throw new IOException("exists", e);
+        }
     }
 
     private boolean isBranchExists(String repository, String branch) throws IOException {
