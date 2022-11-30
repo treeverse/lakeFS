@@ -370,7 +370,7 @@ On Hadoop 2, configure:
     </property>
 	<property>
 		<name>spark.sql.parquet.output.committer.class</name>
-		<value>io.lakefs.committer.DummyParquetOutputCommitter</value>
+		<value>io.lakefs.committer.LakeFSParquetOutputCommitter</value>
 	</property>
 </configuration>
 ```

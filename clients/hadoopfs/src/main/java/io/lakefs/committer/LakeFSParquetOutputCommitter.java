@@ -9,12 +9,12 @@ import org.apache.parquet.hadoop.util.ContextUtil;
 
 import java.io.IOException;
 
-public class DummyParquetOutputCommitter extends DummyOutputCommitter {
-    public DummyParquetOutputCommitter(Path outputPath, JobContext context) throws IOException {
+public class LakeFSParquetOutputCommitter extends LakeFSOutputCommitter {
+    public LakeFSParquetOutputCommitter(Path outputPath, JobContext context) throws IOException {
         super(outputPath, context);
     }
 
-    public DummyParquetOutputCommitter(Path outputPath, TaskAttemptContext context) throws IOException {
+    public LakeFSParquetOutputCommitter(Path outputPath, TaskAttemptContext context) throws IOException {
         super(outputPath, context);
     }
 

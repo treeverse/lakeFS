@@ -109,7 +109,7 @@ public class LakeFSOutputCommitterTest {
 
         SparkConf sparkConf = new SparkConf().setMaster("local").setAppName("Spark test")
                 .set("spark.sql.shuffle.partitions", "17")
-                .set("spark.hadoop.mapred.output.committer.class","io.lakefs.committer.DummyOutputCommitter")
+                .set("spark.hadoop.mapred.output.committer.class","io.lakefs.committer.LakeFSOutputCommitter")
                 .set("spark.hadoop.fs.lakefs.impl","io.lakefs.LakeFSFileSystem")
                 .set("fs.lakefs.access.key", "AKIAIOSFODNN7EXAMPLE")
                 .set("fs.lakefs.secret.key", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
