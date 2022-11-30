@@ -163,7 +163,6 @@ object UncommittedGarbageCollector {
           }
           val hcValues = spark.sparkContext.broadcast(HadoopUtils.getHadoopConfigurationValues(hc, "fs.", "lakefs."))
           val configMapper = new ConfigMapper(hcValues)
-
           GarbageCollector.bulkRemove(configMapper, addressesToDelete, storageNamespace, region, storageType).toDF()
         } else {
           spark.emptyDataFrame.withColumn("address", lit(""))
