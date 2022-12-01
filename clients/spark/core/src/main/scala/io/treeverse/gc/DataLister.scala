@@ -1,7 +1,7 @@
 package io.treeverse.gc
 
 import io.treeverse.clients.ConfigMapper
-import org.apache.hadoop.fs.{LocatedFileStatus, Path, RemoteIterator}
+import org.apache.hadoop.fs.{FileStatus, LocatedFileStatus, Path, RemoteIterator}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions._
 
@@ -31,25 +31,21 @@ class NaiveDataLister extends DataLister {
 
 class FileDescriptor(val path: String, val lastModified: Long) extends Serializable
 
-class convertFileStatusRemoteIterator(val remoteIterator: RemoteIterator[LocatedFileStatus])
-    extends Iterator[FileDescriptor]
-    with Serializable {
-  override def hasNext: Boolean = remoteIterator.hasNext
-
-  override def next(): FileDescriptor = {
-    val item = remoteIterator.next()
-    new FileDescriptor(item.getPath.getName, item.getModificationTime)
-  }
-}
-
 class ParallelDataLister extends DataLister with Serializable {
-  def listPath(configMapper: ConfigMapper, p: Path): Iterator[FileDescriptor] = {
+  private def listPath(configMapper: ConfigMapper, p: Path): Iterator[FileDescriptor] = {
     try {
       val fs = p.getFileSystem(configMapper.configuration)
-      val it = fs.listFiles(p, false)
-      new convertFileStatusRemoteIterator(it)
+      val it = fs.listStatusIterator(p)
+      new Iterator[FileDescriptor] {
+        override def hasNext: Boolean = it.hasNext
+
+        override def next(): FileDescriptor = {
+          val item = it.next()
+          new FileDescriptor(item.getPath.getName, item.getModificationTime)
+        }
+      }
     } catch {
-      case _: FileNotFoundException => Iterator.empty
+      case _: FileNotFoundException => Iterator.empty[FileDescriptor]
     }
   }
 
@@ -57,6 +53,8 @@ class ParallelDataLister extends DataLister with Serializable {
     import spark.implicits._
 
     val slices = listPath(configMapper, path)
+    slices.map(_.path).toSeq.toDF.show
+
     val objectsUDF = udf((sliceId: String) => {
       val slicePath = new Path(path.toString, sliceId)
       listPath(configMapper, slicePath).toSeq
