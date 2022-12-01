@@ -1,7 +1,6 @@
 $(() => {
     let copyCodeContainer = $("<div class=\"copy-code-container\">" +
-        "<button class=\"copy-code-button\" aria-label=\"Copy code block to your clipboard\">" +
-        "<i class=\"far fa-copy\"></i>" +
+        "<button class=\"copy-code-button far fa-copy\" aria-label=\"Copy code block to your clipboard\">" +
         "</button></div>");
     $("div.highlighter-rouge").prepend(copyCodeContainer);
     $("div.highlighter-rouge .copy-code-button").click(function() {
