@@ -33,19 +33,18 @@ class FileDescriptor(val path: String, val lastModified: Long) extends Serializa
 
 class ParallelDataLister extends DataLister with Serializable {
   private def listPath(configMapper: ConfigMapper, p: Path): Iterator[FileDescriptor] = {
-    try {
-      val fs = p.getFileSystem(configMapper.configuration)
-      val it = fs.listStatusIterator(p)
-      new Iterator[FileDescriptor] with Serializable {
-        override def hasNext: Boolean = it.hasNext
+    val fs = p.getFileSystem(configMapper.configuration)
+    if (!fs.exists(p)) {
+      return Iterator.empty
+    }
+    val it = fs.listStatusIterator(p)
+    new Iterator[FileDescriptor] with Serializable {
+      override def hasNext: Boolean = it.hasNext
 
-        override def next(): FileDescriptor = {
-          val item = it.next()
-          new FileDescriptor(item.getPath.getName, item.getModificationTime)
-        }
+      override def next(): FileDescriptor = {
+        val item = it.next()
+        new FileDescriptor(item.getPath.getName, item.getModificationTime)
       }
-    } catch {
-      case _: FileNotFoundException => Iterator.empty
     }
   }
 
