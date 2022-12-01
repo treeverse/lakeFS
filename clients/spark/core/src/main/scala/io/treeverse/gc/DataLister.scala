@@ -1,13 +1,11 @@
 package io.treeverse.gc
 
+import io.treeverse.clients.ConfigMapper
 import org.apache.hadoop.fs.Path
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.{DataFrame, SparkSession}
 
 import scala.collection.mutable.ListBuffer
-import io.treeverse.clients.ConfigMapper
-import org.apache.hadoop.fs.FileStatus
 
 /** List all the files under a given path.
  */
@@ -33,32 +31,34 @@ class NaiveDataLister extends DataLister {
 class FileDescriptor(val path: String, val lastModified: Long) extends Serializable
 
 class ParallelDataLister extends DataLister with Serializable {
-  def listPath(
-      configMapper: ConfigMapper,
-      p: Path
-  ): List[FileDescriptor] = {
+  private def listPath(configMapper: ConfigMapper, p: Path): Iterator[FileDescriptor] = {
     val fs = p.getFileSystem(configMapper.configuration)
     if (!fs.exists(p)) {
-      return List[FileDescriptor]()
+      return Iterator.empty
     }
-    fs.listStatus(p)
-      .map((status: FileStatus) =>
-        new FileDescriptor(status.getPath.getName, status.getModificationTime)
-      )
-      .toList
+    val it = fs.listStatusIterator(p)
+    new Iterator[FileDescriptor] with Serializable {
+      override def hasNext: Boolean = it.hasNext
+
+      override def next(): FileDescriptor = {
+        val item = it.next()
+        new FileDescriptor(item.getPath.getName, item.getModificationTime)
+      }
+    }
   }
 
   override def listData(configMapper: ConfigMapper, path: Path): DataFrame = {
     import spark.implicits._
     val slices = listPath(configMapper, path)
-    val pathStr = path.toString
+    val objectsPath = path.toString // udf require serializable string and not Path
     val objectsUDF = udf((sliceId: String) => {
-      val slicePath = new Path(pathStr, sliceId)
-      listPath(configMapper, slicePath)
+      val slicePath = new Path(objectsPath, sliceId)
+      listPath(configMapper, slicePath).toSeq
         .map(s => (s.path, s.lastModified))
     })
     val objectsDF = slices
       .map(_.path)
+      .toSeq
       .toDF("slice_id")
       .withColumn("udf", explode(objectsUDF(col("slice_id"))))
       .withColumn("base_address", concat(col("slice_id"), lit("/"), col("udf._1")))
