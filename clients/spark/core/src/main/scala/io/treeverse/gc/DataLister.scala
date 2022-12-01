@@ -52,8 +52,9 @@ class ParallelDataLister extends DataLister with Serializable {
   override def listData(configMapper: ConfigMapper, path: Path): DataFrame = {
     import spark.implicits._
     val slices = listPath(configMapper, path)
+    val objectsPath = path.toString // udf require serializable string and not Path
     val objectsUDF = udf((sliceId: String) => {
-      val slicePath = new Path(path.toString, sliceId)
+      val slicePath = new Path(objectsPath, sliceId)
       listPath(configMapper, slicePath).toSeq
         .map(s => (s.path, s.lastModified))
     })
