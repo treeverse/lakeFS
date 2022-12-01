@@ -861,6 +861,11 @@ th, td {
 .tabs {
 	background: transparent;
 	border: none !important;
+	&.ui-widget {
+		.copy-code-button {
+			font-family: "Font Awesome 6 Free" !important;
+		}
+	}
 }
 
 .tabs .ui-widget-header {
