@@ -12,14 +12,12 @@ trait CommittedAddressLister {
 
 class NaiveCommittedAddressLister extends CommittedAddressLister {
   override def listCommittedAddresses(spark: SparkSession, storageNamespace: String): DataFrame = {
-    var normalizedStorageNamespace = storageNamespace
-    if (!normalizedStorageNamespace.endsWith("/")) {
-      normalizedStorageNamespace = "/"
-    }
-    val params =
-      LakeFSJobParams.forStorageNamespace(s"$normalizedStorageNamespace",
-                                          UncommittedGarbageCollector.UNCOMMITTED_GC_SOURCE_NAME
-                                         )
+    val normalizedStorageNamespace =
+      if (storageNamespace.endsWith("/")) storageNamespace else storageNamespace + "/"
+    val params = LakeFSJobParams.forStorageNamespace(
+      normalizedStorageNamespace,
+      UncommittedGarbageCollector.UNCOMMITTED_GC_SOURCE_NAME
+    )
     var df = LakeFSContext.newDF(spark, params)
     df = df
       .select("address")
