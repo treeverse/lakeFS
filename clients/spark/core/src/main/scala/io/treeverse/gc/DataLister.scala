@@ -36,7 +36,7 @@ class ParallelDataLister extends DataLister with Serializable {
     try {
       val fs = p.getFileSystem(configMapper.configuration)
       val it = fs.listStatusIterator(p)
-      new Iterator[FileDescriptor] {
+      new Iterator[FileDescriptor] with Serializable {
         override def hasNext: Boolean = it.hasNext
 
         override def next(): FileDescriptor = {
