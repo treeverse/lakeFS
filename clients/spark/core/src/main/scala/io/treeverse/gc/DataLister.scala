@@ -45,7 +45,7 @@ class ParallelDataLister extends DataLister with Serializable {
         }
       }
     } catch {
-      case _: FileNotFoundException => Iterator.empty[FileDescriptor]
+      case _: FileNotFoundException => Iterator.empty
     }
   }
 
