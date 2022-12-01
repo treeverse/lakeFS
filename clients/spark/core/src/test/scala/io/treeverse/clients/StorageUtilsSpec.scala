@@ -113,6 +113,146 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
     }
   }
 
+  describe("S3.concatKeysToStorageNamespace") {
+    val keys = Seq("k1")
+
+    it("should keep namespace scheme and host and namespace trailing slash") {
+      val storageNSWithPath = "s3://bucket/foo/"
+      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeS3,
+                                           keys,
+                                           storageNSWithPath,
+                                           true,
+                                           Seq("s3://bucket/foo/k1")
+                                          ) should equal(true)
+
+      val storageNSWithoutPath = "s3://bucket/"
+      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeS3,
+                                           keys,
+                                           storageNSWithoutPath,
+                                           true,
+                                           Seq("s3://bucket/k1")
+                                          ) should equal(true)
+    }
+
+    it("should keep namespace scheme and host and add namespace trailing slash") {
+      val storageNSWithPath = "s3://bucket/foo"
+      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeS3,
+                                           keys,
+                                           storageNSWithPath,
+                                           true,
+                                           Seq("s3://bucket/foo/k1")
+                                          ) should equal(true)
+
+      val storageNSWithoutPath = "s3://bucket"
+      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeS3,
+                                           keys,
+                                           storageNSWithoutPath,
+                                           true,
+                                           Seq("s3://bucket/k1")
+                                          ) should equal(true)
+    }
+
+    it("should drop namespace scheme and host and keep namespace trailing slash") {
+      val storageNSWithPath = "s3://bucket/foo/"
+      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeS3,
+                                           keys,
+                                           storageNSWithPath,
+                                           false,
+                                           Seq("foo/k1")
+                                          ) should equal(true)
+
+      val storageNSWithoutPath = "s3://bucket/"
+      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeS3,
+                                           keys,
+                                           storageNSWithoutPath,
+                                           false,
+                                           Seq("k1")
+                                          ) should equal(true)
+    }
+
+    it("should drop namespace scheme and host and add namespace trailing slash") {
+      val storageNSWithPath = "s3://bucket/foo"
+      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeS3,
+                                           keys,
+                                           storageNSWithPath,
+                                           false,
+                                           Seq("foo/k1")
+                                          ) should equal(true)
+
+      val storageNSWithoutPath = "s3://bucket"
+      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeS3,
+                                           keys,
+                                           storageNSWithoutPath,
+                                           false,
+                                           Seq("k1")
+                                          ) should equal(true)
+    }
+  }
+
+  describe("AzureBlob.concatKeysToStorageNamespace") {
+    val keys = Seq("k1")
+
+    it("should keep namespace scheme and host and namespace trailing slash") {
+      val storageNSWithPath = "s3://bucket/foo/"
+      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeAzure,
+                                           keys,
+                                           storageNSWithPath,
+                                           true,
+                                           Seq("s3://bucket/foo/k1")
+                                          ) should equal(true)
+      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeAzure,
+                                           keys,
+                                           storageNSWithPath,
+                                           false,
+                                           Seq("s3://bucket/foo/k1")
+                                          ) should equal(true)
+
+      val storageNSWithoutPath = "s3://bucket/"
+      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeAzure,
+                                           keys,
+                                           storageNSWithoutPath,
+                                           true,
+                                           Seq("s3://bucket/k1")
+                                          ) should equal(true)
+      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeAzure,
+                                           keys,
+                                           storageNSWithoutPath,
+                                           false,
+                                           Seq("s3://bucket/k1")
+                                          ) should equal(true)
+    }
+
+    it("should keep namespace scheme and host and add namespace trailing slash") {
+      val storageNSWithPath = "s3://bucket/foo"
+      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeAzure,
+                                           keys,
+                                           storageNSWithPath,
+                                           true,
+                                           Seq("s3://bucket/foo/k1")
+                                          ) should equal(true)
+      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeAzure,
+                                           keys,
+                                           storageNSWithPath,
+                                           false,
+                                           Seq("s3://bucket/foo/k1")
+                                          ) should equal(true)
+
+      val storageNSWithoutPath = "s3://bucket"
+      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeAzure,
+                                           keys,
+                                           storageNSWithoutPath,
+                                           true,
+                                           Seq("s3://bucket/k1")
+                                          ) should equal(true)
+      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeAzure,
+                                           keys,
+                                           storageNSWithoutPath,
+                                           false,
+                                           Seq("s3://bucket/k1")
+                                          ) should equal(true)
+    }
+  }
+
   private def extractBucketFromRecordedRequest(request: RecordedRequest): String = {
     val splitRequestLine = request.getRequestLine.split('/')
     if (splitRequestLine.length < 3) {
@@ -143,5 +283,25 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
       US_STANDARD,
       BUCKET_NAME
     )
+  }
+
+  private def validateConcatKeysToStorageNamespace(
+      storageType: String,
+      keys: Seq[String],
+      storageNamespace: String,
+      keepNsSchemeAndHost: Boolean,
+      expectedResult: Seq[String]
+  ): Boolean = {
+    var res: Seq[String] = Seq.empty
+    if (storageType == StorageUtils.StorageTypeS3) {
+      res =
+        StorageUtils.S3.concatKeysToStorageNamespace(keys, storageNamespace, keepNsSchemeAndHost)
+    } else {
+      res = StorageUtils.AzureBlob.concatKeysToStorageNamespace(keys,
+                                                                storageNamespace,
+                                                                keepNsSchemeAndHost
+                                                               )
+    }
+    res.toSet == expectedResult.toSet
   }
 }
