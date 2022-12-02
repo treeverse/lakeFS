@@ -58,12 +58,14 @@ func resolveNamespacePrefix(opts block.WalkOpts) (block.QualifiedPrefix, error) 
 }
 
 type Adapter struct {
-	clients               *ClientCache
-	httpClient            *http.Client
-	streamingChunkSize    int
-	streamingChunkTimeout time.Duration
-	respServer            string
-	respServerLock        sync.Mutex
+	clients                      *ClientCache
+	httpClient                   *http.Client
+	streamingChunkSize           int
+	streamingChunkTimeout        time.Duration
+	respServer                   string
+	respServerLock               sync.Mutex
+	ServerSideEncryption         string
+	ServerSideEncryptionKmsKeyID string
 }
 
 func WithHTTPClient(c *http.Client) func(a *Adapter) {
@@ -96,7 +98,21 @@ func WithDiscoverBucketRegion(b bool) func(a *Adapter) {
 	}
 }
 
-func NewAdapter(awsSession *session.Session, opts ...func(a *Adapter)) *Adapter {
+func WithServerSideEncryption(s string) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.ServerSideEncryption = s
+	}
+}
+
+func WithServerSideEncryptionKmsKeyID(s string) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.ServerSideEncryptionKmsKeyID = s
+	}
+}
+
+type AdapterOption func(a *Adapter)
+
+func NewAdapter(awsSession *session.Session, opts ...AdapterOption) *Adapter {
 	a := &Adapter{
 		clients:               NewClientCache(awsSession),
 		httpClient:            awsSession.Config.HTTPClient,
@@ -126,6 +142,13 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 		Key:          aws.String(qualifiedKey.Key),
 		StorageClass: opts.StorageClass,
 	}
+	if a.ServerSideEncryption != "" {
+		putObject.SetServerSideEncryption(a.ServerSideEncryption)
+	}
+	if a.ServerSideEncryptionKmsKeyID != "" {
+		putObject.SetSSEKMSKeyId(a.ServerSideEncryptionKmsKeyID)
+	}
+
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
 	sdkRequest, _ := client.PutObjectRequest(&putObject)
 	headers, err := a.streamToS3(ctx, sdkRequest, sizeBytes, reader)
@@ -184,6 +207,12 @@ func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, s
 	req.Header.Set("Transfer-Encoding", "chunked")
 	req.Header.Set("x-amz-content-sha256", StreamingSha256)
 	req.Header.Set("x-amz-decoded-content-length", fmt.Sprintf("%d", sizeBytes))
+	if a.ServerSideEncryption != "" {
+		req.Header.Set("x-amz-server-side-encryption", a.ServerSideEncryption)
+	}
+	if a.ServerSideEncryptionKmsKeyID != "" {
+		req.Header.Set("x-amz-server-side-encryption-aws-kms-key-id", a.ServerSideEncryptionKmsKeyID)
+	}
 	req = req.WithContext(ctx)
 
 	baseSigner := v4.NewSigner(sdkRequest.Config.Credentials)
@@ -262,6 +291,7 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
 	}
+
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
 	objectOutput, err := client.GetObjectWithContext(ctx, &getObjectInput)
 	if isErrNotFound(err) {
@@ -490,6 +520,12 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 		Key:        aws.String(qualifiedDestinationKey.Key),
 		CopySource: aws.String(qualifiedSourceKey.StorageNamespace + "/" + qualifiedSourceKey.Key),
 	}
+	if a.ServerSideEncryption != "" {
+		copyObjectParams.SetServerSideEncryption(a.ServerSideEncryption)
+	}
+	if a.ServerSideEncryptionKmsKeyID != "" {
+		copyObjectParams.SetSSEKMSKeyId(a.ServerSideEncryptionKmsKeyID)
+	}
 	_, err = a.clients.Get(ctx, qualifiedDestinationKey.StorageNamespace).CopyObjectWithContext(ctx, copyObjectParams)
 	if err != nil {
 		a.log(ctx).WithError(err).Error("failed to copy S3 object")
@@ -497,7 +533,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	return err
 }
 
-func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	var err error
 	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
@@ -509,6 +545,12 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 		Key:          aws.String(qualifiedKey.Key),
 		ContentType:  aws.String(""),
 		StorageClass: opts.StorageClass,
+	}
+	if a.ServerSideEncryption != "" {
+		input.SetServerSideEncryption(a.ServerSideEncryption)
+	}
+	if a.ServerSideEncryptionKmsKeyID != "" {
+		input.SetSSEKMSKeyId(a.ServerSideEncryptionKmsKeyID)
 	}
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
 	req, resp := client.CreateMultipartUploadRequest(input)
