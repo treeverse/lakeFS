@@ -163,7 +163,7 @@ type configuration struct {
 			ForcePathStyle                bool          `mapstructure:"force_path_style"`
 			DiscoverBucketRegion          bool          `mapstructure:"discover_bucket_region"`
 			SkipVerifyCertificateTestOnly bool          `mapstructure:"skip_verify_certificate_test_only"`
-			ServerSideEncryption          string        `mapstructure:"server_side_encryption""`
+			ServerSideEncryption          string        `mapstructure:"server_side_encryption"`
 			ServerSideEncryptionKmsKeyID  string        `mapstructure:"server_side_encryption_kms_key_id"`
 		}
 		Azure *struct {
