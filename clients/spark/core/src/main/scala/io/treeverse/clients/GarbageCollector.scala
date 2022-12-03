@@ -333,13 +333,9 @@ object GarbageCollector {
         if (expiredAddresses == null) {
           expiredAddresses = readExpiredAddresses(gcAddressesLocation, markID)
         }
-        val region = if (args.length == 2) args(1) else null
-        // The remove operation uses an SDK client to directly access the underlying storage, and therefore does not need
-        // a translated storage namespace that triggers processing by Hadoop FileSystems.
-        var storageNSForSdkClient = apiClient.getStorageNamespace(repo, StorageClientType.SDKClient)
-        if (!storageNSForSdkClient.endsWith("/")) {
-          storageNSForSdkClient += "/"
-        }
+
+        val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
+        val region = getRegion(args)
 
         remove(configMapper,
                storageNSForSdkClient,
@@ -436,6 +432,20 @@ object GarbageCollector {
     println("Expired addresses:")
     expiredAddresses.show()
     (gcAddressesLocation, gcCommitsLocation, expiredAddresses, runID)
+  }
+
+  def getStorageNSForSdkClient(apiClient: ApiClient, repo: String): String = {
+    // The remove operation uses an SDK client to directly access the underlying storage, and therefore does not need
+    // a translated storage namespace that triggers processing by Hadoop FileSystems.
+    var storageNSForSdkClient = apiClient.getStorageNamespace(repo, StorageClientType.SDKClient)
+    if (!storageNSForSdkClient.endsWith("/")) {
+      storageNSForSdkClient += "/"
+    }
+    storageNSForSdkClient
+  }
+
+  def getRegion(args: Array[String]): String = {
+    if (args.length == 2) args(1) else null
   }
 
   private def readExpiredAddresses(addressesLocation: String, markID: String): DataFrame = {

@@ -2,13 +2,13 @@ package io.treeverse.gc
 
 import io.treeverse.clients.APIConfigurations
 import io.treeverse.clients.ApiClient
+import io.treeverse.clients.GarbageCollector._
 import io.treeverse.clients.LakeFSContext._
 import io.treeverse.clients._
 import org.apache.commons.lang3.time.DateUtils
 import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
-
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
@@ -90,14 +90,15 @@ object UncommittedGarbageCollector {
     val cutoffTime = DateUtils.addSeconds(new Date(), -minAgeSeconds)
     val startTime = java.time.Clock.systemUTC.instant()
 
-    val shouldMark = hc.getBoolean(LAKEFS_CONF_GC_DO_MARK, true)
-    val shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, true)
+    val shouldMark = hc.getBoolean(LAKEFS_CONF_GC_DO_MARK, false)
+    val shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, false)
     val markID = hc.get(LAKEFS_CONF_GC_MARK_ID, "")
 
-    GarbageCollector.validateRunModeConfigs(hc.getBoolean(LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, false),
+    GarbageCollector.validateRunModeConfigs(
+      hc.getBoolean(LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, false),
       shouldMark,
       shouldSweep,
-      hc.get(LAKEFS_CONF_GC_MARK_ID, "")
+      markID
     )
 
     val apiConf =
@@ -154,15 +155,18 @@ object UncommittedGarbageCollector {
           if (markID != "") { // get the expired addresses from the mark id run
             addressesToDelete = readMarkedAddresses(storageNamespace, markID)
           }
+          println("deleting marked addresses: " + markID)
 
-          val region = if (args.length == 2) args(1) else null
-          var storageNSForSdkClient = apiClient.getStorageNamespace(repo, StorageClientType.SDKClient)
-          if (!storageNSForSdkClient.endsWith("/")) {
-            storageNSForSdkClient += "/"
-          }
-          val hcValues = spark.sparkContext.broadcast(HadoopUtils.getHadoopConfigurationValues(hc, "fs.", "lakefs."))
+          val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
+          val region = getRegion(args)
+          val hcValues = spark.sparkContext.broadcast(
+            HadoopUtils.getHadoopConfigurationValues(hc, "fs.", "lakefs.")
+          )
           val configMapper = new ConfigMapper(hcValues)
-          GarbageCollector.bulkRemove(configMapper, addressesToDelete, storageNamespace, region, storageType).toDF()
+
+          GarbageCollector
+            .bulkRemove(configMapper, addressesToDelete, storageNamespace, region, storageType)
+            .toDF()
         } else {
           spark.emptyDataFrame.withColumn("address", lit(""))
         }
@@ -204,8 +208,7 @@ object UncommittedGarbageCollector {
   }
 
   private def reportPath(storageNamespace: String, runID: String): String = {
-    val report = s"${storageNamespace}_lakefs/retention/gc/uncommitted/$runID"
-    report
+    s"${storageNamespace}_lakefs/retention/gc/uncommitted/$runID"
   }
 
   private def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
