@@ -259,10 +259,10 @@ public class LakeFSOutputCommitter extends FileOutputCommitter {
 
             if (hasChanges(jobBranch)) {
                 CommitsApi commits = lakeFSClient.getCommits();
+                CommitCreation commitCreation = new CommitCreation()
+                    .message(String.format("Add results of job %s", jobContext.getJobID()));
                 Commit c =
-                    commits.commit(repository, jobBranch,
-                                   new CommitCreation().message(String.format("Add success marker for job %s", jobContext.getJobID())),
-                                   null);
+                    commits.commit(repository, jobBranch, commitCreation, null);
                 LOG.info("Committed {}", c);
             } else {
                 LOG.info("Nothing to commit to {}", jobBranch);
@@ -274,7 +274,10 @@ public class LakeFSOutputCommitter extends FileOutputCommitter {
             }
             LOG.info("Merge job branch {} into {}", jobBranch, outputBranch);
             RefsApi refs = lakeFSClient.getRefs();
-            refs.mergeIntoBranch(repository, jobBranch, outputBranch, new Merge().message("").strategy("source-wins"));
+            Merge merge = new Merge()
+                .message(String.format("Commit job %s", jobContext.getJobID()))
+                .strategy("source-wins");
+            refs.mergeIntoBranch(repository, jobBranch, outputBranch, merge);
         } catch (ApiException e) {
             throw new IOException(String.format("commitJob %s failed", jobBranch), e);
         }
