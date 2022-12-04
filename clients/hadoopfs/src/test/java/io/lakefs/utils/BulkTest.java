@@ -41,8 +41,9 @@ public class BulkTest {
     protected final String REPO = "repo";
     protected final String REF = "one";
 
+    protected final String tempDir = "foo/bar/_temp/task";
     protected final ObjectStats stats1 = new ObjectStats()
-        .path("foo/bar/_temp/task/baz/zoo")
+        .path(tempDir + "/baz/zoo")
         .physicalAddress("s3://zoo")
         .checksum("1")
         .sizeBytes(11L)
@@ -50,7 +51,7 @@ public class BulkTest {
         .metadata(null)
         .contentType("text/plain");
     protected final ObjectStats stats2 = new ObjectStats()
-        .path("foo/bar/_temp/task/quux/boo")
+        .path(tempDir + "/quux/boo")
         .physicalAddress("s3://garden")
         .checksum("2")
         .sizeBytes(22L)
@@ -58,7 +59,7 @@ public class BulkTest {
         .metadata(null)
         .contentType("text/complex");
     protected final ObjectStats stats3 = new ObjectStats()
-        .path("foo/bar/_temp/task/quux/moo")
+        .path(tempDir + "/quux/moo")
         .physicalAddress("s3://path")
         .checksum("3")
         .sizeBytes(33L)
@@ -86,7 +87,7 @@ public class BulkTest {
     }
 
     protected void checkCopyPrefixSingleItemCase(String src, String dst) throws ApiException {
-        when(objects.listObjects(REPO, REF, true, "", Bulk.BULK_SIZE, "", "foo/bar/_temp/task/"))
+        when(objects.listObjects(REPO, REF, true, "", Bulk.BULK_SIZE, "", tempDir + "/"))
             .thenReturn(new ObjectStatsList()
                         .pagination(new Pagination().hasMore(false).nextOffset("unused"))
                         .results(ImmutableList.of(stats1)));
@@ -97,17 +98,17 @@ public class BulkTest {
 
     @Test
     public void copyPrefix() throws ApiException {
-        checkCopyPrefixSingleItemCase("foo/bar/_temp/task/", "foo/bar/");
+        checkCopyPrefixSingleItemCase(tempDir + "/", "foo/bar/");
     }
 
     @Test
     public void copyPrefixSrcWithoutTrailingSlash() throws ApiException {
-        checkCopyPrefixSingleItemCase("foo/bar/_temp/task", "foo/bar/");
+        checkCopyPrefixSingleItemCase(tempDir, "foo/bar/");
     }
 
     @Test
     public void copyPrefixDstWithoutTrailingSlash() throws ApiException {
-        checkCopyPrefixSingleItemCase("foo/bar/_temp/task/", "foo/bar");
+        checkCopyPrefixSingleItemCase(tempDir + "/", "foo/bar");
     }
 
     @Test
@@ -116,14 +117,14 @@ public class BulkTest {
         ObjectStatsList osl1 = new ObjectStatsList()
             .pagination(new Pagination().hasMore(true).nextOffset(next1))
             .results(ImmutableList.of(stats1, stats2));
-        when(objects.listObjects(REPO, REF, true, "", Bulk.BULK_SIZE, "", "foo/bar/_temp/task/"))
+        when(objects.listObjects(REPO, REF, true, "", Bulk.BULK_SIZE, "", tempDir + "/"))
             .thenReturn(osl1);
         ObjectStatsList osl2 = new ObjectStatsList()
             .pagination(new Pagination().hasMore(false).nextOffset("unused"))
             .results(ImmutableList.of(stats3));
-        when(objects.listObjects(REPO, REF, true, next1, Bulk.BULK_SIZE, "", "foo/bar/_temp/task/"))
+        when(objects.listObjects(REPO, REF, true, next1, Bulk.BULK_SIZE, "", tempDir + "/"))
             .thenReturn(osl2);
-        bulk.copyPrefix(new ObjectLocation(SCHEME, REPO, REF, "foo/bar/_temp/task/"),
+        bulk.copyPrefix(new ObjectLocation(SCHEME, REPO, REF, tempDir + "/"),
                         new ObjectLocation(SCHEME, REPO, REF, "foo/bar/"));
         verify(objects).stageObject(REPO, REF, "foo/bar/baz/zoo", creationFor(stats1));
         verify(objects).stageObject(REPO, REF, "foo/bar/quux/boo", creationFor(stats2));
@@ -132,22 +133,22 @@ public class BulkTest {
 
     @Test
     public void deletePrefix() throws ApiException {
-        when(objects.listObjects(REPO, REF, false, "", Bulk.BULK_SIZE, "", "foo/bar/_temp/task/"))
+        when(objects.listObjects(REPO, REF, false, "", Bulk.BULK_SIZE, "", tempDir + "/"))
             .thenReturn(new ObjectStatsList()
                         .pagination(new Pagination().hasMore(false).nextOffset("unused"))
                         .results(ImmutableList.of(stats1)));
-        bulk.deletePrefix(new ObjectLocation(SCHEME, REPO, REF, "foo/bar/_temp/task/"));
+        bulk.deletePrefix(new ObjectLocation(SCHEME, REPO, REF, tempDir + "/"));
         verify(objects).deleteObjects(REPO, REF, new PathList().
                                       paths(ImmutableList.of(stats1.getPath())));
     }
 
     @Test
     public void deletePrefixWithoutTrailingSlash() throws ApiException {
-        when(objects.listObjects(REPO, REF, false, "", Bulk.BULK_SIZE, "", "foo/bar/_temp/task/"))
+        when(objects.listObjects(REPO, REF, false, "", Bulk.BULK_SIZE, "", tempDir + "/"))
             .thenReturn(new ObjectStatsList()
                         .pagination(new Pagination().hasMore(false).nextOffset("unused"))
                         .results(ImmutableList.of(stats1)));
-        bulk.deletePrefix(new ObjectLocation(SCHEME, REPO, REF, "foo/bar/_temp/task"));
+        bulk.deletePrefix(new ObjectLocation(SCHEME, REPO, REF, tempDir));
         verify(objects).deleteObjects(REPO, REF, new PathList().
                                       paths(ImmutableList.of(stats1.getPath())));
     }
@@ -158,14 +159,14 @@ public class BulkTest {
         ObjectStatsList osl1 = new ObjectStatsList()
             .pagination(new Pagination().hasMore(true).nextOffset(next1))
             .results(ImmutableList.of(stats1, stats2));
-        when(objects.listObjects(REPO, REF, false, "", Bulk.BULK_SIZE, "", "foo/bar/_temp/task/"))
+        when(objects.listObjects(REPO, REF, false, "", Bulk.BULK_SIZE, "", tempDir + "/"))
             .thenReturn(osl1);
         ObjectStatsList osl2 = new ObjectStatsList()
             .pagination(new Pagination().hasMore(false).nextOffset("unused"))
             .results(ImmutableList.of(stats3));
-        when(objects.listObjects(REPO, REF, false, next1, Bulk.BULK_SIZE, "", "foo/bar/_temp/task/"))
+        when(objects.listObjects(REPO, REF, false, next1, Bulk.BULK_SIZE, "", tempDir + "/"))
             .thenReturn(osl2);
-        bulk.deletePrefix(new ObjectLocation(SCHEME, REPO, REF, "foo/bar/_temp/task/"));
+        bulk.deletePrefix(new ObjectLocation(SCHEME, REPO, REF, tempDir + "/"));
         verify(objects).deleteObjects(REPO, REF, new PathList().
                                       paths(ImmutableList.of(stats1.getPath(), stats2.getPath())));
         verify(objects).deleteObjects(REPO, REF, new PathList().
