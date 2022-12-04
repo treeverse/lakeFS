@@ -4,6 +4,7 @@ import io.lakefs.Constants;
 import io.lakefs.FSConfiguration;
 import io.lakefs.LakeFSFileSystem;
 import io.lakefs.LakeFSClient;
+import io.lakefs.utils.Bulk;
 import io.lakefs.utils.ObjectLocation;
 
 import io.lakefs.clients.api.ApiException;
@@ -11,11 +12,11 @@ import io.lakefs.clients.api.BranchesApi;
 import io.lakefs.clients.api.RefsApi;
 import io.lakefs.clients.api.CommitsApi;
 import io.lakefs.clients.api.model.BranchCreation;
+import io.lakefs.clients.api.model.Commit;
 import io.lakefs.clients.api.model.CommitCreation;
 import io.lakefs.clients.api.model.DiffList;
 import io.lakefs.clients.api.model.Merge;
 
-import org.apache.commons.lang.exception.ExceptionUtils; // (for debug prints ONLY)
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.conf.Configuration;
@@ -30,7 +31,7 @@ import org.apache.http.HttpStatus;
 import com.google.common.base.Preconditions;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashFunction;
-    
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +49,9 @@ public class LakeFSOutputCommitter extends FileOutputCommitter {
      * API client connected to the lakeFS server used on the filesystem.
      */
     protected LakeFSClient lakeFSClient = null;
+
+    protected Bulk bulk = null;
+
     /**
      * Repository for files.
      */
@@ -65,20 +69,27 @@ public class LakeFSOutputCommitter extends FileOutputCommitter {
     protected String jobBranch = null;
 
     /**
-     * Branch for this task.  Deleted if the task fails.  Always defined,
+     * ID for this task, if created with a task context.  Always defined,
      * even if this committer is a noop.
      */
-    protected String taskBranch;
+    protected String taskID = null;
 
     /**
      * Output path (possibly supplied to task).  Defined on a task, null if
      * this committer is a noop.
      */
     protected Path outputPath = null;
+
+    /**
+     * Path for this job: outputPath in the job branch.
+     */
+    protected Path jobPath = null;
+
     /**
      * "Working" path for this task: the same as outputPath, but on
-     * taskBranch rather than on outputBranch.  Defined on a task, null if
-     * this committer is a noop.
+     * jobBranch rather than on outputBranch, and under
+     * _temporary/<TASK_ID>.  Defined on a task, null if this committer is a
+     * noop.
      */
     protected Path workPath = null;
 
@@ -107,8 +118,6 @@ public class LakeFSOutputCommitter extends FileOutputCommitter {
 
         this.conf = context.getConfiguration();
 
-        JobID id = context.getJobID();
-
         this.jobBranch = pathToBranch(outputPath);
 
         LOG.info("Construct OC: Job branch: {}", jobBranch);
@@ -118,10 +127,12 @@ public class LakeFSOutputCommitter extends FileOutputCommitter {
             Preconditions.checkArgument(fs instanceof LakeFSFileSystem,
                                         "%s not on a LakeFSFileSystem", outputPath);
             this.lakeFSClient = new LakeFSClient(fs.getScheme(), conf);
+            this.bulk = new Bulk(this.lakeFSClient);
             ObjectLocation outputLocation = ObjectLocation.pathToObjectLocation(null, outputPath);
             this.repository = outputLocation.getRepository();
             this.outputBranch = outputLocation.getRef();
             this.outputPath = fs.makeQualified(outputPath);
+            this.jobPath = changePathBranch(this.outputPath, this.jobBranch);
         }
     }
 
@@ -129,19 +140,19 @@ public class LakeFSOutputCommitter extends FileOutputCommitter {
         this(outputPath, (JobContext)context);
 
         TaskAttemptID id = context.getTaskAttemptID();
-        // TODO(ariels): s/[^-\w]//g on the branch ID, ensuring all chars
-        // are allowed.  (Some) users might manage to create a bad task
-        // name.
-        this.taskBranch = String.format("%s-%s", this.jobBranch, id.toString());
+        // TODO(ariels): Consider removing weird characters from the task
+        //     ID: users who do not use Spark might manage to create a weird
+        //     task name.
+        this.taskID = id.toString();
 
         if (outputPath != null) {
-            this.workPath = changePathBranch(outputPath, this.taskBranch);
-            LOG.trace("Working path: {}", workPath);
+            this.workPath = new Path(this.jobPath, "_temporary/" + this.taskID + "/");
+            LOG.debug("Working path: {}", this.workPath);
         }
     }
 
     private Path changePathBranch(Path path, String branch) {
-        ObjectLocation loc = ObjectLocation.pathToObjectLocation(null, path);
+        ObjectLocation loc = ObjectLocation.pathToObjectLocation(path);
         loc.setRef(branch);
         return loc.toFSPath();
     }
@@ -240,27 +251,40 @@ public class LakeFSOutputCommitter extends FileOutputCommitter {
             boolean changes = false;
 
             if (needsSuccessFile()) {
-                Path markerPath = new Path(changePathBranch(outputPath, jobBranch),
-                                           FileOutputCommitter.SUCCEEDED_FILE_NAME);
+                Path markerPath = new Path(jobPath, FileOutputCommitter.SUCCEEDED_FILE_NAME);
                 fs.create(markerPath, true).close();
-
-                CommitsApi commits = lakeFSClient.getCommits();
-                commits.commit(repository, jobBranch, new CommitCreation().message(String.format("Add success marker for job %s", jobContext.getJobID())), null);
             }
+
+            bulk.deletePrefix(ObjectLocation.pathToObjectLocation(null, new Path(jobPath, "_temporary")));
+
+            if (hasChanges(jobBranch)) {
+                CommitsApi commits = lakeFSClient.getCommits();
+                CommitCreation commitCreation = new CommitCreation()
+                    .message(String.format("Add results of job %s", jobContext.getJobID()));
+                Commit c =
+                    commits.commit(repository, jobBranch, commitCreation, null);
+                LOG.info("Committed {}", c);
+            } else {
+                LOG.info("Nothing to commit to {}", jobBranch);
+            }
+
             if (!hasDiffs(repository, jobBranch, outputBranch)) {
-                LOG.debug("No differences from {} to {}, nothing to merge", jobBranch, outputBranch);
+                LOG.info("No differences from {} to {}, nothing to merge", jobBranch, outputBranch);
                 return;
             }
-            LOG.info("Commit job branch {} to {}", jobBranch, outputBranch);
+            LOG.info("Merge job branch {} into {}", jobBranch, outputBranch);
             RefsApi refs = lakeFSClient.getRefs();
-            refs.mergeIntoBranch(repository, jobBranch, outputBranch, new Merge().message("").strategy("source-wins"));
+            Merge merge = new Merge()
+                .message(String.format("Commit job %s", jobContext.getJobID()))
+                .strategy("source-wins");
+            refs.mergeIntoBranch(repository, jobBranch, outputBranch, merge);
         } catch (ApiException e) {
-            throw new IOException(String.format("commitJob %s failed", jobContext.getJobID()), e);
+            throw new IOException(String.format("commitJob %s failed", jobBranch), e);
         }
         try {
             cleanupJob();
         } catch (IOException e) {
-            LOG.warn("Failed to delete task branch {} after merge (keep going)", taskBranch, e);
+            LOG.warn("Failed to delete job branch {} after merge (keep going)", jobBranch, e);
         }
 
     }
@@ -279,20 +303,7 @@ public class LakeFSOutputCommitter extends FileOutputCommitter {
     }
 
     @Override
-    public void setupTask(TaskAttemptContext taskContext)
-        throws IOException {
-        if (outputPath == null)
-            return;
-        LOG.info("Setup task for {} on {}", taskBranch, jobBranch);
-        createBranch(jobBranch, outputBranch);
-        createBranch(taskBranch, jobBranch);
-    }
-
-    private void cleanupTask() throws IOException {
-        if (FSConfiguration.getBoolean(conf, outputPath.toUri().getScheme(), Constants.OC_DELETE_TASK_BRANCH, true)) {
-            deleteBranch(taskBranch);
-        }
-    }
+    public void setupTask(TaskAttemptContext taskContext) throws IOException {}
 
     @Override
     public void commitTask(TaskAttemptContext taskContext)
@@ -300,42 +311,16 @@ public class LakeFSOutputCommitter extends FileOutputCommitter {
         if (outputPath == null)
             return;
         try {
-            if (!hasChanges(taskBranch)) {
-                LOG.debug("Nothing to commit into {} for {}", taskBranch, jobBranch);
-                return;
-            }
-
-            LOG.info("Commit task branch {} and merge to {}", taskBranch, jobBranch);
-            CommitsApi commits = lakeFSClient.getCommits();
-            commits.commit(repository, taskBranch, new CommitCreation().message(String.format("committing Task %s", taskContext.getTaskAttemptID())), null);
-
-            if (!hasDiffs(repository, taskBranch, jobBranch)) {
-                LOG.info("Strange, after committing no differences from {} to {}, nothing to merge", taskBranch, jobBranch);
-                return;
-            }
-            RefsApi refs = lakeFSClient.getRefs();
-            refs.mergeIntoBranch(repository, taskBranch, jobBranch, new Merge().message(""));
+            LOG.info("Move task {} files from {} to {}", taskID, workPath, jobPath);
+            bulk.copyPrefix(ObjectLocation.pathToObjectLocation(workPath),
+                            ObjectLocation.pathToObjectLocation(jobPath));
         } catch (ApiException e) {
             throw new IOException(String.format("commitTask %s failed", taskContext.getTaskAttemptID()), e);
-        }
-        try {
-            cleanupTask();
-        } catch (IOException e) {
-            LOG.warn("Failed to delete task branch {} after merge (keep going)", taskBranch, e);
         }
     }
 
     @Override
-    public void abortTask(TaskAttemptContext taskContext)
-        throws IOException {    // TODO(lynn)
-        if (outputPath == null)
-            return;
-        try {
-            cleanupTask();
-        } catch (IOException e) {
-            LOG.warn("Failed to delete task branch {} while aborting (keep going)", taskBranch, e);
-        }
-    }
+    public void abortTask(TaskAttemptContext taskContext) throws IOException {}
 
     // TODO(lynn): More methods: isRecoverySupported, isCommitJobRepeatable, recoverTask.
 }
