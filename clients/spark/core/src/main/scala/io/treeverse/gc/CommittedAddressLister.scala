@@ -24,8 +24,12 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
     var df = LakeFSContext.newDF(spark, params)
     df = df
       // TODO (optional): push down a filter to the input format, to filter out absolute addresses!
-      // filtering on != FULL on purpose - required for backwards compatability with entries prior to address_type
-      .filter(col("address_type") =!= AddressType.FULL.name)
+      .filter(
+        (col("address_type") === AddressType.RELATIVE.name) ||
+          // Backwards compatability with entries prior to address_type
+          (col("address_type") === AddressType.BY_PREFIX_DEPRECATED.name &&
+            col("address_type").contains("://"))
+      )
       .select("address")
       .distinct
     df
