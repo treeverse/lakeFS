@@ -2,14 +2,14 @@ package esti
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/go-test/deep"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -17,9 +17,18 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
+	"golang.org/x/exp/slices"
 )
 
-const uncommittedGCRepoName = "ugc"
+const (
+	uncommittedGCRepoName = "ugc"
+	ugcFindingsFilename   = "ugc-findings.json"
+)
+
+type UncommittedFindings struct {
+	All     []string
+	Deleted []string
+}
 
 func TestUncommittedGC(t *testing.T) {
 	SkipTestIfAskedTo(t)
@@ -43,13 +52,8 @@ func testPreUncommittedGC(t *testing.T) {
 	ctx := context.Background()
 	repo := createRepositoryByName(ctx, t, uncommittedGCRepoName)
 
-	// defer tearDownTest(repo)
-	t.Log("Test uncommitted GC on repo", repo)
-
-	const sampleObjects = 3
-
-	// upload and commit some data
-	for i := 0; i < sampleObjects; i++ {
+	// upload some data and commit
+	for i := 0; i < 3; i++ {
 		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "committed/data-"+strconv.Itoa(i), false)
 	}
 	_, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "Commit initial data"})
@@ -57,12 +61,16 @@ func testPreUncommittedGC(t *testing.T) {
 		t.Fatal("Commit some data", err)
 	}
 
-	// upload same file twice and commit (should leave one unused)
-	for i := 0; i < 2; i++ {
-		_, err = uploadFileAndReport(ctx, repo, mainBranch, "double-or-nothing", "double-or-nothing", false)
-		if err != nil {
-			t.Fatalf("Failed to upload double-or-nothing (round %d): %s", i+1, err)
-		}
+	// upload same file twice and commit, keep delete physical location
+	_, err = uploadFileAndReport(ctx, repo, mainBranch, "committed/double-or-nothing", "double-or-nothing-take1", false)
+	if err != nil {
+		t.Fatalf("Failed to upload double-or-nothing I: %s", err)
+	}
+	firstUploaded := objectPhysicalAddress(t, ctx, repo, "committed/double-or-nothing")
+
+	_, err = uploadFileAndReport(ctx, repo, mainBranch, "committed/double-or-nothing", "double-or-nothing-take2", false)
+	if err != nil {
+		t.Fatalf("Failed to upload double-or-nothing II: %s", err)
 	}
 	_, err = client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "Commit initial data"})
 	if err != nil {
@@ -70,33 +78,92 @@ func testPreUncommittedGC(t *testing.T) {
 	}
 
 	// upload uncommitted data
-	for i := 0; i < sampleObjects; i++ {
-		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "uncommitted/data-"+strconv.Itoa(i), false)
+	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "uncommitted/data1", false)
+
+	// unload uncommitted data and delete
+	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "uncommitted/data2", false)
+	deletedUncommitted := objectPhysicalAddress(t, ctx, repo, "uncommitted/data2")
+	delResp, err := client.DeleteObjectWithResponse(ctx, repo, mainBranch, &api.DeleteObjectParams{Path: "uncommitted/data2"})
+	if err != nil {
+		t.Fatalf("Delete object failed: %s", err)
+	}
+	if delResp.StatusCode() != http.StatusNoContent {
+		t.Fatalf("Delete object failed with status code %d", delResp.StatusCode())
 	}
 
-	// write current underlying storage to a file
+	// write findings into a file
 	objects := listRepositoryUnderlyingStorage(t, ctx, repo)
-	preFilename := filepath.Join(os.TempDir(), "per_ugc.txt")
-	err = os.WriteFile(preFilename, []byte(strings.Join(objects, "\n")), 0666)
+	deleted := []string{firstUploaded, deletedUncommitted}
+	findings, err := json.MarshalIndent(
+		UncommittedFindings{
+			All:     objects,
+			Deleted: deleted,
+		}, "", "  ")
 	if err != nil {
-		t.Fatalf("Failed to write objects list to %s: %s", preFilename, err)
+		t.Fatalf("failed to marshal findings: %s", err)
 	}
+	t.Logf("Findings: %s", findings)
+	findingsPath := findingFilePath()
+	err = os.WriteFile(findingsPath, findings, 0o666)
+	if err != nil {
+		t.Fatalf("Failed to write findings file '%s': %s", findingsPath, err)
+	}
+}
+
+func findingFilePath() string {
+	return filepath.Join(os.TempDir(), ugcFindingsFilename)
+}
+
+func objectPhysicalAddress(t *testing.T, ctx context.Context, repo, objPath string) string {
+	resp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: objPath})
+	if err != nil {
+		t.Fatalf("Failed to stat object '%s': %s", objPath, err)
+	}
+	if resp.JSON200 == nil {
+		t.Fatalf("Failed to stat object '%s': status code %d", objPath, resp.StatusCode())
+	}
+	return resp.JSON200.PhysicalAddress
 }
 
 func testPostUncommittedGC(t *testing.T) {
 	ctx := context.Background()
 	const repo = uncommittedGCRepoName
 
-	preFilename := filepath.Join(os.TempDir(), "per_ugc.txt")
-	bytes, err := os.ReadFile(preFilename)
+	findingPath := findingFilePath()
+	bytes, err := os.ReadFile(findingPath)
 	if err != nil {
-		t.Fatalf("Failed to read '%s': %s", preFilename, err)
+		t.Fatalf("Failed to read '%s': %s", findingPath, err)
 	}
-	preObjects := strings.Split(string(bytes), "\n")
+	var findings UncommittedFindings
+	err = json.Unmarshal(bytes, &findings)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal findings '%s': %s", findingPath, err)
+	}
 
+	// list underlying storage
 	objects := listRepositoryUnderlyingStorage(t, ctx, repo)
-	if diff := deep.Equal(preObjects, objects); diff != nil {
-		t.Errorf("Diff found: %s", diff)
+
+	// verify that all previous objects are found or deleted, if needed
+	for _, obj := range findings.All {
+		foundIt := slices.Contains(objects, obj)
+		expectDeleted := slices.Contains(findings.Deleted, obj)
+		if foundIt && expectDeleted {
+			t.Errorf("Object '%s' FOUND - should have been deleted", obj)
+		} else if !foundIt && !expectDeleted {
+			t.Errorf("Object '%s' NOT FOUND - should NOT been deleted", obj)
+		}
+	}
+
+	// verify that we do not have new objects
+	for _, obj := range objects {
+		// skip uncommitted retention reports
+		if strings.Contains(obj, "/_lakefs/retention/gc/uncommitted/") {
+			continue
+		}
+		// verify we know this object
+		if slices.Contains(findings.All, obj) {
+			t.Errorf("Object '%s' FOUND KNOWN - was not found pre ugc", obj)
+		}
 	}
 }
 
@@ -118,7 +185,8 @@ func listRepositoryUnderlyingStorage(t *testing.T, ctx context.Context, repo str
 	}
 
 	s3Client := newDefaultS3Client()
-	return listUnderlyingStorage(t, ctx, s3Client, qp.StorageNamespace, qp.Prefix)
+	objects := listUnderlyingStorage(t, ctx, s3Client, qp.StorageNamespace, qp.Prefix)
+	return objects
 }
 
 func listUnderlyingStorage(t *testing.T, ctx context.Context, s3Client *s3.S3, bucket, prefix string) []string {
@@ -134,9 +202,8 @@ func listUnderlyingStorage(t *testing.T, ctx context.Context, s3Client *s3.S3, b
 	// sorted list of objects found on repository - before ugc
 	var objects []string
 	for _, obj := range listOutput.Contents {
-		objects = append(objects, aws.StringValue(obj.Key))
+		objects = append(objects, fmt.Sprintf("s3://%s/%s", bucket, aws.StringValue(obj.Key)))
 	}
-	sort.Strings(objects)
 	return objects
 }
 
