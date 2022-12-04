@@ -430,9 +430,18 @@ objects that will be collected as part of the uncommitted GC job:
 1. Objects that were uploaded to lakeFS and deleted.
 2. Objects that were uploaded to lakeFS and were overridden.
 
+While we tried to make the uncommitted GC a server-only solution, we couldn't find a sustainable way to achieve that.
+See discussion on the original [design PR](https://github.com/treeverse/lakeFS/pull/4015). 
+{: .note}
+
 The uncommitted GC will not clean:
 1. Committed objects. For committed objects cleanup see [above](#what-gets-collected)
 2. Everything mentioned in [what does not get collected](#what-does-_not_-get-collected)
+
+### Prerequisites
+
+1. lakeFS server version must be at least <TODO>. If your version is lower, you should first upgrade.
+2.
 
 To run the uncommitted GC job run:
   ```bash
@@ -447,6 +456,9 @@ spark-submit \
           lakefs-spark-client-<VERSION>-assembly-<TODO>.jar \
     <REPO_NAME> <TODO_OUTPUT_LOCATION>
 ```
+
+
+
 
 #### Uncommitted GC job options
 
@@ -476,15 +488,15 @@ single job for it.
    1. better parallelization of the storage namespace traversal.
    2. Optimized Run: GC will only iterate over objects that were written to the
 repository since the last GC run. For more information see the [proposal](https://github.com/treeverse/lakeFS/blob/master/design/accepted/gc_plus/uncommitted-gc.md#flow-2-optimized-run).
-4. Backup & Restore, just like for [committed data](#gc-backup-and-restore).
+4. Backup & Restore, similar to [committed data](#gc-backup-and-restore).
 5. Support for non-S3 repositories.
 
 #### Performance
 {: .no_toc }
 
-The uncommitted GC job was tested on a repository with <> branches, 
-<> uncommitted objects and <> commits.
-Storage namespace number of objects prior to the cleanup was <> objects.
-The job ran on a Spark cluster with <> workers of size <>.
-The job finished at <> deleting <> objects.
+The uncommitted GC job was tested on a repository with 1K branches, 
+25K uncommitted objects and 2K commits.
+The storage namespace number of objects prior to the cleanup was 103K objects.
+The job ran on a Spark cluster with a single master and 2 workers of type [i3.2xlarge](https://aws.amazon.com/ec2/instance-types/i3/) 
+The job finished after 5 minutes deleting 15K objects.
 
