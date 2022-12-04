@@ -339,6 +339,8 @@ var runCmd = &cobra.Command{
 			}),
 		}
 
+		actionsService.SetEndpoint(server)
+
 		go func() {
 			if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				fmt.Printf("server failed to listen on %s: %v\n", cfg.GetListenAddress(), err)

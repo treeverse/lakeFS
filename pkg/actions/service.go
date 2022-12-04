@@ -8,8 +8,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
+
+	"github.com/treeverse/lakefs/pkg/auth"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -46,6 +49,8 @@ type StoreService struct {
 	wg       sync.WaitGroup
 	stats    stats.Collector
 	runHooks bool
+
+	endpoint *http.Server
 }
 
 type Task struct {
@@ -206,13 +211,29 @@ func (s *StoreService) Stop() {
 	s.wg.Wait()
 }
 
-func (s *StoreService) asyncRun(record graveler.HookRecord) {
+func (s *StoreService) SetEndpoint(h *http.Server) {
+	s.endpoint = h
+}
+
+func (s *StoreService) asyncRun(ctx context.Context, record graveler.HookRecord) {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
+		// load the user from the original context
+		user, err := auth.GetUser(ctx)
+		if err != nil {
+			if !errors.Is(err, auth.ErrUserNotFound) {
+				logging.FromContext(s.ctx).WithError(err).WithField("record", record).
+					Info("Failed getting user from context")
+			} else {
+				ctx = s.ctx
+			}
+		} else {
+			ctx = auth.WithUser(s.ctx, user)
+		}
 
-		// passing the global context for cancelling all runs when lakeFS shuts down
-		if err := s.Run(s.ctx, record); err != nil {
+		// passing the global (possibly wrapped) context for cancelling all runs when lakeFS shuts down
+		if err := s.Run(ctx, record); err != nil {
 			logging.FromContext(s.ctx).WithError(err).WithField("record", record).
 				Info("Async run of hook failed")
 		}
@@ -267,7 +288,7 @@ func (s *StoreService) allocateTasks(runID string, actions []*Action) ([][]*Task
 	for actionIdx, action := range actions {
 		var actionTasks []*Task
 		for hookIdx, hook := range action.Hooks {
-			h, err := NewHook(hook, action)
+			h, err := NewHook(hook, action, s.endpoint)
 			if err != nil {
 				return nil, err
 			}
@@ -444,7 +465,7 @@ func (s *StoreService) PostCommitHook(ctx context.Context, record graveler.HookR
 		return err
 	}
 
-	s.asyncRun(record)
+	s.asyncRun(ctx, record)
 	return nil
 }
 
@@ -459,7 +480,7 @@ func (s *StoreService) PostMergeHook(ctx context.Context, record graveler.HookRe
 		return err
 	}
 
-	s.asyncRun(record)
+	s.asyncRun(ctx, record)
 	return nil
 }
 
@@ -467,32 +488,32 @@ func (s *StoreService) PreCreateTagHook(ctx context.Context, record graveler.Hoo
 	return s.Run(ctx, record)
 }
 
-func (s *StoreService) PostCreateTagHook(_ context.Context, record graveler.HookRecord) {
-	s.asyncRun(record)
+func (s *StoreService) PostCreateTagHook(ctx context.Context, record graveler.HookRecord) {
+	s.asyncRun(ctx, record)
 }
 
 func (s *StoreService) PreDeleteTagHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *StoreService) PostDeleteTagHook(_ context.Context, record graveler.HookRecord) {
-	s.asyncRun(record)
+func (s *StoreService) PostDeleteTagHook(ctx context.Context, record graveler.HookRecord) {
+	s.asyncRun(ctx, record)
 }
 
 func (s *StoreService) PreCreateBranchHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *StoreService) PostCreateBranchHook(_ context.Context, record graveler.HookRecord) {
-	s.asyncRun(record)
+func (s *StoreService) PostCreateBranchHook(ctx context.Context, record graveler.HookRecord) {
+	s.asyncRun(ctx, record)
 }
 
 func (s *StoreService) PreDeleteBranchHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *StoreService) PostDeleteBranchHook(_ context.Context, record graveler.HookRecord) {
-	s.asyncRun(record)
+func (s *StoreService) PostDeleteBranchHook(ctx context.Context, record graveler.HookRecord) {
+	s.asyncRun(ctx, record)
 }
 
 func (s *StoreService) NewRunID() string {

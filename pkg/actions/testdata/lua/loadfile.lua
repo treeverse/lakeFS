@@ -1,0 +1,2 @@
+
+f = loadfile("foo.lua")

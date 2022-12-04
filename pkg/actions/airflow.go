@@ -55,11 +55,12 @@ var (
 	errAirflowHookDAGFailed     = errors.New("airflow hook DAG failed")
 )
 
-func NewAirflowHook(h ActionHook, action *Action) (Hook, error) {
+func NewAirflowHook(h ActionHook, action *Action, endpoint *http.Server) (Hook, error) {
 	airflowHook := Airflow{
 		HookBase: HookBase{
 			ID:         h.ID,
 			ActionName: action.Name,
+			Endpoint:   endpoint,
 		},
 		DAGConf: map[string]interface{}{},
 		Timeout: airflowDefaultTimeout,

@@ -69,6 +69,7 @@ clean:
 		pkg/auth/client.gen.go \
 		pkg/graveler/sstable/mock \
 	    pkg/graveler/committed/mock \
+		pkg/onboard/mock \
 	    pkg/graveler/mock \
 	    pkg/kv/mock
 

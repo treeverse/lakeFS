@@ -45,6 +45,12 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// if request already authenticated
+			if _, userNotFoundErr := auth.GetUser(r.Context()); userNotFoundErr == nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			securityRequirements, err := extractSecurityRequirements(router, r)
 			if err != nil {
 				writeError(w, http.StatusBadRequest, err)
@@ -56,7 +62,7 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 				return
 			}
 			if user != nil {
-				r = r.WithContext(context.WithValue(r.Context(), UserContextKey, user))
+				r = r.WithContext(auth.WithUser(r.Context(), user))
 			}
 			next.ServeHTTP(w, r)
 		})
