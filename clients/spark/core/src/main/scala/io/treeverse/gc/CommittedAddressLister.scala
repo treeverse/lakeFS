@@ -4,7 +4,8 @@ import org.apache.spark.sql.DataFrame
 import io.treeverse.clients.LakeFSContext
 import org.apache.spark.sql.SparkSession
 import io.treeverse.clients.LakeFSJobParams
-import org.apache.spark.sql.functions._
+import io.treeverse.lakefs.catalog.Entry.AddressType
+import org.apache.spark.sql.functions.col
 
 trait CommittedAddressLister {
   def listCommittedAddresses(spark: SparkSession, storageNamespace: String): DataFrame
@@ -20,14 +21,14 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
     )
     var df = LakeFSContext.newDF(spark, params)
     df = df
+      // TODO (optional): push down a filter to the input format, to filter out absolute addresses!
+      .filter(
+        (col("address_type") === AddressType.RELATIVE.name) ||
+          // Backwards compatability with entries prior to address_type
+          (col("address_type") === AddressType.BY_PREFIX_DEPRECATED.name &&
+            !col("address_type").contains("://"))
+      )
       .select("address")
-      .withColumn("absolute_address", concat(lit(normalizedStorageNamespace), df("address")))
-    // TODO push down a filter to the input format, to filter out absolute addresses!
-    df = df
-      // TODO (niro): Revert substring after https://github.com/treeverse/lakeFS/issues/4699
-      .select(df("absolute_address"),
-              substring_index(col("absolute_address"), normalizedStorageNamespace, -1).as("address")
-             )
       .distinct
     df
   }
