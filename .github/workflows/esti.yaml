@@ -85,6 +85,8 @@ jobs:
     runs-on: ubuntu-latest-16-cores
     outputs:
       tag: ${{ steps.version.outputs.tag }}
+    env:
+      DOCKER_BUILDKIT: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v3
