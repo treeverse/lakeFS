@@ -49,11 +49,12 @@ public class Bulk {
         ensureTrailingSlash(prefixLoc);
 
         String after = "";
-        for (;;) {              // break within loop
+        Pagination page;
+        do {
             ObjectStatsList o =
                 objects.listObjects(prefixLoc.getRepository(), prefixLoc.getRef(), false,
                                     after, BULK_SIZE, "", prefixLoc.getPath());
-            Pagination page = o.getPagination();
+            page = o.getPagination();
             after = page.getNextOffset();
             if (o.getResults().isEmpty()) {
                 break;
@@ -72,11 +73,7 @@ public class Bulk {
             LOG.info("{}/{}: Delete objects range {}..{}",
                      prefixLoc.getRepository(), prefixLoc.getRef(), p.getPaths().get(0), lastPath);
             objects.deleteObjects(prefixLoc.getRepository(), prefixLoc.getRef(), p);
-
-            if (!page.getHasMore()) {
-                break;
-            }
-        }
+        } while (page.getHasMore());
     }
 
     public void copyPrefix(ObjectLocation fromLoc, ObjectLocation toLoc) throws ApiException {
@@ -85,11 +82,12 @@ public class Bulk {
         ensureTrailingSlash(fromLoc);
         ensureTrailingSlash(toLoc);
         Path listBase = new ObjectLocation(fromLoc.getScheme(), fromLoc.getRepository(), fromLoc.getRef()).toFSPath();
-        for (;;) {              // break within loop
+        Pagination page;
+        do {
             ObjectStatsList o =
                 objects.listObjects(fromLoc.getRepository(), fromLoc.getRef(), true,
                                     after, BULK_SIZE, "", fromLoc.getPath());
-            Pagination page = o.getPagination();
+            page = o.getPagination();
             after = page.getNextOffset();
 
             for (ObjectStats stats : o.getResults()) {
@@ -100,8 +98,7 @@ public class Bulk {
                 } else {
                     throw new RuntimeException(String.format("[I] %s does not have expected prefix %s", src, fromLoc));
                 }
-                // BUG(ariels): trace this!
-                LOG.info("{} -> {}", src, dst);
+                LOG.trace("{} -> {}", src, dst);
                 // TODO(ariels): Support upcoming copy-on-staging API.
                 ObjectStageCreation stage = new ObjectStageCreation()
                     .physicalAddress(stats.getPhysicalAddress())
@@ -112,9 +109,6 @@ public class Bulk {
                     .contentType(stats.getContentType());
                 objects.stageObject(dst.getRepository(), dst.getRef(), dst.getPath(), stage);
             }
-            if (!page.getHasMore()) {
-                break;
-            }
-        }
+        } while (page.getHasMore());
     }
 }
