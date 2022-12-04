@@ -28,7 +28,7 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
         (col("address_type") === AddressType.RELATIVE.name) ||
           // Backwards compatability with entries prior to address_type
           (col("address_type") === AddressType.BY_PREFIX_DEPRECATED.name &&
-            col("address_type").contains("://"))
+            !col("address_type").contains("://"))
       )
       .select("address")
       .distinct
