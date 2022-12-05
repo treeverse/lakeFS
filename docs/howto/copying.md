@@ -10,8 +10,7 @@ redirect_from:
   - ../integrations/rclone.html
 ---
 
-
-## using DistCp
+## Using DistCp
 
 Apache Hadoop [DistCp](https://hadoop.apache.org/docs/current/hadoop-distcp/DistCp.html){:target="_blank"} (distributed copy) is a tool used for large inter/intra-cluster copying. You can easily use it with your lakeFS repositories.
 {% include toc.html %}

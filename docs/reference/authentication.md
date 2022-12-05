@@ -37,8 +37,7 @@ at Administration / My Credentials. lakeFS generates an internal user once
 logged in via the LDAP server. Adding this internal user to a group allows
 assigning them a different policy.
 
-Configure the LDAP server using these [fields in
-`auth.ldap`](configuration.html#ldap):
+Configure the LDAP server using the [configuration fields](../reference/configuration.md):
 
 * `server_endpoint`: the `ldaps:` (or `ldap:`) URL of the LDAP server.
 * `bind_dn`, `bind_password`: Credentials for lakeFS to use to query the

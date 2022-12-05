@@ -15,7 +15,7 @@ has_children: false
 lakeFS is format-agnostic, so you can save data in Delta format within a lakeFS repository to reap the benefits of both technologies. Specifically:
 
 1. ACID operations can now span across many Delta tables.
-1. [CI/CD hooks](../setup/hooks.md) can validate Delta table contents, schema, or even referential integrity.
+1. [CI/CD hooks](../use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates) can validate Delta table contents, schema, or even referential integrity.
 1. lakeFS supports zero-copy branching for quick experimentation with full isolation.
 
 {% include toc.html %}
@@ -25,7 +25,7 @@ lakeFS is format-agnostic, so you can save data in Delta format within a lakeFS 
 
 Most commonly, you interact with Delta tables in a Spark environment - given the native integration between Delta Lake and Spark.
 
-To configure a Spark environment to read from and write to a Delta table within a lakeFS repository, you need to set the proper credentials and endpoint in the S3 Hadoop configuration, like you'd do with any [Spark](./spark.md#configuration).
+To configure a Spark environment to read from and write to a Delta table within a lakeFS repository, you need to set the proper credentials and endpoint in the S3 Hadoop configuration, like you'd do with any [Spark](./spark.md).
 
 
 Once set, you can interact with Delta tables using regular Spark path URIs. Make sure that you include the lakeFS repository and branch name:
