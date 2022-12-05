@@ -35,10 +35,12 @@ trait BulkRemover {
   def constructRemoveKeyNames(
       keys: Seq[String],
       storageNamespace: String,
+      keepNsSchemeAndHost: Boolean = true,
       applyUTF8Encoding: Boolean = false
   ): Seq[String] = {
     println("storageNamespace: " + storageNamespace)
-    var removeKeyNames = StorageUtils.concatKeysToStorageNamespace(keys, storageNamespace)
+    var removeKeyNames =
+      StorageUtils.concatKeysToStorageNamespace(keys, storageNamespace, keepNsSchemeAndHost)
     if (applyUTF8Encoding) {
       removeKeyNames = removeKeyNames
         .map(x => x.getBytes(Charset.forName("UTF-8")))
@@ -64,7 +66,7 @@ object BulkRemoverFactory {
     val bucket = uri.getHost
 
     override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
-      val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace)
+      val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, false)
       println("Remove keys:", removeKeyNames.take(100).mkString(", "))
       val removeKeys = removeKeyNames.map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
 
