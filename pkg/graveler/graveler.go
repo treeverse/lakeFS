@@ -783,7 +783,7 @@ type StagingManager interface {
 	Update(ctx context.Context, st StagingToken, key Key, updateFunc ValueUpdateFunc) error
 
 	// List returns a ValueIterator for the given staging token
-	List(ctx context.Context, st StagingToken, batchSize int) (ValueIterator, error)
+	List(ctx context.Context, st StagingToken, prefix Key, batchSize int) (ValueIterator, error)
 
 	// DropKey clears a value by staging token and key
 	DropKey(ctx context.Context, st StagingToken, key Key) error
@@ -1564,7 +1564,7 @@ func (g *KVGraveler) listStagingArea(ctx context.Context, b *Branch, prefix Key)
 	if b.StagingToken == "" {
 		return nil, ErrNotFound
 	}
-	it, err := g.StagingManager.List(ctx, b.StagingToken, 1)
+	it, err := g.StagingManager.List(ctx, b.StagingToken, prefix, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -1573,7 +1573,7 @@ func (g *KVGraveler) listStagingArea(ctx context.Context, b *Branch, prefix Key)
 		return it, nil
 	}
 
-	itrs, err := g.listSealedTokens(ctx, b)
+	itrs, err := g.listSealedTokens(ctx, b, prefix)
 	if err != nil {
 		it.Close()
 		return nil, err
@@ -1582,10 +1582,10 @@ func (g *KVGraveler) listStagingArea(ctx context.Context, b *Branch, prefix Key)
 	return NewCombinedIterator(itrs...), nil
 }
 
-func (g *KVGraveler) listSealedTokens(ctx context.Context, b *Branch) ([]ValueIterator, error) {
+func (g *KVGraveler) listSealedTokens(ctx context.Context, b *Branch, prefix Key) ([]ValueIterator, error) {
 	itrs := make([]ValueIterator, 0, len(b.SealedTokens))
 	for _, st := range b.SealedTokens {
-		it, err := g.StagingManager.List(ctx, st, 1)
+		it, err := g.StagingManager.List(ctx, st, prefix, 1)
 		if err != nil {
 			for _, it = range itrs {
 				it.Close()
@@ -1598,7 +1598,7 @@ func (g *KVGraveler) listSealedTokens(ctx context.Context, b *Branch) ([]ValueIt
 }
 
 func (g *KVGraveler) sealedTokensIterator(ctx context.Context, b *Branch) (ValueIterator, error) {
-	itrs, err := g.listSealedTokens(ctx, b)
+	itrs, err := g.listSealedTokens(ctx, b, nil)
 	if err != nil {
 		return nil, err
 	}

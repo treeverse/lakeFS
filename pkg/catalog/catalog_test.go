@@ -663,7 +663,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).Times(expectedCalls).Return(gUtils.NewFakeBranchIterator(branches), nil)
 
 	for i := 0; i < len(branches); i++ {
-		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, gomock.Any()).AnyTimes().Return(cUtils.NewFakeValueIterator(records[i]), nil)
+		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, nil, gomock.Any()).AnyTimes().Return(cUtils.NewFakeValueIterator(records[i]), nil)
 	}
 	if numRecords*numBranches > 0 {
 		test.GarbageCollectionManager.EXPECT().GetUncommittedLocation(gomock.Any(), gomock.Any()).Times(expectedCalls).DoAndReturn(func(runID string, sn graveler.StorageNamespace) (string, error) {

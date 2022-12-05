@@ -81,6 +81,10 @@ type Store interface {
 	// partitionKey is optional, passing it might increase performance.
 	Scan(ctx context.Context, partitionKey, start []byte) (EntriesIterator, error)
 
+	// ScanWithPrefix returns entries that can be read by key order, starting at or after the `start` position
+	// partitionKey is optional, passing it might increase performance.
+	ScanWithPrefix(ctx context.Context, partitionKey, prefix []byte, start []byte) (EntriesIterator, error)
+
 	// Close access to the database store. After calling Close the instance is unusable.
 	Close()
 }

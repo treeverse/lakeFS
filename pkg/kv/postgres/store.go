@@ -27,6 +27,7 @@ type Store struct {
 
 type EntriesIterator struct {
 	ctx          context.Context
+	prefix       []byte
 	entries      []kv.Entry
 	currEntryIdx int
 	err          error
@@ -279,23 +280,33 @@ func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.Entrie
 		return nil, kv.ErrMissingPartitionKey
 	}
 
-	return s.scanInternal(ctx, partitionKey, start, true)
+	return s.scanInternal(ctx, partitionKey, nil, start, true)
 }
 
-func (s *Store) scanInternal(ctx context.Context, partitionKey, start []byte, includeStart bool) (*EntriesIterator, error) {
+func (s *Store) ScanWithPrefix(ctx context.Context, partitionKey, prefix, start []byte) (kv.EntriesIterator, error) {
+	if len(partitionKey) == 0 {
+		return nil, kv.ErrMissingPartitionKey
+	}
+
+	return s.scanInternal(ctx, partitionKey, prefix, start, true)
+}
+
+func (s *Store) scanInternal(ctx context.Context, partitionKey, prefix, start []byte, includeStart bool) (*EntriesIterator, error) {
 	var (
 		rows pgx.Rows
 		err  error
 	)
 
+	likePrefix := append(prefix, byte('%'))
+
 	if start == nil {
-		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 ORDER BY key LIMIT $2`, partitionKey, s.Params.ScanPageSize)
+		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key LIKE $2 ORDER BY key LIMIT $3`, partitionKey, likePrefix, s.Params.ScanPageSize)
 	} else {
 		compareOp := ">="
 		if !includeStart {
 			compareOp = ">"
 		}
-		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key `+compareOp+` $2 ORDER BY key LIMIT $3`, partitionKey, start, s.Params.ScanPageSize)
+		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key LIKE $2 AND key `+compareOp+` $3 ORDER BY key LIMIT $4`, partitionKey, likePrefix, start, s.Params.ScanPageSize)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("postgres scan: %w", err)
@@ -310,6 +321,7 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, start []byte, in
 
 	return &EntriesIterator{
 		ctx:          ctx,
+		prefix:       prefix,
 		entries:      entries,
 		currEntryIdx: -1,
 		store:        s,
@@ -335,7 +347,7 @@ func (e *EntriesIterator) Next() bool {
 		if e.currEntryIdx == 0 {
 			return false
 		}
-		tmpIter, err := e.store.scanInternal(e.ctx, e.entries[e.currEntryIdx-1].PartitionKey, e.entries[e.currEntryIdx-1].Key, false)
+		tmpIter, err := e.store.scanInternal(e.ctx, e.entries[e.currEntryIdx-1].PartitionKey, e.prefix, e.entries[e.currEntryIdx-1].Key, false)
 		if err != nil {
 			e.err = fmt.Errorf("scan paging: %w", err)
 			return false

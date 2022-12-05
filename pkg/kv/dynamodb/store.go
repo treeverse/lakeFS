@@ -32,6 +32,7 @@ type EntriesIterator struct {
 	queryResult  *dynamodb.QueryOutput
 	currEntryIdx int
 	partKey      []byte
+	prefixKey    []byte
 	startKey     []byte
 }
 
@@ -302,14 +303,18 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 }
 
 func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.EntriesIterator, error) {
-	internalIter, err := s.scanInternal(ctx, partitionKey, start, nil)
+	return s.ScanWithPrefix(ctx, partitionKey, nil, start)
+}
+
+func (s *Store) ScanWithPrefix(ctx context.Context, partitionKey, prefix, start []byte) (kv.EntriesIterator, error) {
+	internalIter, err := s.scanInternal(ctx, partitionKey, prefix, start, nil)
 	if err != nil {
 		return nil, err
 	}
 	return internalIter, nil
 }
 
-func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, exclusiveStartKey map[string]*dynamodb.AttributeValue) (*EntriesIterator, error) {
+func (s *Store) scanInternal(ctx context.Context, partitionKey, prefix, scanKey []byte, exclusiveStartKey map[string]*dynamodb.AttributeValue) (*EntriesIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
@@ -319,6 +324,14 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, 
 			B: partitionKey,
 		},
 	}
+
+	if len(prefix) > 0 {
+		keyConditionExpression += " AND begins_with(" + ItemKey + ", :prefixkey)"
+		expressionAttributeValues[":prefixkey"] = &dynamodb.AttributeValue{
+			B: prefix,
+		}
+	}
+
 	if len(scanKey) > 0 {
 		keyConditionExpression += " AND " + ItemKey + " >= :fromkey"
 		expressionAttributeValues[":fromkey"] = &dynamodb.AttributeValue{
@@ -352,6 +365,7 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, 
 		scanCtx:      ctx,
 		store:        s,
 		partKey:      partitionKey,
+		prefixKey:    prefix,
 		startKey:     scanKey,
 		queryResult:  queryOutput,
 		currEntryIdx: 0,
@@ -386,7 +400,7 @@ func (e *EntriesIterator) Next() bool {
 		if e.queryResult.LastEvaluatedKey == nil {
 			return false
 		}
-		tmpEntriesIter, err := e.store.scanInternal(e.scanCtx, e.partKey, e.startKey, e.queryResult.LastEvaluatedKey)
+		tmpEntriesIter, err := e.store.scanInternal(e.scanCtx, e.partKey, e.prefixKey, e.startKey, e.queryResult.LastEvaluatedKey)
 		if err != nil {
 			e.err = fmt.Errorf("scan paging: %w", err)
 			return false

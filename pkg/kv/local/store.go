@@ -183,8 +183,13 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 }
 
 func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.EntriesIterator, error) {
+	return s.ScanWithPrefix(ctx, partitionKey, nil, start)
+}
+
+func (s *Store) ScanWithPrefix(ctx context.Context, partitionKey, prefix, start []byte) (kv.EntriesIterator, error) {
 	log := s.logger.WithFields(logging.Fields{
 		"partition_key": string(partitionKey),
+		"prefix":        prefix,
 		"start_key":     string(start),
 		"op":            "scan",
 	}).WithContext(ctx)
@@ -194,7 +199,7 @@ func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.Entrie
 		return nil, kv.ErrMissingPartitionKey
 	}
 
-	return newEntriesIterator(log, s.db, partitionKey, start, s.prefetchSize), nil
+	return newEntriesIterator(log, s.db, partitionKey, prefix, start, s.prefetchSize), nil
 }
 
 func (s *Store) Close() {

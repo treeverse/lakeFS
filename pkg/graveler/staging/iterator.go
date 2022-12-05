@@ -1,6 +1,7 @@
 package staging
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -8,20 +9,25 @@ import (
 )
 
 type Iterator struct {
-	ctx   context.Context
-	store kv.StoreMessage
-	itr   *kv.PartitionIterator
-	entry *graveler.ValueRecord
-	err   error
+	ctx    context.Context
+	store  kv.StoreMessage
+	prefix graveler.Key
+	itr    *kv.PartitionIterator
+	entry  *graveler.ValueRecord
+	err    error
 }
 
 // NewStagingIterator initiates the staging iterator with a batchSize
-func NewStagingIterator(ctx context.Context, store kv.StoreMessage, st graveler.StagingToken) (*Iterator, error) {
+func NewStagingIterator(ctx context.Context, store kv.StoreMessage, st graveler.StagingToken, prefix graveler.Key) (*Iterator, error) {
 	itr := kv.NewPartitionIterator(ctx, store.Store, (&graveler.StagedEntryData{}).ProtoReflect().Type(), graveler.StagingTokenPartition(st))
+	if prefix != nil {
+		itr.SeekGE(prefix)
+	}
 	return &Iterator{
-		ctx:   ctx,
-		store: store,
-		itr:   itr,
+		ctx:    ctx,
+		store:  store,
+		prefix: prefix,
+		itr:    itr,
 	}, nil
 }
 
@@ -39,6 +45,9 @@ func (s *Iterator) Next() bool {
 		return false
 	}
 	key := entry.Value.(*graveler.StagedEntryData).Key
+	if !bytes.HasPrefix(key, s.prefix) {
+		return false
+	}
 	value := graveler.StagedEntryFromProto(entry.Value.(*graveler.StagedEntryData))
 	s.entry = &graveler.ValueRecord{
 		Key:   key,

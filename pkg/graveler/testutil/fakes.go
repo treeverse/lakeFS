@@ -195,14 +195,16 @@ func (s *StagingFake) DropKey(_ context.Context, _ graveler.StagingToken, key gr
 	return nil
 }
 
-func (s *StagingFake) List(_ context.Context, st graveler.StagingToken, _ int) (graveler.ValueIterator, error) {
+func (s *StagingFake) List(_ context.Context, st graveler.StagingToken, prefix graveler.Key, _ int) (graveler.ValueIterator, error) {
 	if s.Err != nil {
 		return nil, s.Err
 	}
 	if s.Values != nil && s.Values[st.String()] != nil {
 		keys := make([]string, 0)
 		for k := range s.Values[st.String()] {
-			keys = append(keys, k)
+			if bytes.HasPrefix([]byte(k), prefix) {
+				keys = append(keys, k)
+			}
 		}
 		sort.Strings(keys)
 		values := make([]graveler.ValueRecord, 0)

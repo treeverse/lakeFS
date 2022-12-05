@@ -43,6 +43,10 @@ func (m *MockStore) Scan(_ context.Context, _, _ []byte) (kv.EntriesIterator, er
 	return nil, errNotImplemented
 }
 
+func (m *MockStore) ScanWithPrefix(_ context.Context, _, _, _ []byte) (kv.EntriesIterator, error) {
+	return nil, errNotImplemented
+}
+
 func (m *MockStore) Close() {}
 
 func (m *MockDriver) Open(_ context.Context, params kvparams.KV) (kv.Store, error) {

@@ -19,12 +19,12 @@ type EntriesIterator struct {
 	logger       logging.Logger
 }
 
-func newEntriesIterator(logger logging.Logger, db *badger.DB, partitionKey, start []byte, prefetchSize int) *EntriesIterator {
-	prefix := partitionRange(partitionKey)
+func newEntriesIterator(logger logging.Logger, db *badger.DB, partitionKey, prefix, start []byte, prefetchSize int) *EntriesIterator {
+	keyPrefix := append(partitionRange(partitionKey), prefix...)
 	txn := db.NewTransaction(false)
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchSize = prefetchSize
-	opts.Prefix = prefix
+	opts.Prefix = keyPrefix
 	iter := txn.NewIterator(opts)
 	return &EntriesIterator{
 		iter:         iter,

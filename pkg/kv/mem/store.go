@@ -26,6 +26,7 @@ type Store struct {
 type EntriesIterator struct {
 	entry     *kv.Entry
 	err       error
+	prefix    []byte
 	start     []byte
 	partition string
 	store     *Store
@@ -145,13 +146,18 @@ func (s *Store) Delete(_ context.Context, partitionKey, key []byte) error {
 	return nil
 }
 
-func (s *Store) Scan(_ context.Context, partitionKey, start []byte) (kv.EntriesIterator, error) {
+func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.EntriesIterator, error) {
+	return s.ScanWithPrefix(ctx, partitionKey, nil, start)
+}
+
+func (s *Store) ScanWithPrefix(ctx context.Context, partitionKey, prefix, start []byte) (kv.EntriesIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
 
 	return &EntriesIterator{
 		store:     s,
+		prefix:    prefix,
 		start:     start,
 		partition: string(partitionKey),
 	}, nil
@@ -170,7 +176,7 @@ func (e *EntriesIterator) Next() bool {
 	l := make([]*kv.Entry, 0)
 	if _, ok := e.store.m[e.partition]; ok {
 		for _, v := range e.store.m[e.partition] {
-			if bytes.Compare(v.Key, e.start) >= 0 {
+			if bytes.HasPrefix(v.Key, e.prefix) && bytes.Compare(v.Key, e.start) >= 0 {
 				entry := v
 				l = append(l, &entry)
 			}
