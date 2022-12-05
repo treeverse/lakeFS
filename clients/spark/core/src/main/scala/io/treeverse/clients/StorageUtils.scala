@@ -9,7 +9,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import java.net.URI
 import java.nio.charset.Charset
 
-trait ObjectPathConstructor {
+trait ObjectPathBuilder {
 
   /** Constructs object paths in a storage namespace.
    *
@@ -30,7 +30,7 @@ object StorageUtils {
   val StorageTypeS3 = "s3"
   val StorageTypeAzure = "azure"
 
-  object AzureBlob extends ObjectPathConstructor {
+  object AzureBlob extends ObjectPathBuilder {
     val StorageAccountKeyPropertyPattern =
       "fs.azure.account.key.<storageAccountName>.dfs.core.windows.net"
     val StorageAccNamePlaceHolder = "<storageAccountName>"
@@ -68,7 +68,7 @@ object StorageUtils {
     }
   }
 
-  object S3 extends ObjectPathConstructor {
+  object S3 extends ObjectPathBuilder {
     val S3MaxBulkSize = 1000
     val S3NumRetries = 1000
     val logger: Logger = LoggerFactory.getLogger(getClass.toString)
