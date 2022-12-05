@@ -392,6 +392,11 @@ type KeyValueStore interface {
 	// List lists values on repository / ref
 	List(ctx context.Context, repository *RepositoryRecord, ref Ref) (ValueIterator, error)
 
+	// ListWithPrefix lists values on repository / ref whose keys start
+	// with prefix.  This avoids fetching batches that might not start
+	// with prefix.
+	ListWithPrefix(ctx context.Context, repository *RepositoryRecord, ref Ref, prefix Key) (ValueIterator, error)
+
 	// ListStaging returns ValueIterator for branch staging area. Exposed to be used by catalog in PrepareGCUncommitted
 	ListStaging(ctx context.Context, branch *Branch) (ValueIterator, error)
 }
@@ -1550,12 +1555,12 @@ func (g *KVGraveler) deleteUnsafe(ctx context.Context, repository *RepositoryRec
 
 // ListStaging Exposing listStagingArea to catalog for PrepareGCUncommitted
 func (g *KVGraveler) ListStaging(ctx context.Context, branch *Branch) (ValueIterator, error) {
-	return g.listStagingArea(ctx, branch)
+	return g.listStagingArea(ctx, branch, nil)
 }
 
 // listStagingArea Returns an iterator which is an aggregation of all changes on all the branch's staging area (staging + sealed)
 // for each key in the staging area it will return the latest update for that key (the value that appears in the newest token)
-func (g *KVGraveler) listStagingArea(ctx context.Context, b *Branch) (ValueIterator, error) {
+func (g *KVGraveler) listStagingArea(ctx context.Context, b *Branch, prefix Key) (ValueIterator, error) {
 	if b.StagingToken == "" {
 		return nil, ErrNotFound
 	}
@@ -1606,6 +1611,10 @@ func (g *KVGraveler) sealedTokensIterator(ctx context.Context, b *Branch) (Value
 }
 
 func (g *KVGraveler) List(ctx context.Context, repository *RepositoryRecord, ref Ref) (ValueIterator, error) {
+	return g.ListWithPrefix(ctx, repository, ref, nil)
+}
+
+func (g *KVGraveler) ListWithPrefix(ctx context.Context, repository *RepositoryRecord, ref Ref, prefix Key) (ValueIterator, error) {
 	reference, err := g.Dereference(ctx, repository, ref)
 	if err != nil {
 		return nil, err
@@ -1620,11 +1629,14 @@ func (g *KVGraveler) List(ctx context.Context, repository *RepositoryRecord, ref
 	}
 
 	listing, err := g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)
+	if prefix != nil {
+		listing = NewFilterPrefixIterator(listing, prefix)
+	}
 	if err != nil {
 		return nil, err
 	}
 	if reference.StagingToken != "" {
-		stagingList, err := g.listStagingArea(ctx, reference.BranchRecord.Branch)
+		stagingList, err := g.listStagingArea(ctx, reference.BranchRecord.Branch, prefix)
 		if err != nil {
 			listing.Close()
 			return nil, err
@@ -1872,7 +1884,7 @@ func (g *KVGraveler) addCommitNoLock(ctx context.Context, repository *Repository
 }
 
 func (g *KVGraveler) isStagingEmpty(ctx context.Context, repository *RepositoryRecord, branch *Branch) (bool, error) {
-	itr, err := g.listStagingArea(ctx, branch)
+	itr, err := g.listStagingArea(ctx, branch, nil)
 	if err != nil {
 		return false, err
 	}
@@ -2029,7 +2041,7 @@ func (g *KVGraveler) ResetPrefix(ctx context.Context, repository *RepositoryReco
 		newSealedTokens = append(newSealedTokens, branch.SealedTokens...)
 
 		// Reset keys by prefix on the new staging token
-		itr, err := g.listStagingArea(ctx, branch)
+		itr, err := g.listStagingArea(ctx, branch, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -2282,7 +2294,7 @@ func (g *KVGraveler) DiffUncommitted(ctx context.Context, repository *Repository
 		metaRangeID = commit.MetaRangeID
 	}
 
-	valueIterator, err := g.listStagingArea(ctx, branch)
+	valueIterator, err := g.listStagingArea(ctx, branch, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2348,7 +2360,7 @@ func (g *KVGraveler) Diff(ctx context.Context, repository *RepositoryRecord, lef
 		leftValueIterator.Close()
 		return nil, err
 	}
-	stagingIterator, err := g.listStagingArea(ctx, rightBranch)
+	stagingIterator, err := g.listStagingArea(ctx, rightBranch, nil)
 	if err != nil {
 		leftValueIterator.Close()
 		return nil, err

@@ -891,7 +891,7 @@ func (c *Catalog) ListEntries(ctx context.Context, repositoryID string, referenc
 	if err != nil {
 		return nil, false, err
 	}
-	iter, err := c.Store.List(ctx, repository, refToList)
+	iter, err := c.Store.ListWithPrefix(ctx, repository, refToList, graveler.Key(prefix))
 	if err != nil {
 		return nil, false, err
 	}

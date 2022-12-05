@@ -121,11 +121,19 @@ func (g *FakeGraveler) ListStaging(_ context.Context, b *graveler.Branch) (grave
 	return g.ListStagingIteratorFactory(b.StagingToken), nil
 }
 
-func (g *FakeGraveler) List(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.Ref) (graveler.ValueIterator, error) {
+func (g *FakeGraveler) List(ctx context.Context, rr *graveler.RepositoryRecord, ref graveler.Ref) (graveler.ValueIterator, error) {
+	return g.ListWithPrefix(ctx, rr, ref, nil)
+}
+
+func (g *FakeGraveler) ListWithPrefix(ctx context.Context, rr *graveler.RepositoryRecord, ref graveler.Ref, prefix graveler.Key) (graveler.ValueIterator, error) {
 	if g.Err != nil {
 		return nil, g.Err
 	}
-	return g.ListIteratorFactory(), nil
+	iter := g.ListIteratorFactory()
+	if prefix != nil {
+		iter = graveler.NewFilterPrefixIterator(iter, prefix)
+	}
+	return iter, nil
 }
 
 func (g *FakeGraveler) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
