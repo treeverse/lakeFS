@@ -24,7 +24,7 @@ next:  ["Import data into your installation", "../howto/import.html"]
 lakeFS requires a PostgreSQL database to synchronize actions in your repositories.
 We will show you how to create a database on Azure Database, but you can use any PostgreSQL database as long as it's accessible by your lakeFS installation.
 
-If you already have a database, take note of the connection string and skip to the [next step](#install-lakefs-on-azure-vm)
+If you already have a database, take note of the connection string and skip to the [next step](#run-the-lakefs-server)
 
 1. Follow the official [Azure documentation](https://docs.microsoft.com/en-us/azure/postgresql/quickstart-create-server-database-portal){: target="_blank" } on how to create a PostgreSQL instance and connect to it.
    Make sure that you're using PostgreSQL version >= 11.

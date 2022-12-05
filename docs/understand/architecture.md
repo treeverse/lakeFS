@@ -23,20 +23,20 @@ The server itself is stateless, meaning you can easily add more instances to han
 
 The following underlying object stores (or any S3-compatible store) can be used by lakeFS to store data:
 
-- [Google Cloud Storage](https://cloud.google.com/storage) ([Prepare Your GCS Bucket](../setup/storage/gcs.md))
-- [Azure Blob Storage](https://azure.microsoft.com/en-us/services/storage/blobs/) ([Prepare Your Blob Storage Container](../setup/storage/blob.md))
-- [AWS S3](https://aws.amazon.com/s3/) ([Prepare Your AWS S3 Bucket](../setup/storage/s3.md))
-- [MinIO](https://min.io/) ([Using lakeFS with MinIO](../integrations/minio.md))
-- [Ceph](https://docs.ceph.com/)
+- Google Cloud Storage
+- Azure Blob Storage
+- AWS S3
+- MinIO
+- Ceph
 
 In additional a Key Value storage is used for storing metadata:
 
 - [PostgreSQL](https://www.postgresql.org/){:target="_blank"}
 - [DynamoDB](https://aws.amazon.com/dynamodb/){:target="_blank"}
 
-Instructions of how to deploy such database on AWS can be found [here](../deploy/aws.html#preparing-the-database-for-the-key-value-store).
+Instructions of how to deploy such database on AWS can be found [here](../deploy/aws.md#grant-dynamodb-permissions-to-lakefs).
 
-Additional information on the data format can be found in [Versioning internals](../understand/versioning-internals.md).
+Additional information on the data format can be found in [Versioning internals](../understand/how/versioning-internals.md).
 
 
 ![Architecture]({{ site.baseurl }}/assets/img/architecture.png)
@@ -45,7 +45,7 @@ Additional information on the data format can be found in [Versioning internals]
 
 lakeFS releases include [binaries](https://github.com/treeverse/lakeFS/releases) for common operating systems, a [containerized option](https://hub.docker.com/r/treeverse/lakefs) or 
 a [Helm chart](https://artifacthub.io/packages/helm/lakefs/lakefs).
-Check out our guides for running lakeFS on [K8S](../deploy/k8s.md), [ECS](../deploy/aws.md#on-ecs), [Google Compute Engine](../deploy/gcp.md#on-google-compute-engine) and [more](../deploy/).
+Check out our guides for running lakeFS on [AWS](../deploy/aws.md), [GCP](../deploy/gcp.md) and [more](../deploy).
 
 ### Load Balancing
 
@@ -71,12 +71,12 @@ The Swagger ([OpenAPI](https://swagger.io/docs/specification/basic-structure/){:
 The Storage Adapter is an abstraction layer for communicating with any underlying object store. 
 Its implementations allow compatibility with many types of underlying storage such as S3, GCS, Azure Blob Storage, or non-production usages such as the local storage adapter.
 
-See the [roadmap](roadmap.md) for information on the future plans for storage compatibility. 
+See the [roadmap](../roadmap.md) for information on the future plans for storage compatibility. 
 
 ### Graveler
 
 The Graveler handles lakeFS versioning by translating lakeFS addresses to the actual stored objects.
-To learn about the data model used to store lakeFS metadata, see the [data model section](versioning-internals.md).
+To learn about the data model used to store lakeFS metadata, see the [data model section](../understand/how/versioning-internals.md).
 
 ### Authentication & Authorization Service
 
@@ -88,7 +88,7 @@ Currently, the Auth service manages its own database of users and credentials an
 
 ### Hooks Engine
 
-The Hooks Engine enables CI/CD for data by triggering user defined [Actions](../setup/hooks.md) that will run during commit/merge. 
+The Hooks Engine enables CI/CD for data by triggering user defined [Actions](../use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates) that will run during commit/merge. 
 
 ### UI
 
@@ -110,12 +110,12 @@ For example, the [Python lakefs-client](https://pypi.org/project/lakefs-client/)
 
 ### lakectl
 
-[lakectl](../reference/commands.md) is a CLI tool that enables lakeFS operations using the lakeFS API from your preferred terminal.
+[lakectl](../reference/cli) is a CLI tool that enables lakeFS operations using the lakeFS API from your preferred terminal.
 
 ### Spark Metadata Client
 
 The lakeFS [Spark Metadata Client](../reference/spark-client.md) makes it easy to perform
-operations related to lakeFS metadata, at scale. Examples include [garbage collection](../reference/garbage-collection.md) or [exporting data from lakeFS](../reference/export.md).
+operations related to lakeFS metadata, at scale. Examples include [garbage collection](../howto/garbage-collection.md) or [exporting data from lakeFS](../howto/export.md).
 
 ### lakeFS Hadoop FileSystem
 

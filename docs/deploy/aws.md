@@ -224,7 +224,7 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
    Since this FileSystem performs many operations directly on the storage, lakeFS requires less permissive permissions, resulting in increased security.
    
    lakeFS always requires permissions to access the `_lakefs` prefix under your storage namespace, in which metadata
-   is stored ([learn more](../understand/versioning-internals.md#constructing-a-consistent-view-of-the-keyspace-ie-a-commit)).  
+   is stored ([learn more](../understand/how/versioning-internals.md#constructing-a-consistent-view-of-the-keyspace-ie-a-commit)).  
    By setting this policy you'll be able to perform only metadata operations through lakeFS, meaning that you'll **not** be able
    to use lakeFS to upload or download objects. Specifically you won't be able to:
       * Upload objects using the lakeFS GUI

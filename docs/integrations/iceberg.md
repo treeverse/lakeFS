@@ -10,4 +10,4 @@ has_children: false
 # Using lakeFS with Iceberg
 
 Currently, lakeFS does not support the Iceberg table format, but we have concrete 
-[plans](../understand/roadmap.md#iceberg-support-high-priority) to add it in the near future.
+[plans](../roadmap.md#iceberg-support-spanhigh-priorityspan-label-label-blue-) to add it in the near future.

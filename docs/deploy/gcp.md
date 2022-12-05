@@ -24,7 +24,7 @@ next:  ["Import data into your installation", "../howto/import.html"]
 lakeFS requires a PostgreSQL database to synchronize actions on your repositories.
 We will show you how to create a database on Google Cloud SQL, but you can use any PostgreSQL database as long as it's accessible by your lakeFS installation.
 
-If you already have a database, take note of the connection string and skip to the [next step](#setting-up-a-lakefs-server)
+If you already have a database, take note of the connection string and skip to the [next step](#run-the-lakefs-server)
 
 1. Follow the official [Google documentation](https://cloud.google.com/sql/docs/postgres/quickstart#create-instance) on how to create a PostgreSQL instance.
    Make sure you're using PostgreSQL version >= 11.

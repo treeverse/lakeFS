@@ -105,7 +105,7 @@ Committing (along with attaching useful information to the commit) makes a lot o
 
 
 For streaming, however, this is currently less clear: There's no obvious point in time to commit as things never actually "finish successfully".
-[The recommended pattern](../using_lakefs/production.md#example-1-rollback---data-ingested-from-a-kafka-stream) would be to ingest from a stream on a separate branch, periodically committing - storing not only the data added since last commit but also capturing the offset read from the stream, for reproducibility.
+[The recommended pattern](./understand/data_lifecycle_management/production.md#example-1-rollback---data-ingested-from-a-kafka-stream) would be to ingest from a stream on a separate branch, periodically committing - storing not only the data added since last commit but also capturing the offset read from the stream, for reproducibility.
 These commits can then be merged into a main branch given they pass all relevant quality checks and other validations using hooks, exposing consumers to validated, clean data.
 
 In practice, implementing such a workflow is a little challenging. Users need to:
@@ -120,12 +120,12 @@ Ideally, lakeFS should provide tools to automate this, with native support for [
 
 ### Native connector: Trino
 
-Currently, the Trino integration works well using the [lakeFS S3 Gateway](architecture.md#s3-gateway). 
+Currently, the Trino integration works well using the [lakeFS S3 Gateway](understand/architecture.md#s3-gateway). 
 
 While easy to integrate and useful out-of-the-box, due to the S3 protocol, it means that the data itself must pass through the lakeFS server.
 
 For larger installations, a native integration where lakeFS handles metadata and returns locations in the underlying object store that Trino can then access directly would allow reducing the operational overhead and increasing the scalability of lakeFS.
-This would be done in a similar way to the [Native Spark integration](../integrations/spark.md) using the [Hadoop Filesystem implementation](../integrations/spark.md#use-the-lakefs-hadoop-filesystem).
+This would be done in a similar way to the [Native Spark integration](integrations/spark.md) using the [Hadoop Filesystem implementation](integrations/spark.md#use-the-lakefs-hadoop-filesystem).
 
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/2357){: target="_blank" class="btn" }
 

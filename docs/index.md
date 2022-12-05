@@ -73,7 +73,7 @@ Through its versioning engine, lakeFS enables the following built-in operations 
 * **tag:** a pointer to a single immutable commit with a readable, meaningful name.
 
 *See the [object model](./understand/model.md) for an in-depth
-definition of these, and the [CLI reference](./reference/commands.md) for the
+definition of these, and the [CLI reference](reference/cli.md) for the
 full list of commands.*
 
 Incorporating these operations into your data lake pipelines provides the same collaboration and organizational benefits you get when managing application code with source control.
@@ -148,7 +148,7 @@ To learn more on how to access a specific historical commit in a repository, see
 
 The best way to deal with mistakes is to avoid them. A data source that is ingested into the lake introducing low-quality data should be blocked before exposure if possible.
 
-With lakeFS, you can achieve this by tying data quality tests to commit and merge operations via lakeFS [hooks](./setup/hooks.md).
+With lakeFS, you can achieve this by tying data quality tests to commit and merge operations via lakeFS [hooks](./use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates).
 
 
 ### Additional things you should know about lakeFS: 
