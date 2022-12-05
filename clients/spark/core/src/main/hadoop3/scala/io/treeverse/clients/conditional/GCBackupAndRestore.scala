@@ -46,13 +46,7 @@ object GCBackupAndRestore {
     objectsRelativePathsDF
       .select("address")
       .as[String]
-      .flatMap(x =>
-        if (storageType == StorageUtils.StorageTypeS3) {
-          StorageUtils.S3.concatKeysToStorageNamespace(Seq(x), storageNSForFS)
-        } else {
-          StorageUtils.AzureBlob.concatKeysToStorageNamespace(Seq(x), storageNSForFS)
-        }
-      )
+      .flatMap(x => StorageUtils.concatKeysToStorageNamespace(Seq(x), storageNSForFS))
   }
 
   def validateAndParseHadoopConfig(

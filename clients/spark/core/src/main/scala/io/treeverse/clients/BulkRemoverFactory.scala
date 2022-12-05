@@ -14,6 +14,7 @@ import io.treeverse.clients.StorageUtils._
 import org.apache.hadoop.conf.Configuration
 
 import java.net.URI
+import java.nio.charset.Charset
 import java.util.stream.Collectors
 import collection.JavaConverters._
 
@@ -31,7 +32,16 @@ trait BulkRemover {
    *  @param storageNamespace the storage namespace in which the objects are stored
    *  @return object URIs of the keys
    */
-  def constructRemoveKeyNames(keys: Seq[String], storageNamespace: String): Seq[String]
+  def constructRemoveKeyNames(keys: Seq[String], storageNamespace: String, applyUTF8Encoding: Boolean = false): Seq[String] = {
+      println("storageNamespace: " + storageNamespace)
+      var removeKeyNames = StorageUtils.concatKeysToStorageNamespace(keys, storageNamespace)
+      if (applyUTF8Encoding) {
+        removeKeyNames = removeKeyNames
+        .map(x => x.getBytes(Charset.forName("UTF-8")))
+        .map(x => new String(x))
+      }
+      removeKeyNames
+  }
 
   /** Bulk delete objects from the underlying storage.
    *
@@ -68,16 +78,6 @@ object BulkRemoverFactory {
     ): AmazonS3 =
       io.treeverse.clients.conditional.S3ClientBuilder.build(hc, bucket, region, numRetries)
 
-    override def constructRemoveKeyNames(
-        keys: Seq[String],
-        storageNamespace: String
-    ): Seq[String] = {
-      println(
-        "storageNamespace: " + storageNamespace
-      ) // example storage namespace s3://bucket/repoDir/
-      StorageUtils.S3.concatKeysToStorageNamespace(keys, storageNamespace, false)
-    }
-
     override def getMaxBulkSize(): Int = {
       S3MaxBulkSize
     }
@@ -91,7 +91,7 @@ object BulkRemoverFactory {
     val storageAccountName = StorageUtils.AzureBlob.uriToStorageAccountName(uri)
 
     override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
-      val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace)
+      val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, true)
       println("Remove keys:", removeKeyNames.take(100).mkString(", "))
       val removeKeys = removeKeyNames.asJava
 
@@ -150,14 +150,6 @@ object BulkRemoverFactory {
           .buildClient
 
       new BlobBatchClientBuilder(blobServiceClientSharedKey).buildClient
-    }
-
-    override def constructRemoveKeyNames(
-        keys: Seq[String],
-        storageNamespace: String
-    ): Seq[String] = {
-      println("storageNamespace: " + storageNamespace)
-      StorageUtils.AzureBlob.concatKeysToStorageNamespace(keys, storageNamespace)
     }
 
     override def getMaxBulkSize(): Int = {

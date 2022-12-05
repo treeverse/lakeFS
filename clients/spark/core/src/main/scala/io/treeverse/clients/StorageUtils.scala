@@ -7,9 +7,10 @@ import com.amazonaws.{AmazonServiceException, ClientConfiguration}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
-import java.nio.charset.Charset
 
-trait ObjectPathBuilder {
+object StorageUtils {
+  val StorageTypeS3 = "s3"
+  val StorageTypeAzure = "azure"
 
   /** Constructs object paths in a storage namespace.
    *
@@ -20,17 +21,25 @@ trait ObjectPathBuilder {
    *  @return object paths in a storage namespace
    */
   def concatKeysToStorageNamespace(
-      keys: Seq[String],
-      storageNamespace: String,
-      keepNsSchemeAndHost: Boolean = true
-  ): Seq[String]
-}
+                                    keys: Seq[String],
+                                    storageNamespace: String,
+                                    keepNsSchemeAndHost: Boolean = true
+                                  ): Seq[String] = {
+    var sanitizedNS = storageNamespace
+    if (!keepNsSchemeAndHost) {
+      val uri = new URI(storageNamespace)
+      sanitizedNS = uri.getPath
+    }
+    val addSuffixSlash =
+      if (sanitizedNS.endsWith("/")) sanitizedNS else sanitizedNS.concat("/")
+    val snPrefix =
+      if (addSuffixSlash.startsWith("/")) addSuffixSlash.substring(1) else addSuffixSlash
 
-object StorageUtils {
-  val StorageTypeS3 = "s3"
-  val StorageTypeAzure = "azure"
+    if (keys.isEmpty) return Seq.empty
+    keys.map(x => snPrefix.concat(x))
+  }
 
-  object AzureBlob extends ObjectPathBuilder {
+  object AzureBlob {
     val StorageAccountKeyPropertyPattern =
       "fs.azure.account.key.<storageAccountName>.dfs.core.windows.net"
     val StorageAccNamePlaceHolder = "<storageAccountName>"
@@ -51,46 +60,12 @@ object StorageUtils {
     def uriToStorageAccountName(storageNsURI: URI): String = {
       storageNsURI.getHost.split('.')(0)
     }
-
-    override def concatKeysToStorageNamespace(
-        keys: Seq[String],
-        storageNamespace: String,
-        keepNsSchemeAndHost: Boolean
-    ): Seq[String] = {
-      val addSuffixSlash =
-        if (storageNamespace.endsWith("/")) storageNamespace else storageNamespace.concat("/")
-
-      if (keys.isEmpty) return Seq.empty
-      keys
-        .map(x => addSuffixSlash.concat(x))
-        .map(x => x.getBytes(Charset.forName("UTF-8")))
-        .map(x => new String(x))
-    }
   }
 
-  object S3 extends ObjectPathBuilder {
+  object S3 {
     val S3MaxBulkSize = 1000
     val S3NumRetries = 1000
     val logger: Logger = LoggerFactory.getLogger(getClass.toString)
-
-    override def concatKeysToStorageNamespace(
-        keys: Seq[String],
-        storageNamespace: String,
-        keepNsSchemeAndHost: Boolean
-    ): Seq[String] = {
-      var sanitizedNS = storageNamespace
-      if (!keepNsSchemeAndHost) {
-        val uri = new URI(storageNamespace)
-        sanitizedNS = uri.getPath
-      }
-      val addSuffixSlash =
-        if (sanitizedNS.endsWith("/")) sanitizedNS else sanitizedNS.concat("/")
-      val snPrefix =
-        if (addSuffixSlash.startsWith("/")) addSuffixSlash.substring(1) else addSuffixSlash
-
-      if (keys.isEmpty) return Seq.empty
-      keys.map(x => snPrefix.concat(x))
-    }
 
     def createAndValidateS3Client(
         configuration: ClientConfiguration,
