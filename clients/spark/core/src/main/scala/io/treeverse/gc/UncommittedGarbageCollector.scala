@@ -176,15 +176,14 @@ object UncommittedGarbageCollector {
         success = false
         throw e
     } finally {
-      if (runID.nonEmpty) {
+      if (runID.nonEmpty && shouldMark) {
         writeReports(
           storageNamespace,
           runID,
           firstSlice,
           startTime,
           success,
-          addressesToDelete,
-          removed
+          addressesToDelete
         )
       }
       spark.close()
@@ -197,14 +196,12 @@ object UncommittedGarbageCollector {
       firstSlice: String,
       startTime: java.time.Instant,
       success: Boolean,
-      expiredAddresses: DataFrame,
-      removed: DataFrame
+      expiredAddresses: DataFrame
   ): Unit = {
     val reportDst = reportPath(storageNamespace, runID)
-    writeJsonSummary(reportDst, runID, firstSlice, startTime, success, removed.count())
+    writeJsonSummary(reportDst, runID, firstSlice, startTime, success, expiredAddresses.count())
 
     expiredAddresses.write.parquet(s"$reportDst/marked")
-    removed.write.parquet(s"$reportDst/deleted")
   }
 
   private def reportPath(storageNamespace: String, runID: String): String = {
