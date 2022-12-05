@@ -96,13 +96,6 @@ This will also allow auto-provisioning of a CosmosDB database and table as part 
 
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/4458){: target="_blank" class="btn" }
 
-
-### Sync a lakeFS reference (or part of it) with a local directory
-
-Support working locally with data stored on lakeFS from a specific reference.
-
-[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/4095){: target="_blank" class="btn" }
-
 ### Improved streaming support for Apache Kafka
 
 Committing (along with attaching useful information to the commit) makes a lot of sense for batch workloads: 
@@ -152,13 +145,6 @@ The lakeFS [Garbage Collection](https://docs.lakefs.io/reference/garbage-collect
 comply with data privacy policies. Currently, lakeFS only supports Garbage Collection of S3/Azure objects managed by lakeFS. Extending the support to GCP will allow lakeFS users that use GCP as their underlying storage to use this feature.
 
 [Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/3626){: target="_blank" class="btn" }
-
-
-### Incremental Garbage Collection <span>High Priority</span>{: .label .label-blue }
-
-Support running the Garbage Collection Spark job incrementally: take into account commits and references scanned and collected on previous runs to avoid traversing the entire graph on each execution.
-
-[Track and discuss it on GitHub](https://github.com/treeverse/lakeFS/issues/4116){: target="_blank" class="btn" }
 
 ### Support long running hooks
 

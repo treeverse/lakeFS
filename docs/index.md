@@ -162,6 +162,17 @@ With lakeFS, you can achieve this by tying data quality tests to commit and merg
 
 <img src="{{ site.baseurl }}/assets/img/lakeFS_integration.png" alt="lakeFS integration into data lake" width="60%" height="60%" />
 
+### Is lakeFS Git for Data?
+
+Git had conquered the world of code because it had best supported engineering best practices required by developers, mainly:
+
+* Collaborate during development.
+* Develop and Test in isolation
+* Revert code repository to a sable version in case of an error
+* Reproduce and troubleshoot issues with a given version of the code
+* Continuously integrate and deploy new code (CI/CD)
+
+lakeFS provides these exact benefits, that are data practitioners are missing today, and enables them a clear intuitive git-like inetrface to easily manage their data like they manage code. Therefore, lakeFS can definitely be regarded as git for data.
 
 ### Downloads
 
