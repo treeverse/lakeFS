@@ -72,6 +72,7 @@ object UncommittedGarbageCollector {
     var firstSlice = ""
     var success = true
     var removed = spark.emptyDataFrame.withColumn("address", lit(""))
+    var markedAddresses = spark.emptyDataFrame.withColumn("address", lit(""))
     var addressesToDelete = spark.emptyDataFrame.withColumn("address", lit(""))
     val repo = args(0)
     val hc = spark.sparkContext.hadoopConfiguration
@@ -153,9 +154,12 @@ object UncommittedGarbageCollector {
       removed = {
         if (shouldSweep) {
           if (markID != "") { // get the expired addresses from the mark id run
-            addressesToDelete = readMarkedAddresses(storageNamespace, markID)
+            markedAddresses = readMarkedAddresses(storageNamespace, markID)
+            println("deleting marked addresses: " + markID)
+          } else {
+            markedAddresses = addressesToDelete
+            println("deleting marked addresses: " + runID)
           }
-          println("deleting marked addresses: " + markID)
 
           val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
           val region = getRegion(args)
@@ -165,7 +169,7 @@ object UncommittedGarbageCollector {
           val configMapper = new ConfigMapper(hcValues)
 
           GarbageCollector
-            .bulkRemove(configMapper, addressesToDelete, storageNSForSdkClient, region, storageType)
+            .bulkRemove(configMapper, markedAddresses, storageNSForSdkClient, region, storageType)
             .toDF()
         } else {
           spark.emptyDataFrame.withColumn("address", lit(""))
@@ -200,7 +204,7 @@ object UncommittedGarbageCollector {
   ): Unit = {
     val reportDst = reportPath(storageNamespace, runID)
     writeJsonSummary(reportDst, runID, firstSlice, startTime, success, expiredAddresses.count())
-
+    expiredAddresses.show()
     expiredAddresses.write.parquet(s"${reportDst}/deleted")
   }
 
@@ -211,11 +215,10 @@ object UncommittedGarbageCollector {
   private def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
     val path = reportPath(storageNamespace, markID)
     val markedRunSummary = spark.read.json(s"${path}/summary.json")
-    markedRunSummary.show()
-    if (markedRunSummary.select("success") == false) {
+    if (markedRunSummary.select("success").first() == false) {
       spark.emptyDataFrame.withColumn("address", lit(""))
     } else {
-      spark.read.parquet(s"${path}/marked")
+      spark.read.parquet(s"${path}/deleted")
     }
   }
 
