@@ -229,6 +229,8 @@ func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
 		StreamingChunkTimeout:         c.values.Blockstore.S3.StreamingChunkTimeout,
 		DiscoverBucketRegion:          c.values.Blockstore.S3.DiscoverBucketRegion,
 		SkipVerifyCertificateTestOnly: c.values.Blockstore.S3.SkipVerifyCertificateTestOnly,
+		ServerSideEncryption:          c.values.Blockstore.S3.ServerSideEncryption,
+		ServerSideEncryptionKmsKeyID:  c.values.Blockstore.S3.ServerSideEncryptionKmsKeyID,
 	}, nil
 }
 

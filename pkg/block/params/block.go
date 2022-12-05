@@ -28,6 +28,8 @@ type S3 struct {
 	StreamingChunkTimeout         time.Duration
 	DiscoverBucketRegion          bool
 	SkipVerifyCertificateTestOnly bool
+	ServerSideEncryption          string
+	ServerSideEncryptionKmsKeyID  string
 }
 
 type GS struct {
