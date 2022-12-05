@@ -123,7 +123,9 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.streaming_chunk_size` `(int : 1048576)` - Object chunk size to buffer before streaming to blockstore (use a lower value for less reliable networks). Minimum is 8192.
 * `blockstore.s3.streaming_chunk_timeout` `(time duration : "60s")` - Per object chunk timeout for blockstore streaming operations (use a larger value for less reliable networks).
 * `blockstore.s3.discover_bucket_region` `(bool : true)` - (Can be turned off if the underlying S3 bucket doesn't support the GetBucketRegion API).
-* `blockstore.s3.skip_verify_certificate_test_only` `(boolean: false)` - Skip certificate verification while connecting to the storage endpoint. Should be used only for testing.
+* `blockstore.s3.skip_verify_certificate_test_only` `(boolean : false)` - Skip certificate verification while connecting to the storage endpoint. Should be used only for testing.
+* `blockstore.s3.server_side_encryption` `(string : )` - Server side encryption format used (Example on AWS using SSE-KMS while passing "aws:kms")
+* `blockstore.s3.server_side_encryption_kms_key_id` `(string : )` - Server side encryption KMS key ID
 * `committed.local_cache` - an object describing the local (on-disk) cache of metadata from
   permanent storage:
   + `committed.local_cache.size_bytes` (`int` : `1073741824`) - bytes for local cache to use on disk.  The cache may use more storage for short periods of time.

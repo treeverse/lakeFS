@@ -108,12 +108,19 @@ func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adap
 	if err != nil {
 		return nil, err
 	}
-	adapter := s3a.NewAdapter(sess,
+	opts := []s3a.AdapterOption{
 		s3a.WithStreamingChunkSize(params.StreamingChunkSize),
 		s3a.WithStreamingChunkTimeout(params.StreamingChunkTimeout),
 		s3a.WithStatsCollector(statsCollector),
 		s3a.WithDiscoverBucketRegion(params.DiscoverBucketRegion),
-	)
+	}
+	if params.ServerSideEncryption != "" {
+		opts = append(opts, s3a.WithServerSideEncryption(params.ServerSideEncryption))
+	}
+	if params.ServerSideEncryptionKmsKeyID != "" {
+		opts = append(opts, s3a.WithServerSideEncryptionKmsKeyID(params.ServerSideEncryptionKmsKeyID))
+	}
+	adapter := s3a.NewAdapter(sess, opts...)
 	logging.Default().WithField("type", "s3").Info("initialized blockstore adapter")
 	return adapter, nil
 }
