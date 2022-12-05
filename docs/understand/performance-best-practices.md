@@ -24,7 +24,7 @@ Just like in Git, branch history is composed by commits and is linear by nature.
 Concurrent commits/merges on the same branch result in a race. The first operation will finish successfully while the rest will retry.
 
 ## Use zero-copy import
-To import object into lakeFS, either a single time or regularly, lakeFS offers a [zero-copy import](https://docs.lakefs.io/setup/import.html#zero-copy-import) feature.
+To import object into lakeFS, either a single time or regularly, lakeFS offers a [zero-copy import](../howto/import.md#zero-copy-import) feature.
 Use this feature to import a large number of objects to lakeFS, instead of simply copying them into your repository.
 This feature will create a reference to the existing objects on your bucket and avoids the copy.
 
@@ -34,15 +34,15 @@ In cases where you are only interested in reading committed data:
 * Add `@` before the path  `lakefs://repo/main@/path`.
 
 When accessing data using the branch name (e.g. `lakefs://repo/main/path`) lakeFS will also try to fetch uncommitted data, which may result in reduced performance.
-For more information, see [how uncommitted data is managed in lakeFS](https://docs.lakefs.io/understand/versioning-internals.html#representing-references-and-uncommitted-metadata)
+For more information, see [how uncommitted data is managed in lakeFS](../understand/how/versioning-internals.md#representing-references-and-uncommitted-metadata)
 
 ## Operate directly on the storage
 Sometimes, storage operations can become a bottleneck. For example, when your data pipelines upload many big objects.
 In such cases, it can be beneficial to perform only versioning operations on lakeFS, while performing storage reads/writes directly on the object store.
 lakeFS offers multiple ways to do that:
-* The [`lakectl upload --direct`](https://docs.lakefs.io/reference/commands.html#lakectl-fs-upload) command (or [download](https://docs.lakefs.io/reference/commands.html#lakectl-fs-download)).
-* The lakeFS [Hadoop Filesystem](https://docs.lakefs.io/integrations/spark.html#use-the-lakefs-hadoop-filesystem).
-* The [staging API](https://docs.lakefs.io/reference/api.html#/objects/stageObject) which can be used to add lakeFS references to objects after having written them to the storage.
+* The [`lakectl upload --direct`](../reference/cli.md#lakectl-fs-upload) command (or [download](../reference/cli.md#lakectl-fs-download)).
+* The lakeFS [Hadoop Filesystem](../integrations/spark.md#use-the-lakefs-hadoop-filesystem).
+* The [staging API](../reference/api.md#objects/stageObject) which can be used to add lakeFS references to objects after having written them to the storage.
 
 Accessing the object store directly is a faster way to interact with your data.
 

@@ -67,7 +67,7 @@ The garbage collection process proceeds in three main phases:
   the garbage collection job looks at the HEAD of the branch that many days
   ago; every commit at or since that HEAD must be retained.
 
-  ![mermaid diagram](/assets/img/gc-sample-commits.png)
+  ![mermaid diagram](../assets/img/gc-sample-commits.png)
   
   Continuing the example, branch `main` retains for 21 days and branch `dev`
   for 7. When running GC on 2022-03-31:
@@ -100,7 +100,7 @@ Some objects will _not_ be collected regardless of configured GC rules:
 * Any object that is accessible from any branch's HEAD.
 * Any object that was _uploaded but never committed_ cannot be collected.  See
   [#1933](https://github.com/treeverse/lakeFS/issues/1933) for more details.
-* Objects stored outside the repository's [storage namespace](../glossary.md#storage-namespace).
+* Objects stored outside the repository's [storage namespace](../understand/glossary.md#storage-namespace).
   For example, objects imported using the lakeFS import UI are not collected.
 
 ## Configuring GC rules

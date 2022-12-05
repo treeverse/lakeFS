@@ -26,7 +26,7 @@ and in the same region of your destination bucket.
 lakeFS supports two ways to ingest objects from the object store without copying the data:
 
 1. [Importing using the lakeFS UI](#importing-using-the-lakefs-ui) - A UI dialog to trigger an import to a designated import branch. It creates a commit from all imported objects.
-1. [Importing using lakectl cli](#importing-using-lakectl-cli) - You can use the [`lakectl` CLI command](../reference/commands.md#lakectl) to create uncommitted objects in a branch. It will make sequential calls between the CLI and the server.
+1. [Importing using lakectl cli](#importing-using-lakectl-cli) - You can use the [`lakectl` CLI command](../reference/cli.md#lakectl) to create uncommitted objects in a branch. It will make sequential calls between the CLI and the server.
 
 #### Using the import wizard
 
@@ -211,6 +211,6 @@ Another way of getting existing data into a lakeFS repository is by copying it. 
 
 To copy data into lakeFS you can use the following tools:
 
-1. The `lakectl` command line tool - see the [reference](../reference/commands.md#lakectl-fs-upload) to learn more about using it to copy local data into lakeFS. Using `lakectl fs upload --recursive` you can upload multiple objects together from a given directory.
-1. Using [rclone](../integrations/rclone.md)
-1. Using Hadoop's [DistCp](../integrations/distcp.md)
+1. The `lakectl` command line tool - see the [reference](../reference/cli#lakectl-fs-upload) to learn more about using it to copy local data into lakeFS. Using `lakectl fs upload --recursive` you can upload multiple objects together from a given directory.
+1. Using [rclone](../howto/copying.md#using-rclone)
+1. Using Hadoop's [DistCp](../howto/copying.md#using-distcp)

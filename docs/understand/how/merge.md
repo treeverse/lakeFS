@@ -37,7 +37,7 @@ below, "A", "B" and "C" are possible file contents, "X" is a missing file, and "
 
 ## Merge Strategies
 
-The [API](./api.md) and [`lakectl`](./commands.md#lakectl-merge) allow passing an optional `strategy` flag with the following values:
+The [API](../../reference/api.md) and [`lakectl`](../../reference/cli.md#lakectl-merge) allow passing an optional `strategy` flag with the following values:
 
 ### `source-wins`
 

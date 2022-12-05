@@ -122,7 +122,7 @@ the amount of changes introduced per commit usually stays relatively stable whil
 This means lakeFS will provide predictable performance:
 committing 100 changes will take roughly the same amount of time whether the resulting commit contains 500 or 500 million objects.
 
-See [Data Model](../understand/versioning-internals.md) for more information.
+See [Data Model](../understand/how/versioning-internals.md) for more information.
 
 Scaling throughput depends very much on the amount of CPU cores available to lakeFS.
 In many cases, it's easier to scale lakeFS across a fleet of smaller cloud instances (or containers)
@@ -150,7 +150,7 @@ The PostgreSQL instance that was used is a [db.m6g.2xlarge](https://docs.aws.ama
 The example repository we tested against contains the metadata of a large lakeFS installation,
 where each commit contains **~180,000,000** objects (representing ~7.5 Petabytes of data).
 
-All tests are reproducible using the [lakectl abuse command](../reference/commands.md#lakectl-abuse),
+All tests are reproducible using the [lakectl abuse command](../reference/cli#lakectl-abuse),
 so use it to properly size and tune your setup. All tests are accompanied by the relevant `lakectl abuse` command that generated them.
 
 ### Random reads
@@ -551,7 +551,7 @@ Data being managed by lakeFS is both structured tabular data,
 as well as unstructured sensor and image data used for training. 
 Assuming a team of 20-50 researchers, with a dataset size of 500 TiB across 20M objects.
 
-**Environment:** lakeFS will be deployed on [Kubernetes](../deploy/aws.md#eks) 
+**Environment:** lakeFS will be deployed on Kubernetes. 
 managed by [AWS EKS](https://aws.amazon.com/eks/){: target="_blank" } 
 with PostgreSQL on [AWS RDS Aurora](https://aws.amazon.com/rds/aurora/postgresql-features/){: target="_blank" }
 
@@ -570,7 +570,7 @@ Since the PostgreSQL instance is expected to hold a very small dataset
 To ensure we have enough RAM to hold this, we'll need 3 GiB of RAM, so, a very moderate Aurora instance `db.t3.large` (2 vCPUs, 8 GB RAM) will be more than enough.
 An equivalent database instance on GCP or Azure should give similar results.
 
-<img src="{{ site.baseurl }}/assets/img/reference_arch1.png" alt="ML and Research lakeFS reference architecture"/>
+<img src="../assets/img/reference_arch1.png" alt="ML and Research lakeFS reference architecture"/>
 
 
 ### Reference Architecture: Automated Production Pipelines
@@ -580,7 +580,7 @@ Airflow DAGs start by creating a branch for isolation and for CI/CD.
 Data being managed by lakeFS is structured, tabular data. The total dataset size is 10 PiB, spanning across 500M objects. 
 The expected throughput is 10k reads/second + 2k writes per second across 100 concurrent branches.
 
-**Environment:** lakeFS will be deployed on [Kubernetes](../deploy/aws.md#eks) 
+**Environment:** lakeFS will be deployed on Kubernetes. 
 managed by [AWS EKS](https://aws.amazon.com/eks/){: target="_blank" } 
 with PostgreSQL on [AWS RDS](https://aws.amazon.com/rds/aurora/postgresql-features/){: target="_blank" }
 
