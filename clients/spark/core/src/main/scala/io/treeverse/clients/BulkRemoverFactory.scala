@@ -32,15 +32,19 @@ trait BulkRemover {
    *  @param storageNamespace the storage namespace in which the objects are stored
    *  @return object URIs of the keys
    */
-  def constructRemoveKeyNames(keys: Seq[String], storageNamespace: String, applyUTF8Encoding: Boolean = false): Seq[String] = {
-      println("storageNamespace: " + storageNamespace)
-      var removeKeyNames = StorageUtils.concatKeysToStorageNamespace(keys, storageNamespace)
-      if (applyUTF8Encoding) {
-        removeKeyNames = removeKeyNames
+  def constructRemoveKeyNames(
+      keys: Seq[String],
+      storageNamespace: String,
+      applyUTF8Encoding: Boolean = false
+  ): Seq[String] = {
+    println("storageNamespace: " + storageNamespace)
+    var removeKeyNames = StorageUtils.concatKeysToStorageNamespace(keys, storageNamespace)
+    if (applyUTF8Encoding) {
+      removeKeyNames = removeKeyNames
         .map(x => x.getBytes(Charset.forName("UTF-8")))
         .map(x => new String(x))
-      }
-      removeKeyNames
+    }
+    removeKeyNames
   }
 
   /** Bulk delete objects from the underlying storage.

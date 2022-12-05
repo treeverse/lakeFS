@@ -21,10 +21,10 @@ object StorageUtils {
    *  @return object paths in a storage namespace
    */
   def concatKeysToStorageNamespace(
-                                    keys: Seq[String],
-                                    storageNamespace: String,
-                                    keepNsSchemeAndHost: Boolean = true
-                                  ): Seq[String] = {
+      keys: Seq[String],
+      storageNamespace: String,
+      keepNsSchemeAndHost: Boolean = true
+  ): Seq[String] = {
     var sanitizedNS = storageNamespace
     if (!keepNsSchemeAndHost) {
       val uri = new URI(storageNamespace)
