@@ -165,7 +165,7 @@ object UncommittedGarbageCollector {
           val configMapper = new ConfigMapper(hcValues)
 
           GarbageCollector
-            .bulkRemove(configMapper, addressesToDelete, storageNamespace, region, storageType)
+            .bulkRemove(configMapper, addressesToDelete, storageNSForSdkClient, region, storageType)
             .toDF()
         } else {
           spark.emptyDataFrame.withColumn("address", lit(""))
@@ -214,6 +214,7 @@ object UncommittedGarbageCollector {
   private def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
     val path = reportPath(storageNamespace, markID)
     val markedRunSummary = spark.read.json(s"$path/summary.json")
+    markedRunSummary.show()
     if (markedRunSummary.select("success") == false) {
       spark.emptyDataFrame.withColumn("address", lit(""))
     } else {
