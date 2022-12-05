@@ -118,16 +118,14 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
 
     it("should keep namespace scheme and host and namespace trailing slash") {
       val storageNSWithPath = "s3://bucket/foo/"
-      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeS3,
-                                           keys,
+      validateConcatKeysToStorageNamespace(keys,
                                            storageNSWithPath,
                                            true,
                                            Seq("s3://bucket/foo/k1")
                                           ) should equal(true)
 
       val storageNSWithoutPath = "s3://bucket/"
-      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeS3,
-                                           keys,
+      validateConcatKeysToStorageNamespace(keys,
                                            storageNSWithoutPath,
                                            true,
                                            Seq("s3://bucket/k1")
@@ -136,16 +134,14 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
 
     it("should keep namespace scheme and host and add namespace trailing slash") {
       val storageNSWithPath = "s3://bucket/foo"
-      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeS3,
-                                           keys,
+      validateConcatKeysToStorageNamespace(keys,
                                            storageNSWithPath,
                                            true,
                                            Seq("s3://bucket/foo/k1")
                                           ) should equal(true)
 
       val storageNSWithoutPath = "s3://bucket"
-      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeS3,
-                                           keys,
+      validateConcatKeysToStorageNamespace(keys,
                                            storageNSWithoutPath,
                                            true,
                                            Seq("s3://bucket/k1")
@@ -154,16 +150,14 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
 
     it("should drop namespace scheme and host and keep namespace trailing slash") {
       val storageNSWithPath = "s3://bucket/foo/"
-      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeS3,
-                                           keys,
+      validateConcatKeysToStorageNamespace(keys,
                                            storageNSWithPath,
                                            false,
                                            Seq("foo/k1")
                                           ) should equal(true)
 
       val storageNSWithoutPath = "s3://bucket/"
-      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeS3,
-                                           keys,
+      validateConcatKeysToStorageNamespace(keys,
                                            storageNSWithoutPath,
                                            false,
                                            Seq("k1")
@@ -172,16 +166,14 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
 
     it("should drop namespace scheme and host and add namespace trailing slash") {
       val storageNSWithPath = "s3://bucket/foo"
-      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeS3,
-                                           keys,
+      validateConcatKeysToStorageNamespace(keys,
                                            storageNSWithPath,
                                            false,
                                            Seq("foo/k1")
                                           ) should equal(true)
 
       val storageNSWithoutPath = "s3://bucket"
-      validateConcatKeysToStorageNamespace(StorageUtils.StorageTypeS3,
-                                           keys,
+      validateConcatKeysToStorageNamespace(keys,
                                            storageNSWithoutPath,
                                            false,
                                            Seq("k1")
@@ -222,7 +214,6 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
   }
 
   private def validateConcatKeysToStorageNamespace(
-      storageType: String,
       keys: Seq[String],
       storageNamespace: String,
       keepNsSchemeAndHost: Boolean,
