@@ -90,7 +90,7 @@ object UncommittedGarbageCollector {
     val cutoffTime = DateUtils.addSeconds(new Date(), -minAgeSeconds)
     val startTime = java.time.Clock.systemUTC.instant()
 
-    val shouldMark = hc.getBoolean(LAKEFS_CONF_GC_DO_MARK, false)
+    val shouldMark = hc.getBoolean(LAKEFS_CONF_GC_DO_MARK, true)
     val shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, false)
     val markID = hc.get(LAKEFS_CONF_GC_MARK_ID, "")
 
@@ -208,13 +208,17 @@ object UncommittedGarbageCollector {
   }
 
   private def reportPath(storageNamespace: String, runID: String): String = {
-    s"${storageNamespace}_lakefs/retention/gc/uncommitted/$runID"
+    s"${storageNamespace}_lakefs/retention/gc/uncommitted/${runID}"
   }
 
   private def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
-    // TODO(eden) - check if this run succeeded
     val path = reportPath(storageNamespace, markID)
-    spark.read.parquet(s"$path/marked")
+    val markedRunSummary = spark.read.json(s"$path/summary.json")
+    if (markedRunSummary.select("success") == false) {
+      spark.emptyDataFrame.withColumn("address", lit(""))
+    } else {
+      spark.read.parquet(s"$path/marked")
+    }
   }
 
   private def writeJsonSummary(
