@@ -201,7 +201,7 @@ object UncommittedGarbageCollector {
     val reportDst = reportPath(storageNamespace, runID)
     writeJsonSummary(reportDst, runID, firstSlice, startTime, success, expiredAddresses.count())
 
-    expiredAddresses.write.parquet(s"$reportDst/marked")
+    expiredAddresses.write.parquet(s"${reportDst}/deleted")
   }
 
   private def reportPath(storageNamespace: String, runID: String): String = {
@@ -210,12 +210,12 @@ object UncommittedGarbageCollector {
 
   private def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
     val path = reportPath(storageNamespace, markID)
-    val markedRunSummary = spark.read.json(s"$path/summary.json")
+    val markedRunSummary = spark.read.json(s"${path}/summary.json")
     markedRunSummary.show()
     if (markedRunSummary.select("success") == false) {
       spark.emptyDataFrame.withColumn("address", lit(""))
     } else {
-      spark.read.parquet(s"$path/marked")
+      spark.read.parquet(s"${path}/marked")
     }
   }
 
