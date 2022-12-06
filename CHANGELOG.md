@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.87.0
+
+What's new:
+- Beta: [Uncommitted garbage collection](https://docs.lakefs.io/howto/garbage-collection.html#beta-deleting-uncommitted-objects)
+(hard-delete).
+- Python client map APIs use dynamically (#4606)
+- S3 block adapter support working with AWS SSE with KMS key ID (#4726)
+
 ## v0.86.0
 
 What's new:
