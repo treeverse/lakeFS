@@ -439,28 +439,28 @@ The uncommitted GC will not clean:
 2. Everything mentioned in [what does not get collected](#what-does-_not_-get-collected)
 
 ### Prerequisites
+{: .no_toc }
 
-1. lakeFS server version must be at least <TODO>. If your version is lower, you should first upgrade.
-2.
+1. lakeFS server version must be at least [v0.87.0](https://github.com/treeverse/lakeFS/releases/tag/v0.87.0). 
+If your version is lower, you should first upgrade.
+2. 
 
 To run the uncommitted GC job run:
   ```bash
 spark-submit \
-    --conf spark.hadoop.lakefs.api.url<LAKEFS_ENDPOINT> \
+    --conf spark.hadoop.lakefs.api.url=<LAKEFS_ENDPOINT> \
     --conf spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY_ID> \
     --conf spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_ACCESS_KEY> \
     --conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY_ID> \
     --conf spark.hadoop.lakefs.api.secret_key=<LAKEFS__SECRET_ACCESS_KEY> \
     --class io.treeverse.gc.UncommittedGarbageCollector \
     --packages org.apache.hadoop:hadoop-aws:2.7.7,\
-          lakefs-spark-client-<VERSION>-assembly-<TODO>.jar \
-    <REPO_NAME> <TODO_OUTPUT_LOCATION>
+          lakefs-spark-client-312-hadoop3-assembly-0.6.0.jar \
+    <REPO_NAME>
 ```
 
-
-
-
 #### Uncommitted GC job options
+{: .no_toc }
 
 Similar to the described [above](#gc-job-options).
 
@@ -473,10 +473,11 @@ during the job run may or may not be detected by the job. It can lead to unexpec
 including the deletion of newly written data. Avoid any write operation while the job is 
 running, like `UploadObject`, `CopyObject`, `StageObject`, `LinkPhysicalAddress` or 
 any other non-read operation.
-2. Only available for S3 repositories at the moment.
+2. Support is limited to S3 repositories, it was not tested on ABS, GS or MinIO.
 3. Scale may be limited, see performance results below.
 
 #### Next steps
+{: .no_toc }
 
 The uncommitted GC is under development, next releases will include:
 
