@@ -84,10 +84,12 @@ func testPreUncommittedGC(t *testing.T) {
 	}
 
 	// upload uncommitted data
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "uncommitted/data1", false)
 
-	// upload uncommitted data and delete
 	for _, direct := range []bool{false, true} {
+		// just leave uncommitted data
+		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, fmt.Sprintf("uncommitted/data1-%t", direct), direct)
+
+		// delete uncommitted
 		objPath := fmt.Sprintf("uncommitted/data2-%t", direct)
 		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath, direct)
 
