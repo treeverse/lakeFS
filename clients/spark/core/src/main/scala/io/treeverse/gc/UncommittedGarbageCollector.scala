@@ -67,6 +67,24 @@ object UncommittedGarbageCollector {
     dataDF
   }
 
+  private def validateRunModeConfigs(
+      shouldMark: Boolean,
+      shouldSweep: Boolean,
+      markID: String
+  ): Unit = {
+    if (!shouldMark && !shouldSweep) {
+      Console.out.println("Nothing to do, must specify at least one of mark, sweep. Exiting...")
+      System.exit(2)
+    } else if (!shouldMark && markID.isEmpty) { // Sweep-only mode but no mark ID to sweep
+      Console.out.printf("Please provide a mark ID (%s) for sweep-only mode. Exiting...\n",
+                         LAKEFS_CONF_GC_MARK_ID
+                        )
+      System.exit(2)
+    } else if (shouldMark && !markID.isEmpty) {
+      Console.out.println("Can't provide mark ID for mark mode. Exiting...")
+    }
+  }
+
   def main(args: Array[String]): Unit = {
     var runID = ""
     var firstSlice = ""
@@ -95,8 +113,7 @@ object UncommittedGarbageCollector {
     val shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, false)
     val markID = hc.get(LAKEFS_CONF_GC_MARK_ID, "")
 
-    GarbageCollector.validateRunModeConfigs(
-      hc.getBoolean(LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY, false),
+    validateRunModeConfigs(
       shouldMark,
       shouldSweep,
       markID
