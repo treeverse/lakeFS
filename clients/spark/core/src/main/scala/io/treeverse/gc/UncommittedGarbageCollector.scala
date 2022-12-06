@@ -178,6 +178,7 @@ object UncommittedGarbageCollector {
     } catch {
       case e: Throwable =>
         success = false
+        println(e.getStackTrace)
         throw e
     } finally {
       if (runID.nonEmpty && shouldMark) {
