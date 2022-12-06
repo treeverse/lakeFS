@@ -215,7 +215,7 @@ object GarbageCollector {
   /** This function validates that at least one of the mark or sweep flags is true, and that if only sweep is true, then a mark ID is provided.
    *  If 'lakefs.debug.gc.no_delete' is passed or if the above is not true, the function will stop the execution of the GC and exit.
    */
-  private def validateRunModeConfigs(
+  def validateRunModeConfigs(
       noDeleteFlag: Boolean,
       shouldMark: Boolean,
       shouldSweep: Boolean,
@@ -237,6 +237,8 @@ object GarbageCollector {
                          LAKEFS_CONF_GC_MARK_ID
                         )
       System.exit(2)
+    } else if (shouldMark && !markID.isEmpty) {
+      Console.out.println("Can't provide mark ID for mark mode. Exiting...")
     }
   }
 
@@ -333,13 +335,9 @@ object GarbageCollector {
         if (expiredAddresses == null) {
           expiredAddresses = readExpiredAddresses(gcAddressesLocation, markID)
         }
-        val region = if (args.length == 2) args(1) else null
-        // The remove operation uses an SDK client to directly access the underlying storage, and therefore does not need
-        // a translated storage namespace that triggers processing by Hadoop FileSystems.
-        var storageNSForSdkClient = apiClient.getStorageNamespace(repo, StorageClientType.SDKClient)
-        if (!storageNSForSdkClient.endsWith("/")) {
-          storageNSForSdkClient += "/"
-        }
+
+        val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
+        val region = getRegion(args)
 
         remove(configMapper,
                storageNSForSdkClient,
@@ -436,6 +434,20 @@ object GarbageCollector {
     println("Expired addresses:")
     expiredAddresses.show()
     (gcAddressesLocation, gcCommitsLocation, expiredAddresses, runID)
+  }
+
+  def getStorageNSForSdkClient(apiClient: ApiClient, repo: String): String = {
+    // The remove operation uses an SDK client to directly access the underlying storage, and therefore does not need
+    // a translated storage namespace that triggers processing by Hadoop FileSystems.
+    var storageNSForSdkClient = apiClient.getStorageNamespace(repo, StorageClientType.SDKClient)
+    if (!storageNSForSdkClient.endsWith("/")) {
+      storageNSForSdkClient += "/"
+    }
+    storageNSForSdkClient
+  }
+
+  def getRegion(args: Array[String]): String = {
+    if (args.length == 2) args(1) else null
   }
 
   private def readExpiredAddresses(addressesLocation: String, markID: String): DataFrame = {
