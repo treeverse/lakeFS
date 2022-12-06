@@ -25,7 +25,7 @@ func isAHash(part string) bool {
 }
 
 func isAFullCommitHash(part string) bool {
-	return len(part) == 64 && hashRegexp.MatchString(part)
+	return len(part) == commitIDStringLength && hashRegexp.MatchString(part)
 }
 
 // revResolve return the first resolve of 'rev' - by hash, branch or tag
