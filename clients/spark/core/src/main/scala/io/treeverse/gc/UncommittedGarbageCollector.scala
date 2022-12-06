@@ -153,12 +153,12 @@ object UncommittedGarbageCollector {
       }
       removed = {
         if (shouldSweep) {
-          if (markID != "") { // get the expired addresses from the mark id run
-            markedAddresses = readMarkedAddresses(storageNamespace, markID)
-            println("deleting marked addresses: " + markID)
-          } else {
+          if (shouldMark) { // get the expired addresses from the mark id run
             markedAddresses = addressesToDelete
             println("deleting marked addresses: " + runID)
+          } else {
+            markedAddresses = readMarkedAddresses(storageNamespace, markID)
+            println("deleting marked addresses: " + markID)
           }
 
           val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)

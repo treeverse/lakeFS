@@ -237,6 +237,8 @@ object GarbageCollector {
                          LAKEFS_CONF_GC_MARK_ID
                         )
       System.exit(2)
+    } else if (shouldMark && !markID.isEmpty) {
+      Console.out.println("Can't provide mark ID for mark mode. Exiting...")
     }
   }
 
