@@ -161,7 +161,7 @@ func testPostUncommittedGC(t *testing.T) {
 			continue
 		}
 		// verify we know this object
-		if slices.Contains(findings.All, obj) {
+		if !slices.Contains(findings.All, obj) {
 			t.Errorf("Object '%s' FOUND KNOWN - was not found pre ugc", obj)
 		}
 	}
