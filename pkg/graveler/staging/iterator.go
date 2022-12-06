@@ -19,10 +19,10 @@ type Iterator struct {
 
 // NewStagingIterator initiates the staging iterator with a batchSize
 func NewStagingIterator(ctx context.Context, store kv.StoreMessage, st graveler.StagingToken, prefix graveler.Key) (*Iterator, error) {
-	itr := kv.NewPartitionIterator(ctx, store.Store, (&graveler.StagedEntryData{}).ProtoReflect().Type(), graveler.StagingTokenPartition(st))
-	if prefix != nil {
-		itr.SeekGE(prefix)
-	}
+	itr := kv.NewPartitionIterator(ctx, store.Store, (&graveler.StagedEntryData{}).ProtoReflect().Type(), graveler.StagingTokenPartition(st), prefix)
+	// if prefix != nil {
+	// 	itr.SeekGE(prefix)
+	// }
 	return &Iterator{
 		ctx:    ctx,
 		store:  store,

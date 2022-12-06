@@ -307,7 +307,7 @@ func TestKVOrderedCommitIterator_CloseTwice(t *testing.T) {
 	entIt := mock.NewMockEntriesIterator(ctrl)
 	entIt.EXPECT().Close().Times(1)
 	store := mock.NewMockStore(ctrl)
-	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
+	store.EXPECT().ScanWithPrefix(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
 	msgStore := kv.StoreMessage{Store: store}
 	repository := &graveler.RepositoryRecord{
 		RepositoryID: "CommitIterClose",
@@ -334,7 +334,7 @@ func TestKVOrderedCommitIterator_NextAfterClose(t *testing.T) {
 	entIt := mock.NewMockEntriesIterator(ctrl)
 	entIt.EXPECT().Close().Times(1)
 	store := mock.NewMockStore(ctrl)
-	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
+	store.EXPECT().ScanWithPrefix(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
 	msgStore := kv.StoreMessage{Store: store}
 	repository := &graveler.RepositoryRecord{
 		RepositoryID: "CommitIterClose",

@@ -249,17 +249,19 @@ type PartitionIterator struct {
 	itrClosed    bool
 	itr          EntriesIterator
 	partitionKey string
+	prefix       []byte
 	value        *MessageEntry
 	err          error
 }
 
-func NewPartitionIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, partitionKey string) *PartitionIterator {
+func NewPartitionIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, partitionKey string, prefix []byte) *PartitionIterator {
 	return &PartitionIterator{
 		ctx:          ctx,
 		store:        store,
 		msgType:      msgType,
 		itrClosed:    true,
 		partitionKey: partitionKey,
+		prefix:       prefix,
 	}
 }
 
@@ -269,7 +271,7 @@ func (p *PartitionIterator) Next() bool {
 	}
 	p.value = nil
 	if p.itrClosed {
-		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), []byte(""))
+		p.itr, p.err = p.store.ScanWithPrefix(p.ctx, []byte(p.partitionKey), p.prefix, []byte(""))
 		if p.err != nil {
 			return false
 		}
@@ -299,7 +301,7 @@ func (p *PartitionIterator) Next() bool {
 func (p *PartitionIterator) SeekGE(key []byte) {
 	if p.Err() == nil {
 		p.Close() // Close previous before creating new iterator
-		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), key)
+		p.itr, p.err = p.store.ScanWithPrefix(p.ctx, []byte(p.partitionKey), p.prefix, key)
 		p.itrClosed = p.err != nil
 	}
 }

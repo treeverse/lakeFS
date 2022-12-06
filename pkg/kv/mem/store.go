@@ -155,6 +155,10 @@ func (s *Store) ScanWithPrefix(ctx context.Context, partitionKey, prefix, start 
 		return nil, kv.ErrMissingPartitionKey
 	}
 
+	if start == nil {
+		start = make([]byte, 0)
+	}
+
 	return &EntriesIterator{
 		store:     s,
 		prefix:    prefix,

@@ -306,34 +306,47 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 	sampleData := setupSampleData(t, ctx, store, testPartitionKey, string(samplePrefix), sampleItems)
 	_ = setupSampleData(t, ctx, store, testUnusedPartitionKey, string(samplePrefix), sampleItems)
 
-	t.Run("full", func(t *testing.T) {
-		scan, err := store.Scan(ctx, []byte(testPartitionKey), samplePrefix)
-		if err != nil {
-			t.Fatal("failed to scan", err)
-		}
-		defer scan.Close()
+	for _, typ := range []string{"prefix", "start"} {
+		t.Run(typ, func(t *testing.T) {
+			var prefix, start []byte
+			if typ == "prefix" {
+				prefix = samplePrefix
+			} else {
+				start = samplePrefix
+			}
+			t.Run("full", func(t *testing.T) {
+				scan, err := store.ScanWithPrefix(ctx, []byte(testPartitionKey), prefix, start)
+				if err != nil {
+					t.Fatal("failed to scan", err)
+				}
+				defer scan.Close()
 
-		var entries []kv.Entry
-		for scan.Next() {
-			ent := scan.Entry()
-			switch {
-			case ent == nil:
-				t.Fatal("scan got nil entry")
-			case ent.Key == nil:
-				t.Fatal("Key is nil while scan item", len(entries))
-			case ent.Value == nil:
-				t.Fatal("Value is nil while scan item", len(entries))
-			}
-			if !bytes.HasPrefix(ent.Key, samplePrefix) {
-				break
-			}
-			entries = append(entries, *ent)
-		}
-		if err := scan.Err(); err != nil {
-			t.Fatal("scan ended with an error", err)
-		}
-		testCompareEntries(t, entries, sampleData)
-	})
+				var entries []kv.Entry
+				for scan.Next() {
+					ent := scan.Entry()
+					switch {
+					case ent == nil:
+						t.Error("scan got nil entry")
+					case ent.Key == nil:
+						t.Error("Key is nil while scan item", len(entries))
+					case ent.Value == nil:
+						t.Error("Value is nil while scan item", len(entries))
+					}
+					if !bytes.HasPrefix(ent.Key, samplePrefix) {
+						if typ == "start" {
+							break
+						}
+						t.Errorf("Key %s missing prefix %s", string(ent.Key), string(samplePrefix))
+					}
+					entries = append(entries, *ent)
+				}
+				if err := scan.Err(); err != nil {
+					t.Fatal("scan ended with an error", err)
+				}
+				testCompareEntries(t, entries, sampleData)
+			})
+		})
+	}
 
 	t.Run("part", func(t *testing.T) {
 		const fromIndex = 5

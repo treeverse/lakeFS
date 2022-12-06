@@ -1,6 +1,7 @@
 package dynamodb
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -314,30 +315,78 @@ func (s *Store) ScanWithPrefix(ctx context.Context, partitionKey, prefix, start 
 	return internalIter, nil
 }
 
-func (s *Store) scanInternal(ctx context.Context, partitionKey, prefix, scanKey []byte, exclusiveStartKey map[string]*dynamodb.AttributeValue) (*EntriesIterator, error) {
+// NextKeyAfterPrefix returns the first key after all keys that have prefix
+// key.  It does not modify key.
+func NextKeyAfterPrefix(key []byte) []byte {
+	key = append([]byte(nil), key...)
+	var i int
+	for i = len(key) - 1; i >= 0; i-- {
+		if key[i] < 255 {
+			key[i]++
+			break
+		}
+		key[i] = 0
+	}
+	if i < 0 {
+		key = append([]byte{1}, key...)
+	}
+	return key
+}
+
+func makeBytesAttribute(value []byte) *dynamodb.AttributeValue {
+	return &dynamodb.AttributeValue{
+		B: value,
+	}
+}
+
+// prefixExpression returns a sort-key expression for keyName to return
+// _almost_ keys with prefix prefixKey that are >=scanKey.  It also adds to
+// ExpressionAttributeValues the values that expression requires.
+//
+// Due to limitations of DynamoDB query syntax, the condition may also
+// accept the first key after prefixKey.  Caller must drop the last value
+// returned if it does not begin with prefixKey.  Specifically this happens
+// when both prefixKey and scanKey are supplied.
+func PrefixExpression(keyName string, prefixKey, scanKey []byte, expressionAttributeValues map[string]*dynamodb.AttributeValue) string {
+	if len(prefixKey) > 0 && len(scanKey) > 0 {
+		// DynamoDB has no way of expressing an exact prefix
+		// ("begins_with(..., prefix)") along with a starting point
+		// (">= scan").  Instead look at all values BETWEEN scanKey
+		// and the first key which does not begin with prefixKey.
+		nextKey := NextKeyAfterPrefix(prefixKey)
+		expressionAttributeValues[":fromkey"] = makeBytesAttribute(scanKey)
+		expressionAttributeValues[":tokey"] = makeBytesAttribute(nextKey)
+		return fmt.Sprintf("%s BETWEEN :fromkey AND :tokey", keyName)
+	}
+	if len(prefixKey) > 0 {
+		expressionAttributeValues[":prefixkey"] = makeBytesAttribute(prefixKey)
+		return fmt.Sprintf("begins_with(%s, :prefixkey)", keyName)
+	}
+	if len(scanKey) > 0 {
+		expressionAttributeValues[":fromkey"] = makeBytesAttribute(scanKey)
+		return fmt.Sprintf("%s >= :fromkey", keyName)
+	}
+	return ""
+}
+
+func (s *Store) scanInternal(ctx context.Context, partitionKey, prefixKey, scanKey []byte, exclusiveStartKey map[string]*dynamodb.AttributeValue) (*EntriesIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
 	keyConditionExpression := PartitionKey + " = :partitionkey"
+
 	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
 		":partitionkey": {
 			B: partitionKey,
 		},
 	}
 
-	if len(prefix) > 0 {
-		keyConditionExpression += " AND begins_with(" + ItemKey + ", :prefixkey)"
-		expressionAttributeValues[":prefixkey"] = &dynamodb.AttributeValue{
-			B: prefix,
-		}
+	rangeCondition := PrefixExpression(ItemKey, prefixKey, scanKey, expressionAttributeValues)
+
+	if len(rangeCondition) > 0 {
+		keyConditionExpression += " AND " + rangeCondition
 	}
 
-	if len(scanKey) > 0 {
-		keyConditionExpression += " AND " + ItemKey + " >= :fromkey"
-		expressionAttributeValues[":fromkey"] = &dynamodb.AttributeValue{
-			B: scanKey,
-		}
-	}
 	queryInput := &dynamodb.QueryInput{
 		TableName:                 aws.String(s.params.TableName),
 		KeyConditionExpression:    aws.String(keyConditionExpression),
@@ -361,11 +410,23 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, prefix, scanKey 
 	}
 	dynamoConsumedCapacity.WithLabelValues(operation).Add(*queryOutput.ConsumedCapacity.CapacityUnits)
 
+	if len(queryOutput.Items) > 0 {
+		// Remove the last element if it was mistakenly returned because of
+		// an inexact PrefixExpression.
+		lastItem := queryOutput.Items[len(queryOutput.Items)-1]
+		if !bytes.HasPrefix(lastItem[ItemKey].B, prefixKey) {
+			queryOutput.Items = queryOutput.Items[0 : len(queryOutput.Items)-1]
+			if queryOutput.Count != nil {
+				*queryOutput.Count--
+			}
+		}
+	}
+
 	return &EntriesIterator{
 		scanCtx:      ctx,
 		store:        s,
 		partKey:      partitionKey,
-		prefixKey:    prefix,
+		prefixKey:    prefixKey,
 		startKey:     scanKey,
 		queryResult:  queryOutput,
 		currEntryIdx: 0,
