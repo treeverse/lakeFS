@@ -31,6 +31,7 @@ import org.apache.http.HttpStatus;
 import com.google.common.base.Preconditions;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashFunction;
+import com.google.common.primitives.Bytes;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,10 +106,13 @@ public class LakeFSOutputCommitter extends FileOutputCommitter {
      *     depend on a configured algorithm here!
      */
     protected String pathToBranch(Path p) {
+        final int MAX_LEN = 32;
         String path = p.toString();
-        // TODO(ariels): Use a more compact encoding (base-36?)
-        String digest = new BigInteger(hash.hashString(path, utf8).asBytes()).toString(36);
-        String pathPrefix = path.length() > 128 ? path.substring(0, 128) : path;
+        // Hash string to get its digest; prepend a zero byte to ensure
+        // BigInteger keeps it positive.
+        byte[] digestBytes = Bytes.concat(new byte[]{(byte)0}, hash.hashString(path, utf8).asBytes());
+        String digest = new BigInteger(digestBytes).toString(36);
+        String pathPrefix = path.length() > MAX_LEN ? path.substring(path.length()-MAX_LEN) : path;
         pathPrefix = pathPrefix.replaceAll("[^-_a-zA-Z0-9]", "-");
         return String.format("%s-%s-%s", branchNamePrefix, digest, pathPrefix);
     }
