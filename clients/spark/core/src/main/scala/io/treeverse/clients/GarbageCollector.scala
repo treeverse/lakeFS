@@ -215,7 +215,7 @@ object GarbageCollector {
   /** This function validates that at least one of the mark or sweep flags is true, and that if only sweep is true, then a mark ID is provided.
    *  If 'lakefs.debug.gc.no_delete' is passed or if the above is not true, the function will stop the execution of the GC and exit.
    */
-  def validateRunModeConfigs(
+  private def validateRunModeConfigs(
       noDeleteFlag: Boolean,
       shouldMark: Boolean,
       shouldSweep: Boolean,
@@ -237,8 +237,6 @@ object GarbageCollector {
                          LAKEFS_CONF_GC_MARK_ID
                         )
       System.exit(2)
-    } else if (shouldMark && !markID.isEmpty) {
-      Console.out.println("Can't provide mark ID for mark mode. Exiting...")
     }
   }
 
