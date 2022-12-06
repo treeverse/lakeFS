@@ -26,7 +26,33 @@ func isAHash(part string) bool {
 
 // revResolve return the first resolve of 'rev' - by hash, branch or tag
 func revResolve(ctx context.Context, store Store, addressProvider ident.AddressProvider, repository *graveler.RepositoryRecord, rev string) (*graveler.ResolvedRef, error) {
-	resolvers := []revResolverFunc{revResolveAHash, revResolveBranch, revResolveTag}
+	// looking for commit first - a full commit takes precedence over a branch or a tag
+	r, err := revResolveAHash(ctx, store, addressProvider, repository, rev)
+	if err != nil {
+		return nil, err
+	}
+	if r != nil {
+		if r.CommitID.String() != rev {
+			// branches and tags take precedence over a prefix of a commit
+			rBranch, err := revResolveByBranchOrTag(ctx, store, addressProvider, repository, rev)
+			if errors.Is(err, graveler.ErrNotFound) {
+				return r, nil
+			}
+			if err != nil {
+				return nil, err
+			}
+			if rBranch != nil {
+				return rBranch, nil
+			}
+		}
+		return r, nil
+	}
+
+	return revResolveByBranchOrTag(ctx, store, addressProvider, repository, rev)
+}
+
+func revResolveByBranchOrTag(ctx context.Context, store Store, addressProvider ident.AddressProvider, repository *graveler.RepositoryRecord, rev string) (*graveler.ResolvedRef, error) {
+	resolvers := []revResolverFunc{revResolveBranch, revResolveTag}
 	for _, resolveHelper := range resolvers {
 		r, err := resolveHelper(ctx, store, addressProvider, repository, rev)
 		if err != nil {
@@ -36,6 +62,7 @@ func revResolve(ctx context.Context, store Store, addressProvider ident.AddressP
 			return r, nil
 		}
 	}
+
 	return nil, graveler.ErrNotFound
 }
 
