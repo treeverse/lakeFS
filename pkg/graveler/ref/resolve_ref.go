@@ -24,35 +24,14 @@ func isAHash(part string) bool {
 	return hashRegexp.MatchString(part)
 }
 
+func isAFullCommitHash(part string) bool {
+	return len(part) == 64 && hashRegexp.MatchString(part)
+}
+
 // revResolve return the first resolve of 'rev' - by hash, branch or tag
 func revResolve(ctx context.Context, store Store, addressProvider ident.AddressProvider, repository *graveler.RepositoryRecord, rev string) (*graveler.ResolvedRef, error) {
 	// looking for commit first - a full commit takes precedence over a branch or a tag
-	r, err := revResolveAHash(ctx, store, addressProvider, repository, rev)
-	if err != nil {
-		return nil, err
-	}
-	if r != nil {
-		if r.CommitID.String() != rev {
-			// branches and tags take precedence over a prefix of a commit
-			rBranch, err := revResolveByBranchOrTag(ctx, store, addressProvider, repository, rev)
-			if errors.Is(err, graveler.ErrNotFound) {
-				return r, nil
-			}
-			if err != nil {
-				return nil, err
-			}
-			if rBranch != nil {
-				return rBranch, nil
-			}
-		}
-		return r, nil
-	}
-
-	return revResolveByBranchOrTag(ctx, store, addressProvider, repository, rev)
-}
-
-func revResolveByBranchOrTag(ctx context.Context, store Store, addressProvider ident.AddressProvider, repository *graveler.RepositoryRecord, rev string) (*graveler.ResolvedRef, error) {
-	resolvers := []revResolverFunc{revResolveBranch, revResolveTag}
+	resolvers := []revResolverFunc{revResolveCommit, revResolveBranch, revResolveTag, revResolveCommitPrefix}
 	for _, resolveHelper := range resolvers {
 		r, err := resolveHelper(ctx, store, addressProvider, repository, rev)
 		if err != nil {
@@ -153,11 +132,33 @@ func ResolveRawRef(ctx context.Context, store Store, addressProvider ident.Addre
 	}, nil
 }
 
-func revResolveAHash(ctx context.Context, store Store, addressProvider ident.AddressProvider, repository *graveler.RepositoryRecord, rev string) (*graveler.ResolvedRef, error) {
+func revResolveCommitPrefix(ctx context.Context, store Store, addressProvider ident.AddressProvider, repository *graveler.RepositoryRecord, rev string) (*graveler.ResolvedRef, error) {
 	if !isAHash(rev) {
 		return nil, nil
 	}
 	commit, err := store.GetCommitByPrefix(ctx, repository, graveler.CommitID(rev))
+	if errors.Is(err, graveler.ErrNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	commitID := graveler.CommitID(addressProvider.ContentAddress(commit))
+	return &graveler.ResolvedRef{
+		Type: graveler.ReferenceTypeCommit,
+		BranchRecord: graveler.BranchRecord{
+			Branch: &graveler.Branch{
+				CommitID: commitID,
+			},
+		},
+	}, nil
+}
+
+func revResolveCommit(ctx context.Context, store Store, addressProvider ident.AddressProvider, repository *graveler.RepositoryRecord, rev string) (*graveler.ResolvedRef, error) {
+	if !isAFullCommitHash(rev) {
+		return nil, nil
+	}
+	commit, err := store.GetCommit(ctx, repository, graveler.CommitID(rev))
 	if errors.Is(err, graveler.ErrNotFound) {
 		return nil, nil
 	}
