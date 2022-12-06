@@ -204,7 +204,7 @@ object UncommittedGarbageCollector {
   ): Unit = {
     val reportDst = reportPath(storageNamespace, runID)
     writeJsonSummary(reportDst, runID, firstSlice, startTime, success, expiredAddresses.count())
-    expiredAddresses.show()
+
     expiredAddresses.write.parquet(s"${reportDst}/deleted")
   }
 
