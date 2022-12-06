@@ -164,7 +164,7 @@ object UncommittedGarbageCollector {
 
         // TODO (niro): not working - need to find the most efficient way to save the first slice
         if (!dataDF.isEmpty) {
-          val firstFile = dataDF.select(col("address")).first().toString()
+          val firstFile = dataDF.first.getAs[String]("address")
           firstSlice = firstFile.substring(0, firstFile.lastIndexOf("/"))
         }
       }
