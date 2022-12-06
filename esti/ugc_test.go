@@ -51,10 +51,12 @@ func TestUncommittedGC(t *testing.T) {
 func testPreUncommittedGC(t *testing.T) {
 	ctx := context.Background()
 	repo := createRepositoryByName(ctx, t, uncommittedGCRepoName)
+	var gone []string
 
 	// upload some data and commit
 	for i := 0; i < 3; i++ {
 		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "committed/data-"+strconv.Itoa(i), false)
+		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "committed/data-direct-"+strconv.Itoa(i), true)
 	}
 	_, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "Commit initial data"})
 	if err != nil {
@@ -62,42 +64,49 @@ func testPreUncommittedGC(t *testing.T) {
 	}
 
 	// upload same file twice and commit, keep delete physical location
-	_, err = uploadFileAndReport(ctx, repo, mainBranch, "committed/double-or-nothing", "double-or-nothing-take1", false)
-	if err != nil {
-		t.Fatalf("Failed to upload double-or-nothing I: %s", err)
-	}
-	firstUploaded := objectPhysicalAddress(t, ctx, repo, "committed/double-or-nothing")
+	for _, direct := range []bool{false, true} {
+		objPath := fmt.Sprintf("committed/double-or-nothing-%t", direct)
+		_, err = uploadFileAndReport(ctx, repo, mainBranch, objPath, objPath+"1", direct)
+		if err != nil {
+			t.Fatalf("Failed to upload double-or-nothing I: %s", err)
+		}
+		addr := objectPhysicalAddress(t, ctx, repo, objPath)
+		gone = append(gone, addr)
 
-	_, err = uploadFileAndReport(ctx, repo, mainBranch, "committed/double-or-nothing", "double-or-nothing-take2", false)
-	if err != nil {
-		t.Fatalf("Failed to upload double-or-nothing II: %s", err)
-	}
-	_, err = client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "Commit initial data"})
-	if err != nil {
-		t.Fatal("Commit single file uploaded twice", err)
+		_, err = uploadFileAndReport(ctx, repo, mainBranch, objPath, objPath+"2", direct)
+		if err != nil {
+			t.Fatalf("Failed to upload double-or-nothing II: %s", err)
+		}
+		_, err = client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "Commit initial data"})
+		if err != nil {
+			t.Fatal("Commit single file uploaded twice", err)
+		}
 	}
 
 	// upload uncommitted data
 	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "uncommitted/data1", false)
 
-	// unload uncommitted data and delete
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "uncommitted/data2", false)
-	deletedUncommitted := objectPhysicalAddress(t, ctx, repo, "uncommitted/data2")
-	delResp, err := client.DeleteObjectWithResponse(ctx, repo, mainBranch, &api.DeleteObjectParams{Path: "uncommitted/data2"})
-	if err != nil {
-		t.Fatalf("Delete object failed: %s", err)
-	}
-	if delResp.StatusCode() != http.StatusNoContent {
-		t.Fatalf("Delete object failed with status code %d", delResp.StatusCode())
+	// upload uncommitted data and delete
+	for _, direct := range []bool{false, true} {
+		objPath := fmt.Sprintf("uncommitted/data2-%t", direct)
+		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath, direct)
+
+		gone = append(gone, objectPhysicalAddress(t, ctx, repo, objPath))
+
+		delResp, err := client.DeleteObjectWithResponse(ctx, repo, mainBranch, &api.DeleteObjectParams{Path: objPath})
+		if err != nil {
+			t.Fatalf("Delete object '%s' failed: %s", objPath, err)
+		}
+		if delResp.StatusCode() != http.StatusNoContent {
+			t.Fatalf("Delete object '%s' failed with status code %d", objPath, delResp.StatusCode())
+		}
 	}
 
 	// write findings into a file
-	objects := listRepositoryUnderlyingStorage(t, ctx, repo)
-	deleted := []string{firstUploaded, deletedUncommitted}
 	findings, err := json.MarshalIndent(
 		UncommittedFindings{
-			All:     objects,
-			Deleted: deleted,
+			All:     listRepositoryUnderlyingStorage(t, ctx, repo),
+			Deleted: gone,
 		}, "", "  ")
 	if err != nil {
 		t.Fatalf("failed to marshal findings: %s", err)
