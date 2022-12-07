@@ -30,13 +30,16 @@ trait BulkRemover {
    *
    *  @param keys keys of objects to be removed
    *  @param storageNamespace the storage namespace in which the objects are stored
+   *  @param keepNsSchemeAndHost whether to keep a storage namespace of the form "s3://bucket/foo/" or remove its URI
+   *                            scheme and host leaving it in the form "/foo/"
+   *  @param applyUTF8Encoding whether to UTF-8 encode keys
    *  @return object URIs of the keys
    */
   def constructRemoveKeyNames(
       keys: Seq[String],
       storageNamespace: String,
-      keepNsSchemeAndHost: Boolean = true,
-      applyUTF8Encoding: Boolean = false
+      keepNsSchemeAndHost: Boolean,
+      applyUTF8Encoding: Boolean
   ): Seq[String] = {
     println("storageNamespace: " + storageNamespace)
     var removeKeyNames =
@@ -66,7 +69,7 @@ object BulkRemoverFactory {
     val bucket = uri.getHost
 
     override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
-      val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, false)
+      val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, false, false)
       println("Remove keys:", removeKeyNames.take(100).mkString(", "))
       val removeKeys = removeKeyNames.map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
 
@@ -97,7 +100,7 @@ object BulkRemoverFactory {
     val storageAccountName = StorageUtils.AzureBlob.uriToStorageAccountName(uri)
 
     override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
-      val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, true)
+      val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, true, true)
       println("Remove keys:", removeKeyNames.take(100).mkString(", "))
       val removeKeys = removeKeyNames.asJava
 
