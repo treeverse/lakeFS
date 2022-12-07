@@ -95,7 +95,6 @@ validate_gc_job() {
   local repo=$2
   local existing_ref=$3
   local test_id=$4
-  local file_should_be_deleted=$(echo ${test_case} | jq -r '.file_deleted')
   if run_lakectl fs cat "lakefs://${repo}/${existing_ref}/file${test_id}" > /dev/null 2>&1 && ${file_should_be_deleted} ; then
     echo "Expected the file to be removed by the garbage collector but it has remained in the repository"
     return 1
@@ -138,11 +137,12 @@ prepare_for_gc() {
   run_lakectl repo create "lakefs://${repo}" "${STORAGE_NAMESPACE}/${repo}/"
   run_lakectl fs upload "lakefs://${repo}/main/not_deleted_file1" -s /local/gc-tests/sample_file
   run_lakectl fs upload "lakefs://${repo}/main/not_deleted_file2" -s /local/gc-tests/sample_file
-  run_lakectl fs upload "lakefs://${repo}/main/not_deleted_file3" -s /local/gc-tests/sample_file
+  run_lakectl fs upload --direct "lakefs://${repo}/main/not_deleted_file3" -s /local/gc-tests/sample_file
   run_lakectl commit "lakefs://${repo}/main" -m "add three files not to be deleted" --epoch-time-seconds 0
 
   run_lakectl branch create "lakefs://${repo}/a${test_id}" -s "lakefs://${repo}/main"
-  run_lakectl fs upload "lakefs://${repo}/a${test_id}/file${test_id}" -s /local/gc-tests/sample_file
+  local direct_upload_flag=$("$(echo ${test_case} | jq -r '.direct_upload // false')" && echo '--direct' || echo '')
+  run_lakectl fs upload "${direct_upload_flag}" "lakefs://${repo}/a${test_id}/file${test_id}" -s /local/gc-tests/sample_file
   file_existing_ref=$(run_lakectl commit "lakefs://${repo}/a${test_id}" -m "uploaded file ${test_id}" --epoch-time-seconds 0 | grep "ID: " | awk '{ print $2 }')
   run_lakectl branch create "lakefs://${repo}/b${test_id}" -s "lakefs://${repo}/${file_existing_ref}"
   echo "${file_existing_ref}" > "existing_ref_${test_id}.txt"
