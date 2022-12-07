@@ -1828,7 +1828,6 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 				}, true, nil
 			}
 		}
-		f.WriteString(entryAddress + "\n")
 		if err = pw.Write(UncommittedParquetObject{
 			PhysicalAddress: entryAddress,
 			CreationDate:    entry.LastModified.AsTime().Unix(),
