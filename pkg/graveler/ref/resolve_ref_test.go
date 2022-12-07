@@ -112,6 +112,19 @@ func TestResolveRawRef(t *testing.T) {
 
 	commitCommitID := commitLog[11]
 
+	branch3Name := string(commitLog[10])[:6]
+	branch3CommitID := commitLog[14]
+
+	testutil.Must(t, r.SetBranch(ctx, repository, graveler.BranchID(branch3Name), graveler.Branch{
+		CommitID:     branch3CommitID,
+		StagingToken: "token3",
+	}))
+
+	tag2Name := string(commitLog[6])[:10]
+	tag2CommitID := commitLog[8]
+
+	testutil.Must(t, r.CreateTag(ctx, repository, graveler.TagID(tag2Name), tag2CommitID))
+
 	table := []struct {
 		Name                   string
 		Ref                    graveler.Ref
@@ -185,6 +198,18 @@ func TestResolveRawRef(t *testing.T) {
 			Name:             "commit_prefix_good",
 			Ref:              graveler.Ref(commitCommitID[:5]),
 			ExpectedCommitID: commitCommitID,
+		},
+		{
+			Name:                   "branch_precedes_commit_prefix",
+			Ref:                    graveler.Ref(branch3Name),
+			ExpectedBranchModifier: graveler.ResolvedBranchModifierNone,
+			ExpectedToken:          "token3",
+			ExpectedCommitID:       branch3CommitID,
+		},
+		{
+			Name:             "tag_precedes_commit_prefix",
+			Ref:              graveler.Ref(tag2Name),
+			ExpectedCommitID: tag2CommitID,
 		},
 		{
 			Name:        "commit_prefix_ambiguous",
