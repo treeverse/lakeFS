@@ -1285,8 +1285,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 	c.LogAction(ctx, "list_repos", r, "", "", "")
 
 	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), paginationAfter(params.After))
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, fmt.Sprintf("error listing repositories: %s", err))
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	results := make([]Repository, 0, len(repos))
