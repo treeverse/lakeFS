@@ -64,6 +64,26 @@ class ParallelDataListerSpec
           df.sort(desc("base_address")).head.getString(0) should be("slice10/object10")
         })
       }
+      it("should be able to list path with ':' in it") {
+        val dataDir = new File(dir.toFile, "data")
+        dataDir.mkdir()
+        withSparkSession(spark => {
+          val sliceID = f"legacy_physical:address_path"
+          val slice = new File(dataDir, sliceID)
+          slice.mkdir()
+          new File(slice, "some_file").createNewFile()
+
+          val path = new Path(dataDir.toURI)
+          val configMapper = new ConfigMapper(
+            spark.sparkContext.broadcast(
+              HadoopUtils.getHadoopConfigurationValues(spark.sparkContext.hadoopConfiguration)
+            )
+          )
+          val df =
+            new ParallelDataLister().listData(configMapper, path).sort("base_address")
+          df.count() should be(1)
+        })
+      }
     }
   }
 }
