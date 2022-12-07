@@ -8,6 +8,9 @@ What's new:
 - Python client map APIs use dynamically (#4606)
 - S3 block adapter support working with AWS SSE with KMS key ID (#4726)
 
+Bug fixes:
+- Fix commit prefix is prefered over branch/tag (#4743)
+
 ## v0.86.0
 
 What's new:
