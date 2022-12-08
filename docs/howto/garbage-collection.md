@@ -289,10 +289,35 @@ This utility is a Spark application that uses [distCp](https://hadoop.apache.org
 * Backup: copy expired objects from your repository's storage namespace to an external location before running GC in [sweep only mode](#sweep-only-mode).  
 * Restore: copy objects that were hard-deleted by GC from an external location you used for saving your backup into your repository's storage namespace.
 
+**Notes**
+* GC backup and restore is available from version 0.5.2 of lakeFS Spark client.
+* It is compatible with Hadoop API versions 3.1.3 and higher.
+* Note that the utility is not fast due to distcp performance limitations. You may prefer to backup your whole storage namespace with [AzCopy](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) / [aws cp](https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html) / [rclone](https://rclone.org/).
+
 ### Job options
 
-- This will only work with Hadoop versions > 3.1.3, and so require a Hadoop 3 client.
-- Note that the utility is not fast due to distcp performance limitations. You may prefer backup your whole storage namespace with [AzCopy](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) / [aws cp](https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html) / [rclone](https://rclone.org/).
+#### Enabled by default
+{: .no_toc }
+
+`-v`, to log additional info (path, size) in the SKIP/COPY log
+`-direct` to write directly to destination paths, recommended when the destination is an object store
+`-strategy=dynamic` to accelerate distCp performance
+
+#### Configuration options
+{: .no_toc }
+
+`-log`, to configure the log path
+`-m`, to set the max number of maps
+`-bandwidth`, to specify bandwidth per map, in MB/second
+`-numListstatusThreads`, number of threads to use for building file listing, max 40
+
+To configure the properties, set the following hadoop properties:
+```text
+spark.hadoop.distcp.log.path
+spark.hadoop.distcp.max.maps
+spark.hadoop.distcp.map.bandwidth.mb
+spark.hadoop.distcp.liststatus.threads 
+```
 
 ### Running GC backup and restore 
 {: .no_toc }
@@ -303,7 +328,6 @@ Currently, GC backup and restore is available for Spark 3.1.2 and 3.2.1, but it 
 First, download the lakeFS Spark client Uber-jar. The Uber-jar can be found on a public S3 location:
 `http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/${CLIENT_VERSION}/lakefs-spark-client-312-hadoop3-assembly-${CLIENT_VERSION}.jar
 `
-**Note** GC backup and restore is available from version 0.5.2 of lakeFS Spark client.
 
 Running instructions:
 
@@ -327,6 +351,7 @@ Program arguments:
 To start the backup process, run:
 ```bash
 spark-submit --class io.treeverse.clients.GCBackupAndRestore \
+  --packages org.apache.hadoop:hadoop-aws:3.2.0 \
   -c spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY> \
   -c spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_KEY> \
   <APPLICATION-JAR-PATH> \
@@ -373,7 +398,7 @@ Program arguments:
 To start the restore process, run:
 ```bash
 spark-submit --class io.treeverse.clients.GCBackupAndRestore \
-  --packages org.apache.hadoop:hadoop-aws:2.7.7 \
+ --packages org.apache.hadoop:hadoop-aws:3.2.0 \
   -c spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY> \
   -c spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_KEY> \
   <APPLICATION-JAR-PATH> \
@@ -392,7 +417,6 @@ Program arguments:
 To start the restore process, run:
   ```bash
 spark-submit --class io.treeverse.clients.GCBackupAndRestore \
-  --packages org.apache.hadoop:hadoop-aws:2.7.7 \
   -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
   <APPLICATION-JAR-PATH> \
   objects-to-restore-list-location backup-external-location storage-namespace azure
