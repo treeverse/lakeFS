@@ -183,10 +183,10 @@ object UncommittedGarbageCollector {
         )
         val configMapper = new ConfigMapper(hcValues)
 
-        GarbageCollector
+        val removed = GarbageCollector
           .bulkRemove(configMapper, markedAddresses, storageNSForSdkClient, region, storageType)
           .toDF()
-          .collect()
+        removed.collect()
       }
     } catch {
       case e: Throwable =>
