@@ -659,6 +659,17 @@ type RefManager interface {
 	// GetBranch returns the Branch metadata object for the given BranchID
 	GetBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (*Branch, error)
 
+	// GetBranchCached gets cached branch information by branch /
+	// repository id.  Cached information is refreshed by time or by
+	// GetBranch.
+	//
+	// Use it only for speedups not for correctness, as it may return
+	// stale (incorrect) data.  The typical flow is to call
+	// GetBranchCached, perform some actions, and commit using an action
+	// that verifies the branch information used was actually correct.
+	// If that fails, retry.
+	GetBranchCached(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (*Branch, error)
+
 	// CreateBranch creates a branch with the given id and Branch metadata
 	CreateBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, branch Branch) error
 
@@ -1428,7 +1439,7 @@ func (g *KVGraveler) Set(ctx context.Context, repository *RepositoryRecord, bran
 func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, repository *RepositoryRecord, branchID BranchID, stagingOperation func(branch *Branch) error) error {
 	var try int
 	for try = 0; try < BranchWriteMaxTries; try++ {
-		branch, err := g.GetBranch(ctx, repository, branchID)
+		branch, err := g.RefManager.GetBranchCached(ctx, repository, branchID)
 		if err != nil {
 			return err
 		}
@@ -1440,7 +1451,7 @@ func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, re
 
 		// Checking if the token has changed.
 		// If it changed, we need to write the changes to the branch's new staging token
-		branch, err = g.GetBranch(ctx, repository, branchID)
+		branch, err = g.RefManager.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return err
 		}

@@ -336,6 +336,10 @@ func (m *RefsFake) GetBranch(context.Context, *graveler.RepositoryRecord, gravel
 	return m.Branch, m.Err
 }
 
+func (m *RefsFake) GetBranchCached(context.Context, *graveler.RepositoryRecord, graveler.BranchID) (*graveler.Branch, error) {
+	return m.Branch, m.Err
+}
+
 func (m *RefsFake) SetBranch(context.Context, *graveler.RepositoryRecord, graveler.BranchID, graveler.Branch) error {
 	return nil
 }

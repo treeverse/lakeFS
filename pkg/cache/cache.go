@@ -12,6 +12,9 @@ type SetFn func() (v interface{}, err error)
 
 type Cache interface {
 	GetOrSet(k interface{}, setFn SetFn) (v interface{}, err error)
+
+	Clear(k interface{})
+	Set(k interface{}, v interface{})
 }
 
 type GetSetCache struct {
@@ -43,6 +46,14 @@ func (c *GetSetCache) GetOrSet(k interface{}, setFn SetFn) (v interface{}, err e
 		c.lru.AddEx(k, v, c.baseExpiry+c.jitterFn())
 		return v, nil
 	})
+}
+
+func (c *GetSetCache) Set(k, v interface{}) {
+	c.lru.AddEx(k, v, c.baseExpiry+c.jitterFn())
+}
+
+func (c *GetSetCache) Clear(k interface{}) {
+	c.lru.Remove(k)
 }
 
 func NewJitterFn(jitter time.Duration) JitterFn {
