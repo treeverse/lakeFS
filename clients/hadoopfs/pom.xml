@@ -334,6 +334,13 @@ To export to S3:
 	  <scope>test</scope>
 	</dependency>
 
+    <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>postgresql</artifactId>
+        <version>1.17.3</version>
+        <scope>test</scope>
+    </dependency>
+
 	<!--
 	     https://stackoverflow.com/questions/35569092/java-lang-classnotfoundexception-com-fasterxml-jackson-annotation-jsonincludev
 	     says to keep all of these on the same versions -->

@@ -42,7 +42,12 @@ import org.junit.Test;
 import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.*;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.lifecycle.Startables;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.*;
@@ -76,37 +81,44 @@ public class LakeFSOutputCommitterTest {
     protected static final String S3_ACCESS_KEY_ID = "AKIArootkey";
     protected static final String S3_SECRET_ACCESS_KEY = "secret/minio/key=";
 
-    @Rule
-    public final GenericContainer s3 = new GenericContainer(MINIO.toString()).
-        withCommand("minio", "server", "/data").
-        withEnv("MINIO_ROOT_USER", S3_ACCESS_KEY_ID).
-        withEnv("MINIO_ROOT_PASSWORD", S3_SECRET_ACCESS_KEY).
-        withEnv("MINIO_DOMAIN", "s3.local.lakefs.io").
-        withEnv("MINIO_UPDATE", "off").
-        withExposedPorts(9000);
+    Network network = Network.newNetwork();
 
-    @Rule
-    public final GenericContainer lakeFS = new GenericContainer(LAKEFS_IMAGE.toString()).
-//            withCommand("/bin/sh", "-c").
-//            withCommand("setup", "--local-settings", "--user-name", "docker", "--access-key-id", LAKEFS_ACCESS_KEY, "--secret-access-key", LAKEFS_SECRET_KEY).
-//            withCommand("lakefs", "run").
-            withEnv("LAKEFS_DATABASE_TYPE", "local").
+    public final GenericContainer<?> s3 = new GenericContainer<>(MINIO.toString()).
+            withCommand("minio", "server", "/data").
+            withEnv("MINIO_ROOT_USER", S3_ACCESS_KEY_ID).
+            withEnv("MINIO_ROOT_PASSWORD", S3_SECRET_ACCESS_KEY).
+            withEnv("MINIO_DOMAIN", "s3.local.lakefs.io").
+            withEnv("MINIO_UPDATE", "off").
+            withNetwork(network).
+            withNetworkAliases("minio").
+            withExposedPorts(9000);
+
+    public final PostgreSQLContainer<?> postgresDB = new PostgreSQLContainer<>("postgres:11")
+            .withExposedPorts(5432)
+            .withDatabaseName("postgres")
+            .withUsername("lakefs")
+            .withPassword("lakefs")
+            .withNetwork(network)
+            .withNetworkAliases("postgres");
+
+    public final GenericContainer<?> lakeFS = new GenericContainer<>(LAKEFS_IMAGE.toString()).
+            withEnv("LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING", "postgres://lakefs:lakefs@postgres/postgres?sslmode=disable").
+            withEnv("LAKEFS_DATABASE_TYPE", "postgres").
             withEnv("LAKEFS_BLOCKSTORE_TYPE", "s3").
             withEnv("LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE", "true").
+//            withEnv("LAKEFS_BLOCKSTORE_S3_ENDPOINT", "http://s3.local.lakefs.io:9000").
             withEnv("LAKEFS_BLOCKSTORE_S3_ENDPOINT", "http://minio:9000").
             withEnv("LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID", S3_ACCESS_KEY_ID).
             withEnv("LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY", S3_SECRET_ACCESS_KEY).
             withEnv("LAKEFS_AUTH_ENCRYPT_SECRET_KEY", "some random secret string").
-//            withEnv("LAKECTL_CREDENTIALS_ACCESS_KEY_ID", LAKEFS_ACCESS_KEY).
-//            withEnv("LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY", LAKEFS_SECRET_KEY).
-//            withEnv("LAKECTL_SERVER_ENDPOINT_URL", "http://localhost:8000").
-            withExposedPorts(8000);
-
-//    protected static String makeS3BucketName() {
-//        String slug = NanoIdUtils.randomNanoId(NanoIdUtils.DEFAULT_NUMBER_GENERATOR,
-//                "abcdefghijklmnopqrstuvwxyz-0123456789".toCharArray(), 14);
-//        return String.format("bucket-%s-x", slug);
-//    }
+            withEnv("LAKEFS_STATS_ENABLED", "false").
+            withEnv("LAKEFS_LOGGING_LEVEL", "DEBUG").
+            waitingFor(Wait.forHttp("/")).
+            withNetwork(network).
+            withNetworkAliases("lakefs").
+            withExposedPorts(8000).
+            dependsOn(postgresDB, s3).
+            withCommand("run");
 
 
     @After
@@ -117,14 +129,26 @@ public class LakeFSOutputCommitterTest {
 
     @Before
     public void setUp() throws Exception {
-        lakeFS.execInContainer("lakefs setup --user-name tester --access-key-id ${LAKEFS_ACCESS_KEY} --secret-access-key ${LAKEFS_SECRET_KEY}");
-        lakeFS.execInContainer("lakefs run");
+        Startables.deepStart(s3, postgresDB, lakeFS).join();
+//        Thread.sleep(20000);
+        Container.ExecResult setupResult = lakeFS.execInContainer("/app/lakefs", "setup", "--user-name=tester", "--access-key-id", LAKEFS_ACCESS_KEY, "--secret-access-key", LAKEFS_SECRET_KEY);
+        String setupstdout = setupResult.getStdout();
+        int setupexitCode = setupResult.getExitCode();
+        System.out.println("setupstdout is " + setupstdout);
+        System.out.println("setupexitCode is " + setupexitCode);
+
+
+        String lakeFSAddress = String.format("http://%s:%s/api/v1", lakeFS.getHost(), lakeFS.getMappedPort(8000));
+        System.out.println("lakeFSAddress is " + lakeFSAddress);
+        String s3Endpoint = String.format("http://%s:%s", s3.getHost(), s3.getMappedPort(9000));
+        System.out.println("s3 is " + s3Endpoint);
+
 
         AWSCredentials creds = new BasicAWSCredentials(S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY);
 
         ClientConfiguration clientConfiguration = new ClientConfiguration()
                 .withSignerOverride("AWSS3V4SignerType");
-        String s3Endpoint = String.format("http://s3.local.lakefs.io:%d", s3.getMappedPort(9000));
+//        String s3Endpoint = String.format("http://s3.local.lakefs.io:%d", s3.getMappedPort(9000));
 
         s3Client = new AmazonS3Client(creds, clientConfiguration);
 
@@ -142,16 +166,29 @@ public class LakeFSOutputCommitterTest {
         conf.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem");
         conf.set("fs.lakefs.access.key", LAKEFS_ACCESS_KEY);
         conf.set("fs.lakefs.secret.key", LAKEFS_SECRET_KEY);
-        conf.set("fs.lakefs.endpoint", "https://localhost:8000/api/v1");
-//        conf.set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem");
-//        conf.set(org.apache.hadoop.fs.s3a.Constants.ACCESS_KEY, S3_ACCESS_KEY_ID);
-//        conf.set(org.apache.hadoop.fs.s3a.Constants.SECRET_KEY, S3_SECRET_ACCESS_KEY);
-//        conf.set(org.apache.hadoop.fs.s3a.Constants.ENDPOINT, s3Endpoint);
-//        conf.set(org.apache.hadoop.fs.s3a.Constants.BUFFER_DIR, "/tmp/s3a");
+        conf.set("fs.lakefs.endpoint", lakeFSAddress);
+        conf.set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem");
+        conf.set(org.apache.hadoop.fs.s3a.Constants.ACCESS_KEY, S3_ACCESS_KEY_ID);
+        conf.set(org.apache.hadoop.fs.s3a.Constants.SECRET_KEY, S3_SECRET_ACCESS_KEY);
+        conf.set(org.apache.hadoop.fs.s3a.Constants.ENDPOINT, s3Endpoint);
 
         lfsClient = new LakeFSClient("lakefs://", conf);
         repositoriesApi = lfsClient.getRepositories();
-        repositoriesApi.createRepository(new RepositoryCreation().name("example_repo").storageNamespace(s3Base), false);
+
+        try {
+            RepositoryCreation rc = new RepositoryCreation().name("example_repo").storageNamespace(s3Base);
+            System.out.println("rc is " + rc);
+            repositoriesApi.createRepository(rc, false);
+        } catch (ApiException e) {
+            System.out.println("error is " + e);
+            System.out.println("lakeFS logs " + lakeFS.getLogs());
+            System.out.println("Done logs ");
+            System.out.println("s3 logs " + s3.getLogs());
+            System.out.println("Done logs s3 ");
+            System.out.println("going to sleep ");
+            Thread.sleep(300000);
+        }
+
 
         SparkConf sparkConf = new SparkConf().setMaster("local").setAppName("Spark test")
                 .set("spark.sql.shuffle.partitions", "17")
@@ -159,7 +196,7 @@ public class LakeFSOutputCommitterTest {
                 .set("spark.hadoop.fs.lakefs.impl","io.lakefs.LakeFSFileSystem")
                 .set("fs.lakefs.access.key", LAKEFS_ACCESS_KEY)
                 .set("fs.lakefs.secret.key", LAKEFS_SECRET_KEY)
-                .set("fs.lakefs.endpoint", "http://localhost:8000/api/v1")
+                .set("fs.lakefs.endpoint", lakeFSAddress)
                 .set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
                 .set(org.apache.hadoop.fs.s3a.Constants.ACCESS_KEY, S3_ACCESS_KEY_ID)
                 .set(org.apache.hadoop.fs.s3a.Constants.SECRET_KEY, S3_SECRET_ACCESS_KEY)
@@ -167,7 +204,7 @@ public class LakeFSOutputCommitterTest {
         this.spark = SparkSession.builder().config(sparkConf).getOrCreate();
     }
 
-//    @Ignore
+    @Ignore
     @Test
     public void testWriteTextfile() throws ApiException, IOException {
         String output = "lakefs://example_repo/main/some_df";
