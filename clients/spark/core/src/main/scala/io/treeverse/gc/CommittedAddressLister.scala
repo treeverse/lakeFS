@@ -32,8 +32,7 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
     val normalizedClientStorageNamespace =
       if (clientStorageNamespace.endsWith("/")) clientStorageNamespace
       else clientStorageNamespace + "/"
-    // TODO (optional): push down a filter to the input format, to filter out absolute addresses!
-    // filter the addresses we manage - relative and full that are part of our storage namespace
+
     import spark.implicits._
     df
       .select("address_type", "address")
