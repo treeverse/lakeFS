@@ -67,7 +67,7 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
         // if not relative and starts with storage namespace - trim to relative
         val relativeType = addrType.equals(AddressType.RELATIVE.name)
         if (!relativeType && addr.startsWith(normalizedClientStorageNamespace)) {
-          addr.substring(normalizedClientStorageNamespace.length - 1)
+          addr.substring(normalizedClientStorageNamespace.length)
         } else {
           addr
         }

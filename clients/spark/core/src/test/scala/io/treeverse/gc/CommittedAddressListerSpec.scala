@@ -122,12 +122,12 @@ class CommittedAddressListerSpec
           addressLister.filterAddresses(spark, df, storageNamespace)
 
         val expected = Set(
-          "/data/gc-migrate-lakefs-0-40-1:b40b9540-91f0-4add-96ba-205f17e03c57/77I_VsbUg1vU05hWRnTlw",
+          "data/gc-migrate-lakefs-0-40-1:b40b9540-91f0-4add-96ba-205f17e03c57/77I_VsbUg1vU05hWRnTlw",
           "data/gqv3epl4fd2o8m3men70/ce8co454fd2o8m3menag",
           "5078f67ece2d495fbe056d5d6bdc93a2",
           "cf4abf678fe54bfebd342a4d93ff05a0",
           "5b72f534f8014e55af18bd59b9235a27",
-          "/data/gqv3epl4fd2o8m3men70/ce8cob54fd2o8m3menbg",
+          "data/gqv3epl4fd2o8m3men70/ce8cob54fd2o8m3menbg",
           "d20cfd37cd0a4dcc80e3ce95446d11eb",
           "482aaffe969747b7a83c2d08816c5c22",
           "data/gqv3epl4fd2o8m3men70/ce8co6d4fd2o8m3menb0"
