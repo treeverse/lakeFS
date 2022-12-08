@@ -2,6 +2,7 @@ package io.treeverse.gc
 
 import io.treeverse.clients.{LakeFSContext, LakeFSJobParams}
 import io.treeverse.lakefs.catalog.Entry.AddressType
+import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 trait CommittedAddressLister {
@@ -30,14 +31,19 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
       if (clientStorageNamespace.endsWith("/")) clientStorageNamespace
       else clientStorageNamespace + "/"
 
+    var storageScheme = new Path(clientStorageNamespace).toUri.getScheme
+    if (storageScheme.nonEmpty) {
+      storageScheme += ":"
+    }
+
     import spark.implicits._
     df
       .select("address_type", "address")
       .filter(row => {
         val (addrType, addr) = (row.getString(0), row.getString(1))
-        addrType.equals(AddressType.RELATIVE.name) || addr.startsWith(
-          normalizedClientStorageNamespace
-        )
+        addrType.equals(AddressType.RELATIVE.name) ||
+        addr.startsWith(normalizedClientStorageNamespace) ||
+        (storageScheme.nonEmpty && !addr.startsWith(storageScheme))
       })
       .map(row => {
         val (addrType, addr) = (row.getString(0), row.getString(1))
