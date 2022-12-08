@@ -1844,8 +1844,8 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 	}
 
 	// Finished reading all staging area - no continuation token
-	hasMore := count > 0
-	return nil, hasMore, nil
+	hasData := count > 0
+	return nil, hasData, nil
 }
 
 func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, location string, fd *os.File, size int64) error {
