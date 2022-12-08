@@ -188,7 +188,6 @@ object UncommittedGarbageCollector {
           GarbageCollector
             .bulkRemove(configMapper, markedAddresses, storageNSForSdkClient, region, storageType)
             .toDF()
-
         } else {
           spark.emptyDataFrame.withColumn("address", lit(""))
         }
