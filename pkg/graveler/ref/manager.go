@@ -35,6 +35,10 @@ const (
 	DefaultCommitCacheSize   = 1000
 	DefaultCommitCacheExpiry = 30 * time.Second
 	DefaultCommitCacheJitter = DefaultRepositoryCacheExpiry / 2
+
+	DefaultBranchCacheSize   = 1000
+	DefaultBranchCacheExpiry = 2 * time.Second
+	DefaultBranchCacheJitter = 250 * time.Millisecond
 )
 
 type CacheConfig struct {
@@ -55,6 +59,12 @@ var (
 		Expiry: DefaultCommitCacheExpiry,
 		Jitter: DefaultCommitCacheJitter,
 	}
+
+	DefaultBranchCacheConfig = &CacheConfig{
+		Size:   DefaultBranchCacheSize,
+		Expiry: DefaultBranchCacheExpiry,
+		Jitter: DefaultBranchCacheJitter,
+	}
 )
 
 type KVManager struct {
@@ -63,6 +73,7 @@ type KVManager struct {
 	batchExecutor   batch.Batcher
 	repoCache       cache.Cache
 	commitCache     cache.Cache
+	branchCache     cache.Cache
 }
 
 func branchFromProto(pb *graveler.BranchData) *graveler.Branch {
@@ -98,17 +109,20 @@ type ManagerConfig struct {
 	AddressProvider   ident.AddressProvider
 	RepoCacheConfig   *CacheConfig
 	CommitCacheConfig *CacheConfig
+	BranchCacheConfig *CacheConfig
 }
 
 func NewKVRefManager(cfg ManagerConfig) *KVManager {
 	repoCache := newCache(cfg.RepoCacheConfig, DefaultRepositoryCacheConfig)
 	commitCache := newCache(cfg.CommitCacheConfig, DefaultCommitCacheConfig)
+	branchCache := newCache(cfg.BranchCacheConfig, DefaultBranchCacheConfig)
 	return &KVManager{
 		kvStore:         cfg.KvStore,
 		addressProvider: cfg.AddressProvider,
 		batchExecutor:   cfg.Executor,
 		repoCache:       repoCache,
 		commitCache:     commitCache,
+		branchCache:     branchCache,
 	}
 }
 
@@ -338,9 +352,31 @@ func (m *KVManager) getBranchWithPredicate(ctx context.Context, repository *grav
 	return branchWithPred.Branch, branchWithPred.Predicate, nil
 }
 
+func makeBranchKey(repository *graveler.RepositoryRecord, branchID graveler.BranchID) string {
+	return fmt.Sprintf("%s/%s", repository.RepositoryID, branchID)
+}
+
 func (m *KVManager) GetBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) (*graveler.Branch, error) {
 	branch, _, err := m.getBranchWithPredicate(ctx, repository, branchID)
+	key := makeBranchKey(repository, branchID)
+	if err == nil {
+		m.branchCache.Set(key, branch)
+	} else {
+		m.branchCache.Clear(key)
+	}
 	return branch, err
+}
+
+func (m *KVManager) GetBranchCached(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) (*graveler.Branch, error) {
+	key := makeBranchKey(repository, branchID)
+	v, err := m.branchCache.GetOrSet(key, func() (v interface{}, err error) {
+		branch, _, err := m.getBranchWithPredicate(ctx, repository, branchID)
+		return branch, err
+	})
+	if v == nil {
+		return nil, err
+	}
+	return v.(*graveler.Branch), nil
 }
 
 func (m *KVManager) createBranch(ctx context.Context, repositoryPartition string, branchID graveler.BranchID, branch graveler.Branch) error {
