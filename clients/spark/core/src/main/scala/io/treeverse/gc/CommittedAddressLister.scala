@@ -33,9 +33,12 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
       else clientStorageNamespace + "/"
 
     var storageScheme = new Path(clientStorageNamespace).toUri.getScheme
-    if (storageScheme.nonEmpty) {
-      storageScheme += ":"
+    if (storageScheme.isEmpty) {
+      throw new IllegalArgumentException(
+        s"Invalid storage namespace - missing scheme $clientStorageNamespace"
+      )
     }
+    storageScheme += ":"
 
     filterAddresses(spark, df, normalizedClientStorageNamespace, storageScheme)
   }
@@ -57,7 +60,7 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
         // - non relative with no schema (relative)
         addrType.equals(AddressType.RELATIVE.name) ||
         addr.startsWith(normalizedClientStorageNamespace) ||
-        (storageScheme.nonEmpty && !addr.startsWith(storageScheme))
+        !addr.startsWith(storageScheme)
       })
       .map(row => {
         val (addrType, addr) = (row.getString(0), row.getString(1))
