@@ -17,7 +17,7 @@ As part of our routine work with data we develop new code, improve and upgrade o
 Creating a branch provides you an isolated environment with a snapshot of your repository (any part of your data lake you chose to manage on lakeFS). While working on your own branch in isolation, all other data users will be looking at the repository’s main branch. They can't see your changes, and you don’t see changes to main done after you created the branch. 
 
 No worries, no data duplication is done, it’s all metadata management behind the scenes.
-Let’s look at 3 examples of a test environment and their branching models.
+Let’s look at 2 examples of a test environment and their branching models.
 
 ### Example 1: Upgrading Spark and using Reset action
 
