@@ -192,13 +192,13 @@ object UncommittedGarbageCollector {
           spark.emptyDataFrame.withColumn("address", lit(""))
         }
       }
+      removed.collect()
     } catch {
       case e: Throwable =>
         success = false
         println(e.getStackTrace)
         throw e
     } finally {
-      removed.collect()
       if (runID.nonEmpty && shouldMark) {
         writeReports(
           storageNamespace,
