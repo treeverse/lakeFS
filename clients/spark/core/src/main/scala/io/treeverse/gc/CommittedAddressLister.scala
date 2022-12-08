@@ -8,27 +8,50 @@ import io.treeverse.lakefs.catalog.Entry.AddressType
 import org.apache.spark.sql.functions.col
 
 trait CommittedAddressLister {
-  def listCommittedAddresses(spark: SparkSession, storageNamespace: String): DataFrame
+  def listCommittedAddresses(
+      spark: SparkSession,
+      storageNamespace: String,
+      clientStorageNamespace: String
+  ): DataFrame
 }
 
 class NaiveCommittedAddressLister extends CommittedAddressLister {
-  override def listCommittedAddresses(spark: SparkSession, storageNamespace: String): DataFrame = {
+  override def listCommittedAddresses(
+      spark: SparkSession,
+      storageNamespace: String,
+      clientStorageNamespace: String
+  ): DataFrame = {
     val normalizedStorageNamespace =
       if (storageNamespace.endsWith("/")) storageNamespace else storageNamespace + "/"
     val params = LakeFSJobParams.forStorageNamespace(
       normalizedStorageNamespace,
       UncommittedGarbageCollector.UNCOMMITTED_GC_SOURCE_NAME
     )
-    var df = LakeFSContext.newDF(spark, params)
-    df = df
-      // TODO (optional): push down a filter to the input format, to filter out absolute addresses!
-      .filter(
-        (col("address_type") === AddressType.RELATIVE.name) ||
-          // Backwards compatability with entries prior to address_type
-          col("address").startsWith(normalizedStorageNamespace)
-      )
-      .select("address")
-      .distinct
+    val df = LakeFSContext.newDF(spark, params)
+
+    val normalizedClientStorageNamespace =
+      if (clientStorageNamespace.endsWith("/")) clientStorageNamespace
+      else clientStorageNamespace + "/"
+    // TODO (optional): push down a filter to the input format, to filter out absolute addresses!
+    // filter the addresses we manage - relative and full that are part of our storage namespace
+    import spark.implicits._
     df
+      .select("address_type", "address")
+      .filter(row => {
+        val (addrType, addr) = (row.getString(0), row.getString(1))
+        addrType.equals(AddressType.RELATIVE.name) || addr.startsWith(
+          normalizedClientStorageNamespace
+        )
+      })
+      .map(row => {
+        val (addrType, addr) = (row.getString(0), row.getString(1))
+        if (addrType.equals(AddressType.RELATIVE.name)) {
+          (addr)
+        } else {
+          (addr.substring(normalizedStorageNamespace.length - 1))
+        }
+      })
+      .distinct()
+      .toDF("address")
   }
 }
