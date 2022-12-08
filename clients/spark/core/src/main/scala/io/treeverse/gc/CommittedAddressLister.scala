@@ -1,11 +1,8 @@
 package io.treeverse.gc
 
-import org.apache.spark.sql.DataFrame
-import io.treeverse.clients.LakeFSContext
-import org.apache.spark.sql.SparkSession
-import io.treeverse.clients.LakeFSJobParams
+import io.treeverse.clients.{LakeFSContext, LakeFSJobParams}
 import io.treeverse.lakefs.catalog.Entry.AddressType
-import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.{DataFrame, SparkSession}
 
 trait CommittedAddressLister {
   def listCommittedAddresses(
@@ -45,9 +42,9 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
       .map(row => {
         val (addrType, addr) = (row.getString(0), row.getString(1))
         if (addrType.equals(AddressType.RELATIVE.name)) {
-          (addr)
+          addr
         } else {
-          (addr.substring(normalizedStorageNamespace.length - 1))
+          addr.substring(normalizedStorageNamespace.length - 1)
         }
       })
       .distinct()
