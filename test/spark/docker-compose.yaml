@@ -33,6 +33,7 @@ services:
       - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
+      - AWS_REGION
     env_file:
         - tester.env
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
