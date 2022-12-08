@@ -155,7 +155,8 @@ object UncommittedGarbageCollector {
         runID = uncommittedGCRunInfo.runID
 
         // Process committed
-        val clientStorageNamespace = apiClient.getStorageNamespace(repo, StorageClientType.SDKClient)
+        val clientStorageNamespace =
+          apiClient.getStorageNamespace(repo, StorageClientType.SDKClient)
         val committedDF = new NaiveCommittedAddressLister()
           .listCommittedAddresses(spark, storageNamespace, clientStorageNamespace)
 
