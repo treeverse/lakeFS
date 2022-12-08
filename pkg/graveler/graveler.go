@@ -209,6 +209,12 @@ type Repository struct {
 	InstanceUID string
 }
 
+// errNotFoundMustVerify is returned by operations such as delete that
+// explicitly _avoided_ action because an object was not found.
+// safeBranchWrite uses this to verify that the cached value is still
+// correct and that no action needed to have been taken.
+var errNotFoundMustVerify = fmt.Errorf("%w", ErrNotFound)
+
 func NewRepository(storageNamespace StorageNamespace, defaultBranchID BranchID) Repository {
 	return Repository{
 		StorageNamespace: storageNamespace,
@@ -1438,6 +1444,10 @@ func (g *KVGraveler) Set(ctx context.Context, repository *RepositoryRecord, bran
 // didn't change while writing to the branch.
 func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, repository *RepositoryRecord, branchID BranchID, stagingOperation func(branch *Branch) error) error {
 	var try int
+	// notFound is set if stagingOperation returns errNotFoundMustVerify
+	// that holds after verifying the staging token.  It causes
+	// safeBranchWrite to return ErrNotFound.
+	notFound := false
 	for try = 0; try < BranchWriteMaxTries; try++ {
 		branch, err := g.RefManager.GetBranchCached(ctx, repository, branchID)
 		if err != nil {
@@ -1445,7 +1455,10 @@ func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, re
 		}
 		startToken := branch.StagingToken
 
-		if err = stagingOperation(branch); err != nil {
+		err = stagingOperation(branch)
+		needsVerification := errors.Is(err, errNotFoundMustVerify)
+
+		if err != nil && !needsVerification {
 			return err
 		}
 
@@ -1457,6 +1470,10 @@ func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, re
 		}
 		endToken := branch.StagingToken
 		if startToken == endToken {
+			if needsVerification {
+				// Correctly processed as not found.
+				notFound = true
+			}
 			break
 		} else {
 			// we got a new token, try again
@@ -1468,6 +1485,9 @@ func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, re
 	}
 	if try == BranchWriteMaxTries {
 		return fmt.Errorf("safe branch write: %w", ErrTooManyTries)
+	}
+	if notFound {
+		return ErrNotFound
 	}
 	return nil
 }
@@ -1526,8 +1546,9 @@ func (g *KVGraveler) deleteUnsafe(ctx context.Context, repository *RepositoryRec
 		}
 		// entry not found in staging - continue to committed check
 	case val == nil:
-		// found tombstone in staging, return ErrNotFound
-		return ErrNotFound
+		// found tombstone in staging so not found.  Still need to
+		// verify staging token was correct.
+		return errNotFoundMustVerify
 	default:
 		// found in staging, set tombstone
 		return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
@@ -1551,8 +1572,9 @@ func (g *KVGraveler) deleteUnsafe(ctx context.Context, repository *RepositoryRec
 			// unknown error
 			return fmt.Errorf("reading from committed: %w", err)
 		}
-		// key is nowhere to be found
-		return ErrNotFound
+		// key is nowhere to be found.  Still need to verify staging
+		// token was correct -- maybe it will show up in the staging area soon!
+		return errNotFoundMustVerify
 	}
 
 	// found in committed, set tombstone
