@@ -14,6 +14,7 @@ trait CommittedAddressLister {
 }
 
 class NaiveCommittedAddressLister extends CommittedAddressLister {
+
   override def listCommittedAddresses(
       spark: SparkSession,
       storageNamespace: String,
@@ -36,21 +37,36 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
       storageScheme += ":"
     }
 
+    filterAddresses(spark, df, normalizedClientStorageNamespace, storageScheme)
+  }
+
+  def filterAddresses(
+      spark: SparkSession,
+      df: DataFrame,
+      normalizedClientStorageNamespace: String,
+      storageScheme: String
+  ): DataFrame = {
     import spark.implicits._
     df
       .select("address_type", "address")
       .filter(row => {
         val (addrType, addr) = (row.getString(0), row.getString(1))
+        // allow:
+        // - type relative
+        // - non relative to repo storage namespace
+        // - non relative with no schema (relative)
         addrType.equals(AddressType.RELATIVE.name) ||
         addr.startsWith(normalizedClientStorageNamespace) ||
         (storageScheme.nonEmpty && !addr.startsWith(storageScheme))
       })
       .map(row => {
         val (addrType, addr) = (row.getString(0), row.getString(1))
-        if (addrType.equals(AddressType.RELATIVE.name)) {
-          addr
+        // if not relative and starts with storage namespace - trim to relative
+        val relativeType = addrType.equals(AddressType.RELATIVE.name)
+        if (!relativeType && addr.startsWith(normalizedClientStorageNamespace)) {
+          addr.substring(normalizedClientStorageNamespace.length - 1)
         } else {
-          addr.substring(normalizedStorageNamespace.length - 1)
+          addr
         }
       })
       .distinct()
