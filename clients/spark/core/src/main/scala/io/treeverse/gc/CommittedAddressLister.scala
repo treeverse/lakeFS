@@ -32,23 +32,23 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
       if (clientStorageNamespace.endsWith("/")) clientStorageNamespace
       else clientStorageNamespace + "/"
 
-    var storageScheme = new Path(clientStorageNamespace).toUri.getScheme
-    if (storageScheme.isEmpty) {
-      throw new IllegalArgumentException(
-        s"Invalid storage namespace - missing scheme $clientStorageNamespace"
-      )
-    }
-    storageScheme += ":"
-
-    filterAddresses(spark, df, normalizedClientStorageNamespace, storageScheme)
+    filterAddresses(spark, df, normalizedClientStorageNamespace)
   }
 
   def filterAddresses(
       spark: SparkSession,
       df: DataFrame,
-      normalizedClientStorageNamespace: String,
-      storageScheme: String
+      normalizedClientStorageNamespace: String
   ): DataFrame = {
+    // extract the schema
+    var storageScheme = new Path(normalizedClientStorageNamespace).toUri.getScheme
+    if (storageScheme.isEmpty) {
+      throw new IllegalArgumentException(
+        s"Invalid storage namespace - missing scheme $normalizedClientStorageNamespace"
+      )
+    }
+    storageScheme += ":"
+
     import spark.implicits._
     df
       .select("address_type", "address")
