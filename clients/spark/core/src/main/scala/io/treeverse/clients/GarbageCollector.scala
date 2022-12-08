@@ -17,7 +17,6 @@ import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneOffset}
 import java.util.UUID
-import org.apache.commons.lang3.StringUtils
 
 trait RangeGetter extends Serializable {
 
@@ -25,10 +24,9 @@ trait RangeGetter extends Serializable {
    */
   def getRangeIDs(commitID: String, repo: String): Iterator[String]
 
-  /** @return all object addresses in range rangeID on repo.
-   *  Absolute addresses are ignored, unless they are under the given storage namespace.
+  /** @return all object addresses in range rangeID on repo
    */
-  def getRangeAddresses(rangeID: String, repo: String, storageNS: String): Iterator[String]
+  def getRangeAddresses(rangeID: String, repo: String): Iterator[String]
 }
 
 class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: ConfigMapper)
@@ -52,18 +50,15 @@ class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: Config
         .map(o => new String(o.id))
   }
 
-  def getRangeAddresses(rangeID: String, repo: String, storageNS: String): Iterator[String] = {
+  def getRangeAddresses(rangeID: String, repo: String): Iterator[String] = {
     val location = ApiClient
       .get(apiConf)
       .getRangeURL(repo, rangeID)
     SSTableReader
       .forRange(configMapper.configuration, location)
       .newIterator()
-      .filter(e => e.message.addressType.isRelative || e.message.address.startsWith(storageNS))
-      .map(e =>
-        if (e.message.addressType.isRelative) e.message.address
-        else StringUtils.removeStart(e.message.address, storageNS)
-      )
+      .filter(_.message.addressType.isRelative)
+      .map(a => a.message.address)
   }
 }
 
@@ -141,7 +136,6 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
       expiredRangeIDs: Dataset[String],
       keepRangeIDs: Dataset[String],
       repo: String,
-      storageNS: String,
       numRangePartitions: Int,
       numAddressPartitions: Int
   ): Dataset[String] = {
@@ -157,12 +151,10 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
 
     val expiredAddresses = cleanExpiredRangeIDs
       .repartition(numAddressPartitions)
-      .flatMap(rangeGetter.getRangeAddresses(_, repo, storageNS))
+      .flatMap(rangeGetter.getRangeAddresses(_, repo))
 
     val keepAddresses =
-      keepRangeIDs
-        .repartition(numAddressPartitions)
-        .flatMap(rangeGetter.getRangeAddresses(_, repo, storageNS))
+      keepRangeIDs.repartition(numAddressPartitions).flatMap(rangeGetter.getRangeAddresses(_, repo))
 
     println(s"getAddressesToDelete: use $numAddressPartitions partitions for addresses")
     val addressPartitioner = new HashPartitioner(numAddressPartitions)
@@ -171,7 +163,6 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
 
   def getExpiredAddresses(
       repo: String,
-      storageNS: String,
       runID: String,
       commitDFLocation: String,
       numRangePartitions: Int,
@@ -190,7 +181,6 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
     getAddressesToDelete(expiredRangeIDsDF,
                          keepRangeIDsDF,
                          repo,
-                         storageNS,
                          numRangePartitions,
                          numAddressPartitions
                         )
@@ -324,20 +314,9 @@ object GarbageCollector {
     var gcCommitsLocation = ""
     var runID = ""
     var expiredAddresses: DataFrame = null
-    val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
-
     if (shouldMark) {
       val markInfo =
-        markAddresses(gc,
-                      apiClient,
-                      repo,
-                      hc,
-                      storageType,
-                      apiURL,
-                      markID,
-                      storageNSForSdkClient,
-                      storageNSForHadoopFS
-                     )
+        markAddresses(gc, apiClient, repo, hc, storageType, apiURL, markID, storageNSForHadoopFS)
       gcAddressesLocation = markInfo._1
       gcCommitsLocation = markInfo._2
       expiredAddresses = markInfo._3
@@ -355,6 +334,7 @@ object GarbageCollector {
           expiredAddresses = readExpiredAddresses(gcAddressesLocation, markID)
         }
 
+        val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
         val region = getRegion(args)
 
         remove(configMapper,
@@ -400,7 +380,6 @@ object GarbageCollector {
       storageType: String,
       apiURL: String,
       markID: String,
-      storageNS: String,
       storageNSForHadoopFS: String
   ): (String, String, DataFrame, String) = {
     val runIDToReproduce = hc.get(LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY, "")
@@ -438,13 +417,7 @@ object GarbageCollector {
                                         )
 
     val expiredAddresses = gc
-      .getExpiredAddresses(repo,
-                           storageNS,
-                           runID,
-                           gcCommitsLocation,
-                           numRangePartitions,
-                           numAddressPartitions
-                          )
+      .getExpiredAddresses(repo, runID, gcCommitsLocation, numRangePartitions, numAddressPartitions)
       .toDF("address")
       .withColumn(MARK_ID_KEY, lit(markID))
 
