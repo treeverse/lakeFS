@@ -291,8 +291,8 @@ This utility is a Spark application that uses [distCp](https://hadoop.apache.org
 
 **Notes**
 * GC backup and restore is available from version 0.5.2 of lakeFS Spark client.
-* This will only work with Hadoop versions > 3.1.3, and so require a Hadoop 3 client.
-* Note that the utility is not fast due to distcp performance limitations. You may prefer backup your whole storage namespace with [AzCopy](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) / [aws cp](https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html) / [rclone](https://rclone.org/).
+* It is compatible with Hadoop API versions 3.1.3 and higher.
+* Note that the utility is not fast due to distcp performance limitations. You may prefer to backup your whole storage namespace with [AzCopy](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) / [aws cp](https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html) / [rclone](https://rclone.org/).
 
 ### Job options
 
