@@ -188,6 +188,7 @@ object UncommittedGarbageCollector {
           GarbageCollector
             .bulkRemove(configMapper, markedAddresses, storageNSForSdkClient, region, storageType)
             .toDF()
+
         } else {
           spark.emptyDataFrame.withColumn("address", lit(""))
         }
@@ -198,6 +199,7 @@ object UncommittedGarbageCollector {
         println(e.getStackTrace)
         throw e
     } finally {
+      removed.collect()
       if (runID.nonEmpty && shouldMark) {
         writeReports(
           storageNamespace,
