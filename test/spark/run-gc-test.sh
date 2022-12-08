@@ -95,6 +95,7 @@ validate_gc_job() {
   local repo=$2
   local existing_ref=$3
   local test_id=$4
+  local file_should_be_deleted=$(echo ${test_case} | jq -r '.file_deleted')
   if run_lakectl fs cat "lakefs://${repo}/${existing_ref}/file${test_id}" > /dev/null 2>&1 && ${file_should_be_deleted} ; then
     echo "Expected the file to be removed by the garbage collector but it has remained in the repository"
     return 1
