@@ -145,7 +145,7 @@ prepare_for_gc() {
   run_lakectl commit "lakefs://${repo}/main" -m "add three files not to be deleted" --epoch-time-seconds 0
 
   run_lakectl branch create "lakefs://${repo}/a${test_id}" -s "lakefs://${repo}/main"
-  local direct_upload_flag=$("$(echo ${test_case} | jq -r '.direct_upload // false')" && echo '--direct' || echo '')
+  local direct_upload_flag=$("$(echo ${test_case} | jq -r '.direct_upload // false')" && [[ ${LAKEFS_BLOCKSTORE_TYPE} == "s3" ]] && echo '--direct' || echo '')
   run_lakectl fs upload "${direct_upload_flag}" "lakefs://${repo}/a${test_id}/file${test_id}" -s /local/gc-tests/sample_file
   file_existing_ref=$(run_lakectl commit "lakefs://${repo}/a${test_id}" -m "uploaded file ${test_id}" --epoch-time-seconds 0 | grep "ID: " | awk '{ print $2 }')
   run_lakectl branch create "lakefs://${repo}/b${test_id}" -s "lakefs://${repo}/${file_existing_ref}"
