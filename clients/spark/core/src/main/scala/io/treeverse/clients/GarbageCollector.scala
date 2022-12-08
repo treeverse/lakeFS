@@ -60,8 +60,8 @@ class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: Config
       .forRange(configMapper.configuration, location)
       .newIterator()
       .filter(e => e.message.addressType.isRelative || e.message.address.startsWith(storageNS))
-      .map(a =>
-        if (e.message.addressType.isRelative) a.message.address
+      .map(e =>
+        if (e.message.addressType.isRelative) e.message.address
         else StringUtils.removeStart(e.message.address, storageNS)
       )
   }
