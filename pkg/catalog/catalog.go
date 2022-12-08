@@ -1769,7 +1769,6 @@ type UncommittedParquetObject struct {
 }
 
 func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, w *UncommittedWriter, mark *GCUncommittedMark, runID string) (*GCUncommittedMark, bool, error) {
-	hasData := false
 	pw, err := writer.NewParquetWriterFromWriter(w, new(UncommittedParquetObject), gcParquetParallelNum) // TODO: Play with np count
 	if err != nil {
 		return nil, false, err
@@ -1787,11 +1786,24 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 		itr.SeekGE(mark.BranchID, mark.Path)
 	}
 
+	normalizedStorageNamespace := string(repository.StorageNamespace)
+	if !strings.HasSuffix(normalizedStorageNamespace, DefaultPathDelimiter) {
+		normalizedStorageNamespace += DefaultPathDelimiter
+	}
+
 	for itr.Next() {
 		entry := itr.Value()
-		// Skip if entry is tombstone or if address is outside of repository namespace
-		if entry.Entry == nil || entry.Entry.AddressType != Entry_RELATIVE {
+		// Skip if entry is tombstone
+		if entry.Entry == nil {
 			continue
+		}
+		// Skip non-relative that address outside the storage namespace
+		entryAddress := entry.Address
+		if entry.Entry.AddressType != Entry_RELATIVE {
+			if !strings.HasPrefix(entry.Address, normalizedStorageNamespace) {
+				continue
+			}
+			entryAddress = entryAddress[len(normalizedStorageNamespace):]
 		}
 
 		count += 1
@@ -1817,12 +1829,11 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 			}
 		}
 		if err = pw.Write(UncommittedParquetObject{
-			PhysicalAddress: entry.Address,
+			PhysicalAddress: entryAddress,
 			CreationDate:    entry.LastModified.AsTime().Unix(),
 		}); err != nil {
 			return nil, false, err
 		}
-		hasData = true
 	}
 	if itr.Err() != nil {
 		return nil, false, itr.Err()
@@ -1833,6 +1844,7 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 	}
 
 	// Finished reading all staging area - no continuation token
+	hasData := count > 0
 	return nil, hasData, nil
 }
 
