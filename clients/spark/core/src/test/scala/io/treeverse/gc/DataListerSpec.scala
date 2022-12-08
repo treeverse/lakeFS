@@ -68,10 +68,11 @@ class ParallelDataListerSpec
         val dataDir = new File(dir.toFile, "data")
         dataDir.mkdir()
         withSparkSession(spark => {
-          val sliceID = f"legacy_physical:address_path"
+          val sliceID = "legacy_physical:address_path"
+          val filename = "some_file"
           val slice = new File(dataDir, sliceID)
           slice.mkdir()
-          new File(slice, "some_file").createNewFile()
+          new File(slice, filename).createNewFile()
 
           val path = new Path(dataDir.toURI)
           val configMapper = new ConfigMapper(
@@ -82,6 +83,7 @@ class ParallelDataListerSpec
           val df =
             new ParallelDataLister().listData(configMapper, path).sort("base_address")
           df.count() should be(1)
+          df.head.getString(0) should be(s"$sliceID/$filename")
         })
       }
     }
