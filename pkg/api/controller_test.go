@@ -1385,7 +1385,7 @@ func TestController_DiffRefs(t *testing.T) {
 		if results[0].Path != prefix {
 			t.Fatalf("wrong result: %s", results[0].Path)
 		}
-		if results[0].Type != "prefix_changed" {
+		if results[0].Type != "changes under prefix" {
 			t.Fatalf("wrong diff type: %s", results[0].Type)
 		}
 	})
@@ -2088,37 +2088,6 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 		verifyResponseOK(t, statResp, err)
 		objectStat := statResp.JSON200
 		if objectStat.PhysicalAddress != onBlock(deps, "another-bucket/some/location") {
-			t.Fatalf("unexpected physical address: %s", objectStat.PhysicalAddress)
-		}
-	})
-
-	t.Run("stage object in storage ns", func(t *testing.T) {
-		linkResp, err := clt.GetPhysicalAddressWithResponse(ctx, "repo1", "main", &api.GetPhysicalAddressParams{Path: "foo/bar2"})
-		verifyResponseOK(t, linkResp, err)
-		if linkResp.JSON200 == nil {
-			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
-		}
-		const expectedSizeBytes = 38
-		resp, err := clt.StageObjectWithResponse(ctx, "repo1", "main", &api.StageObjectParams{Path: "foo/bar2"}, api.StageObjectJSONRequestBody{
-			Checksum:        "afb0689fe58b82c5f762991453edbbec",
-			PhysicalAddress: api.StringValue(linkResp.JSON200.PhysicalAddress),
-			SizeBytes:       expectedSizeBytes,
-		})
-		verifyResponseOK(t, resp, err)
-
-		sizeBytes := api.Int64Value(resp.JSON201.SizeBytes)
-		if sizeBytes != expectedSizeBytes {
-			t.Fatalf("expected %d bytes to be written, got back %d", expectedSizeBytes, sizeBytes)
-		}
-
-		// get back info
-		statResp, err := clt.StatObjectWithResponse(ctx, "repo1", "main", &api.StatObjectParams{Path: "foo/bar2"})
-		verifyResponseOK(t, statResp, err)
-		if statResp.JSON200 == nil {
-			t.Fatalf("StatObject non 200 - status code %d", statResp.StatusCode())
-		}
-		objectStat := statResp.JSON200
-		if objectStat.PhysicalAddress != api.StringValue(linkResp.JSON200.PhysicalAddress) {
 			t.Fatalf("unexpected physical address: %s", objectStat.PhysicalAddress)
 		}
 	})

@@ -376,16 +376,14 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	writeTime := time.Now()
-	physicalAddress, addressType := physicalAddressFullToRelative(repo.StorageNamespace, StringValue(body.Staging.PhysicalAddress))
-
 	// Because CreateEntry tracks staging on a database with atomic operations,
 	// _ignore_ the staging token here: no harm done even if a race was lost
 	// against a commit.
 	entryBuilder := catalog.NewDBEntryBuilder().
 		CommonLevel(false).
 		Path(params.Path).
-		PhysicalAddress(physicalAddress).
-		AddressType(addressType).
+		PhysicalAddress(*body.Staging.PhysicalAddress).
+		AddressType(catalog.AddressTypeFull).
 		CreationDate(writeTime).
 		Size(body.SizeBytes).
 		Checksum(body.Checksum).
@@ -418,19 +416,6 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	writeResponse(w, http.StatusOK, response)
-}
-
-// physicalAddressFullToRelative return relative address based on storage namespace if possible. If address doesn't match
-// the storage namespace prefix, the return address type is full.
-func physicalAddressFullToRelative(storageNamespace string, physicalAddress string) (string, catalog.AddressType) {
-	prefix := storageNamespace
-	if !strings.HasSuffix(prefix, catalog.DefaultPathDelimiter) {
-		prefix += catalog.DefaultPathDelimiter
-	}
-	if strings.HasPrefix(physicalAddress, prefix) {
-		return physicalAddress[len(prefix):], catalog.AddressTypeRelative
-	}
-	return physicalAddress, catalog.AddressTypeFull
 }
 
 func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params ListGroupsParams) {
@@ -2228,13 +2213,11 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		writeTime = time.Unix(*body.Mtime, 0)
 	}
 
-	physicalAddress, addressType := physicalAddressFullToRelative(repo.StorageNamespace, body.PhysicalAddress)
-
 	entryBuilder := catalog.NewDBEntryBuilder().
 		CommonLevel(false).
 		Path(params.Path).
-		PhysicalAddress(physicalAddress).
-		AddressType(addressType).
+		PhysicalAddress(body.PhysicalAddress).
+		AddressType(catalog.AddressTypeFull).
 		CreationDate(writeTime).
 		Size(body.SizeBytes).
 		Checksum(body.Checksum).
