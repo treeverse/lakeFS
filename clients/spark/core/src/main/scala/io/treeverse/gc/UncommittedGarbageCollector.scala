@@ -89,7 +89,6 @@ object UncommittedGarbageCollector {
     var runID = ""
     var firstSlice = ""
     var success = true
-    var removed = spark.emptyDataFrame.withColumn("address", lit(""))
     var markedAddresses = spark.emptyDataFrame.withColumn("address", lit(""))
     var addressesToDelete = spark.emptyDataFrame.withColumn("address", lit(""))
     val repo = args(0)
@@ -170,29 +169,26 @@ object UncommittedGarbageCollector {
           firstSlice = firstFile.substring(0, firstFile.lastIndexOf("/"))
         }
       }
-      removed = {
-        if (shouldSweep) {
-          if (shouldMark) { // get the expired addresses from the mark id run
-            markedAddresses = addressesToDelete
-            println("deleting marked addresses: " + runID)
-          } else {
-            markedAddresses = readMarkedAddresses(storageNamespace, markID)
-            println("deleting marked addresses: " + markID)
-          }
-
-          val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
-          val region = getRegion(args)
-          val hcValues = spark.sparkContext.broadcast(
-            HadoopUtils.getHadoopConfigurationValues(hc, "fs.", "lakefs.")
-          )
-          val configMapper = new ConfigMapper(hcValues)
-
-          GarbageCollector
-            .bulkRemove(configMapper, markedAddresses, storageNSForSdkClient, region, storageType)
-            .toDF()
+      if (shouldSweep) {
+        if (shouldMark) { // get the expired addresses from the mark id run
+          markedAddresses = addressesToDelete
+          println("deleting marked addresses: " + runID)
         } else {
-          spark.emptyDataFrame.withColumn("address", lit(""))
+          markedAddresses = readMarkedAddresses(storageNamespace, markID)
+          println("deleting marked addresses: " + markID)
         }
+
+        val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
+        val region = getRegion(args)
+        val hcValues = spark.sparkContext.broadcast(
+          HadoopUtils.getHadoopConfigurationValues(hc, "fs.", "lakefs.")
+        )
+        val configMapper = new ConfigMapper(hcValues)
+
+        val removed = GarbageCollector
+          .bulkRemove(configMapper, markedAddresses, storageNSForSdkClient, region, storageType)
+          .toDF()
+        removed.collect()
       }
     } catch {
       case e: Throwable =>
