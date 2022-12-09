@@ -309,7 +309,7 @@ jobs:
           --class io.treeverse.gc.UncommittedGarbageCollector
           --packages org.apache.hadoop:hadoop-aws:2.7.7
           /local/${CLIENT_JAR}
-          ugc
+          ugc us-east-1
 
       - name: Uncommitted gc post test
         run: go test -v ./esti -system-tests -use-local-credentials -run=TestUncommittedGC
