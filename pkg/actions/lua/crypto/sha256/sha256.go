@@ -11,7 +11,7 @@ func Open(l *lua.State) {
 		lua.NewLibrary(l, library)
 		return 1
 	}
-	lua.Require(l, "goluago/crypto/sha256", open, false)
+	lua.Require(l, "crypto/sha256", open, false)
 	l.Pop(1)
 }
 
