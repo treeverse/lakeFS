@@ -90,7 +90,6 @@ export const supportedContentTypeRenderers: Record<string, FC<RendererComponent>
 };
 
 export const guessLanguage =  (extension: string | null, contentType: string | null) => {
-    console.log(extension, contentType);
     if (extension  && SyntaxHighlighter.supportedLanguages.indexOf(extension) !== -1) {
         return extension;
     }
@@ -99,7 +98,6 @@ export const guessLanguage =  (extension: string | null, contentType: string | n
             let lang = contentType.substring(14);
             if (lang.endsWith('-script')) {
                 lang = lang.substring(0, lang.length - 7);
-                console.log('shortened to lang', lang);
             }
             if (SyntaxHighlighter.supportedLanguages.indexOf(lang) !== -1) {
                 return lang;
@@ -115,7 +113,6 @@ export const guessLanguage =  (extension: string | null, contentType: string | n
             let lang = contentType.substring(7);
             if (lang.endsWith('-script')) {
                 lang = lang.substring(0, lang.length - 7);
-                console.log('shortened to lang', lang);
             }
             if (SyntaxHighlighter.supportedLanguages.indexOf(lang) !== -1) {
                 return lang;
