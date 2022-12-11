@@ -101,7 +101,7 @@ func TestLuaRunTable(t *testing.T) {
 		{
 			Name:   "simple_math",
 			Input:  "testdata/lua/simple_math.lua",
-			Output: "testdata/lua/simple_math.out",
+			Output: "testdata/lua/simple_math.output",
 		},
 		{
 			Name:  "ensure_no_io",
@@ -116,17 +116,17 @@ func TestLuaRunTable(t *testing.T) {
 		{
 			Name:   "user_injected",
 			Input:  "testdata/lua/print_user.lua",
-			Output: "testdata/lua/print_user.out",
+			Output: "testdata/lua/print_user.output",
 		},
 		{
 			Name:   "json_dump_action",
 			Input:  "testdata/lua/json_marshal_action.lua",
-			Output: "testdata/lua/json_marshal_action.out",
+			Output: "testdata/lua/json_marshal_action.output",
 		},
 		{
 			Name:   "strings_partition",
 			Input:  "testdata/lua/strings_partition.lua",
-			Output: "testdata/lua/strings_partition.out",
+			Output: "testdata/lua/strings_partition.output",
 		},
 	}
 

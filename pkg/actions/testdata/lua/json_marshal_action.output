@@ -1,0 +1,21 @@
+{
+  "action_name": "",
+  "branch_id": "my-branch",
+  "commit": {
+    "creation_date": "0001-01-01T00:00:00Z",
+    "message": "",
+    "meta_range_id": "",
+    "metadata": {},
+    "parents": [],
+    "version": 1
+  },
+  "commit_id": "123456789",
+  "event_type": "pre-create-branch",
+  "hook_id": "myHook",
+  "pre_run_id": "3498032432",
+  "repository_id": "example123",
+  "run_id": "abc123",
+  "source_ref": "abc123",
+  "storage_namespace": "local://foo/bar",
+  "tag_id": ""
+}
