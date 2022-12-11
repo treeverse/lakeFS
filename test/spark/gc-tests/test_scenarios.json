@@ -160,7 +160,8 @@
       }
     ],
     "file_deleted": false,
-    "description": "The file is not deleted as the branch retention policy overrules the default retention policy"
+    "direct_upload": true,
+     "description": "The file (direct upload) is not deleted as the branch retention policy overrules the default retention policy"
   },
   {
     "id": 9,
@@ -179,7 +180,8 @@
       }
     ],
     "file_deleted": true,
-    "description": "The file is deleted because it's in a dangling commit and the default retention policy has passed"
+    "direct_upload": true,
+    "description": "The file (direct upload) is deleted because it's in a dangling commit and the default retention policy has passed"
   },
   {
     "id": 10,
@@ -200,7 +202,8 @@
     "mode": "mark",
     "mark_id": "marker10",
     "file_deleted": false,
-    "description": "The file is only marked for deletion (not actually deleted)"
+    "direct_upload": true,
+    "description": "The file (direct upload) is only marked for deletion (not actually deleted)"
   },
   {
     "id": 11,
@@ -221,6 +224,7 @@
     "mode": "sweep",
     "mark_id": "marker11",
     "file_deleted": true,
-    "description": "The file is swept after it's first marked"
+    "direct_upload": true,
+    "description": "The file (direct upload) is swept after it's first marked"
   }
 ]
