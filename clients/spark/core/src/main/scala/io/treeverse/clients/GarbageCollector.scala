@@ -26,9 +26,8 @@ trait RangeGetter extends Serializable {
   def getRangeIDs(commitID: String, repo: String): Iterator[String]
 
   /** @return all object addresses in range rangeID on repo.
-   *  Absolute addresses are ignored, unless they are under the given storage namespace.
    */
-  def getRangeAddresses(rangeID: String, repo: String, storageNS: String): Iterator[String]
+  def getRangeEntries(rangeID: String, repo: String): Iterator[io.treeverse.lakefs.catalog.Entry]
 }
 
 class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: ConfigMapper)
@@ -52,18 +51,17 @@ class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: Config
         .map(o => new String(o.id))
   }
 
-  def getRangeAddresses(rangeID: String, repo: String, storageNS: String): Iterator[String] = {
+  def getRangeEntries(
+      rangeID: String,
+      repo: String
+  ): Iterator[io.treeverse.lakefs.catalog.Entry] = {
     val location = ApiClient
       .get(apiConf)
       .getRangeURL(repo, rangeID)
     SSTableReader
       .forRange(configMapper.configuration, location)
       .newIterator()
-      .filter(e => e.message.addressType.isRelative || e.message.address.startsWith(storageNS))
-      .map(e =>
-        if (e.message.addressType.isRelative) e.message.address
-        else StringUtils.removeStart(e.message.address, storageNS)
-      )
+      .map(_.message)
   }
 }
 
@@ -155,14 +153,27 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
     // If a rangeID is exactly "kept", it need not be expanded!
     val cleanExpiredRangeIDs = minus(expiredRangeIDs, keepRangeIDs, rangePartitioner)
 
+    // Filter out addresses outside the storage namespace.
+    // Returned addresses are either relative ones, or absolute ones that
+    // are under the storage namespace.
+    def getDeletableAddresses(rangeID: String): Iterator[String] = {
+      rangeGetter
+        .getRangeEntries(rangeID, repo)
+        .filter(e => e.addressType.isRelative || e.address.startsWith(storageNS))
+        .map(e =>
+          if (e.addressType.isRelative) e.address
+          else StringUtils.removeStart(e.address, storageNS)
+        )
+    }
+
     val expiredAddresses = cleanExpiredRangeIDs
       .repartition(numAddressPartitions)
-      .flatMap(rangeGetter.getRangeAddresses(_, repo, storageNS))
+      .flatMap(getDeletableAddresses)
 
     val keepAddresses =
       keepRangeIDs
         .repartition(numAddressPartitions)
-        .flatMap(rangeGetter.getRangeAddresses(_, repo, storageNS))
+        .flatMap(getDeletableAddresses)
 
     println(s"getAddressesToDelete: use $numAddressPartitions partitions for addresses")
     val addressPartitioner = new HashPartitioner(numAddressPartitions)

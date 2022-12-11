@@ -6,6 +6,7 @@ import funspec._
 
 import org.apache.spark.{HashPartitioner, SparkConf}
 import org.apache.spark.sql.{Dataset, SparkSession}
+import io.treeverse.lakefs.catalog
 
 class ARangeGetter(
     val repo: String,
@@ -23,9 +24,19 @@ class ARangeGetter(
     verifyRepo(repo)
     commitRanges(commitID).iterator
   }
-  def getRangeAddresses(rangeID: String, repo: String, storageNS: String): Iterator[String] = {
+
+  def getRangeEntries(rangeID: String, repo: String): Iterator[catalog.Entry] = {
     verifyRepo(repo)
-    ranges(rangeID).filter(a => !a.contains("://") || a.startsWith(storageNS)).iterator
+    ranges(rangeID)
+      .map(a =>
+        catalog.Entry.defaultInstance
+          .withAddress(a)
+          .withAddressType(
+            if (a.contains("://")) catalog.Entry.AddressType.FULL
+            else catalog.Entry.AddressType.RELATIVE
+          )
+      )
+      .iterator
   }
 }
 
@@ -108,7 +119,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
                                                        numRangePartitions,
                                                        numAddressPartitions
                                                       )
-          val expectedToDelete = Seq("a1", "a2", "s3://some-ns/a3", "b1", "b2", "b3", "c2").toDS
+          val expectedToDelete = Seq("a1", "a2", "a3", "b1", "b2", "b3", "c2").toDS
 
           compareDS(actualToDelete, expectedToDelete)
         })
@@ -144,7 +155,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
                                                        numRangePartitions,
                                                        numAddressPartitions
                                                       )
-          val expectedToDelete = Seq("a1", "a2", "s3://some-ns/a3").toDS
+          val expectedToDelete = Seq("a1", "a2", "a3").toDS
 
           compareDS(actualToDelete, expectedToDelete)
         })
