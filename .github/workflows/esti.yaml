@@ -833,6 +833,7 @@ jobs:
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/garbage/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-gc-${{ matrix.spark.version }}
           CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly${{ matrix.spark.suffix }}.jar
+          AWS_REGION: us-east-1
         working-directory: test/spark
         run: ./run-gc-test.sh
 

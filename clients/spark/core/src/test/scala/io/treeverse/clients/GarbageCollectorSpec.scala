@@ -6,6 +6,7 @@ import funspec._
 
 import org.apache.spark.{HashPartitioner, SparkConf}
 import org.apache.spark.sql.{Dataset, SparkSession}
+import io.treeverse.lakefs.catalog
 
 class ARangeGetter(
     val repo: String,
@@ -23,9 +24,19 @@ class ARangeGetter(
     verifyRepo(repo)
     commitRanges(commitID).iterator
   }
-  def getRangeAddresses(rangeID: String, repo: String): Iterator[String] = {
+
+  def getRangeEntries(rangeID: String, repo: String): Iterator[catalog.Entry] = {
     verifyRepo(repo)
-    ranges(rangeID).iterator
+    ranges(rangeID)
+      .map(a =>
+        catalog.Entry.defaultInstance
+          .withAddress(a)
+          .withAddressType(
+            if (a.contains("://")) catalog.Entry.AddressType.FULL
+            else catalog.Entry.AddressType.RELATIVE
+          )
+      )
+      .iterator
   }
 }
 
@@ -50,7 +61,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
 
   val getter = new ARangeGetter("repo",
                                 null,
-                                Map("aaa" -> Seq("a1", "a2", "a3"),
+                                Map("aaa" -> Seq("a1", "a2", "s3://some-ns/a3"),
                                     "bbb" -> Seq("b1", "b2", "b3"),
                                     "ab12" -> Seq("a1", "a2", "b1", "b2"),
                                     "222" -> Seq("a2", "b2", "c2")
@@ -86,6 +97,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
           val actualToDelete = gc.getAddressesToDelete(Seq[String]().toDS,
                                                        Seq[String]().toDS,
                                                        "repo",
+                                                       "",
                                                        numRangePartitions,
                                                        numAddressPartitions
                                                       )
@@ -103,6 +115,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
           val actualToDelete = gc.getAddressesToDelete(Seq("aaa", "222", "bbb").toDS,
                                                        Seq[String]().toDS,
                                                        "repo",
+                                                       "s3://some-ns/",
                                                        numRangePartitions,
                                                        numAddressPartitions
                                                       )
@@ -120,10 +133,11 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
           val actualToDelete = gc.getAddressesToDelete(Seq("aaa", "bbb").toDS,
                                                        Seq("222").toDS,
                                                        "repo",
+                                                       "s3://some-other-ns/",
                                                        numRangePartitions,
                                                        numAddressPartitions
                                                       )
-          val expectedToDelete = Seq("a1", "a3", "b1", "b3").toDS
+          val expectedToDelete = Seq("a1", "b1", "b3").toDS
 
           compareDS(actualToDelete, expectedToDelete)
         })
@@ -137,6 +151,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
           val actualToDelete = gc.getAddressesToDelete(Seq("aaa", "bbb").toDS,
                                                        Seq("bbb").toDS,
                                                        "repo",
+                                                       "s3://some-ns/",
                                                        numRangePartitions,
                                                        numAddressPartitions
                                                       )
@@ -154,10 +169,11 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
           val actualToDelete = gc.getAddressesToDelete(Seq("aaa", "bbb", "ab12").toDS,
                                                        Seq("bbb", "222").toDS,
                                                        "repo",
+                                                       "s3://some-other-ns/",
                                                        numRangePartitions,
                                                        numAddressPartitions
                                                       )
-          val expectedToDelete = Seq("a1", "a3").toDS
+          val expectedToDelete = Seq("a1").toDS
 
           compareDS(actualToDelete, expectedToDelete)
         })
