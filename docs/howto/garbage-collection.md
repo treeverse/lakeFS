@@ -292,6 +292,7 @@ This utility is a Spark application that uses [distCp](https://hadoop.apache.org
 * GC backup and restore is available from version 0.5.2 of lakeFS Spark client.
 * It is compatible with Hadoop API versions 3.1.3 and higher.
 * Note that the utility is not fast due to distcp performance limitations. You may prefer to backup your whole storage namespace with [AzCopy](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) / [aws cp](https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html) / [rclone](https://rclone.org/).
+* GC Backup & Restore is [broken](https://github.com/treeverse/lakeFS/issues/4775) due to recent changes to the storage namespace structure. We're working to fix it. 
 
 ### Job options
 
@@ -424,6 +425,10 @@ spark-submit --class io.treeverse.clients.GCBackupAndRestore \
 
 ## Beta: Deleting uncommitted objects
 
+Note: Uncommitted GC is in Beta mode. Users should read this manual carefully and 
+take precautions before applying the actual delete ("sweep"), like copying the marked objects.
+{: .note }
+
 Deletion of objects that were never committed was always a difficulty for lakeFS, see
 [#1933](https://github.com/treeverse/lakeFS/issues/1933) for more details. Examples for 
 objects that will be collected as part of the uncommitted GC job:
@@ -443,7 +448,7 @@ The uncommitted GC will not clean:
 
 1. lakeFS server version must be at least [v0.87.0](https://github.com/treeverse/lakeFS/releases/tag/v0.87.0). 
 If your version is lower, you should first upgrade.
-2. 
+2. Read the [limitations](#limitations) section.
 
 To run the uncommitted GC job run:
   ```bash
