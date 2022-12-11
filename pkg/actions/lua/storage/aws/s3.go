@@ -26,7 +26,7 @@ import (
 func Open(l *lua.State, ctx context.Context) {
 	open := func(l *lua.State) int {
 		lua.NewLibrary(l, []lua.RegistryFunction{
-			{"s3_client", newS3Client(ctx)},
+			{Name: "s3_client", Function: newS3Client(ctx)},
 		})
 		return 1
 	}
@@ -36,8 +36,8 @@ func Open(l *lua.State, ctx context.Context) {
 
 func newS3Client(ctx context.Context) lua.Function {
 	return func(l *lua.State) int {
-		var accessKeyId, secretAccessKey, endpoint, region string
-		accessKeyId = lua.CheckString(l, 1)
+		var accessKeyID, secretAccessKey, endpoint, region string
+		accessKeyID = lua.CheckString(l, 1)
 		secretAccessKey = lua.CheckString(l, 2)
 		if !l.IsNone(3) {
 			region = lua.CheckString(l, 3)
@@ -46,7 +46,7 @@ func newS3Client(ctx context.Context) lua.Function {
 			endpoint = lua.CheckString(l, 4)
 		}
 		c := &S3Client{
-			AccessKeyId:     accessKeyId,
+			AccessKeyID:     accessKeyID,
 			SecretAccessKey: secretAccessKey,
 			Endpoint:        endpoint,
 			Region:          region, ctx: ctx,
@@ -65,7 +65,7 @@ func newS3Client(ctx context.Context) lua.Function {
 }
 
 type S3Client struct {
-	AccessKeyId     string
+	AccessKeyID     string
 	SecretAccessKey string
 	Endpoint        string
 	Region          string
@@ -80,7 +80,7 @@ func (c *S3Client) client() *s3.S3 {
 	if c.Endpoint != "" {
 		cfg.Endpoint = aws.String(c.Endpoint)
 	}
-	cfg.Credentials = credentials.NewStaticCredentials(c.AccessKeyId, c.SecretAccessKey, "")
+	cfg.Credentials = credentials.NewStaticCredentials(c.AccessKeyID, c.SecretAccessKey, "")
 	sess, _ := session.NewSession(cfg)
 	return s3.New(sess)
 }

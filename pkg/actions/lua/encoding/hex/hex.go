@@ -16,8 +16,8 @@ func Open(l *lua.State) {
 }
 
 var library = []lua.RegistryFunction{
-	{"encode", encode},
-	{"decode", decode},
+	{Name: "encode", Function: encode},
+	{Name: "decode", Function: decode},
 }
 
 func encode(l *lua.State) int {

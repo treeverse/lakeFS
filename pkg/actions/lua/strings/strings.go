@@ -17,12 +17,12 @@ func Open(l *lua.State) {
 }
 
 var stringLibrary = []lua.RegistryFunction{
-	{"split", split},
-	{"trim", trim},
-	{"replace", replace},
-	{"has_prefix", hasPrefix},
-	{"has_suffix", hasSuffix},
-	{"contains", contains},
+	{Name: "split", Function: split},
+	{Name: "trim", Function: trim},
+	{Name: "replace", Function: replace},
+	{Name: "has_prefix", Function: hasPrefix},
+	{Name: "has_suffix", Function: hasSuffix},
+	{Name: "contains", Function: contains},
 }
 
 func split(l *lua.State) int {

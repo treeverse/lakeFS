@@ -19,9 +19,9 @@ func Open(l *lua.State) {
 }
 
 var regexpLibrary = []lua.RegistryFunction{
-	{"match", match},
-	{"quotemeta", quoteMeta},
-	{"compile", compile},
+	{Name: "match", Function: match},
+	{Name: "quotemeta", Function: quoteMeta},
+	{Name: "compile", Function: compile},
 }
 
 func match(l *lua.State) int {

@@ -96,7 +96,7 @@ func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 	if h.ScriptPath != "" {
 		// load file
 		if h.Endpoint == nil {
-			return fmt.Errorf("no endpoint configured, cannot request object: %s", h.ScriptPath)
+			return fmt.Errorf("no endpoint configured, cannot request object: %s: %w", h.ScriptPath, ErrInvalidAction)
 		}
 		url := fmt.Sprintf("/api/v1/repositories/%s/refs/%s/objects", record.RepositoryID, record.SourceRef)
 		req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -110,7 +110,7 @@ func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 		rr := httptest.NewRecorder()
 		h.Endpoint.Handler.ServeHTTP(rr, req)
 		if rr.Code != http.StatusOK {
-			return fmt.Errorf("could not load script_path %s: HTTP %d", h.ScriptPath, rr.Code)
+			return fmt.Errorf("could not load script_path %s: HTTP %d: %w", h.ScriptPath, rr.Code, ErrInvalidAction)
 		}
 		code = rr.Body.String()
 	}
@@ -189,7 +189,7 @@ func NewLuaHook(h ActionHook, action *Action, e *http.Server) (Hook, error) {
 	}
 	args, ok := parsedArgs.(map[string]interface{})
 	if !ok {
-		return &LuaHook{}, fmt.Errorf("error parsing args, got wrong type: %T", parsedArgs)
+		return &LuaHook{}, fmt.Errorf("error parsing args, got wrong type: %T: %w", parsedArgs, ErrInvalidAction)
 	}
 
 	// script or script_ath

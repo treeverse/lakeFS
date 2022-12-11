@@ -34,7 +34,7 @@ hooks:
 aws = require("aws")
 lakefs = require("lakefs")
 path = require("path")
-path_sep = path.default_seperator()
+path_sep = path.default_separator()
 
 s3 = aws.s3_client(args.aws_access_key_id, args.aws_secret_access_key, args.aws_region)
 

@@ -1,42 +1,28 @@
-package hmac
+package md5
 
 import (
-	"crypto/hmac"
-	"crypto/sha1"
-	"crypto/sha256"
-	"hash"
+	"crypto/md5" //#nosec
+	"fmt"
 
 	"github.com/Shopify/go-lua"
 )
 
 func Open(l *lua.State) {
-	hmacOpen := func(l *lua.State) int {
-		lua.NewLibrary(l, hmacLibrary)
+	md5Open := func(l *lua.State) int {
+		lua.NewLibrary(l, md5Library)
 		return 1
 	}
-	lua.Require(l, "goluago/crypto/hmac", hmacOpen, false)
+	lua.Require(l, "encoding/md5", md5Open, false)
 	l.Pop(1)
 }
 
-var hmacLibrary = []lua.RegistryFunction{
-	{"signsha256", signsha256},
-	{"signsha1", signsha1},
+var md5Library = []lua.RegistryFunction{
+	{Name: "sum", Function: sum},
 }
 
-func signsha256(l *lua.State) int {
-	return encode(l, sha256.New)
-}
-
-func signsha1(l *lua.State) int {
-	return encode(l, sha1.New)
-}
-
-func encode(l *lua.State, h func() hash.Hash) int {
-	message := lua.CheckString(l, 1)
-	key := lua.CheckString(l, 2)
-
-	mac := hmac.New(h, []byte(key))
-	mac.Write([]byte(message))
-	l.PushString(string(mac.Sum(nil)))
+func sum(l *lua.State) int {
+	data := lua.CheckString(l, 1)
+	sum := md5.Sum([]byte(data)) //#nosec
+	l.PushString(fmt.Sprintf("%x", sum))
 	return 1
 }

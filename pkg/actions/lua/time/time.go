@@ -18,14 +18,14 @@ func Open(l *lua.State) {
 }
 
 var timeLibrary = []lua.RegistryFunction{
-	{"now", now},
-	{"format", format},
-	{"formatISO", formatISO},
-	{"sleep", sleep},
-	{"since", since},
-	{"add", add},
-	{"parse", parse},
-	{"parseISO", parseISO},
+	{Name: "now", Function: now},
+	{Name: "format", Function: format},
+	{Name: "formatISO", Function: formatISO},
+	{Name: "sleep", Function: sleep},
+	{Name: "since", Function: since},
+	{Name: "add", Function: add},
+	{Name: "parse", Function: parse},
+	{Name: "parseISO", Function: parseISO},
 }
 
 func format(l *lua.State) int {

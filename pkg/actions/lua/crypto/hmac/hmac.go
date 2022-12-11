@@ -2,7 +2,7 @@ package hmac
 
 import (
 	"crypto/hmac"
-	"crypto/sha1"
+	"crypto/sha1" //#nosec
 	"crypto/sha256"
 	"hash"
 
@@ -19,8 +19,8 @@ func Open(l *lua.State) {
 }
 
 var hmacLibrary = []lua.RegistryFunction{
-	{"signsha256", signsha256},
-	{"signsha1", signsha1},
+	{Name: "signsha256", Function: signsha256},
+	{Name: "signsha1", Function: signsha1},
 }
 
 func signsha256(l *lua.State) int {

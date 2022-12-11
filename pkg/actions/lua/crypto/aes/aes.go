@@ -20,8 +20,8 @@ func Open(l *lua.State) {
 }
 
 var aesLibrary = []lua.RegistryFunction{
-	{"encryptCBC", encryptCBC},
-	{"decryptCBC", decryptCBC},
+	{Name: "encryptCBC", Function: encryptCBC},
+	{Name: "decryptCBC", Function: decryptCBC},
 }
 
 func encryptCBC(l *lua.State) int {
@@ -79,7 +79,7 @@ func PKCS5Padding(ciphertext []byte, blockSize int, after int) []byte {
 }
 
 func PKCS5UnPadding(src []byte) []byte {
-	src_length := len(src)
-	padding_length := int(src[src_length-1])
-	return src[:(src_length - padding_length)]
+	srcLength := len(src)
+	paddingLength := int(src[srcLength-1])
+	return src[:(srcLength - paddingLength)]
 }

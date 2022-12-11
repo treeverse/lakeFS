@@ -132,14 +132,14 @@ func (r *genericReader) Read(b []byte) (n int, err error) {
 
 func getBaseLibrary(output io.StringWriter) []glua.RegistryFunction {
 	return []glua.RegistryFunction{
-		{"assert", func(l *glua.State) int {
+		{Name: "assert", Function: func(l *glua.State) int {
 			if !l.ToBoolean(1) {
 				glua.Errorf(l, "%s", glua.OptString(l, 2, "assertion failed!"))
 				panic("unreachable")
 			}
 			return l.Top()
 		}},
-		{"collectgarbage", func(l *glua.State) int {
+		{Name: "collectgarbage", Function: func(l *glua.State) int {
 			switch opt, _ := glua.OptString(l, 1, "collect"), glua.OptInteger(l, 2, 0); opt {
 			case "collect":
 				runtime.GC()
@@ -158,17 +158,17 @@ func getBaseLibrary(output io.StringWriter) []glua.RegistryFunction {
 			}
 			return 1
 		}},
-		//{"dofile", func(l *glua.State) int {
-		//	f := glua.OptString(l, 1, "")
-		//	if l.SetTop(1); glua.LoadFile(l, f, "") != nil {
-		//		l.Error()
-		//		panic("unreachable")
-		//	}
-		//	continuation := func(l *glua.State) int { return l.Top() - 1 }
-		//	l.CallWithContinuation(0, glua.MultipleReturns, 0, continuation)
-		//	return continuation(l)
-		//}},
-		{"error", func(l *glua.State) int {
+		// {"dofile", func(l *glua.State) int {
+		// 	f := glua.OptString(l, 1, "")
+		// 	if l.SetTop(1); glua.LoadFile(l, f, "") != nil {
+		// 		l.Error()
+		// 		panic("unreachable")
+		// 	}
+		// 	continuation := func(l *glua.State) int { return l.Top() - 1 }
+		// 	l.CallWithContinuation(0, glua.MultipleReturns, 0, continuation)
+		// 	return continuation(l)
+		// }},
+		{Name: "error", Function: func(l *glua.State) int {
 			level := glua.OptInteger(l, 2, 1)
 			l.SetTop(1)
 			if l.IsString(1) && level > 0 {
@@ -179,7 +179,7 @@ func getBaseLibrary(output io.StringWriter) []glua.RegistryFunction {
 			l.Error()
 			panic("unreachable")
 		}},
-		{"getmetatable", func(l *glua.State) int {
+		{Name: "getmetatable", Function: func(l *glua.State) int {
 			glua.CheckAny(l, 1)
 			if !l.MetaTable(1) {
 				l.PushNil()
@@ -188,15 +188,15 @@ func getBaseLibrary(output io.StringWriter) []glua.RegistryFunction {
 			glua.MetaField(l, 1, "__metatable")
 			return 1
 		}},
-		{"ipairs", pairs("__ipairs", true, intPairs)},
-		//{"loadfile", func(l *glua.State) int {
-		//	f, m, e := glua.OptString(l, 1, ""), glua.OptString(l, 2, ""), 3
-		//	if l.IsNone(e) {
-		//		e = 0
-		//	}
-		//	return loadHelper(l, glua.LoadFile(l, f, m), e)
-		//}},
-		{"load", func(l *glua.State) int {
+		{Name: "ipairs", Function: pairs("__ipairs", true, intPairs)},
+		// {"loadfile", func(l *glua.State) int {
+		// 	f, m, e := glua.OptString(l, 1, ""), glua.OptString(l, 2, ""), 3
+		// 	if l.IsNone(e) {
+		// 		e = 0
+		// 	}
+		// 	return loadHelper(l, glua.LoadFile(l, f, m), e)
+		// }},
+		{Name: "load", Function: func(l *glua.State) int {
 			m, e := glua.OptString(l, 3, "bt"), 4
 			if l.IsNone(e) {
 				e = 0
@@ -211,15 +211,15 @@ func getBaseLibrary(output io.StringWriter) []glua.RegistryFunction {
 			}
 			return loadHelper(l, err, e)
 		}},
-		{"next", next},
-		{"pairs", pairs("__pairs", false, next)},
-		{"pcall", func(l *glua.State) int {
+		{Name: "next", Function: next},
+		{Name: "pairs", Function: pairs("__pairs", false, next)},
+		{Name: "pcall", Function: func(l *glua.State) int {
 			glua.CheckAny(l, 1)
 			l.PushNil()
 			l.Insert(1) // create space for status result
 			return finishProtectedCall(l, nil == l.ProtectedCallWithContinuation(l.Top()-2, glua.MultipleReturns, 0, 0, protectedCallContinuation))
 		}},
-		{"print", func(l *glua.State) int {
+		{Name: "print", Function: func(l *glua.State) int {
 			n := l.Top()
 			l.Global("tostring")
 			for i := 1; i <= n; i++ {
@@ -232,34 +232,34 @@ func getBaseLibrary(output io.StringWriter) []glua.RegistryFunction {
 					panic("unreachable")
 				}
 				if i > 1 {
-					output.WriteString("\t")
+					_, _ = output.WriteString("\t")
 				}
-				output.WriteString(s)
+				_, _ = output.WriteString(s)
 				l.Pop(1) // pop result
 			}
-			output.WriteString("\n")
+			_, _ = output.WriteString("\n")
 			return 0
 		}},
-		{"rawequal", func(l *glua.State) int {
+		{Name: "rawequal", Function: func(l *glua.State) int {
 			glua.CheckAny(l, 1)
 			glua.CheckAny(l, 2)
 			l.PushBoolean(l.RawEqual(1, 2))
 			return 1
 		}},
-		{"rawlen", func(l *glua.State) int {
+		{Name: "rawlen", Function: func(l *glua.State) int {
 			t := l.TypeOf(1)
 			glua.ArgumentCheck(l, t == glua.TypeTable || t == glua.TypeString, 1, "table or string expected")
 			l.PushInteger(l.RawLength(1))
 			return 1
 		}},
-		{"rawget", func(l *glua.State) int {
+		{Name: "rawget", Function: func(l *glua.State) int {
 			glua.CheckType(l, 1, glua.TypeTable)
 			glua.CheckAny(l, 2)
 			l.SetTop(2)
 			l.RawGet(1)
 			return 1
 		}},
-		{"rawset", func(l *glua.State) int {
+		{Name: "rawset", Function: func(l *glua.State) int {
 			glua.CheckType(l, 1, glua.TypeTable)
 			glua.CheckAny(l, 2)
 			glua.CheckAny(l, 3)
@@ -267,7 +267,7 @@ func getBaseLibrary(output io.StringWriter) []glua.RegistryFunction {
 			l.RawSet(1)
 			return 1
 		}},
-		{"select", func(l *glua.State) int {
+		{Name: "select", Function: func(l *glua.State) int {
 			n := l.Top()
 			if l.TypeOf(1) == glua.TypeString {
 				if s, _ := l.ToString(1); s[0] == '#' {
@@ -284,7 +284,7 @@ func getBaseLibrary(output io.StringWriter) []glua.RegistryFunction {
 			glua.ArgumentCheck(l, 1 <= i, 1, "index out of range")
 			return n - i
 		}},
-		{"setmetatable", func(l *glua.State) int {
+		{Name: "setmetatable", Function: func(l *glua.State) int {
 			t := l.TypeOf(2)
 			glua.CheckType(l, 1, glua.TypeTable)
 			glua.ArgumentCheck(l, t == glua.TypeNil || t == glua.TypeTable, 2, "nil or table expected")
@@ -295,7 +295,7 @@ func getBaseLibrary(output io.StringWriter) []glua.RegistryFunction {
 			l.SetMetaTable(1)
 			return 1
 		}},
-		{"tonumber", func(l *glua.State) int {
+		{Name: "tonumber", Function: func(l *glua.State) int {
 			if l.IsNoneOrNil(2) { // standard conversion
 				if n, ok := l.ToNumber(1); ok {
 					l.PushNumber(n)
@@ -314,17 +314,17 @@ func getBaseLibrary(output io.StringWriter) []glua.RegistryFunction {
 			l.PushNil()
 			return 1
 		}},
-		{"tostring", func(l *glua.State) int {
+		{Name: "tostring", Function: func(l *glua.State) int {
 			glua.CheckAny(l, 1)
 			glua.ToStringMeta(l, 1)
 			return 1
 		}},
-		{"type", func(l *glua.State) int {
+		{Name: "type", Function: func(l *glua.State) int {
 			glua.CheckAny(l, 1)
 			l.PushString(glua.TypeNameOf(l, 1))
 			return 1
 		}},
-		{"xpcall", func(l *glua.State) int {
+		{Name: "xpcall", Function: func(l *glua.State) int {
 			n := l.Top()
 			glua.ArgumentCheck(l, n >= 2, 2, "value expected")
 			l.PushValue(1) // exchange function and error handler

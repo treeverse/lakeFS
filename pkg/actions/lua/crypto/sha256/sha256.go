@@ -16,7 +16,7 @@ func Open(l *lua.State) {
 }
 
 var library = []lua.RegistryFunction{
-	{"digest", digest},
+	{Name: "digest", Function: digest},
 }
 
 func digest(l *lua.State) int {

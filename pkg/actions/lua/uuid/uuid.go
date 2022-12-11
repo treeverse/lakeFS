@@ -6,7 +6,13 @@ import (
 )
 
 var library = []lua.RegistryFunction{
-	{"new", func(l *lua.State) int { l.PushString(uuid.New()); return 1 }},
+	{
+		Name: "new",
+		Function: func(l *lua.State) int {
+			l.PushString(uuid.New())
+			return 1
+		},
+	},
 }
 
 func Open(l *lua.State) {

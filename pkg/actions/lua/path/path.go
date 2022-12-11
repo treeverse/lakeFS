@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	SEPERATOR     = "/"
-	HIDDEN_PREFIX = "_"
+	SEPARATOR    = "/"
+	HiddenPrefix = "_"
 )
 
 func Open(l *lua.State) {
@@ -23,20 +23,20 @@ func Open(l *lua.State) {
 }
 
 var library = []lua.RegistryFunction{
-	{"parse", parse},
-	{"join", join},
-	{"is_hidden", isHidden},
-	{"default_seperator", getDefaultSeperator},
+	{Name: "parse", Function: parse},
+	{Name: "join", Function: join},
+	{Name: "is_hidden", Function: isHidden},
+	{Name: "default_separator", Function: getDefaultSeparator},
 }
 
-func getDefaultSeperator(l *lua.State) int {
-	l.PushString(SEPERATOR)
+func getDefaultSeparator(l *lua.State) int {
+	l.PushString(SEPARATOR)
 	return 1
 }
 
 func parse(l *lua.State) int {
 	p := lua.CheckString(l, 1)
-	sep := SEPERATOR
+	sep := SEPARATOR
 	if !l.IsNone(2) {
 		sep = lua.CheckString(l, 2)
 	}
@@ -61,7 +61,7 @@ func Parse(pth, sep string) map[string]string {
 	}
 	lastIndex := strings.LastIndex(pth, sep)
 	if lastIndex == -1 {
-		// no seperator
+		// no separator
 		return map[string]string{
 			"parent":    "", // no parent
 			"base_name": pth,
@@ -85,12 +85,12 @@ func join(l *lua.State) int {
 func Join(sep string, parts ...string) string {
 	s := ""
 	for i, part := range parts {
-		s = s + part // append it
+		s += part // append it
 		isLast := i == len(parts)-1
 		if !isLast {
 			// check if ends with sep, if not, add it
 			if !strings.HasSuffix(part, sep) {
-				s = s + sep
+				s += sep
 			}
 		}
 	}
@@ -110,11 +110,11 @@ func IsHidden(pth, sep, prefix string) bool {
 
 func isHidden(l *lua.State) int {
 	p := lua.CheckString(l, 1)
-	sep := SEPERATOR
+	sep := SEPARATOR
 	if !l.IsNone(2) {
 		sep = lua.CheckString(l, 2)
 	}
-	prefix := HIDDEN_PREFIX
+	prefix := HiddenPrefix
 	if !l.IsNone(3) {
 		prefix = lua.CheckString(l, 3)
 	}

@@ -34,3 +34,8 @@ linters:
     - unparam
     - unused
     - whitespace
+
+linters-settings:
+  gomnd:
+    ignored-files:
+      - 'pkg/actions/lua/.*'
