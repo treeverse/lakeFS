@@ -3,9 +3,8 @@ package path
 import (
 	"strings"
 
-	"github.com/Shopify/goluago/util"
-
 	"github.com/Shopify/go-lua"
+	"github.com/treeverse/lakefs/pkg/actions/lua/util"
 )
 
 const (

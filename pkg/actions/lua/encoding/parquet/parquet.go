@@ -2,7 +2,7 @@ package parquet
 
 import (
 	"github.com/Shopify/go-lua"
-	"github.com/Shopify/goluago/util"
+	"github.com/treeverse/lakefs/pkg/actions/lua/util"
 	"github.com/xitongsys/parquet-go-source/buffer"
 	"github.com/xitongsys/parquet-go/reader"
 )

@@ -1,21 +1,24 @@
-package lua
+package lakefs
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 
-	"github.com/Shopify/goluago/util"
-
-	"github.com/treeverse/lakefs/pkg/auth"
-
 	"github.com/Shopify/go-lua"
+	"github.com/treeverse/lakefs/pkg/actions/lua/util"
+	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/version"
 )
+
+// LuaClientUserAgent is the default user agent that will be sent to the lakeFS server instance
+var LuaClientUserAgent = "lakefs-lua/" + version.Version
 
 func check(l *lua.State, err error) {
 	if err != nil {
@@ -24,18 +27,20 @@ func check(l *lua.State, err error) {
 	}
 }
 
-func makeLakeFSRequest(ctx context.Context, user *model.User, method, url string, data []byte) (*http.Request, error) {
-	var err error
-	var req *http.Request
+func newLakeFSRequest(ctx context.Context, user *model.User, method, url string, data []byte) (*http.Request, error) {
 	if !strings.HasPrefix(url, "/api/") {
-		url = fmt.Sprintf("/api/v1%s", url)
+		if strings.HasPrefix(url, "/") {
+			url = fmt.Sprintf("/api/v1%s", url)
+		} else {
+			url = fmt.Sprintf("/api/v1/%s", url)
+		}
 	}
+	var body io.Reader
 	if data == nil {
-		req, err = http.NewRequestWithContext(ctx, method, url, nil)
-	} else {
-		req, err = http.NewRequestWithContext(ctx, method, url, bytes.NewReader(data))
-		req.Header.Set("Content-Type", "application/json")
+		body = bytes.NewReader(data)
 	}
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
+	req.Header.Set("User-Agent", LuaClientUserAgent)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +48,16 @@ func makeLakeFSRequest(ctx context.Context, user *model.User, method, url string
 	return req, nil
 }
 
-func exectuteLakeFSRequest(l *lua.State, server *http.Server, request *http.Request) int {
+func newLakeFSJSONRequest(ctx context.Context, user *model.User, method, url string, data []byte) (*http.Request, error) {
+	req, err := newLakeFSRequest(ctx, user, method, url, data)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	return req, nil
+}
+
+func getLakeFSJSONResponse(l *lua.State, server *http.Server, request *http.Request) int {
 	rr := httptest.NewRecorder()
 	server.Handler.ServeHTTP(rr, request)
 	l.PushInteger(rr.Code)
@@ -67,18 +81,18 @@ func OpenClient(l *lua.State, ctx context.Context, user *model.User, server *htt
 				}
 
 				path := fmt.Sprintf("/repositories/%s/tags", repo)
-				req, err := makeLakeFSRequest(ctx, user, http.MethodPost, path, data)
+				req, err := newLakeFSJSONRequest(ctx, user, http.MethodPost, path, data)
 				if err != nil {
 					check(l, err)
 				}
-				return exectuteLakeFSRequest(l, server, req)
+				return getLakeFSJSONResponse(l, server, req)
 			}},
 			{Name: "diff_refs", Function: func(state *lua.State) int {
 				repo := lua.CheckString(l, 1)
 				leftRef := lua.CheckString(l, 2)
 				rightRef := lua.CheckString(l, 3)
 				url := fmt.Sprintf("/repositories/%s/refs/%s/diff/%s", repo, leftRef, rightRef)
-				req, err := makeLakeFSRequest(ctx, user, http.MethodGet, url, nil)
+				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, url, nil)
 				if err != nil {
 					check(l, err)
 				}
@@ -97,13 +111,13 @@ func OpenClient(l *lua.State, ctx context.Context, user *model.User, server *htt
 					q.Add("amount", fmt.Sprintf("%d", lua.CheckInteger(l, 7)))
 				}
 				req.URL.RawQuery = q.Encode()
-				return exectuteLakeFSRequest(l, server, req)
+				return getLakeFSJSONResponse(l, server, req)
 			}},
 			{Name: "list_objects", Function: func(state *lua.State) int {
 				repo := lua.CheckString(l, 1)
 				ref := lua.CheckString(l, 2)
 				url := fmt.Sprintf("/repositories/%s/refs/%s/objects/ls", repo, ref)
-				req, err := makeLakeFSRequest(ctx, user, http.MethodGet, url, nil)
+				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, url, nil)
 				if err != nil {
 					check(l, err)
 				}
@@ -129,13 +143,13 @@ func OpenClient(l *lua.State, ctx context.Context, user *model.User, server *htt
 					q.Add("user_metadata", withUserMetadata)
 				}
 				req.URL.RawQuery = q.Encode()
-				return exectuteLakeFSRequest(l, server, req)
+				return getLakeFSJSONResponse(l, server, req)
 			}},
 			{Name: "get_object", Function: func(state *lua.State) int {
 				repo := lua.CheckString(l, 1)
 				ref := lua.CheckString(l, 2)
 				url := fmt.Sprintf("/repositories/%s/refs/%s/objects", repo, ref)
-				req, err := makeLakeFSRequest(ctx, user, http.MethodGet, url, nil)
+				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, url, nil)
 				if err != nil {
 					check(l, err)
 				}

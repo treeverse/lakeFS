@@ -4,10 +4,10 @@ import (
 	"regexp"
 
 	"github.com/Shopify/go-lua"
-	"github.com/Shopify/goluago/util"
+	"github.com/treeverse/lakefs/pkg/actions/lua/util"
 )
 
-// Open exposes the regexp functions to Lua code in the `goluago/regexp`
+// Open exposes the regexp functions to Lua code in the `regexp`
 // namespace.
 func Open(l *lua.State) {
 	reOpen := func(l *lua.State) int {

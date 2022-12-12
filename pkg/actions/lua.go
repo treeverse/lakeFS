@@ -9,18 +9,15 @@ import (
 	"net/http/httptest"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/logging"
-
-	lualibs "github.com/treeverse/lakefs/pkg/actions/lua"
-
-	"github.com/treeverse/lakefs/pkg/auth/model"
-
-	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/actions/lua/lakefs"
 
 	"github.com/Shopify/go-lua"
-	luautil "github.com/Shopify/goluago/util"
-
+	lualibs "github.com/treeverse/lakefs/pkg/actions/lua"
+	luautil "github.com/treeverse/lakefs/pkg/actions/lua/util"
+	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type LuaHook struct {
@@ -68,7 +65,7 @@ func injectHookContext(l *lua.State, ctx context.Context, user *model.User, endp
 	l.SetGlobal("username")
 	luautil.DeepPush(l, args)
 	l.SetGlobal("args")
-	lualibs.OpenClient(l, ctx, user, endpoint)
+	lakefs.OpenClient(l, ctx, user, endpoint)
 }
 
 type loggingBuffer struct {

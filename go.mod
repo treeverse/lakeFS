@@ -78,6 +78,7 @@ require (
 
 require (
 	github.com/IBM/pgxpoolprometheus v1.0.1
+	github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf
 	github.com/alitto/pond v1.8.2
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/gorilla/securecookie v1.1.1
@@ -90,8 +91,6 @@ require (
 	github.com/Antonboom/errname v0.1.7 // indirect
 	github.com/Antonboom/nilnil v0.1.1 // indirect
 	github.com/GaijinEntertainment/go-exhaustruct/v2 v2.3.0 // indirect
-	github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf // indirect
-	github.com/Shopify/goluago v0.0.0-20221004153823-5cd52da9c04d // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
 	github.com/breml/bidichk v0.2.3 // indirect
@@ -113,7 +112,6 @@ require (
 	github.com/leonklingele/grouper v1.1.0 // indirect
 	github.com/lufeee/execinquery v1.2.1 // indirect
 	github.com/maratori/testableexamples v1.0.0 // indirect
-	github.com/pborman/uuid v0.0.0-20160216163710-c55201b03606 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/quasilyte/gogrep v0.0.0-20220828223005-86e4605de09f // indirect
 	github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567 // indirect

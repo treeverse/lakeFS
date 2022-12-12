@@ -2,14 +2,14 @@ package uuid
 
 import (
 	"github.com/Shopify/go-lua"
-	"github.com/pborman/uuid"
+	"github.com/google/uuid"
 )
 
 var library = []lua.RegistryFunction{
 	{
 		Name: "new",
 		Function: func(l *lua.State) int {
-			l.PushString(uuid.New())
+			l.PushString(uuid.NewString())
 			return 1
 		},
 	},
