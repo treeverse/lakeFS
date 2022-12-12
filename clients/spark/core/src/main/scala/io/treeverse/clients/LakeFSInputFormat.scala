@@ -213,7 +213,8 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
     val fs = FileSystem.get(namespaceURI, conf)
     fs.getStatus(new Path(namespaceURI)) // Will throw an exception if namespace doesn't exist
 
-    val metadataURI = namespaceURI.resolve("_lakefs")
+    val metadataURI =
+      namespaceURI.resolve(if (storageNamespace.endsWith("/")) "_lakefs" else "/_lakefs")
     val metadataPath = new Path(metadataURI)
     if (!fs.exists(metadataPath)) {
       return ListBuffer.empty[InputSplit].asJava
