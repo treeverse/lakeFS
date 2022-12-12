@@ -82,7 +82,6 @@ func forwardOnType(l *lua.State, val interface{}) {
 
 func forwardOnReflect(l *lua.State, val interface{}) {
 	switch v := reflect.ValueOf(val); v.Kind() {
-
 	case reflect.Array, reflect.Slice:
 		recurseOnFuncSlice(l, func(i int) interface{} { return v.Index(i).Interface() }, v.Len())
 
