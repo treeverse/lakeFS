@@ -468,7 +468,8 @@ object GarbageCollector {
     println("Expired addresses:")
     expiredAddresses.show()
 
-    // write expired addresses as text - write to the "[addresses path] + .text"
+    // Enable source for rclone backup and resource
+    // write expired addresses as text - output to '.../addresses_path+".text"/' 
     val gcAddressesPath = new Path(gcAddressesLocation)
     val gcTextAddressesPath = new Path(gcAddressesPath.getParent, gcAddressesPath.getName + ".text")
     expiredAddresses.write
