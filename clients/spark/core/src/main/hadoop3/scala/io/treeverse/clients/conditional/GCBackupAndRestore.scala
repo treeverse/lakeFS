@@ -9,6 +9,14 @@ import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 
 import java.net.URI
 
+/** A Garbage Collection utility that uses distCp under the hood to copy objects marked by GC as expired from one location
+ *  to another.
+ *  Use-cases:
+ *    Backup: copy expired objects from your repository’s storage namespace to an external location before running GC in
+ *    sweep only mode.
+ *    Restore: copy objects that were hard-deleted by GC from an external location you used for saving your backup into
+ *    your repository’s storage namespace.
+ */
 class GCBackupAndRestore {}
 
 object GCBackupAndRestore {
@@ -38,7 +46,7 @@ object GCBackupAndRestore {
     objectsRelativePathsDF
       .select("address")
       .as[String]
-      .flatMap(x => StorageUtils.concatKeysToStorageNamespace(Seq(x), storageNSForFS, storageType))
+      .flatMap(x => StorageUtils.concatKeysToStorageNamespace(Seq(x), storageNSForFS))
   }
 
   def validateAndParseHadoopConfig(

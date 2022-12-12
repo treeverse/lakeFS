@@ -44,13 +44,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
-type contextKey string
-
 const (
 	// DefaultMaxPerPage is the maximum amount of results returned for paginated queries to the API
-	DefaultMaxPerPage int        = 1000
-	lakeFSPrefix                 = "symlinks"
-	UserContextKey    contextKey = "user"
+	DefaultMaxPerPage int = 1000
+	lakeFSPrefix          = "symlinks"
 
 	actionStatusCompleted = "completed"
 	actionStatusFailed    = "failed"
@@ -1953,8 +1950,8 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_commit", r, repository, branch, "")
-	user, ok := ctx.Value(UserContextKey).(*model.User)
-	if !ok {
+	user, err := auth.GetUser(ctx)
+	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing user")
 		return
 	}
@@ -2253,13 +2250,13 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body R
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "revert_branch", r, repository, branch, "")
-	user, ok := ctx.Value(UserContextKey).(*model.User)
-	if !ok {
+	user, err := auth.GetUser(ctx)
+	if err != nil {
 		writeError(w, http.StatusUnauthorized, "user not found")
 		return
 	}
 	committer := user.Username
-	err := c.Catalog.Revert(ctx, repository, branch, catalog.RevertParams{
+	err = c.Catalog.Revert(ctx, repository, branch, catalog.RevertParams{
 		Reference:    body.Ref,
 		Committer:    committer,
 		ParentNumber: body.ParentNumber,
@@ -3101,8 +3098,8 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "merge_branches", r, repository, destinationBranch, sourceRef)
-	user, ok := ctx.Value(UserContextKey).(*model.User)
-	if !ok {
+	user, err := auth.GetUser(ctx)
+	if err != nil {
 		writeError(w, http.StatusUnauthorized, "user not found")
 		return
 	}
@@ -3302,9 +3299,9 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 }
 
 func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	u, ok := r.Context().Value(UserContextKey).(*model.User)
+	u, err := auth.GetUser(r.Context())
 	var user User
-	if ok {
+	if err != nil {
 		user.Id = u.Username
 		user.CreationDate = u.CreatedAt.Unix()
 		if u.FriendlyName != nil {
@@ -3398,8 +3395,8 @@ func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, temp
 	}
 	ctx := r.Context()
 
-	u, ok := ctx.Value(UserContextKey).(*model.User)
-	if !ok {
+	u, err := auth.GetUser(ctx)
+	if err != nil {
 		writeError(w, http.StatusInternalServerError, "request performed with no user")
 	}
 
@@ -3413,7 +3410,7 @@ func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, temp
 	}
 
 	c.LogAction(ctx, "expand_template", r, "", "", "")
-	err := c.Templater.Expand(ctx, w, u, templateLocation, p.Params.AdditionalProperties)
+	err = c.Templater.Expand(ctx, w, u, templateLocation, p.Params.AdditionalProperties)
 	if err != nil {
 		c.Logger.WithError(err).WithField("location", templateLocation).Error("Template expansion failed")
 	}
@@ -3435,8 +3432,8 @@ func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, temp
 
 func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	user, ok := ctx.Value(UserContextKey).(*model.User)
-	if !ok || user == nil {
+	_, err := auth.GetUser(ctx)
+	if err != nil {
 		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
@@ -3634,8 +3631,8 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 		SourceRef:  sourceRef,
 		Client:     client,
 	}
-	user, ok := ctx.Value(UserContextKey).(*model.User)
-	if ok {
+	user, err := auth.GetUser(ctx)
+	if err != nil {
 		ev.UserID = user.Username
 	}
 	c.Logger.WithContext(ctx).WithFields(logging.Fields{
@@ -3674,8 +3671,8 @@ func paginationFor(hasMore bool, results interface{}, fieldName string) Paginati
 
 func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms permissions.Node) bool {
 	ctx := r.Context()
-	user, ok := ctx.Value(UserContextKey).(*model.User)
-	if !ok || user == nil {
+	user, err := auth.GetUser(ctx)
+	if err != nil {
 		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return false
 	}

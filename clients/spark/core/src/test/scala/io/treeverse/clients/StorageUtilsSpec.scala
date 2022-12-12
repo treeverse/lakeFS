@@ -113,6 +113,74 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
     }
   }
 
+  describe("concatKeysToStorageNamespace") {
+    val keys = Seq("k1")
+
+    it("should keep namespace scheme and host and namespace trailing slash") {
+      val storageNSWithPath = "s3://bucket/foo/"
+      validateConcatKeysToStorageNamespace(keys,
+                                           storageNSWithPath,
+                                           true,
+                                           Seq("s3://bucket/foo/k1")
+                                          ) should equal(true)
+
+      val storageNSWithoutPath = "s3://bucket/"
+      validateConcatKeysToStorageNamespace(keys,
+                                           storageNSWithoutPath,
+                                           true,
+                                           Seq("s3://bucket/k1")
+                                          ) should equal(true)
+    }
+
+    it("should keep namespace scheme and host and add namespace trailing slash") {
+      val storageNSWithPath = "s3://bucket/foo"
+      validateConcatKeysToStorageNamespace(keys,
+                                           storageNSWithPath,
+                                           true,
+                                           Seq("s3://bucket/foo/k1")
+                                          ) should equal(true)
+
+      val storageNSWithoutPath = "s3://bucket"
+      validateConcatKeysToStorageNamespace(keys,
+                                           storageNSWithoutPath,
+                                           true,
+                                           Seq("s3://bucket/k1")
+                                          ) should equal(true)
+    }
+
+    it("should drop namespace scheme and host and keep namespace trailing slash") {
+      val storageNSWithPath = "s3://bucket/foo/"
+      validateConcatKeysToStorageNamespace(keys,
+                                           storageNSWithPath,
+                                           false,
+                                           Seq("foo/k1")
+                                          ) should equal(true)
+
+      val storageNSWithoutPath = "s3://bucket/"
+      validateConcatKeysToStorageNamespace(keys,
+                                           storageNSWithoutPath,
+                                           false,
+                                           Seq("k1")
+                                          ) should equal(true)
+    }
+
+    it("should drop namespace scheme and host and add namespace trailing slash") {
+      val storageNSWithPath = "s3://bucket/foo"
+      validateConcatKeysToStorageNamespace(keys,
+                                           storageNSWithPath,
+                                           false,
+                                           Seq("foo/k1")
+                                          ) should equal(true)
+
+      val storageNSWithoutPath = "s3://bucket"
+      validateConcatKeysToStorageNamespace(keys,
+                                           storageNSWithoutPath,
+                                           false,
+                                           Seq("k1")
+                                          ) should equal(true)
+    }
+  }
+
   private def extractBucketFromRecordedRequest(request: RecordedRequest): String = {
     val splitRequestLine = request.getRequestLine.split('/')
     if (splitRequestLine.length < 3) {
@@ -143,5 +211,15 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
       US_STANDARD,
       BUCKET_NAME
     )
+  }
+
+  private def validateConcatKeysToStorageNamespace(
+      keys: Seq[String],
+      storageNamespace: String,
+      keepNsSchemeAndHost: Boolean,
+      expectedResult: Seq[String]
+  ): Boolean = {
+    val res = StorageUtils.concatKeysToStorageNamespace(keys, storageNamespace, keepNsSchemeAndHost)
+    res.toSet == expectedResult.toSet
   }
 }
