@@ -14,6 +14,7 @@ import io.treeverse.clients.StorageUtils._
 import org.apache.hadoop.conf.Configuration
 
 import java.net.URI
+import java.nio.charset.Charset
 import java.util.stream.Collectors
 import collection.JavaConverters._
 
@@ -29,9 +30,27 @@ trait BulkRemover {
    *
    *  @param keys keys of objects to be removed
    *  @param storageNamespace the storage namespace in which the objects are stored
+   *  @param keepNsSchemeAndHost whether to keep a storage namespace of the form "s3://bucket/foo/" or remove its URI
+   *                            scheme and host leaving it in the form "/foo/"
+   *  @param applyUTF8Encoding whether to UTF-8 encode keys
    *  @return object URIs of the keys
    */
-  def constructRemoveKeyNames(keys: Seq[String], storageNamespace: String): Seq[String]
+  def constructRemoveKeyNames(
+      keys: Seq[String],
+      storageNamespace: String,
+      keepNsSchemeAndHost: Boolean,
+      applyUTF8Encoding: Boolean
+  ): Seq[String] = {
+    println("storageNamespace: " + storageNamespace)
+    var removeKeyNames =
+      StorageUtils.concatKeysToStorageNamespace(keys, storageNamespace, keepNsSchemeAndHost)
+    if (applyUTF8Encoding) {
+      removeKeyNames = removeKeyNames
+        .map(x => x.getBytes(Charset.forName("UTF-8")))
+        .map(x => new String(x))
+    }
+    removeKeyNames
+  }
 
   /** Bulk delete objects from the underlying storage.
    *
@@ -50,7 +69,7 @@ object BulkRemoverFactory {
     val bucket = uri.getHost
 
     override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
-      val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace)
+      val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, false, false)
       println("Remove keys:", removeKeyNames.take(100).mkString(", "))
       val removeKeys = removeKeyNames.map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
 
@@ -68,16 +87,6 @@ object BulkRemoverFactory {
     ): AmazonS3 =
       io.treeverse.clients.conditional.S3ClientBuilder.build(hc, bucket, region, numRetries)
 
-    override def constructRemoveKeyNames(
-        keys: Seq[String],
-        storageNamespace: String
-    ): Seq[String] = {
-      println(
-        "storageNamespace: " + storageNamespace
-      ) // example storage namespace s3://bucket/repoDir/
-      StorageUtils.S3.concatKeysToStorageNamespacePrefix(keys, storageNamespace)
-    }
-
     override def getMaxBulkSize(): Int = {
       S3MaxBulkSize
     }
@@ -91,7 +100,7 @@ object BulkRemoverFactory {
     val storageAccountName = StorageUtils.AzureBlob.uriToStorageAccountName(uri)
 
     override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
-      val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace)
+      val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, true, true)
       println("Remove keys:", removeKeyNames.take(100).mkString(", "))
       val removeKeys = removeKeyNames.asJava
 
@@ -150,14 +159,6 @@ object BulkRemoverFactory {
           .buildClient
 
       new BlobBatchClientBuilder(blobServiceClientSharedKey).buildClient
-    }
-
-    override def constructRemoveKeyNames(
-        keys: Seq[String],
-        storageNamespace: String
-    ): Seq[String] = {
-      println("storageNamespace: " + storageNamespace)
-      StorageUtils.AzureBlob.concatKeysToStorageNamespace(keys, storageNamespace)
     }
 
     override def getMaxBulkSize(): Int = {
