@@ -452,7 +452,7 @@ If your version is lower, you should first upgrade.
 3. Use [rclone](https://rclone.org/) for backup and restore
 
 
-Running uncommitted GC performed by the following steps:
+To run uncommitted GC perform the following steps: 
 
 1. Mark the files to deleted - summary and report will be generated under '<repository storage namespace>/_lakefs/retention/gc/uncommitted/<mark id>/'.
    The mark id sortable time based ID, each run output into a new one.
