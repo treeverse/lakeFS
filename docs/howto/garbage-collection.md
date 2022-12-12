@@ -449,20 +449,61 @@ The uncommitted GC will not clean:
 1. lakeFS server version must be at least [v0.87.0](https://github.com/treeverse/lakeFS/releases/tag/v0.87.0). 
 If your version is lower, you should first upgrade.
 2. Read the [limitations](#limitations) section.
+3. Use [rclone](https://rclone.org/) for backup and restore
 
-To run the uncommitted GC job run:
-  ```bash
-spark-submit \
-    --conf spark.hadoop.lakefs.api.url=<LAKEFS_ENDPOINT> \
-    --conf spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY_ID> \
-    --conf spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_ACCESS_KEY> \
-    --conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY_ID> \
-    --conf spark.hadoop.lakefs.api.secret_key=<LAKEFS__SECRET_ACCESS_KEY> \
-    --class io.treeverse.gc.UncommittedGarbageCollector \
-    --packages org.apache.hadoop:hadoop-aws:2.7.7,\
-          lakefs-spark-client-312-hadoop3-assembly-0.6.0.jar \
-    <REPO_NAME>
-```
+
+Running uncommitted GC performed by the following steps:
+
+1. Mark the files to deleted - summary and report will be generated under '<repository storage namespace>/_lakefs/retention/gc/uncommitted/<mark id>/'.
+   The mark id sortable time based ID, each run output into a new one.
+
+   ```bash
+   spark-submit \
+       --conf spark.hadoop.lakefs.api.url=<LAKEFS_ENDPOINT> \
+       --conf spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY_ID> \
+       --conf spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_ACCESS_KEY> \
+       --conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY_ID> \
+       --conf spark.hadoop.lakefs.api.secret_key=<LAKEFS__SECRET_ACCESS_KEY> \
+       --class io.treeverse.gc.UncommittedGarbageCollector \
+       --packages org.apache.hadoop:hadoop-aws:2.7.7 \
+       lakefs-spark-client-312-hadoop3-assembly-0.6.0.jar \
+       <REPO_NAME> <REPO>
+   ```
+
+2. Backup (recommended) - can be done after examine the above content. Backup will copy the objects marked to be deleted for run ID to a specified location.
+   Follow [rclone documentation](https://rclone.org/docs/) to configure remote access to lakeFS storage and the backup location.
+
+   ```shell
+   rclone --include "*.txt" cat "remote:<lakefs storage namespace>/_lakefs/retention/gc/uncommitted/<mark id>/deleted.text/" | \
+     rclone -P --no-traverse --files-from - copy <lakefs storage namespace> <backup storage location>
+   ```
+
+4. Sweep - delete reported objects to delete based on mark ID
+
+   ```bash
+   spark-submit \
+       --conf spark.hadoop.lakefs.gc.mark_id=true \
+       --conf spark.hadoop.lakefs.gc.do_sweep=true \
+       --conf spark.hadoop.lakefs.api.url=<LAKEFS_ENDPOINT> \
+       --conf spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY_ID> \
+       --conf spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_ACCESS_KEY> \
+       --conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY_ID> \
+       --conf spark.hadoop.lakefs.api.secret_key=<LAKEFS__SECRET_ACCESS_KEY> \
+       --class io.treeverse.gc.UncommittedGarbageCollector \
+       --packages org.apache.hadoop:hadoop-aws:2.7.7 \
+       lakefs-spark-client-312-hadoop3-assembly-0.6.0.jar \
+       <REPO_NAME> <REGION>
+   ```
+
+   In case we would like to always run the uncommitted GC without backup, passing `--conf spark.hadoop.lakefs.gc.do_sweep=true` to theprevious command will perform both steps.
+
+5. Restore - in any case we would like to undo and restore the data from from our backup. The following command will copy the objects back from the backup location using the information stored under the specific mark id.
+
+   ```shell
+   rclone --include "*.txt" cat "remote:<lakefs storage namespace>/_lakefs/retention/gc/uncommitted/<mark id>/deleted.text/" | \
+     rclone -P --no-traverse --files-from - copy <backup storage location> <lakefs storage namespace>
+   ```
+
 
 #### Uncommitted GC job options
 {: .no_toc }
@@ -491,7 +532,7 @@ of having 2 garbage collection jobs for a lakeFS installation and working to cre
 single job for it.
 2. Removing the limitation of a read-only lakeFS during the job run.
 3. Performance improvements: 
-   1. better parallelization of the storage namespace traversal.
+   1. Better parallelization of the storage namespace traversal.
    2. Optimized Run: GC will only iterate over objects that were written to the
 repository since the last GC run. For more information see the [proposal](https://github.com/treeverse/lakeFS/blob/master/design/accepted/gc_plus/uncommitted-gc.md#flow-2-optimized-run).
 4. Backup & Restore, similar to [committed data](#gc-backup-and-restore).
