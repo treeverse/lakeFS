@@ -8,7 +8,13 @@ import { FaDownload } from "react-icons/fa";
 import { useAPI } from "../../../lib/hooks/api";
 import { useQuery } from "../../../lib/hooks/router";
 import { objects } from "../../../lib/api";
-import { RendererComponent, supportedContentTypeRenderers, supportedFileExtensionRenderers } from "./fileRenderers";
+import {
+    guessLanguage,
+    GenericRenderer,
+    RendererComponent,
+    supportedContentTypeRenderers,
+    supportedFileExtensionRenderers
+} from "./fileRenderers";
 import { ClipboardButton } from "../../../lib/components/controls";
 import noop from "lodash/noop";
 import { URINavigator } from "../../../lib/components/repository/tree";
@@ -18,6 +24,9 @@ import {RefContextProvider} from "../../../lib/hooks/repo";
 import {linkToPath} from "../../../lib/api";
 
 import "../../../styles/ipynb.css";
+import {FileSymlinkFileIcon} from "@primer/octicons-react";
+
+
 
 interface ObjectViewerPathParams {
     objectName: string;
@@ -57,11 +66,13 @@ export const Loading: FC = () => {
     );
 };
 
+export const MAX_DISPLAYABLE_SIZE = 1024 * 1024; // 1MB
+
 // Resolve the correct renderer according to the priority:
 // 1. If we have a content-type, use that
 // 2. If we have a known file extension, use that
 // 3. Fall back on download behavior
-export const resolveRenderer = (contentType: string | null, extension: string | null): ComponentType<RendererComponent> | null => {
+export const resolveRenderer = (size: number, contentType: string | null, extension: string | null): ComponentType<RendererComponent> | null => {
     
     if (contentType && contentType in supportedContentTypeRenderers) {
         return supportedContentTypeRenderers[contentType];
@@ -166,12 +177,26 @@ export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loadin
         return <></>;
     }
 
+    const size = (rawContent) ? rawContent.length : blobContent.size;
+
     let content;
-    const renderer = resolveRenderer(contentType, fileExtension);
+    const renderer = resolveRenderer(size, contentType, fileExtension);
     if (!renderer) {
-        // File type does not have a renderer
-        // We cannot display it inline
-        content = <FileTypeNotSupported />
+        // let's try and guess?
+        if (size <= MAX_DISPLAYABLE_SIZE) {
+            const language = guessLanguage(fileExtension, contentType);
+            if (language) {
+                content = <GenericRenderer content={rawContent} language={language}/>;
+            } else {
+                // File type does not have a renderer
+                // We cannot display it inline
+                content = <FileTypeNotSupported />
+            }
+        } else {
+            // File type does not have a renderer
+            // We cannot display it inline
+            content = <FileTypeNotSupported />
+        }
     } else {
         content = React.createElement(renderer, { content: rawContent, contentBlob: blobContent, }, []);
     }
@@ -190,20 +215,35 @@ export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loadin
         (<span>{path}</span>);
 
     return (
-            <Card className={'readme-card'}>
-                <Card.Header className={'readme-heading d-flex justify-content-between align-items-center'}>
+            <Card className={'file-content-card'}>
+                <Card.Header className={'file-content-heading d-flex justify-content-between align-items-center'}>
                     {titleComponent}
                     <span className="object-viewer-buttons">
                         <a 
                             href={objectUrl}
                             download={true}
-                            className="btn btn-primary btn-sm download-button">
+                            className="btn btn-primary btn-sm download-button mr-1">
                                 <FaDownload />
                         </a>
-                        <ClipboardButton text={rawContent} variant="outline-primary" size="sm" onSuccess={noop} onError={noop} />
+                        <ClipboardButton
+                            text={`lakefs://${repoId}/${refId}/${path}`}
+                            variant="outline-primary"
+                            size="sm"
+                            onSuccess={noop}
+                            onError={noop}
+                            className={"mr-1"}
+                            tooltip={"copy URI to clipboard"} />
+                        <ClipboardButton
+                            icon={<FileSymlinkFileIcon/>}
+                            text={rawContent}
+                            variant="outline-primary"
+                            size="sm"
+                            onSuccess={noop}
+                            onError={noop}
+                            tooltip={"copy contents to clipboard"}/>
                     </span>
                 </Card.Header>
-                <Card.Body>
+                <Card.Body className={'file-content-body'}>
                     <Box sx={{mx: 1}}>
                         {content}
                     </Box>

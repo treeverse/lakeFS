@@ -3,9 +3,8 @@ package actions
 import (
 	"fmt"
 	"os"
-	"strings"
-
 	"regexp"
+	"strings"
 )
 
 // SecureString is a string that may be populated from an environment variable.

@@ -2,10 +2,11 @@ import React, {useState} from "react";
 
 import moment from "moment";
 import {
+    ClippyIcon,
     DotIcon,
     DownloadIcon,
     FileDirectoryIcon,
-    FileIcon,
+    FileIcon, GearIcon, InfoIcon,
     PencilIcon,
     PlusIcon,
     TrashIcon
@@ -24,6 +25,8 @@ import {ConfirmationModal} from "../modals";
 import {Paginator} from "../pagination";
 import {Link} from "../nav";
 import {RefTypeBranch, RefTypeCommit} from "../../../constants";
+import {copyTextToClipboard} from "../controls";
+import Modal from "react-bootstrap/Modal";
 
 const PREVIEW_SIZE_LIMIT = 4194304; // 4MB in bytes
 
@@ -36,42 +39,122 @@ export const humanSize = (bytes) => {
 const Na = () => (<span>&mdash;</span>);
 
 const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
-    const [show, setShow] = useState(false);
-    const handleClose = () => setShow(false);
-    const handleShow = () => setShow(true);
+
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const handleCloseDeleteConfirmation = () => setShowDeleteConfirmation(false);
+    const handleShowDeleteConfirmation = () => setShowDeleteConfirmation(true);
     const deleteConfirmMsg = `are you sure you wish to delete object "${entry.path}"?`
-    const onSubmit = () => {
+    const onSubmitDeletion = () => {
         onDelete(entry);
-        setShow(false);
+        setShowDeleteConfirmation(false);
     };
+
+
+    const [showObjectStat, setShowObjectStat] = useState(false);
+
+
     return (
         <>
             <Dropdown alignRight>
-                <Dropdown.Toggle variant="light" size="sm">
-                    More Actions
+                <Dropdown.Toggle variant="light" size="sm" className={'row-hover'}>
+                    <GearIcon/>
                 </Dropdown.Toggle>
 
                 <Dropdown.Menu>
-                    <PathLink
-                        path={entry.path}
-                        reference={reference}
-                        repoId={repo.id}
-                        as={Dropdown.Item}>
-                        <DownloadIcon/> {' '} Download
-                    </PathLink>
-                    {reference.type === RefTypeBranch && <Dropdown.Item onClick={(e) => {
-                        e.preventDefault();
-                        handleShow();
+                    {(entry.path_type === 'object') &&
+                        <PathLink
+                            path={entry.path}
+                            reference={reference}
+                            repoId={repo.id}
+                            as={Dropdown.Item}>
+                            <DownloadIcon/> {' '} Download
+                        </PathLink>
+                    }
+                    {(entry.path_type === 'object') &&
+                        <Dropdown.Item onClick={(e) => {
+                            e.preventDefault();
+                            setShowObjectStat(true);
+                        }}>
+                            <InfoIcon/> {' '} Object Info
+                        </Dropdown.Item>
+                    }
+                    <Dropdown.Item onClick={(e) => {
+                        copyTextToClipboard(`lakefs://${repo.id}/${reference.id}/${entry.path}`)
+                        e.preventDefault()
                     }}>
-                        <TrashIcon/> {' '} Delete
-                    </Dropdown.Item>}
+                        <ClippyIcon/> {' '} Copy URI
+                    </Dropdown.Item>
+                    {entry.path_type === 'object' && reference.type === RefTypeBranch &&
+                        <>
+                            <Dropdown.Divider />
+                            <Dropdown.Item onClick={(e) => {
+                                e.preventDefault();
+                                handleShowDeleteConfirmation();
+                            }}>
+                                <TrashIcon/> {' '} Delete
+                            </Dropdown.Item>
+                        </>
+                    }
                 </Dropdown.Menu>
             </Dropdown>
 
-            <ConfirmationModal show={show} onHide={handleClose} msg={deleteConfirmMsg} onConfirm={onSubmit}/>
+            <ConfirmationModal
+                show={showDeleteConfirmation}
+                onHide={handleCloseDeleteConfirmation}
+                msg={deleteConfirmMsg}
+                onConfirm={onSubmitDeletion}/>
+
+            <StatModal
+                entry={entry}
+                show={showObjectStat}
+                onHide={() => setShowObjectStat(false)}/>
         </>
     );
 };
+
+
+const StatModal = ({ show, onHide, entry }) => {
+    return (
+        <Modal show={show} onHide={onHide} size={"lg"}>
+            <Modal.Header closeButton>
+                <Modal.Title>Object Information</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <Table   hover >
+                    <tbody>
+                        <tr>
+                            <td><strong>Path</strong></td>
+                            <td><code>{entry.path}</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Physical Address</strong></td>
+                            <td><code>{entry.physical_address}</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Size (Bytes)</strong></td>
+                            <td>{`${entry.size_bytes}  (${humanSize(entry.size_bytes)})`}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Checksum</strong></td>
+                            <td><code>{entry.checksum}</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Last Modified</strong></td>
+                            <td>{`${moment.unix(entry.mtime).fromNow()} (${moment.unix(entry.mtime).format("MM/DD/YYYY HH:mm:ss")})`}</td>
+                        </tr>
+                        {(entry.content_type) &&
+                            <tr>
+                                <td><strong>Content-Type</strong></td>
+                                <td><code>{entry.content_type}</code></td>
+                            </tr>
+                        }
+                    </tbody>
+                </Table>
+            </Modal.Body>
+        </Modal>
+    );
+};
+
 
 const PathLink = ({repoId, reference, path, children, as = null}) => {
     const link = linkToPath(repoId, reference.id, path);
@@ -180,7 +263,7 @@ const EntryRow = ({repo, reference, path, entry, onDelete, showActions}) => {
     }
 
     let entryActions;
-    if (showActions && entry.path_type === 'object' && (entry.diff_type !== 'removed')) {
+    if (showActions && (entry.diff_type !== 'removed')) {
         entryActions = <EntryRowActions repo={repo} reference={reference} entry={entry} onDelete={onDelete}/>;
     }
 
