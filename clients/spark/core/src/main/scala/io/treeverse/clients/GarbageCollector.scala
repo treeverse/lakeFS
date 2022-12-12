@@ -447,17 +447,17 @@ object GarbageCollector {
     val numAddressPartitions = hc.getInt(LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS,
                                          DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS
                                         )
-
     val expiredAddresses = gc
       .getExpiredAddresses(repo,
-                           storageNS,
-                           runID,
-                           gcCommitsLocation,
-                           numRangePartitions,
-                           numAddressPartitions
-                          )
+        storageNS,
+        runID,
+        gcCommitsLocation,
+        numRangePartitions,
+        numAddressPartitions
+      )
       .toDF("address")
       .withColumn(MARK_ID_KEY, lit(markID))
+      .cache()
 
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
     expiredAddresses.write
@@ -465,10 +465,18 @@ object GarbageCollector {
       .mode(SaveMode.Overwrite)
       .parquet(gcAddressesLocation)
 
-    writeAddressesMarkMetadata(runID, markID, gcAddressesLocation, gcCommitsLocation)
-
     println("Expired addresses:")
     expiredAddresses.show()
+
+    // write expired addresses as text - write to the "[addresses path] + .text"
+    val gcAddressesPath = new Path(gcAddressesLocation)
+    val gcTextAddressesPath = new Path(gcAddressesPath.getParent, gcAddressesPath.getName + ".text")
+    expiredAddresses.write
+      .partitionBy(MARK_ID_KEY)
+      .mode(SaveMode.Overwrite)
+      .text(gcTextAddressesPath.toString)
+    writeAddressesMarkMetadata(runID, markID, gcAddressesLocation, gcCommitsLocation)
+
     (gcAddressesLocation, gcCommitsLocation, expiredAddresses, runID)
   }
 
