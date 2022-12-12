@@ -1447,8 +1447,9 @@ func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, re
 	// notFound is set if stagingOperation returns errNotFoundMustVerify
 	// that holds after verifying the staging token.  It causes
 	// safeBranchWrite to return ErrNotFound.
-	notFound := false
+	var notFound bool
 	for try = 0; try < BranchWriteMaxTries; try++ {
+		notFound = false
 		branch, err := g.RefManager.GetBranchCached(ctx, repository, branchID)
 		if err != nil {
 			return err
@@ -1471,7 +1472,7 @@ func (g *KVGraveler) safeBranchWrite(ctx context.Context, log logging.Logger, re
 		endToken := branch.StagingToken
 		if startToken == endToken {
 			if needsVerification {
-				// Correctly processed as not found.
+				// Verified not found.
 				notFound = true
 			}
 			break
@@ -1561,6 +1562,9 @@ func (g *KVGraveler) deleteUnsafe(ctx context.Context, repository *RepositoryRec
 	} else {
 		commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
 		if err != nil {
+			if errors.Is(err, ErrNotFound) {
+				return errNotFoundMustVerify
+			}
 			return err
 		}
 		metaRangeID = commit.MetaRangeID
