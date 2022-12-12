@@ -470,7 +470,7 @@ To run uncommitted GC perform the following steps:
        <REPO_NAME> <REPO>
    ```
 
-2. Backup (recommended) - can be done after examine the above content. Backup will copy the objects marked to be deleted for run ID to a specified location.
+2. Backup (optional but recommended) - when you start using the feature you may want to first gain confidence in the decisions uncommitted GC makes. Backup will copy the objects marked to be deleted for run ID to a specified location.
    Follow [rclone documentation](https://rclone.org/docs/) to configure remote access to lakeFS storage and the backup location.
 
    ```shell
