@@ -35,12 +35,13 @@ object UncommittedGarbageCollector {
    *  @param before Exclude objects which last_modified date is newer than before Date
    *  @return DF listing all objects under given storageNamespace
    */
-  def listObjects(storageNamespace: String, before: Date): DataFrame = {
+  def listObjects(storageNamespace: String, repo: String, before: Date): (DataFrame, String) = {
     // TODO(niro): parallelize reads from root and data paths
     val sc = spark.sparkContext
     val oldDataPath = new Path(storageNamespace)
     val dataPrefix = "data"
     val dataPath = new Path(storageNamespace, dataPrefix) // TODO(niro): handle better
+    var firstSlice = ""
 
     val configMapper = new ConfigMapper(
       sc.broadcast(
@@ -49,6 +50,18 @@ object UncommittedGarbageCollector {
     )
     // Read objects from data path (new repository structure)
     var dataDF = new ParallelDataLister().listData(configMapper, dataPath)
+
+    // Save first slice from data prefix
+    if (!dataDF.isEmpty) {
+      // Need the before filter to to exclude slices that are not actually read
+      val slices = dataDF.filter(
+        col("last_modified") < before.getTime && !col("base_address").startsWith(repo)
+      )
+      if (!slices.isEmpty) {
+        firstSlice = slices.first.getAs[String]("base_address").split("/")(0)
+      }
+    }
+
     dataDF = dataDF
       .withColumn(
         "address",
@@ -64,7 +77,7 @@ object UncommittedGarbageCollector {
       .filter(!col("address").isin(excludeFromOldData: _*))
     dataDF = dataDF.union(oldDataDF).filter(col("last_modified") < before.getTime).select("address")
 
-    dataDF
+    (dataDF, firstSlice)
   }
 
   private def validateRunModeConfigs(
@@ -80,7 +93,7 @@ object UncommittedGarbageCollector {
                          LAKEFS_CONF_GC_MARK_ID
                         )
       System.exit(2)
-    } else if (shouldMark && !markID.isEmpty) {
+    } else if (shouldMark && markID.nonEmpty) {
       Console.out.println("Can't provide mark ID for mark mode. Exiting...")
     }
   }
@@ -136,7 +149,10 @@ object UncommittedGarbageCollector {
     try {
       if (shouldMark) {
         // Read objects directly from object storage
-        val dataDF = listObjects(storageNamespace, cutoffTime)
+
+        val result = listObjects(storageNamespace, repo, cutoffTime)
+        val dataDF = result._1
+        firstSlice = result._2
 
         // Process uncommitted
         val uncommittedGCRunInfo =
@@ -162,12 +178,6 @@ object UncommittedGarbageCollector {
         addressesToDelete = dataDF
           .except(committedDF)
           .except(uncommittedDF)
-
-        // TODO (niro): not working - need to find the most efficient way to save the first slice
-        if (!dataDF.isEmpty) {
-          val firstFile = dataDF.first.getAs[String]("address")
-          firstSlice = firstFile.substring(0, firstFile.lastIndexOf("/"))
-        }
       }
       if (shouldSweep) {
         if (shouldMark) { // get the expired addresses from the mark id run
@@ -193,7 +203,7 @@ object UncommittedGarbageCollector {
     } catch {
       case e: Throwable =>
         success = false
-        println(e.getStackTrace)
+        println(e.getStackTrace.mkString("Array(", ", ", ")"))
         throw e
     } finally {
       if (runID.nonEmpty && shouldMark) {
@@ -221,20 +231,20 @@ object UncommittedGarbageCollector {
     val reportDst = reportPath(storageNamespace, runID)
     writeJsonSummary(reportDst, runID, firstSlice, startTime, success, expiredAddresses.count())
 
-    expiredAddresses.write.parquet(s"${reportDst}/deleted")
+    expiredAddresses.write.parquet(s"$reportDst/deleted")
   }
 
   private def reportPath(storageNamespace: String, runID: String): String = {
-    s"${storageNamespace}_lakefs/retention/gc/uncommitted/${runID}"
+    s"${storageNamespace}_lakefs/retention/gc/uncommitted/$runID"
   }
 
   private def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
     val path = reportPath(storageNamespace, markID)
-    val markedRunSummary = spark.read.json(s"${path}/summary.json")
+    val markedRunSummary = spark.read.json(s"$path/summary.json")
     if (markedRunSummary.select("success").first() == false) {
       spark.emptyDataFrame.withColumn("address", lit(""))
     } else {
-      spark.read.parquet(s"${path}/deleted")
+      spark.read.parquet(s"$path/deleted")
     }
   }
 

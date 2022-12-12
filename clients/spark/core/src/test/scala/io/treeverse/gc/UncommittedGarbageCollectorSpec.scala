@@ -24,9 +24,10 @@ class UncommittedGarbageCollectorSpec
 
   describe("UncommittedGarbageCollector") {
     var dir: java.nio.file.Path = null
+    val repo = "gc_plus_test"
 
     before {
-      dir = Files.createTempDirectory("gc_plus_test")
+      dir = Files.createTempDirectory(repo)
     }
 
     after {
@@ -73,15 +74,16 @@ class UncommittedGarbageCollectorSpec
     describe(".listObjects") {
       it("should return nothing") {
         withSparkSession(_ => {
-          var dataDF =
-            UncommittedGarbageCollector.listObjects(dir.toString, new Date())
-          dataDF.count() should be(0)
+          var result =
+            UncommittedGarbageCollector.listObjects(dir.toString, repo, new Date())
+          result._1.count() should be(0)
 
           val dataDir = new File(dir.toFile, "data")
           dataDir.mkdir()
 
-          dataDF = UncommittedGarbageCollector.listObjects(dir.toString, new Date())
-          dataDF.count() should be(0)
+          result = UncommittedGarbageCollector.listObjects(dir.toString, repo, new Date())
+          result._1.count() should be(0)
+          result._2 should be("")
         })
       }
 
@@ -90,13 +92,16 @@ class UncommittedGarbageCollectorSpec
           import spark.implicits._
           val data = createSliceData(dir.resolve(""))
 
-          val dataDF = UncommittedGarbageCollector.listObjects(dir.toString,
-                                                               DateUtils.addHours(new Date(), +1)
-                                                              )
+          val (dataDF, firstSlice) =
+            UncommittedGarbageCollector.listObjects(dir.toString,
+                                                    repo,
+                                                    DateUtils.addHours(new Date(), +1)
+                                                   )
           dataDF.count() should be(10)
           val actual = dataDF.select("address").map(_.getString(0)).collect.toSeq.toDS()
           val expected = data.toDS()
           assertDSEqual(actual, expected)
+          firstSlice should be("")
         })
       }
 
@@ -105,8 +110,9 @@ class UncommittedGarbageCollectorSpec
           import spark.implicits._
           val data = createData("data")
 
-          val dataDF =
+          val (dataDF, firstSlice) =
             UncommittedGarbageCollector.listObjects(dir.toString,
+                                                    repo,
                                                     DateUtils.addHours(new Date(), +1)
                                                    )
           dataDF.count() should be(100)
@@ -121,8 +127,9 @@ class UncommittedGarbageCollectorSpec
           import spark.implicits._
           val data = createSliceData(dir.resolve("")) ::: createData("data")
 
-          val dataDF =
+          val (dataDF, firstSlice) =
             UncommittedGarbageCollector.listObjects(dir.toString,
+                                                    repo,
                                                     DateUtils.addHours(new Date(), +1)
                                                    )
           dataDF.count() should be(110)
@@ -137,11 +144,37 @@ class UncommittedGarbageCollectorSpec
           createSliceData(dir.resolve(""))
           createData("data")
 
-          val dataDF =
+          val (dataDF, firstSlice) =
             UncommittedGarbageCollector.listObjects(dir.toString,
+                                                    repo,
                                                     DateUtils.addHours(new Date(), -1)
                                                    )
           dataDF.count() should be(0)
+          firstSlice should be("")
+        })
+      }
+      it("should return correct slice") {
+        withSparkSession(_ => {
+          val dataDir = new File(dir.toFile, "data")
+          dataDir.mkdir()
+          val legacySlice = repo + "_legacy_physical:address_path"
+          val regularSlice = "xxx"
+          val filename = "some_file"
+          var slice = new File(dataDir, legacySlice)
+          slice.mkdir()
+          new File(slice, filename).createNewFile()
+          slice = new File(dataDir, regularSlice)
+          slice.mkdir()
+          new File(slice, filename).createNewFile()
+
+          var (dataDF, firstSlice) =
+            UncommittedGarbageCollector
+              .listObjects(dir.toString, repo, DateUtils.addHours(new Date(), +1))
+          dataDF = dataDF.sort("address")
+          dataDF.count() should be(2)
+          dataDF.head.getString(0) should be(s"data/$legacySlice/$filename")
+          firstSlice should be(regularSlice)
+          dataDF.count() should be(2)
         })
       }
     }
