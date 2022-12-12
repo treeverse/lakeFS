@@ -471,7 +471,7 @@ To run uncommitted GC perform the following steps:
    ```
 
 2. Backup (optional but recommended) - when you start using the feature you may want to first gain confidence in the decisions uncommitted GC makes. Backup will copy the objects marked to be deleted for run ID to a specified location.
-   Follow [rclone documentation](https://rclone.org/docs/) to configure remote access to lakeFS storage and the backup location.
+   Follow [rclone documentation](https://rclone.org/docs/) to configure remote access to lakeFS storage and the backup location and run - 
 
    ```shell
    rclone --include "*.txt" cat "remote:<lakefs storage namespace>/_lakefs/retention/gc/uncommitted/<mark id>/deleted.text/" | \
@@ -495,7 +495,7 @@ To run uncommitted GC perform the following steps:
        <REPO_NAME> <REGION>
    ```
 
-   In case we would like to always run the uncommitted GC without backup, passing `--conf spark.hadoop.lakefs.gc.do_sweep=true` to theprevious command will perform both steps.
+   In case we would like to always run the uncommitted GC without backup, passing `--conf spark.hadoop.lakefs.gc.do_sweep=true` to the previous command will perform both steps.
 
 5. Restore - in any case we would like to undo and restore the data from from our backup. The following command will copy the objects back from the backup location using the information stored under the specific mark id.
 
