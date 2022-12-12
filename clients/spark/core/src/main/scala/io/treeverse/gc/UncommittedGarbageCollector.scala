@@ -233,7 +233,8 @@ object UncommittedGarbageCollector {
   private def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
     val path = reportPath(storageNamespace, markID)
     val markedRunSummary = spark.read.json(s"${path}/summary.json")
-    if (markedRunSummary.select("success").first() == false) {
+    val markedRunSucceeded = markedRunSummary.first.getAs[Boolean]("success")
+    if (markedRunSucceeded == false) {
       spark.emptyDataFrame.withColumn("address", lit(""))
     } else {
       spark.read.parquet(s"$path/deleted")
