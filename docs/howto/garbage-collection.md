@@ -480,8 +480,8 @@ If your version is lower, you should first upgrade.
 ### Running the uncommitted GC 
 
 1. Mark the files to delete - summary and report will be generated under `<REPOSITORY_STORAGE_NAMESPACE>/_lakefs/retention/gc/uncommitted/<MARK_ID>/`.
-   By listing the bucket under 'uncommitted' the last entry represents the last mark id of the uncommitted GC.
-   The GC job logs the mark under - searching "...".
+   By listing the bucket under 'uncommitted' the last entry represents the last mark ID of the uncommitted GC.
+   The GC job prints out "Report for mark_id=..." which includes the mark ID with the run summary.
 
    ```bash
    spark-submit \
