@@ -35,7 +35,7 @@ class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: Config
   def getRangeIDs(commitID: String, repo: String): Iterator[String] = {
     val conf = configMapper.configuration
     val apiClient = ApiClient.get(apiConf)
-    val commit = apiClient.getCommit(repo, commitID)
+    val commit   = apiClient.getCommit(repo, commitID)
     val maxCommitEpochSeconds = conf.getLong(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY, -1)
     if (maxCommitEpochSeconds > 0 && commit.getCreationDate > maxCommitEpochSeconds) {
       return Iterator.empty
@@ -469,7 +469,7 @@ object GarbageCollector {
     expiredAddresses.show()
 
     // Enable source for rclone backup and resource
-    // write expired addresses as text - output to '.../addresses_path+".text"/' 
+    // write expired addresses as text - output to '.../addresses_path+".text"'
     val gcAddressesPath = new Path(gcAddressesLocation)
     val gcTextAddressesPath = new Path(gcAddressesPath.getParent, gcAddressesPath.getName + ".text")
     expiredAddresses.write
