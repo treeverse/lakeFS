@@ -3306,10 +3306,10 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 	ctx := r.Context()
 	emailSubscriptionEnabled := c.Config.IsEmailSubscriptionEnabled()
 	initialized, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
+
 	if initialized == auth.SetupStateInitialized {
 		writeError(w, http.StatusConflict, "lakeFS already initialized")
 		return
