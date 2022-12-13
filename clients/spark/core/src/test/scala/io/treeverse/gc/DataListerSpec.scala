@@ -127,11 +127,11 @@ class NaiveDataListerSpec
               HadoopUtils.getHadoopConfigurationValues(spark.sparkContext.hadoopConfiguration)
             )
           )
-          val df = new NaiveDataLister().listData(configMapper, path).sort("address")
+          val df = new NaiveDataLister().listData(configMapper, path).sort("base_address")
           df.count should be(10)
-          df.sort("address").head.getString(0) should be("object01")
+          df.sort("base_address").head.getString(0) should be("object01")
           df.head.getString(0) should be("object01")
-          df.sort(desc("address")).head.getString(0) should be("object10")
+          df.sort(desc("base_address")).head.getString(0) should be("object10")
         })
       }
     }
