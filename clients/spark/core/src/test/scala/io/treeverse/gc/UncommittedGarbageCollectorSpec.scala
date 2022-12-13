@@ -24,9 +24,10 @@ class UncommittedGarbageCollectorSpec
 
   describe("UncommittedGarbageCollector") {
     var dir: java.nio.file.Path = null
+    val repo = "gc_plus_test"
 
     before {
-      dir = Files.createTempDirectory("gc_plus_test")
+      dir = Files.createTempDirectory(repo)
     }
 
     after {
@@ -82,6 +83,7 @@ class UncommittedGarbageCollectorSpec
 
           dataDF = UncommittedGarbageCollector.listObjects(dir.toString, new Date())
           dataDF.count() should be(0)
+          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be("")
         })
       }
 
@@ -97,6 +99,7 @@ class UncommittedGarbageCollectorSpec
           val actual = dataDF.select("address").map(_.getString(0)).collect.toSeq.toDS()
           val expected = data.toDS()
           assertDSEqual(actual, expected)
+          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be("")
         })
       }
 
@@ -142,6 +145,31 @@ class UncommittedGarbageCollectorSpec
                                                     DateUtils.addHours(new Date(), -1)
                                                    )
           dataDF.count() should be(0)
+          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be("")
+        })
+      }
+      it("should return correct slice") {
+        withSparkSession(_ => {
+          val dataDir = new File(dir.toFile, "data")
+          dataDir.mkdir()
+          val legacySlice = repo + "_legacy_physical:address_path"
+          val regularSlice = "xxx"
+          val filename = "some_file"
+          var slice = new File(dataDir, legacySlice)
+          slice.mkdir()
+          new File(slice, filename).createNewFile()
+          slice = new File(dataDir, regularSlice)
+          slice.mkdir()
+          new File(slice, filename).createNewFile()
+
+          val dataDF = UncommittedGarbageCollector.listObjects(dir.toString,
+                                                               DateUtils.addHours(new Date(), +1)
+                                                              )
+          dataDF.count() should be(2)
+          dataDF.sort("address").select("address").head.getString(0) should be(
+            s"data/$legacySlice/$filename"
+          )
+          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be(regularSlice)
         })
       }
     }

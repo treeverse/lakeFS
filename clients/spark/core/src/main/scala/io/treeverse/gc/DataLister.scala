@@ -24,7 +24,7 @@ class NaiveDataLister extends DataLister {
       val fileStatus = dataIt.next()
       dataList += ((fileStatus.getPath.getName, fileStatus.getModificationTime))
     }
-    dataList.toDF("address", "last_modified")
+    dataList.toDF("base_address", "last_modified")
   }
 }
 
