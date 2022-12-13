@@ -326,10 +326,11 @@ rclone --include "*.txt" cat "azure://tal/azure-br/_lakefs/retention/gc/addresse
 This utility is a Spark application that uses [DistCp](https://hadoop.apache.org/docs/current/hadoop-distcp/DistCp.html) under the hood to copy objects marked by GC as expired from one location to another. 
 
 **Notes**
-* GC backup and restore is available from version 0.5.2 of lakeFS Spark client.
+* GC Backup & Restore job using DistCp is [broken](https://github.com/treeverse/lakeFS/issues/4775) due to changes in the storage namespace structure relevant to lakeFS >= v0.84.0.  We're working to fix it. 
+* There has been a change in the storage namespace structure relevant to lakeFS >= v0.84.0, which causes the [GC Backup & Restore job to break](https://github.com/treeverse/lakeFS/issues/4775).  Currently, we are working on a fix. 
+* GC Backup & Restore is available from version 0.5.2 of lakeFS Spark client.
 * It is compatible with Hadoop API versions 3.1.3 and higher.
 * Note that the utility is not fast due to DistCp performance limitations. You may prefer to backup your whole storage namespace with [AzCopy](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) / [aws cp](https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html) / [rclone](https://rclone.org/).
-* GC Backup & Restore job using DistCp is [broken](https://github.com/treeverse/lakeFS/issues/4775) due to recent changes to the storage namespace structure. We're working to fix it. 
 
 #### Job options
 {: .no_toc }
