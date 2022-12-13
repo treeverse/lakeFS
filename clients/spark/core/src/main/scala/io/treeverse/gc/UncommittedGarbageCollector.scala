@@ -18,6 +18,7 @@ import java.time.format.DateTimeFormatter
 
 object UncommittedGarbageCollector {
   final val UNCOMMITTED_GC_SOURCE_NAME = "uncommitted_gc"
+  private final val DATA_PREFIX = "data/"
 
   lazy val spark: SparkSession =
     SparkSession
@@ -39,8 +40,7 @@ object UncommittedGarbageCollector {
     // TODO(niro): parallelize reads from root and data paths
     val sc = spark.sparkContext
     val oldDataPath = new Path(storageNamespace)
-    val dataPrefix = "data"
-    val dataPath = new Path(storageNamespace, dataPrefix) // TODO(niro): handle better
+    val dataPath = new Path(storageNamespace, DATA_PREFIX)
 
     val configMapper = new ConfigMapper(
       sc.broadcast(
@@ -52,7 +52,7 @@ object UncommittedGarbageCollector {
     dataDF = dataDF
       .withColumn(
         "address",
-        concat(lit(dataPrefix), lit("/"), col("base_address"))
+        concat(lit(DATA_PREFIX), col("base_address"))
       )
 
     // Read objects from namespace root, for old structured repositories
@@ -71,7 +71,7 @@ object UncommittedGarbageCollector {
     var firstSlice = ""
     // Need the before filter to to exclude slices that are not actually read
     val slices =
-      dataDF.filter(col("address").startsWith("data") && !col("base_address").startsWith(repo))
+      dataDF.filter(col("address").startsWith(DATA_PREFIX) && !col("base_address").startsWith(repo))
     if (!slices.isEmpty) {
       firstSlice = slices.first.getAs[String]("base_address").split("/")(0)
     }
