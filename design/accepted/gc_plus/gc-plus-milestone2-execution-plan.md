@@ -25,6 +25,7 @@ The first beta version that was released included:
     * Including GC changes, configuration, and behavior changes to fit GC
 3. Metrics and Logging additions
 4. Deployment to lakeFS Cloud
+5. Improve Backup & Restore
 
 ### Plan
 
