@@ -315,7 +315,7 @@ This utility is a Spark application that uses [DistCp](https://hadoop.apache.org
 * GC backup and restore is available from version 0.5.2 of lakeFS Spark client.
 * It is compatible with Hadoop API versions 3.1.3 and higher.
 * Note that the utility is not fast due to DistCp performance limitations. You may prefer to backup your whole storage namespace with [AzCopy](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) / [aws cp](https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html) / [rclone](https://rclone.org/).
-* GC Backup & Restore job is [broken](https://github.com/treeverse/lakeFS/issues/4775) due to recent changes to the storage namespace structure. We're working to fix it. 
+* GC Backup & Restore job using DistCp is [broken](https://github.com/treeverse/lakeFS/issues/4775) due to recent changes to the storage namespace structure. We're working to fix it. 
 
 #### Job options
 {: .no_toc }
