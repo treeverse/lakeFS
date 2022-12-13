@@ -80,7 +80,7 @@ object UncommittedGarbageCollector {
                          LAKEFS_CONF_GC_MARK_ID
                         )
       System.exit(2)
-    } else if (shouldMark && !markID.isEmpty) {
+    } else if (shouldMark && markID.nonEmpty) {
       Console.out.println("Can't provide mark ID for mark mode. Exiting...")
     }
   }
@@ -193,7 +193,7 @@ object UncommittedGarbageCollector {
     } catch {
       case e: Throwable =>
         success = false
-        println(e.getStackTrace)
+        println(e.getStackTrace.mkString("Array(", ", ", ")"))
         throw e
     } finally {
       if (runID.nonEmpty && shouldMark) {
@@ -219,7 +219,9 @@ object UncommittedGarbageCollector {
       expiredAddresses: DataFrame
   ): Unit = {
     val reportDst = reportPath(storageNamespace, runID)
-    writeJsonSummary(reportDst, runID, firstSlice, startTime, success, expiredAddresses.count())
+    val summary =
+      writeJsonSummary(reportDst, runID, firstSlice, startTime, success, expiredAddresses.count())
+    println(s"Report for mark_id=$runID summary=$summary")
 
     val cachedAddresses = expiredAddresses.cache()
     cachedAddresses.write.parquet(s"$reportDst/deleted")
@@ -227,14 +229,14 @@ object UncommittedGarbageCollector {
   }
 
   private def reportPath(storageNamespace: String, runID: String): String = {
-    s"${storageNamespace}_lakefs/retention/gc/uncommitted/${runID}"
+    s"${storageNamespace}_lakefs/retention/gc/uncommitted/$runID"
   }
 
   private def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
     val path = reportPath(storageNamespace, markID)
-    val markedRunSummary = spark.read.json(s"${path}/summary.json")
+    val markedRunSummary = spark.read.json(s"$path/summary.json")
     val markedRunSucceeded = markedRunSummary.first.getAs[Boolean]("success")
-    if (markedRunSucceeded == false) {
+    if (!markedRunSucceeded) {
       spark.emptyDataFrame.withColumn("address", lit(""))
     } else {
       spark.read.parquet(s"$path/deleted")
@@ -248,7 +250,7 @@ object UncommittedGarbageCollector {
       startTime: java.time.Instant,
       success: Boolean,
       numDeletedObjects: Long
-  ): Unit = {
+  ): String = {
     val dstPath = new Path(s"$dst/summary.json")
     val dstFS = dstPath.getFileSystem(spark.sparkContext.hadoopConfiguration)
     val jsonSummary = JObject(
@@ -258,12 +260,13 @@ object UncommittedGarbageCollector {
       "start_time" -> DateTimeFormatter.ISO_INSTANT.format(startTime),
       "num_deleted_objects" -> numDeletedObjects
     )
-
+    val summary = compact(render(jsonSummary))
     val stream = dstFS.create(dstPath)
     try {
-      stream.writeBytes(compact(render(jsonSummary)))
+      stream.writeBytes(summary)
     } finally {
       stream.close()
     }
+    summary
   }
 }
