@@ -56,9 +56,6 @@ const (
 	entryTypeObject       = "object"
 	entryTypeCommonPrefix = "common_prefix"
 
-	setupStateInitialized    = "initialized"
-	setupStateNotInitialized = "not_initialized"
-
 	DefaultMaxDeleteObjects = 1000
 
 	DefaultResetPasswordExpiration = 20 * time.Minute
@@ -3226,14 +3223,16 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository s
 
 func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	initialized, err := c.MetadataManager.IsInitialized(ctx)
+	emailSubscriptionEnabled := c.Config.IsEmailSubscriptionEnabled()
+	savedState, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
-	state := setupStateNotInitialized
-	if initialized || c.Config.IsAuthTypeAPI() {
-		state = setupStateInitialized
+	state := string(savedState)
+	// no need to create an admin user if users are managed externally
+	if c.Config.IsAuthTypeAPI() {
+		state = string(auth.SetupStateInitialized)
 	}
 	oidcConfig := c.Config.GetAuthOIDCConfiguration()
 	response := SetupState{
@@ -3252,13 +3251,18 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 
 	// check if previous setup completed
 	ctx := r.Context()
-	initialized, err := c.MetadataManager.IsInitialized(ctx)
+	emailSubscriptionEnabled := c.Config.IsEmailSubscriptionEnabled()
+	initialized, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
-	if initialized {
+	if initialized == auth.SetupStateInitialized {
 		writeError(w, http.StatusConflict, "lakeFS already initialized")
+		return
+	}
+	if initialized == auth.SetupStateNotInitialized {
+		writeError(w, http.StatusPreconditionFailed, "wrong step - must first complete previous steps")
 		return
 	}
 
@@ -3295,6 +3299,63 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 		SecretAccessKey: cred.SecretAccessKey,
 		CreationDate:    cred.IssuedDate.Unix(),
 	}
+	writeResponse(w, http.StatusOK, response)
+}
+
+func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body SetupCommPrefsJSONRequestBody) {
+	ctx := r.Context()
+	emailSubscriptionEnabled := c.Config.IsEmailSubscriptionEnabled()
+	initialized, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
+	if c.handleAPIError(ctx, w, err) {
+		return
+	}
+
+	if initialized == auth.SetupStateInitialized {
+		writeError(w, http.StatusConflict, "lakeFS already initialized")
+		return
+	}
+
+	// users should not get here
+	// after this step is done, the browser should navigate the user to the next step
+	// even on refresh or closing the tab and continuing setup in a new tab later
+	// the user should not be posting to this handler
+	if initialized == auth.SetupStateCommPrefsDone {
+		writeError(w, http.StatusPreconditionFailed, "wrong step - CommPrefs have already been set")
+		return
+	}
+
+	response := NextStep{
+		NextStep: string(auth.SetupStateCommPrefsDone),
+	}
+
+	if *body.Email == "" {
+		writeResponse(w, http.StatusBadRequest, "email is required")
+		return
+	}
+
+	// validate email. if the user typed some value into the input, they might have a typo
+	// we assume the intent was to provide a valid email, so we'll return an error
+	if _, err := mail.ParseAddress(*body.Email); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid email address")
+		return
+	}
+
+	// save comm prefs to metadata, for future in-app preferences/unsubscribe functionality
+	commPrefs := auth.CommPrefs{
+		UserEmail:       *body.Email,
+		FeatureUpdates:  body.FeatureUpdates,
+		SecurityUpdates: body.SecurityUpdates,
+	}
+
+	installationID, err := c.MetadataManager.UpdateCommPrefs(ctx, commPrefs)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	// collect comm prefs
+	c.Collector.CollectCommPrefs(commPrefs.UserEmail, installationID, commPrefs.FeatureUpdates, commPrefs.SecurityUpdates)
+
 	writeResponse(w, http.StatusOK, response)
 }
 

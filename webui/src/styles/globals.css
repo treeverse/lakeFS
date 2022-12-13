@@ -582,3 +582,7 @@ td .form-group {
   text-align: right;
   margin-right: 5px;
 }
+
+.required-field-label {
+  color: red;
+}
