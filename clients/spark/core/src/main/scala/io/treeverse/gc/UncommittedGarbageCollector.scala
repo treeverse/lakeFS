@@ -35,13 +35,12 @@ object UncommittedGarbageCollector {
    *  @param before Exclude objects which last_modified date is newer than before Date
    *  @return DF listing all objects under given storageNamespace
    */
-  def listObjects(storageNamespace: String, repo: String, before: Date): (DataFrame, String) = {
+  def listObjects(storageNamespace: String, before: Date): DataFrame = {
     // TODO(niro): parallelize reads from root and data paths
     val sc = spark.sparkContext
     val oldDataPath = new Path(storageNamespace)
     val dataPrefix = "data"
     val dataPath = new Path(storageNamespace, dataPrefix) // TODO(niro): handle better
-    var firstSlice = ""
 
     val configMapper = new ConfigMapper(
       sc.broadcast(
@@ -50,34 +49,33 @@ object UncommittedGarbageCollector {
     )
     // Read objects from data path (new repository structure)
     var dataDF = new ParallelDataLister().listData(configMapper, dataPath)
-
-    // Save first slice from data prefix
-    if (!dataDF.isEmpty) {
-      // Need the before filter to to exclude slices that are not actually read
-      val slices = dataDF.filter(
-        col("last_modified") < before.getTime && !col("base_address").startsWith(repo)
-      )
-      if (!slices.isEmpty) {
-        firstSlice = slices.first.getAs[String]("base_address").split("/")(0)
-      }
-    }
-
     dataDF = dataDF
       .withColumn(
         "address",
         concat(lit(dataPrefix), lit("/"), col("base_address"))
       )
-      .select("address", "last_modified")
 
     // Read objects from namespace root, for old structured repositories
 
     // TODO (niro): implement parallel lister for old repositories (https://github.com/treeverse/lakeFS/issues/4620)
     val oldDataDF = new NaiveDataLister()
       .listData(configMapper, oldDataPath)
+      .withColumn("address", col("base_address"))
       .filter(!col("address").isin(excludeFromOldData: _*))
-    dataDF = dataDF.union(oldDataDF).filter(col("last_modified") < before.getTime).select("address")
+    dataDF = dataDF.union(oldDataDF).filter(col("last_modified") < before.getTime)
 
-    (dataDF, firstSlice)
+    dataDF
+  }
+
+  def getFirstSlice(dataDF: DataFrame, repo: String): String = {
+    var firstSlice = ""
+    // Need the before filter to to exclude slices that are not actually read
+    val slices =
+      dataDF.filter(col("address").startsWith("data") && !col("base_address").startsWith(repo))
+    if (!slices.isEmpty) {
+      firstSlice = slices.first.getAs[String]("base_address").split("/")(0)
+    }
+    firstSlice
   }
 
   private def validateRunModeConfigs(
@@ -149,10 +147,10 @@ object UncommittedGarbageCollector {
     try {
       if (shouldMark) {
         // Read objects directly from object storage
+        val dataDF = listObjects(storageNamespace, cutoffTime)
 
-        val result = listObjects(storageNamespace, repo, cutoffTime)
-        val dataDF = result._1
-        firstSlice = result._2
+        // Get first Slice
+        firstSlice = getFirstSlice(dataDF, repo)
 
         // Process uncommitted
         val uncommittedGCRunInfo =
@@ -176,6 +174,7 @@ object UncommittedGarbageCollector {
           .listCommittedAddresses(spark, storageNamespace, clientStorageNamespace)
 
         addressesToDelete = dataDF
+          .select("address")
           .except(committedDF)
           .except(uncommittedDF)
       }
@@ -242,7 +241,7 @@ object UncommittedGarbageCollector {
 
   private def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
     val path = reportPath(storageNamespace, markID)
-    val markedRunSummary = spark.read.json(s"${path}/summary.json")
+    val markedRunSummary = spark.read.json(s"$path/summary.json")
     val markedRunSucceeded = markedRunSummary.first.getAs[Boolean]("success")
     if (markedRunSucceeded == false) {
       spark.emptyDataFrame.withColumn("address", lit(""))
