@@ -3,21 +3,24 @@
 Uncommitted Garbage Collection [Proposal](https://github.com/treeverse/lakeFS/blob/master/design/accepted/gc_plus/uncommitted-gc.md)
 
 ## Milestone 1
+
 The first beta version that was released included:
 1. Implementation of the clean run flow for old and new repository structures (without optimizations)
 2. Mark & Sweep
 3. Integration tests
-4. Backup & Restore
+4. Backup & Restore - minimal support using rclone
 
 ## Milestone 2
 
 ### Goals
-1. Removing the limitation of a read-only lakeFS during the job run
+1. Removing the limitation of a read-only lakeFS during the GC+ job run
 2. Performance improvements - better parallelization of the storage namespace traversal
-3. Implementing Optimized Run
+3. Implementing Optimized (Incremental) Run
 
 ### Non-Goals
 1. Support for non-S3 repositories
+   * Azure
+   * GCP
 2. Incorporation of committed & uncommitted GC into a single job
     * Including GC changes, configuration, and behavior changes to fit GC
 3. Metrics and Logging additions
@@ -36,10 +39,9 @@ The first beta version that was released included:
         * [lakeFSFS renameObject method](https://github.com/treeverse/lakeFS/issues/4479)
     * [Track copied objects in ref-store](https://github.com/treeverse/lakeFS/issues/4562)
 
-3. Performance improvements:
+2. Performance improvements:
     * [Optimaized listing on old repository structure](https://github.com/treeverse/lakeFS/issues/4620)
     * [Efficient listing on committed entries](https://github.com/treeverse/lakeFS/issues/4600)
-    * [Optimized listing on slices](https://github.com/treeverse/lakeFS/issues/4614)
     * Benchmarks - verify uncommitted GC [performance requirements](https://github.com/treeverse/lakeFS/blob/e316cafe7717bb3203e4018837a41415aa61f74b/design/accepted/gc_plus/uncommitted-gc.md?plain=1#L185) are kept
 
 3. [Implement optimized run flow](https://github.com/treeverse/lakeFS/issues/4489):
