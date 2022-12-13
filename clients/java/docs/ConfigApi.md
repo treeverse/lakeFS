@@ -8,6 +8,7 @@ Method | HTTP request | Description
 [**getSetupState**](ConfigApi.md#getSetupState) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
 [**getStorageConfig**](ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
 [**setup**](ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
+[**setupCommPrefs**](ConfigApi.md#setupCommPrefs) | **POST** /setup_comm_prefs | setup communications preferences
 
 
 <a name="getLakeFSVersion"></a>
@@ -290,5 +291,68 @@ No authorization required
 **200** | user created successfully |  -  |
 **400** | bad request |  -  |
 **409** | setup was already called |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="setupCommPrefs"></a>
+# **setupCommPrefs**
+> NextStep setupCommPrefs(commPrefsInput)
+
+setup communications preferences
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.ConfigApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+
+    ConfigApi apiInstance = new ConfigApi(defaultClient);
+    CommPrefsInput commPrefsInput = new CommPrefsInput(); // CommPrefsInput | 
+    try {
+      NextStep result = apiInstance.setupCommPrefs(commPrefsInput);
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ConfigApi#setupCommPrefs");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **commPrefsInput** | [**CommPrefsInput**](CommPrefsInput.md)|  |
+
+### Return type
+
+[**NextStep**](NextStep.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | communication preferences saved successfully |  -  |
+**409** | setup was already completed |  -  |
+**412** | wrong setup state for this operation |  -  |
 **0** | Internal Server Error |  -  |
 

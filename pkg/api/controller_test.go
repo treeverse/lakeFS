@@ -2410,6 +2410,13 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 			clt := setupClientByEndpoint(t, server.URL, "", "")
 
 			ctx := context.Background()
+			mockEmail := "test@acme.co"
+			_, _ = clt.SetupCommPrefsWithResponse(ctx, api.SetupCommPrefsJSONRequestBody{
+				Email:           &mockEmail,
+				FeatureUpdates:  false,
+				SecurityUpdates: false,
+			})
+
 			resp, err := clt.SetupWithResponse(ctx, api.SetupJSONRequestBody{
 				Username: "admin",
 				Key:      c.key,
@@ -2493,6 +2500,7 @@ func TestLogin(t *testing.T) {
 	handler, deps := setupHandler(t)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
+	_ = setupCommPrefs(t, clt)
 	cred := createDefaultAdminUser(t, clt)
 
 	resp, err := clt.LoginWithResponse(context.Background(), api.LoginJSONRequestBody{
