@@ -266,10 +266,10 @@ repositories may require increasing a read timeout.  If you run into timeout err
    You should remove stale branches to prevent them from retaining old objects.
    For example, consider a branch that has been merged to `main` and has become stale.
    An object which is later deleted from `main` will always be present in the stale branch, preventing it from being hard-deleted.
-   
+
 1. lakeFS will never delete objects outside your repository's storage namespace.
    In particular, objects that were imported using `lakectl ingest` or `UI Import Wizard` will not be affected by GC jobs.
-   
+
 1. In cases where deleted objects are brought back to life while a GC job is running, said objects may or may not be
    deleted. Such actions include:
    1. Reverting a commit in which a file was deleted.
@@ -282,36 +282,59 @@ repositories may require increasing a read timeout.  If you run into timeout err
 GC was created to hard-delete objects from your underlying objects store according to your retention rules. However, when you start
 using the feature you may want to first gain confidence in the decisions GC makes. The GC backup and restore utility helps you do that. 
 
-This utility is a Spark application that uses [distCp](https://hadoop.apache.org/docs/current/hadoop-distcp/DistCp.html) under the hood to copy objects marked by GC as expired from one location to another. 
-
 **Use-cases:**
 * Backup: copy expired objects from your repository's storage namespace to an external location before running GC in [sweep only mode](#sweep-only-mode).  
 * Restore: copy objects that were hard-deleted by GC from an external location you used for saving your backup into your repository's storage namespace.
 
+### Using rclone
+
+Follow [rclone documentation](https://rclone.org/docs/) to configure remote access to the underlying storage used by lakeFS.
+Replace `LAKEFS_STORAGE_NAMESPACE` with remote:bucket/path points to the lakeFS repository storage namespace.
+The `BACKUP_STORAGE_LOCATION` attribute points to a location for backing up the objects that will be deleted.
+
+#### Backup command
+
+   ```shell
+   rclone --include "*.txt" cat "<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/addresses.text/mark_id=<MARK_ID>/" | \
+     rclone -P --no-traverse --files-from - copy <LAKEFS_STORAGE_NAMESPACE> <BACKUP_STORAGE_LOCATION>
+   ```
+
+#### Restore command
+
+   ```shell
+   rclone --include "*.txt" cat "<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/addresses.text/mark_id=<MARK_ID>/" | \
+     rclone -P --no-traverse --files-from - copy <BACKUP_STORAGE_LOCATION> <LAKEFS_STORAGE_NAMESPACE>
+   ```
+
+
+### Using DistCp
+
+This utility is a Spark application that uses [DistCp](https://hadoop.apache.org/docs/current/hadoop-distcp/DistCp.html) under the hood to copy objects marked by GC as expired from one location to another. 
+
 **Notes**
 * GC backup and restore is available from version 0.5.2 of lakeFS Spark client.
 * It is compatible with Hadoop API versions 3.1.3 and higher.
-* Note that the utility is not fast due to distcp performance limitations. You may prefer to backup your whole storage namespace with [AzCopy](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) / [aws cp](https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html) / [rclone](https://rclone.org/).
-* GC Backup & Restore is [broken](https://github.com/treeverse/lakeFS/issues/4775) due to recent changes to the storage namespace structure. We're working to fix it. 
+* Note that the utility is not fast due to DistCp performance limitations. You may prefer to backup your whole storage namespace with [AzCopy](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) / [aws cp](https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html) / [rclone](https://rclone.org/).
+* GC Backup & Restore job is [broken](https://github.com/treeverse/lakeFS/issues/4775) due to recent changes to the storage namespace structure. We're working to fix it. 
 
-### Job options
-
-#### Enabled by default
+#### Job options
 {: .no_toc }
 
-`-v`, to log additional info (path, size) in the SKIP/COPY log
-`-direct` to write directly to destination paths, recommended when the destination is an object store
-`-strategy=dynamic` to accelerate distCp performance
+**Enabled by default**
 
-#### Configuration options
-{: .no_toc }
+ - `-v`, to log additional info (path, size) in the SKIP/COPY log
+ - `-direct` to write directly to destination paths, recommended when the destination is an object store
+ - `-strategy=dynamic` to accelerate DistCp performance
 
-`-log`, to configure the log path
-`-m`, to set the max number of maps
-`-bandwidth`, to specify bandwidth per map, in MB/second
-`-numListstatusThreads`, number of threads to use for building file listing, max 40
+**Additional options**
 
-To configure the properties, set the following hadoop properties:
+ - `-log`, to configure the log path
+ - `-m`, to set the max number of maps
+ - `-bandwidth`, to specify bandwidth per map, in MB/second
+ - `-numListstatusThreads`, number of threads to use for building file listing, max 40
+
+To configure the properties, set the following Hadoop properties:
+
 ```text
 spark.hadoop.distcp.log.path
 spark.hadoop.distcp.max.maps
@@ -319,19 +342,18 @@ spark.hadoop.distcp.map.bandwidth.mb
 spark.hadoop.distcp.liststatus.threads 
 ```
 
-### Running GC backup and restore
+#### Running GC backup and restore
 {: .no_toc }
 
 You can run GC backup and restore using `spark-submit` or using your preferred method of running Spark programs. 
 Currently, GC backup and restore is available for Spark 3.1.2 and 3.2.1, but it may work for other versions.
 
 First, download the lakeFS Spark client Uber-jar. The Uber-jar can be found on a public S3 location:
-`http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/${CLIENT_VERSION}/lakefs-spark-client-312-hadoop3-assembly-${CLIENT_VERSION}.jar
-`
+`http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/${CLIENT_VERSION}/lakefs-spark-client-312-hadoop3-assembly-${CLIENT_VERSION}.jar`
 
 Running instructions:
 
-#### Backup
+##### Backup job
 {: .no_toc }
 
 <div class="tabs">
@@ -349,6 +371,7 @@ Program arguments:
 * _storage type_: s3
 
 To start the backup process, run:
+
 ```bash
 spark-submit --class io.treeverse.clients.GCBackupAndRestore \
   --packages org.apache.hadoop:hadoop-aws:3.2.0 \
@@ -356,10 +379,10 @@ spark-submit --class io.treeverse.clients.GCBackupAndRestore \
   -c spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_KEY> \
   <APPLICATION-JAR-PATH> \
   expired-objects-list-location storage-namespace backup-external-location s3 
-  ```
-  </div>
+```
+</div>
 
-  <div markdown="1" id="azure-option">
+<div markdown="1" id="azure-option">
 
 You should specify the Uber-jar path instead of `<APPLICATION-JAR-PATH>`
 Program arguments:
@@ -369,16 +392,16 @@ Program arguments:
 * _storage type_: s3
 
 To start the backup process, run:
-  ```bash
+```bash
 spark-submit --class io.treeverse.clients.GCBackupAndRestore \
   -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
   <APPLICATION-JAR-PATH> \
   expired-objects-list-location storage-namespace backup-external-location azure
-  ```
+```
 </div>
 
 
-#### Restore
+##### Restore job
 {: .no_toc }
 
 <div class="tabs">
@@ -396,6 +419,7 @@ Program arguments:
 * _storage type_: s3
 
 To start the restore process, run:
+
 ```bash
 spark-submit --class io.treeverse.clients.GCBackupAndRestore \
  --packages org.apache.hadoop:hadoop-aws:3.2.0 \
@@ -415,12 +439,13 @@ Program arguments:
 * _storage type_: azure
 
 To start the restore process, run:
-  ```bash
+
+```bash
 spark-submit --class io.treeverse.clients.GCBackupAndRestore \
   -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
   <APPLICATION-JAR-PATH> \
   objects-to-restore-list-location backup-external-location storage-namespace azure
-  ```
+```
 </div>
 
 ## Beta: Deleting uncommitted objects
