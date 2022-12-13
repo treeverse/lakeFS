@@ -236,6 +236,22 @@ class UncommittedGarbageCollectorSpec
           }
         })
       }
+      it("should raise exception on missing run") {
+        withSparkSession(_ => {
+          val runID = "not_exist"
+          try {
+            UncommittedGarbageCollector.readMarkedAddresses(dir.toString + "/",
+                                                            runID
+                                                           ) // Should throw an exception
+            // Fail test if no exception was thrown
+            throw new Exception("test failed")
+          } catch {
+            // Other types of exceptions will not be caught and test will fail
+            case e: FailedRunException =>
+              e.getMessage.contains(s"Mark ID ($runID) does not exist") should be(true)
+          }
+        })
+      }
     }
     describe(".validateRunModeConfigs") {
       val markID = "markID"
@@ -288,7 +304,8 @@ class UncommittedGarbageCollectorSpec
           throw new Exception("test failed")
         } catch {
           // Other types of exceptions will not be caught and test will fail
-          case _: ParameterValidationException =>
+          case e: ParameterValidationException =>
+            e.getMessage.contains("Please provide a mark ID") should be(true)
         }
       }
     }

@@ -123,11 +123,7 @@ object UncommittedGarbageCollector {
     val shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, false)
     val markID = hc.get(LAKEFS_CONF_GC_MARK_ID, "")
 
-    validateRunModeConfigs(
-      shouldMark,
-      shouldSweep,
-      markID
-    )
+    validateRunModeConfigs(shouldMark, shouldSweep, markID)
 
     val apiConf =
       APIConfigurations(apiURL,
@@ -231,7 +227,7 @@ object UncommittedGarbageCollector {
       success: Boolean,
       expiredAddresses: DataFrame
   ): Unit = {
-    val reportDst = reportPath(storageNamespace, runID)
+    val reportDst = runPath(storageNamespace, runID)
     val summary =
       writeJsonSummary(reportDst, runID, firstSlice, startTime, success, expiredAddresses.count())
     println(s"Report for mark_id=$runID summary=$summary")
@@ -241,17 +237,21 @@ object UncommittedGarbageCollector {
     cachedAddresses.write.text(s"$reportDst/deleted.text")
   }
 
-  private def reportPath(storageNamespace: String, runID: String): String = {
+  private def runPath(storageNamespace: String, runID: String): String = {
     s"${storageNamespace}_lakefs/retention/gc/uncommitted/$runID"
   }
 
   def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
-    val path = reportPath(storageNamespace, markID)
-    val markedRunSummary = spark.read.json(s"$path/summary.json")
+    val reportPath = runPath(storageNamespace, markID) + "/summary.json"
+    val fs = org.apache.hadoop.fs.FileSystem.get(spark.sparkContext.hadoopConfiguration)
+    if (!fs.exists(new Path(reportPath))) {
+      throw new FailedRunException(s"Mark ID ($markID) does not exist")
+    }
+    val markedRunSummary = spark.read.json(reportPath)
     if (!markedRunSummary.first.getAs[Boolean]("success")) {
       throw new FailedRunException(s"Provided mark ($markID) is of a failed run")
     } else {
-      spark.read.parquet(s"$path/deleted")
+      spark.read.parquet(s"$reportPath/deleted")
     }
   }
 
