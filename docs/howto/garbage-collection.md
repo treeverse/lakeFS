@@ -403,10 +403,10 @@ spark-submit --class io.treeverse.clients.GCBackupAndRestore \
   -c spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_KEY> \
   <APPLICATION-JAR-PATH> \
   objects-to-restore-list-location backup-external-location storage-namespace s3 
-  ```
-  </div>
+```
+</div>
 
-  <div markdown="1" id="azure-option">
+<div markdown="1" id="azure-option">
 You should specify the Uber-jar path instead of `<APPLICATION-JAR-PATH>`
 Program arguments:
 * _location of objects to restore list_: the path for a list of object that were hard-deleted by a [sweep-only](#sweep-only-mode) GC run. given a `MARK_ID` used for a sweep only run the file is located under `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=<MARK_ID>/`.
@@ -449,13 +449,14 @@ The uncommitted GC will not clean:
 1. lakeFS server version must be at least [v0.87.0](https://github.com/treeverse/lakeFS/releases/tag/v0.87.0). 
 If your version is lower, you should first upgrade.
 2. Read the [limitations](#limitations) section.
-3. Use [rclone](https://rclone.org/) for backup and restore
+3. Setup [rclone](https://rclone.org/) to access underlying bucket for backup and restore.
 
 
-To run uncommitted GC perform the following steps: 
+### Running the uncommitted GC 
 
-1. Mark the files to delete - summary and report will be generated under '<repository storage namespace>/_lakefs/retention/gc/uncommitted/<mark id>/'.
-   The mark id sortable time based ID, each run output into a new one.
+1. Mark the files to delete - summary and report will be generated under `<REPOSITORY_STORAGE_NAMESPACE>/_lakefs/retention/gc/uncommitted/<MARK_ID>/`.
+   By listing the bucket under 'uncommitted' the last entry represents the last mark id of the uncommitted GC.
+   The GC job logs the mark under - searching "...".
 
    ```bash
    spark-submit \
@@ -463,45 +464,43 @@ To run uncommitted GC perform the following steps:
        --conf spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY_ID> \
        --conf spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_ACCESS_KEY> \
        --conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY_ID> \
-       --conf spark.hadoop.lakefs.api.secret_key=<LAKEFS__SECRET_ACCESS_KEY> \
+       --conf spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_ACCESS_KEY> \
        --class io.treeverse.gc.UncommittedGarbageCollector \
        --packages org.apache.hadoop:hadoop-aws:2.7.7 \
-       lakefs-spark-client-312-hadoop3-assembly-0.6.0.jar \
-       <REPO_NAME> <REPO>
+       <APPLICATION-JAR-PATH> <REPOSITORY_NAME> <REGION>
    ```
 
 2. Backup (optional but recommended) - when you start using the feature you may want to first gain confidence in the decisions uncommitted GC makes. Backup will copy the objects marked to be deleted for run ID to a specified location.
-   Follow [rclone documentation](https://rclone.org/docs/) to configure remote access to lakeFS storage and the backup location and run - 
+   Follow [rclone documentation](https://rclone.org/docs/) to configure remote access to lakeFS storage.
+   Note that the lakeFS and backup locations are specified as `remote:path` based on how rclone was configured.
 
    ```shell
-   rclone --include "*.txt" cat "remote:<lakefs storage namespace>/_lakefs/retention/gc/uncommitted/<mark id>/deleted.text/" | \
-     rclone -P --no-traverse --files-from - copy <lakefs storage namespace> <backup storage location>
+   rclone --include "*.txt" cat "<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/uncommitted/<MARK_ID>/deleted.text/" | \
+     rclone -P --no-traverse --files-from - copy <LAKEFS_STORAGE_NAMESPACE> <BACKUP_STORAGE_LOCATION>
    ```
 
 4. Sweep - delete reported objects to delete based on mark ID
 
    ```bash
    spark-submit \
-       --conf spark.hadoop.lakefs.gc.mark_id=true \
+       --conf spark.hadoop.lakefs.gc.mark_id=<MARK_ID> \
        --conf spark.hadoop.lakefs.gc.do_sweep=true \
        --conf spark.hadoop.lakefs.api.url=<LAKEFS_ENDPOINT> \
        --conf spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY_ID> \
        --conf spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_ACCESS_KEY> \
        --conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY_ID> \
-       --conf spark.hadoop.lakefs.api.secret_key=<LAKEFS__SECRET_ACCESS_KEY> \
+       --conf spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_ACCESS_KEY> \
        --class io.treeverse.gc.UncommittedGarbageCollector \
        --packages org.apache.hadoop:hadoop-aws:2.7.7 \
-       lakefs-spark-client-312-hadoop3-assembly-0.6.0.jar \
-       <REPO_NAME> <REGION>
+       <APPLICATION-JAR-PATH> <REPOSITORY_NAME> <REGION>
    ```
 
-   In case we would like to always run the uncommitted GC without backup, passing `--conf spark.hadoop.lakefs.gc.do_sweep=true` to the previous command will perform both steps.
-
-5. Restore - in any case we would like to undo and restore the data from from our backup. The following command will copy the objects back from the backup location using the information stored under the specific mark id.
+5. Restore - in any case we would like to undo and restore the data from from our backup. The following command will copy the objects back from the backup location using the information stored under the specific mark ID.
+   Note that the lakeFS and backup locations are specified as `remote:path` based on how rclone was configured.
 
    ```shell
-   rclone --include "*.txt" cat "remote:<lakefs storage namespace>/_lakefs/retention/gc/uncommitted/<mark id>/deleted.text/" | \
-     rclone -P --no-traverse --files-from - copy <backup storage location> <lakefs storage namespace>
+   rclone --include "*.txt" cat "remote:<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/uncommitted/<MARK_ID>/deleted.text/" | \
+     rclone -P --no-traverse --files-from - copy <BACKUP_STORAGE_LOCATION> <LAKEFS_STORAGE_NAMESPACE>
    ```
 
 
