@@ -28,7 +28,7 @@ import {RefTypeBranch, RefTypeCommit} from "../../../constants";
 import {copyTextToClipboard} from "../controls";
 import Modal from "react-bootstrap/Modal";
 
-const PREVIEW_SIZE_LIMIT = 4194304; // 4MB in bytes
+const PREVIEW_SIZE_LIMIT = 5.243e+8; // 4MB in bytes
 
 export const humanSize = (bytes) => {
     if (!bytes) return '0.0 B';

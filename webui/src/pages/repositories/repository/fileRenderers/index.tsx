@@ -1,10 +1,14 @@
-import React, { FC, useEffect } from "react";
+import React, {FC, useEffect, useState} from "react";
 import remarkGfm from 'remark-gfm'
 import remarkHtml from 'remark-html'
 import ReactMarkdown from 'react-markdown';
 import { IpynbRenderer as NbRenderer } from "react-ipynb-renderer";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import {githubGist as syntaxHighlightStyle} from "react-syntax-highlighter/dist/esm/styles/hljs";
+
+import {sampleParquet} from './duckdb';
+import {Table} from "react-bootstrap";
+import moment from "moment";
 
 type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = Pick<T, Exclude<keyof T, Keys>> & {
     [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>
@@ -30,10 +34,15 @@ export const MarkdownRenderer: FC<RendererComponent> = ({ content }) => {
 
 export interface GenericRendererProps {
     content: string,
+    contentBlob: Blob,
     language: string,
+    filename: string,
 }
 
-export const GenericRenderer: FC<GenericRendererProps> = ({content, language}) => {
+export const GenericRenderer: FC<GenericRendererProps> = ({content, contentBlob, language, filename}) => {
+    if (dataFormats.indexOf(language) !== -1) {
+        return <DuckDBParquetRenderer contentBlob={contentBlob} filename={filename}/>
+    }
     return (
         <SyntaxHighlighter
             style={syntaxHighlightStyle}
@@ -42,6 +51,86 @@ export const GenericRenderer: FC<GenericRendererProps> = ({content, language}) =
             showLineNumbers={true}>{content}</SyntaxHighlighter>
     );
 };
+
+export interface DuckDBRendererProps {
+    contentBlob: Blob,
+    filename: string,
+}
+
+export const DuckDBParquetRenderer: FC<DuckDBRendererProps> = ({filename, contentBlob }) => {
+    const [data, setData] = useState<any[] | null>(null);
+    useEffect(() => {
+        sampleParquet(filename, contentBlob).then(resp => {
+            console.log(JSON.parse(JSON.stringify(resp.schema)))
+            return setData(resp.sample);
+        });
+    }, [contentBlob, filename])
+
+
+    if (!contentBlob) {
+        return <p>Nope</p>
+    }
+    if (data === null) {
+        return <></>
+    }
+
+
+    return (
+        <div style={{
+            'maxHeight': '800px',
+            'overflow': 'auto',
+            'fontSize': '0.8rem',
+        }}>
+            <Table striped bordered hover size={"sm"} responsive={"sm"}>
+               <thead>
+                <tr>
+                    {Object.getOwnPropertyNames(data[0]).map(name =>
+                        <th key={name}>{name}</th>
+                    )}
+                </tr>
+               </thead>
+                <tbody>
+                {data.map((row, i) => (
+                    <tr key={`row-${i}`}>
+                        {Object.getOwnPropertyNames(data[0]).map(name => (
+                        <DataRow key={`row-${i}-${name}`} value={row[name]}/>
+                        ))}
+                    </tr>
+                ))}
+                </tbody>
+            </Table>
+        </div>
+    )
+}
+
+interface RowProps {
+    value: any,
+}
+
+const DataRow: FC<RowProps> = ({ value }) => {
+     let dataType = 'regular';
+     if (typeof value === 'string') {
+         dataType = 'string';
+     } else if (value instanceof Date) {
+         dataType = 'date'
+     } else if (typeof value === 'number') {
+         dataType = 'number'
+     }
+
+     if (dataType === 'string') {
+         return <td>{value}</td>
+     }
+
+     if (dataType === 'date') {
+         return <td>{moment(value).format(moment.defaultFormat)}</td>
+     }
+
+    if (dataType === 'number') {
+        return <td>{value.toLocaleString("en-US")}</td>
+    }
+
+    return <td>{""  + value}</td>;
+}
 
 export const IpynbRenderer: FC<RendererComponent> = ({ content }) => {
     if (content) {
@@ -89,9 +178,15 @@ export const supportedContentTypeRenderers: Record<string, FC<RendererComponent>
     "image/jpeg": ImageRenderer,
 };
 
+export const dataFormats = ["parquet", "orc", "csv", "tsv"];
+
+
 export const guessLanguage =  (extension: string | null, contentType: string | null) => {
-    if (extension  && SyntaxHighlighter.supportedLanguages.indexOf(extension) !== -1) {
+    if (extension && SyntaxHighlighter.supportedLanguages.indexOf(extension) !== -1) {
         return extension;
+    }
+    if (extension && dataFormats.indexOf( extension) !== -1) {
+        return extension
     }
     if (contentType) {
         if (contentType.indexOf("application/x-") === 0) {

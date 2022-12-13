@@ -66,7 +66,7 @@ export const Loading: FC = () => {
     );
 };
 
-export const MAX_DISPLAYABLE_SIZE = 1024 * 1024; // 1MB
+export const MAX_DISPLAYABLE_SIZE = 1024 * 1024 * 500; // 500MB
 
 // Resolve the correct renderer according to the priority:
 // 1. If we have a content-type, use that
@@ -186,7 +186,11 @@ export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loadin
         if (size <= MAX_DISPLAYABLE_SIZE) {
             const language = guessLanguage(fileExtension, contentType);
             if (language) {
-                content = <GenericRenderer content={rawContent} language={language}/>;
+                content = <GenericRenderer
+                    contentBlob={blobContent}
+                    content={rawContent}
+                    language={language}
+                    filename={path}/>;
             } else {
                 // File type does not have a renderer
                 // We cannot display it inline
