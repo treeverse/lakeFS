@@ -289,7 +289,7 @@ using the feature you may want to first gain confidence in the decisions GC make
 ### Using rclone
 
 Follow [rclone documentation](https://rclone.org/docs/) to configure remote access to the underlying storage used by lakeFS.
-Replace `LAKEFS_STORAGE_NAMESPACE` with remote:bucket/path points to the lakeFS repository storage namespace.
+Replace `LAKEFS_STORAGE_NAMESPACE` with remote:bucket/path which points to the lakeFS repository storage namespace.
 The `BACKUP_STORAGE_LOCATION` attribute points to a location for backing up the objects that will be deleted.
 
 #### Backup command
