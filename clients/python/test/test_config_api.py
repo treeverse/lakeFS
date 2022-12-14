@@ -50,6 +50,13 @@ class TestConfigApi(unittest.TestCase):
         """
         pass
 
+    def test_setup_comm_prefs(self):
+        """Test case for setup_comm_prefs
+
+        setup communications preferences  # noqa: E501
+        """
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()

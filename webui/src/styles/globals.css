@@ -209,6 +209,10 @@
   height: 38px;
 }
 
+.table .change-entry-row:hover {
+  background-color: #FBFBFB;
+}
+
 .table .tree-entry-row td,
 .table .change-entry-row td,
 .actions-runs-list .table td {
@@ -551,13 +555,19 @@ td .form-group {
   background-color: #FBFBFB;
 }
 
-.readme-card {
+.file-content-card {
   margin-top: 0;
 }
 
-.readme-heading {
-  background-color: inherit;
+.file-content-heading {
+  background-color: #FBFBFB;
+  padding: 5px;
 }
+
+.file-content-body {
+  padding: 0;
+}
+
 
 .form-label {
   white-space: nowrap;
@@ -568,5 +578,11 @@ td .form-group {
 }
 
 .object-viewer-buttons {
-  width: 8%;
+  width: 20%;
+  text-align: right;
+  margin-right: 5px;
+}
+
+.required-field-label {
+  color: red;
 }

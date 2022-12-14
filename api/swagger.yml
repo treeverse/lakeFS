@@ -230,7 +230,6 @@ components:
             type: string
             description: Object path
 
-
     ObjectStats:
       type: object
       required:
@@ -244,7 +243,7 @@ components:
           type: string
         path_type:
           type: string
-          enum: [ common_prefix, object ]
+          enum: [common_prefix, object]
         physical_address:
           type: string
         checksum:
@@ -343,12 +342,12 @@ components:
       properties:
         type:
           type: string
-          enum: [ added, removed, changed, conflict, prefix_changed ]
+          enum: [added, removed, changed, conflict, prefix_changed]
         path:
           type: string
         path_type:
           type: string
-          enum: [ common_prefix, object ]
+          enum: [common_prefix, object]
         size_bytes:
           type: integer
           description: represents the size of the added/changed/deleted entry
@@ -374,7 +373,7 @@ components:
       properties:
         type:
           type: string
-          enum: [ object, common_prefix, reset ]
+          enum: [object, common_prefix, reset]
         path:
           type: string
 
@@ -593,7 +592,7 @@ components:
       properties:
         state:
           type: string
-          enum: [initialized, not_initialized]
+          enum: [initialized, not_initialized, comm_prefs_done]
         oidc_enabled:
           type: boolean
         oidc_default_login:
@@ -628,6 +627,30 @@ components:
       required:
         - username
 
+    CommPrefsInput:
+      type: object
+      properties:
+        email:
+          description: the provided email
+          type: string
+        featureUpdates:
+          description: was "feature updates" checked
+          type: boolean
+        securityUpdates:
+          description: was "security updates" checked
+          type: boolean
+      required:
+        - featureUpdates
+        - securityUpdates
+
+    NextStep:
+      type: object
+      properties:
+        nextStep:
+          description: the next step in the setup process
+          type: string
+      required:
+        - nextStep
 
     UpdatePasswordByToken:
       type: object
@@ -644,7 +667,6 @@ components:
       required:
         - token
         - newPassword
-
 
     Credentials:
       type: object
@@ -776,7 +798,7 @@ components:
       properties:
         effect:
           type: string
-          enum: [ allow, deny ]
+          enum: [allow, deny]
         resource:
           type: string
         action:
@@ -865,7 +887,7 @@ components:
           type: string
         status:
           type: string
-          enum: [ failed, completed ]
+          enum: [failed, completed]
         commit_id:
           type: string
 
@@ -905,7 +927,7 @@ components:
           format: date-time
         status:
           type: string
-          enum: [ failed, completed ]
+          enum: [failed, completed]
 
     HookRunList:
       type: object
@@ -1004,7 +1026,6 @@ components:
         - run_id
         - gc_uncommitted_location
 
-
     GarbageCollectionRule:
       type: object
       properties:
@@ -1024,7 +1045,7 @@ components:
         branches:
           type: array
           items:
-            $ref: '#/components/schemas/GarbageCollectionRule'
+            $ref: "#/components/schemas/GarbageCollectionRule"
       required:
         - default_retention_days
         - branches
@@ -1066,11 +1087,11 @@ components:
     RangeMetadata:
       type: object
       required:
-         - id
-         - min_key
-         - max_key
-         - count
-         - estimated_size
+        - id
+        - min_key
+        - max_key
+        - count
+        - estimated_size
       properties:
         id:
           type: string
@@ -1095,9 +1116,9 @@ components:
       type: object
       properties:
         range:
-          $ref: '#/components/schemas/RangeMetadata'
+          $ref: "#/components/schemas/RangeMetadata"
         pagination:
-          $ref: '#/components/schemas/ImportPagination'
+          $ref: "#/components/schemas/ImportPagination"
 
     MetaRangeCreation:
       type: object
@@ -1105,7 +1126,7 @@ components:
         ranges:
           type: array
           items:
-            $ref: '#/components/schemas/RangeMetadata'
+            $ref: "#/components/schemas/RangeMetadata"
           minItems: 1
       required:
         - ranges
@@ -1118,6 +1139,41 @@ components:
           type: string
 
 paths:
+  /setup_comm_prefs:
+    post:
+      tags:
+        - config
+      operationId: setupCommPrefs
+      summary: setup communications preferences
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommPrefsInput"
+      responses:
+        200:
+          description: communication preferences saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NextStep"
+        409:
+          description: setup was already completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        412:
+          description: wrong setup state for this operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /setup_lakefs:
     get:
       tags:
@@ -1139,7 +1195,7 @@ paths:
         - config
       operationId: setup
       summary: setup lakeFS and create a first user
-      security: [ ]
+      security: []
       requestBody:
         required: true
         content:
@@ -1201,7 +1257,7 @@ paths:
         - auth
       operationId: login
       summary: perform a login
-      security: []  # No authentication
+      security: [] # No authentication
       requestBody:
         content:
           application/json:
@@ -1225,51 +1281,51 @@ paths:
           $ref: "#/components/responses/ServerError"
 
   /auth/password:
-      post:
-        tags:
-          - auth
-        operationId: updatePassword
-        summary: Update user password by reset_password token
-        security:
-          - cookie_auth: []
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UpdatePasswordByToken"
-        responses:
-          201:
-            description: successful reset
-          401:
-            $ref: "#/components/responses/Unauthorized"
-          default:
-            $ref: "#/components/responses/ServerError"
+    post:
+      tags:
+        - auth
+      operationId: updatePassword
+      summary: Update user password by reset_password token
+      security:
+        - cookie_auth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePasswordByToken"
+      responses:
+        201:
+          description: successful reset
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
 
   /auth/password/forgot:
-      post:
-        tags:
-          - auth
-        operationId: forgotPassword
-        summary: forgot password request initiates the password reset process
-        security: []
-        requestBody:
-          required: true
+    post:
+      tags:
+        - auth
+      operationId: forgotPassword
+      summary: forgot password request initiates the password reset process
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+      responses:
+        204:
+          description: No content
+        400:
+          description: bad request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ForgotPasswordRequest"
-        responses:
-          204:
-            description: No content
-          400:
-            description: bad request
-            content:
-              application/json:
-                schema:
-                  $ref: "#/components/schemas/Error"
-          default:
-            $ref: "#/components/responses/ServerError"
+                $ref: "#/components/schemas/Error"
+        default:
+          $ref: "#/components/responses/ServerError"
 
   /auth/capabilities:
     get:
@@ -2783,7 +2839,7 @@ paths:
 
     put:
       tags:
-       - staging
+        - staging
       operationId: linkPhysicalAddress
       summary: associate staging on this physical address with a path
       description: |
@@ -2833,32 +2889,31 @@ paths:
         schema:
           type: string
     post:
-        tags:
-          - import
-        operationId: createMetaRange
-        summary: create a lakeFS metarange file from the given ranges
-        requestBody:
-          required: true
+      tags:
+        - import
+      operationId: createMetaRange
+      summary: create a lakeFS metarange file from the given ranges
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MetaRangeCreation"
+      responses:
+        201:
+          description: metarange metadata
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MetaRangeCreation"
-        responses:
-          201:
-            description: metarange metadata
-            content:
-              application/json:
-                schema:
-                  $ref: "#/components/schemas/MetaRangeCreationResponse"
-          400:
-            $ref: "#/components/responses/ValidationError"
-          401:
-            $ref: "#/components/responses/Unauthorized"
-          404:
-            $ref: "#/components/responses/NotFound"
-          default:
-            $ref: "#/components/responses/ServerError"
-
+                $ref: "#/components/schemas/MetaRangeCreationResponse"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/branches/ranges:
     parameters:
@@ -2869,7 +2924,7 @@ paths:
           type: string
     post:
       tags:
-         - import
+        - import
       operationId: ingestRange
       summary: create a lakeFS range file from the source uri
       requestBody:
@@ -2968,7 +3023,7 @@ paths:
           required: false
           schema:
             type: string
-            pattern: '^\*$'  # Currently, only "*" is supported
+            pattern: '^\*$' # Currently, only "*" is supported
       responses:
         201:
           description: object metadata
@@ -3605,7 +3660,7 @@ paths:
   /healthcheck:
     get:
       operationId: healthCheck
-      security: [ ]
+      security: []
       tags:
         - healthCheck
       description: check that the API server is up and running

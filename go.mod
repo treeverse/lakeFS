@@ -78,6 +78,7 @@ require (
 
 require (
 	github.com/IBM/pgxpoolprometheus v1.0.1
+	github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf
 	github.com/alitto/pond v1.8.2
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/gorilla/securecookie v1.1.1
@@ -305,7 +306,7 @@ require (
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.7.0
-	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
+	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
 	golang.org/x/mod v0.6.0 // indirect
 	golang.org/x/net v0.1.0 // indirect
 	golang.org/x/sys v0.1.0 // indirect

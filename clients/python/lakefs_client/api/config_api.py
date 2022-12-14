@@ -22,8 +22,10 @@ from lakefs_client.model_utils import (  # noqa: F401
     none_type,
     validate_and_convert_types
 )
+from lakefs_client.model.comm_prefs_input import CommPrefsInput
 from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
 from lakefs_client.model.error import Error
+from lakefs_client.model.next_step import NextStep
 from lakefs_client.model.setup import Setup
 from lakefs_client.model.setup_state import SetupState
 from lakefs_client.model.storage_config import StorageConfig
@@ -213,6 +215,56 @@ class ConfigApi(object):
                 },
                 'location_map': {
                     'setup': 'body',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [
+                    'application/json'
+                ]
+            },
+            api_client=api_client
+        )
+        self.setup_comm_prefs_endpoint = _Endpoint(
+            settings={
+                'response_type': (NextStep,),
+                'auth': [],
+                'endpoint_path': '/setup_comm_prefs',
+                'operation_id': 'setup_comm_prefs',
+                'http_method': 'POST',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'comm_prefs_input',
+                ],
+                'required': [
+                    'comm_prefs_input',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'comm_prefs_input':
+                        (CommPrefsInput,),
+                },
+                'attribute_map': {
+                },
+                'location_map': {
+                    'comm_prefs_input': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -474,4 +526,69 @@ class ConfigApi(object):
         kwargs['setup'] = \
             setup
         return self.setup_endpoint.call_with_http_info(**kwargs)
+
+    def setup_comm_prefs(
+        self,
+        comm_prefs_input,
+        **kwargs
+    ):
+        """setup communications preferences  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.setup_comm_prefs(comm_prefs_input, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            comm_prefs_input (CommPrefsInput):
+
+        Keyword Args:
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            NextStep
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['comm_prefs_input'] = \
+            comm_prefs_input
+        return self.setup_comm_prefs_endpoint.call_with_http_info(**kwargs)
 

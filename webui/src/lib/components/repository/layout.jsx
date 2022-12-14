@@ -26,7 +26,7 @@ const RepoNav = () => {
     )
 };
 
-export const RepositoryPageLayout = ({ activePage, children, fluid = "xl" }) => {
+export const RepositoryPageLayout = ({ activePage, children, fluid = "sm" }) => {
     return (
         <Layout>
             <div>

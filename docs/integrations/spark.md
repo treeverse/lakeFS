@@ -35,8 +35,8 @@ not on the command line or inlined in code where they might be exposed.
 
 There are two ways you can use lakeFS with Spark:
 
-* <u>Recommended</u>: Using the [lakeFS Hadoop FileSystem](#use-the-lakefs-hadoop-filesystem): fully unlock the performance of lakeFS.
-* Using the [S3 gateway](#use-the-s3-gateway): get started quickly!
+* Using the [lakeFS Hadoop FileSystem](#use-the-lakefs-hadoop-filesystem): Highly scalable, data flows directly from client to storage.
+* Using the [S3 gateway](#use-the-s3-gateway): Highly scalable, highly compatible with any S3 interface.
 
 
 ## Use the lakeFS Hadoop FileSystem

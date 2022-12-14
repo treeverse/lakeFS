@@ -10,13 +10,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/treeverse/lakefs/pkg/api"
-
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -222,7 +220,7 @@ func TestS3HeadBucket(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
-	var badRepo = repo + "-nonexistent"
+	badRepo := repo + "-nonexistent"
 
 	// Upload an object
 	client := newClient(t, sigV2)

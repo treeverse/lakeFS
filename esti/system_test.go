@@ -126,9 +126,9 @@ func deleteRepositoryIfAskedTo(ctx context.Context, repositoryName string) {
 	if deleteRepositories {
 		resp, err := client.DeleteRepositoryWithResponse(ctx, repositoryName)
 		if err != nil {
-			logger.WithError(err).WithField("repo", repositoryName).Error("Reuqest to delete repository failed")
+			logger.WithError(err).WithField("repo", repositoryName).Error("Request to delete repository failed")
 		} else if resp.StatusCode() != http.StatusNoContent {
-			logger.WithFields(logging.Fields{"repo": repositoryName, "status_code": resp.StatusCode()}).Error("Reuqest to delete repository failed")
+			logger.WithFields(logging.Fields{"repo": repositoryName, "status_code": resp.StatusCode()}).Error("Request to delete repository failed")
 		} else {
 			logger.WithField("repo", repositoryName).Info("Deleted repository")
 		}
@@ -187,7 +187,7 @@ func uploadContent(ctx context.Context, repo string, branch string, objPath stri
 
 func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string, direct bool) (checksum, content string) {
 	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath, direct)
-	require.NoError(t, err, "failed to upload file")
+	require.NoError(t, err, "failed to upload file", repo, branch, objPath, "direct:", direct)
 	return checksum, content
 }
 

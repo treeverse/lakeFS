@@ -1,11 +1,13 @@
 package catalog_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"os"
 	"path"
+	"sort"
 	"testing"
 	"time"
 
@@ -572,7 +574,7 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := createPrepareUncommittedTestScenario(t, tt.numBranch, tt.numRecords, tt.expectedCalls)
+			g, expectedRecords := createPrepareUncommittedTestScenario(t, tt.numBranch, tt.numRecords, tt.expectedCalls)
 			blockAdapter := testutil.NewBlockAdapterByType(t, block.BlockstoreTypeMem)
 			c := &catalog.Catalog{
 				Store:                    g.Sut,
@@ -591,56 +593,69 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, runID, result.Metadata.RunId)
 			}
-			verifyData(t, ctx, tt.numBranch, tt.numRecords, result.Metadata.RunId, c)
+			verifyData(t, ctx, tt.numBranch, tt.numRecords, result.Metadata.RunId, c, expectedRecords)
 		})
 	}
 }
 
-func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords, expectedCalls int) *gUtils.GravelerTest {
+func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords, expectedCalls int) (*gUtils.GravelerTest, []string) {
 	t.Helper()
-	testFolder, err := os.MkdirTemp("", xid.New().String())
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		os.RemoveAll(testFolder)
-	})
 
 	test := gUtils.InitGravelerTest(t)
 	records := make([][]*graveler.ValueRecord, numBranches)
 	var branches []*graveler.BranchRecord
+	var expectedRecords []string
 	for i := 0; i < numBranches; i++ {
 		branchID := graveler.BranchID(fmt.Sprintf("branch%04d", i))
 		token := graveler.StagingToken(fmt.Sprintf("%s_st%04d", branchID, i))
 		branches = append(branches, &graveler.BranchRecord{BranchID: branchID, Branch: &graveler.Branch{StagingToken: token}})
 
-		records[i] = make([]*graveler.ValueRecord, numRecords+2)
+		records[i] = make([]*graveler.ValueRecord, 0, numRecords)
 		for j := 0; j < numRecords; j++ {
+			var (
+				addressType catalog.Entry_AddressType
+				address     string
+			)
+			// create full and relative addresses
+			if j%2 == 0 {
+				addressType = catalog.Entry_FULL
+				address = fmt.Sprintf("%s/%s_record%04d", repository.StorageNamespace, branchID, j)
+			} else {
+				addressType = catalog.Entry_RELATIVE
+				address = fmt.Sprintf("%s_record%04d", branchID, j)
+			}
 			e := catalog.Entry{
-				Address:      fmt.Sprintf("%s_record%04d", branchID, j),
+				Address:      address,
 				LastModified: timestamppb.New(time.Now()),
 				Size:         0,
 				ETag:         "",
 				Metadata:     nil,
-				AddressType:  catalog.Entry_RELATIVE,
+				AddressType:  addressType,
 				ContentType:  "",
 			}
+
 			v, err := proto.Marshal(&e)
 			require.NoError(t, err)
-			records[i][j] = &graveler.ValueRecord{
+			records[i] = append(records[i], &graveler.ValueRecord{
 				Key: []byte(e.Address),
 				Value: &graveler.Value{
 					Identity: []byte("dont care"),
 					Data:     v,
 				},
-			}
+			})
+			// we always keep the relative path - as the prepared uncommitted will trim the storage namespace
+			expectedRecords = append(expectedRecords, fmt.Sprintf("%s_record%04d", branchID, j))
 		}
+
 		// Add tombstone
-		records[i][numRecords] = &graveler.ValueRecord{
-			Key:   []byte("AtombstoneFile"),
+		records[i] = append(records[i], &graveler.ValueRecord{
+			Key:   []byte(fmt.Sprintf("%s_tombstone", branchID)),
 			Value: nil,
-		}
+		})
+
 		// Add external address
 		e := catalog.Entry{
-			Address:      fmt.Sprintf("external/address/object"),
+			Address:      fmt.Sprintf("external/address/object_%s", branchID),
 			LastModified: timestamppb.New(time.Now()),
 			Size:         0,
 			ETag:         "",
@@ -650,19 +665,22 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 		}
 		v, err := proto.Marshal(&e)
 		require.NoError(t, err)
-		records[i][numRecords+1] = &graveler.ValueRecord{
+		records[i] = append(records[i], &graveler.ValueRecord{
 			Key: []byte(e.Address),
 			Value: &graveler.Value{
 				Identity: []byte("dont care"),
 				Data:     v,
 			},
-		}
+		})
 	}
 	test.GarbageCollectionManager.EXPECT().NewID().Return("TestRunID")
 	test.RefManager.EXPECT().GetRepository(gomock.Any(), repoID).Times(expectedCalls).Return(repository, nil)
 	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).Times(expectedCalls).Return(gUtils.NewFakeBranchIterator(branches), nil)
 
 	for i := 0; i < len(branches); i++ {
+		sort.Slice(records[i], func(ii, jj int) bool {
+			return bytes.Compare(records[i][ii].Key, records[i][jj].Key) < 0
+		})
 		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, gomock.Any()).AnyTimes().Return(cUtils.NewFakeValueIterator(records[i]), nil)
 	}
 	if numRecords*numBranches > 0 {
@@ -671,13 +689,14 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 		})
 	}
 
-	return test
+	sort.Strings(expectedRecords)
+	return test, expectedRecords
 }
 
-func verifyData(t *testing.T, ctx context.Context, numBranches, numRecords int, runID string, c *catalog.Catalog) {
+func verifyData(t *testing.T, ctx context.Context, numBranches, numRecords int, runID string, c *catalog.Catalog, expectedRecords []string) {
 	totalCount := 0
 	location := fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID)
-
+	var allRecords []string
 	err := c.BlockAdapter.Walk(context.Background(), block.WalkOpts{
 		StorageNamespace: repository.Repository.StorageNamespace.String(),
 		Prefix:           location,
@@ -689,14 +708,14 @@ func verifyData(t *testing.T, ctx context.Context, numBranches, numRecords int, 
 		if err != nil {
 			return err
 		}
-		filename := path.Join(os.TempDir(), xid.New().String())
+		filename := path.Join(t.TempDir(), xid.New().String())
 		fr, err := local.NewLocalFileWriter(filename)
 		if err != nil {
 			return err
 		}
 		defer func() {
-			fr.Close()
-			os.Remove(filename)
+			_ = fr.Close()
+			_ = os.Remove(filename)
 		}()
 
 		_, err = io.Copy(fr, fd)
@@ -717,17 +736,22 @@ func verifyData(t *testing.T, ctx context.Context, numBranches, numRecords int, 
 		count := pr.GetNumRows()
 		u := make([]*catalog.UncommittedParquetObject, count)
 		err = pr.Read(&u)
-		pr.ReadStop()
-		fr.Close()
-		for i, record := range u {
-			branchID := (i + totalCount) / numRecords
-			recordID := (i + totalCount) % numRecords
-			require.Equal(t, fmt.Sprintf("branch%04d_record%04d", branchID, recordID), record.PhysicalAddress)
+		if err != nil {
+			return err
 		}
-		totalCount += int(count)
+		pr.ReadStop()
 
+		for _, record := range u {
+			allRecords = append(allRecords, record.PhysicalAddress)
+		}
+		totalCount += len(u)
 		return nil
 	})
+
+	sort.Strings(allRecords)
+	if diff := deep.Equal(allRecords, expectedRecords); diff != nil {
+		t.Errorf("Found diff in expected records: %s", diff)
+	}
 
 	require.NoError(t, err)
 	require.Equal(t, numBranches*numRecords, totalCount)

@@ -64,6 +64,28 @@ class ParallelDataListerSpec
           df.sort(desc("base_address")).head.getString(0) should be("slice10/object10")
         })
       }
+      it("should be able to list path with ':' in it") {
+        val dataDir = new File(dir.toFile, "data")
+        dataDir.mkdir()
+        withSparkSession(spark => {
+          val sliceID = "legacy_physical:address_path"
+          val filename = "some_file"
+          val slice = new File(dataDir, sliceID)
+          slice.mkdir()
+          new File(slice, filename).createNewFile()
+
+          val path = new Path(dataDir.toURI)
+          val configMapper = new ConfigMapper(
+            spark.sparkContext.broadcast(
+              HadoopUtils.getHadoopConfigurationValues(spark.sparkContext.hadoopConfiguration)
+            )
+          )
+          val df =
+            new ParallelDataLister().listData(configMapper, path).sort("base_address")
+          df.count() should be(1)
+          df.head.getString(0) should be(s"$sliceID/$filename")
+        })
+      }
     }
   }
 }
@@ -105,11 +127,11 @@ class NaiveDataListerSpec
               HadoopUtils.getHadoopConfigurationValues(spark.sparkContext.hadoopConfiguration)
             )
           )
-          val df = new NaiveDataLister().listData(configMapper, path).sort("address")
+          val df = new NaiveDataLister().listData(configMapper, path).sort("base_address")
           df.count should be(10)
-          df.sort("address").head.getString(0) should be("object01")
+          df.sort("base_address").head.getString(0) should be("object01")
           df.head.getString(0) should be("object01")
-          df.sort(desc("address")).head.getString(0) should be("object10")
+          df.sort(desc("base_address")).head.getString(0) should be("object10")
         })
       }
     }

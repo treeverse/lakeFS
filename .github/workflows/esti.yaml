@@ -64,8 +64,6 @@ jobs:
           node-version: "16.17.1"
 
       - name: Generate code
-        env:
-          NODE_OPTIONS: "--max-old-space-size=4096"
         run: |
           make -j3 gen-api VERSION=${{ steps.version.outputs.tag }}
           mkdir webui/dist
@@ -77,6 +75,7 @@ jobs:
         with:
           name: generated-code
           path: /tmp/generated.tar.gz
+
 
   deploy-image:
     name: Build and push Docker image
@@ -177,6 +176,151 @@ jobs:
             echo "Image doesn't exist"
             docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
           fi
+       
+  login-to-amazon-ecr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-1
+          mask-aws-account-id: 'false'
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+    outputs:
+      registry: ${{ steps.login-ecr.outputs.registry }}
+      docker_username: ${{ steps.login-ecr.outputs.docker_username_977611293394_dkr_ecr_us_east_1_amazonaws_com }}
+      docker_password: ${{ steps.login-ecr.outputs.docker_password_977611293394_dkr_ecr_us_east_1_amazonaws_com }}
+
+
+  ugc-test:
+    name: Test uncommitted gc
+    needs: [gen-code, deploy-image, login-to-amazon-ecr]
+    runs-on: ubuntu-20.04
+
+    services:
+      lakefs:
+        image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
+        credentials:
+          username: ${{ needs.login-to-amazon-ecr.outputs.docker_username }}
+          password: ${{ needs.login-to-amazon-ecr.outputs.docker_password }}
+        ports:
+          - '8000:8000'
+        env:
+          LAKEFS_DATABASE_TYPE: local
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
+          LAKEFS_STATS_ENABLED: false
+
+      spark:
+        image: docker.io/bitnami/spark:3.2.3
+        env:
+          SPARK_MODE: master
+          SPARK_RPC_AUTHENTICATION_ENABLED: no
+          SPARK_RPC_ENCRYPTION_ENABLED: no
+          SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
+          SPARK_SSL_ENABLED: no
+        ports:
+          - '8080:8080'
+          - '7077:7077'
+
+      spark-worker:
+        image: docker.io/bitnami/spark:3.2.3
+        env:
+          SPARK_MODE: worker
+          SPARK_MASTER_URL: spark://spark:7077
+          SPARK_WORKER_MEMORY: 1G
+          SPARK_WORKER_CORES: 1
+          SPARK_RPC_AUTHENTICATION_ENABLED: no
+          SPARK_RPC_ENCRYPTION_ENABLED: no
+          SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
+          SPARK_SSL_ENABLED: no
+
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.2
+        id: go
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt-hotspot'
+          java-version: '8'
+          cache: 'sbt'
+
+      - name: Build ugc spark job assembly
+        working-directory: clients/spark
+        run: sbt 'project lakefs-spark-client-301; set test in assembly := {}' assembly
+
+      - name: Generate uniquifying value
+        id: unique
+        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
+
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v3
+        with:
+          name: generated-code
+          path: /tmp/
+
+      - name: Unpack generated code
+        shell: bash
+        run: tar -xf /tmp/generated.tar.gz
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-1
+
+      - name: Uncommitted gc pre test
+        run: go test -v ./esti -system-tests -use-local-credentials -run=TestUncommittedGC
+        env:
+          ESTI_BLOCKSTORE_TYPE: s3
+          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/ugc/${{ steps.unique.outputs.value }}
+          ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          ESTI_VERSION: ${{ steps.version.outputs.tag }}
+          ESTI_SETUP_LAKEFS: true
+          ESTI_UGC_STEP: pre
+
+      - name: Run uncommitted gc
+        working-directory: clients/spark
+        run: >
+          CLIENT_JAR=$(ls target/core-301/scala-2.12/lakefs-spark-client-301-assembly-*.jar);
+          echo $CLIENT_JAR; 
+          docker run --network host --add-host lakefs:127.0.0.1 -v $(pwd):/local --rm docker.io/bitnami/spark:3.2.3 spark-submit
+          --master spark://localhost:7077
+          --conf spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1
+          --conf spark.hadoop.fs.s3.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
+          --conf spark.hadoop.fs.s3a.access.key=${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          --conf spark.hadoop.fs.s3a.secret.key=${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          --conf spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ
+          --conf spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          --conf spark.hadoop.lakefs.debug.gc.uncommitted_min_age_seconds=1
+          --conf spark.hadoop.lakefs.gc.do_sweep=true
+          --class io.treeverse.gc.UncommittedGarbageCollector
+          --packages org.apache.hadoop:hadoop-aws:2.7.7
+          /local/${CLIENT_JAR}
+          ugc us-east-1
+
+      - name: Uncommitted gc post test
+        run: go test -v ./esti -system-tests -use-local-credentials -run=TestUncommittedGC
+        env:
+          ESTI_BLOCKSTORE_TYPE: s3
+          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/ugc/${{ steps.unique.outputs.value }}
+          ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          ESTI_VERSION: ${{ steps.version.outputs.tag }}
+          ESTI_SETUP_LAKEFS: false
+          ESTI_UGC_STEP: post
 
   deploy-rclone-export-image:
     name: Build and push rclone export Docker image
@@ -214,6 +358,7 @@ jobs:
           docker push $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
         env:
           DOCKER_BUILDKIT: "1"
+
 
   hadoopfs-tests:
     name: Test lakeFS Hadoop FileSystem
@@ -688,6 +833,7 @@ jobs:
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/garbage/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-gc-${{ matrix.spark.version }}
           CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly${{ matrix.spark.suffix }}.jar
+          AWS_REGION: us-east-1
         working-directory: test/spark
         run: ./run-gc-test.sh
 
@@ -1043,7 +1189,3 @@ jobs:
 
       - name: See the env when we would have tried to publish coverage
         run: env
-        # uses: codecov/codecov-action@v1
-        # with:
-        #   files: ./esti-cover.out
-        #   fail_ci_if_error: false

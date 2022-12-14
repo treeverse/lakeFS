@@ -73,6 +73,15 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	setupLakeFS := viper.GetBool("setup_lakefs")
 	if setupLakeFS {
 		// first setup of lakeFS
+		mockEmail := "test@acme.co"
+		_, err := client.SetupCommPrefsWithResponse(context.Background(), api.SetupCommPrefsJSONRequestBody{
+			Email:           &mockEmail,
+			FeatureUpdates:  false,
+			SecurityUpdates: false,
+		})
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to setup lakeFS")
+		}
 		adminUserName := params.Name
 		requestBody := api.SetupJSONRequestBody{
 			Username: adminUserName,

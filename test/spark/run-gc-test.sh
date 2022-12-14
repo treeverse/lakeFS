@@ -138,11 +138,16 @@ prepare_for_gc() {
   run_lakectl repo create "lakefs://${repo}" "${STORAGE_NAMESPACE}/${repo}/"
   run_lakectl fs upload "lakefs://${repo}/main/not_deleted_file1" -s /local/gc-tests/sample_file
   run_lakectl fs upload "lakefs://${repo}/main/not_deleted_file2" -s /local/gc-tests/sample_file
-  run_lakectl fs upload "lakefs://${repo}/main/not_deleted_file3" -s /local/gc-tests/sample_file
+  local direct_flag_for_non_deleted=''
+  if [[ $LAKEFS_BLOCKSTORE_TYPE == "s3" ]]; then
+    direct_flag_for_non_deleted='--direct'
+  fi
+  run_lakectl fs upload ${direct_flag_for_non_deleted} "lakefs://${repo}/main/not_deleted_file3" -s /local/gc-tests/sample_file
   run_lakectl commit "lakefs://${repo}/main" -m "add three files not to be deleted" --epoch-time-seconds 0
 
   run_lakectl branch create "lakefs://${repo}/a${test_id}" -s "lakefs://${repo}/main"
-  run_lakectl fs upload "lakefs://${repo}/a${test_id}/file${test_id}" -s /local/gc-tests/sample_file
+  local direct_upload_flag=$("$(echo ${test_case} | jq -r '.direct_upload // false')" && [[ ${LAKEFS_BLOCKSTORE_TYPE} == "s3" ]] && echo '--direct' || echo '')
+   run_lakectl fs upload ${direct_upload_flag} "lakefs://${repo}/a${test_id}/file${test_id}" -s /local/gc-tests/sample_file
   file_existing_ref=$(run_lakectl commit "lakefs://${repo}/a${test_id}" -m "uploaded file ${test_id}" --epoch-time-seconds 0 | grep "ID: " | awk '{ print $2 }')
   run_lakectl branch create "lakefs://${repo}/b${test_id}" -s "lakefs://${repo}/${file_existing_ref}"
   echo "${file_existing_ref}" > "existing_ref_${test_id}.txt"

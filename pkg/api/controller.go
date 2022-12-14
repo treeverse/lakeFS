@@ -44,13 +44,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
-type contextKey string
-
 const (
 	// DefaultMaxPerPage is the maximum amount of results returned for paginated queries to the API
-	DefaultMaxPerPage int        = 1000
-	lakeFSPrefix                 = "symlinks"
-	UserContextKey    contextKey = "user"
+	DefaultMaxPerPage int = 1000
+	lakeFSPrefix          = "symlinks"
 
 	actionStatusCompleted = "completed"
 	actionStatusFailed    = "failed"
@@ -58,9 +55,6 @@ const (
 
 	entryTypeObject       = "object"
 	entryTypeCommonPrefix = "common_prefix"
-
-	setupStateInitialized    = "initialized"
-	setupStateNotInitialized = "not_initialized"
 
 	DefaultMaxDeleteObjects = 1000
 
@@ -1285,8 +1279,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 	c.LogAction(ctx, "list_repos", r, "", "", "")
 
 	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), paginationAfter(params.After))
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, fmt.Sprintf("error listing repositories: %s", err))
+	if c.handleAPIError(ctx, w, err) {
 		return
 	}
 	results := make([]Repository, 0, len(repos))
@@ -1954,8 +1947,8 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_commit", r, repository, branch, "")
-	user, ok := ctx.Value(UserContextKey).(*model.User)
-	if !ok {
+	user, err := auth.GetUser(ctx)
+	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing user")
 		return
 	}
@@ -2254,13 +2247,13 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body R
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "revert_branch", r, repository, branch, "")
-	user, ok := ctx.Value(UserContextKey).(*model.User)
-	if !ok {
+	user, err := auth.GetUser(ctx)
+	if err != nil {
 		writeError(w, http.StatusUnauthorized, "user not found")
 		return
 	}
 	committer := user.Username
-	err := c.Catalog.Revert(ctx, repository, branch, catalog.RevertParams{
+	err = c.Catalog.Revert(ctx, repository, branch, catalog.RevertParams{
 		Reference:    body.Ref,
 		Committer:    committer,
 		ParentNumber: body.ParentNumber,
@@ -3102,8 +3095,8 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "merge_branches", r, repository, destinationBranch, sourceRef)
-	user, ok := ctx.Value(UserContextKey).(*model.User)
-	if !ok {
+	user, err := auth.GetUser(ctx)
+	if err != nil {
 		writeError(w, http.StatusUnauthorized, "user not found")
 		return
 	}
@@ -3230,14 +3223,16 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository s
 
 func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	initialized, err := c.MetadataManager.IsInitialized(ctx)
+	emailSubscriptionEnabled := c.Config.IsEmailSubscriptionEnabled()
+	savedState, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
-	state := setupStateNotInitialized
-	if initialized || c.Config.IsAuthTypeAPI() {
-		state = setupStateInitialized
+	state := string(savedState)
+	// no need to create an admin user if users are managed externally
+	if c.Config.IsAuthTypeAPI() {
+		state = string(auth.SetupStateInitialized)
 	}
 	oidcConfig := c.Config.GetAuthOIDCConfiguration()
 	response := SetupState{
@@ -3256,13 +3251,18 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 
 	// check if previous setup completed
 	ctx := r.Context()
-	initialized, err := c.MetadataManager.IsInitialized(ctx)
+	emailSubscriptionEnabled := c.Config.IsEmailSubscriptionEnabled()
+	initialized, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
-	if initialized {
+	if initialized == auth.SetupStateInitialized {
 		writeError(w, http.StatusConflict, "lakeFS already initialized")
+		return
+	}
+	if initialized == auth.SetupStateNotInitialized {
+		writeError(w, http.StatusPreconditionFailed, "wrong step - must first complete previous steps")
 		return
 	}
 
@@ -3302,10 +3302,67 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 	writeResponse(w, http.StatusOK, response)
 }
 
+func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body SetupCommPrefsJSONRequestBody) {
+	ctx := r.Context()
+	emailSubscriptionEnabled := c.Config.IsEmailSubscriptionEnabled()
+	initialized, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
+	if c.handleAPIError(ctx, w, err) {
+		return
+	}
+
+	if initialized == auth.SetupStateInitialized {
+		writeError(w, http.StatusConflict, "lakeFS already initialized")
+		return
+	}
+
+	// users should not get here
+	// after this step is done, the browser should navigate the user to the next step
+	// even on refresh or closing the tab and continuing setup in a new tab later
+	// the user should not be posting to this handler
+	if initialized == auth.SetupStateCommPrefsDone {
+		writeError(w, http.StatusPreconditionFailed, "wrong step - CommPrefs have already been set")
+		return
+	}
+
+	response := NextStep{
+		NextStep: string(auth.SetupStateCommPrefsDone),
+	}
+
+	if *body.Email == "" {
+		writeResponse(w, http.StatusBadRequest, "email is required")
+		return
+	}
+
+	// validate email. if the user typed some value into the input, they might have a typo
+	// we assume the intent was to provide a valid email, so we'll return an error
+	if _, err := mail.ParseAddress(*body.Email); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid email address")
+		return
+	}
+
+	// save comm prefs to metadata, for future in-app preferences/unsubscribe functionality
+	commPrefs := auth.CommPrefs{
+		UserEmail:       *body.Email,
+		FeatureUpdates:  body.FeatureUpdates,
+		SecurityUpdates: body.SecurityUpdates,
+	}
+
+	installationID, err := c.MetadataManager.UpdateCommPrefs(ctx, commPrefs)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	// collect comm prefs
+	c.Collector.CollectCommPrefs(commPrefs.UserEmail, installationID, commPrefs.FeatureUpdates, commPrefs.SecurityUpdates)
+
+	writeResponse(w, http.StatusOK, response)
+}
+
 func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	u, ok := r.Context().Value(UserContextKey).(*model.User)
+	u, err := auth.GetUser(r.Context())
 	var user User
-	if ok {
+	if err != nil {
 		user.Id = u.Username
 		user.CreationDate = u.CreatedAt.Unix()
 		if u.FriendlyName != nil {
@@ -3399,8 +3456,8 @@ func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, temp
 	}
 	ctx := r.Context()
 
-	u, ok := ctx.Value(UserContextKey).(*model.User)
-	if !ok {
+	u, err := auth.GetUser(ctx)
+	if err != nil {
 		writeError(w, http.StatusInternalServerError, "request performed with no user")
 	}
 
@@ -3414,7 +3471,7 @@ func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, temp
 	}
 
 	c.LogAction(ctx, "expand_template", r, "", "", "")
-	err := c.Templater.Expand(ctx, w, u, templateLocation, p.Params.AdditionalProperties)
+	err = c.Templater.Expand(ctx, w, u, templateLocation, p.Params.AdditionalProperties)
 	if err != nil {
 		c.Logger.WithError(err).WithField("location", templateLocation).Error("Template expansion failed")
 	}
@@ -3436,8 +3493,8 @@ func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, temp
 
 func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	user, ok := ctx.Value(UserContextKey).(*model.User)
-	if !ok || user == nil {
+	_, err := auth.GetUser(ctx)
+	if err != nil {
 		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
@@ -3635,8 +3692,8 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 		SourceRef:  sourceRef,
 		Client:     client,
 	}
-	user, ok := ctx.Value(UserContextKey).(*model.User)
-	if ok {
+	user, err := auth.GetUser(ctx)
+	if err != nil {
 		ev.UserID = user.Username
 	}
 	c.Logger.WithContext(ctx).WithFields(logging.Fields{
@@ -3675,8 +3732,8 @@ func paginationFor(hasMore bool, results interface{}, fieldName string) Paginati
 
 func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms permissions.Node) bool {
 	ctx := r.Context()
-	user, ok := ctx.Value(UserContextKey).(*model.User)
-	if !ok || user == nil {
+	user, err := auth.GetUser(ctx)
+	if err != nil {
 		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return false
 	}

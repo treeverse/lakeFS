@@ -18,6 +18,7 @@ import java.time.format.DateTimeFormatter
 
 object UncommittedGarbageCollector {
   final val UNCOMMITTED_GC_SOURCE_NAME = "uncommitted_gc"
+  private final val DATA_PREFIX = "data/"
 
   lazy val spark: SparkSession =
     SparkSession
@@ -39,8 +40,7 @@ object UncommittedGarbageCollector {
     // TODO(niro): parallelize reads from root and data paths
     val sc = spark.sparkContext
     val oldDataPath = new Path(storageNamespace)
-    val dataPrefix = "data"
-    val dataPath = new Path(storageNamespace, dataPrefix) // TODO(niro): handle better
+    val dataPath = new Path(storageNamespace, DATA_PREFIX)
 
     val configMapper = new ConfigMapper(
       sc.broadcast(
@@ -52,19 +52,30 @@ object UncommittedGarbageCollector {
     dataDF = dataDF
       .withColumn(
         "address",
-        concat(lit(dataPrefix), lit("/"), col("base_address"))
+        concat(lit(DATA_PREFIX), col("base_address"))
       )
-      .select("address", "last_modified")
 
     // Read objects from namespace root, for old structured repositories
 
     // TODO (niro): implement parallel lister for old repositories (https://github.com/treeverse/lakeFS/issues/4620)
     val oldDataDF = new NaiveDataLister()
       .listData(configMapper, oldDataPath)
+      .withColumn("address", col("base_address"))
       .filter(!col("address").isin(excludeFromOldData: _*))
-    dataDF = dataDF.union(oldDataDF).filter(col("last_modified") < before.getTime).select("address")
+    dataDF = dataDF.union(oldDataDF).filter(col("last_modified") < before.getTime)
 
     dataDF
+  }
+
+  def getFirstSlice(dataDF: DataFrame, repo: String): String = {
+    var firstSlice = ""
+    // Need the before filter to to exclude slices that are not actually read
+    val slices =
+      dataDF.filter(col("address").startsWith(DATA_PREFIX) && !col("base_address").startsWith(repo))
+    if (!slices.isEmpty) {
+      firstSlice = slices.first.getAs[String]("base_address").split("/")(0)
+    }
+    firstSlice
   }
 
   private def validateRunModeConfigs(
@@ -80,7 +91,7 @@ object UncommittedGarbageCollector {
                          LAKEFS_CONF_GC_MARK_ID
                         )
       System.exit(2)
-    } else if (shouldMark && !markID.isEmpty) {
+    } else if (shouldMark && markID.nonEmpty) {
       Console.out.println("Can't provide mark ID for mark mode. Exiting...")
     }
   }
@@ -89,7 +100,6 @@ object UncommittedGarbageCollector {
     var runID = ""
     var firstSlice = ""
     var success = true
-    var removed = spark.emptyDataFrame.withColumn("address", lit(""))
     var markedAddresses = spark.emptyDataFrame.withColumn("address", lit(""))
     var addressesToDelete = spark.emptyDataFrame.withColumn("address", lit(""))
     val repo = args(0)
@@ -139,6 +149,9 @@ object UncommittedGarbageCollector {
         // Read objects directly from object storage
         val dataDF = listObjects(storageNamespace, cutoffTime)
 
+        // Get first Slice
+        firstSlice = getFirstSlice(dataDF, repo)
+
         // Process uncommitted
         val uncommittedGCRunInfo =
           new APIUncommittedAddressLister(apiClient).listUncommittedAddresses(spark, repo)
@@ -155,47 +168,41 @@ object UncommittedGarbageCollector {
         runID = uncommittedGCRunInfo.runID
 
         // Process committed
+        val clientStorageNamespace =
+          apiClient.getStorageNamespace(repo, StorageClientType.SDKClient)
         val committedDF = new NaiveCommittedAddressLister()
-          .listCommittedAddresses(spark, storageNamespace)
+          .listCommittedAddresses(spark, storageNamespace, clientStorageNamespace)
 
         addressesToDelete = dataDF
+          .select("address")
           .except(committedDF)
           .except(uncommittedDF)
-
-        // TODO (niro): not working - need to find the most efficient way to save the first slice
-        if (!dataDF.isEmpty) {
-          val firstFile = dataDF.select(col("address")).first().toString()
-          firstSlice = firstFile.substring(0, firstFile.lastIndexOf("/"))
-        }
       }
-      removed = {
-        if (shouldSweep) {
-          if (shouldMark) { // get the expired addresses from the mark id run
-            markedAddresses = addressesToDelete
-            println("deleting marked addresses: " + runID)
-          } else {
-            markedAddresses = readMarkedAddresses(storageNamespace, markID)
-            println("deleting marked addresses: " + markID)
-          }
-
-          val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
-          val region = getRegion(args)
-          val hcValues = spark.sparkContext.broadcast(
-            HadoopUtils.getHadoopConfigurationValues(hc, "fs.", "lakefs.")
-          )
-          val configMapper = new ConfigMapper(hcValues)
-
-          GarbageCollector
-            .bulkRemove(configMapper, markedAddresses, storageNSForSdkClient, region, storageType)
-            .toDF()
+      if (shouldSweep) {
+        if (shouldMark) { // get the expired addresses from the mark id run
+          markedAddresses = addressesToDelete
+          println("deleting marked addresses: " + runID)
         } else {
-          spark.emptyDataFrame.withColumn("address", lit(""))
+          markedAddresses = readMarkedAddresses(storageNamespace, markID)
+          println("deleting marked addresses: " + markID)
         }
+
+        val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
+        val region = getRegion(args)
+        val hcValues = spark.sparkContext.broadcast(
+          HadoopUtils.getHadoopConfigurationValues(hc, "fs.", "lakefs.")
+        )
+        val configMapper = new ConfigMapper(hcValues)
+
+        val removed = GarbageCollector
+          .bulkRemove(configMapper, markedAddresses, storageNSForSdkClient, region, storageType)
+          .toDF()
+        removed.collect()
       }
     } catch {
       case e: Throwable =>
         success = false
-        println(e.getStackTrace)
+        println(e.getStackTrace.mkString("Array(", ", ", ")"))
         throw e
     } finally {
       if (runID.nonEmpty && shouldMark) {
@@ -221,22 +228,27 @@ object UncommittedGarbageCollector {
       expiredAddresses: DataFrame
   ): Unit = {
     val reportDst = reportPath(storageNamespace, runID)
-    writeJsonSummary(reportDst, runID, firstSlice, startTime, success, expiredAddresses.count())
+    val summary =
+      writeJsonSummary(reportDst, runID, firstSlice, startTime, success, expiredAddresses.count())
+    println(s"Report for mark_id=$runID summary=$summary")
 
-    expiredAddresses.write.parquet(s"${reportDst}/deleted")
+    val cachedAddresses = expiredAddresses.cache()
+    cachedAddresses.write.parquet(s"$reportDst/deleted")
+    cachedAddresses.write.text(s"$reportDst/deleted.text")
   }
 
   private def reportPath(storageNamespace: String, runID: String): String = {
-    s"${storageNamespace}_lakefs/retention/gc/uncommitted/${runID}"
+    s"${storageNamespace}_lakefs/retention/gc/uncommitted/$runID"
   }
 
   private def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
     val path = reportPath(storageNamespace, markID)
-    val markedRunSummary = spark.read.json(s"${path}/summary.json")
-    if (markedRunSummary.select("success").first() == false) {
+    val markedRunSummary = spark.read.json(s"$path/summary.json")
+    val markedRunSucceeded = markedRunSummary.first.getAs[Boolean]("success")
+    if (!markedRunSucceeded) {
       spark.emptyDataFrame.withColumn("address", lit(""))
     } else {
-      spark.read.parquet(s"${path}/deleted")
+      spark.read.parquet(s"$path/deleted")
     }
   }
 
@@ -247,7 +259,7 @@ object UncommittedGarbageCollector {
       startTime: java.time.Instant,
       success: Boolean,
       numDeletedObjects: Long
-  ): Unit = {
+  ): String = {
     val dstPath = new Path(s"$dst/summary.json")
     val dstFS = dstPath.getFileSystem(spark.sparkContext.hadoopConfiguration)
     val jsonSummary = JObject(
@@ -257,12 +269,13 @@ object UncommittedGarbageCollector {
       "start_time" -> DateTimeFormatter.ISO_INSTANT.format(startTime),
       "num_deleted_objects" -> numDeletedObjects
     )
-
+    val summary = compact(render(jsonSummary))
     val stream = dstFS.create(dstPath)
     try {
-      stream.writeBytes(compact(render(jsonSummary)))
+      stream.writeBytes(summary)
     } finally {
       stream.close()
     }
+    summary
   }
 }

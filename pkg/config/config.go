@@ -317,6 +317,10 @@ func (c *Config) GetStatsExtended() bool {
 	return c.values.Stats.Extended
 }
 
+func (c *Config) IsEmailSubscriptionEnabled() bool {
+	return c.values.EmailSubscription.Enabled
+}
+
 func (c *Config) GetEmailParams() (email.Params, error) {
 	return email.Params{
 		SMTPHost:           c.values.Email.SMTPHost,
