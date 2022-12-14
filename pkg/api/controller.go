@@ -3362,7 +3362,7 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	u, err := auth.GetUser(r.Context())
 	var user User
-	if err != nil {
+	if err == nil {
 		user.Id = u.Username
 		user.CreationDate = u.CreatedAt.Unix()
 		if u.FriendlyName != nil {
