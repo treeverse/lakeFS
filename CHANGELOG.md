@@ -3,7 +3,7 @@
 ## v0.87.1
 
 Bug fixes:
-- Fix UI | `my credentials` view returns error (#4816)
+- Fix UI "Authorization/My credentials" view returns error (#4816)
 
 ## v0.87.0
 
