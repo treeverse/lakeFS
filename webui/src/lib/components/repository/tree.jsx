@@ -190,20 +190,15 @@ const EntryRow = ({repo, reference, path, entry, onDelete, showActions}) => {
     } else if (entry.diff_type === 'removed') {
         button = (<span>{buttonText}</span>);
     } else {
-        const filePathParams = {
-            objectName: query.path,
-            ...params,
-        };
-        
         const filePathQuery = {
             ref: query.ref,
+            path: query.path,
         };
-
         if (entry.size_bytes > PREVIEW_SIZE_LIMIT) {
             filePathQuery["big"] = true;
         }
 
-        button = (<Link href={{pathname: '/repositories/:repoId/objects/:objectName', query: filePathQuery, params: filePathParams}}>{buttonText}</Link>);
+        button = (<Link href={{pathname: '/repositories/:repoId/object', query: filePathQuery, params: params}}>{buttonText}</Link>);
     }
 
     let size;

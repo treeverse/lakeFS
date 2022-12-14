@@ -616,27 +616,23 @@ class Objects {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?`+query, {
             method: 'GET',
         });
-        if (response.status !== 200) {
+        if (response.status !== 200 && response.status !== 206) {
             throw new Error(await extractError(response));
         }
         
         return response.text()
     }
-
-    async getWithHeaders(repoId, ref, path) {
+    async head(repoId, ref, path) {
         const query = qs({path});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?`+query, {
-            method: 'GET',
+            method: 'HEAD',
         });
-        if (response.status !== 200) {
+
+        if (response.status !== 200 && response.status !== 206) {
             throw new Error(await extractError(response));
         }
 
-        const responseBlob = await response.blob();
-        const responseText = await responseBlob.text();
         return {
-            responseText,
-            responseBlob,
             headers: response.headers,
         }
     }

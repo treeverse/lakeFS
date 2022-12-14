@@ -2848,6 +2848,56 @@ func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, re
 	writeResponse(w, http.StatusOK, response)
 }
 
+func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, repository string, ref string, params HeadObjectParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadObjectAction,
+			Resource: permissions.ObjectArn(repository, params.Path),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "head_object", r, repository, ref, "")
+
+	_, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, err) {
+		return
+	}
+
+	// read the FS entry
+	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
+	if c.handleAPIError(ctx, w, err) {
+		return
+	}
+	c.Logger.Tracef("get repo %s ref %s path %s: %+v", repository, ref, params.Path, entry)
+	if entry.Expired {
+		writeError(w, http.StatusGone, "resource expired")
+		return
+	}
+
+	etag := httputil.ETag(entry.Checksum)
+	w.Header().Set("ETag", etag)
+	lastModified := httputil.HeaderTimestamp(entry.CreationDate)
+	w.Header().Set("Last-Modified", lastModified)
+	w.Header().Set("Accept-Ranges", "bytes")
+	w.Header().Set("Content-Type", entry.ContentType)
+
+	// calculate possible byte range, if any.
+	if params.Range != nil {
+		rng, err := httputil.ParseRange(*params.Range, entry.Size)
+		if err != nil {
+			writeError(w, http.StatusRequestedRangeNotSatisfiable, "Requested Range Not Satisfiable")
+			return
+		}
+		w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", rng.EndOffset-rng.StartOffset+1))
+		w.WriteHeader(http.StatusPartialContent)
+	} else {
+		w.Header().Set("Content-Length", fmt.Sprint(entry.Size))
+	}
+}
+
 func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repository string, ref string, params GetObjectParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -2912,8 +2962,6 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	w.Header().Set("ETag", etag)
 	lastModified := httputil.HeaderTimestamp(entry.CreationDate)
 	w.Header().Set("Last-Modified", lastModified)
-	cd := mime.FormatMediaType("attachment", map[string]string{"filename": filepath.Base(entry.Path)})
-	w.Header().Set("Content-Disposition", cd)
 	w.Header().Set("Content-Type", entry.ContentType)
 	_, err = io.Copy(w, reader)
 	if err != nil {

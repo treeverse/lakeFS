@@ -3,7 +3,8 @@ import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
 import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
 import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
 import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
-import {VoidLogger} from "@duckdb/duckdb-wasm/dist/types/src/log";
+
+
 
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
@@ -16,25 +17,33 @@ const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
     },
 };
 // Select a bundle based on browser checks
-const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
+let _bundle: duckdb.DuckDBBundle;
+let bundlePromise: Promise<duckdb.DuckDBBundle>;
 
+function getBundle(): Promise<duckdb.DuckDBBundle> {
+    if (_bundle) return new Promise(() => _bundle)
+    if (!bundlePromise) {
+        bundlePromise = duckdb.selectBundle(MANUAL_BUNDLES)
+    }
+    return bundlePromise
+}
 
-export async function sampleParquet(filename: string, content: Blob) {
+export async function withConnection(cb: (conn: duckdb.AsyncDuckDBConnection) => void) {
     // Instantiate the async version of DuckDB-wasm
-    const worker = new Worker(bundle.mainWorker!);
+    const bundle = await getBundle();
+    console.log()
+    if (!bundle.mainWorker) {
+        throw Error("could not initialize DuckDB")
+    }
+    const worker = new Worker(bundle.mainWorker);
     const logger = new duckdb.VoidLogger();
     const db = new duckdb.AsyncDuckDB(logger, worker);
     await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-    const buff = new Uint8Array(await content.arrayBuffer())
-    await db.registerFileBuffer(filename, buff)
-    const c = await db.connect()
-    const results =  {
-        sample: (await c.query(`SELECT * FROM "${filename}" LIMIT 100`)).toArray(),
-        totalRows: (await c.query(`SELECT COUNT(*) total FROM "${filename}"`)).toArray(),
-        schema: (await c.query(`DESCRIBE SELECT * FROM "${filename}"`)).toArray(),
-    }
-    await c.close()
+    const conn = await db.connect()
+    await conn.query(`CREATE MACRO lakefs_object(repoId, refId, path) AS '${document.location.protocol}//${document.location.host}/api/v1/repositories/' || repoId || '/refs/' || refId || '/objects?path=' || replace(path, '/', '%2F');`)
+    const results = await cb(conn)
+    await conn.close()
     await db.terminate()
-    return results;
+    await worker.terminate()
+    return results
 }
-

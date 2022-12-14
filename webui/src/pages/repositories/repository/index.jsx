@@ -23,7 +23,7 @@ const RepositoryPage = () => {
             <Route exact path="/repositories/:repoId/objects">
                 <RepositoryObjectsPage/>
             </Route>
-            <Route path="/repositories/:repoId/objects/:objectName">
+            <Route path="/repositories/:repoId/object">
                 <RepositoryObjectsViewPage />
             </Route>
             <Route path="/repositories/:repoId/changes">

@@ -52,6 +52,13 @@ class TestObjectsApi(unittest.TestCase):
         """
         pass
 
+    def test_head_object(self):
+        """Test case for head_object
+
+        check if object exists  # noqa: E501
+        """
+        pass
+
     def test_list_objects(self):
         """Test case for list_objects
 

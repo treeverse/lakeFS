@@ -582,3 +582,33 @@ td .form-group {
   text-align: right;
   margin-right: 5px;
 }
+
+.object-viewer-sql-input.form-control {
+  background-color: #333333;
+  font-size: .8rem;
+  font-family: "SFMono-Regular", menlo, consolas, monospace;
+  color: #BBB;
+}
+.object-viewer-sql-input.form-control:focus {
+  background-color: #333333;
+  color: #FFFFFF;
+}
+.object-viewer-sql-results {
+  max-height: 350px;
+  overflow: auto;
+  font-size: .7rem;
+}
+.image-container {
+  padding: 30px;
+}
+.image-container img {
+  max-width: 100%;
+}
+.object-viewer-pdf {
+  margin: 20px;
+}
+
+.object-viewer-pdf object {
+  width: 100%;
+  height: 600px;
+}
