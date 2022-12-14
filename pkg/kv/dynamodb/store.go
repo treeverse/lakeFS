@@ -99,9 +99,27 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 	}, nil
 }
 
+// isTableExist will try to describeTable and return bool status, error is returned only in case err != ResourceNotFoundException
+func isTableExist(ctx context.Context, svc *dynamodb.DynamoDB, table string) (bool, error) {
+	describeOutput, err := svc.DescribeTableWithContext(ctx, &dynamodb.DescribeTableInput{
+		TableName: aws.String(table),
+	})
+	if err != nil {
+		if _, ok := err.(*dynamodb.ResourceNotFoundException); ok {
+			return false, nil
+		}
+	}
+	return err == nil && describeOutput != nil, err
+}
+
 // setupKeyValueDatabase setup everything required to enable kv over postgres
 func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *kvparams.DynamoDB) error {
 	// main kv table
+	exist, err := isTableExist(ctx, svc, params.TableName)
+	if exist || err != nil {
+		return err
+	}
+
 	table, err := svc.CreateTableWithContext(ctx, &dynamodb.CreateTableInput{
 		TableName: aws.String(params.TableName),
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
