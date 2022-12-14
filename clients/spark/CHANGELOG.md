@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6.0 - 2022-12-14
+What's new:
+* Beta feature: Uncommitted garbage collection.
+Bug fixes:
+* GC JSON summary write using UTF-8 (#4644)
+
 ## v0.5.2 - 2022-11-29
 Bug fixes:
 * Identify the region of the S3 bucket if it's not reachable and update the initialized S3 client using that region.
