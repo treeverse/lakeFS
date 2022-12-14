@@ -4,7 +4,7 @@
 What's new:
 * Beta feature: Uncommitted garbage collection.
 Bug fixes:
-* GC JSON summary write using UTF-8 (#4644)
+* Correctly write GC JSON summary object using UTF-8 (#4644)
 
 ## v0.5.2 - 2022-11-29
 Bug fixes:
