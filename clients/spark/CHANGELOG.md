@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6.0 - 2022-12-14
+What's new:
+* Beta feature: Uncommitted garbage collection. [Documentation](https://docs.lakefs.io/howto/garbage-collection.html#beta:-deleting-uncommitted-objects)
+Bug fixes:
+* Correctly write GC JSON summary object using UTF-8 (#4644)
+
 ## v0.5.2 - 2022-11-29
 Bug fixes:
 * Identify the region of the S3 bucket if it's not reachable and update the initialized S3 client using that region.
