@@ -182,7 +182,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
-  s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.5.2/lakefs-spark-client-312-hadoop3-assembly-0.5.2.jar \
+  s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.6.0/lakefs-spark-client-312-hadoop3-assembly-0.6.0.jar \
   example-repo
   ```
 
@@ -365,6 +365,7 @@ Currently, GC backup and restore is available for Spark 3.1.2 and 3.2.1, but it 
 
 First, download the lakeFS Spark client Uber-jar. The Uber-jar can be found on a public S3 location:
 `http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/${CLIENT_VERSION}/lakefs-spark-client-312-hadoop3-assembly-${CLIENT_VERSION}.jar`
+**Note** GC backup and restore is available from version 0.5.2 of lakeFS Spark client.
 
 Running instructions:
 
