@@ -661,9 +661,12 @@ object GarbageCollector {
 
     val stream = dstFS.create(dstPath)
     try {
-      stream.writeChars(compact(render(jsonSummary)))
+      val bytes = compact(render(jsonSummary)).getBytes("UTF-8")
+      stream.write(bytes)
     } finally {
       stream.close()
     }
   }
+
+  def writeJsonSummaryForTesting = writeJsonSummary _
 }
