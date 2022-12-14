@@ -305,6 +305,7 @@ jobs:
           --conf spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ
           --conf spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
           --conf spark.hadoop.lakefs.debug.gc.uncommitted_min_age_seconds=1
+          --conf spark.hadoop.lakefs.gc.do_mark=true
           --conf spark.hadoop.lakefs.gc.do_sweep=true
           --class io.treeverse.gc.UncommittedGarbageCollector
           --packages org.apache.hadoop:hadoop-aws:2.7.7

@@ -195,15 +195,6 @@ object UncommittedGarbageCollector {
           .toDF()
         removed.collect()
       }
-    } catch {
-      case e: GCExceptions =>
-        success = false
-        println(e.getMessage)
-        System.exit(1)
-      case e: Throwable =>
-        success = false
-        println(e.getStackTrace.mkString("Array(", ", ", ")"))
-        System.exit(2)
     } finally {
       if (runID.nonEmpty && shouldMark) {
         writeReports(
