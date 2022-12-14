@@ -3,7 +3,7 @@
 ## v0.6.0 - 2022-12-14
 
 What's new:
-* Beta feature: Uncommitted garbage collection. [Documentation](https://docs.lakefs.io/howto/garbage-collection.html#beta:-deleting-uncommitted-objects)
+* Beta feature: Uncommitted garbage collection. [Documentation](https://docs.lakefs.io/howto/garbage-collection.html#beta-deleting-uncommitted-objects)
 
 Bug fixes:
 * Correctly write GC JSON summary object using UTF-8 (#4644)
