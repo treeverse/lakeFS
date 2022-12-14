@@ -16,6 +16,7 @@ from lakefs_client.model.auth_capabilities import AuthCapabilities
 from lakefs_client.model.authentication_token import AuthenticationToken
 from lakefs_client.model.branch_creation import BranchCreation
 from lakefs_client.model.branch_protection_rule import BranchProtectionRule
+from lakefs_client.model.comm_prefs_input import CommPrefsInput
 from lakefs_client.model.commit import Commit
 from lakefs_client.model.commit_creation import CommitCreation
 from lakefs_client.model.commit_list import CommitList
@@ -45,6 +46,7 @@ from lakefs_client.model.merge_result import MergeResult
 from lakefs_client.model.merge_result_summary import MergeResultSummary
 from lakefs_client.model.meta_range_creation import MetaRangeCreation
 from lakefs_client.model.meta_range_creation_response import MetaRangeCreationResponse
+from lakefs_client.model.next_step import NextStep
 from lakefs_client.model.object_error import ObjectError
 from lakefs_client.model.object_error_list import ObjectErrorList
 from lakefs_client.model.object_stage_creation import ObjectStageCreation

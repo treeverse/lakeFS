@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.87.1
+
+Bug fixes:
+- Fix UI "Authorization/My Credentials" view returns error (#4816)
+
+## v0.87.0
+
+What's new:
+
+- Allow adding hooks without depending on an external service (#4779)
+- Add support for S3 buckets using SSE with KMS Secret (#4726)
+- Allow user to subscribe for email feature updates and/or security alerts during setup (#4667)
+
+Bug fixes:
+
+- [GC]: Correctly handle deleting absolute paths under the storage namespace (#4763)
+- Ref lookup order now prefers commit and branch refs for user actions (#4743)
+- Fix Python LakeFSClient missing API tags (#4606)
+
 ## v0.86.0
 
 What's new:

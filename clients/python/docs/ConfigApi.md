@@ -8,6 +8,7 @@ Method | HTTP request | Description
 [**get_setup_state**](ConfigApi.md#get_setup_state) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
 [**get_storage_config**](ConfigApi.md#get_storage_config) | **GET** /config/storage | 
 [**setup**](ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
+[**setup_comm_prefs**](ConfigApi.md#setup_comm_prefs) | **POST** /setup_comm_prefs | setup communications preferences
 
 
 # **get_lake_fs_version**
@@ -335,6 +336,80 @@ No authorization required
 **200** | user created successfully |  -  |
 **400** | bad request |  -  |
 **409** | setup was already called |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **setup_comm_prefs**
+> NextStep setup_comm_prefs(comm_prefs_input)
+
+setup communications preferences
+
+### Example
+
+
+```python
+import time
+import lakefs_client
+from lakefs_client.api import config_api
+from lakefs_client.model.comm_prefs_input import CommPrefsInput
+from lakefs_client.model.error import Error
+from lakefs_client.model.next_step import NextStep
+from pprint import pprint
+# Defining the host is optional and defaults to http://localhost/api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_client.Configuration(
+    host = "http://localhost/api/v1"
+)
+
+
+# Enter a context with an instance of the API client
+with lakefs_client.ApiClient() as api_client:
+    # Create an instance of the API class
+    api_instance = config_api.ConfigApi(api_client)
+    comm_prefs_input = CommPrefsInput(
+        email="email_example",
+        feature_updates=True,
+        security_updates=True,
+    ) # CommPrefsInput | 
+
+    # example passing only required values which don't have defaults set
+    try:
+        # setup communications preferences
+        api_response = api_instance.setup_comm_prefs(comm_prefs_input)
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling ConfigApi->setup_comm_prefs: %s\n" % e)
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **comm_prefs_input** | [**CommPrefsInput**](CommPrefsInput.md)|  |
+
+### Return type
+
+[**NextStep**](NextStep.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | communication preferences saved successfully |  -  |
+**409** | setup was already completed |  -  |
+**412** | wrong setup state for this operation |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

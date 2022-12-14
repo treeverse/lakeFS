@@ -15,6 +15,46 @@ security:
 - cookie_auth: []
 - oidc_auth: []
 paths:
+  /setup_comm_prefs:
+    post:
+      operationId: setupCommPrefs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommPrefsInput'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NextStep'
+          description: communication preferences saved successfully
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: setup was already completed
+        "412":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: wrong setup state for this operation
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security: []
+      summary: setup communications preferences
+      tags:
+      - config
+      x-contentType: application/json
+      x-accepts: application/json
   /setup_lakefs:
     get:
       operationId: getSetupState
@@ -5480,6 +5520,7 @@ components:
           enum:
           - initialized
           - not_initialized
+          - comm_prefs_done
           type: string
         oidc_enabled:
           type: boolean
@@ -5519,6 +5560,35 @@ components:
           $ref: '#/components/schemas/AccessKeyCredentials'
       required:
       - username
+      type: object
+    CommPrefsInput:
+      example:
+        featureUpdates: true
+        email: email
+        securityUpdates: true
+      properties:
+        email:
+          description: the provided email
+          type: string
+        featureUpdates:
+          description: was "feature updates" checked
+          type: boolean
+        securityUpdates:
+          description: was "security updates" checked
+          type: boolean
+      required:
+      - featureUpdates
+      - securityUpdates
+      type: object
+    NextStep:
+      example:
+        nextStep: nextStep
+      properties:
+        nextStep:
+          description: the next step in the setup process
+          type: string
+      required:
+      - nextStep
       type: object
     UpdatePasswordByToken:
       example:

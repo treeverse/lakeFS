@@ -3,8 +3,9 @@ import queryString from "query-string"
 export const API_ENDPOINT = '/api/v1';
 export const DEFAULT_LISTING_AMOUNT = 100;
 
-export const SETUP_STATE_INITIALIZED = "initialized"
-export const SETUP_STATE_NOT_INITIALIZED = "not_initialized"
+export const SETUP_STATE_INITIALIZED = "initialized";
+export const SETUP_STATE_NOT_INITIALIZED = "not_initialized";
+export const SETUP_STATE_COMMUNICATION_PERFS_DONE = "comm_prefs_done";
 
 class LocalCache {
     get(key) {
@@ -819,6 +820,30 @@ class Setup {
             },
             body: JSON.stringify({username: username}),
         });
+        switch (response.status) {
+            case 200:
+                return response.json();
+            case 409:
+                throw new Error('Setup is already complete.');
+            default:
+                throw new Error('Unknown');
+        }
+    }
+
+    async commPrefs(email, updates, security) {
+        const response = await apiRequest('/setup_comm_prefs', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email,
+                featureUpdates: updates,
+                securityUpdates: security,
+            }),
+        });
+
         switch (response.status) {
             case 200:
                 return response.json();

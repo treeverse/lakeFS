@@ -161,6 +161,7 @@ Class | Method | HTTP request | Description
 *ConfigApi* | [**get_setup_state**](docs/ConfigApi.md#get_setup_state) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
 *ConfigApi* | [**get_storage_config**](docs/ConfigApi.md#get_storage_config) | **GET** /config/storage | 
 *ConfigApi* | [**setup**](docs/ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
+*ConfigApi* | [**setup_comm_prefs**](docs/ConfigApi.md#setup_comm_prefs) | **POST** /setup_comm_prefs | setup communications preferences
 *HealthCheckApi* | [**health_check**](docs/HealthCheckApi.md#health_check) | **GET** /healthcheck | 
 *ImportApi* | [**create_meta_range**](docs/ImportApi.md#create_meta_range) | **POST** /repositories/{repository}/branches/metaranges | create a lakeFS metarange file from the given ranges
 *ImportApi* | [**ingest_range**](docs/ImportApi.md#ingest_range) | **POST** /repositories/{repository}/branches/ranges | create a lakeFS range file from the source uri
@@ -211,6 +212,7 @@ Class | Method | HTTP request | Description
  - [AuthenticationToken](docs/AuthenticationToken.md)
  - [BranchCreation](docs/BranchCreation.md)
  - [BranchProtectionRule](docs/BranchProtectionRule.md)
+ - [CommPrefsInput](docs/CommPrefsInput.md)
  - [Commit](docs/Commit.md)
  - [CommitCreation](docs/CommitCreation.md)
  - [CommitList](docs/CommitList.md)
@@ -240,6 +242,7 @@ Class | Method | HTTP request | Description
  - [MergeResultSummary](docs/MergeResultSummary.md)
  - [MetaRangeCreation](docs/MetaRangeCreation.md)
  - [MetaRangeCreationResponse](docs/MetaRangeCreationResponse.md)
+ - [NextStep](docs/NextStep.md)
  - [ObjectError](docs/ObjectError.md)
  - [ObjectErrorList](docs/ObjectErrorList.md)
  - [ObjectStageCreation](docs/ObjectStageCreation.md)
