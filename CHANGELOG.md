@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.87.1
+
+Bug fixes:
+- Fix UI "Authorization/My Credentials" view returns error (#4816)
+
 ## v0.87.0
 
 What's new:
