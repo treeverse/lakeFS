@@ -20,8 +20,11 @@ trait TempDirectory {
   def withTempDirectory(testMethod: (Path) => Any) {
     val tempDir = Files.createTempDirectory("test-gc")
 
-    testMethod(tempDir)
-    FileUtils.deleteDirectory(tempDir.toFile)
+    try {
+      testMethod(tempDir)
+    } finally {
+      FileUtils.deleteDirectory(tempDir.toFile)
+    }
   }
 }
 
