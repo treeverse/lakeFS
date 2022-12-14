@@ -223,7 +223,6 @@ class GarbageCollectorJsonOutputSpec extends AnyFunSpec with Matchers with Spark
               .toSeq
             written.size should be(1)
             val actualBytes = Files.readAllBytes(Paths.get(written(0).toString))
-            Console.out.println("GOT: " + new String(actualBytes, "UTF-8"))
             // Explicitly verify that we received UTF-8 encoded data!
             val actual = JsonMethods.parse(new String(actualBytes, "UTF-8"))
             (actual \ "gc_rules") should be(JString(gcRules))
