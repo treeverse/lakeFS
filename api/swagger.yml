@@ -2839,23 +2839,16 @@ paths:
               schema:
                 type: string
         401:
-          $ref: "#/components/responses/Unauthorized"
+          description: Unauthorized
         404:
-          $ref: "#/components/responses/NotFound"
+          description: object not found
         default:
-          $ref: "#/components/responses/ServerError"
+          description: internal server error
         410:
           description: object expired
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
         416:
           description: Requested Range Not Satisfiable
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
+
 
   /repositories/{repository}/branches/{branch}/staging/backing:
     parameters:

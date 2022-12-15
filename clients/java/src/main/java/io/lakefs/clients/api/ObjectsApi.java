@@ -676,10 +676,10 @@ public class ObjectsApi {
         <tr><td> 200 </td><td> object exists </td><td>  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 206 </td><td> partial object content info </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> object not found </td><td>  -  </td></tr>
         <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
         <tr><td> 416 </td><td> Requested Range Not Satisfiable </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> internal server error </td><td>  -  </td></tr>
      </table>
      */
     public okhttp3.Call headObjectCall(String repository, String ref, String path, String range, final ApiCallback _callback) throws ApiException {
@@ -705,7 +705,7 @@ public class ObjectsApi {
         }
 
         final String[] localVarAccepts = {
-            "application/json"
+            
         };
         final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
         if (localVarAccept != null) {
@@ -760,10 +760,10 @@ public class ObjectsApi {
         <tr><td> 200 </td><td> object exists </td><td>  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 206 </td><td> partial object content info </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> object not found </td><td>  -  </td></tr>
         <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
         <tr><td> 416 </td><td> Requested Range Not Satisfiable </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> internal server error </td><td>  -  </td></tr>
      </table>
      */
     public void headObject(String repository, String ref, String path, String range) throws ApiException {
@@ -785,10 +785,10 @@ public class ObjectsApi {
         <tr><td> 200 </td><td> object exists </td><td>  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 206 </td><td> partial object content info </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> object not found </td><td>  -  </td></tr>
         <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
         <tr><td> 416 </td><td> Requested Range Not Satisfiable </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> internal server error </td><td>  -  </td></tr>
      </table>
      */
     public ApiResponse<Void> headObjectWithHttpInfo(String repository, String ref, String path, String range) throws ApiException {
@@ -812,10 +812,10 @@ public class ObjectsApi {
         <tr><td> 200 </td><td> object exists </td><td>  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 206 </td><td> partial object content info </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> object not found </td><td>  -  </td></tr>
         <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
         <tr><td> 416 </td><td> Requested Range Not Satisfiable </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> internal server error </td><td>  -  </td></tr>
      </table>
      */
     public okhttp3.Call headObjectAsync(String repository, String ref, String path, String range, final ApiCallback<Void> _callback) throws ApiException {

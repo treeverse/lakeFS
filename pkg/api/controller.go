@@ -11,6 +11,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/http/httptest"
 	"net/mail"
 	"net/url"
 	"path/filepath"
@@ -2858,18 +2859,22 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	c.LogAction(ctx, "head_object", r, repository, ref, "")
 
 	_, err := c.Catalog.GetRepository(ctx, repository)
-	if c.handleAPIError(ctx, w, err) {
+	rr := httptest.NewRecorder()
+	if c.handleAPIError(ctx, rr, err) {
+		w.WriteHeader(rr.Code)
 		return
 	}
 
 	// read the FS entry
 	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
+	rr = httptest.NewRecorder()
 	if c.handleAPIError(ctx, w, err) {
+		w.WriteHeader(rr.Code)
 		return
 	}
 	c.Logger.Tracef("get repo %s ref %s path %s: %+v", repository, ref, params.Path, entry)
 	if entry.Expired {
-		writeError(w, http.StatusGone, "resource expired")
+		w.WriteHeader(http.StatusGone)
 		return
 	}
 
@@ -2884,7 +2889,7 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	if params.Range != nil {
 		rng, err := httputil.ParseRange(*params.Range, entry.Size)
 		if err != nil {
-			writeError(w, http.StatusRequestedRangeNotSatisfiable, "Requested Range Not Satisfiable")
+			w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
 			return
 		}
 		w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))

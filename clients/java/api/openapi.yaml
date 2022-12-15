@@ -3131,34 +3131,14 @@ paths:
                 type: string
               style: simple
         "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
           description: Unauthorized
         "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
+          description: object not found
         default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
+          description: internal server error
         "410":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
           description: object expired
         "416":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
           description: Requested Range Not Satisfiable
       summary: check if object exists
       tags:

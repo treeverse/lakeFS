@@ -463,7 +463,6 @@ check if object exists
 import time
 import lakefs_client
 from lakefs_client.api import objects_api
-from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
@@ -545,7 +544,7 @@ void (empty response body)
 ### HTTP request headers
 
  - **Content-Type**: Not defined
- - **Accept**: application/json
+ - **Accept**: Not defined
 
 
 ### HTTP response details
@@ -555,10 +554,10 @@ void (empty response body)
 **200** | object exists |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
 **206** | partial object content info |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
 **401** | Unauthorized |  -  |
-**404** | Resource Not Found |  -  |
+**404** | object not found |  -  |
 **410** | object expired |  -  |
 **416** | Requested Range Not Satisfiable |  -  |
-**0** | Internal Server Error |  -  |
+**0** | internal server error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

@@ -455,7 +455,7 @@ null (empty response body)
 ### HTTP request headers
 
  - **Content-Type**: Not defined
- - **Accept**: application/json
+ - **Accept**: Not defined
 
 ### HTTP response details
 | Status code | Description | Response headers |
@@ -463,10 +463,10 @@ null (empty response body)
 **200** | object exists |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
 **206** | partial object content info |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
 **401** | Unauthorized |  -  |
-**404** | Resource Not Found |  -  |
+**404** | object not found |  -  |
 **410** | object expired |  -  |
 **416** | Requested Range Not Satisfiable |  -  |
-**0** | Internal Server Error |  -  |
+**0** | internal server error |  -  |
 
 <a name="listObjects"></a>
 # **listObjects**
