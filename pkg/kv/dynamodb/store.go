@@ -105,12 +105,12 @@ func isTableExist(ctx context.Context, svc *dynamodb.DynamoDB, table string) (bo
 		TableName: aws.String(table),
 	})
 	if err != nil {
-		_, ok := err.(*dynamodb.ResourceNotFoundException)
-		if ok {
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == dynamodb.ErrCodeResourceNotFoundException {
 			return false, nil
 		}
+		return false, err
 	}
-	return err == nil && describeOutput != nil, err
+	return true, nil
 }
 
 // setupKeyValueDatabase setup everything required to enable kv over postgres
