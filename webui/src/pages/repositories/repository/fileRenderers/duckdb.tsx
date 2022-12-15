@@ -31,7 +31,6 @@ function getBundle(): Promise<duckdb.DuckDBBundle> {
 export async function withConnection(cb: (conn: duckdb.AsyncDuckDBConnection) => void) {
     // Instantiate the async version of DuckDB-wasm
     const bundle = await getBundle();
-    console.log()
     if (!bundle.mainWorker) {
         throw Error("could not initialize DuckDB")
     }

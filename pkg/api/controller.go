@@ -2858,16 +2858,9 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	ctx := r.Context()
 	c.LogAction(ctx, "head_object", r, repository, ref, "")
 
-	_, err := c.Catalog.GetRepository(ctx, repository)
-	rr := httptest.NewRecorder()
-	if c.handleAPIError(ctx, rr, err) {
-		w.WriteHeader(rr.Code)
-		return
-	}
-
 	// read the FS entry
 	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
-	rr = httptest.NewRecorder()
+	rr := httptest.NewRecorder()
 	if c.handleAPIError(ctx, w, err) {
 		w.WriteHeader(rr.Code)
 		return

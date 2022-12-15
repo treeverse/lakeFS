@@ -131,7 +131,7 @@ export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loadin
                     <span className="object-viewer-buttons">
                         <a 
                             href={objectUrl}
-                            download={true}
+                            download={path.split('/').pop()}
                             className="btn btn-primary btn-sm download-button mr-1">
                                 <FaDownload />
                         </a>

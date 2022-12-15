@@ -28,8 +28,6 @@ import {RefTypeBranch, RefTypeCommit} from "../../../constants";
 import {copyTextToClipboard} from "../controls";
 import Modal from "react-bootstrap/Modal";
 
-const PREVIEW_SIZE_LIMIT = 5.243e+8; // 4MB in bytes
-
 export const humanSize = (bytes) => {
     if (!bytes) return '0.0 B';
     const e = Math.floor(Math.log(bytes) / Math.log(1024));
@@ -157,10 +155,11 @@ const StatModal = ({ show, onHide, entry }) => {
 
 
 const PathLink = ({repoId, reference, path, children, as = null}) => {
+    const name = path.split('/').pop()
     const link = linkToPath(repoId, reference.id, path);
     if (as === null)
-        return (<a href={link} download={true}>{children}</a>);
-    return React.createElement(as, {href: link, download: true}, children);
+        return (<a href={link} download={name}>{children}</a>);
+    return React.createElement(as, {href: link, download: name}, children);
 };
 
 const EntryRow = ({repo, reference, path, entry, onDelete, showActions}) => {
@@ -193,11 +192,7 @@ const EntryRow = ({repo, reference, path, entry, onDelete, showActions}) => {
         const filePathQuery = {
             ref: query.ref,
             path: query.path,
-        };
-        if (entry.size_bytes > PREVIEW_SIZE_LIMIT) {
-            filePathQuery["big"] = true;
         }
-
         button = (<Link href={{pathname: '/repositories/:repoId/object', query: filePathQuery, params: params}}>{buttonText}</Link>);
     }
 
