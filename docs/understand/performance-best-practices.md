@@ -14,14 +14,12 @@ has_children: false
 ## Overview
 Use this guide to achieve the best performance with lakeFS.
 
-## Avoid huge commits
-If you're having issues with slow commits, consider performing smaller commits. The more objects in the commit, the longer the commit will take to complete.
-Moreover, a commit should represent a meaningful point in your data's lifecycle, so limiting the commit size will create a more comprehensible commit history.
-As a rule of thumb, try to keep your commits smaller than 1M objects.
-
 ## Avoid concurrent commits/merges
 Just like in Git, branch history is composed by commits and is linear by nature. 
 Concurrent commits/merges on the same branch result in a race. The first operation will finish successfully while the rest will retry.
+
+## Perform meaningful commits
+It's a good idea to perform commits that are meaningful in the senese that they represent a logical point in your data's lifecycle. While lakeFS supports arbirartily large commits, avoiding commits with a huge number of objects will result in a more comprehensible commit history.
 
 ## Use zero-copy import
 To import object into lakeFS, either a single time or regularly, lakeFS offers a [zero-copy import](../howto/import.md#zero-copy-import) feature.
