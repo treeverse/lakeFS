@@ -12,6 +12,7 @@
     "typesync": "npx typesync"
   },
   "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.20.0",
     "@mockingjay-io/react-diff-viewer": "^1.0.0",
     "@mui/material": "^5.6.4",
     "@primer/octicons-react": "^13.0.0",

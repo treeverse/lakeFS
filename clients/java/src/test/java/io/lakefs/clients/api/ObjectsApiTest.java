@@ -109,6 +109,24 @@ public class ObjectsApiTest {
     }
     
     /**
+     * check if object exists
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void headObjectTest() throws ApiException {
+        String repository = null;
+        String ref = null;
+        String path = null;
+        String range = null;
+                api.headObject(repository, ref, path, range);
+        // TODO: test validations
+    }
+    
+    /**
      * list objects under a given prefix
      *
      * 

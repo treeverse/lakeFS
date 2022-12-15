@@ -8,6 +8,7 @@ Method | HTTP request | Description
 [**delete_objects**](ObjectsApi.md#delete_objects) | **POST** /repositories/{repository}/branches/{branch}/objects/delete | delete objects
 [**get_object**](ObjectsApi.md#get_object) | **GET** /repositories/{repository}/refs/{ref}/objects | get object content
 [**get_underlying_properties**](ObjectsApi.md#get_underlying_properties) | **GET** /repositories/{repository}/refs/{ref}/objects/underlyingProperties | get object properties on underlying storage
+[**head_object**](ObjectsApi.md#head_object) | **HEAD** /repositories/{repository}/refs/{ref}/objects | check if object exists
 [**list_objects**](ObjectsApi.md#list_objects) | **GET** /repositories/{repository}/refs/{ref}/objects/ls | list objects under a given prefix
 [**stage_object**](ObjectsApi.md#stage_object) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
 [**stat_object**](ObjectsApi.md#stat_object) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
@@ -332,8 +333,8 @@ Name | Type | Description  | Notes
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | object content |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  * Content-Disposition -  <br>  |
-**206** | partial object content |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  * Content-Disposition -  <br>  |
+**200** | object content |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
+**206** | partial object content |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **410** | object expired |  -  |
@@ -443,6 +444,120 @@ Name | Type | Description  | Notes
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **head_object**
+> head_object(repository, ref, path)
+
+check if object exists
+
+### Example
+
+* Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
+* Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
+
+```python
+import time
+import lakefs_client
+from lakefs_client.api import objects_api
+from pprint import pprint
+# Defining the host is optional and defaults to http://localhost/api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_client.Configuration(
+    host = "http://localhost/api/v1"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure HTTP basic authorization: basic_auth
+configuration = lakefs_client.Configuration(
+    username = 'YOUR_USERNAME',
+    password = 'YOUR_PASSWORD'
+)
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_client.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
+# Enter a context with an instance of the API client
+with lakefs_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = objects_api.ObjectsApi(api_client)
+    repository = "repository_example" # str | 
+    ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
+    path = "path_example" # str | relative to the ref
+    range = "bytes=0-1023" # str | Byte range to retrieve (optional)
+
+    # example passing only required values which don't have defaults set
+    try:
+        # check if object exists
+        api_instance.head_object(repository, ref, path)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling ObjectsApi->head_object: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # check if object exists
+        api_instance.head_object(repository, ref, path, range=range)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling ObjectsApi->head_object: %s\n" % e)
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **str**|  |
+ **ref** | **str**| a reference (could be either a branch or a commit ID) |
+ **path** | **str**| relative to the ref |
+ **range** | **str**| Byte range to retrieve | [optional]
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: Not defined
+
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | object exists |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
+**206** | partial object content info |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
+**401** | Unauthorized |  -  |
+**404** | object not found |  -  |
+**410** | object expired |  -  |
+**416** | Requested Range Not Satisfiable |  -  |
+**0** | internal server error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

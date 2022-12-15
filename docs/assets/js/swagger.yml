@@ -2753,9 +2753,6 @@ paths:
             ETag:
               schema:
                 type: string
-            Content-Disposition:
-              schema:
-                type: string
         206:
           description: partial object content
           content:
@@ -2778,9 +2775,6 @@ paths:
             ETag:
               schema:
                 type: string
-            Content-Disposition:
-              schema:
-                type: string
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2799,6 +2793,61 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+    head:
+      tags:
+        - objects
+      operationId: headObject
+      summary: check if object exists
+      parameters:
+        - in: header
+          name: Range
+          description: Byte range to retrieve
+          example: "bytes=0-1023"
+          required: false
+          schema:
+            type: string
+            pattern: '^bytes=((\d*-\d*,? ?)+)$'
+      responses:
+        200:
+          description: object exists
+          headers:
+            Content-Length:
+              schema:
+                type: integer
+                format: int64
+            Last-Modified:
+              schema:
+                type: string
+            ETag:
+              schema:
+                type: string
+        206:
+          description: partial object content info
+          headers:
+            Content-Length:
+              schema:
+                type: integer
+                format: int64
+            Content-Range:
+              schema:
+                type: string
+                pattern: '^bytes=((\d*-\d*,? ?)+)$'
+            Last-Modified:
+              schema:
+                type: string
+            ETag:
+              schema:
+                type: string
+        401:
+          description: Unauthorized
+        404:
+          description: object not found
+        410:
+          description: object expired
+        416:
+          description: Requested Range Not Satisfiable
+        default:
+          description: internal server error
 
   /repositories/{repository}/branches/{branch}/staging/backing:
     parameters:

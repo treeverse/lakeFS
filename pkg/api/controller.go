@@ -1777,14 +1777,14 @@ func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repositor
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, err error) bool {
+func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.ResponseWriter, err error, cb func(w http.ResponseWriter, code int, v interface{})) bool {
 	switch {
 	case errors.Is(err, catalog.ErrNotFound),
 		errors.Is(err, graveler.ErrNotFound),
 		errors.Is(err, actions.ErrNotFound),
 		errors.Is(err, auth.ErrNotFound),
 		errors.Is(err, kv.ErrNotFound):
-		writeError(w, http.StatusNotFound, err)
+		cb(w, http.StatusNotFound, err)
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
 		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
@@ -1796,37 +1796,41 @@ func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, 
 		errors.Is(err, graveler.ErrInvalidRef),
 		errors.Is(err, graveler.ErrInvalidValue),
 		errors.Is(err, actions.ErrParamConflict):
-		writeError(w, http.StatusBadRequest, err)
+		cb(w, http.StatusBadRequest, err)
 
 	case errors.Is(err, graveler.ErrNotUnique),
 		errors.Is(err, graveler.ErrConflictFound),
 		errors.Is(err, graveler.ErrRevertMergeNoParent):
-		writeError(w, http.StatusConflict, err)
+		cb(w, http.StatusConflict, err)
 
 	case errors.Is(err, catalog.ErrFeatureNotSupported):
-		writeError(w, http.StatusNotImplemented, err)
+		cb(w, http.StatusNotImplemented, err)
 
 	case errors.Is(err, graveler.ErrLockNotAcquired):
-		writeError(w, http.StatusInternalServerError, "branch is currently locked, try again later")
+		cb(w, http.StatusInternalServerError, "branch is currently locked, try again later")
 
 	case errors.Is(err, adapter.ErrDataNotFound):
-		writeError(w, http.StatusGone, "No data")
+		cb(w, http.StatusGone, "No data")
 
 	case errors.Is(err, auth.ErrAlreadyExists):
-		writeError(w, http.StatusConflict, "Already exists")
+		cb(w, http.StatusConflict, "Already exists")
 
 	case errors.Is(err, graveler.ErrTooManyTries):
-		writeError(w, http.StatusLocked, "Too many attempts, try again later")
+		cb(w, http.StatusLocked, "Too many attempts, try again later")
 
 	case err != nil:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
-		writeError(w, http.StatusInternalServerError, err)
+		cb(w, http.StatusInternalServerError, err)
 
 	default:
 		return false
 	}
 
 	return true
+}
+
+func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, err error) bool {
+	return c.handleAPIErrorCallback(ctx, w, err, writeError)
 }
 
 func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body ResetBranchJSONRequestBody, repository string, branch string) {
@@ -2845,6 +2849,55 @@ func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, re
 	writeResponse(w, http.StatusOK, response)
 }
 
+func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, repository string, ref string, params HeadObjectParams) {
+	if !c.authorizeCallback(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadObjectAction,
+			Resource: permissions.ObjectArn(repository, params.Path),
+		},
+	}, func(w http.ResponseWriter, code int, v interface{}) {
+		w.WriteHeader(code)
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "head_object", r, repository, ref, "")
+
+	// read the FS entry
+	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
+	if err != nil {
+		c.handleAPIErrorCallback(ctx, w, err, func(w http.ResponseWriter, code int, v interface{}) {
+			w.WriteHeader(code)
+		})
+		return
+	}
+	if entry.Expired {
+		w.WriteHeader(http.StatusGone)
+		return
+	}
+
+	etag := httputil.ETag(entry.Checksum)
+	w.Header().Set("ETag", etag)
+	lastModified := httputil.HeaderTimestamp(entry.CreationDate)
+	w.Header().Set("Last-Modified", lastModified)
+	w.Header().Set("Accept-Ranges", "bytes")
+	w.Header().Set("Content-Type", entry.ContentType)
+
+	// calculate possible byte range, if any.
+	if params.Range != nil {
+		rng, err := httputil.ParseRange(*params.Range, entry.Size)
+		if err != nil {
+			w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+			return
+		}
+		w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", rng.EndOffset-rng.StartOffset+1))
+		w.WriteHeader(http.StatusPartialContent)
+	} else {
+		w.Header().Set("Content-Length", fmt.Sprint(entry.Size))
+	}
+}
+
 func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repository string, ref string, params GetObjectParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -2909,8 +2962,6 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	w.Header().Set("ETag", etag)
 	lastModified := httputil.HeaderTimestamp(entry.CreationDate)
 	w.Header().Set("Last-Modified", lastModified)
-	cd := mime.FormatMediaType("attachment", map[string]string{"filename": filepath.Base(entry.Path)})
-	w.Header().Set("Content-Disposition", cd)
 	w.Header().Set("Content-Type", entry.ContentType)
 	_, err = io.Copy(w, reader)
 	if err != nil {
@@ -3730,11 +3781,11 @@ func paginationFor(hasMore bool, results interface{}, fieldName string) Paginati
 	return pagination
 }
 
-func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms permissions.Node) bool {
+func (c *Controller) authorizeCallback(w http.ResponseWriter, r *http.Request, perms permissions.Node, cb func(w http.ResponseWriter, code int, v interface{})) bool {
 	ctx := r.Context()
 	user, err := auth.GetUser(ctx)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		cb(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return false
 	}
 	resp, err := c.Auth.Authorize(ctx, &auth.AuthorizationRequest{
@@ -3742,18 +3793,22 @@ func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms per
 		RequiredPermissions: perms,
 	})
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		cb(w, http.StatusInternalServerError, err)
 		return false
 	}
 	if resp.Error != nil {
-		writeError(w, http.StatusUnauthorized, resp.Error)
+		cb(w, http.StatusUnauthorized, resp.Error)
 		return false
 	}
 	if !resp.Allowed {
-		writeError(w, http.StatusInternalServerError, "User does not have the required permissions")
+		cb(w, http.StatusInternalServerError, "User does not have the required permissions")
 		return false
 	}
 	return true
+}
+
+func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms permissions.Node) bool {
+	return c.authorizeCallback(w, r, perms, writeError)
 }
 
 func (c *Controller) isNameValid(name string, nameType string) (bool, string) {
