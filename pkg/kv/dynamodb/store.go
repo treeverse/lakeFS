@@ -101,7 +101,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 
 // isTableExist will try to describeTable and return bool status, error is returned only in case err != ResourceNotFoundException
 func isTableExist(ctx context.Context, svc *dynamodb.DynamoDB, table string) (bool, error) {
-	describeOutput, err := svc.DescribeTableWithContext(ctx, &dynamodb.DescribeTableInput{
+	_, err := svc.DescribeTableWithContext(ctx, &dynamodb.DescribeTableInput{
 		TableName: aws.String(table),
 	})
 	if err != nil {
