@@ -153,6 +153,19 @@ func (a *committer) applyNextKey(baseValue *graveler.ValueRecord, changeValue *g
 		// select record from changes, possibly (c==0) overwriting base
 		switch {
 		case !changeValue.IsTombstone():
+			// verify overwriting base with same identify - keep base
+			if c == 0 && bytes.Equal(baseValue.Identity, changeValue.Identity) {
+				if a.logger.IsTracing() {
+					a.logger.WithFields(logging.Fields{
+						"key": string(changeValue.Key),
+						"ID":  string(changeValue.Identity),
+					}).Trace("write key from base")
+				}
+				if err := a.writer.WriteRecord(*baseValue); err != nil {
+					return fmt.Errorf("write base record: %w", err)
+				}
+				break
+			}
 			if a.logger.IsTracing() {
 				a.logger.WithFields(logging.Fields{
 					"key":       string(changeValue.Key),
