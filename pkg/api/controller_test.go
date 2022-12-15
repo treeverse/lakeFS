@@ -1887,6 +1887,111 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	})
 }
 
+func TestController_ObjectsHeadObjectHandler(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	_, err := deps.catalog.CreateRepository(ctx, "repo1", "ns1", "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expensiveString := "EXPENSIVE"
+
+	buf := new(bytes.Buffer)
+	buf.WriteString("this is file content made up of bytes")
+	address := upload.DefaultPathProvider.NewPath()
+	blob, err := upload.WriteBlob(context.Background(), deps.blocks, "ns1", address, buf, 37, block.PutOpts{StorageClass: &expensiveString})
+	if err != nil {
+		t.Fatal(err)
+	}
+	entry := catalog.DBEntry{
+		Path:            "foo/bar",
+		PhysicalAddress: blob.PhysicalAddress,
+		CreationDate:    time.Now(),
+		Size:            blob.Size,
+		Checksum:        blob.Checksum,
+	}
+	testutil.Must(t,
+		deps.catalog.CreateEntry(ctx, "repo1", "main", entry))
+
+	expired := catalog.DBEntry{
+		Path:            "foo/expired",
+		PhysicalAddress: "an_expired_physical_address",
+		CreationDate:    time.Now(),
+		Size:            99999,
+		Checksum:        "b10b",
+		Expired:         true,
+	}
+	testutil.Must(t,
+		deps.catalog.CreateEntry(ctx, "repo1", "main", expired))
+
+	t.Run("head object", func(t *testing.T) {
+		resp, err := clt.HeadObjectWithResponse(ctx, "repo1", "main", &api.HeadObjectParams{Path: "foo/bar"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.HTTPResponse.StatusCode != http.StatusOK {
+			t.Errorf("HeadObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusOK)
+		}
+
+		if resp.HTTPResponse.ContentLength != 37 {
+			t.Errorf("expected 37 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
+		}
+		etag := resp.HTTPResponse.Header.Get("ETag")
+		if etag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
+			t.Errorf("got unexpected etag: %s", etag)
+		}
+
+		body := string(resp.Body)
+		if body != "" {
+			t.Errorf("got unexpected body: '%s'", body)
+		}
+	})
+
+	t.Run("head object byte range", func(t *testing.T) {
+		rng := "bytes=0-9"
+		resp, err := clt.HeadObjectWithResponse(ctx, "repo1", "main", &api.HeadObjectParams{
+			Path:  "foo/bar",
+			Range: &rng,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.HTTPResponse.StatusCode != http.StatusPartialContent {
+			t.Errorf("HeadObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusPartialContent)
+		}
+
+		if resp.HTTPResponse.ContentLength != 10 {
+			t.Errorf("expected 10 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
+		}
+
+		etag := resp.HTTPResponse.Header.Get("ETag")
+		if etag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
+			t.Errorf("got unexpected etag: %s", etag)
+		}
+
+		body := string(resp.Body)
+		if body != "" {
+			t.Errorf("got unexpected body: '%s'", body)
+		}
+	})
+
+	t.Run("head object bad byte range", func(t *testing.T) {
+		rng := "bytes=380-390"
+		resp, err := clt.HeadObjectWithResponse(ctx, "repo1", "main", &api.HeadObjectParams{
+			Path:  "foo/bar",
+			Range: &rng,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.HTTPResponse.StatusCode != http.StatusRequestedRangeNotSatisfiable {
+			t.Errorf("HeadObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusRequestedRangeNotSatisfiable)
+		}
+	})
+}
+
 func TestController_ObjectsGetObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
