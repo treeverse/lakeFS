@@ -2842,13 +2842,12 @@ paths:
           description: Unauthorized
         404:
           description: object not found
-        default:
-          description: internal server error
         410:
           description: object expired
         416:
           description: Requested Range Not Satisfiable
-
+        default:
+          description: internal server error
 
   /repositories/{repository}/branches/{branch}/staging/backing:
     parameters:
