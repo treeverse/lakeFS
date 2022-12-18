@@ -45,6 +45,6 @@ The first beta version that was released included:
  
 2. [Integration tests](https://github.com/treeverse/lakeFS/issues/4830) to verify lakeFS is safe while GC is running
 
-By the end of this milestone, we will release a new beta version that includes all the additions.
+By the end of this milestone, we will release a lakeFS version that includes all the additions.
 
 **Due date: 15/01/2023**
