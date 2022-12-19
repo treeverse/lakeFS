@@ -1,6 +1,7 @@
 package esti
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -21,7 +22,7 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 	// RunCmdAndVerifySuccess(t, Lakectl()+" repo list", false, "\n", emptyVars)
 
 	// Fails due to the usage of repos for isolation - esti creates repos in parallel and
-	// the output of 'repo list' command cannot be well defined
+	// the output of 'repo list' command cannot be well-defined
 	// lakectl repo list with no repo created. Verifying terminal and piped formats
 	// RunCmdAndVerifySuccess(t, Lakectl()+" repo list --no-color", true, "\n", emptyVars)
 	// RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo list", true, "lakectl_repo_list_empty.term", emptyVars)
@@ -40,7 +41,7 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 	// lakectl repo list is expected to show the created repo
 
 	// Fails due to the usage of repos for isolation - esti creates repos in parallel and
-	// the output of 'repo list' command cannot be well defined
+	// the output of 'repo list' command cannot be well-defined
 	// RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo list", false, "lakectl_repo_list_1", vars)
 	// RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo list --no-color", true, "lakectl_repo_list_1", vars)
 	// RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo list", true, "lakectl_repo_list_1.term", vars)
@@ -58,7 +59,7 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+newStorage, false, "lakectl_repo_create_not_unique", vars)
 
 	// Fails due to the usage of repos for isolation - esti creates repos in parallel and
-	// the output of 'repo list' command cannot be well defined
+	// the output of 'repo list' command cannot be well-defined
 	// RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo list", false, "lakectl_repo_list_1", vars)
 
 	// Create another repo with non-default branch
@@ -73,7 +74,7 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 	// The generated names are also added to the verification vars map
 
 	// Fails due to the usage of repos for isolation - esti creates repos in parallel and
-	// the output of 'repo list' command cannot be well defined
+	// the output of 'repo list' command cannot be well-defined
 	// listVars["REPO2"] = repoName2
 	// listVars["STORAGE2"] = storage2
 	// listVars["BRANCH2"] = notDefaultBranchName
@@ -134,6 +135,20 @@ func TestLakectlCommit(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+` -m "`+commitMessage+`" --epoch-time-seconds 0`, false, "lakectl_commit", vars)
 	vars["DATE"] = time.Unix(0, 0).String()
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch+" --amount 1", false, "lakectl_log_with_commit_custom_date", vars)
+
+	// verify the latest commit using 'show commit'
+	ctx := context.Background()
+	getBranchResp, err := client.GetBranchWithResponse(ctx, repoName, mainBranch)
+	if err != nil {
+		t.Fatal("Failed to get branch information", err)
+	}
+	if getBranchResp.JSON200 == nil {
+		t.Fatalf("Get branch status code=%d, expected 200", getBranchResp.StatusCode())
+	}
+	lastCommitID := getBranchResp.JSON200.CommitId
+
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" show commit lakefs://"+repoName+"/"+lastCommitID, false, "lakectl_show_commit", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" show commit lakefs://"+repoName+"/"+lastCommitID+" --show-meta-range-id", false, "lakectl_show_commit_metarange", vars)
 }
 
 func TestLakectlBranchAndTagValidation(t *testing.T) {
