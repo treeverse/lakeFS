@@ -2676,19 +2676,54 @@ lakectl repo list [flags]
 
 ### lakectl show
 
-See detailed information about an entity by ID (commit, user, etc)
+See detailed information about an entity
+
+#### Options
+{:.no_toc}
 
 ```
-lakectl show <repository uri> [flags]
+  -h, --help   help for show
+```
+
+
+
+### lakectl show commit
+
+See detailed information about a commit
+
+```
+lakectl show commit <ref uri> [flags]
 ```
 
 #### Options
 {:.no_toc}
 
 ```
-      --commit string        commit ID to show
-  -h, --help                 help for show
-      --show-meta-range-id   when showing commits, also show meta range ID
+  -h, --help                 help for commit
+      --show-meta-range-id   show meta range ID
+```
+
+
+
+### lakectl show help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type show help [path to command] for full details.
+
+```
+lakectl show help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
 ```
 
 

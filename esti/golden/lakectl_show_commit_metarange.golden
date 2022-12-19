@@ -1,0 +1,9 @@
+
+ID:            <COMMIT_ID>
+Author:        esti
+Date:          ${DATE}
+Meta Range ID: <COMMIT_ID>
+
+	${MESSAGE}
+	
+	
