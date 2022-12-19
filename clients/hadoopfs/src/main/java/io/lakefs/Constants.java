@@ -2,7 +2,7 @@ package io.lakefs;
 
 import org.apache.commons.io.FileUtils;
 
-class Constants {
+public class Constants {
     public static final String DEFAULT_SCHEME = "lakefs";
     public static final String DEFAULT_CLIENT_ENDPOINT = "http://localhost:8000/api/v1";
     public static final String ACCESS_KEY_KEY_SUFFIX = "access.key";
