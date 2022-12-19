@@ -61,6 +61,25 @@ We assumed multiple non-functional and one functional requirements that did
 not actually exist.  We should have specified these requirements as part of
 the design and communicated them with VE team.
 
+### Failed to test the project can increase Spark write performance on lakeFS
+
+As proposed, the main goal of the project was to increase write performance
+on lakeFS.  However our plan did not include an early enough test for this,
+and in fact we did not measure it early enough.
+
+We did have some reasons for this:
+
+* We estimated system performance based on counting API calls.  However the
+  estimates of API latencies proved incorrect.
+* Whole system performance is hard to measure before the system is finished
+  and wanted to advance to that stage.
+* We considered functional requirements (actually being able to implement a
+  working OutputCommitter) at a higher risk than nonfunctional requirements
+  (performance and compatibility).
+
+However these reasons are clearly wrong in retrospect.  Requirements should
+have set clear performance requirements.
+
 ## Shared vision
 
 ### No expected performance of lakeFSFS
