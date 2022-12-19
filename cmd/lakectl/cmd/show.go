@@ -10,7 +10,7 @@ import (
 // showCmd represents the show command
 var showCmd = &cobra.Command{
 	Use:   "show",
-	Short: "See detailed information about an entity (commit, user, etc)",
+	Short: "See detailed information about an entity",
 }
 
 // showCommitCmd represents the show command
