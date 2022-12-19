@@ -53,12 +53,12 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 
 			securityRequirements, err := extractSecurityRequirements(router, r)
 			if err != nil {
-				writeError(w, http.StatusBadRequest, err)
+				writeError(w, r, http.StatusBadRequest, err)
 				return
 			}
 			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig)
 			if err != nil {
-				writeError(w, http.StatusUnauthorized, err)
+				writeError(w, r, http.StatusUnauthorized, err)
 				return
 			}
 			if user != nil {

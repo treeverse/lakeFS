@@ -13,13 +13,13 @@ func NewLogoutHandler(sessionStore sessions.Store, logger logging.Logger, logout
 		err := clearSession(w, r, sessionStore, InternalAuthSessionName)
 		if err != nil {
 			logger.WithError(err).Error("Failed to clear internal session during logout")
-			writeError(w, http.StatusInternalServerError, err)
+			writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
 		err = clearSession(w, r, sessionStore, OIDCAuthSessionName)
 		if err != nil {
 			logger.WithError(err).Error("Failed to clear OIDC session during logout")
-			writeError(w, http.StatusInternalServerError, err)
+			writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
 		http.Redirect(w, r, logoutRedirectURL, http.StatusTemporaryRedirect)
