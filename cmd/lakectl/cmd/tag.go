@@ -154,7 +154,7 @@ var tagShowCmd = &cobra.Command{
 		if resp.JSON200 == nil {
 			Die("Bad response from server", 1)
 		}
-		Fmt("%s %s", resp.JSON200.Id, resp.JSON200.CommitId)
+		Fmt("%s %s\n", resp.JSON200.Id, resp.JSON200.CommitId)
 	},
 }
 

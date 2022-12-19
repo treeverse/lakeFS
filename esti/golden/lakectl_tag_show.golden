@@ -1,0 +1,2 @@
+Tag ref: lakefs://${REPO}/${TAG}
+${TAG} <COMMIT_ID>
