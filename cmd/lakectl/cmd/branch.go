@@ -212,7 +212,7 @@ var branchShowCmd = &cobra.Command{
 			Die("Bad response from server", 1)
 		}
 		branch := resp.JSON200
-		Fmt("%s\n", branch)
+		Fmt("Commit ID: %s\n", branch.CommitId)
 	},
 }
 
