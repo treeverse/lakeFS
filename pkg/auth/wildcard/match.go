@@ -6,6 +6,13 @@ import (
 
 // Match reports whether name matches the shell pattern.
 // This is a strip down version of Go's `path.Match` https://pkg.go.dev/path#Match
+// Call a "fixword" a maximal portion of the pattern consisting only of regular characters and ?s.
+// So a fixword has to begin after * or at the beginning of the string, and it has to end before * or at the end of the string.
+// Each fixword matches a fixed length of string. Now a pattern is a list of fixwords separated by *s.
+// Consider a fixword that is not preceded by a *; that's an easy match to find because it can only be at one place.
+// Consider a fixword that is preceded by a *; if it matches at multiple places then it is always safe to match it at
+// the first possible location: either the pattern ends after that fixword in which case there's only one possible location,
+// or the pattern continues with *, in which case that * can "expand" to pick up all characters and the next match of the fixword.
 func Match(pattern, name string) bool {
 Pattern:
 	for len(pattern) > 0 {
