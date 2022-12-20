@@ -151,7 +151,6 @@ class UncommittedGarbageCollectorSpec
 
       it("should return empty first slice with only staged objects") {
         withSparkSession(_ => {
-          println("should return empty first slice with only staged objects")
           val dataDir = new File(dir.toFile, "data")
           dataDir.mkdir()
           val legacySlice = repo + "_legacy_physical:address_path"
@@ -168,7 +167,6 @@ class UncommittedGarbageCollectorSpec
 
       it("should return empty first slice with only old repository data") {
         withSparkSession(_ => {
-          println("should return empty first slice with only old repository data")
           val dataDir = new File(dir.toFile, "")
           dataDir.mkdir()
           val filename = "some_file"
@@ -185,22 +183,19 @@ class UncommittedGarbageCollectorSpec
 
       it("should return correct slice") {
         withSparkSession(_ => {
-          println("should return correct slice")
           val dataDir = new File(dir.toFile, "data")
           dataDir.mkdir()
           val legacySlice = repo + "_legacy_physical:address_path"
           val regularSlice = "xxx"
-          val newRegularSlice = "yyy"
+          val regularSlice2 = "yyy"
           val filename = "some_file"
           var slice = new File(dataDir, legacySlice)
           slice.mkdir()
           new File(slice, filename).createNewFile()
           slice = new File(dataDir, regularSlice)
-          println("regularSlice!!!!!!!!!!!!!!", slice)
           slice.mkdir()
           new File(slice, filename).createNewFile()
-          slice = new File(dataDir, newRegularSlice)
-          println("newRegularSlice!!!!!!!!!!!!!!", slice)
+          slice = new File(dataDir, regularSlice2)
           slice.mkdir()
           new File(slice, filename).createNewFile()
 
