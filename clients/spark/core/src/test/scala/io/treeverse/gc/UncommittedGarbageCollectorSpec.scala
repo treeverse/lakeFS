@@ -205,14 +205,15 @@ class UncommittedGarbageCollectorSpec
           slice.mkdir()
           new File(slice, filename).createNewFile()
 
-          val dataDF = UncommittedGarbageCollector.listObjects(dir.toString,
+          var dataDF = UncommittedGarbageCollector.listObjects(dir.toString,
                                                                DateUtils.addHours(new Date(), +1)
                                                               )
           dataDF.count() should be(3)
-          dataDF.sort("address").select("address").head.getString(0) should be(
+          dataDF = dataDF.sort("address")
+          dataDF.select("address").head.getString(0) should be(
             s"data/$legacySlice/$filename"
           )
-          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be(newRegularSlice)
+          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be(regularSlice)
         })
       }
     }
