@@ -155,8 +155,7 @@ class UncommittedGarbageCollectorSpec
           val dataDir = new File(dir.toFile, "data")
           dataDir.mkdir()
           val legacySlice = repo + "_legacy_physical:address_path"
-          val slice = new File(dataDir, legacySlice)
-          slice.mkdir()
+          new File(dataDir, legacySlice).createNewFile()
 
           val dataDF =
             UncommittedGarbageCollector.listObjects(dir.toString,
