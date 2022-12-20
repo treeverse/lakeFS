@@ -212,7 +212,7 @@ class UncommittedGarbageCollectorSpec
           dataDF.sort("address").select("address").head.getString(0) should be(
             s"data/$legacySlice/$filename"
           )
-          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be(newRegularSlice)
+          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be(regularSlice)
         })
       }
     }
