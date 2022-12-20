@@ -3648,12 +3648,12 @@ func writeResponse(w http.ResponseWriter, r *http.Request, code int, response in
 		w.WriteHeader(httpStatusClientClosedRequest) // Client closed request
 		return
 	}
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	if response == nil {
 		w.WriteHeader(code)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(code)
 	err := json.NewEncoder(w).Encode(response)
 	if err != nil {

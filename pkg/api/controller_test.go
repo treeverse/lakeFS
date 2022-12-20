@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -37,6 +38,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -2877,7 +2879,6 @@ func TestController_MergeDirtyBranch(t *testing.T) {
 	// merge branch1 to main (dirty)
 	resp, err := clt.MergeIntoBranchWithResponse(ctx, repo, "branch1", "main", api.MergeIntoBranchJSONRequestBody{})
 	testutil.MustDo(t, "perform merge into dirty branch", err)
-	const expectedStatusCode = http.StatusBadRequest
 	if resp.JSON400 == nil || resp.JSON400.Message != graveler.ErrDirtyBranch.Error() {
 		t.Errorf("Merge dirty branch should fail with ErrDirtyBranch, got %+v", resp)
 	}
@@ -3395,4 +3396,70 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 			t.Errorf("PrepareGarbageCollectionUncommittedWithResponse token=%s, expected empty token", token)
 		}
 	})
+}
+
+func TestController_ClientDisconnect(t *testing.T) {
+	handler, deps := setupHandlerWithWalkerFactory(t, store.NewFactory(nil))
+	server := setupServer(t, handler)
+	clt := setupClientByEndpoint(t, server.URL, "", "")
+	_ = setupCommPrefs(t, clt)
+	cred := createDefaultAdminUser(t, clt)
+	clt = setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.SecretAccessKey)
+
+	ctx := context.Background()
+
+	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "repo1"), "main")
+	testutil.Must(t, err)
+
+	pr, pw := io.Pipe()
+	mpw := multipart.NewWriter(pw)
+	reqCtx, cancel := context.WithCancel(ctx)
+	go func() {
+		w, _ := mpw.CreateFormFile("content", "file.data")
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		_, _ = io.CopyN(w, r, 1024)
+		cancel()
+		_, _ = io.CopyN(w, r, 1024)
+		_ = mpw.Close()
+	}()
+
+	_, err = clt.UploadObjectWithBodyWithResponse(reqCtx, "repo1", "main", &api.UploadObjectParams{
+		Path: "test/file.data",
+	}, mpw.FormDataContentType(), pr)
+	expectedErr := context.Canceled
+	if !errors.Is(err, expectedErr) {
+		t.Fatalf("Expected to request err to be %s: %v", expectedErr, err)
+	}
+
+	// wait for request to complete
+	time.Sleep(time.Second)
+
+	// request for metrics
+	resp, err := http.Get(server.URL + "/metrics")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// process relevant metrics
+	const apiReqTotalMetricLabel = `api_requests_total{code="499",method="post"}`
+	var clientRequestClosedCount int
+	for _, line := range strings.Split(string(body), "\n") {
+		if strings.HasPrefix(line, apiReqTotalMetricLabel) {
+			if count, err := strconv.Atoi(line[len(apiReqTotalMetricLabel)+1:]); err == nil {
+				clientRequestClosedCount += count
+			}
+		}
+	}
+
+	const expectedCount = 1
+	if clientRequestClosedCount != expectedCount {
+		t.Fatalf("Metric for client request closed: %d, expected: %d", clientRequestClosedCount, expectedCount)
+	}
 }
