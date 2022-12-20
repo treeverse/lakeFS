@@ -162,7 +162,7 @@ class UncommittedGarbageCollectorSpec
             UncommittedGarbageCollector.listObjects(dir.toString,
                                                     DateUtils.addHours(new Date(), +1)
                                                    )
-          dataDF.count() should be(1)
+          dataDF.count() should be(0)
           UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be("")
         })
       }
