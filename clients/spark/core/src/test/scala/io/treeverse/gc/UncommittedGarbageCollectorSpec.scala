@@ -197,9 +197,11 @@ class UncommittedGarbageCollectorSpec
           slice.mkdir()
           new File(slice, filename).createNewFile()
           slice = new File(dataDir, regularSlice)
+          println("regularSlice!!!!!!!!!!!!!!", slice)
           slice.mkdir()
           new File(slice, filename).createNewFile()
           slice = new File(dataDir, newRegularSlice)
+          println("newRegularSlice!!!!!!!!!!!!!!", slice)
           slice.mkdir()
           new File(slice, filename).createNewFile()
 
