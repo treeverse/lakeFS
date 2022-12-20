@@ -150,32 +150,43 @@ class UncommittedGarbageCollectorSpec
       }
 
       it("should return empty first slice with only staged objects") {
-        val dataDir = new File(dir.toFile, "data")
-        dataDir.mkdir()
-        val legacySlice = repo + "_legacy_physical:address_path"
-        val slice = new File(dataDir, legacySlice)
-        slice.mkdir()
+        withSparkSession(_ => {
+          println("should return empty first slice with only staged objects")
+          val dataDir = new File(dir.toFile, "data")
+          dataDir.mkdir()
+          val legacySlice = repo + "_legacy_physical:address_path"
+          val slice = new File(dataDir, legacySlice)
+          slice.mkdir()
 
-        val dataDF =
-          UncommittedGarbageCollector.listObjects(dir.toString, DateUtils.addHours(new Date(), +1))
-        dataDF.count() should be(1)
-        UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be("")
+          val dataDF =
+            UncommittedGarbageCollector.listObjects(dir.toString,
+                                                    DateUtils.addHours(new Date(), +1)
+                                                   )
+          dataDF.count() should be(1)
+          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be("")
+        })
       }
 
       it("should return empty first slice with only old repository data") {
-        val dataDir = new File(dir.toFile, "")
-        dataDir.mkdir()
-        val filename = "some_file"
-        new File(dataDir, filename).createNewFile()
+        withSparkSession(_ => {
+          println("should return empty first slice with only old repository data")
+          val dataDir = new File(dir.toFile, "")
+          dataDir.mkdir()
+          val filename = "some_file"
+          new File(dataDir, filename).createNewFile()
 
-        val dataDF =
-          UncommittedGarbageCollector.listObjects(dir.toString, DateUtils.addHours(new Date(), +1))
-        dataDF.count() should be(1)
-        UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be("")
+          val dataDF =
+            UncommittedGarbageCollector.listObjects(dir.toString,
+                                                    DateUtils.addHours(new Date(), +1)
+                                                   )
+          dataDF.count() should be(1)
+          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be("")
+        })
       }
 
       it("should return correct slice") {
         withSparkSession(_ => {
+          println("should return correct slice")
           val dataDir = new File(dir.toFile, "data")
           dataDir.mkdir()
           val legacySlice = repo + "_legacy_physical:address_path"
@@ -199,7 +210,7 @@ class UncommittedGarbageCollectorSpec
           dataDF.sort("address").select("address").head.getString(0) should be(
             s"data/$legacySlice/$filename"
           )
-          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be(regularSlice)
+          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be(newRegularSlice)
         })
       }
     }
