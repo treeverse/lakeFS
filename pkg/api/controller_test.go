@@ -2197,6 +2197,42 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("stage object in storage ns", func(t *testing.T) {
+		linkResp, err := clt.GetPhysicalAddressWithResponse(ctx, "repo1", "main", &api.GetPhysicalAddressParams{Path: "foo/bar2"})
+		verifyResponseOK(t, linkResp, err)
+		if linkResp.JSON200 == nil {
+			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
+		}
+		const expectedSizeBytes = 38
+		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, "repo1", "main", &api.LinkPhysicalAddressParams{
+			Path: "foo/bar2",
+		}, api.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: api.StagingLocation{
+				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+				Token:           linkResp.JSON200.Token,
+			},
+		})
+		verifyResponseOK(t, resp, err)
+
+		sizeBytes := api.Int64Value(resp.JSON200.SizeBytes)
+		if sizeBytes != expectedSizeBytes {
+			t.Fatalf("expected %d bytes to be written, got back %d", expectedSizeBytes, sizeBytes)
+		}
+
+		// get back info
+		statResp, err := clt.StatObjectWithResponse(ctx, "repo1", "main", &api.StatObjectParams{Path: "foo/bar2"})
+		verifyResponseOK(t, statResp, err)
+		if statResp.JSON200 == nil {
+			t.Fatalf("StatObject non 200 - status code %d", statResp.StatusCode())
+		}
+		objectStat := statResp.JSON200
+		if objectStat.PhysicalAddress != api.StringValue(linkResp.JSON200.PhysicalAddress) {
+			t.Fatalf("unexpected physical address: %s", objectStat.PhysicalAddress)
+		}
+	})
+
 	t.Run("upload object missing branch", func(t *testing.T) {
 		resp, err := clt.StageObjectWithResponse(ctx, "repo1", "main1234", &api.StageObjectParams{Path: "foo/bar"},
 			api.StageObjectJSONRequestBody{
