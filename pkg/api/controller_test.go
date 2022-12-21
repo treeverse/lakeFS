@@ -2099,14 +2099,19 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
 		}
 		const expectedSizeBytes = 38
-		resp, err := clt.StageObjectWithResponse(ctx, "repo1", "main", &api.StageObjectParams{Path: "foo/bar2"}, api.StageObjectJSONRequestBody{
-			Checksum:        "afb0689fe58b82c5f762991453edbbec",
-			PhysicalAddress: api.StringValue(linkResp.JSON200.PhysicalAddress),
-			SizeBytes:       expectedSizeBytes,
+		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, "repo1", "main", &api.LinkPhysicalAddressParams{
+			Path: "foo/bar2",
+		}, api.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: api.StagingLocation{
+				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+				Token:           linkResp.JSON200.Token,
+			},
 		})
 		verifyResponseOK(t, resp, err)
 
-		sizeBytes := api.Int64Value(resp.JSON201.SizeBytes)
+		sizeBytes := api.Int64Value(resp.JSON200.SizeBytes)
 		if sizeBytes != expectedSizeBytes {
 			t.Fatalf("expected %d bytes to be written, got back %d", expectedSizeBytes, sizeBytes)
 		}

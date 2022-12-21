@@ -376,7 +376,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	writeTime := time.Now()
-	physicalAddress, addressType := physicalAddressFullToRelative(repo.StorageNamespace, StringValue(body.Staging.PhysicalAddress))
+	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, StringValue(body.Staging.PhysicalAddress))
 
 	// Because CreateEntry tracks staging on a database with atomic operations,
 	// _ignore_ the staging token here: no harm done even if a race was lost
@@ -420,9 +420,9 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	writeResponse(w, http.StatusOK, response)
 }
 
-// physicalAddressFullToRelative return relative address based on storage namespace if possible. If address doesn't match
+// normalizePhysicalAddress return relative address based on storage namespace if possible. If address doesn't match
 // the storage namespace prefix, the return address type is full.
-func physicalAddressFullToRelative(storageNamespace string, physicalAddress string) (string, catalog.AddressType) {
+func normalizePhysicalAddress(storageNamespace string, physicalAddress string) (string, catalog.AddressType) {
 	prefix := storageNamespace
 	if !strings.HasSuffix(prefix, catalog.DefaultPathDelimiter) {
 		prefix += catalog.DefaultPathDelimiter
@@ -2228,7 +2228,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		writeTime = time.Unix(*body.Mtime, 0)
 	}
 
-	physicalAddress, addressType := physicalAddressFullToRelative(repo.StorageNamespace, body.PhysicalAddress)
+	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 
 	entryBuilder := catalog.NewDBEntryBuilder().
 		CommonLevel(false).
