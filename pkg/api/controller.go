@@ -1798,7 +1798,8 @@ func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repositor
 }
 
 func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
-	if errors.Is(r.Context().Err(), context.Canceled) {
+	// verify if request canceled even if there is no error, early exit point
+	if httputil.IsRequestCanceled(r) {
 		cb(w, r, httpStatusClientClosedRequest, httpStatusClientClosedRequestText)
 		return true
 	}
@@ -2886,7 +2887,7 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 			Resource: permissions.ObjectArn(repository, params.Path),
 		},
 	}, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
-		w.WriteHeader(code)
+		writeResponse(w, r, code, nil)
 	}) {
 		return
 	}
@@ -2897,12 +2898,12 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
 	if err != nil {
 		c.handleAPIErrorCallback(ctx, w, r, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
-			w.WriteHeader(code)
+			writeResponse(w, r, code, nil)
 		})
 		return
 	}
 	if entry.Expired {
-		w.WriteHeader(http.StatusGone)
+		writeResponse(w, r, http.StatusGone, nil)
 		return
 	}
 
@@ -2917,12 +2918,12 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	if params.Range != nil {
 		rng, err := httputil.ParseRange(*params.Range, entry.Size)
 		if err != nil {
-			w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+			writeResponse(w, r, http.StatusRequestedRangeNotSatisfiable, nil)
 			return
 		}
 		w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", rng.EndOffset-rng.StartOffset+1))
-		w.WriteHeader(http.StatusPartialContent)
+		writeResponse(w, r, http.StatusPartialContent, nil)
 	} else {
 		w.Header().Set("Content-Length", fmt.Sprint(entry.Size))
 	}
@@ -2974,9 +2975,9 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		defer func() {
 			_ = reader.Close()
 		}()
-		w.WriteHeader(http.StatusPartialContent)
 		w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", rng.EndOffset-rng.StartOffset+1))
+		writeResponse(w, r, http.StatusPartialContent, nil)
 	} else {
 		reader, err = c.BlockAdapter.Get(ctx, pointer, entry.Size)
 		if c.handleAPIError(ctx, w, r, err) {
@@ -3491,7 +3492,7 @@ func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body
 	if err != nil {
 		c.Logger.WithError(err).WithField("email", body.Email).Debug("failed sending reset password email")
 	}
-	w.WriteHeader(http.StatusNoContent)
+	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
 func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body UpdatePasswordJSONRequestBody) {
@@ -3523,7 +3524,7 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
+	writeResponse(w, r, http.StatusCreated, nil)
 }
 
 func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, templateLocation string, p ExpandTemplateParams) {
@@ -3644,16 +3645,19 @@ func writeError(w http.ResponseWriter, r *http.Request, code int, v interface{})
 }
 
 func writeResponse(w http.ResponseWriter, r *http.Request, code int, response interface{}) {
-	if errors.Is(r.Context().Err(), context.Canceled) {
+	// check first if the client canceled the request
+	if httputil.IsRequestCanceled(r) {
 		w.WriteHeader(httpStatusClientClosedRequest) // Client closed request
 		return
 	}
-	w.Header().Set("X-Content-Type-Options", "nosniff")
+	// nobody - just status code
 	if response == nil {
 		w.WriteHeader(code)
 		return
 	}
+	// encode response body as json
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(code)
 	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
