@@ -23,10 +23,8 @@ func makeTombstoneV(k string) *graveler.ValueRecord {
 
 func TestCommitAdd(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
-	base := testutil.NewFakeIterator()
-	base.
+	base := testutil.NewFakeIterator().
 		AddRange(&committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 2}).
 		AddValueRecords(makeV("a", "base:a"), makeV("c", "base:c")).
 		AddRange(&committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("d"), Count: 1}).
@@ -56,10 +54,8 @@ func TestCommitAdd(t *testing.T) {
 
 func TestCommitChangeWithinBaseRange(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
-	base := testutil.NewFakeIterator()
-	base.
+	base := testutil.NewFakeIterator().
 		AddRange(&committed.Range{ID: "outer-range", MinKey: committed.Key("k1"), MaxKey: committed.Key("k6"), Count: 2}).
 		AddValueRecords(makeV("k1", "base:k1"), makeV("k6", "base:k6")).
 		AddRange(&committed.Range{ID: "last", MinKey: committed.Key("k10"), MaxKey: committed.Key("k13"), Count: 2}).
@@ -90,10 +86,8 @@ func TestCommitChangeWithinBaseRange(t *testing.T) {
 
 func TestCommitBaseRangesWithinChanges(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
-	base := testutil.NewFakeIterator()
-	base.
+	base := testutil.NewFakeIterator().
 		AddRange(&committed.Range{ID: "inner-range-1", MinKey: committed.Key("k2"), MaxKey: committed.Key("k3"), Count: 2}).
 		AddValueRecords(makeV("k2", "base:k2"), makeV("k3", "base:k3")).
 		AddRange(&committed.Range{ID: "inner-range-2", MinKey: committed.Key("k4"), MaxKey: committed.Key("k5"), Count: 2}).
@@ -120,10 +114,8 @@ func TestCommitBaseRangesWithinChanges(t *testing.T) {
 
 func TestCommitReplace(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
-	base := testutil.NewFakeIterator()
-	base.
+	base := testutil.NewFakeIterator().
 		AddRange(&committed.Range{ID: "base:one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}).
 		AddValueRecords(makeV("a", "base:a"), makeV("b", "base:b"), makeV("c", "base:c")).
 		AddRange(&committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("dz"), Count: 1}).
@@ -151,12 +143,47 @@ func TestCommitReplace(t *testing.T) {
 	}, summary)
 }
 
+// TestCommitOverrideNoChange verify that if we have changes include the same entry as in base (based on identity) we will take the one in base
+// and will not consider it as a change.
+func TestCommitOverrideNoChange(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	base := testutil.NewFakeIterator().
+		AddRange(&committed.Range{ID: "base:one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}).
+		AddValueRecords(
+			makeV("a", "base:a"),
+			&graveler.ValueRecord{Key: graveler.Key("b"), Value: &graveler.Value{Identity: []byte("base:b"), Data: []byte("base")}},
+			makeV("c", "base:c"),
+		).
+		AddRange(&committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("dz"), Count: 1}).
+		AddValueRecords(makeV("d", "base:d")).
+		AddRange(&committed.Range{ID: "three", MinKey: committed.Key("e"), MaxKey: committed.Key("ez"), Count: 1}).
+		AddValueRecords(
+			&graveler.ValueRecord{Key: graveler.Key("e"), Value: &graveler.Value{Identity: []byte("base:e"), Data: []byte("base")}},
+		)
+	changes := testutil.NewValueIteratorFake([]graveler.ValueRecord{
+		{Key: graveler.Key("b"), Value: &graveler.Value{Identity: []byte("base:b"), Data: []byte("new")}},
+		{Key: graveler.Key("e"), Value: &graveler.Value{Identity: []byte("base:e"), Data: []byte("new")}},
+	})
+
+	writer := mock.NewMockMetaRangeWriter(ctrl)
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "base:a")))
+	writer.EXPECT().WriteRecord(gomock.Eq(graveler.ValueRecord{Key: graveler.Key("b"), Value: &graveler.Value{Identity: []byte("base:b"), Data: []byte("base")}}))
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "base:c")))
+	writer.EXPECT().WriteRange(gomock.Eq(committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("dz"), Count: 1}))
+	writer.EXPECT().WriteRecord(gomock.Eq(graveler.ValueRecord{Key: graveler.Key("e"), Value: &graveler.Value{Identity: []byte("base:e"), Data: []byte("base")}}))
+
+	summary, err := committed.Commit(context.Background(), writer, base, changes, &committed.CommitOptions{})
+	assert.Error(t, err, graveler.ErrNoChanges)
+	assert.Equal(t, graveler.DiffSummary{
+		Count: map[graveler.DiffType]int{},
+	}, summary)
+}
+
 func TestCommitDelete(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
-	base := testutil.NewFakeIterator()
-	base.
+	base := testutil.NewFakeIterator().
 		AddRange(&committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}).
 		AddValueRecords(makeV("a", "base:a"), makeV("b", "base:b"), makeV("c", "base:c")).
 		AddRange(&committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("dz"), Count: 1}).
@@ -184,10 +211,8 @@ func TestCommitDelete(t *testing.T) {
 
 func TestCommitCopiesLeftoverChanges(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
-	base := testutil.NewFakeIterator()
-	base.
+	base := testutil.NewFakeIterator().
 		AddRange(&committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}).
 		AddValueRecords(makeV("a", "base:a"), makeV("b", "base:b"), makeV("c", "base:c")).
 		AddRange(&committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("dz"), Count: 1}).
@@ -217,7 +242,6 @@ func TestCommitCopiesLeftoverChanges(t *testing.T) {
 
 func TestCommitTombstoneNoBase(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	base := testutil.NewFakeIterator()
 
@@ -238,7 +262,6 @@ func TestCommitTombstoneNoBase(t *testing.T) {
 
 func TestCommitDeleteNonExistingRecord(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	base := testutil.NewFakeIterator().
 		AddRange(&committed.Range{ID: "base:one", MinKey: committed.Key("c"), MaxKey: committed.Key("d"), Count: 2}).
@@ -266,7 +289,6 @@ func TestCommitDeleteNonExistingRecord(t *testing.T) {
 
 func TestCommitTombstonesBeforeRange(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	base := testutil.NewFakeIterator().
 		AddRange(&committed.Range{ID: "base:range", MinKey: committed.Key("b"), MaxKey: committed.Key("c"), Count: 2}).
@@ -293,13 +315,11 @@ func TestCommitTombstonesBeforeRange(t *testing.T) {
 
 func TestCommitCopiesLeftoverBase(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	range1 := &committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}
 	range2 := &committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("dz"), Count: 1}
 	range4 := &committed.Range{ID: "four", MinKey: committed.Key("g"), MaxKey: committed.Key("hz"), Count: 2}
-	base := testutil.NewFakeIterator()
-	base.
+	base := testutil.NewFakeIterator().
 		AddRange(range1).
 		AddValueRecords(makeV("a", "base:a"), makeV("b", "base:b"), makeV("c", "base:c")).
 		AddRange(range2).
@@ -330,12 +350,10 @@ func TestCommitCopiesLeftoverBase(t *testing.T) {
 
 func TestCommitNoChangesFails(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	range1 := &committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}
 	range2 := &committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("dz"), Count: 1}
-	base := testutil.NewFakeIterator()
-	base.
+	base := testutil.NewFakeIterator().
 		AddRange(range1).
 		AddValueRecords(makeV("a", "base:a"), makeV("b", "base:b"), makeV("c", "base:c")).
 		AddRange(range2).
@@ -352,7 +370,6 @@ func TestCommitNoChangesFails(t *testing.T) {
 
 func TestCommitCancelContext(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	t.Run("base", func(t *testing.T) {
 		base := testutil.NewFakeIterator().
