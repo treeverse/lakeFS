@@ -20,7 +20,6 @@ const Auth = () => {
             <Route path="users/*" element={<UsersIndexPage/>} />
             <Route path="groups/*" element={<GroupsIndexPage/>} />
             <Route path="policies/*" element={<PoliciesIndexPage/>} />
-            <Route element={<Navigate to="credentials" />} />
         </Routes>
     )
 }

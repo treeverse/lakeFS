@@ -204,13 +204,13 @@ const UsersIndexPage = () => {
                 <Route path=":userId/*" element={<UserPage getUserEmailById={getUserEmailById} />} />
                 <Route path="" element={
                     <UsersPage 
-                    refresh={refresh}
-                    loading={loading}
-                    error={error}
-                    nextPage={nextPage}
-                    setRefresh={setRefresh}
-                    userListResults={usersList}
-                />
+                        refresh={refresh}
+                        loading={loading}
+                        error={error}
+                        nextPage={nextPage}
+                        setRefresh={setRefresh}
+                        userListResults={usersList}
+                    />
                 } />
             </Routes>
         </GetUserEmailByIdContext.Provider>
