@@ -137,53 +137,53 @@ func (a *committer) applyBaseRange(baseRange *Range, changeValue *graveler.Value
 }
 
 func (a *committer) applyNextKey(baseValue *graveler.ValueRecord, changeValue *graveler.ValueRecord) error {
-	c := bytes.Compare(baseValue.Key, changeValue.Key)
-	if c < 0 {
-		// select record from base
-		if a.logger.IsTracing() {
-			a.logger.WithFields(logging.Fields{
-				"key": string(baseValue.Key),
-				"ID":  string(baseValue.Identity),
-			}).Trace("write key from base")
-		}
-		if err := a.writer.WriteRecord(*baseValue); err != nil {
-			return fmt.Errorf("write base record: %w", err)
-		}
-	} else {
-		// select record from changes, possibly (c==0) overwriting base
-		switch {
-		case !changeValue.IsTombstone():
-			if a.logger.IsTracing() {
-				a.logger.WithFields(logging.Fields{
-					"key":       string(changeValue.Key),
-					"ID":        string(changeValue.Identity),
-					"tombstone": changeValue.IsTombstone(),
-				}).Trace("write key from changes")
-			}
-			if err := a.writer.WriteRecord(*changeValue); err != nil {
-				return fmt.Errorf("write added record: %w", err)
-			}
-			diffType := graveler.DiffTypeAdded
-			if c == 0 {
-				diffType = graveler.DiffTypeChanged
-			}
-			a.incrementDiffSummary(diffType)
-		case c > 0:
-			// internal error but no data lost: deletion requested of a
-			// file that was not there.
-			if changeValue != nil {
-				a.logger.WithField("key", string(changeValue.Key)).Warn("[I] unmatched delete")
-			}
-		default:
-			// Delete: simply don't copy to output.
+	var writeRecord *graveler.ValueRecord
+
+	compare := bytes.Compare(baseValue.Key, changeValue.Key)
+	switch {
+	case compare < 0:
+		// base key is smaller than change key - select record from base
+		writeRecord = baseValue
+	case changeValue.IsTombstone():
+		// base key is equal or bigger - handle tombstone (delete)
+		if compare == 0 {
+			// key is equal - report as deleted
 			a.incrementDiffSummary(graveler.DiffTypeRemoved)
 		}
+	case compare == 0:
+		// base key is equal, no tombstone - handle change
+		if bytes.Equal(baseValue.Identity, changeValue.Identity) {
+			// same identity - just write the base (do not report any change)
+			writeRecord = baseValue
+		} else {
+			a.incrementDiffSummary(graveler.DiffTypeChanged)
+			writeRecord = changeValue
+		}
+	default:
+		// base key is bigger, no tombstone - handle new key
+		a.incrementDiffSummary(graveler.DiffTypeAdded)
+		writeRecord = changeValue
 	}
-	if c >= 0 {
+
+	// Write record if needed
+	if writeRecord != nil {
+		if a.logger.IsTracing() {
+			a.logger.WithFields(logging.Fields{
+				"key":      string(writeRecord.Key),
+				"identity": string(writeRecord.Identity),
+			}).Trace("write record")
+		}
+		if err := a.writer.WriteRecord(*writeRecord); err != nil {
+			return fmt.Errorf("write record: %w", err)
+		}
+	}
+
+	// Update base and changes iterator to the next element
+	if compare >= 0 {
 		// used up this record from changes
 		a.haveChanges = a.changes.Next()
 	}
-	if c <= 0 {
+	if compare <= 0 {
 		// used up this record from base
 		a.haveBase = a.base.Next()
 	}
