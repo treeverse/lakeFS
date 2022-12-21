@@ -28,7 +28,7 @@ func NewOIDCLoginPageHandler(oidcConfig config.OIDC, sessionStore sessions.Store
 		state, err := nanoid.New(stateLength)
 		if err != nil {
 			logger.WithError(err).Error("failed to generate state for oidc")
-			writeError(w, http.StatusInternalServerError, "Failed to redirect to login page")
+			writeError(w, r, http.StatusInternalServerError, "Failed to redirect to login page")
 			return
 		}
 
@@ -36,7 +36,7 @@ func NewOIDCLoginPageHandler(oidcConfig config.OIDC, sessionStore sessions.Store
 		session.Values[StateSessionKey] = state
 		if err := session.Save(r, w); err != nil {
 			logger.WithError(err).Error("failed to save oidc session")
-			writeError(w, http.StatusInternalServerError, "Failed to save auth session")
+			writeError(w, r, http.StatusInternalServerError, "Failed to save auth session")
 			return
 		}
 		opts := make([]oauth2.AuthCodeOption, 0, len(r.URL.Query()))
