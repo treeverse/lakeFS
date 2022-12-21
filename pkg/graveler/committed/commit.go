@@ -137,49 +137,48 @@ func (a *committer) applyBaseRange(baseRange *Range, changeValue *graveler.Value
 }
 
 func (a *committer) applyNextKey(baseValue *graveler.ValueRecord, changeValue *graveler.ValueRecord) error {
-	// record to be written, nil will skip record (like in case of delete)
-	var record *graveler.ValueRecord
+	var writeRecord *graveler.ValueRecord
 
 	compare := bytes.Compare(baseValue.Key, changeValue.Key)
-	if compare < 0 {
+	switch {
+	case compare < 0:
 		// base key is smaller than change key - select record from base
-		record = baseValue
-	} else if changeValue.IsTombstone() {
+		writeRecord = baseValue
+	case changeValue.IsTombstone():
 		// base key is equal or bigger - handle tombstone (delete)
-		// skip write - keep record nil
 		if compare == 0 {
 			// key is equal - report as deleted
 			a.incrementDiffSummary(graveler.DiffTypeRemoved)
 		}
-	} else if compare == 0 {
+	case compare == 0:
 		// base key is equal, no tombstone - handle change
 		if bytes.Equal(baseValue.Identity, changeValue.Identity) {
 			// same identity - just write the base (do not report any change)
-			record = baseValue
+			writeRecord = baseValue
 		} else {
 			a.incrementDiffSummary(graveler.DiffTypeChanged)
-			record = changeValue
+			writeRecord = changeValue
 		}
-	} else {
+	default:
 		// base key is bigger, no tombstone - handle new key
 		a.incrementDiffSummary(graveler.DiffTypeAdded)
-		record = changeValue
+		writeRecord = changeValue
 	}
 
-	// Write required record if needed
-	if record != nil {
+	// Write record if needed
+	if writeRecord != nil {
 		if a.logger.IsTracing() {
 			a.logger.WithFields(logging.Fields{
-				"key":      string(record.Key),
-				"identity": string(record.Identity),
+				"key":      string(writeRecord.Key),
+				"identity": string(writeRecord.Identity),
 			}).Trace("write record")
 		}
-		if err := a.writer.WriteRecord(*record); err != nil {
+		if err := a.writer.WriteRecord(*writeRecord); err != nil {
 			return fmt.Errorf("write record: %w", err)
 		}
 	}
 
-	//  Update base and changes iterator to the next element
+	// Update base and changes iterator to the next element
 	if compare >= 0 {
 		// used up this record from changes
 		a.haveChanges = a.changes.Next()
