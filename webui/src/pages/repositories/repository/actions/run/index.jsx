@@ -166,7 +166,6 @@ const ActionBrowser = ({ repo, run, hooks, onSelectAction, selectedAction = null
             <Col md={{span: 3}}>
                 <ListGroup variant="flush">
                     <ListGroup.Item action
-                        active={(!selectedAction)}
                         onClick={() => onSelectAction(null)}>
                         <HomeIcon/> Summary
                     </ListGroup.Item>
@@ -180,7 +179,6 @@ const ActionBrowser = ({ repo, run, hooks, onSelectAction, selectedAction = null
                         {actions.map(actionName => (
                             <ListGroup.Item action
                                 key={actionName}
-                                active={(selectedAction === actionName)}
                                 onClick={() => onSelectAction(actionName)}>
                                 <PlayIcon/> {actionName}
                             </ListGroup.Item>

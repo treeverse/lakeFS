@@ -1,40 +1,33 @@
 import React from "react";
-import {Link as RouterLink} from "react-router-dom";
+import {NavLink as RouterLink, useHref, useLinkClickHandler} from "react-router-dom";
 
 import Nav from "react-bootstrap/Nav";
 
 import {buildURL} from "../hooks/router";
 import {Tabs} from "@mui/material";
 
-
-function isModifiedEvent(event) {
-    return !!(event.metaKey || event.altKey || event.ctrlKey || event.shiftKey);
-}
-
 const wrapComponent = (component) => {
-    const linkWrapper = React.forwardRef(({navigate, onClick, ...rest}, forwardedRef) => {
-        const {target} = rest;
+    const linkWrapper = React.forwardRef(({navigate, onClick, to, target, replace, state, ...rest}, ref) => {
+        const href = useHref(to);
+        const handleClick = useLinkClickHandler(to, {
+            replace,
+            state,
+            target,
+        });
+
         const props = {
             ...rest,
-            ref: forwardedRef,
-            onClick: event => {
-                try {
-                    if (onClick) onClick(event);
-                } catch (ex) {
-                    event.preventDefault();
-                    throw ex;
+            ref,
+            href,
+            onClick: (event) => {
+                onClick?.(event);
+                if (!event.defaultPrevented) {
+                    handleClick(event);
                 }
-
-                if (
-                    !event.defaultPrevented && // onClick prevented default
-                    event.button === 0 && // ignore everything but left clicks
-                    (!target || target === "_self") && // let browser handle "target=_blank" etc.
-                    !isModifiedEvent(event) // ignore clicks with modifier keys
-                ) {
-                    event.preventDefault();
-                    navigate();
-                }
-            }
+            },
+            target,
+            replace,
+            navigate,
         };
         return React.createElement(component, props);
     });
@@ -43,13 +36,15 @@ const wrapComponent = (component) => {
 }
 
 export const Link = (props) => {
-    const dontPassTheseProps = ['href', 'to', 'children', 'components'];
-    const linkProps = {to: (props.href) ? buildURL(props.href) : props.href};
-    Object.getOwnPropertyNames(props)
-        .filter(k => dontPassTheseProps.indexOf(k) === -1)
-        .forEach(k => linkProps[k] = props[k]);
-    if (props.component)
-        linkProps.component = wrapComponent(props.component);
+    const dontPassTheseProps = ['href', 'to', 'children', 'components', 'component'];
+    const filteredProps = Object.entries(props).filter(([key]) => {
+        return !dontPassTheseProps.includes(key);
+    });
+    const linkProps = Object.fromEntries(filteredProps);
+    linkProps.to = props.href ? buildURL(props.href) : props.href;
+    if (props.component) {
+        return React.createElement(wrapComponent(props.component), linkProps, props.children);
+    }
 
     return React.createElement(RouterLink, linkProps, props.children);
 }

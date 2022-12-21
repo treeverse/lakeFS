@@ -2,7 +2,7 @@ import React, {useState} from "react";
 
 import moment from "moment";
 import {
-    ClippyIcon,
+    PasteIcon,
     DotIcon,
     DownloadIcon,
     FileDirectoryIcon,
@@ -80,7 +80,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
                         copyTextToClipboard(`lakefs://${repo.id}/${reference.id}/${entry.path}`)
                         e.preventDefault()
                     }}>
-                        <ClippyIcon/> {' '} Copy URI
+                        <PasteIcon/> {' '} Copy URI
                     </Dropdown.Item>
                     {entry.path_type === 'object' && reference.type === RefTypeBranch &&
                         <>

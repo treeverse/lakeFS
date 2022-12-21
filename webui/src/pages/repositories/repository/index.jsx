@@ -1,6 +1,6 @@
 import React from "react";
 
-import {Redirect, Route, Switch} from "react-router-dom";
+import {Navigate, Route, Routes} from "react-router-dom";
 import RepositoryObjectsPage from "./objects";
 import RepositoryChangesPage from "./changes";
 import RepositoryBranchesPage from "./branches";
@@ -16,48 +16,21 @@ import RepositoryObjectsViewPage from "./objectViewer";
 
 const RepositoryPage = () => {
     return (
-        <Switch>
-            <Route exact path="/">
-                <Redirect to="/repositories"/>
-            </Route>
-            <Route exact path="/repositories/:repoId/objects">
-                <RepositoryObjectsPage/>
-            </Route>
-            <Route path="/repositories/:repoId/object">
-                <RepositoryObjectsViewPage />
-            </Route>
-            <Route path="/repositories/:repoId/changes">
-                <RepositoryChangesPage/>
-            </Route>
-            <Route path="/repositories/:repoId/commits">
-                <RepositoryCommitsIndexPage/>
-            </Route>
-            <Route path="/repositories/:repoId/branches">
-                <RepositoryBranchesPage/>
-            </Route>
-            <Route path="/repositories/:repoId/tags">
-                <RepositoryTagsPage/>
-            </Route>
-            <Route path="/repositories/:repoId/compare">
-                <RepositoryComparePage/>
-            </Route>
-            <Route path="/repositories/:repoId/actions">
-                <RepositoryActionsIndexPage/>
-            </Route>
-            <Route exact path="/repositories/:repoId/settings/">
-                <RepositoryGeneralSettingsPage/>
-            </Route>
-            <Route path="/repositories/:repoId/settings/general">
-                <RepositoryGeneralSettingsPage/>
-            </Route>
-            <Route path="/repositories/:repoId/settings/retention">
-                <RepositoryRetentionPage/>
-            </Route>
-            <Route path="/repositories/:repoId/settings/branches">
-                <RepositorySettingsBranchesPage/>
-            </Route>
-            <Redirect from="/repositories/:repoId" to="/repositories/:repoId/objects" />
-        </Switch>
+        <Routes>
+            <Route path="objects/*" element={<RepositoryObjectsPage/>} />
+            <Route path="object/*" element={<RepositoryObjectsViewPage />} />
+            <Route path="changes/*" element={<RepositoryChangesPage/>} />
+            <Route path="commits/*" element={<RepositoryCommitsIndexPage/>} />
+            <Route path="branches/*" element={<RepositoryBranchesPage/>} />
+            <Route path="tags/*" element={<RepositoryTagsPage/>} />
+            <Route path="compare/*" element={<RepositoryComparePage/>} />
+            <Route path="actions/*" element={<RepositoryActionsIndexPage/>} />
+            <Route path="settings/*" element={<RepositoryGeneralSettingsPage/>} />
+            <Route path="settings/general/*" element={<RepositoryGeneralSettingsPage/>} />
+            <Route path="settings/retention/*" element={<RepositoryRetentionPage/>} />
+            <Route path="settings/branches/*" element={<RepositorySettingsBranchesPage/>} />
+            <Route path="/" element={<Navigate to="objects" />} />
+        </Routes>
     )
 };
 

@@ -21,7 +21,7 @@ import Container from "react-bootstrap/Container";
 import {Link} from "../../lib/components/nav";
 import {useRouter} from "../../lib/hooks/router";
 
-import {Route, Switch} from "react-router-dom";
+import {Route, Routes} from "react-router-dom";
 import RepositoryPage from './repository';
 import Alert from "react-bootstrap/Alert";
 import Dropdown from "react-bootstrap/Dropdown";
@@ -281,14 +281,10 @@ const TemplatesModalTitleContainer = () => {
 
 const RepositoriesIndex = () => {
     return (
-        <Switch>
-            <Route exact path="/repositories">
-                <RepositoriesPage/>
-            </Route>
-            <Route path="/repositories/:repoId">
-                <RepositoryPage/>
-            </Route>
-        </Switch>
+        <Routes>
+            <Route path="/" element={<RepositoriesPage/>} />
+            <Route path=":repoId/*" element={<RepositoryPage/>} />
+        </Routes>
     );
 };
 

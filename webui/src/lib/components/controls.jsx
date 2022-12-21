@@ -8,7 +8,7 @@ import Tooltip from "react-bootstrap/Tooltip";
 import Overlay from "react-bootstrap/Overlay";
 import Table from "react-bootstrap/Table";
 import {OverlayTrigger} from "react-bootstrap";
-import {CheckIcon, ClippyIcon, SyncIcon} from "@primer/octicons-react";
+import {CheckIcon, PasteIcon, SyncIcon} from "@primer/octicons-react";
 import {Link} from "./nav";
 import {
     Box,
@@ -236,7 +236,7 @@ export const TooltipButton = ({ onClick, variant, children, tooltip, className="
     );
 };
 
-export const ClipboardButton = ({ text, variant, onSuccess, icon = <ClippyIcon/>, onError, tooltip = "Copy to clipboard", ...rest}) => {
+export const ClipboardButton = ({ text, variant, onSuccess, icon = <PasteIcon/>, onError, tooltip = "Copy to clipboard", ...rest}) => {
 
     const [show, setShow] = useState(false);
     const [copied, setCopied] = useState(false);

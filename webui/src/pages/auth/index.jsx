@@ -1,6 +1,6 @@
 import React from "react";
 
-import {Redirect, Route, Switch} from "react-router-dom";
+import {Navigate, Route, Routes} from "react-router-dom";
 import CredentialsPage from "./credentials";
 import GroupsIndexPage from "./groups";
 import UsersIndexPage from "./users";
@@ -11,33 +11,17 @@ import ActivateInvitedUserPage from "./users/create-user-with-password";
 
 const Auth = () => {
     return (
-        <Switch>
-            <Route exact path="/auth">
-                <Redirect to="/auth/credentials"/>
-            </Route>
-            <Route path="/auth/login">
-                <LoginPage/>
-            </Route>
-            <Route path="/auth/resetpassword">
-                <ResetPasswordPage/>
-            </Route>
-            <Route path="/auth/credentials">
-                <CredentialsPage/>
-            </Route>
-            <Route path="/auth/users/create">
-                <ActivateInvitedUserPage/>
-            </Route>
-            <Route path="/auth/users">
-                <UsersIndexPage/>
-            </Route>
-            <Route path="/auth/groups">
-                <GroupsIndexPage/>
-            </Route>
-            <Route path="/auth/policies">
-                <PoliciesIndexPage/>
-            </Route>
-            <Redirect to="/auth/credentials" />
-        </Switch>
+        <Routes>
+            <Route path="" element={<Navigate to="credentials"/>} />
+            <Route path="login" element={<LoginPage/>} />
+            <Route path="resetpassword" element={<ResetPasswordPage/>} />
+            <Route path="credentials" element={<CredentialsPage/>} />
+            <Route path="users/create" element={<ActivateInvitedUserPage/>} />
+            <Route path="users/*" element={<UsersIndexPage/>} />
+            <Route path="groups/*" element={<GroupsIndexPage/>} />
+            <Route path="policies/*" element={<PoliciesIndexPage/>} />
+            <Route element={<Navigate to="credentials" />} />
+        </Routes>
     )
 }
 

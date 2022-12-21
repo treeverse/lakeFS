@@ -18,7 +18,7 @@ const RepoNav = () => {
             <Link href={{pathname: '/repositories'}} component={Breadcrumb.Item}>
                 Repositories
             </Link>
-            <Link href={{pathname: '/repositories/:repoId/objects', params: {repoId}}} component={Breadcrumb.Item} active>
+            <Link href={{pathname: '/repositories/:repoId/objects', params: {repoId}}} component={Breadcrumb.Item}>
                 {repoId}
             </Link>
         </Breadcrumb>
