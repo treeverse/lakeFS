@@ -1803,7 +1803,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		cb(w, r, httpStatusClientClosedRequest, httpStatusClientClosedRequestText)
 		return true
 	}
-	if err != nil {
+	if err == nil {
 		return false
 	}
 
