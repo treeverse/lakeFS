@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -137,6 +139,13 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 	if err != nil {
 		return err
 	}
+
+	// for unknown size we assume we like to stream content, will use s3manager to perform the request.
+	// we assume the caller may not have 1:1 request to s3 put object in this case as it may perform multipart upload
+	if sizeBytes == -1 {
+		return a.managerUpload(ctx, qualifiedKey, reader, opts)
+	}
+
 	putObject := s3.PutObjectInput{
 		Bucket:       aws.String(qualifiedKey.StorageNamespace),
 		Key:          aws.String(qualifiedKey.Key),
@@ -683,6 +692,33 @@ func (a *Adapter) extractS3Server(resp *http.Response) {
 	a.respServerLock.Lock()
 	defer a.respServerLock.Unlock()
 	a.respServer = server
+}
+
+func (a *Adapter) managerUpload(ctx context.Context, qualifiedKey block.QualifiedKey, reader io.Reader, opts block.PutOpts) error {
+	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
+	uploader := s3manager.NewUploaderWithClient(client)
+
+	input := &s3manager.UploadInput{
+		Bucket:       aws.String(qualifiedKey.StorageNamespace),
+		Key:          aws.String(qualifiedKey.Key),
+		Body:         reader,
+		StorageClass: opts.StorageClass,
+	}
+	if a.ServerSideEncryption != "" {
+		input.ServerSideEncryption = aws.String(a.ServerSideEncryption)
+	}
+	if a.ServerSideEncryptionKmsKeyID != "" {
+		input.SSEKMSKeyId = aws.String(a.ServerSideEncryptionKmsKeyID)
+	}
+
+	output, err := uploader.UploadWithContext(ctx, input)
+	if err != nil {
+		return err
+	}
+	if aws.StringValue(output.ETag) == "" {
+		return ErrMissingETag
+	}
+	return nil
 }
 
 func extractAmzServerSideHeader(header http.Header) http.Header {

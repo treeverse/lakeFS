@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"mime"
+	"mime/multipart"
 	"net/http"
 	"net/mail"
 	"net/url"
@@ -2134,21 +2135,42 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		allowOverwrite = false
 	}
 
-	// write the content
-	file, handler, err := r.FormFile("content")
-	if errors.Is(err, http.ErrMissingFile) {
-		writeError(w, r, http.StatusInternalServerError, fmt.Errorf("multipart uploads missing key 'content': %w", err))
-		return
-	}
+	// read request body parse multi-part for "content" and upload the data
+	_, p, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	defer func() { _ = file.Close() }()
-	contentType := handler.Header.Get("Content-Type")
-	address := c.PathProvider.NewPath()
-	blob, err := upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, address, file, handler.Size, block.PutOpts{StorageClass: params.StorageClass})
-	if err != nil {
+	boundary := p["boundary"]
+	reader := multipart.NewReader(r.Body, boundary)
+	var (
+		contentUploaded bool
+		contentType     string
+		blob            *upload.Blob
+	)
+	for {
+		part, err := reader.NextPart()
+		if err == io.EOF {
+			break
+		}
+		contentType = part.Header.Get("Content-Type")
+		partName := part.FormName()
+		// part is an io.Reader, deal with it
+		if !contentUploaded && partName == "content" {
+			// upload the first "content"
+			address := c.PathProvider.NewPath()
+			blob, err = upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, address, part, -1, block.PutOpts{StorageClass: params.StorageClass})
+			if err != nil {
+				_ = part.Close()
+				writeError(w, r, http.StatusInternalServerError, err)
+				return
+			}
+			contentUploaded = true
+		}
+		_ = part.Close()
+	}
+	if !contentUploaded {
+		err := fmt.Errorf("multipart upload missing key 'content': %w", http.ErrMissingFile)
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
