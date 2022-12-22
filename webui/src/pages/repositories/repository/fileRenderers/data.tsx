@@ -6,7 +6,7 @@ import Alert from "react-bootstrap/Alert";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import {DatabaseIcon} from "@primer/octicons-react";
-import moment from "moment/moment";
+import dayjs from "dayjs";
 import {RendererComponent} from "./types";
 
 export const DataLoader: FC = () => {
@@ -133,7 +133,7 @@ const DataRow: FC<{ value: any }> = ({ value }) => {
     }
 
     if (dataType === 'date') {
-        return <td>{moment(value).format(moment.defaultFormat)}</td>
+        return <td>{dayjs(value).format()}</td>
     }
 
     if (dataType === 'number') {

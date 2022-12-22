@@ -1,6 +1,6 @@
 import React, {useState} from "react";
 
-import moment from "moment";
+import dayjs from "dayjs";
 import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-react";
 
 import {commits} from "../../../../lib/api";
@@ -46,7 +46,7 @@ const CommitWidget = ({ repo, commit }) => {
                     </h6>
                     <p>
                         <small>
-                            <strong>{commit.committer}</strong> committed at <strong>{moment.unix(commit.creation_date).format("MM/DD/YYYY HH:mm:ss")}</strong> ({moment.unix(commit.creation_date).fromNow()})
+                            <strong>{commit.committer}</strong> committed at <strong>{dayjs.unix(commit.creation_date).format("MM/DD/YYYY HH:mm:ss")}</strong> ({dayjs.unix(commit.creation_date).fromNow()})
                         </small>
                     </p>
                 </div>

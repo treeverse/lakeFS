@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import moment from "moment";
+import dayjs from "dayjs";
 
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
@@ -94,13 +94,13 @@ export const Error = ({error, onDismiss = null, className = null}) => {
 export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => {
     if (typeof dateValue === 'number') {
         return (
-            <span>{moment.unix(dateValue).format(format)}</span>
+            <span>{dayjs.unix(dateValue).format(format)}</span>
         );
     }
 
     return (
         <OverlayTrigger placement="bottom" overlay={<Tooltip>{dateValue}</Tooltip>}>
-            <span>{moment(dateValue).format(format)}</span>
+            <span>{dayjs(dateValue).format(format)}</span>
         </OverlayTrigger>
     );
 };
