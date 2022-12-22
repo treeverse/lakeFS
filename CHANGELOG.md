@@ -4,9 +4,9 @@
 
 What's new:
 - Integrate duckdb-wasm to query parquet/csv files on the UI (experimental) (#4821)
-- API upload object without using tmp file (#4848)
 
 Bug fixes:
+- API upload object without using tmp file (#4848)
 - lakectl show commit (#4834)
 - Perform fewer API calls for exists (#4797)
 - Fix commit to keep base entry in case staged entry with matched identity (#4825)
