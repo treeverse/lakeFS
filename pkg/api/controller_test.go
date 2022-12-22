@@ -2101,7 +2101,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 	t.Run("get properties", func(t *testing.T) {
 		resp, err := clt.GetUnderlyingPropertiesWithResponse(ctx, "repo1", "main", &api.GetUnderlyingPropertiesParams{Path: "foo/bar"})
 		if err != nil {
-			t.Errorf("expected to get underlying properties, got %v", err)
+			t.Fatalf("expected to get underlying properties, got %v", err)
 		}
 		properties := resp.JSON200
 		if properties == nil {
