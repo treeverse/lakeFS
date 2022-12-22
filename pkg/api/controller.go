@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"mime"
+	"mime/multipart"
 	"net/http"
 	"net/mail"
 	"net/url"
@@ -2134,21 +2135,54 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		allowOverwrite = false
 	}
 
-	// write the content
-	file, handler, err := r.FormFile("content")
-	if errors.Is(err, http.ErrMissingFile) {
-		writeError(w, r, http.StatusInternalServerError, fmt.Errorf("multipart uploads missing key 'content': %w", err))
-		return
-	}
+	// read request body parse multipart for "content" and upload the data
+	mt, p, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	defer func() { _ = file.Close() }()
-	contentType := handler.Header.Get("Content-Type")
-	address := c.PathProvider.NewPath()
-	blob, err := upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, address, file, handler.Size, block.PutOpts{StorageClass: params.StorageClass})
-	if err != nil {
+	if mt != "multipart/form-data" {
+		writeError(w, r, http.StatusInternalServerError, http.ErrNotMultipart)
+		return
+	}
+	boundary, ok := p["boundary"]
+	if !ok {
+		writeError(w, r, http.StatusInternalServerError, http.ErrMissingBoundary)
+		return
+	}
+
+	reader := multipart.NewReader(r.Body, boundary)
+	var (
+		contentUploaded bool
+		contentType     string
+		blob            *upload.Blob
+	)
+	for !contentUploaded {
+		part, err := reader.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			writeError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+		contentType = part.Header.Get("Content-Type")
+		partName := part.FormName()
+		if partName == "content" {
+			// upload the first "content" and exit the loop
+			address := c.PathProvider.NewPath()
+			blob, err = upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, address, part, -1, block.PutOpts{StorageClass: params.StorageClass})
+			if err != nil {
+				_ = part.Close()
+				writeError(w, r, http.StatusInternalServerError, err)
+				return
+			}
+			contentUploaded = true
+		}
+		_ = part.Close()
+	}
+	if !contentUploaded {
+		err := fmt.Errorf("multipart upload missing key 'content': %w", http.ErrMissingFile)
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
