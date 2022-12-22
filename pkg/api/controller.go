@@ -2141,7 +2141,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	if !strings.HasPrefix(mt, "multipart/") {
+	if mt != "multipart/form-data" {
 		writeError(w, r, http.StatusInternalServerError, http.ErrNotMultipart)
 		return
 	}
@@ -2150,22 +2150,26 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		writeError(w, r, http.StatusInternalServerError, http.ErrMissingBoundary)
 		return
 	}
+
 	reader := multipart.NewReader(r.Body, boundary)
 	var (
 		contentUploaded bool
 		contentType     string
 		blob            *upload.Blob
 	)
-	for {
+	for !contentUploaded {
 		part, err := reader.NextPart()
 		if err == io.EOF {
 			break
 		}
+		if err != nil {
+			writeError(w, r, http.StatusInternalServerError, err)
+			return
+		}
 		contentType = part.Header.Get("Content-Type")
 		partName := part.FormName()
-		// part is an io.Reader, deal with it
-		if !contentUploaded && partName == "content" {
-			// upload the first "content"
+		if partName == "content" {
+			// upload the first "content" and exit the loop
 			address := c.PathProvider.NewPath()
 			blob, err = upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, address, part, -1, block.PutOpts{StorageClass: params.StorageClass})
 			if err != nil {
