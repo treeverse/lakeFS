@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.88.0
+
+What's new:
+- Integrate duckdb-wasm to query parquet/csv files on the UI (experimental) (#4821)
+
+Bug fixes:
+- API upload object without using tmp file (#4848)
+- lakectl show commit (#4834)
+- Perform fewer API calls for exists (#4797)
+- Fix commit to keep base entry in case staged entry with matched identity (#4825)
+- Fix lakectl branch show to print commit ID (#4837)
+- Fix auth's wildcard Match function (#4828)
+- Check if DDB Table exist before Create to reduce excessive permissions requirements   (#4809)
+- Store relative path in stage and link physical address (#4751)
+
 ## v0.87.1
 
 Bug fixes:
