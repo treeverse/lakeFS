@@ -2135,13 +2135,21 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		allowOverwrite = false
 	}
 
-	// read request body parse multi-part for "content" and upload the data
-	_, p, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	// read request body parse multipart for "content" and upload the data
+	mt, p, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	boundary := p["boundary"]
+	if !strings.HasPrefix(mt, "multipart/") {
+		writeError(w, r, http.StatusInternalServerError, http.ErrNotMultipart)
+		return
+	}
+	boundary, ok := p["boundary"]
+	if !ok {
+		writeError(w, r, http.StatusInternalServerError, http.ErrMissingBoundary)
+		return
+	}
 	reader := multipart.NewReader(r.Body, boundary)
 	var (
 		contentUploaded bool
