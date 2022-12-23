@@ -40,6 +40,7 @@ type Config struct {
 	KeepRepo         bool
 	Credentials      model.Credential
 	ServerAddress    string
+	NoProgress       bool
 }
 
 var (
@@ -69,7 +70,9 @@ func (t *Loader) Run() error {
 		return err
 	}
 	stopCh := make(chan struct{})
-	progressBar(t.Config.Duration)
+	if !t.Config.NoProgress {
+		progressBar(t.Config.Duration)
+	}
 	out := new(SimpleScenario).Play(t.Config.ServerAddress, repoName, stopCh)
 	errs := t.streamRequests(out)
 	hasErrors := t.doAttack()
