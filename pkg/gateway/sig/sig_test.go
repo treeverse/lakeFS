@@ -34,19 +34,19 @@ func makeRequest(t *testing.T, headers map[string]string, query map[string]strin
 }
 
 func TestIsAWSSignedRequest(t *testing.T) {
-	type KV map[string]string
+	t.Parallel()
 	cases := []struct {
 		Name    string
 		Want    bool
 		Headers map[string]string
 		Query   map[string]string
 	}{
-		{"no sig", false, nil, nil},
-		{"non aws auth header", false, KV{"Authorization": "Basic dXNlcjpwYXNzd29yZA=="}, nil},
-		{"v2 auth header", true, KV{"Authorization": "AWS wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"}, nil},
-		{"v2 auth query param", true, nil, KV{"AWSAccessKeyId": "bPxRfiCYEXAMPLEKEY"}},
-		{"v4 auth header", true, KV{"Authorization": "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/iam/aws4_request, SignedHeaders=content-type;host;x-amz-date, Signature=5d672d79c15b13162d9279b0855cfba6789a8edb4c82c400e06b5924a6f2b5d7"}, nil},
-		{"v4 auth query param", true, nil, KV{"X-Amz-Credential": "bPxRfiCYEXAMPLEKEY"}},
+		{Name: "no sig", Want: false},
+		{Name: "non aws auth header", Want: false, Headers: map[string]string{"Authorization": "Basic dXNlcjpwYXNzd29yZA=="}},
+		{Name: "v2 auth header", Want: true, Headers: map[string]string{"Authorization": "AWS wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"}},
+		{Name: "v2 auth query param", Want: true, Query: map[string]string{"AWSAccessKeyId": "bPxRfiCYEXAMPLEKEY"}},
+		{Name: "v4 auth header", Want: true, Headers: map[string]string{"Authorization": "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/iam/aws4_request, SignedHeaders=content-type;host;x-amz-date, Signature=5d672d79c15b13162d9279b0855cfba6789a8edb4c82c400e06b5924a6f2b5d7"}},
+		{Name: "v4 auth query param", Want: true, Query: map[string]string{"X-Amz-Credential": "bPxRfiCYEXAMPLEKEY"}},
 	}
 
 	for _, tc := range cases {
@@ -156,8 +156,9 @@ var signatures = []SignCase{
 }
 
 func TestAWSSigVerify(t *testing.T) {
+	t.Parallel()
 	const (
-		numRounds  = 1000
+		numRounds  = 100
 		seed       = 20210913
 		pathLength = 900
 		bucket     = "my-bucket"
