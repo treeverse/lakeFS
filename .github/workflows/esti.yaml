@@ -296,7 +296,7 @@ jobs:
         run: >
           CLIENT_JAR=$(ls target/core-301/scala-2.12/lakefs-spark-client-301-assembly-*.jar);
           echo $CLIENT_JAR; 
-          docker run --network host --add-host lakefs:127.0.0.1 -v $(pwd):/local --rm docker.io/bitnami/spark:3.2.3 spark-submit
+          docker run --network host --add-host lakefs:127.0.0.1 -v $(pwd):/local -v $(pwd)/jars_dir:/opt/bitnami/spark/ivy:z --rm docker.io/bitnami/spark:3.2.3 spark-submit
           --master spark://localhost:7077
           --conf spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1
           --conf spark.hadoop.fs.s3.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
