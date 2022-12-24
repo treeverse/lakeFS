@@ -295,7 +295,7 @@ jobs:
         working-directory: clients/spark
         run: >
           cd target; CLIENT_JAR=$(ls core-301/scala-2.12/lakefs-spark-client-301-assembly-*.jar); cd ..; echo $CLIENT_JAR; 
-          docker run --network host --add-host lakefs:127.0.0.1 -v $(pwd)/target:/local --rm docker.io/bitnami/spark:3.2 spark-submit
+          docker run --network host --add-host lakefs:127.0.0.1 -v $(pwd)/target:/local -v $(pwd)/ivy:/opt/bitnami/spark/.ivy2 --rm docker.io/bitnami/spark:3.2 spark-submit
           --master spark://localhost:7077
           --conf spark.driver.extraJavaOptions="-Divy.cache.dir=/tmp -Divy.home=/tmp"
           --conf spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1
