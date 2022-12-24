@@ -294,11 +294,10 @@ jobs:
       - name: Run uncommitted gc
         working-directory: clients/spark
         run: >
-          cd target; CLIENT_JAR=$(ls core-301/scala-2.12/lakefs-spark-client-301-assembly-*.jar); cd ..;
-          echo $CLIENT_JAR; 
-          docker run --network host --add-host lakefs:127.0.0.1 -v $(pwd)/target:/local -v $(pwd)/jars_dir:/opt/bitnami/spark/ivy:z --rm docker.io/bitnami/spark:3.2 spark-submit
+          cd target; CLIENT_JAR=$(ls core-301/scala-2.12/lakefs-spark-client-301-assembly-*.jar); cd ..; echo $CLIENT_JAR; 
+          docker run --network host --add-host lakefs:127.0.0.1 -v $(pwd)/target:/local --rm docker.io/bitnami/spark:3.2 spark-submit
           --master spark://localhost:7077
-          --conf spark.jars.ivy=/opt/bitnami/spark/ivy
+          --conf spark.driver.extraJavaOptions="-Divy.cache.dir=/tmp -Divy.home=/tmp"
           --conf spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1
           --conf spark.hadoop.fs.s3.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
           --conf spark.hadoop.fs.s3a.access.key=${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
