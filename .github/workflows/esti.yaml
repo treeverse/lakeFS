@@ -217,7 +217,7 @@ jobs:
           LAKEFS_STATS_ENABLED: false
 
       spark:
-        image: docker.io/bitnami/spark:3.2.3
+        image: docker.io/bitnami/spark:3.2
         env:
           SPARK_MODE: master
           SPARK_RPC_AUTHENTICATION_ENABLED: no
@@ -229,7 +229,7 @@ jobs:
           - '7077:7077'
 
       spark-worker:
-        image: docker.io/bitnami/spark:3.2.3
+        image: docker.io/bitnami/spark:3.2
         env:
           SPARK_MODE: worker
           SPARK_MASTER_URL: spark://spark:7077
@@ -294,10 +294,10 @@ jobs:
       - name: Run uncommitted gc
         working-directory: clients/spark
         run: >
-          CLIENT_JAR=$(ls target/core-301/scala-2.12/lakefs-spark-client-301-assembly-*.jar);
-          echo $CLIENT_JAR; 
-          docker run --network host --add-host lakefs:127.0.0.1 -v $(pwd):/local --rm docker.io/bitnami/spark:3.2.3 spark-submit
+          cd target; CLIENT_JAR=$(ls core-301/scala-2.12/lakefs-spark-client-301-assembly-*.jar); cd ..; echo $CLIENT_JAR; 
+          docker run --network host --add-host lakefs:127.0.0.1 -v $(pwd)/target:/local -v $(pwd)/ivy:/opt/bitnami/spark/.ivy2 --rm docker.io/bitnami/spark:3.2 spark-submit
           --master spark://localhost:7077
+          --conf spark.driver.extraJavaOptions="-Divy.cache.dir=/tmp -Divy.home=/tmp"
           --conf spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1
           --conf spark.hadoop.fs.s3.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
           --conf spark.hadoop.fs.s3a.access.key=${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
