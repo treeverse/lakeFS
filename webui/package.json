@@ -9,6 +9,7 @@
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build",
     "serve": "vite preview",
     "test": "jest src",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "typesync": "npx typesync"
   },
   "dependencies": {
@@ -52,7 +53,9 @@
     "@vitejs/plugin-react": "^3.0.0",
     "@vitejs/plugin-react-swc": "^3.0.1",
     "babel-eslint": "^10.1.0",
+    "browserslist": "^4.21.4",
     "cross-env": "^7.0.3",
+    "eslint-plugin-compat": "^4.0.2",
     "eslint-plugin-react": "^7.23.2",
     "jest": "^29.0.3",
     "react-test-renderer": "^18.2.0",
