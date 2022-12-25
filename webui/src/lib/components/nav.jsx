@@ -20,7 +20,10 @@ const wrapComponent = (component) => {
             ref,
             href,
             onClick: (event) => {
-                onClick?.(event);
+                if (onClick && typeof onClick === "function") {
+                    onClick(event);
+                }
+
                 if (!event.defaultPrevented) {
                     handleClick(event);
                 }
