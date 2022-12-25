@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -86,9 +87,7 @@ func MetadataKeyPath(key string) string {
 	return kv.FormatPath(metadataPrefix, key)
 }
 
-var (
-	ErrInvalidStatementSrcFormat = errors.New("invalid statements src format")
-)
+var ErrInvalidStatementSrcFormat = errors.New("invalid statements src format")
 
 type PaginationParams struct {
 	Prefix string
@@ -277,10 +276,10 @@ func ProtoFromPolicy(p *Policy) *PolicyData {
 	}
 }
 
-func CredentialFromProto(s crypt.SecretStore, pb *CredentialData) *Credential {
+func CredentialFromProto(s crypt.SecretStore, pb *CredentialData) (*Credential, error) {
 	secret, err := DecryptSecret(s, pb.SecretAccessKeyEncryptedBytes)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	return &Credential{
 		Username: string(pb.UserId),
@@ -290,7 +289,7 @@ func CredentialFromProto(s crypt.SecretStore, pb *CredentialData) *Credential {
 			SecretAccessKeyEncryptedBytes: pb.SecretAccessKeyEncryptedBytes,
 			IssuedDate:                    pb.IssuedDate.AsTime(),
 		},
-	}
+	}, nil
 }
 
 func ProtoFromCredential(c *Credential) *CredentialData {
@@ -389,15 +388,18 @@ func ConvertPolicyDataList(policies []proto.Message) []*Policy {
 	return res
 }
 
-func ConvertCredDataList(s crypt.SecretStore, creds []proto.Message) []*Credential {
+func ConvertCredDataList(s crypt.SecretStore, creds []proto.Message) ([]*Credential, error) {
 	res := make([]*Credential, 0, len(creds))
 	for _, c := range creds {
-		a := c.(*CredentialData)
-		m := CredentialFromProto(s, a)
+		credentialData := c.(*CredentialData)
+		m, err := CredentialFromProto(s, credentialData)
+		if err != nil {
+			return nil, fmt.Errorf("credentials for %s: %w", credentialData.AccessKeyId, err)
+		}
 		m.SecretAccessKey = ""
 		res = append(res, m)
 	}
-	return res
+	return res, nil
 }
 
 func DecryptSecret(s crypt.SecretStore, value []byte) (string, error) {
