@@ -1,6 +1,7 @@
 package io.lakefs;
 
 import io.lakefs.clients.api.model.StagingLocation;
+import io.lakefs.utils.ObjectLocation;
 import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;

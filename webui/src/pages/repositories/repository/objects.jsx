@@ -304,12 +304,12 @@ const ReadmeContainer = ({repo, reference, path='', refreshDep=''}) => {
     } else {
         readmePath = README_FILE_NAME;
     }
-    const {response, error, loading} = useAPI(async () => {
-        return await objects.getWithHeaders(repo.id, reference.id, readmePath);
-    }, [path, refreshDep]);
+    const {response, error, loading} = useAPI(
+        () => objects.head(repo.id, reference.id, readmePath),
+        [path, refreshDep]);
 
     if (loading || error) {
-        return <></>;
+        return <></>; // no file found.
     }
 
     const fileExtension = getFileExtension(readmePath);
@@ -319,10 +319,9 @@ const ReadmeContainer = ({repo, reference, path='', refreshDep=''}) => {
         <FileContents 
             repoId={repo.id} 
             refId={reference.id}
-            path={README_FILE_NAME}
+            path={readmePath}
             fileExtension={fileExtension}
             contentType={contentType}
-            rawContent={response?.responseText} 
             error={error}
             loading={loading}
             showFullNavigator={false}

@@ -1,5 +1,39 @@
 # Changelog
 
+## v0.88.0
+
+What's new:
+- Integrate duckdb-wasm to query parquet/csv files on the UI (experimental) (#4821)
+
+Bug fixes:
+- API upload object without using tmp file (#4848)
+- lakectl show commit (#4834)
+- Perform fewer API calls for exists (#4797)
+- Fix commit to keep base entry in case staged entry with matched identity (#4825)
+- Fix lakectl branch show to print commit ID (#4837)
+- Fix auth's wildcard Match function (#4828)
+- Check if DDB Table exist before Create to reduce excessive permissions requirements   (#4809)
+- Store relative path in stage and link physical address (#4751)
+
+## v0.87.1
+
+Bug fixes:
+- Fix UI "Authorization/My Credentials" view returns error (#4816)
+
+## v0.87.0
+
+What's new:
+
+- Allow adding hooks without depending on an external service (#4779)
+- Add support for S3 buckets using SSE with KMS Secret (#4726)
+- Allow user to subscribe for email feature updates and/or security alerts during setup (#4667)
+
+Bug fixes:
+
+- [GC]: Correctly handle deleting absolute paths under the storage namespace (#4763)
+- Ref lookup order now prefers commit and branch refs for user actions (#4743)
+- Fix Python LakeFSClient missing API tags (#4606)
+
 ## v0.86.0
 
 What's new:

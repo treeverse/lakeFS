@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -37,6 +38,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -1887,6 +1889,111 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	})
 }
 
+func TestController_ObjectsHeadObjectHandler(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	_, err := deps.catalog.CreateRepository(ctx, "repo1", "ns1", "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expensiveString := "EXPENSIVE"
+
+	buf := new(bytes.Buffer)
+	buf.WriteString("this is file content made up of bytes")
+	address := upload.DefaultPathProvider.NewPath()
+	blob, err := upload.WriteBlob(context.Background(), deps.blocks, "ns1", address, buf, 37, block.PutOpts{StorageClass: &expensiveString})
+	if err != nil {
+		t.Fatal(err)
+	}
+	entry := catalog.DBEntry{
+		Path:            "foo/bar",
+		PhysicalAddress: blob.PhysicalAddress,
+		CreationDate:    time.Now(),
+		Size:            blob.Size,
+		Checksum:        blob.Checksum,
+	}
+	testutil.Must(t,
+		deps.catalog.CreateEntry(ctx, "repo1", "main", entry))
+
+	expired := catalog.DBEntry{
+		Path:            "foo/expired",
+		PhysicalAddress: "an_expired_physical_address",
+		CreationDate:    time.Now(),
+		Size:            99999,
+		Checksum:        "b10b",
+		Expired:         true,
+	}
+	testutil.Must(t,
+		deps.catalog.CreateEntry(ctx, "repo1", "main", expired))
+
+	t.Run("head object", func(t *testing.T) {
+		resp, err := clt.HeadObjectWithResponse(ctx, "repo1", "main", &api.HeadObjectParams{Path: "foo/bar"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.HTTPResponse.StatusCode != http.StatusOK {
+			t.Errorf("HeadObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusOK)
+		}
+
+		if resp.HTTPResponse.ContentLength != 37 {
+			t.Errorf("expected 37 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
+		}
+		etag := resp.HTTPResponse.Header.Get("ETag")
+		if etag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
+			t.Errorf("got unexpected etag: %s", etag)
+		}
+
+		body := string(resp.Body)
+		if body != "" {
+			t.Errorf("got unexpected body: '%s'", body)
+		}
+	})
+
+	t.Run("head object byte range", func(t *testing.T) {
+		rng := "bytes=0-9"
+		resp, err := clt.HeadObjectWithResponse(ctx, "repo1", "main", &api.HeadObjectParams{
+			Path:  "foo/bar",
+			Range: &rng,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.HTTPResponse.StatusCode != http.StatusPartialContent {
+			t.Errorf("HeadObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusPartialContent)
+		}
+
+		if resp.HTTPResponse.ContentLength != 10 {
+			t.Errorf("expected 10 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
+		}
+
+		etag := resp.HTTPResponse.Header.Get("ETag")
+		if etag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
+			t.Errorf("got unexpected etag: %s", etag)
+		}
+
+		body := string(resp.Body)
+		if body != "" {
+			t.Errorf("got unexpected body: '%s'", body)
+		}
+	})
+
+	t.Run("head object bad byte range", func(t *testing.T) {
+		rng := "bytes=380-390"
+		resp, err := clt.HeadObjectWithResponse(ctx, "repo1", "main", &api.HeadObjectParams{
+			Path:  "foo/bar",
+			Range: &rng,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.HTTPResponse.StatusCode != http.StatusRequestedRangeNotSatisfiable {
+			t.Errorf("HeadObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusRequestedRangeNotSatisfiable)
+		}
+	})
+}
+
 func TestController_ObjectsGetObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
@@ -1994,7 +2101,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 	t.Run("get properties", func(t *testing.T) {
 		resp, err := clt.GetUnderlyingPropertiesWithResponse(ctx, "repo1", "main", &api.GetUnderlyingPropertiesParams{Path: "foo/bar"})
 		if err != nil {
-			t.Errorf("expected to get underlying properties, got %v", err)
+			t.Fatalf("expected to get underlying properties, got %v", err)
 		}
 		properties := resp.JSON200
 		if properties == nil {
@@ -2088,6 +2195,42 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 		verifyResponseOK(t, statResp, err)
 		objectStat := statResp.JSON200
 		if objectStat.PhysicalAddress != onBlock(deps, "another-bucket/some/location") {
+			t.Fatalf("unexpected physical address: %s", objectStat.PhysicalAddress)
+		}
+	})
+
+	t.Run("stage object in storage ns", func(t *testing.T) {
+		linkResp, err := clt.GetPhysicalAddressWithResponse(ctx, "repo1", "main", &api.GetPhysicalAddressParams{Path: "foo/bar2"})
+		verifyResponseOK(t, linkResp, err)
+		if linkResp.JSON200 == nil {
+			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
+		}
+		const expectedSizeBytes = 38
+		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, "repo1", "main", &api.LinkPhysicalAddressParams{
+			Path: "foo/bar2",
+		}, api.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: api.StagingLocation{
+				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+				Token:           linkResp.JSON200.Token,
+			},
+		})
+		verifyResponseOK(t, resp, err)
+
+		sizeBytes := api.Int64Value(resp.JSON200.SizeBytes)
+		if sizeBytes != expectedSizeBytes {
+			t.Fatalf("expected %d bytes to be written, got back %d", expectedSizeBytes, sizeBytes)
+		}
+
+		// get back info
+		statResp, err := clt.StatObjectWithResponse(ctx, "repo1", "main", &api.StatObjectParams{Path: "foo/bar2"})
+		verifyResponseOK(t, statResp, err)
+		if statResp.JSON200 == nil {
+			t.Fatalf("StatObject non 200 - status code %d", statResp.StatusCode())
+		}
+		objectStat := statResp.JSON200
+		if objectStat.PhysicalAddress != api.StringValue(linkResp.JSON200.PhysicalAddress) {
 			t.Fatalf("unexpected physical address: %s", objectStat.PhysicalAddress)
 		}
 	})
@@ -2410,6 +2553,13 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 			clt := setupClientByEndpoint(t, server.URL, "", "")
 
 			ctx := context.Background()
+			mockEmail := "test@acme.co"
+			_, _ = clt.SetupCommPrefsWithResponse(ctx, api.SetupCommPrefsJSONRequestBody{
+				Email:           &mockEmail,
+				FeatureUpdates:  false,
+				SecurityUpdates: false,
+			})
+
 			resp, err := clt.SetupWithResponse(ctx, api.SetupJSONRequestBody{
 				Username: "admin",
 				Key:      c.key,
@@ -2493,6 +2643,7 @@ func TestLogin(t *testing.T) {
 	handler, deps := setupHandler(t)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
+	_ = setupCommPrefs(t, clt)
 	cred := createDefaultAdminUser(t, clt)
 
 	resp, err := clt.LoginWithResponse(context.Background(), api.LoginJSONRequestBody{
@@ -2728,7 +2879,6 @@ func TestController_MergeDirtyBranch(t *testing.T) {
 	// merge branch1 to main (dirty)
 	resp, err := clt.MergeIntoBranchWithResponse(ctx, repo, "branch1", "main", api.MergeIntoBranchJSONRequestBody{})
 	testutil.MustDo(t, "perform merge into dirty branch", err)
-	const expectedStatusCode = http.StatusBadRequest
 	if resp.JSON400 == nil || resp.JSON400.Message != graveler.ErrDirtyBranch.Error() {
 		t.Errorf("Merge dirty branch should fail with ErrDirtyBranch, got %+v", resp)
 	}
@@ -3246,4 +3396,70 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 			t.Errorf("PrepareGarbageCollectionUncommittedWithResponse token=%s, expected empty token", token)
 		}
 	})
+}
+
+func TestController_ClientDisconnect(t *testing.T) {
+	handler, deps := setupHandlerWithWalkerFactory(t, store.NewFactory(nil))
+	server := setupServer(t, handler)
+	clt := setupClientByEndpoint(t, server.URL, "", "")
+	_ = setupCommPrefs(t, clt)
+	cred := createDefaultAdminUser(t, clt)
+	clt = setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.SecretAccessKey)
+
+	ctx := context.Background()
+
+	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "repo1"), "main")
+	testutil.Must(t, err)
+
+	pr, pw := io.Pipe()
+	mpw := multipart.NewWriter(pw)
+	reqCtx, cancel := context.WithCancel(ctx)
+	go func() {
+		w, _ := mpw.CreateFormFile("content", "file.data")
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		_, _ = io.CopyN(w, r, 1024)
+		cancel()
+		_, _ = io.CopyN(w, r, 1024)
+		_ = mpw.Close()
+	}()
+
+	_, err = clt.UploadObjectWithBodyWithResponse(reqCtx, "repo1", "main", &api.UploadObjectParams{
+		Path: "test/file.data",
+	}, mpw.FormDataContentType(), pr)
+	expectedErr := context.Canceled
+	if !errors.Is(err, expectedErr) {
+		t.Fatalf("Expected to request err to be %s: %v", expectedErr, err)
+	}
+
+	// wait for request to complete
+	time.Sleep(time.Second)
+
+	// request for metrics
+	resp, err := http.Get(server.URL + "/metrics")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// process relevant metrics
+	const apiReqTotalMetricLabel = `api_requests_total{code="499",method="post"}`
+	var clientRequestClosedCount int
+	for _, line := range strings.Split(string(body), "\n") {
+		if strings.HasPrefix(line, apiReqTotalMetricLabel) {
+			if count, err := strconv.Atoi(line[len(apiReqTotalMetricLabel)+1:]); err == nil {
+				clientRequestClosedCount += count
+			}
+		}
+	}
+
+	const expectedCount = 1
+	if clientRequestClosedCount != expectedCount {
+		t.Fatalf("Metric for client request closed: %d, expected: %d", clientRequestClosedCount, expectedCount)
+	}
 }

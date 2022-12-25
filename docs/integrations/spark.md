@@ -605,6 +605,24 @@ df.write.partitionBy("example-column").parquet(s"s3a://${repo}/${branch}/output-
 
 The data is now created in lakeFS as new changes in your branch. You can now commit these changes or revert them.
 
+### Configuring Azure Databricks with the S3 Gateway
+{: .no_toc }
+
+If you use Azure Databricks, you would want to take advantage of the lakeFS S3 gateway with your Azure account, using the S3A File system. 
+Meaning, you’ll need to add the `hadoop-aws` jar (with the same version of your `hadoop-azure` jar) to your Databricks cluster.
+The S3 gateway makes lakeFS compatible with S3, meaning that the S3A file system can “talk” to it natively
+Define your File system configurations in the following way:
+
+```
+spark.hadoop.fs.lakefs.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
+spark.hadoop.fs.lakefs.access.key=‘AKIAlakefs12345EXAMPLE’                   // The access key to your lakeFS server
+spark.hadoop.fs.lakefs.secret.key=‘abc/lakefs/1234567bPxRfiCYEXAMPLEKEY’     // The secret key to your lakeFS server
+spark.hadoop.fs.lakefs.path.style.access=true
+spark.hadoop.fs.lakefs.endpoint=‘https://lakefs.example.com’                 // The endpoint of your lakeFS server
+```
+
+For more details about [Mounting cloud object storage on Databricks](https://docs.databricks.com/dbfs/mounts.html).
+
 ## Case Study: SimilarWeb
 
 See how SimilarWeb is using lakeFS with Spark to [manage algorithm changes in data pipelines](https://grdoron.medium.com/a-smarter-way-to-manage-algorithm-changes-in-data-pipelines-with-lakefs-a4e284f8c756).

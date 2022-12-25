@@ -19,6 +19,7 @@ func TestAuthMiddleware(t *testing.T) {
 	server := setupServer(t, handler)
 	apiEndpoint := server.URL + api.BaseURL
 	clt := setupClientByEndpoint(t, server.URL, "", "")
+	_ = setupCommPrefs(t, clt)
 	cred := createDefaultAdminUser(t, clt)
 
 	t.Run("valid basic auth", func(t *testing.T) {

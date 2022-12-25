@@ -24,7 +24,7 @@ Available Commands:
   merge           Merge & commit changes from source branch into destination branch
   metastore       Manage metastore commands
   repo            Manage and explore repos
-  show            See detailed information about an entity by ID (commit, user, etc)
+  show            See detailed information about an entity
   tag             Create and manage tags within a repository
 
 Flags:

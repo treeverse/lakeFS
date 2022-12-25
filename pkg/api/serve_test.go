@@ -73,7 +73,27 @@ func (m *memCollector) SetInstallationID(installationID string) {
 	m.InstallationID = installationID
 }
 
+func (m *memCollector) CollectCommPrefs(email, installationID string, featureUpdates, securityUpdates bool) {
+}
+
 func (m *memCollector) Close() {}
+
+func setupCommPrefs(t testing.TB, clt api.ClientWithResponsesInterface) *api.NextStep {
+	t.Helper()
+	mockEmail := "test@acme.co"
+	res, err := clt.SetupCommPrefsWithResponse(context.Background(), api.SetupCommPrefsJSONRequestBody{
+		Email:           &mockEmail,
+		FeatureUpdates:  false,
+		SecurityUpdates: false,
+	})
+	testutil.Must(t, err)
+	if res.JSON200 == nil {
+		t.Fatal("Failed to setup comm prefs", res.HTTPResponse.StatusCode, res.HTTPResponse.Status)
+	}
+	return &api.NextStep{
+		NextStep: "comm_prefs_done",
+	}
+}
 
 func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.BaseCredential {
 	t.Helper()
@@ -233,6 +253,7 @@ func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFa
 	handler, deps := setupHandlerWithWalkerFactory(t, factory)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
+	_ = setupCommPrefs(t, clt)
 	cred := createDefaultAdminUser(t, clt)
 	clt = setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.SecretAccessKey)
 	return clt, deps
@@ -242,6 +263,7 @@ func TestInvalidRoute(t *testing.T) {
 	handler, _ := setupHandler(t)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
+	_ = setupCommPrefs(t, clt)
 	cred := createDefaultAdminUser(t, clt)
 
 	// setup client with invalid endpoint base url

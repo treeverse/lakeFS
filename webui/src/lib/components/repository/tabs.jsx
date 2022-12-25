@@ -42,19 +42,9 @@ export const RepositoryNavTabs = ({ active }) => {
         return url;
     };
 
-    const withRefAndPathContext = (url) => {
-        const { path } = router.query;
-        const params = new URLSearchParams();
-        if (reference) params.append('ref', reference.id);
-        if (path) params.append('path', path);
-        if (params.toString())
-            return `${url}?${params.toString()}`;
-        return url;
-    };
-
     return (
         <Nav variant="tabs" >
-            <Link active={active === 'objects'} href={withRefAndPathContext(`/repositories/${repoId}/objects`)} component={NavItem}>
+            <Link active={active === 'objects'} href={withRefContext(`/repositories/${repoId}/objects`)} component={NavItem}>
                 <DatabaseIcon/> Objects
             </Link>
             <Link active={active === 'changes'} href={withBranchContext(`/repositories/${repoId}/changes`)} component={NavItem}>

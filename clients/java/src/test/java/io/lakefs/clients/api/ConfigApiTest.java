@@ -14,8 +14,10 @@
 package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.model.CommPrefsInput;
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.NextStep;
 import io.lakefs.clients.api.model.Setup;
 import io.lakefs.clients.api.model.SetupState;
 import io.lakefs.clients.api.model.StorageConfig;
@@ -91,6 +93,21 @@ public class ConfigApiTest {
     public void setupTest() throws ApiException {
         Setup setup = null;
                 CredentialsWithSecret response = api.setup(setup);
+        // TODO: test validations
+    }
+    
+    /**
+     * setup communications preferences
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void setupCommPrefsTest() throws ApiException {
+        CommPrefsInput commPrefsInput = null;
+                NextStep response = api.setupCommPrefs(commPrefsInput);
         // TODO: test validations
     }
     

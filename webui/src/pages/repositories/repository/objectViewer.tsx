@@ -1,4 +1,4 @@
-import React, { ComponentType, FC } from "react";
+import React, {  FC } from "react";
 import { useParams } from "react-router-dom";
 import { Box } from "@mui/material";
 import Alert from "react-bootstrap/Alert";
@@ -8,14 +8,8 @@ import { FaDownload } from "react-icons/fa";
 import { useAPI } from "../../../lib/hooks/api";
 import { useQuery } from "../../../lib/hooks/router";
 import { objects } from "../../../lib/api";
-import {
-    guessLanguage,
-    GenericRenderer,
-    RendererComponent,
-    supportedContentTypeRenderers,
-    supportedFileExtensionRenderers
-} from "./fileRenderers";
-import { ClipboardButton } from "../../../lib/components/controls";
+import { ObjectRenderer} from "./fileRenderers";
+import {ClipboardButton, Error} from "../../../lib/components/controls";
 import noop from "lodash/noop";
 import { URINavigator } from "../../../lib/components/repository/tree";
 import { RefTypeCommit } from "../../../constants";
@@ -24,8 +18,6 @@ import {RefContextProvider} from "../../../lib/hooks/repo";
 import {linkToPath} from "../../../lib/api";
 
 import "../../../styles/ipynb.css";
-import {FileSymlinkFileIcon} from "@primer/octicons-react";
-
 
 
 interface ObjectViewerPathParams {
@@ -35,7 +27,7 @@ interface ObjectViewerPathParams {
 
 interface ObjectViewerQueryString {
     ref: string;
-    big: string;
+    path: string;
 }
 
 interface FileContentsProps {
@@ -44,58 +36,18 @@ interface FileContentsProps {
     path: string;
     loading: boolean;
     error: Error | null;
-    rawContent: string;
-    blobContent: Blob; 
     contentType?: string | null;
     fileExtension: string;
+    sizeBytes: number;
     showFullNavigator?: boolean;
 }
 
-interface LargeFileContentsProps {
-    repoId: string;
-    refId: string;
-    path: string;
-    loading: boolean;
-    error: Error | null;
-    showFullNavigator?: boolean;
-}
 
 export const Loading: FC = () => {
     return (
         <Alert variant={"info"}>Loading...</Alert>
     );
 };
-
-export const MAX_DISPLAYABLE_SIZE = 1024 * 1024; // 1MB
-
-// Resolve the correct renderer according to the priority:
-// 1. If we have a content-type, use that
-// 2. If we have a known file extension, use that
-// 3. Fall back on download behavior
-export const resolveRenderer = (size: number, contentType: string | null, extension: string | null): ComponentType<RendererComponent> | null => {
-    
-    if (contentType && contentType in supportedContentTypeRenderers) {
-        return supportedContentTypeRenderers[contentType];
-    }
-
-    if (extension && extension in supportedFileExtensionRenderers) {
-        return supportedFileExtensionRenderers[extension];
-    }
-
-    return null;
-}
-
-const FileTypeNotSupported: FC = () => (
-    <Alert variant="info">
-        {`This file type isn't supported for viewing. You can still download the file or copy its raw contents to the clipboard.`}
-    </Alert>
-);
-
-const FileSizeTooLarge: FC = () => (
-    <Alert variant="info">
-        {`File size too large to preview. You can still download the file.`}
-    </Alert>
-);
 
 export const getFileExtension = (objectName: string): string => {
     const objectNameParts = objectName.split(".");
@@ -109,96 +61,54 @@ export const getContentType = (headers: Headers): string | null => {
 }
 
 const FileObjectsViewerPage = () => {
-    const { objectName, repoId } = useParams<ObjectViewerPathParams>();
-    const decodedObjectName = decodeURIComponent(objectName);
+    const { repoId } = useParams<ObjectViewerPathParams>();
     const queryString = useQuery<ObjectViewerQueryString>();
     const refId = queryString["ref"] ?? "";
-    const isBigFile = queryString["big"] === "true";
-    const {response, error, loading} = useAPI(async () => {
-        if (!isBigFile) {
-            return await objects.getWithHeaders(repoId, refId, decodedObjectName);
-        }
+    const path = queryString["path"] ?? "";
+    const {response, error, loading} = useAPI( () => {
+            return objects.head(repoId, refId, path)
+        },
+        [repoId, refId, path]);
 
-        return null;
-    }, [decodedObjectName]);
-
-    const fileExtension = getFileExtension(decodedObjectName);
-    // We'll need to convert the API service to get rid of this any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const contentType = getContentType((response as any)?.headers);
-
-    if (isBigFile) {
-        return (
-            <RefContextProvider>
-            <RepositoryPageLayout activePage={'objects'}>
-                    {loading && <Loading/>}
-                    <LargeFileContents
-                        repoId={repoId}
-                        refId={refId}
-                        path={decodedObjectName}
-                        loading={loading}
-                        error={error}
-                    />
-                </RepositoryPageLayout>
-            </RefContextProvider>
-        );
+    let content;
+    if (loading) {
+        content  = <Loading/>;
+    } else if (error) {
+        content = <Error error={error}/>
+    } else {
+        const fileExtension = getFileExtension(path);
+        // We'll need to convert the API service to get rid of this any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const contentType = getContentType((response as any)?.headers);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sizeBytes = parseInt((response as any)?.headers.get('Content-Length'))
+        content = <FileContents
+            repoId={repoId}
+            refId={refId}
+            path={path}
+            fileExtension={fileExtension}
+            contentType={contentType}
+            sizeBytes={sizeBytes}
+            error={error}
+            loading={loading}
+        />
     }
 
-    // We'll need to convert the API service to get rid of this any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const responseText = (response as any)?.responseText;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const responseBlob = (response as any)?.responseBlob;
     return (
         <RefContextProvider>
             <RepositoryPageLayout activePage={'objects'}>
-                {loading && <Loading/>}
-                <FileContents 
-                    repoId={repoId} 
-                    refId={refId}
-                    path={decodedObjectName}
-                    fileExtension={fileExtension}
-                    contentType={contentType}
-                    rawContent={responseText}
-                    blobContent={responseBlob}
-                    error={error}
-                    loading={loading}
-                />
+                {content}
             </RepositoryPageLayout>
         </RefContextProvider>
     );
 };
 
-export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loading, error, rawContent, blobContent, contentType = null, fileExtension='', showFullNavigator = true}) => {
+export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loading, error, contentType = null, fileExtension='', sizeBytes, showFullNavigator = true}) => {
 
     const objectUrl = linkToPath(repoId, refId, path);
 
     if (loading || error) {
         return <></>;
-    }
-
-    const size = (rawContent) ? rawContent.length : blobContent.size;
-
-    let content;
-    const renderer = resolveRenderer(size, contentType, fileExtension);
-    if (!renderer) {
-        // let's try and guess?
-        if (size <= MAX_DISPLAYABLE_SIZE) {
-            const language = guessLanguage(fileExtension, contentType);
-            if (language) {
-                content = <GenericRenderer content={rawContent} language={language}/>;
-            } else {
-                // File type does not have a renderer
-                // We cannot display it inline
-                content = <FileTypeNotSupported />
-            }
-        } else {
-            // File type does not have a renderer
-            // We cannot display it inline
-            content = <FileTypeNotSupported />
-        }
-    } else {
-        content = React.createElement(renderer, { content: rawContent, contentBlob: blobContent, }, []);
     }
 
     const repo = {
@@ -221,7 +131,7 @@ export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loadin
                     <span className="object-viewer-buttons">
                         <a 
                             href={objectUrl}
-                            download={true}
+                            download={path.split('/').pop()}
                             className="btn btn-primary btn-sm download-button mr-1">
                                 <FaDownload />
                         </a>
@@ -233,67 +143,21 @@ export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loadin
                             onError={noop}
                             className={"mr-1"}
                             tooltip={"copy URI to clipboard"} />
-                        <ClipboardButton
-                            icon={<FileSymlinkFileIcon/>}
-                            text={rawContent}
-                            variant="outline-primary"
-                            size="sm"
-                            onSuccess={noop}
-                            onError={noop}
-                            tooltip={"copy contents to clipboard"}/>
                     </span>
                 </Card.Header>
                 <Card.Body className={'file-content-body'}>
                     <Box sx={{mx: 1}}>
-                        {content}
+                        <ObjectRenderer
+                            repoId={repoId}
+                            refId={refId}
+                            path={path}
+                            fileExtension={fileExtension}
+                            contentType={contentType}
+                            sizeBytes={sizeBytes}/>
                     </Box>
                 </Card.Body>
             </Card>
     );
 };
-
-const LargeFileContents: FC<LargeFileContentsProps> = ({repoId, refId, path, loading, error, showFullNavigator = true}) => {
-    if (loading || error) {
-        return <></>;
-    }
-    
-    const repo = {
-        id: repoId,
-    };
-
-    const reference = {
-        id: refId,
-        type: RefTypeCommit,
-    }
-    
-    const titleComponent = showFullNavigator ?
-        (<URINavigator path={path} repo={repo} reference={reference} isPathToFile={true} />) :
-        (<span>{path}</span>);
-
-    const downloadPath = linkToPath(repoId, refId, path);
-
-        return (
-            <Card className={'readme-card'}>
-                <Card.Header className={'readme-heading d-flex justify-content-between align-items-center'}>
-                    {titleComponent}
-                    <span className="object-viewer-buttons">
-                        <a 
-                            href={downloadPath}
-                            download="true"
-                            target="_blank"
-                            rel="noreferrer"
-                            className="btn btn-primary btn-sm download-button">
-                                <FaDownload />
-                        </a>
-                    </span>
-                </Card.Header>
-                <Card.Body>
-                    <Box sx={{mx: 1}}>
-                        <FileSizeTooLarge />
-                    </Box>
-                </Card.Body>
-            </Card>
-    );
-}
 
 export default FileObjectsViewerPage;

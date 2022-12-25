@@ -15,6 +15,46 @@ security:
 - cookie_auth: []
 - oidc_auth: []
 paths:
+  /setup_comm_prefs:
+    post:
+      operationId: setupCommPrefs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommPrefsInput'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NextStep'
+          description: communication preferences saved successfully
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: setup was already completed
+        "412":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: wrong setup state for this operation
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security: []
+      summary: setup communications preferences
+      tags:
+      - config
+      x-contentType: application/json
+      x-accepts: application/json
   /setup_lakefs:
     get:
       operationId: getSetupState
@@ -2945,11 +2985,6 @@ paths:
               schema:
                 type: string
               style: simple
-            Content-Disposition:
-              explode: false
-              schema:
-                type: string
-              style: simple
         "206":
           content:
             application/octet-stream:
@@ -2976,11 +3011,6 @@ paths:
                 type: string
               style: simple
             ETag:
-              explode: false
-              schema:
-                type: string
-              style: simple
-            Content-Disposition:
               explode: false
               schema:
                 type: string
@@ -3016,6 +3046,101 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Requested Range Not Satisfiable
       summary: get object content
+      tags:
+      - objects
+      x-accepts: application/json
+    head:
+      operationId: headObject
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: a reference (could be either a branch or a commit ID)
+        explode: false
+        in: path
+        name: ref
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: relative to the ref
+        explode: true
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+        style: form
+      - description: Byte range to retrieve
+        example: bytes=0-1023
+        explode: false
+        in: header
+        name: Range
+        required: false
+        schema:
+          pattern: ^bytes=((\d*-\d*,? ?)+)$
+          type: string
+        style: simple
+      responses:
+        "200":
+          description: object exists
+          headers:
+            Content-Length:
+              explode: false
+              schema:
+                format: int64
+                type: integer
+              style: simple
+            Last-Modified:
+              explode: false
+              schema:
+                type: string
+              style: simple
+            ETag:
+              explode: false
+              schema:
+                type: string
+              style: simple
+        "206":
+          description: partial object content info
+          headers:
+            Content-Length:
+              explode: false
+              schema:
+                format: int64
+                type: integer
+              style: simple
+            Content-Range:
+              explode: false
+              schema:
+                pattern: ^bytes=((\d*-\d*,? ?)+)$
+                type: string
+              style: simple
+            Last-Modified:
+              explode: false
+              schema:
+                type: string
+              style: simple
+            ETag:
+              explode: false
+              schema:
+                type: string
+              style: simple
+        "401":
+          description: Unauthorized
+        "404":
+          description: object not found
+        "410":
+          description: object expired
+        "416":
+          description: Requested Range Not Satisfiable
+        default:
+          description: internal server error
+      summary: check if object exists
       tags:
       - objects
       x-accepts: application/json
@@ -5375,6 +5500,7 @@ components:
           enum:
           - initialized
           - not_initialized
+          - comm_prefs_done
           type: string
         oidc_enabled:
           type: boolean
@@ -5414,6 +5540,35 @@ components:
           $ref: '#/components/schemas/AccessKeyCredentials'
       required:
       - username
+      type: object
+    CommPrefsInput:
+      example:
+        featureUpdates: true
+        email: email
+        securityUpdates: true
+      properties:
+        email:
+          description: the provided email
+          type: string
+        featureUpdates:
+          description: was "feature updates" checked
+          type: boolean
+        securityUpdates:
+          description: was "security updates" checked
+          type: boolean
+      required:
+      - featureUpdates
+      - securityUpdates
+      type: object
+    NextStep:
+      example:
+        nextStep: nextStep
+      properties:
+        nextStep:
+          description: the next step in the setup process
+          type: string
+      required:
+      - nextStep
       type: object
     UpdatePasswordByToken:
       example:
