@@ -34,10 +34,10 @@ const (
 	DBName                    = "lakefs_db"
 	DBContainerTimeoutSeconds = 60 * 30 // 30 minutes
 
-	EnvKeyUseBlockAdapter = "USE_BLOCK_ADAPTER"
+	EnvKeyUseBlockAdapter = "USE_BLOCK_ADAPTER" // pragma: allowlist secret
 	envKeyAwsKeyID        = "AWS_ACCESS_KEY_ID"
 	envKeyAwsSecretKey    = "AWS_SECRET_ACCESS_KEY" //nolint:gosec
-	envKeyAwsRegion       = "AWS_DEFAULT_REGION"
+	envKeyAwsRegion       = "AWS_DEFAULT_REGION"    // pragma: allowlist secret
 
 	testMigrateValue = "This is a test value"
 	testPartitionKey = "This is a test partition key"
