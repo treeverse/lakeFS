@@ -209,5 +209,105 @@ class UncommittedGarbageCollectorSpec
         })
       }
     }
+    describe(".readMarkedAddresses") {
+      it("should raise exception on failed run") {
+        withSparkSession(_ => {
+          val runID = "failedRun"
+          val runPath =
+            dir.resolve(java.nio.file.Paths.get("_lakefs", "retention", "gc", "uncommitted", runID))
+          runPath.toFile.mkdirs()
+          UncommittedGarbageCollector.writeJsonSummary(runPath.toString,
+                                                       runID,
+                                                       "",
+                                                       java.time.Clock.systemUTC.instant(),
+                                                       false,
+                                                       0
+                                                      )
+          try {
+            UncommittedGarbageCollector.readMarkedAddresses(dir.toString + "/",
+                                                            runID
+                                                           ) // Should throw an exception
+            // Fail test if no exception was thrown
+            throw new Exception("test failed")
+          } catch {
+            // Other types of exceptions will not be caught and test will fail
+            case e: FailedRunException =>
+              e.getMessage.contains(s"Provided mark ($runID) is of a failed run") should be(true)
+          }
+        })
+      }
+      it("should raise exception on missing run") {
+        withSparkSession(_ => {
+          val runID = "not_exist"
+          try {
+            UncommittedGarbageCollector.readMarkedAddresses(dir.toString + "/",
+                                                            runID
+                                                           ) // Should throw an exception
+            // Fail test if no exception was thrown
+            throw new Exception("test failed")
+          } catch {
+            // Other types of exceptions will not be caught and test will fail
+            case e: FailedRunException =>
+              e.getMessage.contains(s"Mark ID ($runID) does not exist") should be(true)
+          }
+        })
+      }
+    }
+    describe(".validateRunModeConfigs") {
+      val markID = "markID"
+
+      it("should succeed mark & sweep") {
+        UncommittedGarbageCollector.validateRunModeConfigs(true, true, "")
+      }
+      it("should succeed when sweep with mark ID") {
+        UncommittedGarbageCollector.validateRunModeConfigs(false, true, markID)
+      }
+      it("should fail when no options provided") {
+        try {
+          UncommittedGarbageCollector.validateRunModeConfigs(false,
+                                                             false,
+                                                             markID
+                                                            ) // Should throw an exception
+          // Fail test if no exception was thrown
+          throw new Exception("test failed")
+        } catch {
+          // Other types of exceptions will not be caught and test will fail
+          case e: ParameterValidationException =>
+            e.getMessage.contains(
+              "Nothing to do, must specify at least one of mark, sweep"
+            ) should be(true)
+        }
+      }
+      it("should fail when mark with mark ID") {
+        for (sweepVal <- Seq(true, false)) {
+          try {
+            UncommittedGarbageCollector.validateRunModeConfigs(true,
+                                                               sweepVal,
+                                                               markID
+                                                              ) // Should throw an exception
+            // Fail test if no exception was thrown
+            throw new Exception("test failed")
+          } catch {
+            // Other types of exceptions will not be caught and test will fail
+            case e: ParameterValidationException =>
+              e.getMessage.contains("Can't provide mark ID for mark mode") should be(true)
+          }
+        }
+      }
+      it("should fail when sweep with no mark ID") {
+        try {
+          UncommittedGarbageCollector.validateRunModeConfigs(false,
+                                                             true,
+                                                             ""
+                                                            ) // Should throw an exception
+          // Fail test if no exception was thrown
+          throw new Exception("test failed")
+        } catch {
+          // Other types of exceptions will not be caught and test will fail
+          case e: ParameterValidationException =>
+            e.getMessage.contains("Please provide a mark ID") should be(true)
+        }
+      }
+    }
   }
 }

@@ -501,6 +501,7 @@ If your version is lower, you should first upgrade.
 
    ```bash
    spark-submit \
+       --conf spark.hadoop.lakefs.gc.do_sweep=false \
        --conf spark.hadoop.lakefs.api.url=<LAKEFS_ENDPOINT> \
        --conf spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY_ID> \
        --conf spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_ACCESS_KEY> \
@@ -525,7 +526,7 @@ If your version is lower, you should first upgrade.
    ```bash
    spark-submit \
        --conf spark.hadoop.lakefs.gc.mark_id=<MARK_ID> \
-       --conf spark.hadoop.lakefs.gc.do_sweep=true \
+       --conf spark.hadoop.lakefs.gc.do_mark=false \
        --conf spark.hadoop.lakefs.api.url=<LAKEFS_ENDPOINT> \
        --conf spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY_ID> \
        --conf spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_ACCESS_KEY> \

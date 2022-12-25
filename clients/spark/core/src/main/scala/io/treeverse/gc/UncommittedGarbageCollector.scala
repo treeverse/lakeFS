@@ -78,28 +78,30 @@ object UncommittedGarbageCollector {
     firstSlice
   }
 
-  private def validateRunModeConfigs(
+  def validateRunModeConfigs(
       shouldMark: Boolean,
       shouldSweep: Boolean,
       markID: String
   ): Unit = {
     if (!shouldMark && !shouldSweep) {
-      Console.out.println("Nothing to do, must specify at least one of mark, sweep. Exiting...")
-      System.exit(2)
-    } else if (!shouldMark && markID.isEmpty) { // Sweep-only mode but no mark ID to sweep
-      Console.out.printf("Please provide a mark ID (%s) for sweep-only mode. Exiting...\n",
-                         LAKEFS_CONF_GC_MARK_ID
-                        )
-      System.exit(2)
-    } else if (shouldMark && markID.nonEmpty) {
-      Console.out.println("Can't provide mark ID for mark mode. Exiting...")
+      throw new ParameterValidationException(
+        "Nothing to do, must specify at least one of mark, sweep. Exiting..."
+      )
+    }
+    if (!shouldMark && markID.isEmpty) { // Sweep-only mode but no mark ID to sweep
+      throw new ParameterValidationException(
+        s"Please provide a mark ID ($LAKEFS_CONF_GC_MARK_ID) for sweep-only mode. Exiting...\n"
+      )
+    }
+    if (shouldMark && markID.nonEmpty) {
+      throw new ParameterValidationException("Can't provide mark ID for mark mode. Exiting...")
     }
   }
 
   def main(args: Array[String]): Unit = {
     var runID = ""
     var firstSlice = ""
-    var success = true
+    var success = false
     var markedAddresses = spark.emptyDataFrame.withColumn("address", lit(""))
     var addressesToDelete = spark.emptyDataFrame.withColumn("address", lit(""))
     val repo = args(0)
@@ -120,14 +122,10 @@ object UncommittedGarbageCollector {
     val startTime = java.time.Clock.systemUTC.instant()
 
     val shouldMark = hc.getBoolean(LAKEFS_CONF_GC_DO_MARK, true)
-    val shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, false)
+    val shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, true)
     val markID = hc.get(LAKEFS_CONF_GC_MARK_ID, "")
 
-    validateRunModeConfigs(
-      shouldMark,
-      shouldSweep,
-      markID
-    )
+    validateRunModeConfigs(shouldMark, shouldSweep, markID)
 
     val apiConf =
       APIConfigurations(apiURL,
@@ -199,11 +197,8 @@ object UncommittedGarbageCollector {
           .toDF()
         removed.collect()
       }
-    } catch {
-      case e: Throwable =>
-        success = false
-        println(e.getStackTrace.mkString("Array(", ", ", ")"))
-        throw e
+      // Flow completed successfully - set success to true
+      success = true
     } finally {
       if (runID.nonEmpty && shouldMark) {
         writeReports(
@@ -227,7 +222,7 @@ object UncommittedGarbageCollector {
       success: Boolean,
       expiredAddresses: DataFrame
   ): Unit = {
-    val reportDst = reportPath(storageNamespace, runID)
+    val reportDst = formatRunPath(storageNamespace, runID)
     val summary =
       writeJsonSummary(reportDst, runID, firstSlice, startTime, success, expiredAddresses.count())
     println(s"Report for mark_id=$runID summary=$summary")
@@ -237,22 +232,25 @@ object UncommittedGarbageCollector {
     cachedAddresses.write.text(s"$reportDst/deleted.text")
   }
 
-  private def reportPath(storageNamespace: String, runID: String): String = {
+  private def formatRunPath(storageNamespace: String, runID: String): String = {
     s"${storageNamespace}_lakefs/retention/gc/uncommitted/$runID"
   }
 
-  private def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
-    val path = reportPath(storageNamespace, markID)
-    val markedRunSummary = spark.read.json(s"$path/summary.json")
-    val markedRunSucceeded = markedRunSummary.first.getAs[Boolean]("success")
-    if (!markedRunSucceeded) {
-      spark.emptyDataFrame.withColumn("address", lit(""))
+  def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
+    val reportPath = formatRunPath(storageNamespace, markID) + "/summary.json"
+    val fs = org.apache.hadoop.fs.FileSystem.get(spark.sparkContext.hadoopConfiguration)
+    if (!fs.exists(new Path(reportPath))) {
+      throw new FailedRunException(s"Mark ID ($markID) does not exist")
+    }
+    val markedRunSummary = spark.read.json(reportPath)
+    if (!markedRunSummary.first.getAs[Boolean]("success")) {
+      throw new FailedRunException(s"Provided mark ($markID) is of a failed run")
     } else {
-      spark.read.parquet(s"$path/deleted")
+      spark.read.parquet(s"$reportPath/deleted")
     }
   }
 
-  private def writeJsonSummary(
+  def writeJsonSummary(
       dst: String,
       runID: String,
       firstSlice: String,
