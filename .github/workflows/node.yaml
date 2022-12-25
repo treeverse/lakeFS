@@ -18,6 +18,7 @@ jobs:
         with:
           node-version: '16.17.1'
           cache: 'npm'
+          cache-dependency-path: webui/package-lock.json
       - name: install UI dependencies
         run: npm ci
         working-directory: ./webui
