@@ -87,11 +87,13 @@ object UncommittedGarbageCollector {
       throw new ParameterValidationException(
         "Nothing to do, must specify at least one of mark, sweep. Exiting..."
       )
-    } else if (!shouldMark && markID.isEmpty) { // Sweep-only mode but no mark ID to sweep
+    }
+    if (!shouldMark && markID.isEmpty) { // Sweep-only mode but no mark ID to sweep
       throw new ParameterValidationException(
         s"Please provide a mark ID ($LAKEFS_CONF_GC_MARK_ID) for sweep-only mode. Exiting...\n"
       )
-    } else if (shouldMark && markID.nonEmpty) {
+    }
+    if (shouldMark && markID.nonEmpty) {
       throw new ParameterValidationException("Can't provide mark ID for mark mode. Exiting...")
     }
   }
@@ -99,7 +101,7 @@ object UncommittedGarbageCollector {
   def main(args: Array[String]): Unit = {
     var runID = ""
     var firstSlice = ""
-    var success = true
+    var success = false
     var markedAddresses = spark.emptyDataFrame.withColumn("address", lit(""))
     var addressesToDelete = spark.emptyDataFrame.withColumn("address", lit(""))
     val repo = args(0)
@@ -119,8 +121,8 @@ object UncommittedGarbageCollector {
     val cutoffTime = DateUtils.addSeconds(new Date(), -minAgeSeconds)
     val startTime = java.time.Clock.systemUTC.instant()
 
-    val shouldMark = hc.getBoolean(LAKEFS_CONF_GC_DO_MARK, false)
-    val shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, false)
+    val shouldMark = hc.getBoolean(LAKEFS_CONF_GC_DO_MARK, true)
+    val shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, true)
     val markID = hc.get(LAKEFS_CONF_GC_MARK_ID, "")
 
     validateRunModeConfigs(shouldMark, shouldSweep, markID)
@@ -195,6 +197,8 @@ object UncommittedGarbageCollector {
           .toDF()
         removed.collect()
       }
+      // Flow completed successfully - set success to true
+      success = true
     } finally {
       if (runID.nonEmpty && shouldMark) {
         writeReports(
@@ -218,7 +222,7 @@ object UncommittedGarbageCollector {
       success: Boolean,
       expiredAddresses: DataFrame
   ): Unit = {
-    val reportDst = runPath(storageNamespace, runID)
+    val reportDst = formatRunPath(storageNamespace, runID)
     val summary =
       writeJsonSummary(reportDst, runID, firstSlice, startTime, success, expiredAddresses.count())
     println(s"Report for mark_id=$runID summary=$summary")
@@ -228,12 +232,12 @@ object UncommittedGarbageCollector {
     cachedAddresses.write.text(s"$reportDst/deleted.text")
   }
 
-  private def runPath(storageNamespace: String, runID: String): String = {
+  private def formatRunPath(storageNamespace: String, runID: String): String = {
     s"${storageNamespace}_lakefs/retention/gc/uncommitted/$runID"
   }
 
   def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
-    val reportPath = runPath(storageNamespace, markID) + "/summary.json"
+    val reportPath = formatRunPath(storageNamespace, markID) + "/summary.json"
     val fs = org.apache.hadoop.fs.FileSystem.get(spark.sparkContext.hadoopConfiguration)
     if (!fs.exists(new Path(reportPath))) {
       throw new FailedRunException(s"Mark ID ($markID) does not exist")
