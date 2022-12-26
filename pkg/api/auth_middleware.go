@@ -50,7 +50,6 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 				next.ServeHTTP(w, r)
 				return
 			}
-
 			securityRequirements, err := extractSecurityRequirements(router, r)
 			if err != nil {
 				writeError(w, r, http.StatusBadRequest, err)
@@ -62,7 +61,8 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 				return
 			}
 			if user != nil {
-				r = r.WithContext(auth.WithUser(r.Context(), user))
+				ctx := logging.AddFields(r.Context(), logging.Fields{logging.UserFieldKey: user.Username})
+				r = r.WithContext(auth.WithUser(ctx, user))
 			}
 			next.ServeHTTP(w, r)
 		})

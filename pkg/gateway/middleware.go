@@ -213,6 +213,7 @@ func OperationLookupHandler(next http.Handler) http.Handler {
 				return
 			}
 		}
+		req = req.WithContext(logging.AddFields(ctx, logging.Fields{"operation_id": o.OperationID}))
 		next.ServeHTTP(w, req)
 	})
 }
