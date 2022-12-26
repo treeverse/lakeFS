@@ -122,7 +122,7 @@ func TestLocalLoad(t *testing.T) {
 		Credentials:      *credentials,
 		ServerAddress:    ts.URL,
 		StorageNamespace: "mem://local/test/",
-		NoProgress:       !testing.Verbose(),
+		ShowProgress:     testing.Verbose(),
 	}
 	loader := NewLoader(testConfig)
 	err = loader.Run()

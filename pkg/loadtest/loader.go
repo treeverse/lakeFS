@@ -40,7 +40,7 @@ type Config struct {
 	KeepRepo         bool
 	Credentials      model.Credential
 	ServerAddress    string
-	NoProgress       bool
+	ShowProgress     bool
 }
 
 var (
@@ -70,7 +70,7 @@ func (t *Loader) Run() error {
 		return err
 	}
 	stopCh := make(chan struct{})
-	if !t.Config.NoProgress {
+	if t.Config.ShowProgress {
 		progressBar(t.Config.Duration)
 	}
 	out := new(SimpleScenario).Play(t.Config.ServerAddress, repoName, stopCh)
