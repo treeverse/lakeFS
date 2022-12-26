@@ -1,7 +1,8 @@
 {
     "parser": "@typescript-eslint/parser",
     "plugins": [
-        "@typescript-eslint"
+        "@typescript-eslint",
+        "compat"
     ],
     "env": {
       "browser": true,
@@ -24,7 +25,8 @@
       "eslint:recommended",
       "plugin:@typescript-eslint/eslint-recommended",
       "plugin:@typescript-eslint/recommended",
-      "plugin:react/recommended"
+      "plugin:react/recommended",
+      "plugin:compat/recommended"
     ],
     "globals": {
       "process": true

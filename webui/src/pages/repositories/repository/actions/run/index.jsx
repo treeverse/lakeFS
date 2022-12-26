@@ -14,7 +14,7 @@ import {
     PlayIcon,
 } from "@primer/octicons-react";
 import Button from "react-bootstrap/Button";
-import moment from "moment";
+import dayjs from "dayjs";
 import {ActionStatusIcon} from "../../../../../lib/components/repository/actions";
 import Table from "react-bootstrap/Table";
 import {Link} from "../../../../../lib/components/nav";
@@ -97,9 +97,9 @@ const HookLog = ({ repo, run, execution }) => {
 
     let duration = '(running)';
     if (execution.status === 'completed' || execution.status === 'failed') {
-        const endTs = moment(execution.end_time);
-        const startTs = moment(execution.start_time);
-        const diff = moment.duration(endTs.diff(startTs)).asSeconds();
+        const endTs = dayjs(execution.end_time);
+        const startTs = dayjs(execution.start_time);
+        const diff = dayjs.duration(endTs.diff(startTs)).asSeconds();
         duration = `(${execution.status} in ${diff}s)`;
     } else if (execution.status === 'skipped') {
         duration = '(skipped)'
@@ -166,7 +166,6 @@ const ActionBrowser = ({ repo, run, hooks, onSelectAction, selectedAction = null
             <Col md={{span: 3}}>
                 <ListGroup variant="flush">
                     <ListGroup.Item action
-                        active={(!selectedAction)}
                         onClick={() => onSelectAction(null)}>
                         <HomeIcon/> Summary
                     </ListGroup.Item>
@@ -180,7 +179,6 @@ const ActionBrowser = ({ repo, run, hooks, onSelectAction, selectedAction = null
                         {actions.map(actionName => (
                             <ListGroup.Item action
                                 key={actionName}
-                                active={(selectedAction === actionName)}
                                 onClick={() => onSelectAction(actionName)}>
                                 <PlayIcon/> {actionName}
                             </ListGroup.Item>

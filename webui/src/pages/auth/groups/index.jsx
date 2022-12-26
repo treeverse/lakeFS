@@ -16,7 +16,7 @@ import {
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
-import {Route, Switch} from "react-router-dom";
+import {Route, Routes} from "react-router-dom";
 import {useRouter} from "../../../lib/hooks/router";
 import {Link} from "../../../lib/components/nav";
 import GroupPage from "./group";
@@ -130,14 +130,10 @@ const GroupsPage = () => {
 
 const GroupsIndexPage = () => {
     return (
-        <Switch>
-            <Route path="/auth/groups/:groupId">
-                <GroupPage/>
-            </Route>
-            <Route path="/auth/groups">
-                <GroupsPage/>
-            </Route>
-        </Switch>
+        <Routes>
+            <Route path=":groupId/*" element={<GroupPage/>} />
+            <Route path="" element={<GroupsPage/>} />
+        </Routes>
     )
 }
 

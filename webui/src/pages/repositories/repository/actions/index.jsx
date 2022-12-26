@@ -18,7 +18,7 @@ import {
 import {Table} from "react-bootstrap";
 import {Paginator} from "../../../../lib/components/pagination";
 import {ActionStatusIcon} from "../../../../lib/components/repository/actions";
-import {Route, Switch} from "react-router-dom";
+import {Route, Routes} from "react-router-dom";
 import {Link} from "../../../../lib/components/nav";
 import {useRouter} from "../../../../lib/hooks/router";
 import RepositoryActionPage from "./run";
@@ -223,14 +223,10 @@ const RepositoryActionsPage = () => {
 
 const RepositoryActionsIndexPage = () => {
     return (
-        <Switch>
-            <Route exact path="/repositories/:repoId/actions">
-                <RepositoryActionsPage/>
-            </Route>
-            <Route exact path="/repositories/:repoId/actions/:runId">
-                <RepositoryActionPage/>
-            </Route>
-        </Switch>
+        <Routes>
+            <Route path="" element={<RepositoryActionsPage/>} />
+            <Route path=":runId" element={<RepositoryActionPage/>} />
+        </Routes>
     );
 };
 

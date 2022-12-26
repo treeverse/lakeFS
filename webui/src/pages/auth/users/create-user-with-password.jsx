@@ -1,6 +1,6 @@
 import Layout from "../../../lib/components/layout";
 import React, {useRef, useState} from "react";
-import {Redirect, Route} from "react-router-dom";
+import {Navigate, Route} from "react-router-dom";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
@@ -103,9 +103,7 @@ export const ActivateInvitedUserPage = () => {
             {
                 token ?
                     <CreateUserWithPasswordForm token={token} email={invitedUserEmail}/> :
-                    <Route>
-                        <Redirect to="/auth/login"/>
-                    </Route>
+                    <Route element={<Navigate to="/auth/login"/>} />
             }
         </Layout>
     );

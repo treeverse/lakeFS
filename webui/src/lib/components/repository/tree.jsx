@@ -1,8 +1,8 @@
 import React, {useState} from "react";
 
-import moment from "moment";
+import dayjs from "dayjs";
 import {
-    ClippyIcon,
+    PasteIcon,
     DotIcon,
     DownloadIcon,
     FileDirectoryIcon,
@@ -80,7 +80,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
                         copyTextToClipboard(`lakefs://${repo.id}/${reference.id}/${entry.path}`)
                         e.preventDefault()
                     }}>
-                        <ClippyIcon/> {' '} Copy URI
+                        <PasteIcon/> {' '} Copy URI
                     </Dropdown.Item>
                     {entry.path_type === 'object' && reference.type === RefTypeBranch &&
                         <>
@@ -138,7 +138,7 @@ const StatModal = ({ show, onHide, entry }) => {
                         </tr>
                         <tr>
                             <td><strong>Last Modified</strong></td>
-                            <td>{`${moment.unix(entry.mtime).fromNow()} (${moment.unix(entry.mtime).format("MM/DD/YYYY HH:mm:ss")})`}</td>
+                            <td>{`${dayjs.unix(entry.mtime).fromNow()} (${dayjs.unix(entry.mtime).format("MM/DD/YYYY HH:mm:ss")})`}</td>
                         </tr>
                         {(entry.content_type) &&
                             <tr>
@@ -213,8 +213,8 @@ const EntryRow = ({repo, reference, path, entry, onDelete, showActions}) => {
     } else {
         modified = (
             <OverlayTrigger placement="bottom"
-                            overlay={<Tooltip>{moment.unix(entry.mtime).format("MM/DD/YYYY HH:mm:ss")}</Tooltip>}>
-                <span>{moment.unix(entry.mtime).fromNow()}</span>
+                            overlay={<Tooltip>{dayjs.unix(entry.mtime).format("MM/DD/YYYY HH:mm:ss")}</Tooltip>}>
+                <span>{dayjs.unix(entry.mtime).fromNow()}</span>
             </OverlayTrigger>
         );
     }
