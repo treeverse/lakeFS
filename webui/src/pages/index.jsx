@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {BrowserRouter as Router, Switch, Route, Redirect} from 'react-router-dom';
+import {BrowserRouter as Router, Routes, Route, Navigate} from 'react-router-dom';
 
 // pages
 import Repositories from './repositories';
@@ -10,21 +10,13 @@ import Setup from './setup';
 export const IndexPage = () => {
     return (
         <Router>
-            <Switch>
-                <Route exact path="/">
-                    <Redirect to="/repositories"/>
-                </Route>
-                <Route path="/repositories">
-                    <Repositories/>
-                </Route>
-                <Route path="/auth">
-                    <Auth/>
-                </Route>
-                <Route path="/setup">
-                    <Setup/>
-                </Route>
-                <Redirect to="/repositories" />
-            </Switch>
+            <Routes>
+                <Route path="/" element={<Navigate to="/repositories"/>} />
+                <Route path="/repositories/*" element={<Repositories/>} />
+                <Route path="/auth/*" element={<Auth/>} />
+                <Route path="/setup/*" element={<Setup/>} />
+                <Route path="*" element={<Navigate to="/repositories" replace />} />
+            </Routes>
         </Router>
     );
 };

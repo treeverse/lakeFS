@@ -1,4 +1,4 @@
-import react from '@vitejs/plugin-react';
+import react from '@vitejs/plugin-react-swc';
 import eslintPlugin from 'vite-plugin-eslint';
 import replace from '@rollup/plugin-replace';
 

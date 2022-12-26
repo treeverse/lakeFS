@@ -9,7 +9,7 @@ import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Modal from "react-bootstrap/Modal";
 
 import {RepoIcon, SearchIcon} from "@primer/octicons-react";
-import moment from "moment";
+import dayjs from "dayjs";
 
 import Layout from "../../lib/components/layout";
 import {ActionsBar, Error, ExitConfirmationDialog, Loading, useDebouncedState} from "../../lib/components/controls";
@@ -21,7 +21,7 @@ import Container from "react-bootstrap/Container";
 import {Link} from "../../lib/components/nav";
 import {useRouter} from "../../lib/hooks/router";
 
-import {Route, Switch} from "react-router-dom";
+import {Route, Routes} from "react-router-dom";
 import RepositoryPage from './repository';
 import Alert from "react-bootstrap/Alert";
 import Dropdown from "react-bootstrap/Dropdown";
@@ -133,7 +133,7 @@ const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateRepo }) =>
                                 </h5>
                                 <p>
                                     <small>
-                                        created at <code>{moment.unix(repo.creation_date).toISOString()}</code> ({moment.unix(repo.creation_date).fromNow()})<br/>
+                                        created at <code>{dayjs.unix(repo.creation_date).toISOString()}</code> ({dayjs.unix(repo.creation_date).fromNow()})<br/>
                                         default branch: <code>{repo.default_branch}</code>,{' '}
                                         storage namespace: <code>{repo.storage_namespace}</code>
                                     </small>
@@ -281,14 +281,10 @@ const TemplatesModalTitleContainer = () => {
 
 const RepositoriesIndex = () => {
     return (
-        <Switch>
-            <Route exact path="/repositories">
-                <RepositoriesPage/>
-            </Route>
-            <Route path="/repositories/:repoId">
-                <RepositoryPage/>
-            </Route>
-        </Switch>
+        <Routes>
+            <Route path="/" element={<RepositoriesPage/>} />
+            <Route path=":repoId/*" element={<RepositoryPage/>} />
+        </Routes>
     );
 };
 

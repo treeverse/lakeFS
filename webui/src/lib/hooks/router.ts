@@ -1,5 +1,5 @@
 import {
-  useHistory,
+  useNavigate,
   useLocation,
   useParams,
   generatePath,
@@ -40,14 +40,14 @@ export const useRouter = <
   >
 >() => {
   const location = useLocation();
-  const history = useHistory();
   const query = useQuery<Q>();
   const params = useParams<T>();
+  const navigate = useNavigate();
   return {
     query,
     params,
     route: location.pathname,
-    history: history,
-    push: (url: URLBuilderInput) => history.push(buildURL(url)),
+    navigate,
+    push: (url: URLBuilderInput) => navigate(buildURL(url)),
   };
 };

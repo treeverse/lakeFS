@@ -17,8 +17,13 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16.17.1'
+          cache: 'npm'
+          cache-dependency-path: webui/package-lock.json
       - name: install UI dependencies
-        run: npm install
+        run: npm ci
+        working-directory: ./webui
+      - name: run UI lint
+        run: npm run lint
         working-directory: ./webui
       - name: run UI tests
         run: npm test
