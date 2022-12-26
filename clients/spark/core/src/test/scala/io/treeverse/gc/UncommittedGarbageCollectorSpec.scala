@@ -153,8 +153,8 @@ class UncommittedGarbageCollectorSpec
         withSparkSession(_ => {
           val dataDir = new File(dir.toFile, "data")
           dataDir.mkdir()
-          val legacySlice = repo + "_legacy_physical:address_path"
-          new File(dataDir, legacySlice).createNewFile()
+          val legacyPath = repo + "_legacy_physical:address_path"
+          new File(dataDir, legacyPath).createNewFile()
 
           val dataDF =
             UncommittedGarbageCollector.listObjects(dir.toString,
@@ -185,11 +185,11 @@ class UncommittedGarbageCollectorSpec
         withSparkSession(_ => {
           val dataDir = new File(dir.toFile, "data")
           dataDir.mkdir()
-          val legacySlice = repo + "_legacy_physical:address_path"
+          val legacyPath = repo + "_legacy_physical:address_path"
           val regularSlice = "xxx"
           val regularSlice2 = "yyy"
           val filename = "some_file"
-          var slice = new File(dataDir, legacySlice)
+          var slice = new File(dataDir, legacyPath)
           slice.mkdir()
           new File(slice, filename).createNewFile()
           slice = new File(dataDir, regularSlice)
@@ -205,7 +205,7 @@ class UncommittedGarbageCollectorSpec
           dataDF.count() should be(3)
           dataDF = dataDF.sort("address")
           dataDF.select("address").head.getString(0) should be(
-            s"data/$legacySlice/$filename"
+            s"data/$legacyPath/$filename"
           )
           UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be(regularSlice)
         })
