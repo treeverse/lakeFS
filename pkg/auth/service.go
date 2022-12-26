@@ -347,12 +347,15 @@ func (s *KVAuthService) ListUsers(ctx context.Context, params *model.PaginationP
 func (s *KVAuthService) ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
 	var credential model.CredentialData
 	credentialsKey := model.CredentialPath(username, params.Prefix)
-
 	msgs, paginator, err := s.ListKVPaged(ctx, (&credential).ProtoReflect().Type(), params, credentialsKey, false)
-	if msgs == nil {
-		return nil, paginator, err
+	if err != nil {
+		return nil, nil, err
 	}
-	return model.ConvertCredDataList(s.secretStore, msgs), paginator, err
+	creds, err := model.ConvertCredDataList(s.secretStore, msgs)
+	if err != nil {
+		return nil, nil, err
+	}
+	return creds, paginator, nil
 }
 
 func (s *KVAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName string, username string) error {
@@ -941,7 +944,10 @@ func (s *KVAuthService) GetCredentialsForUser(ctx context.Context, username, acc
 		return nil, err
 	}
 
-	c := model.CredentialFromProto(s.secretStore, &m)
+	c, err := model.CredentialFromProto(s.secretStore, &m)
+	if err != nil {
+		return nil, err
+	}
 	c.SecretAccessKey = ""
 	return c, nil
 }
@@ -966,8 +972,9 @@ func (s *KVAuthService) GetCredentials(ctx context.Context, accessKeyID string) 
 			_, err := s.store.GetMsg(ctx, model.PartitionKey, credentialsKey, &c)
 			if err != nil && !errors.Is(err, kv.ErrNotFound) {
 				return nil, err
-			} else if err == nil {
-				return model.CredentialFromProto(s.secretStore, &c), err
+			}
+			if err == nil {
+				return model.CredentialFromProto(s.secretStore, &c)
 			}
 		}
 		if err = itr.Err(); err != nil {
