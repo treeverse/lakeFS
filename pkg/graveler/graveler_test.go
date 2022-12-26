@@ -147,7 +147,7 @@ func newGraveler(t *testing.T, committedManager graveler.CommittedManager, stagi
 ) catalog.Store {
 	t.Helper()
 
-	return graveler.NewKVGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
+	return graveler.NewGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 }
 
 func TestGraveler_List(t *testing.T) {

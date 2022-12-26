@@ -228,7 +228,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	executor := batch.NewConditionalExecutor(logging.Default())
 	go executor.Run(ctx)
 
-	refManager := ref.NewKVRefManager(ref.ManagerConfig{
+	refManager := ref.NewRefManager(ref.ManagerConfig{
 		Executor:        executor,
 		KvStore:         cfg.KVStore,
 		AddressProvider: ident.NewHexAddressProvider(),
@@ -241,7 +241,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
 	stagingManager := staging.NewManager(ctx, *cfg.KVStore)
-	gStore := graveler.NewKVGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
+	gStore := graveler.NewGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
 	workPool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))

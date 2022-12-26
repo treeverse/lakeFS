@@ -32,7 +32,7 @@ type testCommit struct {
 	version *int
 }
 
-func TestKVOrderedCommitIterator(t *testing.T) {
+func TestOrderedCommitIterator(t *testing.T) {
 	ctx := context.Background()
 	cases := []struct {
 		Name                   string
@@ -159,7 +159,7 @@ func TestKVOrderedCommitIterator(t *testing.T) {
 					Version: version,
 				})
 			}
-			r, store := testRefManagerWithKVAndAddressProvider(t, newFakeAddressProvider(commits))
+			r, store := testRefManagerWithAddressProvider(t, newFakeAddressProvider(commits))
 			repository, err := r.CreateBareRepository(ctx, graveler.RepositoryID(tst.Name), graveler.Repository{
 				StorageNamespace: "s3://foo",
 				CreationDate:     time.Now(),
@@ -171,9 +171,9 @@ func TestKVOrderedCommitIterator(t *testing.T) {
 				testutil.Must(t, err)
 			}
 
-			iterator, err := ref.NewKVOrderedCommitIterator(ctx, store, repository, false)
+			iterator, err := ref.NewOrderedCommitIterator(ctx, store, repository, false)
 			if err != nil {
-				t.Fatal("create kv ordered commit iterator", err)
+				t.Fatal("create ordered commit iterator", err)
 			}
 			var actualOrderedCommits []string
 			for iterator.Next() {
@@ -188,9 +188,9 @@ func TestKVOrderedCommitIterator(t *testing.T) {
 				t.Errorf("Unexpected ordered commits from iterator. diff=%s", diff)
 			}
 			iterator.Close()
-			iterator, err = ref.NewKVOrderedCommitIterator(ctx, store, repository, true)
+			iterator, err = ref.NewOrderedCommitIterator(ctx, store, repository, true)
 			if err != nil {
-				t.Fatal("create kv ordered commit iterator", err)
+				t.Fatal("create ordered commit iterator", err)
 			}
 			var actualAncestryLeaves []string
 			for iterator.Next() {
@@ -209,7 +209,7 @@ func TestKVOrderedCommitIterator(t *testing.T) {
 	}
 }
 
-func TestKVOrderedCommitIteratorGrid(t *testing.T) {
+func TestOrderedCommitIteratorGrid(t *testing.T) {
 	// Construct the following grid, taken from https://github.com/git/git/blob/master/t/t6600-test-reach.sh
 	//             (10,10)
 	//            /       \
@@ -249,7 +249,7 @@ func TestKVOrderedCommitIteratorGrid(t *testing.T) {
 		}
 	}
 	sort.Strings(expectedCommitIDS)
-	r, store := testRefManagerWithKVAndAddressProvider(t, newFakeAddressProvider(commits))
+	r, store := testRefManagerWithAddressProvider(t, newFakeAddressProvider(commits))
 	ctx := context.Background()
 	repo := graveler.RepositoryRecord{
 		RepositoryID: graveler.RepositoryID("repo"),
@@ -265,9 +265,9 @@ func TestKVOrderedCommitIteratorGrid(t *testing.T) {
 		_, err := r.AddCommit(ctx, repository, *c)
 		testutil.Must(t, err)
 	}
-	iterator, err := ref.NewKVOrderedCommitIterator(ctx, store, &repo, false)
+	iterator, err := ref.NewOrderedCommitIterator(ctx, store, &repo, false)
 	if err != nil {
-		t.Fatal("create kv ordered commit iterator", err)
+		t.Fatal("create ordered commit iterator", err)
 	}
 	var actualOrderedCommits []string
 	for iterator.Next() {
@@ -282,9 +282,9 @@ func TestKVOrderedCommitIteratorGrid(t *testing.T) {
 		t.Errorf("Unexpected ordered commits from iterator. diff=%s", diff)
 	}
 	iterator.Close()
-	iterator, err = ref.NewKVOrderedCommitIterator(ctx, store, &repo, true)
+	iterator, err = ref.NewOrderedCommitIterator(ctx, store, &repo, true)
 	if err != nil {
-		t.Fatal("create kv ordered commit iterator", err)
+		t.Fatal("create ordered commit iterator", err)
 	}
 	var actualAncestryLeaves []string
 	for iterator.Next() {
@@ -301,7 +301,7 @@ func TestKVOrderedCommitIteratorGrid(t *testing.T) {
 	iterator.Close()
 }
 
-func TestKVOrderedCommitIterator_CloseTwice(t *testing.T) {
+func TestOrderedCommitIterator_CloseTwice(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	ctx := context.Background()
 	entIt := mock.NewMockEntriesIterator(ctrl)
@@ -319,16 +319,16 @@ func TestKVOrderedCommitIterator_CloseTwice(t *testing.T) {
 			InstanceUID:      "rid",
 		},
 	}
-	it, err := ref.NewKVOrderedCommitIterator(ctx, &msgStore, repository, false)
+	it, err := ref.NewOrderedCommitIterator(ctx, &msgStore, repository, false)
 	if err != nil {
-		t.Fatal("failed to create kv ordered commit iterator", err)
+		t.Fatal("failed to create ordered commit iterator", err)
 	}
 	it.Close()
 	// calling 'Close()` again to verify the iterator doesn't call the internal iterator close method
 	it.Close()
 }
 
-func TestKVOrderedCommitIterator_NextAfterClose(t *testing.T) {
+func TestOrderedCommitIterator_NextAfterClose(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	ctx := context.Background()
 	entIt := mock.NewMockEntriesIterator(ctrl)
@@ -342,7 +342,7 @@ func TestKVOrderedCommitIterator_NextAfterClose(t *testing.T) {
 			InstanceUID: "rid",
 		},
 	}
-	it, err := ref.NewKVOrderedCommitIterator(ctx, &msgStore, repository, false)
+	it, err := ref.NewOrderedCommitIterator(ctx, &msgStore, repository, false)
 	if err != nil {
 		t.Fatal("failed to create kv ordered commit iterator", err)
 	}

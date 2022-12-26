@@ -232,7 +232,7 @@ func TestEmpty(t *testing.T) {
 	}
 }
 
-func prepareTest(t *testing.T, ctx context.Context, refCache cache.Cache, branchLockCallback func(context.Context, *graveler.RepositoryRecord, graveler.BranchID, func() (interface{}, error)) (interface{}, error)) (*settings.KVManager, block.Adapter) {
+func prepareTest(t *testing.T, ctx context.Context, refCache cache.Cache, branchLockCallback func(context.Context, *graveler.RepositoryRecord, graveler.BranchID, func() (interface{}, error)) (interface{}, error)) (*settings.Manager, block.Adapter) {
 	ctrl := gomock.NewController(t)
 	refManager := mock.NewMockRefManager(ctrl)
 

@@ -8,15 +8,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
-type RepositoryIterator interface {
-	Next() bool
-	SeekGE(id graveler.RepositoryID)
-	Value() *graveler.RepositoryRecord
-	Err() error
-	Close()
-}
-
-type KVRepositoryIterator struct {
+type RepositoryIterator struct {
 	ctx    context.Context
 	it     kv.MessageIterator
 	err    error
@@ -25,12 +17,12 @@ type KVRepositoryIterator struct {
 	closed bool
 }
 
-func NewKVRepositoryIterator(ctx context.Context, store *kv.StoreMessage) (*KVRepositoryIterator, error) {
+func NewRepositoryIterator(ctx context.Context, store *kv.StoreMessage) (*RepositoryIterator, error) {
 	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.RepositoryData{}).ProtoReflect().Type(), graveler.RepositoriesPartition(), []byte(graveler.RepoPath("")), kv.IteratorOptionsAfter([]byte{}))
 	if err != nil {
 		return nil, err
 	}
-	return &KVRepositoryIterator{
+	return &RepositoryIterator{
 		ctx:    ctx,
 		it:     it,
 		store:  store.Store,
@@ -38,7 +30,7 @@ func NewKVRepositoryIterator(ctx context.Context, store *kv.StoreMessage) (*KVRe
 	}, nil
 }
 
-func (ri *KVRepositoryIterator) Next() bool {
+func (ri *RepositoryIterator) Next() bool {
 	if ri.Err() != nil || ri.closed {
 		return false
 	}
@@ -63,7 +55,7 @@ func (ri *KVRepositoryIterator) Next() bool {
 	return true
 }
 
-func (ri *KVRepositoryIterator) SeekGE(id graveler.RepositoryID) {
+func (ri *RepositoryIterator) SeekGE(id graveler.RepositoryID) {
 	if errors.Is(ri.Err(), kv.ErrClosedEntries) {
 		return
 	}
@@ -73,14 +65,14 @@ func (ri *KVRepositoryIterator) SeekGE(id graveler.RepositoryID) {
 	ri.value = nil
 }
 
-func (ri *KVRepositoryIterator) Value() *graveler.RepositoryRecord {
+func (ri *RepositoryIterator) Value() *graveler.RepositoryRecord {
 	if ri.Err() != nil {
 		return nil
 	}
 	return ri.value
 }
 
-func (ri *KVRepositoryIterator) Err() error {
+func (ri *RepositoryIterator) Err() error {
 	if ri.err != nil {
 		return ri.err
 	}
@@ -90,7 +82,7 @@ func (ri *KVRepositoryIterator) Err() error {
 	return nil
 }
 
-func (ri *KVRepositoryIterator) Close() {
+func (ri *RepositoryIterator) Close() {
 	if ri.closed {
 		return
 	}
