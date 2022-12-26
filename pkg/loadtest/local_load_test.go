@@ -57,9 +57,6 @@ func TestLocalLoad(t *testing.T) {
 		blockstoreType = "mem"
 	}
 
-	storeMessage = &kv.StoreMessage{Store: kvStore}
-	viper.Set("database.kv_enabled", true)
-
 	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
 	c, err := catalog.New(ctx, catalog.Config{
 		Config:  conf,
@@ -71,7 +68,7 @@ func TestLocalLoad(t *testing.T) {
 	outputWriter := catalog.NewActionsOutputWriter(c.BlockAdapter)
 
 	// wire actions
-	actionsService := actions.NewService(ctx, actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore}), source, outputWriter, &actions.DecreasingIDGenerator{}, &stats.NullCollector{}, true)
+	actionsService := actions.NewService(ctx, actions.NewActionsKVStore(*storeMessage), source, outputWriter, &actions.DecreasingIDGenerator{}, &stats.NullCollector{}, true)
 	c.SetHooksHandler(actionsService)
 
 	credentials, err := auth.SetupAdminUser(ctx, authService, superuser)
