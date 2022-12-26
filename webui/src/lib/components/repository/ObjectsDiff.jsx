@@ -1,7 +1,7 @@
 import React from "react";
 import {useAPI} from "../../hooks/api";
 import {objects} from "../../api";
-import ReactDiffViewer, {DiffMethod} from "@mockingjay-io/react-diff-viewer";
+import ReactDiffViewer, {DiffMethod} from "react-diff-viewer-continued";
 import {Error, Loading} from "../controls";
 import {humanSize} from "./tree";
 import Alert from "react-bootstrap/Alert";

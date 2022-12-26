@@ -18,19 +18,22 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
     const [pagination, setPagination] = useState({after: "", prefix: "", amount});
     const [refList, setRefs] = useState({loading: true, payload: null, error: null});
     const [refType, setRefType] = useState(selected && selected.type || RefTypeBranch)
-    useEffect(async () => {
+    useEffect(() => {
         setRefs({loading: true, payload: null, error: null});
-        try {
-            let response;
-            if (refType === RefTypeTag) {
-                response = await tags.list(repo.id, pagination.prefix, pagination.after, pagination.amount);
-            } else {
-                response = await branches.list(repo.id, pagination.prefix, pagination.after, pagination.amount);
+        const fetchRefs = async () => {
+            try {
+                let response;
+                if (refType === RefTypeTag) {
+                    response = await tags.list(repo.id, pagination.prefix, pagination.after, pagination.amount);
+                } else {
+                    response = await branches.list(repo.id, pagination.prefix, pagination.after, pagination.amount);
+                }
+                setRefs({loading: false, payload: response, error: null});
+            } catch (error) {
+                setRefs({loading: false, payload: null, error: error});
             }
-            setRefs({loading: false, payload: response, error: null});
-        } catch (error) {
-            setRefs({loading: false, payload: null, error: error});
-        }
+        };
+        fetchRefs();
     }, [refType, repo.id, pagination])
 
     // used for commit listing

@@ -1,5 +1,5 @@
 import React, {createContext, useCallback, useEffect, useState} from "react";
-import {Route, Switch} from "react-router-dom";
+import {Route, Routes} from "react-router-dom";
 
 import Button from "react-bootstrap/Button";
 
@@ -200,11 +200,9 @@ const UsersIndexPage = () => {
 
     return (
         <GetUserEmailByIdContext.Provider value={getUserEmailById}>
-            <Switch>
-                <Route path="/auth/users/:userId">
-                    <UserPage getUserEmailById={getUserEmailById} />
-                </Route>
-                <Route path="/auth/users">
+            <Routes>
+                <Route path=":userId/*" element={<UserPage getUserEmailById={getUserEmailById} />} />
+                <Route path="" element={
                     <UsersPage 
                         refresh={refresh}
                         loading={loading}
@@ -213,8 +211,8 @@ const UsersIndexPage = () => {
                         setRefresh={setRefresh}
                         userListResults={usersList}
                     />
-                </Route>
-            </Switch>
+                } />
+            </Routes>
         </GetUserEmailByIdContext.Provider>
     )
 }

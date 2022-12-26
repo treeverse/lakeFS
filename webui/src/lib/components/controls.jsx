@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import moment from "moment";
+import dayjs from "dayjs";
 
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
@@ -8,7 +8,7 @@ import Tooltip from "react-bootstrap/Tooltip";
 import Overlay from "react-bootstrap/Overlay";
 import Table from "react-bootstrap/Table";
 import {OverlayTrigger} from "react-bootstrap";
-import {CheckIcon, ClippyIcon, SyncIcon} from "@primer/octicons-react";
+import {CheckIcon, PasteIcon, SyncIcon} from "@primer/octicons-react";
 import {Link} from "./nav";
 import {
     Box,
@@ -94,13 +94,13 @@ export const Error = ({error, onDismiss = null, className = null}) => {
 export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => {
     if (typeof dateValue === 'number') {
         return (
-            <span>{moment.unix(dateValue).format(format)}</span>
+            <span>{dayjs.unix(dateValue).format(format)}</span>
         );
     }
 
     return (
         <OverlayTrigger placement="bottom" overlay={<Tooltip>{dateValue}</Tooltip>}>
-            <span>{moment(dateValue).format(format)}</span>
+            <span>{dayjs(dateValue).format(format)}</span>
         </OverlayTrigger>
     );
 };
@@ -236,7 +236,7 @@ export const TooltipButton = ({ onClick, variant, children, tooltip, className="
     );
 };
 
-export const ClipboardButton = ({ text, variant, onSuccess, icon = <ClippyIcon/>, onError, tooltip = "Copy to clipboard", ...rest}) => {
+export const ClipboardButton = ({ text, variant, onSuccess, icon = <PasteIcon/>, onError, tooltip = "Copy to clipboard", ...rest}) => {
 
     const [show, setShow] = useState(false);
     const [copied, setCopied] = useState(false);

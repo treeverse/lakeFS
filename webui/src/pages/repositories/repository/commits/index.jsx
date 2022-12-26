@@ -1,6 +1,6 @@
 import React, {useState} from "react";
 
-import moment from "moment";
+import dayjs from "dayjs";
 import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-react";
 
 import {commits} from "../../../../lib/api";
@@ -23,7 +23,7 @@ import {Paginator} from "../../../../lib/components/pagination";
 import RefDropdown from "../../../../lib/components/repository/refDropdown";
 import {Link} from "../../../../lib/components/nav";
 import {useRouter} from "../../../../lib/hooks/router";
-import {Route, Switch} from "react-router-dom";
+import {Route, Routes} from "react-router-dom";
 import RepositoryCommitPage from "./commit";
 import {RepoError} from "../error";
 
@@ -46,7 +46,7 @@ const CommitWidget = ({ repo, commit }) => {
                     </h6>
                     <p>
                         <small>
-                            <strong>{commit.committer}</strong> committed at <strong>{moment.unix(commit.creation_date).format("MM/DD/YYYY HH:mm:ss")}</strong> ({moment.unix(commit.creation_date).fromNow()})
+                            <strong>{commit.committer}</strong> committed at <strong>{dayjs.unix(commit.creation_date).format("MM/DD/YYYY HH:mm:ss")}</strong> ({dayjs.unix(commit.creation_date).fromNow()})
                         </small>
                     </p>
                 </div>
@@ -175,14 +175,10 @@ const RepositoryCommitsPage = () => {
 
 const RepositoryCommitsIndexPage = () => {
     return (
-        <Switch>
-            <Route exact path="/repositories/:repoId/commits">
-                <RepositoryCommitsPage/>
-            </Route>
-            <Route path="/repositories/:repoId/commits/:commitId">
-                <RepositoryCommitPage/>
-            </Route>
-        </Switch>
+        <Routes>
+            <Route path="" element={<RepositoryCommitsPage/>} />
+            <Route path=":commitId" element={<RepositoryCommitPage/>} />
+        </Routes>
     )
 }
 

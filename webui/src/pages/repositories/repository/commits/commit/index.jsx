@@ -5,7 +5,7 @@ import {RefContextProvider, useRefs} from "../../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
 import {useAPI, useAPIWithPagination} from "../../../../../lib/hooks/api";
 import {commits, refs} from "../../../../../lib/api";
-import moment from "moment";
+import dayjs from "dayjs";
 import Table from "react-bootstrap/Table";
 import Alert from "react-bootstrap/Alert";
 import {TreeEntryPaginator, TreeItem} from "../../../../../lib/components/repository/changes";
@@ -170,7 +170,7 @@ const CommitInfo = ({ repo, commit }) => {
             <tr>
                 <td><strong>Creation Date</strong></td>
                 <td>
-                    {moment.unix(commit.creation_date).format("MM/DD/YYYY HH:mm:ss")} ({moment.unix(commit.creation_date).fromNow()})
+                    {dayjs.unix(commit.creation_date).format("MM/DD/YYYY HH:mm:ss")} ({dayjs.unix(commit.creation_date).fromNow()})
                 </td>
             </tr>
             {(commit.parents) ? (

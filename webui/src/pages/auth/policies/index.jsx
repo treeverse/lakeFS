@@ -19,7 +19,7 @@ import {
 } from "../../../lib/components/controls";
 import {useRouter} from "../../../lib/hooks/router";
 import {Link} from "../../../lib/components/nav";
-import {Route, Switch} from "react-router-dom";
+import {Route, Routes} from "react-router-dom";
 import PolicyPage from "./policy";
 import { disallowPercentSign, INVALID_POLICY_ID_ERROR_MESSAGE } from "../validation";
 
@@ -133,14 +133,10 @@ const PoliciesPage = () => {
 
 const PoliciesIndexPage = () => {
     return (
-        <Switch>
-            <Route exact path="/auth/policies">
-                <PoliciesPage/>
-            </Route>
-            <Route path="/auth/policies/:policyId">
-                <PolicyPage/>
-            </Route>
-        </Switch>
+        <Routes>
+            <Route exact path="" element={<PoliciesPage/>} />
+            <Route path=":policyId" element={<PolicyPage/>} />
+        </Routes>
     )
 }
 
