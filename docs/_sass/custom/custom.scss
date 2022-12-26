@@ -1,4 +1,4 @@
-@import url('pygments/github.css');
+@import url('pygments/igorpro.css');
 
 @font-face {
 	font-family: GalanoGrotesque-ExtraLight;
@@ -185,9 +185,15 @@ body {
 		}
 	}
 
-	pre code {
-		background-color: $darkblack;
-    	border: 0px solid $lightgreen;
+	div.highlighter-rouge pre.highlight {
+		padding: 10px;
+	}
+
+	.highlight {
+
+		code {
+			background-color: transparent;
+		}
 	}
 
 	.btn {
@@ -844,7 +850,7 @@ footer {
 .language-sh.highlighter-rouge pre.highlight::before,
 .language-bash.highlighter-rouge pre.highlight::before{
 	content: "$ ";
-	color: $lightgreen;
+	color: $black;
 	font-weight: 400;
 	font-family: monospace;
 	font-size: 0.75em;
@@ -893,22 +899,12 @@ th, td {
 /*overridden*/
 div.highlighter-rouge{
   border-radius: 4px;
-  background-color: $darkblack!important;
 }
 
 .highlighter-rouge{
 
-	.highlight{
-		background-color: $darkblack;
-		&::before, code, .nt, .s1, .nb, .na, .pi, .c1, .nv, .o, .se, .si, .nl, .k, .py, .nf, .n, .kt, .nn, .nc, .sh, .no, .p, .kn, .ow{
-			color: $light-blue-grey;
-		}
-		code .c, code .s2, code .m, code .s{
-			color: $lightpink!important;
-		}
-	}
 	button.copy-code-button{
-		color: $light-blue-grey;
+		color: $black;
 	}
 }
 
