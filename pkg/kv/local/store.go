@@ -182,10 +182,10 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	return nil
 }
 
-func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.EntriesIterator, error) {
+func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
 	log := s.logger.WithFields(logging.Fields{
 		"partition_key": string(partitionKey),
-		"start_key":     string(start),
+		"start_key":     string(options.KeyStart),
 		"op":            "scan",
 	}).WithContext(ctx)
 	log.Trace("performing operation")
@@ -194,7 +194,25 @@ func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.Entrie
 		return nil, kv.ErrMissingPartitionKey
 	}
 
-	return newEntriesIterator(log, s.db, partitionKey, start, s.prefetchSize), nil
+	prefix := partitionRange(partitionKey)
+	txn := s.db.NewTransaction(false)
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchSize = s.prefetchSize
+	if options.BatchSize > 0 && options.BatchSize < s.prefetchSize {
+		opts.PrefetchSize = options.BatchSize
+	}
+	if opts.PrefetchSize > 0 {
+		opts.PrefetchValues = true
+	}
+	opts.Prefix = prefix
+	iter := txn.NewIterator(opts)
+	return &EntriesIterator{
+		iter:         iter,
+		partitionKey: partitionKey,
+		start:        composeKey(partitionKey, options.KeyStart),
+		logger:       log,
+		txn:          txn,
+	}, nil
 }
 
 func (s *Store) Close() {

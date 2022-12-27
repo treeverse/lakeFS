@@ -60,6 +60,11 @@ type ValueWithPredicate struct {
 	Predicate Predicate
 }
 
+type ScanOptions struct {
+	KeyStart  []byte
+	BatchSize int
+}
+
 type Store interface {
 	// Get returns a result containing the Value and Predicate for the given key, or ErrNotFound if key doesn't exist
 	//   Predicate can be used for SetIf operation
@@ -79,7 +84,9 @@ type Store interface {
 
 	// Scan returns entries that can be read by key order, starting at or after the `start` position
 	// partitionKey is optional, passing it might increase performance.
-	Scan(ctx context.Context, partitionKey, start []byte) (EntriesIterator, error)
+	// 'options' holds additional parameters to limit the number of records
+	//  and set the prefix to scan.
+	Scan(ctx context.Context, partitionKey []byte, options ScanOptions) (EntriesIterator, error)
 
 	// Close access to the database store. After calling Close the instance is unusable.
 	Close()

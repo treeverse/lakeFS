@@ -320,15 +320,15 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	return nil
 }
 
-func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.EntriesIterator, error) {
-	internalIter, err := s.scanInternal(ctx, partitionKey, start, nil)
+func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
+	internalIter, err := s.scanInternal(ctx, partitionKey, options, nil)
 	if err != nil {
 		return nil, err
 	}
 	return internalIter, nil
 }
 
-func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, exclusiveStartKey map[string]*dynamodb.AttributeValue) (*EntriesIterator, error) {
+func (s *Store) scanInternal(ctx context.Context, partitionKey []byte, options kv.ScanOptions, exclusiveStartKey map[string]*dynamodb.AttributeValue) (*EntriesIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
@@ -338,12 +338,13 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, 
 			B: partitionKey,
 		},
 	}
-	if len(scanKey) > 0 {
+	if len(options.KeyStart) > 0 {
 		keyConditionExpression += " AND " + ItemKey + " >= :fromkey"
 		expressionAttributeValues[":fromkey"] = &dynamodb.AttributeValue{
-			B: scanKey,
+			B: options.KeyStart,
 		}
 	}
+
 	queryInput := &dynamodb.QueryInput{
 		TableName:                 aws.String(s.params.TableName),
 		KeyConditionExpression:    aws.String(keyConditionExpression),
@@ -355,6 +356,9 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, 
 	}
 	if s.params.ScanLimit != 0 {
 		queryInput.SetLimit(s.params.ScanLimit)
+	}
+	if options.BatchSize != 0 {
+		queryInput.Limit = aws.Int64(int64(options.BatchSize))
 	}
 
 	start := time.Now()
@@ -371,7 +375,7 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, 
 		scanCtx:      ctx,
 		store:        s,
 		partKey:      partitionKey,
-		startKey:     scanKey,
+		startKey:     options.KeyStart,
 		queryResult:  queryOutput,
 		currEntryIdx: 0,
 		err:          nil,
@@ -405,7 +409,7 @@ func (e *EntriesIterator) Next() bool {
 		if e.queryResult.LastEvaluatedKey == nil {
 			return false
 		}
-		tmpEntriesIter, err := e.store.scanInternal(e.scanCtx, e.partKey, e.startKey, e.queryResult.LastEvaluatedKey)
+		tmpEntriesIter, err := e.store.scanInternal(e.scanCtx, e.partKey, kv.ScanOptions{KeyStart: e.startKey}, e.queryResult.LastEvaluatedKey)
 		if err != nil {
 			e.err = fmt.Errorf("scan paging: %w", err)
 			return false
@@ -424,7 +428,6 @@ func (e *EntriesIterator) Next() bool {
 		Value: item.ItemValue,
 	}
 	e.currEntryIdx++
-
 	return true
 }
 

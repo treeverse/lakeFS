@@ -94,8 +94,8 @@ func (m *Manager) DropKey(ctx context.Context, st graveler.StagingToken, key gra
 
 // List TODO niro: Remove batchSize parameter post KV
 // List returns an iterator of staged values on the staging token st
-func (m *Manager) List(ctx context.Context, st graveler.StagingToken, _ int) (graveler.ValueIterator, error) {
-	return NewStagingIterator(ctx, m.store, st)
+func (m *Manager) List(ctx context.Context, st graveler.StagingToken, batchSize int) (graveler.ValueIterator, error) {
+	return NewStagingIterator(ctx, m.store, st, batchSize)
 }
 
 func (m *Manager) Drop(ctx context.Context, st graveler.StagingToken) error {
@@ -146,7 +146,7 @@ func (m *Manager) asyncLoop(ctx context.Context) {
 }
 
 func (m *Manager) findAndDrop(ctx context.Context) error {
-	it, err := m.store.Store.Scan(ctx, []byte(graveler.CleanupTokensPartition()), []byte{})
+	it, err := m.store.Store.Scan(ctx, []byte(graveler.CleanupTokensPartition()), kv.ScanOptions{})
 	if err != nil {
 		return err
 	}
