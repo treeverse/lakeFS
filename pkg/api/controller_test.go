@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"math/rand"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -3400,49 +3400,56 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 
 func TestController_ClientDisconnect(t *testing.T) {
 	handler, deps := setupHandlerWithWalkerFactory(t, store.NewFactory(nil))
+
+	// setup lakefs
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	_ = setupCommPrefs(t, clt)
 	cred := createDefaultAdminUser(t, clt)
-	clt = setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.SecretAccessKey)
 
+	// setup repository
 	ctx := context.Background()
-
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "repo1"), "main")
 	testutil.Must(t, err)
 
-	pr, pw := io.Pipe()
-	mpw := multipart.NewWriter(pw)
-	reqCtx, cancel := context.WithCancel(ctx)
-	go func() {
-		w, _ := mpw.CreateFormFile("content", "file.data")
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
-		_, _ = io.CopyN(w, r, 1024)
-		cancel()
-		_, _ = io.CopyN(w, r, 1024)
-		_ = mpw.Close()
-	}()
+	// prepare a client that will not wait for a response and timeout
+	dialer := net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			ResponseHeaderTimeout: time.Nanosecond,
+			DialContext:           dialer.DialContext,
+			DisableKeepAlives:     true,
+			IdleConnTimeout:       90 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			ForceAttemptHTTP2:     false,
+		},
+	}
+	clt = setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.SecretAccessKey, api.WithHTTPClient(httpClient))
 
-	_, err = clt.UploadObjectWithBodyWithResponse(reqCtx, "repo1", "main", &api.UploadObjectParams{
+	// upload request
+	contentType, reader := writeMultipart("content", "file.data", "something special")
+	_, err = clt.UploadObjectWithBodyWithResponse(ctx, "repo1", "main", &api.UploadObjectParams{
 		Path: "test/file.data",
-	}, mpw.FormDataContentType(), pr)
-	expectedErr := context.Canceled
-	if !errors.Is(err, expectedErr) {
-		t.Fatalf("Expected to request err to be %s: %v", expectedErr, err)
+	}, contentType, reader)
+	if err == nil {
+		t.Fatal("Expected to request complete without error, expected to fail")
 	}
 
-	// wait for request to complete
+	// wait for server to identify we left and update the counter
 	time.Sleep(time.Second)
 
 	// request for metrics
-	resp, err := http.Get(server.URL + "/metrics")
+	metricsResp, err := http.Get(server.URL + "/metrics")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer func() {
-		_ = resp.Body.Close()
+		_ = metricsResp.Body.Close()
 	}()
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(metricsResp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
