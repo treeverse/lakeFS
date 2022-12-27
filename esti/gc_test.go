@@ -50,6 +50,15 @@ var testCases = []testCase{
 		description:  "The file is deleted according to the default retention policy",
 		directUpload: false,
 	},
+	{id: "2",
+		policy: api.GarbageCollectionRules{
+			Branches:             []api.GarbageCollectionRule{{BranchId: "a2", RetentionDays: 1}, {BranchId: "b2", RetentionDays: 3}},
+			DefaultRetentionDays: 5},
+		branches:     []branchProperty{{name: "a2", deleteCommitDaysAgo: 4}, {name: "b2", deleteCommitDaysAgo: 4}},
+		fileDeleted:  true,
+		description:  "The file is deleted according to branches' retention policies",
+		directUpload: false,
+	},
 }
 
 func TestCommittedGC(t *testing.T) {
@@ -209,6 +218,7 @@ func testPostCommittedGC(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		t.Logf("Test case %s", testCase.id)
 		existingRef := fileRefPerTestCase[testCase.id]
 		validateGCJob(t, ctx, testCase, existingRef)
 	}
