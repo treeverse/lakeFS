@@ -14,7 +14,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func TestKVTagIterator(t *testing.T) {
+func TestTagIterator(t *testing.T) {
 	r, kvstore := testRefManager(t)
 	tags := []graveler.TagID{"a", "aa", "b", "c", "e", "d", "f", "g"}
 	ctx := context.Background()
@@ -32,7 +32,7 @@ func TestKVTagIterator(t *testing.T) {
 	}
 
 	t.Run("listing all tags", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, kvstore, repository)
+		iter, err := ref.NewTagIterator(ctx, kvstore, repository)
 		testutil.Must(t, err)
 		ids := make([]graveler.TagID, 0)
 		for iter.Next() {
@@ -50,7 +50,7 @@ func TestKVTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags using prefix", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, kvstore, repository)
+		iter, err := ref.NewTagIterator(ctx, kvstore, repository)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
@@ -69,7 +69,7 @@ func TestKVTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags SeekGE", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, kvstore, repository)
+		iter, err := ref.NewTagIterator(ctx, kvstore, repository)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
@@ -103,7 +103,7 @@ func TestKVTagIterator(t *testing.T) {
 	})
 
 	t.Run("empty value SeekGE", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, kvstore, repository)
+		iter, err := ref.NewTagIterator(ctx, kvstore, repository)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 
@@ -113,7 +113,7 @@ func TestKVTagIterator(t *testing.T) {
 	})
 }
 
-func TestKVTagIterator_CloseTwice(t *testing.T) {
+func TestTagIterator_CloseTwice(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	entIt := mock.NewMockEntriesIterator(ctrl)
@@ -127,16 +127,16 @@ func TestKVTagIterator_CloseTwice(t *testing.T) {
 			InstanceUID: "rid",
 		},
 	}
-	it, err := ref.NewKVTagIterator(ctx, &msgStore, repo)
+	it, err := ref.NewTagIterator(ctx, &msgStore, repo)
 	if err != nil {
-		t.Fatal("TestKVTagIterator failed", err)
+		t.Fatal("TestTagIterator failed", err)
 	}
 	it.Close()
 	// Make sure calling Close again do not crash
 	it.Close()
 }
 
-func TestKVTagIterator_NextClosed(t *testing.T) {
+func TestTagIterator_NextClosed(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	entIt := mock.NewMockEntriesIterator(ctrl)
@@ -150,9 +150,9 @@ func TestKVTagIterator_NextClosed(t *testing.T) {
 			InstanceUID: "rid",
 		},
 	}
-	it, err := ref.NewKVTagIterator(ctx, &msgStore, repo)
+	it, err := ref.NewTagIterator(ctx, &msgStore, repo)
 	if err != nil {
-		t.Fatal("TestKVTagIterator failed", err)
+		t.Fatal("TestTagIterator failed", err)
 	}
 	it.Close()
 	// Make sure calling Next should not crash
