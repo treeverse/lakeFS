@@ -2,9 +2,10 @@ package esti
 
 import (
 	"context"
-	"encoding/json"
-	"os"
-	"path/filepath"
+	"fmt"
+	"log"
+	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,7 +19,6 @@ const (
 	markOnlyMode        = 1
 	sweepOnlyMode       = 2
 	committedGCRepoName = "gc"
-	gcFindingsFilename  = "gc-findings.json"
 )
 
 var (
@@ -55,45 +55,31 @@ var testCases = []testCase{
 func TestCommittedGC(t *testing.T) {
 	SkipTestIfAskedTo(t)
 	blockstoreType := viper.GetViper().GetString("blockstore_type")
+
 	//TODO lynn: change this for test also on Azure
 	if blockstoreType != block.BlockstoreTypeS3 {
 		t.Skip("Running on S3 only")
 	}
 
-	step := viper.GetViper().GetString("gc_step")
-	switch step {
-	case "pre":
-		t.Run("pre", testPreCommittedGC)
-	case "post":
-		t.Run("post", testPostCommittedGC)
-	default:
-		t.Skip("No known value (pre/port) for gc_step")
-	}
-}
+	awsAccessKey := viper.GetViper().GetString("aws_access_key_id")
+	awsSecretKey := viper.GetViper().GetString("aws_secret_access_key")
 
-func testPreCommittedGC(t *testing.T) {
 	ctx := context.Background()
-	blockstoreType := viper.GetViper().GetString("blockstore_type")
-	fileRefPerTestCase := make(map[string]string)
 
 	for _, testCase := range testCases {
 		t.Logf("Test case %s", testCase.id)
+
 		fileExistingRef := prepareForGC(t, ctx, testCase, blockstoreType)
 		t.Logf("fileExistingRef %s", fileExistingRef)
-		fileRefPerTestCase[testCase.id] = fileExistingRef
+
+		repo := committedGCRepoName + testCase.id
+		gcMode := getGCMode(testCase)
+		runGC(repo, gcMode, testCase.markId, awsAccessKey, awsSecretKey)
+
+		validateGCJob(t, ctx, testCase, repo, fileExistingRef)
 	}
 
-	// write findings into a file
-	findings, err := json.MarshalIndent(fileRefPerTestCase, "", "  ")
-	if err != nil {
-		t.Fatalf("failed to marshal findings: %s", err)
-	}
-	t.Logf("File Ref Per Test Case: %s", findings)
-	findingsPath := filepath.Join(os.TempDir(), gcFindingsFilename)
-	err = os.WriteFile(findingsPath, findings, 0o666)
-	if err != nil {
-		t.Fatalf("Failed to write findings file '%s': %s", findingsPath, err)
-	}
+	t.Logf("Tests completed successfully")
 }
 
 func prepareForGC(t *testing.T, ctx context.Context, testCase testCase, blockstoreType string) string {
@@ -173,9 +159,73 @@ func getGCMode(testCase testCase) int {
 	}
 }
 
-func validateGCJob(t *testing.T, ctx context.Context, testCase testCase, existingRef string) {
-	repo := committedGCRepoName + testCase.id
+func runGC(repo string, gcMode int, markId string, awsAccessKey string, awsSecretKey string) {
+	sweepConfig := ""
+	markIDConfig := ""
+	if gcMode == markOnlyMode || gcMode == sweepOnlyMode {
+		// If we are in sweep-only mode, we'll first mark and afterwards we'll sweep
+		sweepConfig = "-c spark.hadoop.lakefs.gc.do_sweep=false "
+	}
+	if markId != "" {
+		markIDConfig = "-c spark.hadoop.lakefs.gc.mark_id=" + markId + " "
+	}
 
+	out, err := exec.Command("/bin/sh", "-c",
+		"cd ../clients/spark/target; echo $(pwd); CLIENT_JAR=$(ls core-301/scala-2.12/lakefs-spark-client-301-assembly-*.jar); cd ..; echo $CLIENT_JAR;").Output()
+	if err != nil {
+		log.Fatal("cmd0: ", err)
+	}
+
+	fmt.Printf("The jar is %s\n", out)
+
+	cmdLine := `cd ../clients/spark/target; CLIENT_JAR=$(ls core-301/scala-2.12/lakefs-spark-client-301-assembly-*.jar); cd ..; echo $CLIENT_JAR;
+			docker run --network host --add-host lakefs:127.0.0.1 -v $(pwd)/target:/local -v $(pwd)/ivy:/opt/bitnami/spark/.ivy2 --rm docker.io/bitnami/spark:3.2 spark-submit \
+			--master spark://localhost:7077 \
+			--conf spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1 \
+			%MORE_CONFIG% \
+			--conf spark.hadoop.fs.s3.impl=org.apache.hadoop.fs.s3a.S3AFileSystem \
+			--conf spark.hadoop.fs.s3a.access.key=%ACCESS_KEY_ID% \
+			--conf spark.hadoop.fs.s3a.secret.key=%SECRET_ACCESS_KEY% \
+			--conf spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ \
+			--conf spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY \
+			--class io.treeverse.clients.GarbageCollector \
+			--packages org.apache.hadoop:hadoop-aws:2.7.7 \
+			/local/${CLIENT_JAR}`
+	vars := strings.NewReplacer("%MORE_CONFIG%", markIDConfig+sweepConfig, "%ACCESS_KEY_ID%", awsAccessKey, "%SECRET_ACCESS_KEY%", awsSecretKey)
+	cmdLine = vars.Replace(cmdLine)
+	cmd := exec.Command("/bin/sh", "-c", cmdLine+" "+repo+" us-east-1")
+
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal("Running GC: ", err)
+	}
+
+	//need to uncomment it, and create the cmd as above (see existing gc test for refference)
+	//if gcMode == sweepOnlyMode {
+	//	cmd = exec.Command("bash", "-c",
+	//		"cd target; CLIENT_JAR=$(ls core-301/scala-2.12/lakefs-spark-client-301-assembly-*.jar); cd ..; echo $CLIENT_JAR;
+	//			"docker run --network host --add-host lakefs:127.0.0.1 -v $(pwd)/target:/local -v $(pwd)/ivy:/opt/bitnami/spark/.ivy2 --rm docker.io/bitnami/spark:3.2 spark-submit
+	//			"--master spark://localhost:7077
+	//			"--conf spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1
+	//			"-c spark.hadoop.lakefs.gc.do_mark=false "+markIDConfig+ //after mark we'll run sweep
+	//			"--conf spark.hadoop.fs.s3.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
+	//			"--conf spark.hadoop.fs.s3a.access.key="+awsAccessKey+"
+	//			"--conf spark.hadoop.fs.s3a.secret.key="+awsSecretKey+"
+	//			"--conf spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ
+	//			"--conf spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+	//			"--class io.treeverse.clients.GarbageCollector
+	//			"--packages org.apache.hadoop:hadoop-aws:2.7.7
+	//			"/local/${CLIENT_JAR}
+	//			repo+" us-east-1")
+	//
+	//	err := cmd.Run()
+	//	if err != nil {
+	//		log.Fatal("Running GC in sweep mode ", err)
+	//	}
+	//}
+}
+
+func validateGCJob(t *testing.T, ctx context.Context, testCase testCase, repo string, existingRef string) {
 	res, _ := client.GetObjectWithResponse(ctx, repo, existingRef, &api.GetObjectParams{Path: "file" + testCase.id})
 	fileExists := res.StatusCode() == 200
 
@@ -191,27 +241,4 @@ func validateGCJob(t *testing.T, ctx context.Context, testCase testCase, existin
 			t.Fatalf("expected '%s' to exist. Test case '%s', Test description '%s'", location, testCase.id, testCase.description)
 		}
 	}
-}
-
-func testPostCommittedGC(t *testing.T) {
-	ctx := context.Background()
-
-	findingPath := filepath.Join(os.TempDir(), gcFindingsFilename)
-	bytes, err := os.ReadFile(findingPath)
-	if err != nil {
-		t.Fatalf("Failed to read '%s': %s", findingPath, err)
-	}
-	fileRefPerTestCase := make(map[string]string)
-
-	err = json.Unmarshal(bytes, &fileRefPerTestCase)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal findings '%s': %s", findingPath, err)
-	}
-
-	for _, testCase := range testCases {
-		existingRef := fileRefPerTestCase[testCase.id]
-		validateGCJob(t, ctx, testCase, existingRef)
-	}
-
-	t.Logf("Tests completed successfully")
 }
