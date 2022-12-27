@@ -35,8 +35,6 @@ GOFMT=$(GOCMD)fmt
 
 GOTEST_PARALLELISM=4
 
-GO_TEST_MODULES=$(shell $(GOCMD) list ./... | grep -v 'lakefs/pkg/api/gen/')
-
 LAKEFS_BINARY_NAME=lakefs
 LAKECTL_BINARY_NAME=lakectl
 
@@ -141,14 +139,14 @@ package-python: client-python
 package: package-python
 
 gen-api: ## Run the swagger code generator
-	$(GOGENERATE) ./pkg/api
-	$(GOGENERATE) ./pkg/auth
+	$(GOGENERATE) \
+		./pkg/api \
+		./pkg/auth
 
 .PHONY: gen-code
 gen-code: gen-api ## Run the generator for inline commands
 	$(GOGENERATE) \
 		./pkg/actions \
-		./pkg/auth \
 		./pkg/graveler \
 		./pkg/graveler/committed \
 		./pkg/graveler/sstable \
@@ -170,16 +168,16 @@ esti: ## run esti (system testing)
 test: test-go test-hadoopfs  ## Run tests for the project
 
 test-go: gen-code			# Run parallelism > num_cores: most of our slow tests are *not* CPU-bound.
-	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast -parallel="$(GOTEST_PARALLELISM)" $(GO_TEST_MODULES)
+	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast -parallel="$(GOTEST_PARALLELISM)" ./...
 
 test-hadoopfs:
 	cd clients/hadoopfs && mvn test
 
 run-test:  ## Run tests without generating anything (faster if already generated)
-	$(GOTEST) -count=1 -coverprofile=cover.out -race -short -cover -failfast $(GO_TEST_MODULES)
+	$(GOTEST) -count=1 -coverprofile=cover.out -race -short -cover -failfast ./...
 
 fast-test:  ## Run tests without race detector (faster)
-	$(GOTEST) -count=1 -coverprofile=cover.out -short -cover -failfast $(GO_TEST_MODULES)
+	$(GOTEST) -count=1 -coverprofile=cover.out -short -cover -failfast ./...
 
 test-html: test  ## Run tests with HTML for the project
 	$(GOTOOL) cover -html=cover.out
