@@ -203,10 +203,9 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	return setupHandlerWithWalkerFactory(t, store.NewFactory(nil))
 }
 
-func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secretAccessKey string) api.ClientWithResponsesInterface {
+func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secretAccessKey string, opts ...api.ClientOption) api.ClientWithResponsesInterface {
 	t.Helper()
 
-	var opts []api.ClientOption
 	if accessKeyID != "" {
 		basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
 		if err != nil {
