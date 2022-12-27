@@ -97,8 +97,12 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
 
   def getRangeIDsForCommits(commitIDs: Dataset[String], repo: String): Dataset[String] = {
     import spark.implicits._
-
-    commitIDs.flatMap(rangeGetter.getRangeIDs(_, repo))
+    commitIDs.rdd
+      .mapPartitions(p => {
+        p.map(rangeGetter.getRangeIDs(_, repo))
+      })
+      .flatMap(i => i)
+      .toDS
   }
 
   val bitwiseOR = (a: Int, b: Int) => a | b
@@ -157,6 +161,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
     // Returned addresses are either relative ones, or absolute ones that
     // are under the storage namespace.
     def getDeletableAddresses(rangeID: String): Iterator[String] = {
+      println(s"getAddressesToDelete: get addresses for range $rangeID")
       rangeGetter
         .getRangeEntries(rangeID, repo)
         .filter(e => e.addressType.isRelative || e.address.startsWith(storageNS))
@@ -166,14 +171,24 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
         )
     }
 
-    val expiredAddresses = cleanExpiredRangeIDs
+    val expiredAddresses = cleanExpiredRangeIDs.distinct
       .repartition(numAddressPartitions)
-      .flatMap(getDeletableAddresses)
+      .rdd
+      .mapPartitions(p => {
+        p.map(getDeletableAddresses)
+      })
+      .flatMap(i => i)
+      .toDS
 
     val keepAddresses =
-      keepRangeIDs
+      keepRangeIDs.distinct
         .repartition(numAddressPartitions)
-        .flatMap(getDeletableAddresses)
+        .rdd
+        .mapPartitions(p => {
+          p.map(getDeletableAddresses)
+        })
+        .flatMap(i => i)
+        .toDS
 
     println(s"getAddressesToDelete: use $numAddressPartitions partitions for addresses")
     val addressPartitioner = new HashPartitioner(numAddressPartitions)
@@ -185,6 +200,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
       storageNS: String,
       runID: String,
       commitDFLocation: String,
+      numCommitPartitions: Int,
       numRangePartitions: Int,
       numAddressPartitions: Int
   ): Dataset[String] = {
@@ -192,8 +208,10 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
 
     val commitsDF = getCommitsDF(commitDFLocation)
 
-    val keepCommitsDF = commitsDF.where("!expired").select("commit_id").as[String]
-    val expiredCommitsDF = commitsDF.where("expired").select("commit_id").as[String]
+    val keepCommitsDF =
+      commitsDF.where("!expired").select("commit_id").as[String].repartition(numCommitPartitions)
+    val expiredCommitsDF =
+      commitsDF.where("expired").select("commit_id").as[String].repartition(numCommitPartitions)
 
     val keepRangeIDsDF = getRangeIDsForCommits(keepCommitsDF, repo)
     val expiredRangeIDsDF = getRangeIDsForCommits(expiredCommitsDF, repo)
@@ -442,6 +460,8 @@ object GarbageCollector {
     }
     println("apiURL: " + apiURL)
 
+    val numCommitPartitions =
+      hc.getInt(LAKEFS_CONF_GC_NUM_COMMIT_PARTITIONS, DEFAULT_LAKEFS_CONF_GC_NUM_COMMIT_PARTITIONS)
     val numRangePartitions =
       hc.getInt(LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS, DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS)
     val numAddressPartitions = hc.getInt(LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS,
@@ -452,6 +472,7 @@ object GarbageCollector {
                            storageNS,
                            runID,
                            gcCommitsLocation,
+                           numCommitPartitions,
                            numRangePartitions,
                            numAddressPartitions
                           )
