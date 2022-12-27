@@ -42,10 +42,10 @@ func testRefManager(t testing.TB) (graveler.RefManager, *kv.StoreMessage) {
 		RepoCacheConfig:   testRepoCacheConfig,
 		CommitCacheConfig: testCommitCacheConfig,
 	}
-	return ref.NewKVRefManager(cfg), storeMessage
+	return ref.NewRefManager(cfg), storeMessage
 }
 
-func testRefManagerWithKVAndAddressProvider(t testing.TB, addressProvider ident.AddressProvider) (graveler.RefManager, *kv.StoreMessage) {
+func testRefManagerWithAddressProvider(t testing.TB, addressProvider ident.AddressProvider) (graveler.RefManager, *kv.StoreMessage) {
 	t.Helper()
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
@@ -57,7 +57,7 @@ func testRefManagerWithKVAndAddressProvider(t testing.TB, addressProvider ident.
 		RepoCacheConfig:   testRepoCacheConfig,
 		CommitCacheConfig: testCommitCacheConfig,
 	}
-	return ref.NewKVRefManager(cfg), storeMessage
+	return ref.NewRefManager(cfg), storeMessage
 }
 
 func TestMain(m *testing.M) {

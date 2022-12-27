@@ -48,7 +48,7 @@ func TestManager_GetRepositoryCache(t *testing.T) {
 		RepoCacheConfig:   cacheConfig,
 		CommitCacheConfig: cacheConfig,
 	}
-	refManager := ref.NewKVRefManager(cfg)
+	refManager := ref.NewRefManager(cfg)
 	for i := 0; i < calls; i++ {
 		_, err := refManager.GetRepository(ctx, "repo1")
 		if err != nil {
@@ -96,7 +96,7 @@ func TestManager_GetCommitCache(t *testing.T) {
 		RepoCacheConfig:   cacheConfig,
 		CommitCacheConfig: cacheConfig,
 	}
-	refManager := ref.NewKVRefManager(cfg)
+	refManager := ref.NewRefManager(cfg)
 	for i := 0; i < calls; i++ {
 		_, err := refManager.GetCommit(ctx, &graveler.RepositoryRecord{
 			RepositoryID: repoID,
@@ -898,7 +898,7 @@ func TestManager_GetCommitByPrefix(t *testing.T) {
 	identityToFakeIdentity := make(map[string]string)
 
 	provider := &fakeAddressProvider{identityToFakeIdentity: identityToFakeIdentity}
-	r, _ := testRefManagerWithKVAndAddressProvider(t, provider)
+	r, _ := testRefManagerWithAddressProvider(t, provider)
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",

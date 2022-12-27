@@ -3,7 +3,6 @@ package committed
 import "google.golang.org/protobuf/proto"
 
 // Range represents a range of sorted Keys
-
 type Range struct {
 	ID            ID
 	MinKey        Key

@@ -15,7 +15,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func TestKVRepositoryIterator(t *testing.T) {
+func TestRepositoryIterator(t *testing.T) {
 	r, store := testRefManager(t)
 	repos := []graveler.RepositoryID{"a", "aa", "b", "c", "e", "d", "f"}
 
@@ -30,7 +30,7 @@ func TestKVRepositoryIterator(t *testing.T) {
 	}
 
 	t.Run("listing all repos", func(t *testing.T) {
-		iter, err := ref.NewKVRepositoryIterator(context.Background(), store)
+		iter, err := ref.NewRepositoryIterator(context.Background(), store)
 		require.NoError(t, err)
 		repoIds := make([]graveler.RepositoryID, 0)
 		for iter.Next() {
@@ -48,7 +48,7 @@ func TestKVRepositoryIterator(t *testing.T) {
 	})
 
 	t.Run("listing repos from prefix", func(t *testing.T) {
-		iter, err := ref.NewKVRepositoryIterator(context.Background(), store)
+		iter, err := ref.NewRepositoryIterator(context.Background(), store)
 		require.NoError(t, err)
 		iter.SeekGE("b")
 		repoIds := make([]graveler.RepositoryID, 0)
@@ -67,7 +67,7 @@ func TestKVRepositoryIterator(t *testing.T) {
 	})
 
 	t.Run("listing repos SeekGE", func(t *testing.T) {
-		iter, err := ref.NewKVRepositoryIterator(context.Background(), store)
+		iter, err := ref.NewRepositoryIterator(context.Background(), store)
 		require.NoError(t, err)
 		iter.SeekGE("b")
 		repoIds := make([]graveler.RepositoryID, 0)
@@ -102,7 +102,7 @@ func TestKVRepositoryIterator(t *testing.T) {
 	})
 }
 
-func TestKVRepositoryIterator_CloseTwice(t *testing.T) {
+func TestRepositoryIterator_CloseTwice(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	entIt := mock.NewMockEntriesIterator(ctrl)
@@ -110,16 +110,16 @@ func TestKVRepositoryIterator_CloseTwice(t *testing.T) {
 	store := mock.NewMockStore(ctrl)
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
 	msgStore := kv.StoreMessage{Store: store}
-	it, err := ref.NewKVRepositoryIterator(ctx, &msgStore)
+	it, err := ref.NewRepositoryIterator(ctx, &msgStore)
 	if err != nil {
-		t.Fatal("NewKVRepositoryIterator failed", err)
+		t.Fatal("NewRepositoryIterator failed", err)
 	}
 	it.Close()
 	// Make sure calling Close again do not crash
 	it.Close()
 }
 
-func TestKVRepositoryIterator_NextClosed(t *testing.T) {
+func TestRepositoryIterator_NextClosed(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	entIt := mock.NewMockEntriesIterator(ctrl)
@@ -127,9 +127,9 @@ func TestKVRepositoryIterator_NextClosed(t *testing.T) {
 	store := mock.NewMockStore(ctrl)
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
 	msgStore := kv.StoreMessage{Store: store}
-	it, err := ref.NewKVRepositoryIterator(ctx, &msgStore)
+	it, err := ref.NewRepositoryIterator(ctx, &msgStore)
 	if err != nil {
-		t.Fatal("NewKVRepositoryIterator failed", err)
+		t.Fatal("NewRepositoryIterator failed", err)
 	}
 	it.Close()
 	// Make sure calling Next should not crash
