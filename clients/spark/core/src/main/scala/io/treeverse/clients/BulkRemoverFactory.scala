@@ -70,7 +70,7 @@ object BulkRemoverFactory {
 
     override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
       val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, false, false)
-      println("Remove keys:", removeKeyNames.take(100).mkString(", "))
+      println(s"Remove keys from ${bucket}: ${removeKeyNames.take(100).mkString(", ")}")
       val removeKeys = removeKeyNames.map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
 
       val delObjReq = new model.DeleteObjectsRequest(bucket).withKeys(removeKeys)
@@ -101,7 +101,7 @@ object BulkRemoverFactory {
 
     override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
       val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, true, true)
-      println("Remove keys:", removeKeyNames.take(100).mkString(", "))
+      println(s"Remove keys: ${removeKeyNames.take(100).mkString(", ")}")
       val removeKeys = removeKeyNames.asJava
 
       val blobBatchClient = getBlobBatchClient(hc, storageAccountUrl, storageAccountName)
