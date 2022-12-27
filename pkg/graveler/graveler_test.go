@@ -187,7 +187,7 @@ func TestGraveler_List(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			listing, err := tt.r.List(ctx, repository, "", 0)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("wrong error, expected:%s got:%s", tt.expectedErr, err)
+				t.Fatalf("wrong error, expected:%v got:%v", tt.expectedErr, err)
 			}
 			if err != nil {
 				return // err == tt.expectedErr
