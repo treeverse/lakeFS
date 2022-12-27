@@ -3400,12 +3400,14 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 
 func TestController_ClientDisconnect(t *testing.T) {
 	handler, deps := setupHandlerWithWalkerFactory(t, store.NewFactory(nil))
+
+	// setup lakefs
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	_ = setupCommPrefs(t, clt)
 	cred := createDefaultAdminUser(t, clt)
 
-	clt = setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.SecretAccessKey)
+	// setup repository
 	ctx := context.Background()
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "repo1"), "main")
 	testutil.Must(t, err)
