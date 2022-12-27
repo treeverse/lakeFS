@@ -3614,6 +3614,7 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
+
 	// set upgrade recommended based on last security audit check
 	var (
 		upgradeRecommended *bool
@@ -3633,6 +3634,57 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		UpgradeUrl:         upgradeURL,
 		Version:            swag.String(version.Version),
 	})
+}
+
+func (c *Controller) ReportUsageEvent(w http.ResponseWriter, r *http.Request, body ReportUsageEventJSONRequestBody) {
+	ctx := r.Context()
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+
+	usageClass, usageName, usageCount := body.Class, body.Name, body.Count
+	if usageClass == "" {
+		writeError(w, r, http.StatusBadRequest, "invalid usage class: cannot use an empty string")
+		return
+	}
+
+	if usageName == "" {
+		writeError(w, r, http.StatusBadRequest, "invalid usage name: cannot use an empty string")
+		return
+	}
+
+	if usageCount <= 0 {
+		writeError(w, r, http.StatusBadRequest, fmt.Sprintf("invalid usage count=%d", usageCount))
+		return
+	}
+
+	client := httputil.GetRequestLakeFSClient(r)
+	ev := stats.Event{
+		Class:      usageClass,
+		Name:       usageName,
+		Repository: "",
+		Ref:        "",
+		SourceRef:  "",
+		UserID:     user.Username,
+		Client:     client,
+	}
+	for i := 0; i < body.Count; i++ {
+		c.Collector.CollectEvent(ev)
+	}
+	c.Logger.WithContext(ctx).WithFields(logging.Fields{
+		"class":      ev.Class,
+		"name":       ev.Name,
+		"count":      usageCount,
+		"repository": ev.Repository,
+		"ref":        ev.Ref,
+		"source_ref": ev.SourceRef,
+		"user_id":    ev.UserID,
+		"client":     ev.Client,
+	}).Debug("sending usage events")
+
+	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
 func IsStatusCodeOK(statusCode int) bool {
@@ -3819,6 +3871,7 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 	if err != nil {
 		ev.UserID = user.Username
 	}
+
 	c.Logger.WithContext(ctx).WithFields(logging.Fields{
 		"class":      ev.Class,
 		"name":       ev.Name,

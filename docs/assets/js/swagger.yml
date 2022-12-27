@@ -1138,6 +1138,23 @@ components:
           description: The id of the created metarange
           type: string
 
+    UsageEvent:
+      type: object
+      properties:
+        class:
+          description: stats event class
+          type: string
+        name:
+          description: stats event name
+          type: string
+        count:
+          description: number of events of the class and name
+          type: integer
+      required:
+        - class
+        - name
+        - count
+
 paths:
   /setup_comm_prefs:
     post:
@@ -3781,5 +3798,31 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /statistics:
+    post:
+      tags:
+        - statistics
+      operationId: reportUsageEvent
+      summary: report usage event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsageEvent"
+      responses:
+        204:
+          description: reported succssfully
+        400:
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"

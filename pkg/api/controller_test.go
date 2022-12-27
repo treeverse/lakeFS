@@ -3463,3 +3463,89 @@ func TestController_ClientDisconnect(t *testing.T) {
 		t.Fatalf("Metric for client request closed: %d, expected: %d", clientRequestClosedCount, expectedCount)
 	}
 }
+
+func TestController_ReportUsageEvent(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	tests := []struct {
+		name               string
+		usageClass         string
+		usageName          string
+		usageCount         int
+		expectedStatusCode int
+	}{
+		{
+			name:               "single-event",
+			usageClass:         "class-single-event",
+			usageName:          "name",
+			usageCount:         1,
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name:               "multiple-events",
+			usageClass:         "class-multiple-events",
+			usageName:          "name",
+			usageCount:         3,
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name:               "empty-usage-class",
+			usageClass:         "",
+			usageName:          "name",
+			usageCount:         1,
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name:               "empty-usage-name",
+			usageClass:         "class-empty-usage-name",
+			usageName:          "",
+			usageCount:         1,
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name:               "zero-usage-count",
+			usageClass:         "class-zero-usage-count",
+			usageName:          "name",
+			usageCount:         0,
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name:               "negative-usage-count",
+			usageClass:         "class-negative-usage-count",
+			usageName:          "name",
+			usageCount:         -23,
+			expectedStatusCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := clt.ReportUsageEventWithResponse(ctx, api.ReportUsageEventJSONRequestBody{
+				Class: tt.usageClass,
+				Name:  tt.usageName,
+				Count: tt.usageCount,
+			})
+			if err != nil {
+				t.Fatal(err, "cannot perform report usage event")
+			}
+
+			if resp.StatusCode() != tt.expectedStatusCode {
+				t.Fatal(err, "expected status code %d, but got %d", tt.expectedStatusCode, resp.StatusCode())
+			}
+
+			// For successful requests, verify the expected events were sent
+			if tt.expectedStatusCode == http.StatusNoContent {
+				var eventsOfClass []*stats.Event
+				for _, ev := range deps.collector.Events {
+					if ev.Class == tt.usageClass {
+						eventsOfClass = append(eventsOfClass, ev)
+					}
+				}
+				if len(eventsOfClass) != tt.usageCount {
+					t.Fatal(err, "wrong number of events sent, expected=%d but actual=%d", tt.usageCount, len(eventsOfClass))
+				}
+			}
+		})
+	}
+}

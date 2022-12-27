@@ -79,6 +79,7 @@ docs/StagingApi.md
 docs/StagingLocation.md
 docs/StagingMetadata.md
 docs/Statement.md
+docs/StatisticsApi.md
 docs/StorageConfig.md
 docs/StorageURI.md
 docs/TagCreation.md
@@ -86,6 +87,7 @@ docs/TagsApi.md
 docs/TemplatesApi.md
 docs/UnderlyingObjectProperties.md
 docs/UpdatePasswordByToken.md
+docs/UsageEvent.md
 docs/User.md
 docs/UserCreation.md
 docs/UserList.md
@@ -105,6 +107,7 @@ lakefs_client/api/refs_api.py
 lakefs_client/api/repositories_api.py
 lakefs_client/api/retention_api.py
 lakefs_client/api/staging_api.py
+lakefs_client/api/statistics_api.py
 lakefs_client/api/tags_api.py
 lakefs_client/api/templates_api.py
 lakefs_client/api_client.py
@@ -182,6 +185,7 @@ lakefs_client/model/storage_uri.py
 lakefs_client/model/tag_creation.py
 lakefs_client/model/underlying_object_properties.py
 lakefs_client/model/update_password_by_token.py
+lakefs_client/model/usage_event.py
 lakefs_client/model/user.py
 lakefs_client/model/user_creation.py
 lakefs_client/model/user_list.py
@@ -272,6 +276,7 @@ test/test_staging_api.py
 test/test_staging_location.py
 test/test_staging_metadata.py
 test/test_statement.py
+test/test_statistics_api.py
 test/test_storage_config.py
 test/test_storage_uri.py
 test/test_tag_creation.py
@@ -279,6 +284,7 @@ test/test_tags_api.py
 test/test_templates_api.py
 test/test_underlying_object_properties.py
 test/test_update_password_by_token.py
+test/test_usage_event.py
 test/test_user.py
 test/test_user_creation.py
 test/test_user_list.py
