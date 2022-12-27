@@ -188,7 +188,7 @@ system-tests: # Run system tests locally
 	./esti/scripts/runner.sh -r all
 
 build-docker: build ## Build Docker image file (Docker required)
-	$(DOCKER) build -t treeverse/$(DOCKER_IMAGE):$(DOCKER_TAG) .
+	$(DOCKER) buildx build -t treeverse/$(DOCKER_IMAGE):$(DOCKER_TAG) .
 
 gofmt:  ## gofmt code formating
 	@echo Running go formating with the following command:
