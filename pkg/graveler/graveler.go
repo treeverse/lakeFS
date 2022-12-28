@@ -1873,7 +1873,7 @@ func (g *Graveler) addCommitNoLock(ctx context.Context, repository *RepositoryRe
 }
 
 func (g *Graveler) isStagingEmpty(ctx context.Context, repository *RepositoryRecord, branch *Branch) (bool, error) {
-	itr, err := g.listStagingArea(ctx, branch, 0)
+	itr, err := g.listStagingArea(ctx, branch, 1)
 	if err != nil {
 		return false, err
 	}
@@ -1905,7 +1905,7 @@ func (g *Graveler) isSealedEmpty(ctx context.Context, repository *RepositoryReco
 	if len(branch.SealedTokens) == 0 {
 		return true, nil
 	}
-	itrs, err := g.sealedTokensIterator(ctx, branch, 0)
+	itrs, err := g.sealedTokensIterator(ctx, branch, 1)
 	if err != nil {
 		return false, err
 	}

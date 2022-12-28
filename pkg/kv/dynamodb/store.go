@@ -354,11 +354,17 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey []byte, options k
 		ExclusiveStartKey:         exclusiveStartKey,
 		ReturnConsumedCapacity:    aws.String(dynamodb.ReturnConsumedCapacityTotal),
 	}
-	if s.params.ScanLimit != 0 {
-		queryInput.SetLimit(s.params.ScanLimit)
+	// scan limit set to the minimum 'params.ScanLimit' and 'options.BatchSize', unless 0 (not set)
+	scanLimit := int(s.params.ScanLimit)
+	if options.BatchSize > 0 {
+		if scanLimit == 0 {
+			scanLimit = options.BatchSize
+		} else if options.BatchSize < scanLimit {
+			scanLimit = options.BatchSize
+		}
 	}
-	if options.BatchSize != 0 {
-		queryInput.Limit = aws.Int64(int64(options.BatchSize))
+	if scanLimit != 0 {
+		queryInput.SetLimit(int64(scanLimit))
 	}
 
 	start := time.Now()

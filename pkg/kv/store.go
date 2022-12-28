@@ -61,7 +61,10 @@ type ValueWithPredicate struct {
 }
 
 type ScanOptions struct {
-	KeyStart  []byte
+	// KeyStart start key to seek the scan
+	KeyStart []byte
+	// BatchSize used by each implementation to perform limited query or fetching of data while scanning.
+	// The 0 value means - use the default by the implementation.
 	BatchSize int
 }
 
@@ -82,10 +85,9 @@ type Store interface {
 	// Delete will delete the key, no error in if key doesn't exist
 	Delete(ctx context.Context, partitionKey, key []byte) error
 
-	// Scan returns entries that can be read by key order, starting at or after the `start` position
+	// Scan returns entries that can be read by key order
 	// partitionKey is optional, passing it might increase performance.
-	// 'options' holds additional parameters to limit the number of records
-	//  and set the prefix to scan.
+	// 'options' holds optional parameters to control the batch size and the key to start the scan with.
 	Scan(ctx context.Context, partitionKey []byte, options ScanOptions) (EntriesIterator, error)
 
 	// Close access to the database store. After calling Close the instance is unusable.
