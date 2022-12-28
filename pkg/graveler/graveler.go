@@ -1451,7 +1451,7 @@ func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repo
 			"try":               try + 1,
 			"branch_token_pre":  branchPreOp.StagingToken,
 			"branch_token_post": branchPostOp.StagingToken,
-		}).Info("Retrying Set")
+		}).Debug("Retrying Set")
 	}
 	if try == BranchWriteMaxTries {
 		return fmt.Errorf("safe branch write: %w", ErrTooManyTries)
