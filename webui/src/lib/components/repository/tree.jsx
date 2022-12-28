@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useCallback, useState} from "react";
 
 import dayjs from "dayjs";
 import {
@@ -52,6 +52,11 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
     const [showObjectStat, setShowObjectStat] = useState(false);
     const [showObjectOrigin, setShowObjectOrigin] = useState(false);
 
+    const handleShowObjectOrigin = useCallback((e) => {
+        e.preventDefault();
+        setShowObjectOrigin(true);
+    }, [setShowObjectOrigin]);
+
     return (
         <>
             <Dropdown alignRight>
@@ -79,10 +84,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
                     }
 
 
-                    <Dropdown.Item onClick={(e) => {
-                        e.preventDefault();
-                        setShowObjectOrigin(true);
-                    }}>
+                    <Dropdown.Item onClick={handleShowObjectOrigin}>
                         <LogIcon/> Blame
                     </Dropdown.Item>
 
@@ -172,23 +174,20 @@ const StatModal = ({ show, onHide, entry }) => {
 
 
 const CommitMetadata = ({ metadata }) => {
-    const keys = Object.getOwnPropertyNames(metadata);
-    if (keys.length === 0) {
+    const entries = Object.entries(metadata)
+    if (entries.length === 0) {
         // empty state
         return <small>No metadata fields</small>
     }
-
     return (
         <Table striped>
             <tbody>
-            {keys.map(k => {
-               return (
-                   <tr key={`blame-commit-md-${k}`}>
-                       <td>{k}</td>
-                       <td><code>{metadata[k]}</code></td>
-                   </tr>
-               )
-            })}
+            {entries.map(([key, value]) =>  (
+                <tr key={`blame-commit-md-${key}`}>
+                   <td>{key}</td>
+                   <td><code>{value}</code></td>
+                </tr>
+            ))}
             </tbody>
         </Table>
     )
