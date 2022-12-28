@@ -15,7 +15,7 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
     import com.amazonaws.auth.{BasicAWSCredentials, AWSStaticCredentialsProvider}
 
     val configuration = new ClientConfiguration().withMaxErrorRetry(numRetries)
-    val s3Endpoint = hc.get(Constants.ENDPOINT)
+    val s3Endpoint = hc.get(Constants.ENDPOINT, null)
 
     // TODO(ariels): Support different per-bucket configuration methods.
     //     Possibly pre-generate a FileSystem to access the desired bucket,

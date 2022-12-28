@@ -107,7 +107,14 @@ object StorageUtils {
     ): AmazonS3 = {
       val builder = awsS3ClientBuilder
         .withClientConfiguration(configuration)
-        .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpoint, region))
+
+      val builderWithEndpoint =
+        if (endpoint != null)
+          builder.withEndpointConfiguration(
+            new AwsClientBuilder.EndpointConfiguration(endpoint, region)
+          )
+        else
+          builder
 
       val builderWithCredentials = credentialsProvider match {
         case Some(cp) => builder.withCredentials(cp)

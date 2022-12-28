@@ -14,7 +14,7 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
     import org.apache.hadoop.fs.s3a.Constants
 
     val configuration = new ClientConfiguration().withMaxErrorRetry(numRetries)
-    val s3Endpoint = hc.get(Constants.ENDPOINT)
+    val s3Endpoint = hc.get(Constants.ENDPOINT, null)
 
     val credentialsProvider =
       if (hc.get(Constants.ACCESS_KEY) != null) {
