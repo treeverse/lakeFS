@@ -97,12 +97,8 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
 
   def getRangeIDsForCommits(commitIDs: Dataset[String], repo: String): Dataset[String] = {
     import spark.implicits._
-    commitIDs.rdd
-      .mapPartitions(p => {
-        p.map(rangeGetter.getRangeIDs(_, repo))
-      })
-      .flatMap(i => i)
-      .toDS
+
+    commitIDs.flatMap(rangeGetter.getRangeIDs(_, repo))
   }
 
   val bitwiseOR = (a: Int, b: Int) => a | b
@@ -171,24 +167,14 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
         )
     }
 
-    val expiredAddresses = cleanExpiredRangeIDs.distinct
+    val expiredAddresses = cleanExpiredRangeIDs
       .repartition(numAddressPartitions)
-      .rdd
-      .mapPartitions(p => {
-        p.map(getDeletableAddresses)
-      })
-      .flatMap(i => i)
-      .toDS
+      .flatMap(getDeletableAddresses)
 
     val keepAddresses =
-      keepRangeIDs.distinct
+      keepRangeIDs
         .repartition(numAddressPartitions)
-        .rdd
-        .mapPartitions(p => {
-          p.map(getDeletableAddresses)
-        })
-        .flatMap(i => i)
-        .toDS
+        .flatMap(getDeletableAddresses)
 
     println(s"getAddressesToDelete: use $numAddressPartitions partitions for addresses")
     val addressPartitioner = new HashPartitioner(numAddressPartitions)
