@@ -13,7 +13,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
 import Layout from "../../lib/components/layout";
-import {ActionsBar, Error, ExitConfirmationDialog, Loading, useDebouncedState} from "../../lib/components/controls";
+import {ActionsBar, Error, Loading, useDebouncedState} from "../../lib/components/controls";
 import {config, repositories} from '../../lib/api';
 import {RepositoryCreateForm} from "../../lib/components/repositoryCreateForm";
 import {useAPI, useAPIWithPagination} from "../../lib/hooks/api";
@@ -25,12 +25,17 @@ import {useRouter} from "../../lib/hooks/router";
 import {Route, Routes} from "react-router-dom";
 import RepositoryPage from './repository';
 import Alert from "react-bootstrap/Alert";
-import Dropdown from "react-bootstrap/Dropdown";
-
-import {SparkQuickstart} from "./wizard/spark_quickstart_wizard";
+import Button from "react-bootstrap/Button";
 
 dayjs.extend(relativeTime);
 
+const CreateRepositoryButton = ({variant = "success", enabled = false, onClick}) => {
+    return (
+        <Button variant={variant} disabled={!enabled} onClick={onClick}>
+            <RepoIcon/> Create Repository
+        </Button>
+    )
+}
 
 const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 
@@ -60,40 +65,6 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
         </Modal>
     );
 };
-
-const RepositoryTemplatesModal = ({show, onExit, createRepo, repoCreationError}) => {
-    const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
-    const onHide = () => {
-        setIsExitDialogOpen(true);
-    }
-    return (
-        <>
-            <ExitConfirmationDialog
-                dialogAlert={'Are you sure you want to exit?'}
-                dialogDescription={'If you stop the Spark quickstart wizard in the middle of the process, you might get partial results.'}
-                onExit={() => {
-                    setIsExitDialogOpen(false);
-                    onExit();
-                }}
-                onContinue={() => setIsExitDialogOpen(false)}
-                isOpen={isExitDialogOpen}
-            />
-            <Modal show={show} onHide={onHide} className={"wizard-modal"} size="lg">
-                <Modal.Header closeButton>
-                    <TemplatesModalTitleContainer/>
-                </Modal.Header>
-                <Modal.Body>
-                    <SparkQuickstart
-                        onExit={onExit}
-                        createRepo={createRepo}
-                        repoCreationError={repoCreationError}
-                    />
-                </Modal.Body>
-            </Modal>
-        </>
-    );
-};
-
 
 const GetStarted = ({onCreateRepo}) => {
     return (
@@ -157,7 +128,6 @@ const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateRepo }) =>
 const RepositoriesPage = () => {
     const router = useRouter();
     const [showCreateRepositoryModal, setShowCreateRepositoryModal] = useState(false);
-    const [showRepositoryTemplatesModal, setShowRepositoryTemplatesModal] = useState(false);
     const [createRepoError, setCreateRepoError] = useState(null);
     const [refresh, setRefresh] = useState(false);
 
@@ -206,21 +176,12 @@ const RepositoriesPage = () => {
                         </Form.Row>
                     </Form>
                     <ButtonToolbar className="justify-content-end mb-2">
-                        <Dropdown>
-                            <Dropdown.Toggle variant="success" id="template-picker-dropdown">
-                                <RepoIcon/> Create Repository
-                            </Dropdown.Toggle>
-                            <Dropdown.Menu>
-                                <Dropdown.Item onClick={() => {
-                                    setShowCreateRepositoryModal(true);
-                                    setCreateRepoError(null);
-                                }}>Blank Repository</Dropdown.Item>
-                                <Dropdown.Item onClick={() => {
-                                    setShowRepositoryTemplatesModal(true);
-                                    setCreateRepoError(null);
-                                }}>Spark Quickstart</Dropdown.Item>
-                            </Dropdown.Menu>
-                        </Dropdown>
+                        <CreateRepositoryButton variant={"success"} enabled={true} onClick={
+                            () => {
+                                setShowCreateRepositoryModal(true);
+                                setCreateRepoError(null);
+                            }
+                        } />
                     </ButtonToolbar>
                 </ActionsBar>
 
@@ -245,15 +206,6 @@ const RepositoriesPage = () => {
                     error={createRepoError}
                     onSubmit={(repo) => createRepo(repo, true)}/>
 
-                <RepositoryTemplatesModal
-                    onExit={() => {
-                        setShowRepositoryTemplatesModal(false);
-                        setCreateRepoError(null);
-                    }}
-                    show={showRepositoryTemplatesModal}
-                    createRepo={(repo) => createRepo(repo, false)}
-                    repoCreationError={createRepoError}
-                />
             </Container>
         </Layout>
     );
@@ -273,12 +225,6 @@ const ModalTitleContainer = () => {
                 </Col>
             </Row>
         </Container>
-    );
-};
-
-const TemplatesModalTitleContainer = () => {
-    return (
-        <Modal.Title>Spark Quickstart</Modal.Title>
     );
 };
 
