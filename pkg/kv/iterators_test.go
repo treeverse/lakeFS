@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/kv/mock"
 )
 
@@ -19,7 +19,7 @@ func TestPartitionIterator_ClosedBehaviour(t *testing.T) {
 	entIt.EXPECT().Close().Times(1)
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
 
-	it := kv.NewPartitionIterator(ctx, store, (&graveler.StagedEntryData{}).ProtoReflect().Type(), "partitionKey")
+	it := kv.NewPartitionIterator(ctx, store, (&kvtest.TestModel{}).ProtoReflect().Type(), "partitionKey", 0)
 	it.SeekGE([]byte("test"))
 	it.Close()
 
@@ -37,7 +37,7 @@ func TestPartitionIterator_CloseAfterSeekGEFailed(t *testing.T) {
 	entItErr := errors.New("failed to scan")
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, entItErr).Times(1)
 
-	it := kv.NewPartitionIterator(ctx, store, (&graveler.StagedEntryData{}).ProtoReflect().Type(), "partitionKey")
+	it := kv.NewPartitionIterator(ctx, store, (&kvtest.TestModel{}).ProtoReflect().Type(), "partitionKey", 0)
 	it.SeekGE([]byte("test"))
 	it.Close() // verify we don't crash after after SeekGE failed internally with Scan
 }

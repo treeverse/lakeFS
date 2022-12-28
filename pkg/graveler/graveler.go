@@ -390,10 +390,10 @@ type KeyValueStore interface {
 	DeleteBatch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, keys []Key) error
 
 	// List lists values on repository / ref
-	List(ctx context.Context, repository *RepositoryRecord, ref Ref) (ValueIterator, error)
+	List(ctx context.Context, repository *RepositoryRecord, ref Ref, batchSize int) (ValueIterator, error)
 
 	// ListStaging returns ValueIterator for branch staging area. Exposed to be used by catalog in PrepareGCUncommitted
-	ListStaging(ctx context.Context, branch *Branch) (ValueIterator, error)
+	ListStaging(ctx context.Context, branch *Branch, batchSize int) (ValueIterator, error)
 }
 
 type VersionController interface {
@@ -1549,17 +1549,17 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 }
 
 // ListStaging Exposing listStagingArea to catalog for PrepareGCUncommitted
-func (g *Graveler) ListStaging(ctx context.Context, branch *Branch) (ValueIterator, error) {
-	return g.listStagingArea(ctx, branch)
+func (g *Graveler) ListStaging(ctx context.Context, branch *Branch, batchSize int) (ValueIterator, error) {
+	return g.listStagingArea(ctx, branch, batchSize)
 }
 
 // listStagingArea Returns an iterator which is an aggregation of all changes on all the branch's staging area (staging + sealed)
 // for each key in the staging area it will return the latest update for that key (the value that appears in the newest token)
-func (g *Graveler) listStagingArea(ctx context.Context, b *Branch) (ValueIterator, error) {
+func (g *Graveler) listStagingArea(ctx context.Context, b *Branch, batchSize int) (ValueIterator, error) {
 	if b.StagingToken == "" {
 		return nil, ErrNotFound
 	}
-	it, err := g.StagingManager.List(ctx, b.StagingToken, 1)
+	it, err := g.StagingManager.List(ctx, b.StagingToken, batchSize)
 	if err != nil {
 		return nil, err
 	}
@@ -1568,7 +1568,7 @@ func (g *Graveler) listStagingArea(ctx context.Context, b *Branch) (ValueIterato
 		return it, nil
 	}
 
-	itrs, err := g.listSealedTokens(ctx, b)
+	itrs, err := g.listSealedTokens(ctx, b, batchSize)
 	if err != nil {
 		it.Close()
 		return nil, err
@@ -1577,23 +1577,24 @@ func (g *Graveler) listStagingArea(ctx context.Context, b *Branch) (ValueIterato
 	return NewCombinedIterator(itrs...), nil
 }
 
-func (g *Graveler) listSealedTokens(ctx context.Context, b *Branch) ([]ValueIterator, error) {
-	itrs := make([]ValueIterator, 0, len(b.SealedTokens))
+func (g *Graveler) listSealedTokens(ctx context.Context, b *Branch, batchSize int) ([]ValueIterator, error) {
+	iterators := make([]ValueIterator, 0, len(b.SealedTokens))
 	for _, st := range b.SealedTokens {
-		it, err := g.StagingManager.List(ctx, st, 1)
+		it, err := g.StagingManager.List(ctx, st, batchSize)
 		if err != nil {
-			for _, it = range itrs {
-				it.Close()
+			// close the iterators we managed to open
+			for _, iter := range iterators {
+				iter.Close()
 			}
 			return nil, err
 		}
-		itrs = append(itrs, it)
+		iterators = append(iterators, it)
 	}
-	return itrs, nil
+	return iterators, nil
 }
 
-func (g *Graveler) sealedTokensIterator(ctx context.Context, b *Branch) (ValueIterator, error) {
-	itrs, err := g.listSealedTokens(ctx, b)
+func (g *Graveler) sealedTokensIterator(ctx context.Context, b *Branch, batchSize int) (ValueIterator, error) {
+	itrs, err := g.listSealedTokens(ctx, b, batchSize)
 	if err != nil {
 		return nil, err
 	}
@@ -1605,7 +1606,7 @@ func (g *Graveler) sealedTokensIterator(ctx context.Context, b *Branch) (ValueIt
 	return changes, nil
 }
 
-func (g *Graveler) List(ctx context.Context, repository *RepositoryRecord, ref Ref) (ValueIterator, error) {
+func (g *Graveler) List(ctx context.Context, repository *RepositoryRecord, ref Ref, batchSize int) (ValueIterator, error) {
 	reference, err := g.Dereference(ctx, repository, ref)
 	if err != nil {
 		return nil, err
@@ -1624,7 +1625,7 @@ func (g *Graveler) List(ctx context.Context, repository *RepositoryRecord, ref R
 		return nil, err
 	}
 	if reference.StagingToken != "" {
-		stagingList, err := g.listStagingArea(ctx, reference.BranchRecord.Branch)
+		stagingList, err := g.listStagingArea(ctx, reference.BranchRecord.Branch, batchSize)
 		if err != nil {
 			listing.Close()
 			return nil, err
@@ -1722,7 +1723,7 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 			}
 			commit.MetaRangeID = *params.SourceMetaRange
 		} else {
-			changes, err := g.sealedTokensIterator(ctx, branch)
+			changes, err := g.sealedTokensIterator(ctx, branch, 0)
 			if err != nil {
 				return nil, err
 			}
@@ -1872,7 +1873,7 @@ func (g *Graveler) addCommitNoLock(ctx context.Context, repository *RepositoryRe
 }
 
 func (g *Graveler) isStagingEmpty(ctx context.Context, repository *RepositoryRecord, branch *Branch) (bool, error) {
-	itr, err := g.listStagingArea(ctx, branch)
+	itr, err := g.listStagingArea(ctx, branch, 1)
 	if err != nil {
 		return false, err
 	}
@@ -1904,7 +1905,7 @@ func (g *Graveler) isSealedEmpty(ctx context.Context, repository *RepositoryReco
 	if len(branch.SealedTokens) == 0 {
 		return true, nil
 	}
-	itrs, err := g.sealedTokensIterator(ctx, branch)
+	itrs, err := g.sealedTokensIterator(ctx, branch, 1)
 	if err != nil {
 		return false, err
 	}
@@ -2029,7 +2030,7 @@ func (g *Graveler) ResetPrefix(ctx context.Context, repository *RepositoryRecord
 		newSealedTokens = append(newSealedTokens, branch.SealedTokens...)
 
 		// Reset keys by prefix on the new staging token
-		itr, err := g.listStagingArea(ctx, branch)
+		itr, err := g.listStagingArea(ctx, branch, 0)
 		if err != nil {
 			return nil, err
 		}
@@ -2282,7 +2283,7 @@ func (g *Graveler) DiffUncommitted(ctx context.Context, repository *RepositoryRe
 		metaRangeID = commit.MetaRangeID
 	}
 
-	valueIterator, err := g.listStagingArea(ctx, branch)
+	valueIterator, err := g.listStagingArea(ctx, branch, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -2348,7 +2349,7 @@ func (g *Graveler) Diff(ctx context.Context, repository *RepositoryRecord, left,
 		leftValueIterator.Close()
 		return nil, err
 	}
-	stagingIterator, err := g.listStagingArea(ctx, rightBranch)
+	stagingIterator, err := g.listStagingArea(ctx, rightBranch, 0)
 	if err != nil {
 		leftValueIterator.Close()
 		return nil, err
