@@ -154,7 +154,7 @@ var runCmd = &cobra.Command{
 				logger.WithError(err).Fatal("failed to create authentication service")
 			}
 		} else {
-			authService = auth.NewKVAuthService(
+			authService = auth.NewAuthService(
 				storeMessage,
 				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 				emailer,

@@ -131,7 +131,7 @@ func (gen *TestDecreasingIDGenerator) NewRunID() string {
 }
 
 func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) (map[string]int, []string) {
-	var keyMap = make(map[string]int, 0)
+	keyMap := make(map[string]int, 0)
 	var keyList []string
 
 	ctrl := gomock.NewController(t)

@@ -15,10 +15,10 @@ import (
 )
 
 var (
-	//go:embed invite_user.golden
+	//go:embed testdata/invite_user.golden
 	inviteUserGolden string
 
-	//go:embed reset_password.golden
+	//go:embed testdata/reset_password.golden
 	resetPasswordGolden string
 )
 

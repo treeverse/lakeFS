@@ -56,7 +56,7 @@ var superuserCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		storeMessage := &kv.StoreMessage{Store: kvStore}
-		authService := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), logger.WithField("service", "auth_service"))
+		authService := auth.NewAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), logger.WithField("service", "auth_service"))
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseType(), kvStore)
 
 		metadataProvider := stats.BuildMetadataProvider(logger, cfg)

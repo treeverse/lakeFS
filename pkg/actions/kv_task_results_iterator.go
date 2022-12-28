@@ -6,7 +6,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
-type KVTaskResultIterator struct {
+type taskResultIterator struct {
 	it    kv.PrimaryIterator
 	entry *TaskResult
 	err   error
@@ -14,7 +14,7 @@ type KVTaskResultIterator struct {
 
 // NewKVTaskResultIterator returns a new iterator over actions task results of a specific run
 // 'after' determines the hook run ID which we should start the scan from, used for pagination
-func NewKVTaskResultIterator(ctx context.Context, store kv.StoreMessage, repositoryID, runID, after string) (*KVTaskResultIterator, error) {
+func NewKVTaskResultIterator(ctx context.Context, store kv.StoreMessage, repositoryID, runID, after string) (*taskResultIterator, error) {
 	prefix := TasksPath(repositoryID, runID)
 	if after != "" {
 		after = kv.FormatPath(prefix, after)
@@ -23,12 +23,12 @@ func NewKVTaskResultIterator(ctx context.Context, store kv.StoreMessage, reposit
 	if err != nil {
 		return nil, err
 	}
-	return &KVTaskResultIterator{
+	return &taskResultIterator{
 		it: *it,
 	}, nil
 }
 
-func (i *KVTaskResultIterator) Next() bool {
+func (i *taskResultIterator) Next() bool {
 	if i.Err() != nil {
 		return false
 	}
@@ -46,7 +46,7 @@ func (i *KVTaskResultIterator) Next() bool {
 	return true
 }
 
-func (i *KVTaskResultIterator) Value() *TaskResult {
+func (i *taskResultIterator) Value() *TaskResult {
 	if i.Err() != nil {
 		return nil
 	}
@@ -54,13 +54,13 @@ func (i *KVTaskResultIterator) Value() *TaskResult {
 	return i.entry
 }
 
-func (i *KVTaskResultIterator) Err() error {
+func (i *taskResultIterator) Err() error {
 	if i.err == nil {
 		return i.it.Err()
 	}
 	return i.err
 }
 
-func (i *KVTaskResultIterator) Close() {
+func (i *taskResultIterator) Close() {
 	i.it.Close()
 }
