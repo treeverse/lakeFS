@@ -1428,32 +1428,30 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repository *RepositoryRecord, branchID BranchID, stagingOperation func(branch *Branch) error) error {
 	var try int
 	for try = 0; try < BranchWriteMaxTries; try++ {
-		branch, err := g.GetBranch(ctx, repository, branchID)
+		branchPreOp, err := g.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return err
 		}
-		startToken := branch.StagingToken
-
-		if err = stagingOperation(branch); err != nil {
+		// startToken := branchPreOp.StagingToken
+		if err = stagingOperation(branchPreOp); err != nil {
 			return err
 		}
 
 		// Checking if the token has changed.
 		// If it changed, we need to write the changes to the branch's new staging token
-		branch, err = g.GetBranch(ctx, repository, branchID)
+		branchPostOp, err := g.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return err
 		}
-		endToken := branch.StagingToken
-		if startToken == endToken {
+		if branchPreOp.StagingToken == branchPostOp.StagingToken {
 			break
-		} else {
-			// we got a new token, try again
-			log.WithField("try", try+1).
-				WithField("startToken", startToken).
-				WithField("endToken", endToken).
-				Info("Retrying Set")
 		}
+		// we got a new token, try again
+		log.WithFields(logging.Fields{
+			"try":               try + 1,
+			"branch_token_pre":  branchPreOp.StagingToken,
+			"branch_token_post": branchPostOp.StagingToken,
+		}).Info("Retrying Set")
 	}
 	if try == BranchWriteMaxTries {
 		return fmt.Errorf("safe branch write: %w", ErrTooManyTries)
@@ -1510,13 +1508,12 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 	switch {
 	case err != nil:
 		if !errors.Is(err, ErrNotFound) {
-			// unknown error
 			return fmt.Errorf("reading from staging: %w", err)
 		}
-		// entry not found in staging - continue to committed check
+		// entry not found in staging - continue to committed
 	case val == nil:
-		// found tombstone in staging, return ErrNotFound
-		return ErrNotFound
+		// found tombstone in staging, do nothing
+		return nil
 	default:
 		// found in staging, set tombstone
 		return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
@@ -1540,8 +1537,8 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 			// unknown error
 			return fmt.Errorf("reading from committed: %w", err)
 		}
-		// key is nowhere to be found
-		return ErrNotFound
+		// key is nowhere to be found - nothing to do
+		return nil
 	}
 
 	// found in committed, set tombstone
