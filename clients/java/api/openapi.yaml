@@ -3434,7 +3434,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: delete object
+      summary: delete object. Missing objects will not return a NotFound error.
       tags:
       - objects
       x-accepts: application/json
@@ -3650,7 +3650,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: delete objects
+      summary: delete objects. Missing objects will not return a NotFound error.
       tags:
       - objects
       x-contentType: application/json
