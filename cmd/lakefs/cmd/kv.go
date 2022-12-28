@@ -119,7 +119,7 @@ var kvScanCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 
-		iter, err := kvStore.Scan(ctx, []byte(partitionKey), start)
+		iter, err := kvStore.Scan(ctx, []byte(partitionKey), kv.ScanOptions{KeyStart: start})
 		if err != nil {
 			return fmt.Errorf("scan failed: %w", err)
 		}

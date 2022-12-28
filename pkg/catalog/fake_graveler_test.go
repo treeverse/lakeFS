@@ -114,14 +114,14 @@ func (g *FakeGraveler) DeleteBatch(ctx context.Context, repository *graveler.Rep
 	return nil
 }
 
-func (g *FakeGraveler) ListStaging(_ context.Context, b *graveler.Branch) (graveler.ValueIterator, error) {
+func (g *FakeGraveler) ListStaging(_ context.Context, b *graveler.Branch, _ int) (graveler.ValueIterator, error) {
 	if g.Err != nil {
 		return nil, g.Err
 	}
 	return g.ListStagingIteratorFactory(b.StagingToken), nil
 }
 
-func (g *FakeGraveler) List(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.Ref) (graveler.ValueIterator, error) {
+func (g *FakeGraveler) List(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.Ref, _ int) (graveler.ValueIterator, error) {
 	if g.Err != nil {
 		return nil, g.Err
 	}

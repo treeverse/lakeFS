@@ -19,22 +19,6 @@ type EntriesIterator struct {
 	logger       logging.Logger
 }
 
-func newEntriesIterator(logger logging.Logger, db *badger.DB, partitionKey, start []byte, prefetchSize int) *EntriesIterator {
-	prefix := partitionRange(partitionKey)
-	txn := db.NewTransaction(false)
-	opts := badger.DefaultIteratorOptions
-	opts.PrefetchSize = prefetchSize
-	opts.Prefix = prefix
-	iter := txn.NewIterator(opts)
-	return &EntriesIterator{
-		iter:         iter,
-		partitionKey: partitionKey,
-		start:        composeKey(partitionKey, start),
-		logger:       logger,
-		txn:          txn,
-	}
-}
-
 func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false

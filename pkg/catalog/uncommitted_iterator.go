@@ -39,7 +39,7 @@ func (u *UncommittedIterator) nextStaging() bool {
 		u.entryItr.Close()
 	}
 	u.branch = u.branchItr.Value()
-	vItr, err := u.store.ListStaging(u.ctx, u.branch.Branch)
+	vItr, err := u.store.ListStaging(u.ctx, u.branch.Branch, 0)
 	if err != nil {
 		u.err = err
 		return false
