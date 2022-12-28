@@ -1138,14 +1138,14 @@ components:
           description: The id of the created metarange
           type: string
 
-    UsageEvent:
+    StatsEvent:
       type: object
       properties:
         class:
-          description: stats event class
+          description: stats event class (e.g. "s3_gateway", "openapi_request", "experimental-feature", "ui-event")
           type: string
         name:
-          description: stats event name
+          description: stats event name (e.g. "put_object", "create_repository", "<experimental-feature-name>")
           type: string
         count:
           description: number of events of the class and name
@@ -1154,6 +1154,16 @@ components:
         - class
         - name
         - count
+
+    StatsEventsList:
+      type: object
+      required:
+        - events
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatsEvent"
 
 paths:
   /setup_comm_prefs:
@@ -3805,17 +3815,17 @@ paths:
     post:
       tags:
         - statistics
-      operationId: reportUsageEvent
-      summary: report usage event
+      operationId: sendStatsEvents
+      summary: send stats events
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UsageEvent"
+              $ref: "#/components/schemas/StatsEventsList"
       responses:
         204:
-          description: reported succssfully
+          description: reported successfully
         400:
           description: bad request
           content:

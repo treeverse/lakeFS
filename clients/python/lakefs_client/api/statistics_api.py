@@ -23,7 +23,7 @@ from lakefs_client.model_utils import (  # noqa: F401
     validate_and_convert_types
 )
 from lakefs_client.model.error import Error
-from lakefs_client.model.usage_event import UsageEvent
+from lakefs_client.model.stats_events_list import StatsEventsList
 
 
 class StatisticsApi(object):
@@ -37,7 +37,7 @@ class StatisticsApi(object):
         if api_client is None:
             api_client = ApiClient()
         self.api_client = api_client
-        self.report_usage_event_endpoint = _Endpoint(
+        self.send_stats_events_endpoint = _Endpoint(
             settings={
                 'response_type': None,
                 'auth': [
@@ -47,16 +47,16 @@ class StatisticsApi(object):
                     'oidc_auth'
                 ],
                 'endpoint_path': '/statistics',
-                'operation_id': 'report_usage_event',
+                'operation_id': 'send_stats_events',
                 'http_method': 'POST',
                 'servers': None,
             },
             params_map={
                 'all': [
-                    'usage_event',
+                    'stats_events_list',
                 ],
                 'required': [
-                    'usage_event',
+                    'stats_events_list',
                 ],
                 'nullable': [
                 ],
@@ -71,13 +71,13 @@ class StatisticsApi(object):
                 'allowed_values': {
                 },
                 'openapi_types': {
-                    'usage_event':
-                        (UsageEvent,),
+                    'stats_events_list':
+                        (StatsEventsList,),
                 },
                 'attribute_map': {
                 },
                 'location_map': {
-                    'usage_event': 'body',
+                    'stats_events_list': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -93,21 +93,21 @@ class StatisticsApi(object):
             api_client=api_client
         )
 
-    def report_usage_event(
+    def send_stats_events(
         self,
-        usage_event,
+        stats_events_list,
         **kwargs
     ):
-        """report usage event  # noqa: E501
+        """send stats events  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.report_usage_event(usage_event, async_req=True)
+        >>> thread = api.send_stats_events(stats_events_list, async_req=True)
         >>> result = thread.get()
 
         Args:
-            usage_event (UsageEvent):
+            stats_events_list (StatsEventsList):
 
         Keyword Args:
             _return_http_data_only (bool): response data without head status
@@ -154,7 +154,7 @@ class StatisticsApi(object):
             '_check_return_type', True
         )
         kwargs['_host_index'] = kwargs.get('_host_index')
-        kwargs['usage_event'] = \
-            usage_event
-        return self.report_usage_event_endpoint.call_with_http_info(**kwargs)
+        kwargs['stats_events_list'] = \
+            stats_events_list
+        return self.send_stats_events_endpoint.call_with_http_info(**kwargs)
 

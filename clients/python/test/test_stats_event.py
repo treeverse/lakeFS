@@ -13,11 +13,11 @@ import sys
 import unittest
 
 import lakefs_client
-from lakefs_client.model.usage_event import UsageEvent
+from lakefs_client.model.stats_event import StatsEvent
 
 
-class TestUsageEvent(unittest.TestCase):
-    """UsageEvent unit test stubs"""
+class TestStatsEvent(unittest.TestCase):
+    """StatsEvent unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,10 +25,10 @@ class TestUsageEvent(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testUsageEvent(self):
-        """Test UsageEvent"""
+    def testStatsEvent(self):
+        """Test StatsEvent"""
         # FIXME: construct object with mandatory attributes with example values
-        # model = UsageEvent()  # noqa: E501
+        # model = StatsEvent()  # noqa: E501
         pass
 
 

@@ -4,14 +4,14 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**reportUsageEvent**](StatisticsApi.md#reportUsageEvent) | **POST** /statistics | report usage event
+[**sendStatsEvents**](StatisticsApi.md#sendStatsEvents) | **POST** /statistics | send stats events
 
 
-<a name="reportUsageEvent"></a>
-# **reportUsageEvent**
-> reportUsageEvent(usageEvent)
+<a name="sendStatsEvents"></a>
+# **sendStatsEvents**
+> sendStatsEvents(statsEventsList)
 
-report usage event
+send stats events
 
 ### Example
 ```java
@@ -50,11 +50,11 @@ public class Example {
     //oidc_auth.setApiKeyPrefix("Token");
 
     StatisticsApi apiInstance = new StatisticsApi(defaultClient);
-    UsageEvent usageEvent = new UsageEvent(); // UsageEvent | 
+    StatsEventsList statsEventsList = new StatsEventsList(); // StatsEventsList | 
     try {
-      apiInstance.reportUsageEvent(usageEvent);
+      apiInstance.sendStatsEvents(statsEventsList);
     } catch (ApiException e) {
-      System.err.println("Exception when calling StatisticsApi#reportUsageEvent");
+      System.err.println("Exception when calling StatisticsApi#sendStatsEvents");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());
@@ -68,7 +68,7 @@ public class Example {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **usageEvent** | [**UsageEvent**](UsageEvent.md)|  |
+ **statsEventsList** | [**StatsEventsList**](StatsEventsList.md)|  |
 
 ### Return type
 
@@ -86,7 +86,7 @@ null (empty response body)
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**204** | reported succssfully |  -  |
+**204** | reported successfully |  -  |
 **400** | bad request |  -  |
 **401** | Unauthorized |  -  |
 **0** | Internal Server Error |  -  |

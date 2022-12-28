@@ -4721,16 +4721,16 @@ paths:
       x-accepts: application/json
   /statistics:
     post:
-      operationId: reportUsageEvent
+      operationId: sendStatsEvents
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UsageEvent'
+              $ref: '#/components/schemas/StatsEventsList'
         required: true
       responses:
         "204":
-          description: reported succssfully
+          description: reported successfully
         "400":
           content:
             application/json:
@@ -4749,7 +4749,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: report usage event
+      summary: send stats events
       tags:
       - statistics
       x-contentType: application/json
@@ -6320,17 +6320,18 @@ components:
           description: The id of the created metarange
           type: string
       type: object
-    UsageEvent:
+    StatsEvent:
       example:
         name: name
         count: 0
         class: class
       properties:
         class:
-          description: stats event class
+          description: stats event class (e.g. "s3_gateway", "openapi_request", "experimental-feature",
+            "ui-event")
           type: string
         name:
-          description: stats event name
+          description: stats event name (e.g. "put_object", "create_repository", "<experimental-feature-name>")
           type: string
         count:
           description: number of events of the class and name
@@ -6339,6 +6340,23 @@ components:
       - class
       - count
       - name
+      type: object
+    StatsEventsList:
+      example:
+        events:
+        - name: name
+          count: 0
+          class: class
+        - name: name
+          count: 0
+          class: class
+      properties:
+        events:
+          items:
+            $ref: '#/components/schemas/StatsEvent'
+          type: array
+      required:
+      - events
       type: object
     inline_object:
       properties:

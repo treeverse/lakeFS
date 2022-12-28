@@ -4,13 +4,13 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**report_usage_event**](StatisticsApi.md#report_usage_event) | **POST** /statistics | report usage event
+[**send_stats_events**](StatisticsApi.md#send_stats_events) | **POST** /statistics | send stats events
 
 
-# **report_usage_event**
-> report_usage_event(usage_event)
+# **send_stats_events**
+> send_stats_events(stats_events_list)
 
-report usage event
+send stats events
 
 ### Example
 
@@ -23,8 +23,8 @@ report usage event
 import time
 import lakefs_client
 from lakefs_client.api import statistics_api
-from lakefs_client.model.usage_event import UsageEvent
 from lakefs_client.model.error import Error
+from lakefs_client.model.stats_events_list import StatsEventsList
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
@@ -64,18 +64,22 @@ configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = statistics_api.StatisticsApi(api_client)
-    usage_event = UsageEvent(
-        _class="_class_example",
-        name="name_example",
-        count=1,
-    ) # UsageEvent | 
+    stats_events_list = StatsEventsList(
+        events=[
+            StatsEvent(
+                _class="_class_example",
+                name="name_example",
+                count=1,
+            ),
+        ],
+    ) # StatsEventsList | 
 
     # example passing only required values which don't have defaults set
     try:
-        # report usage event
-        api_instance.report_usage_event(usage_event)
+        # send stats events
+        api_instance.send_stats_events(stats_events_list)
     except lakefs_client.ApiException as e:
-        print("Exception when calling StatisticsApi->report_usage_event: %s\n" % e)
+        print("Exception when calling StatisticsApi->send_stats_events: %s\n" % e)
 ```
 
 
@@ -83,7 +87,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **usage_event** | [**UsageEvent**](UsageEvent.md)|  |
+ **stats_events_list** | [**StatsEventsList**](StatsEventsList.md)|  |
 
 ### Return type
 
@@ -103,7 +107,7 @@ void (empty response body)
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**204** | reported succssfully |  -  |
+**204** | reported successfully |  -  |
 **400** | bad request |  -  |
 **401** | Unauthorized |  -  |
 **0** | Internal Server Error |  -  |

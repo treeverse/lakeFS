@@ -3464,86 +3464,124 @@ func TestController_ClientDisconnect(t *testing.T) {
 	}
 }
 
-func TestController_ReportUsageEvent(t *testing.T) {
+func TestController_SendStatsEvents(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
 	tests := []struct {
 		name               string
-		usageClass         string
-		usageName          string
-		usageCount         int
+		events             []api.StatsEvent
 		expectedStatusCode int
 	}{
 		{
-			name:               "single-event",
-			usageClass:         "class-single-event",
-			usageName:          "name",
-			usageCount:         1,
+			name: "single_event_count_1",
+			events: []api.StatsEvent{
+				{
+					Class: "single_event_count_1",
+					Name:  "name",
+					Count: 1,
+				},
+			},
 			expectedStatusCode: http.StatusNoContent,
 		},
 		{
-			name:               "multiple-events",
-			usageClass:         "class-multiple-events",
-			usageName:          "name",
-			usageCount:         3,
+			name: "single_event_count_gt_1",
+			events: []api.StatsEvent{
+				{
+					Class: "single_event_count_gt_1",
+					Name:  "name",
+					Count: 3,
+				},
+			},
 			expectedStatusCode: http.StatusNoContent,
 		},
 		{
-			name:               "empty-usage-class",
-			usageClass:         "",
-			usageName:          "name",
-			usageCount:         1,
+			name: "multiple_events",
+			events: []api.StatsEvent{
+				{
+					Class: "class_multiple_events_ev_1",
+					Name:  "name1",
+					Count: 1,
+				},
+				{
+					Class: "class_multiple_events_ev_2",
+					Name:  "name2",
+					Count: 1,
+				},
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name: "empty_usage_class",
+			events: []api.StatsEvent{
+				{
+					Class: "",
+					Name:  "name",
+					Count: 1,
+				},
+			},
 			expectedStatusCode: http.StatusBadRequest,
 		},
 		{
-			name:               "empty-usage-name",
-			usageClass:         "class-empty-usage-name",
-			usageName:          "",
-			usageCount:         1,
+			name: "empty_usage_name",
+			events: []api.StatsEvent{
+				{
+					Class: "class_empty_usage_name",
+					Name:  "",
+					Count: 1,
+				},
+			},
 			expectedStatusCode: http.StatusBadRequest,
 		},
 		{
-			name:               "zero-usage-count",
-			usageClass:         "class-zero-usage-count",
-			usageName:          "name",
-			usageCount:         0,
-			expectedStatusCode: http.StatusBadRequest,
+			name: "zero_usage_count",
+			events: []api.StatsEvent{
+				{
+					Class: "class_zero_usage_count",
+					Name:  "name",
+					Count: 0,
+				},
+			},
+			expectedStatusCode: http.StatusNoContent,
 		},
 		{
-			name:               "negative-usage-count",
-			usageClass:         "class-negative-usage-count",
-			usageName:          "name",
-			usageCount:         -23,
+			name: "negative_usage_count",
+			events: []api.StatsEvent{
+				{
+					Class: "class_negative_usage_count",
+					Name:  "name",
+					Count: -23,
+				},
+			},
 			expectedStatusCode: http.StatusBadRequest,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := clt.ReportUsageEventWithResponse(ctx, api.ReportUsageEventJSONRequestBody{
-				Class: tt.usageClass,
-				Name:  tt.usageName,
-				Count: tt.usageCount,
+			resp, err := clt.SendStatsEventsWithResponse(ctx, api.SendStatsEventsJSONRequestBody{
+				Events: tt.events,
 			})
 			if err != nil {
-				t.Fatal(err, "cannot perform report usage event")
+				t.Fatalf("SendStatsEvents failed: %s", err)
 			}
 
 			if resp.StatusCode() != tt.expectedStatusCode {
-				t.Fatal(err, "expected status code %d, but got %d", tt.expectedStatusCode, resp.StatusCode())
+				t.Fatalf("SendStatsEvents status code: %d, expected: %d", resp.StatusCode(), tt.expectedStatusCode)
 			}
 
 			// For successful requests, verify the expected events were sent
 			if tt.expectedStatusCode == http.StatusNoContent {
-				var eventsOfClass []*stats.Event
-				for _, ev := range deps.collector.Events {
-					if ev.Class == tt.usageClass {
-						eventsOfClass = append(eventsOfClass, ev)
+				for _, sentEv := range tt.events {
+					var eventsOfClass []*stats.Event
+					for _, collectedEv := range deps.collector.Events {
+						if collectedEv.Class == sentEv.Class {
+							eventsOfClass = append(eventsOfClass, collectedEv)
+						}
 					}
-				}
-				if len(eventsOfClass) != tt.usageCount {
-					t.Fatal(err, "wrong number of events sent, expected=%d but actual=%d", tt.usageCount, len(eventsOfClass))
+					if len(eventsOfClass) != sentEv.Count {
+						t.Fatalf("SendStatsEvents events for class %s count: %d, expected: %d", sentEv.Class, len(eventsOfClass), sentEv.Count)
+					}
 				}
 			}
 		})

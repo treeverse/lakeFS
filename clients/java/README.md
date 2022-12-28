@@ -215,7 +215,7 @@ Class | Method | HTTP request | Description
 *RetentionApi* | [**setGarbageCollectionRules**](docs/RetentionApi.md#setGarbageCollectionRules) | **POST** /repositories/{repository}/gc/rules | 
 *StagingApi* | [**getPhysicalAddress**](docs/StagingApi.md#getPhysicalAddress) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
 *StagingApi* | [**linkPhysicalAddress**](docs/StagingApi.md#linkPhysicalAddress) | **PUT** /repositories/{repository}/branches/{branch}/staging/backing | associate staging on this physical address with a path
-*StatisticsApi* | [**reportUsageEvent**](docs/StatisticsApi.md#reportUsageEvent) | **POST** /statistics | report usage event
+*StatisticsApi* | [**sendStatsEvents**](docs/StatisticsApi.md#sendStatsEvents) | **POST** /statistics | send stats events
 *TagsApi* | [**createTag**](docs/TagsApi.md#createTag) | **POST** /repositories/{repository}/tags | create tag
 *TagsApi* | [**deleteTag**](docs/TagsApi.md#deleteTag) | **DELETE** /repositories/{repository}/tags/{tag} | delete tag
 *TagsApi* | [**getTag**](docs/TagsApi.md#getTag) | **GET** /repositories/{repository}/tags/{tag} | get tag
@@ -289,12 +289,13 @@ Class | Method | HTTP request | Description
  - [StagingLocation](docs/StagingLocation.md)
  - [StagingMetadata](docs/StagingMetadata.md)
  - [Statement](docs/Statement.md)
+ - [StatsEvent](docs/StatsEvent.md)
+ - [StatsEventsList](docs/StatsEventsList.md)
  - [StorageConfig](docs/StorageConfig.md)
  - [StorageURI](docs/StorageURI.md)
  - [TagCreation](docs/TagCreation.md)
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)
  - [UpdatePasswordByToken](docs/UpdatePasswordByToken.md)
- - [UsageEvent](docs/UsageEvent.md)
  - [User](docs/User.md)
  - [UserCreation](docs/UserCreation.md)
  - [UserList](docs/UserList.md)

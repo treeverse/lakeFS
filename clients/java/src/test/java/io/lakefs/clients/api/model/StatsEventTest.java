@@ -27,17 +27,17 @@ import org.junit.Test;
 
 
 /**
- * Model tests for UsageEvent
+ * Model tests for StatsEvent
  */
-public class UsageEventTest {
-    private final UsageEvent model = new UsageEvent();
+public class StatsEventTest {
+    private final StatsEvent model = new StatsEvent();
 
     /**
-     * Model tests for UsageEvent
+     * Model tests for StatsEvent
      */
     @Test
-    public void testUsageEvent() {
-        // TODO: test UsageEvent
+    public void testStatsEvent() {
+        // TODO: test StatsEvent
     }
 
     /**

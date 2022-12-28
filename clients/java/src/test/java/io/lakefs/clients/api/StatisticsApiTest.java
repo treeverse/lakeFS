@@ -15,7 +15,7 @@ package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.UsageEvent;
+import io.lakefs.clients.api.model.StatsEventsList;
 import org.junit.Test;
 import org.junit.Ignore;
 
@@ -34,7 +34,7 @@ public class StatisticsApiTest {
 
     
     /**
-     * report usage event
+     * send stats events
      *
      * 
      *
@@ -42,9 +42,9 @@ public class StatisticsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void reportUsageEventTest() throws ApiException {
-        UsageEvent usageEvent = null;
-                api.reportUsageEvent(usageEvent);
+    public void sendStatsEventsTest() throws ApiException {
+        StatsEventsList statsEventsList = null;
+                api.sendStatsEvents(statsEventsList);
         // TODO: test validations
     }
     

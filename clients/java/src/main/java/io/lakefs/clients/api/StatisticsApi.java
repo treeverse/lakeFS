@@ -28,7 +28,7 @@ import java.io.IOException;
 
 
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.UsageEvent;
+import io.lakefs.clients.api.model.StatsEventsList;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -56,22 +56,22 @@ public class StatisticsApi {
     }
 
     /**
-     * Build call for reportUsageEvent
-     * @param usageEvent  (required)
+     * Build call for sendStatsEvents
+     * @param statsEventsList  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> reported succssfully </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> reported successfully </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call reportUsageEventCall(UsageEvent usageEvent, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = usageEvent;
+    public okhttp3.Call sendStatsEventsCall(StatsEventsList statsEventsList, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = statsEventsList;
 
         // create path and map variables
         String localVarPath = "/statistics";
@@ -101,76 +101,76 @@ public class StatisticsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call reportUsageEventValidateBeforeCall(UsageEvent usageEvent, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call sendStatsEventsValidateBeforeCall(StatsEventsList statsEventsList, final ApiCallback _callback) throws ApiException {
         
-        // verify the required parameter 'usageEvent' is set
-        if (usageEvent == null) {
-            throw new ApiException("Missing the required parameter 'usageEvent' when calling reportUsageEvent(Async)");
+        // verify the required parameter 'statsEventsList' is set
+        if (statsEventsList == null) {
+            throw new ApiException("Missing the required parameter 'statsEventsList' when calling sendStatsEvents(Async)");
         }
         
 
-        okhttp3.Call localVarCall = reportUsageEventCall(usageEvent, _callback);
+        okhttp3.Call localVarCall = sendStatsEventsCall(statsEventsList, _callback);
         return localVarCall;
 
     }
 
     /**
-     * report usage event
+     * send stats events
      * 
-     * @param usageEvent  (required)
+     * @param statsEventsList  (required)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> reported succssfully </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> reported successfully </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public void reportUsageEvent(UsageEvent usageEvent) throws ApiException {
-        reportUsageEventWithHttpInfo(usageEvent);
+    public void sendStatsEvents(StatsEventsList statsEventsList) throws ApiException {
+        sendStatsEventsWithHttpInfo(statsEventsList);
     }
 
     /**
-     * report usage event
+     * send stats events
      * 
-     * @param usageEvent  (required)
+     * @param statsEventsList  (required)
      * @return ApiResponse&lt;Void&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> reported succssfully </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> reported successfully </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Void> reportUsageEventWithHttpInfo(UsageEvent usageEvent) throws ApiException {
-        okhttp3.Call localVarCall = reportUsageEventValidateBeforeCall(usageEvent, null);
+    public ApiResponse<Void> sendStatsEventsWithHttpInfo(StatsEventsList statsEventsList) throws ApiException {
+        okhttp3.Call localVarCall = sendStatsEventsValidateBeforeCall(statsEventsList, null);
         return localVarApiClient.execute(localVarCall);
     }
 
     /**
-     * report usage event (asynchronously)
+     * send stats events (asynchronously)
      * 
-     * @param usageEvent  (required)
+     * @param statsEventsList  (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> reported succssfully </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> reported successfully </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call reportUsageEventAsync(UsageEvent usageEvent, final ApiCallback<Void> _callback) throws ApiException {
+    public okhttp3.Call sendStatsEventsAsync(StatsEventsList statsEventsList, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = reportUsageEventValidateBeforeCall(usageEvent, _callback);
+        okhttp3.Call localVarCall = sendStatsEventsValidateBeforeCall(statsEventsList, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }

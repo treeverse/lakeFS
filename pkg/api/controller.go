@@ -3636,7 +3636,7 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (c *Controller) ReportUsageEvent(w http.ResponseWriter, r *http.Request, body ReportUsageEventJSONRequestBody) {
+func (c *Controller) SendStatsEvents(w http.ResponseWriter, r *http.Request, body SendStatsEventsJSONRequestBody) {
 	ctx := r.Context()
 	user, err := auth.GetUser(ctx)
 	if err != nil {
@@ -3644,45 +3644,40 @@ func (c *Controller) ReportUsageEvent(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	usageClass, usageName, usageCount := body.Class, body.Name, body.Count
-	if usageClass == "" {
-		writeError(w, r, http.StatusBadRequest, "invalid usage class: cannot use an empty string")
-		return
-	}
+	for _, statsEv := range body.Events {
+		if statsEv.Class == "" {
+			writeError(w, r, http.StatusBadRequest, "invalid value: class is required")
+			return
+		}
 
-	if usageName == "" {
-		writeError(w, r, http.StatusBadRequest, "invalid usage name: cannot use an empty string")
-		return
-	}
+		if statsEv.Name == "" {
+			writeError(w, r, http.StatusBadRequest, "invalid value: name is required")
+			return
+		}
 
-	if usageCount <= 0 {
-		writeError(w, r, http.StatusBadRequest, fmt.Sprintf("invalid usage count=%d", usageCount))
-		return
-	}
+		if statsEv.Count < 0 {
+			writeError(w, r, http.StatusBadRequest, fmt.Sprintf("invalid usage count=%d", statsEv.Count))
+			return
+		}
 
-	client := httputil.GetRequestLakeFSClient(r)
-	ev := stats.Event{
-		Class:      usageClass,
-		Name:       usageName,
-		Repository: "",
-		Ref:        "",
-		SourceRef:  "",
-		UserID:     user.Username,
-		Client:     client,
+		client := httputil.GetRequestLakeFSClient(r)
+		ev := stats.Event{
+			Class:  statsEv.Class,
+			Name:   statsEv.Name,
+			UserID: user.Username,
+			Client: client,
+		}
+		for i := 0; i < statsEv.Count; i++ {
+			c.Collector.CollectEvent(ev)
+		}
+		c.Logger.WithContext(ctx).WithFields(logging.Fields{
+			"class":   ev.Class,
+			"name":    ev.Name,
+			"count":   statsEv.Count,
+			"user_id": ev.UserID,
+			"client":  ev.Client,
+		}).Debug("sending stats events")
 	}
-	for i := 0; i < body.Count; i++ {
-		c.Collector.CollectEvent(ev)
-	}
-	c.Logger.WithContext(ctx).WithFields(logging.Fields{
-		"class":      ev.Class,
-		"name":       ev.Name,
-		"count":      usageCount,
-		"repository": ev.Repository,
-		"ref":        ev.Ref,
-		"source_ref": ev.SourceRef,
-		"user_id":    ev.UserID,
-		"client":     ev.Client,
-	}).Debug("sending usage events")
 
 	writeResponse(w, r, http.StatusNoContent, nil)
 }

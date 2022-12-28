@@ -25,10 +25,10 @@ import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 
 /**
- * UsageEvent
+ * StatsEvent
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class UsageEvent {
+public class StatsEvent {
   public static final String SERIALIZED_NAME_PROPERTY_CLASS = "class";
   @SerializedName(SERIALIZED_NAME_PROPERTY_CLASS)
   private String propertyClass;
@@ -42,18 +42,18 @@ public class UsageEvent {
   private Integer count;
 
 
-  public UsageEvent propertyClass(String propertyClass) {
+  public StatsEvent propertyClass(String propertyClass) {
     
     this.propertyClass = propertyClass;
     return this;
   }
 
    /**
-   * stats event class
+   * stats event class (e.g. \&quot;s3_gateway\&quot;, \&quot;openapi_request\&quot;, \&quot;experimental-feature\&quot;, \&quot;ui-event\&quot;)
    * @return propertyClass
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "stats event class")
+  @ApiModelProperty(required = true, value = "stats event class (e.g. \"s3_gateway\", \"openapi_request\", \"experimental-feature\", \"ui-event\")")
 
   public String getPropertyClass() {
     return propertyClass;
@@ -65,18 +65,18 @@ public class UsageEvent {
   }
 
 
-  public UsageEvent name(String name) {
+  public StatsEvent name(String name) {
     
     this.name = name;
     return this;
   }
 
    /**
-   * stats event name
+   * stats event name (e.g. \&quot;put_object\&quot;, \&quot;create_repository\&quot;, \&quot;&lt;experimental-feature-name&gt;\&quot;)
    * @return name
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "stats event name")
+  @ApiModelProperty(required = true, value = "stats event name (e.g. \"put_object\", \"create_repository\", \"<experimental-feature-name>\")")
 
   public String getName() {
     return name;
@@ -88,7 +88,7 @@ public class UsageEvent {
   }
 
 
-  public UsageEvent count(Integer count) {
+  public StatsEvent count(Integer count) {
     
     this.count = count;
     return this;
@@ -119,10 +119,10 @@ public class UsageEvent {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    UsageEvent usageEvent = (UsageEvent) o;
-    return Objects.equals(this.propertyClass, usageEvent.propertyClass) &&
-        Objects.equals(this.name, usageEvent.name) &&
-        Objects.equals(this.count, usageEvent.count);
+    StatsEvent statsEvent = (StatsEvent) o;
+    return Objects.equals(this.propertyClass, statsEvent.propertyClass) &&
+        Objects.equals(this.name, statsEvent.name) &&
+        Objects.equals(this.count, statsEvent.count);
   }
 
   @Override
@@ -133,7 +133,7 @@ public class UsageEvent {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class UsageEvent {\n");
+    sb.append("class StatsEvent {\n");
     sb.append("    propertyClass: ").append(toIndentedString(propertyClass)).append("\n");
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    count: ").append(toIndentedString(count)).append("\n");
