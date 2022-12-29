@@ -616,3 +616,20 @@ td .form-group {
 .required-field-label {
   color: red;
 }
+
+/* SQL tables with sticky headers */
+.sticky-table tbody {
+  display:block;
+  height:200px;
+  overflow-y:scroll;
+}
+.sticky-table thead{
+  display:table;
+  width:98.7%;
+  table-layout:fixed;
+}
+.sticky-table tbody tr {
+  display:table;
+  width:100%;
+  table-layout:fixed;
+}
