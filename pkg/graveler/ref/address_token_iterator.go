@@ -9,14 +9,6 @@ import (
 
 // AddressTokenIterator Iterates over repository's token addresses
 type AddressTokenIterator struct {
-	//ctx           context.Context
-	//store         *kv.StoreMessage
-	//itr           *kv.PrimaryIterator
-	//repoPartition string
-	//value         *graveler.AddressData
-	//err           error
-	//
-	//
 	ctx           context.Context
 	it            kv.MessageIterator
 	err           error
@@ -73,7 +65,7 @@ func (i *AddressTokenIterator) SeekGE(address string) {
 	i.Close()
 	it, err := kv.NewPrimaryIterator(i.ctx, i.store, (&graveler.AddressData{}).ProtoReflect().Type(),
 		i.repoPartition,
-		[]byte(graveler.TagPath("")), kv.IteratorOptionsFrom([]byte(graveler.AddressPath(address))))
+		[]byte(graveler.AddressPath("")), kv.IteratorOptionsFrom([]byte(graveler.AddressPath(address))))
 	i.it = it
 	i.err = err
 	i.value = nil

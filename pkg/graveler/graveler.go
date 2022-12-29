@@ -2573,15 +2573,15 @@ func (g *Graveler) DumpTags(ctx context.Context, repository *RepositoryRecord) (
 	)
 }
 
-func (g *KVGraveler) SetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error {
+func (g *Graveler) SetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error {
 	return g.RefManager.SetAddressToken(ctx, repository, token)
 }
 
-func (g *KVGraveler) GetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error {
+func (g *Graveler) GetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error {
 	return g.RefManager.GetAddressToken(ctx, repository, token)
 }
 
-func (g *KVGraveler) ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error) {
+func (g *Graveler) ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error) {
 	return g.RefManager.ListAddressTokens(ctx, repository)
 }
 

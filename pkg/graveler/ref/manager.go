@@ -566,7 +566,7 @@ func newCache(cfg *CacheConfig, def *CacheConfig) cache.Cache {
 	return c
 }
 
-func (m *KVManager) SetAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+func (m *Manager) SetAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
 	a := &graveler.AddressData{
 		Address:   token,
 		ExpiredAt: timestamppb.New(time.Now().Add(addressTokenTime)),
@@ -581,7 +581,7 @@ func (m *KVManager) SetAddressToken(ctx context.Context, repository *graveler.Re
 	return nil
 }
 
-func (m *KVManager) GetAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+func (m *Manager) GetAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
 	// verify??
 	data := graveler.AddressData{}
 	path := []byte(graveler.AddressPath(token))
@@ -599,6 +599,6 @@ func (m *KVManager) GetAddressToken(ctx context.Context, repository *graveler.Re
 	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repository), path)
 }
 
-func (m *KVManager) ListAddressTokens(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
+func (m *Manager) ListAddressTokens(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
 	return NewAddressTokenIterator(ctx, m.kvStore, repository)
 }

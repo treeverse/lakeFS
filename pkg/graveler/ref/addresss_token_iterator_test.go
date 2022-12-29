@@ -33,8 +33,8 @@ func TestAddressTokenIterator(t *testing.T) {
 		testutil.Must(t, err)
 		ids := make([]string, 0)
 		for iter.Next() {
-			b := iter.Value()
-			ids = append(ids, b.Address)
+			a := iter.Value()
+			ids = append(ids, a.Address)
 		}
 		if iter.Err() != nil {
 			t.Fatalf("unexpected error: %v", iter.Err())
@@ -42,116 +42,36 @@ func TestAddressTokenIterator(t *testing.T) {
 		iter.Close()
 
 		if diffs := deep.Equal(ids, addresses); diffs != nil {
-			t.Fatalf("got wrong list of IDs: %v", diffs)
+			t.Fatalf("got wrong list of addresses: %v", diffs)
 		}
 	})
 
-	//t.Run("listing tags using prefix", func(t *testing.T) {
-	//	iter, err := ref.NewKVTagIterator(ctx, kvstore, repository)
-	//	testutil.Must(t, err)
-	//	iter.SeekGE("b")
-	//	ids := make([]graveler.TagID, 0)
-	//	for iter.Next() {
-	//		b := iter.Value()
-	//		ids = append(ids, b.TagID)
-	//	}
-	//	if iter.Err() != nil {
-	//		t.Fatalf("unexpected error: %v", iter.Err())
-	//	}
-	//	iter.Close()
-	//
-	//	if diffs := deep.Equal(ids, []graveler.TagID{"b", "c", "d", "e", "f", "g"}); diffs != nil {
-	//		t.Fatalf("got wrong list of tags: %v", diffs)
-	//	}
-	//})
-	//
-	//t.Run("listing tags SeekGE", func(t *testing.T) {
-	//	iter, err := ref.NewKVTagIterator(ctx, kvstore, repository)
-	//	testutil.Must(t, err)
-	//	iter.SeekGE("b")
-	//	ids := make([]graveler.TagID, 0)
-	//	for iter.Next() {
-	//		b := iter.Value()
-	//		ids = append(ids, b.TagID)
-	//	}
-	//	if iter.Err() != nil {
-	//		t.Fatalf("unexpected error: %v", iter.Err())
-	//	}
-	//
-	//	if diffs := deep.Equal(ids, []graveler.TagID{"b", "c", "d", "e", "f", "g"}); diffs != nil {
-	//		t.Fatalf("got wrong list of tags: %v", diffs)
-	//	}
-	//
-	//	// now let's seek
-	//	iter.SeekGE("aa")
-	//	ids = make([]graveler.TagID, 0)
-	//	for iter.Next() {
-	//		b := iter.Value()
-	//		ids = append(ids, b.TagID)
-	//	}
-	//	if iter.Err() != nil {
-	//		t.Fatalf("unexpected error: %v", iter.Err())
-	//	}
-	//	iter.Close()
-	//
-	//	if diffs := deep.Equal(ids, []graveler.TagID{"aa", "b", "c", "d", "e", "f", "g"}); diffs != nil {
-	//		t.Fatalf("got wrong list of tags")
-	//	}
-	//})
-	//
-	//t.Run("empty value SeekGE", func(t *testing.T) {
-	//	iter, err := ref.NewKVTagIterator(ctx, kvstore, repository)
-	//	testutil.Must(t, err)
-	//	iter.SeekGE("b")
-	//
-	//	if iter.Value() != nil {
-	//		t.Fatalf("expected nil value after seekGE")
-	//	}
-	//})
-}
+	t.Run("listing addresses SeekGE", func(t *testing.T) {
+		iter, err := ref.NewAddressTokenIterator(ctx, kvstore, repository)
+		testutil.Must(t, err)
+		iter.SeekGE("data/a/e")
+		ids := make([]string, 0)
+		for iter.Next() {
+			a := iter.Value()
+			ids = append(ids, a.Address)
+		}
+		if iter.Err() != nil {
+			t.Fatalf("unexpected error: %v", iter.Err())
+		}
+		iter.Close()
 
-//func TestKVTagIterator_CloseTwice(t *testing.T) {
-//	ctx := context.Background()
-//	ctrl := gomock.NewController(t)
-//	entIt := mock.NewMockEntriesIterator(ctrl)
-//	entIt.EXPECT().Close().Times(1)
-//	store := mock.NewMockStore(ctrl)
-//	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
-//	msgStore := kv.StoreMessage{Store: store}
-//	repo := &graveler.RepositoryRecord{
-//		RepositoryID: "repo",
-//		Repository: &graveler.Repository{
-//			InstanceUID: "rid",
-//		},
-//	}
-//	it, err := ref.NewKVTagIterator(ctx, &msgStore, repo)
-//	if err != nil {
-//		t.Fatal("TestKVTagIterator failed", err)
-//	}
-//	it.Close()
-//	// Make sure calling Close again do not crash
-//	it.Close()
-//}
-//
-//func TestKVTagIterator_NextClosed(t *testing.T) {
-//	ctx := context.Background()
-//	ctrl := gomock.NewController(t)
-//	entIt := mock.NewMockEntriesIterator(ctrl)
-//	entIt.EXPECT().Close().Times(1)
-//	store := mock.NewMockStore(ctrl)
-//	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
-//	msgStore := kv.StoreMessage{Store: store}
-//	repo := &graveler.RepositoryRecord{
-//		RepositoryID: "repo",
-//		Repository: &graveler.Repository{
-//			InstanceUID: "rid",
-//		},
-//	}
-//	it, err := ref.NewKVTagIterator(ctx, &msgStore, repo)
-//	if err != nil {
-//		t.Fatal("TestKVTagIterator failed", err)
-//	}
-//	it.Close()
-//	// Make sure calling Next should not crash
-//	it.Next()
-//}
+		if diffs := deep.Equal(ids, []string{"data/a/e", "data/a/f", "data/a/g"}); diffs != nil {
+			t.Fatalf("got wrong list of addresses: %v", diffs)
+		}
+	})
+
+	t.Run("empty value SeekGE", func(t *testing.T) {
+		iter, err := ref.NewAddressTokenIterator(ctx, kvstore, repository)
+		testutil.Must(t, err)
+		iter.SeekGE("data/b")
+
+		if iter.Value() != nil {
+			t.Fatalf("expected nil value after seekGE")
+		}
+	})
+}
