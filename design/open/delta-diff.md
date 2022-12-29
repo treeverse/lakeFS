@@ -134,10 +134,13 @@ To overcome this scenario, we'll use special diff credentials as follows:
            "version": 1,
            "timestamp":1515491537026,
            "operation":"INSERT",
-           "operationParameters":{
-               "mode":"Append",
-               "partitionBy":"[]"
-      },...
+           "operationContent":{
+               "operationParameters": {
+                  "mode":"Append",
+                  "partitionBy":"[]"
+                }
+      },
+      ...
   ]
   ```
 
