@@ -14,7 +14,7 @@ type GravelerTest struct {
 	StagingManager           *mock.MockStagingManager
 	ProtectedBranchesManager *mock.MockProtectedBranchesManager
 	GarbageCollectionManager *mock.MockGarbageCollectionManager
-	Sut                      *graveler.KVGraveler
+	Sut                      *graveler.Graveler
 }
 
 func InitGravelerTest(t *testing.T) *GravelerTest {
@@ -28,7 +28,7 @@ func InitGravelerTest(t *testing.T) *GravelerTest {
 		ProtectedBranchesManager: mock.NewMockProtectedBranchesManager(ctrl),
 	}
 
-	test.Sut = graveler.NewKVGraveler(test.CommittedManager, test.StagingManager, test.RefManager, test.GarbageCollectionManager, test.ProtectedBranchesManager)
+	test.Sut = graveler.NewGraveler(test.CommittedManager, test.StagingManager, test.RefManager, test.GarbageCollectionManager, test.ProtectedBranchesManager)
 
 	return test
 }

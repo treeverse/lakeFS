@@ -25,12 +25,14 @@ run_gc_according_to_storage_provider() {
   if [[ ${LAKEFS_BLOCKSTORE_TYPE} == "azure" ]]; then
     docker-compose run -v ${CLIENT_JAR}:/client/client.jar -T --no-deps --rm spark-submit bash -c "spark-submit -v --packages org.apache.hadoop:hadoop-azure:3.2.1 --master spark://spark:7077 \
      --class io.treeverse.clients.GarbageCollector ${additional_config_string} -c spark.hadoop.lakefs.api.url=http://docker.lakefs.io:8000/api/v1 -c spark.hadoop.lakefs.api.access_key=\${TESTER_ACCESS_KEY_ID} \
-     -c spark.hadoop.lakefs.api.secret_key=\${TESTER_SECRET_ACCESS_KEY} -c spark.hadoop.lakefs.api.connection.timeout_seconds=3 -c spark.hadoop.lakefs.api.read.timeout_seconds=8 -c \
-     spark.hadoop.fs.azure.account.key.\${LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT}.dfs.core.windows.net=\${LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY} ${parallelism} /client/client.jar ${repo}"
+     -c spark.hadoop.lakefs.api.secret_key=\${TESTER_SECRET_ACCESS_KEY} -c spark.hadoop.lakefs.api.connection.timeout_seconds=3 -c spark.hadoop.lakefs.api.read.timeout_seconds=8 \
+     -c spark.hadoop.lakefs.gc.commit.num_partitions=2 \
+     -c spark.hadoop.fs.azure.account.key.\${LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT}.dfs.core.windows.net=\${LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY} ${parallelism} /client/client.jar ${repo}"
   else
     docker-compose run -v ${CLIENT_JAR}:/client/client.jar -T --no-deps --rm spark-submit bash -c "spark-submit -v --master spark://spark:7077 --class io.treeverse.clients.GarbageCollector \
      -c spark.hadoop.lakefs.api.url=http://docker.lakefs.io:8000/api/v1 ${additional_config_string} -c spark.hadoop.lakefs.api.access_key=\${TESTER_ACCESS_KEY_ID} \
      -c spark.hadoop.lakefs.api.secret_key=\${TESTER_SECRET_ACCESS_KEY} -c spark.hadoop.fs.s3a.access.key=\${AWS_ACCESS_KEY_ID} -c spark.hadoop.fs.s3a.secret.key=\${AWS_SECRET_ACCESS_KEY} \
+     -c spark.hadoop.lakefs.gc.commit.num_partitions=2 \
      ${parallelism} /client/client.jar ${repo} us-east-1"
   fi
 }

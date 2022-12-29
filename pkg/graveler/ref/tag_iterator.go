@@ -7,7 +7,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
-type KVTagIterator struct {
+type TagIterator struct {
 	ctx           context.Context
 	it            kv.MessageIterator
 	err           error
@@ -17,7 +17,7 @@ type KVTagIterator struct {
 	closed        bool
 }
 
-func NewKVTagIterator(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord) (*KVTagIterator, error) {
+func NewTagIterator(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord) (*TagIterator, error) {
 	repoPartition := graveler.RepoPartition(repo)
 	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.TagData{}).ProtoReflect().Type(),
 		graveler.RepoPartition(repo),
@@ -25,7 +25,7 @@ func NewKVTagIterator(ctx context.Context, store *kv.StoreMessage, repo *gravele
 	if err != nil {
 		return nil, err
 	}
-	return &KVTagIterator{
+	return &TagIterator{
 		ctx:           ctx,
 		it:            it,
 		store:         store.Store,
@@ -34,7 +34,7 @@ func NewKVTagIterator(ctx context.Context, store *kv.StoreMessage, repo *gravele
 	}, nil
 }
 
-func (i *KVTagIterator) Next() bool {
+func (i *TagIterator) Next() bool {
 	if i.Err() != nil || i.closed {
 		return false
 	}
@@ -56,7 +56,7 @@ func (i *KVTagIterator) Next() bool {
 	return true
 }
 
-func (i *KVTagIterator) SeekGE(id graveler.TagID) {
+func (i *TagIterator) SeekGE(id graveler.TagID) {
 	if i.Err() != nil {
 		return
 	}
@@ -70,14 +70,14 @@ func (i *KVTagIterator) SeekGE(id graveler.TagID) {
 	i.closed = err != nil
 }
 
-func (i *KVTagIterator) Value() *graveler.TagRecord {
+func (i *TagIterator) Value() *graveler.TagRecord {
 	if i.Err() != nil {
 		return nil
 	}
 	return i.value
 }
 
-func (i *KVTagIterator) Err() error {
+func (i *TagIterator) Err() error {
 	if i.err != nil {
 		return i.err
 	}
@@ -87,7 +87,7 @@ func (i *KVTagIterator) Err() error {
 	return nil
 }
 
-func (i *KVTagIterator) Close() {
+func (i *TagIterator) Close() {
 	if i.closed {
 		return
 	}

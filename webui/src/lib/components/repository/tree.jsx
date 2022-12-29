@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useCallback, useState} from "react";
 
 import dayjs from "dayjs";
 import {
@@ -9,7 +9,7 @@ import {
     FileIcon, GearIcon, InfoIcon,
     PencilIcon,
     PlusIcon,
-    TrashIcon
+    TrashIcon, LogIcon
 } from "@primer/octicons-react";
 import Tooltip from "react-bootstrap/Tooltip";
 import Table from "react-bootstrap/Table";
@@ -20,13 +20,14 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Dropdown from "react-bootstrap/Dropdown";
 
-import {linkToPath} from "../../api";
+import {commits, linkToPath} from "../../api";
 import {ConfirmationModal} from "../modals";
 import {Paginator} from "../pagination";
 import {Link} from "../nav";
 import {RefTypeBranch, RefTypeCommit} from "../../../constants";
-import {copyTextToClipboard} from "../controls";
+import {copyTextToClipboard, Error, Loading} from "../controls";
 import Modal from "react-bootstrap/Modal";
+import {useAPI} from "../../hooks/api";
 
 export const humanSize = (bytes) => {
     if (!bytes) return '0.0 B';
@@ -49,7 +50,12 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
 
 
     const [showObjectStat, setShowObjectStat] = useState(false);
+    const [showObjectOrigin, setShowObjectOrigin] = useState(false);
 
+    const handleShowObjectOrigin = useCallback((e) => {
+        e.preventDefault();
+        setShowObjectOrigin(true);
+    }, [setShowObjectOrigin]);
 
     return (
         <>
@@ -76,6 +82,12 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
                             <InfoIcon/> {' '} Object Info
                         </Dropdown.Item>
                     }
+
+
+                    <Dropdown.Item onClick={handleShowObjectOrigin}>
+                        <LogIcon/> Blame
+                    </Dropdown.Item>
+
                     <Dropdown.Item onClick={(e) => {
                         copyTextToClipboard(`lakefs://${repo.id}/${reference.id}/${entry.path}`)
                         e.preventDefault()
@@ -106,6 +118,13 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
                 entry={entry}
                 show={showObjectStat}
                 onHide={() => setShowObjectStat(false)}/>
+
+            <OriginModal
+                entry={entry}
+                repo={repo}
+                reference={reference}
+                show={showObjectOrigin}
+                onHide={() => setShowObjectOrigin(false)}/>
         </>
     );
 };
@@ -148,6 +167,122 @@ const StatModal = ({ show, onHide, entry }) => {
                         }
                     </tbody>
                 </Table>
+            </Modal.Body>
+        </Modal>
+    );
+};
+
+
+const CommitMetadata = ({ metadata }) => {
+    const entries = Object.entries(metadata)
+    if (entries.length === 0) {
+        // empty state
+        return <small>No metadata fields</small>
+    }
+    return (
+        <Table striped>
+            <tbody>
+            {entries.map(([key, value]) =>  (
+                <tr key={`blame-commit-md-${key}`}>
+                   <td>{key}</td>
+                   <td><code>{value}</code></td>
+                </tr>
+            ))}
+            </tbody>
+        </Table>
+    )
+}
+
+const OriginModal = ({ show, onHide, entry, repo, reference }) => {
+
+    const {response: commit, error, loading} = useAPI(async () => {
+        if (show) {
+            return await commits.blame(repo.id, reference.id, entry.path, entry.path_type);
+        }
+        return null
+
+    }, [show, repo.id, reference.id, entry.path])
+
+    const pathType = (entry.path_type === 'object') ? 'object' : 'prefix';
+
+    let content = <Loading/>;
+
+    if (error) {
+        content = <Error error={error}/>
+    }
+    if (!loading && !error && commit) {
+        content = (
+            <>
+                <Table hover >
+                    <tbody>
+                        <tr>
+                            <td><strong>Path</strong></td>
+                            <td><code>{entry.path}</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Commit ID</strong></td>
+                            <td>
+                                <Link className="mr-2" href={{
+                                    pathname: '/repositories/:repoId/commits/:commitId',
+                                    params: {repoId: repo.id, commitId: commit.id}
+                                }}>
+                                    <code>{commit.id}</code>
+                                </Link>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Commit Message</strong></td>
+                            <td>{commit.message}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Committed By</strong></td>
+                            <td>{commit.committer}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Created At</strong></td>
+                            <td>
+                                <>{dayjs.unix(commit.creation_date).format("MM/DD/YYYY HH:mm:ss")}</> ({dayjs.unix(commit.creation_date).fromNow()})
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Metadata</strong></td>
+                            <td>
+                                <CommitMetadata metadata={commit.metadata}/>
+                            </td>
+                        </tr>
+                    </tbody>
+                </Table>
+            </>
+        )
+    }
+
+    if (!loading && !error && !commit) {
+        content = (
+            <>
+            <h5>
+                <small>
+                    No commit found, perhaps this is an
+                    {' '}
+                    <Link className="mr-2" href={{
+                        pathname: '/repositories/:repoId/changes',
+                        params: {repoId: repo.id},
+                        query: {ref: reference.id},
+                    }}>
+                        uncommitted change
+                    </Link>?
+                </small>
+            </h5>
+            </>
+        )
+    }
+
+    return (
+        <Modal show={show} onHide={onHide} size={"lg"}>
+            <Modal.Header closeButton>
+                <Modal.Title>Last commit to modify <>{pathType}</></Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                {content}
             </Modal.Body>
         </Modal>
     );

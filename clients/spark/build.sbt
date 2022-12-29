@@ -2,7 +2,7 @@ import build.BuildType
 
 lazy val baseName = "lakefs-spark"
 
-lazy val projectVersion = "0.6.0"
+lazy val projectVersion = "0.6.1"
 ThisBuild / isSnapshot := false
 
 // Spark versions 2.4.7 and 3.0.1 use different Scala versions.  Changing this is a deep

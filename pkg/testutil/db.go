@@ -256,7 +256,7 @@ func ValidateKV(ctx context.Context, t *testing.T, store kv.Store, entries int) 
 func CleanupKV(ctx context.Context, t *testing.T, store kv.Store) {
 	t.Helper()
 
-	scan, err := store.Scan(ctx, []byte(testPartitionKey), []byte{0})
+	scan, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: []byte{0}})
 	MustDo(t, "scan store", err)
 	defer scan.Close()
 

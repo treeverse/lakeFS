@@ -43,7 +43,7 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 	}
 
 	t.Run("listing all values of partition", func(t *testing.T) {
-		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), firstPartitionKey)
+		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), firstPartitionKey, 0)
 		if itr == nil {
 			t.Fatalf("failed to create partition iterator")
 		}
@@ -67,7 +67,7 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 	})
 
 	t.Run("listing values SeekGE", func(t *testing.T) {
-		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), secondPartitionKey)
+		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), secondPartitionKey, 0)
 		if itr == nil {
 			t.Fatalf("failed to create partition iterator")
 		}
@@ -92,7 +92,7 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 	})
 
 	t.Run("failed SeekGE partition not found", func(t *testing.T) {
-		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), "")
+		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), "", 0)
 		if itr == nil {
 			t.Fatalf("failed to create partition iterator")
 		}

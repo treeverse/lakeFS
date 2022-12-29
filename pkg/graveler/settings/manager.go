@@ -27,29 +27,29 @@ type cacheKey struct {
 
 type updateFunc func(proto.Message) (proto.Message, error)
 
-// KVManager is a key-value store for Graveler repository-level settings.
+// Manager is a key-value store for Graveler repository-level settings.
 // Each setting is stored under a key, and can be any proto.Message.
 // Fetched settings are cached using cache.Cache with a default expiry time of 1 second. Hence, the store is eventually consistent.
-type KVManager struct {
+type Manager struct {
 	store      kv.StoreMessage
 	refManager graveler.RefManager
 	cache      cache.Cache
 }
 
-type ManagerOption func(m *KVManager)
+type ManagerOption func(m *Manager)
 
 func WithCache(cache cache.Cache) ManagerOption {
-	return func(m *KVManager) {
+	return func(m *Manager) {
 		m.WithCache(cache)
 	}
 }
 
-func (m *KVManager) WithCache(cache cache.Cache) {
+func (m *Manager) WithCache(cache cache.Cache) {
 	m.cache = cache
 }
 
-func NewManager(refManager graveler.RefManager, store kv.StoreMessage, options ...ManagerOption) *KVManager {
-	m := &KVManager{
+func NewManager(refManager graveler.RefManager, store kv.StoreMessage, options ...ManagerOption) *Manager {
+	m := &Manager{
 		refManager: refManager,
 		store:      store,
 		cache:      cache.NewCache(cacheSize, defaultCacheExpiry, cache.NewJitterFn(defaultCacheExpiry)),
@@ -61,13 +61,13 @@ func NewManager(refManager graveler.RefManager, store kv.StoreMessage, options .
 }
 
 // Save persists the given setting under the given repository and key. Overrides settings key in KV Store
-func (m *KVManager) Save(ctx context.Context, repository *graveler.RepositoryRecord, key string, setting proto.Message) error {
+func (m *Manager) Save(ctx context.Context, repository *graveler.RepositoryRecord, key string, setting proto.Message) error {
 	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, setting, "saving repository-level setting")
 	// Write key in KV Store
 	return m.store.SetMsg(ctx, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting)
 }
 
-func (m *KVManager) getWithPredicate(ctx context.Context, repo *graveler.RepositoryRecord, key string, data proto.Message) (kv.Predicate, error) {
+func (m *Manager) getWithPredicate(ctx context.Context, repo *graveler.RepositoryRecord, key string, data proto.Message) (kv.Predicate, error) {
 	pred, err := m.store.GetMsg(ctx, graveler.RepoPartition(repo), []byte(graveler.SettingsPath(key)), data)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
@@ -78,7 +78,7 @@ func (m *KVManager) getWithPredicate(ctx context.Context, repo *graveler.Reposit
 	return pred, nil
 }
 
-func (m *KVManager) GetLatest(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, error) {
+func (m *Manager) GetLatest(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, error) {
 	data := settingTemplate.ProtoReflect().Interface()
 	_, err := m.getWithPredicate(ctx, repository, key, data)
 	if err != nil {
@@ -94,7 +94,7 @@ func (m *KVManager) GetLatest(ctx context.Context, repository *graveler.Reposito
 // Get fetches the setting under the given repository and key, and returns the result.
 // The result is eventually consistent: it is not guaranteed to be the most up-to-date setting. The cache expiry period is 1 second.
 // The settingTemplate parameter is used to determine the returned type.
-func (m *KVManager) Get(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, error) {
+func (m *Manager) Get(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, error) {
 	k := cacheKey{
 		RepositoryID: repository.RepositoryID,
 		Key:          key,
@@ -117,7 +117,7 @@ func (m *KVManager) Get(ctx context.Context, repository *graveler.RepositoryReco
 
 // Update atomically gets a setting, performs the update function, and persists the setting to the store.
 // The settingTemplate parameter is used to determine the type passed to the update function.
-func (m *KVManager) Update(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message, update updateFunc) error {
+func (m *Manager) Update(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message, update updateFunc) error {
 	const (
 		maxIntervalSec = 2
 		maxElapsedSec  = 5

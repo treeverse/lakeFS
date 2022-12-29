@@ -6,11 +6,10 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/treeverse/lakefs/pkg/graveler"
-
 	"github.com/go-test/deep"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 )
 

@@ -7,7 +7,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
-type KVOrderedCommitIterator struct {
+type OrderedCommitIterator struct {
 	ctx                context.Context
 	it                 *kv.PrimaryIterator
 	store              kv.Store
@@ -18,11 +18,11 @@ type KVOrderedCommitIterator struct {
 	firstParents       map[string]bool
 }
 
-// NewKVOrderedCommitIterator returns an iterator over all commits in the given repository.
+// NewOrderedCommitIterator returns an iterator over all commits in the given repository.
 // Ordering is based on the Commit ID value.
 // WithOnlyAncestryLeaves causes the iterator to return only commits which are not the first parent of any other commit.
 // Consider a commit graph where all non-first-parent edges are removed. This graph is a tree, and ancestry leaves are its leaves.
-func NewKVOrderedCommitIterator(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord, onlyAncestryLeaves bool) (*KVOrderedCommitIterator, error) {
+func NewOrderedCommitIterator(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord, onlyAncestryLeaves bool) (*OrderedCommitIterator, error) {
 	repoPath := graveler.RepoPartition(repo)
 	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.CommitData{}).ProtoReflect().Type(), repoPath,
 		[]byte(graveler.CommitPath("")), kv.IteratorOptionsFrom([]byte("")))
@@ -37,7 +37,7 @@ func NewKVOrderedCommitIterator(ctx context.Context, store *kv.StoreMessage, rep
 			return nil, err
 		}
 	}
-	return &KVOrderedCommitIterator{
+	return &OrderedCommitIterator{
 		ctx:                ctx,
 		it:                 it,
 		store:              store.Store,
@@ -47,7 +47,7 @@ func NewKVOrderedCommitIterator(ctx context.Context, store *kv.StoreMessage, rep
 	}, nil
 }
 
-func (i *KVOrderedCommitIterator) Next() bool {
+func (i *OrderedCommitIterator) Next() bool {
 	if i.Err() != nil || i.it == nil {
 		return false
 	}
@@ -71,7 +71,7 @@ func (i *KVOrderedCommitIterator) Next() bool {
 	return false
 }
 
-func (i *KVOrderedCommitIterator) SeekGE(id graveler.CommitID) {
+func (i *OrderedCommitIterator) SeekGE(id graveler.CommitID) {
 	if i.err != nil {
 		return
 	}
@@ -81,14 +81,14 @@ func (i *KVOrderedCommitIterator) SeekGE(id graveler.CommitID) {
 		[]byte(graveler.CommitPath("")), kv.IteratorOptionsFrom([]byte(graveler.CommitPath(id))))
 }
 
-func (i *KVOrderedCommitIterator) Value() *graveler.CommitRecord {
+func (i *OrderedCommitIterator) Value() *graveler.CommitRecord {
 	if i.Err() != nil {
 		return nil
 	}
 	return i.value
 }
 
-func (i *KVOrderedCommitIterator) Err() error {
+func (i *OrderedCommitIterator) Err() error {
 	if i.err != nil {
 		return i.err
 	}
@@ -98,7 +98,7 @@ func (i *KVOrderedCommitIterator) Err() error {
 	return nil
 }
 
-func (i *KVOrderedCommitIterator) Close() {
+func (i *OrderedCommitIterator) Close() {
 	if i.it != nil {
 		i.it.Close()
 		i.it = nil

@@ -10,6 +10,7 @@ import Modal from "react-bootstrap/Modal";
 
 import {RepoIcon, SearchIcon} from "@primer/octicons-react";
 import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 
 import Layout from "../../lib/components/layout";
 import {ActionsBar, Error, ExitConfirmationDialog, Loading, useDebouncedState} from "../../lib/components/controls";
@@ -27,6 +28,8 @@ import Alert from "react-bootstrap/Alert";
 import Dropdown from "react-bootstrap/Dropdown";
 
 import {SparkQuickstart} from "./wizard/spark_quickstart_wizard";
+
+dayjs.extend(relativeTime);
 
 
 const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
