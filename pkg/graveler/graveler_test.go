@@ -1670,7 +1670,7 @@ func TestGravelerDelete(t *testing.T) {
 				},
 			},
 			args:        args{key: []byte("key1")},
-			expectedErr: graveler.ErrNotFound,
+			expectedErr: nil,
 		},
 		{
 			name: "exists only in staging - commits",
@@ -1711,7 +1711,7 @@ func TestGravelerDelete(t *testing.T) {
 				},
 			},
 			args:        args{},
-			expectedErr: graveler.ErrNotFound,
+			expectedErr: nil,
 		},
 	}
 	for _, tt := range tests {

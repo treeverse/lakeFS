@@ -40,7 +40,7 @@ public class ObjectsApiTest {
 
     
     /**
-     * delete object
+     * delete object. Missing objects will not return a NotFound error.
      *
      * 
      *
@@ -57,7 +57,7 @@ public class ObjectsApiTest {
     }
     
     /**
-     * delete objects
+     * delete objects. Missing objects will not return a NotFound error.
      *
      * 
      *

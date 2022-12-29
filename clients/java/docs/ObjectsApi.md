@@ -4,8 +4,8 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**deleteObject**](ObjectsApi.md#deleteObject) | **DELETE** /repositories/{repository}/branches/{branch}/objects | delete object
-[**deleteObjects**](ObjectsApi.md#deleteObjects) | **POST** /repositories/{repository}/branches/{branch}/objects/delete | delete objects
+[**deleteObject**](ObjectsApi.md#deleteObject) | **DELETE** /repositories/{repository}/branches/{branch}/objects | delete object. Missing objects will not return a NotFound error.
+[**deleteObjects**](ObjectsApi.md#deleteObjects) | **POST** /repositories/{repository}/branches/{branch}/objects/delete | delete objects. Missing objects will not return a NotFound error.
 [**getObject**](ObjectsApi.md#getObject) | **GET** /repositories/{repository}/refs/{ref}/objects | get object content
 [**getUnderlyingProperties**](ObjectsApi.md#getUnderlyingProperties) | **GET** /repositories/{repository}/refs/{ref}/objects/underlyingProperties | get object properties on underlying storage
 [**headObject**](ObjectsApi.md#headObject) | **HEAD** /repositories/{repository}/refs/{ref}/objects | check if object exists
@@ -19,7 +19,7 @@ Method | HTTP request | Description
 # **deleteObject**
 > deleteObject(repository, branch, path)
 
-delete object
+delete object. Missing objects will not return a NotFound error.
 
 ### Example
 ```java
@@ -107,7 +107,7 @@ null (empty response body)
 # **deleteObjects**
 > ObjectErrorList deleteObjects(repository, branch, pathList)
 
-delete objects
+delete objects. Missing objects will not return a NotFound error.
 
 ### Example
 ```java

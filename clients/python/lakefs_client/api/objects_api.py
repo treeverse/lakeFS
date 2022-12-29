@@ -729,7 +729,7 @@ class ObjectsApi(object):
         path,
         **kwargs
     ):
-        """delete object  # noqa: E501
+        """delete object. Missing objects will not return a NotFound error.  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
@@ -802,7 +802,7 @@ class ObjectsApi(object):
         path_list,
         **kwargs
     ):
-        """delete objects  # noqa: E501
+        """delete objects. Missing objects will not return a NotFound error.  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
