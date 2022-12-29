@@ -136,6 +136,10 @@ const RepositoriesPage = () => {
         routerPfx,
         (prefix) => router.push({pathname: `/repositories`, query: {prefix}})
     );
+    const CreateRepositoryButtonCallback = () => {
+        setShowCreateRepositoryModal(true);
+        setCreateRepoError(null);
+    }
 
     const createRepo = async (repo, presentRepo = true) => {
         try {
@@ -176,12 +180,7 @@ const RepositoriesPage = () => {
                         </Form.Row>
                     </Form>
                     <ButtonToolbar className="justify-content-end mb-2">
-                        <CreateRepositoryButton variant={"success"} enabled={true} onClick={
-                            () => {
-                                setShowCreateRepositoryModal(true);
-                                setCreateRepoError(null);
-                            }
-                        } />
+                        <CreateRepositoryButton variant={"success"} enabled={true} onClick={CreateRepositoryButtonCallback} />
                     </ButtonToolbar>
                 </ActionsBar>
 
