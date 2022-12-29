@@ -658,6 +658,24 @@ class Commits {
         return response.json();
     }
 
+    async blame(repoId, refId, path, type) {
+        const params = {amount: 1};
+        if (type === 'object') {
+            params.objects = path
+        } else {
+            params.prefixes = path
+        }
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(refId)}/commits?${qs(params)}`);
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        const data = await response.json();
+        if (data.results.length >= 1) {
+            return data.results[0] // found a commit object
+        }
+        return null // no commit modified this
+    }
+
     async get(repoId, commitId) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/commits/${encodeURIComponent(commitId)}`);
         if (response.status === 404) {

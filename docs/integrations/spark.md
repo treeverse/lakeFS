@@ -60,7 +60,7 @@ interact with your data on lakeFS.
   Add the package to your `spark-submit` command:
 
   ```
-  --packages io.lakefs:hadoop-lakefs-assembly:0.1.8
+  --packages io.lakefs:hadoop-lakefs-assembly:0.1.9
   ```
 
   </div>
@@ -68,7 +68,7 @@ interact with your data on lakeFS.
 
   Add the `hadoop-lakefs-assembly` jar to your Databricks cluster. Under `compute ➡️ Libraries` Add a Maven package as follows:
 
-  Install a Maven package with the `io.lakefs:hadoop-lakefs-assembly:0.1.8` coordinates.
+  Install a Maven package with the `io.lakefs:hadoop-lakefs-assembly:0.1.9` coordinates.
 
   Once installed, it should look something like this:
 
@@ -116,7 +116,7 @@ spark-shell --conf spark.hadoop.fs.s3a.access.key='AKIAIOSFODNN7EXAMPLE' \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
               --conf spark.hadoop.fs.lakefs.endpoint=https://lakefs.example.com/api/v1 \
-              --packages io.lakefs:hadoop-lakefs-assembly:0.1.8
+              --packages io.lakefs:hadoop-lakefs-assembly:0.1.9
               ...
 ```
   </div>

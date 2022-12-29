@@ -390,10 +390,10 @@ type KeyValueStore interface {
 	DeleteBatch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, keys []Key) error
 
 	// List lists values on repository / ref
-	List(ctx context.Context, repository *RepositoryRecord, ref Ref) (ValueIterator, error)
+	List(ctx context.Context, repository *RepositoryRecord, ref Ref, batchSize int) (ValueIterator, error)
 
 	// ListStaging returns ValueIterator for branch staging area. Exposed to be used by catalog in PrepareGCUncommitted
-	ListStaging(ctx context.Context, branch *Branch) (ValueIterator, error)
+	ListStaging(ctx context.Context, branch *Branch, batchSize int) (ValueIterator, error)
 }
 
 type VersionController interface {
@@ -1428,32 +1428,30 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repository *RepositoryRecord, branchID BranchID, stagingOperation func(branch *Branch) error) error {
 	var try int
 	for try = 0; try < BranchWriteMaxTries; try++ {
-		branch, err := g.GetBranch(ctx, repository, branchID)
+		branchPreOp, err := g.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return err
 		}
-		startToken := branch.StagingToken
-
-		if err = stagingOperation(branch); err != nil {
+		// startToken := branchPreOp.StagingToken
+		if err = stagingOperation(branchPreOp); err != nil {
 			return err
 		}
 
 		// Checking if the token has changed.
 		// If it changed, we need to write the changes to the branch's new staging token
-		branch, err = g.GetBranch(ctx, repository, branchID)
+		branchPostOp, err := g.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return err
 		}
-		endToken := branch.StagingToken
-		if startToken == endToken {
+		if branchPreOp.StagingToken == branchPostOp.StagingToken {
 			break
-		} else {
-			// we got a new token, try again
-			log.WithField("try", try+1).
-				WithField("startToken", startToken).
-				WithField("endToken", endToken).
-				Info("Retrying Set")
 		}
+		// we got a new token, try again
+		log.WithFields(logging.Fields{
+			"try":               try + 1,
+			"branch_token_pre":  branchPreOp.StagingToken,
+			"branch_token_post": branchPostOp.StagingToken,
+		}).Debug("Retrying Set")
 	}
 	if try == BranchWriteMaxTries {
 		return fmt.Errorf("safe branch write: %w", ErrTooManyTries)
@@ -1510,13 +1508,12 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 	switch {
 	case err != nil:
 		if !errors.Is(err, ErrNotFound) {
-			// unknown error
 			return fmt.Errorf("reading from staging: %w", err)
 		}
-		// entry not found in staging - continue to committed check
+		// entry not found in staging - continue to committed
 	case val == nil:
-		// found tombstone in staging, return ErrNotFound
-		return ErrNotFound
+		// found tombstone in staging, do nothing
+		return nil
 	default:
 		// found in staging, set tombstone
 		return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
@@ -1540,8 +1537,8 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 			// unknown error
 			return fmt.Errorf("reading from committed: %w", err)
 		}
-		// key is nowhere to be found
-		return ErrNotFound
+		// key is nowhere to be found - nothing to do
+		return nil
 	}
 
 	// found in committed, set tombstone
@@ -1549,17 +1546,17 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 }
 
 // ListStaging Exposing listStagingArea to catalog for PrepareGCUncommitted
-func (g *Graveler) ListStaging(ctx context.Context, branch *Branch) (ValueIterator, error) {
-	return g.listStagingArea(ctx, branch)
+func (g *Graveler) ListStaging(ctx context.Context, branch *Branch, batchSize int) (ValueIterator, error) {
+	return g.listStagingArea(ctx, branch, batchSize)
 }
 
 // listStagingArea Returns an iterator which is an aggregation of all changes on all the branch's staging area (staging + sealed)
 // for each key in the staging area it will return the latest update for that key (the value that appears in the newest token)
-func (g *Graveler) listStagingArea(ctx context.Context, b *Branch) (ValueIterator, error) {
+func (g *Graveler) listStagingArea(ctx context.Context, b *Branch, batchSize int) (ValueIterator, error) {
 	if b.StagingToken == "" {
 		return nil, ErrNotFound
 	}
-	it, err := g.StagingManager.List(ctx, b.StagingToken, 1)
+	it, err := g.StagingManager.List(ctx, b.StagingToken, batchSize)
 	if err != nil {
 		return nil, err
 	}
@@ -1568,7 +1565,7 @@ func (g *Graveler) listStagingArea(ctx context.Context, b *Branch) (ValueIterato
 		return it, nil
 	}
 
-	itrs, err := g.listSealedTokens(ctx, b)
+	itrs, err := g.listSealedTokens(ctx, b, batchSize)
 	if err != nil {
 		it.Close()
 		return nil, err
@@ -1577,23 +1574,24 @@ func (g *Graveler) listStagingArea(ctx context.Context, b *Branch) (ValueIterato
 	return NewCombinedIterator(itrs...), nil
 }
 
-func (g *Graveler) listSealedTokens(ctx context.Context, b *Branch) ([]ValueIterator, error) {
-	itrs := make([]ValueIterator, 0, len(b.SealedTokens))
+func (g *Graveler) listSealedTokens(ctx context.Context, b *Branch, batchSize int) ([]ValueIterator, error) {
+	iterators := make([]ValueIterator, 0, len(b.SealedTokens))
 	for _, st := range b.SealedTokens {
-		it, err := g.StagingManager.List(ctx, st, 1)
+		it, err := g.StagingManager.List(ctx, st, batchSize)
 		if err != nil {
-			for _, it = range itrs {
-				it.Close()
+			// close the iterators we managed to open
+			for _, iter := range iterators {
+				iter.Close()
 			}
 			return nil, err
 		}
-		itrs = append(itrs, it)
+		iterators = append(iterators, it)
 	}
-	return itrs, nil
+	return iterators, nil
 }
 
-func (g *Graveler) sealedTokensIterator(ctx context.Context, b *Branch) (ValueIterator, error) {
-	itrs, err := g.listSealedTokens(ctx, b)
+func (g *Graveler) sealedTokensIterator(ctx context.Context, b *Branch, batchSize int) (ValueIterator, error) {
+	itrs, err := g.listSealedTokens(ctx, b, batchSize)
 	if err != nil {
 		return nil, err
 	}
@@ -1605,7 +1603,7 @@ func (g *Graveler) sealedTokensIterator(ctx context.Context, b *Branch) (ValueIt
 	return changes, nil
 }
 
-func (g *Graveler) List(ctx context.Context, repository *RepositoryRecord, ref Ref) (ValueIterator, error) {
+func (g *Graveler) List(ctx context.Context, repository *RepositoryRecord, ref Ref, batchSize int) (ValueIterator, error) {
 	reference, err := g.Dereference(ctx, repository, ref)
 	if err != nil {
 		return nil, err
@@ -1624,7 +1622,7 @@ func (g *Graveler) List(ctx context.Context, repository *RepositoryRecord, ref R
 		return nil, err
 	}
 	if reference.StagingToken != "" {
-		stagingList, err := g.listStagingArea(ctx, reference.BranchRecord.Branch)
+		stagingList, err := g.listStagingArea(ctx, reference.BranchRecord.Branch, batchSize)
 		if err != nil {
 			listing.Close()
 			return nil, err
@@ -1722,7 +1720,7 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 			}
 			commit.MetaRangeID = *params.SourceMetaRange
 		} else {
-			changes, err := g.sealedTokensIterator(ctx, branch)
+			changes, err := g.sealedTokensIterator(ctx, branch, 0)
 			if err != nil {
 				return nil, err
 			}
@@ -1872,7 +1870,7 @@ func (g *Graveler) addCommitNoLock(ctx context.Context, repository *RepositoryRe
 }
 
 func (g *Graveler) isStagingEmpty(ctx context.Context, repository *RepositoryRecord, branch *Branch) (bool, error) {
-	itr, err := g.listStagingArea(ctx, branch)
+	itr, err := g.listStagingArea(ctx, branch, 1)
 	if err != nil {
 		return false, err
 	}
@@ -1904,7 +1902,7 @@ func (g *Graveler) isSealedEmpty(ctx context.Context, repository *RepositoryReco
 	if len(branch.SealedTokens) == 0 {
 		return true, nil
 	}
-	itrs, err := g.sealedTokensIterator(ctx, branch)
+	itrs, err := g.sealedTokensIterator(ctx, branch, 1)
 	if err != nil {
 		return false, err
 	}
@@ -2029,7 +2027,7 @@ func (g *Graveler) ResetPrefix(ctx context.Context, repository *RepositoryRecord
 		newSealedTokens = append(newSealedTokens, branch.SealedTokens...)
 
 		// Reset keys by prefix on the new staging token
-		itr, err := g.listStagingArea(ctx, branch)
+		itr, err := g.listStagingArea(ctx, branch, 0)
 		if err != nil {
 			return nil, err
 		}
@@ -2282,7 +2280,7 @@ func (g *Graveler) DiffUncommitted(ctx context.Context, repository *RepositoryRe
 		metaRangeID = commit.MetaRangeID
 	}
 
-	valueIterator, err := g.listStagingArea(ctx, branch)
+	valueIterator, err := g.listStagingArea(ctx, branch, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -2348,7 +2346,7 @@ func (g *Graveler) Diff(ctx context.Context, repository *RepositoryRecord, left,
 		leftValueIterator.Close()
 		return nil, err
 	}
-	stagingIterator, err := g.listStagingArea(ctx, rightBranch)
+	stagingIterator, err := g.listStagingArea(ctx, rightBranch, 0)
 	if err != nil {
 		leftValueIterator.Close()
 		return nil, err

@@ -145,11 +145,15 @@ func (s *Store) Delete(_ context.Context, partitionKey, key []byte) error {
 	return nil
 }
 
-func (s *Store) Scan(_ context.Context, partitionKey, start []byte) (kv.EntriesIterator, error) {
+func (s *Store) Scan(_ context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
 
+	start := options.KeyStart
+	if start == nil {
+		start = []byte{}
+	}
 	return &EntriesIterator{
 		store:     s,
 		start:     start,

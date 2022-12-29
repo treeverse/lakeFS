@@ -61,6 +61,7 @@ object LakeFSContext {
   val LAKEFS_CONF_JOB_COMMIT_ID_KEY = "lakefs.job.commit_id"
   val LAKEFS_CONF_JOB_SOURCE_NAME_KEY = "lakefs.job.source_name"
 
+  val LAKEFS_CONF_GC_NUM_COMMIT_PARTITIONS = "lakefs.gc.commit.num_partitions"
   val LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = "lakefs.gc.range.num_partitions"
   val LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = "lakefs.gc.address.num_partitions"
   val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY = "lakefs.debug.gc.max_commit_iso_datetime"
@@ -78,6 +79,7 @@ object LakeFSContext {
   val MARK_ID_KEY = "mark_id"
   val RUN_ID_KEY = "run_id"
   val COMMITS_LOCATION_KEY = "commits_location"
+  val DEFAULT_LAKEFS_CONF_GC_NUM_COMMIT_PARTITIONS = 24
   val DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = 50
   val DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = 200
 

@@ -157,6 +157,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
     // Returned addresses are either relative ones, or absolute ones that
     // are under the storage namespace.
     def getDeletableAddresses(rangeID: String): Iterator[String] = {
+      println(s"getAddressesToDelete: get addresses for range $rangeID")
       rangeGetter
         .getRangeEntries(rangeID, repo)
         .filter(e => e.addressType.isRelative || e.address.startsWith(storageNS))
@@ -185,6 +186,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
       storageNS: String,
       runID: String,
       commitDFLocation: String,
+      numCommitPartitions: Int,
       numRangePartitions: Int,
       numAddressPartitions: Int
   ): Dataset[String] = {
@@ -192,8 +194,10 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
 
     val commitsDF = getCommitsDF(commitDFLocation)
 
-    val keepCommitsDF = commitsDF.where("!expired").select("commit_id").as[String]
-    val expiredCommitsDF = commitsDF.where("expired").select("commit_id").as[String]
+    val keepCommitsDF =
+      commitsDF.where("!expired").select("commit_id").as[String].repartition(numCommitPartitions)
+    val expiredCommitsDF =
+      commitsDF.where("expired").select("commit_id").as[String].repartition(numCommitPartitions)
 
     val keepRangeIDsDF = getRangeIDsForCommits(keepCommitsDF, repo)
     val expiredRangeIDsDF = getRangeIDsForCommits(expiredCommitsDF, repo)
@@ -442,6 +446,8 @@ object GarbageCollector {
     }
     println("apiURL: " + apiURL)
 
+    val numCommitPartitions =
+      hc.getInt(LAKEFS_CONF_GC_NUM_COMMIT_PARTITIONS, DEFAULT_LAKEFS_CONF_GC_NUM_COMMIT_PARTITIONS)
     val numRangePartitions =
       hc.getInt(LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS, DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS)
     val numAddressPartitions = hc.getInt(LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS,
@@ -452,6 +458,7 @@ object GarbageCollector {
                            storageNS,
                            runID,
                            gcCommitsLocation,
+                           numCommitPartitions,
                            numRangePartitions,
                            numAddressPartitions
                           )

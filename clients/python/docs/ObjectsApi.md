@@ -4,8 +4,8 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**delete_object**](ObjectsApi.md#delete_object) | **DELETE** /repositories/{repository}/branches/{branch}/objects | delete object
-[**delete_objects**](ObjectsApi.md#delete_objects) | **POST** /repositories/{repository}/branches/{branch}/objects/delete | delete objects
+[**delete_object**](ObjectsApi.md#delete_object) | **DELETE** /repositories/{repository}/branches/{branch}/objects | delete object. Missing objects will not return a NotFound error.
+[**delete_objects**](ObjectsApi.md#delete_objects) | **POST** /repositories/{repository}/branches/{branch}/objects/delete | delete objects. Missing objects will not return a NotFound error.
 [**get_object**](ObjectsApi.md#get_object) | **GET** /repositories/{repository}/refs/{ref}/objects | get object content
 [**get_underlying_properties**](ObjectsApi.md#get_underlying_properties) | **GET** /repositories/{repository}/refs/{ref}/objects/underlyingProperties | get object properties on underlying storage
 [**head_object**](ObjectsApi.md#head_object) | **HEAD** /repositories/{repository}/refs/{ref}/objects | check if object exists
@@ -18,7 +18,7 @@ Method | HTTP request | Description
 # **delete_object**
 > delete_object(repository, branch, path)
 
-delete object
+delete object. Missing objects will not return a NotFound error.
 
 ### Example
 
@@ -77,7 +77,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        # delete object
+        # delete object. Missing objects will not return a NotFound error.
         api_instance.delete_object(repository, branch, path)
     except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->delete_object: %s\n" % e)
@@ -120,7 +120,7 @@ void (empty response body)
 # **delete_objects**
 > ObjectErrorList delete_objects(repository, branch, path_list)
 
-delete objects
+delete objects. Missing objects will not return a NotFound error.
 
 ### Example
 
@@ -185,7 +185,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        # delete objects
+        # delete objects. Missing objects will not return a NotFound error.
         api_response = api_instance.delete_objects(repository, branch, path_list)
         pprint(api_response)
     except lakefs_client.ApiException as e:

@@ -136,6 +136,10 @@ const RepositoriesPage = () => {
         routerPfx,
         (prefix) => router.push({pathname: `/repositories`, query: {prefix}})
     );
+    const CreateRepositoryButtonCallback = () => {
+        setShowCreateRepositoryModal(true);
+        setCreateRepoError(null);
+    }
 
     const CreateRepositoryButtonCallback = useCallback(() => {
         setShowCreateRepositoryModal(true);

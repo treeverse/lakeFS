@@ -274,28 +274,34 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	return nil
 }
 
-func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.EntriesIterator, error) {
+func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
 
-	return s.scanInternal(ctx, partitionKey, start, true)
+	return s.scanInternal(ctx, partitionKey, options, true)
 }
 
-func (s *Store) scanInternal(ctx context.Context, partitionKey, start []byte, includeStart bool) (*EntriesIterator, error) {
+func (s *Store) scanInternal(ctx context.Context, partitionKey []byte, options kv.ScanOptions, includeStart bool) (*EntriesIterator, error) {
 	var (
 		rows pgx.Rows
 		err  error
 	)
 
-	if start == nil {
-		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 ORDER BY key LIMIT $2`, partitionKey, s.Params.ScanPageSize)
+	// limit set to the minimum between option's limit and the configured scan page size
+	limit := s.Params.ScanPageSize
+	if options.BatchSize > 0 && options.BatchSize < limit {
+		limit = options.BatchSize
+	}
+
+	if options.KeyStart == nil {
+		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 ORDER BY key LIMIT $2`, partitionKey, limit)
 	} else {
 		compareOp := ">="
 		if !includeStart {
 			compareOp = ">"
 		}
-		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key `+compareOp+` $2 ORDER BY key LIMIT $3`, partitionKey, start, s.Params.ScanPageSize)
+		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key `+compareOp+` $2 ORDER BY key LIMIT $3`, partitionKey, options.KeyStart, limit)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("postgres scan: %w", err)
@@ -329,13 +335,15 @@ func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false
 	}
-	e.currEntryIdx++
 
+	e.currEntryIdx++
 	if e.currEntryIdx == len(e.entries) {
 		if e.currEntryIdx == 0 {
 			return false
 		}
-		tmpIter, err := e.store.scanInternal(e.ctx, e.entries[e.currEntryIdx-1].PartitionKey, e.entries[e.currEntryIdx-1].Key, false)
+		partitionKey := e.entries[e.currEntryIdx-1].PartitionKey
+		key := e.entries[e.currEntryIdx-1].Key
+		tmpIter, err := e.store.scanInternal(e.ctx, partitionKey, kv.ScanOptions{KeyStart: key}, false)
 		if err != nil {
 			e.err = fmt.Errorf("scan paging: %w", err)
 			return false
@@ -346,7 +354,6 @@ func (e *EntriesIterator) Next() bool {
 		e.entries = tmpIter.entries
 		e.currEntryIdx = 0
 	}
-
 	return true
 }
 
