@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useCallback, useState} from "react";
 
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
@@ -136,10 +136,11 @@ const RepositoriesPage = () => {
         routerPfx,
         (prefix) => router.push({pathname: `/repositories`, query: {prefix}})
     );
-    const CreateRepositoryButtonCallback = () => {
+
+    const CreateRepositoryButtonCallback = useCallback(() => {
         setShowCreateRepositoryModal(true);
         setCreateRepoError(null);
-    }
+    }, [showCreateRepositoryModal, setShowCreateRepositoryModal])
 
     const createRepo = async (repo, presentRepo = true) => {
         try {
