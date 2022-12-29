@@ -142,5 +142,8 @@ type Interface interface {
 	DeleteBranchProtectionRule(ctx context.Context, repositoryID string, pattern string) error
 	CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, blockedActions []graveler.BranchProtectionBlockedAction) error
 
+	SetAddressToken(ctx context.Context, repository, token string) error
+	GetAddressToken(ctx context.Context, repository, token string) error
+
 	io.Closer
 }

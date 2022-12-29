@@ -330,6 +330,12 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
+	err = c.Catalog.SetAddressToken(ctx, repository, address)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+
 	response := &StagingLocation{
 		PhysicalAddress: StringPtr(qk.Format()),
 		Token:           StringValue(token),
@@ -359,6 +365,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
+
 	// write metadata
 	qk, err := block.ResolveNamespace(repo.StorageNamespace, params.Path, block.IdentifierTypeRelative)
 	if err != nil {
@@ -377,6 +384,14 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 
 	writeTime := time.Now()
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, StringValue(body.Staging.PhysicalAddress))
+
+	// validate token
+	err = c.Catalog.GetAddressToken(ctx, repository, physicalAddress)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	// TODO - delete expired tokens??
 
 	// Because CreateEntry tracks staging on a database with atomic operations,
 	// _ignore_ the staging token here: no harm done even if a race was lost

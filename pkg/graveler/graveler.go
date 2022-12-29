@@ -527,6 +527,13 @@ type VersionController interface {
 	// CreateBranchProtectionRule creates a rule for the given name pattern,
 	// or returns ErrRuleAlreadyExists if there is already a rule for the pattern.
 	CreateBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string, blockedActions []BranchProtectionBlockedAction) error
+
+	SetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
+
+	GetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
+
+	// ListAddressTokens
+	ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error)
 }
 
 // Plumbing includes commands for fiddling more directly with graveler implementation
@@ -630,6 +637,14 @@ type CommitIterator interface {
 	Close()
 }
 
+type AddressTokenIterator interface {
+	Next() bool
+	SeekGE(address string)
+	Value() *AddressData
+	Err() error
+	Close()
+}
+
 // These are the more complex internal components that compose the functionality of the Graveler
 
 // RefManager handles references: branches, commits, probably tags in the future
@@ -717,6 +732,12 @@ type RefManager interface {
 	// GCCommitIterator TODO (niro): Remove when DB implementation is deleted
 	// GCCommitIterator temporary WA to support both DB and KV GC CommitIterator
 	GCCommitIterator(ctx context.Context, repository *RepositoryRecord) (CommitIterator, error)
+
+	GetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
+
+	SetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
+
+	ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error)
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -2552,6 +2573,18 @@ func (g *KVGraveler) DumpTags(ctx context.Context, repository *RepositoryRecord)
 			EntitySchemaDefinitionKey: schema,
 		},
 	)
+}
+
+func (g *KVGraveler) SetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error {
+	return g.RefManager.SetAddressToken(ctx, repository, token)
+}
+
+func (g *KVGraveler) GetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error {
+	return g.RefManager.GetAddressToken(ctx, repository, token)
+}
+
+func (g *KVGraveler) ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error) {
+	return g.RefManager.ListAddressTokens(ctx, repository)
 }
 
 func tagsToValueIterator(src TagIterator) ValueIterator {

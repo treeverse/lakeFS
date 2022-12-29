@@ -15,6 +15,7 @@ const (
 	branchesPrefix         = "branches"
 	commitsPrefix          = "commits"
 	settingsPrefix         = "settings"
+	addressesPrefix        = "addresses"
 )
 
 //nolint:gochecknoinits
@@ -64,6 +65,10 @@ func CommitPath(commitID CommitID) string {
 
 func SettingsPath(key string) string {
 	return kv.FormatPath(settingsPrefix, key)
+}
+
+func AddressPath(key string) string {
+	return kv.FormatPath(addressesPrefix, key)
 }
 
 func CommitFromProto(pb *CommitData) *Commit {

@@ -1838,6 +1838,30 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 	if itr.Err() != nil {
 		return nil, false, itr.Err()
 	}
+
+	// add unlinked addresses to uncommitted
+	tokenItr, err := c.Store.ListAddressTokens(ctx, repository)
+	if err != nil {
+		return nil, false, err
+	}
+	defer tokenItr.Close()
+	for tokenItr.Next() {
+		token := tokenItr.Value()
+		if token.ExpiredAt.AsTime().Before(time.Now()) {
+			if err = pw.Write(UncommittedParquetObject{
+				PhysicalAddress: token.Address,
+				CreationDate:    time.Now().Unix(),
+			}); err != nil {
+				return nil, false, err
+			}
+		}
+
+		/// todo - limit size?
+	}
+	if tokenItr.Err() != nil {
+		return nil, false, tokenItr.Err()
+	}
+
 	err = pw.WriteStop()
 	if err != nil {
 		return nil, false, err
@@ -1927,6 +1951,22 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 			UncommittedLocation: uncommittedLocation,
 		},
 	}, nil
+}
+
+func (c *Catalog) SetAddressToken(ctx context.Context, repository, token string) error {
+	repo, err := c.getRepository(ctx, repository)
+	if err != nil {
+		return err
+	}
+	return c.Store.SetAddressToken(ctx, repo, token)
+}
+
+func (c *Catalog) GetAddressToken(ctx context.Context, repository, token string) error {
+	repo, err := c.getRepository(ctx, repository)
+	if err != nil {
+		return err
+	}
+	return c.Store.GetAddressToken(ctx, repo, token)
 }
 
 func (c *Catalog) Close() error {

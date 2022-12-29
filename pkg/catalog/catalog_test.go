@@ -689,6 +689,10 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 		})
 	}
 
+	// add address tokens
+	addresses := make([]*graveler.AddressData, 0)
+	test.RefManager.EXPECT().ListAddressTokens(gomock.Any(), gomock.Any()).Times(1).Return(gUtils.NewFakeAddressTokenIterator(addresses), nil)
+
 	sort.Strings(expectedRecords)
 	return test, expectedRecords
 }

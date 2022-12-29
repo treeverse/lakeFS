@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/cache"
@@ -26,6 +28,8 @@ const MaxBatchDelay = time.Millisecond * 3
 
 // commitIDStringLength string representation length of commit ID - based on hex representation of sha256
 const commitIDStringLength = 64
+
+const addressTokenTime = 6 * time.Hour
 
 const (
 	DefaultRepositoryCacheSize   = 1000
@@ -560,4 +564,41 @@ func newCache(cfg *CacheConfig, def *CacheConfig) cache.Cache {
 		c = cache.NewCache(cfg.Size, cfg.Expiry, cache.NewJitterFn(cfg.Jitter))
 	}
 	return c
+}
+
+func (m *KVManager) SetAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+	a := &graveler.AddressData{
+		Address:   token,
+		ExpiredAt: timestamppb.New(time.Now().Add(addressTokenTime)),
+	}
+	err := m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(repository), []byte(graveler.AddressPath(token)), a, nil)
+	if err != nil {
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			err = graveler.ErrAddressTokenAlreadyExists
+		}
+		return err
+	}
+	return nil
+}
+
+func (m *KVManager) GetAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+	// verify??
+	data := graveler.AddressData{}
+	path := []byte(graveler.AddressPath(token))
+	_, err := m.kvStore.GetMsg(ctx, graveler.RepoPartition(repository), path, &data)
+	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			err = graveler.ErrAddressTokenNotFound
+		}
+		return err
+	}
+	if data.ExpiredAt.AsTime().Before(time.Now()) {
+		return graveler.ErrAddressTokenExpired
+	}
+	// TODO - locking ???
+	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repository), path)
+}
+
+func (m *KVManager) ListAddressTokens(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
+	return NewAddressTokenIterator(ctx, m.kvStore, repository)
 }

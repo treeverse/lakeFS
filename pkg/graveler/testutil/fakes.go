@@ -230,6 +230,7 @@ type RefsFake struct {
 	ListBranchesRes     graveler.BranchIterator
 	Refs                map[graveler.Ref]*graveler.ResolvedRef
 	ListTagsRes         graveler.TagIterator
+	addressTokenIter    graveler.AddressTokenIterator
 	CommitIter          graveler.CommitIterator
 	RefType             graveler.ReferenceType
 	Branch              *graveler.Branch
@@ -413,6 +414,18 @@ func (m *RefsFake) FindMergeBase(context.Context, *graveler.RepositoryRecord, ..
 
 func (m *RefsFake) Log(context.Context, *graveler.RepositoryRecord, graveler.CommitID) (graveler.CommitIterator, error) {
 	return m.CommitIter, nil
+}
+
+func (m *RefsFake) GetAddressToken(context.Context, *graveler.RepositoryRecord, string) error {
+	return m.Err
+}
+
+func (m *RefsFake) SetAddressToken(context.Context, *graveler.RepositoryRecord, string) error {
+	return nil
+}
+
+func (m *RefsFake) ListAddressTokens(context.Context, *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
+	return m.addressTokenIter, nil
 }
 
 type diffIter struct {
@@ -848,3 +861,40 @@ func (p ProtectedBranchesManagerFake) IsBlocked(_ context.Context, _ *graveler.R
 	}
 	return false, nil
 }
+
+type FakeAddressTokenIterator struct {
+	Data  []*graveler.AddressData
+	Index int
+}
+
+func NewFakeAddressTokenIterator(data []*graveler.AddressData) *FakeAddressTokenIterator {
+	return &FakeAddressTokenIterator{Data: data, Index: -1}
+}
+
+func (m *FakeAddressTokenIterator) Next() bool {
+	if m.Index >= len(m.Data) {
+		return false
+	}
+	m.Index++
+	return m.Index < len(m.Data)
+}
+
+func (m *FakeAddressTokenIterator) SeekGE(address string) {
+	m.Index = len(m.Data)
+	for i, item := range m.Data {
+		if item.Address >= address {
+			m.Index = i - 1
+			return
+		}
+	}
+}
+
+func (m *FakeAddressTokenIterator) Value() *graveler.AddressData {
+	return m.Data[m.Index]
+}
+
+func (m *FakeAddressTokenIterator) Err() error {
+	return nil
+}
+
+func (m *FakeAddressTokenIterator) Close() {}
