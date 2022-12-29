@@ -3,6 +3,7 @@ package esti
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -43,7 +44,8 @@ type branchProperty struct {
 }
 
 var testCases = []testCase{
-	{id: "1",
+	{
+		id:           "1",
 		policy:       api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{}, DefaultRetentionDays: 1},
 		branches:     []branchProperty{{name: "a1", deleteCommitDaysAgo: 2}, {name: "b1", deleteCommitDaysAgo: 2}},
 		fileDeleted:  true,
@@ -67,7 +69,7 @@ func TestCommittedGC(t *testing.T) {
 	case "post":
 		t.Run("post", testPostCommittedGC)
 	default:
-		t.Skip("No known value (pre/port) for gc_step")
+		t.Skip("No known value (pre/post) for gc_step")
 	}
 }
 
@@ -77,10 +79,11 @@ func testPreCommittedGC(t *testing.T) {
 	fileRefPerTestCase := make(map[string]string)
 
 	for _, testCase := range testCases {
-		t.Logf("Test case %s", testCase.id)
-		fileExistingRef := prepareForGC(t, ctx, testCase, blockstoreType)
-		t.Logf("fileExistingRef %s", fileExistingRef)
-		fileRefPerTestCase[testCase.id] = fileExistingRef
+		t.Run(fmt.Sprintf("Test case %s", testCase.id), func(t *testing.T) {
+			fileExistingRef := prepareForGC(t, ctx, testCase, blockstoreType)
+			t.Logf("fileExistingRef %s", fileExistingRef)
+			fileRefPerTestCase[testCase.id] = fileExistingRef
+		})
 	}
 
 	// write findings into a file
@@ -108,13 +111,13 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase testCase, blocksto
 	commitTime := int64(0)
 	_, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "add three files not to be deleted", Date: &commitTime})
 	if err != nil {
-		t.Fatal("Commit some data", err)
+		t.Fatalf("Commit some data %s", err)
 	}
 
 	newBranch := "a" + testCase.id
 	_, err = client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{Name: newBranch, Source: mainBranch})
 	if err != nil {
-		t.Fatal("Create new branch", err)
+		t.Fatalf("Create new branch %s", err)
 	}
 
 	direct = testCase.directUpload && blockstoreType == block.BlockstoreTypeS3
@@ -124,19 +127,19 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase testCase, blocksto
 	//get commit id after commit for validation step in the tests
 	commitRes, err := client.CommitWithResponse(ctx, repo, newBranch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "Uploaded file" + testCase.id, Date: &commitTime})
 	if err != nil || commitRes.StatusCode() != 201 {
-		t.Fatal("Commit some data", err)
+		t.Fatalf("Commit some data %s", err)
 	}
 	commit := commitRes.JSON201
 	commitId := commit.Id
 
 	_, err = client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{Name: "b" + testCase.id, Source: newBranch})
 	if err != nil {
-		t.Fatal("Create new branch", err)
+		t.Fatalf("Create new branch %s", err)
 	}
 
 	_, err = client.SetGarbageCollectionRulesWithResponse(ctx, repo, api.SetGarbageCollectionRulesJSONRequestBody{Branches: testCase.policy.Branches, DefaultRetentionDays: testCase.policy.DefaultRetentionDays})
 	if err != nil {
-		t.Fatal("Set GC rules", err)
+		t.Fatalf("Set GC rules %s", err)
 	}
 
 	for _, branch := range testCase.branches {
@@ -145,18 +148,18 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase testCase, blocksto
 			epochCommitDateInSeconds := currentEpochInSeconds - (dayInSeconds * branch.deleteCommitDaysAgo)
 			_, err = client.CommitWithResponse(ctx, repo, branch.name, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "Deleted file" + testCase.id, Date: &epochCommitDateInSeconds})
 			if err != nil {
-				t.Fatal("Commit some data", err)
+				t.Fatalf("Commit some data %s", err)
 			}
 			_, _ = uploadFileRandomData(ctx, t, repo, branch.name, "file"+testCase.id+"not_deleted", false)
 			// This is for the previous commit to be the HEAD of the branch outside the retention time (according to GC https://github.com/treeverse/lakeFS/issues/1932)
 			_, err = client.CommitWithResponse(ctx, repo, branch.name, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "not deleted file commit: " + testCase.id, Date: &epochCommitDateInSeconds})
 			if err != nil {
-				t.Fatal("Commit some data", err)
+				t.Fatalf("Commit some data %s", err)
 			}
 		} else {
 			_, err = client.DeleteBranchWithResponse(ctx, repo, branch.name)
 			if err != nil {
-				t.Fatal("Delete brach", err)
+				t.Fatalf("Delete brach %s", err)
 			}
 		}
 	}
@@ -180,15 +183,15 @@ func validateGCJob(t *testing.T, ctx context.Context, testCase testCase, existin
 	fileExists := res.StatusCode() == 200
 
 	if fileExists && testCase.fileDeleted {
-		t.Fatalf("Expected the file to be removed by the garbage collector but it has remained in the repository. Test case '%s'. Test description '%s'", testCase.id, testCase.description)
+		t.Errorf("Expected the file to be removed by the garbage collector but it has remained in the repository. Test case '%s'. Test description '%s'", testCase.id, testCase.description)
 	} else if !fileExists && !testCase.fileDeleted {
-		t.Fatalf("Expected the file to remain in the repository but it was removed by the garbage collector. Test case '%s'. Test description '%s'", testCase.id, testCase.description)
+		t.Errorf("Expected the file to remain in the repository but it was removed by the garbage collector. Test case '%s'. Test description '%s'", testCase.id, testCase.description)
 	}
 	locations := []string{"not_deleted_file1", "not_deleted_file2", "not_deleted_file3"}
 	for _, location := range locations {
 		res, _ = client.GetObjectWithResponse(ctx, repo, "main", &api.GetObjectParams{Path: location})
 		if res.StatusCode() != 200 {
-			t.Fatalf("expected '%s' to exist. Test case '%s', Test description '%s'", location, testCase.id, testCase.description)
+			t.Errorf("expected '%s' to exist. Test case '%s', Test description '%s'", location, testCase.id, testCase.description)
 		}
 	}
 }
@@ -209,9 +212,9 @@ func testPostCommittedGC(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		existingRef := fileRefPerTestCase[testCase.id]
-		validateGCJob(t, ctx, testCase, existingRef)
+		t.Run(fmt.Sprintf("Test case %s", testCase.id), func(t *testing.T) {
+			existingRef := fileRefPerTestCase[testCase.id]
+			validateGCJob(t, ctx, testCase, existingRef)
+		})
 	}
-
-	t.Logf("Tests completed successfully")
 }
