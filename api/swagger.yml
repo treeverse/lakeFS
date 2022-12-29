@@ -3094,7 +3094,7 @@ paths:
       tags:
         - objects
       operationId: deleteObject
-      summary: delete object
+      summary: delete object. Missing objects will not return a NotFound error.
       responses:
         204:
           description: object deleted successfully
@@ -3121,7 +3121,7 @@ paths:
       tags:
         - objects
       operationId: deleteObjects
-      summary: delete objects
+      summary: delete objects. Missing objects will not return a NotFound error.
       requestBody:
         required: true
         content:

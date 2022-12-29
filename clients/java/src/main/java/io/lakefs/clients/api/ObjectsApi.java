@@ -139,7 +139,7 @@ public class ObjectsApi {
     }
 
     /**
-     * delete object
+     * delete object. Missing objects will not return a NotFound error.
      * 
      * @param repository  (required)
      * @param branch  (required)
@@ -159,7 +159,7 @@ public class ObjectsApi {
     }
 
     /**
-     * delete object
+     * delete object. Missing objects will not return a NotFound error.
      * 
      * @param repository  (required)
      * @param branch  (required)
@@ -181,7 +181,7 @@ public class ObjectsApi {
     }
 
     /**
-     * delete object (asynchronously)
+     * delete object. Missing objects will not return a NotFound error. (asynchronously)
      * 
      * @param repository  (required)
      * @param branch  (required)
@@ -278,7 +278,7 @@ public class ObjectsApi {
     }
 
     /**
-     * delete objects
+     * delete objects. Missing objects will not return a NotFound error.
      * 
      * @param repository  (required)
      * @param branch  (required)
@@ -300,7 +300,7 @@ public class ObjectsApi {
     }
 
     /**
-     * delete objects
+     * delete objects. Missing objects will not return a NotFound error.
      * 
      * @param repository  (required)
      * @param branch  (required)
@@ -323,7 +323,7 @@ public class ObjectsApi {
     }
 
     /**
-     * delete objects (asynchronously)
+     * delete objects. Missing objects will not return a NotFound error. (asynchronously)
      * 
      * @param repository  (required)
      * @param branch  (required)

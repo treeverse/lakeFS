@@ -27,14 +27,14 @@ class TestObjectsApi(unittest.TestCase):
     def test_delete_object(self):
         """Test case for delete_object
 
-        delete object  # noqa: E501
+        delete object. Missing objects will not return a NotFound error.  # noqa: E501
         """
         pass
 
     def test_delete_objects(self):
         """Test case for delete_objects
 
-        delete objects  # noqa: E501
+        delete objects. Missing objects will not return a NotFound error.  # noqa: E501
         """
         pass
 
