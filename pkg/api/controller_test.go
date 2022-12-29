@@ -3573,14 +3573,14 @@ func TestController_SendStatsEvents(t *testing.T) {
 			// For successful requests, verify the expected events were sent
 			if tt.expectedStatusCode == http.StatusNoContent {
 				for _, sentEv := range tt.events {
-					var eventsOfClass []*stats.Event
+					var eventsOfClass int
 					for _, collectedEv := range deps.collector.Events {
 						if collectedEv.Class == sentEv.Class {
-							eventsOfClass = append(eventsOfClass, collectedEv)
+							eventsOfClass++
 						}
 					}
-					if len(eventsOfClass) != sentEv.Count {
-						t.Fatalf("SendStatsEvents events for class %s count: %d, expected: %d", sentEv.Class, len(eventsOfClass), sentEv.Count)
+					if eventsOfClass != sentEv.Count {
+						t.Fatalf("SendStatsEvents events for class %s count: %d, expected: %d", sentEv.Class, eventsOfClass, sentEv.Count)
 					}
 				}
 			}
