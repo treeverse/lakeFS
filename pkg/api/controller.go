@@ -3667,9 +3667,8 @@ func (c *Controller) SendStatsEvents(w http.ResponseWriter, r *http.Request, bod
 			UserID: user.Username,
 			Client: client,
 		}
-		for i := 0; i < statsEv.Count; i++ {
-			c.Collector.CollectEvent(ev)
-		}
+		c.Collector.CollectEvents(ev, uint64(statsEv.Count))
+
 		c.Logger.WithContext(ctx).WithFields(logging.Fields{
 			"class":   ev.Class,
 			"name":    ev.Name,

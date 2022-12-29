@@ -26,6 +26,7 @@ const (
 
 type Collector interface {
 	CollectEvent(ev Event)
+	CollectEvents(ev Event, count uint64)
 	CollectMetadata(accountMetadata *Metadata)
 	CollectCommPrefs(email, installationID string, featureUpdates, securityUpdates bool)
 	SetInstallationID(installationID string)
@@ -42,6 +43,11 @@ type Event struct {
 	SourceRef  string `json:"source_ref,omitempty"`
 	UserID     string `json:"user_id,omitempty"`
 	Client     string `json:"client,omitempty"`
+}
+
+type EventWithCount struct {
+	ev    Event
+	count uint64
 }
 
 // ClearExtended clear values of *all* extended fields
@@ -104,7 +110,7 @@ func (t *TimeTicker) Tick() <-chan time.Time {
 
 type BufferedCollector struct {
 	cache            keyIndex
-	writes           chan Event
+	writes           chan EventWithCount
 	sender           Sender
 	sendTimeout      time.Duration
 	flushTicker      FlushTicker
@@ -127,7 +133,7 @@ type BufferedCollectorOpts func(s *BufferedCollector)
 
 func WithWriteBufferSize(bufferSize int) BufferedCollectorOpts {
 	return func(s *BufferedCollector) {
-		s.writes = make(chan Event, bufferSize)
+		s.writes = make(chan EventWithCount, bufferSize)
 	}
 }
 
@@ -180,7 +186,7 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 	}
 	s := &BufferedCollector{
 		cache:           make(keyIndex),
-		writes:          make(chan Event, collectorEventBufferSize),
+		writes:          make(chan EventWithCount, collectorEventBufferSize),
 		runtimeStats:    map[string]string{},
 		flushTicker:     &TimeTicker{ticker: time.NewTicker(flushDuration)},
 		flushSize:       flushSize,
@@ -217,8 +223,8 @@ func (s *BufferedCollector) getInstallationID() string {
 	return s.installationID
 }
 
-func (s *BufferedCollector) incr(k Event) {
-	s.cache[k]++
+func (s *BufferedCollector) incr(k EventWithCount) {
+	s.cache[k.ev] += k.count
 }
 
 func (s *BufferedCollector) send(metrics []Metric) {
@@ -235,7 +241,7 @@ func (s *BufferedCollector) send(metrics []Metric) {
 	}()
 }
 
-func (s *BufferedCollector) CollectEvent(ev Event) {
+func (s *BufferedCollector) CollectEvents(ev Event, count uint64) {
 	if s.isCtxCancelled() {
 		return
 	}
@@ -248,7 +254,11 @@ func (s *BufferedCollector) CollectEvent(ev Event) {
 	} else {
 		ev = ev.ClearExtended()
 	}
-	s.writes <- ev
+	s.writes <- EventWithCount{ev, count}
+}
+
+func (s *BufferedCollector) CollectEvent(ev Event) {
+	s.CollectEvents(ev, 1)
 }
 
 func (s *BufferedCollector) isCtxCancelled() bool {
@@ -271,10 +281,10 @@ func (s *BufferedCollector) Run(ctx context.Context) {
 				}
 			case <-s.heartbeatTicker.Tick():
 				// collect heartbeat
-				s.incr(Event{
+				s.incr(EventWithCount{Event{
 					Class: "global",
 					Name:  "heartbeat",
-				})
+				}, 1})
 			case <-s.flushTicker.Tick():
 				// every N seconds, send the collected events
 				s.flush()

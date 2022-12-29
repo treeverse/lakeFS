@@ -57,10 +57,16 @@ type memCollector struct {
 	mu             sync.Mutex
 }
 
-func (m *memCollector) CollectEvent(ev stats.Event) {
+func (m *memCollector) CollectEvents(ev stats.Event, count uint64) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.Events = append(m.Events, &ev)
+	for i := 0; i < int(count); i++ {
+		m.Events = append(m.Events, &ev)
+	}
+}
+
+func (m *memCollector) CollectEvent(ev stats.Event) {
+	m.CollectEvents(ev, 1)
 }
 
 func (m *memCollector) CollectMetadata(metadata *stats.Metadata) {
