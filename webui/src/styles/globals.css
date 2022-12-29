@@ -594,7 +594,6 @@ td .form-group {
   color: #FFFFFF;
 }
 .object-viewer-sql-results {
-  max-height: 350px;
   overflow: auto;
   font-size: .7rem;
 }
@@ -620,7 +619,7 @@ td .form-group {
 /* SQL tables with sticky headers */
 .sticky-table tbody {
   display:block;
-  height:200px;
+  height:350px;
   overflow-y:scroll;
 }
 .sticky-table thead{

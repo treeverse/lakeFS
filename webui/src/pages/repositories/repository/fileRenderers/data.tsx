@@ -1,8 +1,7 @@
-import React, {FC, FormEvent, useEffect, useRef, useState} from "react";
+import React, {FC, FormEvent, useCallback, useEffect, useRef, useState} from "react";
 import {Error, Loading} from "../../../../lib/components/controls";
 import {withConnection} from "./duckdb";
 import {Table} from "react-bootstrap";
-import Alert from "react-bootstrap/Alert";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import {DatabaseIcon} from "@primer/octicons-react";
@@ -37,21 +36,23 @@ LIMIT 20`
 
     const sql = useRef<HTMLTextAreaElement>(null);
 
-    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    const handleSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         setShouldSubmit(!shouldSubmit)
-    }
+    }, [setShouldSubmit])
 
     useEffect(() => {
         setLoading(true)
         withConnection(async conn => {
-            const results = await conn.query(sql.current!.value)
+            if (!sql || !sql.current) return
+            const results = await conn.query(sql.current.value)
             const data = results.toArray()
             setData(data)
             setError(null)
-            setLoading(false)
+
         }).catch(e => {
             setError(e.toString())
+        }).finally(() => {
             setLoading(false)
         })
     }, [repoId, refId, path, shouldSubmit])

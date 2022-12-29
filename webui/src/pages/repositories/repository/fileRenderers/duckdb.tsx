@@ -32,22 +32,19 @@ async function getDB(): Promise<duckdb.AsyncDuckDB> {
         const db = new duckdb.AsyncDuckDB(logger, _worker);
         await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
         const conn = await db.connect()
-        await conn.query(`CREATE MACRO lakefs_object(repoId, refId, path) AS '${document.location.protocol}//${document.location.host}/api/v1/repositories/' || repoId || '/refs/' || refId || '/objects?path=' || replace(path, '/', '%2F');`)
+        await conn.query(`
+            CREATE MACRO lakefs_object(repoId, refId, path) AS 
+            '${document.location.protocol}//${document.location.host}/api/v1/repositories/' || 
+            repoId || 
+            '/refs/' || 
+            refId ||
+            '/objects?path=' ||
+             replace(path, '/', '%2F')
+        `)
         await conn.close()
         _db = db
     }
     return _db
-}
-
-async function teardownDB() {
-    if (_db) {
-        await _db.terminate()
-        _db = null
-    }
-    if (_worker) {
-        await _worker.terminate()
-        _worker = null
-    }
 }
 
 export async function withConnection(cb: (conn: duckdb.AsyncDuckDBConnection) => void) {
