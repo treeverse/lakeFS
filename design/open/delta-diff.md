@@ -104,11 +104,16 @@ To query the Delta Table from lakeFS, the plugin will generate an S3 client (thi
 The diff algorithm:
 1. Run the Delta [HISTORY command](https://docs.delta.io/latest/delta-utility.html#history-schema) on both table paths.
 2. Traverse through the [returned "commitInfo" entry vector ](https://github.com/delta-io/delta-rs/blob/main/rust/src/delta.rs#L888)
-    1. While the returned entry versions are equal:
+starting from the **last** version fo each entry vector: 
+    1. While the returned entry versions **aren't** equal:
+        1. If the bigger version is the _"left"'s_ version, add the entry to the returned history list.
+        2. Traverse one version back of the bigger version entry's history.
+    2. While the versions > 0: 
         1. Create a hash for the entry based on fields: `timestamp`, `operation`, `operationParameters` , and `operationMetrics` values.
         2. Compare the hashes of the versions.
-        3. If they're equal, continue, else stop.
-3. Return the "left"'s path history vector from the stopped location.
+        3. If they **aren't equal**, add the "left"'s entry to the returned history list, else break and **return the history vector**.
+        4. Traverse one version back in both vectors.
+3. Return an empty history vector.
 
 ### Authentication
 
