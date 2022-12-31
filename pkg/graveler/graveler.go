@@ -528,11 +528,14 @@ type VersionController interface {
 	// or returns ErrRuleAlreadyExists if there is already a rule for the pattern.
 	CreateBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string, blockedActions []BranchProtectionBlockedAction) error
 
+	// SetAddressToken stores the address token under the repository. The token will be valid for addressTokenTime.
+	// or return ErrAddressTokenAlreadyExists if a token already exists.
 	SetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
 
+	// GetAddressToken returns nil if the token is valid (exists and not expired) and deletes it
 	GetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
 
-	// ListAddressTokens
+	// ListAddressTokens lists address tokens on a repository
 	ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error)
 }
 
@@ -733,10 +736,13 @@ type RefManager interface {
 	// GCCommitIterator temporary WA to support both DB and KV GC CommitIterator
 	GCCommitIterator(ctx context.Context, repository *RepositoryRecord) (CommitIterator, error)
 
+	// GetAddressToken verifies the given address token
 	GetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
 
+	// SetAddressToken creates address token
 	SetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
 
+	// ListAddressTokens lists address tokens on a repository
 	ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error)
 }
 

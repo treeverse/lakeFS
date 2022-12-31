@@ -1025,3 +1025,69 @@ func TestManager_ListCommits(t *testing.T) {
 		i++
 	}
 }
+
+func TestManager_ListAddressTokens(t *testing.T) {
+	r, _ := testRefManager(t)
+	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
+	addresses := []string{"data/a", "data/aa", "data/b", "data/c", "data/f", "data/z"}
+
+	for _, a := range addresses {
+		testutil.Must(t, r.SetAddressToken(context.Background(), repository, a))
+	}
+
+	iter, err := r.ListAddressTokens(context.Background(), repository)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer iter.Close()
+
+	var tokens []string
+	for iter.Next() {
+		t := iter.Value()
+		tokens = append(tokens, t.Address)
+	}
+	if iter.Err() != nil {
+		t.Fatalf("unexpected error: %v", iter.Err())
+	}
+	if !reflect.DeepEqual(tokens, addresses) {
+		t.Fatalf("unexpected branch list: %v", tokens)
+	}
+}
+
+func TestManager_SetGetAddressToken(t *testing.T) {
+	r, _ := testRefManager(t)
+	ctx := context.Background()
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
+
+	err = r.SetAddressToken(ctx, repository, "aa")
+	testutil.MustDo(t, "set address token aa", err)
+
+	// check we can't create existing
+	err = r.SetAddressToken(ctx, repository, "aa")
+	if !errors.Is(err, graveler.ErrAddressTokenAlreadyExists) {
+		t.Fatalf("SetAddressToken() err = %s, expected already exists", err)
+	}
+
+	err = r.GetAddressToken(ctx, repository, "aa")
+	testutil.MustDo(t, "get aa token", err)
+
+	// check the token is deleted
+	err = r.GetAddressToken(ctx, repository, "aa")
+	if !errors.Is(err, graveler.ErrAddressTokenNotFound) {
+		t.Fatalf("GetAddressToken() err = %s, expected not found", err)
+	}
+
+	// create again
+	err = r.SetAddressToken(ctx, repository, "aa")
+	testutil.MustDo(t, "set address token aa after delete", err)
+}
