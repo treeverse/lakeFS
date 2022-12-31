@@ -21,6 +21,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
+	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	pyramidparams "github.com/treeverse/lakefs/pkg/pyramid/params"
@@ -448,4 +449,20 @@ func (c *Config) GetUIEnabled() bool {
 
 func (c *Config) GetLoginDuration() time.Duration {
 	return c.values.Auth.LoginDuration
+}
+
+func (c *Config) GravelerRepositoryCacheConfig() ref.CacheConfig {
+	return ref.CacheConfig{
+		Size:   c.values.Graveler.RepositoryCache.Size,
+		Expiry: c.values.Graveler.RepositoryCache.Expiry,
+		Jitter: c.values.Graveler.RepositoryCache.Jitter,
+	}
+}
+
+func (c *Config) GravelerCommitCacheConfig() ref.CacheConfig {
+	return ref.CacheConfig{
+		Size:   c.values.Graveler.CommitCache.Size,
+		Expiry: c.values.Graveler.CommitCache.Expiry,
+		Jitter: c.values.Graveler.CommitCache.Jitter,
+	}
 }
