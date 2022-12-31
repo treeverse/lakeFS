@@ -17,7 +17,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -239,7 +238,7 @@ func (l *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (read
 	}
 	f, err := os.OpenFile(filepath.Clean(p), os.O_RDONLY, 0o600) //nolint: gomnd
 	if os.IsNotExist(err) {
-		return nil, adapter.ErrDataNotFound
+		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -281,7 +280,7 @@ func (l *Adapter) GetRange(_ context.Context, obj block.ObjectPointer, start int
 	f, err := os.Open(filepath.Clean(p))
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, adapter.ErrDataNotFound
+			return nil, block.ErrDataNotFound
 		}
 		return nil, err
 	}

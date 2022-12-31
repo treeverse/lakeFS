@@ -109,7 +109,7 @@ var runCmd = &cobra.Command{
 		ctx := cmd.Context()
 		logger.WithField("version", version.Version).Info("lakeFS run")
 
-		kvParams, err := cfg.GetKVParams()
+		kvParams, err := cfg.GetKVConfig()
 		if err != nil {
 			logger.WithError(err).Fatal("Get KV params")
 		}
@@ -124,8 +124,7 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("Failure on schema validation")
 		}
 
-		emailParams, _ := cfg.GetEmailParams()
-		emailer, err := email.NewEmailer(emailParams)
+		emailer, err := email.NewEmailer(email.Params(cfg.Email))
 		if err != nil {
 			logger.WithError(err).Fatal("Emailer has not been properly configured, check the values in sender field")
 		}
@@ -134,22 +133,22 @@ var runCmd = &cobra.Command{
 		storeMessage := &kv.StoreMessage{Store: kvStore}
 		multipartTracker := multipart.NewTracker(*storeMessage)
 		actionsStore := actions.NewActionsKVStore(*storeMessage)
-		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseType(), kvStore)
+		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
 		// initialize auth service
 		var authService auth.Service
 		if cfg.IsAuthTypeAPI() {
 			var apiEmailer *email.Emailer
-			if !cfg.GetAuthAPISupportsInvites() {
+			if !cfg.Auth.API.SupportsInvites {
 				// invites not supported by API - delegate it to emailer
 				apiEmailer = emailer
 			}
 			authService, err = auth.NewAPIAuthService(
-				cfg.GetAuthAPIEndpoint(),
-				cfg.GetAuthAPIToken(),
+				cfg.Auth.API.Endpoint,
+				cfg.Auth.API.Token,
 				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-				cfg.GetAuthCacheConfig(), nil, apiEmailer)
+				cfg.Auth.Cache, nil, apiEmailer)
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create authentication service")
 			}
@@ -158,7 +157,7 @@ var runCmd = &cobra.Command{
 				storeMessage,
 				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 				emailer,
-				cfg.GetAuthCacheConfig(),
+				cfg.Auth.Cache,
 				logger.WithField("service", "auth_service"),
 			)
 		}
@@ -200,7 +199,7 @@ var runCmd = &cobra.Command{
 			catalog.NewActionsOutputWriter(c.BlockAdapter),
 			idGen,
 			bufferedCollector,
-			cfg.GetActionsEnabled(),
+			cfg.Actions.Enabled,
 		)
 
 		// wire actions into entry catalog
@@ -210,16 +209,16 @@ var runCmd = &cobra.Command{
 		middlewareAuthenticator := auth.ChainAuthenticator{
 			auth.NewBuiltinAuthenticator(authService),
 		}
-		ldapConfig := cfg.GetLDAPConfiguration()
-		if ldapConfig != nil {
-			middlewareAuthenticator = append(middlewareAuthenticator, newLDAPAuthenticator(ldapConfig, authService))
+
+		if cfg.Auth.LDAP != nil {
+			middlewareAuthenticator = append(middlewareAuthenticator, newLDAPAuthenticator(cfg.Auth.LDAP, authService))
 		}
 		controllerAuthenticator := append(middlewareAuthenticator, auth.NewEmailAuthenticator(authService))
 
-		auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL(), metadata.InstallationID)
+		auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, metadata.InstallationID)
 		defer auditChecker.Close()
 		if version.Version != version.UnreleasedVersion {
-			auditChecker.StartPeriodicCheck(ctx, cfg.GetSecurityAuditCheckInterval(), logger)
+			auditChecker.StartPeriodicCheck(ctx, cfg.Security.AuditCheckInterval, logger)
 		}
 
 		allowForeign, err := cmd.Flags().GetBool(mismatchedReposFlagName)
@@ -239,24 +238,23 @@ var runCmd = &cobra.Command{
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-		oidcConfig := cfg.GetAuthOIDCConfiguration()
 		var oauthConfig *oauth2.Config
 		var oidcProvider *oidc.Provider
-		if oidcConfig.Enabled {
+		if cfg.Auth.OIDC.Enabled {
 			oidcProvider, err = oidc.NewProvider(
 				cmd.Context(),
-				oidcConfig.URL,
+				cfg.Auth.OIDC.URL,
 			)
 			if err != nil {
 				logger.WithError(err).Fatal("Failed to initialize OIDC provider")
 			}
 			scopes := []string{oidc.ScopeOpenID, "profile"}
 
-			scopes = append(scopes, oidcConfig.AdditionalScopeClaims...)
+			scopes = append(scopes, cfg.Auth.OIDC.AdditionalScopeClaims...)
 			oauthConfig = &oauth2.Config{
-				ClientID:     oidcConfig.ClientID,
-				ClientSecret: oidcConfig.ClientSecret,
-				RedirectURL:  strings.TrimSuffix(oidcConfig.CallbackBaseURL, "/") + api.BaseURL + "/oidc/callback",
+				ClientID:     cfg.Auth.OIDC.ClientID,
+				ClientSecret: cfg.Auth.OIDC.ClientSecret,
+				RedirectURL:  strings.TrimSuffix(cfg.Auth.OIDC.CallbackBaseURL, "/") + api.BaseURL + "/oidc/callback",
 				Endpoint:     oidcProvider.Endpoint(),
 				Scopes:       scopes,
 			}
@@ -277,7 +275,7 @@ var runCmd = &cobra.Command{
 			logger.WithField("service", "api_gateway"),
 			emailer,
 			templater,
-			cfg.GetS3GatewayDomainNames(),
+			cfg.Gateways.S3.DomainNames,
 			cfg.GetUISnippets(),
 			oidcProvider,
 			oauthConfig,
@@ -285,16 +283,15 @@ var runCmd = &cobra.Command{
 		)
 
 		// init gateway server
-		s3Fallback := cfg.GetS3GatewayFallbackURL()
 		var s3FallbackURL *url.URL
-		if s3Fallback != "" {
-			s3FallbackURL, err = url.Parse(s3Fallback)
+		if cfg.Gateways.S3.FallbackURL != "" {
+			s3FallbackURL, err = url.Parse(cfg.Gateways.S3.FallbackURL)
 			if err != nil {
 				logger.WithError(err).Fatal("Failed to parse s3 fallback URL")
 			}
 		}
 
-		lakefsBaseURL := emailParams.LakefsBaseURL
+		lakefsBaseURL := cfg.Email.LakefsBaseURL
 		if lakefsBaseURL != "" {
 			_, err := url.Parse(lakefsBaseURL)
 			if err != nil {
@@ -303,17 +300,17 @@ var runCmd = &cobra.Command{
 		}
 
 		s3gatewayHandler := gateway.NewHandler(
-			cfg.GetS3GatewayRegion(),
+			cfg.Gateways.S3.Region,
 			c,
 			multipartTracker,
 			blockStore,
 			authService,
-			cfg.GetS3GatewayDomainNames(),
+			cfg.Gateways.S3.DomainNames,
 			bufferedCollector,
 			upload.DefaultPathProvider,
 			s3FallbackURL,
-			cfg.GetAuditLogLevel(),
-			cfg.GetLoggingTraceRequestHeaders(),
+			cfg.Logging.AuditLogLevel,
+			cfg.Logging.TraceRequestHeaders,
 		)
 		ctx, cancelFn := context.WithCancel(cmd.Context())
 		bufferedCollector.Run(ctx)
@@ -321,14 +318,14 @@ var runCmd = &cobra.Command{
 
 		bufferedCollector.CollectEvent(stats.Event{Class: "global", Name: "run"})
 
-		logging.Default().WithField("listen_address", cfg.GetListenAddress()).Info("starting HTTP server")
+		logging.Default().WithField("listen_address", cfg.ListenAddress).Info("starting HTTP server")
 		server := &http.Server{
-			Addr:              cfg.GetListenAddress(),
+			Addr:              cfg.ListenAddress,
 			ReadHeaderTimeout: time.Minute,
 			Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 				// If the request has the S3 GW domain (exact or subdomain) - or carries an AWS sig, serve S3GW
-				if httputil.HostMatches(request, cfg.GetS3GatewayDomainNames()) ||
-					httputil.HostSubdomainOf(request, cfg.GetS3GatewayDomainNames()) ||
+				if httputil.HostMatches(request, cfg.Gateways.S3.DomainNames) ||
+					httputil.HostSubdomainOf(request, cfg.Gateways.S3.DomainNames) ||
 					sig.IsAWSSignedRequest(request) {
 					s3gatewayHandler.ServeHTTP(writer, request)
 					return
@@ -343,7 +340,7 @@ var runCmd = &cobra.Command{
 
 		go func() {
 			if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				fmt.Printf("server failed to listen on %s: %v\n", cfg.GetListenAddress(), err)
+				fmt.Printf("server failed to listen on %s: %v\n", cfg.ListenAddress, err)
 				os.Exit(1)
 			}
 		}()
@@ -490,8 +487,8 @@ func gracefulShutdown(ctx context.Context, quit <-chan os.Signal, done chan<- bo
 	close(done)
 }
 
-// enableKVParamsMetrics reutrns a copy of params.KV with postgres metrics enabled.
-func enableKVParamsMetrics(p params.KV) params.KV {
+// enableKVParamsMetrics returns a copy of params.KV with postgres metrics enabled.
+func enableKVParamsMetrics(p params.Config) params.Config {
 	if p.Postgres == nil || p.Postgres.Metrics {
 		return p
 	}

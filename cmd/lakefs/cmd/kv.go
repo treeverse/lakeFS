@@ -42,7 +42,7 @@ var kvGetCmd = &cobra.Command{
 		}
 
 		ctx := cmd.Context()
-		kvParams, err := cfg.GetKVParams()
+		kvParams, err := cfg.GetKVConfig()
 		if err != nil {
 			return fmt.Errorf("KV params: %w", err)
 		}
@@ -108,7 +108,7 @@ var kvScanCmd = &cobra.Command{
 		}
 
 		ctx := cmd.Context()
-		kvParams, err := cfg.GetKVParams()
+		kvParams, err := cfg.GetKVConfig()
 		if err != nil {
 			return fmt.Errorf("KV params: %w", err)
 		}

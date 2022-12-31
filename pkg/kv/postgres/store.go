@@ -50,7 +50,7 @@ func init() {
 	kv.Register(DriverName, &Driver{})
 }
 
-func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, error) {
+func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, error) {
 	if kvParams.Postgres == nil {
 		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
 	}
@@ -107,7 +107,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 	return store, nil
 }
 
-func newPgxpoolConfig(kvParams kvparams.KV) (*pgxpool.Config, error) {
+func newPgxpoolConfig(kvParams kvparams.Config) (*pgxpool.Config, error) {
 	config, err := pgxpool.ParseConfig(kvParams.Postgres.ConnectionString)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrDriverConfiguration, err)

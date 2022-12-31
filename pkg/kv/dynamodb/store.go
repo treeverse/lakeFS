@@ -56,7 +56,7 @@ func init() {
 
 // Open - opens and returns a KV store over DynamoDB. This function creates the DB session
 // and sets up the KV table.
-func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, error) {
+func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, error) {
 	params := kvParams.DynamoDB
 	if params == nil {
 		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)

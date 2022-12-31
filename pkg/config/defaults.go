@@ -247,6 +247,7 @@ func setDefaults(local bool) {
 
 	viper.SetDefault(DatabaseLocalPathKey, DefaultDatabaseLocalPath)
 	viper.SetDefault(DatabaseLocalPrefetchSizeKey, DefaultDatabaseLocalPrefetchSize)
+	viper.SetDefault("database.local.sync_writes", true)
 
 	viper.SetDefault(DatabaseDynamodbTableNameKey, DefaultDatabaseDynamodbTableName)
 

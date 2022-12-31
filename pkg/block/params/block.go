@@ -13,7 +13,6 @@ type AdapterConfig interface {
 	GetBlockAdapterS3Params() (S3, error)
 	GetBlockAdapterGSParams() (GS, error)
 	GetBlockAdapterAzureParams() (Azure, error)
-	GetCommittedBlockStoragePrefix() string
 }
 
 type Mem struct{}

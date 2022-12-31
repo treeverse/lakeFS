@@ -60,7 +60,7 @@ var entryCmd = &cobra.Command{
 			fmt.Printf("invalid config: %s\n", err)
 		}
 
-		kvParams, err := conf.GetKVParams()
+		kvParams, err := conf.GetKVConfig()
 		if err != nil {
 			logging.Default().WithError(err).Fatal("Get KV params")
 		}

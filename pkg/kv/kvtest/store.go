@@ -49,7 +49,7 @@ func sampleEntry(prefix string, n int) kv.Entry {
 	return kv.Entry{Key: []byte(k), Value: []byte(v)}
 }
 
-func TestDriver(t *testing.T, name string, params kvparams.KV) {
+func TestDriver(t *testing.T, name string, params kvparams.Config) {
 	ms := MakeStoreByName(name, params)
 	t.Run("Driver_Open", func(t *testing.T) { testDriverOpen(t, ms) })
 	t.Run("Store_SetGet", func(t *testing.T) { testStoreSetGet(t, ms) })
@@ -367,7 +367,7 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 	})
 }
 
-func MakeStoreByName(name string, kvParams kvparams.KV) MakeStore {
+func MakeStoreByName(name string, kvParams kvparams.Config) MakeStore {
 	return func(t testing.TB, ctx context.Context) kv.Store {
 		t.Helper()
 		kvParams.Type = name
@@ -919,7 +919,7 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 func GetStore(ctx context.Context, t testing.TB) kv.Store {
 	t.Helper()
 	const storeType = "mem"
-	store, err := kv.Open(ctx, kvparams.KV{Type: storeType})
+	store, err := kv.Open(ctx, kvparams.Config{Type: storeType})
 	if err != nil {
 		t.Fatalf("failed to open kv (%s) store: %s", storeType, err)
 	}

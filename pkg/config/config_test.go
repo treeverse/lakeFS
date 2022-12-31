@@ -39,8 +39,8 @@ func TestConfig_Setup(t *testing.T) {
 	c, err := config.NewConfig()
 	testutil.Must(t, err)
 	// Don't validate, some tested configs don't have all required fields.
-	if c.GetListenAddress() != config.DefaultListenAddr {
-		t.Fatalf("expected listen addr %s, got %s", config.DefaultListenAddr, c.GetListenAddress())
+	if c.ListenAddress != config.DefaultListenAddr {
+		t.Fatalf("expected listen addr %s, got %s", config.DefaultListenAddr, c.ListenAddress)
 	}
 }
 
@@ -48,10 +48,10 @@ func TestConfig_NewFromFile(t *testing.T) {
 	t.Run("valid config", func(t *testing.T) {
 		c, err := newConfigFromFile("testdata/valid_config.yaml")
 		testutil.Must(t, err)
-		if c.GetListenAddress() != "0.0.0.0:8005" {
-			t.Fatalf("expected listen addr 0.0.0.0:8005, got %s", c.GetListenAddress())
+		if c.ListenAddress != "0.0.0.0:8005" {
+			t.Fatalf("expected listen addr 0.0.0.0:8005, got %s", c.ListenAddress)
 		}
-		if diffs := deep.Equal(c.GetS3GatewayDomainNames(), []string{"s3.example.com", "gs3.example.com", "gcp.example.net"}); diffs != nil {
+		if diffs := deep.Equal([]string(c.Gateways.S3.DomainNames), []string{"s3.example.com", "gs3.example.com", "gcp.example.net"}); diffs != nil {
 			t.Fatalf("expected domain name s3.example.com, diffs %s", diffs)
 		}
 	})
@@ -91,7 +91,7 @@ func TestConfig_EnvironmentVariables(t *testing.T) {
 
 	c, err := newConfigFromFile("testdata/valid_config.yaml")
 	testutil.Must(t, err)
-	kvParams, err := c.GetKVParams()
+	kvParams, err := c.GetKVConfig()
 	testutil.Must(t, err)
 	if kvParams.Postgres.ConnectionString != dbString {
 		t.Errorf("got DB connection string %s, expected to override to %s", kvParams.Postgres.ConnectionString, dbString)
@@ -181,13 +181,11 @@ func verifyAWSConfig(t *testing.T, c *config.Config) {
 }
 
 func verifyOIDCConfig(t *testing.T, c *config.Config) {
-	oidcConfig := c.GetAuthOIDCConfiguration()
-
-	if !oidcConfig.Enabled {
+	if !c.Auth.OIDC.Enabled {
 		t.Fatal("expected oidc to be enabled")
 	}
 
-	if diffs := deep.Equal(oidcConfig.AdditionalScopeClaims, []string{"upn", "email"}); diffs != nil {
+	if diffs := deep.Equal(c.Auth.OIDC.AdditionalScopeClaims, []string{"upn", "email"}); diffs != nil {
 		t.Fatalf("expected additional scopes upn and email, diffs %s", diffs)
 	}
 }

@@ -22,7 +22,7 @@ var (
 
 type Driver struct{}
 
-func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, error) {
+func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, error) {
 	params := kvParams.Local
 	if params == nil {
 		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)

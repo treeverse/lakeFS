@@ -2,7 +2,7 @@ import build.BuildType
 
 lazy val baseName = "lakefs-spark"
 
-lazy val projectVersion = "0.6.1"
+lazy val projectVersion = "0.5.1"
 ThisBuild / isSnapshot := false
 
 // Spark versions 2.4.7 and 3.0.1 use different Scala versions.  Changing this is a deep
@@ -138,15 +138,14 @@ lazy val spark312Type =
                 "hadoop3-2.0.1"
                )
 
-lazy val core2 = generateCoreProject(spark2Type)
-lazy val core3 = generateCoreProject(spark3Type)
-lazy val core312 = generateCoreProject(spark312Type)
-lazy val examples2 = generateExamplesProject(spark2Type).dependsOn(core2)
-lazy val examples3 = generateExamplesProject(spark3Type).dependsOn(core3)
-lazy val examples312 = generateExamplesProject(spark312Type).dependsOn(core312)
-
-lazy val root =
-  (project in file(".")).aggregate(core2, core3, core312, examples2, examples3, examples312)
+//lazy val core2 = generateCoreProject(spark2Type)
+//lazy val core3 = generateCoreProject(spark3Type)
+//lazy val core312 = generateCoreProject(spark312Type)
+//lazy val examples2 = generateExamplesProject(spark2Type).dependsOn(core2)
+//lazy val examples3 = generateExamplesProject(spark3Type).dependsOn(core3)
+//lazy val examples312 = generateExamplesProject(spark312Type).dependsOn(core312)
+//lazy val root = (project in file(".")).aggregate(core2, core3, core312, examples2, examples3, examples312)
+lazy val root = generateCoreProject(spark312Type)
 
 def rename(prefix: String) = ShadeRule.rename(prefix -> "io.lakefs.spark.shade.@0")
 
