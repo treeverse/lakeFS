@@ -12,8 +12,8 @@ She would like to debug the ETL run. In other words, she would want to see the D
 
 1. For the MVP, support only Delta table diff.
 2. The system should be open for different data comparison implementations.
-3. The diff itself will consist of metadata changes only, in the form of the operation histories of the two tables, and the change in the number of rows.
-4. The diff will be a "three-dots" diff (like `git log branch1...branch2`). Basically showing the log changes that happened in one branch and not in the other.
+3. The diff itself will consist of metadata changes only (computed using the operation history of the two tables) and, optionally, the change in the number of rows.
+4. The diff will be a "two-dots" diff (like `git log branch1..branch2`). Basically showing the log changes that happened in the topic branch and not in the base branch.
 5. UI: GUI only.
 6. Reduce user friction as much as possible.
 
@@ -21,7 +21,9 @@ She would like to debug the ETL run. In other words, she would want to see the D
 
 ## Non-Goals and off-scope
 
-1.  The Delta diff will be limited to the available Delta Log entries (the JSON files).
+1.  The Delta diff will be limited to the available Delta Log entries (the JSON files), which are, by default, retained
+for [30 days](https://docs.databricks.com/delta/history.html#configure-data-retention-for-time-travel).
+2. Log compaction isn't supported.
 
 ---
 
