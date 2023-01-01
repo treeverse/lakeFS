@@ -11,8 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/graveler/ref"
-
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
 	"github.com/rs/xid"
@@ -21,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 	cUtils "github.com/treeverse/lakefs/pkg/catalog/testutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	gUtils "github.com/treeverse/lakefs/pkg/graveler/testutil"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/xitongsys/parquet-go-source/local"
