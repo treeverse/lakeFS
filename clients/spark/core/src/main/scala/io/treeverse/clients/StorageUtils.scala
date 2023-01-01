@@ -1,6 +1,7 @@
 package io.treeverse.clients
 
 import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.services.s3.model.{HeadBucketRequest, Region}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws.{AmazonServiceException, ClientConfiguration}
@@ -71,6 +72,7 @@ object StorageUtils {
         configuration: ClientConfiguration,
         credentialsProvider: Option[AWSCredentialsProvider],
         awsS3ClientBuilder: AmazonS3ClientBuilder,
+        endpoint: String,
         region: String,
         bucket: String
     ): AmazonS3 = {
@@ -79,7 +81,7 @@ object StorageUtils {
       require(bucket.nonEmpty)
 
       var client =
-        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, region)
+        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint, region)
 
       if (!validateClientAndBucketRegionsMatch(client, bucket)) {
         val bucketRegion = getAWSS3Region(client, bucket)
@@ -89,6 +91,7 @@ object StorageUtils {
         client = initializeS3Client(configuration,
                                     credentialsProvider,
                                     AmazonS3ClientBuilder.standard(),
+                                    endpoint,
                                     bucketRegion
                                    )
       }
@@ -99,11 +102,20 @@ object StorageUtils {
         configuration: ClientConfiguration,
         credentialsProvider: Option[AWSCredentialsProvider],
         awsS3ClientBuilder: AmazonS3ClientBuilder,
+        endpoint: String,
         region: String
     ): AmazonS3 = {
       val builder = awsS3ClientBuilder
         .withClientConfiguration(configuration)
-        .withRegion(region)
+
+      val builderWithEndpoint =
+        if (endpoint != null)
+          builder.withEndpointConfiguration(
+            new AwsClientBuilder.EndpointConfiguration(endpoint, region)
+          )
+        else
+          builder.withRegion(region)
+
       val builderWithCredentials = credentialsProvider match {
         case Some(cp) => builder.withCredentials(cp)
         case None     => builder
