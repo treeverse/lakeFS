@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/graveler/ref"
+
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
 	"github.com/rs/xid"
@@ -545,36 +547,41 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 		name          string
 		numBranch     int
 		numRecords    int
+		numTokens     int
 		expectedCalls int
 	}{
 		{
 			name:          "no branches",
 			numBranch:     0,
 			numRecords:    0,
+			numTokens:     0,
 			expectedCalls: 1,
 		},
 		{
 			name:          "no objects",
 			numBranch:     3,
 			numRecords:    0,
+			numTokens:     0,
 			expectedCalls: 1,
 		},
 		{
 			name:          "Sanity",
 			numBranch:     5,
 			numRecords:    3,
+			numTokens:     5,
 			expectedCalls: 1,
 		},
 		{
 			name:          "Tokenized",
 			numBranch:     500,
 			numRecords:    500,
+			numTokens:     10,
 			expectedCalls: 2,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g, expectedRecords := createPrepareUncommittedTestScenario(t, tt.numBranch, tt.numRecords, tt.expectedCalls)
+			g, expectedRecords := createPrepareUncommittedTestScenario(t, tt.numBranch, tt.numRecords, tt.numTokens, tt.expectedCalls)
 			blockAdapter := testutil.NewBlockAdapterByType(t, block.BlockstoreTypeMem)
 			c := &catalog.Catalog{
 				Store:                    g.Sut,
@@ -593,12 +600,12 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, runID, result.Metadata.RunId)
 			}
-			verifyData(t, ctx, tt.numBranch, tt.numRecords, result.Metadata.RunId, c, expectedRecords)
+			verifyData(t, ctx, tt.numBranch, tt.numRecords, tt.numTokens, result.Metadata.RunId, c, expectedRecords)
 		})
 	}
 }
 
-func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords, expectedCalls int) (*gUtils.GravelerTest, []string) {
+func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords, numTokens, expectedCalls int) (*gUtils.GravelerTest, []string) {
 	t.Helper()
 
 	test := gUtils.InitGravelerTest(t)
@@ -691,13 +698,21 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 
 	// add address tokens
 	addresses := make([]*graveler.AddressData, 0)
+	for i := 0; i < numTokens; i++ {
+		address := fmt.Sprintf("data/address_token_%d", i)
+		addresses = append(addresses, &graveler.AddressData{Address: address,
+			ExpiredAt: timestamppb.New(time.Now().Add(ref.AddressTokenTime))})
+
+		expectedRecords = append(expectedRecords, fmt.Sprintf("data/address_token_%d", i))
+
+	}
 	test.RefManager.EXPECT().ListAddressTokens(gomock.Any(), gomock.Any()).Times(1).Return(gUtils.NewFakeAddressTokenIterator(addresses), nil)
 
 	sort.Strings(expectedRecords)
 	return test, expectedRecords
 }
 
-func verifyData(t *testing.T, ctx context.Context, numBranches, numRecords int, runID string, c *catalog.Catalog, expectedRecords []string) {
+func verifyData(t *testing.T, ctx context.Context, numBranches, numRecords, numTokens int, runID string, c *catalog.Catalog, expectedRecords []string) {
 	totalCount := 0
 	location := fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID)
 	var allRecords []string
@@ -758,5 +773,5 @@ func verifyData(t *testing.T, ctx context.Context, numBranches, numRecords int, 
 	}
 
 	require.NoError(t, err)
-	require.Equal(t, numBranches*numRecords, totalCount)
+	require.Equal(t, numBranches*numRecords+numTokens, totalCount)
 }

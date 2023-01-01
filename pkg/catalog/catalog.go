@@ -1768,13 +1768,7 @@ type UncommittedParquetObject struct {
 	CreationDate    int64  `parquet:"name=creation_date, type=INT64, convertedtype=INT_64"`
 }
 
-func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, w *UncommittedWriter, mark *GCUncommittedMark, runID string) (*GCUncommittedMark, bool, error) {
-	pw, err := writer.NewParquetWriterFromWriter(w, new(UncommittedParquetObject), gcParquetParallelNum) // TODO: Play with np count
-	if err != nil {
-		return nil, false, err
-	}
-	pw.CompressionType = parquet.CompressionCodec_GZIP
-
+func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, w *UncommittedWriter, pw *writer.ParquetWriter, mark *GCUncommittedMark, runID string) (*GCUncommittedMark, bool, error) {
 	count := 0
 	itr, err := NewUncommittedIterator(ctx, c.Store, repository)
 	if err != nil {
@@ -1782,7 +1776,7 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 	}
 	defer itr.Close()
 
-	if mark != nil {
+	if mark != nil && mark.BranchID != "" {
 		itr.SeekGE(mark.BranchID, mark.Path)
 	}
 
@@ -1839,15 +1833,48 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 		return nil, false, itr.Err()
 	}
 
-	// add unlinked addresses to uncommitted
-	tokenItr, err := c.Store.ListAddressTokens(ctx, repository)
+	// Finished reading all staging area - no continuation token
+	hasData := count > 0
+	return nil, hasData, nil
+}
+
+func (c *Catalog) writeTokensLocal(ctx context.Context, repository *graveler.RepositoryRecord, w *UncommittedWriter, pw *writer.ParquetWriter, mark *GCUncommittedMark, runID string) (*GCUncommittedMark, bool, error) {
+	count := 0
+	itr, err := c.Store.ListAddressTokens(ctx, repository)
 	if err != nil {
 		return nil, false, err
 	}
-	defer tokenItr.Close()
-	for tokenItr.Next() {
-		token := tokenItr.Value()
-		if token.ExpiredAt.AsTime().Before(time.Now()) {
+	defer itr.Close()
+
+	if mark != nil && mark.BranchID == "" {
+		itr.SeekGE(mark.Path.String())
+	}
+
+	for itr.Next() {
+		token := itr.Value()
+		count += 1
+
+		if count%gcPeriodicCheckSize == 0 {
+			err := pw.Flush(true)
+			if err != nil {
+				return nil, false, err
+			}
+
+			if w.Size() > int64(c.GCMaxUncommittedFileSize) {
+				if itr.Err() != nil {
+					return nil, false, itr.Err()
+				}
+				err = pw.WriteStop()
+				if err != nil {
+					return nil, false, err
+				}
+				return &GCUncommittedMark{
+					Path:  Path(token.Address),
+					RunID: runID,
+				}, true, nil
+			}
+		}
+		if token.ExpiredAt.AsTime().After(time.Now()) {
 			if err = pw.Write(UncommittedParquetObject{
 				PhysicalAddress: token.Address,
 				CreationDate:    time.Now().Unix(),
@@ -1855,19 +1882,12 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 				return nil, false, err
 			}
 		}
-
-		/// todo - limit size?
 	}
-	if tokenItr.Err() != nil {
-		return nil, false, tokenItr.Err()
+	if itr.Err() != nil {
+		return nil, false, itr.Err()
 	}
 
-	err = pw.WriteStop()
-	if err != nil {
-		return nil, false, err
-	}
-
-	// Finished reading all staging area - no continuation token
+	// Finished reading all tokens - no continuation token
 	hasData := count > 0
 	return nil, hasData, nil
 }
@@ -1918,9 +1938,36 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}()
 
 	uw := NewUncommittedWriter(fd)
+	pw, err := writer.NewParquetWriterFromWriter(uw, new(UncommittedParquetObject), gcParquetParallelNum) // TODO: Play with np count
+	if err != nil {
+		return nil, err
+	}
+	pw.CompressionType = parquet.CompressionCodec_GZIP
 
 	// Write parquet to local storage
-	newMark, hasData, err := c.writeUncommittedLocal(ctx, repository, uw, mark, runID)
+	hasData := false
+	var newMark *GCUncommittedMark
+	if mark != nil && mark.BranchID == "" {
+		newMark, hasData, err = c.writeTokensLocal(ctx, repository, uw, pw, mark, runID)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		newMark, hasData, err = c.writeUncommittedLocal(ctx, repository, uw, pw, mark, runID)
+		if err != nil {
+			return nil, err
+		}
+
+		if newMark == nil {
+			// TODO(in progress) - fix hasData
+			newMark, hasData, err = c.writeTokensLocal(ctx, repository, uw, pw, mark, runID)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	err = pw.WriteStop()
 	if err != nil {
 		return nil, err
 	}

@@ -728,7 +728,7 @@ func (x *StagedEntryData) GetData() []byte {
 	return nil
 }
 
-// message data model to track link addresses token
+// message data model to track address tokens
 type AddressData struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

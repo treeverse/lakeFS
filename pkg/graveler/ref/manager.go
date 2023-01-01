@@ -29,7 +29,7 @@ const MaxBatchDelay = time.Millisecond * 3
 // commitIDStringLength string representation length of commit ID - based on hex representation of sha256
 const commitIDStringLength = 64
 
-const addressTokenTime = 6 * time.Hour
+const AddressTokenTime = 6 * time.Hour
 
 const (
 	DefaultRepositoryCacheSize   = 1000
@@ -569,7 +569,7 @@ func newCache(cfg *CacheConfig, def *CacheConfig) cache.Cache {
 func (m *Manager) SetAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
 	a := &graveler.AddressData{
 		Address:   token,
-		ExpiredAt: timestamppb.New(time.Now().Add(addressTokenTime)),
+		ExpiredAt: timestamppb.New(time.Now().Add(AddressTokenTime)),
 	}
 	err := m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(repository), []byte(graveler.AddressPath(token)), a, nil)
 	if err != nil {
@@ -582,7 +582,6 @@ func (m *Manager) SetAddressToken(ctx context.Context, repository *graveler.Repo
 }
 
 func (m *Manager) GetAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
-	// verify??
 	data := graveler.AddressData{}
 	path := []byte(graveler.AddressPath(token))
 	_, err := m.kvStore.GetMsg(ctx, graveler.RepoPartition(repository), path, &data)
@@ -595,7 +594,6 @@ func (m *Manager) GetAddressToken(ctx context.Context, repository *graveler.Repo
 	if data.ExpiredAt.AsTime().Before(time.Now()) {
 		return graveler.ErrAddressTokenExpired
 	}
-	// TODO - locking ???
 	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repository), path)
 }
 
