@@ -60,6 +60,10 @@ Rewrite lines to explain more and remove weird logging indicators."""
     return
 
 
+def error(msg, statuscode=1):
+    print(msg, file=sys.stderr)
+    exit(statuscode)
+
 def main():
 
     # create rclone configuration file
@@ -78,11 +82,13 @@ def main():
     elif not has_branch and has_commit:
         source += args.commit_id + "/"
         reference = args.commit_id
-    else:
-        raise Exception("Should assign branch or commit, but not both.")
+    elif has_branch:            # and has_commit
+        error("Cannot set both branch and commit_id")
+    else:                       # not has_branch and not has_commit
+         error("Must set one of branch, commit_id")
 
     if has_commit and export_diff:
-        raise Exception("Cannot export diff between two commits.")
+        error("Cannot export diff between two commits.")
 
     now = datetime.utcfromtimestamp(time.time())
     status_file_name_base = f"EXPORT_{reference}_{now.strftime('%d-%m-%Y_%H:%M:%S')}"
@@ -92,8 +98,7 @@ def main():
 
     process = subprocess.run(cmd)
     if process.returncode != 0:
-        print(f"rclone {rclone_command} failed", file=sys.stderr)
-        exit(1)
+        error(f"rclone {rclone_command} failed")
 
     # check export and create status file
     check_cmd = ["rclone", "check", source, args.Dest, "--config=rclone.conf", "--combined=-"]
