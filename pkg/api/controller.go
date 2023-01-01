@@ -3656,7 +3656,7 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 		}
 
 		if statsEv.Count < 0 {
-			writeError(w, r, http.StatusBadRequest, fmt.Sprintf("invalid value: count must be a positive integer"))
+			writeError(w, r, http.StatusBadRequest, fmt.Sprint("invalid value: count must be a non-negative integer"))
 			return
 		}
 	}
