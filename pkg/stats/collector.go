@@ -280,10 +280,10 @@ func (s *BufferedCollector) Run(ctx context.Context) {
 				}
 			case <-s.heartbeatTicker.Tick():
 				// collect heartbeat
-				s.update(Metric{Event{
+				s.incr(Event{
 					Class: "global",
 					Name:  "heartbeat",
-				}, 1})
+				})
 			case <-s.flushTicker.Tick():
 				// every N seconds, send the collected events
 				s.flush()
