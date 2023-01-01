@@ -72,12 +72,12 @@ class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: Config
  *  in the same file, so it cannot be a companion.)
  */
 trait S3ClientBuilder extends Serializable {
-  /**
-   * Name of property from which S3A fetches whether to use path-style S3
-   * access or host-style.
+
+  /** Name of property from which S3A fetches whether to use path-style S3
+   *  access or host-style.
    *
-   * org.apache.hadoop.fs.s3a.Constants defines this property only starting
-   * with version 2.8.  Define it here to support earlier versions.
+   *  org.apache.hadoop.fs.s3a.Constants defines this property only starting
+   *  with version 2.8.  Define it here to support earlier versions.
    */
   protected val S3A_PATH_STYLE_ACCESS = "fs.s3a.path.style.access"
 
