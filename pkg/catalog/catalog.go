@@ -233,8 +233,8 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 			Executor:              executor,
 			KvStore:               cfg.KVStore,
 			AddressProvider:       ident.NewHexAddressProvider(),
-			RepositoryCacheConfig: cfg.Config.GravelerRepositoryCacheConfig(),
-			CommitCacheConfig:     cfg.Config.GravelerCommitCacheConfig(),
+			RepositoryCacheConfig: cfg.Config.GetGravelerRepositoryCacheConfig(),
+			CommitCacheConfig:     cfg.Config.GetGravelerCommitCacheConfig(),
 		})
 	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
 	settingManager := settings.NewManager(refManager, *cfg.KVStore)

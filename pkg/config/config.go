@@ -451,7 +451,7 @@ func (c *Config) GetLoginDuration() time.Duration {
 	return c.values.Auth.LoginDuration
 }
 
-func (c *Config) GravelerRepositoryCacheConfig() ref.CacheConfig {
+func (c *Config) GetGravelerRepositoryCacheConfig() ref.CacheConfig {
 	return ref.CacheConfig{
 		Size:   c.values.Graveler.RepositoryCache.Size,
 		Expiry: c.values.Graveler.RepositoryCache.Expiry,
@@ -459,7 +459,7 @@ func (c *Config) GravelerRepositoryCacheConfig() ref.CacheConfig {
 	}
 }
 
-func (c *Config) GravelerCommitCacheConfig() ref.CacheConfig {
+func (c *Config) GetGravelerCommitCacheConfig() ref.CacheConfig {
 	return ref.CacheConfig{
 		Size:   c.values.Graveler.CommitCache.Size,
 		Expiry: c.values.Graveler.CommitCache.Expiry,
