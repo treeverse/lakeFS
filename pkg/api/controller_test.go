@@ -2105,7 +2105,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 		}
 		properties := resp.JSON200
 		if properties == nil {
-			t.Errorf("expected to get underlying properties, status code %d", resp.HTTPResponse.StatusCode)
+			t.Fatalf("expected to get underlying properties, status code %d", resp.StatusCode())
 		}
 
 		if api.StringValue(properties.StorageClass) != expensiveString {

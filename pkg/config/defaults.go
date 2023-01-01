@@ -159,6 +159,19 @@ const (
 	LakefsEmailBaseURLKey      = "email.lakefs_base_url"
 
 	UIEnabledKey = "ui.enabled"
+
+	GravelerRepositoryCacheSizeKey       = "graveler.repository_cache.size"
+	DefaultGravelerRepositoryCacheSize   = 1000
+	GravelerRepositoryCacheExpiryKey     = "graveler.repository_cache.expiry"
+	DefaultGravelerRepositoryCacheExpiry = 5 * time.Second
+	GravelerRepositoryCacheJitterKey     = "graveler.repository_cache.jitter"
+	DefaultGravelerRepositoryCacheJitter = 2 * time.Second
+	GravelerCommitCacheSizeKey           = "graveler.commit_cache.size"
+	DefaultGravelerCommitCacheSize       = 50_000
+	GravelerCommitCacheExpiryKey         = "graveler.commit_cache.expiry"
+	DefaultGravelerCommitCacheExpiry     = 10 * time.Minute
+	GravelerCommitCacheJitterKey         = "graveler.commit_cache.jitter"
+	DefaultGravelerCommitCacheJitter     = 2 * time.Second
 )
 
 func setDefaults(local bool) {
@@ -243,4 +256,9 @@ func setDefaults(local bool) {
 	viper.SetDefault(DatabasePostgresMaxOpenConnectionsKey, DefaultDatabasePostgresMaxOpenConnections)
 	viper.SetDefault(DatabasePostgresMaxIdleConnectionsKey, DefaultDatabasePostgresMaxIdleConnections)
 	viper.SetDefault(PostgresConnectionMaxLifetimeKey, DefaultPostgresConnectionMaxLifetime)
+
+	viper.SetDefault(GravelerRepositoryCacheSizeKey, DefaultGravelerRepositoryCacheSize)
+	viper.SetDefault(GravelerRepositoryCacheExpiryKey, DefaultGravelerRepositoryCacheExpiry)
+	viper.SetDefault(GravelerCommitCacheSizeKey, DefaultGravelerCommitCacheSize)
+	viper.SetDefault(GravelerCommitCacheExpiryKey, DefaultGravelerCommitCacheExpiry)
 }
