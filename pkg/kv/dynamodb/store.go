@@ -31,7 +31,6 @@ type EntriesIterator struct {
 	store                     *Store
 	queryResult               *dynamodb.QueryOutput
 	currEntryIdx              int64
-	partitionKey              []byte
 	keyConditionExpression    string
 	expressionAttributeValues map[string]*dynamodb.AttributeValue
 	limit                     int64
