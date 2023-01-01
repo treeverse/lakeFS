@@ -26,6 +26,7 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
   private var server: MockWebServer = null
   private var clientConfiguration: ClientConfiguration = null
 
+  private val ENDPOINT = "http://s3.example.net"
   private val US_STANDARD = "US"
   private val US_WEST_2 = "us-west-2"
   private val BUCKET_NAME = "bucket"
@@ -49,6 +50,7 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
         clientConfiguration,
         Some(credentialsProvider),
         awsS3ClientBuilder,
+        ENDPOINT,
         US_WEST_2,
         BUCKET_NAME
       )
@@ -208,6 +210,7 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
       clientConfiguration,
       Some(credentialsProvider),
       awsS3ClientBuilder,
+      ENDPOINT,
       US_STANDARD,
       BUCKET_NAME
     )
