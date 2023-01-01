@@ -32,7 +32,6 @@ services:
       - LAKEFS_ENDPOINT=http://lakefs:8000
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
 
-
   lakefs-export:
     image: "${REPO:-treeverse}/lakefs-rclone-export:${EXPORT_TAG:-latest}"
     depends_on:
@@ -41,13 +40,13 @@ services:
     profiles: ["client"]
     environment:
       - LAKEFS_ENDPOINT=http://lakefs:8000
-      - S3_ACCESS_KEY
-      - S3_SECRET_KEY
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
       - EXPORT_LOCATION
       - LAKECTL_CREDENTIALS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
       - LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-      - LAKEFS_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE
-      - LAKEFS_SECRET_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+      - LAKEFS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+      - LAKEFS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
 
 

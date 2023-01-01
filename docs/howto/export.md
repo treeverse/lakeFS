@@ -198,12 +198,16 @@ Using this method, you can export data from lakeFS to S3 using the export option
 You will need to add the relevant environment variables.
 The complete `docker run` command would look like:
 
-```shell 
+```shell
 docker run \
--e LAKEFS_ACCESS_KEY=XXX -e LAKEFS_SECRET_KEY=YYY -e LAKEFS_ENDPOINT=https://<LAKEFS_ENDPOINT>/ \
--e S3_ACCESS_KEY=XXX -e S3_SECRET_KEY=YYY \
--it treeverse/lakefs-rclone-export:latest example-repo s3://destination-bucket/prefix/ --branch="example-branch"
-``` 
+    -e LAKEFS_ACCESS_KEY_ID=XXX -e LAKEFS_SECRET_ACCESS_KEY=YYY \
+	-e LAKEFS_ENDPOINT=https://<LAKEFS_ENDPOINT>/ \
+	-e AWS_ACCESS_KEY_ID=XXX -e AWS_SECRET_ACCESS_KEY=YYY \
+	treeverse/lakefs-rclone-export:latest \
+		example-repo \
+		s3://destination-bucket/prefix/ \
+		--branch="example-branch"
+```
 
 **Note:** This feature uses [rclone](https://rclone.org/){: target="_blank"},
 and specifically [rclone sync](https://rclone.org/commands/rclone_sync/){: target="_blank"}. This can change the destination path, therefore the s3 destination location must be designated to lakeFS export.

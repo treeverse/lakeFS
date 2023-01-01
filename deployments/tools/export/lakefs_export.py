@@ -1,16 +1,21 @@
-import subprocess
+#!/usr/bin/env python3
+
 import argparse
+import subprocess
+from tempfile import NamedTemporaryFile
 import os
+import posixpath                # Works for URL pathname manipulation on Windows too
 import shlex
+import sys
 import time
 from datetime import datetime
 from string import Template
 
-LAKEFS_ACCESS_KEY = os.getenv('LAKEFS_ACCESS_KEY')
-LAKEFS_SECRET_KEY = os.getenv('LAKEFS_SECRET_KEY')
+LAKEFS_ACCESS_KEY = os.getenv('LAKEFS_ACCESS_KEY_ID')
+LAKEFS_SECRET_KEY = os.getenv('LAKEFS_SECRET_ACCESS_KEY')
 LAKEFS_ENDPOINT = os.getenv('LAKEFS_ENDPOINT')
-S3_ACCESS_KEY = os.getenv('S3_ACCESS_KEY')
-S3_SECRET_KEY = os.getenv('S3_SECRET_KEY')
+S3_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY_ID')
+S3_SECRET_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 
 SUCCESS_MSG = "Export completed successfully!"
 
@@ -38,21 +43,20 @@ def set_args():
     return args
 
 
-def write_status_file(success, status_file_name):
-    if success:
-        with open(status_file_name,'w') as f:
-            f.write(SUCCESS_MSG)
-    else:
-        with open('errors','r') as errors_file, open(status_file_name,'w') as status_file:
-            for line in errors_file:
-                if line.startswith('-'):
-                    status_file.write("path missing in source: " + line)
-                elif line.startswith('+'):
-                    status_file.write("path was missing on the destination: " + line)
-                elif line.startswith('*'):
-                    status_file.write("path was present in source and destination but different: " + line)
-                elif line.startswith('!'):
-                    status_file.write("there was an error reading or hashing the source or dest: " + line)
+def process_output(dest, src):
+    """Process rclone output on file-like object src into file dst.
+
+Rewrite lines to explain more and remove weird logging indicators."""
+    for line in src:
+        line = line.removesuffix('\n')
+        if line.startswith('-'):
+            print("path missing in source:", line, file=dest)
+        elif line.startswith('+'):
+            print("path missing on destination:", line, file=dest)
+        elif line.startswith('*'):
+            print("path different in source and destination:", line, file=dest)
+        elif line.startswith('!'):
+            print("error reading or hashing source or dest", line, file=dest)
     return
 
 
@@ -80,40 +84,56 @@ def main():
     if has_commit and export_diff:
         raise Exception("Cannot export diff between two commits.")
 
-    if export_diff:
-        cmd = ["rclone", "sync", source, args.Dest, "--config=rclone.conf", "--create-empty-src-dirs"]
-    else:
-        cmd = ["rclone", "copy", source, args.Dest, "--config=rclone.conf", "--create-empty-src-dirs"]
+    now = datetime.utcfromtimestamp(time.time())
+    status_file_name_base = f"EXPORT_{reference}_{now.strftime('%d-%m-%Y_%H:%M:%S')}"
 
-    process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if process.stderr:
-        raise Exception("Error while executing rclone command: ", process.stderr)
+    rclone_command = "sync" if export_diff else "copy"
+    cmd = ["rclone", rclone_command, source, args.Dest, "--config=rclone.conf", "--create-empty-src-dirs"]
+
+    process = subprocess.run(cmd)
+    if process.returncode != 0:
+        print(f"rclone {rclone_command} failed", file=sys.stderr)
+        exit(1)
 
     # check export and create status file
-    if export_diff:
-        check_process = subprocess.run(["rclone", "check", source, args.Dest, "--config=rclone.conf", "--combined=errors"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    else:
-        # if we check the copy command we add the flag --one-way since we only want to check that the source files were copied to the destination
-        check_process = subprocess.run(["rclone", "check", source, args.Dest, "--config=rclone.conf", "--combined=errors", "--one-way"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    check_cmd = ["rclone", "check", source, args.Dest, "--config=rclone.conf", "--combined=-"]
+    # if not export_diff:
+    #     # Use the flag --one-way to check a copy command: only need to check
+    #     # that the source files were copied to the destination
+    #     check_cmd.append("--one-way")
 
-    # the command 'rclnoe check --combined' returns files that are identical, as well as errors. So we'll remove the identical files from the errors file
-    with open("errors", "r") as input, open("temp", "w") as output:
-        for line in input:
-            # if line starts with "=" then don't write it in temp file
-            if not line.strip("\n").startswith('='):
-                output.write(line)
-    os.replace('temp', 'errors')
+    check_process = subprocess.Popen(check_cmd, stdout=subprocess.PIPE, text=True)
 
-    now = datetime.utcfromtimestamp(time.time())
-    if os.stat("errors").st_size == 0:
-        status_file_name = "EXPORT_" + reference + "_" + now.strftime("%d-%m-%Y_%H:%M:%S") + "_SUCCESS"
-        success = True
-    else:
-        status_file_name = "EXPORT_" + reference + "_" + now.strftime("%d-%m-%Y_%H:%M:%S") + "_FAILURE"
-        success = False
+    local_status = NamedTemporaryFile(
+        prefix="lakefs_export_status_", suffix=".temp",
+        mode="w", delete=False)
+    try:
+        # local_status cannot be re-opened for read on Windows until we
+        # close it for writing.
+        process_output(local_status, check_process.stdout)
 
-    write_status_file(success, status_file_name)
-    upload_status_file = subprocess.run(["rclone", "copy", "./" + status_file_name, args.Dest, "--config=rclone.conf"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # rclone writes until its done, check_process.stdout is closed, so
+        # the rclone process ended and wait will not block.
+        check_process.wait()
+
+        # Upload status file to destination bucket
+        success = check_process.returncode == 0
+        if success:
+            print(SUCCESS_MSG, file=local_status)
+        local_status.close()
+
+        status_file_name = f"{status_file_name_base}_{'SUCCESS' if success else 'FAILURE'}"
+        dest_path = posixpath.join(args.Dest, status_file_name)
+
+        upload_process = subprocess.run(["rclone", "copyto", local_status.name, dest_path, "--config=rclone.conf"])
+        if upload_process.returncode != 0:
+            print("Failed to upload status file", file=sys.stderr)
+    finally:
+        os.remove(local_status.name)
+
+    if not success:
+        exit(1)
+
 
 if __name__ == '__main__':
-	main()
+    main()
