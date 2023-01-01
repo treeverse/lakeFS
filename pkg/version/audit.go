@@ -2,7 +2,6 @@ package version
 
 import (
 	"context"
-	"crypto/md5" //nolint:gosec
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -40,12 +39,12 @@ type auditPeriodicResponse struct {
 }
 
 type AuditChecker struct {
-	CheckURL                 string
-	Client                   http.Client
-	Version                  string
-	AnonymizedInstallationID string
-	periodicResponse         atomic.Value
-	ticker                   *time.Ticker
+	CheckURL         string
+	Client           http.Client
+	Version          string
+	InstallationID   string
+	periodicResponse atomic.Value
+	ticker           *time.Ticker
 }
 
 func NewDefaultAuditChecker(checkURL, installationID string) *AuditChecker {
@@ -53,17 +52,13 @@ func NewDefaultAuditChecker(checkURL, installationID string) *AuditChecker {
 }
 
 func NewAuditChecker(checkURL, version, installationID string) *AuditChecker {
-	var anonymizedInstallationID string
-	if installationID != "" {
-		anonymizedInstallationID = fmt.Sprintf("%x", md5.Sum([]byte(installationID))) // #nosec
-	}
 	ac := &AuditChecker{
 		CheckURL: checkURL,
 		Client: http.Client{
 			Timeout: auditCheckTimeout,
 		},
-		Version:                  version,
-		AnonymizedInstallationID: anonymizedInstallationID,
+		Version:        version,
+		InstallationID: installationID,
 	}
 	// initial value for last check - empty value
 	ac.periodicResponse.Store(auditPeriodicResponse{})
@@ -80,7 +75,7 @@ func (a *AuditChecker) Check(ctx context.Context) (*AuditResponse, error) {
 	}
 	q := req.URL.Query()
 	q.Add("version", a.Version)
-	q.Add("anonymized_installation_id", a.AnonymizedInstallationID)
+	q.Add("installation_id", a.InstallationID)
 	req.URL.RawQuery = q.Encode()
 
 	resp, err := a.Client.Do(req)
