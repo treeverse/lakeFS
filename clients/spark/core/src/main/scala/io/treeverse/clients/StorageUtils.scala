@@ -114,7 +114,7 @@ object StorageUtils {
             new AwsClientBuilder.EndpointConfiguration(endpoint, region)
           )
         else
-          builder
+          builder.withRegion(region)
 
       val builderWithCredentials = credentialsProvider match {
         case Some(cp) => builder.withCredentials(cp)
