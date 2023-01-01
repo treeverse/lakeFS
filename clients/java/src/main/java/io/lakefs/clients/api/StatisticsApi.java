@@ -56,7 +56,7 @@ public class StatisticsApi {
     }
 
     /**
-     * Build call for sendStatsEvents
+     * Build call for postStatsEvents
      * @param statsEventsList  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
@@ -70,7 +70,7 @@ public class StatisticsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call sendStatsEventsCall(StatsEventsList statsEventsList, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call postStatsEventsCall(StatsEventsList statsEventsList, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = statsEventsList;
 
         // create path and map variables
@@ -101,21 +101,21 @@ public class StatisticsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call sendStatsEventsValidateBeforeCall(StatsEventsList statsEventsList, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call postStatsEventsValidateBeforeCall(StatsEventsList statsEventsList, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'statsEventsList' is set
         if (statsEventsList == null) {
-            throw new ApiException("Missing the required parameter 'statsEventsList' when calling sendStatsEvents(Async)");
+            throw new ApiException("Missing the required parameter 'statsEventsList' when calling postStatsEvents(Async)");
         }
         
 
-        okhttp3.Call localVarCall = sendStatsEventsCall(statsEventsList, _callback);
+        okhttp3.Call localVarCall = postStatsEventsCall(statsEventsList, _callback);
         return localVarCall;
 
     }
 
     /**
-     * send stats events
+     * post stats events
      * 
      * @param statsEventsList  (required)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -128,12 +128,12 @@ public class StatisticsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public void sendStatsEvents(StatsEventsList statsEventsList) throws ApiException {
-        sendStatsEventsWithHttpInfo(statsEventsList);
+    public void postStatsEvents(StatsEventsList statsEventsList) throws ApiException {
+        postStatsEventsWithHttpInfo(statsEventsList);
     }
 
     /**
-     * send stats events
+     * post stats events
      * 
      * @param statsEventsList  (required)
      * @return ApiResponse&lt;Void&gt;
@@ -147,13 +147,13 @@ public class StatisticsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Void> sendStatsEventsWithHttpInfo(StatsEventsList statsEventsList) throws ApiException {
-        okhttp3.Call localVarCall = sendStatsEventsValidateBeforeCall(statsEventsList, null);
+    public ApiResponse<Void> postStatsEventsWithHttpInfo(StatsEventsList statsEventsList) throws ApiException {
+        okhttp3.Call localVarCall = postStatsEventsValidateBeforeCall(statsEventsList, null);
         return localVarApiClient.execute(localVarCall);
     }
 
     /**
-     * send stats events (asynchronously)
+     * post stats events (asynchronously)
      * 
      * @param statsEventsList  (required)
      * @param _callback The callback to be executed when the API call finishes
@@ -168,9 +168,9 @@ public class StatisticsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call sendStatsEventsAsync(StatsEventsList statsEventsList, final ApiCallback<Void> _callback) throws ApiException {
+    public okhttp3.Call postStatsEventsAsync(StatsEventsList statsEventsList, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = sendStatsEventsValidateBeforeCall(statsEventsList, _callback);
+        okhttp3.Call localVarCall = postStatsEventsValidateBeforeCall(statsEventsList, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }

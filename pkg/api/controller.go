@@ -3636,7 +3636,7 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (c *Controller) SendStatsEvents(w http.ResponseWriter, r *http.Request, body SendStatsEventsJSONRequestBody) {
+func (c *Controller) SendStatsEvents(w http.ResponseWriter, r *http.Request, body PostStatsEventsJSONRequestBody) {
 	ctx := r.Context()
 	user, err := auth.GetUser(ctx)
 	if err != nil {

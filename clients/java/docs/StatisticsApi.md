@@ -4,14 +4,14 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**sendStatsEvents**](StatisticsApi.md#sendStatsEvents) | **POST** /statistics | send stats events
+[**postStatsEvents**](StatisticsApi.md#postStatsEvents) | **POST** /statistics | post stats events
 
 
-<a name="sendStatsEvents"></a>
-# **sendStatsEvents**
-> sendStatsEvents(statsEventsList)
+<a name="postStatsEvents"></a>
+# **postStatsEvents**
+> postStatsEvents(statsEventsList)
 
-send stats events
+post stats events
 
 ### Example
 ```java
@@ -52,9 +52,9 @@ public class Example {
     StatisticsApi apiInstance = new StatisticsApi(defaultClient);
     StatsEventsList statsEventsList = new StatsEventsList(); // StatsEventsList | 
     try {
-      apiInstance.sendStatsEvents(statsEventsList);
+      apiInstance.postStatsEvents(statsEventsList);
     } catch (ApiException e) {
-      System.err.println("Exception when calling StatisticsApi#sendStatsEvents");
+      System.err.println("Exception when calling StatisticsApi#postStatsEvents");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());

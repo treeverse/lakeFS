@@ -4,13 +4,13 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**send_stats_events**](StatisticsApi.md#send_stats_events) | **POST** /statistics | send stats events
+[**post_stats_events**](StatisticsApi.md#post_stats_events) | **POST** /statistics | post stats events
 
 
-# **send_stats_events**
-> send_stats_events(stats_events_list)
+# **post_stats_events**
+> post_stats_events(stats_events_list)
 
-send stats events
+post stats events
 
 ### Example
 
@@ -76,10 +76,10 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        # send stats events
-        api_instance.send_stats_events(stats_events_list)
+        # post stats events
+        api_instance.post_stats_events(stats_events_list)
     except lakefs_client.ApiException as e:
-        print("Exception when calling StatisticsApi->send_stats_events: %s\n" % e)
+        print("Exception when calling StatisticsApi->post_stats_events: %s\n" % e)
 ```
 
 

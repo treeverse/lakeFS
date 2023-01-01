@@ -24,10 +24,10 @@ class TestStatisticsApi(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_send_stats_events(self):
-        """Test case for send_stats_events
+    def test_post_stats_events(self):
+        """Test case for post_stats_events
 
-        send stats events  # noqa: E501
+        post stats events  # noqa: E501
         """
         pass
 

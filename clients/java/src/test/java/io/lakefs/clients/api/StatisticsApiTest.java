@@ -34,7 +34,7 @@ public class StatisticsApiTest {
 
     
     /**
-     * send stats events
+     * post stats events
      *
      * 
      *
@@ -42,9 +42,9 @@ public class StatisticsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void sendStatsEventsTest() throws ApiException {
+    public void postStatsEventsTest() throws ApiException {
         StatsEventsList statsEventsList = null;
-                api.sendStatsEvents(statsEventsList);
+                api.postStatsEvents(statsEventsList);
         // TODO: test validations
     }
     

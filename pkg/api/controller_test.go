@@ -3567,7 +3567,7 @@ func TestController_SendStatsEvents(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := clt.SendStatsEventsWithResponse(ctx, api.SendStatsEventsJSONRequestBody{
+			resp, err := clt.PostStatsEventsWithResponse(ctx, api.PostStatsEventsJSONRequestBody{
 				Events: tt.events,
 			})
 			if err != nil {

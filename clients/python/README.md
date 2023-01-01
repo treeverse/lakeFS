@@ -196,7 +196,7 @@ Class | Method | HTTP request | Description
 *RetentionApi* | [**set_garbage_collection_rules**](docs/RetentionApi.md#set_garbage_collection_rules) | **POST** /repositories/{repository}/gc/rules | 
 *StagingApi* | [**get_physical_address**](docs/StagingApi.md#get_physical_address) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
 *StagingApi* | [**link_physical_address**](docs/StagingApi.md#link_physical_address) | **PUT** /repositories/{repository}/branches/{branch}/staging/backing | associate staging on this physical address with a path
-*StatisticsApi* | [**send_stats_events**](docs/StatisticsApi.md#send_stats_events) | **POST** /statistics | send stats events
+*StatisticsApi* | [**post_stats_events**](docs/StatisticsApi.md#post_stats_events) | **POST** /statistics | post stats events
 *TagsApi* | [**create_tag**](docs/TagsApi.md#create_tag) | **POST** /repositories/{repository}/tags | create tag
 *TagsApi* | [**delete_tag**](docs/TagsApi.md#delete_tag) | **DELETE** /repositories/{repository}/tags/{tag} | delete tag
 *TagsApi* | [**get_tag**](docs/TagsApi.md#get_tag) | **GET** /repositories/{repository}/tags/{tag} | get tag

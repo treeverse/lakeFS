@@ -3815,8 +3815,8 @@ paths:
     post:
       tags:
         - statistics
-      operationId: sendStatsEvents
-      summary: send stats events
+      operationId: postStatsEvents
+      summary: post stats events
       requestBody:
         required: true
         content:

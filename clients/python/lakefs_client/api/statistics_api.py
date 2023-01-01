@@ -37,7 +37,7 @@ class StatisticsApi(object):
         if api_client is None:
             api_client = ApiClient()
         self.api_client = api_client
-        self.send_stats_events_endpoint = _Endpoint(
+        self.post_stats_events_endpoint = _Endpoint(
             settings={
                 'response_type': None,
                 'auth': [
@@ -47,7 +47,7 @@ class StatisticsApi(object):
                     'oidc_auth'
                 ],
                 'endpoint_path': '/statistics',
-                'operation_id': 'send_stats_events',
+                'operation_id': 'post_stats_events',
                 'http_method': 'POST',
                 'servers': None,
             },
@@ -93,17 +93,17 @@ class StatisticsApi(object):
             api_client=api_client
         )
 
-    def send_stats_events(
+    def post_stats_events(
         self,
         stats_events_list,
         **kwargs
     ):
-        """send stats events  # noqa: E501
+        """post stats events  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.send_stats_events(stats_events_list, async_req=True)
+        >>> thread = api.post_stats_events(stats_events_list, async_req=True)
         >>> result = thread.get()
 
         Args:
@@ -156,5 +156,5 @@ class StatisticsApi(object):
         kwargs['_host_index'] = kwargs.get('_host_index')
         kwargs['stats_events_list'] = \
             stats_events_list
-        return self.send_stats_events_endpoint.call_with_http_info(**kwargs)
+        return self.post_stats_events_endpoint.call_with_http_info(**kwargs)
 
