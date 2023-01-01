@@ -62,7 +62,7 @@ def generateCoreProject(buildType: BuildType) =
         // hadoop-aws provides AWS SDK at version >= 1.7.4.  So declare this
         // version, but ask to use whatever is provided so we do not
         // override what it selects.
-        "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194" % "provided",
+        "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194",
         "com.azure" % "azure-core" % "1.10.0",
         "com.azure" % "azure-storage-blob" % "12.9.0",
         "com.azure" % "azure-storage-blob-batch" % "12.7.0",
@@ -182,7 +182,8 @@ lazy val assemblySettings = Seq(
     rename("okio.**").inAll,
     rename("okhttp3.**").inAll,
     rename("reactor.netty.**").inAll,
-    rename("reactor.util.**").inAll
+    rename("reactor.util.**").inAll,
+    rename("com.amazonaws.**").inAll
   )
 )
 
