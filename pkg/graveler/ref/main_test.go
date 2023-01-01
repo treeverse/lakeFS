@@ -17,16 +17,14 @@ import (
 )
 
 var (
-	testRepoCacheConfig = &ref.CacheConfig{
-		Size:   ref.DefaultRepositoryCacheSize,
+	testRepoCacheConfig = ref.CacheConfig{
+		Size:   1000,
 		Expiry: 20 * time.Millisecond,
-		Jitter: 0,
 	}
 
-	testCommitCacheConfig = &ref.CacheConfig{
-		Size:   ref.DefaultCommitCacheSize,
+	testCommitCacheConfig = ref.CacheConfig{
+		Size:   5000,
 		Expiry: 20 * time.Millisecond,
-		Jitter: 0,
 	}
 )
 
@@ -36,11 +34,11 @@ func testRefManager(t testing.TB) (graveler.RefManager, *kv.StoreMessage) {
 	kvStore := kvtest.GetStore(ctx, t)
 	storeMessage := &kv.StoreMessage{Store: kvStore}
 	cfg := ref.ManagerConfig{
-		Executor:          batch.NopExecutor(),
-		KvStore:           storeMessage,
-		AddressProvider:   ident.NewHexAddressProvider(),
-		RepoCacheConfig:   testRepoCacheConfig,
-		CommitCacheConfig: testCommitCacheConfig,
+		Executor:              batch.NopExecutor(),
+		KvStore:               storeMessage,
+		AddressProvider:       ident.NewHexAddressProvider(),
+		RepositoryCacheConfig: testRepoCacheConfig,
+		CommitCacheConfig:     testCommitCacheConfig,
 	}
 	return ref.NewRefManager(cfg), storeMessage
 }
@@ -51,11 +49,11 @@ func testRefManagerWithAddressProvider(t testing.TB, addressProvider ident.Addre
 	kvStore := kvtest.GetStore(ctx, t)
 	storeMessage := &kv.StoreMessage{Store: kvStore}
 	cfg := ref.ManagerConfig{
-		Executor:          batch.NopExecutor(),
-		KvStore:           storeMessage,
-		AddressProvider:   addressProvider,
-		RepoCacheConfig:   testRepoCacheConfig,
-		CommitCacheConfig: testCommitCacheConfig,
+		Executor:              batch.NopExecutor(),
+		KvStore:               storeMessage,
+		AddressProvider:       addressProvider,
+		RepositoryCacheConfig: testRepoCacheConfig,
+		CommitCacheConfig:     testCommitCacheConfig,
 	}
 	return ref.NewRefManager(cfg), storeMessage
 }

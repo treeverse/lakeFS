@@ -36,17 +36,17 @@ func TestManager_GetRepositoryCache(t *testing.T) {
 	storeMessage := &kv.StoreMessage{Store: mockStore}
 	ctx := context.Background()
 	mockStore.EXPECT().Get(ctx, []byte("graveler"), []byte("repos/repo1")).Times(times).Return(&kv.ValueWithPredicate{}, nil)
-	cacheConfig := &ref.CacheConfig{
+	cacheConfig := ref.CacheConfig{
 		Size:   100,
 		Expiry: 20 * time.Millisecond,
 		Jitter: 0,
 	}
 	cfg := ref.ManagerConfig{
-		Executor:          batch.NopExecutor(),
-		KvStore:           storeMessage,
-		AddressProvider:   ident.NewHexAddressProvider(),
-		RepoCacheConfig:   cacheConfig,
-		CommitCacheConfig: cacheConfig,
+		Executor:              batch.NopExecutor(),
+		KvStore:               storeMessage,
+		AddressProvider:       ident.NewHexAddressProvider(),
+		RepositoryCacheConfig: cacheConfig,
+		CommitCacheConfig:     cacheConfig,
 	}
 	refManager := ref.NewRefManager(cfg)
 	for i := 0; i < calls; i++ {
@@ -84,17 +84,16 @@ func TestManager_GetCommitCache(t *testing.T) {
 		Times(times).
 		Return(&kv.ValueWithPredicate{}, nil)
 
-	cacheConfig := &ref.CacheConfig{
+	cacheConfig := ref.CacheConfig{
 		Size:   100,
 		Expiry: 20 * time.Millisecond,
-		Jitter: 0,
 	}
 	cfg := ref.ManagerConfig{
-		Executor:          batch.NopExecutor(),
-		KvStore:           storeMessage,
-		AddressProvider:   ident.NewHexAddressProvider(),
-		RepoCacheConfig:   cacheConfig,
-		CommitCacheConfig: cacheConfig,
+		Executor:              batch.NopExecutor(),
+		KvStore:               storeMessage,
+		AddressProvider:       ident.NewHexAddressProvider(),
+		RepositoryCacheConfig: cacheConfig,
+		CommitCacheConfig:     cacheConfig,
 	}
 	refManager := ref.NewRefManager(cfg)
 	for i := 0; i < calls; i++ {
