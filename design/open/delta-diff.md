@@ -105,17 +105,17 @@ Implemented using [delta-rs](https://github.com/delta-io/delta-rs) (Rust), this 
 To query the Delta Table from lakeFS, the plugin will generate an S3 client (this is a constraint imposed by the `delta-rs` package) and send a request to lakeFS's S3 gateway.  
 The diff algorithm:
 1. Run the Delta [HISTORY command](https://docs.delta.io/latest/delta-utility.html#history-schema) on both table paths.
-2. Traverse through the [returned "commitInfo" entry vector ](https://github.com/delta-io/delta-rs/blob/main/rust/src/delta.rs#L888)
+2. Traverse through the [returned "commitInfo" entry vector ](https://github.com/delta-io/delta-rs/blob/d444cdf7588503c1ebfceec90d4d2fadbd50a703/rust/src/delta.rs#L910)
 starting from the **last** version of each history vector: 
-    1. While the returned entry versions **aren't** equal:
+    1. While the returned entry versions **aren't** equal OR no more versions available:
         1. If the bigger version is the _"left"'s_ version, add the entry to the returned history list.
         2. Traverse one version back of the bigger version entry's history.
-    2. While the versions > 0: 
+    2. While the versions > 0 OR no more versions available: 
         1. Create a hash for the entry based on fields: `timestamp`, `operation`, `operationParameters` , and `operationMetrics` values.
         2. Compare the hashes of the versions.
-        3. If they **aren't equal**, add the "left"'s entry to the returned history list, else break and **return the history vector**.
+        3. If they **aren't equal**, add the "left"'s entry to the returned history list, else, break and **return the history list**.
         4. Traverse one version back in both vectors.
-3. Return an empty history vector.
+3. Return the history list.
 
 ### Authentication
 
