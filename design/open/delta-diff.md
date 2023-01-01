@@ -134,23 +134,39 @@ To overcome this scenario, we'll use special diff credentials as follows:
 
 - GET `/repositories/repo/{repo}/otf/refs/{left_ref}/diff/{right_ref}?type={diff_type}`
     - Tagged as experimental
-    - **Response**:
-  ```json
-  [
-       {
-           "version": 1,
-           "timestamp":1515491537026,
-           "operation":"INSERT",
-           "operationContent":{
-               "operationParameters": {
-                  "mode":"Append",
-                  "partitionBy":"[]"
-                }
-      },
-      ...
-  ]
-  ```
-
+    - **Response**:  
+        The response includes an array of operations from different versions of the specified table format.
+        It has a general structure that enables formatting the different table format operation structs.
+      - version:
+        - type: string
+        - description: the version/snapshot/transaction id of the operation.
+      - timestamp (epoch):
+        - type: long
+        - description: operation's timestamp.
+      - operation:
+        - type: string
+        - description: operation's name.
+      - operationContent:
+        - type: map
+        - description: an operation content specific to the table format implemented.
+      
+      **Delta lake response example**:
+      ```json
+      [
+           {
+               "version": "1",
+               "timestamp":1515491537026,
+               "operation":"INSERT",
+               "operationContent":{
+                   "operationParameters": {
+                      "mode":"Append",
+                      "partitionBy":"[]"
+                    }
+          },
+          ...
+      ]
+      ```
+    
 ---
 
 ### Packaging
