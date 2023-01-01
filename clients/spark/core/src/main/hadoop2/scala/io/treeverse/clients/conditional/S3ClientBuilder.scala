@@ -32,7 +32,7 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
 
     val builder = AmazonS3ClientBuilder
       .standard()
-      .withPathStyleAccessEnabled(hc.getBoolean("fs.s3a.path.style.access", true))
+      .withPathStyleAccessEnabled(hc.getBoolean(S3A_PATH_STYLE_ACCESS, true))
 
     createAndValidateS3Client(configuration,
                               credentialsProvider,
