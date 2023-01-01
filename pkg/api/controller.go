@@ -1274,7 +1274,7 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	info := c.BlockAdapter.GetStorageNamespaceInfo()
 	response := StorageConfig{
-		BlockstoreType:                   c.Config.GetBlockstoreType(),
+		BlockstoreType:                   c.Config.BlockstoreType(),
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
 		DefaultNamespacePrefix:           swag.String(c.Config.Blockstore.DefaultNamespacePrefix),

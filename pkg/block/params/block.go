@@ -8,11 +8,11 @@ import (
 
 // AdapterConfig configures a block adapter.
 type AdapterConfig interface {
-	GetBlockstoreType() string
-	GetBlockAdapterLocalParams() (Local, error)
-	GetBlockAdapterS3Params() (S3, error)
-	GetBlockAdapterGSParams() (GS, error)
-	GetBlockAdapterAzureParams() (Azure, error)
+	BlockstoreType() string
+	BlockstoreLocalParams() (Local, error)
+	BlockstoreS3Params() (S3, error)
+	BlockstoreGSParams() (GS, error)
+	BlockstoreAzureParams() (Azure, error)
 }
 
 type Mem struct{}

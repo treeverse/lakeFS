@@ -21,7 +21,7 @@ var diagnosticsCmd = &cobra.Command{
 		ctx := cmd.Context()
 		output, _ := cmd.Flags().GetString("output")
 
-		kvParams, err := cfg.GetKVConfig()
+		kvParams, err := cfg.DatabaseParams()
 		if err != nil {
 			log.Fatalf("Get KV params: %s", err)
 		}

@@ -326,7 +326,7 @@ func newConfig(local bool) (*Config, error) {
 	return c, nil
 }
 
-func reverse(s string) string {
+func stringReverse(s string) string {
 	chars := []rune(s)
 	for i := 0; i < len(chars)/2; i++ {
 		j := len(chars) - 1 - i
@@ -340,11 +340,11 @@ func (c *Config) validateDomainNames() error {
 	domainNames := make([]string, len(domainStrings))
 	copy(domainNames, domainStrings)
 	for i, d := range domainNames {
-		domainNames[i] = reverse(d)
+		domainNames[i] = stringReverse(d)
 	}
 	sort.Strings(domainNames)
 	for i, d := range domainNames {
-		domainNames[i] = reverse(d)
+		domainNames[i] = stringReverse(d)
 	}
 	for i := 0; i < len(domainNames)-1; i++ {
 		if strings.HasSuffix(domainNames[i+1], "."+domainNames[i]) {
@@ -362,7 +362,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) GetKVConfig() (kvparams.Config, error) {
+func (c *Config) DatabaseParams() (kvparams.Config, error) {
 	p := kvparams.Config{
 		Type: c.Database.Type,
 	}
@@ -443,15 +443,13 @@ func (c *Config) GetAwsConfig() *aws.Config {
 	return cfg
 }
 
-func (c *Config) GetBlockstoreType() string {
+func (c *Config) BlockstoreType() string {
 	return c.Blockstore.Type
 }
 
-func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
-	cfg := c.GetAwsConfig()
-
+func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 	return blockparams.S3{
-		AwsConfig:                     cfg,
+		AwsConfig:                     c.GetAwsConfig(),
 		StreamingChunkSize:            c.Blockstore.S3.StreamingChunkSize,
 		StreamingChunkTimeout:         c.Blockstore.S3.StreamingChunkTimeout,
 		DiscoverBucketRegion:          c.Blockstore.S3.DiscoverBucketRegion,
@@ -461,7 +459,7 @@ func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
 	}, nil
 }
 
-func (c *Config) GetBlockAdapterLocalParams() (blockparams.Local, error) {
+func (c *Config) BlockstoreLocalParams() (blockparams.Local, error) {
 	localPath := c.Blockstore.Local.Path
 	path, err := homedir.Expand(localPath)
 	if err != nil {
@@ -471,14 +469,14 @@ func (c *Config) GetBlockAdapterLocalParams() (blockparams.Local, error) {
 	return blockparams.Local{Path: path}, nil
 }
 
-func (c *Config) GetBlockAdapterGSParams() (blockparams.GS, error) {
+func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {
 	return blockparams.GS{
 		CredentialsFile: c.Blockstore.GS.CredentialsFile,
 		CredentialsJSON: c.Blockstore.GS.CredentialsJSON,
 	}, nil
 }
 
-func (c *Config) GetBlockAdapterAzureParams() (blockparams.Azure, error) {
+func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 	return blockparams.Azure{
 		StorageAccount:   c.Blockstore.Azure.StorageAccount,
 		StorageAccessKey: c.Blockstore.Azure.StorageAccessKey,
@@ -487,7 +485,7 @@ func (c *Config) GetBlockAdapterAzureParams() (blockparams.Azure, error) {
 	}, nil
 }
 
-func (c *Config) GetAuthEncryptionSecret() []byte {
+func (c *Config) AuthEncryptionSecret() []byte {
 	secret := c.Auth.Encrypt.SecretKey
 	if len(secret) == 0 {
 		panic(fmt.Errorf("%w. Please set it to a unique, randomly generated value and store it somewhere safe", ErrMissingSecretKey))
@@ -529,7 +527,7 @@ func (c *Config) GetCommittedTierFSParams(adapter block.Adapter) (*pyramidparams
 	}, nil
 }
 
-func (c *Config) GetCommittedParams() committed.Params {
+func (c *Config) CommittedParams() committed.Params {
 	return committed.Params{
 		MinRangeSizeBytes:          c.Committed.Permanent.MinRangeSizeBytes,
 		MaxRangeSizeBytes:          c.Committed.Permanent.MaxRangeSizeBytes,
@@ -542,7 +540,7 @@ func (c *Config) IsAuthTypeAPI() bool {
 	return c.Auth.API.Endpoint != ""
 }
 
-func (c *Config) GetUISnippets() []apiparams.CodeSnippet {
+func (c *Config) UISnippets() []apiparams.CodeSnippet {
 	snippets := make([]apiparams.CodeSnippet, 0, len(c.UI.Snippets))
 	for _, item := range c.UI.Snippets {
 		snippets = append(snippets, apiparams.CodeSnippet{

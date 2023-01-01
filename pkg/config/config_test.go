@@ -91,7 +91,7 @@ func TestConfig_EnvironmentVariables(t *testing.T) {
 
 	c, err := newConfigFromFile("testdata/valid_config.yaml")
 	testutil.Must(t, err)
-	kvParams, err := c.GetKVConfig()
+	kvParams, err := c.DatabaseParams()
 	testutil.Must(t, err)
 	if kvParams.Postgres.ConnectionString != dbString {
 		t.Errorf("got DB connection string %s, expected to override to %s", kvParams.Postgres.ConnectionString, dbString)

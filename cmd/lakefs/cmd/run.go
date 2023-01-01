@@ -109,7 +109,7 @@ var runCmd = &cobra.Command{
 		ctx := cmd.Context()
 		logger.WithField("version", version.Version).Info("lakeFS run")
 
-		kvParams, err := cfg.GetKVConfig()
+		kvParams, err := cfg.DatabaseParams()
 		if err != nil {
 			logger.WithError(err).Fatal("Get KV params")
 		}
@@ -147,7 +147,7 @@ var runCmd = &cobra.Command{
 			authService, err = auth.NewAPIAuthService(
 				cfg.Auth.API.Endpoint,
 				cfg.Auth.API.Token,
-				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
 				cfg.Auth.Cache, nil, apiEmailer)
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create authentication service")
@@ -155,7 +155,7 @@ var runCmd = &cobra.Command{
 		} else {
 			authService = auth.NewAuthService(
 				storeMessage,
-				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
 				emailer,
 				cfg.Auth.Cache,
 				logger.WithField("service", "auth_service"),
@@ -163,7 +163,7 @@ var runCmd = &cobra.Command{
 		}
 
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		blockstoreType := cfg.GetBlockstoreType()
+		blockstoreType := cfg.BlockstoreType()
 		if blockstoreType == "local" || blockstoreType == "mem" {
 			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
 			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
@@ -276,7 +276,7 @@ var runCmd = &cobra.Command{
 			emailer,
 			templater,
 			cfg.Gateways.S3.DomainNames,
-			cfg.GetUISnippets(),
+			cfg.UISnippets(),
 			oidcProvider,
 			oauthConfig,
 			upload.DefaultPathProvider,

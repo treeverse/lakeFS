@@ -153,7 +153,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	c.SetHooksHandler(actionsService)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)
-	kvParams, err := cfg.GetKVConfig()
+	kvParams, err := cfg.DatabaseParams()
 	testutil.Must(t, err)
 	migrator := kv.NewDatabaseMigrator(kvParams)
 

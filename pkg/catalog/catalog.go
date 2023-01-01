@@ -212,7 +212,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg)
 	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg)
 
-	committedParams := cfg.Config.GetCommittedParams()
+	committedParams := cfg.Config.CommittedParams()
 	sstableMetaRangeManager, err := committed.NewMetaRangeManager(
 		committedParams,
 		// TODO(ariels): Use separate range managers for metaranges and ranges
