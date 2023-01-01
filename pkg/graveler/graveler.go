@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -1474,6 +1475,17 @@ func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, bra
 		})
 }
 
+func (g *Graveler) deleteConsumer(ctx context.Context, cancel context.CancelFunc, repository *RepositoryRecord, branch *Branch, cachedMetaRangeID *MetaRangeID, keysChan <-chan Key) error {
+	for key := range keysChan {
+		err := g.deleteUnsafe(ctx, repository, branch, key, cachedMetaRangeID)
+		if err != nil {
+			cancel()
+			return err
+		}
+	}
+	return nil
+}
+
 // DeleteBatch delete batch of keys. Keys length is limited to DeleteKeysMaxSize. Return error can be of type
 // 'multi-error' holds DeleteError with each key/error that failed as part of the batch.
 func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, keys []Key) error {
@@ -1487,17 +1499,36 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 	if len(keys) > DeleteKeysMaxSize {
 		return fmt.Errorf("keys length (%d) passed the maximum allowed(%d): %w", len(keys), DeleteKeysMaxSize, ErrInvalidValue)
 	}
-	var m *multierror.Error
+
 	err = g.safeBranchWrite(ctx, g.log(ctx).WithField("operation", "delete_keys"),
 		repository, branchID, func(branch *Branch) error {
-			var cachedMetaRangeID MetaRangeID // used to cache the committed branch metarange ID
+			commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
+			if err != nil {
+				return err
+			}
+			cachedMetaRangeID := commit.MetaRangeID
+
+			deleteWorkers := int(math.Min(float64(100), float64(len(keys))))
+			keysChan := make(chan Key, len(keys))
+			var wg multierror.Group
+			cctx, cancel := context.WithCancel(ctx)
+			defer cancel()
+			for i := 0; i < deleteWorkers; i++ {
+				wg.Go(func() error {
+					return g.deleteConsumer(cctx, cancel, repository, branch, &cachedMetaRangeID, keysChan)
+				})
+			}
+
 			for _, key := range keys {
-				err := g.deleteUnsafe(ctx, repository, branch, key, &cachedMetaRangeID)
-				if err != nil {
-					m = multierror.Append(m, &DeleteError{Key: key, Err: err})
+				select {
+				case <-cctx.Done():
+					break
+				default:
+					keysChan <- key
 				}
 			}
-			return m.ErrorOrNil()
+			close(keysChan)
+			return wg.Wait().ErrorOrNil()
 		})
 	return err
 }
