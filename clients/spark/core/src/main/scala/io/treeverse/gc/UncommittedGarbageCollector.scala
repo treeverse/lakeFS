@@ -13,6 +13,7 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
 
+import java.net.URI
 import java.util.Date
 import java.time.format.DateTimeFormatter
 
@@ -156,7 +157,11 @@ object UncommittedGarbageCollector {
 
         var uncommittedDF =
           if (uncommittedGCRunInfo.uncommittedLocation != "") {
-            spark.read.parquet(uncommittedGCRunInfo.uncommittedLocation)
+            val uncommittedLocation =
+              ApiClient
+                .translateURI(new URI(uncommittedGCRunInfo.uncommittedLocation), storageType)
+                .toString
+            spark.read.parquet(uncommittedLocation)
           } else {
             // in case of no uncommitted entries
             spark.emptyDataFrame.withColumn("physical_address", lit(""))
