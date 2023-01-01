@@ -4,8 +4,7 @@ import argparse
 import subprocess
 from tempfile import NamedTemporaryFile
 import os
-import posixpath                # Works for URL pathname manipulation on Windows too
-import shlex
+import posixpath  # Works for URL pathname manipulation on Windows too
 import sys
 import time
 from datetime import datetime
@@ -23,7 +22,13 @@ SUCCESS_MSG = "Export completed successfully!"
 def create_rclone_conf_file():
     with open('rclone.conf.template') as f:
         src = Template(f.read())
-        vars = {'lakefs_access_key': LAKEFS_ACCESS_KEY, 'lakefs_secret_key': LAKEFS_SECRET_KEY, 'lakefs_endpoint': LAKEFS_ENDPOINT, 's3_access_key': S3_ACCESS_KEY, 's3_secret_key': S3_SECRET_KEY}
+        vars = {
+            'lakefs_access_key': LAKEFS_ACCESS_KEY,
+            'lakefs_secret_key': LAKEFS_SECRET_KEY,
+            'lakefs_endpoint': LAKEFS_ENDPOINT,
+            's3_access_key': S3_ACCESS_KEY,
+            's3_secret_key': S3_SECRET_KEY,
+        }
         res = src.substitute(vars)
     with open('rclone.conf', 'w+') as f:
         f.write(res)
@@ -33,11 +38,22 @@ def create_rclone_conf_file():
 def set_args():
     parser = argparse.ArgumentParser(description='Process lakeFS export.')
 
-    parser.add_argument('Repo', metavar='repo', type=str, help='name of lakeFS repository')
-    parser.add_argument('Dest', metavar='dest', type=str, help='path of destination')
-    parser.add_argument('--branch', metavar='branch', type=str, action='store', help='relevant branch in the repository to export from')
-    parser.add_argument('--commit_id', metavar='commit', type=str, action='store', help='relevant commit on the repository to export from')
-    parser.add_argument('--prev_commit_id', metavar='previous-commit', type=str, action='store', help='if specified, export only the difference between this commit ID and the head of the branch')
+    parser.add_argument('Repo', metavar='repo', type=str,
+                        help='name of lakeFS repository')
+    parser.add_argument('Dest', metavar='dest', type=str,
+                        help='path of destination')
+    parser.add_argument('--branch', metavar='branch', type=str, action='store',
+                        help=('relevant branch in the repository to export '
+                              'from'))
+    parser.add_argument('--commit_id', metavar='commit', type=str,
+                        action='store',
+                        help=('relevant commit on the repository to export'
+                              'from'))
+    parser.add_argument('--prev_commit_id', metavar='previous-commit',
+                        type=str, action='store',
+                        help=('if specified, export only the difference '
+                              'between this commit ID and the head of the '
+                              'branch'))
 
     args = parser.parse_args()
     return args
@@ -64,8 +80,8 @@ def error(msg, statuscode=1):
     print(msg, file=sys.stderr)
     exit(statuscode)
 
-def main():
 
+def main():
     # create rclone configuration file
     create_rclone_conf_file()
 
@@ -73,9 +89,9 @@ def main():
 
     reference = ""
     source = "lakefs:" + args.Repo + "/"
-    has_branch = (args.branch != None)
-    has_commit = (args.commit_id != None)
-    export_diff = (args.prev_commit_id != None)
+    has_branch = (args.branch is not None)
+    has_commit = (args.commit_id is not None)
+    export_diff = (args.prev_commit_id is not None)
     if has_branch and not has_commit:
         source += args.branch + "/"
         reference = args.branch
@@ -85,29 +101,33 @@ def main():
     elif has_branch:            # and has_commit
         error("Cannot set both branch and commit_id")
     else:                       # not has_branch and not has_commit
-         error("Must set one of branch, commit_id")
+        error("Must set one of branch, commit_id")
 
     if has_commit and export_diff:
         error("Cannot export diff between two commits.")
 
     now = datetime.utcfromtimestamp(time.time())
-    status_file_name_base = f"EXPORT_{reference}_{now.strftime('%d-%m-%Y_%H:%M:%S')}"
+    status_file_name_base = (f"EXPORT_{reference}_"
+                             f"{now.strftime('%d-%m-%Y_%H:%M:%S')}")
 
     rclone_command = "sync" if export_diff else "copy"
-    cmd = ["rclone", rclone_command, source, args.Dest, "--config=rclone.conf", "--create-empty-src-dirs"]
+    cmd = ["rclone", rclone_command, source, args.Dest, "--config=rclone.conf",
+           "--create-empty-src-dirs"]
 
     process = subprocess.run(cmd)
     if process.returncode != 0:
         error(f"rclone {rclone_command} failed")
 
     # check export and create status file
-    check_cmd = ["rclone", "check", source, args.Dest, "--config=rclone.conf", "--combined=-"]
+    check_cmd = ["rclone", "check", source, args.Dest,
+                 "--config=rclone.conf", "--combined=-"]
     # if not export_diff:
     #     # Use the flag --one-way to check a copy command: only need to check
     #     # that the source files were copied to the destination
     #     check_cmd.append("--one-way")
 
-    check_process = subprocess.Popen(check_cmd, stdout=subprocess.PIPE, text=True)
+    check_process = subprocess.Popen(check_cmd, stdout=subprocess.PIPE,
+                                     text=True)
 
     local_status = NamedTemporaryFile(
         prefix="lakefs_export_status_", suffix=".temp",
@@ -127,10 +147,12 @@ def main():
             print(SUCCESS_MSG, file=local_status)
         local_status.close()
 
-        status_file_name = f"{status_file_name_base}_{'SUCCESS' if success else 'FAILURE'}"
+        status_file_name = (f"{status_file_name_base}_"
+                            f"{'SUCCESS' if success else 'FAILURE'}")
         dest_path = posixpath.join(args.Dest, status_file_name)
 
-        upload_process = subprocess.run(["rclone", "copyto", local_status.name, dest_path, "--config=rclone.conf"])
+        upload_process = subprocess.run(["rclone", "copyto", local_status.name,
+                                         dest_path, "--config=rclone.conf"])
         if upload_process.returncode != 0:
             print("Failed to upload status file", file=sys.stderr)
     finally:
