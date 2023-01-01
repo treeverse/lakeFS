@@ -2,7 +2,7 @@ package auth
 
 import (
 	"context"
-	b64 "encoding/base64"
+	"encoding/base64"
 	"errors"
 	"runtime"
 	"strconv"
@@ -184,7 +184,7 @@ func (m *KVMetadataManager) UpdateSetupTimestamp(ctx context.Context, ts time.Ti
 func (m *KVMetadataManager) UpdateCommPrefs(ctx context.Context, commPrefs CommPrefs) (string, error) {
 	encodedEmail := ""
 	if commPrefs.UserEmail != "" {
-		encodedEmail = b64.StdEncoding.EncodeToString([]byte(commPrefs.UserEmail))
+		encodedEmail = base64.StdEncoding.EncodeToString([]byte(commPrefs.UserEmail))
 	}
 
 	return m.installationID, m.writeMetadata(ctx, map[string]string{

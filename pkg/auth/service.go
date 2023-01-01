@@ -129,7 +129,7 @@ type Service interface {
 	ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error
 }
 
-func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.MessageType, params *model.PaginationParams, prefix []byte, secondary bool) ([]proto.Message, *model.Paginator, error) {
+func (s *AuthService) ListKVPaged(ctx context.Context, protoType protoreflect.MessageType, params *model.PaginationParams, prefix []byte, secondary bool) ([]proto.Message, *model.Paginator, error) {
 	var (
 		it    kv.MessageIterator
 		err   error
@@ -174,7 +174,7 @@ func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.
 	return entries, p, nil
 }
 
-type KVAuthService struct {
+type AuthService struct {
 	store       *kv.StoreMessage
 	secretStore crypt.SecretStore
 	cache       Cache
@@ -182,7 +182,7 @@ type KVAuthService struct {
 	*EmailInviteHandler
 }
 
-func NewKVAuthService(store *kv.StoreMessage, secretStore crypt.SecretStore, emailer *email.Emailer, cacheConf params.ServiceCache, logger logging.Logger) *KVAuthService {
+func NewAuthService(store *kv.StoreMessage, secretStore crypt.SecretStore, emailer *email.Emailer, cacheConf params.ServiceCache, logger logging.Logger) *AuthService {
 	logger.Info("initialized Auth service")
 	var cache Cache
 	if cacheConf.Enabled {
@@ -190,7 +190,7 @@ func NewKVAuthService(store *kv.StoreMessage, secretStore crypt.SecretStore, ema
 	} else {
 		cache = &DummyCache{}
 	}
-	res := &KVAuthService{
+	res := &AuthService{
 		store:       store,
 		secretStore: secretStore,
 		cache:       cache,
@@ -200,15 +200,15 @@ func NewKVAuthService(store *kv.StoreMessage, secretStore crypt.SecretStore, ema
 	return res
 }
 
-func (s *KVAuthService) SecretStore() crypt.SecretStore {
+func (s *AuthService) SecretStore() crypt.SecretStore {
 	return s.secretStore
 }
 
-func (s *KVAuthService) Cache() Cache {
+func (s *AuthService) Cache() Cache {
 	return s.cache
 }
 
-func (s *KVAuthService) CreateUser(ctx context.Context, user *model.User) (string, error) {
+func (s *AuthService) CreateUser(ctx context.Context, user *model.User) (string, error) {
 	if err := model.ValidateAuthEntityID(user.Username); err != nil {
 		return InvalidUserID, err
 	}
@@ -224,7 +224,7 @@ func (s *KVAuthService) CreateUser(ctx context.Context, user *model.User) (strin
 	return user.Username, err
 }
 
-func (s *KVAuthService) DeleteUser(ctx context.Context, username string) error {
+func (s *AuthService) DeleteUser(ctx context.Context, username string) error {
 	if _, err := s.GetUser(ctx, username); err != nil {
 		return err
 	}
@@ -276,7 +276,7 @@ func (s *KVAuthService) DeleteUser(ctx context.Context, username string) error {
 
 type UserPredicate func(u *model.UserData) bool
 
-func (s *KVAuthService) getUserByPredicate(ctx context.Context, key userKey, predicate UserPredicate) (*model.User, error) {
+func (s *AuthService) getUserByPredicate(ctx context.Context, key userKey, predicate UserPredicate) (*model.User, error) {
 	return s.cache.GetUser(key, func() (*model.User, error) {
 		m := &model.UserData{}
 		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), []byte(""))
@@ -302,11 +302,11 @@ func (s *KVAuthService) getUserByPredicate(ctx context.Context, key userKey, pre
 }
 
 // GetUserByID TODO(niro): In KV ID == username, Remove this method when DB implementation is deleted
-func (s *KVAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
+func (s *AuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
 	return s.GetUser(ctx, userID)
 }
 
-func (s *KVAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
+func (s *AuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
 	return s.cache.GetUser(userKey{username: username}, func() (*model.User, error) {
 		userKey := model.UserPath(username)
 		m := model.UserData{}
@@ -321,19 +321,19 @@ func (s *KVAuthService) GetUser(ctx context.Context, username string) (*model.Us
 	})
 }
 
-func (s *KVAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+func (s *AuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	return s.getUserByPredicate(ctx, userKey{email: email}, func(value *model.UserData) bool {
 		return value.Email == email
 	})
 }
 
-func (s *KVAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
+func (s *AuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
 	return s.getUserByPredicate(ctx, userKey{externalID: externalID}, func(value *model.UserData) bool {
 		return value.ExternalId == externalID
 	})
 }
 
-func (s *KVAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+func (s *AuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
 	var user model.UserData
 	usersKey := model.UserPath(params.Prefix)
 
@@ -344,7 +344,7 @@ func (s *KVAuthService) ListUsers(ctx context.Context, params *model.PaginationP
 	return model.ConvertUsersDataList(msgs), paginator, err
 }
 
-func (s *KVAuthService) ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
+func (s *AuthService) ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
 	var credential model.CredentialData
 	credentialsKey := model.CredentialPath(username, params.Prefix)
 	msgs, paginator, err := s.ListKVPaged(ctx, (&credential).ProtoReflect().Type(), params, credentialsKey, false)
@@ -358,7 +358,7 @@ func (s *KVAuthService) ListUserCredentials(ctx context.Context, username string
 	return creds, paginator, nil
 }
 
-func (s *KVAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName string, username string) error {
+func (s *AuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName string, username string) error {
 	if _, err := s.GetUser(ctx, username); err != nil {
 		return err
 	}
@@ -379,7 +379,7 @@ func (s *KVAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayNam
 	return nil
 }
 
-func (s *KVAuthService) DetachPolicyFromUserNoValidation(ctx context.Context, policyDisplayName, username string) error {
+func (s *AuthService) DetachPolicyFromUserNoValidation(ctx context.Context, policyDisplayName, username string) error {
 	pu := model.UserPolicyPath(username, policyDisplayName)
 	err := s.store.DeleteMsg(ctx, model.PartitionKey, pu)
 	if err != nil {
@@ -388,7 +388,7 @@ func (s *KVAuthService) DetachPolicyFromUserNoValidation(ctx context.Context, po
 	return nil
 }
 
-func (s *KVAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error {
+func (s *AuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error {
 	if _, err := s.GetUser(ctx, username); err != nil {
 		return err
 	}
@@ -398,7 +398,7 @@ func (s *KVAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayN
 	return s.DetachPolicyFromUserNoValidation(ctx, policyDisplayName, username)
 }
 
-func (s *KVAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+func (s *AuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.PolicyData
 	userPolicyKey := model.UserPolicyPath(username, params.Prefix)
 
@@ -409,7 +409,7 @@ func (s *KVAuthService) ListUserPolicies(ctx context.Context, username string, p
 	return model.ConvertPolicyDataList(msgs), paginator, err
 }
 
-func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+func (s *AuthService) getEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	if _, err := s.GetUser(ctx, username); err != nil {
 		return nil, nil, err
 	}
@@ -493,7 +493,7 @@ func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username strin
 	return resPolicies, &resPaginator, nil
 }
 
-func (s *KVAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+func (s *AuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	return ListEffectivePolicies(ctx, username, params, s.getEffectivePolicies, s.cache)
 }
 
@@ -515,7 +515,7 @@ func ListEffectivePolicies(ctx context.Context, username string, params *model.P
 	return getEffectivePolicies(ctx, username, params)
 }
 
-func (s *KVAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+func (s *AuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.PolicyData
 	groupPolicyKey := model.GroupPolicyPath(groupDisplayName, params.Prefix)
 
@@ -526,7 +526,7 @@ func (s *KVAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName 
 	return model.ConvertPolicyDataList(msgs), paginator, err
 }
 
-func (s *KVAuthService) CreateGroup(ctx context.Context, group *model.Group) error {
+func (s *AuthService) CreateGroup(ctx context.Context, group *model.Group) error {
 	if err := model.ValidateAuthEntityID(group.DisplayName); err != nil {
 		return err
 	}
@@ -542,7 +542,7 @@ func (s *KVAuthService) CreateGroup(ctx context.Context, group *model.Group) err
 	return err
 }
 
-func (s *KVAuthService) DeleteGroup(ctx context.Context, groupDisplayName string) error {
+func (s *AuthService) DeleteGroup(ctx context.Context, groupDisplayName string) error {
 	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
 		return err
 	}
@@ -592,7 +592,7 @@ func (s *KVAuthService) DeleteGroup(ctx context.Context, groupDisplayName string
 	return err
 }
 
-func (s *KVAuthService) GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error) {
+func (s *AuthService) GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error) {
 	groupKey := model.GroupPath(groupDisplayName)
 	m := model.GroupData{}
 	_, err := s.store.GetMsg(ctx, model.PartitionKey, groupKey, &m)
@@ -605,7 +605,7 @@ func (s *KVAuthService) GetGroup(ctx context.Context, groupDisplayName string) (
 	return model.GroupFromProto(&m), nil
 }
 
-func (s *KVAuthService) ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
+func (s *AuthService) ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
 	var group model.GroupData
 	groupKey := model.GroupPath(params.Prefix)
 
@@ -616,7 +616,7 @@ func (s *KVAuthService) ListGroups(ctx context.Context, params *model.Pagination
 	return model.ConvertGroupDataList(msgs), paginator, err
 }
 
-func (s *KVAuthService) AddUserToGroup(ctx context.Context, username, groupDisplayName string) error {
+func (s *AuthService) AddUserToGroup(ctx context.Context, username, groupDisplayName string) error {
 	if _, err := s.GetUser(ctx, username); err != nil {
 		return err
 	}
@@ -636,7 +636,7 @@ func (s *KVAuthService) AddUserToGroup(ctx context.Context, username, groupDispl
 	return err
 }
 
-func (s *KVAuthService) removeUserFromGroupNoValidation(ctx context.Context, username, groupDisplayName string) error {
+func (s *AuthService) removeUserFromGroupNoValidation(ctx context.Context, username, groupDisplayName string) error {
 	gu := model.GroupUserPath(groupDisplayName, username)
 	err := s.store.DeleteMsg(ctx, model.PartitionKey, gu)
 	if err != nil {
@@ -645,7 +645,7 @@ func (s *KVAuthService) removeUserFromGroupNoValidation(ctx context.Context, use
 	return err
 }
 
-func (s *KVAuthService) RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error {
+func (s *AuthService) RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error {
 	if _, err := s.GetUser(ctx, username); err != nil {
 		return err
 	}
@@ -655,7 +655,7 @@ func (s *KVAuthService) RemoveUserFromGroup(ctx context.Context, username, group
 	return s.removeUserFromGroupNoValidation(ctx, username, groupDisplayName)
 }
 
-func (s *KVAuthService) ListUserGroups(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
+func (s *AuthService) ListUserGroups(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
 	if _, err := s.GetUser(ctx, username); err != nil {
 		return nil, nil, err
 	}
@@ -695,7 +695,7 @@ func (s *KVAuthService) ListUserGroups(ctx context.Context, username string, par
 	return userGroups, &resPaginator, nil
 }
 
-func (s *KVAuthService) ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+func (s *AuthService) ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
 	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
 		return nil, nil, err
 	}
@@ -729,7 +729,7 @@ func ValidatePolicy(policy *model.Policy) error {
 	return nil
 }
 
-func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.Policy, update bool) error {
+func (s *AuthService) WritePolicy(ctx context.Context, policy *model.Policy, update bool) error {
 	if err := ValidatePolicy(policy); err != nil {
 		return err
 	}
@@ -757,7 +757,7 @@ func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.Policy, u
 	return nil
 }
 
-func (s *KVAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
+func (s *AuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
 	policyKey := model.PolicyPath(policyDisplayName)
 	p := model.PolicyData{}
 	_, err := s.store.GetMsg(ctx, model.PartitionKey, policyKey, &p)
@@ -770,7 +770,7 @@ func (s *KVAuthService) GetPolicy(ctx context.Context, policyDisplayName string)
 	return model.PolicyFromProto(&p), nil
 }
 
-func (s *KVAuthService) DeletePolicy(ctx context.Context, policyDisplayName string) error {
+func (s *AuthService) DeletePolicy(ctx context.Context, policyDisplayName string) error {
 	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
 		return err
 	}
@@ -814,7 +814,7 @@ func (s *KVAuthService) DeletePolicy(ctx context.Context, policyDisplayName stri
 	return err
 }
 
-func (s *KVAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+func (s *AuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.PolicyData
 	policyKey := model.PolicyPath(params.Prefix)
 
@@ -825,13 +825,13 @@ func (s *KVAuthService) ListPolicies(ctx context.Context, params *model.Paginati
 	return model.ConvertPolicyDataList(msgs), paginator, err
 }
 
-func (s *KVAuthService) CreateCredentials(ctx context.Context, username string) (*model.Credential, error) {
+func (s *AuthService) CreateCredentials(ctx context.Context, username string) (*model.Credential, error) {
 	accessKeyID := keys.GenAccessKeyID()
 	secretAccessKey := keys.GenSecretAccessKey()
 	return s.AddCredentials(ctx, username, accessKeyID, secretAccessKey)
 }
 
-func (s *KVAuthService) AddCredentials(ctx context.Context, username, accessKeyID, secretAccessKey string) (*model.Credential, error) {
+func (s *AuthService) AddCredentials(ctx context.Context, username, accessKeyID, secretAccessKey string) (*model.Credential, error) {
 	if !IsValidAccessKeyID(accessKeyID) {
 		return nil, ErrInvalidAccessKeyID
 	}
@@ -874,7 +874,7 @@ func IsValidAccessKeyID(key string) bool {
 	return l >= 3 && l <= 20
 }
 
-func (s *KVAuthService) DeleteCredentials(ctx context.Context, username, accessKeyID string) error {
+func (s *AuthService) DeleteCredentials(ctx context.Context, username, accessKeyID string) error {
 	if _, err := s.GetUser(ctx, username); err != nil {
 		return err
 	}
@@ -890,7 +890,7 @@ func (s *KVAuthService) DeleteCredentials(ctx context.Context, username, accessK
 	return err
 }
 
-func (s *KVAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
+func (s *AuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
 	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
 		return err
 	}
@@ -911,7 +911,7 @@ func (s *KVAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayNa
 	return err
 }
 
-func (s *KVAuthService) DetachPolicyFromGroupNoValidation(ctx context.Context, policyDisplayName, groupDisplayName string) error {
+func (s *AuthService) DetachPolicyFromGroupNoValidation(ctx context.Context, policyDisplayName, groupDisplayName string) error {
 	pg := model.GroupPolicyPath(groupDisplayName, policyDisplayName)
 	err := s.store.DeleteMsg(ctx, model.PartitionKey, pg)
 	if err != nil {
@@ -920,7 +920,7 @@ func (s *KVAuthService) DetachPolicyFromGroupNoValidation(ctx context.Context, p
 	return err
 }
 
-func (s *KVAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
+func (s *AuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
 	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
 		return err
 	}
@@ -930,7 +930,7 @@ func (s *KVAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplay
 	return s.DetachPolicyFromGroupNoValidation(ctx, policyDisplayName, groupDisplayName)
 }
 
-func (s *KVAuthService) GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error) {
+func (s *AuthService) GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error) {
 	if _, err := s.GetUser(ctx, username); err != nil {
 		return nil, err
 	}
@@ -952,7 +952,7 @@ func (s *KVAuthService) GetCredentialsForUser(ctx context.Context, username, acc
 	return c, nil
 }
 
-func (s *KVAuthService) GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error) {
+func (s *AuthService) GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error) {
 	return s.cache.GetCredential(accessKeyID, func() (*model.Credential, error) {
 		m := &model.UserData{}
 		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), []byte(""))
@@ -984,7 +984,7 @@ func (s *KVAuthService) GetCredentials(ctx context.Context, accessKeyID string) 
 	})
 }
 
-func (s *KVAuthService) HashAndUpdatePassword(ctx context.Context, username string, password string) error {
+func (s *AuthService) HashAndUpdatePassword(ctx context.Context, username string, password string) error {
 	user, err := s.GetUser(ctx, username)
 	if err != nil {
 		return err
@@ -1074,7 +1074,7 @@ func checkPermissions(node permissions.Node, username string, policies []*model.
 	return allowed
 }
 
-func (s *KVAuthService) Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error) {
+func (s *AuthService) Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error) {
 	policies, _, err := s.ListEffectivePolicies(ctx, req.Username, &model.PaginationParams{
 		After:  "", // all
 		Amount: -1, // all
@@ -1096,7 +1096,7 @@ func (s *KVAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 	return &AuthorizationResponse{Allowed: true}, nil
 }
 
-func (s *KVAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error {
+func (s *AuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error {
 	return claimTokenIDOnce(ctx, tokenID, expiresAt, s.markTokenSingleUse)
 }
 
@@ -1113,7 +1113,7 @@ func claimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64, mark
 }
 
 // markTokenSingleUse returns true if token is valid for single use
-func (s *KVAuthService) markTokenSingleUse(ctx context.Context, tokenID string, tokenExpiresAt time.Time) (bool, error) {
+func (s *AuthService) markTokenSingleUse(ctx context.Context, tokenID string, tokenExpiresAt time.Time) (bool, error) {
 	tokenPath := model.ExpiredTokenPath(tokenID)
 	m := model.TokenData{TokenId: tokenID, ExpiredAt: timestamppb.New(tokenExpiresAt)}
 	err := s.store.SetMsgIf(ctx, model.PartitionKey, tokenPath, &m, nil)
@@ -1130,7 +1130,7 @@ func (s *KVAuthService) markTokenSingleUse(ctx context.Context, tokenID string, 
 	return true, nil
 }
 
-func (s *KVAuthService) deleteTokens(ctx context.Context) error {
+func (s *AuthService) deleteTokens(ctx context.Context) error {
 	it, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.TokenData{}).ProtoReflect().Type(), model.PartitionKey, model.ExpiredTokensPath(), kv.IteratorOptionsFrom([]byte("")))
 	if err != nil {
 		return err
