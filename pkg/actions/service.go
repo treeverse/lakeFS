@@ -12,9 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/auth"
-
 	"github.com/hashicorp/go-multierror"
+	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -178,6 +177,20 @@ func RunByBranchPath(repoID, branchID, runID string) []byte {
 
 func RunByCommitPath(repoID, commitID, runID string) []byte {
 	return []byte(kv.FormatPath(byCommitPath(repoID, commitID), runID))
+}
+
+type RunResultIterator interface {
+	Next() bool
+	Value() *RunResult
+	Err() error
+	Close()
+}
+
+type TaskResultIterator interface {
+	Next() bool
+	Value() *TaskResult
+	Err() error
+	Close()
 }
 
 type Service interface {

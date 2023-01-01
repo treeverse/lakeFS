@@ -8,14 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/testutil"
-
+	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
-
 	"github.com/treeverse/lakefs/pkg/graveler"
-
-	"github.com/treeverse/lakefs/pkg/actions"
+	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 func TestNewLuaHook(t *testing.T) {
