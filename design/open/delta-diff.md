@@ -128,7 +128,7 @@ To overcome this scenario, we'll use special diff credentials as follows:
 2. The DiffService checks if the user has "diff credentials" in the DB:
     1. If there are such credentials, it will use them.
     2. If there aren't such, it will generate the credentials and save them: `{AKIA: DIFF-<>, SAK: <>}`. The `DIFF` prefix will be used to identify "diff credentials".
-3. The DiffService will pass the credentials to the Delta Diff plugin during the call as environment variables (or part of the `gRPC` call).
+3. The DiffService will pass the credentials to the Delta Diff plugin during the call as part of the `gRPC` call.
 
 ### API
 
