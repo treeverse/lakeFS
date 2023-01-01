@@ -92,7 +92,7 @@ Plugins can be written and consumed in almost every major language. This is achi
 The DiffService will be an internal component in lakeFS which will serve as the Core system.  
 In order to realize which diff plugins are available, we shall use new configuration values:
 1. `LAKEFS_PLUGINS_LOCATION`
-   The DiffService will use this location to search for the required plugin. Defaults to lakeFS's binary directory.
+   The DiffService will use this location to search for the required plugin. Defaults to lakeFS's configuration file directory.
 2. `LAKEFS_PLUGIN_DIFF_{TYPE OF DIFF}`
    The DiffService will use the name of binary provided by this env var to perform the diff. For instance, `LAKEFS_PLUGIN_DIFF_DELTA=deltaDiffBinary`
    The DiffService will use the [plugins' location](https://github.com/hashicorp/terraform/blob/main/plugins.go) and the diff binary to load the plugin and request a diff.
