@@ -218,7 +218,11 @@ func (s *BufferedCollector) getInstallationID() string {
 	return s.installationID
 }
 
-func (s *BufferedCollector) incr(k Metric) {
+func (s *BufferedCollector) incr(k Event) {
+	s.update(Metric{k, 1})
+}
+
+func (s *BufferedCollector) update(k Metric) {
 	s.cache[k.Event] += k.Value
 }
 
@@ -270,13 +274,13 @@ func (s *BufferedCollector) Run(ctx context.Context) {
 			select {
 			case w := <-s.writes:
 				// collect events, and flush if needed by size
-				s.incr(w)
+				s.update(w)
 				if len(s.cache) >= s.flushSize {
 					s.flush()
 				}
 			case <-s.heartbeatTicker.Tick():
 				// collect heartbeat
-				s.incr(Metric{Event{
+				s.update(Metric{Event{
 					Class: "global",
 					Name:  "heartbeat",
 				}, 1})
@@ -320,7 +324,7 @@ func (s *BufferedCollector) Close() {
 	// drain writes
 	close(s.writes)
 	for w := range s.writes {
-		s.incr(w)
+		s.update(w)
 	}
 	metrics := makeMetrics(s.cache)
 	s.send(metrics)
