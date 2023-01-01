@@ -31,6 +31,7 @@ type EntriesIterator struct {
 	currEntryIdx int
 	err          error
 	store        *Store
+	options      kv.ScanOptions
 }
 
 const (
@@ -279,6 +280,11 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		return nil, kv.ErrMissingPartitionKey
 	}
 
+	// normalize batch size to be the minimum between ScanPageSize and ScanOptions
+	if options.BatchSize == 0 || s.Params.ScanPageSize < options.BatchSize {
+		options.BatchSize = s.Params.ScanPageSize
+	}
+
 	return s.scanInternal(ctx, partitionKey, options, true)
 }
 
@@ -288,20 +294,14 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey []byte, options k
 		err  error
 	)
 
-	// limit set to the minimum between option's limit and the configured scan page size
-	limit := s.Params.ScanPageSize
-	if options.BatchSize > 0 && options.BatchSize < limit {
-		limit = options.BatchSize
-	}
-
 	if options.KeyStart == nil {
-		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 ORDER BY key LIMIT $2`, partitionKey, limit)
+		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 ORDER BY key LIMIT $2`, partitionKey, options.BatchSize)
 	} else {
 		compareOp := ">="
 		if !includeStart {
 			compareOp = ">"
 		}
-		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key `+compareOp+` $2 ORDER BY key LIMIT $3`, partitionKey, options.KeyStart, limit)
+		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key `+compareOp+` $2 ORDER BY key LIMIT $3`, partitionKey, options.KeyStart, options.BatchSize)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("postgres scan: %w", err)
@@ -319,6 +319,7 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey []byte, options k
 		entries:      entries,
 		currEntryIdx: -1,
 		store:        s,
+		options:      options,
 	}, nil
 }
 
@@ -343,7 +344,7 @@ func (e *EntriesIterator) Next() bool {
 		}
 		partitionKey := e.entries[e.currEntryIdx-1].PartitionKey
 		key := e.entries[e.currEntryIdx-1].Key
-		tmpIter, err := e.store.scanInternal(e.ctx, partitionKey, kv.ScanOptions{KeyStart: key}, false)
+		tmpIter, err := e.store.scanInternal(e.ctx, partitionKey, kv.ScanOptions{KeyStart: key, BatchSize: e.options.BatchSize}, false)
 		if err != nil {
 			e.err = fmt.Errorf("scan paging: %w", err)
 			return false
