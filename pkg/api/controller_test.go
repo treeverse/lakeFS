@@ -3469,9 +3469,10 @@ func TestController_SendStatsEvents(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name               string
-		events             []api.StatsEvent
-		expectedStatusCode int
+		name                string
+		events              []api.StatsEvent
+		expectedEventCounts []int
+		expectedStatusCode  int
 	}{
 		{
 			name: "single_event_count_1",
@@ -3482,7 +3483,8 @@ func TestController_SendStatsEvents(t *testing.T) {
 					Count: 1,
 				},
 			},
-			expectedStatusCode: http.StatusNoContent,
+			expectedEventCounts: []int{1},
+			expectedStatusCode:  http.StatusNoContent,
 		},
 		{
 			name: "single_event_count_gt_1",
@@ -3493,7 +3495,8 @@ func TestController_SendStatsEvents(t *testing.T) {
 					Count: 3,
 				},
 			},
-			expectedStatusCode: http.StatusNoContent,
+			expectedEventCounts: []int{3},
+			expectedStatusCode:  http.StatusNoContent,
 		},
 		{
 			name: "multiple_events",
@@ -3509,7 +3512,8 @@ func TestController_SendStatsEvents(t *testing.T) {
 					Count: 1,
 				},
 			},
-			expectedStatusCode: http.StatusNoContent,
+			expectedEventCounts: []int{1, 1},
+			expectedStatusCode:  http.StatusNoContent,
 		},
 		{
 			name: "empty_usage_class",
@@ -3520,7 +3524,8 @@ func TestController_SendStatsEvents(t *testing.T) {
 					Count: 1,
 				},
 			},
-			expectedStatusCode: http.StatusBadRequest,
+			expectedEventCounts: []int{0},
+			expectedStatusCode:  http.StatusBadRequest,
 		},
 		{
 			name: "empty_usage_name",
@@ -3531,7 +3536,8 @@ func TestController_SendStatsEvents(t *testing.T) {
 					Count: 1,
 				},
 			},
-			expectedStatusCode: http.StatusBadRequest,
+			expectedEventCounts: []int{0},
+			expectedStatusCode:  http.StatusBadRequest,
 		},
 		{
 			name: "zero_usage_count",
@@ -3542,7 +3548,8 @@ func TestController_SendStatsEvents(t *testing.T) {
 					Count: 0,
 				},
 			},
-			expectedStatusCode: http.StatusNoContent,
+			expectedEventCounts: []int{0},
+			expectedStatusCode:  http.StatusNoContent,
 		},
 		{
 			name: "negative_usage_count",
@@ -3553,7 +3560,8 @@ func TestController_SendStatsEvents(t *testing.T) {
 					Count: -23,
 				},
 			},
-			expectedStatusCode: http.StatusBadRequest,
+			expectedEventCounts: []int{0},
+			expectedStatusCode:  http.StatusBadRequest,
 		},
 	}
 
@@ -3570,18 +3578,15 @@ func TestController_SendStatsEvents(t *testing.T) {
 				t.Fatalf("SendStatsEvents status code: %d, expected: %d", resp.StatusCode(), tt.expectedStatusCode)
 			}
 
-			// For successful requests, verify the expected events were sent
-			if tt.expectedStatusCode == http.StatusNoContent {
-				for _, sentEv := range tt.events {
-					var eventsOfClass int
-					for _, collectedEv := range deps.collector.Events {
-						if collectedEv.Class == sentEv.Class {
-							eventsOfClass++
-						}
+			for i, sentEv := range tt.events {
+				var collectedEventsCount int
+				for _, collectedMetric := range deps.collector.Metrics {
+					if collectedMetric.Event.Class == sentEv.Class && collectedMetric.Event.Name == sentEv.Name {
+						collectedEventsCount += int(collectedMetric.Value)
 					}
-					if eventsOfClass != sentEv.Count {
-						t.Fatalf("SendStatsEvents events for class %s count: %d, expected: %d", sentEv.Class, eventsOfClass, sentEv.Count)
-					}
+				}
+				if collectedEventsCount != tt.expectedEventCounts[i] {
+					t.Fatalf("SendStatsEvents events for class %s count: %d, expected: %d", sentEv.Class, collectedEventsCount, sentEv.Count)
 				}
 			}
 		})

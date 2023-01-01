@@ -3656,11 +3656,13 @@ func (c *Controller) SendStatsEvents(w http.ResponseWriter, r *http.Request, bod
 		}
 
 		if statsEv.Count < 0 {
-			writeError(w, r, http.StatusBadRequest, fmt.Sprintf("invalid usage count=%d", statsEv.Count))
+			writeError(w, r, http.StatusBadRequest, fmt.Sprintf("invalid value: count must be a positive integer"))
 			return
 		}
+	}
 
-		client := httputil.GetRequestLakeFSClient(r)
+	client := httputil.GetRequestLakeFSClient(r)
+	for _, statsEv := range body.Events {
 		ev := stats.Event{
 			Class:  statsEv.Class,
 			Name:   statsEv.Name,

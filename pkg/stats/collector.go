@@ -45,11 +45,6 @@ type Event struct {
 	Client     string `json:"client,omitempty"`
 }
 
-type EventWithCount struct {
-	ev    Event
-	count uint64
-}
-
 // ClearExtended clear values of *all* extended fields
 func (e Event) ClearExtended() Event {
 	e.Repository = ""
@@ -110,7 +105,7 @@ func (t *TimeTicker) Tick() <-chan time.Time {
 
 type BufferedCollector struct {
 	cache            keyIndex
-	writes           chan EventWithCount
+	writes           chan Metric
 	sender           Sender
 	sendTimeout      time.Duration
 	flushTicker      FlushTicker
@@ -133,7 +128,7 @@ type BufferedCollectorOpts func(s *BufferedCollector)
 
 func WithWriteBufferSize(bufferSize int) BufferedCollectorOpts {
 	return func(s *BufferedCollector) {
-		s.writes = make(chan EventWithCount, bufferSize)
+		s.writes = make(chan Metric, bufferSize)
 	}
 }
 
@@ -186,7 +181,7 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 	}
 	s := &BufferedCollector{
 		cache:           make(keyIndex),
-		writes:          make(chan EventWithCount, collectorEventBufferSize),
+		writes:          make(chan Metric, collectorEventBufferSize),
 		runtimeStats:    map[string]string{},
 		flushTicker:     &TimeTicker{ticker: time.NewTicker(flushDuration)},
 		flushSize:       flushSize,
@@ -223,8 +218,8 @@ func (s *BufferedCollector) getInstallationID() string {
 	return s.installationID
 }
 
-func (s *BufferedCollector) incr(k EventWithCount) {
-	s.cache[k.ev] += k.count
+func (s *BufferedCollector) incr(k Metric) {
+	s.cache[k.Event] += k.Value
 }
 
 func (s *BufferedCollector) send(metrics []Metric) {
@@ -254,7 +249,7 @@ func (s *BufferedCollector) CollectEvents(ev Event, count uint64) {
 	} else {
 		ev = ev.ClearExtended()
 	}
-	s.writes <- EventWithCount{ev, count}
+	s.writes <- Metric{ev, count}
 }
 
 func (s *BufferedCollector) CollectEvent(ev Event) {
@@ -281,7 +276,7 @@ func (s *BufferedCollector) Run(ctx context.Context) {
 				}
 			case <-s.heartbeatTicker.Tick():
 				// collect heartbeat
-				s.incr(EventWithCount{Event{
+				s.incr(Metric{Event{
 					Class: "global",
 					Name:  "heartbeat",
 				}, 1})
