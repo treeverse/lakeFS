@@ -148,6 +148,8 @@ lazy val examples312 = generateExamplesProject(spark312Type).dependsOn(core312)
 lazy val root =
   (project in file(".")).aggregate(core2, core3, core312, examples2, examples3, examples312)
 
+def rename(prefix: String) = ShadeRule.rename(prefix -> "io.lakefs.spark.shade.@0")
+
 // We are using the default sbt assembly merge strategy https://github.com/sbt/sbt-assembly#merge-strategy with a change
 // to the general case: use MergeStrategy.first instead of MergeStrategy.deduplicate.
 lazy val assemblySettings = Seq(
@@ -169,19 +171,18 @@ lazy val assemblySettings = Seq(
     case _ => MergeStrategy.first
   },
   assembly / assemblyShadeRules := Seq(
-    ShadeRule.rename("org.apache.http.**" -> "org.apache.httpShaded@1").inAll,
-    ShadeRule.rename("com.google.protobuf.**" -> "shadeproto.@1").inAll,
-    ShadeRule
-      .rename("com.google.common.**" -> "shadegooglecommon.@1")
+    rename("org.apache.http.**").inAll,
+    rename("com.google.protobuf.**").inAll,
+    rename("com.google.common.**")
       .inLibrary("com.google.guava" % "guava" % "30.1-jre",
                  "com.google.guava" % "failureaccess" % "1.0.1"
                 )
       .inProject,
-    ShadeRule.rename("scala.collection.compat.**" -> "shadecompat.@1").inAll,
-    ShadeRule.rename("okio.**" -> "okio.shaded.@0").inAll,
-    ShadeRule.rename("okhttp3.**" -> "okhttp3.shaded.@0").inAll,
-    ShadeRule.rename("reactor.netty.**" -> "shadereactor.netty.@1").inAll,
-    ShadeRule.rename("reactor.util.**" -> "shadereactor.util.@1").inAll
+    rename("scala.collection.compat.**").inAll,
+    rename("okio.**").inAll,
+    rename("okhttp3.**").inAll,
+    rename("reactor.netty.**").inAll,
+    rename("reactor.util.**").inAll
   )
 )
 

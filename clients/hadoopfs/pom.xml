@@ -148,27 +148,27 @@ To export to S3:
                                     <relocations>
                                         <relocation>
                                             <pattern>org.apache.httpcomponents</pattern>
-                                            <shadedPattern>io.lakefs.shaded.apache.httpcomponents</shadedPattern>
+                                            <shadedPattern>io.lakefs.hadoopfs.shade.org.apache.httpcomponents</shadedPattern>
                                         </relocation>
                                         <relocation>
                                             <pattern>okio</pattern>
-                                            <shadedPattern>io.lakefs.shaded.okio</shadedPattern>
+                                            <shadedPattern>io.lakefs.hadoopfs.shade.okio</shadedPattern>
                                         </relocation>
                                         <relocation>
                                             <pattern>okhttp3</pattern>
-                                            <shadedPattern>io.lakefs.shaded.okhttp3</shadedPattern>
+                                            <shadedPattern>io.lakefs.hadoop.shade.okhttp3</shadedPattern>
                                         </relocation>
                                         <relocation>
                                             <pattern>com.google.gson</pattern>
-                                            <shadedPattern>io.lakefs.shaded.gson</shadedPattern>
+                                            <shadedPattern>io.lakefs.hadoop.shade.gson</shadedPattern>
                                         </relocation>
                                         <relocation>
                                             <pattern>io.gsonfire</pattern>
-                                            <shadedPattern>io.lakefs.shaded.gsonfire</shadedPattern>
+                                            <shadedPattern>io.lakefs.hadoop.shade.gsonfire</shadedPattern>
                                         </relocation>
                                         <relocation>
                                             <pattern>io.lakefs.clients.api</pattern>
-                                            <shadedPattern>io.lakefs.shaded.api</shadedPattern>
+                                            <shadedPattern>io.lakefs.hadoop.shade.api</shadedPattern>
                                         </relocation>
                                     </relocations>
                                     <transformers>
