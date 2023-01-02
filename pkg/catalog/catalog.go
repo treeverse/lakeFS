@@ -1035,6 +1035,7 @@ func (c *Catalog) GetCommit(ctx context.Context, repositoryID string, reference 
 		CreationDate: commit.CreationDate,
 		MetaRangeID:  string(commit.MetaRangeID),
 		Metadata:     Metadata(commit.Metadata),
+		Parents:      []string{},
 	}
 	for _, parent := range commit.Parents {
 		catalogCommitLog.Parents = append(catalogCommitLog.Parents, string(parent))

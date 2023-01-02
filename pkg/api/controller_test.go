@@ -726,6 +726,36 @@ func TestController_GetCommitHandler(t *testing.T) {
 			t.Fatalf("unexpected commit id %s, expected %s", committer, DefaultUserID)
 		}
 	})
+
+	t.Run("initial commit", func(t *testing.T) {
+		// validate a new repository's initial commit existence and structure
+		ctx := context.Background()
+		_, err := deps.catalog.CreateRepository(ctx, "foo2", onBlock(deps, "foo2"), "main")
+		testutil.Must(t, err)
+		resp, err := clt.GetCommitWithResponse(ctx, "foo2", "main")
+		verifyResponseOK(t, resp, err)
+
+		commit := resp.JSON200
+		if commit == nil {
+			t.Fatalf("GetCommit failed - status code: %d", resp.StatusCode())
+		}
+		if len(commit.Id) == 0 {
+			t.Errorf("GetCommit initial commit missing ID: %+v", commit)
+		}
+		metadata := api.Commit_Metadata{}
+		expectedCommit := &api.Commit{
+			Committer:    "",
+			CreationDate: commit.CreationDate,
+			Id:           commit.Id,
+			Message:      graveler.FirstCommitMsg,
+			MetaRangeId:  "",
+			Metadata:     &metadata,
+			Parents:      []string{},
+		}
+		if diff := deep.Equal(commit, expectedCommit); diff != nil {
+			t.Fatalf("GetCommit initial commit diff: %v", diff)
+		}
+	})
 }
 
 func TestController_CommitHandler(t *testing.T) {
