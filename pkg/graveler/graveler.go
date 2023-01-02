@@ -1487,7 +1487,7 @@ func (g *Graveler) deleteConsumer(ctx context.Context, repository *RepositoryRec
 // DeleteBatch delete batch of keys. Keys length is limited to DeleteKeysMaxSize. Return error can be of type
 // 'multi-error' holds DeleteError with each key/error that failed as part of the batch.
 func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, keys []Key) error {
-	const maxWorkerNum = 100
+	const maxWorkerNum = 10
 	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 	if err != nil {
 		return err
