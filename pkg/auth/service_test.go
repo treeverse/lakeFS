@@ -54,11 +54,11 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func setupService(t *testing.T, ctx context.Context) *auth.KVAuthService {
+func setupService(t *testing.T, ctx context.Context) *auth.AuthService {
 	t.Helper()
 	kvStore := kvtest.GetStore(ctx, t)
 	storeMessage := &kv.StoreMessage{Store: kvStore}
-	return auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+	return auth.NewAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
 }
@@ -89,11 +89,11 @@ func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) st
 	return userName
 }
 
-func TestKVAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
+func TestAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
 	storeMessage := &kv.StoreMessage{Store: kvStore}
-	s := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+	s := auth.NewAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
 
@@ -140,11 +140,11 @@ func TestKVAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
 	}
 }
 
-func TestKVAuthService_ListPaged(t *testing.T) {
+func TestAuthService_ListPaged(t *testing.T) {
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
 	storeMessage := &kv.StoreMessage{Store: kvStore}
-	s := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+	s := auth.NewAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
 
@@ -528,16 +528,16 @@ func BenchmarkKVAuthService_ListEffectivePolicies(b *testing.B) {
 	kvStore := kvtest.GetStore(ctx, b)
 	storeMessage := &kv.StoreMessage{Store: kvStore}
 
-	serviceWithoutCache := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+	serviceWithoutCache := auth.NewAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
-	serviceWithCache := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+	serviceWithCache := auth.NewAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled:        true,
 		Size:           1024,
 		TTL:            20 * time.Second,
 		EvictionJitter: 3 * time.Second,
 	}, logging.Default())
-	serviceWithCacheLowTTL := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+	serviceWithCacheLowTTL := auth.NewAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled:        true,
 		Size:           1024,
 		TTL:            1 * time.Millisecond,
@@ -556,7 +556,7 @@ func BenchmarkKVAuthService_ListEffectivePolicies(b *testing.B) {
 	})
 }
 
-func benchmarkKVListEffectivePolicies(b *testing.B, s *auth.KVAuthService, userName string) {
+func benchmarkKVListEffectivePolicies(b *testing.B, s *auth.AuthService, userName string) {
 	b.ResetTimer()
 	ctx := context.Background()
 	for n := 0; n < b.N; n++ {

@@ -84,7 +84,6 @@ func (m *MemLogger) Panic(args ...interface{}) {
 
 func (m *MemLogger) Log(level logrus.Level, args ...interface{}) {
 	m.logLine(level.String(), args...)
-
 }
 
 func (m *MemLogger) Tracef(format string, args ...interface{}) {
@@ -192,7 +191,8 @@ func TestAuditChecker_Check(t *testing.T) {
 		{name: "none", alerts: []Alert{}},
 		{name: "alerts", alerts: []Alert{
 			{ID: "1", AffectedVersions: ">v1,<v2", PatchedVersions: "v2", Description: "bad1"},
-			{ID: "2", AffectedVersions: ">v1,<v1.0.5||>v2<v2.2.0", PatchedVersions: "v1.0.5,v.2.1.1", Description: "bad2"}}},
+			{ID: "2", AffectedVersions: ">v1,<v1.0.5||>v2<v2.2.0", PatchedVersions: "v1.0.5,v.2.1.1", Description: "bad2"},
+		}},
 		{name: "failed", alerts: []Alert{}, statusCode: http.StatusInternalServerError, wantErr: true},
 	}
 	ctx := context.Background()
@@ -219,7 +219,7 @@ func TestAuditChecker_Check(t *testing.T) {
 	}
 }
 
-func TestAuditChecker_Anonymization(t *testing.T) {
+func TestAuditChecker_InstallationID(t *testing.T) {
 	const upgradeURL = "https://no.place.like/home"
 
 	tests := []struct {
@@ -228,15 +228,15 @@ func TestAuditChecker_Anonymization(t *testing.T) {
 		respInstallationID string
 	}{
 		{name: "none", installationID: "", respInstallationID: ""},
-		{name: "anonymized", installationID: "a-sample-installation-id", respInstallationID: "ddb767d9f0aeb9c9c0e7643d71d16d4d"},
+		{name: "installation_id", installationID: "a-sample-installation-id", respInstallationID: "a-sample-installation-id"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := NewAuditChecker(upgradeURL, "v1", tt.installationID)
 
-			if tt.respInstallationID != a.AnonymizedInstallationID {
-				t.Errorf("Check() anonymized installation ID: %s (%s), expected %s", tt.respInstallationID, tt.installationID, a.AnonymizedInstallationID)
+			if tt.respInstallationID != a.InstallationID {
+				t.Errorf("Check() installation ID: %s, expected: %s", a.InstallationID, tt.respInstallationID)
 			}
 		})
 	}

@@ -198,6 +198,18 @@ type configuration struct {
 			}
 		}
 	}
+	Graveler struct {
+		RepositoryCache struct {
+			Size   int           `mapstructure:"size"`
+			Expiry time.Duration `mapstructure:"expiry"`
+			Jitter time.Duration `mapstructure:"jitter"`
+		} `mapstructure:"repository_cache"`
+		CommitCache struct {
+			Size   int           `mapstructure:"size"`
+			Expiry time.Duration `mapstructure:"expiry"`
+			Jitter time.Duration `mapstructure:"jitter"`
+		} `mapstructure:"commit_cache"`
+	} `mapstructure:"graveler"`
 	Gateways struct {
 		S3 struct {
 			DomainNames Strings `mapstructure:"domain_name"`
