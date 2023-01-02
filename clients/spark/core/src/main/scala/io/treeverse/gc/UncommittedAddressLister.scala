@@ -23,10 +23,10 @@ class APIUncommittedAddressLister(apiClient: ApiClient) extends UncommittedAddre
     var continuationToken: String = null
     do {
       resp = apiClient.prepareGarbageCollectionUncommitted(repo, continuationToken)
-      continuationToken = resp.getContinuationToken()
+      continuationToken = resp.getContinuationToken
     } while (StringUtils.isNotBlank(continuationToken))
-    val runID = resp.getRunId()
-    val uncommittedLocation = resp.getGcUncommittedLocation()
+    val runID = resp.getRunId
+    val uncommittedLocation = resp.getGcUncommittedLocation
     new UncommittedGCRunInfo(uncommittedLocation, runID)
   }
 }
