@@ -16,6 +16,9 @@ const (
 	DatabaseLocalPrefetchSizeKey     = "database.local.prefetch_size"
 	DefaultDatabaseLocalPrefetchSize = 256
 
+	DatabaseLocalSyncWritesKey     = "database.local.sync_writes"
+	DefaultDatabaseLocalSyncWrites = true
+
 	DatabaseDynamodbTableNameKey     = "database.dynamodb.table_name"
 	DefaultDatabaseDynamodbTableName = "kvstore"
 
@@ -247,7 +250,7 @@ func setDefaults(local bool) {
 
 	viper.SetDefault(DatabaseLocalPathKey, DefaultDatabaseLocalPath)
 	viper.SetDefault(DatabaseLocalPrefetchSizeKey, DefaultDatabaseLocalPrefetchSize)
-	viper.SetDefault("database.local.sync_writes", true)
+	viper.SetDefault(DatabaseLocalSyncWritesKey, DefaultDatabaseLocalSyncWrites)
 
 	viper.SetDefault(DatabaseDynamodbTableNameKey, DefaultDatabaseDynamodbTableName)
 
