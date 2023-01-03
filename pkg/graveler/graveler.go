@@ -643,7 +643,7 @@ type CommitIterator interface {
 type AddressTokenIterator interface {
 	Next() bool
 	SeekGE(address string)
-	Value() *AddressData
+	Value() *LinkAddressData
 	Err() error
 	Close()
 }

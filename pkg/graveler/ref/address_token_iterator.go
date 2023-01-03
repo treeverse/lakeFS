@@ -12,7 +12,7 @@ type AddressTokenIterator struct {
 	ctx           context.Context
 	it            kv.MessageIterator
 	err           error
-	value         *graveler.AddressData
+	value         *graveler.LinkAddressData
 	repoPartition string
 	store         kv.Store
 	closed        bool
@@ -20,8 +20,8 @@ type AddressTokenIterator struct {
 
 func NewAddressTokenIterator(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord) (*AddressTokenIterator, error) {
 	repoPartition := graveler.RepoPartition(repo)
-	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.AddressData{}).ProtoReflect().Type(),
-		repoPartition, []byte(graveler.AddressPath("")), kv.IteratorOptionsFrom([]byte("")))
+	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.LinkAddressData{}).ProtoReflect().Type(),
+		repoPartition, []byte(graveler.LinkedAddressPath("")), kv.IteratorOptionsFrom([]byte("")))
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (i *AddressTokenIterator) Next() bool {
 		i.err = graveler.ErrReadingFromStore
 		return false
 	}
-	token, ok := e.Value.(*graveler.AddressData)
+	token, ok := e.Value.(*graveler.LinkAddressData)
 	if !ok {
 		i.err = graveler.ErrReadingFromStore
 		return false
@@ -63,16 +63,16 @@ func (i *AddressTokenIterator) SeekGE(address string) {
 		return
 	}
 	i.Close()
-	it, err := kv.NewPrimaryIterator(i.ctx, i.store, (&graveler.AddressData{}).ProtoReflect().Type(),
+	it, err := kv.NewPrimaryIterator(i.ctx, i.store, (&graveler.LinkAddressData{}).ProtoReflect().Type(),
 		i.repoPartition,
-		[]byte(graveler.AddressPath("")), kv.IteratorOptionsFrom([]byte(graveler.AddressPath(address))))
+		[]byte(graveler.LinkedAddressPath("")), kv.IteratorOptionsFrom([]byte(graveler.LinkedAddressPath(address))))
 	i.it = it
 	i.err = err
 	i.value = nil
 	i.closed = err != nil
 }
 
-func (i *AddressTokenIterator) Value() *graveler.AddressData {
+func (i *AddressTokenIterator) Value() *graveler.LinkAddressData {
 	if i.Err() != nil {
 		return nil
 	}

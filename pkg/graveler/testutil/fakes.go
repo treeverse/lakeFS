@@ -863,11 +863,11 @@ func (p ProtectedBranchesManagerFake) IsBlocked(_ context.Context, _ *graveler.R
 }
 
 type FakeAddressTokenIterator struct {
-	Data  []*graveler.AddressData
+	Data  []*graveler.LinkAddressData
 	Index int
 }
 
-func NewFakeAddressTokenIterator(data []*graveler.AddressData) *FakeAddressTokenIterator {
+func NewFakeAddressTokenIterator(data []*graveler.LinkAddressData) *FakeAddressTokenIterator {
 	return &FakeAddressTokenIterator{Data: data, Index: -1}
 }
 
@@ -889,7 +889,7 @@ func (m *FakeAddressTokenIterator) SeekGE(address string) {
 	}
 }
 
-func (m *FakeAddressTokenIterator) Value() *graveler.AddressData {
+func (m *FakeAddressTokenIterator) Value() *graveler.LinkAddressData {
 	return m.Data[m.Index]
 }
 

@@ -7,14 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // MaxBatchDelay - 3ms was chosen as a max delay time for critical path queries.
@@ -29,8 +28,6 @@ const MaxBatchDelay = time.Millisecond * 3
 // commitIDStringLength string representation length of commit ID - based on hex representation of sha256
 const commitIDStringLength = 64
 
-const AddressTokenTime = 6 * time.Hour
-
 const (
 	DefaultRepositoryCacheSize   = 1000
 	DefaultRepositoryCacheExpiry = 5 * time.Second
@@ -39,6 +36,8 @@ const (
 	DefaultCommitCacheSize   = 1000
 	DefaultCommitCacheExpiry = 30 * time.Second
 	DefaultCommitCacheJitter = DefaultRepositoryCacheExpiry / 2
+
+	AddressTokenTime = 6 * time.Hour
 )
 
 type CacheConfig struct {
@@ -567,11 +566,11 @@ func newCache(cfg *CacheConfig, def *CacheConfig) cache.Cache {
 }
 
 func (m *Manager) SetAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
-	a := &graveler.AddressData{
+	a := &graveler.LinkAddressData{
 		Address:   token,
 		ExpiredAt: timestamppb.New(time.Now().Add(AddressTokenTime)),
 	}
-	err := m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(repository), []byte(graveler.AddressPath(token)), a, nil)
+	err := m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(repository), []byte(graveler.LinkedAddressPath(token)), a, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = graveler.ErrAddressTokenAlreadyExists
@@ -582,8 +581,8 @@ func (m *Manager) SetAddressToken(ctx context.Context, repository *graveler.Repo
 }
 
 func (m *Manager) GetAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
-	data := graveler.AddressData{}
-	path := []byte(graveler.AddressPath(token))
+	data := graveler.LinkAddressData{}
+	path := []byte(graveler.LinkedAddressPath(token))
 	_, err := m.kvStore.GetMsg(ctx, graveler.RepoPartition(repository), path, &data)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {

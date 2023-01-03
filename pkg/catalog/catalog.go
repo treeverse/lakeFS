@@ -1776,7 +1776,7 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 	}
 	defer itr.Close()
 
-	if mark != nil && mark.BranchID != "" {
+	if mark != nil {
 		itr.SeekGE(mark.BranchID, mark.Path)
 	}
 
@@ -1810,10 +1810,6 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 			if w.Size() > int64(c.GCMaxUncommittedFileSize) {
 				if itr.Err() != nil {
 					return nil, false, itr.Err()
-				}
-				err = pw.WriteStop()
-				if err != nil {
-					return nil, false, err
 				}
 				return &GCUncommittedMark{
 					BranchID: entry.branchID,
@@ -1863,10 +1859,6 @@ func (c *Catalog) writeTokensLocal(ctx context.Context, repository *graveler.Rep
 			if w.Size() > int64(c.GCMaxUncommittedFileSize) {
 				if itr.Err() != nil {
 					return nil, false, itr.Err()
-				}
-				err = pw.WriteStop()
-				if err != nil {
-					return nil, false, err
 				}
 				return &GCUncommittedMark{
 					Path:  Path(token.Address),
@@ -1947,23 +1939,17 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	// Write parquet to local storage
 	hasData := false
 	var newMark *GCUncommittedMark
-	if mark != nil && mark.BranchID == "" {
-		newMark, hasData, err = c.writeTokensLocal(ctx, repository, uw, pw, mark, runID)
-		if err != nil {
-			return nil, err
-		}
-	} else {
+	if mark == nil || mark.BranchID != "" {
 		newMark, hasData, err = c.writeUncommittedLocal(ctx, repository, uw, pw, mark, runID)
 		if err != nil {
 			return nil, err
 		}
-
-		if newMark == nil {
-			// TODO(in progress) - fix hasData
-			newMark, hasData, err = c.writeTokensLocal(ctx, repository, uw, pw, mark, runID)
-			if err != nil {
-				return nil, err
-			}
+	}
+	if newMark == nil {
+		// TODO - fix hasdata
+		newMark, hasData, err = c.writeTokensLocal(ctx, repository, uw, pw, mark, runID)
+		if err != nil {
+			return nil, err
 		}
 	}
 

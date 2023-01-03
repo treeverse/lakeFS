@@ -696,10 +696,10 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 	}
 
 	// add address tokens
-	addresses := make([]*graveler.AddressData, 0)
+	addresses := make([]*graveler.LinkAddressData, 0)
 	for i := 0; i < numTokens; i++ {
 		address := fmt.Sprintf("data/address_token_%d", i)
-		addresses = append(addresses, &graveler.AddressData{Address: address,
+		addresses = append(addresses, &graveler.LinkAddressData{Address: address,
 			ExpiredAt: timestamppb.New(time.Now().Add(ref.AddressTokenTime))})
 
 		expectedRecords = append(expectedRecords, fmt.Sprintf("data/address_token_%d", i))
@@ -765,12 +765,12 @@ func verifyData(t *testing.T, ctx context.Context, numBranches, numRecords, numT
 		totalCount += len(u)
 		return nil
 	})
+	require.NoError(t, err)
 
 	sort.Strings(allRecords)
 	if diff := deep.Equal(allRecords, expectedRecords); diff != nil {
 		t.Errorf("Found diff in expected records: %s", diff)
 	}
 
-	require.NoError(t, err)
 	require.Equal(t, numBranches*numRecords+numTokens, totalCount)
 }

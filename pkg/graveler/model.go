@@ -15,7 +15,7 @@ const (
 	branchesPrefix         = "branches"
 	commitsPrefix          = "commits"
 	settingsPrefix         = "settings"
-	addressesPrefix        = "addresses"
+	addressesPrefix        = "link-addresses"
 )
 
 //nolint:gochecknoinits
@@ -67,7 +67,7 @@ func SettingsPath(key string) string {
 	return kv.FormatPath(settingsPrefix, key)
 }
 
-func AddressPath(key string) string {
+func LinkedAddressPath(key string) string {
 	return kv.FormatPath(addressesPrefix, key)
 }
 

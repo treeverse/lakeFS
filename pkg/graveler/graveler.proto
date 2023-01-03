@@ -78,7 +78,7 @@ message StagedEntryData {
 }
 
 // message data model to track address tokens
-message AddressData {
+message LinkAddressData {
   string address = 1;
   google.protobuf.Timestamp expired_at = 2;
 }
