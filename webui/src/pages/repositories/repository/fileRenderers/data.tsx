@@ -91,7 +91,7 @@ LIMIT 20`
 
         if (!data || data.numRows === 0) {
             content = (
-                <p className={"text-md-center mt-5 mb-5"}>
+                <p className="text-md-center mt-5 mb-5">
                     No rows returned.
                 </p>
             )
@@ -108,7 +108,7 @@ LIMIT 20`
                         <small>{`Showing only the first ${res.numRows.toLocaleString()} rows (out of ${data.numRows.toLocaleString()})`}</small>
                     }
                     <div className="object-viewer-sql-results">
-                        <Table striped bordered hover size={"sm"} responsive={"sm"} className="sticky-table">
+                        <Table striped bordered hover size={"sm"} responsive={"sm"}>
                             <thead className="thead-dark">
                             <tr>
                                 {fields.map((field, i) =>

@@ -9,6 +9,7 @@ import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url'
 // https://developer.mozilla.org/en-US/docs/Glossary/Percent-encoding
 // also, I tried doing something nicer with list comprehensions and printf('%x') to convert
 //  from unicode code point to hex - DuckDB didn't seem to evaluate lambdas and list comprehensions
+// Issue: https://github.com/duckdb/duckdb/issues/5821
 // when padding a macro to a table function such as read_parquet() or read_csv().
 // so - string replacements it is.
 const URL_ENCODE_MACRO_SQL = `
