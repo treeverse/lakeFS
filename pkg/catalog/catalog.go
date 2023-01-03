@@ -1838,7 +1838,7 @@ func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *gravele
 	return nil, hasData, nil
 }
 
-func (c *Catalog) writeTokensLocal(ctx context.Context, repository *graveler.RepositoryRecord, w *UncommittedWriter, pw *writer.ParquetWriter, mark *GCUncommittedMark, runID string) (*GCUncommittedMark, bool, error) {
+func (c *Catalog) writeTokensLocal(ctx context.Context, repository *graveler.RepositoryRecord, w *UncommittedWriter, pw *writer.ParquetWriter, mark *GCUncommittedMark, runID string, hasData bool) (*GCUncommittedMark, bool, error) {
 	count := 0
 	itr, err := c.Store.ListAddressTokens(ctx, repository)
 	if err != nil {
@@ -1875,7 +1875,7 @@ func (c *Catalog) writeTokensLocal(ctx context.Context, repository *graveler.Rep
 				PhysicalAddress: token.Address,
 				CreationDate:    time.Now().Unix(),
 			}); err != nil {
-				return nil, false, err
+				return nil, hasData, err
 			}
 		}
 	}
@@ -1884,7 +1884,7 @@ func (c *Catalog) writeTokensLocal(ctx context.Context, repository *graveler.Rep
 	}
 
 	// Finished reading all tokens - no continuation token
-	hasData := count > 0
+	hasData = hasData || count > 0
 	return nil, hasData, nil
 }
 
@@ -1950,8 +1950,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 		}
 	}
 	if newMark == nil {
-		// TODO - fix hasdata
-		newMark, hasData, err = c.writeTokensLocal(ctx, repository, uw, pw, mark, runID)
+		newMark, hasData, err = c.writeTokensLocal(ctx, repository, uw, pw, mark, runID, hasData)
 		if err != nil {
 			return nil, err
 		}

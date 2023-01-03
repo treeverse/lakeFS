@@ -581,6 +581,6 @@ func (m *Manager) ListAddressTokens(ctx context.Context, repository *graveler.Re
 }
 
 func (m *Manager) DeleteExpiredAddressTokens(ctx context.Context, repository *graveler.RepositoryRecord) error {
-	//TODO
+	// TODO
 	return nil
 }
