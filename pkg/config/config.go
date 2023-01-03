@@ -243,6 +243,11 @@ type Config struct {
 			Expiry time.Duration `mapstructure:"expiry"`
 			Jitter time.Duration `mapstructure:"jitter"`
 		} `mapstructure:"commit_cache"`
+		BranchCache struct {
+			Size   int           `mapstructure:"size"`
+			Expiry time.Duration `mapstructure:"expiry"`
+			Jitter time.Duration `mapstructure:"jitter"`
+		} `mapstructure:"branch_cache"`
 	} `mapstructure:"graveler"`
 	Gateways struct {
 		S3 struct {

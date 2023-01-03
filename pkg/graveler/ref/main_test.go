@@ -26,6 +26,11 @@ var (
 		Size:   5000,
 		Expiry: 20 * time.Millisecond,
 	}
+
+	testBranchCacheConfig = ref.CacheConfig{
+		Size:   500,
+		Expiry: 20 * time.Millisecond,
+	}
 )
 
 func testRefManager(t testing.TB) (graveler.RefManager, *kv.StoreMessage) {
@@ -39,6 +44,7 @@ func testRefManager(t testing.TB) (graveler.RefManager, *kv.StoreMessage) {
 		AddressProvider:       ident.NewHexAddressProvider(),
 		RepositoryCacheConfig: testRepoCacheConfig,
 		CommitCacheConfig:     testCommitCacheConfig,
+		BranchCacheConfig:     testBranchCacheConfig,
 	}
 	return ref.NewRefManager(cfg), storeMessage
 }
@@ -54,6 +60,7 @@ func testRefManagerWithAddressProvider(t testing.TB, addressProvider ident.Addre
 		AddressProvider:       addressProvider,
 		RepositoryCacheConfig: testRepoCacheConfig,
 		CommitCacheConfig:     testCommitCacheConfig,
+		BranchCacheConfig:     testBranchCacheConfig,
 	}
 	return ref.NewRefManager(cfg), storeMessage
 }

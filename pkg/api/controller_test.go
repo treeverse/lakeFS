@@ -332,12 +332,14 @@ func TestController_LogCommitsParallelHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
-	repo := "repo-log-commits-parallel"
+	repo := testUniqueRepoName()
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 	testutil.Must(t, err)
 
-	commits := 100
-	const prefix = "foo/bar"
+	const (
+		commits = 100
+		prefix  = "foo/bar"
+	)
 	commitsToLook := map[string]*catalog.CommitLog{}
 	for i := 0; i < commits; i++ {
 		n := strconv.Itoa(i + 1)

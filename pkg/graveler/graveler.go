@@ -512,7 +512,7 @@ type VersionController interface {
 	// Note: Ancestors of previously expired commits may still be considered if they can be reached from a non-expired commit.
 	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, previousRunID string) (garbageCollectionRunMetadata *GarbageCollectionRunMetadata, err error)
 
-	// GCGetUncommittedLocation returns full uri of the stroage location of saved uncommitted files per runID
+	// GCGetUncommittedLocation returns full uri of the storage location of saved uncommitted files per runID
 	GCGetUncommittedLocation(repository *RepositoryRecord, runID string) (string, error)
 
 	GCNewRunID() string
@@ -658,6 +658,11 @@ type RefManager interface {
 
 	// GetBranch returns the Branch metadata object for the given BranchID
 	GetBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (*Branch, error)
+
+	// GetBranchCached returns the Branch metadata object for the given BranchID from cache if possible.
+	// This should be used internally in Graveler and follow-up by calling GetBranch to verify we are working
+	// on the latest updated branch.
+	GetBranchCached(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (*Branch, error)
 
 	// CreateBranch creates a branch with the given id and Branch metadata
 	CreateBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, branch Branch) error
@@ -1421,22 +1426,27 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 
 // safeBranchWrite is a helper function that wraps a branch write operation with validation that the staging token
 // didn't change while writing to the branch.
-func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repository *RepositoryRecord, branchID BranchID, stagingOperation func(branch *Branch) error) error {
+func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repository *RepositoryRecord,
+	branchID BranchID, stagingOperation func(branch *Branch) error,
+) error {
 	var try int
 	for try = 0; try < BranchWriteMaxTries; try++ {
-		branchPreOp, err := g.GetBranch(ctx, repository, branchID)
+		// get current branch information
+		branchPreOp, err := g.RefManager.GetBranchCached(ctx, repository, branchID)
 		if err != nil {
-			return err
+			return fmt.Errorf("safe branch write: %w", err)
 		}
-		if err = stagingOperation(branchPreOp); err != nil {
+
+		// perform the operation and verify branch had not updated
+		if err := stagingOperation(branchPreOp); err != nil {
 			return err
 		}
 
 		// Checking if the token has changed.
 		// If it changed, we need to write the changes to the branch's new staging token
-		branchPostOp, err := g.GetBranch(ctx, repository, branchID)
+		branchPostOp, err := g.RefManager.GetBranch(ctx, repository, branchID)
 		if err != nil {
-			return err
+			return fmt.Errorf("safe branch write: %w", err)
 		}
 		if branchPreOp.StagingToken == branchPostOp.StagingToken {
 			break
@@ -1446,7 +1456,7 @@ func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repo
 			"try":               try + 1,
 			"branch_token_pre":  branchPreOp.StagingToken,
 			"branch_token_post": branchPostOp.StagingToken,
-		}).Debug("Retrying Set")
+		}).Debug("Retrying safe branch write")
 	}
 	if try == BranchWriteMaxTries {
 		return fmt.Errorf("safe branch write: %w", ErrTooManyTries)
@@ -1463,10 +1473,10 @@ func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, bra
 		return ErrWriteToProtectedBranch
 	}
 
-	return g.safeBranchWrite(ctx, g.log(ctx).WithField("key", key).WithField("operation", "delete"),
-		repository, branchID, func(branch *Branch) error {
-			return g.deleteUnsafe(ctx, repository, branch, key, nil)
-		})
+	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "delete"})
+	return g.safeBranchWrite(ctx, log, repository, branchID, func(branch *Branch) error {
+		return g.deleteUnsafe(ctx, repository, branch, key, nil)
+	})
 }
 
 // DeleteBatch delete batch of keys. Keys length is limited to DeleteKeysMaxSize. Return error can be of type
@@ -1482,19 +1492,21 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 	if len(keys) > DeleteKeysMaxSize {
 		return fmt.Errorf("keys length (%d) passed the maximum allowed(%d): %w", len(keys), DeleteKeysMaxSize, ErrInvalidValue)
 	}
-	var m *multierror.Error
-	err = g.safeBranchWrite(ctx, g.log(ctx).WithField("operation", "delete_keys"),
-		repository, branchID, func(branch *Branch) error {
-			var cachedMetaRangeID MetaRangeID // used to cache the committed branch metarange ID
-			for _, key := range keys {
-				err := g.deleteUnsafe(ctx, repository, branch, key, &cachedMetaRangeID)
-				if err != nil {
-					m = multierror.Append(m, &DeleteError{Key: key, Err: err})
-				}
+	log := g.log(ctx).WithField("operation", "delete_keys")
+	return g.safeBranchWrite(ctx, log, repository, branchID, func(branch *Branch) error {
+		var (
+			// cachedMetaRangeID used in case of multiple calls to deleteUnsafe to cache meta range ID
+			cachedMetaRangeID MetaRangeID
+			// result collects all the errors while we delete
+			result *multierror.Error
+		)
+		for _, key := range keys {
+			if err := g.deleteUnsafe(ctx, repository, branch, key, &cachedMetaRangeID); err != nil {
+				result = multierror.Append(result, &DeleteError{Key: key, Err: err})
 			}
-			return m.ErrorOrNil()
-		})
-	return err
+		}
+		return result.ErrorOrNil()
+	})
 }
 
 func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecord, branch *Branch, key Key, cachedMetaRangeID *MetaRangeID) error {

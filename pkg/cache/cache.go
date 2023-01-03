@@ -7,11 +7,15 @@ import (
 	lru "github.com/hnlq715/golang-lru"
 )
 
-type JitterFn func() time.Duration
-type SetFn func() (v interface{}, err error)
+type (
+	JitterFn func() time.Duration
+	SetFn    func() (v interface{}, err error)
+)
 
 type Cache interface {
 	GetOrSet(k interface{}, setFn SetFn) (v interface{}, err error)
+	Set(k, v interface{})
+	Clear(k interface{})
 }
 
 type GetSetCache struct {
@@ -40,9 +44,17 @@ func (c *GetSetCache) GetOrSet(k interface{}, setFn SetFn) (v interface{}, err e
 		if err != nil { // Don't cache errors
 			return nil, err
 		}
-		c.lru.AddEx(k, v, c.baseExpiry+c.jitterFn())
+		_ = c.lru.AddEx(k, v, c.baseExpiry+c.jitterFn())
 		return v, nil
 	})
+}
+
+func (c *GetSetCache) Set(k, v interface{}) {
+	_ = c.lru.AddEx(k, v, c.baseExpiry+c.jitterFn())
+}
+
+func (c *GetSetCache) Clear(k interface{}) {
+	c.lru.Remove(k)
 }
 
 func NewJitterFn(jitter time.Duration) JitterFn {

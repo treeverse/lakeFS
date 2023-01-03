@@ -39,6 +39,7 @@ type Manager struct {
 	batchExecutor   batch.Batcher
 	repoCache       cache.Cache
 	commitCache     cache.Cache
+	branchCache     cache.Cache
 }
 
 func branchFromProto(pb *graveler.BranchData) *graveler.Branch {
@@ -74,6 +75,7 @@ type ManagerConfig struct {
 	AddressProvider       ident.AddressProvider
 	RepositoryCacheConfig CacheConfig
 	CommitCacheConfig     CacheConfig
+	BranchCacheConfig     CacheConfig
 }
 
 func NewRefManager(cfg ManagerConfig) *Manager {
@@ -83,6 +85,7 @@ func NewRefManager(cfg ManagerConfig) *Manager {
 		batchExecutor:   cfg.Executor,
 		repoCache:       newCache(cfg.RepositoryCacheConfig),
 		commitCache:     newCache(cfg.CommitCacheConfig),
+		branchCache:     newCache(cfg.BranchCacheConfig),
 	}
 }
 
@@ -313,8 +316,30 @@ func (m *Manager) getBranchWithPredicate(ctx context.Context, repository *gravel
 }
 
 func (m *Manager) GetBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) (*graveler.Branch, error) {
+	cacheKey := makeBranchKey(repository, branchID)
 	branch, _, err := m.getBranchWithPredicate(ctx, repository, branchID)
-	return branch, err
+	if err != nil {
+		m.branchCache.Clear(cacheKey)
+		return nil, err
+	}
+	m.branchCache.Set(cacheKey, branch)
+	return branch, nil
+}
+
+func (m *Manager) GetBranchCached(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) (*graveler.Branch, error) {
+	cacheKey := makeBranchKey(repository, branchID)
+	v, err := m.branchCache.GetOrSet(cacheKey, func() (v interface{}, err error) {
+		branch, _, err := m.getBranchWithPredicate(ctx, repository, branchID)
+		return branch, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return v.(*graveler.Branch), nil
+}
+
+func makeBranchKey(repository *graveler.RepositoryRecord, branchID graveler.BranchID) string {
+	return fmt.Sprintf("%s:%s", repository.RepositoryID, branchID)
 }
 
 func (m *Manager) createBranch(ctx context.Context, repositoryPartition string, branchID graveler.BranchID, branch graveler.Branch) error {

@@ -46,6 +46,14 @@ func (m *mockCache) GetOrSet(k interface{}, setFn cache.SetFn) (v interface{}, e
 	return val, nil
 }
 
+func (m *mockCache) Set(k, v interface{}) {
+	m.c[k] = v
+}
+
+func (m *mockCache) Clear(k interface{}) {
+	delete(m.c, k)
+}
+
 func TestSaveAndGet(t *testing.T) {
 	ctx := context.Background()
 	mc := &mockCache{

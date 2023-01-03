@@ -175,6 +175,12 @@ const (
 	DefaultGravelerCommitCacheExpiry     = 10 * time.Minute
 	GravelerCommitCacheJitterKey         = "graveler.commit_cache.jitter"
 	DefaultGravelerCommitCacheJitter     = 2 * time.Second
+	GravelerBranchCacheSizeKey           = "graveler.branch_cache.size"
+	DefaultGravelerBranchCacheSize       = 10_000
+	GravelerBranchCacheExpiryKey         = "graveler.commit_cache.expiry"
+	DefaultGravelerBranchCacheExpiry     = 10 * time.Minute
+	GravelerBranchCacheJitterKey         = "graveler.commit_cache.jitter"
+	DefaultGravelerBranchCacheJitter     = 2 * time.Second
 )
 
 func setDefaults(local bool) {

@@ -47,6 +47,7 @@ func TestManager_GetRepositoryCache(t *testing.T) {
 		AddressProvider:       ident.NewHexAddressProvider(),
 		RepositoryCacheConfig: cacheConfig,
 		CommitCacheConfig:     cacheConfig,
+		BranchCacheConfig:     cacheConfig,
 	}
 	refManager := ref.NewRefManager(cfg)
 	for i := 0; i < calls; i++ {
@@ -94,6 +95,7 @@ func TestManager_GetCommitCache(t *testing.T) {
 		AddressProvider:       ident.NewHexAddressProvider(),
 		RepositoryCacheConfig: cacheConfig,
 		CommitCacheConfig:     cacheConfig,
+		BranchCacheConfig:     cacheConfig,
 	}
 	refManager := ref.NewRefManager(cfg)
 	for i := 0; i < calls; i++ {

@@ -159,7 +159,7 @@ func (s *StagingFake) Get(_ context.Context, st graveler.StagingToken, key grave
 	return nil, graveler.ErrNotFound
 }
 
-func (s *StagingFake) Set(_ context.Context, _ graveler.StagingToken, key graveler.Key, value *graveler.Value, _ bool) error {
+func (s *StagingFake) Set(_ context.Context, _ graveler.StagingToken, key graveler.Key, value *graveler.Value) error {
 	if s.SetErr != nil {
 		return s.SetErr
 	}
@@ -333,6 +333,10 @@ func (m *RefsFake) DeleteRepository(context.Context, graveler.RepositoryID) erro
 }
 
 func (m *RefsFake) GetBranch(context.Context, *graveler.RepositoryRecord, graveler.BranchID) (*graveler.Branch, error) {
+	return m.Branch, m.Err
+}
+
+func (m *RefsFake) GetBranchCached(context.Context, *graveler.RepositoryRecord, graveler.BranchID) (*graveler.Branch, error) {
 	return m.Branch, m.Err
 }
 
