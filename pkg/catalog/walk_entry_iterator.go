@@ -78,7 +78,6 @@ func NewWalkEntryIterator(ctx context.Context, walker *store.WalkerWrapper, prep
 						Size:         e.Size,
 						ETag:         e.ETag,
 						AddressType:  Entry_FULL,
-						ContentType:  e.Address,
 					},
 				},
 				Mark: Mark(it.walker.Marker()),

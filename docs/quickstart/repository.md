@@ -34,7 +34,7 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
 1. Use the credentials from the previous step to log in as an administrator.
 
-1. Click _Create Repository_ and choose _Blank Repository_.
+1. Click _Create Repository_.
     
    ![Create Repository]({{ site.baseurl }}/assets/img/create_repo_local.png)
 

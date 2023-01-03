@@ -228,11 +228,14 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	executor := batch.NewConditionalExecutor(logging.Default())
 	go executor.Run(ctx)
 
-	refManager := ref.NewRefManager(ref.ManagerConfig{
-		Executor:        executor,
-		KvStore:         cfg.KVStore,
-		AddressProvider: ident.NewHexAddressProvider(),
-	})
+	refManager := ref.NewRefManager(
+		ref.ManagerConfig{
+			Executor:              executor,
+			KvStore:               cfg.KVStore,
+			AddressProvider:       ident.NewHexAddressProvider(),
+			RepositoryCacheConfig: cfg.Config.GetGravelerRepositoryCacheConfig(),
+			CommitCacheConfig:     cfg.Config.GetGravelerCommitCacheConfig(),
+		})
 	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
 	settingManager := settings.NewManager(refManager, *cfg.KVStore)
 	if cfg.SettingsManagerOption != nil {
@@ -1032,6 +1035,7 @@ func (c *Catalog) GetCommit(ctx context.Context, repositoryID string, reference 
 		CreationDate: commit.CreationDate,
 		MetaRangeID:  string(commit.MetaRangeID),
 		Metadata:     Metadata(commit.Metadata),
+		Parents:      []string{},
 	}
 	for _, parent := range commit.Parents {
 		catalogCommitLog.Parents = append(catalogCommitLog.Parents, string(parent))

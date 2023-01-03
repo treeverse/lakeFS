@@ -46,20 +46,6 @@ type CacheConfig struct {
 	Jitter time.Duration
 }
 
-var (
-	DefaultRepositoryCacheConfig = &CacheConfig{
-		Size:   DefaultRepositoryCacheSize,
-		Expiry: DefaultRepositoryCacheExpiry,
-		Jitter: DefaultRepositoryCacheJitter,
-	}
-
-	DefaultCommitCacheConfig = &CacheConfig{
-		Size:   DefaultCommitCacheSize,
-		Expiry: DefaultCommitCacheExpiry,
-		Jitter: DefaultCommitCacheJitter,
-	}
-)
-
 type Manager struct {
 	kvStore         *kv.StoreMessage
 	addressProvider ident.AddressProvider
@@ -96,22 +82,20 @@ func protoFromBranch(branchID graveler.BranchID, b *graveler.Branch) *graveler.B
 }
 
 type ManagerConfig struct {
-	Executor          batch.Batcher
-	KvStore           *kv.StoreMessage
-	AddressProvider   ident.AddressProvider
-	RepoCacheConfig   *CacheConfig
-	CommitCacheConfig *CacheConfig
+	Executor              batch.Batcher
+	KvStore               *kv.StoreMessage
+	AddressProvider       ident.AddressProvider
+	RepositoryCacheConfig CacheConfig
+	CommitCacheConfig     CacheConfig
 }
 
 func NewRefManager(cfg ManagerConfig) *Manager {
-	repoCache := newCache(cfg.RepoCacheConfig, DefaultRepositoryCacheConfig)
-	commitCache := newCache(cfg.CommitCacheConfig, DefaultCommitCacheConfig)
 	return &Manager{
 		kvStore:         cfg.KvStore,
 		addressProvider: cfg.AddressProvider,
 		batchExecutor:   cfg.Executor,
-		repoCache:       repoCache,
-		commitCache:     commitCache,
+		repoCache:       newCache(cfg.RepositoryCacheConfig),
+		commitCache:     newCache(cfg.CommitCacheConfig),
 	}
 }
 
@@ -554,15 +538,11 @@ func (m *Manager) GCCommitIterator(ctx context.Context, repository *graveler.Rep
 	return NewOrderedCommitIterator(ctx, m.kvStore, repository, true)
 }
 
-func newCache(cfg *CacheConfig, def *CacheConfig) cache.Cache {
-	if cfg == nil {
-		cfg = def
+func newCache(cfg CacheConfig) cache.Cache {
+	if cfg.Size == 0 {
+		return cache.NoCache
 	}
-	c := cache.NoCache
-	if cfg.Size > 0 {
-		c = cache.NewCache(cfg.Size, cfg.Expiry, cache.NewJitterFn(cfg.Jitter))
-	}
-	return c
+	return cache.NewCache(cfg.Size, cfg.Expiry, cache.NewJitterFn(cfg.Jitter))
 }
 
 func (m *Manager) SetAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {

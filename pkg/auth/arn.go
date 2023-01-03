@@ -3,9 +3,8 @@ package auth
 import (
 	"strings"
 
-	"github.com/treeverse/lakefs/pkg/permissions"
-
 	"github.com/treeverse/lakefs/pkg/auth/wildcard"
+	"github.com/treeverse/lakefs/pkg/permissions"
 )
 
 type Arn struct {
