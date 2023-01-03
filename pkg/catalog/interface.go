@@ -145,6 +145,6 @@ type Interface interface {
 	// SetAddressToken to validate single use limited in time of a given physical address
 	SetAddressToken(ctx context.Context, repository, token string) error
 	GetAddressToken(ctx context.Context, repository, token string) error
-
+	DeleteExpiredAddressTokens(ctx context.Context, repository string) error
 	io.Closer
 }

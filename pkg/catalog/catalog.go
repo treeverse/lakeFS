@@ -2002,6 +2002,14 @@ func (c *Catalog) GetAddressToken(ctx context.Context, repository, token string)
 	return c.Store.GetAddressToken(ctx, repo, token)
 }
 
+func (c *Catalog) DeleteExpiredAddressTokens(ctx context.Context, repository string) error {
+	repo, err := c.getRepository(ctx, repository)
+	if err != nil {
+		return err
+	}
+	return c.Store.DeleteExpiredAddressTokens(ctx, repo)
+}
+
 func (c *Catalog) Close() error {
 	var errs error
 	for _, manager := range c.managers {

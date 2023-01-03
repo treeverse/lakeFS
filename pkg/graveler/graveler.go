@@ -537,6 +537,9 @@ type VersionController interface {
 
 	// ListAddressTokens lists address tokens on a repository
 	ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error)
+
+	// DeleteExpiredAddressTokens deletes expired tokens on a repository
+	DeleteExpiredAddressTokens(ctx context.Context, repository *RepositoryRecord) error
 }
 
 // Plumbing includes commands for fiddling more directly with graveler implementation
@@ -744,6 +747,9 @@ type RefManager interface {
 
 	// ListAddressTokens lists address tokens on a repository
 	ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error)
+
+	// DeleteExpiredAddressTokens deletes expired tokens on a repository
+	DeleteExpiredAddressTokens(ctx context.Context, repository *RepositoryRecord) error
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -2589,6 +2595,10 @@ func (g *Graveler) GetAddressToken(ctx context.Context, repository *RepositoryRe
 
 func (g *Graveler) ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error) {
 	return g.RefManager.ListAddressTokens(ctx, repository)
+}
+
+func (g *Graveler) DeleteExpiredAddressTokens(ctx context.Context, repository *RepositoryRecord) error {
+	return g.RefManager.DeleteExpiredAddressTokens(ctx, repository)
 }
 
 func tagsToValueIterator(src TagIterator) ValueIterator {

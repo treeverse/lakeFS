@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -35,6 +36,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -65,6 +67,8 @@ const (
 	httpStatusClientClosedRequest = 499
 	// httpStatusClientClosedRequestText text used for client closed request status code
 	httpStatusClientClosedRequestText = "Client closed request"
+
+	deleteTokensMod = 10
 )
 
 type actionsHandler interface {
@@ -385,12 +389,31 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, StringValue(body.Staging.PhysicalAddress))
 
 	// validate token
+	addressTokenCreationTime, err := c.PathProvider.ResolvePathTime(physicalAddress)
+	if err != nil {
+		c.handleAPIError(ctx, w, r, err)
+		return
+	}
+	addressTokenExpiryTime := addressTokenCreationTime.Add(ref.AddressTokenTime)
+	if addressTokenExpiryTime.Before(time.Now()) {
+		c.handleAPIError(ctx, w, r, graveler.ErrAddressTokenExpired)
+		return
+	}
+
 	err = c.Catalog.GetAddressToken(ctx, repository, physicalAddress)
 	if err != nil {
 		c.handleAPIError(ctx, w, r, err)
 		return
 	}
-	// TODO(eden) - delete expired tokens
+
+	rand.Seed(time.Now().UnixNano())
+	deleteTokensRandNumber := rand.Intn(deleteTokensMod)
+	if deleteTokensRandNumber%deleteTokensMod == 0 {
+		err = c.Catalog.DeleteExpiredAddressTokens(ctx, repository)
+		if err != nil {
+			c.Logger.WithError(err).Debug("failed to delete expired address tokens")
+		}
+	}
 
 	// Because CreateEntry tracks staging on a database with atomic operations,
 	// _ignore_ the staging token here: no harm done even if a race was lost

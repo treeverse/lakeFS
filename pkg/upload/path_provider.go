@@ -11,6 +11,7 @@ import (
 // PathProvider captures the requirements from PathPartitionProvider implementation to return a new path
 type PathProvider interface {
 	NewPath() string
+	ResolvePathTime(addressPath string) (time.Time, error)
 }
 
 // PathPartitionProvider provides path by request to upload data. The provided path is built from '<prefix>/<partition>/<unique id>'.
@@ -99,6 +100,15 @@ func (i *PathPartitionProvider) NewPath() string {
 	part := i.partitionForID()
 	name := xid.New().String()
 	return path.Join(i.cfg.Prefix, part, name)
+}
+
+func (i *PathPartitionProvider) ResolvePathTime(addressPath string) (time.Time, error) {
+	_, address := path.Split(addressPath)
+	id, err := xid.FromString(address)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return id.Time(), nil
 }
 
 // partitionForID return the current partition to use. It will update the partition value before return in case we

@@ -428,6 +428,10 @@ func (m *RefsFake) ListAddressTokens(context.Context, *graveler.RepositoryRecord
 	return m.addressTokenIter, nil
 }
 
+func (m *RefsFake) DeleteExpiredAddressTokens(ctx context.Context, repository string) error {
+	return nil
+}
+
 type diffIter struct {
 	current int
 	records []graveler.Diff

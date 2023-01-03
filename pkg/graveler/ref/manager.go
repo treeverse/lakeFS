@@ -599,3 +599,8 @@ func (m *Manager) GetAddressToken(ctx context.Context, repository *graveler.Repo
 func (m *Manager) ListAddressTokens(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
 	return NewAddressTokenIterator(ctx, m.kvStore, repository)
 }
+
+func (m *Manager) DeleteExpiredAddressTokens(ctx context.Context, repository *graveler.RepositoryRecord) error {
+	//TODO
+	return nil
+}
