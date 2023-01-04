@@ -63,13 +63,11 @@ func (i *AddressTokenIterator) SeekGE(address string) {
 		return
 	}
 	i.Close()
-	it, err := kv.NewPrimaryIterator(i.ctx, i.store, (&graveler.LinkAddressData{}).ProtoReflect().Type(),
+	i.it, i.err = kv.NewPrimaryIterator(i.ctx, i.store, (&graveler.LinkAddressData{}).ProtoReflect().Type(),
 		i.repoPartition,
 		[]byte(graveler.LinkedAddressPath("")), kv.IteratorOptionsFrom([]byte(graveler.LinkedAddressPath(address))))
-	i.it = it
-	i.err = err
 	i.value = nil
-	i.closed = err != nil
+	i.closed = i.err != nil
 }
 
 func (i *AddressTokenIterator) Value() *graveler.LinkAddressData {
