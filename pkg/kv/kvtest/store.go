@@ -293,6 +293,30 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 			t.Fatalf("SetIf err=%v - key=%s, value=%s, pred=nil, expected err=%s", err, key, val2, kv.ErrPredicateFailed)
 		}
 	})
+
+	t.Run("update_if_exists", func(t *testing.T) {
+		key := uniqueKey("set-if-exists")
+		val1 := []byte("v1")
+		err := store.Set(ctx, []byte(testPartitionKey), key, val1)
+		if err != nil {
+			t.Fatalf("Set while testing SetIf - key=%s value=%s: %s", key, val1, err)
+		}
+
+		val2 := []byte("v2")
+		err = store.SetIf(ctx, []byte(testPartitionKey), key, val2, kv.ConditionalExists)
+		if err != nil {
+			t.Fatalf("SetIf with previous value - key=%s value=%s pred=%s: %s", key, val2, val1, err)
+		}
+	})
+
+	t.Run("update_if_exists_negative", func(t *testing.T) {
+		key := uniqueKey("set-if-exists_negative")
+		val2 := []byte("v2")
+		err := store.SetIf(ctx, []byte(testPartitionKey), key, val2, kv.ConditionalExists)
+		if !errors.Is(err, kv.ErrPredicateFailed) {
+			t.Fatalf("SetIf err=%v - key=%s, value=%s, pred=%v, expected err=%s", err, key, val2, kv.ConditionalExists, kv.ErrPredicateFailed)
+		}
+	})
 }
 
 func testStoreScan(t *testing.T, ms MakeStore) {

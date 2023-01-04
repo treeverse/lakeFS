@@ -244,11 +244,14 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 
 	var res pgconn.CommandTag
 	var err error
-	if valuePredicate == nil {
-		// use insert to make sure there was no previous value before
+	switch {
+	case valuePredicate == nil: // use insert to make sure there was no previous value before
 		res, err = s.Pool.Exec(ctx, `INSERT INTO `+s.Params.SanitizedTableName+`(partition_key,key,value) VALUES($1,$2,$3) ON CONFLICT DO NOTHING`, partitionKey, key, value)
-	} else {
-		// update just in case the previous value was same as predicate value
+
+	case valuePredicate == kv.ConditionalExists: // update only if exists
+		res, err = s.Pool.Exec(ctx, `UPDATE `+s.Params.SanitizedTableName+` SET value=$3 WHERE key=$2 AND partition_key=$1`, partitionKey, key, value)
+
+	default: // update just in case the previous value was same as predicate value
 		res, err = s.Pool.Exec(ctx, `UPDATE `+s.Params.SanitizedTableName+` SET value=$3 WHERE key=$2 AND partition_key=$1 AND value=$4`, partitionKey, key, value, valuePredicate.([]byte))
 	}
 	if err != nil {

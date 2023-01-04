@@ -17,6 +17,8 @@ const (
 	InitialMigrateVersion = 1
 	PathDelimiter         = "/"
 	MetadataPartitionKey  = "kv-internal-metadata"
+
+	ConditionalExists = "dd136a329c1f297d37d039d9ddd99699"
 )
 
 var (

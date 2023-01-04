@@ -772,7 +772,8 @@ type StagingManager interface {
 	Get(ctx context.Context, st StagingToken, key Key) (*Value, error)
 
 	// Set writes a (possibly nil) value under the given staging token and key.
-	Set(ctx context.Context, st StagingToken, key Key, value *Value, overwrite bool) error
+	// If requireExists is true - update key only if key already exists in store
+	Set(ctx context.Context, st StagingToken, key Key, value *Value, requireExists bool) error
 
 	// Update updates a (possibly nil) value under the given staging token and key.
 	Update(ctx context.Context, st StagingToken, key Key, updateFunc ValueUpdateFunc) error
@@ -1397,7 +1398,7 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 		}
 
 		if !writeCondition.IfAbsent {
-			return g.StagingManager.Set(ctx, branch.StagingToken, key, &value, !writeCondition.IfAbsent)
+			return g.StagingManager.Set(ctx, branch.StagingToken, key, &value, false)
 		}
 
 		// check if the given key exist in the branch first
@@ -1503,6 +1504,12 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 }
 
 func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecord, branch *Branch, key Key, cachedMetaRangeID *MetaRangeID) error {
+	// First attempt to update on staging token
+	err := g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
+	if !errors.Is(err, kv.ErrPredicateFailed) {
+		return err
+	}
+
 	// check staging for entry or tombstone
 	val, err := g.getFromStagingArea(ctx, branch, key)
 	switch {
@@ -1516,7 +1523,7 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 		return nil
 	default:
 		// found in staging, set tombstone
-		return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
+		return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, false)
 	}
 
 	// check key in committed - do we need tombstone?
@@ -1542,7 +1549,7 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 	}
 
 	// found in committed, set tombstone
-	return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
+	return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, false)
 }
 
 // ListStaging Exposing listStagingArea to catalog for PrepareGCUncommitted
@@ -1964,11 +1971,11 @@ func (g *Graveler) resetKey(ctx context.Context, repository *RepositoryRecord, b
 		if stagedValue != nil && bytes.Equal(committed.Identity, stagedValue.Identity) {
 			return nil // No change
 		}
-		return g.StagingManager.Set(ctx, st, key, committed, true)
+		return g.StagingManager.Set(ctx, st, key, committed, false)
 		// entry not committed and changed in staging area => override with tombstone
 		// If not committed and staging == tombstone => ignore
 	} else if !isCommitted && stagedValue != nil {
-		return g.StagingManager.Set(ctx, st, key, nil, true)
+		return g.StagingManager.Set(ctx, st, key, nil, false)
 	}
 
 	return nil
