@@ -1510,22 +1510,6 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 		return err
 	}
 
-	// check staging for entry or tombstone
-	val, err := g.getFromStagingArea(ctx, branch, key)
-	switch {
-	case err != nil:
-		if !errors.Is(err, ErrNotFound) {
-			return fmt.Errorf("reading from staging: %w", err)
-		}
-		// entry not found in staging - continue to committed
-	case val == nil:
-		// found tombstone in staging, do nothing
-		return nil
-	default:
-		// found in staging, set tombstone
-		return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, false)
-	}
-
 	// check key in committed - do we need tombstone?
 	var metaRangeID MetaRangeID
 	if cachedMetaRangeID != nil && *cachedMetaRangeID != "" {
@@ -1539,17 +1523,31 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 	}
 
 	_, err = g.CommittedManager.Get(ctx, repository.StorageNamespace, metaRangeID, key)
-	if err != nil {
-		if !errors.Is(err, ErrNotFound) {
-			// unknown error
-			return fmt.Errorf("reading from committed: %w", err)
-		}
-		// key is nowhere to be found - nothing to do
-		return nil
+	if err == nil {
+		// found in committed, set tombstone
+		return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, false)
 	}
+	if !errors.Is(err, ErrNotFound) {
+		// unknown error
+		return fmt.Errorf("reading from committed: %w", err)
+	}
+	// else key is nowhere to be found - continue to staged
 
-	// found in committed, set tombstone
-	return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, false)
+	// check staging for entry or tombstone
+	val, err := g.getFromStagingArea(ctx, branch, key)
+	if err == nil {
+		if val == nil {
+			// found tombstone in staging, do nothing
+			return nil
+		}
+		// found in staging, set tombstone
+		return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, false)
+	}
+	if !errors.Is(err, ErrNotFound) {
+		return fmt.Errorf("reading from staging: %w", err)
+	}
+	// err == ErrNotFound, key is nowhere to be found - nothing to do
+	return nil
 }
 
 // ListStaging Exposing listStagingArea to catalog for PrepareGCUncommitted
