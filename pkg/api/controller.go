@@ -3,14 +3,12 @@ package api
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
 	"encoding/base64"
 	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"math/big"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -68,8 +66,6 @@ const (
 	httpStatusClientClosedRequest = 499
 	// httpStatusClientClosedRequestText text used for client closed request status code
 	httpStatusClientClosedRequestText = "Client closed request"
-
-	deleteTokensMod = 10
 )
 
 type actionsHandler interface {
@@ -405,20 +401,6 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		c.handleAPIError(ctx, w, r, err)
 		return
-	}
-
-	// delete expired address tokens
-	randNum, err := rand.Int(rand.Reader, big.NewInt(deleteTokensMod))
-	if err != nil {
-		c.Logger.WithError(err).Debug("failed to delete expired address tokens")
-	} else {
-		deleteTokensRandNumber := randNum.Int64()
-		if deleteTokensRandNumber%deleteTokensMod == 0 {
-			err = c.Catalog.DeleteExpiredAddressTokens(ctx, repository)
-			if err != nil {
-				c.Logger.WithError(err).Debug("failed to delete expired address tokens")
-			}
-		}
 	}
 
 	// Because CreateEntry tracks staging on a database with atomic operations,
