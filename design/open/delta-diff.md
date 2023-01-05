@@ -24,6 +24,9 @@ She would like to debug the ETL run. In other words, she would want to see the D
 1.  The Delta diff will be limited to the available Delta Log entries (the JSON files), which are, by default, retained
 for [30 days](https://docs.databricks.com/delta/history.html#configure-data-retention-for-time-travel).
 2. Log compaction isn't supported.
+3. Delta Table diff will only be supported if the table stayed where it was, e.g. if we have a Delta table on path
+`repo/branch1/delta/table` and it moved in a different branch to location `repo/branch2/delta/different/location/table`
+then it won't be "diffable".
 
 ---
 
@@ -90,34 +93,55 @@ Plugins can be written and consumed in almost every major language. This is achi
 #### DiffService
 
 The DiffService will be an internal component in lakeFS which will serve as the Core system.  
-In order to realize which diff plugins are available, we shall use new configuration values:
-1. `LAKEFS_PLUGINS_LOCATION`
-   The DiffService will use this location to search for the required plugin. Defaults to lakeFS's configuration file directory.
-2. `LAKEFS_PLUGIN_DIFF_{TYPE OF DIFF}`
-   The DiffService will use the name of binary provided by this env var to perform the diff. For instance, `LAKEFS_PLUGIN_DIFF_DELTA=deltaDiffBinary`
-   The DiffService will use the [plugins' location](https://github.com/hashicorp/terraform/blob/main/plugins.go) and the diff binary to load the plugin and request a diff.
-   The **type** of diff will be sent as part of the request to lakeFS as specified [here](#API).
-   The communication between the DiffService and the plugins, as explained above, will be through the `go-plugin` package (`gRPC`).
+In order to realize which diff plugins are available, we shall use new manifest section and environment variables:
+
+```yaml
+diff:
+  <diff_type>:
+    plugin: <plugin_name_1>
+plugins:
+  <plugin_name_1>: <location to the 'plugin_name_1' plugin - full path to the binary needed to execute>
+  <plugin_name_2>: <location to the 'plugin_name_1' plugin - full path to the binary needed to execute>    
+```
+
+1. `LAKEFS_DIFF_{DIFF_TYPE}_PLUGIN`
+   The DiffService will use the name of plugin provided by this env var to load the binary and perform the diff. For instance,
+   `LAKEFS_DIFF_DELTA_PLUGIN=delta_diff_plugin` will search for the binary path under the manifest path
+   `plugins.delta_diff_plugin` or environment variable `LAKEFS_PLUGINS_DELTA_DIFF_PLUGIN`.
+   If a given plugin path will not be found in the manifest or env var (e.g. `delta_diff_plugin` in the above example),
+   the binary of a plugin with the same name will be searched under `~/.lakefs/plugins` (as the
+   [plugins' default location](https://github.com/hashicorp/terraform/blob/main/plugins.go)).
+2. `LAKEFS_PLUGINS_{PLUGIN_NAME}`
+   This environment variable (and corresponding manifest path) will provide the path to the binary of a plugin named
+   {PLUGIN_NAME}, for example, `LAKEFS_PLUGINS_DELTA_DIFF_PLUGIN=/path/to/delta/diff/binary`.
+
+The **type** of diff will be sent as part of the request to lakeFS as specified [here](#API).
+The communication between the DiffService and the plugins, as explained above, will be through the `go-plugin` package (`gRPC`).
 
 #### Delta Diff Plugin
 
 Implemented using [delta-rs](https://github.com/delta-io/delta-rs) (Rust), this plugin will perform the diff operation using table paths provided by the DiffService through a `gRPC` call.  
 To query the Delta Table from lakeFS, the plugin will generate an S3 client (this is a constraint imposed by the `delta-rs` package) and send a request to lakeFS's S3 gateway.  
-The diff algorithm:
-1. Run the Delta [HISTORY command](https://docs.delta.io/latest/delta-utility.html#history-schema) on both table paths.
-2. Traverse through the [returned "commitInfo" entry vector ](https://github.com/delta-io/delta-rs/blob/d444cdf7588503c1ebfceec90d4d2fadbd50a703/rust/src/delta.rs#L910)
-starting from the **last** version of each history vector: 
-    1. While the returned entry versions **aren't** equal OR no more versions available:
-        1. If the bigger version is the _"left"'s_ version, add the entry to the returned history list.
-        2. Traverse one version back of the bigger version entry's history.
-    2. While the versions > 0 OR no more versions available: 
+
+* The objects requested from lakeFS will only be the `_delta_log` JSON files, as they are the files that construct a table's history.
+* We shall limit the number of returned objects to 1000 (each entry is ~500 bytes).<sup>[2](#future-plans)</sup>
+
+_The diff algorithm:_
+1. Get the table version of the base common ancestor.
+2. Run a variation of the Delta [HISTORY command](https://docs.delta.io/latest/delta-utility.html#history-schema)<sup>[3](#future-plans)</sup>
+(this variation starts from a given version number) on both table paths, starting from the version retrieved above.
+    - If the left table doesn't include the base version (from point 1), start from the oldest version greater than the base.
+3. Operate on the [returned "commitInfo" entry vector ](https://github.com/delta-io/delta-rs/blob/d444cdf7588503c1ebfceec90d4d2fadbd50a703/rust/src/delta.rs#L910)
+starting from the **oldest** version of each history vector that is greater than the base table version: 
+    1. If one table version is greater than the other table version, increase the smaller table's version until it gets to the same version of the other table.
+    2. While there are more versions available && answer's vector size < 1001: 
         1. Create a hash for the entry based on fields: `timestamp`, `operation`, `operationParameters` , and `operationMetrics` values.
         2. Compare the hashes of the versions.
-        3. If they **aren't equal**, add the "left"'s entry to the returned history list, else, break and **return the history list**.
-        4. Traverse one version back in both vectors.
-3. Return the history list.
+        3. If they **aren't equal**, add the "left" table's entry to the returned history list.
+        4. Traverse one version forward in both vectors.
+4. Return the history list.
 
-### Authentication
+### Authentication<sup>[4](#future-plans)</sup>
 
 The `delta-rs` package generates an S3 client which will be used to communicate back to lakeFS (through the S3 gateway).  
 In order for the S3 client to communicate with lakeFS (or S3 in general) it needs to pass an AWS Access Key Id and Secret access key.  
@@ -132,7 +156,7 @@ To overcome this scenario, we'll use special diff credentials as follows:
 
 ### API
 
-- GET `/repositories/repo/{repo}/otf/refs/{left_ref}/diff/{right_ref}?type={diff_type}`
+- GET `/repositories/repo/{repo}/otf/refs/{left_ref}/diff/{right_ref}?table_path={path}&type={diff_type}`
     - Tagged as experimental
     - **Response**:  
         The response includes an array of operations from different versions of the specified table format.
@@ -169,18 +193,58 @@ To overcome this scenario, we'll use special diff credentials as follows:
     
 ---
 
-### Packaging
+### Build & Package
 
-1. We will package the binary with the lakeFS release.
-2. We will also update the Dockerfile to include the binary within it.
+#### Build
+
+The Rust diff implementation will be located within the lakeFS repo. That way the protobuf will be shared between the 
+"core" and "plugin" components easily. We will use `cargo` to build the artifacts for the different architectures.  
+
+###### lakeFS development
+
+The different plugins will have their own target in the `makefile` which will not be included as a (sub) dependency
+of the `all` target. That way we'll not force lakeFS developers to include Rust (or any other plugin runtime) 
+in their stack.
+If developers want to develop new plugins, they'll have to include the necessary runtime in their environment.
+
+* _Contribution guide_: It also means updating the contribution guide on how to update the makefile if a new plugin is added.
+
+###### Docker
+
+The docker file will build the plugins and will include Rust in the build part.
+
+#### Package
+
+1. We will package the binary within the released lakeFS + lakectl archive. It will be located under a `plugins` directory:
+`plugins/diff/delta_v1`.
+2. We will also update the Docker image to include the binary within it. The docker image is what clients should
+use in order to get the "out-of-the-box" experience.
 
 ---
 
 ## Metrics
 
 ### Applicative Metrics
+
 - Diff runtime
-- The total number of versions returned - this is the number of files that were read from lakeFS. This is basically the size of a Delta Log. We can use it later on to optimize reading.
+- The total number of versions read (per diff) - this is the number of Delta Log (JSON) files that were read from lakeFS by the plugin.
+This is basically the size of a Delta Log. We can use it later on to optimize reading and understand an average size of 
+Delta log.
 
 ### Business Statistics
-- The number of unique requests - get the number of Delta Lake users.
+
+- The number of unique requests by installation id- get the lower bound of the number of Delta Lake users.
+
+---
+
+## Future plans
+
+1. Add a separate call to the plugin that merely checks that the plugin si willing to try to run on a location.
+This allows a better UX(gray-out the button until you type in a good path), and will probably be helpful for performing 
+auto-detection.
+2. Support pagination.
+3. The `delta-rs` HISTORY command is inefficient as it sends multiple requests to get all the Delta log entries. 
+We might want to hold this information in our own model to make it easier for the diff (and possibly merge) to work.
+4. This design's authentication method is temporary. It enlists two auth requirements that we might need to implement:
+   1. Support tags/policies for credentials.
+   2. Allow temporary credentials.
