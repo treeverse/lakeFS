@@ -48,7 +48,7 @@ func NewMetadata(ctx context.Context, logger logging.Logger, blockstoreType stri
 }
 
 func BuildMetadataProvider(logger logging.Logger, c *config.Config) cloud.MetadataProvider {
-	switch c.GetBlockstoreType() {
+	switch c.BlockstoreType() {
 	case block.BlockstoreTypeGS:
 		return gcp.NewMetadataProvider(logger)
 	case block.BlockstoreTypeS3:

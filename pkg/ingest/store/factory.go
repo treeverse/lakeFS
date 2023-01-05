@@ -14,9 +14,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/params"
 )
 
-var (
-	ErrNotSupported = errors.New("no storage adapter found")
-)
+var ErrNotSupported = errors.New("no storage adapter found")
 
 type ObjectStoreEntry struct {
 	// FullKey represents the fully qualified path in the object store namespace for the given entry
@@ -95,7 +93,7 @@ func NewFactory(params params.AdapterConfig) *walkerFactory {
 func (f *walkerFactory) buildS3Walker(opts WalkerOptions) (*s3Walker, error) {
 	var sess *session.Session
 	if f.params != nil {
-		s3params, err := f.params.GetBlockAdapterS3Params()
+		s3params, err := f.params.BlockstoreS3Params()
 		if err != nil {
 			return nil, err
 		}
@@ -116,7 +114,7 @@ func (f *walkerFactory) buildS3Walker(opts WalkerOptions) (*s3Walker, error) {
 func (f *walkerFactory) buildGCSWalker(ctx context.Context) (*gcsWalker, error) {
 	var svc *storage.Client
 	if f.params != nil {
-		gsParams, err := f.params.GetBlockAdapterGSParams()
+		gsParams, err := f.params.BlockstoreGSParams()
 		if err != nil {
 			return nil, err
 		}
@@ -137,7 +135,7 @@ func (f *walkerFactory) buildGCSWalker(ctx context.Context) (*gcsWalker, error) 
 func (f *walkerFactory) buildAzureWalker() (*azureBlobWalker, error) {
 	var p pipeline.Pipeline
 	if f.params != nil {
-		azureParams, err := f.params.GetBlockAdapterAzureParams()
+		azureParams, err := f.params.BlockstoreAzureParams()
 		if err != nil {
 			return nil, err
 		}

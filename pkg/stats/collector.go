@@ -173,10 +173,10 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 	extended := false
 	flushSize := config.DefaultStatsFlushSize
 	if c != nil {
-		statsEnabled = c.GetStatsEnabled() && !strings.HasPrefix(version.Version, version.UnreleasedVersion)
-		flushDuration = c.GetStatsFlushInterval()
-		flushSize = c.GetStatsFlushSize()
-		extended = c.GetStatsExtended()
+		statsEnabled = c.Stats.Enabled && !strings.HasPrefix(version.Version, version.UnreleasedVersion)
+		flushDuration = c.Stats.FlushInterval
+		flushSize = c.Stats.FlushSize
+		extended = c.Stats.Extended
 	}
 	s := &BufferedCollector{
 		cache:           make(keyIndex),
@@ -205,7 +205,7 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 	// assign sender
 	if s.sender == nil {
 		if statsEnabled {
-			s.sender = NewHTTPSender(c.GetStatsAddress(), s.sendTimeout, time.Now)
+			s.sender = NewHTTPSender(c.Stats.Address, s.sendTimeout, time.Now)
 		} else {
 			s.sender = &dummySender{Log: s.log}
 		}
