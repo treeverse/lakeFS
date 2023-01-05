@@ -37,7 +37,7 @@ var (
 type Precond string
 
 // PrecondConditionalExists Conditional for SetIf which performs Set only if key already exists in store
-var PrecondConditionalExists = Precond("dd136a329c1f297d37d039d9ddd99699")
+var PrecondConditionalExists = Precond("ConditionalExists")
 
 func FormatPath(p ...string) string {
 	return strings.Join(p, PathDelimiter)
