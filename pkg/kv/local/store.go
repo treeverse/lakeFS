@@ -198,7 +198,7 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 	txn := s.db.NewTransaction(false)
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchSize = s.prefetchSize
-	if options.BatchSize > 0 && options.BatchSize < s.prefetchSize {
+	if options.BatchSize != 0 && opts.PrefetchSize != 0 && options.BatchSize < opts.PrefetchSize {
 		opts.PrefetchSize = options.BatchSize
 	}
 	if opts.PrefetchSize > 0 {

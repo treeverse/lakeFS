@@ -106,7 +106,7 @@ func isTableExist(ctx context.Context, svc *dynamodb.DynamoDB, table string) (bo
 		TableName: aws.String(table),
 	})
 	if err != nil {
-		if asErr, ok := err.(awserr.Error); ok && asErr.Code() == dynamodb.ErrCodeResourceNotFoundException {
+		if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() == dynamodb.ErrCodeResourceNotFoundException {
 			return false, nil
 		}
 		return false, err
@@ -329,12 +329,8 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 	// limit set to the minimum 'params.ScanLimit' and 'options.BatchSize', unless 0 (not set)
 	limit := s.params.ScanLimit
 	batchSize := int64(options.BatchSize)
-	if batchSize > 0 {
-		if limit == 0 {
-			limit = batchSize
-		} else if batchSize < limit {
-			limit = batchSize
-		}
+	if batchSize != 0 && limit != 0 && batchSize < limit {
+		limit = batchSize
 	}
 
 	// format key and attribute expressions
