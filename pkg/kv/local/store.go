@@ -127,14 +127,16 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 				log.WithField("predicate", nil).Trace("predicate condition failed")
 				return kv.ErrPredicateFailed
 			}
-			val, err := item.ValueCopy(nil)
-			if err != nil {
-				log.WithError(err).Error("could not get byte value for predicate")
-				return err
-			}
-			if !bytes.Equal(val, valuePredicate.([]byte)) {
-				log.WithField("predicate", valuePredicate).WithField("value", val).Trace("predicate condition failed")
-				return kv.ErrPredicateFailed
+			if valuePredicate != kv.PrecondConditionalExists {
+				val, err := item.ValueCopy(nil)
+				if err != nil {
+					log.WithError(err).Error("could not get byte value for predicate")
+					return err
+				}
+				if !bytes.Equal(val, valuePredicate.([]byte)) {
+					log.WithField("predicate", valuePredicate).WithField("value", val).Trace("predicate condition failed")
+					return kv.ErrPredicateFailed
+				}
 			}
 		} else if !errors.Is(err, badger.ErrKeyNotFound) {
 			log.WithField("predicate", valuePredicate).Trace("predicate condition failed (key not found)")
