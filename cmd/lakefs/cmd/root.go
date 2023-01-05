@@ -16,9 +16,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
-var (
-	cfgFile string
-)
+var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -129,7 +127,7 @@ func initConfig() {
 		logger.WithError(err).Fatal("Invalid config")
 	}
 
-	logger.WithFields(cfg.ToLoggerFields()).Info("Config")
+	logger.WithFields(config.MapLoggingFields(cfg)).Info("Config")
 }
 
 // getHomeDir find and return the home directory

@@ -532,16 +532,16 @@ func BenchmarkKVAuthService_ListEffectivePolicies(b *testing.B) {
 		Enabled: false,
 	}, logging.Default())
 	serviceWithCache := auth.NewAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
-		Enabled:        true,
-		Size:           1024,
-		TTL:            20 * time.Second,
-		EvictionJitter: 3 * time.Second,
+		Enabled: true,
+		Size:    1024,
+		TTL:     20 * time.Second,
+		Jitter:  3 * time.Second,
 	}, logging.Default())
 	serviceWithCacheLowTTL := auth.NewAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
-		Enabled:        true,
-		Size:           1024,
-		TTL:            1 * time.Millisecond,
-		EvictionJitter: 1 * time.Millisecond,
+		Enabled: true,
+		Size:    1024,
+		TTL:     1 * time.Millisecond,
+		Jitter:  1 * time.Millisecond,
 	}, logging.Default())
 	userName := userWithPolicies(b, serviceWithoutCache, userPoliciesForTesting)
 
@@ -1002,7 +1002,7 @@ func NewTestApiService(t *testing.T, withCache bool) (*mock.MockClientWithRespon
 		cacheParams.Enabled = true
 		cacheParams.Size = 100
 		cacheParams.TTL = time.Minute
-		cacheParams.EvictionJitter = time.Minute
+		cacheParams.Jitter = time.Minute
 	}
 	s, err := auth.NewAPIAuthServiceWithClient(mockClient, secretStore, cacheParams)
 	if err != nil {

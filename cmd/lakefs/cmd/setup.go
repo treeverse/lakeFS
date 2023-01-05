@@ -23,7 +23,7 @@ var setupCmd = &cobra.Command{
 		cfg := loadConfig()
 
 		ctx := cmd.Context()
-		kvParams, err := cfg.GetKVParams()
+		kvParams, err := cfg.DatabaseParams()
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
 			os.Exit(1)
@@ -70,11 +70,11 @@ var setupCmd = &cobra.Command{
 		storeMessage := &kv.StoreMessage{Store: kvStore}
 		logger := logging.Default()
 		authLogger := logger.WithField("service", "auth_service")
-		authService = auth.NewAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), authLogger)
-		metadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), cfg.GetDatabaseType(), kvStore)
+		authService = auth.NewAuthService(storeMessage, crypt.NewSecretStore(cfg.AuthEncryptionSecret()), nil, cfg.Auth.Cache, authLogger)
+		metadataManager = auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		metadata := stats.NewMetadata(ctx, logger, cfg.GetBlockstoreType(), metadataManager, cloudMetadataProvider)
+		metadata := stats.NewMetadata(ctx, logger, cfg.BlockstoreType(), metadataManager, cloudMetadataProvider)
 
 		initialized, err := metadataManager.IsInitialized(ctx)
 		if err != nil {
@@ -118,12 +118,12 @@ func init() {
 	f.String("secret-access-key", "", "AWS-format secret access key to create for that user (for integration)")
 	if err := f.MarkHidden("access-key-id"); err != nil {
 		// (internal error)
-		fmt.Fprint(os.Stderr, err)
+		_, _ = fmt.Fprint(os.Stderr, err)
 		os.Exit(internalErrorCode)
 	}
 	if err := f.MarkHidden("secret-access-key"); err != nil {
 		// (internal error)
-		fmt.Fprint(os.Stderr, err)
+		_, _ = fmt.Fprint(os.Stderr, err)
 		os.Exit(internalErrorCode)
 	}
 	_ = setupCmd.MarkFlagRequired("user-name")

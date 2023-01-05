@@ -69,7 +69,7 @@ func Serve(
 
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
 	r := chi.NewRouter()
-	oidcConfig := cfg.GetAuthOIDCConfiguration()
+	oidcConfig := cfg.Auth.OIDC
 	apiRouter := r.With(
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
 			AuthenticationFunc: openapi3filter.NoopAuthenticationFunc,
@@ -77,8 +77,8 @@ func Serve(
 		httputil.LoggingMiddleware(
 			RequestIDHeaderName,
 			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
-			cfg.GetAuditLogLevel(),
-			cfg.GetLoggingTraceRequestHeaders()),
+			cfg.Logging.AuditLogLevel,
+			cfg.Logging.TraceRequestHeaders),
 		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &oidcConfig),
 		MetricsMiddleware(swagger),
 	)
@@ -109,15 +109,15 @@ func Serve(
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
 	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
-	if cfg.GetAuthOIDCConfiguration().Enabled {
+	if cfg.Auth.OIDC.Enabled {
 		r.Mount("/oidc/login", NewOIDCLoginPageHandler(oidcConfig, sessionStore, oauthConfig, logger))
 	}
-	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.GetAuthLogoutRedirectURL()))
+	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.Auth.LogoutRedirectURL))
 
 	// Configuration flag to control if the embedded UI is served
 	// or not and assign the correct handler for each case.
 	var rootHandler http.Handler
-	if cfg.GetUIEnabled() {
+	if cfg.UI.Enabled {
 		// Handler which serves the embedded UI
 		// as well as handles erroneous S3 gateway requests
 		// and returns a compatible response

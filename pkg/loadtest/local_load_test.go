@@ -50,7 +50,7 @@ func TestLocalLoad(t *testing.T) {
 	kvStore := kvtest.GetStore(ctx, t)
 	storeMessage := &kv.StoreMessage{Store: kvStore}
 	authService := auth.NewAuthService(storeMessage, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
-	meta := auth.NewKVMetadataManager("local_load_test", conf.GetFixedInstallationID(), conf.GetDatabaseType(), kvStore)
+	meta := auth.NewKVMetadataManager("local_load_test", conf.Installation.FixedID, conf.Database.Type, kvStore)
 
 	blockstoreType := os.Getenv(testutil.EnvKeyUseBlockAdapter)
 	if blockstoreType == "" {
@@ -75,15 +75,14 @@ func TestLocalLoad(t *testing.T) {
 	testutil.Must(t, err)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)
-	kvParams, err := conf.GetKVParams()
+	kvParams, err := conf.DatabaseParams()
 	testutil.Must(t, err)
 	migrator := kv.NewDatabaseMigrator(kvParams)
 	t.Cleanup(func() {
 		_ = c.Close()
 	})
-	auditChecker := version.NewDefaultAuditChecker(conf.GetSecurityAuditCheckURL(), "")
-	emailParams, _ := conf.GetEmailParams()
-	emailer, err := email.NewEmailer(emailParams)
+	auditChecker := version.NewDefaultAuditChecker(conf.Security.AuditCheckURL, "")
+	emailer, err := email.NewEmailer(email.Params(conf.Email))
 	testutil.Must(t, err)
 	handler := api.Serve(
 		conf,

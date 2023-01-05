@@ -212,7 +212,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg)
 	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg)
 
-	committedParams := *cfg.Config.GetCommittedParams()
+	committedParams := cfg.Config.CommittedParams()
 	sstableMetaRangeManager, err := committed.NewMetaRangeManager(
 		committedParams,
 		// TODO(ariels): Use separate range managers for metaranges and ranges
@@ -233,10 +233,10 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 			Executor:              executor,
 			KvStore:               cfg.KVStore,
 			AddressProvider:       ident.NewHexAddressProvider(),
-			RepositoryCacheConfig: cfg.Config.GetGravelerRepositoryCacheConfig(),
-			CommitCacheConfig:     cfg.Config.GetGravelerCommitCacheConfig(),
+			RepositoryCacheConfig: ref.CacheConfig(cfg.Config.Graveler.RepositoryCache),
+			CommitCacheConfig:     ref.CacheConfig(cfg.Config.Graveler.CommitCache),
 		})
-	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
+	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.Committed.BlockStoragePrefix)
 	settingManager := settings.NewManager(refManager, *cfg.KVStore)
 	if cfg.SettingsManagerOption != nil {
 		cfg.SettingsManagerOption(settingManager)

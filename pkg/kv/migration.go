@@ -14,12 +14,12 @@ type Migrator interface {
 }
 
 type DatabaseMigrator struct {
-	params kvparams.KV
+	params kvparams.Config
 }
 
 var ErrMigrationRequired = errors.New("wrong kv version")
 
-func NewDatabaseMigrator(params kvparams.KV) *DatabaseMigrator {
+func NewDatabaseMigrator(params kvparams.Config) *DatabaseMigrator {
 	return &DatabaseMigrator{
 		params: params,
 	}

@@ -186,7 +186,7 @@ func NewAuthService(store *kv.StoreMessage, secretStore crypt.SecretStore, email
 	logger.Info("initialized Auth service")
 	var cache Cache
 	if cacheConf.Enabled {
-		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.EvictionJitter)
+		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.Jitter)
 	} else {
 		cache = &DummyCache{}
 	}
@@ -1884,7 +1884,7 @@ func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore,
 	logging.Default().Info("initialized authorization service")
 	var cache Cache
 	if cacheConf.Enabled {
-		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.EvictionJitter)
+		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.Jitter)
 	} else {
 		cache = &DummyCache{}
 	}
@@ -1902,7 +1902,7 @@ func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore,
 func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, secretStore crypt.SecretStore, cacheConf params.ServiceCache) (*APIAuthService, error) {
 	var cache Cache
 	if cacheConf.Enabled {
-		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.EvictionJitter)
+		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.Jitter)
 	} else {
 		cache = &DummyCache{}
 	}

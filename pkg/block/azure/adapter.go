@@ -13,7 +13,6 @@ import (
 	"github.com/Azure/azure-pipeline-go/pipeline"
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -215,7 +214,7 @@ func (a *Adapter) Download(ctx context.Context, obj block.ObjectPointer, offset,
 	keyOptions := azblob.ClientProvidedKeyOptions{}
 	downloadResponse, err := blobURL.Download(ctx, offset, count, azblob.BlobAccessConditions{}, false, keyOptions)
 	if isErrNotFound(err) {
-		return nil, adapter.ErrDataNotFound
+		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
 		a.log(ctx).WithError(err).Errorf("failed to get azure blob from container %s key %s", container, blobURL)

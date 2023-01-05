@@ -57,7 +57,7 @@ var testCases = []testCase{
 func TestCommittedGC(t *testing.T) {
 	SkipTestIfAskedTo(t)
 	blockstoreType := viper.GetViper().GetString("blockstore_type")
-	//TODO lynn: change this for test also on Azure
+	// TODO lynn: change this for test also on Azure
 	if blockstoreType != block.BlockstoreTypeS3 {
 		t.Skip("Running on S3 only")
 	}
@@ -124,7 +124,7 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase testCase, blocksto
 	_, _ = uploadFileRandomData(ctx, t, repo, newBranch, "file"+testCase.id, direct)
 	commitTime = int64(10)
 
-	//get commit id after commit for validation step in the tests
+	// get commit id after commit for validation step in the tests
 	commitRes, err := client.CommitWithResponse(ctx, repo, newBranch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "Uploaded file" + testCase.id, Date: &commitTime})
 	if err != nil || commitRes.StatusCode() != 201 {
 		t.Fatalf("Commit some data %s", err)
@@ -145,6 +145,9 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase testCase, blocksto
 	for _, branch := range testCase.branches {
 		if branch.deleteCommitDaysAgo > -1 {
 			_, err = client.DeleteObjectWithResponse(ctx, repo, branch.name, &api.DeleteObjectParams{Path: "file" + testCase.id})
+			if err != nil {
+				t.Fatalf("DeleteObject %s", err)
+			}
 			epochCommitDateInSeconds := currentEpochInSeconds - (dayInSeconds * branch.deleteCommitDaysAgo)
 			_, err = client.CommitWithResponse(ctx, repo, branch.name, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "Deleted file" + testCase.id, Date: &epochCommitDateInSeconds})
 			if err != nil {

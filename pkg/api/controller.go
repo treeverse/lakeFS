@@ -30,7 +30,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/oidc"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -267,7 +266,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	}
 
 	loginTime := time.Now()
-	duration := c.Config.GetLoginDuration()
+	duration := c.Config.Auth.LoginDuration
 	expires := loginTime.Add(duration)
 	secret := c.Auth.SecretStore().SharedSecret()
 
@@ -1275,10 +1274,10 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	info := c.BlockAdapter.GetStorageNamespaceInfo()
 	response := StorageConfig{
-		BlockstoreType:                   c.Config.GetBlockstoreType(),
+		BlockstoreType:                   c.Config.BlockstoreType(),
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
-		DefaultNamespacePrefix:           swag.String(c.Config.GetBlockstoreDefaultNamespacePrefix()),
+		DefaultNamespacePrefix:           swag.String(c.Config.Blockstore.DefaultNamespacePrefix),
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
@@ -1424,7 +1423,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 	if _, err := c.BlockAdapter.Get(ctx, obj, objLen); err == nil {
 		return fmt.Errorf("found lakeFS objects in the storage namespace(%s): %w",
 			storageNamespace, errStorageNamespaceInUse)
-	} else if !errors.Is(err, adapter.ErrDataNotFound) {
+	} else if !errors.Is(err, block.ErrDataNotFound) {
 		return err
 	}
 
@@ -1839,7 +1838,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, graveler.ErrLockNotAcquired):
 		cb(w, r, http.StatusInternalServerError, "branch is currently locked, try again later")
 
-	case errors.Is(err, adapter.ErrDataNotFound):
+	case errors.Is(err, block.ErrDataNotFound):
 		cb(w, r, http.StatusGone, "No data")
 
 	case errors.Is(err, auth.ErrAlreadyExists):
@@ -2648,7 +2647,7 @@ func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository
 	}
 	err = c.BlockAdapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
-		Identifier:       fmt.Sprintf("%s/refs_manifest.json", c.Config.GetCommittedBlockStoragePrefix()),
+		Identifier:       fmt.Sprintf("%s/refs_manifest.json", c.Config.Committed.BlockStoragePrefix),
 	}, int64(len(manifestBytes)), bytes.NewReader(manifestBytes), block.PutOpts{})
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
@@ -3339,7 +3338,7 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository s
 
 func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	emailSubscriptionEnabled := c.Config.IsEmailSubscriptionEnabled()
+	emailSubscriptionEnabled := c.Config.EmailSubscription.Enabled
 	savedState, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
@@ -3350,11 +3349,10 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	if c.Config.IsAuthTypeAPI() {
 		state = string(auth.SetupStateInitialized)
 	}
-	oidcConfig := c.Config.GetAuthOIDCConfiguration()
 	response := SetupState{
 		State:            swag.String(state),
-		OidcEnabled:      swag.Bool(oidcConfig.Enabled),
-		OidcDefaultLogin: swag.Bool(oidcConfig.IsDefaultLogin),
+		OidcEnabled:      swag.Bool(c.Config.Auth.OIDC.Enabled),
+		OidcDefaultLogin: swag.Bool(c.Config.Auth.OIDC.IsDefaultLogin),
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
@@ -3367,7 +3365,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 
 	// check if previous setup completed
 	ctx := r.Context()
-	emailSubscriptionEnabled := c.Config.IsEmailSubscriptionEnabled()
+	emailSubscriptionEnabled := c.Config.EmailSubscription.Enabled
 	initialized, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
@@ -3420,7 +3418,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 
 func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body SetupCommPrefsJSONRequestBody) {
 	ctx := r.Context()
-	emailSubscriptionEnabled := c.Config.IsEmailSubscriptionEnabled()
+	emailSubscriptionEnabled := c.Config.EmailSubscription.Enabled
 	initialized, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
 	if c.handleAPIError(ctx, w, r, err) {
 		return

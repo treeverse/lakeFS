@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type KV struct {
+type Config struct {
 	Type     string
 	Postgres *Postgres
 	DynamoDB *DynamoDB
