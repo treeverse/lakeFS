@@ -33,6 +33,12 @@ var (
 	ErrTableNotActive      = errors.New("table not active")
 )
 
+// Precond Type for special conditionals provided as predicates for the SetIf method
+type Precond string
+
+// PrecondConditionalExists Conditional for SetIf which performs Set only if key already exists in store
+var PrecondConditionalExists = Precond("ConditionalExists")
+
 func FormatPath(p ...string) string {
 	return strings.Join(p, PathDelimiter)
 }
