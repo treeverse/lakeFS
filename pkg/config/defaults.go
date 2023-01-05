@@ -170,13 +170,13 @@ const (
 	GravelerRepositoryCacheJitterKey     = "graveler.repository_cache.jitter"
 	DefaultGravelerRepositoryCacheJitter = 2 * time.Second
 	GravelerCommitCacheSizeKey           = "graveler.commit_cache.size"
-	DefaultGravelerCommitCacheSize       = 50_000
+	DefaultGravelerCommitCacheSize       = 60_000
 	GravelerCommitCacheExpiryKey         = "graveler.commit_cache.expiry"
 	DefaultGravelerCommitCacheExpiry     = 10 * time.Minute
 	GravelerCommitCacheJitterKey         = "graveler.commit_cache.jitter"
 	DefaultGravelerCommitCacheJitter     = 2 * time.Second
 	GravelerBranchCacheSizeKey           = "graveler.branch_cache.size"
-	DefaultGravelerBranchCacheSize       = 10_000
+	DefaultGravelerBranchCacheSize       = 500
 	GravelerBranchCacheExpiryKey         = "graveler.commit_cache.expiry"
 	DefaultGravelerBranchCacheExpiry     = 10 * time.Minute
 	GravelerBranchCacheJitterKey         = "graveler.commit_cache.jitter"

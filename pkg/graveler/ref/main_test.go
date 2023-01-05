@@ -29,7 +29,7 @@ var (
 
 	testBranchCacheConfig = ref.CacheConfig{
 		Size:   500,
-		Expiry: 20 * time.Millisecond,
+		Expiry: 500 * time.Millisecond,
 	}
 )
 

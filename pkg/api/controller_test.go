@@ -198,7 +198,7 @@ func TestController_GetRepoHandler(t *testing.T) {
 	})
 
 	t.Run("use same storage namespace twice", func(t *testing.T) {
-		name := testUniqueRepoName()
+		name := testUniqueRepoName(t)
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
 			Name:             name,
 			StorageNamespace: onBlock(deps, name),
@@ -332,7 +332,7 @@ func TestController_LogCommitsParallelHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
-	repo := testUniqueRepoName()
+	repo := testUniqueRepoName(t)
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 	testutil.Must(t, err)
 
@@ -382,7 +382,7 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 	ctx := context.Background()
 
 	// prepare test data
-	repo := testUniqueRepoName()
+	repo := testUniqueRepoName(t)
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 	testutil.Must(t, err)
 	const prefix = "foo/bar"
@@ -765,7 +765,7 @@ func TestController_CommitHandler(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("commit non-existent commit", func(t *testing.T) {
-		repo := testUniqueRepoName()
+		repo := testUniqueRepoName(t)
 		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
 		})
@@ -780,7 +780,7 @@ func TestController_CommitHandler(t *testing.T) {
 	})
 
 	t.Run("commit success", func(t *testing.T) {
-		repo := testUniqueRepoName()
+		repo := testUniqueRepoName(t)
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
@@ -791,7 +791,7 @@ func TestController_CommitHandler(t *testing.T) {
 	})
 
 	t.Run("commit success with source metarange", func(t *testing.T) {
-		repo := testUniqueRepoName()
+		repo := testUniqueRepoName(t)
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 
@@ -810,7 +810,7 @@ func TestController_CommitHandler(t *testing.T) {
 	})
 
 	t.Run("commit failure with source metarange and dirty branch", func(t *testing.T) {
-		repo := testUniqueRepoName()
+		repo := testUniqueRepoName(t)
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 
@@ -835,7 +835,7 @@ func TestController_CommitHandler(t *testing.T) {
 	})
 
 	t.Run("commit failure empty branch", func(t *testing.T) {
-		repo := testUniqueRepoName()
+		repo := testUniqueRepoName(t)
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 
@@ -853,7 +853,7 @@ func TestController_CommitHandler(t *testing.T) {
 	})
 
 	t.Run("commit success - with creation date", func(t *testing.T) {
-		repo := testUniqueRepoName()
+		repo := testUniqueRepoName(t)
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
@@ -956,7 +956,7 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("delete repo success", func(t *testing.T) {
-		repo := testUniqueRepoName()
+		repo := testUniqueRepoName(t)
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
 		testutil.Must(t, err)
 
@@ -972,7 +972,7 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 	})
 
 	t.Run("delete repo doesnt exist", func(t *testing.T) {
-		repo := testUniqueRepoName()
+		repo := testUniqueRepoName(t)
 		resp, err := clt.DeleteRepositoryWithResponse(ctx, repo)
 		testutil.Must(t, err)
 		if resp.StatusCode() == http.StatusOK {
@@ -1716,7 +1716,7 @@ func TestController_IngestRangeHandler(t *testing.T) {
 func TestController_WriteMetaRangeHandler(t *testing.T) {
 	ctx := context.Background()
 	clt, deps := setupClientWithAdmin(t)
-	repo := testUniqueRepoName()
+	repo := testUniqueRepoName(t)
 	// setup test data
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 	testutil.Must(t, err)
@@ -2861,7 +2861,7 @@ func TestController_MergeIntoExplicitBranch(t *testing.T) {
 	ctx := context.Background()
 
 	// setup env
-	repo := testUniqueRepoName()
+	repo := testUniqueRepoName(t)
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 	testutil.Must(t, err)
 	_, err = deps.catalog.CreateBranch(ctx, repo, "branch1", "main")
@@ -2896,7 +2896,7 @@ func TestController_MergeDirtyBranch(t *testing.T) {
 	ctx := context.Background()
 
 	// setup env
-	repo := testUniqueRepoName()
+	repo := testUniqueRepoName(t)
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 	testutil.Must(t, err)
 	err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"})
@@ -2920,7 +2920,7 @@ func TestController_CreateTag(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	// setup env
-	repo := testUniqueRepoName()
+	repo := testUniqueRepoName(t)
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
@@ -3030,15 +3030,23 @@ func TestController_CreateTag(t *testing.T) {
 	})
 }
 
-func testUniqueRepoName() string {
-	return "repo-" + nanoid.MustGenerate("abcdef1234567890", 8)
+func testUniqueRepoName(t testing.TB) string {
+	var prefix string
+	if t == nil {
+		prefix = "repo"
+	} else {
+		// convert test name to repo as prefix (limited in length
+		prefix = strings.ReplaceAll(strings.ToLower(t.Name()), "_", "-")[:52]
+	}
+	uniqueID := nanoid.MustGenerate("abcdef1234567890", 8)
+	return prefix + "-" + uniqueID
 }
 
 func TestController_Revert(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	// setup env
-	repo := testUniqueRepoName()
+	repo := testUniqueRepoName(t)
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
@@ -3086,7 +3094,7 @@ func TestController_Revert(t *testing.T) {
 	})
 
 	t.Run("revert_no_parent", func(t *testing.T) {
-		repo := testUniqueRepoName()
+		repo := testUniqueRepoName(t)
 		// setup data - repo with one object committed
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 		testutil.Must(t, err)
@@ -3118,7 +3126,7 @@ func TestController_RevertConflict(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	// setup env
-	repo := testUniqueRepoName()
+	repo := testUniqueRepoName(t)
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
@@ -3368,7 +3376,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 	})
 
 	t.Run("repository_not_exists", func(t *testing.T) {
-		repo := testUniqueRepoName()
+		repo := testUniqueRepoName(t)
 		resp, err := clt.PrepareGarbageCollectionUncommittedWithResponse(ctx, repo, api.PrepareGarbageCollectionUncommittedJSONRequestBody{})
 		if err != nil {
 			t.Fatalf("PrepareGarbageCollectionUncommittedWithResponse failed: %s", err)
@@ -3379,7 +3387,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 	})
 
 	t.Run("uncommitted", func(t *testing.T) {
-		repo := testUniqueRepoName()
+		repo := testUniqueRepoName(t)
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 		testutil.Must(t, err)
 		const items = 3
@@ -3403,7 +3411,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 	})
 
 	t.Run("committed", func(t *testing.T) {
-		repo := testUniqueRepoName()
+		repo := testUniqueRepoName(t)
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 		testutil.Must(t, err)
 		const items = 3
