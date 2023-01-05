@@ -16,6 +16,7 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/fsnotify/fsnotify"
+	"github.com/go-co-op/gocron"
 	"github.com/go-ldap/ldap/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -190,6 +191,8 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("failed to create catalog")
 		}
 		defer func() { _ = c.Close() }()
+
+		go deleteExpiredAddressesJob(ctx, c)
 
 		templater := templater.NewService(templates.Content, cfg, authService)
 
@@ -394,6 +397,51 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 
 				next = repo.Name
 			}
+		}
+	}
+}
+
+func deleteExpiredAddressesJob(ctx context.Context, c *catalog.Catalog) {
+	s := gocron.NewScheduler(time.UTC)
+	s.Every(1).Hour().Do(func() {
+		deleteExpiredAddressTokens(ctx, c)
+	})
+	s.StartBlocking()
+}
+
+func deleteExpiredAddressTokens(ctx context.Context, c *catalog.Catalog) {
+	const (
+		jobWorkers = 3
+		size       = 10
+	)
+	rChan := make(chan *catalog.Repository, size)
+	for i := 0; i < jobWorkers; i++ {
+		go rWorker(ctx, c, rChan)
+	}
+
+	hasMore := true
+	next := ""
+
+	for hasMore {
+		var err error
+		var repos []*catalog.Repository
+		repos, hasMore, err = c.ListRepositories(ctx, -1, "", next)
+		if err != nil {
+			logging.Default().WithError(err).Debug("failed to list repositories while deleting expired tokens")
+		}
+
+		for _, repo := range repos {
+			rChan <- repo
+			next = repo.Name
+		}
+	}
+}
+
+func rWorker(ctx context.Context, c *catalog.Catalog, rChan <-chan *catalog.Repository) {
+	for r := range rChan {
+		err := c.DeleteExpiredAddressTokens(ctx, r.Name)
+		if err != nil {
+			logging.Default().WithError(err).Debug("failed to delete expired address tokens")
 		}
 	}
 }
