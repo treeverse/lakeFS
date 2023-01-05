@@ -67,7 +67,7 @@ func TestSetGet(t *testing.T) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", graveler.ErrNotFound, err)
 	}
 	value := newTestValue("identity1", "value1")
-	err = s.Set(ctx, "t1", []byte("a/b/c/"), value, true)
+	err = s.Set(ctx, "t1", []byte("a/b/c/"), value, false)
 	testutil.Must(t, err)
 	e, err := s.Get(ctx, "t1", []byte("a/b/c/"))
 	testutil.Must(t, err)
@@ -82,14 +82,14 @@ func TestMultiToken(t *testing.T) {
 	if !errors.Is(err, graveler.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", graveler.ErrNotFound, err)
 	}
-	err = s.Set(ctx, "t1", []byte("a/b/c/"), newTestValue("identity1", "value1"), true)
+	err = s.Set(ctx, "t1", []byte("a/b/c/"), newTestValue("identity1", "value1"), false)
 	testutil.Must(t, err)
 	e, err := s.Get(ctx, "t1", []byte("a/b/c/"))
 	testutil.Must(t, err)
 	if string(e.Identity) != "identity1" {
 		t.Errorf("got wrong identity. expected=%s, got=%s", "identity1", string(e.Identity))
 	}
-	err = s.Set(ctx, "t2", []byte("a/b/c/"), newTestValue("identity2", "value2"), true)
+	err = s.Set(ctx, "t2", []byte("a/b/c/"), newTestValue("identity2", "value2"), false)
 	testutil.Must(t, err)
 	e, err = s.Get(ctx, "t1", []byte("a/b/c/"))
 	testutil.Must(t, err)
@@ -135,9 +135,9 @@ func TestDrop(t *testing.T) {
 
 func setupDrop(ctx context.Context, t *testing.T, numOfValues int, s graveler.StagingManager) {
 	for i := 0; i < numOfValues; i++ {
-		err := s.Set(ctx, "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), true)
+		err := s.Set(ctx, "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), false)
 		testutil.Must(t, err)
-		err = s.Set(ctx, "t2", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), true)
+		err = s.Set(ctx, "t2", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), false)
 		testutil.Must(t, err)
 	}
 }
@@ -281,7 +281,7 @@ func TestDropPrefixBytes(t *testing.T) {
 				err := s.Set(ctx, st, k, &graveler.Value{
 					Identity: []byte{0, 0, 0, 0, 0, 0},
 					Data:     []byte{0, 0, 0, 0, 0, 0},
-				}, true)
+				}, false)
 				testutil.Must(t, err)
 			}
 			err := s.DropByPrefix(ctx, st, tst.prefix)
@@ -308,7 +308,7 @@ func TestList(t *testing.T) {
 	for _, numOfValues := range []int{1, 100, 1000, 1500, 2500} {
 		token := graveler.StagingToken(fmt.Sprintf("t_%d", numOfValues))
 		for i := 0; i < numOfValues; i++ {
-			err := s.Set(ctx, token, []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), true)
+			err := s.Set(ctx, token, []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), false)
 			testutil.Must(t, err)
 		}
 		res := make([]*graveler.ValueRecord, 0, numOfValues)
@@ -338,7 +338,7 @@ func TestSeek(t *testing.T) {
 	ctx, s := newTestStagingManager(t)
 	numOfValues := 100
 	for i := 0; i < numOfValues; i++ {
-		err := s.Set(ctx, "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue("identity1", "value1"), true)
+		err := s.Set(ctx, "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue("identity1", "value1"), false)
 		testutil.Must(t, err)
 	}
 	it, _ := s.List(ctx, "t1", 0)
@@ -374,9 +374,9 @@ func TestSeek(t *testing.T) {
 
 func TestNilValue(t *testing.T) {
 	ctx, s := newTestStagingManager(t)
-	err := s.Set(ctx, "t1", []byte("key1"), nil, true)
+	err := s.Set(ctx, "t1", []byte("key1"), nil, false)
 	testutil.Must(t, err)
-	err = s.Set(ctx, "t1", []byte("key2"), newTestValue("identity2", "value2"), true)
+	err = s.Set(ctx, "t1", []byte("key2"), newTestValue("identity2", "value2"), false)
 	testutil.Must(t, err)
 	e, err := s.Get(ctx, "t1", []byte("key1"))
 	testutil.Must(t, err)
@@ -409,12 +409,12 @@ func TestNilValue(t *testing.T) {
 
 func TestNilIdentity(t *testing.T) {
 	ctx, s := newTestStagingManager(t)
-	err := s.Set(ctx, "t1", []byte("key1"), newTestValue("identity1", "value1"), true)
+	err := s.Set(ctx, "t1", []byte("key1"), newTestValue("identity1", "value1"), false)
 	testutil.Must(t, err)
 	err = s.Set(ctx, "t1", []byte("key1"), &graveler.Value{
 		Identity: nil,
 		Data:     []byte("value1"),
-	}, true)
+	}, false)
 	if !errors.Is(err, graveler.ErrInvalidValue) {
 		t.Fatalf("got unexpected error. expected=%v, got=%v", graveler.ErrInvalidValue, err)
 	}
@@ -442,7 +442,7 @@ func TestDeleteAndTombstone(t *testing.T) {
 		},
 	}
 	for _, val := range tombstoneValues {
-		err = s.Set(ctx, "t1", []byte("key1"), val, true)
+		err = s.Set(ctx, "t1", []byte("key1"), val, false)
 		testutil.Must(t, err)
 		e, err := s.Get(ctx, "t1", []byte("key1"))
 		testutil.Must(t, err)
@@ -465,7 +465,7 @@ func TestDeleteAndTombstone(t *testing.T) {
 		}
 		it.Close()
 	}
-	err = s.Set(ctx, "t1", []byte("key1"), newTestValue("identity3", "value3"), true)
+	err = s.Set(ctx, "t1", []byte("key1"), newTestValue("identity3", "value3"), false)
 	testutil.Must(t, err)
 	e, err := s.Get(ctx, "t1", []byte("key1"))
 	testutil.Must(t, err)

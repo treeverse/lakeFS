@@ -11,6 +11,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	nanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/kv"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
@@ -292,6 +293,39 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 		if !errors.Is(err, kv.ErrPredicateFailed) {
 			t.Fatalf("SetIf err=%v - key=%s, value=%s, pred=nil, expected err=%s", err, key, val2, kv.ErrPredicateFailed)
 		}
+	})
+
+	t.Run("update_if_exists", func(t *testing.T) {
+		key := uniqueKey("set-if-exists")
+		val1 := []byte("v1")
+		err := store.Set(ctx, []byte(testPartitionKey), key, val1)
+		if err != nil {
+			t.Fatalf("Set while testing SetIf - key=%s value=%s: %s", key, val1, err)
+		}
+
+		val2 := []byte("v2")
+		err = store.SetIf(ctx, []byte(testPartitionKey), key, val2, kv.PrecondConditionalExists)
+		if err != nil {
+			t.Fatalf("SetIf with previous value - key=%s value=%s pred=%s: %s", key, val2, val1, err)
+		}
+
+		res, err := store.Get(ctx, []byte(testPartitionKey), key)
+		if err != nil {
+			t.Fatalf("Get while testing SetIf - key=%s: %s", key, err)
+		}
+		require.Equal(t, res.Value, val2)
+	})
+
+	t.Run("update_if_exists_negative", func(t *testing.T) {
+		key := uniqueKey("set-if-exists_negative")
+		val2 := []byte("v2")
+		err := store.SetIf(ctx, []byte(testPartitionKey), key, val2, kv.PrecondConditionalExists)
+		if !errors.Is(err, kv.ErrPredicateFailed) {
+			t.Fatalf("SetIf err=%v - key=%s, value=%s, pred=%v, expected err=%s", err, key, val2, kv.PrecondConditionalExists, kv.ErrPredicateFailed)
+		}
+
+		_, err = store.Get(ctx, []byte(testPartitionKey), key)
+		require.ErrorIs(t, err, kv.ErrNotFound)
 	})
 }
 
