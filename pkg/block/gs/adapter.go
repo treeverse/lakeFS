@@ -11,7 +11,6 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"google.golang.org/api/iterator"
 )
@@ -104,7 +103,7 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	}
 	r, err := a.client.Bucket(qualifiedKey.StorageNamespace).Object(qualifiedKey.Key).NewReader(ctx)
 	if isErrNotFound(err) {
-		return nil, adapter.ErrDataNotFound
+		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
 		a.log(ctx).WithError(err).Errorf("failed to get object bucket %s key %s", qualifiedKey.StorageNamespace, qualifiedKey.Key)
@@ -175,7 +174,7 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 		Object(qualifiedKey.Key).
 		NewRangeReader(ctx, startPosition, endPosition-startPosition+1)
 	if isErrNotFound(err) {
-		return nil, adapter.ErrDataNotFound
+		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
 		a.log(ctx).WithError(err).Errorf("failed to get object bucket %s key %s", qualifiedKey.StorageNamespace, qualifiedKey.Key)

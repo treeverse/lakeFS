@@ -9,7 +9,7 @@ import (
 )
 
 func TestLocalKV(t *testing.T) {
-	kvtest.TestDriver(t, local.DriverName, kvparams.KV{
+	kvtest.TestDriver(t, local.DriverName, kvparams.Config{
 		Type: local.DriverName,
 		Local: &kvparams.Local{
 			Path:          t.TempDir(),

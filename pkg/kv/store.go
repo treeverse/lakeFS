@@ -48,7 +48,7 @@ type Driver interface {
 	// Open opens access to the database store. Implementations give access to the same storage based on the dsn.
 	// Implementation can return the same Storage instance based on dsn or new one as long as it provides access to
 	// the same storage.
-	Open(ctx context.Context, params kvparams.KV) (Store, error)
+	Open(ctx context.Context, params kvparams.Config) (Store, error)
 }
 
 // Predicate value used to update a key base on a previous fetched value.
@@ -164,7 +164,7 @@ func UnregisterAllDrivers() {
 
 // Open lookup driver by 'type' and return store based on the configuration.
 // Failed with ErrUnknownDriver in case 'name' is not registered
-func Open(ctx context.Context, params kvparams.KV) (Store, error) {
+func Open(ctx context.Context, params kvparams.Config) (Store, error) {
 	driversMu.RLock()
 	d, ok := drivers[params.Type]
 	driversMu.RUnlock()

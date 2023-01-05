@@ -38,7 +38,7 @@ func init() {
 	kv.Register(DriverName, &Driver{})
 }
 
-func (d *Driver) Open(_ context.Context, _ kvparams.KV) (kv.Store, error) {
+func (d *Driver) Open(_ context.Context, _ kvparams.Config) (kv.Store, error) {
 	return &Store{
 		m: make(map[string]PartitionMap, 0),
 	}, nil

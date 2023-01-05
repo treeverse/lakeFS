@@ -9,5 +9,5 @@ import (
 )
 
 func TestPostgresKV(t *testing.T) {
-	kvtest.TestDriver(t, postgres.DriverName, kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: databaseURI, ScanPageSize: 10}})
+	kvtest.TestDriver(t, postgres.DriverName, kvparams.Config{Postgres: &kvparams.Postgres{ConnectionString: databaseURI, ScanPageSize: 10}})
 }

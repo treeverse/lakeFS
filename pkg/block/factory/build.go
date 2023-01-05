@@ -36,19 +36,19 @@ var (
 )
 
 func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c params.AdapterConfig) (block.Adapter, error) {
-	blockstore := c.GetBlockstoreType()
+	blockstore := c.BlockstoreType()
 	logging.Default().
 		WithField("type", blockstore).
 		Info("initialize blockstore adapter")
 	switch blockstore {
 	case block.BlockstoreTypeLocal:
-		p, err := c.GetBlockAdapterLocalParams()
+		p, err := c.BlockstoreLocalParams()
 		if err != nil {
 			return nil, err
 		}
 		return buildLocalAdapter(p)
 	case block.BlockstoreTypeS3:
-		p, err := c.GetBlockAdapterS3Params()
+		p, err := c.BlockstoreS3Params()
 		if err != nil {
 			return nil, err
 		}
@@ -58,13 +58,13 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 	case block.BlockstoreTypeTransient:
 		return transient.New(), nil
 	case block.BlockstoreTypeGS:
-		p, err := c.GetBlockAdapterGSParams()
+		p, err := c.BlockstoreGSParams()
 		if err != nil {
 			return nil, err
 		}
 		return buildGSAdapter(ctx, p)
 	case block.BlockstoreTypeAzure:
-		p, err := c.GetBlockAdapterAzureParams()
+		p, err := c.BlockstoreAzureParams()
 		if err != nil {
 			return nil, err
 		}

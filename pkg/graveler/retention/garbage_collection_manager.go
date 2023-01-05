@@ -14,7 +14,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"google.golang.org/protobuf/proto"
 )
@@ -112,7 +111,7 @@ func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageNamespac
 		IdentifierType:   block.IdentifierTypeRelative,
 	}
 	reader, err := m.blockAdapter.Get(ctx, objectPointer, -1)
-	if errors.Is(err, adapter.ErrDataNotFound) {
+	if errors.Is(err, block.ErrDataNotFound) {
 		return nil, graveler.ErrNotFound
 	}
 	if err != nil {

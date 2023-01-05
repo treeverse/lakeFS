@@ -1,4 +1,4 @@
-package adapter
+package block
 
 import "github.com/pkg/errors"
 
