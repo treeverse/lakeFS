@@ -919,8 +919,8 @@ jobs:
           - version: 3.0.2
             suffix: ""
           # Test with an an actual 3.2.3 on Hadoop 2 build
-          - base: ariels9/bitnami-based-spark
-            version: 3.2.3-with-hadoop-2.7
+          - base: treeverse/bitnami-based-spark
+            version: 3.2.3-with-hadoop-2.7-for-testing
             suffix: ""
             allow_failure: true
     env:
