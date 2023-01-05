@@ -918,7 +918,12 @@ jobs:
             suffix: ""
           - version: 3.0.2
             suffix: ""
+          # Test with an an actual 3.2.3 on Hadoop 2 build
+          - base: ariels9/bitnami-based-spark
+            version: 3.2.3-with-hadoop-2.7
+            suffix: ""
     env:
+      SPARK_BASE: ${{ matrix.spark.base }}
       SPARK_TAG: ${{ matrix.spark.version }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
       TAG: ${{ needs.deploy-image.outputs.tag }}
