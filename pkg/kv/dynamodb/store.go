@@ -266,11 +266,11 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		ReturnConsumedCapacity: aws.String(dynamodb.ReturnConsumedCapacityTotal),
 	}
 	if usePredicate {
-		switch {
-		case valuePredicate == nil: // Set only if not exists
+		switch valuePredicate {
+		case nil: // Set only if not exists
 			input.ConditionExpression = aws.String("attribute_not_exists(" + ItemValue + ")")
 
-		case valuePredicate == kv.ConditionalExists: // update only if exists
+		case kv.PrecondConditionalExists: // update only if exists
 			input.ConditionExpression = aws.String("attribute_exists(" + ItemValue + ")")
 
 		default: // update just in case the previous value was same as predicate value

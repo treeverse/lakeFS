@@ -17,8 +17,6 @@ const (
 	InitialMigrateVersion = 1
 	PathDelimiter         = "/"
 	MetadataPartitionKey  = "kv-internal-metadata"
-
-	ConditionalExists = "dd136a329c1f297d37d039d9ddd99699"
 )
 
 var (
@@ -34,6 +32,12 @@ var (
 	ErrUnknownDriver       = errors.New("unknown driver")
 	ErrTableNotActive      = errors.New("table not active")
 )
+
+// Precond Type for special conditionals provided as predicates for the SetIf method
+type Precond string
+
+// PrecondConditionalExists Conditional for SetIf which performs Set only if key already exists in store
+var PrecondConditionalExists = Precond("dd136a329c1f297d37d039d9ddd99699")
 
 func FormatPath(p ...string) string {
 	return strings.Join(p, PathDelimiter)

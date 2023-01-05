@@ -65,12 +65,12 @@ func (m *Manager) Set(ctx context.Context, st graveler.StagingToken, key gravele
 	}
 
 	pb := graveler.ProtoFromStagedEntry(key, value)
-
+	stPartition := graveler.StagingTokenPartition(st)
 	if requireExists {
-		return m.store.SetMsgIf(ctx, graveler.StagingTokenPartition(st), key, pb, kv.ConditionalExists)
+		return m.store.SetMsgIf(ctx, stPartition, key, pb, kv.PrecondConditionalExists)
 	}
 
-	return m.store.SetMsg(ctx, graveler.StagingTokenPartition(st), key, pb)
+	return m.store.SetMsg(ctx, stPartition, key, pb)
 }
 
 func (m *Manager) Update(ctx context.Context, st graveler.StagingToken, key graveler.Key, updateFunc graveler.ValueUpdateFunc) error {

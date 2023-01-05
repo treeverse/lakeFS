@@ -115,13 +115,13 @@ func (s *Store) SetIf(_ context.Context, partitionKey, key, value []byte, valueP
 	sKey := encodeKey(key)
 	curr, currOK := s.m[string(partitionKey)][sKey]
 
-	switch {
-	case valuePredicate == nil:
+	switch valuePredicate {
+	case nil:
 		if currOK {
 			return fmt.Errorf("key=%v: %w", key, kv.ErrPredicateFailed)
 		}
 
-	case valuePredicate == kv.ConditionalExists:
+	case kv.PrecondConditionalExists:
 		if !currOK {
 			return fmt.Errorf("key=%v: %w", key, kv.ErrPredicateFailed)
 		}

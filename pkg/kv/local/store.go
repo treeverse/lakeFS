@@ -127,7 +127,7 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 				log.WithField("predicate", nil).Trace("predicate condition failed")
 				return kv.ErrPredicateFailed
 			}
-			if valuePredicate != kv.ConditionalExists {
+			if valuePredicate != kv.PrecondConditionalExists {
 				val, err := item.ValueCopy(nil)
 				if err != nil {
 					log.WithError(err).Error("could not get byte value for predicate")

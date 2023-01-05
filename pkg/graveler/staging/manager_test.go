@@ -67,7 +67,7 @@ func TestSetGet(t *testing.T) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", graveler.ErrNotFound, err)
 	}
 	value := newTestValue("identity1", "value1")
-	err = s.Set(ctx, "t1", []byte("a/b/c/"), value, true)
+	err = s.Set(ctx, "t1", []byte("a/b/c/"), value, false)
 	testutil.Must(t, err)
 	e, err := s.Get(ctx, "t1", []byte("a/b/c/"))
 	testutil.Must(t, err)
