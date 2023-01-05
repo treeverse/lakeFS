@@ -403,9 +403,13 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 
 func deleteExpiredAddressesJob(ctx context.Context, c *catalog.Catalog) {
 	s := gocron.NewScheduler(time.UTC)
-	s.Every(1).Hour().Do(func() {
+	_, err := s.Every(1).Hour().Do(func() {
 		deleteExpiredAddressTokens(ctx, c)
 	})
+	if err != nil {
+		logging.Default().WithError(err).Debug("failed execute delete expired addresses job")
+	}
+
 	s.StartBlocking()
 }
 
@@ -441,7 +445,7 @@ func rWorker(ctx context.Context, c *catalog.Catalog, rChan <-chan *catalog.Repo
 	for r := range rChan {
 		err := c.DeleteExpiredAddressTokens(ctx, r.Name)
 		if err != nil {
-			logging.Default().WithError(err).Debug("failed to delete expired address tokens")
+			logging.Default().WithError(err).WithField("repository", r.Name).Debug("failed to delete expired address tokens")
 		}
 	}
 }
