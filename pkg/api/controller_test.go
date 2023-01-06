@@ -3031,12 +3031,18 @@ func TestController_CreateTag(t *testing.T) {
 }
 
 func testUniqueRepoName(t testing.TB) string {
-	var prefix string
-	if t == nil {
-		prefix = "repo"
-	} else {
-		// convert test name to repo as prefix (limited in length
-		prefix = strings.ReplaceAll(strings.ToLower(t.Name()), "_", "-")[:52]
+	prefix := "repo"
+	if t != nil {
+		testName := t.Name()
+		if len(testName) > 0 {
+			// cleanup test name from invalid characters + trim if needed
+			replacer := strings.NewReplacer("_", "-", "/", "-")
+			prefix = replacer.Replace(strings.ToLower(testName))
+			const maxPrefixLen = 52
+			if len(prefix) > maxPrefixLen {
+				prefix = prefix[:maxPrefixLen]
+			}
+		}
 	}
 	uniqueID := nanoid.MustGenerate("abcdef1234567890", 8)
 	return prefix + "-" + uniqueID

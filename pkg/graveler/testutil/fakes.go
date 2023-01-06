@@ -159,7 +159,7 @@ func (s *StagingFake) Get(_ context.Context, st graveler.StagingToken, key grave
 	return nil, graveler.ErrNotFound
 }
 
-func (s *StagingFake) Set(_ context.Context, _ graveler.StagingToken, key graveler.Key, value *graveler.Value) error {
+func (s *StagingFake) Set(_ context.Context, _ graveler.StagingToken, key graveler.Key, value *graveler.Value, _ bool) error {
 	if s.SetErr != nil {
 		return s.SetErr
 	}
