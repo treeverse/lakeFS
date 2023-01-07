@@ -58,6 +58,17 @@ func TestUpdate(t *testing.T) {
 	val, err = s.Get(ctx, "t1", []byte(key))
 	require.NoError(t, err)
 	require.Equal(t, testVal2, val)
+
+	// update without set new value
+	err = s.Update(ctx, "t1", []byte(key), func(value *graveler.Value) (*graveler.Value, error) {
+		require.Equal(t, testVal2, value)
+		return nil, graveler.ErrSkipValueUpdate
+	})
+	require.NoError(t, err)
+	// verify that we didn't update the value
+	val, err = s.Get(ctx, "t1", []byte(key))
+	require.NoError(t, err)
+	require.Equal(t, testVal2, val)
 }
 
 func TestSetGet(t *testing.T) {

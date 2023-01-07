@@ -1414,7 +1414,7 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 			if currentValue == nil || currentValue.Identity == nil {
 				return &value, nil
 			}
-			return currentValue, nil
+			return nil, ErrSkipValueUpdate
 		})
 	})
 }

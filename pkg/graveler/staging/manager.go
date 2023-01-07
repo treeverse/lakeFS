@@ -87,8 +87,11 @@ func (m *Manager) Update(ctx context.Context, st graveler.StagingToken, key grav
 		oldValue = graveler.StagedEntryFromProto(oldValueProto)
 	}
 	updatedValue, err := updateFunc(oldValue)
-	if err != nil || updatedValue == oldValue {
-		// report error or skip if value wasn't updated
+	if err != nil {
+		// report error or skip if ErrSkipValueUpdate
+		if errors.Is(err, graveler.ErrSkipValueUpdate) {
+			return nil
+		}
 		return err
 	}
 	return m.store.SetMsgIf(ctx, graveler.StagingTokenPartition(st), key, graveler.ProtoFromStagedEntry(key, updatedValue), pred)
