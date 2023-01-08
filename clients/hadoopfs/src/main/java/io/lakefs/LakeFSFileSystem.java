@@ -589,7 +589,7 @@ public class LakeFSFileSystem extends FileSystem {
      * @throws IOException any issue with lakeFS or underlying filesystem
      */
     private void createDirectoryMarkerIfNotExists(Path f) throws IOException {
-        ObjectLocation objectLocation = pathToObjectLocation(f);
+        ObjectLocation objectLocation = pathToObjectLocation(f).toDirectory();
         if (!objectLocation.isValidPath()) {
             LOG.warn("Cannot create directory marker for invalid path {}", f.toString());
             // Safe to do nothing, because directory markers are mostly
@@ -601,7 +601,7 @@ public class LakeFSFileSystem extends FileSystem {
         }
         try {
             ObjectsApi objects = lfsClient.getObjects();
-            objects.uploadObject(objectLocation.getRepository(), objectLocation.getRef(), objectLocation.getPath(), "", "*", emptyFile);
+            objects.uploadObject(objectLocation.getRepository(), objectLocation.getRef(), objectLocation.getPath(), null, "*", emptyFile);
         } catch (ApiException e) {
             if (e.getCode() == HttpStatus.SC_CONFLICT) {
                 LOG.trace("createDirectoryMarkerIfNotExists: Ignore {} response, marker exists");
