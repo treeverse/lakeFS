@@ -3464,14 +3464,19 @@ func TestController_ClientDisconnect(t *testing.T) {
 	}
 }
 
-func TestController_SendStatsEvents(t *testing.T) {
+func TestController_PostStatsEvents(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
+
+	type key struct {
+		class string
+		name  string
+	}
 
 	tests := []struct {
 		name                string
 		events              []api.StatsEvent
-		expectedEventCounts []int
+		expectedEventCounts map[key]int
 		expectedStatusCode  int
 	}{
 		{
@@ -3483,8 +3488,10 @@ func TestController_SendStatsEvents(t *testing.T) {
 					Count: 1,
 				},
 			},
-			expectedEventCounts: []int{1},
-			expectedStatusCode:  http.StatusNoContent,
+			expectedEventCounts: map[key]int{
+				key{class: "single_event_count_1", name: "name"}: 1,
+			},
+			expectedStatusCode: http.StatusNoContent,
 		},
 		{
 			name: "single_event_count_gt_1",
@@ -3495,8 +3502,10 @@ func TestController_SendStatsEvents(t *testing.T) {
 					Count: 3,
 				},
 			},
-			expectedEventCounts: []int{3},
-			expectedStatusCode:  http.StatusNoContent,
+			expectedEventCounts: map[key]int{
+				key{class: "single_event_count_gt_1", name: "name"}: 3,
+			},
+			expectedStatusCode: http.StatusNoContent,
 		},
 		{
 			name: "multiple_events",
@@ -3512,8 +3521,51 @@ func TestController_SendStatsEvents(t *testing.T) {
 					Count: 1,
 				},
 			},
-			expectedEventCounts: []int{1, 1},
-			expectedStatusCode:  http.StatusNoContent,
+			expectedEventCounts: map[key]int{
+				key{class: "class_multiple_events_ev_1", name: "name1"}: 1,
+				key{class: "class_multiple_events_ev_2", name: "name2"}: 1,
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name: "multiple_events_same_class",
+			events: []api.StatsEvent{
+				{
+					Class: "class_multiple_events_same_class",
+					Name:  "name1",
+					Count: 1,
+				},
+				{
+					Class: "class_multiple_events_same_class",
+					Name:  "name2",
+					Count: 1,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				key{class: "class_multiple_events_same_class", name: "name1"}: 1,
+				key{class: "class_multiple_events_same_class", name: "name2"}: 1,
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name: "multiple_events_same_name",
+			events: []api.StatsEvent{
+				{
+					Class: "multiple_events_same_name_1",
+					Name:  "same_name",
+					Count: 1,
+				},
+				{
+					Class: "multiple_events_same_name_2",
+					Name:  "same_name",
+					Count: 1,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				key{class: "multiple_events_same_name_1", name: "same_name"}: 1,
+				key{class: "multiple_events_same_name_2", name: "same_name"}: 1,
+			},
+			expectedStatusCode: http.StatusNoContent,
 		},
 		{
 			name: "empty_usage_class",
@@ -3524,8 +3576,10 @@ func TestController_SendStatsEvents(t *testing.T) {
 					Count: 1,
 				},
 			},
-			expectedEventCounts: []int{0},
-			expectedStatusCode:  http.StatusBadRequest,
+			expectedEventCounts: map[key]int{
+				key{class: "", name: "name"}: 0,
+			},
+			expectedStatusCode: http.StatusBadRequest,
 		},
 		{
 			name: "empty_usage_name",
@@ -3536,8 +3590,10 @@ func TestController_SendStatsEvents(t *testing.T) {
 					Count: 1,
 				},
 			},
-			expectedEventCounts: []int{0},
-			expectedStatusCode:  http.StatusBadRequest,
+			expectedEventCounts: map[key]int{
+				key{class: "class_empty_usage_name", name: ""}: 0,
+			},
+			expectedStatusCode: http.StatusBadRequest,
 		},
 		{
 			name: "zero_usage_count",
@@ -3548,8 +3604,10 @@ func TestController_SendStatsEvents(t *testing.T) {
 					Count: 0,
 				},
 			},
-			expectedEventCounts: []int{0},
-			expectedStatusCode:  http.StatusNoContent,
+			expectedEventCounts: map[key]int{
+				key{class: "class_zero_usage_count", name: "name"}: 0,
+			},
+			expectedStatusCode: http.StatusNoContent,
 		},
 		{
 			name: "negative_usage_count",
@@ -3560,8 +3618,10 @@ func TestController_SendStatsEvents(t *testing.T) {
 					Count: -23,
 				},
 			},
-			expectedEventCounts: []int{0},
-			expectedStatusCode:  http.StatusBadRequest,
+			expectedEventCounts: map[key]int{
+				key{class: "class_negative_usage_count", name: "name"}: 0,
+			},
+			expectedStatusCode: http.StatusBadRequest,
 		},
 	}
 
@@ -3571,22 +3631,23 @@ func TestController_SendStatsEvents(t *testing.T) {
 				Events: tt.events,
 			})
 			if err != nil {
-				t.Fatalf("SendStatsEvents failed: %s", err)
+				t.Fatalf("PostStatsEvents failed: %s", err)
 			}
 
 			if resp.StatusCode() != tt.expectedStatusCode {
-				t.Fatalf("SendStatsEvents status code: %d, expected: %d", resp.StatusCode(), tt.expectedStatusCode)
+				t.Fatalf("PostStatsEvents status code: %d, expected: %d", resp.StatusCode(), tt.expectedStatusCode)
 			}
 
-			for i, sentEv := range tt.events {
-				var collectedEventsCount int
+			for _, sentEv := range tt.events {
+				var collectedEventsToCount = map[key]int{}
+				var k = key{class: sentEv.Class, name: sentEv.Name}
 				for _, collectedMetric := range deps.collector.Metrics {
 					if collectedMetric.Event.Class == sentEv.Class && collectedMetric.Event.Name == sentEv.Name {
-						collectedEventsCount += int(collectedMetric.Value)
+						collectedEventsToCount[k] = int(collectedMetric.Value)
 					}
 				}
-				if collectedEventsCount != tt.expectedEventCounts[i] {
-					t.Fatalf("SendStatsEvents events for class %s count: %d, expected: %d", sentEv.Class, collectedEventsCount, sentEv.Count)
+				if collectedEventsToCount[k] != tt.expectedEventCounts[k] {
+					t.Fatalf("PostStatsEvents events for class %s and name: %s, count: %d, expected: %d", sentEv.Class, sentEv.Name, collectedEventsToCount[k], tt.expectedEventCounts[k])
 				}
 			}
 		})
