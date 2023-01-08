@@ -14,6 +14,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/graveler/ref"
+
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-co-op/gocron"
@@ -400,26 +402,18 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 
 func deleteExpiredAddressesJob(ctx context.Context, c *catalog.Catalog) {
 	s := gocron.NewScheduler(time.UTC)
-	_, err := s.Every(1).Hour().Do(func() {
+
+	_, err := s.Every(ref.AddressTokenTime).Do(func() {
 		deleteExpiredAddressTokens(ctx, c)
 	})
 	if err != nil {
 		logging.Default().WithError(err).Debug("failed execute delete expired addresses job")
+	} else {
+		s.StartBlocking()
 	}
-
-	s.StartBlocking()
 }
 
 func deleteExpiredAddressTokens(ctx context.Context, c *catalog.Catalog) {
-	const (
-		jobWorkers = 3
-		size       = 10
-	)
-	rChan := make(chan *catalog.Repository, size)
-	for i := 0; i < jobWorkers; i++ {
-		go rWorker(ctx, c, rChan)
-	}
-
 	hasMore := true
 	next := ""
 
@@ -432,17 +426,10 @@ func deleteExpiredAddressTokens(ctx context.Context, c *catalog.Catalog) {
 		}
 
 		for _, repo := range repos {
-			rChan <- repo
-			next = repo.Name
-		}
-	}
-}
-
-func rWorker(ctx context.Context, c *catalog.Catalog, rChan <-chan *catalog.Repository) {
-	for r := range rChan {
-		err := c.DeleteExpiredAddressTokens(ctx, r.Name)
-		if err != nil {
-			logging.Default().WithError(err).WithField("repository", r.Name).Debug("failed to delete expired address tokens")
+			err := c.DeleteExpiredAddressTokens(ctx, repo.Name)
+			if err != nil {
+				logging.Default().WithError(err).WithField("repository", repo.Name).Debug("failed to delete expired address tokens")
+			}
 		}
 	}
 }
