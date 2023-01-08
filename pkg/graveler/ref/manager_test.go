@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rs/xid"
+
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -1089,4 +1091,61 @@ func TestManager_SetGetAddressToken(t *testing.T) {
 	// create again
 	err = r.SetAddressToken(ctx, repository, "aa")
 	testutil.MustDo(t, "set address token aa after delete", err)
+}
+
+func TestManager_IsTokenExpired(t *testing.T) {
+	r, _ := testRefManager(t)
+
+	err := r.IsTokenExpired(&graveler.LinkAddressData{Address: xid.New().String()})
+	testutil.MustDo(t, "set address token aa", err)
+
+	err = r.IsTokenExpired(&graveler.LinkAddressData{Address: xid.NewWithTime(time.Now().Add(-7 * time.Hour)).String()})
+	if !errors.Is(err, graveler.ErrAddressTokenExpired) {
+		t.Fatalf("SetAddressToken() err = %s, expected already exists", err)
+	}
+}
+
+func TestManager_DeleteExpiredAddressTokens(t *testing.T) {
+	r, _ := testRefManager(t)
+	ctx := context.Background()
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
+
+	a := xid.NewWithTime(time.Now()).String()
+	b := xid.NewWithTime(time.Now().Add(-10 * time.Hour)).String() // expired
+	c := xid.NewWithTime(time.Now().Add(-7 * time.Hour)).String()  // expired
+
+	tokens := []string{a, b, c}
+	expectedTokens := []string{a}
+
+	for _, a := range tokens {
+		testutil.Must(t, r.SetAddressToken(context.Background(), repository, a))
+	}
+
+	err = r.DeleteExpiredAddressTokens(context.Background(), repository)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	iter, err := r.ListAddressTokens(context.Background(), repository)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer iter.Close()
+
+	var ts []string
+	for iter.Next() {
+		t := iter.Value()
+		ts = append(ts, t.Address)
+	}
+	if iter.Err() != nil {
+		t.Fatalf("unexpected error: %v", iter.Err())
+	}
+	if diff := deep.Equal(ts, expectedTokens); diff != nil {
+		t.Errorf("Found diff in tokens: %s", tokens)
+	}
 }

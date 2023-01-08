@@ -19,7 +19,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 	cUtils "github.com/treeverse/lakefs/pkg/catalog/testutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	gUtils "github.com/treeverse/lakefs/pkg/graveler/testutil"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/xitongsys/parquet-go-source/local"
@@ -699,8 +698,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 	addresses := make([]*graveler.LinkAddressData, 0)
 	for i := 0; i < numTokens; i++ {
 		address := fmt.Sprintf("data/address_token_%d", i)
-		addresses = append(addresses, &graveler.LinkAddressData{Address: address,
-			ExpiredAt: timestamppb.New(time.Now().Add(ref.AddressTokenTime))})
+		addresses = append(addresses, &graveler.LinkAddressData{Address: address})
 
 		expectedRecords = append(expectedRecords, fmt.Sprintf("data/address_token_%d", i))
 

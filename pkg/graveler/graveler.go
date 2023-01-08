@@ -540,6 +540,9 @@ type VersionController interface {
 
 	// DeleteExpiredAddressTokens deletes expired tokens on a repository
 	DeleteExpiredAddressTokens(ctx context.Context, repository *RepositoryRecord) error
+
+	// IsTokenExpired returns nil if the token is valid and not expired
+	IsTokenExpired(token *LinkAddressData) error
 }
 
 // Plumbing includes commands for fiddling more directly with graveler implementation
@@ -750,6 +753,9 @@ type RefManager interface {
 
 	// DeleteExpiredAddressTokens deletes expired tokens on a repository
 	DeleteExpiredAddressTokens(ctx context.Context, repository *RepositoryRecord) error
+
+	// IsTokenExpired returns nil if the token is valid and not expired
+	IsTokenExpired(token *LinkAddressData) error
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -2599,6 +2605,10 @@ func (g *Graveler) ListAddressTokens(ctx context.Context, repository *Repository
 
 func (g *Graveler) DeleteExpiredAddressTokens(ctx context.Context, repository *RepositoryRecord) error {
 	return g.RefManager.DeleteExpiredAddressTokens(ctx, repository)
+}
+
+func (g *Graveler) IsTokenExpired(token *LinkAddressData) error {
+	return g.RefManager.IsTokenExpired(token)
 }
 
 func tagsToValueIterator(src TagIterator) ValueIterator {

@@ -1870,7 +1870,7 @@ func (c *Catalog) writeTokensLocal(ctx context.Context, repository *graveler.Rep
 				}, true, nil
 			}
 		}
-		if token.ExpiredAt.AsTime().After(time.Now()) {
+		if c.Store.IsTokenExpired(token) == nil {
 			if err = pw.Write(UncommittedParquetObject{
 				PhysicalAddress: token.Address,
 				CreationDate:    time.Now().Unix(),
