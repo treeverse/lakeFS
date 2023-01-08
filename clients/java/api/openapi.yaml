@@ -3690,6 +3690,14 @@ paths:
           default: true
           type: boolean
         style: form
+      - explode: true
+        in: query
+        name: presign
+        required: false
+        schema:
+          default: true
+          type: boolean
+        style: form
       responses:
         "200":
           content:

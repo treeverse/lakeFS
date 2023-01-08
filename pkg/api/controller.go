@@ -3147,7 +3147,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 	objStat := ObjectStats{
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
-		Path:            params.Path,
+		Path:            entry.Path,
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
@@ -3159,6 +3159,17 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 	code := http.StatusOK
 	if entry.Expired {
 		code = http.StatusGone
+	} else if params.Presign != nil && *params.Presign {
+		// need to pre-sign the physical address
+		preSignedUrl, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+			StorageNamespace: repo.StorageNamespace,
+			Identifier:       entry.PhysicalAddress,
+			IdentifierType:   entry.AddressType.ToIdentifierType(),
+		})
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		objStat.PhysicalAddress = preSignedUrl
 	}
 	writeResponse(w, r, code, objStat)
 }

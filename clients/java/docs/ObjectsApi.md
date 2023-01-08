@@ -659,7 +659,7 @@ Name | Type | Description  | Notes
 
 <a name="statObject"></a>
 # **statObject**
-> ObjectStats statObject(repository, ref, path, userMetadata)
+> ObjectStats statObject(repository, ref, path, userMetadata, presign)
 
 get object metadata
 
@@ -704,8 +704,9 @@ public class Example {
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
     String path = "path_example"; // String | relative to the branch
     Boolean userMetadata = true; // Boolean | 
+    Boolean presign = true; // Boolean | 
     try {
-      ObjectStats result = apiInstance.statObject(repository, ref, path, userMetadata);
+      ObjectStats result = apiInstance.statObject(repository, ref, path, userMetadata, presign);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#statObject");
@@ -726,6 +727,7 @@ Name | Type | Description  | Notes
  **ref** | **String**| a reference (could be either a branch or a commit ID) |
  **path** | **String**| relative to the branch |
  **userMetadata** | **Boolean**|  | [optional] [default to true]
+ **presign** | **Boolean**|  | [optional] [default to true]
 
 ### Return type
 

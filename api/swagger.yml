@@ -3167,6 +3167,12 @@ paths:
         schema:
           type: boolean
           default: true
+      - in: query
+        name: presign
+        required: false
+        schema:
+          type: boolean
+          default: true
     get:
       tags:
         - objects

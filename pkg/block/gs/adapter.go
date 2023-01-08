@@ -112,6 +112,26 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	return r, nil
 }
 
+func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer) (string, error) {
+	var err error
+	defer reportMetrics("Get", time.Now(), nil, &err)
+	qualifiedKey, err := resolveNamespace(obj)
+	if err != nil {
+		return "", err
+	}
+	opts := &storage.SignedURLOptions{
+		Scheme:  storage.SigningSchemeV4,
+		Method:  "GET",
+		Expires: time.Now().Add(15 * time.Minute),
+	}
+	k, err := a.client.Bucket(qualifiedKey.StorageNamespace).SignedURL(qualifiedKey.Key, opts)
+	if err != nil {
+		a.log(ctx).WithError(err).Error("error generating pre-signed URL")
+		return "", err
+	}
+	return k, nil
+}
+
 func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
 	var err error
 	defer reportMetrics("Walk", time.Now(), nil, &err)

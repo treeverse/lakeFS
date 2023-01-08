@@ -128,6 +128,7 @@ type Adapter interface {
 	InventoryGenerator
 	Put(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) error
 	Get(ctx context.Context, obj ObjectPointer, expectedSize int64) (io.ReadCloser, error)
+	GetPreSignedURL(ctx context.Context, obj ObjectPointer) (string, error)
 	Walk(ctx context.Context, walkOpt WalkOpts, walkFn WalkFunc) error
 	Exists(ctx context.Context, obj ObjectPointer) (bool, error)
 	GetRange(ctx context.Context, obj ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error)

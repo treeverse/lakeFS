@@ -1164,6 +1164,7 @@ public class ObjectsApi {
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path relative to the branch (required)
      * @param userMetadata  (optional, default to true)
+     * @param presign  (optional, default to true)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -1177,7 +1178,7 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call statObjectCall(String repository, String ref, String path, Boolean userMetadata, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call statObjectCall(String repository, String ref, String path, Boolean userMetadata, Boolean presign, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -1199,6 +1200,10 @@ public class ObjectsApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("user_metadata", userMetadata));
         }
 
+        if (presign != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("presign", presign));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -1218,7 +1223,7 @@ public class ObjectsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call statObjectValidateBeforeCall(String repository, String ref, String path, Boolean userMetadata, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call statObjectValidateBeforeCall(String repository, String ref, String path, Boolean userMetadata, Boolean presign, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -1236,7 +1241,7 @@ public class ObjectsApi {
         }
         
 
-        okhttp3.Call localVarCall = statObjectCall(repository, ref, path, userMetadata, _callback);
+        okhttp3.Call localVarCall = statObjectCall(repository, ref, path, userMetadata, presign, _callback);
         return localVarCall;
 
     }
@@ -1248,6 +1253,7 @@ public class ObjectsApi {
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path relative to the branch (required)
      * @param userMetadata  (optional, default to true)
+     * @param presign  (optional, default to true)
      * @return ObjectStats
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -1260,8 +1266,8 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ObjectStats statObject(String repository, String ref, String path, Boolean userMetadata) throws ApiException {
-        ApiResponse<ObjectStats> localVarResp = statObjectWithHttpInfo(repository, ref, path, userMetadata);
+    public ObjectStats statObject(String repository, String ref, String path, Boolean userMetadata, Boolean presign) throws ApiException {
+        ApiResponse<ObjectStats> localVarResp = statObjectWithHttpInfo(repository, ref, path, userMetadata, presign);
         return localVarResp.getData();
     }
 
@@ -1272,6 +1278,7 @@ public class ObjectsApi {
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path relative to the branch (required)
      * @param userMetadata  (optional, default to true)
+     * @param presign  (optional, default to true)
      * @return ApiResponse&lt;ObjectStats&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -1284,8 +1291,8 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<ObjectStats> statObjectWithHttpInfo(String repository, String ref, String path, Boolean userMetadata) throws ApiException {
-        okhttp3.Call localVarCall = statObjectValidateBeforeCall(repository, ref, path, userMetadata, null);
+    public ApiResponse<ObjectStats> statObjectWithHttpInfo(String repository, String ref, String path, Boolean userMetadata, Boolean presign) throws ApiException {
+        okhttp3.Call localVarCall = statObjectValidateBeforeCall(repository, ref, path, userMetadata, presign, null);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -1297,6 +1304,7 @@ public class ObjectsApi {
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path relative to the branch (required)
      * @param userMetadata  (optional, default to true)
+     * @param presign  (optional, default to true)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -1310,9 +1318,9 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call statObjectAsync(String repository, String ref, String path, Boolean userMetadata, final ApiCallback<ObjectStats> _callback) throws ApiException {
+    public okhttp3.Call statObjectAsync(String repository, String ref, String path, Boolean userMetadata, Boolean presign, final ApiCallback<ObjectStats> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = statObjectValidateBeforeCall(repository, ref, path, userMetadata, _callback);
+        okhttp3.Call localVarCall = statObjectValidateBeforeCall(repository, ref, path, userMetadata, presign, _callback);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

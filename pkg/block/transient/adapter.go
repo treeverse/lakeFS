@@ -34,6 +34,10 @@ func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, expectedSize i
 	return io.NopCloser(&io.LimitedReader{R: rand.Reader, N: expectedSize}), nil
 }
 
+func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer) (string, error) {
+	return "", nil
+}
+
 func (a *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {
 	return true, nil
 }

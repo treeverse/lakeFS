@@ -313,6 +313,30 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	return objectOutput.Body, nil
 }
 
+func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer) (string, error) {
+	log := a.log(ctx).WithField("operation", "GetPresignedURL")
+	qualifiedKey, err := resolveNamespace(obj)
+	if err != nil {
+		log.WithField("namespace", obj.StorageNamespace).
+			WithField("identifier", obj.Identifier).
+			WithError(err).Error("could not resolve namespace")
+		return "", err
+	}
+	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
+	getObjectInput := &s3.GetObjectInput{
+		Bucket: aws.String(qualifiedKey.StorageNamespace),
+		Key:    aws.String(qualifiedKey.Key),
+	}
+	req, _ := client.GetObjectRequest(getObjectInput)
+	preSignedUrl, err := req.Presign(15 * time.Minute)
+	if err != nil {
+		log.WithField("namespace", obj.StorageNamespace).
+			WithField("identifier", obj.Identifier).
+			WithError(err).Error("could not pre-sign request")
+	}
+	return preSignedUrl, err
+}
+
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {
 	var err error
 	defer reportMetrics("Exists", time.Now(), nil, &err)

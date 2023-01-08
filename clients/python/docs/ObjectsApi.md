@@ -860,6 +860,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
     path = "path_example" # str | relative to the branch
     user_metadata = True # bool |  (optional) if omitted the server will use the default value of True
+    presign = True # bool |  (optional) if omitted the server will use the default value of True
 
     # example passing only required values which don't have defaults set
     try:
@@ -873,7 +874,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # get object metadata
-        api_response = api_instance.stat_object(repository, ref, path, user_metadata=user_metadata)
+        api_response = api_instance.stat_object(repository, ref, path, user_metadata=user_metadata, presign=presign)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->stat_object: %s\n" % e)
@@ -888,6 +889,7 @@ Name | Type | Description  | Notes
  **ref** | **str**| a reference (could be either a branch or a commit ID) |
  **path** | **str**| relative to the branch |
  **user_metadata** | **bool**|  | [optional] if omitted the server will use the default value of True
+ **presign** | **bool**|  | [optional] if omitted the server will use the default value of True
 
 ### Return type
 

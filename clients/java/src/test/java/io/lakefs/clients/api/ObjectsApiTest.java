@@ -179,7 +179,8 @@ public class ObjectsApiTest {
         String ref = null;
         String path = null;
         Boolean userMetadata = null;
-                ObjectStats response = api.statObject(repository, ref, path, userMetadata);
+        Boolean presign = null;
+                ObjectStats response = api.statObject(repository, ref, path, userMetadata, presign);
         // TODO: test validations
     }
     

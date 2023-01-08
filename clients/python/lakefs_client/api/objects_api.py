@@ -580,6 +580,7 @@ class ObjectsApi(object):
                     'ref',
                     'path',
                     'user_metadata',
+                    'presign',
                 ],
                 'required': [
                     'repository',
@@ -607,18 +608,22 @@ class ObjectsApi(object):
                         (str,),
                     'user_metadata':
                         (bool,),
+                    'presign':
+                        (bool,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'ref': 'ref',
                     'path': 'path',
                     'user_metadata': 'user_metadata',
+                    'presign': 'presign',
                 },
                 'location_map': {
                     'repository': 'path',
                     'ref': 'path',
                     'path': 'query',
                     'user_metadata': 'query',
+                    'presign': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -1262,6 +1267,7 @@ class ObjectsApi(object):
 
         Keyword Args:
             user_metadata (bool): [optional] if omitted the server will use the default value of True
+            presign (bool): [optional] if omitted the server will use the default value of True
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
