@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -54,6 +55,7 @@ public class LakeFSFileSystem extends FileSystem {
     private LakeFSClient lfsClient;
     private int listAmount;
     private FileSystem fsForConfig;
+    private static File emptyFile = new File("/dev/null");
 
     // Currently bulk deletes *must* receive a single-threaded executor!
     private ExecutorService deleteExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
@@ -588,8 +590,20 @@ public class LakeFSFileSystem extends FileSystem {
      */
     private void createDirectoryMarkerIfEmptyDirectory(Path f) throws IOException {
         ObjectLocation objectLocation = pathToObjectLocation(f);
-        if (objectLocation.isValidPath() && !exists(f)) {
-            createDirectoryMarker(f);
+        if (!objectLocation.isValidPath()) {
+            LOG.warn("Cannot create directory marker for invalid path {}", f.toString());
+            // Safe to do nothing, because directory markers are mostly
+            // useless.  This happens when the path inside the branch is
+            // empty -- and cannot be created.  If the repo or branch names
+            // are empty this also happens but then the actual operation
+            // will fail.
+            return;
+        }
+        try {
+            ObjectsApi objects = lfsClient.getObjects();
+            objects.uploadObject(objectLocation.getRepository(), objectLocation.getRef(), objectLocation.getPath(), null, "*", emptyFile);
+        } catch (ApiException e) {
+            throw new IOException("createDirectoryMarkerIfEmptyDirectory", e);
         }
     }
 
