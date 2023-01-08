@@ -310,7 +310,7 @@ public class LakeFSFileSystem extends FileSystem {
         }
         if (!src.getParent().equals(dst.getParent())) {
             deleteEmptyDirectoryMarkers(dst.getParent());
-            createDirectoryMarkerIfEmptyDirectory(src.getParent());
+            createDirectoryMarkerIfNotExists(src.getParent());
         }
         return result;
     }
@@ -523,7 +523,7 @@ public class LakeFSFileSystem extends FileSystem {
             deleted = deleteHelper(loc);
         }
 
-        createDirectoryMarkerIfEmptyDirectory(path.getParent());
+        createDirectoryMarkerIfNotExists(path.getParent());
         return deleted;
     }
 
@@ -588,7 +588,7 @@ public class LakeFSFileSystem extends FileSystem {
      * @param f path to check if empty directory marker is needed
      * @throws IOException any issue with lakeFS or underlying filesystem
      */
-    private void createDirectoryMarkerIfEmptyDirectory(Path f) throws IOException {
+    private void createDirectoryMarkerIfNotExists(Path f) throws IOException {
         ObjectLocation objectLocation = pathToObjectLocation(f);
         if (!objectLocation.isValidPath()) {
             LOG.warn("Cannot create directory marker for invalid path {}", f.toString());
