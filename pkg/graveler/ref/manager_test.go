@@ -11,10 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rs/xid"
-
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
+	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/batch"
