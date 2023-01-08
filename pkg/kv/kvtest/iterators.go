@@ -12,7 +12,6 @@ import (
 const (
 	firstPartitionKey  = "m"
 	secondPartitionKey = "ma"
-	thirdPartitionKey  = "mb"
 )
 
 func testPartitionIterator(t *testing.T, ms MakeStore) {
@@ -53,7 +52,7 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 			e := itr.Entry()
 			model, ok := e.Value.(*TestModel)
 			if !ok {
-				t.Fatalf("cannot read from store")
+				t.Fatalf("Failed to cast entry to TestModel")
 			}
 			names = append(names, string(model.Name))
 		}
@@ -78,7 +77,7 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 			e := itr.Entry()
 			model, ok := e.Value.(*TestModel)
 			if !ok {
-				t.Fatalf("cannot read from store")
+				t.Fatalf("Failed to cast entry to TestModel")
 			}
 			names = append(names, string(model.Name))
 		}
@@ -148,7 +147,7 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 			e := itr.Entry()
 			model, ok := e.Value.(*TestModel)
 			if !ok {
-				t.Fatalf("cannot read from store")
+				t.Fatalf("Failed to cast entry to TestModel")
 			}
 			names = append(names, string(model.Name))
 		}
@@ -173,7 +172,7 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 			e := itr.Entry()
 			model, ok := e.Value.(*TestModel)
 			if !ok {
-				t.Fatalf("cannot read from store")
+				t.Fatalf("Failed to cast entry to TestModel")
 			}
 			names = append(names, string(model.Name))
 		}
@@ -214,7 +213,7 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 			e := itr.Entry()
 			model, ok := e.Value.(*TestModel)
 			if !ok {
-				t.Fatalf("cannot read from store")
+				t.Fatalf("Failed to cast entry to TestModel")
 			}
 			names = append(names, string(model.Name))
 		}
@@ -239,7 +238,7 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 			e := itr.Entry()
 			model, ok := e.Value.(*TestModel)
 			if !ok {
-				t.Fatalf("cannot read from store")
+				t.Fatalf("Failed to cast entry to TestModel")
 			}
 			names = append(names, string(model.Name))
 		}
@@ -255,138 +254,152 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 
 func testSecondaryIterator(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
+
+	// prepare data
 	store := ms(t, ctx)
 	sm := kv.StoreMessage{
 		Store: store,
 	}
 	m := []TestModel{
-		{Name: []byte("a")},
-		{Name: []byte("aa")},
-		{Name: []byte("b")},
-		{Name: []byte("c")},
-		{Name: []byte("d")},
+		{Name: []byte("a"), JustAString: "one"},
+		{Name: []byte("b"), JustAString: "two"},
+		{Name: []byte("c"), JustAString: "three"},
+		{Name: []byte("d"), JustAString: "four"},
+		{Name: []byte("e"), JustAString: "five"},
 	}
 
-	// prepare data
 	for i := 0; i < len(m); i++ {
-		err := sm.SetMsg(ctx, firstPartitionKey, m[i].Name, &m[i])
+		primaryKey := append([]byte("name/"), m[i].Name...)
+		err := sm.SetMsg(ctx, firstPartitionKey, primaryKey, &m[i])
 		if err != nil {
 			t.Fatal("failed to set model", err)
 		}
-
-		err = sm.SetMsg(ctx, secondPartitionKey, m[i].Name, &m[i])
+		secondaryKey := append([]byte("just_a_string/"), m[i].JustAString...)
+		err = sm.SetMsg(ctx, firstPartitionKey, secondaryKey, &kv.SecondaryIndex{PrimaryKey: primaryKey})
 		if err != nil {
 			t.Fatal("failed to set model", err)
 		}
 	}
-	err := sm.SetMsg(ctx, thirdPartitionKey, []byte("e"), &TestModel{})
+	err := sm.SetMsg(ctx, secondPartitionKey, []byte("just_a_string/e"), &kv.SecondaryIndex{})
+	if err != nil {
+		t.Fatal("failed to set key", err)
+	}
+	err = sm.SetMsg(ctx, secondPartitionKey, []byte("just_a_string/f"), &kv.SecondaryIndex{PrimaryKey: []byte("name/no-name")})
 	if err != nil {
 		t.Fatal("failed to set model", err)
 	}
-
-	err = sm.SetMsg(ctx, thirdPartitionKey, []byte("f"), &TestModel{Name: []byte("notin")})
-	if err != nil {
-		t.Fatal("failed to set model", err)
-	}
-	// first partition - (a,a) (aa,aa) (b,b) (c,c) (d,d)
-	// second partition - (a,a) (aa,aa) (b,b) (c,c) (d,d)
-	// third partition - (e,nil) (f,"notin")
 
 	t.Run("listing all values of partition", func(t *testing.T) {
 		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
-			firstPartitionKey, []byte(""), []byte(""))
+			firstPartitionKey, []byte("just_a_string/"), []byte(""))
 		if err != nil {
 			t.Fatalf("failed to create secondary iterator: %v", err)
 		}
 		defer itr.Close()
-		names := make([]string, 0)
+		var msgs []*TestModel
 		for itr.Next() {
 			e := itr.Entry()
 			model, ok := e.Value.(*TestModel)
 			if !ok {
-				t.Fatalf("cannot read from store")
+				t.Fatalf("Failed to cast entry to TestModel")
 			}
-			names = append(names, string(model.Name))
+			msgs = append(msgs, model)
 		}
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
 		}
-
-		if diffs := deep.Equal(names, []string{"a", "aa", "b", "c", "d"}); diffs != nil {
-			t.Fatalf("got wrong list of names: %v", diffs)
+		expectedMsgs := []*TestModel{
+			{Name: []byte("e"), JustAString: "five"},
+			{Name: []byte("d"), JustAString: "four"},
+			{Name: []byte("a"), JustAString: "one"},
+			{Name: []byte("c"), JustAString: "three"},
+			{Name: []byte("b"), JustAString: "two"},
+		}
+		if diffs := deep.Equal(msgs, expectedMsgs); diffs != nil {
+			t.Fatalf("Diff expected result: %v", diffs)
 		}
 	})
 
 	t.Run("listing with prefix", func(t *testing.T) {
 		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
-			firstPartitionKey, []byte("a"), []byte(""))
+			firstPartitionKey, []byte("just_a_string/f"), []byte(""))
 		if err != nil {
 			t.Fatalf("failed to create secondary iterator: %v", err)
 		}
 		defer itr.Close()
-		names := make([]string, 0)
+		var msgs []*TestModel
 		for itr.Next() {
 			e := itr.Entry()
 			model, ok := e.Value.(*TestModel)
 			if !ok {
-				t.Fatalf("cannot read from store")
+				t.Fatalf("Failed to cast entry to TestModel")
 			}
-			names = append(names, string(model.Name))
+			msgs = append(msgs, model)
 		}
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
 		}
 
-		if diffs := deep.Equal(names, []string{"a", "aa"}); diffs != nil {
-			t.Fatalf("got wrong list of names: %v", diffs)
+		expectedMsgs := []*TestModel{
+			{Name: []byte("e"), JustAString: "five"},
+			{Name: []byte("d"), JustAString: "four"},
+		}
+		if diffs := deep.Equal(msgs, expectedMsgs); diffs != nil {
+			t.Fatalf("Diff expected result: %v", diffs)
 		}
 	})
 
 	t.Run("listing after", func(t *testing.T) {
 		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
-			firstPartitionKey, []byte(""), []byte("b"))
+			firstPartitionKey, []byte("just_a_string/"), []byte("just_a_string/four"))
 		if err != nil {
 			t.Fatalf("failed to create secondary iterator: %v", err)
 		}
 		defer itr.Close()
-		names := make([]string, 0)
+		var msgs []*TestModel
 		for itr.Next() {
 			e := itr.Entry()
 			model, ok := e.Value.(*TestModel)
 			if !ok {
-				t.Fatalf("cannot read from store")
+				t.Fatalf("Failed to cast entry to TestModel")
 			}
-			names = append(names, string(model.Name))
+			msgs = append(msgs, model)
 		}
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
 		}
 
-		if diffs := deep.Equal(names, []string{"c", "d"}); diffs != nil {
-			t.Fatalf("got wrong list of names: %v", diffs)
+		expectedMsgs := []*TestModel{
+			{Name: []byte("a"), JustAString: "one"},
+			{Name: []byte("c"), JustAString: "three"},
+			{Name: []byte("b"), JustAString: "two"},
+		}
+		if diffs := deep.Equal(msgs, expectedMsgs); diffs != nil {
+			t.Fatalf("Diff expected result: %v", diffs)
 		}
 	})
 
 	t.Run("key not found", func(t *testing.T) {
 		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
-			thirdPartitionKey, []byte(""), []byte(""))
+			secondPartitionKey, []byte("just_a_string/e"), []byte(""))
 		if err != nil {
 			t.Fatalf("failed to create secondary iterator: %v", err)
 		}
 		defer itr.Close()
 
 		if itr.Next() {
-			t.Fatalf("next should return false")
+			t.Fatalf("Next() should return false")
 		}
 
-		if !errors.Is(itr.Err(), kv.ErrMissingKey) {
-			t.Fatalf("expected error: %s, got %v", kv.ErrMissingKey, itr.Err())
+		expectedErr := kv.ErrMissingKey
+		if err := itr.Err(); !errors.Is(err, expectedErr) {
+			t.Fatalf("expected error: %s, got %v", expectedErr, err)
 		}
 	})
 
-	t.Run("value as key not found", func(t *testing.T) {
+	t.Run("value not found", func(t *testing.T) {
 		itr, err := kv.NewSecondaryIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(),
-			thirdPartitionKey, []byte(""), []byte("e"))
+			secondPartitionKey, []byte("just_a_string/f"), []byte(""))
 		if err != nil {
 			t.Fatalf("failed to create secondary iterator: %v", err)
 		}
@@ -394,8 +407,8 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 		if itr.Next() {
 			t.Fatalf("next should return false")
 		}
-		if itr.Err() != nil {
-			t.Fatalf("unexpected error: %v", itr.Err())
+		if err := itr.Err(); err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 	})
 }
