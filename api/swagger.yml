@@ -3816,7 +3816,7 @@ paths:
       tags:
         - statistics
       operationId: postStatsEvents
-      summary: post stats events
+      summary: post stats events, this endpoint is meant for internal use only
       requestBody:
         required: true
         content:

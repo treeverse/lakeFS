@@ -34,7 +34,7 @@ public class StatisticsApiTest {
 
     
     /**
-     * post stats events
+     * post stats events, this endpoint is meant for internal use only
      *
      * 
      *

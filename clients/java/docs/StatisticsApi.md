@@ -4,14 +4,14 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**postStatsEvents**](StatisticsApi.md#postStatsEvents) | **POST** /statistics | post stats events
+[**postStatsEvents**](StatisticsApi.md#postStatsEvents) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
 
 
 <a name="postStatsEvents"></a>
 # **postStatsEvents**
 > postStatsEvents(statsEventsList)
 
-post stats events
+post stats events, this endpoint is meant for internal use only
 
 ### Example
 ```java

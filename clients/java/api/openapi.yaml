@@ -4749,7 +4749,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: post stats events
+      summary: post stats events, this endpoint is meant for internal use only
       tags:
       - statistics
       x-contentType: application/json

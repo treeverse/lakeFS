@@ -115,7 +115,7 @@ public class StatisticsApi {
     }
 
     /**
-     * post stats events
+     * post stats events, this endpoint is meant for internal use only
      * 
      * @param statsEventsList  (required)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -133,7 +133,7 @@ public class StatisticsApi {
     }
 
     /**
-     * post stats events
+     * post stats events, this endpoint is meant for internal use only
      * 
      * @param statsEventsList  (required)
      * @return ApiResponse&lt;Void&gt;
@@ -153,7 +153,7 @@ public class StatisticsApi {
     }
 
     /**
-     * post stats events (asynchronously)
+     * post stats events, this endpoint is meant for internal use only (asynchronously)
      * 
      * @param statsEventsList  (required)
      * @param _callback The callback to be executed when the API call finishes

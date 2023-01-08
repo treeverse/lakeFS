@@ -60,7 +60,7 @@ type memCollector struct {
 func (m *memCollector) CollectEvents(ev stats.Event, count uint64) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.Metrics = append(m.Metrics, &stats.Metric{ev, count})
+	m.Metrics = append(m.Metrics, &stats.Metric{Event: ev, Value: count})
 }
 
 func (m *memCollector) CollectEvent(ev stats.Event) {

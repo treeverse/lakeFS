@@ -98,7 +98,7 @@ class StatisticsApi(object):
         stats_events_list,
         **kwargs
     ):
-        """post stats events  # noqa: E501
+        """post stats events, this endpoint is meant for internal use only  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True

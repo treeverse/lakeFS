@@ -27,7 +27,7 @@ class TestStatisticsApi(unittest.TestCase):
     def test_post_stats_events(self):
         """Test case for post_stats_events
 
-        post stats events  # noqa: E501
+        post stats events, this endpoint is meant for internal use only  # noqa: E501
         """
         pass
 

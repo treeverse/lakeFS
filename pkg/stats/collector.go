@@ -219,7 +219,7 @@ func (s *BufferedCollector) getInstallationID() string {
 }
 
 func (s *BufferedCollector) incr(k Event) {
-	s.update(Metric{k, 1})
+	s.update(Metric{Event: k, Value: 1})
 }
 
 func (s *BufferedCollector) update(k Metric) {
@@ -253,7 +253,7 @@ func (s *BufferedCollector) CollectEvents(ev Event, count uint64) {
 	} else {
 		ev = ev.ClearExtended()
 	}
-	s.writes <- Metric{ev, count}
+	s.writes <- Metric{Event: ev, Value: count}
 }
 
 func (s *BufferedCollector) CollectEvent(ev Event) {

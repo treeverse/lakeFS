@@ -4,13 +4,13 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**post_stats_events**](StatisticsApi.md#post_stats_events) | **POST** /statistics | post stats events
+[**post_stats_events**](StatisticsApi.md#post_stats_events) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
 
 
 # **post_stats_events**
 > post_stats_events(stats_events_list)
 
-post stats events
+post stats events, this endpoint is meant for internal use only
 
 ### Example
 
@@ -76,7 +76,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        # post stats events
+        # post stats events, this endpoint is meant for internal use only
         api_instance.post_stats_events(stats_events_list)
     except lakefs_client.ApiException as e:
         print("Exception when calling StatisticsApi->post_stats_events: %s\n" % e)
