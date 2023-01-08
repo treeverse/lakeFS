@@ -1138,6 +1138,33 @@ components:
           description: The id of the created metarange
           type: string
 
+    StatsEvent:
+      type: object
+      properties:
+        class:
+          description: stats event class (e.g. "s3_gateway", "openapi_request", "experimental-feature", "ui-event")
+          type: string
+        name:
+          description: stats event name (e.g. "put_object", "create_repository", "<experimental-feature-name>")
+          type: string
+        count:
+          description: number of events of the class and name
+          type: integer
+      required:
+        - class
+        - name
+        - count
+
+    StatsEventsList:
+      type: object
+      required:
+        - events
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatsEvent"
+
 paths:
   /setup_comm_prefs:
     post:
@@ -3781,5 +3808,31 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /statistics:
+    post:
+      tags:
+        - statistics
+      operationId: postStatsEvents
+      summary: post stats events, this endpoint is meant for internal use only
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatsEventsList"
+      responses:
+        204:
+          description: reported successfully
+        400:
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"
