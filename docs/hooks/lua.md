@@ -12,9 +12,6 @@ redirect_from: []
 # Lua Hooks <span>Experimental</span>{: .label }
 {: .no_toc }
 
-{% include toc.html %}
-
-## Lua based hooks
 
 As of version 0.86.0, lakeFS supports running hooks without relying on external components using an [embedded Lua VM](https://github.com/Shopify/go-lua)
 
@@ -24,6 +21,10 @@ The Lua runtime embedded in lakeFS is limited for security reasons. It provides 
 
 1. Accessing any of the running lakeFS server's environment
 2. Accessing the local filesystem available the lakeFS process
+
+
+
+{% include toc.html %}
 
 
 ## Lua Library reference
