@@ -9,5 +9,5 @@ import (
 )
 
 func TestDynamoKV(t *testing.T) {
-	kvtest.TestDriver(t, dynamodb.DriverName, kvparams.KV{DynamoDB: testParams})
+	kvtest.TestDriver(t, dynamodb.DriverName, kvparams.Config{DynamoDB: testParams})
 }

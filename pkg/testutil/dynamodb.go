@@ -91,7 +91,7 @@ func GetDynamoDBProd(ctx context.Context, tb testing.TB) kv.Store {
 		AwsRegion:          "us-east-1",
 	}
 
-	store, err := kv.Open(ctx, kvparams.KV{Type: dynamodb.DriverName, DynamoDB: testParams})
+	store, err := kv.Open(ctx, kvparams.Config{Type: dynamodb.DriverName, DynamoDB: testParams})
 	if err != nil {
 		tb.Fatalf("failed to open kv dynamodb store %s", err)
 	}

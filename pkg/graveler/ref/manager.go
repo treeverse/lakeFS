@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
 	"strings"
 	"time"
+
+	"github.com/rs/xid"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/batch"
@@ -13,7 +16,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // MaxBatchDelay - 3ms was chosen as a max delay time for critical path queries.
@@ -547,8 +549,7 @@ func newCache(cfg CacheConfig) cache.Cache {
 
 func (m *Manager) SetAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
 	a := &graveler.LinkAddressData{
-		Address:   token,
-		ExpiredAt: timestamppb.New(time.Now().Add(AddressTokenTime)),
+		Address: token,
 	}
 	err := m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(repository), []byte(graveler.LinkedAddressPath(token)), a, nil)
 	if err != nil {
@@ -570,8 +571,9 @@ func (m *Manager) GetAddressToken(ctx context.Context, repository *graveler.Repo
 		}
 		return err
 	}
-	if data.ExpiredAt.AsTime().Before(time.Now()) {
-		return graveler.ErrAddressTokenExpired
+	err = m.IsTokenExpired(&data)
+	if err != nil {
+		return err
 	}
 	return m.deleteAddressToken(ctx, repository, path)
 }
@@ -584,23 +586,23 @@ func (m *Manager) ListAddressTokens(ctx context.Context, repository *graveler.Re
 	return NewAddressTokenIterator(ctx, m.kvStore, repository)
 }
 
-func (m *Manager) DeleteExpiredAddressTokens(ctx context.Context, repository *graveler.RepositoryRecord) error {
-	itr, err := m.ListAddressTokens(ctx, repository)
+func (m *Manager) IsTokenExpired(token *graveler.LinkAddressData) error {
+	creationTime, err := m.resolveAddressTokenTime(token.Address)
 	if err != nil {
-		return nil
+		return err
 	}
-	defer itr.Close()
-	for itr.Next() {
-		token := itr.Value()
-		if token.ExpiredAt.AsTime().Before(time.Now()) {
-			err := m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repository), []byte(graveler.LinkedAddressPath(token.Address)))
-			if err != nil {
-				return nil
-			}
-		}
-	}
-	if itr.Err() != nil {
-		return nil
+	expiry := creationTime.Add(AddressTokenTime)
+	if expiry.Before(time.Now()) {
+		return graveler.ErrAddressTokenExpired
 	}
 	return nil
+}
+
+func (m *Manager) resolveAddressTokenTime(address string) (time.Time, error) {
+	_, name := path.Split(address)
+	id, err := xid.FromString(name)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return id.Time(), nil
 }

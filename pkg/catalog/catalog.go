@@ -212,7 +212,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg)
 	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg)
 
-	committedParams := *cfg.Config.GetCommittedParams()
+	committedParams := cfg.Config.CommittedParams()
 	sstableMetaRangeManager, err := committed.NewMetaRangeManager(
 		committedParams,
 		// TODO(ariels): Use separate range managers for metaranges and ranges
@@ -233,10 +233,10 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 			Executor:              executor,
 			KvStore:               cfg.KVStore,
 			AddressProvider:       ident.NewHexAddressProvider(),
-			RepositoryCacheConfig: cfg.Config.GetGravelerRepositoryCacheConfig(),
-			CommitCacheConfig:     cfg.Config.GetGravelerCommitCacheConfig(),
+			RepositoryCacheConfig: ref.CacheConfig(cfg.Config.Graveler.RepositoryCache),
+			CommitCacheConfig:     ref.CacheConfig(cfg.Config.Graveler.CommitCache),
 		})
-	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
+	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.Committed.BlockStoragePrefix)
 	settingManager := settings.NewManager(refManager, *cfg.KVStore)
 	if cfg.SettingsManagerOption != nil {
 		cfg.SettingsManagerOption(settingManager)
@@ -1870,7 +1870,7 @@ func (c *Catalog) writeTokensLocal(ctx context.Context, repository *graveler.Rep
 				}, true, nil
 			}
 		}
-		if token.ExpiredAt.AsTime().After(time.Now()) {
+		if c.Store.IsTokenExpired(token) == nil {
 			if err = pw.Write(UncommittedParquetObject{
 				PhysicalAddress: token.Address,
 				CreationDate:    time.Now().Unix(),
@@ -2003,14 +2003,6 @@ func (c *Catalog) GetAddressToken(ctx context.Context, repository, token string)
 		return err
 	}
 	return c.Store.GetAddressToken(ctx, repo, token)
-}
-
-func (c *Catalog) DeleteExpiredAddressTokens(ctx context.Context, repository string) error {
-	repo, err := c.getRepository(ctx, repository)
-	if err != nil {
-		return err
-	}
-	return c.Store.DeleteExpiredAddressTokens(ctx, repo)
 }
 
 func (c *Catalog) Close() error {

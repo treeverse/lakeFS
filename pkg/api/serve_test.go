@@ -128,7 +128,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	authService := auth.NewAuthService(kvStoreMessage, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
-	meta := auth.NewKVMetadataManager("serve_test", cfg.GetFixedInstallationID(), cfg.GetDatabaseType(), kvStore)
+	meta := auth.NewKVMetadataManager("serve_test", cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 
 	// Do not validate invalid config (missing required fields).
 	c, err := catalog.New(ctx, catalog.Config{
@@ -153,7 +153,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	c.SetHooksHandler(actionsService)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)
-	kvParams, err := cfg.GetKVParams()
+	kvParams, err := cfg.DatabaseParams()
 	testutil.Must(t, err)
 	migrator := kv.NewDatabaseMigrator(kvParams)
 
@@ -162,9 +162,8 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		_ = c.Close()
 	})
 
-	auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL(), "")
-	emailParams, _ := cfg.GetEmailParams()
-	emailer, err := email.NewEmailer(emailParams)
+	auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, "")
+	emailer, err := email.NewEmailer(email.Params(cfg.Email))
 	tmpl := templater.NewService(templates.Content, cfg, authService)
 
 	testutil.Must(t, err)

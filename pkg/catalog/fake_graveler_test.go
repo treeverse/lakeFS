@@ -306,6 +306,10 @@ func (g *FakeGraveler) ListAddressTokens(_ context.Context, _ *graveler.Reposito
 	return g.AddressTokenIteratorFactory(), nil
 }
 
+func (g *FakeGraveler) IsTokenExpired(_ *graveler.LinkAddressData) error {
+	return nil
+}
+
 type FakeValueIterator struct {
 	Data  []*graveler.ValueRecord
 	Index int

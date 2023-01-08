@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+Deprecated:
+- Authorization using Role-Based Access Control
+- LDAP & OIDC Embedded Support
+
+What's new:
+
+- Authorization using Access Control Lists
+
 ## v0.88.0
 
 What's new:

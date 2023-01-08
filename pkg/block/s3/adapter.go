@@ -19,7 +19,6 @@ import (
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 )
@@ -304,7 +303,7 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
 	objectOutput, err := client.GetObjectWithContext(ctx, &getObjectInput)
 	if isErrNotFound(err) {
-		return nil, adapter.ErrDataNotFound
+		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
 		log.WithError(err).Errorf("failed to get S3 object bucket %s key %s", qualifiedKey.StorageNamespace, qualifiedKey.Key)
@@ -355,7 +354,7 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
 	objectOutput, err := client.GetObjectWithContext(ctx, &getObjectInput)
 	if isErrNotFound(err) {
-		return nil, adapter.ErrDataNotFound
+		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
 		log.WithError(err).WithFields(logging.Fields{

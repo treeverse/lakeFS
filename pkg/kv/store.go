@@ -33,6 +33,12 @@ var (
 	ErrTableNotActive      = errors.New("table not active")
 )
 
+// Precond Type for special conditionals provided as predicates for the SetIf method
+type Precond string
+
+// PrecondConditionalExists Conditional for SetIf which performs Set only if key already exists in store
+var PrecondConditionalExists = Precond("ConditionalExists")
+
 func FormatPath(p ...string) string {
 	return strings.Join(p, PathDelimiter)
 }
@@ -42,7 +48,7 @@ type Driver interface {
 	// Open opens access to the database store. Implementations give access to the same storage based on the dsn.
 	// Implementation can return the same Storage instance based on dsn or new one as long as it provides access to
 	// the same storage.
-	Open(ctx context.Context, params kvparams.KV) (Store, error)
+	Open(ctx context.Context, params kvparams.Config) (Store, error)
 }
 
 // Predicate value used to update a key base on a previous fetched value.
@@ -158,7 +164,7 @@ func UnregisterAllDrivers() {
 
 // Open lookup driver by 'type' and return store based on the configuration.
 // Failed with ErrUnknownDriver in case 'name' is not registered
-func Open(ctx context.Context, params kvparams.KV) (Store, error) {
+func Open(ctx context.Context, params kvparams.Config) (Store, error) {
 	driversMu.RLock()
 	d, ok := drivers[params.Type]
 	driversMu.RUnlock()

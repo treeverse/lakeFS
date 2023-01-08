@@ -428,7 +428,7 @@ func (m *RefsFake) ListAddressTokens(context.Context, *graveler.RepositoryRecord
 	return m.addressTokenIter, nil
 }
 
-func (m *RefsFake) DeleteExpiredAddressTokens(ctx context.Context, repository *graveler.RepositoryRecord) error {
+func (m *RefsFake) IsTokenExpired(token *graveler.LinkAddressData) error {
 	return nil
 }
 

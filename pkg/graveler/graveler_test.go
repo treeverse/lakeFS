@@ -284,32 +284,33 @@ func TestGraveler_Get(t *testing.T) {
 }
 
 func TestGraveler_Set(t *testing.T) {
-	newSetVal := graveler.ValueRecord{Key: []byte("key"), Value: &graveler.Value{Data: []byte("newValue"), Identity: []byte("newIdentity")}}
+	newSetVal := &graveler.ValueRecord{Key: []byte("key"), Value: &graveler.Value{Data: []byte("newValue"), Identity: []byte("newIdentity")}}
+	sampleVal := &graveler.Value{Identity: []byte("sampleIdentity"), Data: []byte("sampleValue")}
 	tests := []struct {
 		name                string
 		ifAbsent            bool
-		expectedValueResult graveler.ValueRecord
+		expectedValueResult *graveler.ValueRecord
 		expectedErr         error
 		committedMgr        *testutil.CommittedFake
 		stagingMgr          *testutil.StagingFake
 		refMgr              *testutil.RefsFake
 	}{
 		{
-			name:                "simple set with nothing before",
+			name:                "with nothing before",
 			committedMgr:        &testutil.CommittedFake{},
 			stagingMgr:          &testutil.StagingFake{},
 			refMgr:              &testutil.RefsFake{Branch: &graveler.Branch{}},
 			expectedValueResult: newSetVal,
 		},
 		{
-			name:                "simple set with committed key",
+			name:                "with committed key",
 			committedMgr:        &testutil.CommittedFake{ValuesByKey: map[string]*graveler.Value{string(newSetVal.Key): {Data: []byte("dsa"), Identity: []byte("asd")}}},
 			stagingMgr:          &testutil.StagingFake{},
 			refMgr:              &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "commit1"}},
 			expectedValueResult: newSetVal,
 		},
 		{
-			name:                "simple set overwrite no prior value",
+			name:                "overwrite no prior value",
 			committedMgr:        &testutil.CommittedFake{Err: graveler.ErrNotFound},
 			stagingMgr:          &testutil.StagingFake{},
 			refMgr:              &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "bla"}, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}},
@@ -317,40 +318,41 @@ func TestGraveler_Set(t *testing.T) {
 			ifAbsent:            true,
 		},
 		{
-			name:         "simple set overwrite with prior committed value",
-			committedMgr: &testutil.CommittedFake{},
-			stagingMgr:   &testutil.StagingFake{},
-			refMgr:       &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "bla"}, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}},
-			expectedErr:  graveler.ErrPreconditionFailed,
-			ifAbsent:     true,
+			name:                "overwrite with prior committed value",
+			committedMgr:        &testutil.CommittedFake{},
+			stagingMgr:          &testutil.StagingFake{},
+			refMgr:              &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "bla"}, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}},
+			expectedValueResult: nil,
+			ifAbsent:            true,
 		},
 		{
-			name:         "simple set overwrite with prior staging value",
-			committedMgr: &testutil.CommittedFake{},
-			stagingMgr:   &testutil.StagingFake{Values: map[string]map[string]*graveler.Value{"st": {"key": &graveler.Value{Identity: []byte("sdf"), Data: []byte("sdf")}}}},
-			refMgr:       &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "bla", StagingToken: "st"}, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}},
-			expectedErr:  graveler.ErrPreconditionFailed,
-			ifAbsent:     true,
+			name:                "overwrite with prior staging value",
+			committedMgr:        &testutil.CommittedFake{},
+			stagingMgr:          &testutil.StagingFake{Values: map[string]map[string]*graveler.Value{"st": {"key": sampleVal}}, LastSetValueRecord: &graveler.ValueRecord{Key: []byte("key"), Value: sampleVal}},
+			refMgr:              &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "bla", StagingToken: "st"}, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}},
+			expectedValueResult: &graveler.ValueRecord{Key: []byte("key"), Value: sampleVal},
+			ifAbsent:            true,
 		},
 		{
-			name:                "simple set overwrite with prior staging tombstone",
+			name:                "overwrite with prior staging tombstone",
 			committedMgr:        &testutil.CommittedFake{Err: graveler.ErrNotFound},
-			stagingMgr:          &testutil.StagingFake{Values: map[string]map[string]*graveler.Value{"st1": {"key": nil}, "st2": {"key": &graveler.Value{Identity: []byte("not-nil"), Data: []byte("not-nil")}}}},
+			stagingMgr:          &testutil.StagingFake{Values: map[string]map[string]*graveler.Value{"st1": {"key": nil}, "st2": {"key": sampleVal}}, LastSetValueRecord: &graveler.ValueRecord{Key: []byte("key"), Value: sampleVal}},
 			refMgr:              &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "bla", StagingToken: "st1", SealedTokens: []graveler.StagingToken{"st2"}}, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}},
 			expectedValueResult: newSetVal,
 			ifAbsent:            true,
 		},
 	}
+	ctx := context.Background()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			store := newGraveler(t, tt.committedMgr, tt.stagingMgr, tt.refMgr, nil, testutil.NewProtectedBranchesManagerFake())
-			err := store.Set(context.Background(), repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(tt.ifAbsent))
+			err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(tt.ifAbsent))
 			if err != tt.expectedErr {
-				t.Fatalf("wrong error, expected:%v got:%v", tt.expectedErr, err)
+				t.Fatalf("Set() - error: %v, expected: %v", err, tt.expectedErr)
 			}
 			lastVal := tt.stagingMgr.LastSetValueRecord
 			if err == nil {
-				require.Equal(t, tt.expectedValueResult, *lastVal)
+				require.Equal(t, tt.expectedValueResult, lastVal)
 			} else {
 				require.NotEqual(t, &tt.expectedValueResult, lastVal)
 			}
