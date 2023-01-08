@@ -123,7 +123,8 @@ func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *
 	}
 
 	table, err := svc.CreateTableWithContext(ctx, &dynamodb.CreateTableInput{
-		TableName: aws.String(params.TableName),
+		TableName:   aws.String(params.TableName),
+		BillingMode: aws.String(dynamodb.BillingModePayPerRequest), // On-Demand
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			{
 				AttributeName: aws.String(PartitionKey),
@@ -143,10 +144,6 @@ func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *
 				AttributeName: aws.String(ItemKey),
 				KeyType:       aws.String("RANGE"),
 			},
-		},
-		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
-			ReadCapacityUnits:  aws.Int64(params.ReadCapacityUnits),
-			WriteCapacityUnits: aws.Int64(params.WriteCapacityUnits),
 		},
 	})
 	if err != nil {
