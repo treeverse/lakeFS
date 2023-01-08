@@ -3612,6 +3612,7 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
+
 	// set upgrade recommended based on last security audit check
 	var (
 		upgradeRecommended *bool
@@ -3631,6 +3632,53 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		UpgradeUrl:         upgradeURL,
 		Version:            swag.String(version.Version),
 	})
+}
+
+func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, body PostStatsEventsJSONRequestBody) {
+	ctx := r.Context()
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+
+	for _, statsEv := range body.Events {
+		if statsEv.Class == "" {
+			writeError(w, r, http.StatusBadRequest, "invalid value: class is required")
+			return
+		}
+
+		if statsEv.Name == "" {
+			writeError(w, r, http.StatusBadRequest, "invalid value: name is required")
+			return
+		}
+
+		if statsEv.Count < 0 {
+			writeError(w, r, http.StatusBadRequest, "invalid value: count must be a non-negative integer")
+			return
+		}
+	}
+
+	client := httputil.GetRequestLakeFSClient(r)
+	for _, statsEv := range body.Events {
+		ev := stats.Event{
+			Class:  statsEv.Class,
+			Name:   statsEv.Name,
+			UserID: user.Username,
+			Client: client,
+		}
+		c.Collector.CollectEvents(ev, uint64(statsEv.Count))
+
+		c.Logger.WithContext(ctx).WithFields(logging.Fields{
+			"class":   ev.Class,
+			"name":    ev.Name,
+			"count":   statsEv.Count,
+			"user_id": ev.UserID,
+			"client":  ev.Client,
+		}).Debug("sending stats events")
+	}
+
+	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
 func IsStatusCodeOK(statusCode int) bool {
@@ -3817,6 +3865,7 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 	if err != nil {
 		ev.UserID = user.Username
 	}
+
 	c.Logger.WithContext(ctx).WithFields(logging.Fields{
 		"class":      ev.Class,
 		"name":       ev.Name,

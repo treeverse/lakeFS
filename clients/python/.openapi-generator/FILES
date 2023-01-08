@@ -79,6 +79,9 @@ docs/StagingApi.md
 docs/StagingLocation.md
 docs/StagingMetadata.md
 docs/Statement.md
+docs/StatisticsApi.md
+docs/StatsEvent.md
+docs/StatsEventsList.md
 docs/StorageConfig.md
 docs/StorageURI.md
 docs/TagCreation.md
@@ -105,6 +108,7 @@ lakefs_client/api/refs_api.py
 lakefs_client/api/repositories_api.py
 lakefs_client/api/retention_api.py
 lakefs_client/api/staging_api.py
+lakefs_client/api/statistics_api.py
 lakefs_client/api/tags_api.py
 lakefs_client/api/templates_api.py
 lakefs_client/api_client.py
@@ -177,6 +181,8 @@ lakefs_client/model/stage_range_creation.py
 lakefs_client/model/staging_location.py
 lakefs_client/model/staging_metadata.py
 lakefs_client/model/statement.py
+lakefs_client/model/stats_event.py
+lakefs_client/model/stats_events_list.py
 lakefs_client/model/storage_config.py
 lakefs_client/model/storage_uri.py
 lakefs_client/model/tag_creation.py
@@ -272,6 +278,9 @@ test/test_staging_api.py
 test/test_staging_location.py
 test/test_staging_metadata.py
 test/test_statement.py
+test/test_statistics_api.py
+test/test_stats_event.py
+test/test_stats_events_list.py
 test/test_storage_config.py
 test/test_storage_uri.py
 test/test_tag_creation.py
