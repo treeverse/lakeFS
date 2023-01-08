@@ -914,21 +914,24 @@ jobs:
         spark:
           - version: 3.2.1
             suffix: "-hadoop3"
+            allow_failure: false
           - version: 3.1.2
             suffix: ""
+            allow_failure: false
           - version: 3.0.2
             suffix: ""
+            allow_failure: false
           # Test with an an actual 3.2.3 on Hadoop 2 build
           - base: treeverse/bitnami-based-spark
             version: 3.2.3-with-hadoop-2.7-for-testing
             suffix: ""
-            #allow_failure: true
+            allow_failure: false
     env:
       SPARK_BASE: ${{ matrix.spark.base }}
       SPARK_TAG: ${{ matrix.spark.version }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
       TAG: ${{ needs.deploy-image.outputs.tag }}
-    continue-on-error: ${{ matrix.allow_failure }}
+    continue-on-error: ${{ matrix.spark.allow_failure }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
