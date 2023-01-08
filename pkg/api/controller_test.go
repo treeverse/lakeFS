@@ -3568,6 +3568,25 @@ func TestController_PostStatsEvents(t *testing.T) {
 			expectedStatusCode: http.StatusNoContent,
 		},
 		{
+			name: "multiple_events_same_class_same_name",
+			events: []api.StatsEvent{
+				{
+					Class: "multiple_events_same_class_same_name",
+					Name:  "same_name",
+					Count: 1,
+				},
+				{
+					Class: "multiple_events_same_class_same_name",
+					Name:  "same_name",
+					Count: 1,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "multiple_events_same_class_same_name", name: "same_name"}: 2,
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
 			name: "empty_usage_class",
 			events: []api.StatsEvent{
 				{
@@ -3641,9 +3660,13 @@ func TestController_PostStatsEvents(t *testing.T) {
 			for _, sentEv := range tt.events {
 				var collectedEventsToCount = map[key]int{}
 				var k = key{class: sentEv.Class, name: sentEv.Name}
+				_, isMapContainKey := collectedEventsToCount[k]
+				if isMapContainKey {
+					continue
+				}
 				for _, collectedMetric := range deps.collector.Metrics {
 					if collectedMetric.Event.Class == sentEv.Class && collectedMetric.Event.Name == sentEv.Name {
-						collectedEventsToCount[k] = int(collectedMetric.Value)
+						collectedEventsToCount[k] += int(collectedMetric.Value)
 					}
 				}
 				if collectedEventsToCount[k] != tt.expectedEventCounts[k] {
