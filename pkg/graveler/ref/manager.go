@@ -606,3 +606,24 @@ func (m *Manager) resolveAddressTokenTime(address string) (time.Time, error) {
 	}
 	return id.Time(), nil
 }
+
+func (m *Manager) DeleteExpiredAddressTokens(ctx context.Context, repository *graveler.RepositoryRecord) error {
+	itr, err := m.ListAddressTokens(ctx, repository)
+	if err != nil {
+		return nil
+	}
+	defer itr.Close()
+	for itr.Next() {
+		token := itr.Value()
+		if m.IsTokenExpired(token) != nil {
+			err := m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repository), []byte(graveler.LinkedAddressPath(token.Address)))
+			if err != nil {
+				return nil
+			}
+		}
+	}
+	if itr.Err() != nil {
+		return nil
+	}
+	return nil
+}
