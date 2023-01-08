@@ -18,7 +18,6 @@ class LinkOnCloseOutputStream extends OutputStream {
     private final URI physicalUri;
     private final MetadataClient metadataClient;
     private final OutputStream out;
-    private boolean isLinked;
 
     /**
      * @param lfs LakeFS file system
@@ -64,14 +63,11 @@ class LinkOnCloseOutputStream extends OutputStream {
 
         // Now the object is on the underlying store, find its parameters (sadly lost by
         // the underlying Hadoop FileSystem) so we can link it on lakeFS.
-        if (!this.isLinked) {
-            try {
-                lfs.linkPhysicalAddress(objectLoc, stagingLoc, physicalUri, metadataClient);
-            } catch (io.lakefs.clients.api.ApiException e) {
-                throw new IOException("link lakeFS path to physical address", e);
-            }
-            this.isLinked = true;
-            lfs.deleteEmptyDirectoryMarkers(new Path(objectLoc.toString()).getParent());
+        try {
+            lfs.linkPhysicalAddress(objectLoc, stagingLoc, physicalUri, metadataClient);
+        } catch (io.lakefs.clients.api.ApiException e) {
+            throw new IOException("link lakeFS path to physical address", e);
         }
+        lfs.deleteEmptyDirectoryMarkers(new Path(objectLoc.toString()).getParent());
     }
 }
