@@ -3489,7 +3489,7 @@ func TestController_PostStatsEvents(t *testing.T) {
 				},
 			},
 			expectedEventCounts: map[key]int{
-				key{class: "single_event_count_1", name: "name"}: 1,
+				{class: "single_event_count_1", name: "name"}: 1,
 			},
 			expectedStatusCode: http.StatusNoContent,
 		},
@@ -3503,7 +3503,7 @@ func TestController_PostStatsEvents(t *testing.T) {
 				},
 			},
 			expectedEventCounts: map[key]int{
-				key{class: "single_event_count_gt_1", name: "name"}: 3,
+				{class: "single_event_count_gt_1", name: "name"}: 3,
 			},
 			expectedStatusCode: http.StatusNoContent,
 		},
@@ -3522,8 +3522,8 @@ func TestController_PostStatsEvents(t *testing.T) {
 				},
 			},
 			expectedEventCounts: map[key]int{
-				key{class: "class_multiple_events_ev_1", name: "name1"}: 1,
-				key{class: "class_multiple_events_ev_2", name: "name2"}: 1,
+				{class: "class_multiple_events_ev_1", name: "name1"}: 1,
+				{class: "class_multiple_events_ev_2", name: "name2"}: 1,
 			},
 			expectedStatusCode: http.StatusNoContent,
 		},
@@ -3542,8 +3542,8 @@ func TestController_PostStatsEvents(t *testing.T) {
 				},
 			},
 			expectedEventCounts: map[key]int{
-				key{class: "class_multiple_events_same_class", name: "name1"}: 1,
-				key{class: "class_multiple_events_same_class", name: "name2"}: 1,
+				{class: "class_multiple_events_same_class", name: "name1"}: 1,
+				{class: "class_multiple_events_same_class", name: "name2"}: 1,
 			},
 			expectedStatusCode: http.StatusNoContent,
 		},
@@ -3562,8 +3562,8 @@ func TestController_PostStatsEvents(t *testing.T) {
 				},
 			},
 			expectedEventCounts: map[key]int{
-				key{class: "multiple_events_same_name_1", name: "same_name"}: 1,
-				key{class: "multiple_events_same_name_2", name: "same_name"}: 1,
+				{class: "multiple_events_same_name_1", name: "same_name"}: 1,
+				{class: "multiple_events_same_name_2", name: "same_name"}: 1,
 			},
 			expectedStatusCode: http.StatusNoContent,
 		},
@@ -3577,7 +3577,7 @@ func TestController_PostStatsEvents(t *testing.T) {
 				},
 			},
 			expectedEventCounts: map[key]int{
-				key{class: "", name: "name"}: 0,
+				{class: "", name: "name"}: 0,
 			},
 			expectedStatusCode: http.StatusBadRequest,
 		},
@@ -3591,7 +3591,7 @@ func TestController_PostStatsEvents(t *testing.T) {
 				},
 			},
 			expectedEventCounts: map[key]int{
-				key{class: "class_empty_usage_name", name: ""}: 0,
+				{class: "class_empty_usage_name", name: ""}: 0,
 			},
 			expectedStatusCode: http.StatusBadRequest,
 		},
@@ -3605,7 +3605,7 @@ func TestController_PostStatsEvents(t *testing.T) {
 				},
 			},
 			expectedEventCounts: map[key]int{
-				key{class: "class_zero_usage_count", name: "name"}: 0,
+				{class: "class_zero_usage_count", name: "name"}: 0,
 			},
 			expectedStatusCode: http.StatusNoContent,
 		},
@@ -3619,7 +3619,7 @@ func TestController_PostStatsEvents(t *testing.T) {
 				},
 			},
 			expectedEventCounts: map[key]int{
-				key{class: "class_negative_usage_count", name: "name"}: 0,
+				{class: "class_negative_usage_count", name: "name"}: 0,
 			},
 			expectedStatusCode: http.StatusBadRequest,
 		},
