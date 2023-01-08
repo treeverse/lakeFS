@@ -776,7 +776,7 @@ type StagingManager interface {
 	Set(ctx context.Context, st StagingToken, key Key, value *Value, requireExists bool) error
 
 	// Update updates a (possibly nil) value under the given staging token and key.
-	// Skip update in case value returned from 'updateFunc' is the same as the value passed to call.
+	// Skip update in case 'ErrSkipUpdateValue' is returned from 'updateFunc'.
 	Update(ctx context.Context, st StagingToken, key Key, updateFunc ValueUpdateFunc) error
 
 	// List returns a ValueIterator for the given staging token
