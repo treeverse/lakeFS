@@ -538,9 +538,6 @@ type VersionController interface {
 	// ListAddressTokens lists address tokens on a repository
 	ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error)
 
-	// DeleteExpiredAddressTokens deletes expired tokens on a repository
-	DeleteExpiredAddressTokens(ctx context.Context, repository *RepositoryRecord) error
-
 	// IsTokenExpired returns nil if the token is valid and not expired
 	IsTokenExpired(token *LinkAddressData) error
 }
@@ -750,9 +747,6 @@ type RefManager interface {
 
 	// ListAddressTokens lists address tokens on a repository
 	ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error)
-
-	// DeleteExpiredAddressTokens deletes expired tokens on a repository
-	DeleteExpiredAddressTokens(ctx context.Context, repository *RepositoryRecord) error
 
 	// IsTokenExpired returns nil if the token is valid and not expired
 	IsTokenExpired(token *LinkAddressData) error
@@ -2600,10 +2594,6 @@ func (g *Graveler) GetAddressToken(ctx context.Context, repository *RepositoryRe
 
 func (g *Graveler) ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error) {
 	return g.RefManager.ListAddressTokens(ctx, repository)
-}
-
-func (g *Graveler) DeleteExpiredAddressTokens(ctx context.Context, repository *RepositoryRecord) error {
-	return g.RefManager.DeleteExpiredAddressTokens(ctx, repository)
 }
 
 func (g *Graveler) IsTokenExpired(token *LinkAddressData) error {
