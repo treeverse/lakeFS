@@ -16,12 +16,9 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	apiparams "github.com/treeverse/lakefs/pkg/api/params"
-	"github.com/treeverse/lakefs/pkg/auth/email"
-	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/block"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
-	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	pyramidparams "github.com/treeverse/lakefs/pkg/pyramid/params"
@@ -39,8 +36,258 @@ var (
 // without any other configuration like DB or blockstore.
 const UseLocalConfiguration = "local-settings"
 
+type OIDC struct {
+	Enabled        bool `mapstructure:"enabled"`
+	IsDefaultLogin bool `mapstructure:"is_default_login"`
+
+	// provider details:
+	URL          string `mapstructure:"url"`
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
+
+	// configure the OIDC authentication flow:
+	CallbackBaseURL                  string            `mapstructure:"callback_base_url"`
+	AuthorizeEndpointQueryParameters map[string]string `mapstructure:"authorize_endpoint_query_parameters"`
+
+	// configure how users are handled on the lakeFS side:
+	ValidateIDTokenClaims  map[string]string `mapstructure:"validate_id_token_claims"`
+	DefaultInitialGroups   []string          `mapstructure:"default_initial_groups"`
+	InitialGroupsClaimName string            `mapstructure:"initial_groups_claim_name"`
+	FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
+	AdditionalScopeClaims  []string          `mapstructure:"additional_scope_claims"`
+}
+
+// LDAP holds configuration for authenticating on an LDAP server.
+type LDAP struct {
+	ServerEndpoint    string `mapstructure:"server_endpoint"`
+	BindDN            string `mapstructure:"bind_dn"`
+	BindPassword      string `mapstructure:"bind_password"`
+	DefaultUserGroup  string `mapstructure:"default_user_group"`
+	UsernameAttribute string `mapstructure:"username_attribute"`
+	UserBaseDN        string `mapstructure:"user_base_dn"`
+	UserFilter        string `mapstructure:"user_filter"`
+}
+
+// S3AuthInfo holds S3-style authentication.
+type S3AuthInfo struct {
+	CredentialsFile string `mapstructure:"credentials_file"`
+	Profile         string
+	Credentials     *struct {
+		AccessKeyID SecureString `mapstructure:"access_key_id"`
+		// AccessSecretKey is the old name for SecretAccessKey.
+		//
+		// Deprecated: use SecretAccessKey instead.
+		AccessSecretKey SecureString `mapstructure:"access_secret_key"`
+		SecretAccessKey SecureString `mapstructure:"secret_access_key"`
+		SessionToken    SecureString `mapstructure:"session_token"`
+	}
+}
+
+// Config - Output struct of configuration, used to validate.  If you read a key using a viper accessor
+// rather than accessing a field of this struct, that key will *not* be validated.  So don't
+// do that.
 type Config struct {
-	values configuration
+	ListenAddress string `mapstructure:"listen_address"`
+
+	Actions struct {
+		// ActionsEnabled set to false will block any hook execution
+		Enabled bool `mapstructure:"enabled"`
+	}
+
+	Logging struct {
+		Format        string   `mapstructure:"format"`
+		Level         string   `mapstructure:"level"`
+		Output        []string `mapstructure:"output"`
+		FileMaxSizeMB int      `mapstructure:"file_max_size_mb"`
+		FilesKeep     int      `mapstructure:"files_keep"`
+		AuditLogLevel string   `mapstructure:"audit_log_level"`
+		// TraceRequestHeaders work only on 'trace' level, default is false as it may log sensitive data to the log
+		TraceRequestHeaders bool `mapstructure:"trace_request_headers"`
+	}
+
+	Database struct {
+		// DropTables Development flag to delete tables after successful migration to KV
+		DropTables bool `mapstructure:"drop_tables"`
+		// Type Name of the KV Store driver DB implementation which is available according to the kv package Drivers function
+		Type string `mapstructure:"type" validate:"required"`
+
+		Local *struct {
+			// Path - Local directory path to store the DB files
+			Path string `mapstructure:"path"`
+			// SyncWrites - Sync ensures data written to disk on each write instead of mem cache
+			SyncWrites bool `mapstructure:"sync_writes"`
+			// PrefetchSize - Number of elements to prefetch while iterating
+			PrefetchSize int `mapstructure:"prefetch_size"`
+			// EnableLogging - Enable store and badger (trace only) logging
+			EnableLogging bool `mapstructure:"enable_logging"`
+		} `mapstructure:"local"`
+
+		Postgres *struct {
+			ConnectionString      string        `mapstructure:"connection_string"`
+			MaxOpenConnections    int32         `mapstructure:"max_open_connections"`
+			MaxIdleConnections    int32         `mapstructure:"max_idle_connections"`
+			ConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
+			ScanPageSize          int           `mapstructure:"scan_page_size"`
+			Metrics               bool          `mapstructure:"metrics"`
+		}
+
+		DynamoDB *struct {
+			// The name of the DynamoDB table to be used as KV
+			TableName string `mapstructure:"table_name"`
+
+			// Table provisioned throughput parameters, as described in
+			// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html
+			ReadCapacityUnits  int64 `mapstructure:"read_capacity_units"`
+			WriteCapacityUnits int64 `mapstructure:"write_capacity_units"`
+
+			// Maximal number of items per page during scan operation
+			ScanLimit int64 `mapstructure:"scan_limit"`
+
+			// The endpoint URL of the DynamoDB endpoint
+			// Can be used to redirect to DynamoDB on AWS, local docker etc.
+			Endpoint string `mapstructure:"endpoint"`
+
+			// AWS connection details - region and credentials
+			// This will override any such details that are already exist in the system
+			// While in general, AWS region and credentials are configured in the system for AWS usage,
+			// these can be used to specify fake values, that cna be used to connect to local DynamoDB,
+			// in case there are no credentials configured in the system
+			// This is a client requirement as described in section 4 in
+			// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
+			AwsRegion          string `mapstructure:"aws_region"`
+			AwsProfile         string `mapstructure:"aws_profile"`
+			AwsAccessKeyID     string `mapstructure:"aws_access_key_id"`
+			AwsSecretAccessKey string `mapstructure:"aws_secret_access_key"`
+		} `mapstructure:"dynamodb"`
+	}
+
+	Auth struct {
+		Cache struct {
+			Enabled bool
+			Size    int
+			TTL     time.Duration
+			Jitter  time.Duration
+		}
+		Encrypt struct {
+			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
+		}
+		API struct {
+			Endpoint        string
+			Token           string
+			SupportsInvites bool `mapstructure:"supports_invites"`
+		}
+		LDAP              *LDAP
+		OIDC              OIDC
+		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
+		LoginDuration     time.Duration `mapstructure:"login_duration"`
+	}
+	Blockstore struct {
+		Type                   string `mapstructure:"type" validate:"required"`
+		DefaultNamespacePrefix string `mapstructure:"default_namespace_prefix"`
+		Local                  *struct {
+			Path string `mapstructure:"path"`
+		}
+		S3 *struct {
+			S3AuthInfo                    `mapstructure:",squash"`
+			Region                        string        `mapstructure:"region"`
+			Endpoint                      string        `mapstructure:"endpoint"`
+			StreamingChunkSize            int           `mapstructure:"streaming_chunk_size"`
+			StreamingChunkTimeout         time.Duration `mapstructure:"streaming_chunk_timeout"`
+			MaxRetries                    int           `mapstructure:"max_retries"`
+			ForcePathStyle                bool          `mapstructure:"force_path_style"`
+			DiscoverBucketRegion          bool          `mapstructure:"discover_bucket_region"`
+			SkipVerifyCertificateTestOnly bool          `mapstructure:"skip_verify_certificate_test_only"`
+			ServerSideEncryption          string        `mapstructure:"server_side_encryption"`
+			ServerSideEncryptionKmsKeyID  string        `mapstructure:"server_side_encryption_kms_key_id"`
+		}
+		Azure *struct {
+			TryTimeout       time.Duration `mapstructure:"try_timeout"`
+			StorageAccount   string        `mapstructure:"storage_account"`
+			StorageAccessKey string        `mapstructure:"storage_access_key"`
+			AuthMethod       string        `mapstructure:"auth_method"`
+		}
+		GS *struct {
+			S3Endpoint      string `mapstructure:"s3_endpoint"`
+			CredentialsFile string `mapstructure:"credentials_file"`
+			CredentialsJSON string `mapstructure:"credentials_json"`
+		}
+	}
+	Committed struct {
+		LocalCache struct {
+			SizeBytes             int64   `mapstructure:"size_bytes"`
+			Dir                   string  `mapstructure:"dir"`
+			MaxUploadersPerWriter int     `mapstructure:"max_uploaders_per_writer"`
+			RangeProportion       float64 `mapstructure:"range_proportion"`
+			MetaRangeProportion   float64 `mapstructure:"metarange_proportion"`
+		} `mapstructure:"local_cache"`
+		BlockStoragePrefix string `mapstructure:"block_storage_prefix"`
+		Permanent          struct {
+			MinRangeSizeBytes      uint64  `mapstructure:"min_range_size_bytes"`
+			MaxRangeSizeBytes      uint64  `mapstructure:"max_range_size_bytes"`
+			RangeRaggednessEntries float64 `mapstructure:"range_raggedness_entries"`
+		} `mapstructure:"permanent"`
+		SSTable struct {
+			Memory struct {
+				CacheSizeBytes int64 `mapstructure:"cache_size_bytes"`
+			} `mapstructure:"memory"`
+		}
+	}
+	Graveler struct {
+		RepositoryCache struct {
+			Size   int           `mapstructure:"size"`
+			Expiry time.Duration `mapstructure:"expiry"`
+			Jitter time.Duration `mapstructure:"jitter"`
+		} `mapstructure:"repository_cache"`
+		CommitCache struct {
+			Size   int           `mapstructure:"size"`
+			Expiry time.Duration `mapstructure:"expiry"`
+			Jitter time.Duration `mapstructure:"jitter"`
+		} `mapstructure:"commit_cache"`
+	} `mapstructure:"graveler"`
+	Gateways struct {
+		S3 struct {
+			DomainNames Strings `mapstructure:"domain_name"`
+			Region      string  `mapstructure:"region"`
+			FallbackURL string  `mapstructure:"fallback_url"`
+		} `mapstructure:"s3"`
+	}
+	Stats struct {
+		Enabled       bool          `mapstructure:"enabled"`
+		Address       string        `mapstructure:"address"`
+		FlushInterval time.Duration `mapstructure:"flush_interval"`
+		FlushSize     int           `mapstructure:"flush_size"`
+		Extended      bool          `mapstructure:"extended"`
+	} `mapstructure:"stats"`
+	EmailSubscription struct {
+		Enabled bool `mapstructure:"enabled"`
+	} `mapstructure:"email_subscription"`
+	Installation struct {
+		FixedID string `mapstructure:"fixed_id"`
+	} `mapstructure:"installation"`
+	Security struct {
+		AuditCheckInterval time.Duration `mapstructure:"audit_check_interval"`
+		AuditCheckURL      string        `mapstructure:"audit_check_url"`
+	} `mapstructure:"security"`
+	Email struct {
+		SMTPHost           string        `mapstructure:"smtp_host"`
+		SMTPPort           int           `mapstructure:"smtp_port"`
+		UseSSL             bool          `mapstructure:"use_ssl"`
+		Username           string        `mapstructure:"username"`
+		Password           string        `mapstructure:"password"`
+		LocalName          string        `mapstructure:"local_name"`
+		Sender             string        `mapstructure:"sender"`
+		LimitEveryDuration time.Duration `mapstructure:"limit_every_duration"`
+		Burst              int           `mapstructure:"burst"`
+		LakefsBaseURL      string        `mapstructure:"lakefs_base_url"`
+	} `mapstructure:"email"`
+	UI struct {
+		// Enabled - control serving of embedded UI
+		Enabled  bool `mapstructure:"enabled"`
+		Snippets []struct {
+			ID   string `mapstructure:"id"`
+			Code string `mapstructure:"code"`
+		} `mapstructure:"snippets"`
+	} `mapstructure:"ui"`
 }
 
 func NewConfig() (*Config, error) {
@@ -56,7 +303,7 @@ func newConfig(local bool) (*Config, error) {
 
 	// Inform viper of all expected fields.  Otherwise, it fails to deserialize from the
 	// environment.
-	keys := GetStructKeys(reflect.TypeOf(c.values), "mapstructure", "squash")
+	keys := GetStructKeys(reflect.TypeOf(c), "mapstructure", "squash")
 	for _, key := range keys {
 		viper.SetDefault(key, nil)
 	}
@@ -64,7 +311,7 @@ func newConfig(local bool) (*Config, error) {
 	setDefaults(local)
 	setupLogger()
 
-	err := viper.UnmarshalExact(&c.values, viper.DecodeHook(
+	err := viper.UnmarshalExact(&c, viper.DecodeHook(
 		mapstructure.ComposeDecodeHookFunc(
 			DecodeStrings, mapstructure.StringToTimeDurationHookFunc())))
 	if err != nil {
@@ -79,7 +326,7 @@ func newConfig(local bool) (*Config, error) {
 	return c, nil
 }
 
-func reverse(s string) string {
+func stringReverse(s string) string {
 	chars := []rune(s)
 	for i := 0; i < len(chars)/2; i++ {
 		j := len(chars) - 1 - i
@@ -89,15 +336,15 @@ func reverse(s string) string {
 }
 
 func (c *Config) validateDomainNames() error {
-	domainStrings := c.GetS3GatewayDomainNames()
+	domainStrings := c.Gateways.S3.DomainNames
 	domainNames := make([]string, len(domainStrings))
 	copy(domainNames, domainStrings)
 	for i, d := range domainNames {
-		domainNames[i] = reverse(d)
+		domainNames[i] = stringReverse(d)
 	}
 	sort.Strings(domainNames)
 	for i, d := range domainNames {
-		domainNames[i] = reverse(d)
+		domainNames[i] = stringReverse(d)
 	}
 	for i := 0; i < len(domainNames)-1; i++ {
 		if strings.HasSuffix(domainNames[i+1], "."+domainNames[i]) {
@@ -108,135 +355,112 @@ func (c *Config) validateDomainNames() error {
 }
 
 func (c *Config) Validate() error {
-	missingKeys := ValidateMissingRequiredKeys(c.values, "mapstructure", "squash")
+	missingKeys := ValidateMissingRequiredKeys(c, "mapstructure", "squash")
 	if len(missingKeys) > 0 {
 		return fmt.Errorf("%w: %v", ErrMissingRequiredKeys, missingKeys)
 	}
-
 	return nil
 }
 
-func (c *Config) GetDatabaseType() string {
-	return c.values.Database.Type
-}
-
-func (c *Config) GetKVParams() (kvparams.KV, error) {
-	p := kvparams.KV{
-		Type: c.values.Database.Type,
+func (c *Config) DatabaseParams() (kvparams.Config, error) {
+	p := kvparams.Config{
+		Type: c.Database.Type,
 	}
-	if c.values.Database.Local != nil {
-		localPath, err := homedir.Expand(c.values.Database.Local.Path)
+	if c.Database.Local != nil {
+		localPath, err := homedir.Expand(c.Database.Local.Path)
 		if err != nil {
-			return kvparams.KV{}, fmt.Errorf("parse database local path '%s': %w", c.values.Database.Local.Path, err)
+			return kvparams.Config{}, fmt.Errorf("parse database local path '%s': %w", c.Database.Local.Path, err)
 		}
 		p.Local = &kvparams.Local{
 			Path:         localPath,
-			PrefetchSize: c.values.Database.Local.PrefetchSize,
-		}
-		p.Local.SyncWrites = true
-		if c.values.Database.Local.SyncWrites != nil {
-			p.Local.SyncWrites = *c.values.Database.Local.SyncWrites
-		}
-		p.Local.EnableLogging = false
-		if c.values.Database.Local.EnableLogging != nil {
-			p.Local.EnableLogging = *c.values.Database.Local.EnableLogging
+			PrefetchSize: c.Database.Local.PrefetchSize,
 		}
 	}
 
-	if c.values.Database.Postgres != nil {
+	if c.Database.Postgres != nil {
 		p.Postgres = &kvparams.Postgres{
-			ConnectionString:      c.values.Database.Postgres.ConnectionString.SecureValue(),
-			MaxIdleConnections:    c.values.Database.Postgres.MaxIdleConnections,
-			MaxOpenConnections:    c.values.Database.Postgres.MaxOpenConnections,
-			ConnectionMaxLifetime: c.values.Database.Postgres.ConnectionMaxLifetime,
+			ConnectionString:      c.Database.Postgres.ConnectionString,
+			MaxIdleConnections:    c.Database.Postgres.MaxIdleConnections,
+			MaxOpenConnections:    c.Database.Postgres.MaxOpenConnections,
+			ConnectionMaxLifetime: c.Database.Postgres.ConnectionMaxLifetime,
 		}
 	}
 
-	if c.values.Database.DynamoDB != nil {
+	if c.Database.DynamoDB != nil {
 		p.DynamoDB = &kvparams.DynamoDB{
-			TableName:          c.values.Database.DynamoDB.TableName,
-			ReadCapacityUnits:  c.values.Database.DynamoDB.ReadCapacityUnits,
-			WriteCapacityUnits: c.values.Database.DynamoDB.WriteCapacityUnits,
-			ScanLimit:          c.values.Database.DynamoDB.ScanLimit,
-			Endpoint:           c.values.Database.DynamoDB.Endpoint,
-			AwsRegion:          c.values.Database.DynamoDB.AwsRegion,
-			AwsProfile:         c.values.Database.DynamoDB.AwsProfile,
-			AwsAccessKeyID:     c.values.Database.DynamoDB.AwsAccessKeyID.SecureValue(),
-			AwsSecretAccessKey: c.values.Database.DynamoDB.AwsSecretAccessKey.SecureValue(),
+			TableName:          c.Database.DynamoDB.TableName,
+			ReadCapacityUnits:  c.Database.DynamoDB.ReadCapacityUnits,
+			WriteCapacityUnits: c.Database.DynamoDB.WriteCapacityUnits,
+			ScanLimit:          c.Database.DynamoDB.ScanLimit,
+			Endpoint:           c.Database.DynamoDB.Endpoint,
+			AwsRegion:          c.Database.DynamoDB.AwsRegion,
+			AwsProfile:         c.Database.DynamoDB.AwsProfile,
+			AwsAccessKeyID:     c.Database.DynamoDB.AwsAccessKeyID,
+			AwsSecretAccessKey: c.Database.DynamoDB.AwsSecretAccessKey,
 		}
 	}
 	return p, nil
 }
 
-func (c *Config) GetLDAPConfiguration() *LDAP {
-	return c.values.Auth.LDAP
-}
-
 func (c *Config) GetAwsConfig() *aws.Config {
 	logger := logging.Default().WithField("sdk", "aws")
 	cfg := &aws.Config{
-		Region: aws.String(c.values.Blockstore.S3.Region),
+		Region: aws.String(c.Blockstore.S3.Region),
 		Logger: &logging.AWSAdapter{Logger: logger},
 	}
 	level := strings.ToLower(logging.Level())
 	if level == "trace" {
 		cfg.LogLevel = aws.LogLevel(aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors)
 	}
-	if c.values.Blockstore.S3.Profile != "" || c.values.Blockstore.S3.CredentialsFile != "" {
+	if c.Blockstore.S3.Profile != "" || c.Blockstore.S3.CredentialsFile != "" {
 		cfg.Credentials = credentials.NewSharedCredentials(
-			c.values.Blockstore.S3.CredentialsFile,
-			c.values.Blockstore.S3.Profile,
+			c.Blockstore.S3.CredentialsFile,
+			c.Blockstore.S3.Profile,
 		)
 	}
-	if c.values.Blockstore.S3.Credentials != nil {
-		secretAccessKey := c.values.Blockstore.S3.Credentials.SecretAccessKey
+	if c.Blockstore.S3.Credentials != nil {
+		secretAccessKey := c.Blockstore.S3.Credentials.SecretAccessKey
 		if secretAccessKey == "" {
 			logging.Default().Warn("blockstore.s3.credentials.access_secret_key is deprecated. Use instead: blockstore.s3.credentials.secret_access_key.")
-			secretAccessKey = c.values.Blockstore.S3.Credentials.AccessSecretKey
+			secretAccessKey = c.Blockstore.S3.Credentials.AccessSecretKey
 		}
 		cfg.Credentials = credentials.NewStaticCredentials(
-			c.values.Blockstore.S3.Credentials.AccessKeyID.SecureValue(),
+			c.Blockstore.S3.Credentials.AccessKeyID.SecureValue(),
 			secretAccessKey.SecureValue(),
-			c.values.Blockstore.S3.Credentials.SessionToken.SecureValue(),
+			c.Blockstore.S3.Credentials.SessionToken.SecureValue(),
 		)
 	}
 
-	s3Endpoint := c.values.Blockstore.S3.Endpoint
+	s3Endpoint := c.Blockstore.S3.Endpoint
 	if len(s3Endpoint) > 0 {
 		cfg = cfg.WithEndpoint(s3Endpoint)
 	}
-	s3ForcePathStyle := c.values.Blockstore.S3.ForcePathStyle
+	s3ForcePathStyle := c.Blockstore.S3.ForcePathStyle
 	if s3ForcePathStyle {
 		cfg = cfg.WithS3ForcePathStyle(true)
 	}
-	cfg = cfg.WithMaxRetries(c.values.Blockstore.S3.MaxRetries)
+	cfg = cfg.WithMaxRetries(c.Blockstore.S3.MaxRetries)
 	return cfg
 }
 
-func (c *Config) GetBlockstoreType() string {
-	return c.values.Blockstore.Type
+func (c *Config) BlockstoreType() string {
+	return c.Blockstore.Type
 }
 
-func (c *Config) GetBlockstoreDefaultNamespacePrefix() string {
-	return c.values.Blockstore.DefaultNamespacePrefix
-}
-
-func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
-	cfg := c.GetAwsConfig()
-
+func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 	return blockparams.S3{
-		AwsConfig:                     cfg,
-		StreamingChunkSize:            c.values.Blockstore.S3.StreamingChunkSize,
-		StreamingChunkTimeout:         c.values.Blockstore.S3.StreamingChunkTimeout,
-		DiscoverBucketRegion:          c.values.Blockstore.S3.DiscoverBucketRegion,
-		SkipVerifyCertificateTestOnly: c.values.Blockstore.S3.SkipVerifyCertificateTestOnly,
-		ServerSideEncryption:          c.values.Blockstore.S3.ServerSideEncryption,
-		ServerSideEncryptionKmsKeyID:  c.values.Blockstore.S3.ServerSideEncryptionKmsKeyID,
+		AwsConfig:                     c.GetAwsConfig(),
+		StreamingChunkSize:            c.Blockstore.S3.StreamingChunkSize,
+		StreamingChunkTimeout:         c.Blockstore.S3.StreamingChunkTimeout,
+		DiscoverBucketRegion:          c.Blockstore.S3.DiscoverBucketRegion,
+		SkipVerifyCertificateTestOnly: c.Blockstore.S3.SkipVerifyCertificateTestOnly,
+		ServerSideEncryption:          c.Blockstore.S3.ServerSideEncryption,
+		ServerSideEncryptionKmsKeyID:  c.Blockstore.S3.ServerSideEncryptionKmsKeyID,
 	}, nil
 }
 
-func (c *Config) GetBlockAdapterLocalParams() (blockparams.Local, error) {
-	localPath := c.values.Blockstore.Local.Path
+func (c *Config) BlockstoreLocalParams() (blockparams.Local, error) {
+	localPath := c.Blockstore.Local.Path
 	path, err := homedir.Expand(localPath)
 	if err != nil {
 		return blockparams.Local{}, fmt.Errorf("parse blockstore location URI %s: %w", localPath, err)
@@ -245,96 +469,28 @@ func (c *Config) GetBlockAdapterLocalParams() (blockparams.Local, error) {
 	return blockparams.Local{Path: path}, nil
 }
 
-func (c *Config) GetBlockAdapterGSParams() (blockparams.GS, error) {
+func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {
 	return blockparams.GS{
-		CredentialsFile: c.values.Blockstore.GS.CredentialsFile,
-		CredentialsJSON: c.values.Blockstore.GS.CredentialsJSON,
+		CredentialsFile: c.Blockstore.GS.CredentialsFile,
+		CredentialsJSON: c.Blockstore.GS.CredentialsJSON,
 	}, nil
 }
 
-func (c *Config) GetBlockAdapterAzureParams() (blockparams.Azure, error) {
+func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 	return blockparams.Azure{
-		StorageAccount:   c.values.Blockstore.Azure.StorageAccount,
-		StorageAccessKey: c.values.Blockstore.Azure.StorageAccessKey,
-		AuthMethod:       c.values.Blockstore.Azure.AuthMethod,
-		TryTimeout:       c.values.Blockstore.Azure.TryTimeout,
+		StorageAccount:   c.Blockstore.Azure.StorageAccount,
+		StorageAccessKey: c.Blockstore.Azure.StorageAccessKey,
+		AuthMethod:       c.Blockstore.Azure.AuthMethod,
+		TryTimeout:       c.Blockstore.Azure.TryTimeout,
 	}, nil
 }
 
-func (c *Config) GetAuthCacheConfig() authparams.ServiceCache {
-	return authparams.ServiceCache{
-		Enabled:        c.values.Auth.Cache.Enabled,
-		Size:           c.values.Auth.Cache.Size,
-		TTL:            c.values.Auth.Cache.TTL,
-		EvictionJitter: c.values.Auth.Cache.Jitter,
-	}
-}
-
-func (c *Config) GetAuthEncryptionSecret() []byte {
-	secret := c.values.Auth.Encrypt.SecretKey
+func (c *Config) AuthEncryptionSecret() []byte {
+	secret := c.Auth.Encrypt.SecretKey
 	if len(secret) == 0 {
 		panic(fmt.Errorf("%w. Please set it to a unique, randomly generated value and store it somewhere safe", ErrMissingSecretKey))
 	}
 	return []byte(secret)
-}
-
-func (c *Config) GetS3GatewayRegion() string {
-	return c.values.Gateways.S3.Region
-}
-
-func (c *Config) GetS3GatewayDomainNames() []string {
-	return c.values.Gateways.S3.DomainNames
-}
-
-func (c *Config) GetS3GatewayFallbackURL() string {
-	return c.values.Gateways.S3.FallbackURL
-}
-
-func (c *Config) GetListenAddress() string {
-	return c.values.ListenAddress
-}
-
-func (c *Config) GetActionsEnabled() bool {
-	return c.values.Actions.Enabled
-}
-
-func (c *Config) GetStatsEnabled() bool {
-	return c.values.Stats.Enabled
-}
-
-func (c *Config) GetStatsAddress() string {
-	return c.values.Stats.Address
-}
-
-func (c *Config) GetStatsFlushInterval() time.Duration {
-	return c.values.Stats.FlushInterval
-}
-
-func (c *Config) GetStatsFlushSize() int {
-	return c.values.Stats.FlushSize
-}
-
-func (c *Config) GetStatsExtended() bool {
-	return c.values.Stats.Extended
-}
-
-func (c *Config) IsEmailSubscriptionEnabled() bool {
-	return c.values.EmailSubscription.Enabled
-}
-
-func (c *Config) GetEmailParams() (email.Params, error) {
-	return email.Params{
-		SMTPHost:           c.values.Email.SMTPHost,
-		SMTPPort:           c.values.Email.SMTPPort,
-		UseSSL:             c.values.Email.UseSSL,
-		Username:           c.values.Email.Username,
-		Password:           c.values.Email.Password,
-		LocalName:          c.values.Email.LocalName,
-		Sender:             c.values.Email.Sender,
-		LimitEveryDuration: c.values.Email.LimitEveryDuration,
-		Burst:              c.values.Email.Burst,
-		LakefsBaseURL:      c.values.Email.LakefsBaseURL,
-	}, nil
 }
 
 const floatSumTolerance = 1e-6
@@ -342,16 +498,16 @@ const floatSumTolerance = 1e-6
 // GetCommittedTierFSParams returns parameters for building a tierFS.  Caller must separately
 // build and populate Adapter.
 func (c *Config) GetCommittedTierFSParams(adapter block.Adapter) (*pyramidparams.ExtParams, error) {
-	rangePro := c.values.Committed.LocalCache.RangeProportion
-	metaRangePro := c.values.Committed.LocalCache.MetaRangeProportion
+	rangePro := c.Committed.LocalCache.RangeProportion
+	metaRangePro := c.Committed.LocalCache.MetaRangeProportion
 
 	if math.Abs(rangePro+metaRangePro-1) > floatSumTolerance {
 		return nil, fmt.Errorf("range_proportion(%f) and metarange_proportion(%f): %w", rangePro, metaRangePro, ErrInvalidProportion)
 	}
 
-	localCacheDir, err := homedir.Expand(c.values.Committed.LocalCache.Dir)
+	localCacheDir, err := homedir.Expand(c.Committed.LocalCache.Dir)
 	if err != nil {
-		return nil, fmt.Errorf("expand %s: %w", c.values.Committed.LocalCache.Dir, err)
+		return nil, fmt.Errorf("expand %s: %w", c.Committed.LocalCache.Dir, err)
 	}
 
 	logger := logging.Default().WithField("module", "pyramid")
@@ -361,108 +517,36 @@ func (c *Config) GetCommittedTierFSParams(adapter block.Adapter) (*pyramidparams
 		SharedParams: pyramidparams.SharedParams{
 			Logger:             logger,
 			Adapter:            adapter,
-			BlockStoragePrefix: c.values.Committed.BlockStoragePrefix,
+			BlockStoragePrefix: c.Committed.BlockStoragePrefix,
 			Local: pyramidparams.LocalDiskParams{
 				BaseDir:             localCacheDir,
-				TotalAllocatedBytes: c.values.Committed.LocalCache.SizeBytes,
+				TotalAllocatedBytes: c.Committed.LocalCache.SizeBytes,
 			},
-			PebbleSSTableCacheSizeBytes: c.values.Committed.SSTable.Memory.CacheSizeBytes,
+			PebbleSSTableCacheSizeBytes: c.Committed.SSTable.Memory.CacheSizeBytes,
 		},
 	}, nil
 }
 
-func (c *Config) GetCommittedParams() *committed.Params {
-	return &committed.Params{
-		MinRangeSizeBytes:          c.values.Committed.Permanent.MinRangeSizeBytes,
-		MaxRangeSizeBytes:          c.values.Committed.Permanent.MaxRangeSizeBytes,
-		RangeSizeEntriesRaggedness: c.values.Committed.Permanent.RangeRaggednessEntries,
-		MaxUploaders:               c.values.Committed.LocalCache.MaxUploadersPerWriter,
+func (c *Config) CommittedParams() committed.Params {
+	return committed.Params{
+		MinRangeSizeBytes:          c.Committed.Permanent.MinRangeSizeBytes,
+		MaxRangeSizeBytes:          c.Committed.Permanent.MaxRangeSizeBytes,
+		RangeSizeEntriesRaggedness: c.Committed.Permanent.RangeRaggednessEntries,
+		MaxUploaders:               c.Committed.LocalCache.MaxUploadersPerWriter,
 	}
 }
 
-func (c *Config) GetFixedInstallationID() string {
-	return c.values.Installation.FixedID
-}
-
-func (c *Config) GetCommittedBlockStoragePrefix() string {
-	return c.values.Committed.BlockStoragePrefix
-}
-
-func (c *Config) ToLoggerFields() logging.Fields {
-	return MapLoggingFields(c.values)
-}
-
-func (c *Config) GetLoggingTraceRequestHeaders() bool {
-	return c.values.Logging.TraceRequestHeaders
-}
-
-func (c *Config) GetAuditLogLevel() string {
-	return c.values.Logging.AuditLogLevel
-}
-
-func (c *Config) GetSecurityAuditCheckInterval() time.Duration {
-	return c.values.Security.AuditCheckInterval
-}
-
-func (c *Config) GetSecurityAuditCheckURL() string {
-	return c.values.Security.AuditCheckURL
-}
-
-func (c *Config) GetAuthAPIEndpoint() string {
-	return c.values.Auth.API.Endpoint
-}
-
 func (c *Config) IsAuthTypeAPI() bool {
-	return c.values.Auth.API.Endpoint != ""
+	return c.Auth.API.Endpoint != ""
 }
 
-func (c *Config) GetAuthAPIToken() string {
-	return c.values.Auth.API.Token
-}
-
-func (c *Config) GetAuthAPISupportsInvites() bool {
-	return c.values.Auth.API.SupportsInvites
-}
-
-func (c *Config) GetUISnippets() []apiparams.CodeSnippet {
-	snippets := make([]apiparams.CodeSnippet, 0, len(c.values.UI.Snippets))
-	for _, item := range c.values.UI.Snippets {
+func (c *Config) UISnippets() []apiparams.CodeSnippet {
+	snippets := make([]apiparams.CodeSnippet, 0, len(c.UI.Snippets))
+	for _, item := range c.UI.Snippets {
 		snippets = append(snippets, apiparams.CodeSnippet{
 			ID:   item.ID,
 			Code: item.Code,
 		})
 	}
 	return snippets
-}
-
-func (c *Config) GetAuthOIDCConfiguration() OIDC {
-	return c.values.Auth.OIDC
-}
-
-func (c *Config) GetAuthLogoutRedirectURL() string {
-	return c.values.Auth.LogoutRedirectURL
-}
-
-func (c *Config) GetUIEnabled() bool {
-	return c.values.UI.Enabled
-}
-
-func (c *Config) GetLoginDuration() time.Duration {
-	return c.values.Auth.LoginDuration
-}
-
-func (c *Config) GetGravelerRepositoryCacheConfig() ref.CacheConfig {
-	return ref.CacheConfig{
-		Size:   c.values.Graveler.RepositoryCache.Size,
-		Expiry: c.values.Graveler.RepositoryCache.Expiry,
-		Jitter: c.values.Graveler.RepositoryCache.Jitter,
-	}
-}
-
-func (c *Config) GetGravelerCommitCacheConfig() ref.CacheConfig {
-	return ref.CacheConfig{
-		Size:   c.values.Graveler.CommitCache.Size,
-		Expiry: c.values.Graveler.CommitCache.Expiry,
-		Jitter: c.values.Graveler.CommitCache.Jitter,
-	}
 }

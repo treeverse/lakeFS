@@ -43,6 +43,7 @@ var (
 	ErrTagAlreadyExists             = fmt.Errorf("tag already exists: %w", ErrNotUnique)
 	ErrAddressTokenAlreadyExists    = fmt.Errorf("address token already exists: %w", ErrNotUnique)
 	ErrAddressTokenNotFound         = fmt.Errorf("address token %w", ErrNotFound)
+	ErrAddressTokenExpired          = errors.New("address token has expired")
 	ErrDirtyBranch                  = wrapError(ErrUserVisible, "uncommitted changes (dirty branch)")
 	ErrMetaRangeNotFound            = errors.New("metarange not found")
 	ErrLockNotAcquired              = errors.New("lock not acquired")
@@ -54,7 +55,7 @@ var (
 	ErrDeleteDefaultBranch          = wrapError(ErrUserVisible, "cannot delete repository default branch")
 	ErrCommitMetaRangeDirtyBranch   = wrapError(ErrUserVisible, "cannot use source MetaRange on a branch with uncommitted changes")
 	ErrTooManyTries                 = errors.New("too many tries")
-	ErrAddressTokenExpired          = errors.New("address token has expired")
+	ErrSkipValueUpdate              = errors.New("skip value update")
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.

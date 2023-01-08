@@ -127,14 +127,16 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 				log.WithField("predicate", nil).Trace("predicate condition failed")
 				return kv.ErrPredicateFailed
 			}
-			val, err := item.ValueCopy(nil)
-			if err != nil {
-				log.WithError(err).Error("could not get byte value for predicate")
-				return err
-			}
-			if !bytes.Equal(val, valuePredicate.([]byte)) {
-				log.WithField("predicate", valuePredicate).WithField("value", val).Trace("predicate condition failed")
-				return kv.ErrPredicateFailed
+			if valuePredicate != kv.PrecondConditionalExists {
+				val, err := item.ValueCopy(nil)
+				if err != nil {
+					log.WithError(err).Error("could not get byte value for predicate")
+					return err
+				}
+				if !bytes.Equal(val, valuePredicate.([]byte)) {
+					log.WithField("predicate", valuePredicate).WithField("value", val).Trace("predicate condition failed")
+					return kv.ErrPredicateFailed
+				}
 			}
 		} else if !errors.Is(err, badger.ErrKeyNotFound) {
 			log.WithField("predicate", valuePredicate).Trace("predicate condition failed (key not found)")
@@ -198,7 +200,7 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 	txn := s.db.NewTransaction(false)
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchSize = s.prefetchSize
-	if options.BatchSize > 0 && options.BatchSize < s.prefetchSize {
+	if options.BatchSize != 0 && opts.PrefetchSize != 0 && options.BatchSize < opts.PrefetchSize {
 		opts.PrefetchSize = options.BatchSize
 	}
 	if opts.PrefetchSize > 0 {

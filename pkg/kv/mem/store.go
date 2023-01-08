@@ -38,7 +38,7 @@ func init() {
 	kv.Register(DriverName, &Driver{})
 }
 
-func (d *Driver) Open(_ context.Context, _ kvparams.KV) (kv.Store, error) {
+func (d *Driver) Open(_ context.Context, _ kvparams.Config) (kv.Store, error) {
 	return &Store{
 		m: make(map[string]PartitionMap, 0),
 	}, nil
@@ -114,16 +114,25 @@ func (s *Store) SetIf(_ context.Context, partitionKey, key, value []byte, valueP
 
 	sKey := encodeKey(key)
 	curr, currOK := s.m[string(partitionKey)][sKey]
-	if valuePredicate == nil {
+
+	switch valuePredicate {
+	case nil:
 		if currOK {
 			return fmt.Errorf("key=%v: %w", key, kv.ErrPredicateFailed)
 		}
-	} else if !bytes.Equal(valuePredicate.([]byte), curr.Value) {
-		return fmt.Errorf("%w: partition=%s, key=%v, encoding=%s", kv.ErrPredicateFailed, partitionKey, key, sKey)
+
+	case kv.PrecondConditionalExists:
+		if !currOK {
+			return fmt.Errorf("key=%v: %w", key, kv.ErrPredicateFailed)
+		}
+
+	default: // check for predicate
+		if !bytes.Equal(valuePredicate.([]byte), curr.Value) {
+			return fmt.Errorf("%w: partition=%s, key=%v, encoding=%s", kv.ErrPredicateFailed, partitionKey, key, sKey)
+		}
 	}
 
 	s.internalSet(partitionKey, key, value)
-
 	return nil
 }
 

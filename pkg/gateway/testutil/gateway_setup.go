@@ -35,7 +35,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	ctx := context.Background()
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 
-	store := kvtest.MakeStoreByName("mem", kvparams.KV{})(t, context.Background())
+	store := kvtest.MakeStoreByName("mem", kvparams.Config{})(t, context.Background())
 	defer store.Close()
 	storeMessage := &kv.StoreMessage{Store: store}
 	multipartTracker := multipart.NewTracker(*storeMessage)

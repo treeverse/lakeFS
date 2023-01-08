@@ -25,14 +25,15 @@ type Store struct {
 }
 
 type EntriesIterator struct {
-	scanCtx      context.Context
-	entry        *kv.Entry
-	err          error
-	store        *Store
-	queryResult  *dynamodb.QueryOutput
-	currEntryIdx int
-	partKey      []byte
-	startKey     []byte
+	scanCtx                   context.Context
+	entry                     *kv.Entry
+	err                       error
+	store                     *Store
+	queryResult               *dynamodb.QueryOutput
+	currEntryIdx              int64
+	keyConditionExpression    string
+	expressionAttributeValues map[string]*dynamodb.AttributeValue
+	limit                     int64
 }
 
 type DynKVItem struct {
@@ -56,7 +57,7 @@ func init() {
 
 // Open - opens and returns a KV store over DynamoDB. This function creates the DB session
 // and sets up the KV table.
-func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, error) {
+func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, error) {
 	params := kvParams.DynamoDB
 	if params == nil {
 		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
@@ -105,7 +106,7 @@ func isTableExist(ctx context.Context, svc *dynamodb.DynamoDB, table string) (bo
 		TableName: aws.String(table),
 	})
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == dynamodb.ErrCodeResourceNotFoundException {
+		if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() == dynamodb.ErrCodeResourceNotFoundException {
 			return false, nil
 		}
 		return false, err
@@ -266,13 +267,18 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		ReturnConsumedCapacity: aws.String(dynamodb.ReturnConsumedCapacityTotal),
 	}
 	if usePredicate {
-		if valuePredicate != nil {
+		switch valuePredicate {
+		case nil: // Set only if not exists
+			input.ConditionExpression = aws.String("attribute_not_exists(" + ItemValue + ")")
+
+		case kv.PrecondConditionalExists: // update only if exists
+			input.ConditionExpression = aws.String("attribute_exists(" + ItemValue + ")")
+
+		default: // update just in case the previous value was same as predicate value
 			input.ConditionExpression = aws.String(ItemValue + " = :predicate")
 			input.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
 				":predicate": {B: valuePredicate.([]byte)},
 			}
-		} else {
-			input.ConditionExpression = aws.String("attribute_not_exists(" + ItemValue + ")")
 		}
 	}
 
@@ -321,23 +327,24 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 }
 
 func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
-	internalIter, err := s.scanInternal(ctx, partitionKey, options, nil)
-	if err != nil {
-		return nil, err
-	}
-	return internalIter, nil
-}
-
-func (s *Store) scanInternal(ctx context.Context, partitionKey []byte, options kv.ScanOptions, exclusiveStartKey map[string]*dynamodb.AttributeValue) (*EntriesIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
-	keyConditionExpression := PartitionKey + " = :partitionkey"
+
+	// limit set to the minimum 'params.ScanLimit' and 'options.BatchSize', unless 0 (not set)
+	limit := s.params.ScanLimit
+	batchSize := int64(options.BatchSize)
+	if batchSize != 0 && limit != 0 && batchSize < limit {
+		limit = batchSize
+	}
+
+	// format key and attribute expressions
 	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
 		":partitionkey": {
 			B: partitionKey,
 		},
 	}
+	keyConditionExpression := PartitionKey + " = :partitionkey"
 	if len(options.KeyStart) > 0 {
 		keyConditionExpression += " AND " + ItemKey + " >= :fromkey"
 		expressionAttributeValues[":fromkey"] = &dynamodb.AttributeValue{
@@ -345,6 +352,26 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey []byte, options k
 		}
 	}
 
+	queryResult, err := s.scanInternal(ctx, keyConditionExpression, expressionAttributeValues, limit, nil)
+	if err != nil {
+		return nil, err
+	}
+	it := &EntriesIterator{
+		scanCtx:                   ctx,
+		store:                     s,
+		keyConditionExpression:    keyConditionExpression,
+		expressionAttributeValues: expressionAttributeValues,
+		limit:                     limit,
+		queryResult:               queryResult,
+	}
+	return it, nil
+}
+
+func (s *Store) scanInternal(ctx context.Context, keyConditionExpression string,
+	expressionAttributeValues map[string]*dynamodb.AttributeValue,
+	limit int64,
+	exclusiveStartKey map[string]*dynamodb.AttributeValue,
+) (*dynamodb.QueryOutput, error) {
 	queryInput := &dynamodb.QueryInput{
 		TableName:                 aws.String(s.params.TableName),
 		KeyConditionExpression:    aws.String(keyConditionExpression),
@@ -354,17 +381,8 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey []byte, options k
 		ExclusiveStartKey:         exclusiveStartKey,
 		ReturnConsumedCapacity:    aws.String(dynamodb.ReturnConsumedCapacityTotal),
 	}
-	// scan limit set to the minimum 'params.ScanLimit' and 'options.BatchSize', unless 0 (not set)
-	scanLimit := int(s.params.ScanLimit)
-	if options.BatchSize > 0 {
-		if scanLimit == 0 {
-			scanLimit = options.BatchSize
-		} else if options.BatchSize < scanLimit {
-			scanLimit = options.BatchSize
-		}
-	}
-	if scanLimit != 0 {
-		queryInput.SetLimit(int64(scanLimit))
+	if limit != 0 {
+		queryInput.SetLimit(limit)
 	}
 
 	start := time.Now()
@@ -377,15 +395,7 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey []byte, options k
 	}
 	dynamoConsumedCapacity.WithLabelValues(operation).Add(*queryOutput.ConsumedCapacity.CapacityUnits)
 
-	return &EntriesIterator{
-		scanCtx:      ctx,
-		store:        s,
-		partKey:      partitionKey,
-		startKey:     options.KeyStart,
-		queryResult:  queryOutput,
-		currEntryIdx: 0,
-		err:          nil,
-	}, nil
+	return queryOutput, nil
 }
 
 func handleClientError(err error) error {
@@ -411,16 +421,16 @@ func (e *EntriesIterator) Next() bool {
 		return false
 	}
 
-	for e.currEntryIdx == int(*e.queryResult.Count) {
+	for e.currEntryIdx == aws.Int64Value(e.queryResult.Count) {
 		if e.queryResult.LastEvaluatedKey == nil {
 			return false
 		}
-		tmpEntriesIter, err := e.store.scanInternal(e.scanCtx, e.partKey, kv.ScanOptions{KeyStart: e.startKey}, e.queryResult.LastEvaluatedKey)
+		queryResult, err := e.store.scanInternal(e.scanCtx, e.keyConditionExpression, e.expressionAttributeValues, e.limit, e.queryResult.LastEvaluatedKey)
 		if err != nil {
 			e.err = fmt.Errorf("scan paging: %w", err)
 			return false
 		}
-		e.queryResult = tmpEntriesIter.queryResult
+		e.queryResult = queryResult
 		e.currEntryIdx = 0
 	}
 

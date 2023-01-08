@@ -27,10 +27,11 @@ type Store struct {
 
 type EntriesIterator struct {
 	ctx          context.Context
+	store        *Store
 	entries      []kv.Entry
+	limit        int
 	currEntryIdx int
 	err          error
-	store        *Store
 }
 
 const (
@@ -50,7 +51,7 @@ func init() {
 	kv.Register(DriverName, &Driver{})
 }
 
-func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, error) {
+func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, error) {
 	if kvParams.Postgres == nil {
 		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
 	}
@@ -87,7 +88,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
 	}
 
-	// register collector to publish pgxpool stats as metrics
+	// register collector to publish pgx's pool stats as metrics
 	var collector prometheus.Collector
 	if params.Metrics {
 		collector = pgxpoolprometheus.NewCollector(pool, map[string]string{"db_name": params.TableName})
@@ -107,7 +108,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 	return store, nil
 }
 
-func newPgxpoolConfig(kvParams kvparams.KV) (*pgxpool.Config, error) {
+func newPgxpoolConfig(kvParams kvparams.Config) (*pgxpool.Config, error) {
 	config, err := pgxpool.ParseConfig(kvParams.Postgres.ConnectionString)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrDriverConfiguration, err)
@@ -244,11 +245,14 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 
 	var res pgconn.CommandTag
 	var err error
-	if valuePredicate == nil {
-		// use insert to make sure there was no previous value before
+	switch valuePredicate {
+	case nil: // use insert to make sure there was no previous value before
 		res, err = s.Pool.Exec(ctx, `INSERT INTO `+s.Params.SanitizedTableName+`(partition_key,key,value) VALUES($1,$2,$3) ON CONFLICT DO NOTHING`, partitionKey, key, value)
-	} else {
-		// update just in case the previous value was same as predicate value
+
+	case kv.PrecondConditionalExists: // update only if exists
+		res, err = s.Pool.Exec(ctx, `UPDATE `+s.Params.SanitizedTableName+` SET value=$3 WHERE key=$2 AND partition_key=$1`, partitionKey, key, value)
+
+	default: // update just in case the previous value was same as predicate value
 		res, err = s.Pool.Exec(ctx, `UPDATE `+s.Params.SanitizedTableName+` SET value=$3 WHERE key=$2 AND partition_key=$1 AND value=$4`, partitionKey, key, value, valuePredicate.([]byte))
 	}
 	if err != nil {
@@ -279,29 +283,39 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		return nil, kv.ErrMissingPartitionKey
 	}
 
-	return s.scanInternal(ctx, partitionKey, options, true)
+	// limit based on the minimum between ScanPageSize and ScanOptions batch size
+	limit := s.Params.ScanPageSize
+	if options.BatchSize != 0 && s.Params.ScanPageSize != 0 && options.BatchSize < s.Params.ScanPageSize {
+		limit = options.BatchSize
+	}
+
+	entries, err := s.scanInternal(ctx, partitionKey, options.KeyStart, limit, true)
+	if err != nil {
+		return nil, err
+	}
+	return &EntriesIterator{
+		ctx:          ctx,
+		store:        s,
+		entries:      entries,
+		limit:        limit,
+		currEntryIdx: -1,
+	}, nil
 }
 
-func (s *Store) scanInternal(ctx context.Context, partitionKey []byte, options kv.ScanOptions, includeStart bool) (*EntriesIterator, error) {
+func (s *Store) scanInternal(ctx context.Context, partitionKey []byte, keyStart []byte, limit int, includeStart bool) ([]kv.Entry, error) {
 	var (
 		rows pgx.Rows
 		err  error
 	)
 
-	// limit set to the minimum between option's limit and the configured scan page size
-	limit := s.Params.ScanPageSize
-	if options.BatchSize > 0 && options.BatchSize < limit {
-		limit = options.BatchSize
-	}
-
-	if options.KeyStart == nil {
+	if keyStart == nil {
 		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 ORDER BY key LIMIT $2`, partitionKey, limit)
 	} else {
 		compareOp := ">="
 		if !includeStart {
 			compareOp = ">"
 		}
-		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key `+compareOp+` $2 ORDER BY key LIMIT $3`, partitionKey, options.KeyStart, limit)
+		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key `+compareOp+` $2 ORDER BY key LIMIT $3`, partitionKey, keyStart, limit)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("postgres scan: %w", err)
@@ -313,13 +327,7 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey []byte, options k
 	if err != nil {
 		return nil, fmt.Errorf("scanning all entries: %w", err)
 	}
-
-	return &EntriesIterator{
-		ctx:          ctx,
-		entries:      entries,
-		currEntryIdx: -1,
-		store:        s,
-	}, nil
+	return entries, nil
 }
 
 func (s *Store) Close() {
@@ -343,15 +351,15 @@ func (e *EntriesIterator) Next() bool {
 		}
 		partitionKey := e.entries[e.currEntryIdx-1].PartitionKey
 		key := e.entries[e.currEntryIdx-1].Key
-		tmpIter, err := e.store.scanInternal(e.ctx, partitionKey, kv.ScanOptions{KeyStart: key}, false)
+		entries, err := e.store.scanInternal(e.ctx, partitionKey, key, e.limit, false)
 		if err != nil {
 			e.err = fmt.Errorf("scan paging: %w", err)
 			return false
 		}
-		if len(tmpIter.entries) == 0 {
+		if len(entries) == 0 {
 			return false
 		}
-		e.entries = tmpIter.entries
+		e.entries = entries
 		e.currEntryIdx = 0
 	}
 	return true

@@ -594,10 +594,11 @@ td .form-group {
   color: #FFFFFF;
 }
 .object-viewer-sql-results {
-  max-height: 350px;
   overflow: auto;
-  font-size: .7rem;
+  font-size: .75rem;
+  max-height: 400px;
 }
+
 .image-container {
   padding: 30px;
 }
