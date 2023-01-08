@@ -922,7 +922,7 @@ jobs:
           - base: treeverse/bitnami-based-spark
             version: 3.2.3-with-hadoop-2.7-for-testing
             suffix: ""
-            allow_failure: true
+            #allow_failure: true
     env:
       SPARK_BASE: ${{ matrix.spark.base }}
       SPARK_TAG: ${{ matrix.spark.version }}
