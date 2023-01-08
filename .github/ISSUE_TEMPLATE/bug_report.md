@@ -30,7 +30,7 @@ Please use the following references to fill out the bug report.
 
 ## Logs
 <!--
-If available provide any logs relevant to the issue (lakeFS, clients, ecosystem)
+If available, please provide any logs relevant to the issue (lakeFS, clients, ecosystem). Make sure to scrub anything confidential! These will typically be near strings such as `secret`, `access` or `AKIA`
 -->
 
 ## Steps to Reproduce
