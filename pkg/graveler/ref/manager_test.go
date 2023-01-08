@@ -1070,26 +1070,28 @@ func TestManager_SetGetAddressToken(t *testing.T) {
 	})
 	testutil.Must(t, err)
 
-	err = r.SetAddressToken(ctx, repository, "aa")
+	address := xid.New().String()
+
+	err = r.SetAddressToken(ctx, repository, address)
 	testutil.MustDo(t, "set address token aa", err)
 
 	// check we can't create existing
-	err = r.SetAddressToken(ctx, repository, "aa")
+	err = r.SetAddressToken(ctx, repository, address)
 	if !errors.Is(err, graveler.ErrAddressTokenAlreadyExists) {
 		t.Fatalf("SetAddressToken() err = %s, expected already exists", err)
 	}
 
-	err = r.GetAddressToken(ctx, repository, "aa")
+	err = r.GetAddressToken(ctx, repository, address)
 	testutil.MustDo(t, "get aa token", err)
 
 	// check the token is deleted
-	err = r.GetAddressToken(ctx, repository, "aa")
+	err = r.GetAddressToken(ctx, repository, address)
 	if !errors.Is(err, graveler.ErrAddressTokenNotFound) {
 		t.Fatalf("GetAddressToken() err = %s, expected not found", err)
 	}
 
 	// create again
-	err = r.SetAddressToken(ctx, repository, "aa")
+	err = r.SetAddressToken(ctx, repository, address)
 	testutil.MustDo(t, "set address token aa after delete", err)
 }
 
