@@ -776,6 +776,7 @@ type StagingManager interface {
 	Set(ctx context.Context, st StagingToken, key Key, value *Value, requireExists bool) error
 
 	// Update updates a (possibly nil) value under the given staging token and key.
+	// Skip update in case 'ErrSkipUpdateValue' is returned from 'updateFunc'.
 	Update(ctx context.Context, st StagingToken, key Key, updateFunc ValueUpdateFunc) error
 
 	// List returns a ValueIterator for the given staging token
@@ -1391,37 +1392,31 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 		return ErrWriteToProtectedBranch
 	}
 
-	setFunc := func(branch *Branch) error {
-		writeCondition := &WriteCondition{}
-		for _, cond := range writeConditions {
-			cond(writeCondition)
-		}
+	writeCondition := &WriteCondition{}
+	for _, cond := range writeConditions {
+		cond(writeCondition)
+	}
 
+	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "set"})
+	return g.safeBranchWrite(ctx, log, repository, branchID, func(branch *Branch) error {
 		if !writeCondition.IfAbsent {
 			return g.StagingManager.Set(ctx, branch.StagingToken, key, &value, false)
 		}
 
-		// check if the given key exist in the branch first
+		// verify the key not found
 		_, err := g.Get(ctx, repository, Ref(branchID), key)
-		if err == nil {
-			// we got a key here already!
-			return ErrPreconditionFailed
-		}
-		if !errors.Is(err, ErrNotFound) {
-			// another error occurred!
+		if err == nil || !errors.Is(err, ErrNotFound) {
 			return err
 		}
 
-		return g.StagingManager.Update(ctx, branch.StagingToken, key, func(v *Value) (*Value, error) {
-			if v == nil || v.Identity == nil {
-				// value doesn't exist or is a tombstone
+		// update stage with new value only if key not found or tombstone
+		return g.StagingManager.Update(ctx, branch.StagingToken, key, func(currentValue *Value) (*Value, error) {
+			if currentValue == nil || currentValue.Identity == nil {
 				return &value, nil
 			}
-			return nil, ErrPreconditionFailed
+			return nil, ErrSkipValueUpdate
 		})
-	}
-
-	return g.safeBranchWrite(ctx, g.log(ctx).WithField("key", key).WithField("operation", "set"), repository, branchID, setFunc)
+	})
 }
 
 // safeBranchWrite is a helper function that wraps a branch write operation with validation that the staging token
@@ -1433,7 +1428,6 @@ func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repo
 		if err != nil {
 			return err
 		}
-		// startToken := branchPreOp.StagingToken
 		if err = stagingOperation(branchPreOp); err != nil {
 			return err
 		}
