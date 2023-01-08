@@ -9,6 +9,27 @@ What's new:
 
 - Authorization using Access Control Lists
 
+## v0.89.0
+
+What's new:
+
+- UI: added a blame button to path context menu (#4888)
+- Configurable repository and commit cache (#4910)
+- [Breaking Change] API delete will not return object not found (#4886)
+- Support MinIO (#4878)
+
+Bug fixes:
+
+- Refactor lakefs_export script output (#4904)
+- Report all errors as messages not as Exceptions (#4914)
+- API GetCommit return empty array instead of nil for no parent (#4922)
+- fix: loading of duckdb every query (#4903)
+- KV scan batch size control (#4875)
+- Return secondary key for secondary iterator (#4945)
+- Add missing Auditing fields into logger context   (#4864)
+- Fix CredentialFromProto can fail to decode secret (#4862)
+- Fix: ingest range content type is wrong (#4907)
+
 ## v0.88.0
 
 What's new:
