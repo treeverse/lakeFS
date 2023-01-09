@@ -603,7 +603,7 @@ public class LakeFSFileSystem extends FileSystem {
             ObjectsApi objects = lfsClient.getObjects();
             objects.uploadObject(objectLocation.getRepository(), objectLocation.getRef(), objectLocation.getPath(), null, "*", emptyFile);
         } catch (ApiException e) {
-            if (e.getCode() == HttpStatus.SC_CONFLICT) {
+            if (e.getCode() == HttpStatus.SC_PRECONDITION_FAILED) {
                 LOG.trace("createDirectoryMarkerIfNotExists: Ignore {} response, marker exists");
                 return;
             }
