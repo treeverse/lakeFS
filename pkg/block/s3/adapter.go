@@ -325,7 +325,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 			WithError(err).Error("could not resolve namespace")
 		return "", err
 	}
-	var preSignedUrl string
+	var preSignedURL string
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
 	if mode == block.PreSignModeWrite {
 		putObjectInput := &s3.PutObjectInput{
@@ -333,21 +333,21 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 			Key:    aws.String(qualifiedKey.Key),
 		}
 		req, _ := client.PutObjectRequest(putObjectInput)
-		preSignedUrl, err = req.Presign(DefaultPreSignedURLDuration)
+		preSignedURL, err = req.Presign(DefaultPreSignedURLDuration)
 	} else {
 		getObjectInput := &s3.GetObjectInput{
 			Bucket: aws.String(qualifiedKey.StorageNamespace),
 			Key:    aws.String(qualifiedKey.Key),
 		}
 		req, _ := client.GetObjectRequest(getObjectInput)
-		preSignedUrl, err = req.Presign(DefaultPreSignedURLDuration)
+		preSignedURL, err = req.Presign(DefaultPreSignedURLDuration)
 	}
 	if err != nil {
 		log.WithField("namespace", obj.StorageNamespace).
 			WithField("identifier", obj.Identifier).
 			WithError(err).Error("could not pre-sign request")
 	}
-	return preSignedUrl, err
+	return preSignedURL, err
 }
 
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {

@@ -237,11 +237,14 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 
 	keyCredentials, ok := a.credentials.(*azblob.SharedKeyCredential)
 	if !ok {
-		return "", fmt.Errorf("pre-signed mode on Azure is only supported for shared key credentials: %w", ErrNotImplemented)
+		err = fmt.Errorf("pre-signed mode on Azure is only supported for shared key credentials: %w", ErrNotImplemented)
+		a.log(ctx).WithError(err).Error("no support for pre-signed using this Azure credentials provider")
+		return "", err
 	}
 
 	sasQueryParams, err := vals.NewSASQueryParameters(keyCredentials)
 	if err != nil {
+		a.log(ctx).WithError(err).Error("could not generate SAS query parameters")
 		return "", err
 	}
 	// Create the URL of the resource you wish to access and append the SAS query parameters.

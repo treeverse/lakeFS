@@ -3197,7 +3197,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		code = http.StatusGone
 	} else if params.Presign != nil && *params.Presign {
 		// need to pre-sign the physical address
-		preSignedUrl, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+		preSignedURL, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
 			StorageNamespace: repo.StorageNamespace,
 			Identifier:       entry.PhysicalAddress,
 			IdentifierType:   entry.AddressType.ToIdentifierType(),
@@ -3205,7 +3205,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
-		objStat.PhysicalAddress = preSignedUrl
+		objStat.PhysicalAddress = preSignedURL
 	}
 	writeResponse(w, r, code, objStat)
 }
