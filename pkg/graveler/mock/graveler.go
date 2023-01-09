@@ -1718,21 +1718,6 @@ func (mr *MockRefManagerMockRecorder) GetBranch(ctx, repository, branchID interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBranch", reflect.TypeOf((*MockRefManager)(nil).GetBranch), ctx, repository, branchID)
 }
 
-// GetBranchCached mocks base method.
-func (m *MockRefManager) GetBranchCached(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) (*graveler.Branch, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBranchCached", ctx, repository, branchID)
-	ret0, _ := ret[0].(*graveler.Branch)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetBranchCached indicates an expected call of GetBranchCached.
-func (mr *MockRefManagerMockRecorder) GetBranchCached(ctx, repository, branchID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBranchCached", reflect.TypeOf((*MockRefManager)(nil).GetBranchCached), ctx, repository, branchID)
-}
-
 // GetCommit mocks base method.
 func (m *MockRefManager) GetCommit(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) (*graveler.Commit, error) {
 	m.ctrl.T.Helper()
