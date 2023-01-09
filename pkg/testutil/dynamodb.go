@@ -84,11 +84,9 @@ func UniqueKVTableName() string {
 func GetDynamoDBProd(ctx context.Context, tb testing.TB) kv.Store {
 	table := UniqueKVTableName()
 	testParams := &kvparams.DynamoDB{
-		TableName:          table,
-		ReadCapacityUnits:  DynamoDBReadCapacity,
-		WriteCapacityUnits: DynamoDBWriteCapacity,
-		ScanLimit:          DynamoDBScanLimit,
-		AwsRegion:          "us-east-1",
+		TableName: table,
+		ScanLimit: DynamoDBScanLimit,
+		AwsRegion: "us-east-1",
 	}
 
 	store, err := kv.Open(ctx, kvparams.Config{Type: dynamodb.DriverName, DynamoDB: testParams})

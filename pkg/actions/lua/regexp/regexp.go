@@ -20,7 +20,7 @@ func Open(l *lua.State) {
 
 var regexpLibrary = []lua.RegistryFunction{
 	{Name: "match", Function: match},
-	{Name: "quotemeta", Function: quoteMeta},
+	{Name: "quote_meta", Function: quoteMeta},
 	{Name: "compile", Function: compile},
 }
 
@@ -65,10 +65,10 @@ func compile(l *lua.State) int {
 }
 
 var regexpFunc = map[string]func(*regexp.Regexp) lua.Function{
-	"findAll":         reFindAll,
-	"findAllSubmatch": reFindAllSubmatch,
-	"find":            reFind,
-	"findSubmatch":    reFindSubmatch,
+	"find_all":          reFindAll,
+	"find_all_submatch": reFindAllSubmatch,
+	"find":              reFind,
+	"find_submatch":     reFindSubmatch,
 }
 
 func reFindAll(re *regexp.Regexp) lua.Function {

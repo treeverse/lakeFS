@@ -35,11 +35,6 @@ type DynamoDB struct {
 	// The name of the DynamoDB table to be used as KV
 	TableName string
 
-	// Table provisioned throughput parameters, as described in
-	// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html
-	ReadCapacityUnits  int64
-	WriteCapacityUnits int64
-
 	// Maximal number of items per page during scan operation
 	ScanLimit int64
 
