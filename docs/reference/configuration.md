@@ -52,8 +52,6 @@ This reference uses `.` to denote the nesting of values.
     + `database.postgres.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused `(valid units: ns|us|ms|s|m|h)` 
   + `database.dynamodb` - Configuration section when using `database.type="dynamodb"`
     + `database.dynamodb.table_name` `(string : "kvstore")` - Table used to store the data
-    + `database.dynamodb.read_capacity_units` `(int : 1000)` - Read capacity units, measured in requests per second 
-    + `database.dynamodb.write_capacity_units` `(int : 1000)` - Write capacity units, measured in requests per second
     + `database.dynamodb.scan_limit` `(int : )` - Maximal number of items per page during scan operation
     
       **Note:** Refer to the following [AWS documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html#Query.Limit) for further information
