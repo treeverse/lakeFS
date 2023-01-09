@@ -295,7 +295,7 @@ func (g *FakeGraveler) SetAddressToken(_ context.Context, _ *graveler.Repository
 	panic("implement me")
 }
 
-func (g *FakeGraveler) GetAddressToken(_ context.Context, _ *graveler.RepositoryRecord, _ string) error {
+func (g *FakeGraveler) VerifyAddressToken(_ context.Context, _ *graveler.RepositoryRecord, _ string) error {
 	panic("implement me")
 }
 
@@ -306,8 +306,8 @@ func (g *FakeGraveler) ListAddressTokens(_ context.Context, _ *graveler.Reposito
 	return g.AddressTokenIteratorFactory(), nil
 }
 
-func (g *FakeGraveler) IsTokenExpired(_ *graveler.LinkAddressData) error {
-	return nil
+func (g *FakeGraveler) IsTokenExpired(_ *graveler.LinkAddressData) (bool, error) {
+	return false, nil
 }
 
 type FakeValueIterator struct {

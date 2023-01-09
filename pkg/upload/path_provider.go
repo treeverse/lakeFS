@@ -11,6 +11,7 @@ import (
 // PathProvider captures the requirements from PathPartitionProvider implementation to return a new path
 type PathProvider interface {
 	NewPath() string
+	// ResolvePathTime - get string parse it to xid and returns the timestamp part of it
 	ResolvePathTime(address string) (time.Time, error)
 }
 

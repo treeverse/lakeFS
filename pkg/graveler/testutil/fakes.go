@@ -416,7 +416,7 @@ func (m *RefsFake) Log(context.Context, *graveler.RepositoryRecord, graveler.Com
 	return m.CommitIter, nil
 }
 
-func (m *RefsFake) GetAddressToken(context.Context, *graveler.RepositoryRecord, string) error {
+func (m *RefsFake) VerifyAddressToken(context.Context, *graveler.RepositoryRecord, string) error {
 	return m.Err
 }
 
@@ -428,8 +428,8 @@ func (m *RefsFake) ListAddressTokens(context.Context, *graveler.RepositoryRecord
 	return m.addressTokenIter, nil
 }
 
-func (m *RefsFake) IsTokenExpired(token *graveler.LinkAddressData) error {
-	return nil
+func (m *RefsFake) IsTokenExpired(token *graveler.LinkAddressData) (bool, error) {
+	return false, nil
 }
 
 type diffIter struct {
