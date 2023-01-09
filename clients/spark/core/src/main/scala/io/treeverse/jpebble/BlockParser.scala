@@ -129,12 +129,17 @@ object BlockParser {
 
   def readMagic(bytes: Iterator[Byte]) = {
     val magic = bytes.take(footerMagic.length).toArray
+    if (magic.size < footerMagic.length) {
+      throw new BadFileFormatException(
+        s"Bad magic ${magic.map("%02x".format(_)).mkString(" ")}: too short"
+      )
+    }
     val isMatch = magic
       .zip(BlockParser.footerMagic)
       .filter({ case ((a, b)) => a != b })
       .isEmpty
     if (!isMatch) {
-      throw new BadFileFormatException(s"Bad magic ${magic.map("%02x".format(_)).mkString(" ")}")
+      throw new BadFileFormatException(s"Bad magic ${magic.map("%02x".format(_)).mkString(" ")}: wrong bytes")
     }
   }
 
