@@ -38,7 +38,6 @@ interface ConfirmationButtonWithContextProps extends Omit<ConfirmationButtonProp
 
 interface BasicModal {
     display: boolean;
-
     children: ReactNode;
     onCancel: () => void;
 }
