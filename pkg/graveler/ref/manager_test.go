@@ -1125,9 +1125,10 @@ func TestManager_DeleteExpiredAddressTokens(t *testing.T) {
 	a := xid.NewWithTime(time.Now()).String()
 	b := xid.NewWithTime(time.Now().Add(-10 * time.Hour)).String() // expired
 	c := xid.NewWithTime(time.Now().Add(-7 * time.Hour)).String()  // expired
+	prefix := "data/skdgjslk/"
 
-	tokens := []string{a, b, c}
-	expectedTokens := []string{a}
+	tokens := []string{prefix + a, prefix + b, prefix + c}
+	expectedTokens := []string{prefix + a}
 
 	for _, a := range tokens {
 		testutil.Must(t, r.SetAddressToken(context.Background(), repository, a))
@@ -1153,6 +1154,6 @@ func TestManager_DeleteExpiredAddressTokens(t *testing.T) {
 		t.Fatalf("unexpected error: %v", iter.Err())
 	}
 	if diff := deep.Equal(ts, expectedTokens); diff != nil {
-		t.Errorf("Found diff in tokens: %s", tokens)
+		t.Errorf("Found diff in tokens: %s", ts)
 	}
 }

@@ -14,6 +14,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/graveler/ref"
+
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-co-op/gocron"
@@ -32,7 +34,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multipart"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
-	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
 	_ "github.com/treeverse/lakefs/pkg/kv/dynamodb"
@@ -192,7 +193,12 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		go deleteExpiredAddressesJob(ctx, c)
+		deleteScheduler := getScheduler()
+		err = deleteExpiredAddressesJob(ctx, deleteScheduler, c)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to initialize delete expired address tokens job")
+		}
+		deleteScheduler.StartAsync()
 
 		templater := templater.NewService(templates.Content, cfg, authService)
 
@@ -399,38 +405,23 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 	}
 }
 
-func deleteExpiredAddressesJob(ctx context.Context, c *catalog.Catalog) {
-	s := gocron.NewScheduler(time.UTC)
-
-	_, err := s.Every(ref.AddressTokenTime).Do(func() {
-		deleteExpiredAddressTokens(ctx, c)
+func deleteExpiredAddressesJob(ctx context.Context, s *gocron.Scheduler, c *catalog.Catalog) error {
+	const deleteExpiredAddressTokensPeriod = 3
+	job, err := s.Every(deleteExpiredAddressTokensPeriod * ref.AddressTokenTime).Do(func() {
+		err := c.DeleteExpiredAddressTokens(ctx)
+		if err != nil {
+			logging.Default().WithError(err).Debug("failed execute delete expired addresses job")
+		}
 	})
 	if err != nil {
-		logging.Default().WithError(err).Debug("failed execute delete expired addresses job")
-	} else {
-		s.StartBlocking()
+		return err
 	}
+	job.SingletonMode()
+	return nil
 }
 
-func deleteExpiredAddressTokens(ctx context.Context, c *catalog.Catalog) {
-	hasMore := true
-	next := ""
-
-	for hasMore {
-		var err error
-		var repos []*catalog.Repository
-		repos, hasMore, err = c.ListRepositories(ctx, -1, "", next)
-		if err != nil {
-			logging.Default().WithError(err).Debug("failed to list repositories while deleting expired tokens")
-		}
-
-		for _, repo := range repos {
-			err := c.DeleteExpiredAddressTokens(ctx, repo.Name)
-			if err != nil {
-				logging.Default().WithError(err).WithField("repository", repo.Name).Debug("failed to delete expired address tokens")
-			}
-		}
-	}
+func getScheduler() *gocron.Scheduler {
+	return gocron.NewScheduler(time.UTC)
 }
 
 // checkMetadataPrefix checks for non-migrated repos of issue #2397 (https://github.com/treeverse/lakeFS/issues/2397)

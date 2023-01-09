@@ -594,7 +594,7 @@ func (m *Manager) IsTokenExpired(token *graveler.LinkAddressData) (bool, error) 
 	}
 	expiry := creationTime.Add(AddressTokenTime)
 	if expiry.Before(time.Now()) {
-		return true, graveler.ErrAddressTokenExpired
+		return true, nil
 	}
 	return false, nil
 }
@@ -618,17 +618,17 @@ func (m *Manager) DeleteExpiredAddressTokens(ctx context.Context, repository *gr
 		token := itr.Value()
 		expired, err := m.IsTokenExpired(token)
 		if err != nil {
-			return nil
+			return err
 		}
 		if expired {
 			err := m.deleteAddressToken(ctx, repository, token.Address)
 			if err != nil {
-				return nil
+				return err
 			}
 		}
 	}
-	if itr.Err() != nil {
-		return nil
+	if err = itr.Err(); err != nil {
+		return err
 	}
 	return nil
 }

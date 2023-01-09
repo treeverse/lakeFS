@@ -1949,12 +1949,30 @@ func (c *Catalog) VerifyAddressToken(ctx context.Context, repository, token stri
 	return c.Store.VerifyAddressToken(ctx, repo, token)
 }
 
-func (c *Catalog) DeleteExpiredAddressTokens(ctx context.Context, repository string) error {
-	repo, err := c.getRepository(ctx, repository)
+func (c *Catalog) DeleteExpiredAddressTokens(ctx context.Context) error {
+	it, err := c.Store.ListRepositories(ctx)
 	if err != nil {
+		return fmt.Errorf("get iterator: %w", err)
+	}
+	defer it.Close()
+
+	var repos []*graveler.RepositoryRecord
+	for it.Next() {
+		record := it.Value()
+		repos = append(repos, record)
+
+	}
+	if err := it.Err(); err != nil {
 		return err
 	}
-	return c.Store.DeleteExpiredAddressTokens(ctx, repo)
+
+	for _, repo := range repos {
+		err := c.Store.DeleteExpiredAddressTokens(ctx, repo)
+		if err != nil {
+			c.log.WithError(err).WithField("repository", repo.RepositoryID).Warn("failed to delete expired address tokens")
+		}
+	}
+	return nil
 }
 
 func (c *Catalog) Close() error {
