@@ -1961,7 +1961,6 @@ func (c *Catalog) DeleteExpiredAddressTokens(ctx context.Context) {
 	for it.Next() {
 		record := it.Value()
 		repos = append(repos, record)
-
 	}
 	if err := it.Err(); err != nil {
 		c.log.WithError(err).Warn("failed to list repositories")
