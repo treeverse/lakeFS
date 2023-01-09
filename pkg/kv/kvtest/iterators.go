@@ -1,6 +1,7 @@
 package kvtest
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"testing"
@@ -302,6 +303,10 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 			model, ok := e.Value.(*TestModel)
 			if !ok {
 				t.Fatalf("Failed to cast entry to TestModel")
+			}
+			expectedKey := append([]byte("just_a_string1/"), model.JustAString...)
+			if !bytes.Equal(e.Key, expectedKey) {
+				t.Fatalf("Iterator key=%s, expected=%s", e.Key, expectedKey)
 			}
 			msgs = append(msgs, model)
 		}
