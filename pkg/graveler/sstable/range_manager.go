@@ -86,17 +86,18 @@ func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, i
 	defer m.execAndLog(ctx, it.Close, "close iterator")
 
 	// Ranges are keyed by MaxKey, seek to the range that might contain key.
-	key, value := it.SeekGE(lookup)
+	key, value := it.SeekGE(lookup, 0)
 	if key == nil {
 		if it.Error() != nil {
 			return nil, fmt.Errorf("read metarange from sstable id %s: %w", id, it.Error())
 		}
 		return nil, ErrKeyNotFound
 	}
+	vBytes, _, err := value.Value(nil)
 
 	return &committed.Record{
 		Key:   key.UserKey,
-		Value: value,
+		Value: vBytes,
 	}, nil
 }
 
@@ -116,7 +117,7 @@ func (m *RangeManager) GetValue(ctx context.Context, ns committed.Namespace, id 
 	defer m.execAndLog(ctx, it.Close, "close iterator")
 
 	// actual reading
-	key, value := it.SeekGE(lookup)
+	key, value := it.SeekGE(lookup, 0)
 	if key == nil {
 		if it.Error() != nil {
 			return nil, fmt.Errorf("read key from sstable id %s: %w", id, it.Error())
@@ -130,10 +131,11 @@ func (m *RangeManager) GetValue(ctx context.Context, ns committed.Namespace, id 
 		// lookup path in range but key not found
 		return nil, ErrKeyNotFound
 	}
+	vBytes, _, err := value.Value(nil)
 
 	return &committed.Record{
 		Key:   key.UserKey,
-		Value: value,
+		Value: vBytes,
 	}, nil
 }
 

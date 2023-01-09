@@ -27,13 +27,21 @@ func NewIterator(it sstable.Iterator, derefer func() error) *Iterator {
 }
 
 func (iter *Iterator) SeekGE(lookup committed.Key) {
-	iter.currKey, iter.currValue = iter.it.SeekGE(lookup)
+	key, value := iter.it.SeekGE(lookup, 0)
+	val, _, err := value.Value(nil)
+	iter.currKey = key
+	iter.currValue = val
+	iter.err = err
 	iter.postSeek = true
 }
 
 func (iter *Iterator) Next() bool {
 	if !iter.postSeek {
-		iter.currKey, iter.currValue = iter.it.Next()
+		key, value := iter.it.Next()
+		iter.currKey = key
+		val, _, err := value.Value(nil)
+		iter.err = err
+		iter.currValue = val
 	}
 	iter.postSeek = false
 
