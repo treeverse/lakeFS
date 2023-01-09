@@ -140,11 +140,13 @@ def getSharedLibraryDependencies(buildType: BuildType) : Seq[ModuleID]  = {
     "org.scalactic" %% "scalactic" % "3.2.9",
     "dev.failsafe" % "failsafe" % "3.2.4",
     "org.apache.hadoop" % "hadoop-distcp" % buildType.hadoopVersion,
-    "org.scalatestplus" %% "mockito-4-6" % "3.2.14.0" % "test",
     // https://mvnrepository.com/artifact/com.squareup.okhttp3/mockwebserver
     "com.squareup.okhttp3" % "mockwebserver" % "4.10.0" % "test",
     "xerces" % "xercesImpl" % "2.12.2" % "test",
     "org.scalatest" %% "scalatest" % "3.2.9" % "test",
+    // scalacheck-1.15 is last version to support Scala 2.11 :-(
+    "org.scalatestplus" %% "scalacheck-1-15" % "3.2.3.0" % "test",
+    "org.scalatestplus" %% "mockito-4-2" % "3.2.11.0" % "test",
     "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.10" % "test",
     "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
     "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
