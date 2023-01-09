@@ -140,7 +140,8 @@ def getSharedLibraryDependencies(buildType: BuildType) : Seq[ModuleID]  = {
     "org.scalactic" %% "scalactic" % "3.2.9",
     "dev.failsafe" % "failsafe" % "3.2.4",
     "org.apache.hadoop" % "hadoop-distcp" % buildType.hadoopVersion,
-    "org.scalatestplus" %% "mockito-4-6" % "3.2.14.0" % "test",
+    "org.scalatestplus" %% "scalacheck-1-17" % "3.2.15.0" % "test",
+    "org.scalatestplus" %% "mockito-4-6" % "3.2.15.0" % "test",
     // https://mvnrepository.com/artifact/com.squareup.okhttp3/mockwebserver
     "com.squareup.okhttp3" % "mockwebserver" % "4.10.0" % "test",
     "xerces" % "xercesImpl" % "2.12.2" % "test",
