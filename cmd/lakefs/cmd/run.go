@@ -193,7 +193,7 @@ var runCmd = &cobra.Command{
 		defer func() { _ = c.Close() }()
 
 		deleteScheduler := getScheduler()
-		err = deleteExpiredAddressesJob(ctx, deleteScheduler, c)
+		err = scheduleExpiredAddressesJob(ctx, deleteScheduler, c)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to initialize delete expired address tokens job")
 		}
@@ -404,13 +404,10 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 	}
 }
 
-func deleteExpiredAddressesJob(ctx context.Context, s *gocron.Scheduler, c *catalog.Catalog) error {
-	const deleteExpiredAddressTokensPeriod = 3
-	job, err := s.Every(deleteExpiredAddressTokensPeriod * ref.AddressTokenTime).Do(func() {
-		err := c.DeleteExpiredAddressTokens(ctx)
-		if err != nil {
-			logging.Default().WithError(err).Debug("failed execute delete expired addresses job")
-		}
+func scheduleExpiredAddressesJob(ctx context.Context, s *gocron.Scheduler, c *catalog.Catalog) error {
+	const deleteExpiredAddressPeriod = 3
+	job, err := s.Every(deleteExpiredAddressPeriod * ref.AddressTokenTime).Do(func() {
+		c.DeleteExpiredAddressTokens(ctx)
 	})
 	if err != nil {
 		return err

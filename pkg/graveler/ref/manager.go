@@ -611,7 +611,7 @@ func (m *Manager) resolveAddressTokenTime(address string) (time.Time, error) {
 func (m *Manager) DeleteExpiredAddressTokens(ctx context.Context, repository *graveler.RepositoryRecord) error {
 	itr, err := m.ListAddressTokens(ctx, repository)
 	if err != nil {
-		return nil
+		return err
 	}
 	defer itr.Close()
 	for itr.Next() {
@@ -627,8 +627,5 @@ func (m *Manager) DeleteExpiredAddressTokens(ctx context.Context, repository *gr
 			}
 		}
 	}
-	if err = itr.Err(); err != nil {
-		return err
-	}
-	return nil
+	return itr.Err()
 }

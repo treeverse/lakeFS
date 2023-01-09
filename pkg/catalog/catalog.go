@@ -1949,10 +1949,11 @@ func (c *Catalog) VerifyAddressToken(ctx context.Context, repository, token stri
 	return c.Store.VerifyAddressToken(ctx, repo, token)
 }
 
-func (c *Catalog) DeleteExpiredAddressTokens(ctx context.Context) error {
+func (c *Catalog) DeleteExpiredAddressTokens(ctx context.Context) {
 	it, err := c.Store.ListRepositories(ctx)
 	if err != nil {
-		return fmt.Errorf("get iterator: %w", err)
+		c.log.WithError(err).Warn("failed to list repositories")
+		return
 	}
 	defer it.Close()
 
@@ -1963,7 +1964,8 @@ func (c *Catalog) DeleteExpiredAddressTokens(ctx context.Context) error {
 
 	}
 	if err := it.Err(); err != nil {
-		return err
+		c.log.WithError(err).Warn("failed to list repositories")
+		return
 	}
 
 	for _, repo := range repos {
@@ -1972,7 +1974,6 @@ func (c *Catalog) DeleteExpiredAddressTokens(ctx context.Context) error {
 			c.log.WithError(err).WithField("repository", repo.RepositoryID).Warn("failed to delete expired address tokens")
 		}
 	}
-	return nil
 }
 
 func (c *Catalog) Close() error {
