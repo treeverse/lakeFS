@@ -139,7 +139,9 @@ object BlockParser {
       .filter({ case ((a, b)) => a != b })
       .isEmpty
     if (!isMatch) {
-      throw new BadFileFormatException(s"Bad magic ${magic.map("%02x".format(_)).mkString(" ")}: wrong bytes")
+      throw new BadFileFormatException(
+        s"Bad magic ${magic.map("%02x".format(_)).mkString(" ")}: wrong bytes"
+      )
     }
   }
 
