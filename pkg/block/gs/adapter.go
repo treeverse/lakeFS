@@ -21,6 +21,8 @@ const (
 	delimiter    = "/"
 	partSuffix   = ".part_"
 	markerSuffix = ".multipart"
+
+	defaultPreSignedURLDuration = time.Minute * 15
 )
 
 var (
@@ -33,12 +35,22 @@ var (
 )
 
 type Adapter struct {
-	client *storage.Client
+	client                   *storage.Client
+	presignDurationGenerator func() time.Time
+}
+
+func WithPreSignedURLDurationGenerator(f func() time.Time) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.presignDurationGenerator = f
+	}
 }
 
 func NewAdapter(client *storage.Client, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		client: client,
+		presignDurationGenerator: func() time.Time {
+			return time.Now().Add(defaultPreSignedURLDuration)
+		},
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -112,17 +124,21 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	return r, nil
 }
 
-func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer) (string, error) {
+func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
 	var err error
-	defer reportMetrics("Get", time.Now(), nil, &err)
+	defer reportMetrics("GetPreSignedURL", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return "", err
 	}
+	method := http.MethodGet
+	if mode == block.PreSignModeWrite {
+		method = http.MethodPut
+	}
 	opts := &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,
-		Method:  "GET",
-		Expires: time.Now().Add(15 * time.Minute),
+		Method:  method,
+		Expires: a.presignDurationGenerator(),
 	}
 	k, err := a.client.Bucket(qualifiedKey.StorageNamespace).SignedURL(qualifiedKey.Key, opts)
 	if err != nil {

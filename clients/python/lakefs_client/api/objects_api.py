@@ -195,6 +195,7 @@ class ObjectsApi(object):
                     'ref',
                     'path',
                     'range',
+                    'presign',
                 ],
                 'required': [
                     'repository',
@@ -229,18 +230,22 @@ class ObjectsApi(object):
                         (str,),
                     'range':
                         (str,),
+                    'presign':
+                        (bool,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'ref': 'ref',
                     'path': 'path',
                     'range': 'Range',
+                    'presign': 'presign',
                 },
                 'location_map': {
                     'repository': 'path',
                     'ref': 'path',
                     'path': 'query',
                     'range': 'header',
+                    'presign': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -415,6 +420,7 @@ class ObjectsApi(object):
                     'repository',
                     'ref',
                     'user_metadata',
+                    'presign',
                     'after',
                     'amount',
                     'delimiter',
@@ -449,6 +455,8 @@ class ObjectsApi(object):
                         (str,),
                     'user_metadata':
                         (bool,),
+                    'presign':
+                        (bool,),
                     'after':
                         (str,),
                     'amount':
@@ -462,6 +470,7 @@ class ObjectsApi(object):
                     'repository': 'repository',
                     'ref': 'ref',
                     'user_metadata': 'user_metadata',
+                    'presign': 'presign',
                     'after': 'after',
                     'amount': 'amount',
                     'delimiter': 'delimiter',
@@ -471,6 +480,7 @@ class ObjectsApi(object):
                     'repository': 'path',
                     'ref': 'path',
                     'user_metadata': 'query',
+                    'presign': 'query',
                     'after': 'query',
                     'amount': 'query',
                     'delimiter': 'query',
@@ -895,6 +905,7 @@ class ObjectsApi(object):
 
         Keyword Args:
             range (str): Byte range to retrieve. [optional]
+            presign (bool): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -1114,6 +1125,7 @@ class ObjectsApi(object):
 
         Keyword Args:
             user_metadata (bool): [optional] if omitted the server will use the default value of True
+            presign (bool): [optional]
             after (str): return items after this value. [optional]
             amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
             delimiter (str): delimiter used to group common prefixes by. [optional]
@@ -1267,7 +1279,7 @@ class ObjectsApi(object):
 
         Keyword Args:
             user_metadata (bool): [optional] if omitted the server will use the default value of True
-            presign (bool): [optional] if omitted the server will use the default value of True
+            presign (bool): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

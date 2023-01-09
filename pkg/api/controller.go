@@ -333,6 +333,21 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		PhysicalAddress: StringPtr(qk.Format()),
 		Token:           StringValue(token),
 	}
+
+	if params.Presign != nil && *params.Presign {
+		// generate a pre-signed PUT url for the given request
+		preSignedURL, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+			StorageNamespace: repo.StorageNamespace,
+			Identifier:       address,
+			IdentifierType:   block.IdentifierTypeRelative,
+		}, block.PreSignModeWrite)
+		if err != nil {
+			writeError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+		response.PresignedUrl = StringPtr(preSignedURL)
+	}
+
 	writeResponse(w, r, http.StatusOK, response)
 }
 
@@ -2990,9 +3005,20 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		return
 	}
 
+	// if pre-sign, return a redirect
+	pointer := block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}
+	if params.Presign != nil && *params.Presign {
+		location, err := c.BlockAdapter.GetPreSignedURL(ctx, pointer, block.PreSignModeRead)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		w.Header().Set("Location", location)
+		w.WriteHeader(http.StatusFound)
+		return
+	}
+
 	// setup response
 	var reader io.ReadCloser
-	pointer := block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}
 
 	// handle partial response if byte range supplied
 	if params.Range != nil {
@@ -3099,6 +3125,16 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 			if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
 				objStat.Metadata = &ObjectUserMetadata{AdditionalProperties: entry.Metadata}
 			}
+			if params.Presign != nil && *params.Presign {
+				objStat.PhysicalAddress, err = c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+					StorageNamespace: repo.StorageNamespace,
+					Identifier:       entry.PhysicalAddress,
+					IdentifierType:   entry.AddressType.ToIdentifierType(),
+				}, block.PreSignModeRead)
+				if c.handleAPIError(ctx, w, r, err) {
+					return
+				}
+			}
 			objList = append(objList, objStat)
 		}
 	}
@@ -3165,7 +3201,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 			StorageNamespace: repo.StorageNamespace,
 			Identifier:       entry.PhysicalAddress,
 			IdentifierType:   entry.AddressType.ToIdentifierType(),
-		})
+		}, block.PreSignModeRead)
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}

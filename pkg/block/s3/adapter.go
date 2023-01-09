@@ -29,6 +29,9 @@ const (
 
 	// Chunks smaller than that are only allowed for the last chunk upload
 	minChunkSize = 8 * 1024
+
+	// DefaultPreSignedURLDuration determines how long should pre-signed URLs be valid for
+	DefaultPreSignedURLDuration = time.Minute * 15
 )
 
 var (
@@ -313,7 +316,7 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	return objectOutput.Body, nil
 }
 
-func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer) (string, error) {
+func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
 	log := a.log(ctx).WithField("operation", "GetPresignedURL")
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
@@ -322,13 +325,23 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer) 
 			WithError(err).Error("could not resolve namespace")
 		return "", err
 	}
+	var preSignedUrl string
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
-	getObjectInput := &s3.GetObjectInput{
-		Bucket: aws.String(qualifiedKey.StorageNamespace),
-		Key:    aws.String(qualifiedKey.Key),
+	if mode == block.PreSignModeWrite {
+		putObjectInput := &s3.PutObjectInput{
+			Bucket: aws.String(qualifiedKey.StorageNamespace),
+			Key:    aws.String(qualifiedKey.Key),
+		}
+		req, _ := client.PutObjectRequest(putObjectInput)
+		preSignedUrl, err = req.Presign(DefaultPreSignedURLDuration)
+	} else {
+		getObjectInput := &s3.GetObjectInput{
+			Bucket: aws.String(qualifiedKey.StorageNamespace),
+			Key:    aws.String(qualifiedKey.Key),
+		}
+		req, _ := client.GetObjectRequest(getObjectInput)
+		preSignedUrl, err = req.Presign(DefaultPreSignedURLDuration)
 	}
-	req, _ := client.GetObjectRequest(getObjectInput)
-	preSignedUrl, err := req.Presign(15 * time.Minute)
 	if err != nil {
 		log.WithField("namespace", obj.StorageNamespace).
 			WithField("identifier", obj.Identifier).

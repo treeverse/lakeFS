@@ -34,7 +34,7 @@ func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, expectedSize i
 	return io.NopCloser(&io.LimitedReader{R: rand.Reader, N: expectedSize}), nil
 }
 
-func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer) (string, error) {
+func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer, _ block.PreSignMode) (string, error) {
 	return "", nil
 }
 
