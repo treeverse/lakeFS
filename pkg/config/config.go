@@ -405,8 +405,10 @@ func (c *Config) DatabaseParams() (kvparams.Config, error) {
 func (c *Config) GetAwsConfig() *aws.Config {
 	logger := logging.Default().WithField("sdk", "aws")
 	cfg := &aws.Config{
-		Region: aws.String(c.Blockstore.S3.Region),
 		Logger: &logging.AWSAdapter{Logger: logger},
+	}
+	if c.Blockstore.S3.Region != "" {
+		cfg.Region = aws.String(c.Blockstore.S3.Region)
 	}
 	level := strings.ToLower(logging.Level())
 	if level == "trace" {
