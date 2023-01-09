@@ -135,11 +135,6 @@ type Config struct {
 			// The name of the DynamoDB table to be used as KV
 			TableName string `mapstructure:"table_name"`
 
-			// Table provisioned throughput parameters, as described in
-			// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html
-			ReadCapacityUnits  int64 `mapstructure:"read_capacity_units"`
-			WriteCapacityUnits int64 `mapstructure:"write_capacity_units"`
-
 			// Maximal number of items per page during scan operation
 			ScanLimit int64 `mapstructure:"scan_limit"`
 
@@ -389,8 +384,6 @@ func (c *Config) DatabaseParams() (kvparams.Config, error) {
 	if c.Database.DynamoDB != nil {
 		p.DynamoDB = &kvparams.DynamoDB{
 			TableName:          c.Database.DynamoDB.TableName,
-			ReadCapacityUnits:  c.Database.DynamoDB.ReadCapacityUnits,
-			WriteCapacityUnits: c.Database.DynamoDB.WriteCapacityUnits,
 			ScanLimit:          c.Database.DynamoDB.ScanLimit,
 			Endpoint:           c.Database.DynamoDB.Endpoint,
 			AwsRegion:          c.Database.DynamoDB.AwsRegion,

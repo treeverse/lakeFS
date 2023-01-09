@@ -22,12 +22,6 @@ const (
 	DatabaseDynamodbTableNameKey     = "database.dynamodb.table_name"
 	DefaultDatabaseDynamodbTableName = "kvstore"
 
-	DatabaseDynamodbReadCapacityUnitsKey     = "database.dynamodb.read_capacity_units"
-	DefaultDatabaseDynamodbReadCapacityUnits = 1000
-
-	DatabaseDynamodbWriteCapacityUnitsKey     = "database.dynamodb.write_capacity_units"
-	DefaultDatabaseDynamodbWriteCapacityUnits = 1000
-
 	DatabasePostgresMaxOpenConnectionsKey     = "database.postgres.max_open_connections"
 	DefaultDatabasePostgresMaxOpenConnections = 25
 
@@ -253,9 +247,6 @@ func setDefaults(local bool) {
 	viper.SetDefault(DatabaseLocalSyncWritesKey, DefaultDatabaseLocalSyncWrites)
 
 	viper.SetDefault(DatabaseDynamodbTableNameKey, DefaultDatabaseDynamodbTableName)
-
-	viper.SetDefault(DatabaseDynamodbReadCapacityUnitsKey, DefaultDatabaseDynamodbReadCapacityUnits)
-	viper.SetDefault(DatabaseDynamodbWriteCapacityUnitsKey, DefaultDatabaseDynamodbWriteCapacityUnits)
 
 	viper.SetDefault(DatabasePostgresMaxOpenConnectionsKey, DefaultDatabasePostgresMaxOpenConnections)
 	viper.SetDefault(DatabasePostgresMaxIdleConnectionsKey, DefaultDatabasePostgresMaxIdleConnections)
