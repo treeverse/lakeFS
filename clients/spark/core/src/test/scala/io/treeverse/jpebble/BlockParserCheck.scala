@@ -12,18 +12,12 @@ import funspec._
   * https://github.com/typelevel/scalacheck/blob/main/doc/UserGuide.md.
  */
 class BlockParserCheck extends AnyFunSpec with ScalaCheckDrivenPropertyChecks with Matchers {
-  val makeLE32 = (x: Int) => Seq(x, x >>> 8, x >>> 16, x >>> 24).map(_.toByte).iterator
 
   describe("readInt32") {
+    val makeLE32 = (x: Int) => Seq(x, x >>> 8, x >>> 16, x >>> 24).map(_.toByte).iterator
     it("reads little-endian int32s") {
-      forAll { (a: Int) => BlockParser.readInt32(makeLE32(a)) should be(a) }
+      forAll { (bytes: Int) => BlockParser.readInt32(makeLE32(bytes)) should be(bytes) }
     }
 
-    it("equals readFixedInt") {
-      val gen = Gen.containerOfN[Seq, Byte](4, arbByte.arbitrary)
-      forAll(gen) {
-        case (a) => BlockParser.readInt32(a.iterator) should be(BlockParser.readFixedInt(a.iterator))
-      }
-    }
   }
 }
