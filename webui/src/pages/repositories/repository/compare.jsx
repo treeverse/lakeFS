@@ -1,10 +1,17 @@
 import React, {useState} from "react";
 
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
-import {ActionGroup, ActionsBar, Error, Loading, RefreshButton} from "../../../lib/components/controls";
+import {
+    ActionGroup,
+    ActionsBar,
+    Error,
+    ExperimentalOverlayTooltip,
+    Loading,
+    RefreshButton
+} from "../../../lib/components/controls";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
-import {ArrowLeftIcon, GitMergeIcon} from "@primer/octicons-react";
+import {ArrowLeftIcon, DiffIcon, GitMergeIcon} from "@primer/octicons-react";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {refs} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
@@ -16,12 +23,7 @@ import {URINavigator} from "../../../lib/components/repository/tree";
 import {appendMoreResults} from "./changes";
 import {RefTypeBranch, RefTypeCommit} from "../../../constants";
 import Button from "react-bootstrap/Button";
-import {
-    FormControl,
-    FormHelperText,
-    InputLabel, MenuItem,
-    Select
-} from "@mui/material";
+import {FormControl, FormHelperText, InputLabel, MenuItem, Select} from "@mui/material";
 import Modal from "react-bootstrap/Modal";
 import {RepoError} from "./error";
 
@@ -29,10 +31,12 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
+    const [showDeltaDiffButton, setShowDeltaDiffButton] = useState(false);
 
     const refresh = () => {
         setResultsState({prefix: prefix, results:[], pagination:{}})
         setInternalRefresh(!internalRefresh)
+        setShowDeltaDiffButton(false);
     }
 
     const delimiter = "/"
@@ -73,61 +77,72 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     else content = (
             <div className="tree-container">
                 {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
-                    <Card>
-                        <Card.Header>
-                        <span className="float-left">
-                            {(delimiter !== "") && (
-                                <URINavigator
-                                    path={prefix}
-                                    reference={reference}
-                                    relativeTo={relativeTitle(reference, compareReference)}
-                                    repo={repo}
-                                    pathURLBuilder={(params, query) => {
-                                        const q = {
-                                            delimiter: "/",
-                                            prefix: query.path,
-                                        };
-                                        if (compareReference) q.compare = compareReference.id;
-                                        if (reference) q.ref = reference.id;
-                                        return {
-                                            pathname: '/repositories/:repoId/compare',
-                                            params: {repoId: repo.id},
-                                            query: q
+                    <>
+                        <ExperimentalOverlayTooltip show={showDeltaDiffButton}>
+                            <Button className="action-bar" variant="primary" disabled={false}>
+                                <DiffIcon/> Compare Delta Lake tables
+                            </Button>
+                        </ExperimentalOverlayTooltip>
+                        <Card>
+                            <Card.Header>
+                                <span className="float-left">
+                                    {(delimiter !== "") && (
+                                        <URINavigator
+                                            path={prefix}
+                                            reference={reference}
+                                            relativeTo={relativeTitle(reference, compareReference)}
+                                            repo={repo}
+                                            pathURLBuilder={(params, query) => {
+                                                const q = {
+                                                    delimiter: "/",
+                                                    prefix: query.path,
+                                                };
+                                                if (compareReference)
+                                                    q.compare = compareReference.id;
+                                                if (reference)
+                                                    q.ref = reference.id;
+                                                return {
+                                                    pathname: '/repositories/:repoId/compare',
+                                                    params: {repoId: repo.id},
+                                                    query: q
+                                                };
+                                            }}/>
+                                    )}
+                                </span>
+                            </Card.Header>
+                            <Card.Body>
+                                <Table borderless size="sm">
+                                    <tbody>
+                                    {results.map(entry => {
+                                        if(!showDeltaDiffButton && entry.path.includes("_delta_log")) {
+                                            setShowDeltaDiffButton(true)
                                         }
-                                    }}
-                                />
-                            )}
-                        </span>
-                        </Card.Header>
-                        <Card.Body>
-                            <Table borderless size="sm">
-                                <tbody>
-                                {results.map(entry => {
-                                    let leftCommittedRef = reference.id;
-                                    let rightCommittedRef = compareReference.id;
-                                    if (reference.type === RefTypeBranch) {
-                                        leftCommittedRef += "@";
-                                    }
-                                    if (compareReference.type === RefTypeBranch) {
-                                        rightCommittedRef += "@";
-                                    }
-                                    return (
-                                    <TreeItem key={entry.path+"-item"} entry={entry} repo={repo} reference={reference}
-                                              internalReferesh={internalRefresh} leftDiffRefID={leftCommittedRef}
-                                              rightDiffRefID={rightCommittedRef} delimiter={delimiter} relativeTo={prefix}
-                                              onNavigate={onNavigate}
-                                              getMore={(afterUpdatedChild, path, useDelimiter = true, amount = -1) => {
-                                                  return refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
-                                              }}
-                                    />)})
-                                }
-                                { !!nextPage &&
-                                <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
-                                }
-                                </tbody>
-                            </Table>
-                        </Card.Body>
-                    </Card>
+                                        let leftCommittedRef = reference.id;
+                                        let rightCommittedRef = compareReference.id;
+                                        if (reference.type === RefTypeBranch) {
+                                            leftCommittedRef += "@";
+                                        }
+                                        if (compareReference.type === RefTypeBranch) {
+                                            rightCommittedRef += "@";
+                                        }
+                                        return (
+                                            <TreeItem key={entry.path + "-item"} entry={entry} repo={repo}
+                                                      reference={reference}
+                                                      internalReferesh={internalRefresh} leftDiffRefID={leftCommittedRef}
+                                                      rightDiffRefID={rightCommittedRef} delimiter={delimiter}
+                                                      relativeTo={prefix}
+                                                      onNavigate={onNavigate}
+                                                      getMore={(afterUpdatedChild, path, useDelimiter = true, amount = -1) => {
+                                                          return refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined);
+                                                      }}/>);
+                                    })}
+                                    {!!nextPage &&
+                                        <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage}
+                                                            setAfterUpdated={setAfterUpdated}/>}
+                                    </tbody>
+                                </Table>
+                            </Card.Body>
+                    </Card></>
                 )}
             </div>
     )
@@ -255,7 +270,6 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
         </>
     );
 }
-
 
 const CompareContainer = () => {
     const router = useRouter();
