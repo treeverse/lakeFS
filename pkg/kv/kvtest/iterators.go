@@ -304,7 +304,7 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 			if !ok {
 				t.Fatalf("Failed to cast entry to TestModel")
 			}
-			expectedKey := append([]byte("just_a_string1/"), model.JustAString...)
+			expectedKey := append([]byte("just_a_string/"), model.JustAString...)
 			if !bytes.Equal(e.Key, expectedKey) {
 				t.Fatalf("Iterator key=%s, expected=%s", e.Key, expectedKey)
 			}
