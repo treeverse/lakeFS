@@ -1098,17 +1098,20 @@ func TestManager_IsTokenExpired(t *testing.T) {
 	r, _ := testRefManager(t)
 
 	expired, err := r.IsTokenExpired(&graveler.LinkAddressData{Address: xid.New().String()})
-	testutil.MustDo(t, "set address token aa", err)
+	testutil.MustDo(t, "is token expired", err)
 	if expired {
 		t.Fatalf("expected token not expired")
 	}
 
 	expired, err = r.IsTokenExpired(&graveler.LinkAddressData{Address: xid.NewWithTime(time.Now().Add(-7 * time.Hour)).String()})
-	if !errors.Is(err, graveler.ErrAddressTokenExpired) {
-		t.Fatalf("SetAddressToken() err = %s, expected already exists", err)
-	}
+	testutil.MustDo(t, "is token expired", err)
 	if !expired {
 		t.Fatalf("expected token expired")
+	}
+
+	expired, err = r.IsTokenExpired(&graveler.LinkAddressData{Address: "aaa"})
+	if !errors.Is(err, xid.ErrInvalidID) {
+		t.Fatalf("err = %s, expected invalid xid", err)
 	}
 }
 
