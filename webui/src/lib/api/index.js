@@ -63,7 +63,7 @@ const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
         ...defaultAPIHeaders,
         ...additionalHeaders,
     })
-    const response = await fetch(`${API_ENDPOINT}${uri}`, {headers,  ...requestData});
+    const response = await fetch(`${API_ENDPOINT}${uri}`, {headers, ...requestData});
 
     // check if we're missing credentials
     if (response.status === 401) {
@@ -184,7 +184,7 @@ class Auth {
 
         const user = await this.getCurrentUser();
 
-        cache.set('user',user);
+        cache.set('user', user);
         return user;
     }
 
@@ -236,7 +236,7 @@ class Auth {
 
     async listGroupMembers(groupId, after, amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount});
-        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}/members?`+query);
+        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}/members?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list group members: ${await extractError(response)}`);
         }
@@ -293,7 +293,7 @@ class Auth {
     }
 
     async createGroup(groupId) {
-        const response = await apiRequest(`/auth/groups`, {method: 'POST',  body: JSON.stringify({id: groupId})});
+        const response = await apiRequest(`/auth/groups`, {method: 'POST', body: JSON.stringify({id: groupId})});
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
@@ -336,7 +336,7 @@ class Auth {
 
     async listCredentials(userId, after, amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount});
-        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/credentials?`+query);
+        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/credentials?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list credentials: ${await extractError(response)}`);
         }
@@ -355,7 +355,7 @@ class Auth {
 
     async listUserGroups(userId, after, amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount});
-        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/groups?`+query);
+        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/groups?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list user groups: ${await extractError(response)}`);
         }
@@ -365,10 +365,10 @@ class Auth {
     async listUserPolicies(userId, effective = false, after = "", amount = DEFAULT_LISTING_AMOUNT) {
         const params = {after, amount};
         if (effective) {
-            params.effective =  'true'
+            params.effective = 'true'
         }
         const query = qs(params);
-        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/policies?`+query);
+        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/policies?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list policies: ${await extractError(response)}`);
         }
@@ -385,7 +385,7 @@ class Auth {
 
     async listGroupPolicies(groupId, after, amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount});
-        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}/policies?`+query);
+        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}/policies?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list policies: ${await extractError(response)}`);
         }
@@ -399,7 +399,7 @@ class Auth {
         }
     }
 
-    async deleteUsers (userIds) {
+    async deleteUsers(userIds) {
         for (let i = 0; i < userIds.length; i++) {
             const userId = userIds[i];
             await this.deleteUser(userId);
@@ -414,7 +414,7 @@ class Auth {
         }
     }
 
-    async deleteGroups (groupIds) {
+    async deleteGroups(groupIds) {
         for (let i = 0; i < groupIds.length; i++) {
             const groupId = groupIds[i]
             await this.deleteGroup(groupId);
@@ -428,7 +428,7 @@ class Auth {
         }
     }
 
-    async deletePolicies (policyIds) {
+    async deletePolicies(policyIds) {
         for (let i = 0; i < policyIds.length; i++) {
             const policyId = policyIds[i];
             await this.deletePolicy(policyId);
@@ -524,7 +524,7 @@ class Branches {
 
     async list(repoId, prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({prefix, after, amount});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches?`+query);
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list branches: ${await extractError(response)}`);
         }
@@ -546,7 +546,7 @@ class Tags {
 
     async list(repoId, prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({prefix, after, amount});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/tags?`+query);
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/tags?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list tags: ${await extractError(response)}`);
         }
@@ -578,8 +578,8 @@ class Tags {
 class Objects {
 
     async list(repoId, ref, tree, after = "", amount = DEFAULT_LISTING_AMOUNT, readUncommitted = true, delimiter = "/") {
-        const query = qs({prefix:tree, amount, after, readUncommitted, delimiter});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?`+query);
+        const query = qs({prefix: tree, amount, after, readUncommitted, delimiter});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
@@ -591,7 +591,7 @@ class Objects {
         data.append('content', fileObject);
         window.data = data;
         const query = qs({path});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects?`+query, {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects?` + query, {
             method: 'POST',
             body: data,
             headers: new Headers({'Accept': 'application/json'})
@@ -604,7 +604,7 @@ class Objects {
 
     async delete(repoId, branchId, path) {
         const query = qs({path});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects?`+query, {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects?` + query, {
             method: 'DELETE',
         });
         if (response.status !== 204) {
@@ -614,18 +614,19 @@ class Objects {
 
     async get(repoId, ref, path) {
         const query = qs({path});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?`+query, {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query, {
             method: 'GET',
         });
         if (response.status !== 200 && response.status !== 206) {
             throw new Error(await extractError(response));
         }
-        
+
         return response.text()
     }
+
     async head(repoId, ref, path) {
         const query = qs({path});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?`+query, {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query, {
             method: 'HEAD',
         });
 
@@ -640,7 +641,7 @@ class Objects {
 
     async getStat(repoId, ref, path) {
         const query = qs({path});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/stat?`+query);
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/stat?` + query);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
@@ -651,7 +652,7 @@ class Objects {
 class Commits {
     async log(repoId, refId, after = "", amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(refId)}/commits?`+query);
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(refId)}/commits?` + query);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
@@ -686,8 +687,11 @@ class Commits {
         return response.json();
     }
 
-    async commit(repoId, branchId, message, metadata ={}, source_metarange="") {
-        const requestURL = queryString.stringifyUrl({url: `/repositories/${repoId}/branches/${branchId}/commits`, query: {source_metarange: source_metarange}});
+    async commit(repoId, branchId, message, metadata = {}, source_metarange = "") {
+        const requestURL = queryString.stringifyUrl({
+            url: `/repositories/${repoId}/branches/${branchId}/commits`,
+            query: {source_metarange: source_metarange}
+        });
         const parsedURL = queryString.exclude(requestURL, (name, value) => value === "", {parseNumbers: true});
         const response = await apiRequest(parsedURL, {
 
@@ -706,7 +710,7 @@ class Refs {
 
     async changes(repoId, branchId, after, prefix, delimiter, amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, prefix, delimiter, amount});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/diff?`+query);
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/diff?` + query);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
@@ -715,14 +719,14 @@ class Refs {
 
     async diff(repoId, leftRef, rightRef, after, prefix = "", delimiter = "", amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount, delimiter, prefix});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(leftRef)}/diff/${encodeURIComponent(rightRef)}?`+query);
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(leftRef)}/diff/${encodeURIComponent(rightRef)}?` + query);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
         return response.json();
     }
 
-    async merge(repoId, sourceBranch, destinationBranch, strategy="") {
+    async merge(repoId, sourceBranch, destinationBranch, strategy = "") {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(sourceBranch)}/merge/${encodeURIComponent(destinationBranch)}`, {
             method: 'POST',
             body: JSON.stringify({strategy})
@@ -746,7 +750,7 @@ class Actions {
 
     async listRuns(repoId, branch = "", commit = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({branch, commit, after, amount});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/actions/runs?`+query);
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/actions/runs?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list actions runs: ${await extractError(response)}`);
         }
@@ -763,7 +767,7 @@ class Actions {
 
     async listRunHooks(repoId, runId, after = "", amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/actions/runs/${encodeURIComponent(runId)}/hooks?`+query);
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/actions/runs/${encodeURIComponent(runId)}/hooks?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list actions run hooks: ${await extractError(response)}`)
         }
@@ -794,8 +798,8 @@ class Retention {
         return response.json();
     }
 
-    async setGCPolicy(repoID,policy) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`,{
+    async setGCPolicy(repoID, policy) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`, {
             method: 'POST',
             body: policy
         });
@@ -806,7 +810,7 @@ class Retention {
     }
 
     async deleteGCPolicy(repoID) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`,{
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`, {
             method: 'DELETE',
         });
         if (response.status !== 204) {
@@ -893,6 +897,7 @@ class Config {
                 throw new Error('Unknown');
         }
     }
+
     async getLakeFSVersion() {
         const response = await apiRequest('/config/version', {
             method: 'GET',
@@ -917,14 +922,22 @@ class BranchProtectionRules {
         }
         return response.json();
     }
+
     async createRule(repoID, pattern) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection`, {method: 'POST', body: JSON.stringify({pattern: pattern})});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection`, {
+            method: 'POST',
+            body: JSON.stringify({pattern: pattern})
+        });
         if (response.status !== 204) {
             throw new Error(`could not create protection rule: ${await extractError(response)}`);
         }
     }
+
     async deleteRule(repoID, pattern) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection`, {method: 'DELETE', body: JSON.stringify({pattern: pattern})});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection`, {
+            method: 'DELETE',
+            body: JSON.stringify({pattern: pattern})
+        });
         if (response.status === 404) {
             throw new NotFoundError('branch protection rule not found')
         }
@@ -936,7 +949,7 @@ class BranchProtectionRules {
 }
 
 class Ranges {
-    async createRange(repoID, fromSourceURI, after, prepend, continuation_token="") {
+    async createRange(repoID, fromSourceURI, after, prepend, continuation_token = "") {
         const response = await apiRequest(`/repositories/${repoID}/branches/ranges`, {
             method: 'POST',
             body: JSON.stringify({fromSourceURI, after, prepend, continuation_token}),
@@ -969,11 +982,26 @@ class Templates {
         }
         const response = await apiRequest(
             `/templates/${encodeURI(templateLocation)}?${urlParams.toString()}`,
-            { method: 'GET' });
+            {method: 'GET'});
         if (!response.ok) {
             throw new Error(await extractError(response));
         }
         return response.text();
+    }
+}
+
+class Statistics {
+    async sendStats(statsEvents) {
+        const request = {
+            "events": statsEvents,
+        }
+        const response = await apiRequest(`/statistics`, {
+            method: 'POST',
+            body: JSON.stringify(request),
+        });
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
     }
 }
 
@@ -992,3 +1020,4 @@ export const branchProtectionRules = new BranchProtectionRules();
 export const ranges = new Ranges();
 export const metaRanges = new MetaRanges();
 export const templates = new Templates();
+export const statistics = new Statistics();
