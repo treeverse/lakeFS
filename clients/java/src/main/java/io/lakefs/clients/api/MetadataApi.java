@@ -60,6 +60,7 @@ public class MetadataApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param location path to the table data (optional)
+     * @param presign  (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -72,7 +73,7 @@ public class MetadataApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call createSymlinkFileCall(String repository, String branch, String location, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call createSymlinkFileCall(String repository, String branch, String location, Boolean presign, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -88,6 +89,10 @@ public class MetadataApi {
 
         if (location != null) {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("location", location));
+        }
+
+        if (presign != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("presign", presign));
         }
 
         final String[] localVarAccepts = {
@@ -109,7 +114,7 @@ public class MetadataApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call createSymlinkFileValidateBeforeCall(String repository, String branch, String location, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call createSymlinkFileValidateBeforeCall(String repository, String branch, String location, Boolean presign, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -122,7 +127,7 @@ public class MetadataApi {
         }
         
 
-        okhttp3.Call localVarCall = createSymlinkFileCall(repository, branch, location, _callback);
+        okhttp3.Call localVarCall = createSymlinkFileCall(repository, branch, location, presign, _callback);
         return localVarCall;
 
     }
@@ -133,6 +138,7 @@ public class MetadataApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param location path to the table data (optional)
+     * @param presign  (optional)
      * @return StorageURI
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -144,8 +150,8 @@ public class MetadataApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public StorageURI createSymlinkFile(String repository, String branch, String location) throws ApiException {
-        ApiResponse<StorageURI> localVarResp = createSymlinkFileWithHttpInfo(repository, branch, location);
+    public StorageURI createSymlinkFile(String repository, String branch, String location, Boolean presign) throws ApiException {
+        ApiResponse<StorageURI> localVarResp = createSymlinkFileWithHttpInfo(repository, branch, location, presign);
         return localVarResp.getData();
     }
 
@@ -155,6 +161,7 @@ public class MetadataApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param location path to the table data (optional)
+     * @param presign  (optional)
      * @return ApiResponse&lt;StorageURI&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -166,8 +173,8 @@ public class MetadataApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<StorageURI> createSymlinkFileWithHttpInfo(String repository, String branch, String location) throws ApiException {
-        okhttp3.Call localVarCall = createSymlinkFileValidateBeforeCall(repository, branch, location, null);
+    public ApiResponse<StorageURI> createSymlinkFileWithHttpInfo(String repository, String branch, String location, Boolean presign) throws ApiException {
+        okhttp3.Call localVarCall = createSymlinkFileValidateBeforeCall(repository, branch, location, presign, null);
         Type localVarReturnType = new TypeToken<StorageURI>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -178,6 +185,7 @@ public class MetadataApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param location path to the table data (optional)
+     * @param presign  (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -190,9 +198,9 @@ public class MetadataApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call createSymlinkFileAsync(String repository, String branch, String location, final ApiCallback<StorageURI> _callback) throws ApiException {
+    public okhttp3.Call createSymlinkFileAsync(String repository, String branch, String location, Boolean presign, final ApiCallback<StorageURI> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = createSymlinkFileValidateBeforeCall(repository, branch, location, _callback);
+        okhttp3.Call localVarCall = createSymlinkFileValidateBeforeCall(repository, branch, location, presign, _callback);
         Type localVarReturnType = new TypeToken<StorageURI>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

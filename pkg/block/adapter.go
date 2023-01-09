@@ -23,6 +23,9 @@ type MultipartUploadCompletion struct {
 // IdentifierType is the type the ObjectPointer Identifier
 type IdentifierType int32
 
+// PreSignMode is the mode to use when generating a pre-signed URL (read/write)
+type PreSignMode int32
+
 const (
 	BlockstoreTypeS3        = "s3"
 	BlockstoreTypeGS        = "gs"
@@ -43,6 +46,11 @@ const (
 	// IdentifierTypeFull indicates that the address is the full address of the object in the object store.
 	// For example: "s3://bucket/foo/bar"
 	IdentifierTypeFull IdentifierType = 2
+)
+
+const (
+	PreSignModeRead PreSignMode = iota
+	PreSignModeWrite
 )
 
 // ObjectPointer is a unique identifier of an object in the object
@@ -128,7 +136,7 @@ type Adapter interface {
 	InventoryGenerator
 	Put(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) error
 	Get(ctx context.Context, obj ObjectPointer, expectedSize int64) (io.ReadCloser, error)
-	GetPreSignedURL(ctx context.Context, obj ObjectPointer) (string, error)
+	GetPreSignedURL(ctx context.Context, obj ObjectPointer, mode PreSignMode) (string, error)
 	Walk(ctx context.Context, walkOpt WalkOpts, walkFn WalkFunc) error
 	Exists(ctx context.Context, obj ObjectPointer) (bool, error)
 	GetRange(ctx context.Context, obj ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error)

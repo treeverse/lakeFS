@@ -56,6 +56,7 @@ class MetadataApi(object):
                     'repository',
                     'branch',
                     'location',
+                    'presign',
                 ],
                 'required': [
                     'repository',
@@ -80,16 +81,20 @@ class MetadataApi(object):
                         (str,),
                     'location':
                         (str,),
+                    'presign':
+                        (bool,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'branch': 'branch',
                     'location': 'location',
+                    'presign': 'presign',
                 },
                 'location_map': {
                     'repository': 'path',
                     'branch': 'path',
                     'location': 'query',
+                    'presign': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -243,6 +248,7 @@ class MetadataApi(object):
 
         Keyword Args:
             location (str): path to the table data. [optional]
+            presign (bool): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

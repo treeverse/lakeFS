@@ -286,6 +286,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
     path = "path_example" # str | relative to the ref
     range = "bytes=0-1023" # str | Byte range to retrieve (optional)
+    presign = True # bool |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -299,7 +300,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # get object content
-        api_response = api_instance.get_object(repository, ref, path, range=range)
+        api_response = api_instance.get_object(repository, ref, path, range=range, presign=presign)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->get_object: %s\n" % e)
@@ -314,6 +315,7 @@ Name | Type | Description  | Notes
  **ref** | **str**| a reference (could be either a branch or a commit ID) |
  **path** | **str**| relative to the ref |
  **range** | **str**| Byte range to retrieve | [optional]
+ **presign** | **bool**|  | [optional]
 
 ### Return type
 
@@ -335,6 +337,7 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | object content |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
 **206** | partial object content |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
+**302** | Redirect to a pre-signed URL for the object |  * Location - redirect to S3 <br>  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **410** | object expired |  -  |
@@ -621,6 +624,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     repository = "repository_example" # str | 
     ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
     user_metadata = True # bool |  (optional) if omitted the server will use the default value of True
+    presign = True # bool |  (optional)
     after = "after_example" # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
     delimiter = "delimiter_example" # str | delimiter used to group common prefixes by (optional)
@@ -638,7 +642,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # list objects under a given prefix
-        api_response = api_instance.list_objects(repository, ref, user_metadata=user_metadata, after=after, amount=amount, delimiter=delimiter, prefix=prefix)
+        api_response = api_instance.list_objects(repository, ref, user_metadata=user_metadata, presign=presign, after=after, amount=amount, delimiter=delimiter, prefix=prefix)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->list_objects: %s\n" % e)
@@ -652,6 +656,7 @@ Name | Type | Description  | Notes
  **repository** | **str**|  |
  **ref** | **str**| a reference (could be either a branch or a commit ID) |
  **user_metadata** | **bool**|  | [optional] if omitted the server will use the default value of True
+ **presign** | **bool**|  | [optional]
  **after** | **str**| return items after this value | [optional]
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
  **delimiter** | **str**| delimiter used to group common prefixes by | [optional]
@@ -860,7 +865,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
     path = "path_example" # str | relative to the branch
     user_metadata = True # bool |  (optional) if omitted the server will use the default value of True
-    presign = True # bool |  (optional) if omitted the server will use the default value of True
+    presign = True # bool |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -889,7 +894,7 @@ Name | Type | Description  | Notes
  **ref** | **str**| a reference (could be either a branch or a commit ID) |
  **path** | **str**| relative to the branch |
  **user_metadata** | **bool**|  | [optional] if omitted the server will use the default value of True
- **presign** | **bool**|  | [optional] if omitted the server will use the default value of True
+ **presign** | **bool**|  | [optional]
 
 ### Return type
 

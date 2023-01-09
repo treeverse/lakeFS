@@ -29,16 +29,27 @@ const (
 	defaultMaxRetryRequests = 0
 	AuthMethodAccessKey     = "access-key"
 	AuthMethodMSI           = "msi"
+
+	defaultPreSignedURLDuration = time.Minute * 15
+
+	preSignedBlobPattern = "https://%s.blob.core.windows.net/%s/%s?%s"
 )
 
 type Adapter struct {
-	pipeline       pipeline.Pipeline
-	configurations configurations
-	credentials    azblob.Credential
+	pipeline                      pipeline.Pipeline
+	configurations                configurations
+	credentials                   azblob.Credential
+	preSignedURLDurationGenerator func() time.Time
 }
 
 type configurations struct {
 	retryReaderOptions azblob.RetryReaderOptions
+}
+
+func WithPreSignedURLDurationGenerator(f func() time.Time) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.preSignedURLDurationGenerator = f
+	}
 }
 
 func NewAdapter(pipeline pipeline.Pipeline, credentials azblob.Credential, opts ...func(a *Adapter)) *Adapter {
@@ -46,6 +57,9 @@ func NewAdapter(pipeline pipeline.Pipeline, credentials azblob.Credential, opts 
 		pipeline:       pipeline,
 		credentials:    credentials,
 		configurations: configurations{retryReaderOptions: azblob.RetryReaderOptions{MaxRetryRequests: defaultMaxRetryRequests}},
+		preSignedURLDurationGenerator: func() time.Time {
+			return time.Now().UTC().Add(defaultPreSignedURLDuration)
+		},
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -200,8 +214,12 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	return a.Download(ctx, obj, 0, azblob.CountToEnd)
 }
 
-func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer) (string, error) {
-	return a.getPreSignedURL(ctx, obj, azblob.BlobSASPermissions{Read: true})
+func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+	permissions := azblob.BlobSASPermissions{Read: true}
+	if mode == block.PreSignModeWrite {
+		permissions = azblob.BlobSASPermissions{Write: true}
+	}
+	return a.getPreSignedURL(ctx, obj, permissions)
 }
 
 func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions azblob.BlobSASPermissions) (string, error) {
@@ -211,7 +229,7 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	}
 	vals := azblob.BlobSASSignatureValues{
 		Protocol:      azblob.SASProtocolHTTPS, // Users MUST use HTTPS (not HTTP)
-		ExpiryTime:    time.Now().UTC().Add(15 * time.Minute),
+		ExpiryTime:    a.preSignedURLDurationGenerator(),
 		ContainerName: qualifiedKey.ContainerName,
 		BlobName:      qualifiedKey.BlobURL,
 		Permissions:   permissions.String(),
@@ -229,7 +247,7 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	// Create the URL of the resource you wish to access and append the SAS query parameters.
 	// Since this is a blob SAS, the URL is to the Azure storage blob.
 	qp := sasQueryParams.Encode()
-	return fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s?%s",
+	return fmt.Sprintf(preSignedBlobPattern,
 		a.credentials, qualifiedKey.ContainerName, qualifiedKey.BlobURL, qp), nil
 }
 

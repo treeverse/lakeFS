@@ -23,6 +23,7 @@ import com.google.gson.stream.JsonWriter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 /**
  * location for placing an object when staging it
@@ -37,6 +38,10 @@ public class StagingLocation {
   public static final String SERIALIZED_NAME_TOKEN = "token";
   @SerializedName(SERIALIZED_NAME_TOKEN)
   private String token;
+
+  public static final String SERIALIZED_NAME_PRESIGNED_URL = "presigned_url";
+  @SerializedName(SERIALIZED_NAME_PRESIGNED_URL)
+  private String presignedUrl;
 
 
   public StagingLocation physicalAddress(String physicalAddress) {
@@ -85,6 +90,29 @@ public class StagingLocation {
   }
 
 
+  public StagingLocation presignedUrl(String presignedUrl) {
+    
+    this.presignedUrl = presignedUrl;
+    return this;
+  }
+
+   /**
+   * if presign&#x3D;true is passed in the request, this field will contain a presigned URL to use when uploading
+   * @return presignedUrl
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "if presign=true is passed in the request, this field will contain a presigned URL to use when uploading")
+
+  public String getPresignedUrl() {
+    return presignedUrl;
+  }
+
+
+  public void setPresignedUrl(String presignedUrl) {
+    this.presignedUrl = presignedUrl;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -95,12 +123,24 @@ public class StagingLocation {
     }
     StagingLocation stagingLocation = (StagingLocation) o;
     return Objects.equals(this.physicalAddress, stagingLocation.physicalAddress) &&
-        Objects.equals(this.token, stagingLocation.token);
+        Objects.equals(this.token, stagingLocation.token) &&
+        Objects.equals(this.presignedUrl, stagingLocation.presignedUrl);
+  }
+
+  private static <T> boolean equalsNullable(JsonNullable<T> a, JsonNullable<T> b) {
+    return a == b || (a != null && b != null && a.isPresent() && b.isPresent() && Objects.deepEquals(a.get(), b.get()));
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(physicalAddress, token);
+    return Objects.hash(physicalAddress, token, presignedUrl);
+  }
+
+  private static <T> int hashCodeNullable(JsonNullable<T> a) {
+    if (a == null) {
+      return 1;
+    }
+    return a.isPresent() ? Arrays.deepHashCode(new Object[]{a.get()}) : 31;
   }
 
   @Override
@@ -109,6 +149,7 @@ public class StagingLocation {
     sb.append("class StagingLocation {\n");
     sb.append("    physicalAddress: ").append(toIndentedString(physicalAddress)).append("\n");
     sb.append("    token: ").append(toIndentedString(token)).append("\n");
+    sb.append("    presignedUrl: ").append(toIndentedString(presignedUrl)).append("\n");
     sb.append("}");
     return sb.toString();
   }

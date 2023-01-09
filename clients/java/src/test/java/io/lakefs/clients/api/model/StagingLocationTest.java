@@ -21,6 +21,7 @@ import com.google.gson.stream.JsonWriter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -54,6 +55,14 @@ public class StagingLocationTest {
     @Test
     public void tokenTest() {
         // TODO: test token
+    }
+
+    /**
+     * Test the property 'presignedUrl'
+     */
+    @Test
+    public void presignedUrlTest() {
+        // TODO: test presignedUrl
     }
 
 }
