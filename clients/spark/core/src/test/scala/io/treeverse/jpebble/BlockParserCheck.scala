@@ -12,6 +12,17 @@ import funspec._
   * https://github.com/typelevel/scalacheck/blob/main/doc/UserGuide.md.
  */
 class BlockParserCheck extends AnyFunSpec with ScalaCheckDrivenPropertyChecks with Matchers {
+  describe("readMagic") {
+    it("fails on any non-magic bytes") {
+      val gen = Gen.containerOf[Seq, Byte](arbByte.arbitrary)
+      forAll(gen) {
+        case (bytes) => if (bytes != BlockParser.footerMagic)
+          a [BadFileFormatException] should be thrownBy {
+            BlockParser.readMagic(bytes.iterator)
+          }
+      }
+    }
+  }
 
   describe("readInt32") {
     val makeLE32 = (x: Int) => Seq(x, x >>> 8, x >>> 16, x >>> 24).map(_.toByte).iterator
