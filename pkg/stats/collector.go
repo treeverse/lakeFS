@@ -26,6 +26,7 @@ const (
 
 type Collector interface {
 	CollectEvent(ev Event)
+	CollectEvents(ev Event, count uint64)
 	CollectMetadata(accountMetadata *Metadata)
 	CollectCommPrefs(email, installationID string, featureUpdates, securityUpdates bool)
 	SetInstallationID(installationID string)
@@ -104,7 +105,7 @@ func (t *TimeTicker) Tick() <-chan time.Time {
 
 type BufferedCollector struct {
 	cache            keyIndex
-	writes           chan Event
+	writes           chan Metric
 	sender           Sender
 	sendTimeout      time.Duration
 	flushTicker      FlushTicker
@@ -127,7 +128,7 @@ type BufferedCollectorOpts func(s *BufferedCollector)
 
 func WithWriteBufferSize(bufferSize int) BufferedCollectorOpts {
 	return func(s *BufferedCollector) {
-		s.writes = make(chan Event, bufferSize)
+		s.writes = make(chan Metric, bufferSize)
 	}
 }
 
@@ -180,7 +181,7 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 	}
 	s := &BufferedCollector{
 		cache:           make(keyIndex),
-		writes:          make(chan Event, collectorEventBufferSize),
+		writes:          make(chan Metric, collectorEventBufferSize),
 		runtimeStats:    map[string]string{},
 		flushTicker:     &TimeTicker{ticker: time.NewTicker(flushDuration)},
 		flushSize:       flushSize,
@@ -218,7 +219,11 @@ func (s *BufferedCollector) getInstallationID() string {
 }
 
 func (s *BufferedCollector) incr(k Event) {
-	s.cache[k]++
+	s.update(Metric{Event: k, Value: 1})
+}
+
+func (s *BufferedCollector) update(k Metric) {
+	s.cache[k.Event] += k.Value
 }
 
 func (s *BufferedCollector) send(metrics []Metric) {
@@ -235,7 +240,7 @@ func (s *BufferedCollector) send(metrics []Metric) {
 	}()
 }
 
-func (s *BufferedCollector) CollectEvent(ev Event) {
+func (s *BufferedCollector) CollectEvents(ev Event, count uint64) {
 	if s.isCtxCancelled() {
 		return
 	}
@@ -248,7 +253,11 @@ func (s *BufferedCollector) CollectEvent(ev Event) {
 	} else {
 		ev = ev.ClearExtended()
 	}
-	s.writes <- ev
+	s.writes <- Metric{Event: ev, Value: count}
+}
+
+func (s *BufferedCollector) CollectEvent(ev Event) {
+	s.CollectEvents(ev, 1)
 }
 
 func (s *BufferedCollector) isCtxCancelled() bool {
@@ -265,7 +274,7 @@ func (s *BufferedCollector) Run(ctx context.Context) {
 			select {
 			case w := <-s.writes:
 				// collect events, and flush if needed by size
-				s.incr(w)
+				s.update(w)
 				if len(s.cache) >= s.flushSize {
 					s.flush()
 				}
@@ -315,7 +324,7 @@ func (s *BufferedCollector) Close() {
 	// drain writes
 	close(s.writes)
 	for w := range s.writes {
-		s.incr(w)
+		s.update(w)
 	}
 	metrics := makeMetrics(s.cache)
 	s.send(metrics)
