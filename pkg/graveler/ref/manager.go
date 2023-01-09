@@ -575,10 +575,11 @@ func (m *Manager) VerifyAddressToken(ctx context.Context, repository *graveler.R
 	if err != nil {
 		return err
 	}
-	return m.deleteAddressToken(ctx, repository, path)
+	return m.deleteAddressToken(ctx, repository, token)
 }
 
-func (m *Manager) deleteAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, path []byte) error {
+func (m *Manager) deleteAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+	path := []byte(graveler.LinkedAddressPath(token))
 	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repository), path)
 }
 
@@ -615,8 +616,12 @@ func (m *Manager) DeleteExpiredAddressTokens(ctx context.Context, repository *gr
 	defer itr.Close()
 	for itr.Next() {
 		token := itr.Value()
-		if m.IsTokenExpired(token) != nil {
-			err := m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repository), []byte(graveler.LinkedAddressPath(token.Address)))
+		expired, err := m.IsTokenExpired(token)
+		if err != nil {
+			return nil
+		}
+		if expired {
+			err := m.deleteAddressToken(ctx, repository, token.Address)
 			if err != nil {
 				return nil
 			}
