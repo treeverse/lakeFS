@@ -94,7 +94,9 @@ func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, i
 		return nil, ErrKeyNotFound
 	}
 	vBytes, _, err := value.Value(nil)
-
+	if err != nil {
+		return nil, fmt.Errorf("extract value from sstable id %s (key %s): %w", id, key, err)
+	}
 	return &committed.Record{
 		Key:   key.UserKey,
 		Value: vBytes,
@@ -132,6 +134,9 @@ func (m *RangeManager) GetValue(ctx context.Context, ns committed.Namespace, id 
 		return nil, ErrKeyNotFound
 	}
 	vBytes, _, err := value.Value(nil)
+	if err != nil {
+		return nil, fmt.Errorf("extract value from sstable id %s (key %s): %w", id, key, err)
+	}
 
 	return &committed.Record{
 		Key:   key.UserKey,

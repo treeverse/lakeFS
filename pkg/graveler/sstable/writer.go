@@ -138,14 +138,14 @@ func (dw *DiskWriter) Close() (*committed.WriteResult, error) {
 	// Prepare metadata properties for Close to write.  The map was already set in the
 	// sstable.Writer constructor and cannot be changed, but we can replace its values
 	// before writing it out.
-	first := dw.first
-	last := dw.last
+	first := string(dw.first)
+	last := string(dw.last)
 	estimatedSize := dw.w.EstimatedSize()
 	count := dw.count
-	dw.SetMetadata(MetadataFirstKey, string(first))
-	dw.SetMetadata(MetadataLastKey, string(last))
-	dw.SetMetadata(MetadataNumRecordsKey, fmt.Sprint(count))
-	dw.SetMetadata(MetadataEstimatedSizeKey, fmt.Sprint(estimatedSize))
+	dw.SetMetadata(MetadataFirstKey, first)
+	dw.SetMetadata(MetadataLastKey, last)
+	dw.SetMetadata(MetadataNumRecordsKey, strconv.Itoa(count))
+	dw.SetMetadata(MetadataEstimatedSizeKey, strconv.FormatUint(estimatedSize, 10))
 
 	if err := dw.w.Close(); err != nil {
 		return nil, fmt.Errorf("sstable close (%s): %w", sstableID, err)
