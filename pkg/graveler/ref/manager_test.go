@@ -1080,13 +1080,13 @@ func TestManager_SetGetAddressToken(t *testing.T) {
 		t.Fatalf("SetAddressToken() err = %s, expected already exists", err)
 	}
 
-	err = r.GetAddressToken(ctx, repository, address)
+	err = r.VerifyAddressToken(ctx, repository, address)
 	testutil.MustDo(t, "get aa token", err)
 
 	// check the token is deleted
-	err = r.GetAddressToken(ctx, repository, address)
+	err = r.VerifyAddressToken(ctx, repository, address)
 	if !errors.Is(err, graveler.ErrAddressTokenNotFound) {
-		t.Fatalf("GetAddressToken() err = %s, expected not found", err)
+		t.Fatalf("VerifyAddressToken() err = %s, expected not found", err)
 	}
 
 	// create again

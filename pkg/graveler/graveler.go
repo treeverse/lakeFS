@@ -532,8 +532,8 @@ type VersionController interface {
 	// or return ErrAddressTokenAlreadyExists if a token already exists.
 	SetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
 
-	// GetAddressToken returns nil if the token is valid (exists and not expired) and deletes it
-	GetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
+	// VerifyAddressToken returns nil if the token is valid (exists and not expired) and deletes it
+	VerifyAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
 
 	// ListAddressTokens lists address tokens on a repository
 	ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error)
@@ -542,7 +542,7 @@ type VersionController interface {
 	DeleteExpiredAddressTokens(ctx context.Context, repository *RepositoryRecord) error
 
 	// IsTokenExpired returns nil if the token is valid and not expired
-	IsTokenExpired(token *LinkAddressData) error
+	IsTokenExpired(token *LinkAddressData) (bool, error)
 }
 
 // Plumbing includes commands for fiddling more directly with graveler implementation
@@ -742,8 +742,8 @@ type RefManager interface {
 	// GCCommitIterator temporary WA to support both DB and KV GC CommitIterator
 	GCCommitIterator(ctx context.Context, repository *RepositoryRecord) (CommitIterator, error)
 
-	// GetAddressToken verifies the given address token
-	GetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
+	// VerifyAddressToken verifies the given address token
+	VerifyAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
 
 	// SetAddressToken creates address token
 	SetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
@@ -755,7 +755,7 @@ type RefManager interface {
 	DeleteExpiredAddressTokens(ctx context.Context, repository *RepositoryRecord) error
 
 	// IsTokenExpired returns nil if the token is valid and not expired
-	IsTokenExpired(token *LinkAddressData) error
+	IsTokenExpired(token *LinkAddressData) (bool, error)
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -2594,8 +2594,8 @@ func (g *Graveler) SetAddressToken(ctx context.Context, repository *RepositoryRe
 	return g.RefManager.SetAddressToken(ctx, repository, token)
 }
 
-func (g *Graveler) GetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error {
-	return g.RefManager.GetAddressToken(ctx, repository, token)
+func (g *Graveler) VerifyAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error {
+	return g.RefManager.VerifyAddressToken(ctx, repository, token)
 }
 
 func (g *Graveler) ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error) {
@@ -2606,7 +2606,7 @@ func (g *Graveler) DeleteExpiredAddressTokens(ctx context.Context, repository *R
 	return g.RefManager.DeleteExpiredAddressTokens(ctx, repository)
 }
 
-func (g *Graveler) IsTokenExpired(token *LinkAddressData) error {
+func (g *Graveler) IsTokenExpired(token *LinkAddressData) (bool, error) {
 	return g.RefManager.IsTokenExpired(token)
 }
 

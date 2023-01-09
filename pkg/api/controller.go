@@ -332,7 +332,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 
 	err = c.Catalog.SetAddressToken(ctx, repository, address)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, err)
+		c.handleAPIError(ctx, w, r, err)
 		return
 	}
 
@@ -387,7 +387,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	// validate token
 	addressTokenCreationTime, err := c.PathProvider.ResolvePathTime(physicalAddress)
 	if err != nil {
-		c.handleAPIError(ctx, w, r, err)
+		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 	addressTokenExpiryTime := addressTokenCreationTime.Add(ref.AddressTokenTime)
@@ -396,7 +396,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	err = c.Catalog.GetAddressToken(ctx, repository, physicalAddress)
+	err = c.Catalog.VerifyAddressToken(ctx, repository, physicalAddress)
 	if err != nil {
 		c.handleAPIError(ctx, w, r, err)
 		return
@@ -1872,11 +1872,9 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, graveler.ErrTooManyTries):
 		cb(w, r, http.StatusLocked, "Too many attempts, try again later")
 
-	case errors.Is(err, graveler.ErrAddressTokenExpired):
-		cb(w, r, http.StatusGone, "address token is expired")
-
-	case errors.Is(err, graveler.ErrAddressTokenNotFound):
-		cb(w, r, http.StatusNotFound, "address token not found")
+	case errors.Is(err, graveler.ErrAddressTokenNotFound),
+		errors.Is(err, graveler.ErrAddressTokenExpired):
+		cb(w, r, http.StatusBadRequest, "bad address token (expired or invalid)")
 
 	case err != nil:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
