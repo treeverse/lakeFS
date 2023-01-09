@@ -594,9 +594,9 @@ func (m *Manager) IsTokenExpired(token *graveler.LinkAddressData) (bool, error) 
 	}
 	expiry := creationTime.Add(AddressTokenTime)
 	if expiry.Before(time.Now()) {
-		return false, graveler.ErrAddressTokenExpired
+		return true, graveler.ErrAddressTokenExpired
 	}
-	return true, nil
+	return false, nil
 }
 
 func (m *Manager) resolveAddressTokenTime(address string) (time.Time, error) {
