@@ -103,7 +103,8 @@ func CopyFromEntry(w http.ResponseWriter, req *http.Request, o *PathOperation, c
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
 		return nil
 	}
-	blob, err := upload.CopyBlob(req.Context(), o.BlockStore, sourceRepo.StorageNamespace, o.Repository.StorageNamespace, sourceEntry.PhysicalAddress, sourceEntry.Checksum, sourceEntry.Size)
+	destAddress := o.PathProvider.NewPath()
+	blob, err := upload.CopyBlob(req.Context(), o.BlockStore, sourceRepo.StorageNamespace, o.Repository.StorageNamespace, sourceEntry.PhysicalAddress, sourceEntry.Checksum, destAddress, sourceEntry.Size)
 	if err != nil {
 		o.Log(req).WithError(err).Error("block adapter could not copy object")
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
