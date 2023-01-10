@@ -329,6 +329,12 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
+	err = c.Catalog.SetLinkAddress(ctx, repository, address)
+	if err != nil {
+		c.handleAPIError(ctx, w, r, err)
+		return
+	}
+
 	response := &StagingLocation{
 		PhysicalAddress: StringPtr(qk.Format()),
 		Token:           StringValue(token),
@@ -376,6 +382,13 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 
 	writeTime := time.Now()
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, StringValue(body.Staging.PhysicalAddress))
+
+	// validate token
+	err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
+	if err != nil {
+		c.handleAPIError(ctx, w, r, err)
+		return
+	}
 
 	// Because CreateEntry tracks staging on a database with atomic operations,
 	// _ignore_ the staging token here: no harm done even if a race was lost
@@ -1846,6 +1859,10 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	case errors.Is(err, graveler.ErrTooManyTries):
 		cb(w, r, http.StatusLocked, "Too many attempts, try again later")
+
+	case errors.Is(err, graveler.ErrAddressTokenNotFound),
+		errors.Is(err, graveler.ErrAddressTokenExpired):
+		cb(w, r, http.StatusBadRequest, "bad address token (expired or invalid)")
 
 	case err != nil:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
