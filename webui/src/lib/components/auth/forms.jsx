@@ -9,6 +9,8 @@ import {SearchIcon} from "@primer/octicons-react";
 import {useAPI} from "../../hooks/api";
 import {Checkbox, DataTable, DebouncedFormControl, Error, Loading} from "../controls";
 
+const isEmptyString = (str) => (!str?.length);
+
 
 export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
                           emptyState = 'No matches', modalTitle = 'Add',
@@ -42,7 +44,7 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
                             onAdd={() => setSelected([...selected, ent.id])}
                             onRemove={() => setSelected(selected.filter(id => id !== ent.id))}
                             name={'selected'}/>,
-                        <strong>{ent.id}</strong>
+                        <strong>{!isEmptyString(ent.email) ? ent.email : ent.id}</strong>
                     ]}/>
 
                 <div className="mt-3">
