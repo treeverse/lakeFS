@@ -414,7 +414,7 @@ jobs:
         id: import_metaclient
         uses: actions/download-artifact@v3
         with:
-          name: metaclient-3x
+          name: metaclient${{ matrix.spark.suffix }}
           path: test/spark/metaclient
 
       - name: GC test
