@@ -291,26 +291,26 @@ func (g *FakeGraveler) GetStagingToken(_ context.Context, _ *graveler.Repository
 	panic("implement me")
 }
 
-func (g *FakeGraveler) SetAddressToken(_ context.Context, _ *graveler.RepositoryRecord, _ string) error {
+func (g *FakeGraveler) SetLinkAddress(_ context.Context, _ *graveler.RepositoryRecord, _ string) error {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) VerifyAddressToken(_ context.Context, _ *graveler.RepositoryRecord, _ string) error {
+func (g *FakeGraveler) VerifyLinkAddress(_ context.Context, _ *graveler.RepositoryRecord, _ string) error {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) ListAddressTokens(_ context.Context, _ *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
+func (g *FakeGraveler) ListLinkAddresses(_ context.Context, _ *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
 	if g.Err != nil {
 		return nil, g.Err
 	}
 	return g.AddressTokenIteratorFactory(), nil
 }
 
-func (g *FakeGraveler) DeleteExpiredAddressTokens(_ context.Context, _ *graveler.RepositoryRecord) error {
+func (g *FakeGraveler) DeleteExpiredLinkAddresses(_ context.Context, _ *graveler.RepositoryRecord) error {
 	return nil
 }
 
-func (g *FakeGraveler) IsTokenExpired(_ *graveler.LinkAddressData) (bool, error) {
+func (g *FakeGraveler) IsLinkAddressExpired(_ *graveler.LinkAddressData) (bool, error) {
 	return false, nil
 }
 

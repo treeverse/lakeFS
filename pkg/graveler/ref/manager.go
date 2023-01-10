@@ -548,7 +548,7 @@ func newCache(cfg CacheConfig) cache.Cache {
 	return cache.NewCache(cfg.Size, cfg.Expiry, cache.NewJitterFn(cfg.Jitter))
 }
 
-func (m *Manager) SetAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+func (m *Manager) SetLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
 	a := &graveler.LinkAddressData{
 		Address: token,
 	}
@@ -562,7 +562,7 @@ func (m *Manager) SetAddressToken(ctx context.Context, repository *graveler.Repo
 	return nil
 }
 
-func (m *Manager) VerifyAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
 	data := graveler.LinkAddressData{}
 	path := []byte(graveler.LinkedAddressPath(token))
 	_, err := m.kvStore.GetMsg(ctx, graveler.RepoPartition(repository), path, &data)
@@ -572,24 +572,24 @@ func (m *Manager) VerifyAddressToken(ctx context.Context, repository *graveler.R
 		}
 		return err
 	}
-	_, err = m.IsTokenExpired(&data)
+	_, err = m.IsLinkAddressExpired(&data)
 	if err != nil {
 		return err
 	}
-	return m.deleteAddressToken(ctx, repository, token)
+	return m.deleteLinkAddress(ctx, repository, token)
 }
 
-func (m *Manager) deleteAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+func (m *Manager) deleteLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
 	path := []byte(graveler.LinkedAddressPath(token))
 	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repository), path)
 }
 
-func (m *Manager) ListAddressTokens(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
+func (m *Manager) ListLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
 	return NewAddressTokenIterator(ctx, m.kvStore, repository)
 }
 
-func (m *Manager) IsTokenExpired(token *graveler.LinkAddressData) (bool, error) {
-	creationTime, err := m.resolveAddressTokenTime(token.Address)
+func (m *Manager) IsLinkAddressExpired(token *graveler.LinkAddressData) (bool, error) {
+	creationTime, err := m.resolveLinkAddressTime(token.Address)
 	if err != nil {
 		return false, err
 	}
@@ -599,7 +599,7 @@ func (m *Manager) IsTokenExpired(token *graveler.LinkAddressData) (bool, error) 
 	return false, nil
 }
 
-func (m *Manager) resolveAddressTokenTime(address string) (time.Time, error) {
+func (m *Manager) resolveLinkAddressTime(address string) (time.Time, error) {
 	_, name := path.Split(address)
 	id, err := xid.FromString(name)
 	if err != nil {
@@ -608,20 +608,20 @@ func (m *Manager) resolveAddressTokenTime(address string) (time.Time, error) {
 	return id.Time(), nil
 }
 
-func (m *Manager) DeleteExpiredAddressTokens(ctx context.Context, repository *graveler.RepositoryRecord) error {
-	itr, err := m.ListAddressTokens(ctx, repository)
+func (m *Manager) DeleteExpiredLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) error {
+	itr, err := m.ListLinkAddresses(ctx, repository)
 	if err != nil {
 		return err
 	}
 	defer itr.Close()
 	for itr.Next() {
 		token := itr.Value()
-		expired, err := m.IsTokenExpired(token)
+		expired, err := m.IsLinkAddressExpired(token)
 		if err != nil {
 			return err
 		}
 		if expired {
-			err := m.deleteAddressToken(ctx, repository, token.Address)
+			err := m.deleteLinkAddress(ctx, repository, token.Address)
 			if err != nil {
 				return err
 			}

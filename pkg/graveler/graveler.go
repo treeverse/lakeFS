@@ -528,21 +528,21 @@ type VersionController interface {
 	// or returns ErrRuleAlreadyExists if there is already a rule for the pattern.
 	CreateBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string, blockedActions []BranchProtectionBlockedAction) error
 
-	// SetAddressToken stores the address token under the repository. The token will be valid for addressTokenTime.
+	// SetLinkAddress stores the address token under the repository. The token will be valid for addressTokenTime.
 	// or return ErrAddressTokenAlreadyExists if a token already exists.
-	SetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
+	SetLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error
 
-	// VerifyAddressToken returns nil if the token is valid (exists and not expired) and deletes it
-	VerifyAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
+	// VerifyLinkAddress returns nil if the token is valid (exists and not expired) and deletes it
+	VerifyLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error
 
-	// ListAddressTokens lists address tokens on a repository
-	ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error)
+	// ListLinkAddresses lists address tokens on a repository
+	ListLinkAddresses(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error)
 
-	// DeleteExpiredAddressTokens deletes expired tokens on a repository
-	DeleteExpiredAddressTokens(ctx context.Context, repository *RepositoryRecord) error
+	// DeleteExpiredLinkAddresses deletes expired tokens on a repository
+	DeleteExpiredLinkAddresses(ctx context.Context, repository *RepositoryRecord) error
 
-	// IsTokenExpired returns nil if the token is valid and not expired
-	IsTokenExpired(token *LinkAddressData) (bool, error)
+	// IsLinkAddressExpired returns nil if the token is valid and not expired
+	IsLinkAddressExpired(token *LinkAddressData) (bool, error)
 }
 
 // Plumbing includes commands for fiddling more directly with graveler implementation
@@ -742,20 +742,20 @@ type RefManager interface {
 	// GCCommitIterator temporary WA to support both DB and KV GC CommitIterator
 	GCCommitIterator(ctx context.Context, repository *RepositoryRecord) (CommitIterator, error)
 
-	// VerifyAddressToken verifies the given address token
-	VerifyAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
+	// VerifyLinkAddress verifies the given address token
+	VerifyLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error
 
-	// SetAddressToken creates address token
-	SetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error
+	// SetLinkAddress creates address token
+	SetLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error
 
-	// ListAddressTokens lists address tokens on a repository
-	ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error)
+	// ListLinkAddresses lists address tokens on a repository
+	ListLinkAddresses(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error)
 
-	// DeleteExpiredAddressTokens deletes expired tokens on a repository
-	DeleteExpiredAddressTokens(ctx context.Context, repository *RepositoryRecord) error
+	// DeleteExpiredLinkAddresses deletes expired tokens on a repository
+	DeleteExpiredLinkAddresses(ctx context.Context, repository *RepositoryRecord) error
 
-	// IsTokenExpired returns nil if the token is valid and not expired
-	IsTokenExpired(token *LinkAddressData) (bool, error)
+	// IsLinkAddressExpired returns nil if the token is valid and not expired
+	IsLinkAddressExpired(token *LinkAddressData) (bool, error)
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -2590,24 +2590,24 @@ func (g *Graveler) DumpTags(ctx context.Context, repository *RepositoryRecord) (
 	)
 }
 
-func (g *Graveler) SetAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error {
-	return g.RefManager.SetAddressToken(ctx, repository, token)
+func (g *Graveler) SetLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error {
+	return g.RefManager.SetLinkAddress(ctx, repository, token)
 }
 
-func (g *Graveler) VerifyAddressToken(ctx context.Context, repository *RepositoryRecord, token string) error {
-	return g.RefManager.VerifyAddressToken(ctx, repository, token)
+func (g *Graveler) VerifyLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error {
+	return g.RefManager.VerifyLinkAddress(ctx, repository, token)
 }
 
-func (g *Graveler) ListAddressTokens(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error) {
-	return g.RefManager.ListAddressTokens(ctx, repository)
+func (g *Graveler) ListLinkAddresses(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error) {
+	return g.RefManager.ListLinkAddresses(ctx, repository)
 }
 
-func (g *Graveler) DeleteExpiredAddressTokens(ctx context.Context, repository *RepositoryRecord) error {
-	return g.RefManager.DeleteExpiredAddressTokens(ctx, repository)
+func (g *Graveler) DeleteExpiredLinkAddresses(ctx context.Context, repository *RepositoryRecord) error {
+	return g.RefManager.DeleteExpiredLinkAddresses(ctx, repository)
 }
 
-func (g *Graveler) IsTokenExpired(token *LinkAddressData) (bool, error) {
-	return g.RefManager.IsTokenExpired(token)
+func (g *Graveler) IsLinkAddressExpired(token *LinkAddressData) (bool, error) {
+	return g.RefManager.IsLinkAddressExpired(token)
 }
 
 func tagsToValueIterator(src TagIterator) ValueIterator {

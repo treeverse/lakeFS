@@ -329,7 +329,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	err = c.Catalog.SetAddressToken(ctx, repository, address)
+	err = c.Catalog.SetLinkAddress(ctx, repository, address)
 	if err != nil {
 		c.handleAPIError(ctx, w, r, err)
 		return
@@ -384,7 +384,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, StringValue(body.Staging.PhysicalAddress))
 
 	// validate token
-	err = c.Catalog.VerifyAddressToken(ctx, repository, physicalAddress)
+	err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
 	if err != nil {
 		c.handleAPIError(ctx, w, r, err)
 		return

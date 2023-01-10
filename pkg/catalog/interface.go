@@ -142,9 +142,9 @@ type Interface interface {
 	DeleteBranchProtectionRule(ctx context.Context, repositoryID string, pattern string) error
 	CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, blockedActions []graveler.BranchProtectionBlockedAction) error
 
-	// SetAddressToken to validate single use limited in time of a given physical address
-	SetAddressToken(ctx context.Context, repository, token string) error
-	VerifyAddressToken(ctx context.Context, repository, token string) error
-	DeleteExpiredAddressTokens(ctx context.Context)
+	// SetLinkAddress to validate single use limited in time of a given physical address
+	SetLinkAddress(ctx context.Context, repository, token string) error
+	VerifyLinkAddress(ctx context.Context, repository, token string) error
+	DeleteExpiredLinkAddresses(ctx context.Context)
 	io.Closer
 }

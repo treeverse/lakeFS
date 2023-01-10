@@ -11,7 +11,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func TestAddressTokenIterator(t *testing.T) {
+func TestLinkAddressIterator(t *testing.T) {
 	r, kvstore := testRefManager(t)
 	addresses := []string{"data/a/a", "data/a/b", "data/a/c", "data/a/d", "data/a/e", "data/a/f", "data/a/g"}
 	ctx := context.Background()
@@ -24,7 +24,7 @@ func TestAddressTokenIterator(t *testing.T) {
 
 	// prepare data
 	for _, b := range addresses {
-		err := r.SetAddressToken(ctx, repository, b)
+		err := r.SetLinkAddress(ctx, repository, b)
 		testutil.Must(t, err)
 	}
 
