@@ -32,7 +32,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
-    const [showDeltaDiffButton, setShowDeltaDiffButton] = useState(false);
+    const [showDeltaDiffButton, setShowDeltaDiffButton] = useState(true);
     const [showComingSoonModal, setShowComingSoonModal] = useState(false);
     const sendDeltaDiffStats = async () => {
         const deltaDiffStatEvents = [
@@ -42,13 +42,12 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                 "count": 1,
             }
         ];
-        await statistics.sendStats(deltaDiffStatEvents);
+        await statistics.postStatsEvents(deltaDiffStatEvents);
     }
 
     const refresh = () => {
         setResultsState({prefix: prefix, results:[], pagination:{}})
         setInternalRefresh(!internalRefresh)
-        setShowDeltaDiffButton(false);
     }
 
     const delimiter = "/"
@@ -136,9 +135,6 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                 <Table borderless size="sm">
                                     <tbody>
                                     {results.map(entry => {
-                                        if(!showDeltaDiffButton && entry.path.includes("_delta_log")) {
-                                            setShowDeltaDiffButton(true)
-                                        }
                                         let leftCommittedRef = reference.id;
                                         let rightCommittedRef = compareReference.id;
                                         if (reference.type === RefTypeBranch) {

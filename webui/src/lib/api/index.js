@@ -991,7 +991,7 @@ class Templates {
 }
 
 class Statistics {
-    async sendStats(statsEvents) {
+    async postStatsEvents(statsEvents) {
         const request = {
             "events": statsEvents,
         }
