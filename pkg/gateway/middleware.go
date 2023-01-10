@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/graveler"
-
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -18,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/operations"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
