@@ -72,9 +72,9 @@ interact with your data on lakeFS.
 
   Once installed, it should look something like this:
 
-
   ![Databricks - Adding the lakeFS client Jar](../assets/img/databricks-install-package.png)
 
+  Alternatively, follow this [step by step Databricks integration tutorial, including lakeFS Hadoop File System, Python client and lakeFS SPARK client](https://lakefs.io/blog/databricks-lakefs-integration-tutorial/).
   </div>
 </div>
 
@@ -197,6 +197,7 @@ spark.hadoop.fs.s3a.impl shaded.databricks.org.apache.hadoop.fs.s3a.S3AFileSyste
 spark.hadoop.fs.lakefs.endpoint https://lakefs.example.com/api/v1
 ```
 
+  Alternatively, follow this [step by step Databricks integration tutorial, including lakeFS Hadoop File System, Python client and lakeFS SPARK client](https://lakefs.io/blog/databricks-lakefs-integration-tutorial/).
   </div>
 </div>
    
