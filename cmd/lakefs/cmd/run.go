@@ -16,6 +16,7 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/fsnotify/fsnotify"
+	"github.com/go-co-op/gocron"
 	"github.com/go-ldap/ldap/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -31,6 +32,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multipart"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
+	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
 	_ "github.com/treeverse/lakefs/pkg/kv/dynamodb"
@@ -189,6 +191,13 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("failed to create catalog")
 		}
 		defer func() { _ = c.Close() }()
+
+		deleteScheduler := getScheduler()
+		err = scheduleExpiredAddressesJob(ctx, deleteScheduler, c)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to initialize delete expired address tokens job")
+		}
+		deleteScheduler.StartAsync()
 
 		templater := templater.NewService(templates.Content, cfg, authService)
 
@@ -393,6 +402,22 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 			}
 		}
 	}
+}
+
+func scheduleExpiredAddressesJob(ctx context.Context, s *gocron.Scheduler, c *catalog.Catalog) error {
+	const deleteExpiredAddressPeriod = 3
+	job, err := s.Every(deleteExpiredAddressPeriod * ref.LinkAddressTime).Do(func() {
+		c.DeleteExpiredAddressTokens(ctx)
+	})
+	if err != nil {
+		return err
+	}
+	job.SingletonMode()
+	return nil
+}
+
+func getScheduler() *gocron.Scheduler {
+	return gocron.NewScheduler(time.UTC)
 }
 
 // checkMetadataPrefix checks for non-migrated repos of issue #2397 (https://github.com/treeverse/lakeFS/issues/2397)

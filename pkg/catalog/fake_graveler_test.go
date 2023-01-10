@@ -306,6 +306,10 @@ func (g *FakeGraveler) ListAddressTokens(_ context.Context, _ *graveler.Reposito
 	return g.AddressTokenIteratorFactory(), nil
 }
 
+func (g *FakeGraveler) DeleteExpiredAddressTokens(_ context.Context, _ *graveler.RepositoryRecord) error {
+	return nil
+}
+
 func (g *FakeGraveler) IsTokenExpired(_ *graveler.LinkAddressData) (bool, error) {
 	return false, nil
 }

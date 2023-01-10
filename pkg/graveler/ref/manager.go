@@ -576,10 +576,11 @@ func (m *Manager) VerifyAddressToken(ctx context.Context, repository *graveler.R
 	if err != nil {
 		return err
 	}
-	return m.deleteAddressToken(ctx, repository, path)
+	return m.deleteAddressToken(ctx, repository, token)
 }
 
-func (m *Manager) deleteAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, path []byte) error {
+func (m *Manager) deleteAddressToken(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+	path := []byte(graveler.LinkedAddressPath(token))
 	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repository), path)
 }
 
@@ -592,9 +593,8 @@ func (m *Manager) IsTokenExpired(token *graveler.LinkAddressData) (bool, error) 
 	if err != nil {
 		return false, err
 	}
-	expiry := creationTime.Add(LinkAddressTime)
-	if expiry.Before(time.Now()) {
-		return true, graveler.ErrAddressTokenExpired
+	if time.Since(creationTime) > LinkAddressTime {
+		return true, nil
 	}
 	return false, nil
 }
@@ -606,4 +606,26 @@ func (m *Manager) resolveAddressTokenTime(address string) (time.Time, error) {
 		return time.Time{}, err
 	}
 	return id.Time(), nil
+}
+
+func (m *Manager) DeleteExpiredAddressTokens(ctx context.Context, repository *graveler.RepositoryRecord) error {
+	itr, err := m.ListAddressTokens(ctx, repository)
+	if err != nil {
+		return err
+	}
+	defer itr.Close()
+	for itr.Next() {
+		token := itr.Value()
+		expired, err := m.IsTokenExpired(token)
+		if err != nil {
+			return err
+		}
+		if expired {
+			err := m.deleteAddressToken(ctx, repository, token.Address)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return itr.Err()
 }

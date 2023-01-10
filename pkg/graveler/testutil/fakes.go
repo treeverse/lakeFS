@@ -432,6 +432,10 @@ func (m *RefsFake) IsTokenExpired(token *graveler.LinkAddressData) (bool, error)
 	return false, nil
 }
 
+func (m *RefsFake) DeleteExpiredAddressTokens(ctx context.Context, repository *graveler.RepositoryRecord) error {
+	return nil
+}
+
 type diffIter struct {
 	current int
 	records []graveler.Diff

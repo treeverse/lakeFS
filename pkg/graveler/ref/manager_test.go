@@ -1098,16 +1098,64 @@ func TestManager_IsTokenExpired(t *testing.T) {
 	r, _ := testRefManager(t)
 
 	expired, err := r.IsTokenExpired(&graveler.LinkAddressData{Address: xid.New().String()})
-	testutil.MustDo(t, "set address token aa", err)
+	testutil.MustDo(t, "is token expired", err)
 	if expired {
 		t.Fatalf("expected token not expired")
 	}
 
 	expired, err = r.IsTokenExpired(&graveler.LinkAddressData{Address: xid.NewWithTime(time.Now().Add(-7 * time.Hour)).String()})
-	if !errors.Is(err, graveler.ErrAddressTokenExpired) {
-		t.Fatalf("SetAddressToken() err = %s, expected already exists", err)
-	}
+	testutil.MustDo(t, "is token expired", err)
 	if !expired {
 		t.Fatalf("expected token expired")
+	}
+
+	expired, err = r.IsTokenExpired(&graveler.LinkAddressData{Address: "aaa"})
+	if !errors.Is(err, xid.ErrInvalidID) {
+		t.Fatalf("err = %s, expected invalid xid", err)
+	}
+}
+
+func TestManager_DeleteExpiredAddressTokens(t *testing.T) {
+	r, _ := testRefManager(t)
+	ctx := context.Background()
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
+
+	a := "data/aaa/" + xid.NewWithTime(time.Now()).String()
+	b := "data/bbb/" + xid.NewWithTime(time.Now().Add(-10*time.Hour)).String() // expired
+	c := "data/ccc/" + xid.NewWithTime(time.Now().Add(-7*time.Hour)).String()  // expired
+
+	tokens := []string{a, b, c}
+	expectedTokens := []string{a}
+
+	for _, a := range tokens {
+		testutil.Must(t, r.SetAddressToken(context.Background(), repository, a))
+	}
+
+	err = r.DeleteExpiredAddressTokens(context.Background(), repository)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	iter, err := r.ListAddressTokens(context.Background(), repository)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer iter.Close()
+
+	var ts []string
+	for iter.Next() {
+		t := iter.Value()
+		ts = append(ts, t.Address)
+	}
+	if iter.Err() != nil {
+		t.Fatalf("unexpected error: %v", iter.Err())
+	}
+	if diff := deep.Equal(ts, expectedTokens); diff != nil {
+		t.Errorf("Found diff in tokens: %s", ts)
 	}
 }
