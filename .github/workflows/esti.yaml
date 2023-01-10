@@ -403,7 +403,7 @@ jobs:
         id: import_metaclient
         uses: actions/download-artifact@v3
         with:
-          name: metaclient-3x
+          name: metaclient-hadoop3
           path: test/spark/metaclient
 
       - name: GC test
