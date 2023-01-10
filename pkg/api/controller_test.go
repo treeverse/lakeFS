@@ -1554,6 +1554,21 @@ func TestController_UploadObject(t *testing.T) {
 		}
 	})
 
+	t.Run("disable overwrite with if-none-match (no entry)", func(t *testing.T) {
+		ifNoneMatch := api.StringPtr("*")
+		contentType, buf := writeMultipart("content", "baz4", "something else!")
+		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &api.UploadObjectParams{
+			Path:        "foo/baz4",
+			IfNoneMatch: ifNoneMatch,
+		}, contentType, buf)
+		if err != nil {
+			t.Fatalf("UploadObject err=%s, expected no error", err)
+		}
+		if resp.JSON201 == nil {
+			t.Fatalf("UploadObject status code=%d, expected 201", resp.StatusCode())
+		}
+	})
+
 	t.Run("upload object missing 'content' key", func(t *testing.T) {
 		// write
 		contentType, buf := writeMultipart("this-is-not-content", "bar", "hello world!")
