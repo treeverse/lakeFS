@@ -12,15 +12,15 @@ func Open(l *lua.State) {
 		lua.NewLibrary(l, md5Library)
 		return 1
 	}
-	lua.Require(l, "encoding/md5", md5Open, false)
+	lua.Require(l, "crypto/md5", md5Open, false)
 	l.Pop(1)
 }
 
 var md5Library = []lua.RegistryFunction{
-	{Name: "sum", Function: sum},
+	{Name: "digest", Function: digest},
 }
 
-func sum(l *lua.State) int {
+func digest(l *lua.State) int {
 	data := lua.CheckString(l, 1)
 	sum := md5.Sum([]byte(data)) //#nosec
 	l.PushString(fmt.Sprintf("%x", sum))

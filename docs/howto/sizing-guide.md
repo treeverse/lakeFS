@@ -88,9 +88,13 @@ that would require about 3 GiB of RAM.
 PostgreSQL CPU cores help scale concurrent requests. 1 CPU core for every 5,000 requests/second is ideal.
 </div>
 <div markdown="1" id="dynamodb-ram">
-lakeFS will create a table on the DB, with the default on-demand setting. No need to specify how much read and write throughput you expect your application to perform, as DynamoDB instantly accommodates your workloads as they ramp up or down.
+lakeFS will create a DynamoDB table for you, defaults to on-demand capacity setting. No need to specify how much read and write throughput you expect your application to perform, as DynamoDB instantly accommodates your workloads as they ramp up or down.
 
 You can customize the table settings to provisioned capacity which allows you to manage and optimize your costs by allocating read/write capacity in advance (see [Benchmarks](#benchmarks))
+
+**Notes**:
+* Using DynamoDB on-demand capacity might generate unwanted costs if the table is abused, if you'd like to cap your costs, make sure to change the table to use provisioned capacity instead.  
+* lakeFS doesn't manage the DynamoDB's table lifecycle, we've included the table creation in order to help evaluating the system with minimal effort, any change to the table beyond the table creation - will need to be handled manually or by 3rd party tools.
 
 **RAM**  
 Managed by AWS.

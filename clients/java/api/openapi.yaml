@@ -4719,6 +4719,41 @@ paths:
       tags:
       - templates
       x-accepts: application/json
+  /statistics:
+    post:
+      operationId: postStatsEvents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatsEventsList'
+        required: true
+      responses:
+        "204":
+          description: reported successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: bad request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: post stats events, this endpoint is meant for internal use only
+      tags:
+      - statistics
+      x-contentType: application/json
+      x-accepts: application/json
 components:
   parameters:
     PaginationPrefix:
@@ -6284,6 +6319,44 @@ components:
         id:
           description: The id of the created metarange
           type: string
+      type: object
+    StatsEvent:
+      example:
+        name: name
+        count: 0
+        class: class
+      properties:
+        class:
+          description: stats event class (e.g. "s3_gateway", "openapi_request", "experimental-feature",
+            "ui-event")
+          type: string
+        name:
+          description: stats event name (e.g. "put_object", "create_repository", "<experimental-feature-name>")
+          type: string
+        count:
+          description: number of events of the class and name
+          type: integer
+      required:
+      - class
+      - count
+      - name
+      type: object
+    StatsEventsList:
+      example:
+        events:
+        - name: name
+          count: 0
+          class: class
+        - name: name
+          count: 0
+          class: class
+      properties:
+        events:
+          items:
+            $ref: '#/components/schemas/StatsEvent'
+          type: array
+      required:
+      - events
       type: object
     inline_object:
       properties:

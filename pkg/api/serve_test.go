@@ -51,16 +51,20 @@ type dependencies struct {
 
 // memCollector in-memory collector stores events and metadata sent
 type memCollector struct {
-	Events         []*stats.Event
+	Metrics        []*stats.Metric
 	Metadata       []*stats.Metadata
 	InstallationID string
 	mu             sync.Mutex
 }
 
-func (m *memCollector) CollectEvent(ev stats.Event) {
+func (m *memCollector) CollectEvents(ev stats.Event, count uint64) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.Events = append(m.Events, &ev)
+	m.Metrics = append(m.Metrics, &stats.Metric{Event: ev, Value: count})
+}
+
+func (m *memCollector) CollectEvent(ev stats.Event) {
+	m.CollectEvents(ev, 1)
 }
 
 func (m *memCollector) CollectMetadata(metadata *stats.Metadata) {

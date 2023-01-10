@@ -27,5 +27,6 @@ from lakefs_client.api.refs_api import RefsApi
 from lakefs_client.api.repositories_api import RepositoriesApi
 from lakefs_client.api.retention_api import RetentionApi
 from lakefs_client.api.staging_api import StagingApi
+from lakefs_client.api.statistics_api import StatisticsApi
 from lakefs_client.api.tags_api import TagsApi
 from lakefs_client.api.templates_api import TemplatesApi

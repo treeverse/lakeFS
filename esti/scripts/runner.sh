@@ -46,7 +46,7 @@ wait_for_lakefs_ready() {
 
 run_tests() {
   echo "Run Tests (logs at $TEST_LOG)"
-  go test -v ../../esti --args --system-tests --use-local-credentials "$@" | tee "$TEST_LOG"
+  go test -v ../../esti --args --system-tests --use-local-credentials --skip=".*GC" "$@" | tee "$TEST_LOG"
   return "${PIPESTATUS[0]}"
 }
 

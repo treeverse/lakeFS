@@ -19,8 +19,6 @@ func TestMain(m *testing.M) {
 
 	testParams = &kvparams.DynamoDB{
 		TableName:          testutil.UniqueKVTableName(),
-		ReadCapacityUnits:  100,
-		WriteCapacityUnits: 100,
 		ScanLimit:          10,
 		Endpoint:           databaseURI,
 		AwsRegion:          "us-east-1",

@@ -52,8 +52,6 @@ This reference uses `.` to denote the nesting of values.
     + `database.postgres.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused `(valid units: ns|us|ms|s|m|h)` 
   + `database.dynamodb` - Configuration section when using `database.type="dynamodb"`
     + `database.dynamodb.table_name` `(string : "kvstore")` - Table used to store the data
-    + `database.dynamodb.read_capacity_units` `(int : 1000)` - Read capacity units, measured in requests per second 
-    + `database.dynamodb.write_capacity_units` `(int : 1000)` - Write capacity units, measured in requests per second
     + `database.dynamodb.scan_limit` `(int : )` - Maximal number of items per page during scan operation
     
       **Note:** Refer to the following [AWS documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html#Query.Limit) for further information
@@ -126,6 +124,12 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.skip_verify_certificate_test_only` `(boolean : false)` - Skip certificate verification while connecting to the storage endpoint. Should be used only for testing.
 * `blockstore.s3.server_side_encryption` `(string : )` - Server side encryption format used (Example on AWS using SSE-KMS while passing "aws:kms")
 * `blockstore.s3.server_side_encryption_kms_key_id` `(string : )` - Server side encryption KMS key ID
+* `graveler.reposiory_cache.size` `(int : 1000)` - How many items to store in the repository cache.
+* `graveler.reposiory_cache.ttl` `(time duration : "5s")` - How long to store an item in the repository cache.
+* `graveler.reposiory_cache.jitter` `(time duration : "2s")` - A random amount of time between 0 and this value is added to each item's TTL.
+* `graveler.commit_cache.size` `(int : 50000)` - How many items to store in the commit cache.
+* `graveler.commit_cache.ttl` `(time duration : "10m")` - How long to store an item in the commit cache.
+* `graveler.commit_cache.jitter` `(time duration : "2s")` - A random amount of time between 0 and this value is added to each item's TTL.
 * `committed.local_cache` - an object describing the local (on-disk) cache of metadata from
   permanent storage:
   + `committed.local_cache.size_bytes` (`int` : `1073741824`) - bytes for local cache to use on disk.  The cache may use more storage for short periods of time.

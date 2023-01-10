@@ -3565,3 +3565,216 @@ func TestController_ClientDisconnect(t *testing.T) {
 		t.Fatalf("Metric for client request closed: %d, expected: %d", clientRequestClosedCount, expectedCount)
 	}
 }
+
+func TestController_PostStatsEvents(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	type key struct {
+		class string
+		name  string
+	}
+
+	tests := []struct {
+		name                string
+		events              []api.StatsEvent
+		expectedEventCounts map[key]int
+		expectedStatusCode  int
+	}{
+		{
+			name: "single_event_count_1",
+			events: []api.StatsEvent{
+				{
+					Class: "single_event_count_1",
+					Name:  "name",
+					Count: 1,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "single_event_count_1", name: "name"}: 1,
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name: "single_event_count_gt_1",
+			events: []api.StatsEvent{
+				{
+					Class: "single_event_count_gt_1",
+					Name:  "name",
+					Count: 3,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "single_event_count_gt_1", name: "name"}: 3,
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name: "multiple_events",
+			events: []api.StatsEvent{
+				{
+					Class: "class_multiple_events_ev_1",
+					Name:  "name1",
+					Count: 1,
+				},
+				{
+					Class: "class_multiple_events_ev_2",
+					Name:  "name2",
+					Count: 1,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "class_multiple_events_ev_1", name: "name1"}: 1,
+				{class: "class_multiple_events_ev_2", name: "name2"}: 1,
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name: "multiple_events_same_class",
+			events: []api.StatsEvent{
+				{
+					Class: "class_multiple_events_same_class",
+					Name:  "name1",
+					Count: 1,
+				},
+				{
+					Class: "class_multiple_events_same_class",
+					Name:  "name2",
+					Count: 1,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "class_multiple_events_same_class", name: "name1"}: 1,
+				{class: "class_multiple_events_same_class", name: "name2"}: 1,
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name: "multiple_events_same_name",
+			events: []api.StatsEvent{
+				{
+					Class: "multiple_events_same_name_1",
+					Name:  "same_name",
+					Count: 1,
+				},
+				{
+					Class: "multiple_events_same_name_2",
+					Name:  "same_name",
+					Count: 1,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "multiple_events_same_name_1", name: "same_name"}: 1,
+				{class: "multiple_events_same_name_2", name: "same_name"}: 1,
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name: "multiple_events_same_class_same_name",
+			events: []api.StatsEvent{
+				{
+					Class: "multiple_events_same_class_same_name",
+					Name:  "same_name",
+					Count: 1,
+				},
+				{
+					Class: "multiple_events_same_class_same_name",
+					Name:  "same_name",
+					Count: 1,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "multiple_events_same_class_same_name", name: "same_name"}: 2,
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name: "empty_usage_class",
+			events: []api.StatsEvent{
+				{
+					Class: "",
+					Name:  "name",
+					Count: 1,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "", name: "name"}: 0,
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "empty_usage_name",
+			events: []api.StatsEvent{
+				{
+					Class: "class_empty_usage_name",
+					Name:  "",
+					Count: 1,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "class_empty_usage_name", name: ""}: 0,
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "zero_usage_count",
+			events: []api.StatsEvent{
+				{
+					Class: "class_zero_usage_count",
+					Name:  "name",
+					Count: 0,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "class_zero_usage_count", name: "name"}: 0,
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name: "negative_usage_count",
+			events: []api.StatsEvent{
+				{
+					Class: "class_negative_usage_count",
+					Name:  "name",
+					Count: -23,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "class_negative_usage_count", name: "name"}: 0,
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := clt.PostStatsEventsWithResponse(ctx, api.PostStatsEventsJSONRequestBody{
+				Events: tt.events,
+			})
+			if err != nil {
+				t.Fatalf("PostStatsEvents failed: %s", err)
+			}
+
+			if resp.StatusCode() != tt.expectedStatusCode {
+				t.Fatalf("PostStatsEvents status code: %d, expected: %d", resp.StatusCode(), tt.expectedStatusCode)
+			}
+
+			for _, sentEv := range tt.events {
+				var collectedEventsToCount = map[key]int{}
+				var k = key{class: sentEv.Class, name: sentEv.Name}
+				_, isMapContainKey := collectedEventsToCount[k]
+				if isMapContainKey {
+					continue
+				}
+				for _, collectedMetric := range deps.collector.Metrics {
+					if collectedMetric.Event.Class == sentEv.Class && collectedMetric.Event.Name == sentEv.Name {
+						collectedEventsToCount[k] += int(collectedMetric.Value)
+					}
+				}
+				if collectedEventsToCount[k] != tt.expectedEventCounts[k] {
+					t.Fatalf("PostStatsEvents events for class %s and name: %s, count: %d, expected: %d", sentEv.Class, sentEv.Name, collectedEventsToCount[k], tt.expectedEventCounts[k])
+				}
+			}
+		})
+	}
+}
