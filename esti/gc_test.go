@@ -19,9 +19,9 @@ import (
 type GCMode int
 
 const (
-	fullGCMode    GCMode = 0
-	markOnlyMode  GCMode = 1
-	sweepOnlyMode GCMode = 2
+	fullGCMode GCMode = iota
+	markOnlyMode
+	sweepOnlyMode
 )
 
 const (
@@ -172,7 +172,7 @@ func TestCommittedGC(t *testing.T) {
 	}
 	ctx := context.Background()
 	for _, tst := range testCases {
-		tst := tst
+		tst := tst // re-define tst to be in the scope of the closure. See: https://gist.github.com/posener/92a55c4cd441fc5e5e85f27bca008721
 		t.Run(fmt.Sprintf("Test case %s", tst.id), func(t *testing.T) {
 			fileExistingRef := prepareForGC(t, ctx, &tst, blockstoreType)
 			t.Parallel()
@@ -270,7 +270,6 @@ func getSparkSubmitArgs() []string {
 		"--master", "spark://localhost:7077",
 		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp",
 		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1",
-		"--conf", "spark.hadoop.fs.s3.impl=org.apache.hadoop.fs.s3a.S3AFileSystem",
 		"--conf", "spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ",
 		"--conf", "spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 		"--class", "io.treeverse.clients.GarbageCollector",
