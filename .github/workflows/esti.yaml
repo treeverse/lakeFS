@@ -884,8 +884,8 @@ jobs:
       - name: Package Metaclient
         working-directory: clients/spark
         run: |
-          sbt 'set core3 / assembly / test := {}' lakefs-spark-client-301/assembly
-          sbt 'set core312 / assembly / test := {}' lakefs-spark-client-312-hadoop3/assembly
+          sbt 'set core3 / assembly / test := {}' lakefs-spark-client-301/assembly &
+          sbt 'set core312 / assembly / test := {}' lakefs-spark-client-312-hadoop3/assembly && fg
 
       - name: Prepare Metaclient location for export
         # upload-artifact cannot take a working-directory option (that only
