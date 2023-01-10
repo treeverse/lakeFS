@@ -2293,6 +2293,71 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 	})
 }
 
+func TestController_LinkPhysicalAddressHandler(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "bucket/prefix"), "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("get and link physical address", func(t *testing.T) {
+		linkResp, err := clt.GetPhysicalAddressWithResponse(ctx, "repo1", "main", &api.GetPhysicalAddressParams{Path: "foo/bar2"})
+		verifyResponseOK(t, linkResp, err)
+		if linkResp.JSON200 == nil {
+			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
+		}
+		const expectedSizeBytes = 38
+		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, "repo1", "main", &api.LinkPhysicalAddressParams{
+			Path: "foo/bar2",
+		}, api.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: api.StagingLocation{
+				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+				Token:           linkResp.JSON200.Token,
+			},
+		})
+		verifyResponseOK(t, resp, err)
+	})
+
+	t.Run("link physical address twice", func(t *testing.T) {
+		linkResp, err := clt.GetPhysicalAddressWithResponse(ctx, "repo1", "main", &api.GetPhysicalAddressParams{Path: "foo/bar2"})
+		verifyResponseOK(t, linkResp, err)
+		if linkResp.JSON200 == nil {
+			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
+		}
+		const expectedSizeBytes = 38
+		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, "repo1", "main", &api.LinkPhysicalAddressParams{
+			Path: "foo/bar2",
+		}, api.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: api.StagingLocation{
+				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+				Token:           linkResp.JSON200.Token,
+			},
+		})
+		verifyResponseOK(t, resp, err)
+
+		resp, err = clt.LinkPhysicalAddressWithResponse(ctx, "repo1", "main", &api.LinkPhysicalAddressParams{
+			Path: "foo/bar2",
+		}, api.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: api.StagingLocation{
+				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+				Token:           linkResp.JSON200.Token,
+			},
+		})
+		testutil.Must(t, err)
+		if resp.HTTPResponse.StatusCode != http.StatusNotFound {
+			t.Fatalf("expected error linking the same physical address twice")
+		}
+	})
+}
+
 func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()

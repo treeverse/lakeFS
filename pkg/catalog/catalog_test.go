@@ -748,11 +748,11 @@ func verifyData(t *testing.T, ctx context.Context, numBranches, numRecords int, 
 		return nil
 	})
 
+	require.NoError(t, err)
 	sort.Strings(allRecords)
 	if diff := deep.Equal(allRecords, expectedRecords); diff != nil {
 		t.Errorf("Found diff in expected records: %s", diff)
 	}
 
-	require.NoError(t, err)
 	require.Equal(t, numBranches*numRecords, totalCount)
 }

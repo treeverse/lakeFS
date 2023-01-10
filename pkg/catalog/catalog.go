@@ -1933,6 +1933,48 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}, nil
 }
 
+func (c *Catalog) SetLinkAddress(ctx context.Context, repository, token string) error {
+	repo, err := c.getRepository(ctx, repository)
+	if err != nil {
+		return err
+	}
+	return c.Store.SetLinkAddress(ctx, repo, token)
+}
+
+func (c *Catalog) VerifyLinkAddress(ctx context.Context, repository, token string) error {
+	repo, err := c.getRepository(ctx, repository)
+	if err != nil {
+		return err
+	}
+	return c.Store.VerifyLinkAddress(ctx, repo, token)
+}
+
+func (c *Catalog) DeleteExpiredLinkAddresses(ctx context.Context) {
+	it, err := c.Store.ListRepositories(ctx)
+	if err != nil {
+		c.log.WithError(err).Warn("Failed to list repositories during delete expired addresses")
+		return
+	}
+	defer it.Close()
+
+	var repos []*graveler.RepositoryRecord
+	for it.Next() {
+		record := it.Value()
+		repos = append(repos, record)
+	}
+	if err := it.Err(); err != nil {
+		c.log.WithError(err).Warn("Failed to iterate over repositories during delete expired addresses")
+		return
+	}
+
+	for _, repo := range repos {
+		err := c.Store.DeleteExpiredLinkAddresses(ctx, repo)
+		if err != nil {
+			c.log.WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired address tokens failed")
+		}
+	}
+}
+
 func (c *Catalog) Close() error {
 	var errs error
 	for _, manager := range c.managers {

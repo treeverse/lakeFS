@@ -527,6 +527,22 @@ type VersionController interface {
 	// CreateBranchProtectionRule creates a rule for the given name pattern,
 	// or returns ErrRuleAlreadyExists if there is already a rule for the pattern.
 	CreateBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string, blockedActions []BranchProtectionBlockedAction) error
+
+	// SetLinkAddress stores the address token under the repository. The token will be valid for addressTokenTime.
+	// or return ErrAddressTokenAlreadyExists if a token already exists.
+	SetLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error
+
+	// VerifyLinkAddress returns nil if the token is valid (exists and not expired) and deletes it
+	VerifyLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error
+
+	// ListLinkAddresses lists address tokens on a repository
+	ListLinkAddresses(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error)
+
+	// DeleteExpiredLinkAddresses deletes expired tokens on a repository
+	DeleteExpiredLinkAddresses(ctx context.Context, repository *RepositoryRecord) error
+
+	// IsLinkAddressExpired returns nil if the token is valid and not expired
+	IsLinkAddressExpired(token *LinkAddressData) (bool, error)
 }
 
 // Plumbing includes commands for fiddling more directly with graveler implementation
@@ -630,6 +646,14 @@ type CommitIterator interface {
 	Close()
 }
 
+type AddressTokenIterator interface {
+	Next() bool
+	SeekGE(address string)
+	Value() *LinkAddressData
+	Err() error
+	Close()
+}
+
 // These are the more complex internal components that compose the functionality of the Graveler
 
 // RefManager handles references: branches, commits, probably tags in the future
@@ -717,6 +741,21 @@ type RefManager interface {
 	// GCCommitIterator TODO (niro): Remove when DB implementation is deleted
 	// GCCommitIterator temporary WA to support both DB and KV GC CommitIterator
 	GCCommitIterator(ctx context.Context, repository *RepositoryRecord) (CommitIterator, error)
+
+	// VerifyLinkAddress verifies the given address token
+	VerifyLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error
+
+	// SetLinkAddress creates address token
+	SetLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error
+
+	// ListLinkAddresses lists address tokens on a repository
+	ListLinkAddresses(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error)
+
+	// DeleteExpiredLinkAddresses deletes expired tokens on a repository
+	DeleteExpiredLinkAddresses(ctx context.Context, repository *RepositoryRecord) error
+
+	// IsLinkAddressExpired returns nil if the token is valid and not expired
+	IsLinkAddressExpired(token *LinkAddressData) (bool, error)
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -2549,6 +2588,26 @@ func (g *Graveler) DumpTags(ctx context.Context, repository *RepositoryRecord) (
 			EntitySchemaDefinitionKey: schema,
 		},
 	)
+}
+
+func (g *Graveler) SetLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error {
+	return g.RefManager.SetLinkAddress(ctx, repository, token)
+}
+
+func (g *Graveler) VerifyLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error {
+	return g.RefManager.VerifyLinkAddress(ctx, repository, token)
+}
+
+func (g *Graveler) ListLinkAddresses(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error) {
+	return g.RefManager.ListLinkAddresses(ctx, repository)
+}
+
+func (g *Graveler) DeleteExpiredLinkAddresses(ctx context.Context, repository *RepositoryRecord) error {
+	return g.RefManager.DeleteExpiredLinkAddresses(ctx, repository)
+}
+
+func (g *Graveler) IsLinkAddressExpired(token *LinkAddressData) (bool, error) {
+	return g.RefManager.IsLinkAddressExpired(token)
 }
 
 func tagsToValueIterator(src TagIterator) ValueIterator {

@@ -1,9 +1,12 @@
 package upload
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/rs/xid"
 )
 
 func TestPathPartitionProvider(t *testing.T) {
@@ -103,4 +106,43 @@ func testValidUploadPath(t *testing.T, prefix, p string) []string {
 		t.Fatalf("Expected %d separators: %s", expectedParts, p)
 	}
 	return parts
+}
+
+func TestResolvePathTime(t *testing.T) {
+	const (
+		size     = 5
+		interval = 24 * time.Hour
+		prefix   = "by_size"
+	)
+	tm := time.Now()
+	tellTime := func() time.Time { return tm }
+	provider := NewPathPartitionProvider(
+		WithPathProviderPrefix(prefix),
+		WithPathProviderSize(size),
+		WithPathProviderInterval(interval),
+		WithPathProviderTellTime(tellTime),
+	)
+
+	t.Run("sanity", func(t *testing.T) {
+		time := time.Now()
+		id := xid.NewWithTime(time).String()
+
+		idTime, err := provider.ResolvePathTime(id)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+
+		if time.Equal(idTime) {
+			t.Errorf("time doesn't match: '%s' '%s'", idTime, time)
+		}
+	})
+
+	t.Run("string non xid", func(t *testing.T) {
+		id := "test"
+
+		_, err := provider.ResolvePathTime(id)
+		if !errors.Is(err, xid.ErrInvalidID) {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
 }
