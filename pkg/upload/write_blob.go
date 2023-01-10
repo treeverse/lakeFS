@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"io"
 
-	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 )
 
@@ -36,22 +35,19 @@ func WriteBlob(ctx context.Context, adapter block.Adapter, bucketName, address s
 }
 
 // CopyBlob copies file from sourceAddress to a generated UUID in destinationAddress
-func CopyBlob(ctx context.Context, adapter block.Adapter, sourceBucketName string, destinationBucketName string, sourceAddress string, checksum string, size int64) (*Blob, error) {
-	uid := uuid.New()
-	destinationAddress := hex.EncodeToString(uid[:])
-
+func CopyBlob(ctx context.Context, adapter block.Adapter, sourceBucketName, destinationBucketName, sourceAddress, checksum, destAddress string, size int64) (*Blob, error) {
 	err := adapter.Copy(ctx, block.ObjectPointer{
 		StorageNamespace: sourceBucketName,
 		Identifier:       sourceAddress,
 	}, block.ObjectPointer{
 		StorageNamespace: destinationBucketName,
-		Identifier:       destinationAddress,
+		Identifier:       destAddress,
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &Blob{
-		PhysicalAddress: destinationAddress,
+		PhysicalAddress: destAddress,
 		RelativePath:    true,
 		Checksum:        checksum,
 		Size:            size,
