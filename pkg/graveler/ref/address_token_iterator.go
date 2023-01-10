@@ -44,12 +44,12 @@ func (i *AddressTokenIterator) Next() bool {
 		i.value = nil
 		return false
 	}
-	e := i.it.Entry()
-	if e == nil {
+	entry := i.it.Entry()
+	if entry == nil {
 		i.err = graveler.ErrReadingFromStore
 		return false
 	}
-	token, ok := e.Value.(*graveler.LinkAddressData)
+	token, ok := entry.Value.(*graveler.LinkAddressData)
 	if !ok {
 		i.err = graveler.ErrReadingFromStore
 		return false

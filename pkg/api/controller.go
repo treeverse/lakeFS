@@ -34,7 +34,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -385,17 +384,6 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, StringValue(body.Staging.PhysicalAddress))
 
 	// validate token
-	addressTokenCreationTime, err := c.PathProvider.ResolvePathTime(physicalAddress)
-	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, err)
-		return
-	}
-	addressTokenExpiryTime := addressTokenCreationTime.Add(ref.AddressTokenTime)
-	if addressTokenExpiryTime.Before(time.Now()) {
-		c.handleAPIError(ctx, w, r, graveler.ErrAddressTokenExpired)
-		return
-	}
-
 	err = c.Catalog.VerifyAddressToken(ctx, repository, physicalAddress)
 	if err != nil {
 		c.handleAPIError(ctx, w, r, err)
