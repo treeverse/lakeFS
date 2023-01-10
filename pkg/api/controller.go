@@ -1828,6 +1828,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
 		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
+		errors.Is(err, catalog.ErrInvalidValue),
+		errors.Is(err, catalog.ErrPathRequiredValue),
 		errors.Is(err, graveler.ErrNoChanges),
 		errors.Is(err, permissions.ErrInvalidServiceName),
 		errors.Is(err, permissions.ErrInvalidAction),
@@ -2304,6 +2306,80 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
+	response := ObjectStats{
+		Checksum:        entry.Checksum,
+		Mtime:           entry.CreationDate.Unix(),
+		Path:            entry.Path,
+		PathType:        entryTypeObject,
+		PhysicalAddress: qk.Format(),
+		SizeBytes:       Int64Ptr(entry.Size),
+		ContentType:     &entry.ContentType,
+	}
+	writeResponse(w, r, http.StatusCreated, response)
+}
+
+func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body CopyObjectJSONRequestBody, repository string, branch string) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadActionsAction,
+					Resource: permissions.ObjectArn(repository, body.Source),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.WriteObjectAction,
+					Resource: permissions.ObjectArn(repository, body.Destination),
+				},
+			},
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "copy_object", r, repository, branch, "")
+
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// TODO (niro): Naive copy object flow - real implementation still missing
+	src, err := c.Catalog.GetEntry(ctx, repository, branch, body.Source, catalog.GetEntryParams{})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	destAddress := c.PathProvider.NewPath()
+	blob, err := upload.CopyBlob(ctx, c.BlockAdapter, repo.StorageNamespace, repo.StorageNamespace, src.PhysicalAddress, src.Checksum, destAddress, src.Size)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	writeTime := time.Now()
+	entryBuilder := catalog.NewDBEntryBuilder().
+		CommonLevel(false).
+		Path(body.Destination).
+		PhysicalAddress(blob.PhysicalAddress).
+		AddressType(catalog.AddressTypeRelative).
+		CreationDate(writeTime).
+		Size(blob.Size).
+		Checksum(blob.Checksum).
+		ContentType(src.ContentType)
+	entry := entryBuilder.Build()
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress, block.IdentifierTypeRelative)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	// TODO: end
+
 	response := ObjectStats{
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
