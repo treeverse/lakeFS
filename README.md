@@ -18,7 +18,7 @@
 </p>
 
 
-## What is lakeFS
+## lakeFS is a data version control - git for data
 
 lakeFS is an open-source tool that transforms your object storage into a Git-like repository. It enables you to manage your data lake the way you manage your code.
 
@@ -32,23 +32,37 @@ For more information, see the [official lakeFS documentation](https://docs.lakef
 
 ## Capabilities
 
-### In Development
+### ETL Testing with Isolated Dev/Test Environment
 
-* **Experiment** - try new tools, upgrade versions, and evaluate code changes in isolation. You can get an isolated snapshot to run and compare experiments by creating a new branch of the data, while others are not exposed.
-* **Debug** - checkout specific commits in a repository’s commit history to materialize consistent, historical versions of your data. 
-* **Collaborate** - leverage isolated branches managed by metadata (not copies of files) to work in parallel.
+When working with a data lake, it’s useful to have replicas of your production environment. These replicas allow you to test these ETLs and understand changes to your data without impacting the consumers of the production data.
 
-### During Deployment
+Running ETL and transformation jobs directly in production without proper ETL Testing is a guaranteed way to have data issues flow into dashboards, ML models, and other consumers sooner or later. The most common approach to avoid making changes directly in production is to create and maintain multiple data environments and perform ETL testing on them. Dev environment to develop the data pipelines and test environment where pipeline changes are tested before pushing it to production
 
-* **Version Control** - deploy data safely with CI/CD workflows borrowed from software engineering best practices. Ingest new data onto an isolated branch, perform data validations, then add to production through a merge operation.
-* **Test** - define pre-merge and pre-commit hooks to run tests that enforce schema and validate properties of the data to catch issues before they reach production.
+### Reproducibility
 
-### In Production
+Data changes frequently. This makes the task of keeping track of its exact state over time difficult. Oftentimes, people maintain only one state of their data––its current state.
 
-* **Roll Back** - recover from errors by instantly reverting data to a former, consistent snapshot of the data lake. Choose any commit in a repository’s commit history to revert in one atomic action.
-* **Troubleshoot** - investigate production errors by starting with a snapshot of the inputs to the failed process. 
-* **Cross-collection Consistency** - provide consumers multiple synchronized collections of data in one atomic, revertable action. 
+This has a negative impact on the work, as it becomes hard to:
+* Debug a data issue.
+* Validate machine learning training accuracy (re-running a model over different data gives different results).
+Comply with data audits.
 
+In comparison, lakeFS exposes a Git-like interface to data that allows keeping track of more than just the current state of data. This makes reproducing its state at any point in time straightforward.
+
+### CI/CD for Data
+
+Data pipelines feed processed data from data lakes to downstream consumers like business dashboards and machine learning models. As more and more organizations rely on data to enable business critical decisions, data reliability and trust are of paramount concern. Thus, it’s important to ensure that production data adheres to the data governance policies of businesses. These data governance requirements can be as simple as a file format validation, schema check, or an exhaustive PII(Personally Identifiable Information) data removal from all of organization’s data.
+
+Thus, to ensure the quality and reliability at each stage of the data lifecycle, data quality gates need to be implemented. That is, we need to run Continuous Integration(CI) tests on the data, and only if data governance requirements are met can the data can be promoted to production for business use.
+
+Everytime there is an update to production data, the best practice would be to run CI tests and then promote(deploy) the data to production.
+
+### Rollback
+A rollback operation is used to to fix critical data errors immediately.
+
+What is a critical data error? Think of a situation where erroneous or misformatted data causes a signficant issue with an important service or function. In such situations, the first thing to do is stop the bleeding.
+
+Rolling back returns data to a state in the past, before the error was present. You might not be showing all the latest data after a rollback, but at least you aren’t showing incorrect data or raising errors.
 
 ## Getting Started
 
@@ -85,6 +99,7 @@ Stay up to date and get lakeFS support via:
 - Share your lakeFS experience and get support on [our Slack](https://go.lakefs.io/JoinSlack).
 - Follow us and join the conversation on [Twitter](https://twitter.com/lakeFS).
 - Learn from video tutorials on [our YouTube channel](https://lakefs.io/youtube).
+- Read more on data versioning and other data lake best practices in [our blog](https://lakefs.io/blog/).
 - Feel free to [contact us](https://lakefs.io/contact-us/) about anything else.
 
 ## More information
