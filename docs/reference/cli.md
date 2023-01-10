@@ -39,7 +39,7 @@ When setting up a new installation and creating initial credentials (see [Quick 
 will provide a link to download a preconfigured configuration file for you.
 
 `lakectl` configuration items can each be controlled by an environment variable. The variable name will have a prefix of
-*LAKECTL_*, followed by the name of the configuration, replacing every '.' with a '_'. Example: `LAKECTL_SERVER_ENDPOINT_URL` 
+*LAKECTL_*, followed by the name of the configuration, replacing every '.' with a '_'. Example: `LAKECTL_SERVER_ENDPOINT_URL`
 controls `server.endpoint_url`.
 ### lakectl
 
@@ -1778,20 +1778,16 @@ lakectl diff <ref uri> [ref uri] [flags]
 {:.no_toc}
 
 ```
-
 	lakectl diff lakefs://example-repo/example-branch
 	Show uncommitted changes in example-branch.
-
 	lakectl diff lakefs://example-repo/main lakefs://example-repo/dev
 	This shows the differences between master and dev starting at the last common commit.
 	This is similar to the three-dot (...) syntax in git.
 	Uncommitted changes are not shown.
-
 	lakectl diff --two-way lakefs://example-repo/main lakefs://example-repo/dev
 	Show changes between the tips of the main and dev branches.
 	This is similar to the two-dot (..) syntax in git.
 	Uncommitted changes are not shown.
-
 	lakectl diff --two-way lakefs://example-repo/main lakefs://example-repo/dev$
 	Show changes between the tip of the main and the dev branch, including uncommitted changes on dev.
 ```
@@ -2853,3 +2849,5 @@ lakectl tag show <tag uri> [flags]
 ```
 
 
+
+Footer
