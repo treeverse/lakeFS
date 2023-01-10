@@ -1,11 +1,13 @@
 package esti
 
 import (
+	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
+	"io"
 	"os"
-	"path/filepath"
+	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,12 +16,16 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 )
 
+type GCMode int
+
 const (
-	fullGCMode          = 0
-	markOnlyMode        = 1
-	sweepOnlyMode       = 2
+	fullGCMode    GCMode = 0
+	markOnlyMode  GCMode = 1
+	sweepOnlyMode GCMode = 2
+)
+
+const (
 	committedGCRepoName = "gc"
-	gcFindingsFilename  = "gc-findings.json"
 )
 
 var (
@@ -34,8 +40,7 @@ type testCase struct {
 	fileDeleted  bool
 	description  string
 	directUpload bool
-	testMode     string
-	markId       string
+	testMode     GCMode
 }
 
 type branchProperty struct {
@@ -45,12 +50,116 @@ type branchProperty struct {
 
 var testCases = []testCase{
 	{
-		id:           "1",
-		policy:       api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{}, DefaultRetentionDays: 1},
-		branches:     []branchProperty{{name: "a1", deleteCommitDaysAgo: 2}, {name: "b1", deleteCommitDaysAgo: 2}},
+		id:     "1",
+		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{}, DefaultRetentionDays: 1},
+		branches: []branchProperty{
+			{name: "a1", deleteCommitDaysAgo: 2}, {name: "b1", deleteCommitDaysAgo: 2},
+		},
 		fileDeleted:  true,
 		description:  "The file is deleted according to the default retention policy",
 		directUpload: false,
+	},
+	{
+		id:     "2",
+		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{{BranchId: "a2", RetentionDays: 1}, {BranchId: "b2", RetentionDays: 3}}, DefaultRetentionDays: 5},
+		branches: []branchProperty{
+			{name: "a2", deleteCommitDaysAgo: 4}, {name: "b2", deleteCommitDaysAgo: 4},
+		},
+		fileDeleted:  true,
+		description:  "The file is deleted according to branches' retention policies",
+		directUpload: false,
+	},
+	{
+		id:     "3",
+		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{{BranchId: "a3", RetentionDays: 1}, {BranchId: "b3", RetentionDays: 3}}, DefaultRetentionDays: 5},
+		branches: []branchProperty{
+			{name: "a3", deleteCommitDaysAgo: 4}, {name: "b3", deleteCommitDaysAgo: 2},
+		},
+		fileDeleted:  false,
+		description:  "The file is not deleted because of the retention policy of the second branch",
+		directUpload: false,
+	},
+	{
+		id:     "4",
+		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{}, DefaultRetentionDays: 5},
+		branches: []branchProperty{
+			{name: "a4", deleteCommitDaysAgo: 4}, {name: "b4", deleteCommitDaysAgo: 2},
+		},
+		fileDeleted:  false,
+		description:  "The file isn't deleted according to default retention policy",
+		directUpload: false,
+	},
+	{
+		id:     "5",
+		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{{BranchId: "a5", RetentionDays: 1}, {BranchId: "b5", RetentionDays: 3}}, DefaultRetentionDays: 5},
+		branches: []branchProperty{
+			{name: "a5", deleteCommitDaysAgo: 1},
+		},
+		fileDeleted:  false,
+		description:  "The file is not deleted as it still exists in the second branch",
+		directUpload: false,
+	},
+	{
+		id:     "6",
+		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{{BranchId: "a6", RetentionDays: 1}}, DefaultRetentionDays: 5},
+		branches: []branchProperty{
+			{name: "a6", deleteCommitDaysAgo: 1}, {name: "b6", deleteCommitDaysAgo: 4},
+		},
+		fileDeleted:  false,
+		description:  "The file is not deleted because default retention time keeps it for the second branch",
+		directUpload: false,
+	},
+	{
+		id:     "7",
+		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{{BranchId: "a7", RetentionDays: 1}}, DefaultRetentionDays: 5},
+		branches: []branchProperty{
+			{name: "a7", deleteCommitDaysAgo: 1}, {name: "b7", deleteCommitDaysAgo: 5},
+		},
+		fileDeleted:  true,
+		description:  "The file is deleted as the retention policy for the branch permits the deletion from the branch, and the default retention policy permits deletion for the second branch",
+		directUpload: false,
+	},
+	{
+		id:     "8",
+		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{{BranchId: "a8", RetentionDays: 3}}, DefaultRetentionDays: 1},
+		branches: []branchProperty{
+			{name: "a8", deleteCommitDaysAgo: 2}, {name: "b8", deleteCommitDaysAgo: -1},
+		},
+		fileDeleted:  false,
+		description:  "The file (direct upload) is not deleted as the branch retention policy overrules the default retention policy",
+		directUpload: true,
+	},
+	{
+		id:     "9",
+		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{}, DefaultRetentionDays: 1},
+		branches: []branchProperty{
+			{name: "a9", deleteCommitDaysAgo: -1}, {name: "b9", deleteCommitDaysAgo: -1},
+		},
+		fileDeleted:  true,
+		description:  "The file (direct upload) is deleted because it's in a dangling commit and the default retention policy has passed",
+		directUpload: true,
+	},
+	{
+		id:     "10",
+		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{}, DefaultRetentionDays: 1},
+		branches: []branchProperty{
+			{name: "a10", deleteCommitDaysAgo: -1}, {name: "b10", deleteCommitDaysAgo: -1},
+		},
+		fileDeleted:  false,
+		description:  "The file (direct upload) is only marked for deletion (not actually deleted)",
+		directUpload: true,
+		testMode:     markOnlyMode,
+	},
+	{
+		id:     "11",
+		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{}, DefaultRetentionDays: 1},
+		branches: []branchProperty{
+			{name: "a11", deleteCommitDaysAgo: -1}, {name: "b11", deleteCommitDaysAgo: -1},
+		},
+		fileDeleted:  true,
+		description:  "The file (direct upload) is swept after it's first marked",
+		directUpload: true,
+		testMode:     sweepOnlyMode,
 	},
 }
 
@@ -61,45 +170,32 @@ func TestCommittedGC(t *testing.T) {
 	if blockstoreType != block.BlockstoreTypeS3 {
 		t.Skip("Running on S3 only")
 	}
-
-	step := viper.GetViper().GetString("gc_step")
-	switch step {
-	case "pre":
-		t.Run("pre", testPreCommittedGC)
-	case "post":
-		t.Run("post", testPostCommittedGC)
-	default:
-		t.Skip("No known value (pre/post) for gc_step")
-	}
-}
-
-func testPreCommittedGC(t *testing.T) {
 	ctx := context.Background()
-	blockstoreType := viper.GetViper().GetString("blockstore_type")
-	fileRefPerTestCase := make(map[string]string)
-
-	for _, testCase := range testCases {
-		t.Run(fmt.Sprintf("Test case %s", testCase.id), func(t *testing.T) {
-			fileExistingRef := prepareForGC(t, ctx, testCase, blockstoreType)
+	for _, tst := range testCases {
+		tst := tst
+		t.Run(fmt.Sprintf("Test case %s", tst.id), func(t *testing.T) {
+			fileExistingRef := prepareForGC(t, ctx, &tst, blockstoreType)
+			t.Parallel()
 			t.Logf("fileExistingRef %s", fileExistingRef)
-			fileRefPerTestCase[testCase.id] = fileExistingRef
+			repo := committedGCRepoName + tst.id
+			if tst.testMode == sweepOnlyMode || tst.testMode == markOnlyMode {
+				runGC(t, repo, "--conf", "spark.hadoop.lakefs.gc.do_sweep=false",
+					"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker%s", tst.id))
+			}
+			if tst.testMode == sweepOnlyMode {
+				runGC(t, repo, "--conf", "spark.hadoop.lakefs.gc.do_mark=false",
+					"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker%s", tst.id))
+			}
+			if tst.testMode == fullGCMode {
+				runGC(t, repo)
+			}
+			validateGCJob(t, ctx, &tst, fileExistingRef)
 		})
 	}
 
-	// write findings into a file
-	findings, err := json.MarshalIndent(fileRefPerTestCase, "", "  ")
-	if err != nil {
-		t.Fatalf("failed to marshal findings: %s", err)
-	}
-	t.Logf("File Ref Per Test Case: %s", findings)
-	findingsPath := filepath.Join(os.TempDir(), gcFindingsFilename)
-	err = os.WriteFile(findingsPath, findings, 0o666)
-	if err != nil {
-		t.Fatalf("Failed to write findings file '%s': %s", findingsPath, err)
-	}
 }
 
-func prepareForGC(t *testing.T, ctx context.Context, testCase testCase, blockstoreType string) string {
+func prepareForGC(t *testing.T, ctx context.Context, testCase *testCase, blockstoreType string) string {
 	repo := createRepositoryByName(ctx, t, committedGCRepoName+testCase.id)
 
 	// upload 3 files not to be deleted and commit
@@ -169,17 +265,49 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase testCase, blocksto
 	return commitId
 }
 
-func getGCMode(testCase testCase) int {
-	if testCase.testMode == "mark" {
-		return markOnlyMode
-	} else if testCase.testMode == "sweep" {
-		return sweepOnlyMode
-	} else {
-		return fullGCMode
+func getSparkSubmitArgs() []string {
+	return []string{
+		"--master", "spark://localhost:7077",
+		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp",
+		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1",
+		"--conf", "spark.hadoop.fs.s3.impl=org.apache.hadoop.fs.s3a.S3AFileSystem",
+		"--conf", "spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ",
+		"--conf", "spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+		"--class", "io.treeverse.clients.GarbageCollector",
+		"--packages", "org.apache.hadoop:hadoop-aws:3.2.4",
 	}
 }
 
-func validateGCJob(t *testing.T, ctx context.Context, testCase testCase, existingRef string) {
+func getDockerArgs(workingDirectory string) []string {
+	return []string{"run", "--network", "host", "--add-host", "lakefs:127.0.0.1",
+		"-v", fmt.Sprintf("%s/ivy:/opt/bitnami/spark/.ivy2", workingDirectory),
+		"-v", fmt.Sprintf("%s:/opt/metaclient/client.jar", metaclientJarPath),
+		"--rm",
+		"-e", "AWS_ACCESS_KEY_ID",
+		"-e", "AWS_SECRET_ACCESS_KEY",
+	}
+}
+
+func runGC(t *testing.T, repo string, extraSparkArgs ...string) {
+	workingDirectory, err := os.Getwd()
+	if err != nil {
+		t.Fatal("Getting working directory: ", err)
+	}
+	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
+	dockerArgs := getDockerArgs(workingDirectory)
+	dockerArgs = append(dockerArgs, "docker.io/bitnami/spark:3.2", "spark-submit")
+	sparkSubmitArgs := getSparkSubmitArgs()
+	sparkSubmitArgs = append(sparkSubmitArgs, extraSparkArgs...)
+	args := append(dockerArgs, sparkSubmitArgs...)
+	args = append(args, "/opt/metaclient/client.jar", repo, "us-east-1")
+	cmd := exec.Command("docker", args...)
+	err = runCommand(fmt.Sprintf("gc-%s", repo), cmd)
+	if err != nil {
+		t.Fatal("Running GC: ", err)
+	}
+}
+
+func validateGCJob(t *testing.T, ctx context.Context, testCase *testCase, existingRef string) {
 	repo := committedGCRepoName + testCase.id
 
 	res, _ := client.GetObjectWithResponse(ctx, repo, existingRef, &api.GetObjectParams{Path: "file" + testCase.id})
@@ -199,25 +327,40 @@ func validateGCJob(t *testing.T, ctx context.Context, testCase testCase, existin
 	}
 }
 
-func testPostCommittedGC(t *testing.T) {
-	ctx := context.Background()
-
-	findingPath := filepath.Join(os.TempDir(), gcFindingsFilename)
-	bytes, err := os.ReadFile(findingPath)
+// runCommand runs the given command. It redirects the output of the command:
+// 1. stdout is redirected to the logger.
+// 2. stderr is simply printed out.
+func runCommand(cmdName string, cmd *exec.Cmd) error {
+	handlePipe := func(pipe io.ReadCloser, log func(format string, args ...interface{})) {
+		reader := bufio.NewReader(pipe)
+		go func() {
+			defer func() {
+				_ = pipe.Close()
+			}()
+			for {
+				str, err := reader.ReadString('\n')
+				if err != nil {
+					break
+				}
+				log(strings.TrimSuffix(str, "\n"))
+			}
+		}()
+	}
+	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		t.Fatalf("Failed to read '%s': %s", findingPath, err)
+		return fmt.Errorf("failed to get stdout from command: %w", err)
 	}
-	fileRefPerTestCase := make(map[string]string)
-
-	err = json.Unmarshal(bytes, &fileRefPerTestCase)
+	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
-		t.Fatalf("Failed to unmarshal findings '%s': %s", findingPath, err)
+		return fmt.Errorf("failed to get stderr from command: %w", err)
 	}
-
-	for _, testCase := range testCases {
-		t.Run(fmt.Sprintf("Test case %s", testCase.id), func(t *testing.T) {
-			existingRef := fileRefPerTestCase[testCase.id]
-			validateGCJob(t, ctx, testCase, existingRef)
-		})
+	handlePipe(stdoutPipe, logger.WithField("source", cmdName).Infof)
+	handlePipe(stderrPipe, func(format string, args ...interface{}) {
+		println(format, args)
+	})
+	err = cmd.Start()
+	if err != nil {
+		return err
 	}
+	return cmd.Wait()
 }
