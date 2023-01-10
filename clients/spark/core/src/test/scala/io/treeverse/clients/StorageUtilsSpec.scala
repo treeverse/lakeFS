@@ -7,7 +7,7 @@ import com.amazonaws.auth.{
 }
 import com.amazonaws.services.s3.model.Region
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
-import com.amazonaws.thirdparty.apache.http.HttpStatus
+import org.apache.http.HttpStatus
 import com.amazonaws.{ClientConfiguration, HttpMethod, Protocol, SdkClientException}
 import okhttp3.HttpUrl
 import okhttp3.mockwebserver.{MockResponse, MockWebServer, RecordedRequest}

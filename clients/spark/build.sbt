@@ -80,7 +80,7 @@ def generateExamplesProject(buildType: BuildType) =
       scalacOptions += "-Ywarn-unused-import",
       libraryDependencies ++= Seq(
         "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
-        "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194"
+        "com.amazonaws" % "aws-java-sdk-s3" % "1.12.194"
       ),
       assembly / mainClass := Some("io.treeverse.examples.List"),
       target := file(s"target/examples-${buildType.name}/"),
@@ -161,9 +161,9 @@ def getLibraryDependenciesByHadoopFlavour(hadoopFlavour: String) : Seq[ModuleID]
     // hadoop-aws provides AWS SDK at version >= 1.7.4.  So declare this
     // version, but ask to use whatever is provided so we do not
     // override what it selects.
-    Seq("com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194")
+    Seq("com.amazonaws" % "aws-java-sdk-s3" % "1.12.194")
   } else {
-    Seq("com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194" % "provided")
+    Seq("com.amazonaws" % "aws-java-sdk-s3" % "1.12.194" % "provided")
   }
 }
 
