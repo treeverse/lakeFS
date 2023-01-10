@@ -1591,7 +1591,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		verifyResponseOK(t, delResp, err)
 
 		_, err = deps.catalog.GetBranchReference(ctx, "my-new-repo", "main2")
-		if !errors.Is(err, catalog.ErrNotFound) {
+		if !errors.Is(err, graveler.ErrNotFound) {
 			t.Fatalf("expected branch to be gone, instead got error: %s", err)
 		}
 	})
@@ -3695,8 +3695,8 @@ func TestController_PostStatsEvents(t *testing.T) {
 			}
 
 			for _, sentEv := range tt.events {
-				var collectedEventsToCount = map[key]int{}
-				var k = key{class: sentEv.Class, name: sentEv.Name}
+				collectedEventsToCount := map[key]int{}
+				k := key{class: sentEv.Class, name: sentEv.Name}
 				_, isMapContainKey := collectedEventsToCount[k]
 				if isMapContainKey {
 					continue

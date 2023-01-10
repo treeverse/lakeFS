@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/graveler"
+
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -159,7 +161,7 @@ func EnrichWithRepositoryOrFallback(c catalog.Interface, authService auth.Gatewa
 			return
 		}
 		repo, err := c.GetRepository(ctx, repoID)
-		if errors.Is(err, catalog.ErrNotFound) {
+		if errors.Is(err, graveler.ErrNotFound) {
 			authResp, authErr := authService.Authorize(ctx, &auth.AuthorizationRequest{
 				Username: username,
 				RequiredPermissions: permissions.Node{
