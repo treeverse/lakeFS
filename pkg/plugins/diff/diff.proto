@@ -1,0 +1,39 @@
+/*
+Run from lakeFS root:
+    protoc --proto_path=pkg/plugins/diff --go_out=pkg/plugins/diff --go_opt=paths=source_relative \
+        --go-grpc_out=pkg/plugins/diff --go-grpc_opt=paths=source_relative diff.proto
+ */
+syntax = "proto3";
+package diff;
+option go_package = "github.com/treeverse/lakefs/plugins/diff";
+
+message DiffRequest {
+  TablePaths paths = 1;
+  GatewayConfig gateway_config = 2;
+}
+
+message TablePaths {
+  string left_table_path = 1;
+  string right_table_path = 2;
+  optional string base_table_path = 3;
+}
+
+message GatewayConfig {
+  string key = 1;
+  string secret = 2;
+  string endpoint = 3;
+}
+
+message DiffResponse {
+  message Diff {
+    string version = 1;
+    int64 timestamp = 2;
+    string description = 3;
+    map<string, string> content = 4;
+  }
+  repeated Diff diffs = 1;
+}
+
+service Differ {
+  rpc Diff(DiffRequest) returns (DiffResponse);
+}
