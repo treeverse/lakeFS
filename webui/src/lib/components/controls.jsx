@@ -406,3 +406,20 @@ export const ExitConfirmationDialog = ({dialogAlert, dialogDescription, onExit, 
         </Dialog>
     )
 };
+
+
+export const ExperimentalOverlayTooltip = ({children, show = true, placement="auto"}) => {
+    const experimentalTooltip = () => (
+        <Tooltip id="button-tooltip" >
+            Experimental
+        </Tooltip>
+    );
+    return show ? (
+        <OverlayTrigger
+            placement={placement}
+            overlay={experimentalTooltip()}
+        >
+            {children}
+        </OverlayTrigger>
+    ) : <></>
+}

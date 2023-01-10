@@ -176,7 +176,7 @@ jobs:
             echo "Image doesn't exist"
             docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
           fi
-       
+
   login-to-amazon-ecr:
     runs-on: ubuntu-latest
     steps:
@@ -326,8 +326,8 @@ jobs:
 
   committed-gc-test:
     name: Test committed gc
-    needs: [ gen-code, deploy-image, login-to-amazon-ecr ]
-    runs-on: ubuntu-20.04
+    needs: [ gen-code, deploy-image, login-to-amazon-ecr, build-spark3-metadata-client ]
+    runs-on: ubuntu-latest-16-cores
 
     services:
       lakefs:
@@ -347,12 +347,16 @@ jobs:
 
       spark:
         image: docker.io/bitnami/spark:3.2
+        options: --name spark-master
         env:
           SPARK_MODE: master
           SPARK_RPC_AUTHENTICATION_ENABLED: no
           SPARK_RPC_ENCRYPTION_ENABLED: no
           SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
           SPARK_SSL_ENABLED: no
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
         ports:
           - '8080:8080'
           - '7077:7077'
@@ -368,7 +372,9 @@ jobs:
           SPARK_RPC_ENCRYPTION_ENABLED: no
           SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
           SPARK_SSL_ENABLED: no
-
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
@@ -378,16 +384,6 @@ jobs:
         with:
           go-version: 1.19.2
         id: go
-
-      - uses: actions/setup-java@v3
-        with:
-          distribution: 'adopt-hotspot'
-          java-version: '8'
-          cache: 'sbt'
-
-      - name: Build gc spark job assembly
-        working-directory: clients/spark
-        run: sbt 'project lakefs-spark-client-301; set test in assembly := {}' assembly
 
       - name: Generate uniquifying value
         id: unique
@@ -403,51 +399,23 @@ jobs:
         shell: bash
         run: tar -xf /tmp/generated.tar.gz
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
+      - name: Import Metaclient
+        id: import_metaclient
+        uses: actions/download-artifact@v3
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: us-east-1
+          name: metaclient-3x
+          path: test/spark/metaclient
 
-      - name: GC pre test
-        run: go test -v ./esti -system-tests -use-local-credentials -run=TestCommittedGC
+      - name: GC test
+        run: go test -timeout 30m -v ./esti -system-tests -use-local-credentials -run=TestCommittedGC -metaclient-jar=$(pwd)/test/spark/metaclient/spark-assembly-hadoop3.jar
         env:
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/gc-tests/${{ steps.unique.outputs.value }}
-          ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           ESTI_VERSION: ${{ steps.version.outputs.tag }}
           ESTI_SETUP_LAKEFS: true
-          ESTI_GC_STEP: pre
-
-      - name: Run GC
-        working-directory: clients/spark
-        run: >
-          cd target; CLIENT_JAR=$(ls core-301/scala-2.12/lakefs-spark-client-301-assembly-*.jar); cd ..; echo $CLIENT_JAR;
-          docker run --network host --add-host lakefs:127.0.0.1 -v $(pwd)/target:/local -v $(pwd)/ivy:/opt/bitnami/spark/.ivy2 --rm docker.io/bitnami/spark:3.2 spark-submit
-          --master spark://localhost:7077
-          --conf spark.driver.extraJavaOptions="-Divy.cache.dir=/tmp -Divy.home=/tmp"
-          --conf spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1
-          --conf spark.hadoop.fs.s3.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
-          --conf spark.hadoop.fs.s3a.access.key=${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          --conf spark.hadoop.fs.s3a.secret.key=${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          --conf spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ
-          --conf spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-          --class io.treeverse.clients.GarbageCollector
-          --packages org.apache.hadoop:hadoop-aws:2.7.7
-          /local/${CLIENT_JAR}
-          gc1 us-east-1
-
-      - name: GC post test
-        run: go test -v ./esti -system-tests -use-local-credentials -run=TestCommittedGC
-        env:
-          ESTI_BLOCKSTORE_TYPE: s3
-          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/gc-tests/${{ steps.unique.outputs.value }}
-          ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          ESTI_VERSION: ${{ steps.version.outputs.tag }}
-          ESTI_SETUP_LAKEFS: false
-          ESTI_GC_STEP: post
 
   deploy-rclone-export-image:
     name: Build and push rclone export Docker image
@@ -868,6 +836,15 @@ jobs:
     name: Build metadata client for Spark 3.x
     runs-on: ubuntu-20.04
     needs: check-secrets
+    strategy:
+      matrix:
+        spark:
+          - project-variable: core3
+            project-suffix: 301
+            artifact-suffix: ""
+          - project-variable: core312
+            project-suffix: 312-hadoop3
+            artifact-suffix: "-hadoop3"
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
@@ -884,8 +861,7 @@ jobs:
       - name: Package Metaclient
         working-directory: clients/spark
         run: |
-          sbt 'set core3 / assembly / test := {}' lakefs-spark-client-301/assembly
-          sbt 'set core312 / assembly / test := {}' lakefs-spark-client-312-hadoop3/assembly
+          sbt 'set ${{ matrix.spark.project-variable }} / assembly / test := {}' lakefs-spark-client-${{ matrix.spark.project-suffix }}/assembly
 
       - name: Prepare Metaclient location for export
         # upload-artifact cannot take a working-directory option (that only
@@ -894,13 +870,12 @@ jobs:
         working-directory: clients/spark
         run: |
           mkdir -p /tmp/export
-          cp target/core-301/scala-2.12/lakefs-spark-client-301-assembly*.jar /tmp/export/spark-assembly.jar
-          cp target/core-312-hadoop3/scala-2.12/lakefs-spark-client-312-hadoop3-assembly*.jar /tmp/export/spark-assembly-hadoop3.jar
+          cp target/core-${{ matrix.spark.project-suffix }}/scala-2.12/lakefs-spark-client-${{ matrix.spark.project-suffix }}-assembly*.jar /tmp/export/spark-assembly${{ matrix.spark.artifact-suffix }}.jar
 
       - name: Export Metaclient
         uses: actions/upload-artifact@v3
         with:
-          name: metaclient-3x
+          name: metaclient${{ matrix.spark.artifact-suffix }}
           path: /tmp/export/
           if-no-files-found: error
           retention-days: 7
@@ -940,7 +915,7 @@ jobs:
         id: import_metaclient
         uses: actions/download-artifact@v3
         with:
-          name: metaclient-3x
+          name: metaclient${{ matrix.spark.suffix }}
           path: test/spark/metaclient
 
       - name: Generate uniquifying value
@@ -1013,7 +988,7 @@ jobs:
         id: import_metaclient
         uses: actions/download-artifact@v3
         with:
-          name: metaclient-3x
+          name: metaclient${{ matrix.spark.suffix }}
           path: test/spark/metaclient
 
       - name: Generate uniquifying value
@@ -1079,7 +1054,7 @@ jobs:
         id: import_metaclient
         uses: actions/download-artifact@v3
         with:
-          name: metaclient-3x
+          name: metaclient${{ matrix.spark.suffix }}
           path: test/spark/metaclient
 
       - name: Generate uniquifying value

@@ -1,12 +1,19 @@
 import React, {useState} from "react";
 
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
-import {ActionGroup, ActionsBar, Error, Loading, RefreshButton} from "../../../lib/components/controls";
+import {
+    ActionGroup,
+    ActionsBar,
+    Error,
+    ExperimentalOverlayTooltip,
+    Loading,
+    RefreshButton
+} from "../../../lib/components/controls";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
-import {ArrowLeftIcon, GitMergeIcon} from "@primer/octicons-react";
+import {ArrowLeftIcon, DiffIcon, GitMergeIcon} from "@primer/octicons-react";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
-import {refs} from "../../../lib/api";
+import {refs, statistics} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
@@ -16,19 +23,27 @@ import {URINavigator} from "../../../lib/components/repository/tree";
 import {appendMoreResults} from "./changes";
 import {RefTypeBranch, RefTypeCommit} from "../../../constants";
 import Button from "react-bootstrap/Button";
-import {
-    FormControl,
-    FormHelperText,
-    InputLabel, MenuItem,
-    Select
-} from "@mui/material";
+import {FormControl, FormHelperText, InputLabel, MenuItem, Select} from "@mui/material";
 import Modal from "react-bootstrap/Modal";
 import {RepoError} from "./error";
+import {ComingSoonModal} from "../../../lib/components/modals";
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
+    const [showDeltaDiffButton, setShowDeltaDiffButton] = useState(true);
+    const [showComingSoonModal, setShowComingSoonModal] = useState(false);
+    const sendDeltaDiffStats = async () => {
+        const deltaDiffStatEvents = [
+            {
+                "class": "experimental-feature",
+                "name": "delta-diff",
+                "count": 1,
+            }
+        ];
+        await statistics.postStatsEvents(deltaDiffStatEvents);
+    }
 
     const refresh = () => {
         setResultsState({prefix: prefix, results:[], pagination:{}})
@@ -73,61 +88,79 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     else content = (
             <div className="tree-container">
                 {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
-                    <Card>
-                        <Card.Header>
-                        <span className="float-left">
-                            {(delimiter !== "") && (
-                                <URINavigator
-                                    path={prefix}
-                                    reference={reference}
-                                    relativeTo={relativeTitle(reference, compareReference)}
-                                    repo={repo}
-                                    pathURLBuilder={(params, query) => {
-                                        const q = {
-                                            delimiter: "/",
-                                            prefix: query.path,
-                                        };
-                                        if (compareReference) q.compare = compareReference.id;
-                                        if (reference) q.ref = reference.id;
-                                        return {
-                                            pathname: '/repositories/:repoId/compare',
-                                            params: {repoId: repo.id},
-                                            query: q
+                    <>
+                        <ComingSoonModal display={showComingSoonModal}
+                                         onCancel={() => setShowComingSoonModal(false)}>
+                            <div>lakeFS Delta Lake tables diff is under development</div>
+                        </ComingSoonModal>
+                        <ExperimentalOverlayTooltip show={showDeltaDiffButton}>
+                            <Button className="action-bar"
+                                    variant="primary"
+                                    disabled={false}
+                                    onClick={() => {
+                                        setShowComingSoonModal(true);
+                                        sendDeltaDiffStats();
+                                    }}>
+                                <DiffIcon/> Compare Delta Lake tables
+                            </Button>
+                        </ExperimentalOverlayTooltip>
+                        <Card>
+                            <Card.Header>
+                                <span className="float-left">
+                                    {(delimiter !== "") && (
+                                        <URINavigator
+                                            path={prefix}
+                                            reference={reference}
+                                            relativeTo={relativeTitle(reference, compareReference)}
+                                            repo={repo}
+                                            pathURLBuilder={(params, query) => {
+                                                const q = {
+                                                    delimiter: "/",
+                                                    prefix: query.path,
+                                                };
+                                                if (compareReference)
+                                                    q.compare = compareReference.id;
+                                                if (reference)
+                                                    q.ref = reference.id;
+                                                return {
+                                                    pathname: '/repositories/:repoId/compare',
+                                                    params: {repoId: repo.id},
+                                                    query: q
+                                                };
+                                            }}/>
+                                    )}
+                                </span>
+                            </Card.Header>
+                            <Card.Body>
+                                <Table borderless size="sm">
+                                    <tbody>
+                                    {results.map(entry => {
+                                        let leftCommittedRef = reference.id;
+                                        let rightCommittedRef = compareReference.id;
+                                        if (reference.type === RefTypeBranch) {
+                                            leftCommittedRef += "@";
                                         }
-                                    }}
-                                />
-                            )}
-                        </span>
-                        </Card.Header>
-                        <Card.Body>
-                            <Table borderless size="sm">
-                                <tbody>
-                                {results.map(entry => {
-                                    let leftCommittedRef = reference.id;
-                                    let rightCommittedRef = compareReference.id;
-                                    if (reference.type === RefTypeBranch) {
-                                        leftCommittedRef += "@";
-                                    }
-                                    if (compareReference.type === RefTypeBranch) {
-                                        rightCommittedRef += "@";
-                                    }
-                                    return (
-                                    <TreeItem key={entry.path+"-item"} entry={entry} repo={repo} reference={reference}
-                                              internalReferesh={internalRefresh} leftDiffRefID={leftCommittedRef}
-                                              rightDiffRefID={rightCommittedRef} delimiter={delimiter} relativeTo={prefix}
-                                              onNavigate={onNavigate}
-                                              getMore={(afterUpdatedChild, path, useDelimiter = true, amount = -1) => {
-                                                  return refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
-                                              }}
-                                    />)})
-                                }
-                                { !!nextPage &&
-                                <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
-                                }
-                                </tbody>
-                            </Table>
-                        </Card.Body>
-                    </Card>
+                                        if (compareReference.type === RefTypeBranch) {
+                                            rightCommittedRef += "@";
+                                        }
+                                        return (
+                                            <TreeItem key={entry.path + "-item"} entry={entry} repo={repo}
+                                                      reference={reference}
+                                                      internalReferesh={internalRefresh} leftDiffRefID={leftCommittedRef}
+                                                      rightDiffRefID={rightCommittedRef} delimiter={delimiter}
+                                                      relativeTo={prefix}
+                                                      onNavigate={onNavigate}
+                                                      getMore={(afterUpdatedChild, path, useDelimiter = true, amount = -1) => {
+                                                          return refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined);
+                                                      }}/>);
+                                    })}
+                                    {!!nextPage &&
+                                        <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage}
+                                                            setAfterUpdated={setAfterUpdated}/>}
+                                    </tbody>
+                                </Table>
+                            </Card.Body>
+                    </Card></>
                 )}
             </div>
     )
@@ -255,7 +288,6 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
         </>
     );
 }
-
 
 const CompareContainer = () => {
     const router = useRouter();
