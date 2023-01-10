@@ -3075,6 +3075,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 		return
 	}
 	ctx := r.Context()
+	user, _ := auth.GetUser(ctx)
 	c.LogAction(ctx, "list_objects", r, repository, ref, "")
 
 	res, hasMore, err := c.Catalog.ListEntries(
@@ -3126,13 +3127,28 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 				objStat.Metadata = &ObjectUserMetadata{AdditionalProperties: entry.Metadata}
 			}
 			if params.Presign != nil && *params.Presign {
-				objStat.PhysicalAddress, err = c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
-					StorageNamespace: repo.StorageNamespace,
-					Identifier:       entry.PhysicalAddress,
-					IdentifierType:   entry.AddressType.ToIdentifierType(),
-				}, block.PreSignModeRead)
+				// check if the user has read permissions for this object
+				authResponse, err := c.Auth.Authorize(ctx, &auth.AuthorizationRequest{
+					Username: user.Username,
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
+							Action:   permissions.ReadObjectAction,
+							Resource: permissions.ObjectArn(repository, entry.Path),
+						},
+					},
+				})
 				if c.handleAPIError(ctx, w, r, err) {
 					return
+				}
+				if authResponse.Allowed {
+					objStat.PhysicalAddress, err = c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+						StorageNamespace: repo.StorageNamespace,
+						Identifier:       entry.PhysicalAddress,
+						IdentifierType:   entry.AddressType.ToIdentifierType(),
+					}, block.PreSignModeRead)
+					if c.handleAPIError(ctx, w, r, err) {
+						return
+					}
 				}
 			}
 			objList = append(objList, objStat)
