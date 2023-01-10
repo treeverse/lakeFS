@@ -39,7 +39,7 @@ When setting up a new installation and creating initial credentials (see [Quick 
 will provide a link to download a preconfigured configuration file for you.
 
 `lakectl` configuration items can each be controlled by an environment variable. The variable name will have a prefix of
-*LAKECTL_*, followed by the name of the configuration, replacing every '.' with a '_'. Example: `LAKECTL_SERVER_ENDPOINT_URL` 
+*LAKECTL_*, followed by the name of the configuration, replacing every '.' with a '_'. Example: `LAKECTL_SERVER_ENDPOINT_URL`
 controls `server.endpoint_url`.
 ### lakectl
 
