@@ -851,7 +851,7 @@ jobs:
 
   build-spark3-metadata-client:
     name: Build metadata client for Spark 3.x
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-8-cores
     needs: check-secrets
     strategy:
       matrix:
