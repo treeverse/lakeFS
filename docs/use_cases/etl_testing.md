@@ -1,25 +1,27 @@
 ---
 layout: default
-title: Isolated Dev/Test Environment
-description: In this tutorial, we will explore how to use lakeFS to create isolated dev/test data environments to run data pipelines.
+title: ETL Testing Environment
+description: In this tutorial, we will explore how to safely run ETL testing using lakeFS to create isolated dev/test data environments to run data pipelines.
 parent: Use Cases
 nav_order: 10
 has_children: false
+redirect_from:
+  - /use_cases/iso_env.html
 ---
 
-# Isolated Dev/Test Environment
+# ETL Testing with Isolated Dev/Test Environment
 
 ## Why do I need multiple environments?
 
-When working with a data lake, it's useful to have replicas of your production environment. These replicas allow you to test and understand changes to your data without impacting the consumers of the production data.
+When working with a data lake, it's useful to have replicas of your production environment. These replicas allow you to test these ETLs and understand changes to your data without impacting the consumers of the production data.
 
-Running ETL and transformation jobs directly in production is a guaranteed way to have data issues flow into dashboards, ML models, and other consumers sooner or later. The most common approach to avoid making changes directly in production is to create and maintain multiple data environments. Dev environment to develop the data pipelines and test environment where pipeline changes are implemented before pushing it to production.
+Running ETL and transformation jobs directly in production without proper ETL Testing is a guaranteed way to have data issues flow into dashboards, ML models, and other consumers sooner or later. The most common approach to avoid making changes directly in production is to create and maintain multiple data environments and perform ETL testing on them. Dev environment to develop the data pipelines and test environment where pipeline changes are tested before pushing it to production.
 
-The issue with this approach is that it's time-consuming and costly to maintain these separate dev/test environments. And for larger teams it forces multiple people to share these environments, requiring significant co-ordination.
+The issue with this approach is that it's time-consuming and costly to maintain these separate dev/test environments to enable thoruogh effective ETL testing. And for larger teams it forces multiple people to share these environments, requiring significant co-ordination.
 
 ## How do I create dev/test environments with lakeFS?
 
-lakeFS makes creating isolated dev/test environments instantaneous. This frees you from spending time on environment maintenance and makes it possible to create as many environments as needed.
+lakeFS makes creating isolated dev/test environments for ETL testing instantaneous. This frees you from spending time on environment maintenance and makes it possible to create as many environments as needed.
 
 In a lakeFS repository, data is always located on a `branch`. You can think of each `branch` in lakeFS as its own environment. This is because branches are isolated, meaning changes on one branch have no effect other branches.
 
@@ -29,7 +31,7 @@ Objects that remain unchanged between two branches are not copied, but rather sh
 Let’s see an example of using multiple lakeFS branches for isolation.
 
 
-## Using branches as environments
+## Using branches as development and testing environments
 
 The key difference when using lakeFS for isolated data environments is that you can create them immediately before testing a change. And once new data is merged into production, you can delete the branch - effectively deleting the old environment.
 
@@ -37,12 +39,12 @@ This is different from creating a long-living test environment used as a staging
 
 ![dev/test branches as environments]({{ site.baseurl }}/assets/img/iso_env_dev_test_branching.png)
 
-# Creating Dev/Test Environments with lakeFS
+# Creating Dev/Test Environments with lakeFS for ETL testing
 
 lakeFS supports UI, CLI (`lakectl` commandline utility) and several client API [integrations](../integrations) to run the Git-like operations. Let us explore how to create dev/test environments using each of these options below.
 
 ## Using lakeFS Playground UI
-In this tutorial, we will use [lakeFS playground](https://demo.lakefs.io/) to create dev/test data environments. Playground allows you to spin up a lakeFS instance in a click, create different data environments by simply branching out of your data repository and develop & test data pipelines in these isolated branches.
+In this tutorial, we will use [lakeFS playground](https://demo.lakefs.io/) to create dev/test data environments for ETL testing. Playground allows you to spin up a lakeFS instance in a click, create different data environments by simply branching out of your data repository and develop & test data pipelines in these isolated branches.
 
 First, let us spin up a [playground](https://demo.lakefs.io/) instance. Once you have a live environment, login to your instance with access and secret keys. Then, you can work with the sample data repository `my-repo` that is created for you.
 
@@ -66,7 +68,7 @@ Now you can add, modify or delete objects under the `test-env` branch without af
 
 ## Using lakeFS Python Client API and Jupyter notebook
 
-This use case shows how to create dev/test data environments using lakeFS branches. The following tutorial will use an existing lakeFS environment (i.e., playground), a jupyter notebook, and python lakefs_client API to demonstrate integration of lakeFS with [Spark](../integrations/spark). You can run this tutorial on your local machine.
+This use case shows how to create dev/test data environments for ETL testing using lakeFS branches. The following tutorial will use an existing lakeFS environment (i.e., playground), a jupyter notebook, and python lakefs_client API to demonstrate integration of lakeFS with [Spark](../integrations/spark). You can run this tutorial on your local machine.
 
 Follow the tutorial video below to get started with the playground and jupyter notebook, or follow the instructions on this page.
 <iframe width="420" height="315" src="https://www.youtube.com/embed/fprpDZ96JQo"></iframe>
@@ -192,3 +194,6 @@ You can safely continue working with the data from main which is unharmed due to
 
 ## Case Study: Enigma
 Learn how Enigma increased Data Engineers efficiency using lakeFS’ branching to [achieve islated development and staging environments](https://enigma.com/blog/post/improving-our-research-velocity-with-lakefs).
+
+## Further Reading
+For further details on the best practices of ETL testing on data lakes with lakeFS go to the [lakeFS Blog](https://lakefs.io/blog/etl-testing/)
