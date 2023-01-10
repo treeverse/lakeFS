@@ -868,6 +868,15 @@ jobs:
     name: Build metadata client for Spark 3.x
     runs-on: ubuntu-20.04
     needs: check-secrets
+    strategy:
+      matrix:
+        spark:
+          - project-variable: core3
+            project-suffix: 301
+            artifact-suffix: ""
+          - project-variable: core312
+            project-suffix: 312-hadoop3
+            artifact-suffix: "-hadoop3"
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
@@ -884,8 +893,7 @@ jobs:
       - name: Package Metaclient
         working-directory: clients/spark
         run: |
-          sbt 'set core3 / assembly / test := {}' lakefs-spark-client-301/assembly &
-          sbt 'set core312 / assembly / test := {}' lakefs-spark-client-312-hadoop3/assembly && fg
+          sbt 'set ${{ matrix.spark.project-variable }} / assembly / test := {}' lakefs-spark-client-${{ matrix.spark.project-suffix }}/assembly
 
       - name: Prepare Metaclient location for export
         # upload-artifact cannot take a working-directory option (that only
@@ -894,13 +902,12 @@ jobs:
         working-directory: clients/spark
         run: |
           mkdir -p /tmp/export
-          cp target/core-301/scala-2.12/lakefs-spark-client-301-assembly*.jar /tmp/export/spark-assembly.jar
-          cp target/core-312-hadoop3/scala-2.12/lakefs-spark-client-312-hadoop3-assembly*.jar /tmp/export/spark-assembly-hadoop3.jar
+          cp target/core-${{ matrix.spark.project-suffix }}/scala-2.12/lakefs-spark-client-${{ matrix.spark.project-suffix }}-assembly*.jar /tmp/export/spark-assembly${{ matrix.spark.artifact-suffix }}.jar
 
       - name: Export Metaclient
         uses: actions/upload-artifact@v3
         with:
-          name: metaclient-3x
+          name: metaclient${{ matrix.spark.artifact-suffix }}
           path: /tmp/export/
           if-no-files-found: error
           retention-days: 7
@@ -940,7 +947,7 @@ jobs:
         id: import_metaclient
         uses: actions/download-artifact@v3
         with:
-          name: metaclient-3x
+          name: metaclient${{ matrix.spark.suffix }}
           path: test/spark/metaclient
 
       - name: Generate uniquifying value
@@ -1013,7 +1020,7 @@ jobs:
         id: import_metaclient
         uses: actions/download-artifact@v3
         with:
-          name: metaclient-3x
+          name: metaclient${{ matrix.spark.suffix }}
           path: test/spark/metaclient
 
       - name: Generate uniquifying value
@@ -1079,7 +1086,7 @@ jobs:
         id: import_metaclient
         uses: actions/download-artifact@v3
         with:
-          name: metaclient-3x
+          name: metaclient${{ matrix.spark.suffix }}
           path: test/spark/metaclient
 
       - name: Generate uniquifying value
