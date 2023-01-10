@@ -290,7 +290,7 @@ func getDockerArgs(workingDirectory string) []string {
 func runGC(t *testing.T, repo string, extraSparkArgs ...string) {
 	workingDirectory, err := os.Getwd()
 	if err != nil {
-		t.Fatal("Getting working directory: ", err)
+		t.Fatal("Failed getting working directory: ", err)
 	}
 	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
 	dockerArgs := getDockerArgs(workingDirectory)
