@@ -3871,8 +3871,9 @@ func TestController_CopyObjectHandler(t *testing.T) {
 	t.Run("copy object", func(t *testing.T) {
 		time.Sleep(1 * time.Second)
 		copyResp, err := clt.CopyObjectWithResponse(ctx, "repo1", "main", api.CopyObjectJSONRequestBody{
-			Source:      "foo/bar",
-			Destination: "bar/foo",
+			SourcePath:        "foo/bar",
+			DestinationPath:   "bar/foo",
+			DestinationBranch: "main",
 		})
 		verifyResponseOK(t, copyResp, err)
 
@@ -3895,8 +3896,9 @@ func TestController_CopyObjectHandler(t *testing.T) {
 
 	t.Run("copy object not found", func(t *testing.T) {
 		resp, err := clt.CopyObjectWithResponse(ctx, "repo1", "main", api.CopyObjectJSONRequestBody{
-			Destination: "bar/foo",
-			Source:      "not/found",
+			DestinationPath:   "bar/foo",
+			SourcePath:        "not/found",
+			DestinationBranch: "main",
 		})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON404)
@@ -3904,8 +3906,9 @@ func TestController_CopyObjectHandler(t *testing.T) {
 
 	t.Run("copy object validation error", func(t *testing.T) {
 		resp, err := clt.CopyObjectWithResponse(ctx, "repo1", "main", api.CopyObjectJSONRequestBody{
-			Destination: "",
-			Source:      "foo/bar",
+			DestinationPath:   "",
+			SourcePath:        "foo/bar",
+			DestinationBranch: "main",
 		})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON400)

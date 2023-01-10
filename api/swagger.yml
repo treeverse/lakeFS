@@ -277,15 +277,19 @@ components:
     ObjectCopyCreation:
       type: object
       required:
-        - source
-        - destination
+        - source_path
+        - destination_path
+        - destination_branch
       properties:
-        source:
+        source_path:
           type: string
-          description: path of the copied object relative to the branch
-        destination:
+          description: path of the copied object relative to the ref
+        destination_path:
           type: string
-          description: the new copy path relative to the branch
+          description: the new copy path relative to the destination branch
+        destination_branch:
+          type: string
+          description: the new copy destination branch
 
     ObjectStageCreation:
       type: object
@@ -3228,7 +3232,7 @@ paths:
         410:
           description: object gone (but partial metadata may be available)
 
-  /repositories/{repository}/branches/{branch}/objects/copy:
+  /repositories/{repository}/refs/{ref}/objects/copy:
     parameters:
       - in: path
         name: repository
@@ -3236,10 +3240,11 @@ paths:
         schema:
           type: string
       - in: path
-        name: branch
+        name: ref
         required: true
         schema:
           type: string
+        description: a reference (could be either a branch or a commit ID)
     post:
       tags:
         - objects

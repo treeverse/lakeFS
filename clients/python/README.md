@@ -168,6 +168,7 @@ Class | Method | HTTP request | Description
 *MetadataApi* | [**create_symlink_file**](docs/MetadataApi.md#create_symlink_file) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory
 *MetadataApi* | [**get_meta_range**](docs/MetadataApi.md#get_meta_range) | **GET** /repositories/{repository}/metadata/meta_range/{meta_range} | return URI to a meta-range file
 *MetadataApi* | [**get_range**](docs/MetadataApi.md#get_range) | **GET** /repositories/{repository}/metadata/range/{range} | return URI to a range file
+*ObjectsApi* | [**copy_object**](docs/ObjectsApi.md#copy_object) | **POST** /repositories/{repository}/refs/{ref}/objects/copy | create a copy of an object
 *ObjectsApi* | [**delete_object**](docs/ObjectsApi.md#delete_object) | **DELETE** /repositories/{repository}/branches/{branch}/objects | delete object. Missing objects will not return a NotFound error.
 *ObjectsApi* | [**delete_objects**](docs/ObjectsApi.md#delete_objects) | **POST** /repositories/{repository}/branches/{branch}/objects/delete | delete objects. Missing objects will not return a NotFound error.
 *ObjectsApi* | [**get_object**](docs/ObjectsApi.md#get_object) | **GET** /repositories/{repository}/refs/{ref}/objects | get object content
@@ -244,6 +245,7 @@ Class | Method | HTTP request | Description
  - [MetaRangeCreation](docs/MetaRangeCreation.md)
  - [MetaRangeCreationResponse](docs/MetaRangeCreationResponse.md)
  - [NextStep](docs/NextStep.md)
+ - [ObjectCopyCreation](docs/ObjectCopyCreation.md)
  - [ObjectError](docs/ObjectError.md)
  - [ObjectErrorList](docs/ObjectErrorList.md)
  - [ObjectStageCreation](docs/ObjectStageCreation.md)

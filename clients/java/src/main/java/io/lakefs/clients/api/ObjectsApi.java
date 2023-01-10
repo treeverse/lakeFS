@@ -29,6 +29,7 @@ import java.io.IOException;
 
 import io.lakefs.clients.api.model.Error;
 import java.io.File;
+import io.lakefs.clients.api.model.ObjectCopyCreation;
 import io.lakefs.clients.api.model.ObjectErrorList;
 import io.lakefs.clients.api.model.ObjectStageCreation;
 import io.lakefs.clients.api.model.ObjectStats;
@@ -61,6 +62,153 @@ public class ObjectsApi {
         this.localVarApiClient = apiClient;
     }
 
+    /**
+     * Build call for copyObject
+     * @param repository  (required)
+     * @param ref a reference (could be either a branch or a commit ID) (required)
+     * @param objectCopyCreation  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> Copy object response </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call copyObjectCall(String repository, String ref, ObjectCopyCreation objectCopyCreation, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = objectCopyCreation;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/refs/{ref}/objects/copy"
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "ref" + "\\}", localVarApiClient.escapeString(ref.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call copyObjectValidateBeforeCall(String repository, String ref, ObjectCopyCreation objectCopyCreation, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling copyObject(Async)");
+        }
+        
+        // verify the required parameter 'ref' is set
+        if (ref == null) {
+            throw new ApiException("Missing the required parameter 'ref' when calling copyObject(Async)");
+        }
+        
+        // verify the required parameter 'objectCopyCreation' is set
+        if (objectCopyCreation == null) {
+            throw new ApiException("Missing the required parameter 'objectCopyCreation' when calling copyObject(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = copyObjectCall(repository, ref, objectCopyCreation, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * create a copy of an object
+     * 
+     * @param repository  (required)
+     * @param ref a reference (could be either a branch or a commit ID) (required)
+     * @param objectCopyCreation  (required)
+     * @return ObjectStats
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> Copy object response </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ObjectStats copyObject(String repository, String ref, ObjectCopyCreation objectCopyCreation) throws ApiException {
+        ApiResponse<ObjectStats> localVarResp = copyObjectWithHttpInfo(repository, ref, objectCopyCreation);
+        return localVarResp.getData();
+    }
+
+    /**
+     * create a copy of an object
+     * 
+     * @param repository  (required)
+     * @param ref a reference (could be either a branch or a commit ID) (required)
+     * @param objectCopyCreation  (required)
+     * @return ApiResponse&lt;ObjectStats&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> Copy object response </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<ObjectStats> copyObjectWithHttpInfo(String repository, String ref, ObjectCopyCreation objectCopyCreation) throws ApiException {
+        okhttp3.Call localVarCall = copyObjectValidateBeforeCall(repository, ref, objectCopyCreation, null);
+        Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * create a copy of an object (asynchronously)
+     * 
+     * @param repository  (required)
+     * @param ref a reference (could be either a branch or a commit ID) (required)
+     * @param objectCopyCreation  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> Copy object response </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call copyObjectAsync(String repository, String ref, ObjectCopyCreation objectCopyCreation, final ApiCallback<ObjectStats> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = copyObjectValidateBeforeCall(repository, ref, objectCopyCreation, _callback);
+        Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
     /**
      * Build call for deleteObject
      * @param repository  (required)

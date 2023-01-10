@@ -16,6 +16,7 @@ package io.lakefs.clients.api;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
 import java.io.File;
+import io.lakefs.clients.api.model.ObjectCopyCreation;
 import io.lakefs.clients.api.model.ObjectErrorList;
 import io.lakefs.clients.api.model.ObjectStageCreation;
 import io.lakefs.clients.api.model.ObjectStats;
@@ -38,6 +39,23 @@ public class ObjectsApiTest {
 
     private final ObjectsApi api = new ObjectsApi();
 
+    
+    /**
+     * create a copy of an object
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void copyObjectTest() throws ApiException {
+        String repository = null;
+        String ref = null;
+        ObjectCopyCreation objectCopyCreation = null;
+                ObjectStats response = api.copyObject(repository, ref, objectCopyCreation);
+        // TODO: test validations
+    }
     
     /**
      * delete object. Missing objects will not return a NotFound error.
