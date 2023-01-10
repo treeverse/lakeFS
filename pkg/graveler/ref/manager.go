@@ -39,7 +39,8 @@ const (
 	DefaultCommitCacheExpiry = 30 * time.Second
 	DefaultCommitCacheJitter = DefaultRepositoryCacheExpiry / 2
 
-	AddressTokenTime = 6 * time.Hour
+	// LinkAddressTime the time address is valid from get to link
+	LinkAddressTime = 6 * time.Hour
 )
 
 type CacheConfig struct {
@@ -591,7 +592,7 @@ func (m *Manager) IsTokenExpired(token *graveler.LinkAddressData) (bool, error) 
 	if err != nil {
 		return false, err
 	}
-	expiry := creationTime.Add(AddressTokenTime)
+	expiry := creationTime.Add(LinkAddressTime)
 	if expiry.Before(time.Now()) {
 		return true, graveler.ErrAddressTokenExpired
 	}
