@@ -273,7 +273,6 @@ func getSparkSubmitArgs() []string {
 		"--conf", "spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ",
 		"--conf", "spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 		"--class", "io.treeverse.clients.GarbageCollector",
-		"--packages", "org.apache.hadoop:hadoop-aws:3.2.4",
 	}
 }
 
