@@ -1933,23 +1933,23 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}, nil
 }
 
-func (c *Catalog) SetLinkAddress(ctx context.Context, repository, token string) error {
+func (c *Catalog) SetAddressToken(ctx context.Context, repository, token string) error {
 	repo, err := c.getRepository(ctx, repository)
 	if err != nil {
 		return err
 	}
-	return c.Store.SetLinkAddress(ctx, repo, token)
+	return c.Store.SetAddressToken(ctx, repo, token)
 }
 
-func (c *Catalog) VerifyLinkAddress(ctx context.Context, repository, token string) error {
+func (c *Catalog) VerifyAddressToken(ctx context.Context, repository, token string) error {
 	repo, err := c.getRepository(ctx, repository)
 	if err != nil {
 		return err
 	}
-	return c.Store.VerifyLinkAddress(ctx, repo, token)
+	return c.Store.VerifyAddressToken(ctx, repo, token)
 }
 
-func (c *Catalog) DeleteExpiredLinkAddress(ctx context.Context) {
+func (c *Catalog) DeleteExpiredAddressTokens(ctx context.Context) {
 	it, err := c.Store.ListRepositories(ctx)
 	if err != nil {
 		c.log.WithError(err).Warn("Failed to list repositories during delete expired addresses")
@@ -1968,7 +1968,7 @@ func (c *Catalog) DeleteExpiredLinkAddress(ctx context.Context) {
 	}
 
 	for _, repo := range repos {
-		err := c.Store.DeleteExpiredLinkAddresses(ctx, repo)
+		err := c.Store.DeleteExpiredAddressTokens(ctx, repo)
 		if err != nil {
 			c.log.WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired address tokens failed")
 		}

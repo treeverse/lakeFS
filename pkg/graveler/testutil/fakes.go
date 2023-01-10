@@ -416,23 +416,23 @@ func (m *RefsFake) Log(context.Context, *graveler.RepositoryRecord, graveler.Com
 	return m.CommitIter, nil
 }
 
-func (m *RefsFake) VerifyLinkAddress(context.Context, *graveler.RepositoryRecord, string) error {
+func (m *RefsFake) VerifyAddressToken(context.Context, *graveler.RepositoryRecord, string) error {
 	return m.Err
 }
 
-func (m *RefsFake) SetLinkAddress(context.Context, *graveler.RepositoryRecord, string) error {
+func (m *RefsFake) SetAddressToken(context.Context, *graveler.RepositoryRecord, string) error {
 	return nil
 }
 
-func (m *RefsFake) ListLinkAddresses(context.Context, *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
+func (m *RefsFake) ListAddressTokens(context.Context, *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
 	return m.addressTokenIter, nil
 }
 
-func (m *RefsFake) IsLinkAddressExpired(token *graveler.LinkAddressData) (bool, error) {
+func (m *RefsFake) IsTokenExpired(token *graveler.LinkAddressData) (bool, error) {
 	return false, nil
 }
 
-func (m *RefsFake) DeleteExpiredLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) error {
+func (m *RefsFake) DeleteExpiredAddressTokens(ctx context.Context, repository *graveler.RepositoryRecord) error {
 	return nil
 }
 

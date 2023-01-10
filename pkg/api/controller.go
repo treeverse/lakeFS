@@ -329,7 +329,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	err = c.Catalog.SetLinkAddress(ctx, repository, address)
+	err = c.Catalog.SetAddressToken(ctx, repository, address)
 	if err != nil {
 		c.handleAPIError(ctx, w, r, err)
 		return
@@ -383,8 +383,8 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	writeTime := time.Now()
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, StringValue(body.Staging.PhysicalAddress))
 
-	// validate link address token
-	err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
+	// validate token
+	err = c.Catalog.VerifyAddressToken(ctx, repository, physicalAddress)
 	if err != nil {
 		c.handleAPIError(ctx, w, r, err)
 		return
@@ -1860,8 +1860,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, graveler.ErrTooManyTries):
 		cb(w, r, http.StatusLocked, "Too many attempts, try again later")
 
-	case errors.Is(err, graveler.ErrLinkAddressNotFound),
-		errors.Is(err, graveler.ErralinkAddressExpired):
+	case errors.Is(err, graveler.ErrAddressTokenNotFound),
+		errors.Is(err, graveler.ErrAddressTokenExpired):
 		cb(w, r, http.StatusBadRequest, "bad address token (expired or invalid)")
 
 	case err != nil:

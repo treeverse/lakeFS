@@ -77,7 +77,7 @@ message StagedEntryData {
   bytes data = 3;
 }
 
-// message data model to track link address tokens
+// message data model to track address tokens
 message LinkAddressData {
   // xid physical address that includes the creation date
   string address = 1;

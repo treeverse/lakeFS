@@ -1037,10 +1037,10 @@ func TestManager_ListAddressTokens(t *testing.T) {
 	addresses := []string{"data/a", "data/aa", "data/b", "data/c", "data/f", "data/z"}
 
 	for _, a := range addresses {
-		testutil.Must(t, r.SetLinkAddress(context.Background(), repository, a))
+		testutil.Must(t, r.SetAddressToken(context.Background(), repository, a))
 	}
 
-	iter, err := r.ListLinkAddresses(context.Background(), repository)
+	iter, err := r.ListAddressTokens(context.Background(), repository)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1071,45 +1071,45 @@ func TestManager_SetGetAddressToken(t *testing.T) {
 
 	address := xid.New().String()
 
-	err = r.SetLinkAddress(ctx, repository, address)
+	err = r.SetAddressToken(ctx, repository, address)
 	testutil.MustDo(t, "set address token aa", err)
 
 	// check we can't create existing
-	err = r.SetLinkAddress(ctx, repository, address)
-	if !errors.Is(err, graveler.ErrLinkAddressAlreadyExists) {
-		t.Fatalf("SetLinkAddress() err = %s, expected already exists", err)
+	err = r.SetAddressToken(ctx, repository, address)
+	if !errors.Is(err, graveler.ErrAddressTokenAlreadyExists) {
+		t.Fatalf("SetAddressToken() err = %s, expected already exists", err)
 	}
 
-	err = r.VerifyLinkAddress(ctx, repository, address)
+	err = r.VerifyAddressToken(ctx, repository, address)
 	testutil.MustDo(t, "get aa token", err)
 
 	// check the token is deleted
-	err = r.VerifyLinkAddress(ctx, repository, address)
-	if !errors.Is(err, graveler.ErrLinkAddressNotFound) {
-		t.Fatalf("VerifyLinkAddress() err = %s, expected not found", err)
+	err = r.VerifyAddressToken(ctx, repository, address)
+	if !errors.Is(err, graveler.ErrAddressTokenNotFound) {
+		t.Fatalf("VerifyAddressToken() err = %s, expected not found", err)
 	}
 
 	// create again
-	err = r.SetLinkAddress(ctx, repository, address)
+	err = r.SetAddressToken(ctx, repository, address)
 	testutil.MustDo(t, "set address token aa after delete", err)
 }
 
 func TestManager_IsTokenExpired(t *testing.T) {
 	r, _ := testRefManager(t)
 
-	expired, err := r.IsLinkAddressExpired(&graveler.LinkAddressData{Address: xid.New().String()})
+	expired, err := r.IsTokenExpired(&graveler.LinkAddressData{Address: xid.New().String()})
 	testutil.MustDo(t, "is token expired", err)
 	if expired {
 		t.Fatalf("expected token not expired")
 	}
 
-	expired, err = r.IsLinkAddressExpired(&graveler.LinkAddressData{Address: xid.NewWithTime(time.Now().Add(-7 * time.Hour)).String()})
+	expired, err = r.IsTokenExpired(&graveler.LinkAddressData{Address: xid.NewWithTime(time.Now().Add(-7 * time.Hour)).String()})
 	testutil.MustDo(t, "is token expired", err)
 	if !expired {
 		t.Fatalf("expected token expired")
 	}
 
-	expired, err = r.IsLinkAddressExpired(&graveler.LinkAddressData{Address: "aaa"})
+	expired, err = r.IsTokenExpired(&graveler.LinkAddressData{Address: "aaa"})
 	if !errors.Is(err, xid.ErrInvalidID) {
 		t.Fatalf("err = %s, expected invalid xid", err)
 	}
@@ -1133,15 +1133,15 @@ func TestManager_DeleteExpiredAddressTokens(t *testing.T) {
 	expectedTokens := []string{a}
 
 	for _, a := range tokens {
-		testutil.Must(t, r.SetLinkAddress(context.Background(), repository, a))
+		testutil.Must(t, r.SetAddressToken(context.Background(), repository, a))
 	}
 
-	err = r.DeleteExpiredLinkAddresses(context.Background(), repository)
+	err = r.DeleteExpiredAddressTokens(context.Background(), repository)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	iter, err := r.ListLinkAddresses(context.Background(), repository)
+	iter, err := r.ListAddressTokens(context.Background(), repository)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
