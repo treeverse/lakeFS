@@ -62,14 +62,8 @@ clean:
 		$(LAKEFS_BINARY_NAME) \
 		$(UI_BUILD_DIR) \
 		$(UI_DIR)/node_modules \
-		pkg/actions/mock \
 		pkg/api/lakefs.gen.go \
-		pkg/auth/client.gen.go \
-		pkg/graveler/sstable/mock \
-	    pkg/graveler/committed/mock \
-		pkg/onboard/mock \
-	    pkg/graveler/mock \
-	    pkg/kv/mock
+		pkg/auth/client.gen.go
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
@@ -138,6 +132,7 @@ package-python: client-python
 
 package: package-python
 
+.PHONY: gen-api
 gen-api: ## Run the swagger code generator
 	$(GOGENERATE) \
 		./pkg/api \
@@ -167,7 +162,7 @@ esti: ## run esti (system testing)
 
 test: test-go test-hadoopfs  ## Run tests for the project
 
-test-go: gen-code			# Run parallelism > num_cores: most of our slow tests are *not* CPU-bound.
+test-go: gen-api			# Run parallelism > num_cores: most of our slow tests are *not* CPU-bound.
 	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast -parallel="$(GOTEST_PARALLELISM)" ./...
 
 test-hadoopfs:
@@ -205,13 +200,29 @@ validate-fmt:  ## Validate go format
 
 .PHONY: validate-proto
 validate-proto: proto  ## build proto and check if diff found
-	git diff --quiet -- pkg/catalog/catalog.pb.go || (echo "Modification verification failed! graveler's catalog proto"; false)
-	git diff --quiet -- pkg/graveler/committed/committed.pb.go || (echo "Modification verification failed! graveler's committed proto"; false)
-	git diff --quiet -- pkg/graveler/graveler.pb.go || (echo "Modification verification failed! graveler's proto"; false)
-	git diff --quiet -- pkg/graveler/settings/test_settings.pb.go || (echo "Modification verification failed! graveler's settings test proto"; false)
+	git diff --quiet -- pkg/actions/actions.pb.go || (echo "Modification verification failed! pkg/actions/actions.pb.go"; false)
+	git diff --quiet -- pkg/auth/model/model.pb.go || (echo "Modification verification failed! pkg/auth/model/model.pb.go"; false)
+	git diff --quiet -- pkg/catalog/catalog.pb.go || (echo "Modification verification failed! pkg/catalog/catalog.pb.go"; false)
+	git diff --quiet -- pkg/gateway/multipart/multipart.pb.go || (echo "Modification verification failed! pkg/gateway/multipart/multipart.pb.go"; false)
+	git diff --quiet -- pkg/graveler/graveler.pb.go || (echo "Modification verification failed! pkg/graveler/graveler.pb.go"; false)
+	git diff --quiet -- pkg/graveler/committed/committed.pb.go || (echo "Modification verification failed! pkg/graveler/committed/committed.pb.go"; false)
+	git diff --quiet -- pkg/graveler/settings/test_settings.pb.go || (echo "Modification verification failed! pkg/graveler/settings/test_settings.pb.go"; false)
+	git diff --quiet -- pkg/kv/secondary_index.pb.go || (echo "Modification verification failed! pkg/kv/secondary_index.pb.go"; false)
+	git diff --quiet -- pkg/kv/kvtest/test_model.pb.go || (echo "Modification verification failed! pkg/kv/kvtest/test_model.pb.go"; false)
+
+.PHONY: validate-mockgen
+validate-mockgen: gen-code
+	git diff --quiet -- pkg/actions/mock/mock_actions.go || (echo "Modification verification failed! pkg/actions/mock/mock_actions.go"; false)
+	git diff --quiet -- pkg/auth/mock/mock_auth_client.go || (echo "Modification verification failed! pkg/auth/mock/mock_auth_client.go"; false)
+	git diff --quiet -- pkg/graveler/committed/mock/batch_write_closer.go || (echo "Modification verification failed! pkg/graveler/committed/mock/batch_write_closer.go"; false)
+	git diff --quiet -- pkg/graveler/committed/mock/meta_range.go || (echo "Modification verification failed! pkg/graveler/committed/mock/meta_range.go"; false)
+	git diff --quiet -- pkg/graveler/committed/mock/range_manager.go || (echo "Modification verification failed! pkg/graveler/committed/mock/range_manager.go"; false)
+	git diff --quiet -- pkg/graveler/mock/graveler.go || (echo "Modification verification failed! pkg/graveler/mock/graveler.go"; false)
+	git diff --quiet -- pkg/kv/mock/store.go || (echo "Modification verification failed! pkg/kv/mock/store.go"; false)
+	git diff --quiet -- pkg/pyramid/mock/pyramid.go || (echo "Modification verification failed! pkg/pyramid/mock/pyramid.go"; false)
 
 validate-reference:
-	git diff --quiet -- docs/reference/commands.md || (echo "Modification verification failed! commands docs"; false)
+	git diff --quiet -- docs/reference/cli.md || (echo "Modification verification failed! docs/reference/cli.md"; false)
 
 validate-client-python:
 	git diff --quiet -- clients/python || (echo "Modification verification failed! python client"; false)
@@ -220,7 +231,7 @@ validate-client-java:
 	git diff --quiet -- clients/java || (echo "Modification verification failed! java client"; false)
 
 # Run all validation/linting steps
-checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java validate-reference
+checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java validate-reference validate-mockgen
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
@@ -229,15 +240,15 @@ gen-ui: $(UI_DIR)/node_modules  ## Build UI web app
 	cd $(UI_DIR) && $(NPM) run build
 
 proto: go-install ## Build proto (Protocol Buffers) files
-	$(PROTOC) --proto_path=pkg/catalog --go_out=pkg/catalog --go_opt=paths=source_relative catalog.proto
-	$(PROTOC) --proto_path=pkg/graveler/committed --go_out=pkg/graveler/committed --go_opt=paths=source_relative committed.proto
-	$(PROTOC) --proto_path=pkg/graveler --go_out=pkg/graveler --go_opt=paths=source_relative graveler.proto
-	$(PROTOC) --proto_path=pkg/graveler/settings --go_out=pkg/graveler/settings --go_opt=paths=source_relative test_settings.proto
-	$(PROTOC) --proto_path=pkg/kv/kvtest --go_out=pkg/kv/kvtest --go_opt=paths=source_relative test_model.proto
-	$(PROTOC) --proto_path=pkg/kv --go_out=pkg/kv --go_opt=paths=source_relative secondary_index.proto
-	$(PROTOC) --proto_path=pkg/gateway/multipart --go_out=pkg/gateway/multipart --go_opt=paths=source_relative multipart.proto
 	$(PROTOC) --proto_path=pkg/actions --go_out=pkg/actions --go_opt=paths=source_relative actions.proto
 	$(PROTOC) --proto_path=pkg/auth/model --go_out=pkg/auth/model --go_opt=paths=source_relative model.proto
+	$(PROTOC) --proto_path=pkg/catalog --go_out=pkg/catalog --go_opt=paths=source_relative catalog.proto
+	$(PROTOC) --proto_path=pkg/gateway/multipart --go_out=pkg/gateway/multipart --go_opt=paths=source_relative multipart.proto
+	$(PROTOC) --proto_path=pkg/graveler --go_out=pkg/graveler --go_opt=paths=source_relative graveler.proto
+	$(PROTOC) --proto_path=pkg/graveler/committed --go_out=pkg/graveler/committed --go_opt=paths=source_relative committed.proto
+	$(PROTOC) --proto_path=pkg/graveler/settings --go_out=pkg/graveler/settings --go_opt=paths=source_relative test_settings.proto
+	$(PROTOC) --proto_path=pkg/kv --go_out=pkg/kv --go_opt=paths=source_relative secondary_index.proto
+	$(PROTOC) --proto_path=pkg/kv/kvtest --go_out=pkg/kv/kvtest --go_opt=paths=source_relative test_model.proto
 
 publish-scala: ## sbt publish spark client jars to nexus and s3 bucket
 	cd clients/spark && sbt assembly && sbt s3Upload && sbt publishSigned
@@ -251,4 +262,4 @@ help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # helpers
-gen: gen-ui gen-code clients gen-docs
+gen: gen-ui gen-api clients gen-docs
