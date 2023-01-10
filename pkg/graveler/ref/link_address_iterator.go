@@ -7,8 +7,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
-// AddressTokenIterator Iterates over repository's token addresses
-type AddressTokenIterator struct {
+// LinkAddressIterator Iterates over repository's token addresses
+type LinkAddressIterator struct {
 	ctx           context.Context
 	it            kv.MessageIterator
 	err           error
@@ -18,7 +18,7 @@ type AddressTokenIterator struct {
 	closed        bool
 }
 
-func NewAddressTokenIterator(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord) (*AddressTokenIterator, error) {
+func NewAddressTokenIterator(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord) (*LinkAddressIterator, error) {
 	repoPartition := graveler.RepoPartition(repo)
 	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.LinkAddressData{}).ProtoReflect().Type(),
 		repoPartition, []byte(graveler.LinkedAddressPath("")), kv.IteratorOptionsFrom([]byte("")))
@@ -26,7 +26,7 @@ func NewAddressTokenIterator(ctx context.Context, store *kv.StoreMessage, repo *
 		return nil, err
 	}
 
-	return &AddressTokenIterator{
+	return &LinkAddressIterator{
 		ctx:           ctx,
 		store:         store.Store,
 		it:            it,
@@ -36,7 +36,7 @@ func NewAddressTokenIterator(ctx context.Context, store *kv.StoreMessage, repo *
 	}, nil
 }
 
-func (i *AddressTokenIterator) Next() bool {
+func (i *LinkAddressIterator) Next() bool {
 	if i.Err() != nil || i.closed {
 		return false
 	}
@@ -58,7 +58,7 @@ func (i *AddressTokenIterator) Next() bool {
 	return true
 }
 
-func (i *AddressTokenIterator) SeekGE(address string) {
+func (i *LinkAddressIterator) SeekGE(address string) {
 	if i.Err() != nil {
 		return
 	}
@@ -70,14 +70,14 @@ func (i *AddressTokenIterator) SeekGE(address string) {
 	i.closed = i.err != nil
 }
 
-func (i *AddressTokenIterator) Value() *graveler.LinkAddressData {
+func (i *LinkAddressIterator) Value() *graveler.LinkAddressData {
 	if i.Err() != nil {
 		return nil
 	}
 	return i.value
 }
 
-func (i *AddressTokenIterator) Err() error {
+func (i *LinkAddressIterator) Err() error {
 	if i.err != nil {
 		return i.err
 	}
@@ -87,7 +87,7 @@ func (i *AddressTokenIterator) Err() error {
 	return nil
 }
 
-func (i *AddressTokenIterator) Close() {
+func (i *LinkAddressIterator) Close() {
 	if i.closed {
 		return
 	}

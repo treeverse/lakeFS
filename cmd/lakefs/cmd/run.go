@@ -407,7 +407,7 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 func scheduleExpiredAddressesJob(ctx context.Context, s *gocron.Scheduler, c *catalog.Catalog) error {
 	const deleteExpiredAddressPeriod = 3
 	job, err := s.Every(deleteExpiredAddressPeriod * ref.LinkAddressTime).Do(func() {
-		c.DeleteExpiredAddressTokens(ctx)
+		c.DeleteExpiredLinkAddress(ctx)
 	})
 	if err != nil {
 		return err
