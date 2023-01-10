@@ -294,7 +294,7 @@ func runGC(t *testing.T, repo string, extraSparkArgs ...string) {
 	}
 	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
 	dockerArgs := getDockerArgs(workingDirectory)
-	dockerArgs = append(dockerArgs, "docker.io/bitnami/spark:3.2", "spark-submit")
+	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/bitnami/spark:%s", sparkImageTag), "spark-submit")
 	sparkSubmitArgs := getSparkSubmitArgs()
 	sparkSubmitArgs = append(sparkSubmitArgs, extraSparkArgs...)
 	args := append(dockerArgs, sparkSubmitArgs...)

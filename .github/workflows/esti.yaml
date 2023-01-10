@@ -328,7 +328,18 @@ jobs:
     name: Test committed gc
     needs: [ gen-code, deploy-image, login-to-amazon-ecr, build-spark3-metadata-client ]
     runs-on: ubuntu-latest-16-cores
-
+    strategy:
+      matrix:
+        spark:
+          - version: 3.2.1
+            suffix: "-hadoop3"
+            allow_failure: false
+          - version: 3.1.2
+            suffix: ""
+            allow_failure: false
+          - version: 3.0.2
+            suffix: ""
+            allow_failure: false
     services:
       lakefs:
         image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
@@ -346,7 +357,7 @@ jobs:
           LAKEFS_STATS_ENABLED: false
 
       spark:
-        image: docker.io/bitnami/spark:3.2
+        image: docker.io/bitnami/spark:${{ matrix.spark.version }}
         options: --name spark-master
         env:
           SPARK_MODE: master
@@ -362,7 +373,7 @@ jobs:
           - '7077:7077'
 
       spark-worker:
-        image: docker.io/bitnami/spark:3.2
+        image: docker.io/bitnami/spark:${{ matrix.spark.version }}
         env:
           SPARK_MODE: worker
           SPARK_MASTER_URL: spark://spark:7077
@@ -407,7 +418,11 @@ jobs:
           path: test/spark/metaclient
 
       - name: GC test
-        run: go test -timeout 30m -v ./esti -system-tests -use-local-credentials -run=TestCommittedGC -metaclient-jar=$(pwd)/test/spark/metaclient/spark-assembly-hadoop3.jar
+        run: |
+          go test -timeout 30m -v ./esti \
+            -system-tests -use-local-credentials -run=TestCommittedGC \
+            -spark-image-tag=${{ matrix.spark.version }} \
+            -metaclient-jar=$(pwd)/test/spark/metaclient/spark-assembly${{ matrix.spark.suffix }}.jar
         env:
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/gc-tests/${{ steps.unique.outputs.value }}
