@@ -289,7 +289,6 @@ jobs:
           ESTI_UGC_STEP: pre
 
       - name: Run uncommitted gc
-        working-directory: clients/spark
         run: >
           docker run --network host --add-host lakefs:127.0.0.1 -v $(pwd)/test/spark/metaclient/:/local -v $(pwd)/ivy:/opt/bitnami/spark/.ivy2 --rm docker.io/bitnami/spark:3.2 spark-submit
           --master spark://localhost:7077
