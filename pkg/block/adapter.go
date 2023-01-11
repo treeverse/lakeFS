@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"time"
 )
 
 // MultipartPart single multipart information
@@ -52,6 +53,9 @@ const (
 	PreSignModeRead PreSignMode = iota
 	PreSignModeWrite
 )
+
+// DefaultPreSignExpiryDuration is the amount of time pre-signed requests are valid for.
+const DefaultPreSignExpiryDuration = time.Minute * 15
 
 // ObjectPointer is a unique identifier of an object in the object
 // store: the store is a 1:1 mapping between pointers and objects.

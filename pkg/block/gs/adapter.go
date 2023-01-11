@@ -21,8 +21,6 @@ const (
 	delimiter    = "/"
 	partSuffix   = ".part_"
 	markerSuffix = ".multipart"
-
-	defaultPreSignedURLDuration = time.Minute * 15
 )
 
 var (
@@ -49,7 +47,7 @@ func NewAdapter(client *storage.Client, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		client: client,
 		presignDurationGenerator: func() time.Time {
-			return time.Now().Add(defaultPreSignedURLDuration)
+			return time.Now().Add(block.DefaultPreSignExpiryDuration)
 		},
 	}
 	for _, opt := range opts {

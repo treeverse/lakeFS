@@ -30,8 +30,6 @@ const (
 	AuthMethodAccessKey     = "access-key"
 	AuthMethodMSI           = "msi"
 
-	defaultPreSignedURLDuration = time.Minute * 15
-
 	preSignedBlobPattern = "https://%s.blob.core.windows.net/%s/%s?%s"
 )
 
@@ -59,7 +57,7 @@ func NewAdapter(pipeline pipeline.Pipeline, credentials azblob.Credential, opts 
 		credentials:    credentials,
 		configurations: configurations{retryReaderOptions: azblob.RetryReaderOptions{MaxRetryRequests: defaultMaxRetryRequests}},
 		preSignedURLDurationGenerator: func() time.Time {
-			return time.Now().UTC().Add(defaultPreSignedURLDuration)
+			return time.Now().UTC().Add(block.DefaultPreSignExpiryDuration)
 		},
 	}
 	keyCredentials, ok := credentials.(*azblob.SharedKeyCredential)

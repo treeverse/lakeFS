@@ -29,9 +29,6 @@ const (
 
 	// Chunks smaller than that are only allowed for the last chunk upload
 	minChunkSize = 8 * 1024
-
-	// DefaultPreSignedURLDuration determines how long should pre-signed URLs be valid for
-	DefaultPreSignedURLDuration = time.Minute * 15
 )
 
 var (
@@ -333,14 +330,14 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 			Key:    aws.String(qualifiedKey.Key),
 		}
 		req, _ := client.PutObjectRequest(putObjectInput)
-		preSignedURL, err = req.Presign(DefaultPreSignedURLDuration)
+		preSignedURL, err = req.Presign(block.DefaultPreSignExpiryDuration)
 	} else {
 		getObjectInput := &s3.GetObjectInput{
 			Bucket: aws.String(qualifiedKey.StorageNamespace),
 			Key:    aws.String(qualifiedKey.Key),
 		}
 		req, _ := client.GetObjectRequest(getObjectInput)
-		preSignedURL, err = req.Presign(DefaultPreSignedURLDuration)
+		preSignedURL, err = req.Presign(block.DefaultPreSignExpiryDuration)
 	}
 	if err != nil {
 		log.WithField("namespace", obj.StorageNamespace).
