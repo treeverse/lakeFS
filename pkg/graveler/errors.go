@@ -8,6 +8,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
+// Define errors we raise from this package - do not convert underlying errors, optionally wrap if needed to consolidate
 var (
 	// ErrUserVisible is base error for "user-visible" errors, which should not be wrapped with internal debug info.
 	ErrUserVisible = errors.New("")
