@@ -854,9 +854,9 @@ jobs:
           - project-variable: core3
             project-suffix: 301
             artifact-suffix: ""
-#          - project-variable: core312
-#            project-suffix: 312-hadoop3
-#            artifact-suffix: "-hadoop3"
+          - project-variable: core312
+            project-suffix: 312-hadoop3
+            artifact-suffix: "-hadoop3"
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
@@ -961,8 +961,8 @@ jobs:
     strategy:
       matrix:
         spark:
-#          - version: 3.2.1
-#            suffix: "-hadoop3"
+          - version: 3.2.1
+            suffix: "-hadoop3"
           - version: 3.1.2
             suffix: ""
           - version: 3.0.2
