@@ -16,7 +16,7 @@ import "google/protobuf/timestamp.proto";
 message DiffPaths {
   string left_path = 1;
   string right_path = 2;
-  optional string base_table_path = 3;
+  optional string base_path = 3;
 }
 
 message GatewayConfig {
