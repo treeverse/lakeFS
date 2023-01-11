@@ -345,7 +345,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 			writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
-		response.PresignedUrl = StringPtr(preSignedURL)
+		response.PresignedUrl = &preSignedURL
 	}
 
 	writeResponse(w, r, http.StatusOK, response)
