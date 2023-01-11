@@ -1,9 +1,11 @@
 package esti
 
 import (
+	"net/url"
 	"strings"
 	"testing"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -12,36 +14,30 @@ import (
 
 func TestPreSign(t *testing.T) {
 	SkipTestIfAskedTo(t)
-	blockStoreType := viper.GetViper().GetString("blockstore_type")
-	expected := ""
+	blockStoreType := viper.GetString("blockstore.type")
+	expectedKey := ""
 	switch blockStoreType {
 	case block.BlockstoreTypeS3:
-		expected = "X-Amz-Signature="
+		expectedKey = "X-Amz-Signature"
 	case block.BlockstoreTypeGS:
-		expected = "X-Goog-Signature="
+		expectedKey = "X-Goog-Signature"
 	case block.BlockstoreTypeAzure:
-		expected = "sv="
+		expectedKey = "sv"
 	default:
 		t.Skip("Only GS, S3 and Azure Blob supported for pre-signed urls")
 	}
-
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "foo/bar", true)
-
-	// Get Object
-	preSign := true
+	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "foo/bar", false)
 	response, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{
 		Path:    "foo/bar",
-		Presign: &preSign,
+		Presign: swag.Bool(true),
 	})
 	require.NoError(t, err, "failed to stat object with presign=true")
-	signedUrl := response.JSON200.PhysicalAddress
-	if !strings.HasPrefix(signedUrl, "http") {
-		t.Errorf("exected an HTTP(s) URL instead of an object store URI, got %s", signedUrl)
-	}
-
-	if !strings.Contains(signedUrl, expected) {
-		t.Errorf("expected a signed URL, got %s", signedUrl)
-	}
+	require.NotNil(t, response.JSON200, "successful response")
+	signedURL := response.JSON200.PhysicalAddress
+	parsedSignedURL, err := url.Parse(signedURL)
+	require.NoErrorf(t, err, "failed to parse url - %s", signedURL)
+	require.Truef(t, strings.HasPrefix(parsedSignedURL.Scheme, "http"), "URL scheme http(s) - %s", signedURL)
+	require.NotEmptyf(t, parsedSignedURL.Query().Get(expectedKey), "signature expected in key '%s' - %s", expectedKey, signedURL)
 }
