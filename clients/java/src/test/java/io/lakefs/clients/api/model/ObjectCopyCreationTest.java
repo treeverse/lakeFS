@@ -41,27 +41,19 @@ public class ObjectCopyCreationTest {
     }
 
     /**
-     * Test the property 'sourcePath'
+     * Test the property 'srcPath'
      */
     @Test
-    public void sourcePathTest() {
-        // TODO: test sourcePath
+    public void srcPathTest() {
+        // TODO: test srcPath
     }
 
     /**
-     * Test the property 'destinationPath'
+     * Test the property 'srcRef'
      */
     @Test
-    public void destinationPathTest() {
-        // TODO: test destinationPath
-    }
-
-    /**
-     * Test the property 'destinationBranch'
-     */
-    @Test
-    public void destinationBranchTest() {
-        // TODO: test destinationBranch
+    public void srcRefTest() {
+        // TODO: test srcRef
     }
 
 }

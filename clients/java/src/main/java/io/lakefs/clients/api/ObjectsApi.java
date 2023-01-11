@@ -65,7 +65,8 @@ public class ObjectsApi {
     /**
      * Build call for copyObject
      * @param repository  (required)
-     * @param ref a reference (could be either a branch or a commit ID) (required)
+     * @param branch destination branch for the copy (required)
+     * @param destPath destination path relative to the branch (required)
      * @param objectCopyCreation  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
@@ -80,19 +81,23 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call copyObjectCall(String repository, String ref, ObjectCopyCreation objectCopyCreation, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call copyObjectCall(String repository, String branch, String destPath, ObjectCopyCreation objectCopyCreation, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = objectCopyCreation;
 
         // create path and map variables
-        String localVarPath = "/repositories/{repository}/refs/{ref}/objects/copy"
+        String localVarPath = "/repositories/{repository}/branches/{branch}/objects/copy"
             .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
-            .replaceAll("\\{" + "ref" + "\\}", localVarApiClient.escapeString(ref.toString()));
+            .replaceAll("\\{" + "branch" + "\\}", localVarApiClient.escapeString(branch.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (destPath != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("dest_path", destPath));
+        }
 
         final String[] localVarAccepts = {
             "application/json"
@@ -113,16 +118,21 @@ public class ObjectsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call copyObjectValidateBeforeCall(String repository, String ref, ObjectCopyCreation objectCopyCreation, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call copyObjectValidateBeforeCall(String repository, String branch, String destPath, ObjectCopyCreation objectCopyCreation, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling copyObject(Async)");
         }
         
-        // verify the required parameter 'ref' is set
-        if (ref == null) {
-            throw new ApiException("Missing the required parameter 'ref' when calling copyObject(Async)");
+        // verify the required parameter 'branch' is set
+        if (branch == null) {
+            throw new ApiException("Missing the required parameter 'branch' when calling copyObject(Async)");
+        }
+        
+        // verify the required parameter 'destPath' is set
+        if (destPath == null) {
+            throw new ApiException("Missing the required parameter 'destPath' when calling copyObject(Async)");
         }
         
         // verify the required parameter 'objectCopyCreation' is set
@@ -131,7 +141,7 @@ public class ObjectsApi {
         }
         
 
-        okhttp3.Call localVarCall = copyObjectCall(repository, ref, objectCopyCreation, _callback);
+        okhttp3.Call localVarCall = copyObjectCall(repository, branch, destPath, objectCopyCreation, _callback);
         return localVarCall;
 
     }
@@ -140,7 +150,8 @@ public class ObjectsApi {
      * create a copy of an object
      * 
      * @param repository  (required)
-     * @param ref a reference (could be either a branch or a commit ID) (required)
+     * @param branch destination branch for the copy (required)
+     * @param destPath destination path relative to the branch (required)
      * @param objectCopyCreation  (required)
      * @return ObjectStats
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -154,8 +165,8 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ObjectStats copyObject(String repository, String ref, ObjectCopyCreation objectCopyCreation) throws ApiException {
-        ApiResponse<ObjectStats> localVarResp = copyObjectWithHttpInfo(repository, ref, objectCopyCreation);
+    public ObjectStats copyObject(String repository, String branch, String destPath, ObjectCopyCreation objectCopyCreation) throws ApiException {
+        ApiResponse<ObjectStats> localVarResp = copyObjectWithHttpInfo(repository, branch, destPath, objectCopyCreation);
         return localVarResp.getData();
     }
 
@@ -163,7 +174,8 @@ public class ObjectsApi {
      * create a copy of an object
      * 
      * @param repository  (required)
-     * @param ref a reference (could be either a branch or a commit ID) (required)
+     * @param branch destination branch for the copy (required)
+     * @param destPath destination path relative to the branch (required)
      * @param objectCopyCreation  (required)
      * @return ApiResponse&lt;ObjectStats&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -177,8 +189,8 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<ObjectStats> copyObjectWithHttpInfo(String repository, String ref, ObjectCopyCreation objectCopyCreation) throws ApiException {
-        okhttp3.Call localVarCall = copyObjectValidateBeforeCall(repository, ref, objectCopyCreation, null);
+    public ApiResponse<ObjectStats> copyObjectWithHttpInfo(String repository, String branch, String destPath, ObjectCopyCreation objectCopyCreation) throws ApiException {
+        okhttp3.Call localVarCall = copyObjectValidateBeforeCall(repository, branch, destPath, objectCopyCreation, null);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -187,7 +199,8 @@ public class ObjectsApi {
      * create a copy of an object (asynchronously)
      * 
      * @param repository  (required)
-     * @param ref a reference (could be either a branch or a commit ID) (required)
+     * @param branch destination branch for the copy (required)
+     * @param destPath destination path relative to the branch (required)
      * @param objectCopyCreation  (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
@@ -202,9 +215,9 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call copyObjectAsync(String repository, String ref, ObjectCopyCreation objectCopyCreation, final ApiCallback<ObjectStats> _callback) throws ApiException {
+    public okhttp3.Call copyObjectAsync(String repository, String branch, String destPath, ObjectCopyCreation objectCopyCreation, final ApiCallback<ObjectStats> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = copyObjectValidateBeforeCall(repository, ref, objectCopyCreation, _callback);
+        okhttp3.Call localVarCall = copyObjectValidateBeforeCall(repository, branch, destPath, objectCopyCreation, _callback);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

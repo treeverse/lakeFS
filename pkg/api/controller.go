@@ -1828,7 +1828,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
 		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
-		errors.Is(err, catalog.ErrInvalidValue),
+		errors.Is(err, graveler.ErrInvalidValue),
 		errors.Is(err, catalog.ErrPathRequiredValue),
 		errors.Is(err, graveler.ErrNoChanges),
 		errors.Is(err, permissions.ErrInvalidServiceName),

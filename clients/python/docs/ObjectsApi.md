@@ -4,7 +4,7 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**copy_object**](ObjectsApi.md#copy_object) | **POST** /repositories/{repository}/refs/{ref}/objects/copy | create a copy of an object
+[**copy_object**](ObjectsApi.md#copy_object) | **POST** /repositories/{repository}/branches/{branch}/objects/copy | create a copy of an object
 [**delete_object**](ObjectsApi.md#delete_object) | **DELETE** /repositories/{repository}/branches/{branch}/objects | delete object. Missing objects will not return a NotFound error.
 [**delete_objects**](ObjectsApi.md#delete_objects) | **POST** /repositories/{repository}/branches/{branch}/objects/delete | delete objects. Missing objects will not return a NotFound error.
 [**get_object**](ObjectsApi.md#get_object) | **GET** /repositories/{repository}/refs/{ref}/objects | get object content
@@ -17,7 +17,7 @@ Method | HTTP request | Description
 
 
 # **copy_object**
-> ObjectStats copy_object(repository, ref, object_copy_creation)
+> ObjectStats copy_object(repository, branch, dest_path, object_copy_creation)
 
 create a copy of an object
 
@@ -75,17 +75,17 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
-    ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
+    branch = "branch_example" # str | destination branch for the copy
+    dest_path = "dest_path_example" # str | destination path relative to the branch
     object_copy_creation = ObjectCopyCreation(
-        source_path="source_path_example",
-        destination_path="destination_path_example",
-        destination_branch="destination_branch_example",
+        src_path="src_path_example",
+        src_ref="src_ref_example",
     ) # ObjectCopyCreation | 
 
     # example passing only required values which don't have defaults set
     try:
         # create a copy of an object
-        api_response = api_instance.copy_object(repository, ref, object_copy_creation)
+        api_response = api_instance.copy_object(repository, branch, dest_path, object_copy_creation)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->copy_object: %s\n" % e)
@@ -97,7 +97,8 @@ with lakefs_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
- **ref** | **str**| a reference (could be either a branch or a commit ID) |
+ **branch** | **str**| destination branch for the copy |
+ **dest_path** | **str**| destination path relative to the branch |
  **object_copy_creation** | [**ObjectCopyCreation**](ObjectCopyCreation.md)|  |
 
 ### Return type

@@ -4,7 +4,7 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**copyObject**](ObjectsApi.md#copyObject) | **POST** /repositories/{repository}/refs/{ref}/objects/copy | create a copy of an object
+[**copyObject**](ObjectsApi.md#copyObject) | **POST** /repositories/{repository}/branches/{branch}/objects/copy | create a copy of an object
 [**deleteObject**](ObjectsApi.md#deleteObject) | **DELETE** /repositories/{repository}/branches/{branch}/objects | delete object. Missing objects will not return a NotFound error.
 [**deleteObjects**](ObjectsApi.md#deleteObjects) | **POST** /repositories/{repository}/branches/{branch}/objects/delete | delete objects. Missing objects will not return a NotFound error.
 [**getObject**](ObjectsApi.md#getObject) | **GET** /repositories/{repository}/refs/{ref}/objects | get object content
@@ -18,7 +18,7 @@ Method | HTTP request | Description
 
 <a name="copyObject"></a>
 # **copyObject**
-> ObjectStats copyObject(repository, ref, objectCopyCreation)
+> ObjectStats copyObject(repository, branch, destPath, objectCopyCreation)
 
 create a copy of an object
 
@@ -60,10 +60,11 @@ public class Example {
 
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
-    String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
+    String branch = "branch_example"; // String | destination branch for the copy
+    String destPath = "destPath_example"; // String | destination path relative to the branch
     ObjectCopyCreation objectCopyCreation = new ObjectCopyCreation(); // ObjectCopyCreation | 
     try {
-      ObjectStats result = apiInstance.copyObject(repository, ref, objectCopyCreation);
+      ObjectStats result = apiInstance.copyObject(repository, branch, destPath, objectCopyCreation);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#copyObject");
@@ -81,7 +82,8 @@ public class Example {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
- **ref** | **String**| a reference (could be either a branch or a commit ID) |
+ **branch** | **String**| destination branch for the copy |
+ **destPath** | **String**| destination path relative to the branch |
  **objectCopyCreation** | [**ObjectCopyCreation**](ObjectCopyCreation.md)|  |
 
 ### Return type

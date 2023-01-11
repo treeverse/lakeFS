@@ -29,85 +29,58 @@ import java.io.IOException;
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ObjectCopyCreation {
-  public static final String SERIALIZED_NAME_SOURCE_PATH = "source_path";
-  @SerializedName(SERIALIZED_NAME_SOURCE_PATH)
-  private String sourcePath;
+  public static final String SERIALIZED_NAME_SRC_PATH = "src_path";
+  @SerializedName(SERIALIZED_NAME_SRC_PATH)
+  private String srcPath;
 
-  public static final String SERIALIZED_NAME_DESTINATION_PATH = "destination_path";
-  @SerializedName(SERIALIZED_NAME_DESTINATION_PATH)
-  private String destinationPath;
-
-  public static final String SERIALIZED_NAME_DESTINATION_BRANCH = "destination_branch";
-  @SerializedName(SERIALIZED_NAME_DESTINATION_BRANCH)
-  private String destinationBranch;
+  public static final String SERIALIZED_NAME_SRC_REF = "src_ref";
+  @SerializedName(SERIALIZED_NAME_SRC_REF)
+  private String srcRef;
 
 
-  public ObjectCopyCreation sourcePath(String sourcePath) {
+  public ObjectCopyCreation srcPath(String srcPath) {
     
-    this.sourcePath = sourcePath;
+    this.srcPath = srcPath;
     return this;
   }
 
    /**
    * path of the copied object relative to the ref
-   * @return sourcePath
+   * @return srcPath
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "path of the copied object relative to the ref")
 
-  public String getSourcePath() {
-    return sourcePath;
+  public String getSrcPath() {
+    return srcPath;
   }
 
 
-  public void setSourcePath(String sourcePath) {
-    this.sourcePath = sourcePath;
+  public void setSrcPath(String srcPath) {
+    this.srcPath = srcPath;
   }
 
 
-  public ObjectCopyCreation destinationPath(String destinationPath) {
+  public ObjectCopyCreation srcRef(String srcRef) {
     
-    this.destinationPath = destinationPath;
+    this.srcRef = srcRef;
     return this;
   }
 
    /**
-   * the new copy path relative to the destination branch
-   * @return destinationPath
+   * a reference, if empty uses the provided branch as ref
+   * @return srcRef
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "the new copy path relative to the destination branch")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "a reference, if empty uses the provided branch as ref")
 
-  public String getDestinationPath() {
-    return destinationPath;
+  public String getSrcRef() {
+    return srcRef;
   }
 
 
-  public void setDestinationPath(String destinationPath) {
-    this.destinationPath = destinationPath;
-  }
-
-
-  public ObjectCopyCreation destinationBranch(String destinationBranch) {
-    
-    this.destinationBranch = destinationBranch;
-    return this;
-  }
-
-   /**
-   * the new copy destination branch
-   * @return destinationBranch
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "the new copy destination branch")
-
-  public String getDestinationBranch() {
-    return destinationBranch;
-  }
-
-
-  public void setDestinationBranch(String destinationBranch) {
-    this.destinationBranch = destinationBranch;
+  public void setSrcRef(String srcRef) {
+    this.srcRef = srcRef;
   }
 
 
@@ -120,23 +93,21 @@ public class ObjectCopyCreation {
       return false;
     }
     ObjectCopyCreation objectCopyCreation = (ObjectCopyCreation) o;
-    return Objects.equals(this.sourcePath, objectCopyCreation.sourcePath) &&
-        Objects.equals(this.destinationPath, objectCopyCreation.destinationPath) &&
-        Objects.equals(this.destinationBranch, objectCopyCreation.destinationBranch);
+    return Objects.equals(this.srcPath, objectCopyCreation.srcPath) &&
+        Objects.equals(this.srcRef, objectCopyCreation.srcRef);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(sourcePath, destinationPath, destinationBranch);
+    return Objects.hash(srcPath, srcRef);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ObjectCopyCreation {\n");
-    sb.append("    sourcePath: ").append(toIndentedString(sourcePath)).append("\n");
-    sb.append("    destinationPath: ").append(toIndentedString(destinationPath)).append("\n");
-    sb.append("    destinationBranch: ").append(toIndentedString(destinationBranch)).append("\n");
+    sb.append("    srcPath: ").append(toIndentedString(srcPath)).append("\n");
+    sb.append("    srcRef: ").append(toIndentedString(srcRef)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -82,9 +82,8 @@ class ObjectCopyCreation(ModelNormal):
                 and the value is attribute type.
         """
         return {
-            'source_path': (str,),  # noqa: E501
-            'destination_path': (str,),  # noqa: E501
-            'destination_branch': (str,),  # noqa: E501
+            'src_path': (str,),  # noqa: E501
+            'src_ref': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -93,9 +92,8 @@ class ObjectCopyCreation(ModelNormal):
 
 
     attribute_map = {
-        'source_path': 'source_path',  # noqa: E501
-        'destination_path': 'destination_path',  # noqa: E501
-        'destination_branch': 'destination_branch',  # noqa: E501
+        'src_path': 'src_path',  # noqa: E501
+        'src_ref': 'src_ref',  # noqa: E501
     }
 
     read_only_vars = {
@@ -105,13 +103,11 @@ class ObjectCopyCreation(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, source_path, destination_path, destination_branch, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, src_path, *args, **kwargs):  # noqa: E501
         """ObjectCopyCreation - a model defined in OpenAPI
 
         Args:
-            source_path (str): path of the copied object relative to the ref
-            destination_path (str): the new copy path relative to the destination branch
-            destination_branch (str): the new copy destination branch
+            src_path (str): path of the copied object relative to the ref
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -144,6 +140,7 @@ class ObjectCopyCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            src_ref (str): a reference, if empty uses the provided branch as ref. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -171,9 +168,7 @@ class ObjectCopyCreation(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.source_path = source_path
-        self.destination_path = destination_path
-        self.destination_branch = destination_branch
+        self.src_path = src_path
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -194,13 +189,11 @@ class ObjectCopyCreation(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, source_path, destination_path, destination_branch, *args, **kwargs):  # noqa: E501
+    def __init__(self, src_path, *args, **kwargs):  # noqa: E501
         """ObjectCopyCreation - a model defined in OpenAPI
 
         Args:
-            source_path (str): path of the copied object relative to the ref
-            destination_path (str): the new copy path relative to the destination branch
-            destination_branch (str): the new copy destination branch
+            src_path (str): path of the copied object relative to the ref
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -233,6 +226,7 @@ class ObjectCopyCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            src_ref (str): a reference, if empty uses the provided branch as ref. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -258,9 +252,7 @@ class ObjectCopyCreation(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.source_path = source_path
-        self.destination_path = destination_path
-        self.destination_branch = destination_branch
+        self.src_path = src_path
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

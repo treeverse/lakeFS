@@ -52,7 +52,7 @@ class ObjectsApi(object):
                     'jwt_token',
                     'oidc_auth'
                 ],
-                'endpoint_path': '/repositories/{repository}/refs/{ref}/objects/copy',
+                'endpoint_path': '/repositories/{repository}/branches/{branch}/objects/copy',
                 'operation_id': 'copy_object',
                 'http_method': 'POST',
                 'servers': None,
@@ -60,12 +60,14 @@ class ObjectsApi(object):
             params_map={
                 'all': [
                     'repository',
-                    'ref',
+                    'branch',
+                    'dest_path',
                     'object_copy_creation',
                 ],
                 'required': [
                     'repository',
-                    'ref',
+                    'branch',
+                    'dest_path',
                     'object_copy_creation',
                 ],
                 'nullable': [
@@ -83,18 +85,22 @@ class ObjectsApi(object):
                 'openapi_types': {
                     'repository':
                         (str,),
-                    'ref':
+                    'branch':
+                        (str,),
+                    'dest_path':
                         (str,),
                     'object_copy_creation':
                         (ObjectCopyCreation,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
-                    'ref': 'ref',
+                    'branch': 'branch',
+                    'dest_path': 'dest_path',
                 },
                 'location_map': {
                     'repository': 'path',
-                    'ref': 'path',
+                    'branch': 'path',
+                    'dest_path': 'query',
                     'object_copy_creation': 'body',
                 },
                 'collection_format_map': {
@@ -793,7 +799,8 @@ class ObjectsApi(object):
     def copy_object(
         self,
         repository,
-        ref,
+        branch,
+        dest_path,
         object_copy_creation,
         **kwargs
     ):
@@ -802,12 +809,13 @@ class ObjectsApi(object):
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.copy_object(repository, ref, object_copy_creation, async_req=True)
+        >>> thread = api.copy_object(repository, branch, dest_path, object_copy_creation, async_req=True)
         >>> result = thread.get()
 
         Args:
             repository (str):
-            ref (str): a reference (could be either a branch or a commit ID)
+            branch (str): destination branch for the copy
+            dest_path (str): destination path relative to the branch
             object_copy_creation (ObjectCopyCreation):
 
         Keyword Args:
@@ -857,8 +865,10 @@ class ObjectsApi(object):
         kwargs['_host_index'] = kwargs.get('_host_index')
         kwargs['repository'] = \
             repository
-        kwargs['ref'] = \
-            ref
+        kwargs['branch'] = \
+            branch
+        kwargs['dest_path'] = \
+            dest_path
         kwargs['object_copy_creation'] = \
             object_copy_creation
         return self.copy_object_endpoint.call_with_http_info(**kwargs)

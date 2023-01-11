@@ -51,9 +51,10 @@ public class ObjectsApiTest {
     @Test
     public void copyObjectTest() throws ApiException {
         String repository = null;
-        String ref = null;
+        String branch = null;
+        String destPath = null;
         ObjectCopyCreation objectCopyCreation = null;
-                ObjectStats response = api.copyObject(repository, ref, objectCopyCreation);
+                ObjectStats response = api.copyObject(repository, branch, destPath, objectCopyCreation);
         // TODO: test validations
     }
     

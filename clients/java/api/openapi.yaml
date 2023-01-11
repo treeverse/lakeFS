@@ -3655,6 +3655,75 @@ paths:
       - objects
       x-contentType: application/json
       x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/objects/copy:
+    post:
+      operationId: copyObject
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: destination branch for the copy
+        explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: destination path relative to the branch
+        explode: true
+        in: query
+        name: dest_path
+        required: true
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObjectCopyCreation'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectStats'
+          description: Copy object response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: create a copy of an object
+      tags:
+      - objects
+      x-contentType: application/json
+      x-accepts: application/json
   /repositories/{repository}/refs/{ref}/objects/stat:
     get:
       operationId: statObject
@@ -3720,67 +3789,6 @@ paths:
       summary: get object metadata
       tags:
       - objects
-      x-accepts: application/json
-  /repositories/{repository}/refs/{ref}/objects/copy:
-    post:
-      operationId: copyObject
-      parameters:
-      - explode: false
-        in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-        style: simple
-      - description: a reference (could be either a branch or a commit ID)
-        explode: false
-        in: path
-        name: ref
-        required: true
-        schema:
-          type: string
-        style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ObjectCopyCreation'
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ObjectStats'
-          description: Copy object response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Validation Error
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      summary: create a copy of an object
-      tags:
-      - objects
-      x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/refs/{ref}/objects/underlyingProperties:
     get:
@@ -5138,23 +5146,17 @@ components:
       type: object
     ObjectCopyCreation:
       example:
-        destination_path: destination_path
-        destination_branch: destination_branch
-        source_path: source_path
+        src_path: src_path
+        src_ref: src_ref
       properties:
-        source_path:
+        src_path:
           description: path of the copied object relative to the ref
           type: string
-        destination_path:
-          description: the new copy path relative to the destination branch
-          type: string
-        destination_branch:
-          description: the new copy destination branch
+        src_ref:
+          description: a reference, if empty uses the provided branch as ref
           type: string
       required:
-      - destination_branch
-      - destination_path
-      - source_path
+      - src_path
       type: object
     ObjectStageCreation:
       example:
