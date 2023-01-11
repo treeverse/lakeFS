@@ -4,14 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Azure/azure-pipeline-go/pipeline"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-pipeline-go/pipeline"
-	"github.com/Azure/azure-storage-blob-go/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -34,16 +36,18 @@ const (
 type Adapter struct {
 	pipeline       pipeline.Pipeline
 	configurations configurations
+	client         service.Client
 }
 
 type configurations struct {
 	retryReaderOptions azblob.RetryReaderOptions
 }
 
-func NewAdapter(pipeline pipeline.Pipeline, opts ...func(a *Adapter)) *Adapter {
+func NewAdapter(client service.Client, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
-		pipeline:       pipeline,
-		configurations: configurations{retryReaderOptions: azblob.RetryReaderOptions{MaxRetryRequests: defaultMaxRetryRequests}},
+		// pipeline:       client,
+		configurations: configurations{retryReaderOptions: azblob.RetryReaderOptions{MaxRetries: defaultMaxRetryRequests}},
+		client:         client,
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -131,33 +135,33 @@ func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ strin
 	return nil, fmt.Errorf("inventory %w", ErrNotImplemented)
 }
 
-func (a *Adapter) getContainerURL(rawURL string) azblob.ContainerURL {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		panic(err)
-	}
-	return azblob.NewContainerURL(*u, a.pipeline)
-}
+// func (a *Adapter) getContainerURL(rawURL string) service.ContainerURL {
+// 	u, err := url.Parse(rawURL)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	return azblob.NewContainerURL(*u, a.pipeline)
+// }
 
-func (a *Adapter) translatePutOpts(ctx context.Context, opts block.PutOpts) azblob.UploadStreamToBlockBlobOptions {
-	res := azblob.UploadStreamToBlockBlobOptions{}
-	if opts.StorageClass == nil {
-		return res
-	}
-
-	for _, t := range azblob.PossibleAccessTierTypeValues() {
-		if strings.EqualFold(*opts.StorageClass, string(t)) {
-			res.BlobAccessTier = t
-			break
-		}
-	}
-
-	if res.BlobAccessTier == "" {
-		a.log(ctx).WithField("tier_type", *opts.StorageClass).Warn("Unknown Azure tier type")
-	}
-
-	return res
-}
+// func (a *Adapter) translatePutOpts(ctx context.Context, opts block.PutOpts) azblob.UploadStreamToBlockBlobOptions {
+// 	res := azblob.UploadStreamToBlockBlobOptions{}
+// 	if opts.StorageClass == nil {
+// 		return res
+// 	}
+//
+// 	for _, t := range azblob.PossibleAccessTierTypeValues() {
+// 		if strings.EqualFold(*opts.StorageClass, string(t)) {
+// 			res.BlobAccessTier = t
+// 			break
+// 		}
+// 	}
+//
+// 	if res.BlobAccessTier == "" {
+// 		a.log(ctx).WithField("tier_type", *opts.StorageClass).Warn("Unknown Azure tier type")
+// 	}
+//
+// 	return res
+// }
 
 func (a *Adapter) log(ctx context.Context) logging.Logger {
 	return logging.FromContext(ctx)
@@ -170,30 +174,35 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 	if err != nil {
 		return err
 	}
-	container := a.getContainerURL(qualifiedKey.ContainerURL)
-	blobURL := container.NewBlockBlobURL(qualifiedKey.BlobURL)
+	// _, err = a.client.UploadStream(ctx, "nir", qualifiedKey.BlobURL, reader, nil)
+	_, err = a.client.NewContainerClient("nir").NewBlockBlobClient(qualifiedKey.BlobURL).UploadStream(ctx, reader, nil)
+	// service.Client.NewContainerClient("nir")
+	// container := a.getContainerURL(qualifiedKey.ContainerURL)
+	// blobURL := container.NewBlockBlobURL(qualifiedKey.BlobURL)
+	return err
+	// blobURL := container.NewBlockBlobURL(qualifiedKey.BlobURL)
 
 	// TODO(Guys): remove this work around once azure fixes panic issue and use azblob.UploadStreamToBlockBlob
-	transferManager, err := azblob.NewStaticBuffer(_1MiB, MaxBuffers)
-	if err != nil {
-		return err
-	}
-	uploadOpts := a.translatePutOpts(ctx, opts)
-	uploadOpts.TransferManager = transferManager
-	defer transferManager.Close()
-	resp, err := copyFromReader(ctx, reader, blobURL, uploadOpts)
-	if err != nil {
-		return err
-	}
-	_ = resp == nil // this is done in order to ignore "result 0 is never used" error ( copyFromReader is copied from azure, and we want to keep it with minimum changes)
-	return nil
+	// transferManager, err := azblob.NewStaticBuffer(_1MiB, MaxBuffers)
+	// if err != nil {
+	// 	return err
+	// }
+	// uploadOpts := a.translatePutOpts(ctx, opts)
+	// uploadOpts.TransferManager = transferManager
+	// defer transferManager.Close()
+	// resp, err := copyFromReader(ctx, reader, blobURL, uploadOpts)
+	// if err != nil {
+	// 	return err
+	// }
+	// _ = resp == nil // this is done in order to ignore "result 0 is never used" error ( copyFromReader is copied from azure, and we want to keep it with minimum changes)
+	// return nil
 }
 
 func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	var err error
 	defer reportMetrics("Get", time.Now(), nil, &err)
 
-	return a.Download(ctx, obj, 0, azblob.CountToEnd)
+	return a.Download(ctx, obj, 0, service.CountToEnd)
 }
 
 func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
@@ -208,52 +217,57 @@ func (a *Adapter) Download(ctx context.Context, obj block.ObjectPointer, offset,
 	if err != nil {
 		return nil, err
 	}
-	container := a.getContainerURL(qualifiedKey.ContainerURL)
-	blobURL := container.NewBlobURL(qualifiedKey.BlobURL)
+	container := a.client.NewContainerClient(qualifiedKey.ContainerURL)
+	blobURL := container.NewBlockBlobClient(qualifiedKey.BlobURL)
 
-	keyOptions := azblob.ClientProvidedKeyOptions{}
-	downloadResponse, err := blobURL.Download(ctx, offset, count, azblob.BlobAccessConditions{}, false, keyOptions)
+	// keyOptions := service.ClientProvidedKeyOptions{}
+	downloadResponse, err := blobURL.DownloadStream(ctx, &azblob.DownloadStreamOptions{
+		RangeGetContentMD5: nil,
+		Range: blob.HTTPRange{
+			Offset: offset,
+			Count:  count,
+		},
+	})
 	if isErrNotFound(err) {
 		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
-		a.log(ctx).WithError(err).Errorf("failed to get azure blob from container %s key %s", container, blobURL)
 		return nil, err
 	}
-	bodyStream := downloadResponse.Body(a.configurations.retryReaderOptions)
-	return bodyStream, nil
+	return resp.Body, nil
 }
 
 func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
 	var err error
 	defer reportMetrics("Walk", time.Now(), nil, &err)
+	return ErrNotImplemented
+	//
+	// qualifiedPrefix, err := resolveNamespacePrefix(walkOpt)
+	// if err != nil {
+	// 	return err
+	// }
 
-	qualifiedPrefix, err := resolveNamespacePrefix(walkOpt)
-	if err != nil {
-		return err
-	}
-
-	containerURL := a.getContainerURL(qualifiedPrefix.ContainerURL)
-
-	for marker := (azblob.Marker{}); marker.NotDone(); {
-		listBlob, err := containerURL.ListBlobsFlatSegment(ctx, marker, azblob.ListBlobsSegmentOptions{Prefix: qualifiedPrefix.Prefix})
-		if err != nil {
-			return err
-		}
-		marker = listBlob.NextMarker
-		for _, blobInfo := range listBlob.Segment.BlobItems {
-			if err := walkFn(blobInfo.Name); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	// containerURL := a.getContainerURL(qualifiedPrefix.ContainerURL)
+	//
+	// for marker := (azblob.Marker{}); marker.NotDone(); {
+	// 	listBlob, err := containerURL.ListBlobsFlatSegment(ctx, marker, azblob.ListBlobsSegmentOptions{Prefix: qualifiedPrefix.Prefix})
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	marker = listBlob.NextMarker
+	// 	for _, blobInfo := range listBlob.Segment.BlobItems {
+	// 		if err := walkFn(blobInfo.Name); err != nil {
+	// 			return err
+	// 		}
+	// 	}
+	// }
+	// return nil
 }
 
-func isErrNotFound(err error) bool {
-	var storageErr azblob.StorageError
-	return errors.As(err, &storageErr) && storageErr.ServiceCode() == azblob.ServiceCodeBlobNotFound
-}
+// func isErrNotFound(err error) bool {
+// 	var storageErr external.StorageError
+// 	return errors.As(err, &storageErr) && storageErr.ServiceCode() == azblob.ServiceCodeBlobNotFound
+// }
 
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {
 	var err error
@@ -264,83 +278,99 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 		return false, err
 	}
 
-	container := a.getContainerURL(qualifiedKey.ContainerURL)
-	blobURL := container.NewBlobURL(qualifiedKey.BlobURL)
+	// container := a.client.clientgetContainerURL(qualifiedKey.ContainerURL)
+	blobURL := a.client.NewContainerClient("nir").NewBlobClient(qualifiedKey.BlobURL)
 
-	_, err = blobURL.GetProperties(ctx, azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
+	_, err = blobURL.GetProperties(ctx, nil)
 
-	if isErrNotFound(err) {
-		return false, nil
-	}
+	// if isErrNotFound(err) {
+	// 	return false, nil
+	// }
 	if err != nil {
 		return false, err
 	}
 	return true, nil
+	// if errors.Is(err, )
+	// container := a.getContainerURL(qualifiedKey.ContainerURL)
+	// blobURL := container.NewBlobURL(qualifiedKey.BlobURL)
+	//
+	// _, err = blobURL.GetProperties(ctx, azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
+	// a.client.UploadStream()
+	// azblob.
+	// if isErrNotFound(err) {
+	// 	return false, nil
+	// }
+	// if err != nil {
+	// 	return false, err
+	// }
+	// return true, nil
 }
 
 func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (block.Properties, error) {
-	var err error
-	defer reportMetrics("GetProperties", time.Now(), nil, &err)
-
-	qualifiedKey, err := resolveBlobURLInfo(obj)
-	if err != nil {
-		return block.Properties{}, err
-	}
-
-	container := a.getContainerURL(qualifiedKey.ContainerURL)
-	blobURL := container.NewBlobURL(qualifiedKey.BlobURL)
-
-	props, err := blobURL.GetProperties(ctx, azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
-	if err != nil {
-		return block.Properties{}, err
-	}
-	storageClass := props.AccessTier()
-	return block.Properties{StorageClass: &storageClass}, nil
+	return block.Properties{}, ErrNotImplemented
+	// var err error
+	// defer reportMetrics("GetProperties", time.Now(), nil, &err)
+	//
+	// qualifiedKey, err := resolveBlobURLInfo(obj)
+	// if err != nil {
+	// 	return block.Properties{}, err
+	// }
+	//
+	// container := a.getContainerURL(qualifiedKey.ContainerURL)
+	// blobURL := container.NewBlobURL(qualifiedKey.BlobURL)
+	//
+	// props, err := blobURL.GetProperties(ctx, azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
+	// if err != nil {
+	// 	return block.Properties{}, err
+	// }
+	// storageClass := props.AccessTier()
+	// return block.Properties{StorageClass: &storageClass}, nil
 }
 
 func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	var err error
 	defer reportMetrics("Remove", time.Now(), nil, &err)
+	return ErrNotImplemented
+	// qualifiedKey, err := resolveBlobURLInfo(obj)
+	// if err != nil {
+	// 	return err
+	// }
 
-	qualifiedKey, err := resolveBlobURLInfo(obj)
-	if err != nil {
-		return err
-	}
+	// container := a.client.NewContainerClient("nir")
+	// blobURL := container.NewBlobClient(qualifiedKey.BlobURL)
 
-	container := a.getContainerURL(qualifiedKey.ContainerURL)
-	blobURL := container.NewBlobURL(qualifiedKey.BlobURL)
-
-	_, err = blobURL.Delete(ctx, "", azblob.BlobAccessConditions{})
+	// _, err = blobURL.Delete(ctx, service.DeleteOp)
 	return err
 }
 
 func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.ObjectPointer) error {
-	var err error
-	defer reportMetrics("Copy", time.Now(), nil, &err)
-
-	qualifiedDestinationKey, err := resolveBlobURLInfo(destinationObj)
-	if err != nil {
-		return err
-	}
-	qualifiedSourceKey, err := resolveBlobURLInfo(sourceObj)
-	if err != nil {
-		return err
-	}
-	sourceContainer := a.getContainerURL(qualifiedSourceKey.ContainerURL)
-	sourceURL := sourceContainer.NewBlobURL(qualifiedSourceKey.BlobURL)
-
-	destinationContainer := a.getContainerURL(qualifiedDestinationKey.ContainerURL)
-	destinationURL := destinationContainer.NewBlobURL(qualifiedDestinationKey.BlobURL)
-	resp, err := destinationURL.StartCopyFromURL(ctx, sourceURL.URL(), azblob.Metadata{}, azblob.ModifiedAccessConditions{}, azblob.BlobAccessConditions{}, azblob.AccessTierNone, azblob.BlobTagsMap{})
-	if err != nil {
-		return err
-	}
-	// validate copy is not asynchronous
-	copyStatus := resp.CopyStatus()
-	if copyStatus == "pending" {
-		return ErrAsyncCopy
-	}
-	return nil
+	return ErrNotImplemented
+	// var err error
+	// defer reportMetrics("Copy", time.Now(), nil, &err)
+	//
+	// qualifiedDestinationKey, err := resolveBlobURLInfo(destinationObj)
+	// if err != nil {
+	// 	return err
+	// }
+	// qualifiedSourceKey, err := resolveBlobURLInfo(sourceObj)
+	// if err != nil {
+	// 	return err
+	// }
+	// sourceContainer := a.getContainerURL(qualifiedSourceKey.ContainerURL)
+	// sourceURL := sourceContainer.NewBlobURL(qualifiedSourceKey.BlobURL)
+	//
+	// destinationContainer := a.getContainerURL(qualifiedDestinationKey.ContainerURL)
+	// destinationURL := destinationContainer.NewBlobURL(qualifiedDestinationKey.BlobURL)
+	// resp, err := destinationURL.StartCopyFromURL(ctx, sourceURL.URL(), azblob.Metadata{}, azblob.ModifiedAccessConditions{}, azblob.BlobAccessConditions{}, azblob.AccessTierNone, azblob.BlobTagsMap{})
+	// if err != nil {
+	// 	return err
+	// }
+	// // validate copy is not asynchronous
+	// copyStatus := resp.CopyStatus()
+	// if copyStatus == "pending" {
+	// 	return ErrAsyncCopy
+	// }
+	// return nil
 }
 
 func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
@@ -367,14 +397,14 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int
 		return nil, err
 	}
 
-	container := a.getContainerURL(qualifiedKey.ContainerURL)
+	container := a.client.NewContainerClient("")
 	hashReader := block.NewHashingReader(reader, block.HashFunctionMD5)
 
-	transferManager, err := azblob.NewStaticBuffer(_1MiB, MaxBuffers)
-	if err != nil {
-		return nil, err
-	}
-	defer transferManager.Close()
+	// transferManager, err := azblob.NewStaticBuffer(_1MiB, MaxBuffers)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// defer transferManager.Close()
 	multipartBlockWriter := NewMultipartBlockWriter(hashReader, container, qualifiedKey.BlobURL)
 	_, err = copyFromReader(ctx, hashReader, multipartBlockWriter, azblob.UploadStreamToBlockBlobOptions{
 		TransferManager: transferManager,
