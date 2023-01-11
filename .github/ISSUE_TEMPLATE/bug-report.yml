@@ -51,7 +51,7 @@ body:
     validations:
       required: true
   - type: input
-    id: Clients
+    id: clients
     attributes:
       label: Affected Clients
       description: If applicable provide lakeFS client and version that was used
