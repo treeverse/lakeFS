@@ -3930,13 +3930,6 @@ paths:
         schema:
           type: string
         style: form
-      - explode: true
-        in: query
-        name: presign
-        required: false
-        schema:
-          type: boolean
-        style: form
       responses:
         "201":
           content:
@@ -5022,6 +5015,10 @@ components:
           - object
           type: string
         physical_address:
+          description: |
+            The location of the object on the underlying object store.
+            Formatted as a native URI with the object store type as scheme ("s3://...", "gs://...", etc.)
+            Or, in the case of presign=true, will be an HTTP URL to be consumed via regular HTTP GET
           type: string
         checksum:
           type: string

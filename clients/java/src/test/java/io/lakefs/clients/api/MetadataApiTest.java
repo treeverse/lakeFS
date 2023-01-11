@@ -46,8 +46,7 @@ public class MetadataApiTest {
         String repository = null;
         String branch = null;
         String location = null;
-        Boolean presign = null;
-                StorageURI response = api.createSymlinkFile(repository, branch, location, presign);
+                StorageURI response = api.createSymlinkFile(repository, branch, location);
         // TODO: test validations
     }
     

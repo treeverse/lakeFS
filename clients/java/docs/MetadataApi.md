@@ -11,7 +11,7 @@ Method | HTTP request | Description
 
 <a name="createSymlinkFile"></a>
 # **createSymlinkFile**
-> StorageURI createSymlinkFile(repository, branch, location, presign)
+> StorageURI createSymlinkFile(repository, branch, location)
 
 creates symlink files corresponding to the given directory
 
@@ -55,9 +55,8 @@ public class Example {
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
     String location = "location_example"; // String | path to the table data
-    Boolean presign = true; // Boolean | 
     try {
-      StorageURI result = apiInstance.createSymlinkFile(repository, branch, location, presign);
+      StorageURI result = apiInstance.createSymlinkFile(repository, branch, location);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling MetadataApi#createSymlinkFile");
@@ -77,7 +76,6 @@ Name | Type | Description  | Notes
  **repository** | **String**|  |
  **branch** | **String**|  |
  **location** | **String**| path to the table data | [optional]
- **presign** | **Boolean**|  | [optional]
 
 ### Return type
 

@@ -69,7 +69,6 @@ with lakefs_client.ApiClient(configuration) as api_client:
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
     location = "location_example" # str | path to the table data (optional)
-    presign = True # bool |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -83,7 +82,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # creates symlink files corresponding to the given directory
-        api_response = api_instance.create_symlink_file(repository, branch, location=location, presign=presign)
+        api_response = api_instance.create_symlink_file(repository, branch, location=location)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling MetadataApi->create_symlink_file: %s\n" % e)
@@ -97,7 +96,6 @@ Name | Type | Description  | Notes
  **repository** | **str**|  |
  **branch** | **str**|  |
  **location** | **str**| path to the table data | [optional]
- **presign** | **bool**|  | [optional]
 
 ### Return type
 

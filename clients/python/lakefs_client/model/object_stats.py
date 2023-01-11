@@ -131,7 +131,7 @@ class ObjectStats(ModelNormal):
         Args:
             path (str):
             path_type (str):
-            physical_address (str):
+            physical_address (str): The location of the object on the underlying object store. Formatted as a native URI with the object store type as scheme (\"s3://...\", \"gs://...\", etc.) Or, in the case of presign=true, will be an HTTP URL to be consumed via regular HTTP GET 
             checksum (str):
             mtime (int): Unix Epoch in seconds
 
@@ -227,7 +227,7 @@ class ObjectStats(ModelNormal):
         Args:
             path (str):
             path_type (str):
-            physical_address (str):
+            physical_address (str): The location of the object on the underlying object store. Formatted as a native URI with the object store type as scheme (\"s3://...\", \"gs://...\", etc.) Or, in the case of presign=true, will be an HTTP URL to be consumed via regular HTTP GET 
             checksum (str):
             mtime (int): Unix Epoch in seconds
 

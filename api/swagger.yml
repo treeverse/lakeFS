@@ -246,6 +246,10 @@ components:
           enum: [common_prefix, object]
         physical_address:
           type: string
+          description: |
+            The location of the object on the underlying object store.
+            Formatted as a native URI with the object store type as scheme ("s3://...", "gs://...", etc.)
+            Or, in the case of presign=true, will be an HTTP URL to be consumed via regular HTTP GET
         checksum:
           type: string
         size_bytes:
@@ -3318,11 +3322,6 @@ paths:
         schema:
           type: string
         description: path to the table data
-      - in: query
-        name: presign
-        required: false
-        schema:
-          type: boolean
     post:
       tags:
         - metadata
