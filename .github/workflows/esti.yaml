@@ -81,7 +81,7 @@ jobs:
     name: Build and push Docker image
     needs: [check-secrets, gen-code]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ubuntu-latest-16-cores
     outputs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
