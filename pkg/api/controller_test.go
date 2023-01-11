@@ -3847,3 +3847,74 @@ func TestController_PostStatsEvents(t *testing.T) {
 		})
 	}
 }
+
+func TestController_CopyObjectHandler(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "bucket/prefix"), "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	const expectedSize = 38
+	const content = "hello world this is my awesome content"
+	uploadResp, err := uploadObjectHelper(t, ctx, clt, "foo/bar", strings.NewReader(content), "repo1", "main")
+	verifyResponseOK(t, uploadResp, err)
+
+	sizeBytes := api.Int64Value(uploadResp.JSON201.SizeBytes)
+
+	if sizeBytes != expectedSize {
+		t.Fatalf("expected %d bytes to be written, got back %d", expectedSize, sizeBytes)
+	}
+
+	t.Run("copy object", func(t *testing.T) {
+		time.Sleep(1 * time.Second)
+		copyResp, err := clt.CopyObjectWithResponse(ctx, "repo1", "main", &api.CopyObjectParams{
+			DestPath: "bar/foo",
+		}, api.CopyObjectJSONRequestBody{
+			SrcPath: "foo/bar",
+		})
+		verifyResponseOK(t, copyResp, err)
+		copyType := copyResp.HTTPResponse.Header.Get("X-lakeFS-Copy-Type")
+		// Verify copyType
+		require.Equal(t, copyType, "full")
+		// Verify creation path, date and physical address are different
+		require.False(t, uploadResp.JSON201.PhysicalAddress == copyResp.JSON201.PhysicalAddress)
+		require.False(t, uploadResp.JSON201.Mtime == copyResp.JSON201.Mtime)
+		require.Equal(t, copyResp.JSON201.Path, "bar/foo")
+
+		// Verify all else is equal
+		uploadResp.JSON201.PhysicalAddress = copyResp.JSON201.PhysicalAddress
+		uploadResp.JSON201.Mtime = copyResp.JSON201.Mtime
+		uploadResp.JSON201.Path = copyResp.JSON201.Path
+		require.Nil(t, deep.Equal(uploadResp.JSON201, copyResp.JSON201))
+
+		// get back info
+		statResp, err := clt.StatObjectWithResponse(ctx, "repo1", "main", &api.StatObjectParams{Path: "bar/foo"})
+		verifyResponseOK(t, statResp, err)
+		require.Nil(t, deep.Equal(statResp.JSON200, copyResp.JSON201))
+	})
+
+	t.Run("copy object not found", func(t *testing.T) {
+		ref := "main"
+		resp, err := clt.CopyObjectWithResponse(ctx, "repo1", "main", &api.CopyObjectParams{
+			DestPath: "bar/foo",
+		}, api.CopyObjectJSONRequestBody{
+			SrcPath: "not/found",
+			SrcRef:  &ref,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON404)
+	})
+
+	t.Run("copy object validation error", func(t *testing.T) {
+		resp, err := clt.CopyObjectWithResponse(ctx, "repo1", "main", &api.CopyObjectParams{
+			DestPath: "",
+		}, api.CopyObjectJSONRequestBody{
+			SrcPath: "foo/bar",
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON400)
+	})
+}

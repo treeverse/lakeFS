@@ -274,6 +274,18 @@ components:
           items:
             $ref: "#/components/schemas/ObjectStats"
 
+    ObjectCopyCreation:
+      type: object
+      required:
+        - src_path
+      properties:
+        src_path:
+          type: string
+          description: path of the copied object relative to the ref
+        src_ref:
+          type: string
+          description: a reference, if empty uses the provided branch as ref
+
     ObjectStageCreation:
       type: object
       required:
@@ -3162,6 +3174,52 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ObjectErrorList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/branches/{branch}/objects/copy:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        description: destination branch for the copy
+      - in: query
+        name: dest_path
+        description: destination path relative to the branch
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - objects
+      operationId: copyObject
+      summary: create a copy of an object
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjectCopyCreation"
+      responses:
+        201:
+          description: Copy object response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectStats"
+        400:
+          $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
