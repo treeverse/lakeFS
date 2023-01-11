@@ -1,0 +1,230 @@
+[
+  {
+    "id": 1,
+    "policy": {
+      "default_retention_days": 1,
+      "branches": []
+    },
+    "branches": [
+      {
+        "branch_name": "a1",
+        "delete_commit_days_ago": 2
+      },
+      {
+        "branch_name": "b1",
+        "delete_commit_days_ago": 2
+      }
+    ],
+    "file_deleted": true,
+    "description": "The file is deleted according to the default retention policy"
+  },
+  {
+    "id": 2,
+    "policy": {
+      "default_retention_days": 5,
+      "branches": [
+        {"branch_id": "a2", "retention_days": 1},
+        {"branch_id": "b2", "retention_days": 3}
+      ]
+    },
+    "branches": [
+      {
+        "branch_name": "a2",
+        "delete_commit_days_ago": 4
+      },
+      {
+        "branch_name": "b2",
+        "delete_commit_days_ago": 4
+      }
+    ],
+    "file_deleted": true,
+    "description": "The file is deleted according to branches' retention policies"
+  },
+  {
+    "id": 3,
+    "policy": {
+      "default_retention_days": 5,
+      "branches": [
+        {"branch_id": "a3", "retention_days": 1},
+        {"branch_id": "b3", "retention_days": 3}
+      ]
+    },
+    "branches": [
+      {
+        "branch_name": "a3",
+        "delete_commit_days_ago": 4
+      },
+      {
+        "branch_name": "b3",
+        "delete_commit_days_ago": 2
+      }
+    ],
+    "file_deleted": false,
+    "description": "The file is not deleted because of the retention policy of the second branch"
+  },
+  {
+    "id": 4,
+    "policy": {
+      "default_retention_days": 5,
+      "branches": []
+    },
+    "branches": [
+      {
+        "branch_name": "a4",
+        "delete_commit_days_ago": 4
+      },
+      {
+        "branch_name": "b4",
+        "delete_commit_days_ago": 2
+      }
+    ],
+    "file_deleted": false,
+    "description": "The file isn't deleted according to default retention policy"
+  },
+  {
+    "id": 5,
+    "policy": {
+      "default_retention_days": 5,
+      "branches": [
+        {"branch_id": "a5", "retention_days": 1},
+        {"branch_id": "b5", "retention_days": 3}
+      ]
+    },
+    "branches": [
+      {
+        "branch_name": "a5",
+        "delete_commit_days_ago": 1
+      }
+    ],
+    "file_deleted": false,
+    "description": "The file is not deleted as it still exists in the second branch"
+  },
+  {
+    "id": 6,
+    "policy": {
+      "default_retention_days": 5,
+      "branches": [
+        {"branch_id": "a6", "retention_days": 1}
+      ]
+    },
+    "branches": [
+      {
+        "branch_name": "a6",
+        "delete_commit_days_ago": 1
+      },
+      {
+        "branch_name": "b6",
+        "delete_commit_days_ago": 4
+      }
+    ],
+    "file_deleted": false,
+    "description": "The file is not deleted because default retention time keeps it for the second branch"
+  },
+  {
+    "id": 7,
+    "policy": {
+      "default_retention_days": 5,
+      "branches": [
+        {"branch_id": "a7", "retention_days": 1}
+      ]
+    },
+    "branches": [
+      {
+        "branch_name": "a7",
+        "delete_commit_days_ago": 1
+      },
+      {
+        "branch_name": "b7",
+        "delete_commit_days_ago": 5
+      }
+    ],
+    "file_deleted": true,
+    "description": "The file is deleted as the retention policy for the branch permits the deletion from the branch, and the default retention policy permits deletion for the second branch"
+  },
+  {
+    "id": 8,
+    "policy": {
+      "default_retention_days": 1,
+      "branches": [
+        {"branch_id": "a8", "retention_days": 3}
+      ]
+    },
+    "branches" : [
+      {
+        "branch_name": "a8",
+        "delete_commit_days_ago": 2
+      },
+      {
+        "branch_name": "b8",
+        "delete_commit_days_ago": -1
+      }
+    ],
+    "file_deleted": false,
+    "direct_upload": true,
+     "description": "The file (direct upload) is not deleted as the branch retention policy overrules the default retention policy"
+  },
+  {
+    "id": 9,
+    "policy": {
+      "default_retention_days": 1,
+      "branches": []
+    },
+    "branches" : [
+      {
+        "branch_name": "a9",
+        "delete_commit_days_ago": -1
+      },
+      {
+        "branch_name": "b9",
+        "delete_commit_days_ago": -1
+      }
+    ],
+    "file_deleted": true,
+    "direct_upload": true,
+    "description": "The file (direct upload) is deleted because it's in a dangling commit and the default retention policy has passed"
+  },
+  {
+    "id": 10,
+    "policy": {
+      "default_retention_days": 1,
+      "branches": []
+    },
+    "branches" : [
+      {
+        "branch_name": "a10",
+        "delete_commit_days_ago": -1
+      },
+      {
+        "branch_name": "b10",
+        "delete_commit_days_ago": -1
+      }
+    ],
+    "mode": "mark",
+    "mark_id": "marker10",
+    "file_deleted": false,
+    "direct_upload": true,
+    "description": "The file (direct upload) is only marked for deletion (not actually deleted)"
+  },
+  {
+    "id": 11,
+    "policy": {
+      "default_retention_days": 1,
+      "branches": []
+    },
+    "branches" : [
+      {
+        "branch_name": "a11",
+        "delete_commit_days_ago": -1
+      },
+      {
+        "branch_name": "b11",
+        "delete_commit_days_ago": -1
+      }
+    ],
+    "mode": "sweep",
+    "mark_id": "marker11",
+    "file_deleted": true,
+    "direct_upload": true,
+    "description": "The file (direct upload) is swept after it's first marked"
+  }
+]
