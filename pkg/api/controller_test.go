@@ -1643,32 +1643,62 @@ func TestController_IngestRangeHandler(t *testing.T) {
 		prepend                 = "some/logical/prefix"
 	)
 
-	continuationToken := "opaque"
+	const continuationToken = "opaque"
 
-	setup := func(t *testing.T, count int, expectedErr error) (api.ClientWithResponsesInterface, *testutils.FakeWalker) {
-		t.Helper()
+	t.Run("ingest directory marker", func(t *testing.T) {
 		ctx := context.Background()
-
-		w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, expectedErr)
+		w := testutils.NewFakeWalker(0, 1, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, nil)
+		w.Entries = []store.ObjectStoreEntry{
+			{
+				RelativeKey: "",
+				FullKey:     uriPrefix + "/",
+				Address:     fromSourceURIWithPrefix + "/",
+				ETag:        "dir_etag",
+				Size:        0,
+			},
+		}
 		clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
-
-		// setup test data
-		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, "repo-dir-marker", onBlock(deps, "foo2"), "main")
 		testutil.Must(t, err)
 
-		return clt, w
-	}
+		resp, err := clt.IngestRangeWithResponse(ctx, "repo-dir-marker", api.IngestRangeJSONRequestBody{
+			FromSourceURI:     fromSourceURIWithPrefix,
+			ContinuationToken: swag.String(continuationToken),
+			After:             after,
+		})
+		verifyResponseOK(t, resp, err)
+		require.NotNil(t, resp.JSON201.Range)
+		require.NotNil(t, resp.JSON201.Pagination)
+		require.Equal(t, 1, resp.JSON201.Range.Count)
+		require.Equal(t, resp.JSON201.Range.MinKey, "")
+		require.Equal(t, resp.JSON201.Range.MaxKey, "")
+		require.False(t, resp.JSON201.Pagination.HasMore)
+		require.Empty(t, resp.JSON201.Pagination.LastKey)
+		require.Empty(t, resp.JSON201.Pagination.ContinuationToken)
+	})
 
 	t.Run("successful ingestion no pagination", func(t *testing.T) {
 		ctx := context.Background()
 		count := 1000
-		clt, w := setup(t, count, nil)
+		clt, w := func(t *testing.T, count int, expectedErr error) (api.ClientWithResponsesInterface, *testutils.FakeWalker) {
+			t.Helper()
+			ctx := context.Background()
+
+			w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, expectedErr)
+			clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
+
+			// setup test data
+			_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
+			testutil.Must(t, err)
+
+			return clt, w
+		}(t, count, nil)
 
 		resp, err := clt.IngestRangeWithResponse(ctx, "repo1", api.IngestRangeJSONRequestBody{
 			After:             after,
 			FromSourceURI:     fromSourceURIWithPrefix,
 			Prepend:           prepend,
-			ContinuationToken: &continuationToken,
+			ContinuationToken: swag.String(continuationToken),
 		})
 
 		verifyResponseOK(t, resp, err)
@@ -1686,13 +1716,25 @@ func TestController_IngestRangeHandler(t *testing.T) {
 		// force splitting the range before
 		ctx := context.Background()
 		count := 200_000
-		clt, w := setup(t, count, nil)
+		clt, w := func(t *testing.T, count int, expectedErr error) (api.ClientWithResponsesInterface, *testutils.FakeWalker) {
+			t.Helper()
+			ctx := context.Background()
+
+			w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, expectedErr)
+			clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
+
+			// setup test data
+			_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
+			testutil.Must(t, err)
+
+			return clt, w
+		}(t, count, nil)
 
 		resp, err := clt.IngestRangeWithResponse(ctx, "repo1", api.IngestRangeJSONRequestBody{
 			After:             after,
 			FromSourceURI:     fromSourceURIWithPrefix,
 			Prepend:           prepend,
-			ContinuationToken: &continuationToken,
+			ContinuationToken: swag.String(continuationToken),
 		})
 
 		verifyResponseOK(t, resp, err)
@@ -1711,13 +1753,25 @@ func TestController_IngestRangeHandler(t *testing.T) {
 		ctx := context.Background()
 		count := 10
 		expectedErr := errors.New("failed reading for object store")
-		clt, _ := setup(t, count, expectedErr)
+		clt, _ := func(t *testing.T, count int, expectedErr error) (api.ClientWithResponsesInterface, *testutils.FakeWalker) {
+			t.Helper()
+			ctx := context.Background()
+
+			w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, expectedErr)
+			clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
+
+			// setup test data
+			_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
+			testutil.Must(t, err)
+
+			return clt, w
+		}(t, count, expectedErr)
 
 		resp, err := clt.IngestRangeWithResponse(ctx, "repo1", api.IngestRangeJSONRequestBody{
 			After:             after,
 			FromSourceURI:     fromSourceURIWithPrefix,
 			Prepend:           prepend,
-			ContinuationToken: &continuationToken,
+			ContinuationToken: swag.String(continuationToken),
 		})
 
 		require.NoError(t, err)
