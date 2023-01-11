@@ -43,7 +43,11 @@ func NewActionStatsMockCollector() ActionStatsMockCollector {
 }
 
 func (c *ActionStatsMockCollector) CollectEvent(ev stats.Event) {
-	c.Hits[ev.Name]++
+	c.CollectEvents(ev, 1)
+}
+
+func (c *ActionStatsMockCollector) CollectEvents(ev stats.Event, count uint64) {
+	c.Hits[ev.Name] += int(count)
 }
 
 func (c *ActionStatsMockCollector) CollectMetadata(_ *stats.Metadata)       {}

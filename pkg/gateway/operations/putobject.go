@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/block"
@@ -103,7 +102,8 @@ func CopyFromEntry(w http.ResponseWriter, req *http.Request, o *PathOperation, c
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
 		return nil
 	}
-	blob, err := upload.CopyBlob(req.Context(), o.BlockStore, sourceRepo.StorageNamespace, o.Repository.StorageNamespace, sourceEntry.PhysicalAddress, sourceEntry.Checksum, sourceEntry.Size)
+	destAddress := o.PathProvider.NewPath()
+	blob, err := upload.CopyBlob(req.Context(), o.BlockStore, sourceRepo.StorageNamespace, o.Repository.StorageNamespace, sourceEntry.PhysicalAddress, sourceEntry.Checksum, destAddress, sourceEntry.Size)
 	if err != nil {
 		o.Log(req).WithError(err).Error("block adapter could not copy object")
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
@@ -143,18 +143,15 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
 		return
 	}
+	// check if src and dst are in the same repository and branch
 	var ent *catalog.DBEntry
-	// check if src and dst are in the same repository
-	if strings.EqualFold(o.Repository.Name, p.Repo) {
+	if o.Repository.Name == p.Repo && o.Reference == p.Reference {
 		ent = extractEntryFromCopyReq(w, req, o, copySource)
-		if ent == nil {
-			return // operation already failed
-		}
 	} else {
 		ent = CopyFromEntry(w, req, o, copySource)
-		if ent == nil {
-			return // operation already failed
-		}
+	}
+	if ent == nil {
+		return // operation already failed
 	}
 	ent.CreationDate = time.Now()
 	ent.Path = o.Path
@@ -223,7 +220,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 			// if this is a copy part with a byte range:
 			parsedRange, parseErr := httputil.ParseRange(rang, ent.Size)
 			if parseErr != nil {
-				// invalid range will silently fallback to copying the entire object. ¯\_(ツ)_/¯
+				// invalid range will silently fall back to copying the entire object. ¯\_(ツ)_/¯
 				resp, err = o.BlockStore.UploadCopyPart(req.Context(), src, dst, uploadID, partNumber)
 			} else {
 				resp, err = o.BlockStore.UploadCopyPartRange(req.Context(), src, dst, uploadID, partNumber, parsedRange.StartOffset, parsedRange.EndOffset)

@@ -74,6 +74,8 @@ from lakefs_client.model.stage_range_creation import StageRangeCreation
 from lakefs_client.model.staging_location import StagingLocation
 from lakefs_client.model.staging_metadata import StagingMetadata
 from lakefs_client.model.statement import Statement
+from lakefs_client.model.stats_event import StatsEvent
+from lakefs_client.model.stats_events_list import StatsEventsList
 from lakefs_client.model.storage_config import StorageConfig
 from lakefs_client.model.storage_uri import StorageURI
 from lakefs_client.model.tag_creation import TagCreation

@@ -1554,6 +1554,21 @@ func TestController_UploadObject(t *testing.T) {
 		}
 	})
 
+	t.Run("disable overwrite with if-none-match (no entry)", func(t *testing.T) {
+		ifNoneMatch := api.StringPtr("*")
+		contentType, buf := writeMultipart("content", "baz4", "something else!")
+		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &api.UploadObjectParams{
+			Path:        "foo/baz4",
+			IfNoneMatch: ifNoneMatch,
+		}, contentType, buf)
+		if err != nil {
+			t.Fatalf("UploadObject err=%s, expected no error", err)
+		}
+		if resp.JSON201 == nil {
+			t.Fatalf("UploadObject status code=%d, expected 201", resp.StatusCode())
+		}
+	})
+
 	t.Run("upload object missing 'content' key", func(t *testing.T) {
 		// write
 		contentType, buf := writeMultipart("this-is-not-content", "bar", "hello world!")
@@ -1591,7 +1606,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		verifyResponseOK(t, delResp, err)
 
 		_, err = deps.catalog.GetBranchReference(ctx, "my-new-repo", "main2")
-		if !errors.Is(err, catalog.ErrNotFound) {
+		if !errors.Is(err, graveler.ErrNotFound) {
 			t.Fatalf("expected branch to be gone, instead got error: %s", err)
 		}
 	})
@@ -1628,32 +1643,62 @@ func TestController_IngestRangeHandler(t *testing.T) {
 		prepend                 = "some/logical/prefix"
 	)
 
-	continuationToken := "opaque"
+	const continuationToken = "opaque"
 
-	setup := func(t *testing.T, count int, expectedErr error) (api.ClientWithResponsesInterface, *testutils.FakeWalker) {
-		t.Helper()
+	t.Run("ingest directory marker", func(t *testing.T) {
 		ctx := context.Background()
-
-		w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, expectedErr)
+		w := testutils.NewFakeWalker(0, 1, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, nil)
+		w.Entries = []store.ObjectStoreEntry{
+			{
+				RelativeKey: "",
+				FullKey:     uriPrefix + "/",
+				Address:     fromSourceURIWithPrefix + "/",
+				ETag:        "dir_etag",
+				Size:        0,
+			},
+		}
 		clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
-
-		// setup test data
-		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, "repo-dir-marker", onBlock(deps, "foo2"), "main")
 		testutil.Must(t, err)
 
-		return clt, w
-	}
+		resp, err := clt.IngestRangeWithResponse(ctx, "repo-dir-marker", api.IngestRangeJSONRequestBody{
+			FromSourceURI:     fromSourceURIWithPrefix,
+			ContinuationToken: swag.String(continuationToken),
+			After:             after,
+		})
+		verifyResponseOK(t, resp, err)
+		require.NotNil(t, resp.JSON201.Range)
+		require.NotNil(t, resp.JSON201.Pagination)
+		require.Equal(t, 1, resp.JSON201.Range.Count)
+		require.Equal(t, resp.JSON201.Range.MinKey, "")
+		require.Equal(t, resp.JSON201.Range.MaxKey, "")
+		require.False(t, resp.JSON201.Pagination.HasMore)
+		require.Empty(t, resp.JSON201.Pagination.LastKey)
+		require.Empty(t, resp.JSON201.Pagination.ContinuationToken)
+	})
 
 	t.Run("successful ingestion no pagination", func(t *testing.T) {
 		ctx := context.Background()
 		count := 1000
-		clt, w := setup(t, count, nil)
+		clt, w := func(t *testing.T, count int, expectedErr error) (api.ClientWithResponsesInterface, *testutils.FakeWalker) {
+			t.Helper()
+			ctx := context.Background()
+
+			w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, expectedErr)
+			clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
+
+			// setup test data
+			_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
+			testutil.Must(t, err)
+
+			return clt, w
+		}(t, count, nil)
 
 		resp, err := clt.IngestRangeWithResponse(ctx, "repo1", api.IngestRangeJSONRequestBody{
 			After:             after,
 			FromSourceURI:     fromSourceURIWithPrefix,
 			Prepend:           prepend,
-			ContinuationToken: &continuationToken,
+			ContinuationToken: swag.String(continuationToken),
 		})
 
 		verifyResponseOK(t, resp, err)
@@ -1671,13 +1716,25 @@ func TestController_IngestRangeHandler(t *testing.T) {
 		// force splitting the range before
 		ctx := context.Background()
 		count := 200_000
-		clt, w := setup(t, count, nil)
+		clt, w := func(t *testing.T, count int, expectedErr error) (api.ClientWithResponsesInterface, *testutils.FakeWalker) {
+			t.Helper()
+			ctx := context.Background()
+
+			w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, expectedErr)
+			clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
+
+			// setup test data
+			_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
+			testutil.Must(t, err)
+
+			return clt, w
+		}(t, count, nil)
 
 		resp, err := clt.IngestRangeWithResponse(ctx, "repo1", api.IngestRangeJSONRequestBody{
 			After:             after,
 			FromSourceURI:     fromSourceURIWithPrefix,
 			Prepend:           prepend,
-			ContinuationToken: &continuationToken,
+			ContinuationToken: swag.String(continuationToken),
 		})
 
 		verifyResponseOK(t, resp, err)
@@ -1696,13 +1753,25 @@ func TestController_IngestRangeHandler(t *testing.T) {
 		ctx := context.Background()
 		count := 10
 		expectedErr := errors.New("failed reading for object store")
-		clt, _ := setup(t, count, expectedErr)
+		clt, _ := func(t *testing.T, count int, expectedErr error) (api.ClientWithResponsesInterface, *testutils.FakeWalker) {
+			t.Helper()
+			ctx := context.Background()
+
+			w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, expectedErr)
+			clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
+
+			// setup test data
+			_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
+			testutil.Must(t, err)
+
+			return clt, w
+		}(t, count, expectedErr)
 
 		resp, err := clt.IngestRangeWithResponse(ctx, "repo1", api.IngestRangeJSONRequestBody{
 			After:             after,
 			FromSourceURI:     fromSourceURIWithPrefix,
 			Prepend:           prepend,
-			ContinuationToken: &continuationToken,
+			ContinuationToken: swag.String(continuationToken),
 		})
 
 		require.NoError(t, err)
@@ -2289,6 +2358,71 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 		testutil.Must(t, err)
 		if resp.JSON400 == nil {
 			t.Fatalf("Wrong storage adapter should return 400, got status %s [%d]\n\tbody: %s", resp.Status(), resp.StatusCode(), string(resp.Body))
+		}
+	})
+}
+
+func TestController_LinkPhysicalAddressHandler(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "bucket/prefix"), "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("get and link physical address", func(t *testing.T) {
+		linkResp, err := clt.GetPhysicalAddressWithResponse(ctx, "repo1", "main", &api.GetPhysicalAddressParams{Path: "foo/bar2"})
+		verifyResponseOK(t, linkResp, err)
+		if linkResp.JSON200 == nil {
+			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
+		}
+		const expectedSizeBytes = 38
+		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, "repo1", "main", &api.LinkPhysicalAddressParams{
+			Path: "foo/bar2",
+		}, api.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: api.StagingLocation{
+				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+				Token:           linkResp.JSON200.Token,
+			},
+		})
+		verifyResponseOK(t, resp, err)
+	})
+
+	t.Run("link physical address twice", func(t *testing.T) {
+		linkResp, err := clt.GetPhysicalAddressWithResponse(ctx, "repo1", "main", &api.GetPhysicalAddressParams{Path: "foo/bar2"})
+		verifyResponseOK(t, linkResp, err)
+		if linkResp.JSON200 == nil {
+			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
+		}
+		const expectedSizeBytes = 38
+		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, "repo1", "main", &api.LinkPhysicalAddressParams{
+			Path: "foo/bar2",
+		}, api.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: api.StagingLocation{
+				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+				Token:           linkResp.JSON200.Token,
+			},
+		})
+		verifyResponseOK(t, resp, err)
+
+		resp, err = clt.LinkPhysicalAddressWithResponse(ctx, "repo1", "main", &api.LinkPhysicalAddressParams{
+			Path: "foo/bar2",
+		}, api.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: api.StagingLocation{
+				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+				Token:           linkResp.JSON200.Token,
+			},
+		})
+		testutil.Must(t, err)
+		if resp.HTTPResponse.StatusCode != http.StatusNotFound {
+			t.Fatalf("expected error linking the same physical address twice")
 		}
 	})
 }
@@ -2955,8 +3089,8 @@ func TestController_CreateTag(t *testing.T) {
 			Ref: "main$",
 		})
 		testutil.Must(t, err)
-		if tagResp.JSONDefault == nil {
-			t.Errorf("Create tag to explicit stage should fail with error, got %v", tagResp)
+		if tagResp.JSON400 == nil {
+			t.Errorf("Create tag to explicit stage should fail with validation error, got (status code: %d): %s", tagResp.StatusCode(), tagResp.Body)
 		}
 	})
 
@@ -3063,8 +3197,8 @@ func TestController_Revert(t *testing.T) {
 	t.Run("staging", func(t *testing.T) {
 		revertResp, err := clt.RevertBranchWithResponse(ctx, repo, "main", api.RevertBranchJSONRequestBody{Ref: "main$"})
 		testutil.Must(t, err)
-		if revertResp.JSONDefault == nil {
-			t.Errorf("Revert to explicit staging should fail with error, got %v", revertResp)
+		if revertResp.JSON400 == nil {
+			t.Errorf("Revert should fail with stating reference, got (status code: %d): %s", revertResp.StatusCode(), revertResp.Body)
 		}
 	})
 
@@ -3498,5 +3632,218 @@ func TestController_ClientDisconnect(t *testing.T) {
 	const expectedCount = 1
 	if clientRequestClosedCount != expectedCount {
 		t.Fatalf("Metric for client request closed: %d, expected: %d", clientRequestClosedCount, expectedCount)
+	}
+}
+
+func TestController_PostStatsEvents(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	type key struct {
+		class string
+		name  string
+	}
+
+	tests := []struct {
+		name                string
+		events              []api.StatsEvent
+		expectedEventCounts map[key]int
+		expectedStatusCode  int
+	}{
+		{
+			name: "single_event_count_1",
+			events: []api.StatsEvent{
+				{
+					Class: "single_event_count_1",
+					Name:  "name",
+					Count: 1,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "single_event_count_1", name: "name"}: 1,
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name: "single_event_count_gt_1",
+			events: []api.StatsEvent{
+				{
+					Class: "single_event_count_gt_1",
+					Name:  "name",
+					Count: 3,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "single_event_count_gt_1", name: "name"}: 3,
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name: "multiple_events",
+			events: []api.StatsEvent{
+				{
+					Class: "class_multiple_events_ev_1",
+					Name:  "name1",
+					Count: 1,
+				},
+				{
+					Class: "class_multiple_events_ev_2",
+					Name:  "name2",
+					Count: 1,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "class_multiple_events_ev_1", name: "name1"}: 1,
+				{class: "class_multiple_events_ev_2", name: "name2"}: 1,
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name: "multiple_events_same_class",
+			events: []api.StatsEvent{
+				{
+					Class: "class_multiple_events_same_class",
+					Name:  "name1",
+					Count: 1,
+				},
+				{
+					Class: "class_multiple_events_same_class",
+					Name:  "name2",
+					Count: 1,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "class_multiple_events_same_class", name: "name1"}: 1,
+				{class: "class_multiple_events_same_class", name: "name2"}: 1,
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name: "multiple_events_same_name",
+			events: []api.StatsEvent{
+				{
+					Class: "multiple_events_same_name_1",
+					Name:  "same_name",
+					Count: 1,
+				},
+				{
+					Class: "multiple_events_same_name_2",
+					Name:  "same_name",
+					Count: 1,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "multiple_events_same_name_1", name: "same_name"}: 1,
+				{class: "multiple_events_same_name_2", name: "same_name"}: 1,
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name: "multiple_events_same_class_same_name",
+			events: []api.StatsEvent{
+				{
+					Class: "multiple_events_same_class_same_name",
+					Name:  "same_name",
+					Count: 1,
+				},
+				{
+					Class: "multiple_events_same_class_same_name",
+					Name:  "same_name",
+					Count: 1,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "multiple_events_same_class_same_name", name: "same_name"}: 2,
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name: "empty_usage_class",
+			events: []api.StatsEvent{
+				{
+					Class: "",
+					Name:  "name",
+					Count: 1,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "", name: "name"}: 0,
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "empty_usage_name",
+			events: []api.StatsEvent{
+				{
+					Class: "class_empty_usage_name",
+					Name:  "",
+					Count: 1,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "class_empty_usage_name", name: ""}: 0,
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "zero_usage_count",
+			events: []api.StatsEvent{
+				{
+					Class: "class_zero_usage_count",
+					Name:  "name",
+					Count: 0,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "class_zero_usage_count", name: "name"}: 0,
+			},
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name: "negative_usage_count",
+			events: []api.StatsEvent{
+				{
+					Class: "class_negative_usage_count",
+					Name:  "name",
+					Count: -23,
+				},
+			},
+			expectedEventCounts: map[key]int{
+				{class: "class_negative_usage_count", name: "name"}: 0,
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := clt.PostStatsEventsWithResponse(ctx, api.PostStatsEventsJSONRequestBody{
+				Events: tt.events,
+			})
+			if err != nil {
+				t.Fatalf("PostStatsEvents failed: %s", err)
+			}
+
+			if resp.StatusCode() != tt.expectedStatusCode {
+				t.Fatalf("PostStatsEvents status code: %d, expected: %d", resp.StatusCode(), tt.expectedStatusCode)
+			}
+
+			for _, sentEv := range tt.events {
+				collectedEventsToCount := map[key]int{}
+				k := key{class: sentEv.Class, name: sentEv.Name}
+				_, isMapContainKey := collectedEventsToCount[k]
+				if isMapContainKey {
+					continue
+				}
+				for _, collectedMetric := range deps.collector.Metrics {
+					if collectedMetric.Event.Class == sentEv.Class && collectedMetric.Event.Name == sentEv.Name {
+						collectedEventsToCount[k] += int(collectedMetric.Value)
+					}
+				}
+				if collectedEventsToCount[k] != tt.expectedEventCounts[k] {
+					t.Fatalf("PostStatsEvents events for class %s and name: %s, count: %d, expected: %d", sentEv.Class, sentEv.Name, collectedEventsToCount[k], tt.expectedEventCounts[k])
+				}
+			}
+		})
 	}
 }

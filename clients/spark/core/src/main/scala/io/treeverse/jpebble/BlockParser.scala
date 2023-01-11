@@ -129,15 +129,24 @@ object BlockParser {
 
   def readMagic(bytes: Iterator[Byte]) = {
     val magic = bytes.take(footerMagic.length).toArray
+    if (magic.size < footerMagic.length) {
+      throw new BadFileFormatException(
+        s"Bad magic ${magic.map("%02x".format(_)).mkString(" ")}: too short"
+      )
+    }
     val isMatch = magic
       .zip(BlockParser.footerMagic)
       .filter({ case ((a, b)) => a != b })
       .isEmpty
     if (!isMatch) {
-      throw new BadFileFormatException(s"Bad magic ${magic.map("%02x".format(_)).mkString(" ")}")
+      throw new BadFileFormatException(
+        s"Bad magic ${magic.map("%02x".format(_)).mkString(" ")}: wrong bytes"
+      )
     }
   }
 
+  /** Return an int32 with (fixed-width, 4 byte) little-endian encoding from bytes.
+   */
   def readInt32(bytes: Iterator[Byte]): Int =
     // RocksDB format is little-endian.  And Scala applies functions
     // left-to-right, so the first Seq.next call really executes first.
@@ -190,12 +199,6 @@ object BlockParser {
     ret
   }
 
-  /** Return an int32 with (fixed-width, 4 byte) little-endian encoding from bytes.
-   */
-  def readFixedInt(bytes: Iterator[Byte]): Int =
-    (bytes.next() & 0xff) + 256 * ((bytes
-      .next() & 0xff) + 256 * ((bytes.next() & 0xff) + 256 * (bytes.next() & 0xff)))
-
   /** Mix bits of CRC32C to match its use in RocksDB SSTables.  (That format
    *  includes CRCs inside checksummed data, meaning further CRCs of that
    *  block can fail to detect anything; defining this mixing protects that
@@ -217,7 +220,7 @@ object BlockParser {
     val crc = new CRC32C()
     update(crc, block.bytes, block.from, block.size - blockTrailerLen + 1)
     val computedCRC = fixupCRC(crc.getValue().toInt)
-    val expectedCRC = readFixedInt(
+    val expectedCRC = readInt32(
       block.slice(block.size - blockTrailerLen + 1, block.size).iterator
     )
     if (computedCRC != expectedCRC) {
@@ -297,7 +300,7 @@ object BlockParser {
     val blockIndexType = {
       val props = BlockParser.readProperties(in, footer)
       val typeIt = props(BlockParser.INDEX_TYPE_KEY).iterator
-      val typ = BlockParser.readFixedInt(typeIt)
+      val typ = BlockParser.readInt32(typeIt)
       BlockParser.readEnd(typeIt)
       typ
     }

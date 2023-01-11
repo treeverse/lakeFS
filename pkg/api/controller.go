@@ -199,7 +199,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 		}
 		lg := c.Logger.WithField("path", objectPath)
 		switch {
-		case errors.Is(err, catalog.ErrNotFound), errors.Is(err, graveler.ErrNotFound):
+		case errors.Is(err, graveler.ErrNotFound):
 			lg.WithError(err).Debug("tried to delete a non-existent object")
 		case errors.Is(err, graveler.ErrWriteToProtectedBranch):
 			errs = append(errs, ObjectError{
@@ -303,7 +303,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 	c.LogAction(ctx, "generate_physical_address", r, repository, branch, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if errors.Is(err, catalog.ErrNotFound) {
+	if errors.Is(err, graveler.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, err)
 		return
 	}
@@ -313,7 +313,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 	}
 
 	token, err := c.Catalog.GetStagingToken(ctx, repository, branch)
-	if errors.Is(err, catalog.ErrNotFound) {
+	if errors.Is(err, graveler.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, err)
 		return
 	}
@@ -326,6 +326,12 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 	qk, err := block.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+
+	err = c.Catalog.SetLinkAddress(ctx, repository, address)
+	if err != nil {
+		c.handleAPIError(ctx, w, r, err)
 		return
 	}
 
@@ -365,7 +371,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	c.LogAction(ctx, "stage_object", r, repository, branch, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if errors.Is(err, catalog.ErrNotFound) {
+	if errors.Is(err, graveler.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, err)
 		return
 	}
@@ -392,6 +398,13 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	writeTime := time.Now()
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, StringValue(body.Staging.PhysicalAddress))
 
+	// validate token
+	err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
+	if err != nil {
+		c.handleAPIError(ctx, w, r, err)
+		return
+	}
+
 	// Because CreateEntry tracks staging on a database with atomic operations,
 	// _ignore_ the staging token here: no harm done even if a race was lost
 	// against a commit.
@@ -410,7 +423,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	entry := entryBuilder.Build()
 
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
-	if errors.Is(err, catalog.ErrNotFound) {
+	if errors.Is(err, graveler.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, err)
 		return
 	}
@@ -1490,8 +1503,7 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 		}
 		writeResponse(w, r, http.StatusOK, response)
 
-	case errors.Is(err, catalog.ErrNotFound),
-		errors.Is(err, catalog.ErrRepositoryNotFound):
+	case errors.Is(err, graveler.ErrNotFound):
 		writeError(w, r, http.StatusNotFound, "repository not found")
 
 	case errors.Is(err, graveler.ErrRepositoryInDeletion):
@@ -1823,8 +1835,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	}
 
 	switch {
-	case errors.Is(err, catalog.ErrNotFound),
-		errors.Is(err, graveler.ErrNotFound),
+	case errors.Is(err, graveler.ErrNotFound),
 		errors.Is(err, actions.ErrNotFound),
 		errors.Is(err, auth.ErrNotFound),
 		errors.Is(err, kv.ErrNotFound):
@@ -1832,23 +1843,20 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
 		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
-		errors.Is(err, catalog.ErrNoDifferenceWasFound),
 		errors.Is(err, graveler.ErrNoChanges),
 		errors.Is(err, permissions.ErrInvalidServiceName),
 		errors.Is(err, permissions.ErrInvalidAction),
 		errors.Is(err, model.ErrValidationError),
 		errors.Is(err, graveler.ErrInvalidRef),
 		errors.Is(err, graveler.ErrInvalidValue),
-		errors.Is(err, actions.ErrParamConflict):
+		errors.Is(err, actions.ErrParamConflict),
+		errors.Is(err, graveler.ErrDereferenceCommitWithStaging):
 		cb(w, r, http.StatusBadRequest, err)
 
 	case errors.Is(err, graveler.ErrNotUnique),
 		errors.Is(err, graveler.ErrConflictFound),
 		errors.Is(err, graveler.ErrRevertMergeNoParent):
 		cb(w, r, http.StatusConflict, err)
-
-	case errors.Is(err, catalog.ErrFeatureNotSupported):
-		cb(w, r, http.StatusNotImplemented, err)
 
 	case errors.Is(err, graveler.ErrLockNotAcquired):
 		cb(w, r, http.StatusInternalServerError, "branch is currently locked, try again later")
@@ -1861,6 +1869,10 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	case errors.Is(err, graveler.ErrTooManyTries):
 		cb(w, r, http.StatusLocked, "Too many attempts, try again later")
+
+	case errors.Is(err, graveler.ErrAddressTokenNotFound),
+		errors.Is(err, graveler.ErrAddressTokenExpired):
+		cb(w, r, http.StatusBadRequest, "bad address token (expired or invalid)")
 
 	case err != nil:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
@@ -2142,7 +2154,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 			writeError(w, r, http.StatusPreconditionFailed, "path already exists")
 			return
 		}
-		if !errors.Is(err, catalog.ErrNotFound) {
+		if !errors.Is(err, graveler.ErrNotFound) {
 			writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
@@ -2359,11 +2371,11 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 	ctx := r.Context()
 	c.LogAction(ctx, "get_commit", r, repository, commitID, "")
 	commit, err := c.Catalog.GetCommit(ctx, repository, commitID)
-	if errors.Is(err, catalog.ErrRepositoryNotFound) {
+	if errors.Is(err, graveler.ErrRepositoryNotFound) {
 		writeError(w, r, http.StatusNotFound, "repository not found")
 		return
 	}
-	if errors.Is(err, catalog.ErrNotFound) {
+	if errors.Is(err, graveler.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "commit not found")
 		return
 	}
@@ -3295,7 +3307,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		c.Logger.WithError(err).WithField("run_id", hookAbortErr.RunID).Warn("aborted by hooks")
 		writeError(w, r, http.StatusPreconditionFailed, err)
 		return
-	case errors.Is(err, catalog.ErrConflictFound) || errors.Is(err, graveler.ErrConflictFound):
+	case errors.Is(err, graveler.ErrConflictFound):
 		writeResponse(w, r, http.StatusConflict, MergeResult{Reference: res})
 		return
 	}
@@ -3675,6 +3687,7 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
+
 	// set upgrade recommended based on last security audit check
 	var (
 		upgradeRecommended *bool
@@ -3694,6 +3707,53 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		UpgradeUrl:         upgradeURL,
 		Version:            swag.String(version.Version),
 	})
+}
+
+func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, body PostStatsEventsJSONRequestBody) {
+	ctx := r.Context()
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+
+	for _, statsEv := range body.Events {
+		if statsEv.Class == "" {
+			writeError(w, r, http.StatusBadRequest, "invalid value: class is required")
+			return
+		}
+
+		if statsEv.Name == "" {
+			writeError(w, r, http.StatusBadRequest, "invalid value: name is required")
+			return
+		}
+
+		if statsEv.Count < 0 {
+			writeError(w, r, http.StatusBadRequest, "invalid value: count must be a non-negative integer")
+			return
+		}
+	}
+
+	client := httputil.GetRequestLakeFSClient(r)
+	for _, statsEv := range body.Events {
+		ev := stats.Event{
+			Class:  statsEv.Class,
+			Name:   statsEv.Name,
+			UserID: user.Username,
+			Client: client,
+		}
+		c.Collector.CollectEvents(ev, uint64(statsEv.Count))
+
+		c.Logger.WithContext(ctx).WithFields(logging.Fields{
+			"class":   ev.Class,
+			"name":    ev.Name,
+			"count":   statsEv.Count,
+			"user_id": ev.UserID,
+			"client":  ev.Client,
+		}).Debug("sending stats events")
+	}
+
+	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
 func IsStatusCodeOK(statusCode int) bool {
@@ -3880,6 +3940,7 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 	if err != nil {
 		ev.UserID = user.Username
 	}
+
 	c.Logger.WithContext(ctx).WithFields(logging.Fields{
 		"class":      ev.Class,
 		"name":       ev.Name,

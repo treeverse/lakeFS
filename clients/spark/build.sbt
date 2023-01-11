@@ -36,6 +36,11 @@ def generateCoreProject(buildType: BuildType) =
   Project(s"${baseName}-client-${buildType.name}", file(s"core"))
     .settings(
       sharedSettings,
+      if (buildType.hadoopFlavour == "hadoop2") {
+        hadoop2AssemblySettings
+      } else {
+        hadoop3AssemblySettings
+      },
       s3UploadSettings,
       settingsToCompileIn("core", buildType.hadoopFlavour),
       scalaVersion := buildType.scalaVersion,
@@ -45,48 +50,8 @@ def generateCoreProject(buildType: BuildType) =
       Compile / PB.targets := Seq(
         scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
       ),
-      libraryDependencies ++= Seq(
-        "io.lakefs" % "api-client" % "0.85.0-RC1",
-        "commons-codec" % "commons-codec" % "1.15",
-        "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
-        "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
-        "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion % "provided",
-        "org.apache.hadoop" % "hadoop-common" % buildType.hadoopVersion % "provided",
-        "org.apache.hadoop" % "hadoop-azure" % buildType.hadoopVersion % "provided",
-        "com.google.cloud.bigdataoss" % "gcs-connector" % buildType.gcpConnectorVersion,
-        "org.scalaj" %% "scalaj-http" % "2.4.2",
-        "org.json4s" %% "json4s-native" % "3.5.5",
-        "com.google.guava" % "guava" % "16.0.1",
-        "com.google.guava" % "failureaccess" % "1.0.1",
-        "org.rogach" %% "scallop" % "4.0.3",
-        // hadoop-aws provides AWS SDK at version >= 1.7.4.  So declare this
-        // version, but ask to use whatever is provided so we do not
-        // override what it selects.
-        "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194" % "provided",
-        "com.azure" % "azure-core" % "1.10.0",
-        "com.azure" % "azure-storage-blob" % "12.9.0",
-        "com.azure" % "azure-storage-blob-batch" % "12.7.0",
-        // Snappy is JNI :-(.  However it does claim to work with
-        // ClassLoaders, and (even more importantly!) using a preloaded JNI
-        // version will probably continue to work because the C language API
-        // is quite stable.  Take the version documented in DataBricks
-        // Runtime 7.6, and note that it changes in 8.3 :-(
-        "org.xerial.snappy" % "snappy-java" % "1.1.8.4",
-        "org.scalactic" %% "scalactic" % "3.2.9",
-        "dev.failsafe" % "failsafe" % "3.2.4",
-        "org.apache.hadoop" % "hadoop-distcp" % buildType.hadoopVersion,
-        "org.scalatestplus" %% "mockito-4-6" % "3.2.14.0" % "test",
-        // https://mvnrepository.com/artifact/com.squareup.okhttp3/mockwebserver
-        "com.squareup.okhttp3" % "mockwebserver" % "4.10.0" % "test",
-        "xerces" % "xercesImpl" % "2.12.2" % "test",
-        "org.scalatest" %% "scalatest" % "3.2.9" % "test",
-        "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.10" % "test",
-        "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
-        "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
-        // Test with an up-to-date fasterxml.
-        "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2" % "test",
-        "com.storm-enroute" %% "scalameter" % "0.18" % "test"
-      ),
+      libraryDependencies ++= getSharedLibraryDependencies(buildType)
+        ++ getLibraryDependenciesByHadoopFlavour(buildType.hadoopFlavour),
       testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
       Test / logBuffered := false,
       // Uncomment to get accurate benchmarks with just "sbt test".
@@ -130,13 +95,13 @@ lazy val spark3Type =
 // EMR-6.5.0 beta, managed GC
 lazy val spark312Type =
   new BuildType("312-hadoop3",
-                scala212Version,
-                "3.1.2",
-                "0.10.11",
-                "3.2.1",
-                "hadoop3",
-                "hadoop3-2.0.1"
-               )
+    scala212Version,
+    "3.1.2",
+    "0.10.11",
+    "3.2.1",
+    "hadoop3",
+    "hadoop3-2.0.1"
+  )
 
 lazy val core2 = generateCoreProject(spark2Type)
 lazy val core3 = generateCoreProject(spark3Type)
@@ -148,43 +113,105 @@ lazy val examples312 = generateExamplesProject(spark312Type).dependsOn(core312)
 lazy val root =
   (project in file(".")).aggregate(core2, core3, core312, examples2, examples3, examples312)
 
+def getSharedLibraryDependencies(buildType: BuildType) : Seq[ModuleID]  = {
+  Seq(
+    "io.lakefs" % "api-client" % "0.85.0-RC1",
+    "commons-codec" % "commons-codec" % "1.15",
+    "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
+    "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
+    "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion % "provided",
+    "org.apache.hadoop" % "hadoop-common" % buildType.hadoopVersion % "provided",
+    "org.apache.hadoop" % "hadoop-azure" % buildType.hadoopVersion % "provided",
+    "com.google.cloud.bigdataoss" % "gcs-connector" % buildType.gcpConnectorVersion,
+    "org.scalaj" %% "scalaj-http" % "2.4.2",
+    "org.json4s" %% "json4s-native" % "3.5.5",
+    "com.google.guava" % "guava" % "16.0.1",
+    "com.google.guava" % "failureaccess" % "1.0.1",
+    "org.rogach" %% "scallop" % "4.0.3",
+    "com.azure" % "azure-core" % "1.10.0",
+    "com.azure" % "azure-storage-blob" % "12.9.0",
+    "com.azure" % "azure-storage-blob-batch" % "12.7.0",
+    // Snappy is JNI :-(.  However it does claim to work with
+    // ClassLoaders, and (even more importantly!) using a preloaded JNI
+    // version will probably continue to work because the C language API
+    // is quite stable.  Take the version documented in DataBricks
+    // Runtime 7.6, and note that it changes in 8.3 :-(
+    "org.xerial.snappy" % "snappy-java" % "1.1.8.4",
+    "org.scalactic" %% "scalactic" % "3.2.9",
+    "dev.failsafe" % "failsafe" % "3.2.4",
+    "org.apache.hadoop" % "hadoop-distcp" % buildType.hadoopVersion,
+    // https://mvnrepository.com/artifact/com.squareup.okhttp3/mockwebserver
+    "com.squareup.okhttp3" % "mockwebserver" % "4.10.0" % "test",
+    "xerces" % "xercesImpl" % "2.12.2" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.9" % "test",
+    // scalacheck-1.15 is last version to support Scala 2.11 :-(
+    "org.scalatestplus" %% "scalacheck-1-15" % "3.2.3.0" % "test",
+    "org.scalatestplus" %% "mockito-4-2" % "3.2.11.0" % "test",
+    "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.10" % "test",
+    "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
+    "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
+    // Test with an up-to-date fasterxml.
+    "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2" % "test",
+    "com.storm-enroute" %% "scalameter" % "0.18" % "test"
+  )
+}
+
+def getLibraryDependenciesByHadoopFlavour(hadoopFlavour: String) : Seq[ModuleID]  = {
+  if (hadoopFlavour == "hadoop2") {
+    // hadoop-aws provides AWS SDK at version >= 1.7.4.  So declare this
+    // version, but ask to use whatever is provided so we do not
+    // override what it selects.
+    Seq("com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194")
+  } else {
+    Seq("com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194" % "provided")
+  }
+}
+
 def rename(prefix: String) = ShadeRule.rename(prefix -> "io.lakefs.spark.shade.@0")
 
 // We are using the default sbt assembly merge strategy https://github.com/sbt/sbt-assembly#merge-strategy with a change
 // to the general case: use MergeStrategy.first instead of MergeStrategy.deduplicate.
-lazy val assemblySettings = Seq(
-  assembly / assemblyMergeStrategy := {
-    case PathList("META-INF", xs @ _*) =>
-      (xs map { _.toLowerCase }) match {
-        case ("manifest.mf" :: Nil) | ("index.list" :: Nil) | ("dependencies" :: Nil) =>
-          MergeStrategy.discard
-        case ps @ (x :: xs) if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") =>
-          MergeStrategy.discard
-        case "plexus" :: xs =>
-          MergeStrategy.discard
-        case "services" :: xs =>
-          MergeStrategy.filterDistinctLines
-        case ("spring.schemas" :: Nil) | ("spring.handlers" :: Nil) =>
-          MergeStrategy.filterDistinctLines
-        case _ => MergeStrategy.first
-      }
-    case _ => MergeStrategy.first
-  },
-  assembly / assemblyShadeRules := Seq(
-    rename("org.apache.http.**").inAll,
-    rename("com.google.protobuf.**").inAll,
-    rename("com.google.common.**")
-      .inLibrary("com.google.guava" % "guava" % "30.1-jre",
-                 "com.google.guava" % "failureaccess" % "1.0.1"
-                )
-      .inProject,
-    rename("scala.collection.compat.**").inAll,
-    rename("okio.**").inAll,
-    rename("okhttp3.**").inAll,
-    rename("reactor.netty.**").inAll,
-    rename("reactor.util.**").inAll
-  )
+lazy val sharedAssemblyMergeStrategy =
+assembly / assemblyMergeStrategy := {
+  case PathList("META-INF", xs @ _*) =>
+    (xs map { _.toLowerCase }) match {
+      case ("manifest.mf" :: Nil) | ("index.list" :: Nil) | ("dependencies" :: Nil) =>
+        MergeStrategy.discard
+      case ps @ (x :: xs) if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") =>
+        MergeStrategy.discard
+      case "plexus" :: xs =>
+        MergeStrategy.discard
+      case "services" :: xs =>
+        MergeStrategy.filterDistinctLines
+      case ("spring.schemas" :: Nil) | ("spring.handlers" :: Nil) =>
+        MergeStrategy.filterDistinctLines
+      case _ => MergeStrategy.first
+    }
+  case _ => MergeStrategy.first
+}
+
+lazy val sharedShadeRules = Seq(
+  rename("org.apache.http.**").inAll,
+  rename("com.google.protobuf.**").inAll,
+  rename("com.google.common.**")
+    .inLibrary("com.google.guava" % "guava" % "30.1-jre",
+      "com.google.guava" % "failureaccess" % "1.0.1"
+    )
+    .inProject,
+  rename("scala.collection.compat.**").inAll,
+  rename("okio.**").inAll,
+  rename("okhttp3.**").inAll,
+  rename("reactor.netty.**").inAll,
+  rename("reactor.util.**").inAll
 )
+
+lazy val hadoop2ShadeRules = sharedShadeRules ++ Seq( rename("com.amazonaws.**").inAll)
+lazy val hadoop3ShadeRules = sharedShadeRules
+
+lazy val hadoop2AssemblySettings = Seq(sharedAssemblyMergeStrategy,
+  assembly / assemblyShadeRules := hadoop2ShadeRules)
+lazy val hadoop3AssemblySettings = Seq(sharedAssemblyMergeStrategy,
+  assembly / assemblyShadeRules := hadoop3ShadeRules)
 
 // Upload assembly jars to S3
 lazy val s3UploadSettings = Seq(
@@ -220,7 +247,7 @@ lazy val publishSettings = Seq(
   )
 )
 
-lazy val sharedSettings = commonSettings ++ assemblySettings ++ publishSettings
+lazy val sharedSettings = commonSettings ++ publishSettings
 
 ThisBuild / scmInfo := Some(
   ScmInfo(

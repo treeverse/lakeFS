@@ -138,10 +138,14 @@ func (dw *DiskWriter) Close() (*committed.WriteResult, error) {
 	// Prepare metadata properties for Close to write.  The map was already set in the
 	// sstable.Writer constructor and cannot be changed, but we can replace its values
 	// before writing it out.
-	dw.SetMetadata(MetadataFirstKey, string(dw.first))
-	dw.SetMetadata(MetadataLastKey, string(dw.last))
-	dw.SetMetadata(MetadataNumRecordsKey, fmt.Sprint(dw.count))
-	dw.SetMetadata(MetadataEstimatedSizeKey, fmt.Sprint(dw.w.EstimatedSize()))
+	first := dw.first
+	last := dw.last
+	estimatedSize := dw.w.EstimatedSize()
+	count := dw.count
+	dw.SetMetadata(MetadataFirstKey, string(first))
+	dw.SetMetadata(MetadataLastKey, string(last))
+	dw.SetMetadata(MetadataNumRecordsKey, strconv.Itoa(count))
+	dw.SetMetadata(MetadataEstimatedSizeKey, strconv.FormatUint(estimatedSize, 10))
 
 	if err := dw.w.Close(); err != nil {
 		return nil, fmt.Errorf("sstable close (%s): %w", sstableID, err)
@@ -155,10 +159,10 @@ func (dw *DiskWriter) Close() (*committed.WriteResult, error) {
 
 	return &committed.WriteResult{
 		RangeID:                 committed.ID(sstableID),
-		First:                   dw.first,
-		Last:                    dw.last,
-		Count:                   dw.count,
-		EstimatedRangeSizeBytes: dw.w.EstimatedSize(),
+		First:                   first,
+		Last:                    last,
+		Count:                   count,
+		EstimatedRangeSizeBytes: estimatedSize,
 	}, nil
 }
 

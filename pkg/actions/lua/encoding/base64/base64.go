@@ -18,8 +18,8 @@ func Open(l *lua.State) {
 var base64Library = []lua.RegistryFunction{
 	{Name: "encode", Function: encode},
 	{Name: "decode", Function: decode},
-	{Name: "urlEncode", Function: urlEncode},
-	{Name: "urlDecode", Function: urlDecode},
+	{Name: "url_encode", Function: urlEncode},
+	{Name: "url_decode", Function: urlDecode},
 }
 
 func encode(l *lua.State) int {

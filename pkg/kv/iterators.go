@@ -183,7 +183,7 @@ func (s *SecondaryIterator) Next() bool {
 		return false
 	}
 	s.value = &MessageEntry{
-		Key:   next.PrimaryKey,
+		Key:   secondary.Key,
 		Value: value,
 	}
 	return true

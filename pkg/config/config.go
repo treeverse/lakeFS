@@ -135,11 +135,6 @@ type Config struct {
 			// The name of the DynamoDB table to be used as KV
 			TableName string `mapstructure:"table_name"`
 
-			// Table provisioned throughput parameters, as described in
-			// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html
-			ReadCapacityUnits  int64 `mapstructure:"read_capacity_units"`
-			WriteCapacityUnits int64 `mapstructure:"write_capacity_units"`
-
 			// Maximal number of items per page during scan operation
 			ScanLimit int64 `mapstructure:"scan_limit"`
 
@@ -389,8 +384,6 @@ func (c *Config) DatabaseParams() (kvparams.Config, error) {
 	if c.Database.DynamoDB != nil {
 		p.DynamoDB = &kvparams.DynamoDB{
 			TableName:          c.Database.DynamoDB.TableName,
-			ReadCapacityUnits:  c.Database.DynamoDB.ReadCapacityUnits,
-			WriteCapacityUnits: c.Database.DynamoDB.WriteCapacityUnits,
 			ScanLimit:          c.Database.DynamoDB.ScanLimit,
 			Endpoint:           c.Database.DynamoDB.Endpoint,
 			AwsRegion:          c.Database.DynamoDB.AwsRegion,
@@ -405,8 +398,10 @@ func (c *Config) DatabaseParams() (kvparams.Config, error) {
 func (c *Config) GetAwsConfig() *aws.Config {
 	logger := logging.Default().WithField("sdk", "aws")
 	cfg := &aws.Config{
-		Region: aws.String(c.Blockstore.S3.Region),
 		Logger: &logging.AWSAdapter{Logger: logger},
+	}
+	if c.Blockstore.S3.Region != "" {
+		cfg.Region = aws.String(c.Blockstore.S3.Region)
 	}
 	level := strings.ToLower(logging.Level())
 	if level == "trace" {

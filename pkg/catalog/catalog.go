@@ -313,14 +313,7 @@ func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, s
 
 func (c *Catalog) getRepository(ctx context.Context, repository string) (*graveler.RepositoryRecord, error) {
 	repositoryID := graveler.RepositoryID(repository)
-	repo, err := c.Store.GetRepository(ctx, repositoryID)
-	if err != nil {
-		if errors.Is(err, graveler.ErrRepositoryNotFound) {
-			return nil, ErrRepositoryNotFound
-		}
-		return nil, err
-	}
-	return repo, err
+	return c.Store.GetRepository(ctx, repositoryID)
 }
 
 // GetRepository get repository information
@@ -594,9 +587,6 @@ func (c *Catalog) GetBranchReference(ctx context.Context, repositoryID string, b
 	}
 	b, err := c.Store.GetBranch(ctx, repository, branchID)
 	if err != nil {
-		if errors.Is(err, graveler.ErrBranchNotFound) {
-			err = ErrBranchNotFound
-		}
 		return "", err
 	}
 	return string(b.CommitID), nil
@@ -1095,7 +1085,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler.RepositoryRecord, it graveler.CommitIterator, params LogParams) ([]*CommitLog, bool, error) {
 	// verify we are not listing commits without any paths
 	if len(params.PathList) == 0 {
-		return nil, false, fmt.Errorf("%w: list commits without paths", ErrInvalid)
+		return nil, false, fmt.Errorf("%w: list commits without paths", graveler.ErrInvalid)
 	}
 	// commit/key to value cache - helps when fetching the same commit/key while processing parent commits
 	const commitLogCacheSize = 1024 * 5
@@ -1933,6 +1923,48 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}, nil
 }
 
+func (c *Catalog) SetLinkAddress(ctx context.Context, repository, token string) error {
+	repo, err := c.getRepository(ctx, repository)
+	if err != nil {
+		return err
+	}
+	return c.Store.SetLinkAddress(ctx, repo, token)
+}
+
+func (c *Catalog) VerifyLinkAddress(ctx context.Context, repository, token string) error {
+	repo, err := c.getRepository(ctx, repository)
+	if err != nil {
+		return err
+	}
+	return c.Store.VerifyLinkAddress(ctx, repo, token)
+}
+
+func (c *Catalog) DeleteExpiredLinkAddresses(ctx context.Context) {
+	it, err := c.Store.ListRepositories(ctx)
+	if err != nil {
+		c.log.WithError(err).Warn("Failed to list repositories during delete expired addresses")
+		return
+	}
+	defer it.Close()
+
+	var repos []*graveler.RepositoryRecord
+	for it.Next() {
+		record := it.Value()
+		repos = append(repos, record)
+	}
+	if err := it.Err(); err != nil {
+		c.log.WithError(err).Warn("Failed to iterate over repositories during delete expired addresses")
+		return
+	}
+
+	for _, repo := range repos {
+		err := c.Store.DeleteExpiredLinkAddresses(ctx, repo)
+		if err != nil {
+			c.log.WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired address tokens failed")
+		}
+	}
+}
+
 func (c *Catalog) Close() error {
 	var errs error
 	for _, manager := range c.managers {
@@ -1952,10 +1984,10 @@ func (c *Catalog) dereferenceCommitID(ctx context.Context, repository *graveler.
 		return "", err
 	}
 	if resolvedRef.CommitID == "" {
-		return "", fmt.Errorf("%w: no commit", ErrInvalidRef)
+		return "", fmt.Errorf("%w: no commit", graveler.ErrInvalidRef)
 	}
 	if resolvedRef.ResolvedBranchModifier == graveler.ResolvedBranchModifierStaging {
-		return "", fmt.Errorf("%w: should point to a commit", ErrInvalidRef)
+		return "", fmt.Errorf("%w: should point to a commit", graveler.ErrInvalidRef)
 	}
 	return resolvedRef.CommitID, nil
 }

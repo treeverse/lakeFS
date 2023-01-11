@@ -26,29 +26,24 @@ The app itself is the word count example that store the information into csv for
 ### GC tests
 
 The tests use two branches `a<id>` and `b<id>`, and according to the test scenarios, files are uploaded/deleted from them, and the branches themselves might be deleted as well (if specifying `-1` as the value of `delete_commit_days_ago`: `"delete_commit_days_ago": -1`).  
-If you wish to add additional tests to the test suit of GC, update the `gc-tests/test_scenarios.json` file with the new test scenario and mind giving it a new unique id and append it to the end of the branch names (`a<id>` and `b<id>`).  
+If you wish to add additional tests to the test suit of GC, update the test table in `gc_test.go` with the new test scenario. Give the test case a new unique id and append it to the branch names (`a<id>` and `b<id>`).  
 Example:
-```json lines
+```go
 {
-    "id": 3,   // Notice the id
-    "policy": {
-      "default_retention_days": 5,
-      "branches": [                               // Notice the branches names
-        {"branch_id": "a3", "retention_days": 1},  
-        {"branch_id": "b3", "retention_days": 3}
-      ]
-    },
-    "branches": [                                 // Notice the branches names
-      {
-        "branch_name": "a3",
-        "delete_commit_days_ago": 4
-      },
-      {
-        "branch_name": "b3",
-        "delete_commit_days_ago": 2
-      }
-    ],
-    "file_deleted": false,
-    "description": "The file is not deleted because of the retention policy of the second branch"
-  }
+  id: "3", // note the id
+  policy: api.GarbageCollectionRules{
+      Branches: []api.GarbageCollectionRule{
+        {BranchId: "a3", RetentionDays: 1},
+        {BranchId: "b3", RetentionDays: 3},
+	  },
+      DefaultRetentionDays: 5,
+  },
+  branches: []branchProperty{
+    {name: "a3", deleteCommitDaysAgo: 4},
+	{name: "b3", deleteCommitDaysAgo: 2},
+  },
+  fileDeleted:  false,
+  description:  "The file is not deleted because of the retention policy of the second branch",
+  directUpload: false,
+},
 ```

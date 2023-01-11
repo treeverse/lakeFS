@@ -2304,3 +2304,11 @@ func TestGraveler_PreDeleteBranchHook(t *testing.T) {
 		})
 	}
 }
+
+func TestGraveler_SetAddressToken(t *testing.T) {
+	gravel := newGraveler(t, nil, nil, &testutil.RefsFake{}, nil, nil)
+	err := gravel.SetLinkAddress(context.Background(), repository, "data/a")
+	if err != nil {
+		t.Fatal("unexpected error on set address token", err)
+	}
+}
