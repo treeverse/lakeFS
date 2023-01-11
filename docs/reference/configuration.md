@@ -179,7 +179,7 @@ This reference uses `.` to denote the nesting of values.
 * `stats.flush_interval` `(duration : 30s)` - Interval used to post anonymous statistics collected
 * `stats.flush_size` `(int : 100)` - A size (in records) of anonymous statistics collected in which we post
 * `security.audit_check_interval` `(duration : 24h)` - Duration in which we check for security audit.
-* `ui.enable` `(bool: true)` - Whether to server the embedded UI from the binary  
+* `ui.enabled` `(bool: true)` - Whether to server the embedded UI from the binary  
 {: .ref-list }
 
 ## Using Environment Variables
