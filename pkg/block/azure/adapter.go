@@ -40,6 +40,7 @@ type Adapter struct {
 	configurations                configurations
 	credentials                   azblob.Credential
 	preSignedURLDurationGenerator func() time.Time
+	keyCredentials                *azblob.SharedKeyCredential
 }
 
 type configurations struct {
@@ -60,6 +61,10 @@ func NewAdapter(pipeline pipeline.Pipeline, credentials azblob.Credential, opts 
 		preSignedURLDurationGenerator: func() time.Time {
 			return time.Now().UTC().Add(defaultPreSignedURLDuration)
 		},
+	}
+	keyCredentials, ok := credentials.(*azblob.SharedKeyCredential)
+	if ok {
+		a.keyCredentials = keyCredentials
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -235,14 +240,13 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		Permissions:   permissions.String(),
 	}
 
-	keyCredentials, ok := a.credentials.(*azblob.SharedKeyCredential)
-	if !ok {
+	if a.keyCredentials == nil {
 		err = fmt.Errorf("pre-signed mode on Azure is only supported for shared key credentials: %w", ErrNotImplemented)
 		a.log(ctx).WithError(err).Error("no support for pre-signed using this Azure credentials provider")
 		return "", err
 	}
 
-	sasQueryParams, err := vals.NewSASQueryParameters(keyCredentials)
+	sasQueryParams, err := vals.NewSASQueryParameters(a.keyCredentials)
 	if err != nil {
 		a.log(ctx).WithError(err).Error("could not generate SAS query parameters")
 		return "", err
@@ -251,7 +255,7 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	// Since this is a blob SAS, the URL is to the Azure storage blob.
 	qp := sasQueryParams.Encode()
 	return fmt.Sprintf(preSignedBlobPattern,
-		a.credentials, qualifiedKey.ContainerName, qualifiedKey.BlobURL, qp), nil
+		a.keyCredentials.AccountName(), qualifiedKey.ContainerName, qualifiedKey.BlobURL, qp), nil
 }
 
 func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {

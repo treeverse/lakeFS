@@ -334,7 +334,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		Token:           StringValue(token),
 	}
 
-	if params.Presign != nil && *params.Presign {
+	if swag.BoolValue(params.Presign) {
 		// generate a pre-signed PUT url for the given request
 		preSignedURL, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
 			StorageNamespace: repo.StorageNamespace,
@@ -3007,7 +3007,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 
 	// if pre-sign, return a redirect
 	pointer := block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}
-	if params.Presign != nil && *params.Presign {
+	if swag.BoolValue(params.Presign) {
 		location, err := c.BlockAdapter.GetPreSignedURL(ctx, pointer, block.PreSignModeRead)
 		if c.handleAPIError(ctx, w, r, err) {
 			return
@@ -3126,7 +3126,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 			if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
 				objStat.Metadata = &ObjectUserMetadata{AdditionalProperties: entry.Metadata}
 			}
-			if params.Presign != nil && *params.Presign {
+			if swag.BoolValue(params.Presign) {
 				// check if the user has read permissions for this object
 				authResponse, err := c.Auth.Authorize(ctx, &auth.AuthorizationRequest{
 					Username: user.Username,
@@ -3211,7 +3211,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 	code := http.StatusOK
 	if entry.Expired {
 		code = http.StatusGone
-	} else if params.Presign != nil && *params.Presign {
+	} else if swag.BoolValue(params.Presign) {
 		// need to pre-sign the physical address
 		preSignedURL, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
 			StorageNamespace: repo.StorageNamespace,

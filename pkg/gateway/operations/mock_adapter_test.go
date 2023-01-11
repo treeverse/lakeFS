@@ -18,8 +18,7 @@ type mockAdapter struct {
 }
 
 func (a *mockAdapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
-	// TODO implement me
-	panic("implement me")
+	return "", block.ErrOperationNotSupported
 }
 
 func newMockAdapter() *mockAdapter {
