@@ -318,99 +318,116 @@ jobs:
           ESTI_SETUP_LAKEFS: false
           ESTI_UGC_STEP: post
 
-#
-#  committed-gc-test:
-#    name: Test committed gc
-#    needs: [ gen-code, deploy-image, login-to-amazon-ecr, build-spark3-metadata-client ]
-#    runs-on: ubuntu-latest-16-cores
-#
-#    services:
-#      lakefs:
-#        image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
-#        credentials:
-#          username: ${{ needs.login-to-amazon-ecr.outputs.docker_username }}
-#          password: ${{ needs.login-to-amazon-ecr.outputs.docker_password }}
-#        ports:
-#          - '8000:8000'
-#        env:
-#          LAKEFS_DATABASE_TYPE: local
-#          LAKEFS_BLOCKSTORE_TYPE: s3
-#          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-#          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-#          LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
-#          LAKEFS_STATS_ENABLED: false
-#
-#      spark:
-#        image: docker.io/bitnami/spark:3.2
-#        options: --name spark-master
-#        env:
-#          SPARK_MODE: master
-#          SPARK_RPC_AUTHENTICATION_ENABLED: no
-#          SPARK_RPC_ENCRYPTION_ENABLED: no
-#          SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
-#          SPARK_SSL_ENABLED: no
-#          AWS_REGION: us-east-1
-#          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-#          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-#        ports:
-#          - '8080:8080'
-#          - '7077:7077'
-#
-#      spark-worker:
-#        image: docker.io/bitnami/spark:3.2
-#        env:
-#          SPARK_MODE: worker
-#          SPARK_MASTER_URL: spark://spark:7077
-#          SPARK_WORKER_MEMORY: 1G
-#          SPARK_WORKER_CORES: 2
-#          SPARK_RPC_AUTHENTICATION_ENABLED: no
-#          SPARK_RPC_ENCRYPTION_ENABLED: no
-#          SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
-#          SPARK_SSL_ENABLED: no
-#          AWS_REGION: us-east-1
-#          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-#          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-#    steps:
-#      - name: Check-out code
-#        uses: actions/checkout@v3
-#
-#      - name: Setup Go
-#        uses: actions/setup-go@v3
-#        with:
-#          go-version: 1.19.2
-#        id: go
-#
-#      - name: Generate uniquifying value
-#        id: unique
-#        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
-#
-#      - name: Retrieve generated code
-#        uses: actions/download-artifact@v3
-#        with:
-#          name: generated-code
-#          path: /tmp/
-#
-#      - name: Unpack generated code
-#        shell: bash
-#        run: tar -xf /tmp/generated.tar.gz
-#
-#      - name: Import Metaclient
-#        id: import_metaclient
-#        uses: actions/download-artifact@v3
-#        with:
-#          name: metaclient-hadoop3
-#          path: test/spark/metaclient
-#
-#      - name: GC test
-#        run: go test -timeout 30m -v ./esti -system-tests -use-local-credentials -run=TestCommittedGC -metaclient-jar=$(pwd)/test/spark/metaclient/spark-assembly-hadoop3.jar
-#        env:
-#          ESTI_BLOCKSTORE_TYPE: s3
-#          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/gc-tests/${{ steps.unique.outputs.value }}
-#          AWS_REGION: us-east-1
-#          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-#          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-#          ESTI_VERSION: ${{ steps.version.outputs.tag }}
-#          ESTI_SETUP_LAKEFS: true
+
+  committed-gc-test:
+    name: Test committed gc
+    needs: [ gen-code, deploy-image, login-to-amazon-ecr, build-spark3-metadata-client ]
+    runs-on: ubuntu-latest-8-cores
+    strategy:
+      matrix:
+        spark:
+          - version: 3.2.1
+            suffix: "-hadoop3"
+            allow_failure: false
+          - version: 3.1.2
+            suffix: ""
+            allow_failure: false
+          - version: 3.0.2
+            suffix: ""
+            allow_failure: false
+    services:
+      lakefs:
+        image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
+        credentials:
+          username: ${{ needs.login-to-amazon-ecr.outputs.docker_username }}
+          password: ${{ needs.login-to-amazon-ecr.outputs.docker_password }}
+        ports:
+          - '8000:8000'
+        env:
+          LAKEFS_DATABASE_TYPE: local
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
+          LAKEFS_STATS_ENABLED: false
+
+      spark:
+        image: docker.io/bitnami/spark:${{ matrix.spark.version }}
+        options: --name spark-master
+        env:
+          SPARK_MODE: master
+          SPARK_RPC_AUTHENTICATION_ENABLED: no
+          SPARK_RPC_ENCRYPTION_ENABLED: no
+          SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
+          SPARK_SSL_ENABLED: no
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          SPARK_WORKER_MEMORY: 4G
+          SPARK_WORKER_CORES: 4
+        ports:
+          - '8080:8080'
+          - '7077:7077'
+
+      spark-worker:
+        image: docker.io/bitnami/spark:${{ matrix.spark.version }}
+        env:
+          SPARK_MODE: worker
+          SPARK_MASTER_URL: spark://spark:7077
+          SPARK_WORKER_MEMORY: 4G
+          SPARK_WORKER_CORES: 4
+          SPARK_RPC_AUTHENTICATION_ENABLED: no
+          SPARK_RPC_ENCRYPTION_ENABLED: no
+          SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
+          SPARK_SSL_ENABLED: no
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.2
+        id: go
+
+      - name: Generate uniquifying value
+        id: unique
+        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
+
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v3
+        with:
+          name: generated-code
+          path: /tmp/
+
+      - name: Unpack generated code
+        shell: bash
+        run: tar -xf /tmp/generated.tar.gz
+
+      - name: Import Metaclient
+        id: import_metaclient
+        uses: actions/download-artifact@v3
+        with:
+          name: metaclient${{ matrix.spark.suffix }}
+          path: test/spark/metaclient
+
+      - name: GC test
+        run: |
+          go test -timeout 30m -v ./esti \
+            -system-tests -use-local-credentials -run=TestCommittedGC \
+            -spark-image-tag=${{ matrix.spark.version }} \
+            -metaclient-jar=$(pwd)/test/spark/metaclient/spark-assembly${{ matrix.spark.suffix }}.jar
+        env:
+          ESTI_BLOCKSTORE_TYPE: s3
+          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/gc-tests/${{ steps.unique.outputs.value }}
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          ESTI_VERSION: ${{ steps.version.outputs.tag }}
+          ESTI_SETUP_LAKEFS: true
 
   deploy-rclone-export-image:
     name: Build and push rclone export Docker image
@@ -829,7 +846,7 @@ jobs:
 
   build-spark3-metadata-client:
     name: Build metadata client for Spark 3.x
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-8-cores
     needs: check-secrets
     strategy:
       matrix:
@@ -875,33 +892,19 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  metadata-client-gc-spark3:
-    name: Test lakeFS metadata client GC with Spark 3.x
+  metadata-client-gc-spark3-hadoop3-on-azure:
+    name: Test lakeFS metadata client GC with Spark 3.x and Hadoop 3 on Azure
     needs: [deploy-image, build-spark3-metadata-client]
     runs-on: ubuntu-latest-8-cores
     strategy:
       matrix:
         spark:
-#          - version: 3.2.1
-#            suffix: "-hadoop3"
-#            allow_failure: false
-          - version: 3.1.2
-            suffix: ""
-            allow_failure: false
-          - version: 3.0.2
-            suffix: ""
-            allow_failure: false
-          # Test with an an actual 3.2.3 on Hadoop 2 build
-          - base: treeverse/bitnami-based-spark
-            version: 3.2.3-with-hadoop-2.7-for-testing
-            suffix: ""
-            allow_failure: true
+          - version: 3.2.1
+            suffix: "-hadoop3"
     env:
-      SPARK_BASE: ${{ matrix.spark.base }}
       SPARK_TAG: ${{ matrix.spark.version }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
       TAG: ${{ needs.deploy-image.outputs.tag }}
-    continue-on-error: ${{ matrix.spark.allow_failure }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
@@ -925,9 +928,9 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           LAKEFS_DATABASE_TYPE: postgres
-          LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_BLOCKSTORE_TYPE: azure
+          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
+          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
 
       - name: Setup lakeFS for metadata client tests
         working-directory: test/spark
@@ -935,94 +938,21 @@ jobs:
 
       - name: Test GC with Spark 3.x
         env:
-          LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_DATABASE_TYPE: postgres
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/garbage/${{ steps.unique.outputs.value }}
+          STORAGE_NAMESPACE: https://esti.blob.core.windows.net/esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/garbage/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-gc-${{ matrix.spark.version }}
           CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly${{ matrix.spark.suffix }}.jar
-          AWS_REGION: us-east-1
+          LAKEFS_BLOCKSTORE_TYPE: azure
+          LAKEFS_DATABASE_TYPE: postgres
+          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
+          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
         working-directory: test/spark
         run: ./run-gc-test.sh
-
-      - name: Spark executor logs on failure
-        if: ${{ failure() }}
-        continue-on-error: true
-        working-directory: test/spark
-        run: docker-compose logs --tail=50000 spark-worker
-
-      - name: Spark driver logs on failure
-        if: ${{ failure() }}
-        continue-on-error: true
-        working-directory: test/spark
-        run: docker-compose logs --tail=50000 spark ; docker ps
 
       - name: lakeFS Logs on Spark with gateway failure
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
         run: docker-compose logs --tail=1000 lakefs
-
-#  metadata-client-gc-spark3-hadoop3-on-azure:
-#    name: Test lakeFS metadata client GC with Spark 3.x and Hadoop 3 on Azure
-#    needs: [deploy-image, build-spark3-metadata-client]
-#    runs-on: ubuntu-latest-8-cores
-#    strategy:
-#      matrix:
-#        spark:
-#          - version: 3.2.1
-#            suffix: "-hadoop3"
-#    env:
-#      SPARK_TAG: ${{ matrix.spark.version }}
-#      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-#      TAG: ${{ needs.deploy-image.outputs.tag }}
-#    steps:
-#      - name: Check-out code
-#        uses: actions/checkout@v3
-#
-#      - name: Import Metaclient
-#        id: import_metaclient
-#        uses: actions/download-artifact@v3
-#        with:
-#          name: metaclient${{ matrix.spark.suffix }}
-#          path: test/spark/metaclient
-#
-#      - name: Generate uniquifying value
-#        id: unique
-#        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
-#
-#      - name: Start lakeFS for Spark tests
-#        uses: ./.github/actions/bootstrap-test-lakefs
-#        with:
-#          compose-directory: test/spark
-#        env:
-#          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#          LAKEFS_DATABASE_TYPE: postgres
-#          LAKEFS_BLOCKSTORE_TYPE: azure
-#          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
-#          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
-#
-#      - name: Setup lakeFS for metadata client tests
-#        working-directory: test/spark
-#        run: ./setup-test.sh
-#
-#      - name: Test GC with Spark 3.x
-#        env:
-#          STORAGE_NAMESPACE: https://esti.blob.core.windows.net/esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/garbage/${{ steps.unique.outputs.value }}
-#          REPOSITORY: test-data-gc-${{ matrix.spark.version }}
-#          CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly${{ matrix.spark.suffix }}.jar
-#          LAKEFS_BLOCKSTORE_TYPE: azure
-#          LAKEFS_DATABASE_TYPE: postgres
-#          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
-#          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
-#        working-directory: test/spark
-#        run: ./run-gc-test.sh
-#
-#      - name: lakeFS Logs on Spark with gateway failure
-#        if: ${{ failure() }}
-#        continue-on-error: true
-#        working-directory: test/spark
-#        run: docker-compose logs --tail=1000 lakefs
 
   metadata-client-export-spark3:
     name: Test lakeFS metadata client export with Spark 3.x
