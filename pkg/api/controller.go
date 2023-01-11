@@ -199,7 +199,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 		}
 		lg := c.Logger.WithField("path", objectPath)
 		switch {
-		case errors.Is(err, catalog.ErrNotFound), errors.Is(err, graveler.ErrNotFound):
+		case errors.Is(err, graveler.ErrNotFound):
 			lg.WithError(err).Debug("tried to delete a non-existent object")
 		case errors.Is(err, graveler.ErrWriteToProtectedBranch):
 			errs = append(errs, ObjectError{
@@ -303,7 +303,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 	c.LogAction(ctx, "generate_physical_address", r, repository, branch, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if errors.Is(err, catalog.ErrNotFound) {
+	if errors.Is(err, graveler.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, err)
 		return
 	}
@@ -313,7 +313,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 	}
 
 	token, err := c.Catalog.GetStagingToken(ctx, repository, branch)
-	if errors.Is(err, catalog.ErrNotFound) {
+	if errors.Is(err, graveler.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, err)
 		return
 	}
@@ -356,7 +356,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	c.LogAction(ctx, "stage_object", r, repository, branch, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if errors.Is(err, catalog.ErrNotFound) {
+	if errors.Is(err, graveler.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, err)
 		return
 	}
@@ -408,7 +408,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	entry := entryBuilder.Build()
 
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
-	if errors.Is(err, catalog.ErrNotFound) {
+	if errors.Is(err, graveler.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, err)
 		return
 	}
@@ -1488,8 +1488,7 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 		}
 		writeResponse(w, r, http.StatusOK, response)
 
-	case errors.Is(err, catalog.ErrNotFound),
-		errors.Is(err, catalog.ErrRepositoryNotFound):
+	case errors.Is(err, graveler.ErrNotFound):
 		writeError(w, r, http.StatusNotFound, "repository not found")
 
 	case errors.Is(err, graveler.ErrRepositoryInDeletion):
@@ -1821,8 +1820,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	}
 
 	switch {
-	case errors.Is(err, catalog.ErrNotFound),
-		errors.Is(err, graveler.ErrNotFound),
+	case errors.Is(err, graveler.ErrNotFound),
 		errors.Is(err, actions.ErrNotFound),
 		errors.Is(err, auth.ErrNotFound),
 		errors.Is(err, kv.ErrNotFound):
@@ -1830,23 +1828,21 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
 		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
-		errors.Is(err, catalog.ErrNoDifferenceWasFound),
+		errors.Is(err, graveler.ErrInvalidValue),
+		errors.Is(err, catalog.ErrPathRequiredValue),
 		errors.Is(err, graveler.ErrNoChanges),
 		errors.Is(err, permissions.ErrInvalidServiceName),
 		errors.Is(err, permissions.ErrInvalidAction),
 		errors.Is(err, model.ErrValidationError),
 		errors.Is(err, graveler.ErrInvalidRef),
-		errors.Is(err, graveler.ErrInvalidValue),
-		errors.Is(err, actions.ErrParamConflict):
+		errors.Is(err, actions.ErrParamConflict),
+		errors.Is(err, graveler.ErrDereferenceCommitWithStaging):
 		cb(w, r, http.StatusBadRequest, err)
 
 	case errors.Is(err, graveler.ErrNotUnique),
 		errors.Is(err, graveler.ErrConflictFound),
 		errors.Is(err, graveler.ErrRevertMergeNoParent):
 		cb(w, r, http.StatusConflict, err)
-
-	case errors.Is(err, catalog.ErrFeatureNotSupported):
-		cb(w, r, http.StatusNotImplemented, err)
 
 	case errors.Is(err, graveler.ErrLockNotAcquired):
 		cb(w, r, http.StatusInternalServerError, "branch is currently locked, try again later")
@@ -2144,7 +2140,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 			writeError(w, r, http.StatusPreconditionFailed, "path already exists")
 			return
 		}
-		if !errors.Is(err, catalog.ErrNotFound) {
+		if !errors.Is(err, graveler.ErrNotFound) {
 			writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
@@ -2321,6 +2317,86 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 	writeResponse(w, r, http.StatusCreated, response)
 }
 
+func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body CopyObjectJSONRequestBody, repository string, branch string, params CopyObjectParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadActionsAction,
+					Resource: permissions.ObjectArn(repository, params.DestPath),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.WriteObjectAction,
+					Resource: permissions.ObjectArn(repository, body.SrcPath),
+				},
+			},
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "copy_object", r, repository, branch, params.DestPath)
+
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	ref := branch
+	if body.SrcRef != nil {
+		ref = *body.SrcRef
+	}
+
+	// TODO (niro): Naive copy object flow - real implementation still missing (https://github.com/treeverse/lakeFS/issues/4477)
+	src, err := c.Catalog.GetEntry(ctx, repository, ref, body.SrcPath, catalog.GetEntryParams{})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	destAddress := c.PathProvider.NewPath()
+	blob, err := upload.CopyBlob(ctx, c.BlockAdapter, repo.StorageNamespace, repo.StorageNamespace, src.PhysicalAddress, src.Checksum, destAddress, src.Size)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	writeTime := time.Now()
+	entryBuilder := catalog.NewDBEntryBuilder().
+		CommonLevel(false).
+		Path(params.DestPath).
+		PhysicalAddress(blob.PhysicalAddress).
+		AddressType(catalog.AddressTypeRelative).
+		CreationDate(writeTime).
+		Size(blob.Size).
+		Checksum(blob.Checksum).
+		ContentType(src.ContentType)
+	entry := entryBuilder.Build()
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress, block.IdentifierTypeRelative)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	w.Header().Set("X-lakeFS-Copy-Type", "full") // update with the real implementation
+	// TODO: end of TODO
+
+	response := ObjectStats{
+		Checksum:        entry.Checksum,
+		Mtime:           entry.CreationDate.Unix(),
+		Path:            entry.Path,
+		PathType:        entryTypeObject,
+		PhysicalAddress: qk.Format(),
+		SizeBytes:       Int64Ptr(entry.Size),
+		ContentType:     &entry.ContentType,
+	}
+	writeResponse(w, r, http.StatusCreated, response)
+}
+
 func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body RevertBranchJSONRequestBody, repository string, branch string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -2361,11 +2437,11 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 	ctx := r.Context()
 	c.LogAction(ctx, "get_commit", r, repository, commitID, "")
 	commit, err := c.Catalog.GetCommit(ctx, repository, commitID)
-	if errors.Is(err, catalog.ErrRepositoryNotFound) {
+	if errors.Is(err, graveler.ErrRepositoryNotFound) {
 		writeError(w, r, http.StatusNotFound, "repository not found")
 		return
 	}
-	if errors.Is(err, catalog.ErrNotFound) {
+	if errors.Is(err, graveler.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "commit not found")
 		return
 	}
@@ -3249,7 +3325,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		c.Logger.WithError(err).WithField("run_id", hookAbortErr.RunID).Warn("aborted by hooks")
 		writeError(w, r, http.StatusPreconditionFailed, err)
 		return
-	case errors.Is(err, catalog.ErrConflictFound) || errors.Is(err, graveler.ErrConflictFound):
+	case errors.Is(err, graveler.ErrConflictFound):
 		writeResponse(w, r, http.StatusConflict, MergeResult{Reference: res})
 		return
 	}

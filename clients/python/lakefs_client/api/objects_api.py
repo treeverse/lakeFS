@@ -23,6 +23,7 @@ from lakefs_client.model_utils import (  # noqa: F401
     validate_and_convert_types
 )
 from lakefs_client.model.error import Error
+from lakefs_client.model.object_copy_creation import ObjectCopyCreation
 from lakefs_client.model.object_error_list import ObjectErrorList
 from lakefs_client.model.object_stage_creation import ObjectStageCreation
 from lakefs_client.model.object_stats import ObjectStats
@@ -42,6 +43,79 @@ class ObjectsApi(object):
         if api_client is None:
             api_client = ApiClient()
         self.api_client = api_client
+        self.copy_object_endpoint = _Endpoint(
+            settings={
+                'response_type': (ObjectStats,),
+                'auth': [
+                    'basic_auth',
+                    'cookie_auth',
+                    'jwt_token',
+                    'oidc_auth'
+                ],
+                'endpoint_path': '/repositories/{repository}/branches/{branch}/objects/copy',
+                'operation_id': 'copy_object',
+                'http_method': 'POST',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'repository',
+                    'branch',
+                    'dest_path',
+                    'object_copy_creation',
+                ],
+                'required': [
+                    'repository',
+                    'branch',
+                    'dest_path',
+                    'object_copy_creation',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'repository':
+                        (str,),
+                    'branch':
+                        (str,),
+                    'dest_path':
+                        (str,),
+                    'object_copy_creation':
+                        (ObjectCopyCreation,),
+                },
+                'attribute_map': {
+                    'repository': 'repository',
+                    'branch': 'branch',
+                    'dest_path': 'dest_path',
+                },
+                'location_map': {
+                    'repository': 'path',
+                    'branch': 'path',
+                    'dest_path': 'query',
+                    'object_copy_creation': 'body',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [
+                    'application/json'
+                ]
+            },
+            api_client=api_client
+        )
         self.delete_object_endpoint = _Endpoint(
             settings={
                 'response_type': None,
@@ -721,6 +795,83 @@ class ObjectsApi(object):
             },
             api_client=api_client
         )
+
+    def copy_object(
+        self,
+        repository,
+        branch,
+        dest_path,
+        object_copy_creation,
+        **kwargs
+    ):
+        """create a copy of an object  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.copy_object(repository, branch, dest_path, object_copy_creation, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            repository (str):
+            branch (str): destination branch for the copy
+            dest_path (str): destination path relative to the branch
+            object_copy_creation (ObjectCopyCreation):
+
+        Keyword Args:
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            ObjectStats
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['repository'] = \
+            repository
+        kwargs['branch'] = \
+            branch
+        kwargs['dest_path'] = \
+            dest_path
+        kwargs['object_copy_creation'] = \
+            object_copy_creation
+        return self.copy_object_endpoint.call_with_http_info(**kwargs)
 
     def delete_object(
         self,

@@ -47,6 +47,7 @@ docs/MetaRangeCreation.md
 docs/MetaRangeCreationResponse.md
 docs/MetadataApi.md
 docs/NextStep.md
+docs/ObjectCopyCreation.md
 docs/ObjectError.md
 docs/ObjectErrorList.md
 docs/ObjectStageCreation.md
@@ -154,6 +155,7 @@ lakefs_client/model/merge_result_summary.py
 lakefs_client/model/meta_range_creation.py
 lakefs_client/model/meta_range_creation_response.py
 lakefs_client/model/next_step.py
+lakefs_client/model/object_copy_creation.py
 lakefs_client/model/object_error.py
 lakefs_client/model/object_error_list.py
 lakefs_client/model/object_stage_creation.py
@@ -246,6 +248,7 @@ test/test_meta_range_creation.py
 test/test_meta_range_creation_response.py
 test/test_metadata_api.py
 test/test_next_step.py
+test/test_object_copy_creation.py
 test/test_object_error.py
 test/test_object_error_list.py
 test/test_object_stage_creation.py
