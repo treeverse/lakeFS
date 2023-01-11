@@ -2,11 +2,12 @@ package plugins
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"os"
-	"os/exec"
 )
 
 // PluginGroupType specifies the group name of related plugins
