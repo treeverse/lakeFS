@@ -273,7 +273,6 @@ func getSparkSubmitArgs() []string {
 		"--conf", "spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ",
 		"--conf", "spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 		"--class", "io.treeverse.clients.GarbageCollector",
-		"--packages", "org.apache.hadoop:hadoop-aws:3.2.4",
 	}
 }
 
@@ -294,7 +293,7 @@ func runGC(t *testing.T, repo string, extraSparkArgs ...string) {
 	}
 	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
 	dockerArgs := getDockerArgs(workingDirectory)
-	dockerArgs = append(dockerArgs, "docker.io/bitnami/spark:3.2", "spark-submit")
+	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/bitnami/spark:%s", sparkImageTag), "spark-submit")
 	sparkSubmitArgs := getSparkSubmitArgs()
 	sparkSubmitArgs = append(sparkSubmitArgs, extraSparkArgs...)
 	args := append(dockerArgs, sparkSubmitArgs...)
