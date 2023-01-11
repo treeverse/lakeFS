@@ -862,6 +862,12 @@ components:
           type: boolean
         upgrade_url:
           type: string
+    GarbageCollectionConfig:
+      type: object
+      properties:
+        grace_period:
+          description: Duration in seconds. Objects created in the recent grace_period will not be collected.
+          type: integer
 
     ActionRun:
       type: object
@@ -3771,6 +3777,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StorageConfig"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+  /config/garbage-collection:
+    get:
+      tags:
+        - config
+      operationId: getGarbageCollectionConfig
+      description: get information of gc settings
+      responses:
+        200:
+          description: lakeFS garbage collection config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarbageCollectionConfig"
         401:
           $ref: "#/components/responses/Unauthorized"
   /templates/{template_location}:

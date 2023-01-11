@@ -143,6 +143,8 @@ object UncommittedGarbageCollector {
       storageNamespace += "/"
     }
 
+    apiClient.getGarbageCollectionRules()
+
     try {
       if (shouldMark) {
         // Read objects directly from object storage

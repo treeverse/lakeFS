@@ -28,6 +28,7 @@ from lakefs_client.model.diff import Diff
 from lakefs_client.model.diff_list import DiffList
 from lakefs_client.model.error import Error
 from lakefs_client.model.forgot_password_request import ForgotPasswordRequest
+from lakefs_client.model.garbage_collection_config import GarbageCollectionConfig
 from lakefs_client.model.garbage_collection_prepare_request import GarbageCollectionPrepareRequest
 from lakefs_client.model.garbage_collection_prepare_response import GarbageCollectionPrepareResponse
 from lakefs_client.model.garbage_collection_rule import GarbageCollectionRule
