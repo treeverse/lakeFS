@@ -24,6 +24,13 @@ class TestObjectsApi(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def test_copy_object(self):
+        """Test case for copy_object
+
+        create a copy of an object  # noqa: E501
+        """
+        pass
+
     def test_delete_object(self):
         """Test case for delete_object
 
