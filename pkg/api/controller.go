@@ -2318,20 +2318,20 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 	writeResponse(w, r, http.StatusCreated, response)
 }
 
-func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body CopyObjectJSONRequestBody, repository string, ref string) {
+func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body CopyObjectJSONRequestBody, repository string, branch string, params CopyObjectParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ReadActionsAction,
-					Resource: permissions.ObjectArn(repository, body.SourcePath),
+					Resource: permissions.ObjectArn(repository, params.DestPath),
 				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.WriteObjectAction,
-					Resource: permissions.ObjectArn(repository, body.DestinationPath),
+					Resource: permissions.ObjectArn(repository, body.SrcPath),
 				},
 			},
 		},
@@ -2339,15 +2339,20 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "copy_object", r, repository, body.DestinationBranch, ref)
+	c.LogAction(ctx, "copy_object", r, repository, branch, params.DestPath)
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
+	ref := branch
+	if body.SrcRef != nil {
+		ref = *body.SrcRef
+	}
+
 	// TODO (niro): Naive copy object flow - real implementation still missing (https://github.com/treeverse/lakeFS/issues/4477)
-	src, err := c.Catalog.GetEntry(ctx, repository, ref, body.SourcePath, catalog.GetEntryParams{})
+	src, err := c.Catalog.GetEntry(ctx, repository, ref, body.SrcPath, catalog.GetEntryParams{})
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2361,7 +2366,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 	writeTime := time.Now()
 	entryBuilder := catalog.NewDBEntryBuilder().
 		CommonLevel(false).
-		Path(body.DestinationPath).
+		Path(params.DestPath).
 		PhysicalAddress(blob.PhysicalAddress).
 		AddressType(catalog.AddressTypeRelative).
 		CreationDate(writeTime).
@@ -2369,7 +2374,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 		Checksum(blob.Checksum).
 		ContentType(src.ContentType)
 	entry := entryBuilder.Build()
-	err = c.Catalog.CreateEntry(ctx, repo.Name, body.DestinationBranch, entry)
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2378,6 +2383,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
+	w.Header().Set("X-Copy-Type", "full") // update with the real implementation
 	// TODO: end of TODO
 
 	response := ObjectStats{

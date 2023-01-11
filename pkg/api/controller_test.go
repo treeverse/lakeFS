@@ -3870,13 +3870,15 @@ func TestController_CopyObjectHandler(t *testing.T) {
 
 	t.Run("copy object", func(t *testing.T) {
 		time.Sleep(1 * time.Second)
-		copyResp, err := clt.CopyObjectWithResponse(ctx, "repo1", "main", api.CopyObjectJSONRequestBody{
-			SourcePath:        "foo/bar",
-			DestinationPath:   "bar/foo",
-			DestinationBranch: "main",
+		copyResp, err := clt.CopyObjectWithResponse(ctx, "repo1", "main", &api.CopyObjectParams{
+			DestPath: "bar/foo",
+		}, api.CopyObjectJSONRequestBody{
+			SrcPath: "foo/bar",
 		})
 		verifyResponseOK(t, copyResp, err)
-
+		copyType := copyResp.HTTPResponse.Header.Get("X-Copy-Type")
+		// Verify copyType
+		require.Equal(t, copyType, "full")
 		// Verify creation path, date and physical address are different
 		require.False(t, uploadResp.JSON201.PhysicalAddress == copyResp.JSON201.PhysicalAddress)
 		require.False(t, uploadResp.JSON201.Mtime == copyResp.JSON201.Mtime)
@@ -3895,20 +3897,22 @@ func TestController_CopyObjectHandler(t *testing.T) {
 	})
 
 	t.Run("copy object not found", func(t *testing.T) {
-		resp, err := clt.CopyObjectWithResponse(ctx, "repo1", "main", api.CopyObjectJSONRequestBody{
-			DestinationPath:   "bar/foo",
-			SourcePath:        "not/found",
-			DestinationBranch: "main",
+		ref := "main"
+		resp, err := clt.CopyObjectWithResponse(ctx, "repo1", "main", &api.CopyObjectParams{
+			DestPath: "bar/foo",
+		}, api.CopyObjectJSONRequestBody{
+			SrcPath: "not/found",
+			SrcRef:  &ref,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON404)
 	})
 
 	t.Run("copy object validation error", func(t *testing.T) {
-		resp, err := clt.CopyObjectWithResponse(ctx, "repo1", "main", api.CopyObjectJSONRequestBody{
-			DestinationPath:   "",
-			SourcePath:        "foo/bar",
-			DestinationBranch: "main",
+		resp, err := clt.CopyObjectWithResponse(ctx, "repo1", "main", &api.CopyObjectParams{
+			DestPath: "",
+		}, api.CopyObjectJSONRequestBody{
+			SrcPath: "foo/bar",
 		})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON400)
