@@ -197,7 +197,7 @@ jobs:
 
   ugc-test:
     name: Test uncommitted gc
-    needs: [gen-code, deploy-image, login-to-amazon-ecr]
+    needs: [gen-code, deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
     runs-on: ubuntu-20.04
 
     services:
@@ -250,15 +250,12 @@ jobs:
           go-version: 1.19.2
         id: go
 
-      - uses: actions/setup-java@v3
+      - name: Import Metaclient
+        id: import_metaclient
+        uses: actions/download-artifact@v3
         with:
-          distribution: 'adopt-hotspot'
-          java-version: '8'
-          cache: 'sbt'
-
-      - name: Build ugc spark job assembly
-        working-directory: clients/spark
-        run: sbt 'project lakefs-spark-client-301; set test in assembly := {}' assembly
+          name: metaclient
+          path: test/spark/metaclient
 
       - name: Generate uniquifying value
         id: unique
@@ -292,10 +289,8 @@ jobs:
           ESTI_UGC_STEP: pre
 
       - name: Run uncommitted gc
-        working-directory: clients/spark
         run: >
-          cd target; CLIENT_JAR=$(ls core-301/scala-2.12/lakefs-spark-client-301-assembly-*.jar); cd ..; echo $CLIENT_JAR; 
-          docker run --network host --add-host lakefs:127.0.0.1 -v $(pwd)/target:/local -v $(pwd)/ivy:/opt/bitnami/spark/.ivy2 --rm docker.io/bitnami/spark:3.2 spark-submit
+          docker run --network host --add-host lakefs:127.0.0.1 -v $(pwd)/test/spark/metaclient/:/local -v $(pwd)/ivy:/opt/bitnami/spark/.ivy2 --rm docker.io/bitnami/spark:3.2 spark-submit
           --master spark://localhost:7077
           --conf spark.driver.extraJavaOptions="-Divy.cache.dir=/tmp -Divy.home=/tmp"
           --conf spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1
@@ -309,7 +304,7 @@ jobs:
           --conf spark.hadoop.lakefs.gc.do_sweep=true
           --class io.treeverse.gc.UncommittedGarbageCollector
           --packages org.apache.hadoop:hadoop-aws:2.7.7
-          /local/${CLIENT_JAR}
+          /local/spark-assembly.jar
           ugc us-east-1
 
       - name: Uncommitted gc post test
