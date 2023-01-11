@@ -1,0 +1,46 @@
+/*
+Run from lakeFS root:
+    protoc --proto_path=pkg/plugins/diff --go_out=pkg/plugins/diff --go_opt=paths=source_relative \
+        --go-grpc_out=pkg/plugins/diff --go-grpc_opt=paths=source_relative diff.proto
+ */
+syntax = "proto3";
+package diff;
+option go_package = "github.com/treeverse/lakefs/plugins/diff";
+
+import "google/protobuf/timestamp.proto";
+
+/* Examples:
+    s3://repo/branch/path/to/dataset
+    lakefs://repo/branch/path/to/dataset
+ */
+message DiffPaths {
+  string left_path = 1;
+  string right_path = 2;
+  optional string base_path = 3;
+}
+
+message GatewayConfig {
+  string key = 1;
+  string secret = 2;
+  string endpoint = 3;
+}
+
+message DiffRequest {
+  DiffPaths paths = 1;
+  GatewayConfig gateway_config = 2;
+}
+
+message Diff {
+  uint32 version = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  string description = 3;
+  map<string, string> content = 4;
+}
+
+message DiffResponse {
+  repeated Diff diffs = 1;
+}
+
+service Differ {
+  rpc Diff(DiffRequest) returns (DiffResponse);
+}
