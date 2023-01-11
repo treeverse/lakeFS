@@ -30,13 +30,6 @@ type EntryWithMarker struct {
 	Mark
 }
 
-var (
-	// ErrItClosed is used to determine the reason for the end of the walk
-	ErrItClosed = errors.New("iterator closed")
-
-	errSeekGENotSupported = errors.New("SeekGE not supported for walk entry iterator")
-)
-
 // bufferSize - buffer size of the buffer between reading entries from the blockstore Walk and passing it on
 const bufferSize = 100
 
@@ -117,7 +110,7 @@ func (it *walkEntryIterator) Next() bool {
 }
 
 func (it *walkEntryIterator) SeekGE(Path) {
-	it.err.Store(errSeekGENotSupported)
+	it.err.Store(ErrFeatureNotSupported)
 }
 
 func (it *walkEntryIterator) Value() *EntryRecord {

@@ -1821,7 +1821,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, model.ErrValidationError),
 		errors.Is(err, graveler.ErrInvalidRef),
 		errors.Is(err, graveler.ErrInvalidValue),
-		errors.Is(err, actions.ErrParamConflict):
+		errors.Is(err, actions.ErrParamConflict),
+		errors.Is(err, graveler.ErrDereferenceCommitWithStaging):
 		cb(w, r, http.StatusBadRequest, err)
 
 	case errors.Is(err, graveler.ErrNotUnique),

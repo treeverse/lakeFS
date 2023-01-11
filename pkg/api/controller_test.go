@@ -2970,8 +2970,8 @@ func TestController_CreateTag(t *testing.T) {
 			Ref: "main$",
 		})
 		testutil.Must(t, err)
-		if tagResp.JSONDefault == nil {
-			t.Errorf("Create tag to explicit stage should fail with error, got %v", tagResp)
+		if tagResp.JSON400 == nil {
+			t.Errorf("Create tag to explicit stage should fail with validation error, got (status code: %d): %s", tagResp.StatusCode(), tagResp.Body)
 		}
 	})
 
@@ -3078,8 +3078,8 @@ func TestController_Revert(t *testing.T) {
 	t.Run("staging", func(t *testing.T) {
 		revertResp, err := clt.RevertBranchWithResponse(ctx, repo, "main", api.RevertBranchJSONRequestBody{Ref: "main$"})
 		testutil.Must(t, err)
-		if revertResp.JSONDefault == nil {
-			t.Errorf("Revert to explicit staging should fail with error, got %v", revertResp)
+		if revertResp.JSON400 == nil {
+			t.Errorf("Revert should fail with stating reference, got (status code: %d): %s", revertResp.StatusCode(), revertResp.Body)
 		}
 	})
 
