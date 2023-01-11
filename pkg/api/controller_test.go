@@ -1554,6 +1554,21 @@ func TestController_UploadObject(t *testing.T) {
 		}
 	})
 
+	t.Run("disable overwrite with if-none-match (no entry)", func(t *testing.T) {
+		ifNoneMatch := api.StringPtr("*")
+		contentType, buf := writeMultipart("content", "baz4", "something else!")
+		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &api.UploadObjectParams{
+			Path:        "foo/baz4",
+			IfNoneMatch: ifNoneMatch,
+		}, contentType, buf)
+		if err != nil {
+			t.Fatalf("UploadObject err=%s, expected no error", err)
+		}
+		if resp.JSON201 == nil {
+			t.Fatalf("UploadObject status code=%d, expected 201", resp.StatusCode())
+		}
+	})
+
 	t.Run("upload object missing 'content' key", func(t *testing.T) {
 		// write
 		contentType, buf := writeMultipart("this-is-not-content", "bar", "hello world!")
@@ -1591,7 +1606,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		verifyResponseOK(t, delResp, err)
 
 		_, err = deps.catalog.GetBranchReference(ctx, "my-new-repo", "main2")
-		if !errors.Is(err, catalog.ErrNotFound) {
+		if !errors.Is(err, graveler.ErrNotFound) {
 			t.Fatalf("expected branch to be gone, instead got error: %s", err)
 		}
 	})
@@ -3020,8 +3035,8 @@ func TestController_CreateTag(t *testing.T) {
 			Ref: "main$",
 		})
 		testutil.Must(t, err)
-		if tagResp.JSONDefault == nil {
-			t.Errorf("Create tag to explicit stage should fail with error, got %v", tagResp)
+		if tagResp.JSON400 == nil {
+			t.Errorf("Create tag to explicit stage should fail with validation error, got (status code: %d): %s", tagResp.StatusCode(), tagResp.Body)
 		}
 	})
 
@@ -3128,8 +3143,8 @@ func TestController_Revert(t *testing.T) {
 	t.Run("staging", func(t *testing.T) {
 		revertResp, err := clt.RevertBranchWithResponse(ctx, repo, "main", api.RevertBranchJSONRequestBody{Ref: "main$"})
 		testutil.Must(t, err)
-		if revertResp.JSONDefault == nil {
-			t.Errorf("Revert to explicit staging should fail with error, got %v", revertResp)
+		if revertResp.JSON400 == nil {
+			t.Errorf("Revert should fail with stating reference, got (status code: %d): %s", revertResp.StatusCode(), revertResp.Body)
 		}
 	})
 
@@ -3760,8 +3775,8 @@ func TestController_PostStatsEvents(t *testing.T) {
 			}
 
 			for _, sentEv := range tt.events {
-				var collectedEventsToCount = map[key]int{}
-				var k = key{class: sentEv.Class, name: sentEv.Name}
+				collectedEventsToCount := map[key]int{}
+				k := key{class: sentEv.Class, name: sentEv.Name}
 				_, isMapContainKey := collectedEventsToCount[k]
 				if isMapContainKey {
 					continue
