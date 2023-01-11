@@ -7,14 +7,15 @@ syntax = "proto3";
 package diff;
 option go_package = "github.com/treeverse/lakefs/plugins/diff";
 
-message DiffRequest {
-  TablePaths paths = 1;
-  GatewayConfig gateway_config = 2;
-}
+import "google/protobuf/timestamp.proto";
 
-message TablePaths {
-  string left_table_path = 1;
-  string right_table_path = 2;
+/* Examples:
+    s3://repo/branch/path/to/dataset
+    lakefs://repo/branch/path/to/dataset
+ */
+message DiffPaths {
+  string left_path = 1;
+  string right_path = 2;
   optional string base_table_path = 3;
 }
 
@@ -24,13 +25,19 @@ message GatewayConfig {
   string endpoint = 3;
 }
 
+message DiffRequest {
+  DiffPaths paths = 1;
+  GatewayConfig gateway_config = 2;
+}
+
+message Diff {
+  uint32 version = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  string description = 3;
+  map<string, string> content = 4;
+}
+
 message DiffResponse {
-  message Diff {
-    string version = 1;
-    int64 timestamp = 2;
-    string description = 3;
-    map<string, string> content = 4;
-  }
   repeated Diff diffs = 1;
 }
 
