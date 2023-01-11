@@ -284,7 +284,7 @@ components:
           description: path of the copied object relative to the ref
         src_ref:
           type: string
-          description: a reference (could be either a branch or a commit ID), if empty uses the provided branch as ref
+          description: a reference, if empty uses the provided branch as ref
 
     ObjectStageCreation:
       type: object

@@ -3876,7 +3876,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 			SrcPath: "foo/bar",
 		})
 		verifyResponseOK(t, copyResp, err)
-		copyType := copyResp.HTTPResponse.Header.Get("X-Copy-Type")
+		copyType := copyResp.HTTPResponse.Header.Get("X-lakeFS-Copy-Type")
 		// Verify copyType
 		require.Equal(t, copyType, "full")
 		// Verify creation path, date and physical address are different
