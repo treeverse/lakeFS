@@ -197,7 +197,7 @@ jobs:
 
   ugc-test:
     name: Test uncommitted gc
-    needs: [gen-code, deploy-image, login-to-amazon-ecr]
+    needs: [gen-code, deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
     runs-on: ubuntu-20.04
 
     services:
@@ -249,12 +249,6 @@ jobs:
         with:
           go-version: 1.19.2
         id: go
-
-      - uses: actions/setup-java@v3
-        with:
-          distribution: 'adopt-hotspot'
-          java-version: '8'
-          cache: 'sbt'
 
       - name: Import Metaclient
         id: import_metaclient
