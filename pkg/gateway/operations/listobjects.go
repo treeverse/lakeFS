@@ -183,7 +183,7 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 			delimiter,
 			maxKeys,
 		)
-		if errors.Is(err, catalog.ErrBranchNotFound) {
+		if errors.Is(err, graveler.ErrBranchNotFound) {
 			o.Log(req).WithError(err).WithFields(logging.Fields{
 				"ref":  prefix.Ref,
 				"path": prefix.Path,
@@ -314,7 +314,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 			delimiter,
 			maxKeys,
 		)
-		if errors.Is(err, catalog.ErrNotFound) || errors.Is(err, graveler.ErrNotFound) {
+		if errors.Is(err, graveler.ErrNotFound) {
 			results = make([]*catalog.DBEntry, 0) // no results found
 		} else if err != nil {
 			o.Log(req).WithError(err).WithFields(logging.Fields{

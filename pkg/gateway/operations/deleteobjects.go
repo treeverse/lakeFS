@@ -148,7 +148,7 @@ func updateDeleteResult(result *serde.DeleteResult, quiet bool, log logging.Logg
 
 func checkForDeleteError(log logging.Logger, key string, err error) *serde.DeleteError {
 	switch {
-	case errors.Is(err, catalog.ErrNotFound), errors.Is(err, graveler.ErrNotFound):
+	case errors.Is(err, graveler.ErrNotFound):
 		log.Debug("tried to delete a non-existent object (OK)")
 	case errors.Is(err, graveler.ErrWriteToProtectedBranch):
 		apiErr := gerrors.Codes.ToAPIErr(gerrors.ErrWriteToProtectedBranch)

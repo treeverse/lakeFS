@@ -313,14 +313,7 @@ func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, s
 
 func (c *Catalog) getRepository(ctx context.Context, repository string) (*graveler.RepositoryRecord, error) {
 	repositoryID := graveler.RepositoryID(repository)
-	repo, err := c.Store.GetRepository(ctx, repositoryID)
-	if err != nil {
-		if errors.Is(err, graveler.ErrRepositoryNotFound) {
-			return nil, ErrRepositoryNotFound
-		}
-		return nil, err
-	}
-	return repo, err
+	return c.Store.GetRepository(ctx, repositoryID)
 }
 
 // GetRepository get repository information
@@ -594,9 +587,6 @@ func (c *Catalog) GetBranchReference(ctx context.Context, repositoryID string, b
 	}
 	b, err := c.Store.GetBranch(ctx, repository, branchID)
 	if err != nil {
-		if errors.Is(err, graveler.ErrBranchNotFound) {
-			err = ErrBranchNotFound
-		}
 		return "", err
 	}
 	return string(b.CommitID), nil
@@ -1095,7 +1085,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler.RepositoryRecord, it graveler.CommitIterator, params LogParams) ([]*CommitLog, bool, error) {
 	// verify we are not listing commits without any paths
 	if len(params.PathList) == 0 {
-		return nil, false, fmt.Errorf("%w: list commits without paths", ErrInvalid)
+		return nil, false, fmt.Errorf("%w: list commits without paths", graveler.ErrInvalid)
 	}
 	// commit/key to value cache - helps when fetching the same commit/key while processing parent commits
 	const commitLogCacheSize = 1024 * 5
@@ -1994,10 +1984,10 @@ func (c *Catalog) dereferenceCommitID(ctx context.Context, repository *graveler.
 		return "", err
 	}
 	if resolvedRef.CommitID == "" {
-		return "", fmt.Errorf("%w: no commit", ErrInvalidRef)
+		return "", fmt.Errorf("%w: no commit", graveler.ErrInvalidRef)
 	}
 	if resolvedRef.ResolvedBranchModifier == graveler.ResolvedBranchModifierStaging {
-		return "", fmt.Errorf("%w: should point to a commit", ErrInvalidRef)
+		return "", fmt.Errorf("%w: should point to a commit", graveler.ErrInvalidRef)
 	}
 	return resolvedRef.CommitID, nil
 }
