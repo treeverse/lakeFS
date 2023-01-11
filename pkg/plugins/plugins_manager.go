@@ -109,13 +109,13 @@ func (m *Manager) AddPluginType(pluginGroupType PluginGroupType, pluginType Plug
 	ptcm[pluginType] = pluginTypeConfig
 }
 
-// WrappedPluginClient generates a ClientWrapper that wraps the go-plugin client.
+// WrapPlugin generates a PluginWrapper that wraps the go-plugin client.
 //
 // It accepts two parameters: the top PluginGroupType and the required PluginType under it.
-// For example, PluginGroupType = "diff", PluginType = "delta" will generate a ClientWrapper with a client that performs
+// For example, PluginGroupType = "diff", PluginType = "delta" will generate a PluginWrapper with a client that performs
 // diffs over Delta Lake tables.
 // It also returns a DestroyClientFunc
-func (m *Manager) WrappedPluginClient(pluginGroupType PluginGroupType, pluginType PluginType) (*ClientWrapper, error) {
+func (m *Manager) WrapPlugin(pluginGroupType PluginGroupType, pluginType PluginType) (*PluginWrapper, error) {
 	ptpp, ok := m.pluginTypes[pluginGroupType]
 	if !ok {
 		return nil, fmt.Errorf("unknown plugin group %s", pluginGroupType)
@@ -124,11 +124,11 @@ func (m *Manager) WrappedPluginClient(pluginGroupType PluginGroupType, pluginTyp
 	if !ok {
 		return nil, fmt.Errorf("unknown plugin type %s under plugin group %s", pluginType, pluginGroupType)
 	}
-	return newClient(fmt.Sprintf("%s_%s", pluginGroupType, pluginType), clientConfig)
+	return newPlugin(fmt.Sprintf("%s_%s", pluginGroupType, pluginType), clientConfig)
 }
 
-// newClient generates a ClientWrapper that wraps the go-plugin client.
-func newClient(clientName string, clientConfig plugin.ClientConfig) (*ClientWrapper, error) {
+// newPlugin generates a PluginWrapper that wraps the go-plugin client.
+func newPlugin(clientName string, clientConfig plugin.ClientConfig) (*PluginWrapper, error) {
 	logger := hclog.New(&hclog.LoggerOptions{
 		Name:   fmt.Sprintf("%s_logger", clientName),
 		Output: os.Stdout,
@@ -136,7 +136,7 @@ func newClient(clientName string, clientConfig plugin.ClientConfig) (*ClientWrap
 	})
 	clientConfig.Logger = logger
 	client := plugin.NewClient(&clientConfig)
-	return &ClientWrapper{
+	return &PluginWrapper{
 		Client: client,
 		Log:    logging.Default(),
 	}, nil
