@@ -2383,7 +2383,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	w.Header().Set("X-Copy-Type", "full") // update with the real implementation
+	w.Header().Set("X-lakeFS-Copy-Type", "full") // update with the real implementation
 	// TODO: end of TODO
 
 	response := ObjectStats{
