@@ -11,14 +11,6 @@ body:
         We appreciate the time you invest in filing a bug report and created this template to help make this process easier.
         It's really important to have all the information and context, to ensure we can properly address your issue. 
         Please use the following references to fill out the bug report.
-  - type: input
-    id: contact
-    attributes:
-      label: Contact Details
-      description: How can we get in touch with you if we need more info?
-      placeholder: ex. email@example.com
-    validations:
-      required: false
   - type: textarea
     id: what-happened
     attributes:
@@ -28,15 +20,22 @@ body:
         Current Behavior:
         What actually happened, including error codes if applies.
                 
-        Expected Behavior:
-        How you expected thing to work.
-                
-        Steps to Reproduce
+        Steps to Reproduce:
         1.
         2.
         3.
     validations:
       required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      value: |  
+        Expected Behavior:
+        How you expected thing to work.
+    validations:
+      required: false
   - type: input
     id: lakefs_version
     attributes:
@@ -49,7 +48,7 @@ body:
       description: lakeFS deployment type
       placeholder: ex. AWS ECS, Docker or Kubernetes, helm-chart, local
     validations:
-      required: true
+      required: false
   - type: input
     id: clients
     attributes:
@@ -64,11 +63,11 @@ body:
       label: Relevant logs output
       description: Please copy and paste any relevant log output (lakeFS, clients, ecosystem). Make sure to scrub anything confidential! These will typically be near strings such as `secret`, `access` or `AKIA`
       render: shell
-  - type: checkboxes
-    id: terms
+  - type: input
+    id: contact
     attributes:
-      label: Code of Conduct
-      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/treeverse/lakeFS/blob/master/CODE_OF_CONDUCT.md)
-      options:
-        - label: I agree to follow this project's Code of Conduct
-          required: true
+      label: Contact Details
+      description: How can we get in touch with you if we need more info?
+      placeholder: ex. email@example.com
+    validations:
+      required: false
