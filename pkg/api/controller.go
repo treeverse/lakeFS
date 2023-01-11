@@ -3661,7 +3661,7 @@ func (c *Controller) GetGarbageCollectionConfig(w http.ResponseWriter, r *http.R
 	}
 
 	writeResponse(w, r, http.StatusOK, GarbageCollectionConfig{
-		GracePeriod: aws.Int(int(ref.LinkAddressTime)),
+		GracePeriod: aws.Int(int(ref.LinkAddressTime.Seconds())),
 	})
 }
 
