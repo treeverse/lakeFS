@@ -257,11 +257,11 @@ jobs:
           cache: 'sbt'
 
       - name: Import Metaclient
-          id: import_metaclient
-          uses: actions/download-artifact@v3
-          with:
-            name: metaclient
-            path: test/spark/metaclient
+        id: import_metaclient
+        uses: actions/download-artifact@v3
+        with:
+          name: metaclient
+          path: test/spark/metaclient
 
       - name: Generate uniquifying value
         id: unique
