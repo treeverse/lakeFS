@@ -16,11 +16,13 @@ import {
     TrashIcon
 } from "@primer/octicons-react";
 import {Link} from "../nav";
-import {useAPIWithPagination} from "../../hooks/api";
+import {useAPI, useAPIWithPagination} from "../../hooks/api";
 import {Error} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
 import {ConfirmationModal} from "../modals";
 import ChangeSummary from "./ChangeSummary";
+import {ChangesTreeType} from "../../../constants";
+import {objects} from "../../api";
 
 class RowAction {
     /**
@@ -61,6 +63,7 @@ const ChangeRowActions = ({actions}) => <>
  * 2. Multiple TreeItem as children, each representing another tree node.
  * @param entry The entry the TreeItem is representing, could be either an object or a prefix.
  * @param repo Repository
+ * @param changesTreeType the type of changes tree the tree item is created for - object changes or table changes
  * @param reference commitID / branch
  * @param leftDiffRefID commitID / branch
  * @param rightDiffRefID commitID / branch
@@ -71,11 +74,12 @@ const ChangeRowActions = ({actions}) => <>
  * @param relativeTo prefix of the parent item ('' for root elements)
  * @param {(after : string, path : string, useDelimiter :? boolean, amount :? number) => Promise<any> } getMore callback to be called when more items need to be rendered
  */
-export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore, depth=0 }) => {
+export const TreeItem = ({ entry, repo, changesTreeType = ChangesTreeType.ObjectChanges, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore, depth=0 }) => {
     const [dirExpanded, setDirExpanded] = useState(false); // state of a non-leaf item expansion
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
-    const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
+    const [objectDiffExpanded, setObjectDiffExpanded] = useState(false); // state of a leaf item expansion
+    const [deltaLakeDiffExpanded, setDeltaLakeDiffExpanded] = useState(false); // state of a leaf item expansion
 
     const { error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!dirExpanded) return
@@ -91,6 +95,43 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
         return {results:resultsState.results, pagination: pagination}
     }, [repo.id, reference.id, internalRefresh, afterUpdated, entry.path, delimiter, dirExpanded])
 
+    let isDeltaTableRootEntry = false
+    if (changesTreeType === ChangesTreeType.DeltaLakeTableChanges) {
+        // The delta tables diff container only shows prefixes.
+        if (entry.path_type === "object") {
+            return
+        }
+
+        // The delta tables diff container only shows prefixes that are either delta tables or prefixes that can
+        // potentially lead to delta tables. The later are prefixes that have prefixes under them as opposed to only
+        // have objects.
+
+        // Tree items that represent prefixes are always of entry.type = prefix_changed and the actual diff type is
+        // presented at the object level. Therefore, in case of delta tables that were added or removed we don't know
+        // under which of the diff refs the prefix is expected to be listed and therefore we list both and take the one
+        // that returned results.
+        const listRight = useAPI(() => objects.list(repo.id, rightDiffRefID, entry.path), []);
+        const listLeft = useAPI(() => objects.list(repo.id, leftDiffRefID, entry.path), []);
+        let listPrefix = listRight.response !== null && listRight.response.results.length !== 0 ? listRight : listLeft
+        if (listPrefix.response !== null && listPrefix.response.results.length !== 0) {
+            let listedItems = listPrefix.response.results;
+            let isPotentialRouteToDeltaTable = false;
+            for (let i = 0; i < listedItems.length; i++) {
+                let item = listedItems[i];
+                if (item.path_type === "common_prefix") {
+                    isPotentialRouteToDeltaTable = true;
+                }
+                if (item.path.includes("_delta_log/")) {
+                    isDeltaTableRootEntry = true;
+                    break;
+                }
+            }
+            if (!isPotentialRouteToDeltaTable) {
+                return;
+            }
+        }
+    }
+
     const results = resultsState.results
     if (error)
         return <Error error={error}/>
@@ -102,9 +143,9 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
     // When the entry represents a tree leaf
     if (!entry.path.endsWith(delimiter))
         return <>
-            <TreeEntryRow key={entry.path + "entry-row"} entry={entry} leaf={true} relativeTo={relativeTo} depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert} onNavigate={onNavigate} repo={repo}
-                          reference={reference} diffExpanded={diffExpanded} onClickExpandDiff={() => setDiffExpanded(!diffExpanded)} getMore={getMore}/>
-            {diffExpanded && <tr key={"row-" + entry.path} className={"leaf-entry-row"}>
+            <TreeEntryRow key={entry.path + "entry-row"} entry={entry} leaf={true} changesTreeType={changesTreeType} relativeTo={relativeTo} depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert} onNavigate={onNavigate} repo={repo}
+                          reference={reference} diffExpanded={objectDiffExpanded} onClickExpandObjectDiff={() => setObjectDiffExpanded(!objectDiffExpanded)} getMore={getMore}/>
+            {objectDiffExpanded && <tr key={"row-" + entry.path} className={"leaf-entry-row"}>
                 <td className="objects-diff" colSpan={4}>
                     <ObjectsDiff
                         diffType={entry.type}
@@ -120,10 +161,11 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
         </>
 
     return <>
-        <TreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference} getMore={getMore}/>
+        <TreeEntryRow key={entry.path + "entry-row"} entry={entry} changesTreeType={changesTreeType} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference} getMore={getMore}
+                      isDeltaTableRootEntry={isDeltaTableRootEntry} onClickExpandDeltaLakeDiff={() => setDeltaLakeDiffExpanded(!deltaLakeDiffExpanded)} deltaLakeDiffExpanded={deltaLakeDiffExpanded}/>
         {dirExpanded && results &&
             results.map(child =>
-                (<TreeItem key={child.path + "-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
+                (<TreeItem key={child.path + "-item"} entry={child} repo={repo} changesTreeType={changesTreeType} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
                            internalReferesh={internalRefresh} delimiter={delimiter} depth={depth + 1}
                            relativeTo={entry.path} getMore={getMore}/>))}
         {(!!nextPage || loading) &&
@@ -133,7 +175,7 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
     </>
 }
 
-export const TreeEntryRow = ({entry, relativeTo = "", leaf = false, dirExpanded, diffExpanded, depth = 0, onClick, loading = false, onRevert, onNavigate, onClickExpandDiff = null, getMore}) => {
+export const TreeEntryRow = ({entry, relativeTo = "", leaf = false, changesTreeType = ChangesTreeType.ObjectChanges, dirExpanded, diffExpanded, depth = 0, onClick, loading = false, onRevert, onNavigate, onClickExpandObjectDiff = null, onClickExpandDeltaLakeDiff = null, isDeltaTableRootEntry = false, deltaLakeDiffExpanded,  getMore}) => {
     const [showRevertConfirm, setShowRevertConfirm] = useState(false)
     let rowClass = 'tree-entry-row ' + diffType(entry);
     let pathSection = extractPathText(entry, relativeTo);
@@ -143,16 +185,27 @@ export const TreeEntryRow = ({entry, relativeTo = "", leaf = false, dirExpanded,
         pathSection = <Link href={onNavigate(entry)}>{pathSection}</Link>
     }
     const rowActions = []
-    if (onClickExpandDiff) {
-        rowActions.push(new RowAction(<FileDiffIcon/>, diffExpanded ? "Hide changes" : "Show changes", diffExpanded, onClickExpandDiff))
-    }
-    if (!leaf) {
-        rowActions.push(new RowAction(<GraphIcon/>, showSummary ? "Hide summary" : "Calculate change summary", showSummary, () => setShowSummary(!showSummary)))
-    }
-    if (onRevert) {
-        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", false, () => {
-            setShowRevertConfirm(true)
-        }))
+    switch (changesTreeType) {
+        case ChangesTreeType.ObjectChanges:
+            if (onClickExpandObjectDiff) {
+                rowActions.push(new RowAction(<FileDiffIcon/>, diffExpanded ? "Hide changes" : "Show changes", diffExpanded, onClickExpandObjectDiff))
+            }
+            if (!leaf) {
+                rowActions.push(new RowAction(<GraphIcon/>, showSummary ? "Hide summary" : "Calculate change summary", showSummary, () => setShowSummary(!showSummary)))
+            }
+            if (onRevert) {
+                rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", false, () => {
+                    setShowRevertConfirm(true)
+                }))
+            }
+            break;
+        case ChangesTreeType.DeltaLakeTableChanges:
+            if (isDeltaTableRootEntry) {
+                rowActions.push(new RowAction(<FileDiffIcon/>, deltaLakeDiffExpanded ? "Hide table changes" : "Show table changes", deltaLakeDiffExpanded, onClickExpandDeltaLakeDiff))
+            }
+            break;
+        default:
+            throw new Error('Unsupported ChangesTreeType');
     }
     return (
         <tr className={rowClass}>
@@ -160,7 +213,7 @@ export const TreeEntryRow = ({entry, relativeTo = "", leaf = false, dirExpanded,
             <td className="col-9 tree-path">
                 <span style={{marginLeft: (depth * 20) + "px"}}>
                     <span onClick={onClick}>
-                        {!leaf && (dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>)}
+                        {!isDeltaTableRootEntry && !leaf && (dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>)}
                     </span>
                     {loading ? <ClockIcon/> : ""}
                     {pathSection}
@@ -198,6 +251,31 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
         </tr>
     );
 };
+
+export const DeltaTableChangesTreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore}) => {
+    return <>
+        <TreeItem key={entry.path + "-item"} entry={entry} repo={repo}
+                  changesTreeType={ChangesTreeType.DeltaLakeTableChanges}
+                  reference={reference}
+                  internalReferesh={internalRefresh} leftDiffRefID={leftDiffRefID}
+                  rightDiffRefID={rightDiffRefID} delimiter={delimiter}
+                  relativeTo={relativeTo}
+                  onNavigate={onNavigate}
+                  getMore={getMore}/>
+    </>
+}
+
+export const ObjectChangesTreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore}) => {
+    return <>
+        <TreeItem key={entry.path + "-item"} entry={entry} repo={repo}
+                  reference={reference}
+                  internalReferesh={internalRefresh} leftDiffRefID={leftDiffRefID}
+                  rightDiffRefID={rightDiffRefID} delimiter={delimiter}
+                  relativeTo={relativeTo}
+                  onNavigate={onNavigate}
+                  getMore={getMore}/>
+    </>
+}
 
 function extractPathText(entry, relativeTo) {
     let pathText = entry.path;
