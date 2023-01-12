@@ -68,7 +68,7 @@ type PrefixURLInfo struct {
 	Prefix        string
 }
 
-func resolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
+func ResolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
 	var qk BlobURLInfo
 	storageType, err := block.GetStorageType(pathURL)
 	if err != nil {
@@ -84,8 +84,9 @@ func resolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
 		return qk, block.ErrInvalidNamespace
 	}
 	return BlobURLInfo{
-		ContainerURL: fmt.Sprintf("%s://%s/%s", pathURL.Scheme, pathURL.Host, parts[0]),
-		BlobURL:      strings.Join(parts[1:], "/"),
+		ContainerURL:  fmt.Sprintf("%s://%s/%s", pathURL.Scheme, pathURL.Host, parts[0]),
+		ContainerName: parts[0],
+		BlobURL:       strings.Join(parts[1:], "/"),
 	}, nil
 }
 
@@ -102,7 +103,7 @@ func resolveBlobURLInfo(obj block.ObjectPointer) (BlobURLInfo, error) {
 		if err != nil {
 			return qk, err
 		}
-		qp, err := resolveBlobURLInfoFromURL(parsedNamespace)
+		qp, err := ResolveBlobURLInfoFromURL(parsedNamespace)
 		if err != nil {
 			return qk, err
 		}
@@ -117,7 +118,7 @@ func resolveBlobURLInfo(obj block.ObjectPointer) (BlobURLInfo, error) {
 
 		return info, nil
 	}
-	return resolveBlobURLInfoFromURL(parsedKey)
+	return ResolveBlobURLInfoFromURL(parsedKey)
 }
 
 func resolveNamespacePrefix(lsOpts block.WalkOpts) (PrefixURLInfo, error) {

@@ -8,11 +8,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/treeverse/lakefs/pkg/block/azure"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/go-openapi/swag"
+	"github.com/treeverse/lakefs/pkg/block/azure"
 )
 
 var (
@@ -76,7 +75,8 @@ func (a *azureBlobWalker) Walk(_ context.Context, storageURI *url.URL, op WalkOp
 	if err != nil {
 		return err
 	}
-	container := a.client.NewContainerClient(containerURL.String())
+	qk, err := azure.ResolveBlobURLInfoFromURL(containerURL)
+	container := a.client.NewContainerClient(qk.ContainerName)
 
 	for marker := &op.ContinuationToken; marker != nil; {
 		listBlob := container.NewListBlobsFlatPager(&azblob.ListBlobsFlatOptions{
