@@ -71,6 +71,7 @@ func copyFromReader(ctx context.Context, from io.Reader, to blockWriter, o block
 			buffer = <-buffers.Acquire()
 		}
 		err = cp.sendChunk(buffer)
+		buffers.Release(buffer)
 		if err != nil {
 			break
 		}
@@ -163,7 +164,6 @@ func (c *copier) sendChunk(buffer []byte) error {
 			defer c.wg.Done()
 			// Upload the outgoing block, matching the number of bytes read
 			c.write(copierChunk{buffer: buffer[0:n], id: nextID})
-			c.buffers.Release(buffer) // The goroutine reading from the stream can reuse this buffer now
 		}(nextID)
 		return nil
 
@@ -178,7 +178,6 @@ func (c *copier) sendChunk(buffer []byte) error {
 			defer c.wg.Done()
 			// Upload the outgoing block, matching the number of bytes read
 			c.write(copierChunk{buffer: buffer[0:n], id: nextID})
-			c.buffers.Release(buffer) // The goroutine reading from the stream can reuse this buffer now
 		}(nextID)
 		return io.EOF
 	}
