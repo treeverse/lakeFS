@@ -36,7 +36,7 @@ For more information, see the [official lakeFS documentation](https://docs.lakef
 
 When working with a data lake, it’s useful to have replicas of your production environment. These replicas allow you to test these ETLs and understand changes to your data without impacting downstream data consumers.
 
-Running ETL and transformation jobs directly in production without proper ETL Testing is a guaranteed way to have data issues flow into dashboards, ML models, and other consumers sooner or later. The most common approach to avoid making changes directly in production is to create and maintain multiple data environments and perform ETL testing on them. Dev environment to develop the data pipelines and test environment where pipeline changes are tested before pushing it to production
+Running ETL and transformation jobs directly in production without proper ETL Testing is a guaranteed way to have data issues flow into dashboards, ML models, and other consumers sooner or later. The most common approach to avoid making changes directly in production is to create and maintain multiple data environments and perform ETL testing on them. Dev environment to develop the data pipelines and test environment where pipeline changes are tested before pushing it to production. With lakeFS you can create branches, and get a copy of the full production data, without copying anything. This enables a faster and easier process of ETL testing.
 
 ### Reproducibility
 
@@ -55,14 +55,14 @@ Data pipelines feed processed data from data lakes to downstream consumers like 
 
 Thus, to ensure the quality and reliability at each stage of the data lifecycle, data quality gates need to be implemented. That is, we need to run Continuous Integration(CI) tests on the data, and only if data governance requirements are met can the data can be promoted to production for business use.
 
-Everytime there is an update to production data, the best practice would be to run CI tests and then promote(deploy) the data to production.
+Everytime there is an update to production data, the best practice would be to run CI tests and then promote(deploy) the data to production. With lakeFS you can create hooks that make sure that only data that passed these tests will become part of production.
 
 ### Rollback
 A rollback operation is used to to fix critical data errors immediately.
 
 What is a critical data error? Think of a situation where erroneous or misformatted data causes a signficant issue with an important service or function. In such situations, the first thing to do is stop the bleeding.
 
-Rolling back returns data to a state in the past, before the error was present. You might not be showing all the latest data after a rollback, but at least you aren’t showing incorrect data or raising errors.
+Rolling back returns data to a state in the past, before the error was present. You might not be showing all the latest data after a rollback, but at least you aren’t showing incorrect data or raising errors. Since lakeFS provides versions of the data without making copies of the data, you can time travel between versions and roll back to the version of the data before the error was presented.
 
 ## Getting Started
 
