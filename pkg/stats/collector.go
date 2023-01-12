@@ -17,7 +17,6 @@ import (
 const (
 	collectorEventBufferSize = 8 * 1024
 	flushInterval            = 10 * time.Minute
-	sendTimeout              = 5 * time.Second
 
 	// heartbeatInterval is the interval between 2 heartbeat events.
 	heartbeatInterval = 60 * time.Minute
@@ -106,7 +105,6 @@ type BufferedCollector struct {
 	cache            keyIndex
 	writes           chan Metric
 	sender           Sender
-	sendTimeout      time.Duration
 	flushTicker      FlushTicker
 	flushSize        int
 	heartbeatTicker  FlushTicker
@@ -184,7 +182,6 @@ func NewBufferedCollector(installationID string, cfg Config, opts ...BufferedCol
 		pendingRequests: sync.WaitGroup{},
 		ctxCancelled:    0,
 		done:            make(chan bool),
-		sendTimeout:     sendTimeout,
 		extended:        cfg.Extended,
 		log:             logging.Default(),
 	}
@@ -198,9 +195,9 @@ func NewBufferedCollector(installationID string, cfg Config, opts ...BufferedCol
 	// assign sender
 	if s.sender == nil {
 		if cfg.Enabled {
-			s.sender = NewHTTPSender(cfg.Address, s.sendTimeout, time.Now)
+			s.sender = NewHTTPSender(cfg.Address, s.log, time.Now)
 		} else {
-			s.sender = &dummySender{Log: s.log}
+			s.sender = &dummySender{Logger: s.log}
 		}
 	}
 	return s
@@ -220,14 +217,16 @@ func (s *BufferedCollector) update(k Metric) {
 
 func (s *BufferedCollector) send(metrics []Metric) {
 	s.pendingRequests.Add(1)
+	ctx := context.Background()
 	go func() {
 		defer s.pendingRequests.Done()
 		if len(metrics) == 0 {
 			return
 		}
-		err := s.sender.SendEvent(context.Background(), s.getInstallationID(), s.processID, metrics)
+		installationID := s.getInstallationID()
+		err := s.sender.SendEvent(ctx, installationID, s.processID, metrics)
 		if err != nil {
-			s.log.WithError(err).WithField("service", "stats_collector").Debug("could not send stats")
+			s.log.WithError(err).Debug("could not send stats")
 		}
 	}()
 }
@@ -339,26 +338,24 @@ func makeMetrics(counters keyIndex) []Metric {
 }
 
 func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
-	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
-	defer cancel()
+	ctx := context.Background()
 	err := s.sender.UpdateMetadata(ctx, *accountMetadata)
 	if err != nil {
-		s.log.WithError(err).WithField("service", "stats_collector").Debug("could not update metadata")
+		s.log.WithError(err).Debug("could not update metadata")
 	}
 }
 
 func (s *BufferedCollector) CollectCommPrefs(email, installationID string, featureUpdates, securityUpdates bool) {
-	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
-	defer cancel()
 	commPrefs := &CommPrefsData{
 		Email:           email,
 		InstallationID:  installationID,
 		FeatureUpdates:  featureUpdates,
 		SecurityUpdates: securityUpdates,
 	}
+	ctx := context.Background()
 	err := s.sender.UpdateCommPrefs(ctx, commPrefs)
 	if err != nil {
-		s.log.WithError(err).WithField("service", "stats_collector").Info("could not update comm prefs")
+		s.log.WithError(err).Info("could not update comm prefs")
 	}
 }
 

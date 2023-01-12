@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -26,22 +27,32 @@ type Sender interface {
 type TimeFn func() time.Time
 
 type HTTPSender struct {
-	addr        string
-	sendTimeout time.Duration
-	timeFunc    TimeFn
-	client      http.Client
+	addr     string
+	timeFunc TimeFn
+	client   *http.Client
 }
 
-func NewHTTPSender(addr string, timeout time.Duration, timeFunc TimeFn) *HTTPSender {
-	client := http.Client{
-		Timeout: timeout,
-	}
+type LoggerAdapter struct {
+	logging.Logger
+}
+
+func (l *LoggerAdapter) Printf(msg string, args ...interface{}) {
+	l.Debugf(msg, args...)
+}
+
+func NewHTTPSender(addr string, log logging.Logger, timeFunc TimeFn) *HTTPSender {
+	retryClient := retryablehttp.NewClient()
+	retryClient.Logger = &LoggerAdapter{Logger: log}
 	return &HTTPSender{
-		addr:        addr,
-		sendTimeout: timeout,
-		timeFunc:    timeFunc,
-		client:      client,
+		addr:     addr,
+		timeFunc: timeFunc,
+		client:   retryClient.StandardClient(),
 	}
+}
+
+// IsSuccessStatusCode returns true for status code 2xx
+func IsSuccessStatusCode(statusCode int) bool {
+	return statusCode >= http.StatusOK && statusCode < http.StatusMultipleChoices
 }
 
 func (s *HTTPSender) UpdateMetadata(ctx context.Context, m Metadata) error {
@@ -57,13 +68,13 @@ func (s *HTTPSender) UpdateMetadata(ctx context.Context, m Metadata) error {
 		return fmt.Errorf("could not create HTTP request: %s: %w", err, ErrSendError)
 	}
 	req = req.WithContext(ctx)
-	res, err := http.DefaultClient.Do(req)
+	res, err := s.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("could not make HTTP request: %s: %w", err, ErrSendError)
 	}
-	_ = res.Body.Close()
-	if res.StatusCode != http.StatusCreated {
-		return fmt.Errorf("bad status code received. status=%d: %w", res.StatusCode, ErrSendError)
+	defer func() { _ = res.Body.Close() }()
+	if !IsSuccessStatusCode(res.StatusCode) {
+		return fmt.Errorf("request failed - status=%d: %w", res.StatusCode, ErrSendError)
 	}
 	return nil
 }
@@ -88,11 +99,9 @@ func (s *HTTPSender) SendEvent(ctx context.Context, installationID, processID st
 	if err != nil {
 		return fmt.Errorf("could not make HTTP request: %s: %w", err, ErrSendError)
 	}
-	defer func() {
-		_ = res.Body.Close()
-	}()
-	if res.StatusCode != http.StatusCreated {
-		return fmt.Errorf("bad status code received. status=%d: %w", res.StatusCode, ErrSendError)
+	defer func() { _ = res.Body.Close() }()
+	if !IsSuccessStatusCode(res.StatusCode) {
+		return fmt.Errorf("request failed - status=%d: %w", res.StatusCode, ErrSendError)
 	}
 	return nil
 }
@@ -108,26 +117,26 @@ func (s *HTTPSender) UpdateCommPrefs(ctx context.Context, commPrefs *CommPrefsDa
 		return fmt.Errorf("could not create HTTP request: %s: %w", err, ErrSendError)
 	}
 	req = req.WithContext(ctx)
-	res, err := http.DefaultClient.Do(req)
+	res, err := s.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("could not make HTTP request: %s: %w", err, ErrSendError)
 	}
-	_ = res.Body.Close()
-	if res.StatusCode != http.StatusCreated {
-		return fmt.Errorf("bad status code received. status=%d: %w", res.StatusCode, ErrSendError)
+	defer func() { _ = res.Body.Close() }()
+	if !IsSuccessStatusCode(res.StatusCode) {
+		return fmt.Errorf("request failed - status=%d: %w", res.StatusCode, ErrSendError)
 	}
 	return nil
 }
 
 type dummySender struct {
-	Log logging.Logger
+	logging.Logger
 }
 
 func (s *dummySender) SendEvent(_ context.Context, installationID, processID string, metrics []Metric) error {
-	if s.Log == nil || !s.Log.IsTracing() {
+	if s.Logger == nil || !s.IsTracing() {
 		return nil
 	}
-	s.Log.WithFields(logging.Fields{
+	s.WithFields(logging.Fields{
 		"installation_id": installationID,
 		"process_id":      processID,
 		"metrics":         fmt.Sprintf("%+v", metrics),
@@ -136,20 +145,20 @@ func (s *dummySender) SendEvent(_ context.Context, installationID, processID str
 }
 
 func (s *dummySender) UpdateMetadata(_ context.Context, m Metadata) error {
-	if s.Log == nil || !s.Log.IsTracing() {
+	if s.Logger == nil || !s.IsTracing() {
 		return nil
 	}
-	s.Log.WithFields(logging.Fields{
+	s.WithFields(logging.Fields{
 		"metadata": fmt.Sprintf("%+v", m),
 	}).Trace("dummy sender received metadata")
 	return nil
 }
 
-func (s *dummySender) UpdateCommPrefs(ctx context.Context, commPrefs *CommPrefsData) error {
-	if s.Log == nil || !s.Log.IsTracing() {
+func (s *dummySender) UpdateCommPrefs(_ context.Context, commPrefs *CommPrefsData) error {
+	if s.Logger == nil || !s.IsTracing() {
 		return nil
 	}
-	s.Log.WithFields(logging.Fields{
+	s.WithFields(logging.Fields{
 		"email":           commPrefs.Email,
 		"featureUpdates":  commPrefs.FeatureUpdates,
 		"securityUpdates": commPrefs.SecurityUpdates,
