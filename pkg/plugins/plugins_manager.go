@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	pluginGroupNotFound = fmt.Errorf("unknown plugin group")
-	pluginTypeNotFound  = fmt.Errorf("unknown plugin type")
+	errPluginGroupNotFound = fmt.Errorf("unknown plugin group")
+	errPluginTypeNotFound  = fmt.Errorf("unknown plugin type")
 )
 
 // PluginGroup specifies the group name of related plugins
@@ -125,11 +125,11 @@ func (m *Manager) AddPluginType(pluginGroup PluginGroup, pluginType PluginType, 
 func (m *Manager) WrapPlugin(pluginGroupType PluginGroup, pluginType PluginType) (*PluginWrapper, error) {
 	ptpp, ok := m.pluginGroups[pluginGroupType]
 	if !ok {
-		return nil, pluginGroupNotFound
+		return nil, errPluginGroupNotFound
 	}
 	clientConfig, ok := ptpp[pluginType]
 	if !ok {
-		return nil, pluginTypeNotFound
+		return nil, errPluginTypeNotFound
 	}
 	return newPlugin(fmt.Sprintf("%s_%s", pluginGroupType, pluginType), clientConfig)
 }
