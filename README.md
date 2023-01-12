@@ -34,7 +34,7 @@ For more information, see the [official lakeFS documentation](https://docs.lakef
 
 ### ETL Testing with Isolated Dev/Test Environment
 
-When working with a data lake, it’s useful to have replicas of your production environment. These replicas allow you to test these ETLs and understand changes to your data without impacting the consumers of the production data.
+When working with a data lake, it’s useful to have replicas of your production environment. These replicas allow you to test these ETLs and understand changes to your data without impacting downstream data consumers.
 
 Running ETL and transformation jobs directly in production without proper ETL Testing is a guaranteed way to have data issues flow into dashboards, ML models, and other consumers sooner or later. The most common approach to avoid making changes directly in production is to create and maintain multiple data environments and perform ETL testing on them. Dev environment to develop the data pipelines and test environment where pipeline changes are tested before pushing it to production
 
