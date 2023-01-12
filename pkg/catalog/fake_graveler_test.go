@@ -10,15 +10,16 @@ import (
 
 type FakeGraveler struct {
 	graveler.VersionController
-	KeyValue                   map[string]*graveler.Value
-	Err                        error
-	ListIteratorFactory        func() graveler.ValueIterator
-	ListStagingIteratorFactory func(token graveler.StagingToken) graveler.ValueIterator
-	DiffIteratorFactory        func() graveler.DiffIterator
-	RepositoryIteratorFactory  func() graveler.RepositoryIterator
-	BranchIteratorFactory      func() graveler.BranchIterator
-	TagIteratorFactory         func() graveler.TagIterator
-	hooks                      graveler.HooksHandler
+	KeyValue                    map[string]*graveler.Value
+	Err                         error
+	ListIteratorFactory         func() graveler.ValueIterator
+	ListStagingIteratorFactory  func(token graveler.StagingToken) graveler.ValueIterator
+	DiffIteratorFactory         func() graveler.DiffIterator
+	RepositoryIteratorFactory   func() graveler.RepositoryIterator
+	BranchIteratorFactory       func() graveler.BranchIterator
+	TagIteratorFactory          func() graveler.TagIterator
+	AddressTokenIteratorFactory func() graveler.AddressTokenIterator
+	hooks                       graveler.HooksHandler
 }
 
 func (g *FakeGraveler) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
@@ -290,6 +291,29 @@ func (g *FakeGraveler) GetStagingToken(_ context.Context, _ *graveler.Repository
 	panic("implement me")
 }
 
+func (g *FakeGraveler) SetLinkAddress(_ context.Context, _ *graveler.RepositoryRecord, _ string) error {
+	panic("implement me")
+}
+
+func (g *FakeGraveler) VerifyLinkAddress(_ context.Context, _ *graveler.RepositoryRecord, _ string) error {
+	panic("implement me")
+}
+
+func (g *FakeGraveler) ListLinkAddresses(_ context.Context, _ *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
+	if g.Err != nil {
+		return nil, g.Err
+	}
+	return g.AddressTokenIteratorFactory(), nil
+}
+
+func (g *FakeGraveler) DeleteExpiredLinkAddresses(_ context.Context, _ *graveler.RepositoryRecord) error {
+	return nil
+}
+
+func (g *FakeGraveler) IsLinkAddressExpired(_ *graveler.LinkAddressData) (bool, error) {
+	return false, nil
+}
+
 type FakeValueIterator struct {
 	Data  []*graveler.ValueRecord
 	Index int
@@ -464,3 +488,44 @@ func (m *FakeTagIterator) Err() error {
 }
 
 func (m *FakeTagIterator) Close() {}
+
+type FakeAddressTokenIterator struct {
+	Data  []*graveler.LinkAddressData
+	Index int
+}
+
+func NewFakeAddressTokenIterator(data []*graveler.LinkAddressData) *FakeAddressTokenIterator {
+	return &FakeAddressTokenIterator{Data: data, Index: -1}
+}
+
+func NewFakeAddressTokenIteratorFactory(data []*graveler.LinkAddressData) func() graveler.AddressTokenIterator {
+	return func() graveler.AddressTokenIterator { return NewFakeAddressTokenIterator(data) }
+}
+
+func (m *FakeAddressTokenIterator) Next() bool {
+	if m.Index >= len(m.Data) {
+		return false
+	}
+	m.Index++
+	return m.Index < len(m.Data)
+}
+
+func (m *FakeAddressTokenIterator) SeekGE(address string) {
+	m.Index = len(m.Data)
+	for i, item := range m.Data {
+		if item.Address >= address {
+			m.Index = i - 1
+			return
+		}
+	}
+}
+
+func (m *FakeAddressTokenIterator) Value() *graveler.LinkAddressData {
+	return m.Data[m.Index]
+}
+
+func (m *FakeAddressTokenIterator) Err() error {
+	return nil
+}
+
+func (m *FakeAddressTokenIterator) Close() {}

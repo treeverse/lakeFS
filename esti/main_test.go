@@ -71,6 +71,8 @@ var (
 
 	testDirectDataAccess = Booleans{false}
 
+	metaclientJarPath  string
+	sparkImageTag      string
 	repositoriesToKeep arrayFlags
 	groupsToKeep       arrayFlags
 	usersToKeep        arrayFlags
@@ -270,7 +272,8 @@ func TestMain(m *testing.M) {
 	flag.Var(&groupsToKeep, "group-to-keep", "Groups to keep in case of pre-run cleanup")
 	flag.Var(&usersToKeep, "user-to-keep", "Users to keep in case of pre-run cleanup")
 	flag.Var(&policiesToKeep, "policy-to-keep", "Policies to keep in case of pre-run cleanup")
-
+	flag.StringVar(&metaclientJarPath, "metaclient-jar", "", "Location of the lakeFS metadata client jar")
+	flag.StringVar(&sparkImageTag, "spark-image-tag", "", "Tag of Bitnami Spark image")
 	if directs, ok := os.LookupEnv("ESTI_TEST_DATA_ACCESS"); ok {
 		if err := testDirectDataAccess.Parse(directs); err != nil {
 			logger.Fatalf("ESTI_TEST_DATA_ACCESS=\"%s\": %s", directs, err)

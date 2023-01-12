@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
 	"strings"
 	"time"
+
+	"github.com/rs/xid"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/batch"
@@ -26,6 +29,19 @@ const MaxBatchDelay = time.Millisecond * 3
 
 // commitIDStringLength string representation length of commit ID - based on hex representation of sha256
 const commitIDStringLength = 64
+
+const (
+	DefaultRepositoryCacheSize   = 1000
+	DefaultRepositoryCacheExpiry = 5 * time.Second
+	DefaultRepositoryCacheJitter = DefaultRepositoryCacheExpiry / 2
+
+	DefaultCommitCacheSize   = 1000
+	DefaultCommitCacheExpiry = 30 * time.Second
+	DefaultCommitCacheJitter = DefaultRepositoryCacheExpiry / 2
+
+	// LinkAddressTime the time address is valid from get to link
+	LinkAddressTime = 6 * time.Hour
+)
 
 type CacheConfig struct {
 	Size   int
@@ -530,4 +546,86 @@ func newCache(cfg CacheConfig) cache.Cache {
 		return cache.NoCache
 	}
 	return cache.NewCache(cfg.Size, cfg.Expiry, cache.NewJitterFn(cfg.Jitter))
+}
+
+func (m *Manager) SetLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+	a := &graveler.LinkAddressData{
+		Address: token,
+	}
+	err := m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(repository), []byte(graveler.LinkedAddressPath(token)), a, nil)
+	if err != nil {
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			err = graveler.ErrAddressTokenAlreadyExists
+		}
+		return err
+	}
+	return nil
+}
+
+func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+	data := graveler.LinkAddressData{}
+	path := []byte(graveler.LinkedAddressPath(token))
+	_, err := m.kvStore.GetMsg(ctx, graveler.RepoPartition(repository), path, &data)
+	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			err = graveler.ErrAddressTokenNotFound
+		}
+		return err
+	}
+	_, err = m.IsLinkAddressExpired(&data)
+	if err != nil {
+		return err
+	}
+	return m.deleteLinkAddress(ctx, repository, token)
+}
+
+func (m *Manager) deleteLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+	path := []byte(graveler.LinkedAddressPath(token))
+	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repository), path)
+}
+
+func (m *Manager) ListLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
+	return NewAddressTokenIterator(ctx, m.kvStore, repository)
+}
+
+func (m *Manager) IsLinkAddressExpired(token *graveler.LinkAddressData) (bool, error) {
+	creationTime, err := m.resolveLinkAddressTime(token.Address)
+	if err != nil {
+		return false, err
+	}
+	if time.Since(creationTime) > LinkAddressTime {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (m *Manager) resolveLinkAddressTime(address string) (time.Time, error) {
+	_, name := path.Split(address)
+	id, err := xid.FromString(name)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return id.Time(), nil
+}
+
+func (m *Manager) DeleteExpiredLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) error {
+	itr, err := m.ListLinkAddresses(ctx, repository)
+	if err != nil {
+		return err
+	}
+	defer itr.Close()
+	for itr.Next() {
+		token := itr.Value()
+		expired, err := m.IsLinkAddressExpired(token)
+		if err != nil {
+			return err
+		}
+		if expired {
+			err := m.deleteLinkAddress(ctx, repository, token.Address)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return itr.Err()
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
+// Define errors we raise from this package - do not convert underlying errors, optionally wrap if needed to consolidate
 var (
 	// ErrUserVisible is base error for "user-visible" errors, which should not be wrapped with internal debug info.
 	ErrUserVisible = errors.New("")
@@ -41,6 +42,9 @@ var (
 	ErrConflictFound                = wrapError(ErrUserVisible, "conflict found")
 	ErrBranchExists                 = fmt.Errorf("branch already exists: %w", ErrNotUnique)
 	ErrTagAlreadyExists             = fmt.Errorf("tag already exists: %w", ErrNotUnique)
+	ErrAddressTokenAlreadyExists    = fmt.Errorf("address token already exists: %w", ErrNotUnique)
+	ErrAddressTokenNotFound         = fmt.Errorf("address token %w", ErrNotFound)
+	ErrAddressTokenExpired          = errors.New("address token has expired")
 	ErrDirtyBranch                  = wrapError(ErrUserVisible, "uncommitted changes (dirty branch)")
 	ErrMetaRangeNotFound            = errors.New("metarange not found")
 	ErrLockNotAcquired              = errors.New("lock not acquired")

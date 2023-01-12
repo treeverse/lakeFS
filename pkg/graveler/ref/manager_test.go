@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
+	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/batch"
@@ -1022,5 +1023,139 @@ func TestManager_ListCommits(t *testing.T) {
 		}
 		lastCommit = string(commit.CommitID)
 		i++
+	}
+}
+
+func TestManager_ListAddressTokens(t *testing.T) {
+	r, _ := testRefManager(t)
+	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
+	addresses := []string{"data/a", "data/aa", "data/b", "data/c", "data/f", "data/z"}
+
+	for _, a := range addresses {
+		testutil.Must(t, r.SetLinkAddress(context.Background(), repository, a))
+	}
+
+	iter, err := r.ListLinkAddresses(context.Background(), repository)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer iter.Close()
+
+	var tokens []string
+	for iter.Next() {
+		t := iter.Value()
+		tokens = append(tokens, t.Address)
+	}
+	if iter.Err() != nil {
+		t.Fatalf("unexpected error: %v", iter.Err())
+	}
+	if !reflect.DeepEqual(tokens, addresses) {
+		t.Fatalf("unexpected branch list: %v", tokens)
+	}
+}
+
+func TestManager_SetGetAddressToken(t *testing.T) {
+	r, _ := testRefManager(t)
+	ctx := context.Background()
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
+
+	address := xid.New().String()
+
+	err = r.SetLinkAddress(ctx, repository, address)
+	testutil.MustDo(t, "set address token aa", err)
+
+	// check we can't create existing
+	err = r.SetLinkAddress(ctx, repository, address)
+	if !errors.Is(err, graveler.ErrAddressTokenAlreadyExists) {
+		t.Fatalf("SetAddressToken() err = %s, expected already exists", err)
+	}
+
+	err = r.VerifyLinkAddress(ctx, repository, address)
+	testutil.MustDo(t, "get aa token", err)
+
+	// check the token is deleted
+	err = r.VerifyLinkAddress(ctx, repository, address)
+	if !errors.Is(err, graveler.ErrAddressTokenNotFound) {
+		t.Fatalf("VerifyAddressToken() err = %s, expected not found", err)
+	}
+
+	// create again
+	err = r.SetLinkAddress(ctx, repository, address)
+	testutil.MustDo(t, "set address token aa after delete", err)
+}
+
+func TestManager_IsTokenExpired(t *testing.T) {
+	r, _ := testRefManager(t)
+
+	expired, err := r.IsLinkAddressExpired(&graveler.LinkAddressData{Address: xid.New().String()})
+	testutil.MustDo(t, "is token expired", err)
+	if expired {
+		t.Fatalf("expected token not expired")
+	}
+
+	expired, err = r.IsLinkAddressExpired(&graveler.LinkAddressData{Address: xid.NewWithTime(time.Now().Add(-7 * time.Hour)).String()})
+	testutil.MustDo(t, "is token expired", err)
+	if !expired {
+		t.Fatalf("expected token expired")
+	}
+
+	expired, err = r.IsLinkAddressExpired(&graveler.LinkAddressData{Address: "aaa"})
+	if !errors.Is(err, xid.ErrInvalidID) {
+		t.Fatalf("err = %s, expected invalid xid", err)
+	}
+}
+
+func TestManager_DeleteExpiredAddressTokens(t *testing.T) {
+	r, _ := testRefManager(t)
+	ctx := context.Background()
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
+
+	a := "data/aaa/" + xid.NewWithTime(time.Now()).String()
+	b := "data/bbb/" + xid.NewWithTime(time.Now().Add(-10*time.Hour)).String() // expired
+	c := "data/ccc/" + xid.NewWithTime(time.Now().Add(-7*time.Hour)).String()  // expired
+
+	tokens := []string{a, b, c}
+	expectedTokens := []string{a}
+
+	for _, a := range tokens {
+		testutil.Must(t, r.SetLinkAddress(context.Background(), repository, a))
+	}
+
+	err = r.DeleteExpiredLinkAddresses(context.Background(), repository)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	iter, err := r.ListLinkAddresses(context.Background(), repository)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer iter.Close()
+
+	var ts []string
+	for iter.Next() {
+		t := iter.Value()
+		ts = append(ts, t.Address)
+	}
+	if iter.Err() != nil {
+		t.Fatalf("unexpected error: %v", iter.Err())
+	}
+	if diff := deep.Equal(ts, expectedTokens); diff != nil {
+		t.Errorf("Found diff in tokens: %s", ts)
 	}
 }
