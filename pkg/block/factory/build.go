@@ -150,14 +150,14 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 }
 
 func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
-	p, err := BuildAzureClient(params)
+	p, credentials, err := BuildAzureClient(params)
 	if err != nil {
 		return nil, err
 	}
-	return azure.NewAdapter(p), nil
+	return azure.NewAdapter(p, credentials), nil
 }
 
-func BuildAzureClient(params params.Azure) (pipeline.Pipeline, error) {
+func BuildAzureClient(params params.Azure) (pipeline.Pipeline, azblob.Credential, error) {
 	accountName := params.StorageAccount
 	accountKey := params.StorageAccessKey
 	var credentials azblob.Credential
@@ -171,7 +171,7 @@ func BuildAzureClient(params params.Azure) (pipeline.Pipeline, error) {
 		err = ErrAuthMethodNotSupported
 	}
 	if err != nil {
-		return nil, fmt.Errorf("invalid credentials: %w", err)
+		return nil, nil, fmt.Errorf("invalid credentials: %w", err)
 	}
-	return azblob.NewPipeline(credentials, azblob.PipelineOptions{Retry: azblob.RetryOptions{TryTimeout: params.TryTimeout}}), nil
+	return azblob.NewPipeline(credentials, azblob.PipelineOptions{Retry: azblob.RetryOptions{TryTimeout: params.TryTimeout}}), credentials, nil
 }

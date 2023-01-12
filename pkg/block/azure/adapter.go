@@ -29,21 +29,40 @@ const (
 	defaultMaxRetryRequests = 0
 	AuthMethodAccessKey     = "access-key"
 	AuthMethodMSI           = "msi"
+
+	preSignedBlobPattern = "https://%s.blob.core.windows.net/%s/%s?%s"
 )
 
 type Adapter struct {
-	pipeline       pipeline.Pipeline
-	configurations configurations
+	pipeline                      pipeline.Pipeline
+	configurations                configurations
+	credentials                   azblob.Credential
+	preSignedURLDurationGenerator func() time.Time
+	keyCredentials                *azblob.SharedKeyCredential
 }
 
 type configurations struct {
 	retryReaderOptions azblob.RetryReaderOptions
 }
 
-func NewAdapter(pipeline pipeline.Pipeline, opts ...func(a *Adapter)) *Adapter {
+func WithPreSignedURLDurationGenerator(f func() time.Time) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.preSignedURLDurationGenerator = f
+	}
+}
+
+func NewAdapter(pipeline pipeline.Pipeline, credentials azblob.Credential, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		pipeline:       pipeline,
+		credentials:    credentials,
 		configurations: configurations{retryReaderOptions: azblob.RetryReaderOptions{MaxRetryRequests: defaultMaxRetryRequests}},
+		preSignedURLDurationGenerator: func() time.Time {
+			return time.Now().UTC().Add(block.DefaultPreSignExpiryDuration)
+		},
+	}
+	keyCredentials, ok := credentials.(*azblob.SharedKeyCredential)
+	if ok {
+		a.keyCredentials = keyCredentials
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -52,8 +71,9 @@ func NewAdapter(pipeline pipeline.Pipeline, opts ...func(a *Adapter)) *Adapter {
 }
 
 type BlobURLInfo struct {
-	ContainerURL string
-	BlobURL      string
+	ContainerURL  string
+	ContainerName string
+	BlobURL       string
 }
 
 type PrefixURLInfo struct {
@@ -77,8 +97,9 @@ func resolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
 		return qk, block.ErrInvalidNamespace
 	}
 	return BlobURLInfo{
-		ContainerURL: fmt.Sprintf("%s://%s/%s", pathURL.Scheme, pathURL.Host, parts[0]),
-		BlobURL:      strings.Join(parts[1:], "/"),
+		ContainerURL:  fmt.Sprintf("%s://%s/%s", pathURL.Scheme, pathURL.Host, parts[0]),
+		ContainerName: parts[0],
+		BlobURL:       strings.Join(parts[1:], "/"),
 	}, nil
 }
 
@@ -100,13 +121,13 @@ func resolveBlobURLInfo(obj block.ObjectPointer) (BlobURLInfo, error) {
 			return qk, err
 		}
 		info := BlobURLInfo{
-			ContainerURL: qp.ContainerURL,
-			BlobURL:      qp.BlobURL + "/" + key,
+			ContainerURL:  qp.ContainerURL,
+			ContainerName: qp.ContainerName,
+			BlobURL:       qp.BlobURL + "/" + key,
 		}
 		if qp.BlobURL == "" {
 			info.BlobURL = key
 		}
-
 		return info, nil
 	}
 	return resolveBlobURLInfoFromURL(parsedKey)
@@ -194,6 +215,45 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	defer reportMetrics("Get", time.Now(), nil, &err)
 
 	return a.Download(ctx, obj, 0, azblob.CountToEnd)
+}
+
+func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+	permissions := azblob.BlobSASPermissions{Read: true}
+	if mode == block.PreSignModeWrite {
+		permissions = azblob.BlobSASPermissions{Write: true}
+	}
+	return a.getPreSignedURL(ctx, obj, permissions)
+}
+
+func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions azblob.BlobSASPermissions) (string, error) {
+	qualifiedKey, err := resolveBlobURLInfo(obj)
+	if err != nil {
+		return "", err
+	}
+	vals := azblob.BlobSASSignatureValues{
+		Protocol:      azblob.SASProtocolHTTPS, // Users MUST use HTTPS (not HTTP)
+		ExpiryTime:    a.preSignedURLDurationGenerator(),
+		ContainerName: qualifiedKey.ContainerName,
+		BlobName:      qualifiedKey.BlobURL,
+		Permissions:   permissions.String(),
+	}
+
+	if a.keyCredentials == nil {
+		err = fmt.Errorf("pre-signed mode on Azure is only supported for shared key credentials: %w", ErrNotImplemented)
+		a.log(ctx).WithError(err).Error("no support for pre-signed using this Azure credentials provider")
+		return "", err
+	}
+
+	sasQueryParams, err := vals.NewSASQueryParameters(a.keyCredentials)
+	if err != nil {
+		a.log(ctx).WithError(err).Error("could not generate SAS query parameters")
+		return "", err
+	}
+	// Create the URL of the resource you wish to access and append the SAS query parameters.
+	// Since this is a blob SAS, the URL is to the Azure storage blob.
+	qp := sasQueryParams.Encode()
+	return fmt.Sprintf(preSignedBlobPattern,
+		a.keyCredentials.AccountName(), qualifiedKey.ContainerName, qualifiedKey.BlobURL, qp), nil
 }
 
 func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
