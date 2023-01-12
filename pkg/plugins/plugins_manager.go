@@ -10,6 +10,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
+var (
+	pluginGroupNotFound = fmt.Errorf("unknown plugin group")
+	pluginTypeNotFound  = fmt.Errorf("unknown plugin type")
+)
+
 // PluginGroup specifies the group name of related plugins
 // For example, "diff" is a group of plugins that know how to perform a diff.
 type PluginGroup string
@@ -24,7 +29,7 @@ type PluginIdentity struct {
 	Key     string
 	Secret  string
 }
-type PluginTypeConfigMap map[PluginType]plugin.ClientConfig
+type pluginTypeConfigMap map[PluginType]plugin.ClientConfig
 
 // PluginGroupTypeMap example:
 /*
@@ -91,20 +96,21 @@ type PluginTypeConfigMap map[PluginType]plugin.ClientConfig
 	},
 }
 */
-type PluginGroupTypeMap map[PluginGroup]PluginTypeConfigMap
+type PluginGroupTypeMap map[PluginGroup]pluginTypeConfigMap
 
 // The Manager holds the different types of plugins that can be used in the plugin system
 type Manager struct {
 	pluginGroups PluginGroupTypeMap
 }
 
+// AddPluginType is used to register a new plugin type with a plugin group. It can also introduce a new plugin group.
 func (m *Manager) AddPluginType(pluginGroup PluginGroup, pluginType PluginType, clientConfig plugin.ClientConfig) {
 	if m.pluginGroups == nil {
 		m.pluginGroups = make(PluginGroupTypeMap)
 	}
 	ptcm, ok := m.pluginGroups[pluginGroup]
 	if !ok {
-		ptcm := make(PluginTypeConfigMap)
+		ptcm := make(pluginTypeConfigMap)
 		m.pluginGroups[pluginGroup] = ptcm
 	}
 	ptcm[pluginType] = clientConfig
@@ -119,11 +125,11 @@ func (m *Manager) AddPluginType(pluginGroup PluginGroup, pluginType PluginType, 
 func (m *Manager) WrapPlugin(pluginGroupType PluginGroup, pluginType PluginType) (*PluginWrapper, error) {
 	ptpp, ok := m.pluginGroups[pluginGroupType]
 	if !ok {
-		return nil, fmt.Errorf("unknown plugin group %s", pluginGroupType)
+		return nil, pluginGroupNotFound
 	}
 	clientConfig, ok := ptpp[pluginType]
 	if !ok {
-		return nil, fmt.Errorf("unknown plugin type %s under plugin group %s", pluginType, pluginGroupType)
+		return nil, pluginTypeNotFound
 	}
 	return newPlugin(fmt.Sprintf("%s_%s", pluginGroupType, pluginType), clientConfig)
 }
