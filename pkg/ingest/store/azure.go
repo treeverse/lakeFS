@@ -5,7 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
+
+	"github.com/treeverse/lakefs/pkg/block/azure"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
@@ -17,20 +20,21 @@ var (
 	ErrAzureCredentials = errors.New("azure credentials error")
 )
 
-//func getAzureClient() (pipeline.Pipeline, error) {
-//	// From the Azure portal, get your storage account name and key and set environment variables.
-//	accountName, accountKey := os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
-//	if len(accountName) == 0 || len(accountKey) == 0 {
-//		return nil, fmt.Errorf("%w: either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set", ErrAzureCredentials)
-//	}
-//
-//	// Create a default request pipeline using your storage account name and account key.
-//	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
-//	if err != nil {
-//		return nil, fmt.Errorf("invalid credentials with error: %w", err)
-//	}
-//	return azblob.NewPipeline(credential, azblob.PipelineOptions{}), nil
-//}
+func getAzureClient() (*service.Client, error) {
+	// From the Azure portal, get your storage account name and key and set environment variables.
+	accountName, accountKey := os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
+	if len(accountName) == 0 || len(accountKey) == 0 {
+		return nil, fmt.Errorf("%w: either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set", ErrAzureCredentials)
+	}
+
+	// Create a default request client using your storage account name and account key.
+	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
+	if err != nil {
+		return nil, fmt.Errorf("invalid credentials with error: %w", err)
+	}
+	containerURL := fmt.Sprintf(azure.AzURLTemplate, accountName)
+	return service.NewClientWithSharedKeyCredential(containerURL, credential, nil)
+}
 
 func NewAzureBlobWalker(svc service.Client) (*azureBlobWalker, error) {
 	return &azureBlobWalker{

@@ -20,18 +20,13 @@ import (
 type MultipartBlockWriter struct {
 	reader *block.HashingReader // the reader that would be passed to copyFromReader, this is needed in order to get size and md5
 	// to is the location we are writing our chunks to.
-	to      *blockblob.Client
-	toIDs   *blockblob.Client
-	toSizes *blockblob.Client
-	etag    string
+	to *blockblob.Client
 }
 
 func NewMultipartBlockWriter(reader *block.HashingReader, containerURL container.Client, objName string) *MultipartBlockWriter {
 	return &MultipartBlockWriter{
-		reader:  reader,
-		to:      containerURL.NewBlockBlobClient(objName),
-		toIDs:   containerURL.NewBlockBlobClient(objName + idSuffix),
-		toSizes: containerURL.NewBlockBlobClient(objName + sizeSuffix),
+		reader: reader,
+		to:     containerURL.NewBlockBlobClient(objName),
 	}
 }
 
@@ -79,7 +74,7 @@ func completeMultipart(ctx context.Context, parts []block.MultipartPart, contain
 	etag := string(*res.ETag)
 	return &block.CompleteMultiPartUploadResponse{
 		ETag:          etag,
-		ContentLength: int64(size),
+		ContentLength: size,
 	}, nil
 }
 

@@ -31,8 +31,8 @@ const (
 	_1MiB                   = 1024 * 1024
 	MaxBuffers              = 1
 	defaultMaxRetryRequests = 0
-	AuthMethodAccessKey     = "access-key"
-	AuthMethodMSI           = "msi"
+
+	AzURLTemplate = "https://%s.blob.core.windows.net/"
 )
 
 type Adapter struct {
@@ -140,14 +140,6 @@ func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ strin
 	return nil, fmt.Errorf("inventory %w", ErrNotImplemented)
 }
 
-// func (a *Adapter) getContainerURL(rawURL string) service.ContainerURL {
-// 	u, err := url.Parse(rawURL)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	return azblob.NewContainerURL(*u, a.pipeline)
-// }
-
 func (a *Adapter) translatePutOpts(ctx context.Context, opts block.PutOpts) azblob.UploadStreamOptions {
 	res := azblob.UploadStreamOptions{}
 	if opts.StorageClass == nil {
@@ -156,7 +148,8 @@ func (a *Adapter) translatePutOpts(ctx context.Context, opts block.PutOpts) azbl
 
 	for _, t := range blob.PossibleAccessTierValues() {
 		if strings.EqualFold(*opts.StorageClass, string(t)) {
-			res.AccessTier = &t
+			accessTier := t
+			res.AccessTier = &accessTier
 			break
 		}
 	}
@@ -376,18 +369,9 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	hashReader := block.NewHashingReader(reader, block.HashFunctionMD5)
 
 	multipartBlockWriter := NewMultipartBlockWriter(hashReader, *container, qualifiedKey.BlobURL)
-	// resp, err := multipartBlockWriter.to.UploadStream(ctx, reader, nil)
 	res, err := copyFromReader(ctx, hashReader, multipartBlockWriter, blockblob.UploadStreamOptions{
-		BlockSize:               sizeBytes,
-		Concurrency:             1,
-		TransactionalValidation: nil,
-		HTTPHeaders:             nil,
-		Metadata:                nil,
-		AccessConditions:        nil,
-		AccessTier:              nil,
-		Tags:                    nil,
-		CpkInfo:                 nil,
-		CpkScopeInfo:            nil,
+		BlockSize:   sizeBytes,
+		Concurrency: 1,
 	})
 	if err != nil {
 		return nil, err
@@ -397,6 +381,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	}, nil
 }
 
+// TODO (niro): Need to fix this
 func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, _ string, _ int) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), nil, &err)

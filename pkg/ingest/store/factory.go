@@ -144,14 +144,13 @@ func (f *walkerFactory) buildAzureWalker() (*azureBlobWalker, error) {
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		var err error
+		p, err = getAzureClient()
+		if err != nil {
+			return nil, err
+		}
 	}
-	//else {
-	//	var err error
-	//	p, err = getAzureClient()
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//}
 	return NewAzureBlobWalker(*p)
 }
 

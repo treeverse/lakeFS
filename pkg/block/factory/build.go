@@ -30,10 +30,7 @@ import (
 // googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
 const googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
 
-var (
-	ErrInvalidBlockStoreType  = errors.New("invalid blockstore type")
-	ErrAuthMethodNotSupported = errors.New("authentication method not supported")
-)
+var ErrInvalidBlockStoreType = errors.New("invalid blockstore type")
 
 func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c params.AdapterConfig) (block.Adapter, error) {
 	blockstore := c.BlockstoreType()
@@ -157,52 +154,11 @@ func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
 	return azure.NewAdapter(*p), nil
 }
 
-//func BuildAzureClient(params params.Azure) (*azblob.Client, error) {
-// accountName := params.StorageAccount
-// accountKey := params.StorageAccessKey
-// var credentials *azblob.SharedKeyCredential
-//cred, err := azidentity.NewDefaultAzureCredential(nil)
-//if err != nil {
-//	return nil, err
-//}
-// var err error
-// switch params.AuthMethod {
-// case azure.AuthMethodAccessKey:
-// 	credentials, err = azblob.NewSharedKeyCredential(accountName, accountKey)
-// // case azure.AuthMethodMSI:
-// // 	credentials, err = azure.GetMSICredentials()
-// default:
-// 	err = ErrAuthMethodNotSupported
-// }
-// if err != nil {
-// 	return nil, fmt.Errorf("invalid credentials: %w", err)
-// }
-// return azblob.NewPipeline(credentials, azblob.PipelineOptions{Retry: azblob.RetryOptions{TryTimeout: params.TryTimeout}}), nil
-//return azblob.NewClient("https://testmultigen2.blob.core.windows.net/", cred, nil)
-//}
-
 func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
-	// accountName := params.StorageAccount
-	// accountKey := params.StorageAccessKey
-	// var credentials *azblob.SharedKeyCredential
 	cred, err := azblob.NewSharedKeyCredential(params.StorageAccount, params.StorageAccessKey)
-	// cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return nil, err
 	}
-	// var err error
-	// switch params.AuthMethod {
-	// case azure.AuthMethodAccessKey:
-	// 	credentials, err := azblob.NewSharedKeyCredential(accountName, accountKey)
-	// // case azure.AuthMethodMSI:
-	//  	credentials, err := azure.GetMSICredentials()
-	// default:
-	// 	err = ErrAuthMethodNotSupported
-	// }
-	// if err != nil {
-	// 	return nil, fmt.Errorf("invalid credentials: %w", err)
-	// }
-	// return azblob.NewPipeline(credentials, azblob.PipelineOptions{Retry: azblob.RetryOptions{TryTimeout: params.TryTimeout}}), nil
-	url := fmt.Sprintf("https://%s.blob.core.windows.net/", params.StorageAccount)
+	url := fmt.Sprintf(azure.AzURLTemplate, params.StorageAccount)
 	return service.NewClientWithSharedKeyCredential(url, cred, nil)
 }
