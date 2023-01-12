@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -159,7 +160,24 @@ var testCases = []testCase{
 	},
 }
 
-func newSubmitConfig(repo string, extraSubmitArgs ...string) *sparkSubmitConfig {
+func newSubmitConfig(repo string, blockstoreType string, doMark *bool, doSweep *bool) *sparkSubmitConfig {
+	extraSubmitArgs := make([]string, 0)
+	if doMark != nil && !*doMark {
+		extraSubmitArgs = append(extraSubmitArgs,
+			"--conf", "spark.hadoop.lakefs.gc.do_sweep=false",
+			"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker-%s", repo))
+	}
+	if doSweep != nil && !*doSweep {
+		extraSubmitArgs = append(extraSubmitArgs,
+			"--conf", "spark.hadoop.lakefs.gc.do_mark=false",
+			"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker-%s", repo))
+	}
+	if blockstoreType == block.BlockstoreTypeAzure {
+		extraSubmitArgs = append(extraSubmitArgs,
+			"--packages", "org.apache.hadoop:hadoop-azure:3.2.1",
+			"--conf", "spark.hadoop.lakefs.api.connection.timeout_seconds=3", "--conf", "spark.hadoop.lakefs.api.read.timeout_seconds=8",
+			"--conf", fmt.Sprintf("spark.hadoop.fs.azure.account.key.%s.dfs.core.windows.net=%s", azureStorageAccount, azureStorageAccessKey))
+	}
 	return &sparkSubmitConfig{
 		sparkVersion:    sparkImageTag,
 		localJar:        metaclientJarPath,
@@ -173,10 +191,6 @@ func newSubmitConfig(repo string, extraSubmitArgs ...string) *sparkSubmitConfig 
 func TestCommittedGC(t *testing.T) {
 	SkipTestIfAskedTo(t)
 	blockstoreType := viper.GetViper().GetString("blockstore_type")
-	// TODO lynn: change this for test also on Azure
-	if blockstoreType != block.BlockstoreTypeS3 {
-		t.Skip("Running on S3 only")
-	}
 	ctx := context.Background()
 	for _, tst := range testCases {
 		tst := tst // re-define tst to be in the scope of the closure. See: https://gist.github.com/posener/92a55c4cd441fc5e5e85f27bca008721
@@ -185,20 +199,18 @@ func TestCommittedGC(t *testing.T) {
 			t.Parallel()
 			t.Logf("fileExistingRef %s", fileExistingRef)
 			repo := committedGCRepoName + tst.id
+
 			if tst.testMode == sweepOnlyMode || tst.testMode == markOnlyMode {
-				submitConfig := newSubmitConfig(repo,
-					"--conf", "spark.hadoop.lakefs.gc.do_sweep=false",
-					"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker%s", tst.id))
+				submitConfig := newSubmitConfig(repo, blockstoreType, nil, swag.Bool(false))
 				testutil.MustDo(t, "run GC with do_sweep=false", runSparkSubmit(submitConfig))
 			}
 			if tst.testMode == sweepOnlyMode {
-				submitConfig := newSubmitConfig(repo,
-					"--conf", "spark.hadoop.lakefs.gc.do_mark=false",
-					"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker%s", tst.id))
+				submitConfig := newSubmitConfig(repo, blockstoreType, swag.Bool(false), nil)
 				testutil.MustDo(t, "run GC with do_mark=false", runSparkSubmit(submitConfig))
 			}
 			if tst.testMode == fullGCMode {
-				testutil.MustDo(t, "run GC", runSparkSubmit(newSubmitConfig(repo)))
+				submitConfig := newSubmitConfig(repo, blockstoreType, nil, nil)
+				testutil.MustDo(t, "run GC", runSparkSubmit(submitConfig))
 			}
 			validateGCJob(t, ctx, &tst, fileExistingRef)
 		})
