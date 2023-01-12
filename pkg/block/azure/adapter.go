@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
@@ -32,40 +33,31 @@ const (
 	MaxBuffers              = 1
 	defaultMaxRetryRequests = 0
 
-	AzURLTemplate = "https://%s.blob.core.windows.net/"
+	AzURLTemplate        = "https://%s.blob.core.windows.net/"
 	preSignedBlobPattern = "https://%s.blob.core.windows.net/%s/%s?%s"
 )
 
 type Adapter struct {
-	client         service.Client
-	configurations configurations
-	credentials                   azblob.Credential
+	client                        service.Client
+	configurations                configurations
 	preSignedURLDurationGenerator func() time.Time
-	keyCredentials                *azblob.SharedKeyCredential
+	keyCredentials                *aztables.SharedKeyCredential
 }
 
 type configurations struct {
 	retryReaderOptions azblob.RetryReaderOptions
 }
 
-func WithPreSignedURLDurationGenerator(f func() time.Time) func(a *Adapter) {
-	return func(a *Adapter) {
-		a.preSignedURLDurationGenerator = f
-	}
-}
-
-func NewAdapter(client service.Client, credentials azblob.Credential, opts ...func(a *Adapter)) *Adapter {
+func NewAdapter(client service.Client, credentials *aztables.SharedKeyCredential, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		client:         client,
 		configurations: configurations{retryReaderOptions: azblob.RetryReaderOptions{MaxRetries: defaultMaxRetryRequests}},
 		preSignedURLDurationGenerator: func() time.Time {
 			return time.Now().UTC().Add(block.DefaultPreSignExpiryDuration)
 		},
+		keyCredentials: credentials,
 	}
-	keyCredentials, ok := credentials.(*azblob.SharedKeyCredential)
-	if ok {
-		a.keyCredentials = keyCredentials
-	}
+
 	for _, opt := range opts {
 		opt(a)
 	}
@@ -201,24 +193,22 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 }
 
 func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
-	permissions := azblob.BlobSASPermissions{Read: true}
+	permissions := aztables.AccountSASPermissions{Read: true}
 	if mode == block.PreSignModeWrite {
-		permissions = azblob.BlobSASPermissions{Write: true}
+		permissions = aztables.AccountSASPermissions{
+			Read:   true,
+			Add:    true,
+			Update: true,
+			Delete: true,
+		}
 	}
 	return a.getPreSignedURL(ctx, obj, permissions)
 }
 
-func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions azblob.BlobSASPermissions) (string, error) {
+func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions aztables.AccountSASPermissions) (string, error) {
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return "", err
-	}
-	vals := azblob.BlobSASSignatureValues{
-		Protocol:      azblob.SASProtocolHTTPS, // Users MUST use HTTPS (not HTTP)
-		ExpiryTime:    a.preSignedURLDurationGenerator(),
-		ContainerName: qualifiedKey.ContainerName,
-		BlobName:      qualifiedKey.BlobURL,
-		Permissions:   permissions.String(),
 	}
 
 	if a.keyCredentials == nil {
@@ -227,14 +217,19 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		return "", err
 	}
 
-	sasQueryParams, err := vals.NewSASQueryParameters(a.keyCredentials)
+	client, err := aztables.NewServiceClientWithSharedKey(qualifiedKey.ContainerURL, a.keyCredentials, nil)
 	if err != nil {
-		a.log(ctx).WithError(err).Error("could not generate SAS query parameters")
 		return "", err
 	}
-	// Create the URL of the resource you wish to access and append the SAS query parameters.
-	// Since this is a blob SAS, the URL is to the Azure storage blob.
-	qp := sasQueryParams.Encode()
+
+	qp, err := client.GetAccountSASURL(aztables.AccountSASResourceTypes{
+		Container: true,
+		Object:    true,
+	}, permissions, time.Now(), a.preSignedURLDurationGenerator())
+	if err != nil {
+		return "", err
+	}
+
 	return fmt.Sprintf(preSignedBlobPattern,
 		a.keyCredentials.AccountName(), qualifiedKey.ContainerName, qualifiedKey.BlobURL, qp), nil
 }

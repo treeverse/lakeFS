@@ -75,8 +75,11 @@ func (a *azureBlobWalker) Walk(_ context.Context, storageURI *url.URL, op WalkOp
 		return err
 	}
 	qk, err := azure.ResolveBlobURLInfoFromURL(containerURL)
-	container := a.client.NewContainerClient(qk.ContainerName)
+	if err != nil {
+		return err
+	}
 
+	container := a.client.NewContainerClient(qk.ContainerName)
 	listBlob := container.NewListBlobsFlatPager(&azblob.ListBlobsFlatOptions{
 		Prefix: &prefix,
 	})
@@ -103,7 +106,6 @@ func (a *azureBlobWalker) Walk(_ context.Context, storageURI *url.URL, op WalkOp
 			}); err != nil {
 				return err
 			}
-
 		}
 	}
 

@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"cloud.google.com/go/storage"
+	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/aws/aws-sdk-go/aws"
@@ -154,12 +155,17 @@ func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
 	return azure.NewAdapter(*p, credentials), nil
 }
 
-func BuildAzureServiceClient(params params.Azure) (*service.Client, azblob.Credential, error) {
+func BuildAzureServiceClient(params params.Azure) (*service.Client, *aztables.SharedKeyCredential, error) {
 	cred, err := azblob.NewSharedKeyCredential(params.StorageAccount, params.StorageAccessKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid credentials: %w", err)
 	}
+	keyCred, err := aztables.NewSharedKeyCredential(params.StorageAccount, params.StorageAccessKey)
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid credentials: %w", err)
+	}
+
 	url := fmt.Sprintf(azure.AzURLTemplate, params.StorageAccount)
 	client, err := service.NewClientWithSharedKeyCredential(url, cred, nil)
-	return client, cred, nil
+	return client, keyCred, err
 }

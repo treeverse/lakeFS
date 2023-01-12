@@ -37,12 +37,6 @@ type Adapter struct {
 	presignDurationGenerator func() time.Time
 }
 
-func WithPreSignedURLDurationGenerator(f func() time.Time) func(a *Adapter) {
-	return func(a *Adapter) {
-		a.presignDurationGenerator = f
-	}
-}
-
 func NewAdapter(client *storage.Client, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		client: client,
@@ -272,7 +266,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	return nil
 }
 
-func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	var err error
 	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)

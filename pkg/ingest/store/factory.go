@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"cloud.google.com/go/storage"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/block/params"
