@@ -298,11 +298,11 @@ func TestMain(m *testing.M) {
 		params.AdminAccessKeyID = *adminAccessKeyID
 		params.AdminSecretAccessKey = *adminSecretAccessKey
 	}
-	azureStorageAccount = viper.GetString("azure_storage_account")
-	azureStorageAccessKey = viper.GetString("azure_storage_access_key")
 	viper.SetDefault("post_migrate", false)
 
 	logger, client, svc = testutil.SetupTestingEnv(&params)
+	azureStorageAccount = viper.GetString("azure_storage_account")
+	azureStorageAccessKey = viper.GetString("azure_storage_access_key")
 
 	var err error
 	setupLakeFS := viper.GetBool("setup_lakefs")
