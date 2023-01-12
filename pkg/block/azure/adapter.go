@@ -265,7 +265,6 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 		return false, err
 	}
 
-	// container := a.client.clientgetContainerURL(qualifiedKey.ContainerURL)
 	blobURL := a.client.NewContainerClient(qualifiedKey.ContainerName).NewBlobClient(qualifiedKey.BlobURL)
 
 	_, err = blobURL.GetProperties(ctx, nil)
@@ -406,8 +405,8 @@ func (a *Adapter) copyPartRange(ctx context.Context, sourceObj, destinationObj b
 		return nil, err
 	}
 
-	destinationContainer := a.client.NewContainerClient(qualifiedDestinationKey.ContainerURL)
-	sourceContainer := a.client.NewContainerClient(qualifiedSourceKey.ContainerURL)
+	destinationContainer := a.client.NewContainerClient(qualifiedDestinationKey.ContainerName)
+	sourceContainer := a.client.NewContainerClient(qualifiedSourceKey.ContainerName)
 	sourceBlobURL := sourceContainer.NewBlockBlobClient(qualifiedSourceKey.BlobURL)
 
 	return copyPartRange(ctx, *destinationContainer, qualifiedDestinationKey.BlobURL, *sourceBlobURL, startPosition, count)
