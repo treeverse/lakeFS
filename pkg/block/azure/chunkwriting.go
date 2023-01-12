@@ -13,10 +13,9 @@ import (
 	"sync/atomic"
 	"syscall"
 
-	guuid "github.com/google/uuid"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
+	guuid "github.com/google/uuid"
 )
 
 var ErrEmptyBuffer = errors.New("TransferManager returned a 0 size buffer, this is a bug in the manager")

@@ -46,7 +46,6 @@ type configurations struct {
 
 func NewAdapter(client service.Client, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
-		// pipeline:       client,
 		configurations: configurations{retryReaderOptions: azblob.RetryReaderOptions{MaxRetries: defaultMaxRetryRequests}},
 		client:         client,
 	}
@@ -212,6 +211,7 @@ func (a *Adapter) Download(ctx context.Context, obj block.ObjectPointer, offset,
 		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
+		a.log(ctx).WithError(err).Errorf("failed to get azure blob from container %s key %s", container, blobURL)
 		return nil, err
 	}
 	return downloadResponse.Body, nil
@@ -314,7 +314,6 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 }
 
 func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.ObjectPointer) error {
-	// return ErrNotImplemented
 	var err error
 	defer reportMetrics("Copy", time.Now(), nil, &err)
 
@@ -356,7 +355,7 @@ func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPoint
 	}, nil
 }
 
-func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, _ string, _ int) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, _ string, _ int) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), nil, &err)
 
@@ -369,19 +368,15 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	hashReader := block.NewHashingReader(reader, block.HashFunctionMD5)
 
 	multipartBlockWriter := NewMultipartBlockWriter(hashReader, *container, qualifiedKey.BlobURL)
-	res, err := copyFromReader(ctx, hashReader, multipartBlockWriter, blockblob.UploadStreamOptions{
-		BlockSize:   sizeBytes,
-		Concurrency: 1,
-	})
+	_, err = copyFromReader(ctx, hashReader, multipartBlockWriter, blockblob.UploadStreamOptions{})
 	if err != nil {
 		return nil, err
 	}
 	return &block.UploadPartResponse{
-		ETag: strings.Trim(string(*res.ETag), `"`),
+		ETag: strings.Trim(multipartBlockWriter.etag, `"`),
 	}, nil
 }
 
-// TODO (niro): Need to fix this
 func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, _ string, _ int) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), nil, &err)
