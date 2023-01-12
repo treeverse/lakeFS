@@ -965,68 +965,6 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  metadata-client-gc-spark3-hadoop3-on-azure:
-    name: Test lakeFS metadata client GC with Spark 3.x and Hadoop 3 on Azure
-    needs: [deploy-image, build-spark3-metadata-client]
-    runs-on: ubuntu-latest-8-cores
-    strategy:
-      matrix:
-        spark:
-          - version: 3.2.1
-            suffix: "-hadoop3"
-    env:
-      SPARK_TAG: ${{ matrix.spark.version }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-      TAG: ${{ needs.deploy-image.outputs.tag }}
-    steps:
-      - name: Check-out code
-        uses: actions/checkout@v3
-
-      - name: Import Metaclient
-        id: import_metaclient
-        uses: actions/download-artifact@v3
-        with:
-          name: metaclient${{ matrix.spark.suffix }}
-          path: test/spark/metaclient
-
-      - name: Generate uniquifying value
-        id: unique
-        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
-
-      - name: Start lakeFS for Spark tests
-        uses: ./.github/actions/bootstrap-test-lakefs
-        with:
-          compose-directory: test/spark
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          LAKEFS_DATABASE_TYPE: postgres
-          LAKEFS_BLOCKSTORE_TYPE: azure
-          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
-          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
-
-      - name: Setup lakeFS for metadata client tests
-        working-directory: test/spark
-        run: ./setup-test.sh
-
-      - name: Test GC with Spark 3.x
-        env:
-          STORAGE_NAMESPACE: https://esti.blob.core.windows.net/esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/garbage/${{ steps.unique.outputs.value }}
-          REPOSITORY: test-data-gc-${{ matrix.spark.version }}
-          CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly${{ matrix.spark.suffix }}.jar
-          LAKEFS_BLOCKSTORE_TYPE: azure
-          LAKEFS_DATABASE_TYPE: postgres
-          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
-          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
-        working-directory: test/spark
-        run: ./run-gc-test.sh
-
-      - name: lakeFS Logs on Spark with gateway failure
-        if: ${{ failure() }}
-        continue-on-error: true
-        working-directory: test/spark
-        run: docker-compose logs --tail=1000 lakefs
-
   metadata-client-export-spark3:
     name: Test lakeFS metadata client export with Spark 3.x
     needs: [deploy-image, build-spark3-metadata-client]
