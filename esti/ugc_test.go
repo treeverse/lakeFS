@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/testutil"
 	"golang.org/x/exp/slices"
 )
 
@@ -36,19 +37,21 @@ func TestUncommittedGC(t *testing.T) {
 	if blockstoreType != block.BlockstoreTypeS3 {
 		t.Skip("Running on S3 only")
 	}
-
-	step := viper.GetViper().GetString("ugc_step")
-	switch step {
-	case "pre":
-		t.Run("pre", testPreUncommittedGC)
-	case "post":
-		t.Run("post", testPostUncommittedGC)
-	default:
-		t.Skip("No known value (pre/port) for ugc_step")
+	prepareForUncommittedGC(t)
+	submitConfig := &sparkSubmitConfig{
+		sparkVersion:    sparkImageTag,
+		localJar:        metaclientJarPath,
+		entryPoint:      "io.treeverse.gc.UncommittedGarbageCollector",
+		extraSubmitArgs: []string{"--conf", "spark.hadoop.lakefs.debug.gc.uncommitted_min_age_seconds=1"},
+		programArgs:     []string{uncommittedGCRepoName, "us-east-1"},
+		logSource:       "ugc",
 	}
+	testutil.MustDo(t, "run uncommitted GC", runSparkSubmit(submitConfig))
+	validateUncommittedGC(t)
+
 }
 
-func testPreUncommittedGC(t *testing.T) {
+func prepareForUncommittedGC(t *testing.T) {
 	ctx := context.Background()
 	repo := createRepositoryByName(ctx, t, uncommittedGCRepoName)
 	var gone []string
@@ -136,7 +139,7 @@ func objectPhysicalAddress(t *testing.T, ctx context.Context, repo, objPath stri
 	return resp.JSON200.PhysicalAddress
 }
 
-func testPostUncommittedGC(t *testing.T) {
+func validateUncommittedGC(t *testing.T) {
 	ctx := context.Background()
 	const repo = uncommittedGCRepoName
 
