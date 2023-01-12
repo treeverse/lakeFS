@@ -2663,15 +2663,24 @@ func TestController_ConfigHandlers(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
-	ExpectedExample := onBlock(deps, "example-bucket/")
-
 	t.Run("Get storage config", func(t *testing.T) {
+		ExpectedExample := onBlock(deps, "example-bucket/")
 		resp, err := clt.GetStorageConfigWithResponse(ctx)
 		verifyResponseOK(t, resp, err)
 
 		example := resp.JSON200.BlockstoreNamespaceExample
 		if example != ExpectedExample {
 			t.Errorf("expected to get %s, got %s", ExpectedExample, example)
+		}
+	})
+
+	t.Run("Get gc config", func(t *testing.T) {
+		expectedPeriod := int((6 * time.Hour).Seconds())
+		resp, err := clt.GetGarbageCollectionConfigWithResponse(ctx)
+		verifyResponseOK(t, resp, err)
+		period := resp.JSON200.GracePeriod
+		if *period != expectedPeriod {
+			t.Errorf("expected to get %d, got %d", expectedPeriod, period)
 		}
 	})
 }
