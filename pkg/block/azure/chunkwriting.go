@@ -71,7 +71,6 @@ func copyFromReader(ctx context.Context, from io.Reader, to blockWriter, o block
 			buffer = <-buffers.Acquire()
 		}
 		err = cp.sendChunk(buffer)
-		buffers.Release(buffer)
 		if err != nil {
 			break
 		}
@@ -139,17 +138,21 @@ func (c *copier) getErr() error {
 // sendChunk reads data from out internal reader, creates a chunk, and sends it to be written via a channel.
 // sendChunk returns io.EOF when the reader returns an io.EOF or io.ErrUnexpectedEOF.
 func (c *copier) sendChunk(buffer []byte) error {
+	// TODO(niro): Need to find a solution to all the buffers.Release
 	if err := c.getErr(); err != nil {
+		c.buffers.Release(buffer)
 		return err
 	}
 
 	if len(buffer) == 0 {
+		c.buffers.Release(buffer)
 		return ErrEmptyBuffer
 	}
 
 	n, err := io.ReadFull(c.reader, buffer)
 	switch {
 	case err == nil && n == 0:
+		c.buffers.Release(buffer)
 		return nil
 
 	case err == nil:
@@ -162,12 +165,14 @@ func (c *copier) sendChunk(buffer []byte) error {
 			// we MUST do this after attempting to write to errCh
 			// to avoid it racing with the reading goroutine.
 			defer c.wg.Done()
+			defer c.buffers.Release(buffer)
 			// Upload the outgoing block, matching the number of bytes read
 			c.write(copierChunk{buffer: buffer[0:n], id: nextID})
 		}(nextID)
 		return nil
 
 	case err != nil && (errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF)) && n == 0:
+		c.buffers.Release(buffer)
 		return io.EOF
 	}
 
@@ -176,20 +181,22 @@ func (c *copier) sendChunk(buffer []byte) error {
 		c.wg.Add(1)
 		go func(nextID string) {
 			defer c.wg.Done()
+			defer c.buffers.Release(buffer)
 			// Upload the outgoing block, matching the number of bytes read
 			c.write(copierChunk{buffer: buffer[0:n], id: nextID})
 		}(nextID)
 		return io.EOF
 	}
 	if err := c.getErr(); err != nil {
+		c.buffers.Release(buffer)
 		return err
 	}
+	c.buffers.Release(buffer)
 	return err
 }
 
 // write uploads a chunk to blob storage.
 func (c *copier) write(chunk copierChunk) {
-	// defer c.o.TransferManager.Put(chunk.buffer)
 	if err := c.ctx.Err(); err != nil {
 		return
 	}
