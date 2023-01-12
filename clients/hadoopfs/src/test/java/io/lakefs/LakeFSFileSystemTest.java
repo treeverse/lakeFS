@@ -821,13 +821,13 @@ public class LakeFSFileSystemTest {
     }
 
     private boolean dstPathLinkedToSrcPhysicalAddress(ObjectLocation srcObjLoc, ObjectLocation dstObjLoc) throws ApiException {
-        ArgumentCaptor<ObjectStageCreation> creationReqCapture = ArgumentCaptor.forClass(ObjectStageCreation.class);
-        verify(objectsApi).stageObject(eq(dstObjLoc.getRepository()), eq(dstObjLoc.getRef()), eq(dstObjLoc.getPath()),
+        ArgumentCaptor<ObjectCopyCreation> creationReqCapture = ArgumentCaptor.forClass(ObjectCopyCreation.class);
+        verify(objectsApi).copyObject(eq(dstObjLoc.getRepository()), eq(dstObjLoc.getRef()), eq(dstObjLoc.getPath()),
                 creationReqCapture.capture());
-        ObjectStageCreation actualCreationReq = creationReqCapture.getValue();
+        ObjectCopyCreation actualCreationReq = creationReqCapture.getValue();
         // Rename is a metadata operation, therefore the dst name is expected to link to the src physical address.
-        String expectedPhysicalAddress = s3Url(objectLocToS3ObjKey(srcObjLoc));
-        return expectedPhysicalAddress.equals(actualCreationReq.getPhysicalAddress());
+        return srcObjLoc.getRef().equals(actualCreationReq.getSrcRef()) &&
+                srcObjLoc.getPath().equals(actualCreationReq.getSrcPath());
     }
 
     /**
@@ -974,7 +974,7 @@ public class LakeFSFileSystemTest {
         boolean renamed = fs.rename(src, dst);
         Assert.assertFalse(renamed);
         Mockito.verify(objectsApi, never()).statObject(any(), any(), any(), any());
-        Mockito.verify(objectsApi, never()).stageObject(any(), any(), any(), any());
+        Mockito.verify(objectsApi, never()).copyObject(any(), any(), any(), any());
         Mockito.verify(objectsApi, never()).deleteObject(any(), any(), any());
     }
 
@@ -988,7 +988,7 @@ public class LakeFSFileSystemTest {
         boolean renamed = fs.rename(src, dst);
         Assert.assertTrue(renamed);
         Mockito.verify(objectsApi, never()).statObject(any(), any(), any(), any());
-        Mockito.verify(objectsApi, never()).stageObject(any(), any(), any(), any());
+        Mockito.verify(objectsApi, never()).copyObject(any(), any(), any(), any());
         Mockito.verify(objectsApi, never()).deleteObject(any(), any(), any());
     }
 
