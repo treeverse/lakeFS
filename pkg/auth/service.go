@@ -1212,7 +1212,7 @@ func (a *APIAuthService) CreateUser(ctx context.Context, user *model.User) (stri
 		return InvalidUserID, err
 	}
 
-	return fmt.Sprint(resp.JSON201.Id), nil
+	return resp.JSON201.Username, nil
 }
 
 func (a *APIAuthService) DeleteUser(ctx context.Context, username string) error {
@@ -1673,9 +1673,19 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 		}
 		credentials := resp.JSON200
 		// TODO(Guys): return username instead of this call
-		user, err := a.GetUserByID(ctx, model.ConvertDBID(credentials.UserId))
-		if err != nil {
-			return nil, err
+		var user *model.User
+		if credentials.UserName != nil {
+			user, err = a.GetUser(ctx, *credentials.UserName)
+			if err != nil {
+				return nil, err
+			}
+		} else if credentials.UserId != nil {
+			user, err = a.GetUserByID(ctx, model.ConvertDBID(*credentials.UserId))
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, ErrNotFound
 		}
 		return &model.Credential{
 			BaseCredential: model.BaseCredential{

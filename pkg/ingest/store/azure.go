@@ -10,7 +10,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
-	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/block/azure"
 )
 
@@ -54,7 +53,7 @@ func extractAzurePrefix(storageURI *url.URL) (*url.URL, string, error) {
 	if len(path) == 0 {
 		return nil, "", fmt.Errorf("%w: could not parse container URL: %s", ErrAzureInvalidURL, storageURI)
 	}
-	parts := strings.SplitN(path, "/", 2) //nolint: gomnd
+	parts := strings.SplitN(path, "/", 2) // nolint: gomnd
 	if len(parts) == 1 {
 		// we only have a container
 		return storageURI, "", nil
@@ -78,36 +77,33 @@ func (a *azureBlobWalker) Walk(_ context.Context, storageURI *url.URL, op WalkOp
 	qk, err := azure.ResolveBlobURLInfoFromURL(containerURL)
 	container := a.client.NewContainerClient(qk.ContainerName)
 
-	for marker := &op.ContinuationToken; marker != nil; {
-		listBlob := container.NewListBlobsFlatPager(&azblob.ListBlobsFlatOptions{
-			Prefix: &prefix,
-			Marker: marker,
-		})
+	listBlob := container.NewListBlobsFlatPager(&azblob.ListBlobsFlatOptions{
+		Prefix: &prefix,
+	})
 
-		for listBlob.More() {
-			resp, err := listBlob.NextPage(context.Background())
-			if err != nil {
+	for listBlob.More() {
+		resp, err := listBlob.NextPage(context.Background())
+		if err != nil {
+			return err
+		}
+
+		for _, blobInfo := range resp.Segment.BlobItems {
+			// skipping everything in the page which is before 'After' (without forgetting the possible empty string key!)
+			if op.After != "" && *blobInfo.Name <= op.After {
+				continue
+			}
+			a.mark.LastKey = *blobInfo.Name
+			if err := walkFn(ObjectStoreEntry{
+				FullKey:     *blobInfo.Name,
+				RelativeKey: strings.TrimPrefix(*blobInfo.Name, prefix),
+				Address:     getAzureBlobURL(containerURL, *blobInfo.Name).String(),
+				ETag:        string(*blobInfo.Properties.ETag),
+				Mtime:       *blobInfo.Properties.LastModified,
+				Size:        *blobInfo.Properties.ContentLength,
+			}); err != nil {
 				return err
 			}
-			a.mark.ContinuationToken = swag.StringValue(marker)
-			marker = resp.NextMarker
-			for _, blobInfo := range resp.Segment.BlobItems {
-				// skipping everything in the page which is before 'After' (without forgetting the possible empty string key!)
-				if op.After != "" && *blobInfo.Name <= op.After {
-					continue
-				}
-				a.mark.LastKey = *blobInfo.Name
-				if err := walkFn(ObjectStoreEntry{
-					FullKey:     *blobInfo.Name,
-					RelativeKey: strings.TrimPrefix(*blobInfo.Name, prefix),
-					Address:     getAzureBlobURL(containerURL, *blobInfo.Name).String(),
-					ETag:        string(*blobInfo.Properties.ETag),
-					Mtime:       *blobInfo.Properties.LastModified,
-					Size:        *blobInfo.Properties.ContentLength,
-				}); err != nil {
-					return err
-				}
-			}
+
 		}
 	}
 
