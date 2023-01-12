@@ -164,12 +164,12 @@ func newSubmitConfig(repo string, blockstoreType string, doMark *bool, doSweep *
 	extraSubmitArgs := make([]string, 0)
 	if doMark != nil && !*doMark {
 		extraSubmitArgs = append(extraSubmitArgs,
-			"--conf", "spark.hadoop.lakefs.gc.do_sweep=false",
+			"--conf", "spark.hadoop.lakefs.gc.do_mark=false",
 			"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker-%s", repo))
 	}
 	if doSweep != nil && !*doSweep {
 		extraSubmitArgs = append(extraSubmitArgs,
-			"--conf", "spark.hadoop.lakefs.gc.do_mark=false",
+			"--conf", "spark.hadoop.lakefs.gc.do_sweep=false",
 			"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker-%s", repo))
 	}
 	if blockstoreType == block.BlockstoreTypeAzure {
@@ -191,6 +191,7 @@ func newSubmitConfig(repo string, blockstoreType string, doMark *bool, doSweep *
 func TestCommittedGC(t *testing.T) {
 	SkipTestIfAskedTo(t)
 	blockstoreType := viper.GetViper().GetString("blockstore_type")
+	logger.Infof("Got blockstore type %s", blockstoreType)
 	ctx := context.Background()
 	for _, tst := range testCases {
 		tst := tst // re-define tst to be in the scope of the closure. See: https://gist.github.com/posener/92a55c4cd441fc5e5e85f27bca008721

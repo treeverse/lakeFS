@@ -93,5 +93,6 @@ func runSparkSubmit(config *sparkSubmitConfig) error {
 	args = append(args, "/opt/metaclient/client.jar")
 	args = append(args, config.programArgs...)
 	cmd := exec.Command("docker", args...)
+	logger.Infof("Running command: %s", cmd.String())
 	return runCommand(config.logSource, cmd)
 }
