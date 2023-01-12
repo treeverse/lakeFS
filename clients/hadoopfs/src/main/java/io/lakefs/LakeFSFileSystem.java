@@ -440,16 +440,15 @@ public class LakeFSFileSystem extends FileSystem {
 
         ObjectsApi objects = lfsClient.getObjects();
         //TODO (Tals): Can we add metadata? we currently don't have an API to get the metadata of an object.
-        ObjectStageCreation creationReq = new ObjectStageCreation()
-                .checksum(srcStatus.getChecksum())
-                .sizeBytes(srcStatus.getLen())
-                .physicalAddress(srcStatus.getPhysicalAddress());
+        ObjectCopyCreation creationReq = new ObjectCopyCreation()
+                .srcRef(srcObjectLoc.getRef())
+                .srcPath(srcObjectLoc.getPath());
 
         try {
-            objects.stageObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
+            objects.copyObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
                     creationReq);
         } catch (ApiException e) {
-            throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst + ", failed to stage object", e);
+            throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst + ", failed to copy object", e);
         }
 
         // delete src path
