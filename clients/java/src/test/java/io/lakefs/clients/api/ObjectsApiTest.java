@@ -16,6 +16,7 @@ package io.lakefs.clients.api;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
 import java.io.File;
+import io.lakefs.clients.api.model.ObjectCopyCreation;
 import io.lakefs.clients.api.model.ObjectErrorList;
 import io.lakefs.clients.api.model.ObjectStageCreation;
 import io.lakefs.clients.api.model.ObjectStats;
@@ -38,6 +39,24 @@ public class ObjectsApiTest {
 
     private final ObjectsApi api = new ObjectsApi();
 
+    
+    /**
+     * create a copy of an object
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void copyObjectTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        String destPath = null;
+        ObjectCopyCreation objectCopyCreation = null;
+                ObjectStats response = api.copyObject(repository, branch, destPath, objectCopyCreation);
+        // TODO: test validations
+    }
     
     /**
      * delete object. Missing objects will not return a NotFound error.
@@ -87,7 +106,8 @@ public class ObjectsApiTest {
         String ref = null;
         String path = null;
         String range = null;
-                File response = api.getObject(repository, ref, path, range);
+        Boolean presign = null;
+                File response = api.getObject(repository, ref, path, range, presign);
         // TODO: test validations
     }
     
@@ -139,11 +159,12 @@ public class ObjectsApiTest {
         String repository = null;
         String ref = null;
         Boolean userMetadata = null;
+        Boolean presign = null;
         String after = null;
         Integer amount = null;
         String delimiter = null;
         String prefix = null;
-                ObjectStatsList response = api.listObjects(repository, ref, userMetadata, after, amount, delimiter, prefix);
+                ObjectStatsList response = api.listObjects(repository, ref, userMetadata, presign, after, amount, delimiter, prefix);
         // TODO: test validations
     }
     
@@ -179,7 +200,8 @@ public class ObjectsApiTest {
         String ref = null;
         String path = null;
         Boolean userMetadata = null;
-                ObjectStats response = api.statObject(repository, ref, path, userMetadata);
+        Boolean presign = null;
+                ObjectStats response = api.statObject(repository, ref, path, userMetadata, presign);
         // TODO: test validations
     }
     

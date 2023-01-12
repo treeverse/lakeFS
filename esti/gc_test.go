@@ -1,19 +1,15 @@
 package esti
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"io"
-	"os"
-	"os/exec"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 type GCMode int
@@ -163,6 +159,17 @@ var testCases = []testCase{
 	},
 }
 
+func newSubmitConfig(repo string, extraSubmitArgs ...string) *sparkSubmitConfig {
+	return &sparkSubmitConfig{
+		sparkVersion:    sparkImageTag,
+		localJar:        metaclientJarPath,
+		entryPoint:      "io.treeverse.clients.GarbageCollector",
+		extraSubmitArgs: extraSubmitArgs,
+		programArgs:     []string{repo, "us-east-1"},
+		logSource:       fmt.Sprintf("gc-%s", repo),
+	}
+}
+
 func TestCommittedGC(t *testing.T) {
 	SkipTestIfAskedTo(t)
 	blockstoreType := viper.GetViper().GetString("blockstore_type")
@@ -179,15 +186,19 @@ func TestCommittedGC(t *testing.T) {
 			t.Logf("fileExistingRef %s", fileExistingRef)
 			repo := committedGCRepoName + tst.id
 			if tst.testMode == sweepOnlyMode || tst.testMode == markOnlyMode {
-				runGC(t, repo, "--conf", "spark.hadoop.lakefs.gc.do_sweep=false",
+				submitConfig := newSubmitConfig(repo,
+					"--conf", "spark.hadoop.lakefs.gc.do_sweep=false",
 					"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker%s", tst.id))
+				testutil.MustDo(t, "run GC with do_sweep=false", runSparkSubmit(submitConfig))
 			}
 			if tst.testMode == sweepOnlyMode {
-				runGC(t, repo, "--conf", "spark.hadoop.lakefs.gc.do_mark=false",
+				submitConfig := newSubmitConfig(repo,
+					"--conf", "spark.hadoop.lakefs.gc.do_mark=false",
 					"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker%s", tst.id))
+				testutil.MustDo(t, "run GC with do_mark=false", runSparkSubmit(submitConfig))
 			}
 			if tst.testMode == fullGCMode {
-				runGC(t, repo)
+				testutil.MustDo(t, "run GC", runSparkSubmit(newSubmitConfig(repo)))
 			}
 			validateGCJob(t, ctx, &tst, fileExistingRef)
 		})
@@ -265,46 +276,6 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase *testCase, blockst
 	return commitId
 }
 
-func getSparkSubmitArgs() []string {
-	return []string{
-		"--master", "spark://localhost:7077",
-		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp",
-		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1",
-		"--conf", "spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ",
-		"--conf", "spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-		"--class", "io.treeverse.clients.GarbageCollector",
-	}
-}
-
-func getDockerArgs(workingDirectory string) []string {
-	return []string{"run", "--network", "host", "--add-host", "lakefs:127.0.0.1",
-		"-v", fmt.Sprintf("%s/ivy:/opt/bitnami/spark/.ivy2", workingDirectory),
-		"-v", fmt.Sprintf("%s:/opt/metaclient/client.jar", metaclientJarPath),
-		"--rm",
-		"-e", "AWS_ACCESS_KEY_ID",
-		"-e", "AWS_SECRET_ACCESS_KEY",
-	}
-}
-
-func runGC(t *testing.T, repo string, extraSparkArgs ...string) {
-	workingDirectory, err := os.Getwd()
-	if err != nil {
-		t.Fatal("Failed getting working directory: ", err)
-	}
-	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
-	dockerArgs := getDockerArgs(workingDirectory)
-	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/bitnami/spark:%s", sparkImageTag), "spark-submit")
-	sparkSubmitArgs := getSparkSubmitArgs()
-	sparkSubmitArgs = append(sparkSubmitArgs, extraSparkArgs...)
-	args := append(dockerArgs, sparkSubmitArgs...)
-	args = append(args, "/opt/metaclient/client.jar", repo, "us-east-1")
-	cmd := exec.Command("docker", args...)
-	err = runCommand(fmt.Sprintf("gc-%s", repo), cmd)
-	if err != nil {
-		t.Fatal("Running GC: ", err)
-	}
-}
-
 func validateGCJob(t *testing.T, ctx context.Context, testCase *testCase, existingRef string) {
 	repo := committedGCRepoName + testCase.id
 
@@ -323,42 +294,4 @@ func validateGCJob(t *testing.T, ctx context.Context, testCase *testCase, existi
 			t.Errorf("expected '%s' to exist. Test case '%s', Test description '%s'", location, testCase.id, testCase.description)
 		}
 	}
-}
-
-// runCommand runs the given command. It redirects the output of the command:
-// 1. stdout is redirected to the logger.
-// 2. stderr is simply printed out.
-func runCommand(cmdName string, cmd *exec.Cmd) error {
-	handlePipe := func(pipe io.ReadCloser, log func(format string, args ...interface{})) {
-		reader := bufio.NewReader(pipe)
-		go func() {
-			defer func() {
-				_ = pipe.Close()
-			}()
-			for {
-				str, err := reader.ReadString('\n')
-				if err != nil {
-					break
-				}
-				log(strings.TrimSuffix(str, "\n"))
-			}
-		}()
-	}
-	stdoutPipe, err := cmd.StdoutPipe()
-	if err != nil {
-		return fmt.Errorf("failed to get stdout from command: %w", err)
-	}
-	stderrPipe, err := cmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("failed to get stderr from command: %w", err)
-	}
-	handlePipe(stdoutPipe, logger.WithField("source", cmdName).Infof)
-	handlePipe(stderrPipe, func(format string, args ...interface{}) {
-		println(format, args)
-	})
-	err = cmd.Start()
-	if err != nil {
-		return err
-	}
-	return cmd.Wait()
 }

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
-
 	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/treeverse/lakefs/pkg/block/factory"
@@ -140,7 +139,7 @@ func (f *walkerFactory) buildAzureWalker() (*azureBlobWalker, error) {
 		if err != nil {
 			return nil, err
 		}
-		p, err = factory.BuildAzureServiceClient(azureParams)
+		p, _, err = factory.BuildAzureServiceClient(azureParams)
 		if err != nil {
 			return nil, err
 		}

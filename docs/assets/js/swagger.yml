@@ -274,6 +274,18 @@ components:
           items:
             $ref: "#/components/schemas/ObjectStats"
 
+    ObjectCopyCreation:
+      type: object
+      required:
+        - src_path
+      properties:
+        src_path:
+          type: string
+          description: path of the copied object relative to the ref
+        src_ref:
+          type: string
+          description: a reference, if empty uses the provided branch as ref
+
     ObjectStageCreation:
       type: object
       required:
@@ -953,6 +965,11 @@ components:
         token:
           type: string
           description: opaque staging token to use to link uploaded object
+        presigned_url:
+          type: string
+          nullable: true
+          description: if presign=true is passed in the request, this field will contain a presigned URL to use when uploading
+
 
     StagingMetadata:
       type: object
@@ -2761,6 +2778,11 @@ paths:
           schema:
             type: string
             pattern: '^bytes=((\d*-\d*,? ?)+)$'
+        - in: query
+          name: presign
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: object content
@@ -2800,6 +2822,12 @@ paths:
               schema:
                 type: string
             ETag:
+              schema:
+                type: string
+        302:
+          description: Redirect to a pre-signed URL for the object
+          headers:
+            Location:
               schema:
                 type: string
         401:
@@ -2899,6 +2927,12 @@ paths:
         - staging
       operationId: getPhysicalAddress
       summary: get a physical address and a return token to write object to underlying storage
+      parameters:
+        - in: query
+          name: presign
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: physical address for staging area
@@ -3169,6 +3203,52 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /repositories/{repository}/branches/{branch}/objects/copy:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        description: destination branch for the copy
+      - in: query
+        name: dest_path
+        description: destination path relative to the branch
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - objects
+      operationId: copyObject
+      summary: create a copy of an object
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjectCopyCreation"
+      responses:
+        201:
+          description: Copy object response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectStats"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /repositories/{repository}/refs/{ref}/objects/stat:
     parameters:
       - in: path
@@ -3194,6 +3274,11 @@ paths:
         schema:
           type: boolean
           default: true
+      - in: query
+        name: presign
+        required: false
+        schema:
+          type: boolean
     get:
       tags:
         - objects
@@ -3272,6 +3357,11 @@ paths:
         schema:
           type: boolean
           default: true
+      - in: query
+        name: presign
+        required: false
+        schema:
+          type: boolean
       - $ref: "#/components/parameters/PaginationAfter"
       - $ref: "#/components/parameters/PaginationAmount"
       - $ref: "#/components/parameters/PaginationDelimiter"
@@ -3313,6 +3403,11 @@ paths:
         schema:
           type: string
         description: path to the table data
+      - in: query
+        name: presign
+        required: false
+        schema:
+          type: boolean
     post:
       tags:
         - metadata

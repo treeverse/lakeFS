@@ -147,18 +147,19 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 }
 
 func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
-	p, err := BuildAzureServiceClient(params)
+	p, credentials, err := BuildAzureServiceClient(params)
 	if err != nil {
 		return nil, err
 	}
-	return azure.NewAdapter(*p), nil
+	return azure.NewAdapter(*p, credentials), nil
 }
 
-func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
+func BuildAzureServiceClient(params params.Azure) (*service.Client, azblob.Credential, error) {
 	cred, err := azblob.NewSharedKeyCredential(params.StorageAccount, params.StorageAccessKey)
 	if err != nil {
-		return nil, err
+		return nil, nil, fmt.Errorf("invalid credentials: %w", err)
 	}
 	url := fmt.Sprintf(azure.AzURLTemplate, params.StorageAccount)
-	return service.NewClientWithSharedKeyCredential(url, cred, nil)
+	client, err := service.NewClientWithSharedKeyCredential(url, cred, nil)
+	return client, cred, nil
 }

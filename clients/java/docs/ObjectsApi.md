@@ -4,6 +4,7 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**copyObject**](ObjectsApi.md#copyObject) | **POST** /repositories/{repository}/branches/{branch}/objects/copy | create a copy of an object
 [**deleteObject**](ObjectsApi.md#deleteObject) | **DELETE** /repositories/{repository}/branches/{branch}/objects | delete object. Missing objects will not return a NotFound error.
 [**deleteObjects**](ObjectsApi.md#deleteObjects) | **POST** /repositories/{repository}/branches/{branch}/objects/delete | delete objects. Missing objects will not return a NotFound error.
 [**getObject**](ObjectsApi.md#getObject) | **GET** /repositories/{repository}/refs/{ref}/objects | get object content
@@ -14,6 +15,98 @@ Method | HTTP request | Description
 [**statObject**](ObjectsApi.md#statObject) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
 [**uploadObject**](ObjectsApi.md#uploadObject) | **POST** /repositories/{repository}/branches/{branch}/objects | 
 
+
+<a name="copyObject"></a>
+# **copyObject**
+> ObjectStats copyObject(repository, branch, destPath, objectCopyCreation)
+
+create a copy of an object
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.ObjectsApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+    
+    // Configure HTTP basic authorization: basic_auth
+    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
+    basic_auth.setUsername("YOUR USERNAME");
+    basic_auth.setPassword("YOUR PASSWORD");
+
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
+    // Configure API key authorization: oidc_auth
+    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
+    oidc_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //oidc_auth.setApiKeyPrefix("Token");
+
+    ObjectsApi apiInstance = new ObjectsApi(defaultClient);
+    String repository = "repository_example"; // String | 
+    String branch = "branch_example"; // String | destination branch for the copy
+    String destPath = "destPath_example"; // String | destination path relative to the branch
+    ObjectCopyCreation objectCopyCreation = new ObjectCopyCreation(); // ObjectCopyCreation | 
+    try {
+      ObjectStats result = apiInstance.copyObject(repository, branch, destPath, objectCopyCreation);
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ObjectsApi#copyObject");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **String**|  |
+ **branch** | **String**| destination branch for the copy |
+ **destPath** | **String**| destination path relative to the branch |
+ **objectCopyCreation** | [**ObjectCopyCreation**](ObjectCopyCreation.md)|  |
+
+### Return type
+
+[**ObjectStats**](ObjectStats.md)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**201** | Copy object response |  -  |
+**400** | Validation Error |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**0** | Internal Server Error |  -  |
 
 <a name="deleteObject"></a>
 # **deleteObject**
@@ -194,7 +287,7 @@ Name | Type | Description  | Notes
 
 <a name="getObject"></a>
 # **getObject**
-> File getObject(repository, ref, path, range)
+> File getObject(repository, ref, path, range, presign)
 
 get object content
 
@@ -239,8 +332,9 @@ public class Example {
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
     String path = "path_example"; // String | relative to the ref
     String range = "bytes=0-1023"; // String | Byte range to retrieve
+    Boolean presign = true; // Boolean | 
     try {
-      File result = apiInstance.getObject(repository, ref, path, range);
+      File result = apiInstance.getObject(repository, ref, path, range, presign);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#getObject");
@@ -261,6 +355,7 @@ Name | Type | Description  | Notes
  **ref** | **String**| a reference (could be either a branch or a commit ID) |
  **path** | **String**| relative to the ref |
  **range** | **String**| Byte range to retrieve | [optional]
+ **presign** | **Boolean**|  | [optional]
 
 ### Return type
 
@@ -280,6 +375,7 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | object content |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
 **206** | partial object content |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
+**302** | Redirect to a pre-signed URL for the object |  * Location - redirect to S3 <br>  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **410** | object expired |  -  |
@@ -470,7 +566,7 @@ null (empty response body)
 
 <a name="listObjects"></a>
 # **listObjects**
-> ObjectStatsList listObjects(repository, ref, userMetadata, after, amount, delimiter, prefix)
+> ObjectStatsList listObjects(repository, ref, userMetadata, presign, after, amount, delimiter, prefix)
 
 list objects under a given prefix
 
@@ -514,12 +610,13 @@ public class Example {
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
     Boolean userMetadata = true; // Boolean | 
+    Boolean presign = true; // Boolean | 
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
     String delimiter = "delimiter_example"; // String | delimiter used to group common prefixes by
     String prefix = "prefix_example"; // String | return items prefixed with this value
     try {
-      ObjectStatsList result = apiInstance.listObjects(repository, ref, userMetadata, after, amount, delimiter, prefix);
+      ObjectStatsList result = apiInstance.listObjects(repository, ref, userMetadata, presign, after, amount, delimiter, prefix);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#listObjects");
@@ -539,6 +636,7 @@ Name | Type | Description  | Notes
  **repository** | **String**|  |
  **ref** | **String**| a reference (could be either a branch or a commit ID) |
  **userMetadata** | **Boolean**|  | [optional] [default to true]
+ **presign** | **Boolean**|  | [optional]
  **after** | **String**| return items after this value | [optional]
  **amount** | **Integer**| how many items to return | [optional] [default to 100]
  **delimiter** | **String**| delimiter used to group common prefixes by | [optional]
@@ -659,7 +757,7 @@ Name | Type | Description  | Notes
 
 <a name="statObject"></a>
 # **statObject**
-> ObjectStats statObject(repository, ref, path, userMetadata)
+> ObjectStats statObject(repository, ref, path, userMetadata, presign)
 
 get object metadata
 
@@ -704,8 +802,9 @@ public class Example {
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
     String path = "path_example"; // String | relative to the branch
     Boolean userMetadata = true; // Boolean | 
+    Boolean presign = true; // Boolean | 
     try {
-      ObjectStats result = apiInstance.statObject(repository, ref, path, userMetadata);
+      ObjectStats result = apiInstance.statObject(repository, ref, path, userMetadata, presign);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#statObject");
@@ -726,6 +825,7 @@ Name | Type | Description  | Notes
  **ref** | **String**| a reference (could be either a branch or a commit ID) |
  **path** | **String**| relative to the branch |
  **userMetadata** | **Boolean**|  | [optional] [default to true]
+ **presign** | **Boolean**|  | [optional]
 
 ### Return type
 

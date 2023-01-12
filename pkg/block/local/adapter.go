@@ -58,6 +58,10 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 	return localAdapter, nil
 }
 
+func (l *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+	return "", fmt.Errorf("local adapter: %w", block.ErrOperationNotSupported)
+}
+
 func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier, obj.IdentifierType)
 	if err != nil {

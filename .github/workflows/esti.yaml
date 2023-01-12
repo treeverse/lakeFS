@@ -224,6 +224,9 @@ jobs:
           SPARK_RPC_ENCRYPTION_ENABLED: no
           SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
           SPARK_SSL_ENABLED: no
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
         ports:
           - '8080:8080'
           - '7077:7077'
@@ -239,7 +242,9 @@ jobs:
           SPARK_RPC_ENCRYPTION_ENABLED: no
           SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
           SPARK_SSL_ENABLED: no
-
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
@@ -271,53 +276,20 @@ jobs:
         shell: bash
         run: tar -xf /tmp/generated.tar.gz
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: us-east-1
-
-      - name: Uncommitted gc pre test
-        run: go test -v ./esti -system-tests -use-local-credentials -run=TestUncommittedGC
+      - name: Uncommitted GC test
+        run: |
+          go test -timeout 30m -v ./esti \
+            -system-tests -use-local-credentials -run=TestUncommittedGC \
+            -spark-image-tag=3.2 \
+            -metaclient-jar=$(pwd)/test/spark/metaclient/spark-assembly.jar
         env:
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/ugc/${{ steps.unique.outputs.value }}
-          ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           ESTI_VERSION: ${{ steps.version.outputs.tag }}
           ESTI_SETUP_LAKEFS: true
-          ESTI_UGC_STEP: pre
-
-      - name: Run uncommitted gc
-        run: >
-          docker run --network host --add-host lakefs:127.0.0.1 -v $(pwd)/test/spark/metaclient/:/local -v $(pwd)/ivy:/opt/bitnami/spark/.ivy2 --rm docker.io/bitnami/spark:3.2 spark-submit
-          --master spark://localhost:7077
-          --conf spark.driver.extraJavaOptions="-Divy.cache.dir=/tmp -Divy.home=/tmp"
-          --conf spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1
-          --conf spark.hadoop.fs.s3.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
-          --conf spark.hadoop.fs.s3a.access.key=${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          --conf spark.hadoop.fs.s3a.secret.key=${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          --conf spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ
-          --conf spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-          --conf spark.hadoop.lakefs.debug.gc.uncommitted_min_age_seconds=1
-          --conf spark.hadoop.lakefs.gc.do_mark=true
-          --conf spark.hadoop.lakefs.gc.do_sweep=true
-          --class io.treeverse.gc.UncommittedGarbageCollector
-          --packages org.apache.hadoop:hadoop-aws:2.7.7
-          /local/spark-assembly.jar
-          ugc us-east-1
-
-      - name: Uncommitted gc post test
-        run: go test -v ./esti -system-tests -use-local-credentials -run=TestUncommittedGC
-        env:
-          ESTI_BLOCKSTORE_TYPE: s3
-          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/ugc/${{ steps.unique.outputs.value }}
-          ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          ESTI_VERSION: ${{ steps.version.outputs.tag }}
-          ESTI_SETUP_LAKEFS: false
-          ESTI_UGC_STEP: post
-
 
   committed-gc-test:
     name: Test committed gc

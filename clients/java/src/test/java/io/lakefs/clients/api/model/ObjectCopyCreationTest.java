@@ -21,48 +21,39 @@ import com.google.gson.stream.JsonWriter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
-import org.openapitools.jackson.nullable.JsonNullable;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
 
 /**
- * Model tests for StagingLocation
+ * Model tests for ObjectCopyCreation
  */
-public class StagingLocationTest {
-    private final StagingLocation model = new StagingLocation();
+public class ObjectCopyCreationTest {
+    private final ObjectCopyCreation model = new ObjectCopyCreation();
 
     /**
-     * Model tests for StagingLocation
+     * Model tests for ObjectCopyCreation
      */
     @Test
-    public void testStagingLocation() {
-        // TODO: test StagingLocation
+    public void testObjectCopyCreation() {
+        // TODO: test ObjectCopyCreation
     }
 
     /**
-     * Test the property 'physicalAddress'
+     * Test the property 'srcPath'
      */
     @Test
-    public void physicalAddressTest() {
-        // TODO: test physicalAddress
+    public void srcPathTest() {
+        // TODO: test srcPath
     }
 
     /**
-     * Test the property 'token'
+     * Test the property 'srcRef'
      */
     @Test
-    public void tokenTest() {
-        // TODO: test token
-    }
-
-    /**
-     * Test the property 'presignedUrl'
-     */
-    @Test
-    public void presignedUrlTest() {
-        // TODO: test presignedUrl
+    public void srcRefTest() {
+        // TODO: test srcRef
     }
 
 }

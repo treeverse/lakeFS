@@ -34,6 +34,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -339,6 +340,21 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		PhysicalAddress: StringPtr(qk.Format()),
 		Token:           StringValue(token),
 	}
+
+	if swag.BoolValue(params.Presign) {
+		// generate a pre-signed PUT url for the given request
+		preSignedURL, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+			StorageNamespace: repo.StorageNamespace,
+			Identifier:       address,
+			IdentifierType:   block.IdentifierTypeRelative,
+		}, block.PreSignModeWrite)
+		if err != nil {
+			writeError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+		response.PresignedUrl = &preSignedURL
+	}
+
 	writeResponse(w, r, http.StatusOK, response)
 }
 
@@ -1828,12 +1844,13 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
 		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
+		errors.Is(err, graveler.ErrInvalidValue),
+		errors.Is(err, catalog.ErrPathRequiredValue),
 		errors.Is(err, graveler.ErrNoChanges),
 		errors.Is(err, permissions.ErrInvalidServiceName),
 		errors.Is(err, permissions.ErrInvalidAction),
 		errors.Is(err, model.ErrValidationError),
 		errors.Is(err, graveler.ErrInvalidRef),
-		errors.Is(err, graveler.ErrInvalidValue),
 		errors.Is(err, actions.ErrParamConflict),
 		errors.Is(err, graveler.ErrDereferenceCommitWithStaging):
 		cb(w, r, http.StatusBadRequest, err)
@@ -2304,6 +2321,86 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
+	response := ObjectStats{
+		Checksum:        entry.Checksum,
+		Mtime:           entry.CreationDate.Unix(),
+		Path:            entry.Path,
+		PathType:        entryTypeObject,
+		PhysicalAddress: qk.Format(),
+		SizeBytes:       Int64Ptr(entry.Size),
+		ContentType:     &entry.ContentType,
+	}
+	writeResponse(w, r, http.StatusCreated, response)
+}
+
+func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body CopyObjectJSONRequestBody, repository string, branch string, params CopyObjectParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadActionsAction,
+					Resource: permissions.ObjectArn(repository, params.DestPath),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.WriteObjectAction,
+					Resource: permissions.ObjectArn(repository, body.SrcPath),
+				},
+			},
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "copy_object", r, repository, branch, params.DestPath)
+
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	ref := branch
+	if body.SrcRef != nil {
+		ref = *body.SrcRef
+	}
+
+	// TODO (niro): Naive copy object flow - real implementation still missing (https://github.com/treeverse/lakeFS/issues/4477)
+	src, err := c.Catalog.GetEntry(ctx, repository, ref, body.SrcPath, catalog.GetEntryParams{})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	destAddress := c.PathProvider.NewPath()
+	blob, err := upload.CopyBlob(ctx, c.BlockAdapter, repo.StorageNamespace, repo.StorageNamespace, src.PhysicalAddress, src.Checksum, destAddress, src.Size)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	writeTime := time.Now()
+	entryBuilder := catalog.NewDBEntryBuilder().
+		CommonLevel(false).
+		Path(params.DestPath).
+		PhysicalAddress(blob.PhysicalAddress).
+		AddressType(catalog.AddressTypeRelative).
+		CreationDate(writeTime).
+		Size(blob.Size).
+		Checksum(blob.Checksum).
+		ContentType(src.ContentType)
+	entry := entryBuilder.Build()
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress, block.IdentifierTypeRelative)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	w.Header().Set("X-lakeFS-Copy-Type", "full") // update with the real implementation
+	// TODO: end of TODO
+
 	response := ObjectStats{
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
@@ -3002,9 +3099,20 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		return
 	}
 
+	// if pre-sign, return a redirect
+	pointer := block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}
+	if swag.BoolValue(params.Presign) {
+		location, err := c.BlockAdapter.GetPreSignedURL(ctx, pointer, block.PreSignModeRead)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		w.Header().Set("Location", location)
+		w.WriteHeader(http.StatusFound)
+		return
+	}
+
 	// setup response
 	var reader io.ReadCloser
-	pointer := block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}
 
 	// handle partial response if byte range supplied
 	if params.Range != nil {
@@ -3061,6 +3169,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 		return
 	}
 	ctx := r.Context()
+	user, _ := auth.GetUser(ctx)
 	c.LogAction(ctx, "list_objects", r, repository, ref, "")
 
 	res, hasMore, err := c.Catalog.ListEntries(
@@ -3111,6 +3220,31 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 			if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
 				objStat.Metadata = &ObjectUserMetadata{AdditionalProperties: entry.Metadata}
 			}
+			if swag.BoolValue(params.Presign) {
+				// check if the user has read permissions for this object
+				authResponse, err := c.Auth.Authorize(ctx, &auth.AuthorizationRequest{
+					Username: user.Username,
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
+							Action:   permissions.ReadObjectAction,
+							Resource: permissions.ObjectArn(repository, entry.Path),
+						},
+					},
+				})
+				if c.handleAPIError(ctx, w, r, err) {
+					return
+				}
+				if authResponse.Allowed {
+					objStat.PhysicalAddress, err = c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+						StorageNamespace: repo.StorageNamespace,
+						Identifier:       entry.PhysicalAddress,
+						IdentifierType:   entry.AddressType.ToIdentifierType(),
+					}, block.PreSignModeRead)
+					if c.handleAPIError(ctx, w, r, err) {
+						return
+					}
+				}
+			}
 			objList = append(objList, objStat)
 		}
 	}
@@ -3159,7 +3293,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 	objStat := ObjectStats{
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
-		Path:            params.Path,
+		Path:            entry.Path,
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
@@ -3171,6 +3305,17 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 	code := http.StatusOK
 	if entry.Expired {
 		code = http.StatusGone
+	} else if swag.BoolValue(params.Presign) {
+		// need to pre-sign the physical address
+		preSignedURL, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+			StorageNamespace: repo.StorageNamespace,
+			Identifier:       entry.PhysicalAddress,
+			IdentifierType:   entry.AddressType.ToIdentifierType(),
+		}, block.PreSignModeRead)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		objStat.PhysicalAddress = preSignedURL
 	}
 	writeResponse(w, r, code, objStat)
 }
@@ -3643,6 +3788,19 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		UpgradeRecommended: upgradeRecommended,
 		UpgradeUrl:         upgradeURL,
 		Version:            swag.String(version.Version),
+	})
+}
+
+func (c *Controller) GetGarbageCollectionConfig(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	_, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+
+	writeResponse(w, r, http.StatusOK, GarbageCollectionConfig{
+		GracePeriod: aws.Int(int(ref.LinkAddressTime.Seconds())),
 	})
 }
 

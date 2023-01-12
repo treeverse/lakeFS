@@ -62,6 +62,7 @@ public class StagingApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param path relative to the branch (required)
+     * @param presign  (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -74,7 +75,7 @@ public class StagingApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call getPhysicalAddressCall(String repository, String branch, String path, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call getPhysicalAddressCall(String repository, String branch, String path, Boolean presign, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -90,6 +91,10 @@ public class StagingApi {
 
         if (path != null) {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("path", path));
+        }
+
+        if (presign != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("presign", presign));
         }
 
         final String[] localVarAccepts = {
@@ -111,7 +116,7 @@ public class StagingApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call getPhysicalAddressValidateBeforeCall(String repository, String branch, String path, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call getPhysicalAddressValidateBeforeCall(String repository, String branch, String path, Boolean presign, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -129,7 +134,7 @@ public class StagingApi {
         }
         
 
-        okhttp3.Call localVarCall = getPhysicalAddressCall(repository, branch, path, _callback);
+        okhttp3.Call localVarCall = getPhysicalAddressCall(repository, branch, path, presign, _callback);
         return localVarCall;
 
     }
@@ -140,6 +145,7 @@ public class StagingApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param path relative to the branch (required)
+     * @param presign  (optional)
      * @return StagingLocation
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -151,8 +157,8 @@ public class StagingApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public StagingLocation getPhysicalAddress(String repository, String branch, String path) throws ApiException {
-        ApiResponse<StagingLocation> localVarResp = getPhysicalAddressWithHttpInfo(repository, branch, path);
+    public StagingLocation getPhysicalAddress(String repository, String branch, String path, Boolean presign) throws ApiException {
+        ApiResponse<StagingLocation> localVarResp = getPhysicalAddressWithHttpInfo(repository, branch, path, presign);
         return localVarResp.getData();
     }
 
@@ -162,6 +168,7 @@ public class StagingApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param path relative to the branch (required)
+     * @param presign  (optional)
      * @return ApiResponse&lt;StagingLocation&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -173,8 +180,8 @@ public class StagingApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<StagingLocation> getPhysicalAddressWithHttpInfo(String repository, String branch, String path) throws ApiException {
-        okhttp3.Call localVarCall = getPhysicalAddressValidateBeforeCall(repository, branch, path, null);
+    public ApiResponse<StagingLocation> getPhysicalAddressWithHttpInfo(String repository, String branch, String path, Boolean presign) throws ApiException {
+        okhttp3.Call localVarCall = getPhysicalAddressValidateBeforeCall(repository, branch, path, presign, null);
         Type localVarReturnType = new TypeToken<StagingLocation>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -185,6 +192,7 @@ public class StagingApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param path relative to the branch (required)
+     * @param presign  (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -197,9 +205,9 @@ public class StagingApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call getPhysicalAddressAsync(String repository, String branch, String path, final ApiCallback<StagingLocation> _callback) throws ApiException {
+    public okhttp3.Call getPhysicalAddressAsync(String repository, String branch, String path, Boolean presign, final ApiCallback<StagingLocation> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = getPhysicalAddressValidateBeforeCall(repository, branch, path, _callback);
+        okhttp3.Call localVarCall = getPhysicalAddressValidateBeforeCall(repository, branch, path, presign, _callback);
         Type localVarReturnType = new TypeToken<StagingLocation>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

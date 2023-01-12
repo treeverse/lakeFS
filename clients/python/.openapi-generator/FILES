@@ -25,6 +25,7 @@ docs/Diff.md
 docs/DiffList.md
 docs/Error.md
 docs/ForgotPasswordRequest.md
+docs/GarbageCollectionConfig.md
 docs/GarbageCollectionPrepareRequest.md
 docs/GarbageCollectionPrepareResponse.md
 docs/GarbageCollectionRule.md
@@ -47,6 +48,7 @@ docs/MetaRangeCreation.md
 docs/MetaRangeCreationResponse.md
 docs/MetadataApi.md
 docs/NextStep.md
+docs/ObjectCopyCreation.md
 docs/ObjectError.md
 docs/ObjectErrorList.md
 docs/ObjectStageCreation.md
@@ -135,6 +137,7 @@ lakefs_client/model/diff.py
 lakefs_client/model/diff_list.py
 lakefs_client/model/error.py
 lakefs_client/model/forgot_password_request.py
+lakefs_client/model/garbage_collection_config.py
 lakefs_client/model/garbage_collection_prepare_request.py
 lakefs_client/model/garbage_collection_prepare_response.py
 lakefs_client/model/garbage_collection_rule.py
@@ -154,6 +157,7 @@ lakefs_client/model/merge_result_summary.py
 lakefs_client/model/meta_range_creation.py
 lakefs_client/model/meta_range_creation_response.py
 lakefs_client/model/next_step.py
+lakefs_client/model/object_copy_creation.py
 lakefs_client/model/object_error.py
 lakefs_client/model/object_error_list.py
 lakefs_client/model/object_stage_creation.py
@@ -224,6 +228,7 @@ test/test_diff.py
 test/test_diff_list.py
 test/test_error.py
 test/test_forgot_password_request.py
+test/test_garbage_collection_config.py
 test/test_garbage_collection_prepare_request.py
 test/test_garbage_collection_prepare_response.py
 test/test_garbage_collection_rule.py
@@ -246,6 +251,7 @@ test/test_meta_range_creation.py
 test/test_meta_range_creation_response.py
 test/test_metadata_api.py
 test/test_next_step.py
+test/test_object_copy_creation.py
 test/test_object_error.py
 test/test_object_error_list.py
 test/test_object_stage_creation.py
