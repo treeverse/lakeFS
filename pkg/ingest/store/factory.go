@@ -139,7 +139,7 @@ func (f *walkerFactory) buildAzureWalker() (*azureBlobWalker, error) {
 		if err != nil {
 			return nil, err
 		}
-		p, err = factory.BuildAzureClient(azureParams)
+		p, _, err = factory.BuildAzureClient(azureParams)
 		if err != nil {
 			return nil, err
 		}

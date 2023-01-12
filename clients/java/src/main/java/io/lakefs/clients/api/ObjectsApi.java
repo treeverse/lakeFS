@@ -514,6 +514,7 @@ public class ObjectsApi {
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path relative to the ref (required)
      * @param range Byte range to retrieve (optional)
+     * @param presign  (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -522,6 +523,7 @@ public class ObjectsApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> object content </td><td>  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 206 </td><td> partial object content </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
+        <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
@@ -529,7 +531,7 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call getObjectCall(String repository, String ref, String path, String range, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call getObjectCall(String repository, String ref, String path, String range, Boolean presign, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -545,6 +547,10 @@ public class ObjectsApi {
 
         if (path != null) {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("path", path));
+        }
+
+        if (presign != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("presign", presign));
         }
 
         if (range != null) {
@@ -570,7 +576,7 @@ public class ObjectsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call getObjectValidateBeforeCall(String repository, String ref, String path, String range, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call getObjectValidateBeforeCall(String repository, String ref, String path, String range, Boolean presign, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -588,7 +594,7 @@ public class ObjectsApi {
         }
         
 
-        okhttp3.Call localVarCall = getObjectCall(repository, ref, path, range, _callback);
+        okhttp3.Call localVarCall = getObjectCall(repository, ref, path, range, presign, _callback);
         return localVarCall;
 
     }
@@ -600,6 +606,7 @@ public class ObjectsApi {
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path relative to the ref (required)
      * @param range Byte range to retrieve (optional)
+     * @param presign  (optional)
      * @return File
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -607,6 +614,7 @@ public class ObjectsApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> object content </td><td>  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 206 </td><td> partial object content </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
+        <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
@@ -614,8 +622,8 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public File getObject(String repository, String ref, String path, String range) throws ApiException {
-        ApiResponse<File> localVarResp = getObjectWithHttpInfo(repository, ref, path, range);
+    public File getObject(String repository, String ref, String path, String range, Boolean presign) throws ApiException {
+        ApiResponse<File> localVarResp = getObjectWithHttpInfo(repository, ref, path, range, presign);
         return localVarResp.getData();
     }
 
@@ -626,6 +634,7 @@ public class ObjectsApi {
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path relative to the ref (required)
      * @param range Byte range to retrieve (optional)
+     * @param presign  (optional)
      * @return ApiResponse&lt;File&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -633,6 +642,7 @@ public class ObjectsApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> object content </td><td>  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 206 </td><td> partial object content </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
+        <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
@@ -640,8 +650,8 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<File> getObjectWithHttpInfo(String repository, String ref, String path, String range) throws ApiException {
-        okhttp3.Call localVarCall = getObjectValidateBeforeCall(repository, ref, path, range, null);
+    public ApiResponse<File> getObjectWithHttpInfo(String repository, String ref, String path, String range, Boolean presign) throws ApiException {
+        okhttp3.Call localVarCall = getObjectValidateBeforeCall(repository, ref, path, range, presign, null);
         Type localVarReturnType = new TypeToken<File>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -653,6 +663,7 @@ public class ObjectsApi {
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path relative to the ref (required)
      * @param range Byte range to retrieve (optional)
+     * @param presign  (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -661,6 +672,7 @@ public class ObjectsApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> object content </td><td>  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 206 </td><td> partial object content </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
+        <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
@@ -668,9 +680,9 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call getObjectAsync(String repository, String ref, String path, String range, final ApiCallback<File> _callback) throws ApiException {
+    public okhttp3.Call getObjectAsync(String repository, String ref, String path, String range, Boolean presign, final ApiCallback<File> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = getObjectValidateBeforeCall(repository, ref, path, range, _callback);
+        okhttp3.Call localVarCall = getObjectValidateBeforeCall(repository, ref, path, range, presign, _callback);
         Type localVarReturnType = new TypeToken<File>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -990,6 +1002,7 @@ public class ObjectsApi {
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param userMetadata  (optional, default to true)
+     * @param presign  (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @param delimiter delimiter used to group common prefixes by (optional)
@@ -1006,7 +1019,7 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call listObjectsCall(String repository, String ref, Boolean userMetadata, String after, Integer amount, String delimiter, String prefix, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call listObjectsCall(String repository, String ref, Boolean userMetadata, Boolean presign, String after, Integer amount, String delimiter, String prefix, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -1022,6 +1035,10 @@ public class ObjectsApi {
 
         if (userMetadata != null) {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("user_metadata", userMetadata));
+        }
+
+        if (presign != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("presign", presign));
         }
 
         if (after != null) {
@@ -1059,7 +1076,7 @@ public class ObjectsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call listObjectsValidateBeforeCall(String repository, String ref, Boolean userMetadata, String after, Integer amount, String delimiter, String prefix, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call listObjectsValidateBeforeCall(String repository, String ref, Boolean userMetadata, Boolean presign, String after, Integer amount, String delimiter, String prefix, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -1072,7 +1089,7 @@ public class ObjectsApi {
         }
         
 
-        okhttp3.Call localVarCall = listObjectsCall(repository, ref, userMetadata, after, amount, delimiter, prefix, _callback);
+        okhttp3.Call localVarCall = listObjectsCall(repository, ref, userMetadata, presign, after, amount, delimiter, prefix, _callback);
         return localVarCall;
 
     }
@@ -1083,6 +1100,7 @@ public class ObjectsApi {
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param userMetadata  (optional, default to true)
+     * @param presign  (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @param delimiter delimiter used to group common prefixes by (optional)
@@ -1098,8 +1116,8 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ObjectStatsList listObjects(String repository, String ref, Boolean userMetadata, String after, Integer amount, String delimiter, String prefix) throws ApiException {
-        ApiResponse<ObjectStatsList> localVarResp = listObjectsWithHttpInfo(repository, ref, userMetadata, after, amount, delimiter, prefix);
+    public ObjectStatsList listObjects(String repository, String ref, Boolean userMetadata, Boolean presign, String after, Integer amount, String delimiter, String prefix) throws ApiException {
+        ApiResponse<ObjectStatsList> localVarResp = listObjectsWithHttpInfo(repository, ref, userMetadata, presign, after, amount, delimiter, prefix);
         return localVarResp.getData();
     }
 
@@ -1109,6 +1127,7 @@ public class ObjectsApi {
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param userMetadata  (optional, default to true)
+     * @param presign  (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @param delimiter delimiter used to group common prefixes by (optional)
@@ -1124,8 +1143,8 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<ObjectStatsList> listObjectsWithHttpInfo(String repository, String ref, Boolean userMetadata, String after, Integer amount, String delimiter, String prefix) throws ApiException {
-        okhttp3.Call localVarCall = listObjectsValidateBeforeCall(repository, ref, userMetadata, after, amount, delimiter, prefix, null);
+    public ApiResponse<ObjectStatsList> listObjectsWithHttpInfo(String repository, String ref, Boolean userMetadata, Boolean presign, String after, Integer amount, String delimiter, String prefix) throws ApiException {
+        okhttp3.Call localVarCall = listObjectsValidateBeforeCall(repository, ref, userMetadata, presign, after, amount, delimiter, prefix, null);
         Type localVarReturnType = new TypeToken<ObjectStatsList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -1136,6 +1155,7 @@ public class ObjectsApi {
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param userMetadata  (optional, default to true)
+     * @param presign  (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @param delimiter delimiter used to group common prefixes by (optional)
@@ -1152,9 +1172,9 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call listObjectsAsync(String repository, String ref, Boolean userMetadata, String after, Integer amount, String delimiter, String prefix, final ApiCallback<ObjectStatsList> _callback) throws ApiException {
+    public okhttp3.Call listObjectsAsync(String repository, String ref, Boolean userMetadata, Boolean presign, String after, Integer amount, String delimiter, String prefix, final ApiCallback<ObjectStatsList> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = listObjectsValidateBeforeCall(repository, ref, userMetadata, after, amount, delimiter, prefix, _callback);
+        okhttp3.Call localVarCall = listObjectsValidateBeforeCall(repository, ref, userMetadata, presign, after, amount, delimiter, prefix, _callback);
         Type localVarReturnType = new TypeToken<ObjectStatsList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -1325,6 +1345,7 @@ public class ObjectsApi {
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path relative to the branch (required)
      * @param userMetadata  (optional, default to true)
+     * @param presign  (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -1338,7 +1359,7 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call statObjectCall(String repository, String ref, String path, Boolean userMetadata, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call statObjectCall(String repository, String ref, String path, Boolean userMetadata, Boolean presign, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -1360,6 +1381,10 @@ public class ObjectsApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("user_metadata", userMetadata));
         }
 
+        if (presign != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("presign", presign));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -1379,7 +1404,7 @@ public class ObjectsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call statObjectValidateBeforeCall(String repository, String ref, String path, Boolean userMetadata, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call statObjectValidateBeforeCall(String repository, String ref, String path, Boolean userMetadata, Boolean presign, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -1397,7 +1422,7 @@ public class ObjectsApi {
         }
         
 
-        okhttp3.Call localVarCall = statObjectCall(repository, ref, path, userMetadata, _callback);
+        okhttp3.Call localVarCall = statObjectCall(repository, ref, path, userMetadata, presign, _callback);
         return localVarCall;
 
     }
@@ -1409,6 +1434,7 @@ public class ObjectsApi {
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path relative to the branch (required)
      * @param userMetadata  (optional, default to true)
+     * @param presign  (optional)
      * @return ObjectStats
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -1421,8 +1447,8 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ObjectStats statObject(String repository, String ref, String path, Boolean userMetadata) throws ApiException {
-        ApiResponse<ObjectStats> localVarResp = statObjectWithHttpInfo(repository, ref, path, userMetadata);
+    public ObjectStats statObject(String repository, String ref, String path, Boolean userMetadata, Boolean presign) throws ApiException {
+        ApiResponse<ObjectStats> localVarResp = statObjectWithHttpInfo(repository, ref, path, userMetadata, presign);
         return localVarResp.getData();
     }
 
@@ -1433,6 +1459,7 @@ public class ObjectsApi {
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path relative to the branch (required)
      * @param userMetadata  (optional, default to true)
+     * @param presign  (optional)
      * @return ApiResponse&lt;ObjectStats&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -1445,8 +1472,8 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<ObjectStats> statObjectWithHttpInfo(String repository, String ref, String path, Boolean userMetadata) throws ApiException {
-        okhttp3.Call localVarCall = statObjectValidateBeforeCall(repository, ref, path, userMetadata, null);
+    public ApiResponse<ObjectStats> statObjectWithHttpInfo(String repository, String ref, String path, Boolean userMetadata, Boolean presign) throws ApiException {
+        okhttp3.Call localVarCall = statObjectValidateBeforeCall(repository, ref, path, userMetadata, presign, null);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -1458,6 +1485,7 @@ public class ObjectsApi {
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path relative to the branch (required)
      * @param userMetadata  (optional, default to true)
+     * @param presign  (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -1471,9 +1499,9 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call statObjectAsync(String repository, String ref, String path, Boolean userMetadata, final ApiCallback<ObjectStats> _callback) throws ApiException {
+    public okhttp3.Call statObjectAsync(String repository, String ref, String path, Boolean userMetadata, Boolean presign, final ApiCallback<ObjectStats> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = statObjectValidateBeforeCall(repository, ref, path, userMetadata, _callback);
+        okhttp3.Call localVarCall = statObjectValidateBeforeCall(repository, ref, path, userMetadata, presign, _callback);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

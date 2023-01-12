@@ -2960,6 +2960,13 @@ paths:
           pattern: ^bytes=((\d*-\d*,? ?)+)$
           type: string
         style: simple
+      - explode: true
+        in: query
+        name: presign
+        required: false
+        schema:
+          type: boolean
+        style: form
       responses:
         "200":
           content:
@@ -3011,6 +3018,14 @@ paths:
                 type: string
               style: simple
             ETag:
+              explode: false
+              schema:
+                type: string
+              style: simple
+        "302":
+          description: Redirect to a pre-signed URL for the object
+          headers:
+            Location:
               explode: false
               schema:
                 type: string
@@ -3169,6 +3184,13 @@ paths:
         required: true
         schema:
           type: string
+        style: form
+      - explode: true
+        in: query
+        name: presign
+        required: false
+        schema:
+          type: boolean
         style: form
       responses:
         "200":
@@ -3759,6 +3781,13 @@ paths:
           default: true
           type: boolean
         style: form
+      - explode: true
+        in: query
+        name: presign
+        required: false
+        schema:
+          type: boolean
+        style: form
       responses:
         "200":
           content:
@@ -3871,6 +3900,13 @@ paths:
         required: false
         schema:
           default: true
+          type: boolean
+        style: form
+      - explode: true
+        in: query
+        name: presign
+        required: false
+        schema:
           type: boolean
         style: form
       - description: return items after this value
@@ -5103,6 +5139,10 @@ components:
           - object
           type: string
         physical_address:
+          description: |
+            The location of the object on the underlying object store.
+            Formatted as a native URI with the object store type as scheme ("s3://...", "gs://...", etc.)
+            Or, in the case of presign=true, will be an HTTP URL to be consumed via regular HTTP GET
           type: string
         checksum:
           type: string
@@ -6177,12 +6217,18 @@ components:
       description: location for placing an object when staging it
       example:
         physical_address: physical_address
+        presigned_url: presigned_url
         token: token
       properties:
         physical_address:
           type: string
         token:
           description: opaque staging token to use to link uploaded object
+          type: string
+        presigned_url:
+          description: if presign=true is passed in the request, this field will contain
+            a presigned URL to use when uploading
+          nullable: true
           type: string
       required:
       - token
@@ -6197,6 +6243,7 @@ components:
         checksum: checksum
         staging:
           physical_address: physical_address
+          presigned_url: presigned_url
           token: token
       properties:
         staging:
