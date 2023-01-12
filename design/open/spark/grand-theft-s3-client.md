@@ -14,8 +14,8 @@ S3 directly:
 	  GC (both committed and uncommititted), Spark Export, and also
       available for users to use to access lakeFS metadata directly.
 	</td><td>
-	  Accesses stored metadata directly on S3.
-	  <td>
+	  Accesses stored metadata directly on S3 and deletes data objects.
+	</td>
   </tr><tr>
 	<td>
 	  lakeFSFS
@@ -78,38 +78,42 @@ We propose to:
 
 Unify client generation code into a single library.  We will be able to test
 this library individually on various Spark setups.  This will probably not
-usefully be automatic -- there is no automatic source for _new_ Spark
-setups, and it is not clear how often _existing_ Spark setups change.  But
-even being able to run a single command on a Spark cluster and get useful
-information will be very useful for investigation, helping customers probe
-their setup, and further development to support setups where we fail.
+be automatic -- there is no automatic source for _new_ Spark setups, and it
+is not clear how often _existing_ Spark setups change.  But even being able
+to run a single command on a Spark cluster and get useful information will
+be very useful for investigation, helping customers probe their setup, and
+further development to support setups where we fail.
 
 This library will define an interface for _client acquisition_: given
 various parameters TBD (perhaps a SparkContext or a Hadoop configuration), a
 path, and optionally also a FileSystem on that path, a client acquisition
-module returns a client or a failure message.
+attempt returns a client or a failure message.
 
-The library will include code that tries each of a list of modules, in order
-of desirability.  It will return a client or throw some exception with a
-detailed method.  And it will report which module was actually used to
+A future version may well generalize to acquiring a client for other
+underlying storage types from other FileSystems.
+
+The library will include code that tries each of a list of strategies, in
+order of desirability.  It will return a client or throw some exception with
+a detailed method.  And it will report which strategy was actually used to
 acquire the client.  To increase performance, the library will cache to
 client used by FileSystem.  This will typically mean that the acquisition
 code is called just once.
 
-The list of modules will be configurable on a Hadoop property.  Additionally
-we will create pre-populated lists, one recommended for no-hassle production
-use and the other consisting of all (or almost) modules that will be
-recommended for debugging.  Users who explicitly wish to use a single module
-will simply configure that one module as the only option.
+The list of strategies will be configurable on a Hadoop property.
+Additionally we will create pre-populated lists, one recommended for
+no-hassle production use and the other consisting of all (or almost)
+strategies that will be recommended for debugging.  Users who explicitly
+wish to use a single strategy will simply configure that one strategy as the
+only option.
 
-One complication is that many FileSystems are _layered_ and modules to
+One complication is that many FileSystems are _layered_ and strategies to
 detect them may require some recursion or at least iteration.  For instance,
 while S3A may support `S3AFileSystem.getAmazonS3Client`, on DataBricks we
 might have to unwrap it from `CredentialScopeFileSystem` using
 `CredentialScopeFileSystem.getReadDelegate`, and then try to acquire an S3
 client from whatever is returned.
 
-The type of the returned client is indeterminate to the caller.  It _is_ a
+The type of the returned client is indeterminate to the caller.  It _is_ an
 AmazonS3Client with desired authentication and the ability to connect to the
 bucket.  But it may well be one of a different version or package than the
 caller expects, and if the caller so much as attempts to cast it to
@@ -121,10 +125,10 @@ and the library should also help with this call.[^2]
     actual type and is compatible.  This is a bug and will surely break
     somewhere.
 
-### Example: information a module might return
+### Example: information a strategy might return
 
 One method of generating a FileSystem is to call `getWrappedFs` _if_ that
-FileSystem has such a call, and recurse on that.  When such a module fails,
+FileSystem has such a call, and recurse on that.  When such a strategy fails,
 it should report:
 
 1. The dynamic type of FileSystem that it received.

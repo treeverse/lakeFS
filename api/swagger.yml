@@ -274,6 +274,18 @@ components:
           items:
             $ref: "#/components/schemas/ObjectStats"
 
+    ObjectCopyCreation:
+      type: object
+      required:
+        - src_path
+      properties:
+        src_path:
+          type: string
+          description: path of the copied object relative to the ref
+        src_ref:
+          type: string
+          description: a reference, if empty uses the provided branch as ref
+
     ObjectStageCreation:
       type: object
       required:
@@ -862,6 +874,12 @@ components:
           type: boolean
         upgrade_url:
           type: string
+    GarbageCollectionConfig:
+      type: object
+      properties:
+        grace_period:
+          description: Duration in seconds. Objects created in the recent grace_period will not be collected.
+          type: integer
 
     ActionRun:
       type: object
@@ -3169,6 +3187,52 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /repositories/{repository}/branches/{branch}/objects/copy:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        description: destination branch for the copy
+      - in: query
+        name: dest_path
+        description: destination path relative to the branch
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - objects
+      operationId: copyObject
+      summary: create a copy of an object
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjectCopyCreation"
+      responses:
+        201:
+          description: Copy object response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectStats"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /repositories/{repository}/refs/{ref}/objects/stat:
     parameters:
       - in: path
@@ -3771,6 +3835,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StorageConfig"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+  /config/garbage-collection:
+    get:
+      tags:
+        - config
+      operationId: getGarbageCollectionConfig
+      description: get information of gc settings
+      responses:
+        200:
+          description: lakeFS garbage collection config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarbageCollectionConfig"
         401:
           $ref: "#/components/responses/Unauthorized"
   /templates/{template_location}:

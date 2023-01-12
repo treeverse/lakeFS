@@ -34,6 +34,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -1828,12 +1829,13 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
 		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
+		errors.Is(err, graveler.ErrInvalidValue),
+		errors.Is(err, catalog.ErrPathRequiredValue),
 		errors.Is(err, graveler.ErrNoChanges),
 		errors.Is(err, permissions.ErrInvalidServiceName),
 		errors.Is(err, permissions.ErrInvalidAction),
 		errors.Is(err, model.ErrValidationError),
 		errors.Is(err, graveler.ErrInvalidRef),
-		errors.Is(err, graveler.ErrInvalidValue),
 		errors.Is(err, actions.ErrParamConflict),
 		errors.Is(err, graveler.ErrDereferenceCommitWithStaging):
 		cb(w, r, http.StatusBadRequest, err)
@@ -2304,6 +2306,86 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
+	response := ObjectStats{
+		Checksum:        entry.Checksum,
+		Mtime:           entry.CreationDate.Unix(),
+		Path:            entry.Path,
+		PathType:        entryTypeObject,
+		PhysicalAddress: qk.Format(),
+		SizeBytes:       Int64Ptr(entry.Size),
+		ContentType:     &entry.ContentType,
+	}
+	writeResponse(w, r, http.StatusCreated, response)
+}
+
+func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body CopyObjectJSONRequestBody, repository string, branch string, params CopyObjectParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadActionsAction,
+					Resource: permissions.ObjectArn(repository, params.DestPath),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.WriteObjectAction,
+					Resource: permissions.ObjectArn(repository, body.SrcPath),
+				},
+			},
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "copy_object", r, repository, branch, params.DestPath)
+
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	ref := branch
+	if body.SrcRef != nil {
+		ref = *body.SrcRef
+	}
+
+	// TODO (niro): Naive copy object flow - real implementation still missing (https://github.com/treeverse/lakeFS/issues/4477)
+	src, err := c.Catalog.GetEntry(ctx, repository, ref, body.SrcPath, catalog.GetEntryParams{})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	destAddress := c.PathProvider.NewPath()
+	blob, err := upload.CopyBlob(ctx, c.BlockAdapter, repo.StorageNamespace, repo.StorageNamespace, src.PhysicalAddress, src.Checksum, destAddress, src.Size)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	writeTime := time.Now()
+	entryBuilder := catalog.NewDBEntryBuilder().
+		CommonLevel(false).
+		Path(params.DestPath).
+		PhysicalAddress(blob.PhysicalAddress).
+		AddressType(catalog.AddressTypeRelative).
+		CreationDate(writeTime).
+		Size(blob.Size).
+		Checksum(blob.Checksum).
+		ContentType(src.ContentType)
+	entry := entryBuilder.Build()
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress, block.IdentifierTypeRelative)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	w.Header().Set("X-lakeFS-Copy-Type", "full") // update with the real implementation
+	// TODO: end of TODO
+
 	response := ObjectStats{
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
@@ -3643,6 +3725,19 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		UpgradeRecommended: upgradeRecommended,
 		UpgradeUrl:         upgradeURL,
 		Version:            swag.String(version.Version),
+	})
+}
+
+func (c *Controller) GetGarbageCollectionConfig(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	_, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+
+	writeResponse(w, r, http.StatusOK, GarbageCollectionConfig{
+		GracePeriod: aws.Int(int(ref.LinkAddressTime.Seconds())),
 	})
 }
 
