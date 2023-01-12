@@ -1,24 +1,20 @@
 package azure
 
 import (
-	"bufio"
 	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"io"
 	"sort"
-	"strconv"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type MultipartBlockWriter struct {
@@ -39,31 +35,20 @@ func NewMultipartBlockWriter(reader *block.HashingReader, containerURL container
 	}
 }
 
-func (m *MultipartBlockWriter) StageBlock(ctx context.Context, s string, seeker io.ReadSeeker, options *blockblob.StageBlockOptions) (blockblob.StageBlockResponse, error) {
-	return m.to.StageBlock(ctx, s, streaming.NopCloser(seeker), options)
+func (m *MultipartBlockWriter) StageBlock(ctx context.Context, base64BlockID string, body io.ReadSeekCloser, options *blockblob.StageBlockOptions) (blockblob.StageBlockResponse, error) {
+	return m.to.StageBlock(ctx, base64BlockID, body, options)
 }
 
-func (m *MultipartBlockWriter) CommitBlockList(ctx context.Context, ids []string, headers azblob.BlobHTTPHeaders, metadata azblob.Metadata, conditions azblob.BlobAccessConditions, tierType azblob.AccessTierType, tagsMap azblob.BlobTagsMap, options azblob.ClientProvidedKeyOptions) (*azblob.BlockBlobCommitBlockListResponse, error) {
-	m.etag = "\"" + hex.EncodeToString(m.reader.Md5.Sum(nil)) + "\""
-	base64Etag := base64.StdEncoding.EncodeToString([]byte(m.etag))
-
-	// write to blockIDs
-	pd := strings.Join(ids, "\n") + "\n"
-	_, err := m.toIDs.StageBlock(ctx, base64Etag, strings.NewReader(pd), conditions.LeaseAccessConditions, nil, options)
-	if err != nil {
-		return nil, fmt.Errorf("failed staging part data: %w", err)
-	}
-	// write block sizes
-	sd := strconv.Itoa(int(m.reader.CopiedSize)) + "\n"
-	_, err = m.toSizes.StageBlock(ctx, base64Etag, strings.NewReader(sd), conditions.LeaseAccessConditions, nil, options)
-	if err != nil {
-		return nil, fmt.Errorf("failed staging part data: %w", err)
-	}
-
-	return &azblob.BlockBlobCommitBlockListResponse{}, err
+func (m *MultipartBlockWriter) CommitBlockList(ctx context.Context, base64BlockIDs []string, options *blockblob.CommitBlockListOptions) (blockblob.CommitBlockListResponse, error) {
+	return m.to.CommitBlockList(ctx, base64BlockIDs, options)
 }
 
-func completeMultipart(ctx context.Context, parts []block.MultipartPart, container container.Client, objName string, retryOptions azblob.RetryReaderOptions) (*block.CompleteMultiPartUploadResponse, error) {
+func (m *MultipartBlockWriter) Upload(ctx context.Context, body io.ReadSeekCloser, options *blockblob.UploadOptions) (blockblob.UploadResponse, error) {
+	// Need to implement copyFromReader instead
+	return m.to.Upload(ctx, body, options)
+}
+
+func completeMultipart(ctx context.Context, parts []block.MultipartPart, container container.Client, objName string) (*block.CompleteMultiPartUploadResponse, error) {
 	sort.Slice(parts, func(i, j int) bool {
 		return parts[i].PartNumber < parts[j].PartNumber
 	})
@@ -77,11 +62,11 @@ func completeMultipart(ctx context.Context, parts []block.MultipartPart, contain
 		metaBlockIDs[i] = base64Etag
 	}
 
-	stageBlockIDs, err := getMultipartIDs(ctx, container, objName, metaBlockIDs, retryOptions)
+	stageBlockIDs, err := getMultipartIDs(ctx, container, objName)
 	if err != nil {
 		return nil, err
 	}
-	size, err := getMultipartSize(ctx, container, objName, metaBlockIDs, retryOptions)
+	size, err := getMultipartSize(ctx, container, objName)
 	if err != nil {
 		return nil, err
 	}
@@ -98,68 +83,27 @@ func completeMultipart(ctx context.Context, parts []block.MultipartPart, contain
 	}, nil
 }
 
-func getMultipartIDs(ctx context.Context, container container.Client, objName string, base64BlockIDs []string, retryOptions azblob.RetryReaderOptions) ([]string, error) {
-	blobURL := container.NewBlockBlobClient(objName + idSuffix)
-	_, err := blobURL.CommitBlockList(ctx, base64BlockIDs, nil)
+func getMultipartIDs(ctx context.Context, container container.Client, objName string) ([]string, error) {
+	blobURL := container.NewBlockBlobClient(objName)
+	blocks, err := blobURL.GetBlockList(ctx, blockblob.BlockListTypeUncommitted, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	downloadResponse, err := blobURL.DownloadStream(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	bodyStream := downloadResponse.Body
-	defer func() {
-		_ = bodyStream.Close()
-	}()
-	scanner := bufio.NewScanner(bodyStream)
 	ids := make([]string, 0)
-	for scanner.Scan() {
-		id := scanner.Text()
-		ids = append(ids, id)
-	}
-
-	// remove
-	_, err = blobURL.Delete(ctx, nil)
-	if err != nil {
-		logging.Default().WithContext(ctx).WithField("blob_url", blobURL.URL()).WithError(err).Warn("Failed to delete multipart ids data file")
+	for _, b := range blocks.UncommittedBlocks {
+		ids = append(ids, *b.Name)
 	}
 	return ids, nil
 }
 
-func getMultipartSize(ctx context.Context, container container.Client, objName string, base64BlockIDs []string, retryOptions azblob.RetryReaderOptions) (int, error) {
-	blobURL := container.NewBlockBlobClient(objName + sizeSuffix)
-	_, err := blobURL.CommitBlockList(ctx, base64BlockIDs, nil)
+func getMultipartSize(ctx context.Context, container container.Client, objName string) (int64, error) {
+	blobURL := container.NewBlockBlobClient(objName)
+	resp, err := blobURL.GetProperties(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
 
-	downloadResponse, err := blobURL.DownloadStream(ctx, nil)
-	if err != nil {
-		return 0, err
-	}
-	bodyStream := downloadResponse.Body
-	defer func() {
-		_ = bodyStream.Close()
-	}()
-	scanner := bufio.NewScanner(bodyStream)
-	size := 0
-	for scanner.Scan() {
-		s := scanner.Text()
-		stageSize, err := strconv.Atoi(s)
-		if err != nil {
-			return 0, err
-		}
-		size += stageSize
-	}
-
-	// remove
-	_, err = blobURL.Delete(ctx, nil)
-	if err != nil {
-		logging.Default().WithContext(ctx).WithField("blob_url", blobURL.URL()).WithError(err).Warn("Failed to delete multipart size data file")
-	}
-	return size, nil
+	return *resp.ContentLength, nil
 }
 
 func copyPartRange(ctx context.Context, destinationContainer container.Client, destinationObjName string, sourceBlobURL blockblob.Client, startPosition, count int64) (*block.UploadPartResponse, error) {

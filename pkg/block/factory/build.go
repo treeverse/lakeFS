@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"net/http"
 
 	"cloud.google.com/go/storage"
@@ -155,38 +154,39 @@ func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
 	if err != nil {
 		return nil, err
 	}
-	return azure.NewAdapter(p), nil
+	return azure.NewAdapter(*p), nil
 }
 
-func BuildAzureClient(params params.Azure) (*azblob.Client, error) {
-	// accountName := params.StorageAccount
-	// accountKey := params.StorageAccessKey
-	// var credentials *azblob.SharedKeyCredential
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
-	if err != nil {
-		return nil, err
-	}
-	// var err error
-	// switch params.AuthMethod {
-	// case azure.AuthMethodAccessKey:
-	// 	credentials, err = azblob.NewSharedKeyCredential(accountName, accountKey)
-	// // case azure.AuthMethodMSI:
-	// // 	credentials, err = azure.GetMSICredentials()
-	// default:
-	// 	err = ErrAuthMethodNotSupported
-	// }
-	// if err != nil {
-	// 	return nil, fmt.Errorf("invalid credentials: %w", err)
-	// }
-	// return azblob.NewPipeline(credentials, azblob.PipelineOptions{Retry: azblob.RetryOptions{TryTimeout: params.TryTimeout}}), nil
-	return azblob.NewClient("https://testmultigen2.blob.core.windows.net/", cred, nil)
-}
+//func BuildAzureClient(params params.Azure) (*azblob.Client, error) {
+// accountName := params.StorageAccount
+// accountKey := params.StorageAccessKey
+// var credentials *azblob.SharedKeyCredential
+//cred, err := azidentity.NewDefaultAzureCredential(nil)
+//if err != nil {
+//	return nil, err
+//}
+// var err error
+// switch params.AuthMethod {
+// case azure.AuthMethodAccessKey:
+// 	credentials, err = azblob.NewSharedKeyCredential(accountName, accountKey)
+// // case azure.AuthMethodMSI:
+// // 	credentials, err = azure.GetMSICredentials()
+// default:
+// 	err = ErrAuthMethodNotSupported
+// }
+// if err != nil {
+// 	return nil, fmt.Errorf("invalid credentials: %w", err)
+// }
+// return azblob.NewPipeline(credentials, azblob.PipelineOptions{Retry: azblob.RetryOptions{TryTimeout: params.TryTimeout}}), nil
+//return azblob.NewClient("https://testmultigen2.blob.core.windows.net/", cred, nil)
+//}
 
 func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
 	// accountName := params.StorageAccount
 	// accountKey := params.StorageAccessKey
 	// var credentials *azblob.SharedKeyCredential
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	cred, err := azblob.NewSharedKeyCredential(params.StorageAccount, params.StorageAccessKey)
+	// cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return nil, err
 	}
@@ -203,5 +203,6 @@ func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
 	// 	return nil, fmt.Errorf("invalid credentials: %w", err)
 	// }
 	// return azblob.NewPipeline(credentials, azblob.PipelineOptions{Retry: azblob.RetryOptions{TryTimeout: params.TryTimeout}}), nil
-	return service.NewClient("https://testmultigen2.blob.core.windows.net/", cred, nil)
+	url := fmt.Sprintf("https://%s.blob.core.windows.net/", params.StorageAccount)
+	return service.NewClientWithSharedKeyCredential(url, cred, nil)
 }
