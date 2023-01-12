@@ -121,13 +121,13 @@ func resolveBlobURLInfo(obj block.ObjectPointer) (BlobURLInfo, error) {
 			return qk, err
 		}
 		info := BlobURLInfo{
-			ContainerURL: qp.ContainerURL,
-			BlobURL:      qp.BlobURL + "/" + key,
+			ContainerURL:  qp.ContainerURL,
+			ContainerName: qp.ContainerName,
+			BlobURL:       qp.BlobURL + "/" + key,
 		}
 		if qp.BlobURL == "" {
 			info.BlobURL = key
 		}
-
 		return info, nil
 	}
 	return resolveBlobURLInfoFromURL(parsedKey)
