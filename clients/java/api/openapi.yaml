@@ -4734,6 +4734,26 @@ paths:
       tags:
       - config
       x-accepts: application/json
+  /config/garbage-collection:
+    get:
+      description: get information of gc settings
+      operationId: getGarbageCollectionConfig
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GarbageCollectionConfig'
+          description: lakeFS garbage collection config
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+      tags:
+      - config
+      x-accepts: application/json
   /templates/{template_location}:
     get:
       description: fetch and expand template
@@ -6009,6 +6029,15 @@ components:
           type: boolean
         upgrade_url:
           type: string
+      type: object
+    GarbageCollectionConfig:
+      example:
+        grace_period: 0
+      properties:
+        grace_period:
+          description: Duration in seconds. Objects created in the recent grace_period
+            will not be collected.
+          type: integer
       type: object
     ActionRun:
       example:
