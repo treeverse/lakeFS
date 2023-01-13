@@ -17,11 +17,8 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
-<<<<<<< HEAD
-	"github.com/treeverse/lakefs/pkg/testutil"
-=======
 	"github.com/treeverse/lakefs/pkg/config"
->>>>>>> 625af94e (use blockstore type key as constant)
+	"github.com/treeverse/lakefs/pkg/testutil"
 	"golang.org/x/exp/slices"
 )
 
@@ -52,7 +49,6 @@ func TestUncommittedGC(t *testing.T) {
 	}
 	testutil.MustDo(t, "run uncommitted GC", runSparkSubmit(submitConfig))
 	validateUncommittedGC(t)
-
 }
 
 func prepareForUncommittedGC(t *testing.T) {
