@@ -53,7 +53,7 @@ func TestPreSign(t *testing.T) {
 	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "foo/bar", false)
 
 	objContent := randstr.String(randomDataContentLength)
-	_, err := uploadFileAndReport(ctx, repo, mainBranch, "foo/bar", objContent, false)
+	_, err = uploadFileAndReport(ctx, repo, mainBranch, "foo/bar", objContent, false)
 	if err != nil {
 		t.Errorf("could no upload data file")
 	}
