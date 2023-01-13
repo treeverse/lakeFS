@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"golang.org/x/exp/slices"
 )
@@ -33,7 +34,7 @@ type UncommittedFindings struct {
 
 func TestUncommittedGC(t *testing.T) {
 	SkipTestIfAskedTo(t)
-	blockstoreType := viper.GetViper().GetString("blockstore_type")
+	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
 	if blockstoreType != block.BlockstoreTypeS3 {
 		t.Skip("Running on S3 only")
 	}
@@ -48,7 +49,6 @@ func TestUncommittedGC(t *testing.T) {
 	}
 	testutil.MustDo(t, "run uncommitted GC", runSparkSubmit(submitConfig))
 	validateUncommittedGC(t)
-
 }
 
 func prepareForUncommittedGC(t *testing.T) {

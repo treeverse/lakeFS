@@ -48,7 +48,13 @@ func setupTest(buffer int, opts ...stats.BufferedCollectorOpts) (*mockSender, *m
 	sender := &mockSender{metrics: make(chan []stats.Metric, 10), metadata: make(chan stats.Metadata, 10)}
 	ticker := &mockTicker{tc: make(chan time.Time)}
 	opts = append(opts, stats.WithSender(sender), stats.WithTicker(ticker), stats.WithWriteBufferSize(buffer))
-	collector := stats.NewBufferedCollector("installation_id", nil, opts...)
+	collector := stats.NewBufferedCollector("installation_id", stats.Config{
+		Enabled:       true,
+		Address:       "http://0.0.0.0/stats",
+		FlushInterval: 30 * time.Second,
+		FlushSize:     10,
+		Extended:      false,
+	}, opts...)
 	collector.SetRuntimeCollector(func() map[string]string {
 		return map[string]string{"runtime": "stat"}
 	})

@@ -302,13 +302,9 @@ func newConfig(local bool) (*Config, error) {
 	for _, key := range keys {
 		viper.SetDefault(key, nil)
 	}
-
 	setDefaults(local)
-	setupLogger()
 
-	err := viper.UnmarshalExact(&c, viper.DecodeHook(
-		mapstructure.ComposeDecodeHookFunc(
-			DecodeStrings, mapstructure.StringToTimeDurationHookFunc())))
+	err := Unmarshal(c)
 	if err != nil {
 		return nil, err
 	}
@@ -318,7 +314,18 @@ func newConfig(local bool) (*Config, error) {
 		return nil, err
 	}
 
+	// setup logging package
+	logging.SetOutputFormat(c.Logging.Format)
+	logging.SetOutputs(c.Logging.Output, c.Logging.FileMaxSizeMB, c.Logging.FilesKeep)
+	logging.SetLevel(c.Logging.Level)
 	return c, nil
+}
+
+func Unmarshal(c *Config) error {
+	return viper.UnmarshalExact(&c,
+		viper.DecodeHook(
+			mapstructure.ComposeDecodeHookFunc(
+				DecodeStrings, mapstructure.StringToTimeDurationHookFunc())))
 }
 
 func stringReverse(s string) string {
