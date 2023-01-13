@@ -444,11 +444,32 @@ public class LakeFSFileSystem extends FileSystem {
                 .srcRef(srcObjectLoc.getRef())
                 .srcPath(srcObjectLoc.getPath());
 
+        Boolean fallbackToStage = false;
         try {
             objects.copyObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
                     creationReq);
         } catch (ApiException e) {
-            throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst + ", failed to copy object", e);
+            if (e.getCode() !=HttpStatus.SC_INTERNAL_SERVER_ERROR ||
+                    e.getMessage().contains("invalid API endpoint")){
+                throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst + ", failed to copy object", e);
+            }
+
+            LOG.warn("Copy API doesn't exist, falling back to stageObject");
+            fallbackToStage = true;
+        }
+
+        if (fallbackToStage){
+            ObjectStageCreation stageCreationReq = new ObjectStageCreation()
+                    .checksum(srcStatus.getChecksum())
+                    .sizeBytes(srcStatus.getLen())
+                    .physicalAddress(srcStatus.getPhysicalAddress());
+            try {
+                objects.stageObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
+                        stageCreationReq);
+            } catch (ApiException e) {
+                throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst +
+                        ", failed to stage object", e);
+            }
         }
 
         // delete src path
@@ -475,6 +496,10 @@ public class LakeFSFileSystem extends FileSystem {
                 return (FileNotFoundException) new FileNotFoundException(msg).initCause(e);
             case HttpStatus.SC_FORBIDDEN:
                 return (AccessDeniedException) new AccessDeniedException(msg).initCause(e);
+            case HttpStatus.SC_INTERNAL_SERVER_ERROR:
+                if (msg.contains("invalid API endpoint")){
+                    return (AccessDeniedException) new AccessDeniedException(msg).initCause(e);
+                }
             default:
                 return new IOException(msg, e);
         }
