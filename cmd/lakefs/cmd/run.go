@@ -103,9 +103,15 @@ var runCmd = &cobra.Command{
 		cfg := loadConfig()
 		viper.WatchConfig()
 		viper.OnConfigChange(func(in fsnotify.Event) {
-			lvl := viper.GetString(config.LoggingLevelKey)
-			logger.WithField("toLevel", lvl).Info("Changing log level")
-			logging.SetLevel(lvl)
+			var c config.Config
+			if err := config.Unmarshal(&c); err != nil {
+				logger.WithError(err).Error("Failed to unmarshal config while reload")
+				return
+			}
+			if c.Logging.Level != logging.Level() {
+				logger.WithField("level", c.Logging.Level).Info("Update log level")
+				logging.SetLevel(c.Logging.Level)
+			}
 		})
 
 		ctx := cmd.Context()
@@ -172,7 +178,7 @@ var runCmd = &cobra.Command{
 		}
 
 		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
-		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg, stats.WithLogger(logger))
+		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(cfg.Stats), stats.WithLogger(logger))
 
 		// init block store
 		blockStore, err := factory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
@@ -304,7 +310,7 @@ var runCmd = &cobra.Command{
 		if lakefsBaseURL != "" {
 			_, err := url.Parse(lakefsBaseURL)
 			if err != nil {
-				logger.WithError(err).Warn(fmt.Sprintf("Failed to parse lakefs base url for email, check the value in %s", config.LakefsEmailBaseURLKey))
+				logger.WithError(err).Warn("Failed to parse configured lakefs base url for email")
 			}
 		}
 
