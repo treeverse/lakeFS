@@ -59,7 +59,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
 
     return (
         <>
-            <Dropdown alignRight>
+            <Dropdown align="end">
                 <Dropdown.Toggle variant="light" size="sm" className={'row-hover'}>
                     <GearIcon/>
                 </Dropdown.Toggle>
@@ -222,7 +222,7 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
                         <tr>
                             <td><strong>Commit ID</strong></td>
                             <td>
-                                <Link className="mr-2" href={{
+                                <Link className="me-2" href={{
                                     pathname: '/repositories/:repoId/commits/:commitId',
                                     params: {repoId: repo.id, commitId: commit.id}
                                 }}>
@@ -263,7 +263,7 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
                 <small>
                     No commit found, perhaps this is an
                     {' '}
-                    <Link className="mr-2" href={{
+                    <Link className="me-2" href={{
                         pathname: '/repositories/:repoId/changes',
                         params: {repoId: repo.id},
                         query: {ref: reference.id},
@@ -499,18 +499,18 @@ const GetStarted = ({ config, onUpload, onImport }) => {
         <Container className="m-4 mb-5">
             <h2 className="mt-2">To get started with this repository:</h2>
 
-            <Row className="pt-2 ml-2">
-                <DotIcon className="mr-1 mt-1"/>
+            <Row className="pt-2 ms-2">
+                <DotIcon className="me-1 mt-1"/>
                 <Button variant="link" disabled={(config.config.blockstore_type === 'local' || config.config.blockstore_type === 'mem')} onClick={onImport}>Import</Button>&nbsp;data from {config.config.blockstore_type}. Or, see the&nbsp;<a href="https://docs.lakefs.io/setup/import.html" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.
             </Row>
 
-            <Row className="pt-2 ml-2">
-                <DotIcon className="mr-1 mt-1"/>
+            <Row className="pt-2 ms-2">
+                <DotIcon className="me-1 mt-1"/>
                 <Button variant="link" onClick={onUpload}>Upload</Button>&nbsp;an object.
             </Row>
 
-            <Row className="pt-2 ml-2">
-                <DotIcon className="mr-1 mt-1"/>
+            <Row className="pt-2 ms-2">
+                <DotIcon className="me-1 mt-1"/>
                 Use&nbsp;<a href="https://docs.lakefs.io/integrations/distcp.html" target="_blank" rel="noopener noreferrer">DistCp</a>&nbsp;or&nbsp;
                 <a href="https://docs.lakefs.io/integrations/rclone.html" target="_blank" rel="noopener noreferrer">Rclone</a>&nbsp;to copy data into your repository.
             </Row>
