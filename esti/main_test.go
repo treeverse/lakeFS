@@ -64,10 +64,11 @@ const (
 )
 
 var (
-	logger logging.Logger
-	client api.ClientWithResponsesInterface
-	svc    *s3.S3
-	server *webhookServer
+	logger      logging.Logger
+	client      api.ClientWithResponsesInterface
+	endpointURL string
+	svc         *s3.S3
+	server      *webhookServer
 
 	testDirectDataAccess = Booleans{false}
 
@@ -296,7 +297,7 @@ func TestMain(m *testing.M) {
 	}
 	viper.SetDefault("post_migrate", false)
 
-	logger, client, svc = testutil.SetupTestingEnv(&params)
+	logger, client, svc, endpointURL = testutil.SetupTestingEnv(&params)
 
 	var err error
 	setupLakeFS := viper.GetBool("setup_lakefs")
