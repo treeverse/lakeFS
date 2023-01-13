@@ -17,7 +17,11 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
+<<<<<<< HEAD
 	"github.com/treeverse/lakefs/pkg/testutil"
+=======
+	"github.com/treeverse/lakefs/pkg/config"
+>>>>>>> 625af94e (use blockstore type key as constant)
 	"golang.org/x/exp/slices"
 )
 
@@ -33,7 +37,7 @@ type UncommittedFindings struct {
 
 func TestUncommittedGC(t *testing.T) {
 	SkipTestIfAskedTo(t)
-	blockstoreType := viper.GetString("blockstore.type")
+	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
 	if blockstoreType != block.BlockstoreTypeS3 {
 		t.Skip("Running on S3 only")
 	}

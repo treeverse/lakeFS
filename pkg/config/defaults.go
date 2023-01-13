@@ -10,6 +10,8 @@ const (
 	DefaultListenAddress        = "0.0.0.0:8000"
 	DefaultLoggingLevel         = "INFO"
 	DefaultLoggingAuditLogLevel = "DEBUG"
+
+	BlockstoreTypeKey = "blockstore.type"
 )
 
 //nolint:gomnd
@@ -17,7 +19,7 @@ func setDefaults(local bool) {
 	if local {
 		viper.SetDefault("database.type", "local")
 		viper.SetDefault("auth.encrypt.secret_key", "THIS_MUST_BE_CHANGED_IN_PRODUCTION") // #nosec
-		viper.SetDefault("blockstore.type", "local")
+		viper.SetDefault(BlockstoreTypeKey, "local")
 	}
 
 	viper.SetDefault("listen_address", DefaultListenAddress)
