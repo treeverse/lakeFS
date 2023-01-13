@@ -103,10 +103,14 @@ var runCmd = &cobra.Command{
 		cfg := loadConfig()
 		viper.WatchConfig()
 		viper.OnConfigChange(func(in fsnotify.Event) {
-			lvl := viper.GetString("logging.level")
-			if lvl != logging.Level() {
-				logger.WithField("level", lvl).Info("Changing log level")
-				logging.SetLevel(lvl)
+			var c config.Config
+			if err := config.Unmarshal(&c); err != nil {
+				logger.WithError(err).Error("Failed to unmarshal config while reload")
+				return
+			}
+			if c.Logging.Level != logging.Level() {
+				logger.WithField("level", c.Logging.Level).Info("Update log level")
+				logging.SetLevel(c.Logging.Level)
 			}
 		})
 
