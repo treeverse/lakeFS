@@ -7,13 +7,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/treeverse/lakefs/pkg/block"
+
 	"github.com/thanhpk/randstr"
 
 	"github.com/go-openapi/swag"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/block"
 )
 
 func matchPreSignedURLContent(t *testing.T, preSignedURL, content string) {
@@ -29,7 +29,15 @@ func matchPreSignedURLContent(t *testing.T, preSignedURL, content string) {
 
 func TestPreSign(t *testing.T) {
 	SkipTestIfAskedTo(t)
-	blockStoreType := viper.GetString("blockstore.type")
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	// look at the storage namespace to make sure our repo is indeed running with a supported object store
+	repoResponse, err := client.GetRepositoryWithResponse(ctx, repo)
+	require.NoError(t, err, "could not get repository information")
+	require.Equal(t, repoResponse.StatusCode(), http.StatusOK, "could not get repository information")
+	namespace := repoResponse.JSON200.StorageNamespace
+	blockStoreType, _, _ := strings.Cut(namespace, ":")
 	expectedKey := ""
 	switch blockStoreType {
 	case block.BlockstoreTypeS3:
@@ -39,10 +47,9 @@ func TestPreSign(t *testing.T) {
 	case block.BlockstoreTypeAzure:
 		expectedKey = "sv"
 	default:
-		t.Skip("Only GS, S3 and Azure Blob supported for pre-signed urls")
+		t.Skipf("Only GS, S3 and Azure Blob supported for pre-signed urls. Got: %s", blockStoreType)
 	}
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+
 	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "foo/bar", false)
 
 	objContent := randstr.String(randomDataContentLength)
