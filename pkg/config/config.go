@@ -304,7 +304,6 @@ func newConfig(local bool) (*Config, error) {
 	}
 
 	setDefaults(local)
-	setupLogger()
 
 	err := viper.UnmarshalExact(&c, viper.DecodeHook(
 		mapstructure.ComposeDecodeHookFunc(
@@ -318,6 +317,10 @@ func newConfig(local bool) (*Config, error) {
 		return nil, err
 	}
 
+	// setup logging package
+	logging.SetOutputFormat(c.Logging.Format)
+	logging.SetOutputs(c.Logging.Output, c.Logging.FileMaxSizeMB, c.Logging.FilesKeep)
+	logging.SetLevel(c.Logging.Level)
 	return c, nil
 }
 

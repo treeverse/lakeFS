@@ -33,7 +33,7 @@ type UncommittedFindings struct {
 
 func TestUncommittedGC(t *testing.T) {
 	SkipTestIfAskedTo(t)
-	blockstoreType := viper.GetViper().GetString("blockstore_type")
+	blockstoreType := viper.GetString("blockstore.type")
 	if blockstoreType != block.BlockstoreTypeS3 {
 		t.Skip("Running on S3 only")
 	}

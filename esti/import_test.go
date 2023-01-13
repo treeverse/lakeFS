@@ -20,7 +20,7 @@ const (
 func TestImport(t *testing.T) {
 	SkipTestIfAskedTo(t)
 	importPath := ""
-	switch viper.GetViper().GetString("blockstore_type") {
+	switch viper.GetString("blockstore.type") {
 	case block.BlockstoreTypeS3:
 		importPath = s3ImportPath
 	case block.BlockstoreTypeGS:
