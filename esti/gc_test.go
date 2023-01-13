@@ -173,7 +173,7 @@ func newSubmitConfig(repo string, extraSubmitArgs ...string) *sparkSubmitConfig 
 
 func TestCommittedGC(t *testing.T) {
 	SkipTestIfAskedTo(t)
-	blockstoreType := viper.GetViper().GetString(config.BlockstoreTypeKey)
+	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
 	// TODO lynn: change this for test also on Azure
 	if blockstoreType != block.BlockstoreTypeS3 {
 		t.Skip("Running on S3 only")
