@@ -180,7 +180,7 @@ const CommitMetadata = ({ metadata }) => {
         return <small>No metadata fields</small>
     }
     return (
-        <Table striped>
+        <Table striped size="sm" responsive>
             <tbody>
             {entries.map(([key, value]) =>  (
                 <tr key={`blame-commit-md-${key}`}>
@@ -213,7 +213,7 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
     if (!loading && !error && commit) {
         content = (
             <>
-                <Table hover >
+                <Table hover responsive>
                     <tbody>
                         <tr>
                             <td><strong>Path</strong></td>
