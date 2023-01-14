@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -172,7 +173,7 @@ func newSubmitConfig(repo string, extraSubmitArgs ...string) *sparkSubmitConfig 
 
 func TestCommittedGC(t *testing.T) {
 	SkipTestIfAskedTo(t)
-	blockstoreType := viper.GetViper().GetString("blockstore_type")
+	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
 	// TODO lynn: change this for test also on Azure
 	if blockstoreType != block.BlockstoreTypeS3 {
 		t.Skip("Running on S3 only")
@@ -203,7 +204,6 @@ func TestCommittedGC(t *testing.T) {
 			validateGCJob(t, ctx, &tst, fileExistingRef)
 		})
 	}
-
 }
 
 func prepareForGC(t *testing.T, ctx context.Context, testCase *testCase, blockstoreType string) string {

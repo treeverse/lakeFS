@@ -35,7 +35,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/catalog/testutils"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
@@ -2811,7 +2810,7 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 
 func TestLogin(t *testing.T) {
 	const configureDuration = "48h"
-	viper.Set(config.AuthLoginDuration, configureDuration)
+	viper.Set("auth.login_duration", configureDuration)
 
 	handler, deps := setupHandler(t)
 	server := setupServer(t, handler)
