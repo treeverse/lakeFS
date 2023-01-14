@@ -16,15 +16,13 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-var (
-	ErrNotImplemented = errors.New("not implemented")
-	ErrAsyncCopy      = errors.New("asynchronous copy not supported")
-)
+var ErrNotImplemented = errors.New("not implemented")
 
 const (
 	sizeSuffix              = "_size"
@@ -376,18 +374,18 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 		return err
 	}
 
-	destinationContainer := a.client.NewContainerClient(qualifiedDestinationKey.ContainerName)
-	destinationURL := destinationContainer.NewBlobClient(qualifiedDestinationKey.BlobURL)
-	resp, err := destinationURL.StartCopyFromURL(ctx, qualifiedSourceKey.BlobURL, nil)
+	destClient := a.client.NewContainerClient(qualifiedDestinationKey.ContainerName).NewBlobClient(qualifiedDestinationKey.BlobURL)
+	sourceClient := a.client.NewContainerClient(qualifiedSourceKey.ContainerName).NewBlobClient(qualifiedSourceKey.BlobURL)
+	sasKey, err := sourceClient.GetSASURL(sas.BlobPermissions{
+		Read: true,
+	}, time.Now(), time.Now().Add(10*time.Minute))
 	if err != nil {
 		return err
 	}
-	// validate copy is not asynchronous
-	copyStatus := resp.CopyStatus
-	if *copyStatus == blob.CopyStatusTypePending {
-		return ErrAsyncCopy
-	}
-	return nil
+
+	// TODO (niro): copy is limited to 256MB, should we handle it somehow?
+	_, err = destClient.CopyFromURL(ctx, sasKey, nil)
+	return err
 }
 
 func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
