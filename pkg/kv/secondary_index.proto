@@ -5,5 +5,5 @@ package io.treeverse.lakefs.kv;
 
 // message data model for secondary index
 message SecondaryIndex {
-  bytes primary_key = 99;
+  bytes primary_key = 1;
 }

@@ -20,7 +20,7 @@ import (
 
 var ErrEmptyBuffer = errors.New("TransferManager returned a 0 size buffer, this is a bug in the manager")
 
-// This code is taken from azblob chunkwriting.go
+// This code adapted from azblob chunkwriting.go
 // The reason is that the original code commit the data at the end of the copy
 // In order to support multipart upload we need to save the blockIDs instead of committing them
 // And once complete multipart is called we commit all the blockIDs
@@ -38,7 +38,7 @@ func copyFromReader(ctx context.Context, from io.Reader, to blockWriter, o block
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// TODO(niro): Need to configure
+	// TODO(niro): Need to configure?
 	buffers := newMMBPool(MaxBuffers, _1MiB)
 	defer buffers.Free()
 
@@ -262,6 +262,8 @@ func (id *id) next() string {
 func (id *id) issued() []string {
 	return id.all
 }
+
+// Code taken from Azure SDK for go blockblob/chunkwriting.go
 
 // bufferManager provides an abstraction for the management of buffers.
 // this is mostly for testing purposes, but does allow for different implementations without changing the algorithm.

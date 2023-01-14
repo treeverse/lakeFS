@@ -378,7 +378,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	sourceClient := a.client.NewContainerClient(qualifiedSourceKey.ContainerName).NewBlobClient(qualifiedSourceKey.BlobURL)
 	sasKey, err := sourceClient.GetSASURL(sas.BlobPermissions{
 		Read: true,
-	}, time.Now(), time.Now().Add(10*time.Minute))
+	}, time.Now(), a.preSignedURLDurationGenerator())
 	if err != nil {
 		return err
 	}
