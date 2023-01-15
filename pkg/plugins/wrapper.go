@@ -1,9 +1,13 @@
 package plugins
 
 import (
+	"errors"
 	"github.com/hashicorp/go-plugin"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
+
+var ErrClientAlreadyInitialized = errors.New("gRPC client already initialized")
+var ErrClientAlreadyClosed = errors.New("client already closed")
 
 // Wrapper wraps the go-plugin client (which is in fact a plugin controller) and the GRPC client.
 // It's used as a convenience struct to call the different types of plugins, and to be included as a subtype of specific
@@ -17,20 +21,21 @@ type Wrapper struct {
 // InitClient initializes the inner GRPC client to communicate to the
 func (c *Wrapper) InitClient() error {
 	if c.GRPCClient != nil {
-		return nil
+		return ErrClientAlreadyInitialized
 	}
 	grpcClient, err := c.Client.Client()
 	if err != nil {
-		c.Log.Fatal(err)
 		return err
 	}
 	c.GRPCClient = &grpcClient
 	return nil
 }
 
-// DestroyClient terminates the plugin
-func (c *Wrapper) DestroyClient() {
-	if c.Client != nil {
-		c.Client.Kill()
+// Close terminates the plugin
+func (c *Wrapper) Close() error {
+	if c.Client == nil {
+		return ErrClientAlreadyClosed
 	}
+	c.Client.Kill()
+	return nil
 }
