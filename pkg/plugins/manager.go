@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"errors"
 	"fmt"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
@@ -10,179 +11,173 @@ import (
 )
 
 var (
-	errPluginNameNotFound = fmt.Errorf("unknown plugin name")
-	errPluginTypeNotFound = fmt.Errorf("unknown plugin type")
-	errPluginImplNotFound = fmt.Errorf("unknown plugin imlementation")
+	ErrPluginTypeNotFound   = errors.New("unknown plugin type")
+	ErrPluginNameNotFound   = errors.New("unknown plugin name")
+	ErrUninitializedManager = errors.New("uninitialized plugins manager")
+	ErrPluginImplNotFound = errors.New("unknown plugin implementation")
 )
 
-// PluginType specifies the type of related plugins
-// For example, "diff" is a type of plugins that know how to perform a diff.
-type PluginType string
-
-// PluginName specifies the name of a plugin
-// For example, "delta" is a plugin.
-type PluginName string
-
-// PluginIdentity identifies the plugin implementation.
+// PluginIdentity identifies the plugin name, type, version, and the executable's location.
 type PluginIdentity struct {
-	Impl               plugin.Plugin
-	ImplName           string
-	HandshakeConfig    plugin.HandshakeConfig
+	Name               string
+	Type               string
+	Version            int
 	ExecutableLocation string
 }
-type pluginTypeConfigMap map[PluginName]plugin.ClientConfig
 
-// PluginTypeNameMap example:
+// PluginAuth includes authentication properties for the plugin.
+type PluginAuth struct {
+	Key   string
+	Value string
+}
+
+// pluginNameConfig includes the plugin's execute command, and its handshake config.
+// Examples:
 /*
+Delta diff example:
 {
-	"diff": {
-		"delta": plugin.clientConfig{
-			HandshakeConfig: plugin.HandshakeConfig{
-				ProtocolVersion:  1,
-				MagicCookieKey:   "key",
-				MagicCookieValue: "value",
-			},
-			Cmd: exec.Command("path/to/executable/diff/delta"),
-			AllowedProtocols: []plugin.Protocol{
-				plugin.ProtocolGRPC,
-			},
-			Impl: map[string]plugin.Plugin{
-				"deltaDiff": DeltaGRPCPlugin,
-			},
-		},
-		"iceberg: {
-			HandshakeConfig: plugin.HandshakeConfig{
-				ProtocolVersion:  1,
-				MagicCookieKey:   "key",
-				MagicCookieValue: "value",
-			},
-			Cmd: exec.Command("path/to/executable/diff/iceberg"),
-			AllowedProtocols: []plugin.Protocol{
-				plugin.ProtocolGRPC,
-			},
-			Impl: map[string]plugin.Plugin{
-				"icebergDiff": IcebergGRPCPlugin
-			},
-		}
+	HandshakeConfig: plugin.HandshakeConfig{
+		ProtocolVersion:  1,
+		MagicCookieKey:   "deltaKey",
+		MagicCookieValue: "deltaValue",
 	},
-	"merge": {
-		"delta": {
-			HandshakeConfig: plugin.HandshakeConfig{
-				ProtocolVersion:  1,
-				MagicCookieKey:   "key",
-				MagicCookieValue: "value",
-			},
-			Cmd: exec.Command("path/to/executable/merge/delta"),
-			AllowedProtocols: []plugin.Protocol{
-				plugin.ProtocolGRPC,
-			},
-			Impl: map[string]plugin.Plugin{
-				"deltaMerge": DeltaGRPCPlugin,
-			},
-		},
-		"iceberg: {
-			HandshakeConfig: plugin.HandshakeConfig{
-				ProtocolVersion:  1,
-				MagicCookieKey:   "key",
-				MagicCookieValue: "value",
-			},
-			Cmd: exec.Command("path/to/executable/merge/iceberg"),
-			AllowedProtocols: []plugin.Protocol{
-				plugin.ProtocolGRPC,
-			},
-			Impl: map[string]plugin.Plugin{
-				"icebergMerge": IcebergGRPCPlugin
-			},
-		}
+	Cmd: exec.Command{ Path: "path/to/executable/diff/delta", ...}
+}
+
+Iceberg merge example
+{
+	HandshakeConfig: plugin.HandshakeConfig{
+		ProtocolVersion:  24,
+		MagicCookieKey:   "icebergKey",
+		MagicCookieValue: "icebergValue",
 	},
+	Cmd: exec.Command{ Path: "/path/to/executable/merge/iceberg", ...}
 }
 */
-type PluginTypeNameMap map[PluginType]pluginTypeConfigMap
+type pluginNameConfig struct {
+	plugin.HandshakeConfig
+	*exec.Cmd
+}
+
+// pluginTypeConfig includes the plugin.Plugin interface implementations for the given plugin along with the supported
+// protocols and specific configurations for the different implementations for that plugin type.
+// Diff Example:
+//
+//	{
+//		AllowedProtocols: []plugin.Protocol{ plugin.ProtocolGRPC },
+//		Plugin: map[string]plugin.Plugin{"differPlugin": GRPCPlugin},
+//		PluginNameConfigMap: {
+//			"delta": <delta pluginNameConfig>,
+//			"iceberg: <iceberg pluginNameConfig>,
+//		}
+//	}
+type pluginTypeConfig struct {
+	AllowedProtocols    []plugin.Protocol
+	Plugins             map[string]plugin.Plugin
+	PluginNameConfigMap map[string]pluginNameConfig
+}
 
 // The Manager holds the different types of plugins that can be used in the plugin system
 type Manager struct {
-	pluginTypes     PluginTypeNameMap
+	pluginTypes map[string]pluginTypeConfig
 	pluginImplNames map[string]string
 }
 
+func NewManager() *Manager {
+	return &Manager{
+		pluginTypes: make(map[string]pluginTypeConfig),
+		pluginImplNames: make(map[string]string),
+	}
+}
+
 // PluginImplName is a getter for the `pluginImplNames` map.
-func (m *Manager) PluginImplName(pluginType PluginType, pluginName PluginName) (string, error) {
+func (m *Manager) PluginImplName(pluginType string, pluginName string) (string, error) {
 	in, ok := m.pluginImplNames[implNameKey(pluginType, pluginName)]
 	if !ok {
-		return "", errPluginImplNotFound
+		return "", ErrPluginImplNotFound
 	}
 	return in, nil
 }
 
-// RegisterPlugin is used to register a new plugin with a plugin type. It can also introduce a new plugin type.
-func (m *Manager) RegisterPlugin(pluginType PluginType, pluginName PluginName, pluginID PluginIdentity) {
-	if m.pluginTypes == nil {
-		m.pluginTypes = make(PluginTypeNameMap)
-	}
-	ptcm, ok := m.pluginTypes[pluginType]
-	if !ok {
-		ptcm := make(pluginTypeConfigMap)
-		m.pluginTypes[pluginType] = ptcm
-	}
-	if m.pluginImplNames == nil {
-		m.pluginImplNames = make(map[string]string)
-	}
-	m.pluginImplNames[implNameKey(pluginType, pluginName)] = pluginID.ImplName
-	ptcm[pluginName] = clientConfig(pluginID)
-}
-
-func implNameKey(pluginType PluginType, pluginName PluginName) string {
-	return fmt.Sprintf("%s_%s", pluginType, pluginName)
-}
-
-// clientConfig generates a plugin.ClientConfig struct to be used to configure the Manager's plugins with the
-// corresponding configurations
-func clientConfig(identity PluginIdentity) plugin.ClientConfig {
-	handshakeConfig := identity.HandshakeConfig
-	allowedProtocols := []plugin.Protocol{
-		plugin.ProtocolGRPC,
-	}
-	return plugin.ClientConfig{
-		HandshakeConfig:  handshakeConfig,
-		Cmd:              exec.Command(identity.ExecutableLocation), //nolint:gosec
-		AllowedProtocols: allowedProtocols,
-		// "Plugins": the different types of plugins that the Plugin serves/consumes. Basically a plugin per
-		// communication type. There will be a single plugin which is the GRPC implementation of the Plugin.
-		Plugins: map[string]plugin.Plugin{
-			identity.ImplName: identity.Impl,
-		},
-	}
-}
-
-// WrapPlugin generates a Wrapper that wraps the go-plugin client.
+// LoadClient loads a Client that wraps the go-plugin client.
 //
-// It accepts two parameters: the top PluginType and the required PluginName under it.
-// For example, PluginType = "diff", PluginName = "delta" will generate a Wrapper with a client that performs
+// It uses a plugin's identity: the plugin type and the plugin name under it.
+// For example, plugin type = "diff", plugin name = "delta" will generate a Client with a go-plugin client that performs
 // diffs over Delta Lake tables.
-// It also returns a DestroyClientFunc
-func (m *Manager) WrapPlugin(pluginType PluginType, pluginName PluginName) (*Wrapper, error) {
-	ptpp, ok := m.pluginTypes[pluginType]
-	if !ok {
-		return nil, errPluginNameNotFound
+func (m *Manager) LoadClient(identity PluginIdentity) (*Client, error) {
+	if m == nil {
+		return nil, ErrUninitializedManager
 	}
-	clientConfig, ok := ptpp[pluginName]
+	ptm, ok := m.pluginTypes[identity.Type]
 	if !ok {
-		return nil, errPluginTypeNotFound
+		return nil, ErrPluginTypeNotFound
 	}
-	return newPluginWrapper(pluginType, pluginName, clientConfig)
+	pluginNameConfig, ok := ptm.PluginNameConfigMap[identity.Name]
+	if !ok {
+		return nil, ErrPluginNameNotFound
+	}
+
+	clientConfig := plugin.ClientConfig{
+		Plugins:          ptm.Plugins,
+		AllowedProtocols: ptm.AllowedProtocols,
+		HandshakeConfig:  pluginNameConfig.HandshakeConfig,
+		Cmd:              pluginNameConfig.Cmd,
+	}
+	return newPluginClient(fmt.Sprintf("%s:%s", identity.Type, identity.Name), clientConfig)
 }
 
-// newPluginWrapper generates a Wrapper that wraps the go-plugin client.
-func newPluginWrapper(pluginType PluginType, pluginName PluginName, clientConfig plugin.ClientConfig) (*Wrapper, error) {
-	logger := hclog.New(&hclog.LoggerOptions{
-		Name:   fmt.Sprintf("%s_%s_logger", pluginType, pluginName),
+// newPluginClient generates a Client that wraps the go-plugin client.
+func newPluginClient(clientName string, clientConfig plugin.ClientConfig) (*Client, error) {
+	hl := hclog.New(&hclog.LoggerOptions{
+		Name:   fmt.Sprintf("%s_logger", clientName),
 		Output: os.Stdout,
 		Level:  hclog.Debug,
 	})
-	clientConfig.Logger = logger
-	client := plugin.NewClient(&clientConfig)
-	return &Wrapper{
-		Client: client,
-		Log:    logging.Default(),
-	}, nil
+	l := logging.Default()
+	hcl := NewHClogger(hl, l)
+	clientConfig.Logger = hcl
+	pc := plugin.NewClient(&clientConfig)
+	grpcClient, err := pc.Client()
+	if err != nil {
+		return nil, err
+	}
+	client := NewClient(pc, grpcClient, hcl)
+	return &client, nil
+}
+
+// RegisterPlugin is used to register a new plugin type with a plugin group. It can also introduce a new plugin group.
+func (m *Manager) RegisterPlugin(id PluginIdentity, auth PluginAuth, p plugin.Plugin) error {
+	if m == nil {
+		return ErrUninitializedManager
+	}
+	pt, ok := m.pluginTypes[id.Type]
+	if !ok {
+		pt = typeConfig(id.Type, p)
+	}
+	pt.PluginNameConfigMap[id.Name] = pluginNameConfig{
+		HandshakeConfig: plugin.HandshakeConfig{
+			ProtocolVersion:  uint(id.Version),
+			MagicCookieKey:   auth.Key,
+			MagicCookieValue: auth.Value,
+		},
+		Cmd: exec.Command(id.ExecutableLocation), //nolint:gosec
+	}
+	m.pluginTypes[id.Type] = pt
+	return nil
+}
+
+func typeConfig(pluginType string, p plugin.Plugin) pluginTypeConfig {
+	return pluginTypeConfig{
+		AllowedProtocols: []plugin.Protocol{
+			plugin.ProtocolGRPC,
+		},
+		Plugins: map[string]plugin.Plugin{
+			pluginType: p,
+		},
+		PluginNameConfigMap: make(map[string]pluginNameConfig),
+	}
+}
+
+func implNameKey(pluginType string, pluginName string) string {
+	return fmt.Sprintf("%s_%s", pluginType, pluginName)
 }

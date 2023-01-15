@@ -173,6 +173,10 @@ type Logger interface {
 	Panicf(format string, args ...interface{})
 	Logf(level logrus.Level, format string, args ...interface{})
 	IsTracing() bool
+	IsDebugging() bool
+	IsInfo() bool
+	IsError() bool
+	IsWarn() bool
 }
 
 type logrusEntryWrapper struct {
@@ -272,6 +276,22 @@ func (l logrusEntryWrapper) Logf(level logrus.Level, format string, args ...inte
 
 func (*logrusEntryWrapper) IsTracing() bool {
 	return defaultLogger.IsLevelEnabled(logrus.TraceLevel)
+}
+
+func (*logrusEntryWrapper) IsDebugging() bool {
+	return defaultLogger.IsLevelEnabled(logrus.DebugLevel)
+}
+
+func (*logrusEntryWrapper) IsInfo() bool {
+	return defaultLogger.IsLevelEnabled(logrus.InfoLevel)
+}
+
+func (*logrusEntryWrapper) IsError() bool {
+	return defaultLogger.IsLevelEnabled(logrus.ErrorLevel)
+}
+
+func (*logrusEntryWrapper) IsWarn() bool {
+	return defaultLogger.IsLevelEnabled(logrus.WarnLevel)
 }
 
 type logrusCallerFormatter struct {
