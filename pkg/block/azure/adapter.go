@@ -192,7 +192,6 @@ func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer, mo
 			Read:  true,
 			Add:   true,
 			Write: true,
-			Tag:   true,
 		}
 	}
 	return a.getPreSignedURL(obj, permissions)
