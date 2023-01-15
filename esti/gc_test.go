@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -191,7 +190,7 @@ func newSubmitConfig(repo string, blockstoreType string, doMark *bool, doSweep *
 
 func TestCommittedGC(t *testing.T) {
 	SkipTestIfAskedTo(t)
-	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
+	blockstoreType := viper.GetString("blockstore_type")
 	logger.Infof("Got blockstore type %s", blockstoreType)
 	ctx := context.Background()
 	for _, tst := range testCases {
