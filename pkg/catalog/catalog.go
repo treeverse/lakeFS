@@ -36,6 +36,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/pyramid"
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
+	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/validator"
 	"github.com/xitongsys/parquet-go/parquet"
 	"github.com/xitongsys/parquet-go/writer"
@@ -815,6 +816,57 @@ func (c *Catalog) CreateEntry(ctx context.Context, repositoryID string, branch s
 		return err
 	}
 	return c.Store.Set(ctx, repository, branchID, key, *value, writeConditions...)
+}
+
+// CopyEntry try to perform a shallow copy from source to destination
+// Shallow copy will succeed only if source is a staged reference
+func (c *Catalog) CopyEntry(ctx context.Context, repositoryID, dstPath, dstBranch, srcRef, address string, source DBEntry) (*DBEntry, error) {
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	resolvedRef, err := c.Store.Dereference(ctx, repository, graveler.Ref(srcRef))
+	if err != nil {
+		return nil, err
+	}
+
+	writeTime := time.Now()
+	entryBuilder := NewDBEntryBuilder().
+		CommonLevel(false).
+		Path(dstPath).
+		PhysicalAddress(address).
+		AddressType(AddressTypeRelative).
+		CreationDate(writeTime).
+		Size(source.Size).
+		Checksum(source.Checksum).
+		ContentType(source.ContentType)
+	dstEntry := entryBuilder.Build()
+
+	value, err := EntryToValue(newEntryFromCatalogEntry(dstEntry))
+	if err != nil {
+		return nil, err
+	}
+	stagingToken := graveler.StagingToken("") // empty will trigger full copy
+	if resolvedRef.Type == graveler.ReferenceTypeBranch && dstBranch == srcRef {
+		stagingToken = resolvedRef.Branch.StagingToken
+	}
+	err = c.Store.Copy(ctx, repository, resolvedRef.BranchID, stagingToken, graveler.Key(source.Path), graveler.Key(dstPath), value, func() error {
+		// Perform a full copy
+		blob, err := upload.CopyBlob(ctx, c.BlockAdapter, repository.StorageNamespace.String(), repository.StorageNamespace.String(),
+			source.PhysicalAddress, source.Checksum, address, source.Size)
+		if err != nil {
+			return err
+		}
+		dstEntry.Checksum = blob.Checksum
+		dstEntry.Size = blob.Size
+
+		return c.CreateEntry(ctx, repositoryID, dstBranch, dstEntry)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return &dstEntry, nil
 }
 
 func (c *Catalog) DeleteEntry(ctx context.Context, repositoryID string, branch string, path string) error {

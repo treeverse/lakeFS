@@ -65,6 +65,9 @@ const (
 	httpStatusClientClosedRequest = 499
 	// httpStatusClientClosedRequestText text used for client closed request status code
 	httpStatusClientClosedRequestText = "Client closed request"
+
+	CopyTypeFull    = "full"
+	CopyTypeShallow = "shallow"
 )
 
 type actionsHandler interface {
@@ -2361,45 +2364,32 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 		return
 	}
 
-	ref := branch
+	reference := branch
 	if body.SrcRef != nil {
-		ref = *body.SrcRef
+		reference = *body.SrcRef
 	}
 
-	// TODO (niro): Naive copy object flow - real implementation still missing (https://github.com/treeverse/lakeFS/issues/4477)
-	src, err := c.Catalog.GetEntry(ctx, repository, ref, body.SrcPath, catalog.GetEntryParams{})
+	src, err := c.Catalog.GetEntry(ctx, repository, reference, body.SrcPath, catalog.GetEntryParams{})
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
 	destAddress := c.PathProvider.NewPath()
-	blob, err := upload.CopyBlob(ctx, c.BlockAdapter, repo.StorageNamespace, repo.StorageNamespace, src.PhysicalAddress, src.Checksum, destAddress, src.Size)
+	entry, err := c.Catalog.CopyEntry(ctx, repository, params.DestPath, branch, *body.SrcRef, destAddress, *src)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
-	writeTime := time.Now()
-	entryBuilder := catalog.NewDBEntryBuilder().
-		CommonLevel(false).
-		Path(params.DestPath).
-		PhysicalAddress(blob.PhysicalAddress).
-		AddressType(catalog.AddressTypeRelative).
-		CreationDate(writeTime).
-		Size(blob.Size).
-		Checksum(blob.Checksum).
-		ContentType(src.ContentType)
-	entry := entryBuilder.Build()
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress, block.IdentifierTypeRelative)
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	w.Header().Set("X-lakeFS-Copy-Type", "full") // update with the real implementation
-	// TODO: end of TODO
+	copyType := CopyTypeShallow
+	if src.PhysicalAddress == entry.PhysicalAddress {
+		copyType = CopyTypeFull
+	}
+	w.Header().Set("X-lakeFS-Copy-Type", copyType) // update with the real implementation
 
 	response := ObjectStats{
 		Checksum:        entry.Checksum,
