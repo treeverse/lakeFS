@@ -1,19 +1,18 @@
 package esti
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"testing"
 
-	"github.com/treeverse/lakefs/pkg/block"
-
-	"github.com/thanhpk/randstr"
-
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
+	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/block"
 )
 
 func matchPreSignedURLContent(t *testing.T, preSignedURL, content string) {
@@ -103,5 +102,53 @@ func TestPreSign(t *testing.T) {
 		endpointParsedURL, err := url.Parse(endpointURL)
 		require.NoError(t, err, "failed to parse the endpoint URL used by esti")
 		require.NotEqual(t, endpointParsedURL.Host, responseHost, "Should have been redirected to the object store")
+	})
+
+	t.Run("preSignGetPhysicalAddress", func(t *testing.T) {
+		// request a pre-signed URL for us to upload to
+		response, err := client.GetPhysicalAddressWithResponse(ctx, repo, mainBranch, &api.GetPhysicalAddressParams{
+			Path:    "foo/uploaded",
+			Presign: swag.Bool(true),
+		})
+		require.NoError(t, err, "failed to get physical address with presign=true")
+		require.Equal(t, response.StatusCode(), http.StatusOK, "expected a 200 OK")
+		preSignedURLPtr := response.JSON200.PresignedUrl
+		require.NotEmpty(t, preSignedURLPtr)
+		preSignedURL := *preSignedURLPtr
+
+		// upload to the pre-signed URL (Assuming that all object stores do it with a simple HTTP PUT
+		uploadContentLength := 1024 * 1024 // 1MB
+		objContent := randstr.String(uploadContentLength)
+		req, err := http.NewRequest(http.MethodPut, preSignedURL, bytes.NewReader([]byte(objContent)))
+		require.NoError(t, err, "failed to create PUT request")
+		req.Header.Set("Content-Type", "application/octet-stream")
+		httpResp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err, "failed to execute PUT request")
+		require.Truef(t, httpResp.StatusCode < 400, "got a bad response from pre-signed URL for PUT: %s", httpResp.Status)
+
+		// Let's link this physical address
+		linkResponse, err := client.LinkPhysicalAddressWithResponse(ctx, repo, mainBranch, &api.LinkPhysicalAddressParams{
+			Path: "foo/uploaded",
+		}, api.LinkPhysicalAddressJSONRequestBody{
+			Checksum:    httpResp.Header.Get("Etag"),
+			ContentType: swag.String("application/octet-stream"),
+			SizeBytes:   int64(uploadContentLength),
+			Staging: api.StagingLocation{
+				PhysicalAddress: response.JSON200.PhysicalAddress,
+				PresignedUrl:    response.JSON200.PresignedUrl,
+				Token:           response.JSON200.Token,
+			},
+		})
+		require.NoError(t, err, "failed to link physical address")
+		require.Equalf(t, linkResponse.StatusCode(), http.StatusOK, "unexpected HTTP code for link_physical_address: %s", linkResponse.Status())
+
+		// Finally, let's read it back and see that we get back what we uploaded!
+		readBackResponse, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &api.GetObjectParams{
+			Path: "foo/uploaded",
+		})
+		require.NoError(t, err, "failed to read back linked object")
+		require.Equalf(t, readBackResponse.StatusCode(), http.StatusOK, "unexpected HTTP code for get_object after linking: %s", readBackResponse.Status())
+		returnedContent := readBackResponse.Body
+		require.Equal(t, returnedContent, objContent, "the body returned is different from the one uploaded")
 	})
 }
