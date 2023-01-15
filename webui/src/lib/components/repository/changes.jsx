@@ -13,7 +13,8 @@ import {
     HistoryIcon,
     PencilIcon,
     PlusIcon,
-    TrashIcon
+    TrashIcon,
+    TableIcon
 } from "@primer/octicons-react";
 import {Link} from "../nav";
 import {useAPI, useAPIWithPagination} from "../../hooks/api";
@@ -178,10 +179,10 @@ export const TreeItem = ({ entry, repo, changesTreeType = ChangesTreeType.Object
 export const TreeEntryRow = ({entry, relativeTo = "", leaf = false, changesTreeType = ChangesTreeType.ObjectChanges, dirExpanded, diffExpanded, depth = 0, onClick, loading = false, onRevert, onNavigate, onClickExpandObjectDiff = null, onClickExpandDeltaLakeDiff = null, isDeltaTableRootEntry = false, deltaLakeDiffExpanded,  getMore}) => {
     const [showRevertConfirm, setShowRevertConfirm] = useState(false)
     let rowClass = 'tree-entry-row ' + diffType(entry);
-    let pathSection = extractPathText(entry, relativeTo);
-    let diffIndicator = diffIndicatorIcon(entry);
+    let pathSection = extractPathText(entry, relativeTo, isDeltaTableRootEntry);
+    let diffIndicator = diffIndicatorIcon(entry, isDeltaTableRootEntry);
     const [showSummary, setShowSummary] = useState(false);
-    if (entry.path_type === "common_prefix") {
+    if (entry.path_type === "common_prefix" && !isDeltaTableRootEntry) {
         pathSection = <Link href={onNavigate(entry)}>{pathSection}</Link>
     }
     const rowActions = []
@@ -277,10 +278,13 @@ export const ObjectChangesTreeItem = ({ entry, repo, reference, leftDiffRefID, r
     </>
 }
 
-function extractPathText(entry, relativeTo) {
+function extractPathText(entry, relativeTo, isDeltaTableRootEntry) {
     let pathText = entry.path;
     if (pathText.startsWith(relativeTo)) {
         pathText = pathText.substr(relativeTo.length);
+    }
+    if (isDeltaTableRootEntry && pathText.endsWith("/")) {
+        pathText = pathText.slice(0,-1)
     }
     return pathText;
 }
@@ -301,7 +305,15 @@ function diffType(entry) {
     }
 }
 
-function diffIndicatorIcon(entry) {
+function diffIndicatorIcon(entry, isDeltaTableRootEntry) {
+    if (isDeltaTableRootEntry) {
+        return <>
+            <span>
+                <TableIcon/>
+            </span>
+        </>
+    }
+
     if (entry.path_type === 'common_prefix') {
         return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-prefix"}>Changes under prefix</Tooltip>)}>
                         <span>
