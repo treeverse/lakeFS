@@ -61,9 +61,7 @@ func copyFromReader(ctx context.Context, from io.Reader, to blockWriter, o block
 			// got a buffer
 		default:
 			// no buffer available; allocate a new buffer if possible
-			if _, err := buffers.Grow(); err != nil {
-				return nil, err
-			}
+			buffers.Grow()
 			// either grab the newly allocated buffer or wait for one to become available
 			buffer = <-buffers.Acquire()
 		}
@@ -274,7 +272,7 @@ type bufferManager[T ~[]byte] interface {
 	// It returns the total number of buffers or an error.
 	// No error is returned if the number of buffers has reached max.
 	// This is called only from the reading goroutine.
-	Grow() (int, error)
+	Grow() int
 
 	// Free cleans up all buffers.
 	Free()
@@ -285,13 +283,12 @@ type mmb []byte
 
 // TODO (niro): consider implementation refactoring
 // newMMB creates a new memory mapped buffer with the specified size
-func newMMB(size int64) (mmb, error) {
-	return make(mmb, size), nil
+func newMMB(size int64) mmb {
+	return make(mmb, size)
 }
 
 // delete cleans up the memory mapped buffer
 func (m *mmb) delete() {
-	return
 }
 
 // mmbPool implements the bufferManager interface.
@@ -316,16 +313,13 @@ func (pool *mmbPool) Acquire() <-chan mmb {
 	return pool.buffers
 }
 
-func (pool *mmbPool) Grow() (int, error) {
+func (pool *mmbPool) Grow() int {
 	if pool.count < pool.max {
-		buffer, err := newMMB(pool.size)
-		if err != nil {
-			return 0, err
-		}
+		buffer := newMMB(pool.size)
 		pool.buffers <- buffer
 		pool.count++
 	}
-	return pool.count, nil
+	return pool.count
 }
 
 func (pool *mmbPool) Release(buffer mmb) {

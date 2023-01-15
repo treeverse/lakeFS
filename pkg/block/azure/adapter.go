@@ -205,7 +205,7 @@ func (a *Adapter) getPreSignedURL(obj block.ObjectPointer, permissions sas.BlobP
 	}
 
 	blobURL := a.client.NewContainerClient(qualifiedKey.ContainerName).NewBlobClient(qualifiedKey.BlobURL)
-	u, err := blobURL.GetSASURL(permissions, time.Unix(0, 0), a.preSignedURLDurationGenerator())
+	u, err := blobURL.GetSASURL(permissions, time.Time{}, a.preSignedURLDurationGenerator())
 	if err != nil {
 		return "", err
 	}
@@ -352,7 +352,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	sourceClient := a.client.NewContainerClient(qualifiedSourceKey.ContainerName).NewBlobClient(qualifiedSourceKey.BlobURL)
 	sasKey, err := sourceClient.GetSASURL(sas.BlobPermissions{
 		Read: true,
-	}, time.Unix(0, 0), a.preSignedURLDurationGenerator())
+	}, time.Time{}, a.preSignedURLDurationGenerator())
 	if err != nil {
 		return err
 	}

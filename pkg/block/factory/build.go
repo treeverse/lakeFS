@@ -169,7 +169,7 @@ func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
 
 	defaultCreds, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return nil, fmt.Errorf("invalid credentials: %w", err)
+		return nil, fmt.Errorf("missing credentials: %w", err)
 	}
 	return service.NewClient(url, defaultCreds, &options)
 }
