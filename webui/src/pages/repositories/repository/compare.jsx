@@ -31,14 +31,13 @@ import Button from "react-bootstrap/Button";
 import {FormControl, FormHelperText, InputLabel, MenuItem, Select} from "@mui/material";
 import Modal from "react-bootstrap/Modal";
 import {RepoError} from "./error";
-// import {ComingSoonModal} from "../../../lib/components/modals";
+import {ComingSoonModal} from "../../../lib/components/modals";
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
-    const [showDeltaDiffContainer, setShowDeltaDiffContainer] = useState(false);
-    // const [showDeltaMergeComingSoonModal, setShowDeltaMergeComingSoonModal] = useState(false);
+    const [showDeltaDiffCompareView, setShowDeltaDiffCompareView] = useState(false);
 
     const refresh = () => {
         setResultsState({prefix: prefix, results:[], pagination:{}})
@@ -96,13 +95,13 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                 {(results.length === 0)
                     ? <Alert variant="info">No changes</Alert>
                     : (<>
-                        {showDeltaDiffContainer
+                        {showDeltaDiffCompareView
                             ? <>
                             <Button className="action-bar"
                                       variant="secondary"
                                       disabled={false}
                                       onClick={() => {
-                                          setShowDeltaDiffContainer(false)
+                                          setShowDeltaDiffCompareView(false)
                                       }}>
                                 <ArrowLeftIcon/> Back to object comparison
                             </Button>
@@ -117,7 +116,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                     disabled={false}
                                     onClick={() => {
                                     sendDeltaDiffStats();
-                                    setShowDeltaDiffContainer(true)
+                                    setShowDeltaDiffCompareView(true)
                                 }}>
                             <DiffIcon/> Compare Delta Lake tables
                                 </Button>
@@ -163,7 +162,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                             rightCommittedRef += "@";
                                         }
                                         return (
-                                            showDeltaDiffContainer
+                                            showDeltaDiffCompareView
                                             ? <DeltaTableChangesTreeItem key={entry.path + "-item"} entry={entry} repo={repo}
                                                                          reference={reference}
                                                                          internalReferesh={internalRefresh} leftDiffRefID={leftCommittedRef}
@@ -232,6 +231,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                             source={compareReference.id}
                             dest={reference.id}
                             onDone={refresh}
+                            showDeltaDiffCompareView={showDeltaDiffCompareView}
                         />
                     }
                 </ActionGroup>
@@ -242,7 +242,19 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     );
 };
 
-const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
+const MergeButton = ({repo, onDone, source, dest, disabled = false, showDeltaDiffCompareView}) => {
+    const [showDeltaMergeComingSoonModal, setShowDeltaMergeComingSoonModal] = useState(false);
+    const sendDeltaMergeStats = async () => {
+        const deltaMergeStatEvents = [
+            {
+                "class": "experimental-feature",
+                "name": "delta-diff",
+                "count": 1,
+            }
+        ];
+        await statistics.postStatsEvents(deltaMergeStatEvents);
+    }
+
     const initialMerge = {
         merging: false,
         show: false,
@@ -260,12 +272,6 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
     }
 
     const onSubmit = async () => {
-        //TODO (Tals): add coming soon modal to merge button when in delta compare view
-        // <ComingSoonModal display={showDeltaMergeComingSoonModal}
-        //                  onCancel={() => setShowDeltaMergeComingSoonModal(false)}>
-        //     <div>lakeFS Delta Lake tables diff is under development</div>
-        // </ComingSoonModal>
-
         let strategy = mergeState.strategy;
         if (strategy === "none") {
             strategy = "";
@@ -317,7 +323,16 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <Button variant="success" disabled={disabled} onClick={() => setMergeState({merging: mergeState.merging,
+            <ComingSoonModal display={showDeltaMergeComingSoonModal}
+                             onCancel={() => setShowDeltaMergeComingSoonModal(false)}>
+                <div>lakeFS Delta Lake tables merge is under development</div>
+            </ComingSoonModal>
+            <Button variant="success" disabled={disabled} onClick={showDeltaDiffCompareView ?
+                () => {
+                    sendDeltaMergeStats()
+                    setShowDeltaMergeComingSoonModal(!showDeltaMergeComingSoonModal)
+                } :
+                () => setMergeState({merging: mergeState.merging,
                 err: mergeState.err, show: true, strategy: mergeState.strategy})}>
                 <GitMergeIcon/> Merge
             </Button>
