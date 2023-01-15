@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	errPluginGroupNotFound = fmt.Errorf("unknown plugin group")
-	errPluginTypeNotFound  = fmt.Errorf("unknown plugin type")
+	ErrPluginGroupNotFound = fmt.Errorf("unknown plugin group")
+	ErrPluginTypeNotFound  = fmt.Errorf("unknown plugin type")
 )
 
 // PluginType specifies the type of related plugins
@@ -25,12 +25,11 @@ type PluginName string
 
 // PluginIdentity identifies the plugin implementation.
 type PluginIdentity struct {
-	Impl               plugin.Plugin
-	ImplName           string
+	Plugin             plugin.Plugin
+	PluginName         string
 	HandshakeConfig    plugin.HandshakeConfig
 	ExecutableLocation string
 }
-type pluginTypeConfigMap map[PluginName]plugin.ClientConfig
 
 // PluginTypeNameMap example:
 /*
@@ -46,7 +45,7 @@ type pluginTypeConfigMap map[PluginName]plugin.ClientConfig
 			AllowedProtocols: []plugin.Protocol{
 				plugin.ProtocolGRPC,
 			},
-			Impl: map[string]plugin.Plugin{
+			Plugin: map[string]plugin.Plugin{
 				"deltaDiff": DeltaGRPCPlugin,
 			},
 		},
@@ -60,7 +59,7 @@ type pluginTypeConfigMap map[PluginName]plugin.ClientConfig
 			AllowedProtocols: []plugin.Protocol{
 				plugin.ProtocolGRPC,
 			},
-			Impl: map[string]plugin.Plugin{
+			Plugin: map[string]plugin.Plugin{
 				"icebergDiff": IcebergGRPCPlugin
 			},
 		}
@@ -76,7 +75,7 @@ type pluginTypeConfigMap map[PluginName]plugin.ClientConfig
 			AllowedProtocols: []plugin.Protocol{
 				plugin.ProtocolGRPC,
 			},
-			Impl: map[string]plugin.Plugin{
+			Plugin: map[string]plugin.Plugin{
 				"deltaMerge": DeltaGRPCPlugin,
 			},
 		},
@@ -90,13 +89,15 @@ type pluginTypeConfigMap map[PluginName]plugin.ClientConfig
 			AllowedProtocols: []plugin.Protocol{
 				plugin.ProtocolGRPC,
 			},
-			Impl: map[string]plugin.Plugin{
+			Plugin: map[string]plugin.Plugin{
 				"icebergMerge": IcebergGRPCPlugin
 			},
 		}
 	},
 }
 */
+type pluginTypeConfigMap map[PluginName]plugin.ClientConfig
+
 type PluginTypeNameMap map[PluginType]pluginTypeConfigMap
 
 // The Manager holds the different types of plugins that can be used in the plugin system
@@ -113,11 +114,11 @@ type Manager struct {
 func (m *Manager) WrapPlugin(pluginType PluginType, pluginName PluginName) (*Wrapper, error) {
 	ptpp, ok := m.pluginTypes[pluginType]
 	if !ok {
-		return nil, errPluginGroupNotFound
+		return nil, ErrPluginGroupNotFound
 	}
 	clientConfig, ok := ptpp[pluginName]
 	if !ok {
-		return nil, errPluginTypeNotFound
+		return nil, ErrPluginTypeNotFound
 	}
 	return newPluginWrapper(fmt.Sprintf("%s_%s", pluginType, pluginName), clientConfig)
 }
@@ -164,7 +165,7 @@ func clientConfig(identity PluginIdentity) plugin.ClientConfig {
 		// "Plugins": the different types of plugins that the Plugin serves/consumes. Basically a plugin per
 		// communication type. There will be a single plugin which is the GRPC implementation of the Plugin.
 		Plugins: map[string]plugin.Plugin{
-			identity.ImplName: identity.Impl,
+			identity.PluginName: identity.Plugin,
 		},
 	}
 }
