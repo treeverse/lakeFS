@@ -6,11 +6,11 @@ import (
 	"google.golang.org/grpc"
 )
 
-type DeltaGrpcClient struct {
+type GrpcClient struct {
 	client DifferClient // This is the underlying GRPC API client
 }
 
-func (d *DeltaGrpcClient) Diff(ctx context.Context, paths TablePaths, s3Creds S3Creds) ([]*Diff, error) {
+func (d *GrpcClient) Diff(ctx context.Context, paths TablePaths, s3Creds S3Creds) ([]*Diff, error) {
 	dr, err := d.client.Diff(ctx, &DiffRequest{
 		Paths: &DiffPaths{
 			LeftPath:  paths.LeftTablePath,
@@ -28,20 +28,20 @@ func (d *DeltaGrpcClient) Diff(ctx context.Context, paths TablePaths, s3Creds S3
 	return dr.Diffs, nil
 }
 
-type DeltaDiffGRPCPlugin struct {
+type GRPCPlugin struct {
 	// GRPCPlugin must implement the Plugin interface
 	plugin.Plugin
 	Impl Differ
 }
 
 // GRPCServer must be implemented even though we won't use it
-func (p *DeltaDiffGRPCPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
+func (p *GRPCPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
 	return nil
 }
 
 // GRPCClient will return the Delta diff GRPC custom client
-func (p *DeltaDiffGRPCPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
-	return &DeltaGrpcClient{
+func (p *GRPCPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
+	return &GrpcClient{
 		client: NewDifferClient(c), // This is the underlying GRPC client
 	}, nil
 }

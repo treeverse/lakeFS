@@ -44,7 +44,7 @@ type Entry struct {
 	OperationContent map[string]string
 }
 
-func (s *Service) RunDiff(ctx context.Context, diffName string, diffParams interface{}) ([]Entry, error) {
+func (s *Service) RunDiff(ctx context.Context, diffName string, diffParams Params) ([]Entry, error) {
 	pn := plugins.PluginName(diffName)
 	w, err := s.pluginManager.WrapPlugin(pluginType, pn)
 	if err != nil {
@@ -57,8 +57,7 @@ func (s *Service) RunDiff(ctx context.Context, diffName string, diffParams inter
 	}
 	switch diffName {
 	case "delta":
-		params := diffParams.(Params)
-		return s.runDeltaDiff(ctx, params, w, dispenseName)
+		return s.runDeltaDiff(ctx, diffParams, w, dispenseName)
 	default:
 		return nil, errUnknownDiffType
 	}
@@ -70,8 +69,8 @@ func (s *Service) runDeltaDiff(ctx context.Context, params Params, w *plugins.Wr
 	if err != nil {
 		return nil, err
 	}
-	deltaDiffer := grpcRaw.(Differ)
-	diffs, err := deltaDiffer.Diff(ctx, params.TablePaths, params.S3Creds)
+	differ := grpcRaw.(Differ)
+	diffs, err := differ.Diff(ctx, params.TablePaths, params.S3Creds)
 	result := make([]Entry, len(diffs))
 	for _, diff := range diffs {
 		result = append(result, Entry{
