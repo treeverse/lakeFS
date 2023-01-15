@@ -315,7 +315,7 @@ func TestS3CopyObject(t *testing.T) {
 
 	// assert that the physical addresses of the objects are the same
 	if strings.Compare(sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress) != 0 {
-		t.Errorf(
+		t.Fatalf(
 			"Source object address: %s Source destination address: %s", sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress)
 	}
 
@@ -331,7 +331,7 @@ func TestS3CopyObject(t *testing.T) {
 		})
 
 	if err != nil {
-		t.Errorf("minio.Client.CopyObjectFrom(%s)To(%s): %s", SourcePath, DestPath, err)
+		t.Fatalf("minio.Client.CopyObjectFrom(%s)To(%s): %s", SourcePath, DestPath, err)
 	}
 
 	download, err = minioClient.GetObject(
@@ -342,11 +342,11 @@ func TestS3CopyObject(t *testing.T) {
 	contents = bytes.NewBuffer(nil)
 	_, err = io.Copy(contents, download)
 	if err != nil {
-		t.Errorf("download %s: %s", DestPath, err)
+		t.Fatalf("download %s: %s", DestPath, err)
 	}
 	// compere files content
 	if strings.Compare(contents.String(), Content) != 0 {
-		t.Errorf(
+		t.Fatalf(
 			"Downloaded bytes %v from uploaded bytes %v", contents.Bytes(), Content)
 	}
 
@@ -366,7 +366,7 @@ func TestS3CopyObject(t *testing.T) {
 
 	// assert that the physical addresses of the objects are not the same
 	if strings.Compare(sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress) == 0 {
-		t.Errorf(
+		t.Fatalf(
 			"Source object address: %s Source destination address: %s", sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress)
 	}
 }
