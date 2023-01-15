@@ -2,17 +2,17 @@ package plugins
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
-
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"os"
+	"os/exec"
 )
 
 var (
-	errPluginGroupNotFound = fmt.Errorf("unknown plugin group")
-	errPluginTypeNotFound  = fmt.Errorf("unknown plugin type")
+	errPluginNameNotFound = fmt.Errorf("unknown plugin name")
+	errPluginTypeNotFound = fmt.Errorf("unknown plugin type")
+	errPluginImplNotFound = fmt.Errorf("unknown plugin imlementation")
 )
 
 // PluginType specifies the type of related plugins
@@ -101,43 +101,20 @@ type PluginTypeNameMap map[PluginType]pluginTypeConfigMap
 
 // The Manager holds the different types of plugins that can be used in the plugin system
 type Manager struct {
-	pluginTypes PluginTypeNameMap
+	pluginTypes     PluginTypeNameMap
+	pluginImplNames map[string]string
 }
 
-// WrapPlugin generates a Wrapper that wraps the go-plugin client.
-//
-// It accepts two parameters: the top PluginType and the required PluginName under it.
-// For example, PluginType = "diff", PluginName = "delta" will generate a Wrapper with a client that performs
-// diffs over Delta Lake tables.
-// It also returns a DestroyClientFunc
-func (m *Manager) WrapPlugin(pluginType PluginType, pluginName PluginName) (*Wrapper, error) {
-	ptpp, ok := m.pluginTypes[pluginType]
+// PluginImplName is a getter for the `pluginImplNames` map.
+func (m *Manager) PluginImplName(pluginType PluginType, pluginName PluginName) (string, error) {
+	in, ok := m.pluginImplNames[implNameKey(pluginType, pluginName)]
 	if !ok {
-		return nil, errPluginGroupNotFound
+		return "", errPluginImplNotFound
 	}
-	clientConfig, ok := ptpp[pluginName]
-	if !ok {
-		return nil, errPluginTypeNotFound
-	}
-	return newPluginWrapper(fmt.Sprintf("%s_%s", pluginType, pluginName), clientConfig)
+	return in, nil
 }
 
-// newPluginWrapper generates a Wrapper that wraps the go-plugin client.
-func newPluginWrapper(clientName string, clientConfig plugin.ClientConfig) (*Wrapper, error) {
-	logger := hclog.New(&hclog.LoggerOptions{
-		Name:   fmt.Sprintf("%s_logger", clientName),
-		Output: os.Stdout,
-		Level:  hclog.Debug,
-	})
-	clientConfig.Logger = logger
-	client := plugin.NewClient(&clientConfig)
-	return &Wrapper{
-		Client: client,
-		Log:    logging.Default(),
-	}, nil
-}
-
-// RegisterPlugin is used to register a new plugin type with a plugin group. It can also introduce a new plugin group.
+// RegisterPlugin is used to register a new plugin with a plugin type. It can also introduce a new plugin type.
 func (m *Manager) RegisterPlugin(pluginType PluginType, pluginName PluginName, pluginID PluginIdentity) {
 	if m.pluginTypes == nil {
 		m.pluginTypes = make(PluginTypeNameMap)
@@ -147,7 +124,15 @@ func (m *Manager) RegisterPlugin(pluginType PluginType, pluginName PluginName, p
 		ptcm := make(pluginTypeConfigMap)
 		m.pluginTypes[pluginType] = ptcm
 	}
+	if m.pluginImplNames == nil {
+		m.pluginImplNames = make(map[string]string)
+	}
+	m.pluginImplNames[implNameKey(pluginType, pluginName)] = pluginID.ImplName
 	ptcm[pluginName] = clientConfig(pluginID)
+}
+
+func implNameKey(pluginType PluginType, pluginName PluginName) string {
+	return fmt.Sprintf("%s_%s", pluginType, pluginName)
 }
 
 // clientConfig generates a plugin.ClientConfig struct to be used to configure the Manager's plugins with the
@@ -167,4 +152,37 @@ func clientConfig(identity PluginIdentity) plugin.ClientConfig {
 			identity.ImplName: identity.Impl,
 		},
 	}
+}
+
+// WrapPlugin generates a Wrapper that wraps the go-plugin client.
+//
+// It accepts two parameters: the top PluginType and the required PluginName under it.
+// For example, PluginType = "diff", PluginName = "delta" will generate a Wrapper with a client that performs
+// diffs over Delta Lake tables.
+// It also returns a DestroyClientFunc
+func (m *Manager) WrapPlugin(pluginType PluginType, pluginName PluginName) (*Wrapper, error) {
+	ptpp, ok := m.pluginTypes[pluginType]
+	if !ok {
+		return nil, errPluginNameNotFound
+	}
+	clientConfig, ok := ptpp[pluginName]
+	if !ok {
+		return nil, errPluginTypeNotFound
+	}
+	return newPluginWrapper(pluginType, pluginName, clientConfig)
+}
+
+// newPluginWrapper generates a Wrapper that wraps the go-plugin client.
+func newPluginWrapper(pluginType PluginType, pluginName PluginName, clientConfig plugin.ClientConfig) (*Wrapper, error) {
+	logger := hclog.New(&hclog.LoggerOptions{
+		Name:   fmt.Sprintf("%s_%s_logger", pluginType, pluginName),
+		Output: os.Stdout,
+		Level:  hclog.Debug,
+	})
+	clientConfig.Logger = logger
+	client := plugin.NewClient(&clientConfig)
+	return &Wrapper{
+		Client: client,
+		Log:    logging.Default(),
+	}, nil
 }
