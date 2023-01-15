@@ -390,7 +390,10 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int
 	hashReader := block.NewHashingReader(reader, block.HashFunctionMD5)
 
 	multipartBlockWriter := NewMultipartBlockWriter(hashReader, *container, qualifiedKey.BlobURL)
-	_, err = copyFromReader(ctx, hashReader, multipartBlockWriter, blockblob.UploadStreamOptions{})
+	_, err = copyFromReader(ctx, hashReader, multipartBlockWriter, blockblob.UploadStreamOptions{
+		BlockSize:   _1MiB,
+		Concurrency: MaxBuffers,
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -38,8 +38,7 @@ func copyFromReader(ctx context.Context, from io.Reader, to blockWriter, o block
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// TODO(niro): Need to configure?
-	buffers := newMMBPool(MaxBuffers, _1MiB)
+	buffers := newMMBPool(o.Concurrency, o.BlockSize)
 	defer buffers.Free()
 
 	cp := &copier{
@@ -293,7 +292,7 @@ func newMMB(size int64) (mmb, error) {
 	if err != nil {
 		return nil, os.NewSyscallError("Mmap", err)
 	}
-	return mmb(addr), nil
+	return addr, nil
 }
 
 // delete cleans up the memory mapped buffer
