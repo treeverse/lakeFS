@@ -21,12 +21,11 @@ import {
     ObjectChangesTreeItem,
     DeltaTableChangesTreeItem,
     TreeEntryPaginator,
-    TreeItem
 } from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {appendMoreResults} from "./changes";
-import {RefTypeBranch, RefTypeCommit, ChangesTreeType} from "../../../constants";
+import {RefTypeBranch, RefTypeCommit} from "../../../constants";
 import Button from "react-bootstrap/Button";
 import {FormControl, FormHelperText, InputLabel, MenuItem, Select} from "@mui/material";
 import Modal from "react-bootstrap/Modal";

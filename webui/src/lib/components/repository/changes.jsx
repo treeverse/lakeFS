@@ -252,7 +252,7 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
     );
 };
 
-export const DeltaTableChangesTreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore}) => {
+export const DeltaTableChangesTreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onNavigate, delimiter, relativeTo, getMore}) => {
     return <>
         <TreeItem key={entry.path + "-item"} entry={entry} repo={repo}
                   changesTreeType={ChangesTreeType.DeltaLakeTableChanges}
@@ -265,7 +265,7 @@ export const DeltaTableChangesTreeItem = ({ entry, repo, reference, leftDiffRefI
     </>
 }
 
-export const ObjectChangesTreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore}) => {
+export const ObjectChangesTreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onNavigate, delimiter, relativeTo, getMore}) => {
     return <>
         <TreeItem key={entry.path + "-item"} entry={entry} repo={repo}
                   reference={reference}
