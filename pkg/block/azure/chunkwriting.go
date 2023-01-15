@@ -8,10 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"sync"
 	"sync/atomic"
-	"syscall"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
@@ -285,25 +283,15 @@ type bufferManager[T ~[]byte] interface {
 // mmb is a memory mapped buffer
 type mmb []byte
 
+// TODO (niro): consider implementation refactoring
 // newMMB creates a new memory mapped buffer with the specified size
 func newMMB(size int64) (mmb, error) {
-	prot, flags := syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_ANON|syscall.MAP_PRIVATE
-	addr, err := syscall.Mmap(-1, 0, int(size), prot, flags)
-	if err != nil {
-		return nil, os.NewSyscallError("Mmap", err)
-	}
-	return addr, nil
+	return make(mmb, size), nil
 }
 
 // delete cleans up the memory mapped buffer
 func (m *mmb) delete() {
-	err := syscall.Munmap(*m)
-	*m = nil
-	if err != nil {
-		// if we get here, there is likely memory corruption.
-		// please open an issue https://github.com/Azure/azure-sdk-for-go/issues
-		panic(fmt.Sprintf("Munmap error: %v", err))
-	}
+	return
 }
 
 // mmbPool implements the bufferManager interface.
