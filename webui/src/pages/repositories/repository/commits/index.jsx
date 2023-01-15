@@ -35,7 +35,7 @@ const CommitWidget = ({ repo, commit }) => {
     return (
         <ListGroup.Item>
             <div className="clearfix">
-                <div className="float-left">
+                <div className="float-start">
                     <h6>
                         <Link href={{
                             pathname: '/repositories/:repoId/commits/:commitId',
@@ -50,7 +50,7 @@ const CommitWidget = ({ repo, commit }) => {
                         </small>
                     </p>
                 </div>
-                <div className="float-right">
+                <div className="float-end">
                     <ButtonGroup className="commit-actions">
                         <LinkButton
                             buttonVariant="outline-dark"
@@ -69,19 +69,14 @@ const CommitWidget = ({ repo, commit }) => {
                         <ClipboardButton variant={buttonVariant} text={commit.id} tooltip="Copy ID to clipboard"/>
                         <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}/${commit.id}`} tooltip="Copy URI to clipboard" icon={<LinkIcon/>}/>
                         <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${commit.id}`} tooltip="Copy S3 URI to clipboard" icon={<PackageIcon/>}/>
+                        <LinkButton
+                            buttonVariant="outline-dark"
+                            href={{pathname: '/repositories/:repoId/objects', params: {repoId: repo.id}, query: {ref: commit.id}}}
+                            tooltip="Browse objects at this commit">
+                            <BrowserIcon/>
+                        </LinkButton>
 
                     </ButtonGroup>
-
-                    <div className="float-right ml-2">
-                        <ButtonGroup className="commit-actions">
-                            <LinkButton
-                                buttonVariant="outline-dark"
-                                href={{pathname: '/repositories/:repoId/objects', params: {repoId: repo.id}, query: {ref: commit.id}}}
-                                tooltip="Browse objects at this commit">
-                                <BrowserIcon/>
-                            </LinkButton>
-                        </ButtonGroup>
-                    </div>
                 </div>
             </div>
         </ListGroup.Item>
