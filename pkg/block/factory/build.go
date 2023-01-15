@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 
 	"cloud.google.com/go/storage"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -159,22 +160,27 @@ func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
 }
 
 func BuildAzureServiceClient(params params.Azure) (*service.Client, *aztables.SharedKeyCredential, error) {
-	cred, err := azblob.NewSharedKeyCredential(params.StorageAccount, params.StorageAccessKey)
-	if err != nil {
-		return nil, nil, fmt.Errorf("invalid credentials: %w", err)
-	}
+	url := fmt.Sprintf(azure.AzURLTemplate, params.StorageAccount)
 	keyCred, err := aztables.NewSharedKeyCredential(params.StorageAccount, params.StorageAccessKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid credentials: %w", err)
 	}
 
-	url := fmt.Sprintf(azure.AzURLTemplate, params.StorageAccount)
-	client, err := service.NewClientWithSharedKeyCredential(url, cred, &service.ClientOptions{
-		ClientOptions: azcore.ClientOptions{
-			Retry: policy.RetryOptions{
-				TryTimeout: params.TryTimeout,
-			},
-		},
-	})
+	var client *service.Client
+	options := service.ClientOptions{ClientOptions: azcore.ClientOptions{Retry: policy.RetryOptions{TryTimeout: params.TryTimeout}}}
+	defaultCreds, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid credentials: %w", err)
+	}
+	if defaultCreds == nil {
+		cred, err := service.NewSharedKeyCredential(params.StorageAccount, params.StorageAccessKey)
+		if err != nil {
+			return nil, nil, fmt.Errorf("invalid credentials: %w", err)
+		}
+		client, err = service.NewClientWithSharedKeyCredential(url, cred, &options)
+	} else {
+		client, err = service.NewClient(url, defaultCreds, &options)
+	}
+
 	return client, keyCred, err
 }
