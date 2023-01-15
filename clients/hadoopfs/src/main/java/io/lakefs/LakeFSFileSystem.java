@@ -431,7 +431,6 @@ public class LakeFSFileSystem extends FileSystem {
      */
     private boolean fallbackToStage = false;
 
-
     /**
      * Non-atomic rename operation.
      *
@@ -447,21 +446,23 @@ public class LakeFSFileSystem extends FileSystem {
 
         ObjectsApi objects = lfsClient.getObjects();
         //TODO (Tals): Can we add metadata? we currently don't have an API to get the metadata of an object.
-        ObjectCopyCreation creationReq = new ObjectCopyCreation()
-                .srcRef(srcObjectLoc.getRef())
-                .srcPath(srcObjectLoc.getPath());
 
-        try {
-            objects.copyObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
-                    creationReq);
-        } catch (ApiException e) {
-            if (e.getCode() != HttpStatus.SC_INTERNAL_SERVER_ERROR ||
-                    !e.getMessage().contains("invalid API endpoint")){
-                throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst + ", failed to copy object", e);
+        if (!fallbackToStage) {
+            try {
+                ObjectCopyCreation creationReq = new ObjectCopyCreation()
+                        .srcRef(srcObjectLoc.getRef())
+                        .srcPath(srcObjectLoc.getPath());
+                objects.copyObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
+                        creationReq);
+            } catch (ApiException e) {
+                if (e.getCode() != HttpStatus.SC_INTERNAL_SERVER_ERROR ||
+                        !e.getMessage().contains("invalid API endpoint")) {
+                    throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst + ", failed to copy object", e);
+                }
+
+                LOG.warn("Copy API doesn't exist, falling back to stageObject");
+                fallbackToStage = true;
             }
-
-            LOG.warn("Copy API doesn't exist, falling back to stageObject");
-            fallbackToStage = true;
         }
 
         if (fallbackToStage){
