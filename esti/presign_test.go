@@ -149,6 +149,6 @@ func TestPreSign(t *testing.T) {
 		require.NoError(t, err, "failed to read back linked object")
 		require.Equalf(t, readBackResponse.StatusCode(), http.StatusOK, "unexpected HTTP code for get_object after linking: %s", readBackResponse.Status())
 		returnedContent := readBackResponse.Body
-		require.Equal(t, returnedContent, objContent, "the body returned is different from the one uploaded")
+		require.Equal(t, string(returnedContent), objContent, "the body returned is different from the one uploaded")
 	})
 }
