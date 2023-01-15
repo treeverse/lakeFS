@@ -30,7 +30,7 @@ func getAzureClient() (*service.Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid credentials with error: %w", err)
 	}
-	containerURL := fmt.Sprintf(azure.AzURLTemplate, accountName)
+	containerURL := fmt.Sprintf(azure.URLTemplate, accountName)
 	return service.NewClientWithSharedKeyCredential(containerURL, credential, nil)
 }
 

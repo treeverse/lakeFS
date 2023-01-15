@@ -157,7 +157,7 @@ func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
 }
 
 func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
-	url := fmt.Sprintf(azure.AzURLTemplate, params.StorageAccount)
+	url := fmt.Sprintf(azure.URLTemplate, params.StorageAccount)
 	options := service.ClientOptions{ClientOptions: azcore.ClientOptions{Retry: policy.RetryOptions{TryTimeout: params.TryTimeout}}}
 	if params.StorageAccessKey != "" {
 		cred, err := service.NewSharedKeyCredential(params.StorageAccount, params.StorageAccessKey)

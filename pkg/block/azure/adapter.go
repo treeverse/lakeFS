@@ -29,7 +29,7 @@ const (
 	MaxBuffers              = 1
 	defaultMaxRetryRequests = 0
 
-	AzURLTemplate = "https://%s.blob.core.windows.net/"
+	URLTemplate = "https://%s.blob.core.windows.net/"
 )
 
 type Adapter struct {
