@@ -123,11 +123,13 @@ func newPluginClient(clientName string, clientConfig plugin.ClientConfig) (*Clie
 	l := logging.Default()
 	hcl := NewHClogger(hl, l)
 	clientConfig.Logger = hcl
-	client := plugin.NewClient(&clientConfig)
-	return &Client{
-		Client: client,
-		Log:    l,
-	}, nil
+	pc := plugin.NewClient(&clientConfig)
+	grpcClient, err := pc.Client()
+	if err != nil {
+		return nil, err
+	}
+	client := NewClient(pc, &grpcClient, hcl)
+	return &client, nil
 }
 
 // RegisterPlugin is used to register a new plugin type with a plugin group. It can also introduce a new plugin group.
