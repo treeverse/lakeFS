@@ -13,7 +13,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 
 	"cloud.google.com/go/storage"
-	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -152,35 +151,27 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 }
 
 func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
-	p, credentials, err := BuildAzureServiceClient(params)
+	p, err := BuildAzureServiceClient(params)
 	if err != nil {
 		return nil, err
 	}
-	return azure.NewAdapter(*p, credentials), nil
+	return azure.NewAdapter(*p), nil
 }
 
-func BuildAzureServiceClient(params params.Azure) (*service.Client, *aztables.SharedKeyCredential, error) {
+func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
 	url := fmt.Sprintf(azure.AzURLTemplate, params.StorageAccount)
-	keyCred, err := aztables.NewSharedKeyCredential(params.StorageAccount, params.StorageAccessKey)
-	if err != nil {
-		return nil, nil, fmt.Errorf("invalid credentials: %w", err)
-	}
-
-	var client *service.Client
 	options := service.ClientOptions{ClientOptions: azcore.ClientOptions{Retry: policy.RetryOptions{TryTimeout: params.TryTimeout}}}
-	defaultCreds, err := azidentity.NewDefaultAzureCredential(nil)
-	if err != nil {
-		return nil, nil, fmt.Errorf("invalid credentials: %w", err)
-	}
-	if defaultCreds == nil {
+	if params.StorageAccessKey != "" {
 		cred, err := service.NewSharedKeyCredential(params.StorageAccount, params.StorageAccessKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("invalid credentials: %w", err)
+			return nil, fmt.Errorf("invalid credentials: %w", err)
 		}
-		client, err = service.NewClientWithSharedKeyCredential(url, cred, &options)
-	} else {
-		client, err = service.NewClient(url, defaultCreds, &options)
+		return service.NewClientWithSharedKeyCredential(url, cred, &options)
 	}
 
-	return client, keyCred, err
+	defaultCreds, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return nil, fmt.Errorf("invalid credentials: %w", err)
+	}
+	return service.NewClient(url, defaultCreds, &options)
 }

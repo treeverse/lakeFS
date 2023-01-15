@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
@@ -31,29 +30,26 @@ const (
 	MaxBuffers              = 1
 	defaultMaxRetryRequests = 0
 
-	AzURLTemplate        = "https://%s.blob.core.windows.net/"
-	preSignedBlobPattern = "https://%s.blob.core.windows.net/%s/%s?%s"
+	AzURLTemplate = "https://%s.blob.core.windows.net/"
 )
 
 type Adapter struct {
 	client                        service.Client
 	configurations                configurations
 	preSignedURLDurationGenerator func() time.Time
-	keyCredentials                *aztables.SharedKeyCredential
 }
 
 type configurations struct {
 	retryReaderOptions azblob.RetryReaderOptions
 }
 
-func NewAdapter(client service.Client, credentials *aztables.SharedKeyCredential, opts ...func(a *Adapter)) *Adapter {
+func NewAdapter(client service.Client, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		client:         client,
 		configurations: configurations{retryReaderOptions: azblob.RetryReaderOptions{MaxRetries: defaultMaxRetryRequests}},
 		preSignedURLDurationGenerator: func() time.Time {
 			return time.Now().UTC().Add(block.DefaultPreSignExpiryDuration)
 		},
-		keyCredentials: credentials,
 	}
 
 	for _, opt := range opts {
@@ -191,45 +187,32 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 }
 
 func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
-	permissions := aztables.AccountSASPermissions{Read: true}
+	permissions := sas.BlobPermissions{Read: true}
 	if mode == block.PreSignModeWrite {
-		permissions = aztables.AccountSASPermissions{
+		permissions = sas.BlobPermissions{
 			Read:   true,
 			Add:    true,
-			Update: true,
+			Write:  true,
 			Delete: true,
+			Tag:    true,
 		}
 	}
-	return a.getPreSignedURL(ctx, obj, permissions)
+	return a.getPreSignedURL(obj, permissions)
 }
 
-func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions aztables.AccountSASPermissions) (string, error) {
+func (a *Adapter) getPreSignedURL(obj block.ObjectPointer, permissions sas.BlobPermissions) (string, error) {
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return "", err
 	}
 
-	if a.keyCredentials == nil {
-		err = fmt.Errorf("pre-signed mode on Azure is only supported for shared key credentials: %w", ErrNotImplemented)
-		a.log(ctx).WithError(err).Error("no support for pre-signed using this Azure credentials provider")
-		return "", err
-	}
-
-	client, err := aztables.NewServiceClientWithSharedKey(qualifiedKey.ContainerURL, a.keyCredentials, nil)
+	blobURL := a.client.NewContainerClient(qualifiedKey.ContainerName).NewBlobClient(qualifiedKey.BlobURL)
+	u, err := blobURL.GetSASURL(permissions, time.Unix(0, 0), a.preSignedURLDurationGenerator())
 	if err != nil {
 		return "", err
 	}
 
-	qp, err := client.GetAccountSASURL(aztables.AccountSASResourceTypes{
-		Container: true,
-		Object:    true,
-	}, permissions, time.Now(), a.preSignedURLDurationGenerator())
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf(preSignedBlobPattern,
-		a.keyCredentials.AccountName(), qualifiedKey.ContainerName, qualifiedKey.BlobURL, qp), nil
+	return u, nil
 }
 
 func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
@@ -378,7 +361,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	sourceClient := a.client.NewContainerClient(qualifiedSourceKey.ContainerName).NewBlobClient(qualifiedSourceKey.BlobURL)
 	sasKey, err := sourceClient.GetSASURL(sas.BlobPermissions{
 		Read: true,
-	}, time.Now(), a.preSignedURLDurationGenerator())
+	}, time.Unix(0, 0), a.preSignedURLDurationGenerator())
 	if err != nil {
 		return err
 	}
