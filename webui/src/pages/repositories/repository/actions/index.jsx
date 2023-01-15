@@ -30,7 +30,7 @@ const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
     return (
         <tr>
             <td>
-                <ActionStatusIcon className="mr-2" status={run.status}/>
+                <ActionStatusIcon className="me-2" status={run.status}/>
                 {' '}
                 <Link href={{
                     pathname: '/repositories/:repoId/actions/:runId',
@@ -41,7 +41,7 @@ const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
             </td>
             <td>{run.event_type}</td>
             <td>
-                <Link className="mr-2" href={{
+                <Link className="me-2" href={{
                     pathname: '/repositories/:repoId/objects',
                     params: {repoId: repo.id},
                     query: {ref: run.branch}
@@ -64,7 +64,7 @@ const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
             <td>
                 {(!run.commit_id) ? <Na/> : (
                     <>
-                        <Link className="mr-2" href={{
+                        <Link className="me-2" href={{
                             pathname: '/repositories/:repoId/commits/:commitId',
                             params: {repoId: repo.id, commitId: run.commit_id}
                         }}>

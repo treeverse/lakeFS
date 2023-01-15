@@ -75,7 +75,7 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
         }}>
         {config?.warnings && <Warnings warnings={config.warnings}/>}
 
-            <Form.Group as={Row} controlId="id">
+            <Form.Group as={Row} controlId="id" className="mb-3">
                 <Form.Label column sm={fieldNameOffset}>Repository ID</Form.Label>
                 <Col sm={sm}>
                     <Form.Control type="text" ref={repoNameField} onChange={onRepoNameChange}/>
@@ -86,7 +86,7 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
                     }
                 </Col>
             </Form.Group>
-            <Form.Group as={Row}>
+            <Form.Group as={Row} className="mb-3">
                 <Form.Label column sm={fieldNameOffset}>
                     <span>Storage Namespace&nbsp;
                     <OverlayTrigger placement="bottom" overlay={<Tooltip style={{"font-size": "s"}}>What should I type here?</Tooltip>}>
@@ -104,7 +104,7 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
                     }
                 </Col>
             </Form.Group>
-            <Form.Group as={Row} controlId="defaultBranch">
+            <Form.Group as={Row} controlId="defaultBranch" className="mb-3">
                 <Form.Label column sm={fieldNameOffset}>Default Branch</Form.Label>
                 <Col sm={sm}>
                     <Form.Control type="text" ref={defaultBranchField} placeholder="defaultBranch" defaultValue={"main"} onChange={checkDefaultBranchValidity}/>
@@ -117,15 +117,15 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
             </Form.Group>
 
             {error &&
-            <Row>
+            <Row className="mb-3">
                 <Col md={{span: sm, offset: fieldNameOffset}} >
                     <Alert variant={"danger"}>{error.message}</Alert>
                 </Col>
             </Row>}
 
-            <Row>
+            <Row className="mb-3">
                 <Col md={{span: sm, offset: fieldNameOffset}} >
-                    <Button variant="success" type="submit" className="mr-2" disabled={!formValid || inProgress}>
+                    <Button variant="success" type="submit" className="me-2" disabled={!formValid || inProgress}>
                         { inProgress ? 'Creating...' : 'Create Repository' }
                     </Button>
                     <Button variant="secondary" onClick={(e) => {
