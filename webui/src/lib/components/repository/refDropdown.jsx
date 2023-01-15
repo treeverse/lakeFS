@@ -221,7 +221,7 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, variant="light", pre
     const popover = (
         <Overlay target={target.current} show={show} placement="bottom" rootClose={true} onHide={() => setShow(false)}>
             <Popover className="ref-popover">
-                <Popover.Body>
+                <Popover.Content>
                     <RefSelector
                         repo={repo}
                         withCommits={withCommits}
@@ -232,7 +232,7 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, variant="light", pre
                             selectRef(ref);
                             setShow(false);
                         }}/>
-                </Popover.Body>
+                </Popover.Content>
             </Popover>
         </Overlay>
     );
