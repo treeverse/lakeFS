@@ -105,7 +105,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                 <ArrowLeftIcon/> Back to object comparison
                             </Button>
                             <div className="mr-1 mb-2">
-                                <InfoIcon/> Browse to your delta lake table and click the diff icon to view changes
+                                <InfoIcon/> Browse to your table to view Delta Lake changes
                             </div>
                             </>
                             :
