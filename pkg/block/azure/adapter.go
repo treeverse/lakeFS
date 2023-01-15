@@ -265,7 +265,7 @@ func (a *Adapter) Download(ctx context.Context, obj block.ObjectPointer, offset,
 	return downloadResponse.Body, nil
 }
 
-func (a *Adapter) Walk(_ context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
+func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
 	var err error
 	defer reportMetrics("Walk", time.Now(), nil, &err)
 
@@ -283,7 +283,7 @@ func (a *Adapter) Walk(_ context.Context, walkOpt block.WalkOpts, walkFn block.W
 		})
 
 		for listBlob.More() {
-			resp, err := listBlob.NextPage(context.Background())
+			resp, err := listBlob.NextPage(ctx)
 			if err != nil {
 				return err
 			}

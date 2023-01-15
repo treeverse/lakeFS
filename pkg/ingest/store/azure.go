@@ -68,7 +68,7 @@ func getAzureBlobURL(containerURL *url.URL, blobName string) *url.URL {
 	return containerURL.ResolveReference(&relativePath)
 }
 
-func (a *azureBlobWalker) Walk(_ context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
+func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
 	// we use bucket as container and prefix as path
 	containerURL, prefix, err := extractAzurePrefix(storageURI)
 	if err != nil {
@@ -85,7 +85,7 @@ func (a *azureBlobWalker) Walk(_ context.Context, storageURI *url.URL, op WalkOp
 	})
 
 	for listBlob.More() {
-		resp, err := listBlob.NextPage(context.Background())
+		resp, err := listBlob.NextPage(ctx)
 		if err != nil {
 			return err
 		}

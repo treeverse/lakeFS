@@ -133,24 +133,24 @@ func (f *walkerFactory) buildGCSWalker(ctx context.Context) (*gcsWalker, error) 
 }
 
 func (f *walkerFactory) buildAzureWalker() (*azureBlobWalker, error) {
-	var p *service.Client
+	var c *service.Client
 	if f.params != nil {
 		azureParams, err := f.params.BlockstoreAzureParams()
 		if err != nil {
 			return nil, err
 		}
-		p, _, err = factory.BuildAzureServiceClient(azureParams)
+		c, _, err = factory.BuildAzureServiceClient(azureParams)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		var err error
-		p, err = getAzureClient()
+		c, err = getAzureClient()
 		if err != nil {
 			return nil, err
 		}
 	}
-	return NewAzureBlobWalker(*p)
+	return NewAzureBlobWalker(*c)
 }
 
 func (f *walkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*WalkerWrapper, error) {

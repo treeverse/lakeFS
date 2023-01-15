@@ -117,12 +117,7 @@ func getMultipartIDs(ctx context.Context, container container.Client, objName st
 		return nil, err
 	}
 
-	downloadResponse, err := blobURL.DownloadStream(ctx, &blob.DownloadStreamOptions{
-		Range: blob.HTTPRange{
-			Offset: 0,
-			Count:  blockblob.CountToEnd,
-		},
-	})
+	downloadResponse, err := blobURL.DownloadStream(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -152,12 +147,7 @@ func getMultipartSize(ctx context.Context, container container.Client, objName s
 		return 0, err
 	}
 
-	downloadResponse, err := blobURL.DownloadStream(ctx, &blob.DownloadStreamOptions{
-		Range: blob.HTTPRange{
-			Offset: 0,
-			Count:  blockblob.CountToEnd,
-		},
-	})
+	downloadResponse, err := blobURL.DownloadStream(ctx, nil)
 	if err != nil {
 		return 0, err
 	}

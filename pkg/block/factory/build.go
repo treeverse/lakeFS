@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+
 	"cloud.google.com/go/storage"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -166,6 +169,12 @@ func BuildAzureServiceClient(params params.Azure) (*service.Client, *aztables.Sh
 	}
 
 	url := fmt.Sprintf(azure.AzURLTemplate, params.StorageAccount)
-	client, err := service.NewClientWithSharedKeyCredential(url, cred, nil)
+	client, err := service.NewClientWithSharedKeyCredential(url, cred, &service.ClientOptions{
+		ClientOptions: azcore.ClientOptions{
+			Retry: policy.RetryOptions{
+				TryTimeout: params.TryTimeout,
+			},
+		},
+	})
 	return client, keyCred, err
 }
