@@ -386,6 +386,9 @@ type KeyValueStore interface {
 	// Delete value from repository / branch by key
 	Delete(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key) error
 
+	// Copy value from repository / branch by key
+	Copy(ctx context.Context, repository *RepositoryRecord, branchID BranchID, st StagingToken, src, dst Key, value *Value, copyOperation func() error) error
+
 	// DeleteBatch delete values from repository / branch by batch of keys
 	DeleteBatch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, keys []Key) error
 
@@ -1533,6 +1536,38 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 			}
 			return m.ErrorOrNil()
 		})
+	return err
+}
+
+func (g *Graveler) Copy(ctx context.Context, repository *RepositoryRecord, branchID BranchID, st StagingToken, src, dst Key, value *Value, copyOperation func() error) error {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrWriteToProtectedBranch
+	}
+
+	log := g.log(ctx).WithFields(logging.Fields{"src": src, "dst": dst, "operation": "copy"})
+	err = g.safeBranchWrite(ctx, log, repository, branchID, func(branch *Branch) error {
+		if st != branch.StagingToken {
+			return ErrFullCopyRequired // st changed - perform full copy
+		}
+
+		_, err = g.getFromStagingArea(ctx, branch, src)
+		switch {
+		case err == nil: // staged - try shallow copy
+			return g.StagingManager.Set(ctx, branch.StagingToken, dst, value, false)
+
+		case !errors.Is(err, ErrNotFound): // Unexpected error
+			return err
+		}
+		// Not found or not staged == src is committed - perform full copy
+		return ErrFullCopyRequired
+	})
+	if errors.Is(err, ErrFullCopyRequired) {
+		return copyOperation()
+	}
 	return err
 }
 

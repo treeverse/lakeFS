@@ -3,6 +3,7 @@ package graveler_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -43,6 +44,12 @@ var (
 		StagingToken: stagingToken1,
 		SealedTokens: []graveler.StagingToken{stagingToken2, stagingToken3},
 	}
+
+	branch2 = graveler.Branch{
+		CommitID:     commit2ID,
+		StagingToken: stagingToken1,
+	}
+
 	commit1       = graveler.Commit{MetaRangeID: mr1ID, Parents: []graveler.CommitID{commit4ID}}
 	commit2       = graveler.Commit{MetaRangeID: mr2ID, Parents: []graveler.CommitID{commit4ID}}
 	commit3       = graveler.Commit{MetaRangeID: mr3ID}
@@ -55,6 +62,8 @@ var (
 	key2          = []byte("some/key/2")
 	value1        = &graveler.Value{Identity: []byte("id1"), Data: []byte("data1")}
 	value2        = &graveler.Value{Identity: []byte("id2"), Data: []byte("data2")}
+
+	ErrTestGraveler = errors.New("test error")
 )
 
 func TestGravelerGet(t *testing.T) {
@@ -520,5 +529,99 @@ func TestGravelerCommit_v2(t *testing.T) {
 		require.Error(t, err)
 		require.True(t, errors.Is(err, graveler.ErrTooManyTries))
 		require.Equal(t, val, graveler.CommitID(""))
+	})
+}
+
+func TestGravelerCopy(t *testing.T) {
+	ctx := context.Background()
+	srcKey := graveler.Key("src")
+	srcValue := graveler.Value{
+		Identity: []byte("test"),
+		Data:     []byte("test"),
+	}
+	dstKey := graveler.Key("dst")
+
+	t.Run("copy from staging", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_STAGING_WRITE).Return(false, nil)
+		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
+		test.StagingManager.EXPECT().Get(ctx, stagingToken1, srcKey).Times(1).Return(&srcValue, nil)
+		test.StagingManager.EXPECT().Set(ctx, stagingToken1, dstKey, &srcValue, false).Times(1).Return(nil)
+		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
+
+		err := test.Sut.Copy(ctx, repository, branch1ID, stagingToken1, srcKey, dstKey, &srcValue, func() error {
+			return fmt.Errorf("copy function should not be called")
+		})
+
+		require.NoError(t, err)
+	})
+
+	t.Run("copy with empty staging token", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_STAGING_WRITE).Return(false, nil)
+		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
+		testSuccess := false
+		err := test.Sut.Copy(ctx, repository, branch1ID, "", srcKey, dstKey, &srcValue, func() error {
+			testSuccess = true
+			return nil
+		})
+		require.NoError(t, err)
+		require.True(t, testSuccess)
+	})
+
+	t.Run("copy with changed staging", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_STAGING_WRITE).Return(false, nil)
+		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
+		test.StagingManager.EXPECT().Get(ctx, stagingToken1, srcKey).Times(1).Return(&srcValue, nil)
+		test.StagingManager.EXPECT().Set(ctx, stagingToken1, dstKey, &srcValue, false).Times(1).Return(nil)
+		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(2).Return(&graveler.Branch{
+			CommitID:     branch1.CommitID,
+			StagingToken: stagingToken2,
+		}, nil)
+		testSuccess := false
+		err := test.Sut.Copy(ctx, repository, branch1ID, stagingToken1, srcKey, dstKey, &srcValue, func() error {
+			testSuccess = true
+			return nil
+		})
+		require.NoError(t, err)
+		require.True(t, testSuccess)
+	})
+
+	t.Run("copy with entry not in staging", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch2ID, graveler.BranchProtectionBlockedAction_STAGING_WRITE).Return(false, nil)
+		test.RefManager.EXPECT().GetBranch(ctx, repository, branch2ID).Times(1).Return(&branch2, nil)
+		test.StagingManager.EXPECT().Get(ctx, stagingToken1, srcKey).Times(1).Return(nil, graveler.ErrNotFound)
+		testSuccess := false
+		err := test.Sut.Copy(ctx, repository, branch2ID, stagingToken1, srcKey, dstKey, &srcValue, func() error {
+			testSuccess = true
+			return nil
+		})
+		require.NoError(t, err)
+		require.True(t, testSuccess)
+	})
+
+	t.Run("copy with get error", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch2ID, graveler.BranchProtectionBlockedAction_STAGING_WRITE).Return(false, nil)
+		test.RefManager.EXPECT().GetBranch(ctx, repository, branch2ID).Times(1).Return(&branch2, nil)
+		test.StagingManager.EXPECT().Get(ctx, stagingToken1, srcKey).Times(1).Return(nil, ErrTestGraveler)
+		err := test.Sut.Copy(ctx, repository, branch2ID, stagingToken1, srcKey, dstKey, &srcValue, func() error {
+			return fmt.Errorf("copy function should not be called")
+		})
+		require.ErrorIs(t, err, ErrTestGraveler)
+	})
+
+	t.Run("copy with set error", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch2ID, graveler.BranchProtectionBlockedAction_STAGING_WRITE).Return(false, nil)
+		test.RefManager.EXPECT().GetBranch(ctx, repository, branch2ID).Times(1).Return(&branch2, nil)
+		test.StagingManager.EXPECT().Get(ctx, stagingToken1, srcKey).Times(1).Return(&srcValue, nil)
+		test.StagingManager.EXPECT().Set(ctx, stagingToken1, dstKey, &srcValue, false).Times(1).Return(ErrTestGraveler)
+		err := test.Sut.Copy(ctx, repository, branch2ID, stagingToken1, srcKey, dstKey, &srcValue, func() error {
+			return fmt.Errorf("copy function should not be called")
+		})
+		require.ErrorIs(t, err, ErrTestGraveler)
 	})
 }
