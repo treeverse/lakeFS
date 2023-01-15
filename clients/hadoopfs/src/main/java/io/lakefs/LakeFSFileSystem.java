@@ -503,10 +503,6 @@ public class LakeFSFileSystem extends FileSystem {
                 return (FileNotFoundException) new FileNotFoundException(msg).initCause(e);
             case HttpStatus.SC_FORBIDDEN:
                 return (AccessDeniedException) new AccessDeniedException(msg).initCause(e);
-            case HttpStatus.SC_INTERNAL_SERVER_ERROR:
-                if (msg.contains("invalid API endpoint")){
-                    return (AccessDeniedException) new AccessDeniedException(msg).initCause(e);
-                }
             default:
                 return new IOException(msg, e);
         }
