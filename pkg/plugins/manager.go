@@ -128,7 +128,7 @@ func newPluginClient(clientName string, clientConfig plugin.ClientConfig) (*Clie
 	if err != nil {
 		return nil, err
 	}
-	client := NewClient(pc, &grpcClient, hcl)
+	client := NewClient(pc, grpcClient, hcl)
 	return &client, nil
 }
 
