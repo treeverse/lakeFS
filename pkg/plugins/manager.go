@@ -31,7 +31,7 @@ type PluginAuth struct {
 	Value string
 }
 
-// PluginNameConfig includes the plugin's execute command, and its handshake config.
+// pluginNameConfig includes the plugin's execute command, and its handshake config.
 // Examples:
 /*
 Delta diff example:
@@ -54,44 +54,44 @@ Iceberg merge example
 	Cmd: exec.Command{ Path: "/path/to/executable/merge/iceberg", ...}
 }
 */
-type PluginNameConfig struct {
+type pluginNameConfig struct {
 	plugin.HandshakeConfig
 	*exec.Cmd
 }
 
-// PluginTypeConfig includes the plugin.Plugin interfaces for the given plugin along with the supported protocols
-// and specific configurations for the different implementations for that plugin type.
+// pluginTypeConfig includes the plugin.Plugin interface implementations for the given plugin along with the supported
+// protocols and specific configurations for the different implementations for that plugin type.
 // Diff Example:
 //
 //	{
 //		AllowedProtocols: []plugin.Protocol{ plugin.ProtocolGRPC },
 //		Plugin: map[string]plugin.Plugin{"differPlugin": GRPCPlugin},
 //		PluginNameConfigMap: {
-//			"delta": <delta PluginNameConfig>,
-//			"iceberg: <iceberg PluginNameConfig>,
+//			"delta": <delta pluginNameConfig>,
+//			"iceberg: <iceberg pluginNameConfig>,
 //		}
 //	}
-type PluginTypeConfig struct {
+type pluginTypeConfig struct {
 	AllowedProtocols    []plugin.Protocol
 	Plugins             map[string]plugin.Plugin
-	PluginNameConfigMap map[string]PluginNameConfig
+	PluginNameConfigMap map[string]pluginNameConfig
 }
 
 // The Manager holds the different types of plugins that can be used in the plugin system
 type Manager struct {
-	pluginTypes map[string]PluginTypeConfig
+	pluginTypes map[string]pluginTypeConfig
 }
 
-func NewPluginsManager() *Manager {
-	return &Manager{pluginTypes: make(map[string]PluginTypeConfig)}
+func NewManager() *Manager {
+	return &Manager{pluginTypes: make(map[string]pluginTypeConfig)}
 }
 
-// WrapPlugin generates a Wrapper that wraps the go-plugin client.
+// LoadClient loads a Client that wraps the go-plugin client.
 //
-// It a plugin's identity: the plugin type and the plugin name under it.
-// For example, plugin type = "diff", plugin name = "delta" will generate a Wrapper with a client that performs
+// It uses a plugin's identity: the plugin type and the plugin name under it.
+// For example, plugin type = "diff", plugin name = "delta" will generate a Client with a go-plugin client that performs
 // diffs over Delta Lake tables.
-func (m *Manager) WrapPlugin(identity PluginIdentity) (*Wrapper, error) {
+func (m *Manager) LoadClient(identity PluginIdentity) (*Client, error) {
 	if m == nil {
 		return nil, ErrUninitializedManager
 	}
@@ -110,11 +110,11 @@ func (m *Manager) WrapPlugin(identity PluginIdentity) (*Wrapper, error) {
 		HandshakeConfig:  pluginNameConfig.HandshakeConfig,
 		Cmd:              pluginNameConfig.Cmd,
 	}
-	return newPluginWrapper(fmt.Sprintf("%s:%s", identity.Type, identity.Name), clientConfig)
+	return newPluginClient(fmt.Sprintf("%s:%s", identity.Type, identity.Name), clientConfig)
 }
 
-// newPluginWrapper generates a Wrapper that wraps the go-plugin client.
-func newPluginWrapper(clientName string, clientConfig plugin.ClientConfig) (*Wrapper, error) {
+// newPluginClient generates a Client that wraps the go-plugin client.
+func newPluginClient(clientName string, clientConfig plugin.ClientConfig) (*Client, error) {
 	hl := hclog.New(&hclog.LoggerOptions{
 		Name:   fmt.Sprintf("%s_logger", clientName),
 		Output: os.Stdout,
@@ -124,7 +124,7 @@ func newPluginWrapper(clientName string, clientConfig plugin.ClientConfig) (*Wra
 	hcl := NewHClogger(hl, l)
 	clientConfig.Logger = hcl
 	client := plugin.NewClient(&clientConfig)
-	return &Wrapper{
+	return &Client{
 		Client: client,
 		Log:    l,
 	}, nil
@@ -137,9 +137,9 @@ func (m *Manager) RegisterPlugin(id PluginIdentity, auth PluginAuth, p plugin.Pl
 	}
 	pt, ok := m.pluginTypes[id.Type]
 	if !ok {
-		pt = pluginTypeConfig(id.Type, p)
+		pt = typeConfig(id.Type, p)
 	}
-	pt.PluginNameConfigMap[id.Name] = PluginNameConfig{
+	pt.PluginNameConfigMap[id.Name] = pluginNameConfig{
 		HandshakeConfig: plugin.HandshakeConfig{
 			ProtocolVersion:  uint(id.Version),
 			MagicCookieKey:   auth.Key,
@@ -151,36 +151,14 @@ func (m *Manager) RegisterPlugin(id PluginIdentity, auth PluginAuth, p plugin.Pl
 	return nil
 }
 
-func pluginTypeConfig(pluginType string, p plugin.Plugin) PluginTypeConfig {
-	return PluginTypeConfig{
+func typeConfig(pluginType string, p plugin.Plugin) pluginTypeConfig {
+	return pluginTypeConfig{
 		AllowedProtocols: []plugin.Protocol{
 			plugin.ProtocolGRPC,
 		},
 		Plugins: map[string]plugin.Plugin{
 			pluginType: p,
 		},
-		PluginNameConfigMap: make(map[string]PluginNameConfig),
+		PluginNameConfigMap: make(map[string]pluginNameConfig),
 	}
-}
-
-// clientConfig generates a plugin.ClientConfig struct to be used to configure the Manager's plugins with the
-// corresponding configurations.
-func (m *Manager) clientConfig(pluginType string, pluginName string) (*plugin.ClientConfig, error) {
-	if m == nil {
-		return nil, ErrUninitializedManager
-	}
-	ptc, ok := m.pluginTypes[pluginType]
-	if !ok {
-		return nil, ErrPluginTypeNotFound
-	}
-	pnc, ok := ptc.PluginNameConfigMap[pluginName]
-	if !ok {
-		return nil, ErrPluginNameNotFound
-	}
-	return &plugin.ClientConfig{
-		HandshakeConfig:  pnc.HandshakeConfig,
-		Cmd:              pnc.Cmd,
-		AllowedProtocols: ptc.AllowedProtocols,
-		Plugins:          ptc.Plugins,
-	}, nil
 }
