@@ -17,6 +17,10 @@ type mockAdapter struct {
 	lastStorageClass *string
 }
 
+func (a *mockAdapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+	return "", block.ErrOperationNotSupported
+}
+
 func newMockAdapter() *mockAdapter {
 	adapter := mockAdapter{
 		totalSize:        0,

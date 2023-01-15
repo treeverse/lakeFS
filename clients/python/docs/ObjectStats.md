@@ -6,7 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **path** | **str** |  | 
 **path_type** | **str** |  | 
-**physical_address** | **str** |  | 
+**physical_address** | **str** | The location of the object on the underlying object store. Formatted as a native URI with the object store type as scheme (\&quot;s3://...\&quot;, \&quot;gs://...\&quot;, etc.) Or, in the case of presign&#x3D;true, will be an HTTP URL to be consumed via regular HTTP GET  | 
 **checksum** | **str** |  | 
 **mtime** | **int** | Unix Epoch in seconds | 
 **size_bytes** | **int** |  | [optional] 

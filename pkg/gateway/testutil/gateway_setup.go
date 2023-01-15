@@ -33,9 +33,9 @@ type Dependencies struct {
 
 func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string) (http.Handler, *Dependencies) {
 	ctx := context.Background()
-	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
+	viper.Set("blockstore.type", block.BlockstoreTypeMem)
 
-	store := kvtest.MakeStoreByName("mem", kvparams.Config{})(t, context.Background())
+	store := kvtest.MakeStoreByName("mem", kvparams.Config{})(t, ctx)
 	defer store.Close()
 	storeMessage := &kv.StoreMessage{Store: store}
 	multipartTracker := multipart.NewTracker(*storeMessage)
@@ -73,7 +73,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 		&stats.NullCollector{},
 		upload.DefaultPathProvider,
 		nil,
-		config.DefaultAuditLogLevel,
+		config.DefaultLoggingAuditLogLevel,
 		true,
 	)
 

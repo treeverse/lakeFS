@@ -17,9 +17,7 @@ const (
 	StorageTypeAzure
 )
 
-var (
-	ErrInvalidNamespace = errors.New("invalid namespace")
-)
+var ErrInvalidNamespace = errors.New("invalid namespace")
 
 func (s StorageType) BlockstoreType() string {
 	switch s {

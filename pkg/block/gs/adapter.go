@@ -33,12 +33,22 @@ var (
 )
 
 type Adapter struct {
-	client *storage.Client
+	client                   *storage.Client
+	presignDurationGenerator func() time.Time
+}
+
+func WithPreSignedURLDurationGenerator(f func() time.Time) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.presignDurationGenerator = f
+	}
 }
 
 func NewAdapter(client *storage.Client, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		client: client,
+		presignDurationGenerator: func() time.Time {
+			return time.Now().Add(block.DefaultPreSignExpiryDuration)
+		},
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -110,6 +120,30 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 		return nil, err
 	}
 	return r, nil
+}
+
+func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+	var err error
+	defer reportMetrics("GetPreSignedURL", time.Now(), nil, &err)
+	qualifiedKey, err := resolveNamespace(obj)
+	if err != nil {
+		return "", err
+	}
+	method := http.MethodGet
+	if mode == block.PreSignModeWrite {
+		method = http.MethodPut
+	}
+	opts := &storage.SignedURLOptions{
+		Scheme:  storage.SigningSchemeV4,
+		Method:  method,
+		Expires: a.presignDurationGenerator(),
+	}
+	k, err := a.client.Bucket(qualifiedKey.StorageNamespace).SignedURL(qualifiedKey.Key, opts)
+	if err != nil {
+		a.log(ctx).WithError(err).Error("error generating pre-signed URL")
+		return "", err
+	}
+	return k, nil
 }
 
 func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
