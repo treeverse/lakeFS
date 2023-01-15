@@ -1,6 +1,6 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 
-import {UploadIcon} from "@primer/octicons-react";
+import {SearchIcon, UploadIcon} from "@primer/octicons-react";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {ActionGroup, ActionsBar, Error, Loading, RefreshButton, Warnings} from "../../../lib/components/controls";
@@ -28,6 +28,8 @@ import {
 import {Box} from "@mui/material";
 import {RepoError} from "./error";
 import { getContentType, getFileExtension, FileContents } from "./objectViewer";
+import {OverlayTrigger, Tooltip} from "react-bootstrap";
+import InputGroup from "react-bootstrap/InputGroup";
 
 const README_FILE_NAME = 'README.md';
 
@@ -329,6 +331,57 @@ const ReadmeContainer = ({repo, reference, path='', refreshDep=''}) => {
     );
 }
 
+const PrefixSearchWidget = ({ path, onNavigate }) => {
+
+    const [expanded, setExpanded] = useState(false)
+
+    const toggle = useCallback((e) => {
+        e.preventDefault()
+        setExpanded((prev) => {
+            return !prev
+        })
+    }, [setExpanded])
+
+    const handleSubmit =(e) => {
+        e.preventDefault()
+        onNavigate(ref.current.value)
+    }
+
+    const ref = useRef(null);
+
+    if (expanded) {
+        return (
+            <Form onSubmit={handleSubmit}>
+                <InputGroup>
+                    <Form.Control
+                        ref={ref}
+                        defaultValue={path}
+                        autoFocus
+                        placeholder="Go to Prefix"
+                        aria-label="Go to prefix"
+                    />
+                    <Button variant="outline-secondary" onClick={toggle}>
+                        <SearchIcon/>
+                    </Button>
+
+                </InputGroup>
+            </Form>
+        )
+    }
+
+    return (
+        <OverlayTrigger placement="bottom" overlay={
+            <Tooltip>
+                Find path by Prefix
+            </Tooltip>
+        }>
+            <Button variant="light" onClick={toggle}>
+                <SearchIcon/>
+            </Button>
+        </OverlayTrigger>
+    )
+}
+
 const ObjectsBrowser = ({config, configError}) => {
     const router = useRouter();
     const {path, after} = router.query;
@@ -360,6 +413,13 @@ const ObjectsBrowser = ({config, configError}) => {
                 </ActionGroup>
 
                 <ActionGroup orientation="right">
+                    <PrefixSearchWidget path={path} onNavigate={(path) => {
+                        const query = {}
+                        if (path) query.path = path
+                        if (reference) query.ref = reference.id
+                        const url = {pathname: `/repositories/:repoId/objects`, query, params: {repoId: repo.id}}
+                        router.push(url)
+                    }}/>
                     <RefreshButton onClick={refresh}/>
                     <UploadButton
                         config={config}
