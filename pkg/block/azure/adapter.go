@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
@@ -34,7 +33,7 @@ const (
 )
 
 type Adapter struct {
-	client                        service.Client
+	client                        *service.Client
 	configurations                configurations
 	preSignedURLDurationGenerator func() time.Time
 }
@@ -43,7 +42,7 @@ type configurations struct {
 	retryReaderOptions azblob.RetryReaderOptions
 }
 
-func NewAdapter(client service.Client, opts ...func(a *Adapter)) *Adapter {
+func NewAdapter(client *service.Client, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		client:         client,
 		configurations: configurations{retryReaderOptions: azblob.RetryReaderOptions{MaxRetries: defaultMaxRetryRequests}},
@@ -186,15 +185,14 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	return a.Download(ctx, obj, 0, blockblob.CountToEnd)
 }
 
-func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
 	permissions := sas.BlobPermissions{Read: true}
 	if mode == block.PreSignModeWrite {
 		permissions = sas.BlobPermissions{
-			Read:   true,
-			Add:    true,
-			Write:  true,
-			Delete: true,
-			Tag:    true,
+			Read:  true,
+			Add:   true,
+			Write: true,
+			Tag:   true,
 		}
 	}
 	return a.getPreSignedURL(obj, permissions)
@@ -230,7 +228,6 @@ func (a *Adapter) Download(ctx context.Context, obj block.ObjectPointer, offset,
 	container := a.client.NewContainerClient(qualifiedKey.ContainerName)
 	blobURL := container.NewBlockBlobClient(qualifiedKey.BlobURL)
 
-	// keyOptions := service.ClientProvidedKeyOptions{}
 	downloadResponse, err := blobURL.DownloadStream(ctx, &azblob.DownloadStreamOptions{
 		RangeGetContentMD5: nil,
 		Range: blob.HTTPRange{
@@ -238,7 +235,7 @@ func (a *Adapter) Download(ctx context.Context, obj block.ObjectPointer, offset,
 			Count:  count,
 		},
 	})
-	if isErrNotFound(err) {
+	if bloberror.HasCode(err, bloberror.BlobNotFound) {
 		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
@@ -282,12 +279,6 @@ func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block
 	}
 }
 
-func isErrNotFound(err error) bool {
-	var responseErr *azcore.ResponseError
-
-	return errors.As(err, &responseErr) && responseErr.ErrorCode == string(bloberror.BlobNotFound)
-}
-
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {
 	var err error
 	defer reportMetrics("Exists", time.Now(), nil, &err)
@@ -301,7 +292,7 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 
 	_, err = blobURL.GetProperties(ctx, nil)
 
-	if isErrNotFound(err) {
+	if bloberror.HasCode(err, bloberror.BlobNotFound) {
 		return false, nil
 	}
 	if err != nil {

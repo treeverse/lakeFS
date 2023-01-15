@@ -8,7 +8,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/go-test/deep"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
@@ -53,7 +52,7 @@ func TestMultipartUpload(t *testing.T) {
 	getResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &api.GetObjectParams{Path: file})
 	require.NoError(t, err, "failed to get object")
 	require.Equal(t, http.StatusOK, getResp.StatusCode())
-	if deep.Equal(partsConcat, getResp.Body) != nil {
+	if !bytes.Equal(partsConcat, getResp.Body) {
 		t.Fatalf("uploaded object did not match")
 	}
 }

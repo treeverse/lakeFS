@@ -34,7 +34,7 @@ func getAzureClient() (*service.Client, error) {
 	return service.NewClientWithSharedKeyCredential(containerURL, credential, nil)
 }
 
-func NewAzureBlobWalker(svc service.Client) (*azureBlobWalker, error) {
+func NewAzureBlobWalker(svc *service.Client) (*azureBlobWalker, error) {
 	return &azureBlobWalker{
 		client: svc,
 		mark:   Mark{HasMore: true},
@@ -42,7 +42,7 @@ func NewAzureBlobWalker(svc service.Client) (*azureBlobWalker, error) {
 }
 
 type azureBlobWalker struct {
-	client service.Client
+	client *service.Client
 	mark   Mark
 }
 

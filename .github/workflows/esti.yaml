@@ -1235,6 +1235,3 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
-
-      - name: See the env when we would have tried to publish coverage
-        run: env

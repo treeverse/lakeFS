@@ -150,7 +150,7 @@ func (f *walkerFactory) buildAzureWalker() (*azureBlobWalker, error) {
 			return nil, err
 		}
 	}
-	return NewAzureBlobWalker(*c)
+	return NewAzureBlobWalker(c)
 }
 
 func (f *walkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*WalkerWrapper, error) {

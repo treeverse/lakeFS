@@ -7,12 +7,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-
+	"cloud.google.com/go/storage"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-
-	"cloud.google.com/go/storage"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -34,7 +32,7 @@ import (
 // googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
 const googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
 
-var ErrInvalidBlockStoreType = errors.New("invalid blockstore type")
+var ErrInvalidBlockstoreType = errors.New("invalid blockstore type")
 
 func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c params.AdapterConfig) (block.Adapter, error) {
 	blockstore := c.BlockstoreType()
@@ -72,7 +70,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 		return buildAzureAdapter(p)
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
-			ErrInvalidBlockStoreType, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeTransient, block.BlockstoreTypeGS})
+			ErrInvalidBlockstoreType, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeTransient, block.BlockstoreTypeGS})
 	}
 }
 
@@ -155,7 +153,7 @@ func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
 	if err != nil {
 		return nil, err
 	}
-	return azure.NewAdapter(*p), nil
+	return azure.NewAdapter(p), nil
 }
 
 func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {

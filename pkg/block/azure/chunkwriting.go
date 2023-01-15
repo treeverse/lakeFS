@@ -18,7 +18,7 @@ import (
 	guuid "github.com/google/uuid"
 )
 
-var ErrEmptyBuffer = errors.New("TransferManager returned a 0 size buffer, this is a bug in the manager")
+var ErrEmptyBuffer = errors.New("BufferManager returned a 0 size buffer, this is a bug in the manager")
 
 // This code adapted from azblob chunkwriting.go
 // The reason is that the original code commit the data at the end of the copy
@@ -203,7 +203,6 @@ func (c *copier) write(chunk copierChunk) {
 	_, err := c.to.StageBlock(c.ctx, chunk.id, streaming.NopCloser(bytes.NewReader(chunk.buffer)), &blockblob.StageBlockOptions{
 		CpkInfo:                 c.o.CpkInfo,
 		CpkScopeInfo:            c.o.CpkScopeInfo,
-		LeaseAccessConditions:   nil, // panic: c.o.AccessConditions.LeaseAccessConditions,
 		TransactionalValidation: c.o.TransactionalValidation,
 	})
 	if err != nil {
