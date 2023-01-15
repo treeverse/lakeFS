@@ -50,7 +50,7 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
                     <p>
                         <strong>Selected: </strong>
                         {(selected.map(item => (
-                            <Badge key={item} pill variant="primary" className="mr-1">
+                            <Badge key={item} pill variant="primary" className="me-1">
                                 {item}
                             </Badge>
                         )))}
@@ -68,11 +68,9 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
             <Modal.Body>
                 <Form onSubmit={e => { e.preventDefault() }}>
                     <InputGroup>
-                        <InputGroup.Prepend>
-                            <InputGroup.Text>
-                                <SearchIcon/>
-                            </InputGroup.Text>
-                        </InputGroup.Prepend>
+                        <InputGroup.Text>
+                            <SearchIcon/>
+                        </InputGroup.Text>
                         <DebouncedFormControl
                             ref={search}
                             placeholder={filterPlaceholder}

@@ -190,11 +190,11 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
                         e.preventDefault();
                     }}>
                         {config?.warnings &&
-                            <Form.Group controlId="warnings">
+                            <Form.Group controlId="warnings" className="mb-3">
                                 <Warnings warnings={config.warnings}/>
                             </Form.Group>}
-                        <Form.Group controlId="path">
-                            <Row noGutters={true}>
+                        <Form.Group controlId="path" className="mb-3">
+                            <Row className="g-0">
                                 <Col className="col-auto d-flex align-items-center justify-content-start">
                                     {basePath}
                                 </Col>
@@ -205,7 +205,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
                             </Row>
                         </Form.Group>
 
-                        <Form.Group controlId="content">
+                        <Form.Group controlId="content" className="mb-3">
                             <Form.Control
                                 type="file"
                                 name="content"

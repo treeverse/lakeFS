@@ -108,8 +108,8 @@ LIMIT 20`
                         <small>{`Showing only the first ${res.numRows.toLocaleString()} rows (out of ${data.numRows.toLocaleString()})`}</small>
                     }
                     <div className="object-viewer-sql-results">
-                        <Table striped bordered hover size={"sm"} responsive={"sm"}>
-                            <thead className="thead-dark">
+                        <Table striped bordered hover size={"sm"} responsive={true}>
+                            <thead className="table-dark">
                             <tr>
                                 {fields.map((field, i) =>
                                     <th key={i}>

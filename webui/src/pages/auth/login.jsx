@@ -27,7 +27,7 @@ const LoginForm = ({oidcEnabled}) => {
 
     return (
         <Row>
-            <Col md={{offset: 4, span: 4}}>
+            <Col md={{offset: 5, span: 2}}>
                 <Card className="login-widget">
                     <Card.Header>Login</Card.Header>
                     <Card.Body>
@@ -47,11 +47,11 @@ const LoginForm = ({oidcEnabled}) => {
 
                             }
                         }}>
-                            <Form.Group controlId="username">
+                            <Form.Group controlId="username" className="mb-3">
                                 <Form.Control type="text" placeholder={usernamePlaceholder} autoFocus/>
                             </Form.Group>
 
-                            <Form.Group controlId="password">
+                            <Form.Group controlId="password" className="mb-3">
                                 <Form.Control type="password" placeholder={passwordPlaceholder}/>
                             </Form.Group>
 

@@ -65,13 +65,13 @@ const CommitButton = ({repo, onCommit, enabled = false}) => {
                         onSubmit();
                         e.preventDefault();
                     }}>
-                        <Form.Group controlId="message">
+                        <Form.Group controlId="message" className="mb-3">
                             <Form.Control type="text" placeholder="Commit Message" ref={textRef}/>
                         </Form.Group>
 
                         {metadataFields.map((f, i) => {
                             return (
-                                <Form.Group controlId="message" key={`commit-metadata-field-${f.key}-${f.value}-${i}`}>
+                                <Form.Group controlId="message" key={`commit-metadata-field-${f.key}-${f.value}-${i}`} className="mb-3">
                                     <Row>
                                         <Col md={{span: 5}}>
                                             <Form.Control type="text" placeholder="Key" defaultValue={f.key}
@@ -255,7 +255,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
                 {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
                     <Card>
                         <Card.Header>
-                        <span className="float-left">
+                        <span className="float-start">
                             {(delimiter !== "") && (
                                 <URINavigator path={prefix} reference={reference} repo={repo}
                                               relativeTo={`${reference.id} workspace`}
