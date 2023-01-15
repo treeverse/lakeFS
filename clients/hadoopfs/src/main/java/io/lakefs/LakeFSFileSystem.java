@@ -426,6 +426,13 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     /**
+     * fallbackToStage determines whether the old StageObject API should be use,
+     * turn true when CopyObject API is not supported.
+     */
+    private boolean fallbackToStage = false;
+
+
+    /**
      * Non-atomic rename operation.
      *
      * @return true if rename succeeded, false otherwise
@@ -444,13 +451,12 @@ public class LakeFSFileSystem extends FileSystem {
                 .srcRef(srcObjectLoc.getRef())
                 .srcPath(srcObjectLoc.getPath());
 
-        Boolean fallbackToStage = false;
         try {
             objects.copyObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
                     creationReq);
         } catch (ApiException e) {
-            if (e.getCode() !=HttpStatus.SC_INTERNAL_SERVER_ERROR ||
-                    e.getMessage().contains("invalid API endpoint")){
+            if (e.getCode() != HttpStatus.SC_INTERNAL_SERVER_ERROR ||
+                    !e.getMessage().contains("invalid API endpoint")){
                 throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst + ", failed to copy object", e);
             }
 
