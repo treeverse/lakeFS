@@ -23,8 +23,6 @@ const (
 	Diff PluginType = iota
 )
 
-const ()
-
 var allowedProtocols = []plugin.Protocol{
 	plugin.ProtocolGRPC,
 }
