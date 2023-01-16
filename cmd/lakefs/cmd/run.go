@@ -234,10 +234,10 @@ var runCmd = &cobra.Command{
 		controllerAuthenticator := append(middlewareAuthenticator, auth.NewEmailAuthenticator(authService))
 
 		auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, metadata.InstallationID)
+		defer auditChecker.Close()
 		if version.Version != version.UnreleasedVersion {
 			auditChecker.StartPeriodicCheck(ctx, cfg.Security.AuditCheckInterval, logger)
 		}
-		defer auditChecker.Close()
 
 		allowForeign, err := cmd.Flags().GetBool(mismatchedReposFlagName)
 		if err != nil {
