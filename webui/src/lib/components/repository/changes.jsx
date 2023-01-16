@@ -1,59 +1,15 @@
 import React, {useState} from "react";
 
-import {OverlayTrigger} from "react-bootstrap";
-import Tooltip from "react-bootstrap/Tooltip";
 import {
-    ChevronDownIcon,
-    ChevronRightIcon,
-    CircleSlashIcon,
-    ClockIcon,
-    FileDiffIcon,
-    FileDirectoryIcon,
-    GraphIcon,
-    HistoryIcon,
-    PencilIcon,
-    PlusIcon,
-    TrashIcon
+    ClockIcon
 } from "@primer/octicons-react";
-import {Link} from "../nav";
 import {useAPIWithPagination} from "../../hooks/api";
 import {Error} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
-import {ConfirmationModal} from "../modals";
-import ChangeSummary from "./ChangeSummary";
+import {TreeItemType} from "../../../constants";
+import * as tablesUtil from "../../../util/tablesUtil";
+import {ObjectTreeEntryRow, PrefixTreeEntryRow, TableTreeEntryRow} from "./treeRows";
 
-class RowAction {
-    /**
-     * @param {JSX.Element} icon
-     * @param {string} tooltip
-     * @param {boolean} visible
-     * @param {()=>void} onClick
-     */
-    constructor(icon, tooltip, visible, onClick) {
-        this.tooltip = tooltip
-        this.visible = visible
-        this.onClick = onClick
-        this.icon = icon
-    }
-}
-
-/**
- * @param {[RowAction]} actions
- */
-const ChangeRowActions = ({actions}) => <>
-    {
-        actions.map(action => (
-            <><OverlayTrigger placement="bottom" overlay={<Tooltip>{action.tooltip}</Tooltip>}>
-                <Link className={"btn-link"} disabled={false} style={{visibility: action.visible ? "visible" : ""}}
-                        onClick={(e) => {
-                            e.preventDefault();
-                            action.onClick()
-                        }}>
-                    {action.icon}
-                </Link>
-            </OverlayTrigger>&#160;&#160;</>
-        ))}
-</>;
 
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
@@ -91,19 +47,22 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
         return {results:resultsState.results, pagination: pagination}
     }, [repo.id, reference.id, internalRefresh, afterUpdated, entry.path, delimiter, dirExpanded])
 
+
     const results = resultsState.results
     if (error)
         return <Error error={error}/>
 
+    const itemType = treeItemType(entry, repo, leftDiffRefID, rightDiffRefID);
+
     if (loading && results.length === 0)
-        return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference}
-                             getMore={getMore}/>
+        return <ObjectTreeEntryRow key={entry.path+"entry-row"} entry={entry} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference}
+                                   getMore={getMore}/>
 
     // When the entry represents a tree leaf
     if (!entry.path.endsWith(delimiter))
         return <>
-            <TreeEntryRow key={entry.path + "entry-row"} entry={entry} leaf={true} relativeTo={relativeTo} depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert} onNavigate={onNavigate} repo={repo}
-                          reference={reference} diffExpanded={diffExpanded} onClickExpandDiff={() => setDiffExpanded(!diffExpanded)} getMore={getMore}/>
+            <ObjectTreeEntryRow key={entry.path + "entry-row"} entry={entry} relativeTo={relativeTo} depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert} repo={repo}
+                                diffExpanded={diffExpanded} onClickExpandDiff={() => setDiffExpanded(!diffExpanded)}/>
             {diffExpanded && <tr key={"row-" + entry.path} className={"leaf-entry-row"}>
                 <td className="objects-diff" colSpan={4}>
                     <ObjectsDiff
@@ -120,7 +79,10 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
         </>
 
     return <>
-        <TreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference} getMore={getMore}/>
+        {itemType === TreeItemType.Prefix
+            ? <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
+            : <TableTreeEntryRow key={entry.path + "entry-row"} entry={entry} relativeTo={relativeTo} depth={depth} onRevert={onRevert}/>
+        }
         {dirExpanded && results &&
             results.map(child =>
                 (<TreeItem key={child.path + "-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
@@ -132,50 +94,6 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
         }
     </>
 }
-
-export const TreeEntryRow = ({entry, relativeTo = "", leaf = false, dirExpanded, diffExpanded, depth = 0, onClick, loading = false, onRevert, onNavigate, onClickExpandDiff = null, getMore}) => {
-    const [showRevertConfirm, setShowRevertConfirm] = useState(false)
-    let rowClass = 'tree-entry-row ' + diffType(entry);
-    let pathSection = extractPathText(entry, relativeTo);
-    let diffIndicator = diffIndicatorIcon(entry);
-    const [showSummary, setShowSummary] = useState(false);
-    if (entry.path_type === "common_prefix") {
-        pathSection = <Link href={onNavigate(entry)}>{pathSection}</Link>
-    }
-    const rowActions = []
-    if (onClickExpandDiff) {
-        rowActions.push(new RowAction(<FileDiffIcon/>, diffExpanded ? "Hide changes" : "Show changes", diffExpanded, onClickExpandDiff))
-    }
-    if (!leaf) {
-        rowActions.push(new RowAction(<GraphIcon/>, showSummary ? "Hide summary" : "Calculate change summary", showSummary, () => setShowSummary(!showSummary)))
-    }
-    if (onRevert) {
-        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", false, () => {
-            setShowRevertConfirm(true)
-        }))
-    }
-    return (
-        <tr className={rowClass}>
-            <td className="pl-4 col-auto p-2">{diffIndicator}</td>
-            <td className="col-9 tree-path">
-                <span style={{marginLeft: (depth * 20) + "px"}}>
-                    <span onClick={onClick}>
-                        {!leaf && (dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>)}
-                    </span>
-                    {loading ? <ClockIcon/> : ""}
-                    {pathSection}
-                </span>
-            </td>
-            <td className={"col-2 p-0 text-right"}>{showSummary && <ChangeSummary prefix={entry.path} getMore={getMore}/>}</td>
-            <td className={"col-1 change-entry-row-actions"}>
-                <ChangeRowActions actions={rowActions} />
-                <ConfirmationModal show={showRevertConfirm} onHide={() => setShowRevertConfirm(false)}
-                                   msg={`Are you sure you wish to revert "${entry.path}" (${entry.type})?`}
-                                   onConfirm={() => onRevert(entry)}/>
-            </td>
-        </tr>
-    );
-};
 
 export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, loading=false }) => {
     let pathSectionText = "Load more results ...";
@@ -199,65 +117,20 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
     );
 };
 
-function extractPathText(entry, relativeTo) {
-    let pathText = entry.path;
-    if (pathText.startsWith(relativeTo)) {
-        pathText = pathText.substr(relativeTo.length);
-    }
-    return pathText;
-}
-
-function diffType(entry) {
-    switch (entry.type) {
-        case 'changed':
-        case 'prefix_changed':
-            return 'diff-changed';
-        case 'added':
-            return 'diff-added';
-        case 'removed':
-            return 'diff-removed';
-        case 'conflict':
-            return 'diff-conflict';
-        default:
-            return '';
-    }
-}
-
-function diffIndicatorIcon(entry) {
-    if (entry.path_type === 'common_prefix') {
-        return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-prefix"}>Changes under prefix</Tooltip>)}>
-                        <span>
-                            <FileDirectoryIcon/>
-                        </span>
-               </OverlayTrigger>;
+function treeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
+    if (entry.path_type === "object") {
+        return TreeItemType.Object;
     }
 
-    switch (entry.type) {
-        case 'removed':
-            return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-removed"}>Removed</Tooltip>)}>
-                        <span>
-                            <TrashIcon/>
-                        </span>
-                    </OverlayTrigger>;
-        case 'added':
-            return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-added"}>Added</Tooltip>)}>
-                        <span>
-                            <PlusIcon/>
-                        </span>
-                    </OverlayTrigger>;
-        case 'changed':
-            return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-changed"}>Changed</Tooltip>)}>
-                        <span>
-                            <PencilIcon/>
-                        </span>
-                    </OverlayTrigger>;
-        case 'conflict':
-            return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-conflict"}>Conflict</Tooltip>)}>
-                        <span>
-                            <CircleSlashIcon/>
-                        </span>
-                    </OverlayTrigger>;
-        default:
-            return '';
+    // Tree items that represent prefixes are always of entry.type = prefix_changed and the actual diff type is
+    // presented at the object level. Therefore, in case of tables that were added or removed we don't know
+    // under which of the diff refs the table root is expected to be listed and therefore we try to get the table type
+    // from both and take the one that returned results.
+    const tableTypeFromRight = tablesUtil.getTableType(entry.path, repo, rightDiffRefID);
+    const tableTypeFromLeft = tablesUtil.getTableType(entry.path, repo, leftDiffRefID);
+    const tableType = tableTypeFromRight !== null ? tableTypeFromRight : tableTypeFromLeft;
+    if (tableType !== null) {
+        return tablesUtil.tableTypetoTreeItemType(tableType);
     }
+    return TreeItemType.Prefix;
 }

@@ -5,13 +5,12 @@ import {
     ActionGroup,
     ActionsBar,
     Error,
-    ExperimentalOverlayTooltip,
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
-import {ArrowLeftIcon, DiffIcon, GitMergeIcon} from "@primer/octicons-react";
+import {ArrowLeftIcon, GitMergeIcon, InfoIcon} from "@primer/octicons-react";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {refs, statistics} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
@@ -26,25 +25,12 @@ import Button from "react-bootstrap/Button";
 import {FormControl, FormHelperText, InputLabel, MenuItem, Select} from "@mui/material";
 import Modal from "react-bootstrap/Modal";
 import {RepoError} from "./error";
-import {ComingSoonModal} from "../../../lib/components/modals";
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
-    const [showDeltaDiffButton, setShowDeltaDiffButton] = useState(true);
-    const [showComingSoonModal, setShowComingSoonModal] = useState(false);
-    const sendDeltaDiffStats = async () => {
-        const deltaDiffStatEvents = [
-            {
-                "class": "experimental-feature",
-                "name": "delta-diff",
-                "count": 1,
-            }
-        ];
-        await statistics.postStatsEvents(deltaDiffStatEvents);
-    }
-
+    
     const refresh = () => {
         setResultsState({prefix: prefix, results:[], pagination:{}})
         setInternalRefresh(!internalRefresh)
@@ -89,21 +75,9 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
             <div className="tree-container">
                 {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
                     <>
-                        <ComingSoonModal display={showComingSoonModal}
-                                         onCancel={() => setShowComingSoonModal(false)}>
-                            <div>lakeFS Delta Lake tables diff is under development</div>
-                        </ComingSoonModal>
-                        <ExperimentalOverlayTooltip show={showDeltaDiffButton}>
-                            <Button className="action-bar"
-                                    variant="primary"
-                                    disabled={false}
-                                    onClick={() => {
-                                        setShowComingSoonModal(true);
-                                        sendDeltaDiffStats();
-                                    }}>
-                                <DiffIcon/> Compare Delta Lake tables
-                            </Button>
-                        </ExperimentalOverlayTooltip>
+                        <div className="mr-1 mb-2">
+                            <Alert variant={"info"}><InfoIcon/> You can now use lakeFS to compare Delta Lake tables</Alert>
+                        </div>
                         <Card>
                             <Card.Header>
                                 <span className="float-left">
