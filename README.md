@@ -18,7 +18,7 @@
 </p>
 
 
-## lakeFS is a data version control - git for data
+## lakeFS is a data version control - Git for data
 
 lakeFS is an open-source tool that transforms your object storage into a Git-like repository. It enables you to manage your data lake the way you manage your code.
 
