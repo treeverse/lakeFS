@@ -94,7 +94,6 @@ func pluginClient(name string, p plugin.Plugin, hc plugin.HandshakeConfig, cmd *
 	return newPluginClient(name, clientConfig)
 }
 
-// newPluginClient generates a Client that wraps the go-plugin client.
 func newPluginClient(clientName string, clientConfig plugin.ClientConfig) (*plugin.Client, error) {
 	hl := hclog.New(&hclog.LoggerOptions{
 		Name:   fmt.Sprintf("%s_logger", clientName),
