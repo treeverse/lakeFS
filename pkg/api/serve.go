@@ -4,6 +4,7 @@ package api
 
 import (
 	"errors"
+	"github.com/treeverse/lakefs/pkg/plugins/diff"
 	"io"
 	"net/http"
 
@@ -60,6 +61,7 @@ func Serve(
 	oidcProvider *oidc.Provider,
 	oauthConfig *oauth2.Config,
 	pathProvider upload.PathProvider,
+	otfDiffService *diff.Service,
 ) http.Handler {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := GetSwagger()
@@ -101,6 +103,7 @@ func Serve(
 		oidcAuthenticator,
 		sessionStore,
 		pathProvider,
+		otfDiffService,
 	)
 	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
 

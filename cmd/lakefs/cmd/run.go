@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/plugins"
+	"github.com/treeverse/lakefs/pkg/plugins/diff"
 	"io"
 	"net"
 	"net/http"
@@ -215,6 +217,7 @@ var runCmd = &cobra.Command{
 		defer actionsService.Stop()
 		c.SetHooksHandler(actionsService)
 
+		otfDiffService := initOTFService()
 		middlewareAuthenticator := auth.ChainAuthenticator{
 			auth.NewBuiltinAuthenticator(authService),
 		}
@@ -289,6 +292,7 @@ var runCmd = &cobra.Command{
 			oidcProvider,
 			oauthConfig,
 			upload.DefaultPathProvider,
+			otfDiffService,
 		)
 
 		// init gateway server
@@ -522,6 +526,17 @@ func enableKVParamsMetrics(p params.Config) params.Config {
 	pg.Metrics = true
 	p.Postgres = &pg
 	return p
+}
+
+func initOTFService() *diff.Service {
+	pluginsManager := plugins.NewManager()
+	pid := plugins.PluginIdentity{Version: 0, ExecutableLocation: "~/.lakefs/plugins/delta"}
+	pa := plugins.PluginAuth{Key: "deltaKey", Value: "7a44968c-5076-4a90-9a0e-0249cc6c119a"}
+	err := pluginsManager.RegisterPlugin("delta", pid, pa, plugins.Diff, diff.DeltaDiffGRPCPlugin{})
+	if err != nil {
+		return nil
+	}
+	return diff.NewService(pluginsManager)
 }
 
 //nolint:gochecknoinits
