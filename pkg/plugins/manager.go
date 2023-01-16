@@ -12,22 +12,14 @@ import (
 )
 
 var (
-	ErrPluginTypeNotFound   = errors.New("unknown plugin type")
-	ErrPluginNameNotFound   = errors.New("unknown plugin name")
-	ErrUninitializedManager = errors.New("uninitialized plugins manager")
+	ErrInvalidPluginNotFound = errors.New("invalid plugin type")
+	ErrPluginNameNotFound    = errors.New("unknown plugin name")
+	ErrUninitializedManager  = errors.New("uninitialized plugins manager")
 )
 
 var allowedProtocols = []plugin.Protocol{
 	plugin.ProtocolGRPC,
 }
-
-type PluginType int
-
-const (
-	Diff PluginType = iota
-)
-
-type ClosingFunc func()
 
 // PluginIdentity identifies the plugin's version and executable location.
 type PluginIdentity struct {
@@ -41,33 +33,24 @@ type PluginAuth struct {
 	Value string
 }
 
-// The Manager holds different maps for different kinds of possible plugin clients.
-// For example, the diffClients map might contain a mapping of "delta" -> plugin.Client to communicate with the Delta
+// The Manager holds a map for different kinds of possible plugin clients.
+// For example, the clients map might contain a mapping of "delta" -> plugin.Client to communicate with the Delta
 // plugin.
-type Manager struct {
-	diffClients map[string]*plugin.Client
+type Manager[T any] struct {
+	clients map[string]*plugin.Client
 }
 
-func NewManager() *Manager {
-	return &Manager{
-		diffClients: make(map[string]*plugin.Client),
+func NewManager[T any]() *Manager[T] {
+	return &Manager[T]{
+		clients: make(map[string]*plugin.Client),
 	}
 }
 
 // RegisterPlugin is used to register a new plugin client with the corresponding plugin type.
-func (m *Manager) RegisterPlugin(name string, id PluginIdentity, auth PluginAuth, pt PluginType, p plugin.Plugin) error {
+func (m *Manager[T]) RegisterPlugin(name string, id PluginIdentity, auth PluginAuth, p plugin.Plugin) error {
 	if m == nil {
 		return ErrUninitializedManager
 	}
-	switch pt {
-	case Diff:
-		return m.registerDiffPlugin(name, id, auth, p)
-	default:
-		return ErrPluginTypeNotFound
-	}
-}
-
-func (m *Manager) registerDiffPlugin(name string, id PluginIdentity, auth PluginAuth, p plugin.Plugin) error {
 	hc := plugin.HandshakeConfig{
 		ProtocolVersion:  uint(id.Version),
 		MagicCookieKey:   auth.Key,
@@ -78,7 +61,11 @@ func (m *Manager) registerDiffPlugin(name string, id PluginIdentity, auth Plugin
 	if err != nil {
 		return err
 	}
-	m.diffClients[name] = c
+	_, ok := any(c).(T)
+	if !ok {
+		return ErrInvalidPluginNotFound
+	}
+	m.clients[name] = c
 	return nil
 }
 
@@ -106,23 +93,23 @@ func newPluginClient(clientName string, clientConfig plugin.ClientConfig) (*plug
 	return plugin.NewClient(&clientConfig), nil
 }
 
-// LoadDiffPluginClient initializes a plugin.Client, and returns a Differ client and a ClosingFunc to Kill() the client
-// after being used.
-func (m *Manager) LoadDiffPluginClient(name string) (interface{}, ClosingFunc, error) {
+// LoadPluginClient loads a Client of type T.
+func (m *Manager[T]) LoadPluginClient(name string) (*T, error) {
 	if m == nil {
-		return nil, nil, ErrUninitializedManager
+		return nil, ErrUninitializedManager
 	}
-	c, ok := m.diffClients[name]
+	c, ok := m.clients[name]
 	if !ok {
-		return nil, nil, ErrPluginNameNotFound
+		return nil, ErrPluginNameNotFound
 	}
 	grpcClient, err := c.Client()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	stub, err := grpcClient.Dispense(name)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return stub, func() { c.Kill() }, nil
+	cd, _ := stub.(T)
+	return &cd, nil
 }
