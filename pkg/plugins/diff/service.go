@@ -2,19 +2,21 @@ package diff
 
 import (
 	"context"
-	"fmt"
-	"github.com/treeverse/lakefs/pkg/plugins"
+	"errors"
 	"strconv"
 	"time"
+
+	"github.com/treeverse/lakefs/pkg/plugins"
 )
 
 type Differ interface {
 	Diff(context.Context, TablePaths, S3Creds) ([]*Diff, error)
 }
 
-const pluginType = plugins.PluginType("diff")
-
-var errUnknownDiffType = fmt.Errorf("unknown diff type")
+var (
+	ErrUninitializedDiffService       = errors.New("uninitialized diff service")
+	ErrClientNotImplementingInterface = errors.New("not a diff plugin")
+)
 
 type TablePaths struct {
 	LeftTablePath  string
@@ -33,10 +35,6 @@ type Params struct {
 	S3Creds    S3Creds
 }
 
-type Service struct {
-	pluginManager plugins.Manager
-}
-
 type Entry struct {
 	Version          string
 	Timestamp        time.Time
@@ -44,33 +42,37 @@ type Entry struct {
 	OperationContent map[string]string
 }
 
-func (s *Service) RunDiff(ctx context.Context, diffName string, diffParams Params) ([]Entry, error) {
-	pn := plugins.PluginName(diffName)
-	w, err := s.pluginManager.WrapPlugin(pluginType, pn)
-	if err != nil {
-		return nil, err
-	}
-	defer w.DestroyClient()
-	dispenseName, err := s.pluginManager.PluginImplName(pluginType, pn)
-	if err != nil {
-		return nil, err
-	}
-	switch diffName {
-	case "delta":
-		return s.runDeltaDiff(ctx, diffParams, w, dispenseName)
-	default:
-		return nil, errUnknownDiffType
+type Service struct {
+	pluginManager *plugins.Manager
+}
+
+func NewService(pm *plugins.Manager) *Service {
+	return &Service{
+		pluginManager: pm,
 	}
 }
 
-func (s *Service) runDeltaDiff(ctx context.Context, params Params, w *plugins.Wrapper, implName string) ([]Entry, error) {
-	grpc := *(w.GRPCClient)
-	grpcRaw, err := grpc.Dispense(implName)
+func (s *Service) RunDiff(ctx context.Context, diffName string, diffParams Params) ([]Entry, error) {
+	if s == nil {
+		return nil, ErrUninitializedDiffService
+	}
+	d, closeClient, err := s.pluginManager.LoadDiffPluginClient(diffName)
 	if err != nil {
 		return nil, err
 	}
-	differ := grpcRaw.(Differ)
-	diffs, err := differ.Diff(ctx, params.TablePaths, params.S3Creds)
+	defer closeClient()
+	diff, ok := d.(Differ)
+	if !ok {
+		return nil, ErrClientNotImplementingInterface
+	}
+	diffs, err := diff.Diff(ctx, diffParams.TablePaths, diffParams.S3Creds)
+	if err != nil {
+		return nil, err
+	}
+	return buildEntries(diffs), nil
+}
+
+func buildEntries(diffs []*Diff) []Entry {
 	result := make([]Entry, len(diffs))
 	for _, diff := range diffs {
 		result = append(result, Entry{
@@ -80,5 +82,5 @@ func (s *Service) runDeltaDiff(ctx context.Context, params Params, w *plugins.Wr
 			OperationContent: diff.Content,
 		})
 	}
-	return result, nil
+	return result
 }
