@@ -21,6 +21,8 @@ var allowedProtocols = []plugin.Protocol{
 	plugin.ProtocolGRPC,
 }
 
+type ClosingFunc func()
+
 // PluginIdentity identifies the plugin's version and executable location.
 type PluginIdentity struct {
 	Version            int
@@ -94,22 +96,22 @@ func newPluginClient(clientName string, clientConfig plugin.ClientConfig) (*plug
 }
 
 // LoadPluginClient loads a Client of type T.
-func (m *Manager[T]) LoadPluginClient(name string) (*T, error) {
+func (m *Manager[T]) LoadPluginClient(name string) (*T, ClosingFunc, error) {
 	if m == nil {
-		return nil, ErrUninitializedManager
+		return nil, nil, ErrUninitializedManager
 	}
 	c, ok := m.clients[name]
 	if !ok {
-		return nil, ErrPluginNameNotFound
+		return nil, nil, ErrPluginNameNotFound
 	}
 	grpcClient, err := c.Client()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	stub, err := grpcClient.Dispense(name)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	cd, _ := stub.(T)
-	return &cd, nil
+	return &cd, func() { c.Kill() }, nil
 }

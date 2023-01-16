@@ -14,8 +14,7 @@ type Differ interface {
 }
 
 var (
-	ErrUninitializedDiffService       = errors.New("uninitialized diff service")
-	ErrClientNotImplementingInterface = errors.New("not a diff plugin")
+	ErrUninitializedDiffService = errors.New("uninitialized diff service")
 )
 
 type TablePaths struct {
@@ -43,10 +42,10 @@ type Entry struct {
 }
 
 type Service struct {
-	pluginManager *plugins.Manager
+	pluginManager *plugins.Manager[Differ]
 }
 
-func NewService(pm *plugins.Manager) *Service {
+func NewService(pm *plugins.Manager[Differ]) *Service {
 	return &Service{
 		pluginManager: pm,
 	}
@@ -56,16 +55,12 @@ func (s *Service) RunDiff(ctx context.Context, diffName string, diffParams Param
 	if s == nil {
 		return nil, ErrUninitializedDiffService
 	}
-	d, closeClient, err := s.pluginManager.LoadDiffPluginClient(diffName)
+	d, closeClient, err := s.pluginManager.LoadPluginClient(diffName)
 	if err != nil {
 		return nil, err
 	}
 	defer closeClient()
-	diff, ok := d.(Differ)
-	if !ok {
-		return nil, ErrClientNotImplementingInterface
-	}
-	diffs, err := diff.Diff(ctx, diffParams.TablePaths, diffParams.S3Creds)
+	diffs, err := (*d).Diff(ctx, diffParams.TablePaths, diffParams.S3Creds)
 	if err != nil {
 		return nil, err
 	}
