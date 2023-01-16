@@ -3,24 +3,34 @@ package plugins
 import (
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"os"
-	"os/exec"
 )
 
 var (
 	ErrPluginTypeNotFound   = errors.New("unknown plugin type")
 	ErrPluginNameNotFound   = errors.New("unknown plugin name")
 	ErrUninitializedManager = errors.New("uninitialized plugins manager")
-	ErrPluginImplNotFound = errors.New("unknown plugin implementation")
 )
 
-// PluginIdentity identifies the plugin name, type, version, and the executable's location.
+type PluginType int
+
+const (
+	Diff PluginType = iota
+)
+
+const ()
+
+var allowedProtocols = []plugin.Protocol{
+	plugin.ProtocolGRPC,
+}
+
+// PluginIdentity identifies the plugin's version and executable location.
 type PluginIdentity struct {
-	Name               string
-	Type               string
 	Version            int
 	ExecutableLocation string
 }
@@ -31,103 +41,60 @@ type PluginAuth struct {
 	Value string
 }
 
-// pluginNameConfig includes the plugin's execute command, and its handshake config.
-// Examples:
-/*
-Delta diff example:
-{
-	HandshakeConfig: plugin.HandshakeConfig{
-		ProtocolVersion:  1,
-		MagicCookieKey:   "deltaKey",
-		MagicCookieValue: "deltaValue",
-	},
-	Cmd: exec.Command{ Path: "path/to/executable/diff/delta", ...}
-}
-
-Iceberg merge example
-{
-	HandshakeConfig: plugin.HandshakeConfig{
-		ProtocolVersion:  24,
-		MagicCookieKey:   "icebergKey",
-		MagicCookieValue: "icebergValue",
-	},
-	Cmd: exec.Command{ Path: "/path/to/executable/merge/iceberg", ...}
-}
-*/
-type pluginNameConfig struct {
-	plugin.HandshakeConfig
-	*exec.Cmd
-}
-
-// pluginTypeConfig includes the plugin.Plugin interface implementations for the given plugin along with the supported
-// protocols and specific configurations for the different implementations for that plugin type.
-// Diff Example:
-//
-//	{
-//		AllowedProtocols: []plugin.Protocol{ plugin.ProtocolGRPC },
-//		Plugin: map[string]plugin.Plugin{"differPlugin": GRPCPlugin},
-//		PluginNameConfigMap: {
-//			"delta": <delta pluginNameConfig>,
-//			"iceberg: <iceberg pluginNameConfig>,
-//		}
-//	}
-type pluginTypeConfig struct {
-	AllowedProtocols    []plugin.Protocol
-	Plugins             map[string]plugin.Plugin
-	PluginNameConfigMap map[string]pluginNameConfig
-}
-
-// The Manager holds the different types of plugins that can be used in the plugin system
+// The Manager holds different maps for different kinds of possible plugin clients.
+// For example, the diffClients map might contain a mapping of "delta" -> plugin.Client to communicate with the Delta
+// plugin.
 type Manager struct {
-	pluginTypes map[string]pluginTypeConfig
-	pluginImplNames map[string]string
+	diffClients map[string]*plugin.Client
 }
 
 func NewManager() *Manager {
 	return &Manager{
-		pluginTypes: make(map[string]pluginTypeConfig),
-		pluginImplNames: make(map[string]string),
+		diffClients: make(map[string]*plugin.Client),
 	}
 }
 
-// PluginImplName is a getter for the `pluginImplNames` map.
-func (m *Manager) PluginImplName(pluginType string, pluginName string) (string, error) {
-	in, ok := m.pluginImplNames[implNameKey(pluginType, pluginName)]
-	if !ok {
-		return "", ErrPluginImplNotFound
-	}
-	return in, nil
-}
-
-// LoadClient loads a Client that wraps the go-plugin client.
-//
-// It uses a plugin's identity: the plugin type and the plugin name under it.
-// For example, plugin type = "diff", plugin name = "delta" will generate a Client with a go-plugin client that performs
-// diffs over Delta Lake tables.
-func (m *Manager) LoadClient(identity PluginIdentity) (*Client, error) {
+// RegisterPlugin is used to register a new plugin client with the corresponding plugin type.
+func (m *Manager) RegisterPlugin(name string, id PluginIdentity, auth PluginAuth, pt PluginType, p plugin.Plugin) error {
 	if m == nil {
-		return nil, ErrUninitializedManager
+		return ErrUninitializedManager
 	}
-	ptm, ok := m.pluginTypes[identity.Type]
-	if !ok {
-		return nil, ErrPluginTypeNotFound
+	switch pt {
+	case Diff:
+		return m.registerDiffPlugin(name, id, auth, p)
+	default:
+		return ErrPluginTypeNotFound
 	}
-	pluginNameConfig, ok := ptm.PluginNameConfigMap[identity.Name]
-	if !ok {
-		return nil, ErrPluginNameNotFound
-	}
-
-	clientConfig := plugin.ClientConfig{
-		Plugins:          ptm.Plugins,
-		AllowedProtocols: ptm.AllowedProtocols,
-		HandshakeConfig:  pluginNameConfig.HandshakeConfig,
-		Cmd:              pluginNameConfig.Cmd,
-	}
-	return newPluginClient(fmt.Sprintf("%s:%s", identity.Type, identity.Name), clientConfig)
 }
 
-// newPluginClient generates a Client that wraps the go-plugin client.
-func newPluginClient(clientName string, clientConfig plugin.ClientConfig) (*Client, error) {
+func (m *Manager) registerDiffPlugin(name string, id PluginIdentity, auth PluginAuth, p plugin.Plugin) error {
+	hc := plugin.HandshakeConfig{
+		ProtocolVersion:  uint(id.Version),
+		MagicCookieKey:   auth.Key,
+		MagicCookieValue: auth.Value,
+	}
+	cmd := exec.Command(id.ExecutableLocation) //nolint:gosec
+	c, err := pluginClient(name, p, hc, cmd)
+	if err != nil {
+		return err
+	}
+	m.diffClients[name] = c
+	return nil
+}
+
+func pluginClient(name string, p plugin.Plugin, hc plugin.HandshakeConfig, cmd *exec.Cmd) (*plugin.Client, error) {
+	clientConfig := plugin.ClientConfig{
+		Plugins: map[string]plugin.Plugin{
+			name: p,
+		},
+		AllowedProtocols: allowedProtocols,
+		HandshakeConfig:  hc,
+		Cmd:              cmd,
+	}
+	return newPluginClient(name, clientConfig)
+}
+
+func newPluginClient(clientName string, clientConfig plugin.ClientConfig) (*plugin.Client, error) {
 	hl := hclog.New(&hclog.LoggerOptions{
 		Name:   fmt.Sprintf("%s_logger", clientName),
 		Output: os.Stdout,
@@ -136,48 +103,31 @@ func newPluginClient(clientName string, clientConfig plugin.ClientConfig) (*Clie
 	l := logging.Default()
 	hcl := NewHClogger(hl, l)
 	clientConfig.Logger = hcl
-	pc := plugin.NewClient(&clientConfig)
-	grpcClient, err := pc.Client()
+	return plugin.NewClient(&clientConfig), nil
+}
+
+// LoadDiffPluginClient loads a Client that wraps the go-plugin client.
+//
+// It uses a plugin's identity: the plugin type and the plugin name under it.
+// For example, plugin type = "diff", plugin name = "delta" will generate a Client with a go-plugin client that performs
+// diffs over Delta Lake tables.
+// TODO: return type should be the "Diff" interface we'll define, and we should assert the correct type of 'stub'
+// and return it.
+func (m *Manager) LoadDiffPluginClient(name string) (interface{}, error) {
+	if m == nil {
+		return nil, ErrUninitializedManager
+	}
+	c, ok := m.diffClients[name]
+	if !ok {
+		return nil, ErrPluginNameNotFound
+	}
+	grpcClient, err := c.Client()
 	if err != nil {
 		return nil, err
 	}
-	client := NewClient(pc, grpcClient, hcl)
-	return &client, nil
-}
-
-// RegisterPlugin is used to register a new plugin type with a plugin group. It can also introduce a new plugin group.
-func (m *Manager) RegisterPlugin(id PluginIdentity, auth PluginAuth, p plugin.Plugin) error {
-	if m == nil {
-		return ErrUninitializedManager
+	stub, err := grpcClient.Dispense(name)
+	if err != nil {
+		return nil, err
 	}
-	pt, ok := m.pluginTypes[id.Type]
-	if !ok {
-		pt = typeConfig(id.Type, p)
-	}
-	pt.PluginNameConfigMap[id.Name] = pluginNameConfig{
-		HandshakeConfig: plugin.HandshakeConfig{
-			ProtocolVersion:  uint(id.Version),
-			MagicCookieKey:   auth.Key,
-			MagicCookieValue: auth.Value,
-		},
-		Cmd: exec.Command(id.ExecutableLocation), //nolint:gosec
-	}
-	m.pluginTypes[id.Type] = pt
-	return nil
-}
-
-func typeConfig(pluginType string, p plugin.Plugin) pluginTypeConfig {
-	return pluginTypeConfig{
-		AllowedProtocols: []plugin.Protocol{
-			plugin.ProtocolGRPC,
-		},
-		Plugins: map[string]plugin.Plugin{
-			pluginType: p,
-		},
-		PluginNameConfigMap: make(map[string]pluginNameConfig),
-	}
-}
-
-func implNameKey(pluginType string, pluginName string) string {
-	return fmt.Sprintf("%s_%s", pluginType, pluginName)
+	return stub, nil
 }

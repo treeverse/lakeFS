@@ -2,26 +2,23 @@ package plugins
 
 import (
 	"errors"
+
 	"github.com/hashicorp/go-plugin"
 )
 
 var ErrClientAlreadyClosed = errors.New("client already closed")
 
 // Client wraps the go-plugin client (which is in fact a plugin controller) and the GRPC client.
-// It's used as a convenience struct to call the different types of plugins, and to be included as a subtype of specific
-// plugin client implementations
 type Client struct {
-	GRPCClient plugin.ClientProtocol
-	client     *plugin.Client
-	log        HClogger
+	client *plugin.Client
+	log    HClogger
 }
 
 // NewClient constructs a new Client instance
-func NewClient(client *plugin.Client, protocol plugin.ClientProtocol, log HClogger) Client {
+func NewClient(client *plugin.Client, log HClogger) Client {
 	return Client{
-		GRPCClient: protocol,
-		client:     client,
-		log:        log,
+		client: client,
+		log:    log,
 	}
 }
 
