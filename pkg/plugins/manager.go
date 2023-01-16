@@ -17,17 +17,17 @@ var (
 	ErrUninitializedManager = errors.New("uninitialized plugins manager")
 )
 
+var allowedProtocols = []plugin.Protocol{
+	plugin.ProtocolGRPC,
+}
+
 type PluginType int
 
 const (
 	Diff PluginType = iota
 )
 
-const ()
-
-var allowedProtocols = []plugin.Protocol{
-	plugin.ProtocolGRPC,
-}
+type ClosingFunc func()
 
 // PluginIdentity identifies the plugin's version and executable location.
 type PluginIdentity struct {
@@ -106,28 +106,23 @@ func newPluginClient(clientName string, clientConfig plugin.ClientConfig) (*plug
 	return plugin.NewClient(&clientConfig), nil
 }
 
-// LoadDiffPluginClient loads a Client that wraps the go-plugin client.
-//
-// It uses a plugin's identity: the plugin type and the plugin name under it.
-// For example, plugin type = "diff", plugin name = "delta" will generate a Client with a go-plugin client that performs
-// diffs over Delta Lake tables.
-// TODO: return type should be the "Diff" interface we'll define, and we should assert the correct type of 'stub'
-// and return it.
-func (m *Manager) LoadDiffPluginClient(name string) (interface{}, error) {
+// LoadDiffPluginClient initializes a plugin.Client, and returns a Differ client and a ClosingFunc to Kill() the client
+// after being used.
+func (m *Manager) LoadDiffPluginClient(name string) (interface{}, ClosingFunc, error) {
 	if m == nil {
-		return nil, ErrUninitializedManager
+		return nil, nil, ErrUninitializedManager
 	}
 	c, ok := m.diffClients[name]
 	if !ok {
-		return nil, ErrPluginNameNotFound
+		return nil, nil, ErrPluginNameNotFound
 	}
 	grpcClient, err := c.Client()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	stub, err := grpcClient.Dispense(name)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return stub, nil
+	return stub, func() { c.Kill() }, nil
 }
