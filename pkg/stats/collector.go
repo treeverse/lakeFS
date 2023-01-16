@@ -182,7 +182,7 @@ func NewBufferedCollector(installationID string, cfg Config, opts ...BufferedCol
 		closed:          0,
 		extended:        cfg.Extended,
 		log:             logging.Default(),
-		sendCh:          make(chan *InputEvent),
+		sendCh:          make(chan *InputEvent, 1), // buffered as like to check if sender is free
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -261,12 +261,7 @@ func (s *BufferedCollector) Run(ctx context.Context) {
 
 func (s *BufferedCollector) sendMetricsLoop(ctx context.Context) {
 	defer s.wg.Done()
-	for event := range s.sendCh {
-		err := s.sender.SendEvent(ctx, event)
-		if err != nil {
-			s.log.WithError(err).Debug("Failed sending stats event")
-		}
-	}
+	s.processSendCh(ctx)
 }
 
 func (s *BufferedCollector) updateMetricsLoop(ctx context.Context) {
@@ -304,6 +299,9 @@ func (s *BufferedCollector) updateMetricsLoop(ctx context.Context) {
 
 // flush send the current cache information using SendEvents
 func (s *BufferedCollector) flush() {
+	if len(s.sendCh) > 0 {
+		return
+	}
 	event := s.newInputEvent()
 	if event == nil {
 		return
@@ -336,18 +334,30 @@ func (s *BufferedCollector) Close() {
 	s.cancel()
 	s.wg.Wait()
 
-	// drain updates
+	// drain events
+	ctx := context.Background()
+	s.processSendCh(ctx)
+
+	// drain updates and post last event
 	for w := range s.updatesCh {
 		s.update(w)
 	}
-
-	// post any events left
 	event := s.newInputEvent()
 	if event != nil {
-		err := s.sender.SendEvent(context.Background(), event)
-		if err != nil {
-			s.log.WithError(err).Warn("Failed sending event while shutting down")
-		}
+		s.sendEventHelper(ctx, event)
+	}
+}
+
+func (s *BufferedCollector) processSendCh(ctx context.Context) {
+	for event := range s.sendCh {
+		s.sendEventHelper(ctx, event)
+	}
+}
+
+func (s *BufferedCollector) sendEventHelper(ctx context.Context, event *InputEvent) {
+	err := s.sender.SendEvent(ctx, event)
+	if err != nil {
+		s.log.WithError(err).Debug("Failed sending stats event")
 	}
 }
 
