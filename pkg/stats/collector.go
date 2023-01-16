@@ -113,9 +113,7 @@ type BufferedCollector struct {
 	runtimeCollector func() map[string]string
 	runtimeStats     map[string]string
 	inFlight         sync.WaitGroup
-	pendingRequests  sync.WaitGroup
 	closed           int32
-	done             chan bool
 	extended         bool
 	log              logging.Logger
 	wg               sync.WaitGroup
@@ -181,9 +179,7 @@ func NewBufferedCollector(installationID string, cfg Config, opts ...BufferedCol
 		installationID:  installationID,
 		processID:       uuid.Must(uuid.NewUUID()).String(),
 		inFlight:        sync.WaitGroup{},
-		pendingRequests: sync.WaitGroup{},
 		closed:          0,
-		done:            make(chan bool),
 		extended:        cfg.Extended,
 		log:             logging.Default(),
 		sendCh:          make(chan *InputEvent),
