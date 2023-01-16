@@ -19,7 +19,7 @@ var (
 )
 
 type Sender interface {
-	SendEvent(ctx context.Context, installationID, processID string, m []Metric) error
+	SendEvent(ctx context.Context, event *InputEvent) error
 	UpdateMetadata(ctx context.Context, m Metadata) error
 	UpdateCommPrefs(ctx context.Context, commPrefs *CommPrefsData) error
 }
@@ -27,9 +27,8 @@ type Sender interface {
 type TimeFn func() time.Time
 
 type HTTPSender struct {
-	addr     string
-	timeFunc TimeFn
-	client   *http.Client
+	addr   string
+	client *http.Client
 }
 
 type LoggerAdapter struct {
@@ -40,13 +39,12 @@ func (l *LoggerAdapter) Printf(msg string, args ...interface{}) {
 	l.Debugf(msg, args...)
 }
 
-func NewHTTPSender(addr string, log logging.Logger, timeFunc TimeFn) *HTTPSender {
+func NewHTTPSender(addr string, log logging.Logger) *HTTPSender {
 	retryClient := retryablehttp.NewClient()
 	retryClient.Logger = &LoggerAdapter{Logger: log}
 	return &HTTPSender{
-		addr:     addr,
-		timeFunc: timeFunc,
-		client:   retryClient.StandardClient(),
+		addr:   addr,
+		client: retryClient.StandardClient(),
 	}
 }
 
@@ -79,13 +77,7 @@ func (s *HTTPSender) UpdateMetadata(ctx context.Context, m Metadata) error {
 	return nil
 }
 
-func (s *HTTPSender) SendEvent(ctx context.Context, installationID, processID string, metrics []Metric) error {
-	event := &InputEvent{
-		InstallationID: installationID,
-		ProcessID:      processID,
-		Time:           s.timeFunc().Format(time.RFC3339),
-		Metrics:        metrics,
-	}
+func (s *HTTPSender) SendEvent(ctx context.Context, event *InputEvent) error {
 	serialized, err := json.Marshal(event)
 	if err != nil {
 		return fmt.Errorf("could not serialize event: %s: %w", err, ErrSendError)
@@ -132,14 +124,15 @@ type dummySender struct {
 	logging.Logger
 }
 
-func (s *dummySender) SendEvent(_ context.Context, installationID, processID string, metrics []Metric) error {
+func (s *dummySender) SendEvent(_ context.Context, event *InputEvent) error {
 	if s.Logger == nil || !s.IsTracing() {
 		return nil
 	}
 	s.WithFields(logging.Fields{
-		"installation_id": installationID,
-		"process_id":      processID,
-		"metrics":         fmt.Sprintf("%+v", metrics),
+		"installation_id": event.InstallationID,
+		"process_id":      event.ProcessID,
+		"event_time":      event.Time,
+		"metrics":         fmt.Sprintf("%+v", event.Metrics),
 	}).Trace("dummy sender received metrics")
 	return nil
 }

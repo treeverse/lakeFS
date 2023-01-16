@@ -15,8 +15,8 @@ type mockSender struct {
 	metadata chan stats.Metadata
 }
 
-func (s *mockSender) SendEvent(_ context.Context, _, _ string, m []stats.Metric) error {
-	s.metrics <- m
+func (s *mockSender) SendEvent(_ context.Context, evt *stats.InputEvent) error {
+	s.metrics <- evt.Metrics
 	return nil
 }
 
