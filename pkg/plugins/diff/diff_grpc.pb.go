@@ -8,7 +8,6 @@ package diff
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -19,7 +18,7 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// DifferClient is the client API for DeltaDiffer service.
+// DifferClient is the client API for Differ service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DifferClient interface {
@@ -36,14 +35,14 @@ func NewDifferClient(cc grpc.ClientConnInterface) DifferClient {
 
 func (c *differClient) Diff(ctx context.Context, in *DiffRequest, opts ...grpc.CallOption) (*DiffResponse, error) {
 	out := new(DiffResponse)
-	err := c.cc.Invoke(ctx, "/diff.DeltaDiffer/Diff", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/diff.Differ/Diff", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// DifferServer is the server API for DeltaDiffer service.
+// DifferServer is the server API for Differ service.
 // All implementations must embed UnimplementedDifferServer
 // for forward compatibility
 type DifferServer interface {
@@ -81,7 +80,7 @@ func _Differ_Diff_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/diff.DeltaDiffer/Diff",
+		FullMethod: "/diff.Differ/Diff",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DifferServer).Diff(ctx, req.(*DiffRequest))
@@ -89,11 +88,11 @@ func _Differ_Diff_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	return interceptor(ctx, in, info, handler)
 }
 
-// Differ_ServiceDesc is the grpc.ServiceDesc for DeltaDiffer service.
+// Differ_ServiceDesc is the grpc.ServiceDesc for Differ service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Differ_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "diff.DeltaDiffer",
+	ServiceName: "diff.Differ",
 	HandlerType: (*DifferServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

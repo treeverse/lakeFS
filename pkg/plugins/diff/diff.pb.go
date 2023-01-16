@@ -12,12 +12,11 @@
 package diff
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -411,8 +410,8 @@ var file_diff_proto_depIdxs = []int32{
 	6, // 2: diff.Diff.timestamp:type_name -> google.protobuf.Timestamp
 	5, // 3: diff.Diff.content:type_name -> diff.Diff.ContentEntry
 	3, // 4: diff.DiffResponse.diffs:type_name -> diff.Diff
-	2, // 5: diff.DeltaDiffer.Diff:input_type -> diff.DiffRequest
-	4, // 6: diff.DeltaDiffer.Diff:output_type -> diff.DiffResponse
+	2, // 5: diff.Differ.Diff:input_type -> diff.DiffRequest
+	4, // 6: diff.Differ.Diff:output_type -> diff.DiffResponse
 	6, // [6:7] is the sub-list for method output_type
 	5, // [5:6] is the sub-list for method input_type
 	5, // [5:5] is the sub-list for extension type_name
