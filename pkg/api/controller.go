@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/plugins/diff"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -20,6 +19,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/treeverse/lakefs/pkg/plugins/diff"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/davecgh/go-spew/spew"

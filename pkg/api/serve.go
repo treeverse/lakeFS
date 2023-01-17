@@ -4,9 +4,10 @@ package api
 
 import (
 	"errors"
-	"github.com/treeverse/lakefs/pkg/plugins/diff"
 	"io"
 	"net/http"
+
+	"github.com/treeverse/lakefs/pkg/plugins/diff"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/getkin/kin-openapi/openapi3"

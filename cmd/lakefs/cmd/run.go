@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/plugins"
-	"github.com/treeverse/lakefs/pkg/plugins/diff"
 	"io"
 	"net"
 	"net/http"
@@ -15,6 +13,9 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/treeverse/lakefs/pkg/plugins"
+	"github.com/treeverse/lakefs/pkg/plugins/diff"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/fsnotify/fsnotify"
