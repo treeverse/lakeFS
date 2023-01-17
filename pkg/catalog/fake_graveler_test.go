@@ -98,7 +98,7 @@ func (g *FakeGraveler) GetByCommitID(ctx context.Context, repository *graveler.R
 	return g.Get(ctx, repository, graveler.Ref(commitID), key)
 }
 
-func (g *FakeGraveler) Set(_ context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, value graveler.Value, _ ...graveler.WriteConditionOption) error {
+func (g *FakeGraveler) Set(_ context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, value graveler.Value, _ ...graveler.SetOptionsFunc) error {
 	if g.Err != nil {
 		return g.Err
 	}

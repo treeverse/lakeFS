@@ -66,8 +66,9 @@ const (
 	// httpStatusClientClosedRequestText text used for client closed request status code
 	httpStatusClientClosedRequestText = "Client closed request"
 
-	CopyTypeFull    = "full"
-	CopyTypeShallow = "shallow"
+	httpHeaderCopyType        = "X-Lakefs-Copy-Type"
+	httpHeaderCopyTypeFull    = "full"
+	httpHeaderCopyTypeShallow = "shallow"
 )
 
 type actionsHandler interface {
@@ -2146,7 +2147,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 
 	// before writing body, ensure preconditions - this means we essentially check for object existence twice:
 	// once before uploading the body to save resources and time,
-	//	and then graveler will check again when passed a WriteCondition.
+	//	and then graveler will check again when passed a SetOptions.
 	allowOverwrite := true
 	if params.IfNoneMatch != nil {
 		if StringValue(params.IfNoneMatch) != "*" {
@@ -2234,7 +2235,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	}
 	entry := entryBuilder.Build()
 
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.IfAbsent(!allowOverwrite))
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithIfAbsent(!allowOverwrite))
 	if errors.Is(err, graveler.ErrPreconditionFailed) {
 		writeError(w, r, http.StatusPreconditionFailed, "path already exists")
 		return
@@ -2343,62 +2344,120 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ReadActionsAction,
-					Resource: permissions.ObjectArn(repository, params.DestPath),
+					Resource: permissions.ObjectArn(repository, body.SrcPath),
 				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.WriteObjectAction,
-					Resource: permissions.ObjectArn(repository, body.SrcPath),
+					Resource: permissions.ObjectArn(repository, branch),
 				},
 			},
 		},
 	}) {
 		return
 	}
+
 	ctx := r.Context()
 	c.LogAction(ctx, "copy_object", r, repository, branch, params.DestPath)
 
-	repo, err := c.Catalog.GetRepository(ctx, repository)
+	// use destination branch as source if not specified
+	srcRef := swag.StringValue(body.SrcRef)
+	if srcRef == "" {
+		srcRef = branch
+	}
+
+	// verify branch exists
+	branchExists, err := c.Catalog.BranchExists(ctx, repository, branch)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-
-	reference := branch
-	if body.SrcRef != nil {
-		reference = *body.SrcRef
-	}
-
-	src, err := c.Catalog.GetEntry(ctx, repository, reference, body.SrcPath, catalog.GetEntryParams{})
-	if c.handleAPIError(ctx, w, r, err) {
+	if !branchExists {
+		writeError(w, r, http.StatusNotFound, fmt.Sprintf("branch '%s' not found", branch))
 		return
 	}
 
-	destAddress := c.PathProvider.NewPath()
-	entry, err := c.Catalog.CopyEntry(ctx, repository, params.DestPath, branch, *body.SrcRef, destAddress, *src)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
+	var (
+		copyType string           // copy type performed
+		srcEntry *catalog.DBEntry // loaded src entry
+		entry    *catalog.DBEntry // set to the entry we created (shallow or copy)
+	)
+
+	// entry on same branch and written on stage - create a shallow copy
+	if srcRef == branch {
+		copyType = httpHeaderCopyTypeShallow
+		// try to get the entry from branch's staging
+		srcEntry, err = c.Catalog.GetEntry(ctx, repository, branch, body.SrcPath, catalog.GetEntryParams{
+			ReturnExpired: true,
+			StageOnly:     true,
+		})
+		if !errors.Is(err, graveler.ErrNotFound) && c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		// TODO(barak) add physical address to copy table
+
+		// try to make a shallow copy
+		if err == nil {
+			dstEntry := *srcEntry
+			dstEntry.Path = params.DestPath
+			err = c.Catalog.CreateEntry(ctx, repository, branch, dstEntry, graveler.WithMaxTries(1))
+			if err == nil {
+				// made it we just point to the new entry we created
+				entry = &dstEntry
+			} else if errors.Is(err, graveler.ErrTooManyTries) {
+				// do nothing we - continue to fallthrough to do full copy
+			} else if c.handleAPIError(ctx, w, r, err) {
+				return
+			}
+		}
 	}
 
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, block.IdentifierTypeRelative)
-	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, err)
-		return
-	}
-	copyType := CopyTypeShallow
-	if src.PhysicalAddress == entry.PhysicalAddress {
-		copyType = CopyTypeFull
-	}
-	w.Header().Set("X-lakeFS-Copy-Type", copyType) // update with the real implementation
+	// fallback to a full copy
+	if entry == nil {
+		copyType = httpHeaderCopyTypeFull
 
+		// fetch src entry if needed (was not in stage)
+		if srcEntry == nil {
+			srcEntry, err = c.Catalog.GetEntry(ctx, repository, branch+string(graveler.RefModTypeDollar), body.SrcPath, catalog.GetEntryParams{ReturnExpired: true})
+			if c.handleAPIError(ctx, w, r, err) {
+				return
+			}
+		}
+
+		repo, err := c.Catalog.GetRepository(ctx, repository)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+
+		// copy data by physical address
+		dstEntry := *srcEntry
+		dstEntry.Path = params.DestPath
+		dstEntry.AddressType = catalog.AddressTypeRelative
+		dstEntry.PhysicalAddress = c.PathProvider.NewPath()
+		srcObject := block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: srcEntry.PhysicalAddress}
+		destObj := block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: dstEntry.PhysicalAddress}
+		err = c.BlockAdapter.Copy(ctx, srcObject, destObj)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+
+		// create entry to the final copy
+		err = c.Catalog.CreateEntry(ctx, repository, branch, dstEntry, graveler.WithMaxTries(1))
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		entry = &dstEntry
+	}
+
+	w.Header().Set(httpHeaderCopyType, copyType)
 	response := ObjectStats{
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
 		Path:            entry.Path,
 		PathType:        entryTypeObject,
-		PhysicalAddress: qk.Format(),
+		PhysicalAddress: entry.PhysicalAddress,
 		SizeBytes:       Int64Ptr(entry.Size),
-		ContentType:     &entry.ContentType,
+		ContentType:     StringPtr(entry.ContentType),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }

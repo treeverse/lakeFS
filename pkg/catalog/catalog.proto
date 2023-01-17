@@ -22,3 +22,7 @@ message Entry {
 	AddressType address_type = 6;
 	string content_type = 7;
 }
+
+message CopyTableEntry {
+	string address = 1;
+}

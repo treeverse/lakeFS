@@ -8,9 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rs/xid"
-
 	"github.com/hashicorp/go-multierror"
+	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -564,8 +563,8 @@ func (m *Manager) SetLinkAddress(ctx context.Context, repository *graveler.Repos
 
 func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
 	data := graveler.LinkAddressData{}
-	path := []byte(graveler.LinkedAddressPath(token))
-	_, err := m.kvStore.GetMsg(ctx, graveler.RepoPartition(repository), path, &data)
+	addrPath := []byte(graveler.LinkedAddressPath(token))
+	_, err := m.kvStore.GetMsg(ctx, graveler.RepoPartition(repository), addrPath, &data)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrAddressTokenNotFound
@@ -580,8 +579,8 @@ func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.Re
 }
 
 func (m *Manager) deleteLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
-	path := []byte(graveler.LinkedAddressPath(token))
-	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repository), path)
+	addrPath := []byte(graveler.LinkedAddressPath(token))
+	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repository), addrPath)
 }
 
 func (m *Manager) ListLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {

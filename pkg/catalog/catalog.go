@@ -36,7 +36,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/pyramid"
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
-	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/validator"
 	"github.com/xitongsys/parquet-go/parquet"
 	"github.com/xitongsys/parquet-go/writer"
@@ -731,7 +730,7 @@ func (c *Catalog) GetTag(ctx context.Context, repositoryID string, tagID string)
 
 // GetEntry returns the current entry for path in repository branch reference.  Returns
 // the entry with ExpiredError if it has expired from underlying storage.
-func (c *Catalog) GetEntry(ctx context.Context, repositoryID string, reference string, path string, _ GetEntryParams) (*DBEntry, error) {
+func (c *Catalog) GetEntry(ctx context.Context, repositoryID string, reference string, path string, params GetEntryParams) (*DBEntry, error) {
 	refToGet := graveler.Ref(reference)
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
@@ -744,7 +743,7 @@ func (c *Catalog) GetEntry(ctx context.Context, repositoryID string, reference s
 	if err != nil {
 		return nil, err
 	}
-	val, err := c.Store.Get(ctx, repository, refToGet, graveler.Key(path))
+	val, err := c.Store.Get(ctx, repository, refToGet, graveler.Key(path), graveler.WithStageOnly(params.StageOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -795,7 +794,7 @@ func addressTypeToCatalog(t Entry_AddressType) AddressType {
 	}
 }
 
-func (c *Catalog) CreateEntry(ctx context.Context, repositoryID string, branch string, entry DBEntry, writeConditions ...graveler.WriteConditionOption) error {
+func (c *Catalog) CreateEntry(ctx context.Context, repositoryID string, branch string, entry DBEntry, opts ...graveler.SetOptionsFunc) error {
 	branchID := graveler.BranchID(branch)
 	ent := newEntryFromCatalogEntry(entry)
 	path := Path(entry.Path)
@@ -815,58 +814,7 @@ func (c *Catalog) CreateEntry(ctx context.Context, repositoryID string, branch s
 	if err != nil {
 		return err
 	}
-	return c.Store.Set(ctx, repository, branchID, key, *value, writeConditions...)
-}
-
-// CopyEntry try to perform a shallow copy from source to destination
-// Shallow copy will succeed only if source is a staged reference
-func (c *Catalog) CopyEntry(ctx context.Context, repositoryID, dstPath, dstBranch, srcRef, address string, source DBEntry) (*DBEntry, error) {
-	repository, err := c.getRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	resolvedRef, err := c.Store.Dereference(ctx, repository, graveler.Ref(srcRef))
-	if err != nil {
-		return nil, err
-	}
-
-	writeTime := time.Now()
-	entryBuilder := NewDBEntryBuilder().
-		CommonLevel(false).
-		Path(dstPath).
-		PhysicalAddress(address).
-		AddressType(AddressTypeRelative).
-		CreationDate(writeTime).
-		Size(source.Size).
-		Checksum(source.Checksum).
-		ContentType(source.ContentType)
-	dstEntry := entryBuilder.Build()
-
-	value, err := EntryToValue(newEntryFromCatalogEntry(dstEntry))
-	if err != nil {
-		return nil, err
-	}
-	stagingToken := graveler.StagingToken("") // empty will trigger full copy
-	if resolvedRef.Type == graveler.ReferenceTypeBranch && dstBranch == srcRef {
-		stagingToken = resolvedRef.Branch.StagingToken
-	}
-	err = c.Store.Copy(ctx, repository, resolvedRef.BranchID, stagingToken, graveler.Key(source.Path), graveler.Key(dstPath), value, func() error {
-		// Perform a full copy
-		blob, err := upload.CopyBlob(ctx, c.BlockAdapter, repository.StorageNamespace.String(), repository.StorageNamespace.String(),
-			source.PhysicalAddress, source.Checksum, address, source.Size)
-		if err != nil {
-			return err
-		}
-		dstEntry.Checksum = blob.Checksum
-		dstEntry.Size = blob.Size
-
-		return c.CreateEntry(ctx, repositoryID, dstBranch, dstEntry)
-	})
-
-	if err != nil {
-		return nil, err
-	}
-	return &dstEntry, nil
+	return c.Store.Set(ctx, repository, branchID, key, *value, opts...)
 }
 
 func (c *Catalog) DeleteEntry(ctx context.Context, repositoryID string, branch string, path string) error {

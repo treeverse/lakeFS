@@ -64,18 +64,23 @@ func (mr *MockKeyValueStoreMockRecorder) DeleteBatch(ctx, repository, branchID, 
 }
 
 // Get mocks base method.
-func (m *MockKeyValueStore) Get(ctx context.Context, repository *graveler.RepositoryRecord, ref graveler.Ref, key graveler.Key) (*graveler.Value, error) {
+func (m *MockKeyValueStore) Get(ctx context.Context, repository *graveler.RepositoryRecord, ref graveler.Ref, key graveler.Key, opts ...graveler.GetOptionsFunc) (*graveler.Value, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, repository, ref, key)
+	varargs := []interface{}{ctx, repository, ref, key}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Get", varargs...)
 	ret0, _ := ret[0].(*graveler.Value)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockKeyValueStoreMockRecorder) Get(ctx, repository, ref, key interface{}) *gomock.Call {
+func (mr *MockKeyValueStoreMockRecorder) Get(ctx, repository, ref, key interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockKeyValueStore)(nil).Get), ctx, repository, ref, key)
+	varargs := append([]interface{}{ctx, repository, ref, key}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockKeyValueStore)(nil).Get), varargs...)
 }
 
 // GetByCommitID mocks base method.
@@ -124,10 +129,10 @@ func (mr *MockKeyValueStoreMockRecorder) ListStaging(ctx, branch, batchSize inte
 }
 
 // Set mocks base method.
-func (m *MockKeyValueStore) Set(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, value graveler.Value, writeConditions ...graveler.WriteConditionOption) error {
+func (m *MockKeyValueStore) Set(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, value graveler.Value, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, repository, branchID, key, value}
-	for _, a := range writeConditions {
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "Set", varargs...)
@@ -136,9 +141,9 @@ func (m *MockKeyValueStore) Set(ctx context.Context, repository *graveler.Reposi
 }
 
 // Set indicates an expected call of Set.
-func (mr *MockKeyValueStoreMockRecorder) Set(ctx, repository, branchID, key, value interface{}, writeConditions ...interface{}) *gomock.Call {
+func (mr *MockKeyValueStoreMockRecorder) Set(ctx, repository, branchID, key, value interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, repository, branchID, key, value}, writeConditions...)
+	varargs := append([]interface{}{ctx, repository, branchID, key, value}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockKeyValueStore)(nil).Set), varargs...)
 }
 
