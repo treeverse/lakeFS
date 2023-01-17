@@ -32,7 +32,6 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
-    const [showDeltaDiffButton] = useState(true);
     const [showComingSoonModal, setShowComingSoonModal] = useState(false);
     const sendDeltaDiffStats = async () => {
         const deltaDiffStatEvents = [
@@ -93,7 +92,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                          onCancel={() => setShowComingSoonModal(false)}>
                             <div>lakeFS Delta Lake tables diff is under development</div>
                         </ComingSoonModal>
-                        <ExperimentalOverlayTooltip show={showDeltaDiffButton}>
+                        <ExperimentalOverlayTooltip>
                             <Button className="action-bar"
                                     variant="primary"
                                     disabled={false}
