@@ -32,7 +32,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
-    const [showDeltaDiffButton, setShowDeltaDiffButton] = useState(true);
+    const [showDeltaDiffButton] = useState(true);
     const [showComingSoonModal, setShowComingSoonModal] = useState(false);
     const sendDeltaDiffStats = async () => {
         const deltaDiffStatEvents = [
@@ -97,9 +97,9 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                             <Button className="action-bar"
                                     variant="primary"
                                     disabled={false}
-                                    onClick={() => {
+                                    onClick={async () => {
                                         setShowComingSoonModal(true);
-                                        sendDeltaDiffStats();
+                                        await sendDeltaDiffStats();
                                     }}>
                                 <DiffIcon/> Compare Delta Lake tables
                             </Button>
