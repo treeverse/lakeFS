@@ -11,13 +11,14 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/Azure/azure-storage-blob-go/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
 	guuid "github.com/google/uuid"
 )
 
-var ErrEmptyBuffer = errors.New("TransferManager returned a 0 size buffer, this is a bug in the manager")
+var ErrEmptyBuffer = errors.New("BufferManager returned a 0 size buffer, this is a bug in the manager")
 
-// This code is taken from azblob chunkwriting.go
+// This code adapted from azblob chunkwriting.go
 // The reason is that the original code commit the data at the end of the copy
 // In order to support multipart upload we need to save the blockIDs instead of committing them
 // And once complete multipart is called we commit all the blockIDs
@@ -25,29 +26,47 @@ var ErrEmptyBuffer = errors.New("TransferManager returned a 0 size buffer, this 
 // blockWriter provides methods to upload blocks that represent a file to a server and commit them.
 // This allows us to provide a local implementation that fakes the server for hermetic testing.
 type blockWriter interface {
-	StageBlock(context.Context, string, io.ReadSeeker, azblob.LeaseAccessConditions, []byte, azblob.ClientProvidedKeyOptions) (*azblob.BlockBlobStageBlockResponse, error)
-	CommitBlockList(context.Context, []string, azblob.BlobHTTPHeaders, azblob.Metadata, azblob.BlobAccessConditions, azblob.AccessTierType, azblob.BlobTagsMap, azblob.ClientProvidedKeyOptions) (*azblob.BlockBlobCommitBlockListResponse, error)
+	StageBlock(context.Context, string, io.ReadSeekCloser, *blockblob.StageBlockOptions) (blockblob.StageBlockResponse, error)
+	Upload(context.Context, io.ReadSeekCloser, *blockblob.UploadOptions) (blockblob.UploadResponse, error)
+	CommitBlockList(context.Context, []string, *blockblob.CommitBlockListOptions) (blockblob.CommitBlockListResponse, error)
 }
 
 // copyFromReader copies a source io.Reader to blob storage using concurrent uploads.
-func copyFromReader(ctx context.Context, from io.Reader, to blockWriter, o azblob.UploadStreamToBlockBlobOptions) (*azblob.BlockBlobCommitBlockListResponse, error) {
+func copyFromReader(ctx context.Context, from io.Reader, to blockWriter, o blockblob.UploadStreamOptions) (*blockblob.CommitBlockListResponse, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	buffers := newMMBPool(o.Concurrency, o.BlockSize)
+	defer buffers.Free()
+
 	cp := &copier{
-		ctx:    ctx,
-		cancel: cancel,
-		reader: from,
-		to:     to,
-		id:     newID(),
-		o:      o,
-		errCh:  make(chan error, 1),
+		ctx:     ctx,
+		cancel:  cancel,
+		reader:  from,
+		to:      to,
+		id:      newID(),
+		o:       o,
+		errCh:   make(chan error, 1),
+		buffers: buffers,
 	}
 
 	// Send all our chunks until we get an error.
-	var err error
+	var (
+		err    error
+		buffer []byte
+	)
 	for {
-		if err = cp.sendChunk(); err != nil {
+		select {
+		case buffer = <-buffers.Acquire():
+			// got a buffer
+		default:
+			// no buffer available; allocate a new buffer if possible
+			buffers.Grow()
+			// either grab the newly allocated buffer or wait for one to become available
+			buffer = <-buffers.Acquire()
+		}
+		err = cp.sendChunk(buffer)
+		if err != nil {
 			break
 		}
 	}
@@ -62,7 +81,7 @@ func copyFromReader(ctx context.Context, from io.Reader, to blockWriter, o azblo
 		return nil, err
 	}
 
-	return cp.result, nil
+	return &cp.result, nil
 }
 
 // copier streams a file via chunks in parallel from a reader representing a file.
@@ -74,7 +93,7 @@ type copier struct {
 	cancel context.CancelFunc
 
 	// o contains our options for uploading.
-	o azblob.UploadStreamToBlockBlobOptions
+	o blockblob.UploadStreamOptions
 
 	// id provides the ids for each chunk.
 	id *id
@@ -90,7 +109,9 @@ type copier struct {
 	wg sync.WaitGroup
 
 	// result holds the final result from blob storage after we have submitted all chunks.
-	result *azblob.BlockBlobCommitBlockListResponse
+	result blockblob.CommitBlockListResponse
+
+	buffers bufferManager[mmb]
 }
 
 type copierChunk struct {
@@ -111,59 +132,74 @@ func (c *copier) getErr() error {
 
 // sendChunk reads data from out internal reader, creates a chunk, and sends it to be written via a channel.
 // sendChunk returns io.EOF when the reader returns an io.EOF or io.ErrUnexpectedEOF.
-func (c *copier) sendChunk() error {
+func (c *copier) sendChunk(buffer []byte) error {
+	// TODO(niro): Need to find a solution to all the buffers.Release
 	if err := c.getErr(); err != nil {
+		c.buffers.Release(buffer)
 		return err
 	}
 
-	buffer := c.o.TransferManager.Get()
 	if len(buffer) == 0 {
+		c.buffers.Release(buffer)
 		return ErrEmptyBuffer
 	}
 
 	n, err := io.ReadFull(c.reader, buffer)
 	switch {
 	case err == nil && n == 0:
+		c.buffers.Release(buffer)
 		return nil
+
 	case err == nil:
-		id := c.id.next()
+		nextID := c.id.next()
 		c.wg.Add(1)
-		c.o.TransferManager.Run(
-			func() {
-				defer c.wg.Done()
-				c.write(copierChunk{buffer: buffer[0:n], id: id})
-			},
-		)
+		// NOTE: we must pass id as an arg to our goroutine else
+		// it's captured by reference and can change underneath us!
+		go func(nextID string) {
+			// signal that the block has been staged.
+			// we MUST do this after attempting to write to errCh
+			// to avoid it racing with the reading goroutine.
+			defer c.wg.Done()
+			defer c.buffers.Release(buffer)
+			// Upload the outgoing block, matching the number of bytes read
+			c.write(copierChunk{buffer: buffer[0:n], id: nextID})
+		}(nextID)
 		return nil
+
 	case err != nil && (errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF)) && n == 0:
+		c.buffers.Release(buffer)
 		return io.EOF
 	}
 
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-		id := c.id.next()
+		nextID := c.id.next()
 		c.wg.Add(1)
-		c.o.TransferManager.Run(
-			func() {
-				defer c.wg.Done()
-				c.write(copierChunk{buffer: buffer[0:n], id: id})
-			},
-		)
+		go func(nextID string) {
+			defer c.wg.Done()
+			defer c.buffers.Release(buffer)
+			// Upload the outgoing block, matching the number of bytes read
+			c.write(copierChunk{buffer: buffer[0:n], id: nextID})
+		}(nextID)
 		return io.EOF
 	}
 	if err := c.getErr(); err != nil {
+		c.buffers.Release(buffer)
 		return err
 	}
+	c.buffers.Release(buffer)
 	return err
 }
 
 // write uploads a chunk to blob storage.
 func (c *copier) write(chunk copierChunk) {
-	defer c.o.TransferManager.Put(chunk.buffer)
-
 	if err := c.ctx.Err(); err != nil {
 		return
 	}
-	_, err := c.to.StageBlock(c.ctx, chunk.id, bytes.NewReader(chunk.buffer), c.o.AccessConditions.LeaseAccessConditions, nil, c.o.ClientProvidedKeyOptions)
+	_, err := c.to.StageBlock(c.ctx, chunk.id, streaming.NopCloser(bytes.NewReader(chunk.buffer)), &blockblob.StageBlockOptions{
+		CpkInfo:                 c.o.CpkInfo,
+		CpkScopeInfo:            c.o.CpkScopeInfo,
+		TransactionalValidation: c.o.TransactionalValidation,
+	})
 	if err != nil {
 		c.errCh <- fmt.Errorf("write error: %w", err)
 		return
@@ -177,7 +213,15 @@ func (c *copier) close() error {
 	}
 
 	var err error
-	c.result, err = c.to.CommitBlockList(c.ctx, c.id.issued(), c.o.BlobHTTPHeaders, c.o.Metadata, c.o.AccessConditions, c.o.BlobAccessTier, c.o.BlobTagsMap, c.o.ClientProvidedKeyOptions)
+	c.result, err = c.to.CommitBlockList(c.ctx, c.id.issued(), &blockblob.CommitBlockListOptions{
+		Tags:             c.o.Tags,
+		Metadata:         c.o.Metadata,
+		Tier:             c.o.AccessTier,
+		HTTPHeaders:      c.o.HTTPHeaders,
+		CpkInfo:          c.o.CpkInfo,
+		CpkScopeInfo:     c.o.CpkScopeInfo,
+		AccessConditions: c.o.AccessConditions,
+	})
 	return err
 }
 
@@ -211,4 +255,81 @@ func (id *id) next() string {
 // The value is only valid until the next time next() is called.
 func (id *id) issued() []string {
 	return id.all
+}
+
+// Code taken from Azure SDK for go blockblob/chunkwriting.go
+
+// bufferManager provides an abstraction for the management of buffers.
+// this is mostly for testing purposes, but does allow for different implementations without changing the algorithm.
+type bufferManager[T ~[]byte] interface {
+	// Acquire returns the channel that contains the pool of buffers.
+	Acquire() <-chan T
+
+	// Release releases the buffer back to the pool for reuse/cleanup.
+	Release(T)
+
+	// Grow grows the number of buffers, up to the predefined max.
+	// It returns the total number of buffers or an error.
+	// No error is returned if the number of buffers has reached max.
+	// This is called only from the reading goroutine.
+	Grow() int
+
+	// Free cleans up all buffers.
+	Free()
+}
+
+// mmb is a memory mapped buffer
+type mmb []byte
+
+// TODO (niro): consider implementation refactoring
+// newMMB creates a new memory mapped buffer with the specified size
+func newMMB(size int64) mmb {
+	return make(mmb, size)
+}
+
+// delete cleans up the memory mapped buffer
+func (m *mmb) delete() {
+}
+
+// mmbPool implements the bufferManager interface.
+// it uses anonymous memory mapped files for buffers.
+// don't use this type directly, use newMMBPool() instead.
+type mmbPool struct {
+	buffers chan mmb
+	count   int
+	max     int
+	size    int64
+}
+
+func newMMBPool(maxBuffers int, bufferSize int64) bufferManager[mmb] {
+	return &mmbPool{
+		buffers: make(chan mmb, maxBuffers),
+		max:     maxBuffers,
+		size:    bufferSize,
+	}
+}
+
+func (pool *mmbPool) Acquire() <-chan mmb {
+	return pool.buffers
+}
+
+func (pool *mmbPool) Grow() int {
+	if pool.count < pool.max {
+		buffer := newMMB(pool.size)
+		pool.buffers <- buffer
+		pool.count++
+	}
+	return pool.count
+}
+
+func (pool *mmbPool) Release(buffer mmb) {
+	pool.buffers <- buffer
+}
+
+func (pool *mmbPool) Free() {
+	for i := 0; i < pool.count; i++ {
+		buffer := <-pool.buffers
+		buffer.delete()
+	}
+	pool.count = 0
 }

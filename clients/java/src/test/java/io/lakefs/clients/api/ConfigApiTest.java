@@ -17,6 +17,7 @@ import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.CommPrefsInput;
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.GarbageCollectionConfig;
 import io.lakefs.clients.api.model.NextStep;
 import io.lakefs.clients.api.model.Setup;
 import io.lakefs.clients.api.model.SetupState;
@@ -38,6 +39,20 @@ public class ConfigApiTest {
 
     private final ConfigApi api = new ConfigApi();
 
+    
+    /**
+     * 
+     *
+     * get information of gc settings
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void getGarbageCollectionConfigTest() throws ApiException {
+                GarbageCollectionConfig response = api.getGarbageCollectionConfig();
+        // TODO: test validations
+    }
     
     /**
      * 

@@ -7,6 +7,7 @@ import org.apache.hadoop.fs.Path;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Wraps a FSDataOutputStream to link file on staging when done writing
@@ -18,7 +19,7 @@ class LinkOnCloseOutputStream extends OutputStream {
     private final URI physicalUri;
     private final MetadataClient metadataClient;
     private final OutputStream out;
-    private boolean isLinked;
+    private final AtomicBoolean isLinked = new AtomicBoolean(false);
 
     /**
      * @param lfs LakeFS file system
@@ -64,13 +65,12 @@ class LinkOnCloseOutputStream extends OutputStream {
 
         // Now the object is on the underlying store, find its parameters (sadly lost by
         // the underlying Hadoop FileSystem) so we can link it on lakeFS.
-        if (!this.isLinked) {
+        if (!this.isLinked.getAndSet(true)) {
             try {
                 lfs.linkPhysicalAddress(objectLoc, stagingLoc, physicalUri, metadataClient);
             } catch (io.lakefs.clients.api.ApiException e) {
                 throw new IOException("link lakeFS path to physical address", e);
             }
-            this.isLinked = true;
             lfs.deleteEmptyDirectoryMarkers(new Path(objectLoc.toString()).getParent());
         }
     }

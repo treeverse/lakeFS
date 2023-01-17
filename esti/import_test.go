@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/config"
 )
 
 const (
@@ -20,7 +21,8 @@ const (
 func TestImport(t *testing.T) {
 	SkipTestIfAskedTo(t)
 	importPath := ""
-	switch viper.GetViper().GetString("blockstore_type") {
+	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
+	switch blockstoreType {
 	case block.BlockstoreTypeS3:
 		importPath = s3ImportPath
 	case block.BlockstoreTypeGS:

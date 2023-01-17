@@ -39,8 +39,8 @@ func TestConfig_Setup(t *testing.T) {
 	c, err := config.NewConfig()
 	testutil.Must(t, err)
 	// Don't validate, some tested configs don't have all required fields.
-	if c.ListenAddress != config.DefaultListenAddr {
-		t.Fatalf("expected listen addr %s, got %s", config.DefaultListenAddr, c.ListenAddress)
+	if c.ListenAddress != config.DefaultListenAddress {
+		t.Fatalf("expected listen addr '%s', got '%s'", config.DefaultListenAddress, c.ListenAddress)
 	}
 }
 

@@ -103,6 +103,10 @@ func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (io.R
 	return io.NopCloser(bytes.NewReader(data)), nil
 }
 
+func (a *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, mode block.PreSignMode) (string, error) {
+	return "", fmt.Errorf("mem block adapter: %w", block.ErrOperationNotSupported)
+}
+
 func (a *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()

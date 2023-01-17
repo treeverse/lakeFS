@@ -31,7 +31,7 @@ type SetupTestingEnvParams struct {
 	AdminSecretAccessKey string
 }
 
-func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientWithResponsesInterface, *s3.S3) {
+func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientWithResponsesInterface, *s3.S3, string) {
 	logger := logging.Default()
 
 	viper.SetDefault("setup_lakefs", true)
@@ -42,7 +42,8 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	viper.SetDefault("blockstore_type", block.BlockstoreTypeS3)
 	viper.SetDefault("version", "dev")
 	viper.SetDefault("lakectl_dir", "..")
-
+	viper.SetDefault("azure_storage_account", "")
+	viper.SetDefault("azure_storage_access_key", "")
 	viper.AddConfigPath(".")
 	viper.SetEnvPrefix(strings.ToUpper(params.Name))
 	viper.SetConfigName(strings.ToLower(params.Name))
@@ -117,7 +118,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	key := viper.GetString("access_key_id")
 	secret := viper.GetString("secret_access_key")
 	svc := SetupTestS3Client(s3Endpoint, key, secret)
-	return logger, client, svc
+	return logger, client, svc, endpointURL
 }
 
 func SetupTestS3Client(endpoint, key, secret string) *s3.S3 {
@@ -134,7 +135,8 @@ func SetupTestS3Client(endpoint, key, secret string) *s3.S3 {
 					Value: credentials.Value{
 						AccessKeyID:     key,
 						SecretAccessKey: secret,
-					}})))
+					},
+				})))
 	return svc
 }
 

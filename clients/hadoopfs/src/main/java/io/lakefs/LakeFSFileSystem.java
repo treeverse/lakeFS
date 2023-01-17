@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -54,6 +55,7 @@ public class LakeFSFileSystem extends FileSystem {
     private LakeFSClient lfsClient;
     private int listAmount;
     private FileSystem fsForConfig;
+    private static File emptyFile = new File("/dev/null");
 
     // Currently bulk deletes *must* receive a single-threaded executor!
     private ExecutorService deleteExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
@@ -308,7 +310,7 @@ public class LakeFSFileSystem extends FileSystem {
         }
         if (!src.getParent().equals(dst.getParent())) {
             deleteEmptyDirectoryMarkers(dst.getParent());
-            createDirectoryMarkerIfEmptyDirectory(src.getParent());
+            createDirectoryMarkerIfNotExists(src.getParent());
         }
         return result;
     }
@@ -424,6 +426,12 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     /**
+     * fallbackToStage determines whether the old StageObject API should be use,
+     * turn true when CopyObject API is not supported.
+     */
+    private boolean fallbackToStage = false;
+
+    /**
      * Non-atomic rename operation.
      *
      * @return true if rename succeeded, false otherwise
@@ -438,16 +446,37 @@ public class LakeFSFileSystem extends FileSystem {
 
         ObjectsApi objects = lfsClient.getObjects();
         //TODO (Tals): Can we add metadata? we currently don't have an API to get the metadata of an object.
-        ObjectStageCreation creationReq = new ObjectStageCreation()
-                .checksum(srcStatus.getChecksum())
-                .sizeBytes(srcStatus.getLen())
-                .physicalAddress(srcStatus.getPhysicalAddress());
 
-        try {
-            objects.stageObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
-                    creationReq);
-        } catch (ApiException e) {
-            throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst + ", failed to stage object", e);
+        if (!fallbackToStage) {
+            try {
+                ObjectCopyCreation creationReq = new ObjectCopyCreation()
+                        .srcRef(srcObjectLoc.getRef())
+                        .srcPath(srcObjectLoc.getPath());
+                objects.copyObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
+                        creationReq);
+            } catch (ApiException e) {
+                if (e.getCode() != HttpStatus.SC_INTERNAL_SERVER_ERROR ||
+                        !e.getMessage().contains("invalid API endpoint")) {
+                    throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst + ", failed to copy object", e);
+                }
+
+                LOG.warn("Copy API doesn't exist, falling back to stageObject");
+                fallbackToStage = true;
+            }
+        }
+
+        if (fallbackToStage) {
+            ObjectStageCreation stageCreationReq = new ObjectStageCreation()
+                    .checksum(srcStatus.getChecksum())
+                    .sizeBytes(srcStatus.getLen())
+                    .physicalAddress(srcStatus.getPhysicalAddress());
+            try {
+                objects.stageObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
+                        stageCreationReq);
+            } catch (ApiException e) {
+                throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst +
+                        ", failed to stage object", e);
+            }
         }
 
         // delete src path
@@ -521,7 +550,7 @@ public class LakeFSFileSystem extends FileSystem {
             deleted = deleteHelper(loc);
         }
 
-        createDirectoryMarkerIfEmptyDirectory(path.getParent());
+        createDirectoryMarkerIfNotExists(path.getParent());
         return deleted;
     }
 
@@ -586,10 +615,26 @@ public class LakeFSFileSystem extends FileSystem {
      * @param f path to check if empty directory marker is needed
      * @throws IOException any issue with lakeFS or underlying filesystem
      */
-    private void createDirectoryMarkerIfEmptyDirectory(Path f) throws IOException {
-        ObjectLocation objectLocation = pathToObjectLocation(f);
-        if (objectLocation.isValidPath() && !exists(f)) {
-            createDirectoryMarker(f);
+    private void createDirectoryMarkerIfNotExists(Path f) throws IOException {
+        ObjectLocation objectLocation = pathToObjectLocation(f).toDirectory();
+        if (!objectLocation.isValidPath()) {
+            LOG.warn("Cannot create directory marker for invalid path {}", f.toString());
+            // Safe to do nothing, because directory markers are mostly
+            // useless.  This happens when the path inside the branch is
+            // empty -- and cannot be created.  If the repo or branch names
+            // are empty this also happens but then the actual operation
+            // will fail.
+            return;
+        }
+        try {
+            ObjectsApi objects = lfsClient.getObjects();
+            objects.uploadObject(objectLocation.getRepository(), objectLocation.getRef(), objectLocation.getPath(), null, "*", emptyFile);
+        } catch (ApiException e) {
+            if (e.getCode() == HttpStatus.SC_PRECONDITION_FAILED) {
+                LOG.trace("createDirectoryMarkerIfNotExists: Ignore {} response, marker exists");
+                return;
+            }
+            throw new IOException("createDirectoryMarkerIfNotExists", e);
         }
     }
 

@@ -8,8 +8,10 @@ import (
 	"net/http"
 
 	"cloud.google.com/go/storage"
-	"github.com/Azure/azure-pipeline-go/pipeline"
-	"github.com/Azure/azure-storage-blob-go/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -30,10 +32,7 @@ import (
 // googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
 const googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
 
-var (
-	ErrInvalidBlockStoreType  = errors.New("invalid blockstore type")
-	ErrAuthMethodNotSupported = errors.New("authentication method not supported")
-)
+var ErrInvalidBlockstoreType = errors.New("invalid blockstore type")
 
 func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c params.AdapterConfig) (block.Adapter, error) {
 	blockstore := c.BlockstoreType()
@@ -71,7 +70,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 		return buildAzureAdapter(p)
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
-			ErrInvalidBlockStoreType, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeTransient, block.BlockstoreTypeGS})
+			ErrInvalidBlockstoreType, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeTransient, block.BlockstoreTypeGS})
 	}
 }
 
@@ -150,28 +149,27 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 }
 
 func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
-	p, err := BuildAzureClient(params)
+	p, err := BuildAzureServiceClient(params)
 	if err != nil {
 		return nil, err
 	}
 	return azure.NewAdapter(p), nil
 }
 
-func BuildAzureClient(params params.Azure) (pipeline.Pipeline, error) {
-	accountName := params.StorageAccount
-	accountKey := params.StorageAccessKey
-	var credentials azblob.Credential
-	var err error
-	switch params.AuthMethod {
-	case azure.AuthMethodAccessKey:
-		credentials, err = azure.GetAccessKeyCredentials(accountName, accountKey)
-	case azure.AuthMethodMSI:
-		credentials, err = azure.GetMSICredentials()
-	default:
-		err = ErrAuthMethodNotSupported
+func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
+	url := fmt.Sprintf(azure.URLTemplate, params.StorageAccount)
+	options := service.ClientOptions{ClientOptions: azcore.ClientOptions{Retry: policy.RetryOptions{TryTimeout: params.TryTimeout}}}
+	if params.StorageAccessKey != "" {
+		cred, err := service.NewSharedKeyCredential(params.StorageAccount, params.StorageAccessKey)
+		if err != nil {
+			return nil, fmt.Errorf("invalid credentials: %w", err)
+		}
+		return service.NewClientWithSharedKeyCredential(url, cred, &options)
 	}
+
+	defaultCreds, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return nil, fmt.Errorf("invalid credentials: %w", err)
+		return nil, fmt.Errorf("missing credentials: %w", err)
 	}
-	return azblob.NewPipeline(credentials, azblob.PipelineOptions{Retry: azblob.RetryOptions{TryTimeout: params.TryTimeout}}), nil
+	return service.NewClient(url, defaultCreds, &options)
 }

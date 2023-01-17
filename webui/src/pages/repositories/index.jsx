@@ -161,15 +161,13 @@ const RepositoriesPage = () => {
         <Layout>
             <Container fluid="xl" className="mt-3">
                 <ActionsBar>
-                    <Form className="float-left" style={{minWidth: 300}} onSubmit={e => { e.preventDefault(); }}>
-                        <Form.Row>
+                    <Form style={{minWidth: 300}} onSubmit={e => { e.preventDefault(); }}>
+                        <Form.Group>
                             <Col>
                                 <InputGroup>
-                                    <InputGroup.Prepend>
-                                        <InputGroup.Text>
-                                            <SearchIcon/>
-                                        </InputGroup.Text>
-                                    </InputGroup.Prepend>
+                                    <InputGroup.Text>
+                                        <SearchIcon/>
+                                    </InputGroup.Text>
                                     <Form.Control
                                         placeholder="Find a repository..."
                                         autoFocus
@@ -178,9 +176,9 @@ const RepositoriesPage = () => {
                                     />
                                 </InputGroup>
                             </Col>
-                        </Form.Row>
+                        </Form.Group>
                     </Form>
-                    <ButtonToolbar className="justify-content-end mb-2">
+                    <ButtonToolbar className="ms-auto mb-2">
                         <CreateRepositoryButton variant={"success"} enabled={true} onClick={CreateRepositoryButtonCallback} />
                     </ButtonToolbar>
                 </ActionsBar>

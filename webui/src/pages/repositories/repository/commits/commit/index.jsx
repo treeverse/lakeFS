@@ -46,7 +46,7 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
                 {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
                     <Card>
                         <Card.Header>
-                        <span className="float-left">
+                        <span className="float-start">
                             {(delimiter !== "") && (
                                 <URINavigator path={prefix} reference={commit} repo={repo}
                                               relativeTo={`${commit.id.substring(0, 12)}`}
@@ -205,10 +205,10 @@ const CommitView = ({ repo, commitId, onNavigate, view, prefix }) => {
             <Card>
                 <Card.Body>
                     <div className="clearfix">
-                        <div className="float-left">
+                        <div className="float-start">
                             <Card.Title>{commit.message}</Card.Title>
                         </div>
-                        <div className="float-right">
+                        <div className="float-end">
                             <CommitActions repo={repo} commit={commit}/>
                         </div>
                     </div>
