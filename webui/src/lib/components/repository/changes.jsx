@@ -58,10 +58,10 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
         return <ObjectTreeEntryRow key={entry.path+"entry-row"} entry={entry} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference}
                                    getMore={getMore}/>
 
-    // When the entry represents a tree leaf
-    if (!entry.path.endsWith(delimiter))
+    if (treeItemType === TreeItemType.Object) {
         return <>
-            <ObjectTreeEntryRow key={entry.path + "entry-row"} entry={entry} relativeTo={relativeTo} depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert} repo={repo}
+            <ObjectTreeEntryRow key={entry.path + "entry-row"} entry={entry} relativeTo={relativeTo}
+                                depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert} repo={repo}
                                 diffExpanded={diffExpanded} onClickExpandDiff={() => setDiffExpanded(!diffExpanded)}/>
             {diffExpanded && <tr key={"row-" + entry.path} className={"leaf-entry-row"}>
                 <td className="objects-diff" colSpan={4}>
@@ -72,27 +72,27 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
                         rightRef={rightDiffRefID}
                         path={entry.path}
                     />
-            {loading && <ClockIcon/>}
+                    {loading && <ClockIcon/>}
                 </td>
-                </tr>
+            </tr>
             }
         </>
-
-    return <>
-        {itemType === TreeItemType.Prefix
-            ? <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
-            : <TableTreeEntryRow key={entry.path + "entry-row"} entry={entry} relativeTo={relativeTo} depth={depth} onRevert={onRevert}/>
-        }
-        {dirExpanded && results &&
+    } else if (itemType === TreeItemType.Prefix) {
+        return <>
+            <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
+            {dirExpanded && results &&
             results.map(child =>
                 (<TreeItem key={child.path + "-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
                            internalReferesh={internalRefresh} delimiter={delimiter} depth={depth + 1}
                            relativeTo={entry.path} getMore={getMore}/>))}
-        {(!!nextPage || loading) &&
+            {(!!nextPage || loading) &&
             <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage}
                                 setAfterUpdated={setAfterUpdated}/>
-        }
-    </>
+            }
+        </>
+    } else {
+        return <TableTreeEntryRow key={entry.path + "entry-row"} entry={entry} relativeTo={relativeTo} depth={depth} onRevert={onRevert}/>
+    }
 }
 
 export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, loading=false }) => {
