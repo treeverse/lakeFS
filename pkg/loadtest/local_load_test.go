@@ -105,6 +105,7 @@ func TestLocalLoad(t *testing.T) {
 		nil,
 		nil,
 		upload.DefaultPathProvider,
+		nil,
 	)
 
 	ts := httptest.NewServer(handler)

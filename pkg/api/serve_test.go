@@ -192,6 +192,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		nil,
 		nil,
 		upload.DefaultPathProvider,
+		nil,
 	)
 
 	return handler, &dependencies{
