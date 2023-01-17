@@ -42,7 +42,8 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	viper.SetDefault("blockstore_type", block.BlockstoreTypeS3)
 	viper.SetDefault("version", "dev")
 	viper.SetDefault("lakectl_dir", "..")
-
+	viper.SetDefault("azure_storage_account", "")
+	viper.SetDefault("azure_storage_access_key", "")
 	viper.AddConfigPath(".")
 	viper.SetEnvPrefix(strings.ToUpper(params.Name))
 	viper.SetConfigName(strings.ToLower(params.Name))
