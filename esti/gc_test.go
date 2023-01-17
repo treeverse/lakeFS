@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -160,14 +159,14 @@ var testCases = []testCase{
 	},
 }
 
-func newSubmitConfig(repo string, blockstoreType string, doMark *bool, doSweep *bool) *sparkSubmitConfig {
+func newSubmitConfig(repo string, blockstoreType string, doMark bool, doSweep bool) *sparkSubmitConfig {
 	extraSubmitArgs := make([]string, 0)
-	if doMark != nil && !*doMark {
+	if !doMark {
 		extraSubmitArgs = append(extraSubmitArgs,
 			"--conf", "spark.hadoop.lakefs.gc.do_mark=false",
 			"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker-%s", repo))
 	}
-	if doSweep != nil && !*doSweep {
+	if !doSweep {
 		extraSubmitArgs = append(extraSubmitArgs,
 			"--conf", "spark.hadoop.lakefs.gc.do_sweep=false",
 			"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker-%s", repo))
@@ -202,15 +201,15 @@ func TestCommittedGC(t *testing.T) {
 			repo := committedGCRepoName + tst.id
 
 			if tst.testMode == sweepOnlyMode || tst.testMode == markOnlyMode {
-				submitConfig := newSubmitConfig(repo, blockstoreType, nil, swag.Bool(false))
+				submitConfig := newSubmitConfig(repo, blockstoreType, true, false)
 				testutil.MustDo(t, "run GC with do_sweep=false", runSparkSubmit(submitConfig))
 			}
 			if tst.testMode == sweepOnlyMode {
-				submitConfig := newSubmitConfig(repo, blockstoreType, swag.Bool(false), nil)
+				submitConfig := newSubmitConfig(repo, blockstoreType, false, true)
 				testutil.MustDo(t, "run GC with do_mark=false", runSparkSubmit(submitConfig))
 			}
 			if tst.testMode == fullGCMode {
-				submitConfig := newSubmitConfig(repo, blockstoreType, nil, nil)
+				submitConfig := newSubmitConfig(repo, blockstoreType, true, true)
 				testutil.MustDo(t, "run GC", runSparkSubmit(submitConfig))
 			}
 			validateGCJob(t, ctx, &tst, fileExistingRef)
