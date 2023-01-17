@@ -2,7 +2,7 @@
 
 ## v0.90.0
 Deprecated:
-- Authorization using Role-Based Access Control
+- Authorization using Role-Based Access Control (will be removed in future releases)
 - LDAP & OIDC Embedded Support
 
 What's new:
