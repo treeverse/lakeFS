@@ -74,15 +74,15 @@ class UncommittedGarbageCollectorSpec
     describe(".listObjects") {
       it("should return nothing") {
         withSparkSession(_ => {
-          var dataDF =
+          val (dataDF, _) =
             UncommittedGarbageCollector.listObjects(dir.toString, new Date())
           dataDF.count() should be(0)
 
           val dataDir = new File(dir.toFile, "data")
           dataDir.mkdir()
 
-          dataDF = UncommittedGarbageCollector.listObjects(dir.toString, new Date())
-          dataDF.count() should be(0)
+          val res = UncommittedGarbageCollector.listObjects(dir.toString, new Date())
+          res._1.count() should be(0)
           UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be("")
         })
       }
@@ -92,7 +92,7 @@ class UncommittedGarbageCollectorSpec
           import spark.implicits._
           val data = createSliceData(dir.resolve(""))
 
-          val dataDF = UncommittedGarbageCollector.listObjects(dir.toString,
+          var (dataDF, _) = UncommittedGarbageCollector.listObjects(dir.toString,
                                                                DateUtils.addHours(new Date(), +1)
                                                               )
           dataDF.count() should be(10)
@@ -108,7 +108,7 @@ class UncommittedGarbageCollectorSpec
           import spark.implicits._
           val data = createData("data")
 
-          val dataDF =
+          var (dataDF, _) =
             UncommittedGarbageCollector.listObjects(dir.toString,
                                                     DateUtils.addHours(new Date(), +1)
                                                    )
@@ -124,7 +124,7 @@ class UncommittedGarbageCollectorSpec
           import spark.implicits._
           val data = createSliceData(dir.resolve("")) ::: createData("data")
 
-          val dataDF =
+          var (dataDF, _) =
             UncommittedGarbageCollector.listObjects(dir.toString,
                                                     DateUtils.addHours(new Date(), +1)
                                                    )
@@ -140,7 +140,7 @@ class UncommittedGarbageCollectorSpec
           createSliceData(dir.resolve(""))
           createData("data")
 
-          val dataDF =
+          var (dataDF, _) =
             UncommittedGarbageCollector.listObjects(dir.toString,
                                                     DateUtils.addHours(new Date(), -1)
                                                    )
@@ -156,7 +156,7 @@ class UncommittedGarbageCollectorSpec
           val legacyPath = repo + "_legacy_physical:address_path"
           new File(dataDir, legacyPath).createNewFile()
 
-          val dataDF =
+          var (dataDF, _) =
             UncommittedGarbageCollector.listObjects(dir.toString,
                                                     DateUtils.addHours(new Date(), +1)
                                                    )
@@ -172,7 +172,7 @@ class UncommittedGarbageCollectorSpec
           val filename = "some_file"
           new File(dataDir, filename).createNewFile()
 
-          val dataDF =
+          var (dataDF, _) =
             UncommittedGarbageCollector.listObjects(dir.toString,
                                                     DateUtils.addHours(new Date(), +1)
                                                    )
@@ -199,9 +199,10 @@ class UncommittedGarbageCollectorSpec
           slice.mkdir()
           new File(slice, filename).createNewFile()
 
-          val dataDF = UncommittedGarbageCollector
+          var (dataDF, _) = UncommittedGarbageCollector
             .listObjects(dir.toString, DateUtils.addHours(new Date(), +1))
-            .sort("address")
+
+          dataDF = dataDF.sort("address")
           dataDF.count() should be(3)
           dataDF.select("address").head.getString(0) should be(
             s"data/$legacyPath/$filename"
@@ -224,6 +225,7 @@ class UncommittedGarbageCollectorSpec
           UncommittedGarbageCollector.writeReports(dir.toString + "/",
                                                    runID,
                                                    firstSlice,
+                                                   startTime,
                                                    startTime,
                                                    success,
                                                    df
@@ -256,6 +258,7 @@ class UncommittedGarbageCollectorSpec
           UncommittedGarbageCollector.writeJsonSummary(runPath.toString,
                                                        runID,
                                                        "",
+                                                       java.time.Clock.systemUTC.instant(),
                                                        java.time.Clock.systemUTC.instant(),
                                                        false,
                                                        0

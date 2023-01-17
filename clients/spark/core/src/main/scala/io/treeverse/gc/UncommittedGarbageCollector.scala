@@ -37,7 +37,7 @@ object UncommittedGarbageCollector {
    *  @param before Exclude objects which last_modified date is newer than before Date
    *  @return DF listing all objects under given storageNamespace
    */
-  def listObjects(storageNamespace: String, before: Date): DataFrame = {
+  def listObjects(storageNamespace: String, before: Date): (DataFrame, java.time.Instant) = {
     // TODO(niro): parallelize reads from root and data paths
     val sc = spark.sparkContext
     val oldDataPath = new Path(storageNamespace)
@@ -49,6 +49,7 @@ object UncommittedGarbageCollector {
       )
     )
     // Read objects from data path (new repository structure)
+    val startListTime = java.time.Instant.now()
     var dataDF = new ParallelDataLister().listData(configMapper, dataPath)
     dataDF = dataDF
       .withColumn(
@@ -65,7 +66,7 @@ object UncommittedGarbageCollector {
       .filter(!col("address").isin(excludeFromOldData: _*))
     dataDF = dataDF.union(oldDataDF).filter(col("last_modified") < before.getTime)
 
-    dataDF
+    (dataDF, startListTime)
   }
 
   def getFirstSlice(dataDF: DataFrame, repo: String): String = {
@@ -103,6 +104,7 @@ object UncommittedGarbageCollector {
     var runID = ""
     var firstSlice = ""
     var success = false
+    var listTime = java.time.Instant.now()
     var markedAddresses = spark.emptyDataFrame.withColumn("address", lit(""))
     var addressesToDelete = spark.emptyDataFrame.withColumn("address", lit(""))
     val repo = args(0)
@@ -146,7 +148,8 @@ object UncommittedGarbageCollector {
     try {
       if (shouldMark) {
         // Read objects directly from object storage
-        val dataDF = listObjects(storageNamespace, cutoffTime)
+        val (dataDF, startListTime) = listObjects(storageNamespace, cutoffTime)
+        listTime = startListTime
 
         // Get first Slice
         firstSlice = getFirstSlice(dataDF, repo)
@@ -211,6 +214,7 @@ object UncommittedGarbageCollector {
           runID,
           firstSlice,
           startTime,
+          listTime,
           success,
           addressesToDelete
         )
@@ -224,12 +228,13 @@ object UncommittedGarbageCollector {
       runID: String,
       firstSlice: String,
       startTime: java.time.Instant,
+      startListTime: java.time.Instant,
       success: Boolean,
       expiredAddresses: DataFrame
   ): Unit = {
     val reportDst = formatRunPath(storageNamespace, runID)
     val summary =
-      writeJsonSummary(reportDst, runID, firstSlice, startTime, success, expiredAddresses.count())
+      writeJsonSummary(reportDst, runID, firstSlice, startTime, startListTime, success, expiredAddresses.count())
     println(s"Report for mark_id=$runID summary=$summary")
 
     val cachedAddresses = expiredAddresses.cache()
@@ -260,6 +265,7 @@ object UncommittedGarbageCollector {
       runID: String,
       firstSlice: String,
       startTime: java.time.Instant,
+      startListTime: java.time.Instant,
       success: Boolean,
       numDeletedObjects: Long
   ): String = {
@@ -270,6 +276,7 @@ object UncommittedGarbageCollector {
       "success" -> success,
       "first_slice" -> firstSlice,
       "start_time" -> DateTimeFormatter.ISO_INSTANT.format(startTime),
+      "start_list_time" -> DateTimeFormatter.ISO_INSTANT.format(startTime),
       "num_deleted_objects" -> numDeletedObjects
     )
     val summary = compact(render(jsonSummary))
