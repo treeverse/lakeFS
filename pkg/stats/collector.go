@@ -19,7 +19,7 @@ const (
 	flushInterval            = 10 * time.Minute
 
 	// heartbeatInterval is the interval between 2 heartbeat events.
-	heartbeatInterval = 60 * time.Minute
+	heartbeatInterval = time.Hour
 )
 
 type Collector interface {
@@ -102,23 +102,40 @@ func (t *TimeTicker) Tick() <-chan time.Time {
 }
 
 type BufferedCollector struct {
-	cache            keyIndex
-	updatesCh        chan Metric
-	sender           Sender
-	flushTicker      FlushTicker
-	flushSize        int
-	heartbeatTicker  FlushTicker
-	installationID   string
-	processID        string
+	// cache used to count event occurrences until we flush and send the data
+	cache keyIndex
+	// updatesCh holds reported metrics by the application and update the cache
+	updatesCh chan Metric
+	// sender used to post the collected metrics collected in cache and metadata
+	sender Sender
+	// sendCh used to post collected metrics. enables to let the sender post data without blocking updates from the application
+	sendCh chan *InputEvent
+	// flushTicker triggers flush to send the collected events in cache so far
+	flushTicker FlushTicker
+	// flushSize when cache size gets to flushSize we flush data
+	flushSize int
+	// heartbeatTicker trigger sending heartbeat event
+	heartbeatTicker *time.Ticker
+	// installationID posted as part of each report
+	installationID string
+	// processID unique identifier to distinguish between processes from the same install
+	processID string
+	// runtimeCollector callback func (optional) enable reporting metadata collected using runtime. triggered each flush.
 	runtimeCollector func() map[string]string
-	runtimeStats     map[string]string
-	inFlight         sync.WaitGroup
-	closed           int32
-	extended         bool
-	log              logging.Logger
-	wg               sync.WaitGroup
-	cancel           context.CancelFunc
-	sendCh           chan *InputEvent
+	// runtimeStats holds last values from runtimeCollector
+	runtimeStats map[string]string
+	// inFlight monitor active calls to CollectEvents. Enables waiting until application code is no longer uses updatesCh.
+	inFlight sync.WaitGroup
+	// closed used as flag that the collector is closed. stop processing CollectEvents.
+	closed int32
+	// extended stats indicate if we post extra stats on each BI or
+	extended bool
+	// log is the logger
+	log logging.Logger
+	// wg used to wait until two main goroutines are done
+	wg sync.WaitGroup
+	// cancel enables Close to trigger cancel to the background processing
+	cancel context.CancelFunc
 }
 
 type BufferedCollectorOpts func(s *BufferedCollector)
@@ -175,7 +192,7 @@ func NewBufferedCollector(installationID string, cfg Config, opts ...BufferedCol
 		runtimeStats:    map[string]string{},
 		flushTicker:     &TimeTicker{ticker: time.NewTicker(cfg.FlushInterval)},
 		flushSize:       cfg.FlushSize,
-		heartbeatTicker: &TimeTicker{ticker: time.NewTicker(heartbeatInterval)},
+		heartbeatTicker: time.NewTicker(heartbeatInterval),
 		installationID:  installationID,
 		processID:       uuid.Must(uuid.NewUUID()).String(),
 		inFlight:        sync.WaitGroup{},
@@ -255,8 +272,11 @@ func (s *BufferedCollector) Run(ctx context.Context) {
 	ctx, s.cancel = context.WithCancel(ctx)
 	const backgroundLoops = 2
 	s.wg.Add(backgroundLoops)
+	// update metrics sent on updatesCh
 	go s.updateMetricsLoop(ctx)
-	go s.sendMetricsLoop(ctx)
+	// post metrics waiting in sendCh
+	// we use background context as we do not want to cancel posting based on context
+	go s.sendMetricsLoop(context.Background())
 }
 
 func (s *BufferedCollector) sendMetricsLoop(ctx context.Context) {
@@ -278,7 +298,7 @@ func (s *BufferedCollector) updateMetricsLoop(ctx context.Context) {
 				s.flush()
 			}
 
-		case <-s.heartbeatTicker.Tick():
+		case <-s.heartbeatTicker.C:
 			// collect heartbeat
 			s.incr(Event{
 				Class: "global",
@@ -310,6 +330,7 @@ func (s *BufferedCollector) flush() {
 	// we keep the current cache state and retry on the next flush
 	select {
 	case s.sendCh <- event:
+		// reset the cache if we managed to send the event
 		s.cache = make(keyIndex)
 	default:
 		// keep data in cache for the next time we try to send
@@ -334,20 +355,17 @@ func (s *BufferedCollector) Close() {
 	s.cancel()
 	s.wg.Wait()
 
-	// drain events
-	ctx := context.Background()
-	s.processSendCh(ctx)
-
-	// drain updates and post last event
+	// drain updates to cache and post last event
 	for w := range s.updatesCh {
 		s.update(w)
 	}
 	event := s.newInputEvent()
 	if event != nil {
-		s.sendEventHelper(ctx, event)
+		s.sendEventHelper(context.Background(), event)
 	}
 }
 
+// processSendCh post metrics waiting on sendCh. Stops when 'sendCh' is closed.
 func (s *BufferedCollector) processSendCh(ctx context.Context) {
 	for event := range s.sendCh {
 		s.sendEventHelper(ctx, event)
