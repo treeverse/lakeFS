@@ -1,13 +1,25 @@
 # Changelog
 
-## Unreleased
+## UNRELEASED
+
 Deprecated:
 - Authorization using Role-Based Access Control
 - LDAP & OIDC Embedded Support
 
-What's new:
+## v0.90.0
 
+What's new:
 - Authorization using Access Control Lists
+- Support ADLS Gen2 (#5027)
+- ui: added a "go to prefix" button (#5036)
+- Add support for presigned URLs in the lakeFS API (#4985)
+- change to dynamodb on-demand capacity (#4953)
+- upgraded to bootstrap-5, react-bootstrap-2.7 (#5034)
+- Optional Blockstore S3 region (#4956)
+
+Bug fix:
+- Reduce the use of specific catalog errors to fix missing checks (#4995)
+- Fix graveler to work with empty key (#4986)
 
 ## v0.89.0
 
