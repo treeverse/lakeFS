@@ -465,7 +465,7 @@ public class LakeFSFileSystem extends FileSystem {
             }
         }
 
-        if (fallbackToStage){
+        if (fallbackToStage) {
             ObjectStageCreation stageCreationReq = new ObjectStageCreation()
                     .checksum(srcStatus.getChecksum())
                     .sizeBytes(srcStatus.getLen())
