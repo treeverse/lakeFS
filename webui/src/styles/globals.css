@@ -9,6 +9,10 @@
   --color-bg-conflict: #fff3cd;
 }
 
+.main-app {
+  margin: 15px;
+}
+
 
 .logo {
   height: 30px;
@@ -22,9 +26,7 @@
   padding-top: 7px;
 }
 
-.card.login-widget {
-  width: 400px;
-}
+.card.login-widget {}
 
 .card.login-widget .btn {
   width: 100%;
@@ -47,11 +49,11 @@
   border-bottom: none;
 }
 
-.action-bar .float-left .btn {
+.action-bar .float-start .btn {
   margin-right: 10px;
 }
 
-.action-bar .float-right .btn {
+.action-bar .float-end .btn {
   margin-left: 10px;
 }
 
@@ -119,6 +121,7 @@
 .ref-scroller {
   max-height: 250px;
   overflow: auto;
+  min-height: 30px;
 }
 
 .ref-list .list-group-item:first-child {
@@ -208,6 +211,12 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.125);
   height: 38px;
 }
+
+.table .tree-entry-row:last-child,
+.table .change-entry-row:last-child {
+  border-bottom: 0;
+}
+
 
 .table .change-entry-row:hover {
   background-color: #FBFBFB;
@@ -492,6 +501,14 @@ td .form-group {
   border: transparent;
 }
 
+.action-group-right .btn {
+  margin-left: 5px;
+}
+
+.action-group-left .btn {
+  margin-right: 5px;
+}
+
 .action-bar .btn.create-user {
   background-color: #258c82;
 }
@@ -500,13 +517,17 @@ td .form-group {
   background-color: #7e7e7e;
 }
 
+
+
 .after-setup-btn {
   width: 250px;
   margin-top: 7px;
   background-color: #0fa276;
+  color: #FFF;
   border: 0;
 }
 .after-setup-btn:hover {
+  color: #FFF;
   background-color: #4e555b;
 }
 

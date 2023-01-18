@@ -287,7 +287,7 @@ Name | Type | Description  | Notes
 
 <a name="getObject"></a>
 # **getObject**
-> File getObject(repository, ref, path, range)
+> File getObject(repository, ref, path, range, presign)
 
 get object content
 
@@ -332,8 +332,9 @@ public class Example {
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
     String path = "path_example"; // String | relative to the ref
     String range = "bytes=0-1023"; // String | Byte range to retrieve
+    Boolean presign = true; // Boolean | 
     try {
-      File result = apiInstance.getObject(repository, ref, path, range);
+      File result = apiInstance.getObject(repository, ref, path, range, presign);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#getObject");
@@ -354,6 +355,7 @@ Name | Type | Description  | Notes
  **ref** | **String**| a reference (could be either a branch or a commit ID) |
  **path** | **String**| relative to the ref |
  **range** | **String**| Byte range to retrieve | [optional]
+ **presign** | **Boolean**|  | [optional]
 
 ### Return type
 
@@ -373,6 +375,7 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | object content |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
 **206** | partial object content |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
+**302** | Redirect to a pre-signed URL for the object |  * Location - redirect to S3 <br>  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **410** | object expired |  -  |
@@ -563,7 +566,7 @@ null (empty response body)
 
 <a name="listObjects"></a>
 # **listObjects**
-> ObjectStatsList listObjects(repository, ref, userMetadata, after, amount, delimiter, prefix)
+> ObjectStatsList listObjects(repository, ref, userMetadata, presign, after, amount, delimiter, prefix)
 
 list objects under a given prefix
 
@@ -607,12 +610,13 @@ public class Example {
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
     Boolean userMetadata = true; // Boolean | 
+    Boolean presign = true; // Boolean | 
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
     String delimiter = "delimiter_example"; // String | delimiter used to group common prefixes by
     String prefix = "prefix_example"; // String | return items prefixed with this value
     try {
-      ObjectStatsList result = apiInstance.listObjects(repository, ref, userMetadata, after, amount, delimiter, prefix);
+      ObjectStatsList result = apiInstance.listObjects(repository, ref, userMetadata, presign, after, amount, delimiter, prefix);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#listObjects");
@@ -632,6 +636,7 @@ Name | Type | Description  | Notes
  **repository** | **String**|  |
  **ref** | **String**| a reference (could be either a branch or a commit ID) |
  **userMetadata** | **Boolean**|  | [optional] [default to true]
+ **presign** | **Boolean**|  | [optional]
  **after** | **String**| return items after this value | [optional]
  **amount** | **Integer**| how many items to return | [optional] [default to 100]
  **delimiter** | **String**| delimiter used to group common prefixes by | [optional]
@@ -752,7 +757,7 @@ Name | Type | Description  | Notes
 
 <a name="statObject"></a>
 # **statObject**
-> ObjectStats statObject(repository, ref, path, userMetadata)
+> ObjectStats statObject(repository, ref, path, userMetadata, presign)
 
 get object metadata
 
@@ -797,8 +802,9 @@ public class Example {
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
     String path = "path_example"; // String | relative to the branch
     Boolean userMetadata = true; // Boolean | 
+    Boolean presign = true; // Boolean | 
     try {
-      ObjectStats result = apiInstance.statObject(repository, ref, path, userMetadata);
+      ObjectStats result = apiInstance.statObject(repository, ref, path, userMetadata, presign);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#statObject");
@@ -819,6 +825,7 @@ Name | Type | Description  | Notes
  **ref** | **String**| a reference (could be either a branch or a commit ID) |
  **path** | **String**| relative to the branch |
  **userMetadata** | **Boolean**|  | [optional] [default to true]
+ **presign** | **Boolean**|  | [optional]
 
 ### Return type
 

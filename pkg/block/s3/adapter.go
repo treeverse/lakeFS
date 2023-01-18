@@ -10,14 +10,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -67,12 +66,6 @@ type Adapter struct {
 	respServerLock               sync.Mutex
 	ServerSideEncryption         string
 	ServerSideEncryptionKmsKeyID string
-}
-
-func WithHTTPClient(c *http.Client) func(a *Adapter) {
-	return func(a *Adapter) {
-		a.httpClient = c
-	}
 }
 
 func WithStreamingChunkSize(sz int) func(a *Adapter) {
@@ -311,6 +304,40 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	}
 	sizeBytes = *objectOutput.ContentLength
 	return objectOutput.Body, nil
+}
+
+func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+	log := a.log(ctx).WithField("operation", "GetPresignedURL")
+	qualifiedKey, err := resolveNamespace(obj)
+	if err != nil {
+		log.WithField("namespace", obj.StorageNamespace).
+			WithField("identifier", obj.Identifier).
+			WithError(err).Error("could not resolve namespace")
+		return "", err
+	}
+	var preSignedURL string
+	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
+	if mode == block.PreSignModeWrite {
+		putObjectInput := &s3.PutObjectInput{
+			Bucket: aws.String(qualifiedKey.StorageNamespace),
+			Key:    aws.String(qualifiedKey.Key),
+		}
+		req, _ := client.PutObjectRequest(putObjectInput)
+		preSignedURL, err = req.Presign(block.DefaultPreSignExpiryDuration)
+	} else {
+		getObjectInput := &s3.GetObjectInput{
+			Bucket: aws.String(qualifiedKey.StorageNamespace),
+			Key:    aws.String(qualifiedKey.Key),
+		}
+		req, _ := client.GetObjectRequest(getObjectInput)
+		preSignedURL, err = req.Presign(block.DefaultPreSignExpiryDuration)
+	}
+	if err != nil {
+		log.WithField("namespace", obj.StorageNamespace).
+			WithField("identifier", obj.Identifier).
+			WithError(err).Error("could not pre-sign request")
+	}
+	return preSignedURL, err
 }
 
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {

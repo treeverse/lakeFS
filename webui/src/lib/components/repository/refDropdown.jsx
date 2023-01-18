@@ -54,7 +54,7 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
             </Form>
         </div>
     );
-    const refTypeNav = withTags && <Nav variant="tabs" onSelect={setRefType} activeKey={refType}>
+    const refTypeNav = withTags && <Nav variant="tabs" onSelect={setRefType} activeKey={refType} className="mt-2">
         <Nav.Item>
             <Nav.Link eventKey={"branch"}>Branches</Nav.Link>
         </Nav.Item>
@@ -104,17 +104,24 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
             {form}
             {refTypeNav}
             <div className="ref-scroller">
-                <ul className="list-group ref-list">
-                    {results.map(namedRef => (
-                        <RefEntry key={namedRef.id} repo={repo} refType={refType} namedRef={namedRef.id} selectRef={selectRef} selected={selected} withCommits={refType !== RefTypeTag && withCommits} logCommits={async () => {
-                            const data = await commits.log(repo.id, namedRef.id)
-                            setCommitList({...commitList, branch: namedRef.id, commits: data.results});
+                {(results && results.length > 0) ? (
+                    <>
+                        <ul className="list-group ref-list">
+                            {results.map(namedRef => (
+                                <RefEntry key={namedRef.id} repo={repo} refType={refType} namedRef={namedRef.id} selectRef={selectRef} selected={selected} withCommits={refType !== RefTypeTag && withCommits} logCommits={async () => {
+                                    const data = await commits.log(repo.id, namedRef.id)
+                                    setCommitList({...commitList, branch: namedRef.id, commits: data.results});
+                                }}/>
+                            ))}
+                        </ul>
+                        <Paginator results={refList.payload.results} pagination={refList.payload.pagination} from={pagination.after} onPaginate={(after) => {
+                            setPagination({after})
                         }}/>
-                    ))}
-                </ul>
-                <Paginator results={refList.payload.results} pagination={refList.payload.pagination} from={pagination.after} onPaginate={(after) => {
-                    setPagination({after})
-                }}/>
+                    </>
+                ) : (
+                    <p className="text-center mt-3"><small>No references found</small></p>
+                )}
+
             </div>
         </div>
     );
@@ -214,7 +221,7 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, variant="light", pre
     const popover = (
         <Overlay target={target.current} show={show} placement="bottom" rootClose={true} onHide={() => setShow(false)}>
             <Popover className="ref-popover">
-                <Popover.Content>
+                <Popover.Body>
                     <RefSelector
                         repo={repo}
                         withCommits={withCommits}
@@ -225,7 +232,7 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, variant="light", pre
                             selectRef(ref);
                             setShow(false);
                         }}/>
-                </Popover.Content>
+                </Popover.Body>
             </Popover>
         </Overlay>
     );
