@@ -3,7 +3,6 @@ package diff
 import (
 	"context"
 	"errors"
-	"strconv"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/plugins"
@@ -71,7 +70,7 @@ func buildEntries(diffs []*Diff) []Entry {
 	result := make([]Entry, len(diffs))
 	for _, diff := range diffs {
 		result = append(result, Entry{
-			Version:          strconv.Itoa(int(diff.Version)),
+			Version:          diff.Version,
 			Timestamp:        diff.Timestamp.AsTime(),
 			Operation:        diff.Description,
 			OperationContent: diff.Content,
