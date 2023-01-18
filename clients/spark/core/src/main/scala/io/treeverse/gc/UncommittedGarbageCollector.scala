@@ -234,7 +234,14 @@ object UncommittedGarbageCollector {
   ): Unit = {
     val reportDst = formatRunPath(storageNamespace, runID)
     val summary =
-      writeJsonSummary(reportDst, runID, firstSlice, startTime, startListTime, success, expiredAddresses.count())
+      writeJsonSummary(reportDst,
+                       runID,
+                       firstSlice,
+                       startTime,
+                       startListTime,
+                       success,
+                       expiredAddresses.count()
+                      )
     println(s"Report for mark_id=$runID summary=$summary")
 
     val cachedAddresses = expiredAddresses.cache()
@@ -276,7 +283,7 @@ object UncommittedGarbageCollector {
       "success" -> success,
       "first_slice" -> firstSlice,
       "start_time" -> DateTimeFormatter.ISO_INSTANT.format(startTime),
-      "start_list_time" -> DateTimeFormatter.ISO_INSTANT.format(startTime),
+      "start_list_time" -> DateTimeFormatter.ISO_INSTANT.format(startListTime),
       "num_deleted_objects" -> numDeletedObjects
     )
     val summary = compact(render(jsonSummary))
