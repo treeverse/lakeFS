@@ -2,6 +2,7 @@ package diff
 
 import (
 	"context"
+
 	"google.golang.org/grpc/codes"
 
 	"github.com/hashicorp/go-plugin"
