@@ -7,11 +7,11 @@ import (
 	"google.golang.org/grpc"
 )
 
-type DeltaDiffGRPCClient struct {
+type GRPCClient struct {
 	client DifferClient // This is the underlying GRPC API client
 }
 
-func (d *DeltaDiffGRPCClient) Diff(ctx context.Context, paths TablePaths, s3Creds S3Creds) ([]*Diff, error) {
+func (d *GRPCClient) Diff(ctx context.Context, paths TablePaths, s3Creds S3Creds) ([]*Diff, error) {
 	dr, err := d.client.Diff(ctx, &DiffRequest{
 		Paths: &DiffPaths{
 			LeftPath:  paths.LeftTablePath,
@@ -43,7 +43,7 @@ func (p *DeltaDiffGRPCPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Serv
 
 // GRPCClient will return the Delta diff GRPC custom client
 func (p *DeltaDiffGRPCPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
-	return &DeltaDiffGRPCClient{
+	return &GRPCClient{
 		client: NewDifferClient(c), // This is the underlying GRPC client
 	}, nil
 }

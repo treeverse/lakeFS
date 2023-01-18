@@ -108,5 +108,5 @@ func (m *Manager[T]) LoadPluginClient(name string) (*T, ClosingFunc, error) {
 		return nil, nil, err
 	}
 	cd, _ := stub.(T)
-	return &cd, func() { c.Kill() }, nil
+	return &cd, c.Kill, nil
 }
