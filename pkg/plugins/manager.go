@@ -61,10 +61,7 @@ func (m *Manager[T]) RegisterPlugin(name string, id PluginIdentity, auth PluginH
 		MagicCookieValue: auth.Value,
 	}
 	cmd := exec.Command(id.ExecutableLocation) //nolint:gosec
-	c, err := newPluginClient(name, p, hc, cmd)
-	if err != nil {
-		return err
-	}
+	c := newPluginClient(name, p, hc, cmd)
 	_, ok := any(c).(T)
 	if !ok {
 		return ErrInvalidPluginNotFound
@@ -73,7 +70,7 @@ func (m *Manager[T]) RegisterPlugin(name string, id PluginIdentity, auth PluginH
 	return nil
 }
 
-func newPluginClient(name string, p plugin.Plugin, hc plugin.HandshakeConfig, cmd *exec.Cmd) (*plugin.Client, error) {
+func newPluginClient(name string, p plugin.Plugin, hc plugin.HandshakeConfig, cmd *exec.Cmd) *plugin.Client {
 	clientConfig := plugin.ClientConfig{
 		Plugins: map[string]plugin.Plugin{
 			name: p,
@@ -90,7 +87,7 @@ func newPluginClient(name string, p plugin.Plugin, hc plugin.HandshakeConfig, cm
 	l := logging.Default()
 	hcl := NewHClogger(hl, l)
 	clientConfig.Logger = hcl
-	return plugin.NewClient(&clientConfig), nil
+	return plugin.NewClient(&clientConfig)
 }
 
 // LoadPluginClient loads a Client of type T.
