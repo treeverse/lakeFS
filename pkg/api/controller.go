@@ -2363,10 +2363,9 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 	ctx := r.Context()
 	c.LogAction(ctx, "copy_object", r, repository, branch, destPath)
 
-	// use destination branch as source if not specified
-	srcRef := swag.StringValue(body.SrcRef)
-	if srcRef == "" {
-		srcRef = branch
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
 	}
 
 	// verify branch exists
@@ -2377,6 +2376,12 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 	if !branchExists {
 		writeError(w, r, http.StatusNotFound, fmt.Sprintf("branch '%s' not found", branch))
 		return
+	}
+
+	// use destination branch as source if not specified
+	srcRef := swag.StringValue(body.SrcRef)
+	if srcRef == "" {
+		srcRef = branch
 	}
 
 	var (
@@ -2408,10 +2413,16 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 	// full copy if no entry was created until here
 	if entry == nil {
 		copyType = httpHeaderCopyTypeFull
-		entry, err = c.copyObjectFull(ctx, repository, branch, srcPath, destPath, srcEntry)
+		entry, err = c.copyObjectFull(ctx, repo, branch, srcPath, destPath, srcEntry)
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
+	}
+
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, block.IdentifierTypeRelative)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
 	}
 
 	w.Header().Set(httpHeaderCopyType, copyType)
@@ -2420,14 +2431,14 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 		Mtime:           entry.CreationDate.Unix(),
 		Path:            entry.Path,
 		PathType:        entryTypeObject,
-		PhysicalAddress: entry.PhysicalAddress,
+		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
 		ContentType:     StringPtr(entry.ContentType),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
 
-func (c *Controller) copyObjectShallow(ctx context.Context, repository string, branch string, srcEntry *catalog.DBEntry, destPath string) (*catalog.DBEntry, error) {
+func (c *Controller) copyObjectShallow(ctx context.Context, repository, branch string, srcEntry *catalog.DBEntry, destPath string) (*catalog.DBEntry, error) {
 	// track physical address (copy-table)
 	err := c.Catalog.TrackPhysicalAddress(ctx, repository, srcEntry.PhysicalAddress)
 	if err != nil {
@@ -2446,19 +2457,14 @@ func (c *Controller) copyObjectShallow(ctx context.Context, repository string, b
 }
 
 // copyObjectFull copy data from srcEntry's physical address (if set) or srcPath into destPath
-func (c *Controller) copyObjectFull(ctx context.Context, repository string, branch string, srcPath string, destPath string, srcEntry *catalog.DBEntry) (*catalog.DBEntry, error) {
+func (c *Controller) copyObjectFull(ctx context.Context, repo *catalog.Repository, branch string, srcPath string, destPath string, srcEntry *catalog.DBEntry) (*catalog.DBEntry, error) {
 	var err error
 	// fetch src entry if needed - optimization in case we already have the entry
 	if srcEntry == nil {
-		srcEntry, err = c.Catalog.GetEntry(ctx, repository, branch, srcPath, catalog.GetEntryParams{ReturnExpired: true})
+		srcEntry, err = c.Catalog.GetEntry(ctx, repo.Name, branch, srcPath, catalog.GetEntryParams{ReturnExpired: true})
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if err != nil {
-		return nil, err
 	}
 
 	// copy data to a new physical address
@@ -2475,7 +2481,7 @@ func (c *Controller) copyObjectFull(ctx context.Context, repository string, bran
 	}
 
 	// create entry for the final copy
-	err = c.Catalog.CreateEntry(ctx, repository, branch, dstEntry, graveler.WithMaxTries(1))
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, dstEntry, graveler.WithMaxTries(1))
 	if err != nil {
 		return nil, err
 	}
