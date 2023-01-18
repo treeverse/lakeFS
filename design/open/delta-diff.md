@@ -156,7 +156,7 @@ To overcome this scenario, we'll use special diff credentials as follows:
 
 ### API
 
-- GET `/repositories/repo/{repo}/otf/refs/{left_ref}/diff/{right_ref}?table_path={path}&type={diff_type}`
+- GET `/repositories/{repo}/otf/refs/{left_ref}/diff/{right_ref}?table_path={path}&type={diff_type}`
     - Tagged as experimental
     - **Response**:  
         The response includes an array of operations from different versions of the specified table format.
@@ -182,10 +182,8 @@ To overcome this scenario, we'll use special diff credentials as follows:
                "timestamp":1515491537026,
                "operation":"INSERT",
                "operationContent":{
-                   "operationParameters": {
-                      "mode":"Append",
-                      "partitionBy":"[]"
-                    }
+                   "mode":"Append",
+                   "partitionBy":"[]"
           },
           ...
       ]
