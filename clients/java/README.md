@@ -182,6 +182,7 @@ Class | Method | HTTP request | Description
 *ConfigApi* | [**getStorageConfig**](docs/ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
 *ConfigApi* | [**setup**](docs/ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 *ConfigApi* | [**setupCommPrefs**](docs/ConfigApi.md#setupCommPrefs) | **POST** /setup_comm_prefs | setup communications preferences
+*ExperimentalApi* | [**otfDiff**](docs/ExperimentalApi.md#otfDiff) | **GET** /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref} | perform otf diff
 *HealthCheckApi* | [**healthCheck**](docs/HealthCheckApi.md#healthCheck) | **GET** /healthcheck | 
 *ImportApi* | [**createMetaRange**](docs/ImportApi.md#createMetaRange) | **POST** /repositories/{repository}/branches/metaranges | create a lakeFS metarange file from the given ranges
 *ImportApi* | [**ingestRange**](docs/ImportApi.md#ingestRange) | **POST** /repositories/{repository}/branches/ranges | create a lakeFS range file from the source uri
@@ -198,6 +199,7 @@ Class | Method | HTTP request | Description
 *ObjectsApi* | [**stageObject**](docs/ObjectsApi.md#stageObject) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
 *ObjectsApi* | [**statObject**](docs/ObjectsApi.md#statObject) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
 *ObjectsApi* | [**uploadObject**](docs/ObjectsApi.md#uploadObject) | **POST** /repositories/{repository}/branches/{branch}/objects | 
+*OtfDiffApi* | [**otfDiff**](docs/OtfDiffApi.md#otfDiff) | **GET** /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref} | perform otf diff
 *RefsApi* | [**diffRefs**](docs/RefsApi.md#diffRefs) | **GET** /repositories/{repository}/refs/{leftRef}/diff/{rightRef} | diff references
 *RefsApi* | [**dumpRefs**](docs/RefsApi.md#dumpRefs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store
 *RefsApi* | [**logCommits**](docs/RefsApi.md#logCommits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits.
@@ -272,6 +274,8 @@ Class | Method | HTTP request | Description
  - [ObjectStageCreation](docs/ObjectStageCreation.md)
  - [ObjectStats](docs/ObjectStats.md)
  - [ObjectStatsList](docs/ObjectStatsList.md)
+ - [OtfDiff](docs/OtfDiff.md)
+ - [OtfDiffList](docs/OtfDiffList.md)
  - [Pagination](docs/Pagination.md)
  - [PathList](docs/PathList.md)
  - [Policy](docs/Policy.md)

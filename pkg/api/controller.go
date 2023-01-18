@@ -98,7 +98,7 @@ type Controller struct {
 	sessionStore          sessions.Store
 	oidcAuthenticator     *oidc.Authenticator
 	PathProvider          upload.PathProvider
-	OTFDiffService        *diff.Service
+	otfDiffService        *diff.Service
 }
 
 func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, r *http.Request, body PrepareGarbageCollectionUncommittedJSONRequestBody, repository string) {
@@ -3854,6 +3854,80 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
+func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository string, leftRef string, rightRef string, params OtfDiffParams) {
+	ctx := r.Context()
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+	c.LogAction(ctx, "table_format_diff", r, repository, rightRef, leftRef)
+	credentials, _, err := c.Auth.ListUserCredentials(ctx, user.Username, nil)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	if len(credentials) == 0 {
+		writeError(w, r, http.StatusPreconditionFailed, "no programmatic credentials")
+		return
+	}
+	var br string
+	if params.BaseRef != nil {
+		br = *params.BaseRef
+	}
+	tp := buildS3TablePaths(repository, leftRef, rightRef, br, params.TablePath)
+
+	diffParams := diff.Params{
+		TablePaths: tp,
+		S3Creds: diff.S3Creds{
+			Key:      credentials[0].AccessKeyID,
+			Secret:   credentials[0].SecretAccessKey,
+			Endpoint: fmt.Sprintf("https://%s", c.Config.ListenAddress),
+		},
+	}
+
+	entries, err := c.otfDiffService.RunDiff(ctx, params.Type, diffParams)
+	if err != nil {
+		c.Logger.Error(err)
+		if errors.Is(err, diff.ErrOTFNotFound) {
+			writeError(w, r, http.StatusNotFound, err)
+		} else {
+			writeError(w, r, http.StatusInternalServerError, err)
+		}
+		return
+	}
+	writeResponse(w, r, http.StatusOK, buildOtfDiffListResponse(entries))
+}
+
+func buildS3TablePaths(repo, leftRef, rightRef, baseRef, tablePath string) diff.TablePaths {
+	tp := diff.TablePaths{
+		LeftTablePath:  fmt.Sprintf("s3://%s/%s/%s", repo, leftRef, tablePath),
+		RightTablePath: fmt.Sprintf("s3://%s/%s/%s", repo, rightRef, tablePath),
+	}
+	if baseRef != "" {
+		tp.BaseTablePath = fmt.Sprintf("s3://%s/%s/%s", repo, baseRef, tablePath)
+	}
+	return tp
+}
+
+func buildOtfDiffListResponse(entries []diff.Entry) OtfDiffList {
+	var ol []OtfDiff
+	for _, entry := range entries {
+		content := make(map[string]interface{})
+		for k, v := range entry.OperationContent {
+			content[k] = v
+		}
+		ol = append(ol, OtfDiff{
+			Operation:        entry.Operation,
+			OperationContent: content,
+			Timestamp:        entry.Timestamp.Nanosecond(),
+			Version:          entry.Version,
+		})
+	}
+	return OtfDiffList{
+		Results: ol,
+	}
+}
+
 func IsStatusCodeOK(statusCode int) bool {
 	return statusCode >= 200 && statusCode <= 299
 }
@@ -4022,7 +4096,7 @@ func NewController(
 		sessionStore:          sessionStore,
 		oidcAuthenticator:     oidcAuthenticator,
 		PathProvider:          pathProvider,
-		OTFDiffService:        diffService,
+		otfDiffService:        diffService,
 	}
 }
 
