@@ -60,7 +60,7 @@ export const CommunicationPreferencesSetup: FC<CommunicationPreferencesSetupProp
                                 <Form.Check type="checkbox" checked={updatesCheck} onChange={handleUpdatesChange} label="I'd like to receive news and feature updates" />
                             </Form.Group>
 
-                            <Form.Group controlId="security-check" className="mt-4">
+                            <Form.Group controlId="security-check" className="mt-4 mb-3">
                                 <Form.Label>Security updates</Form.Label>
                                 <Form.Check type="checkbox" checked={securityCheck} onChange={handleSecurityChange} label="I'd like to receive security updates" />
                             </Form.Group>

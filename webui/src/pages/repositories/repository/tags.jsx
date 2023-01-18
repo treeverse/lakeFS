@@ -40,7 +40,7 @@ const TagWidget = ({ repo, tag, onDelete }) => {
     return (
         <ListGroup.Item>
             <div className="clearfix">
-                <div className="float-left">
+                <div className="float-start">
                     <h6>
                         <Link href={{
                             pathname: '/repositories/:repoId/objects',
@@ -52,7 +52,7 @@ const TagWidget = ({ repo, tag, onDelete }) => {
                     </h6>
                 </div>
 
-                <div className="float-right">
+                <div className="float-end">
                     <ButtonGroup className="commit-actions">
                         <ConfirmationButton
                             variant="outline-danger"
@@ -67,7 +67,7 @@ const TagWidget = ({ repo, tag, onDelete }) => {
                             <TrashIcon/>
                         </ConfirmationButton>
                     </ButtonGroup>
-                    <ButtonGroup className="branch-actions ml-2">
+                    <ButtonGroup className="branch-actions ms-2">
                         <LinkButton
                             href={{
                                 pathname: '/repositories/:repoId/commits/:commitId',
@@ -137,11 +137,11 @@ const CreateTagButton = ({ repo, variant = "success", onCreate = null, children 
                         onSubmit();
                         e.preventDefault();
                     }}>
-                        <Form.Group controlId="name" className="float-left w-25">
+                        <Form.Group controlId="name" className="float-start w-25">
                             <Form.Control type="text" placeholder="Tag Name" name="text" ref={textRef} onChange={() => setDisabled(!textRef.current || !textRef.current.value)}/>
                         </Form.Group>
                         <Form.Group controlId="source">
-                            <span className="ml-2 mr-2">@</span>
+                            <span className="ms-2 me-2">@</span>
                             <RefDropdown
                                 repo={repo}
                                 prefix={'From '}

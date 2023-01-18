@@ -21,48 +21,31 @@ import com.google.gson.stream.JsonWriter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
-import org.openapitools.jackson.nullable.JsonNullable;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
 
 /**
- * Model tests for StagingLocation
+ * Model tests for GarbageCollectionConfig
  */
-public class StagingLocationTest {
-    private final StagingLocation model = new StagingLocation();
+public class GarbageCollectionConfigTest {
+    private final GarbageCollectionConfig model = new GarbageCollectionConfig();
 
     /**
-     * Model tests for StagingLocation
+     * Model tests for GarbageCollectionConfig
      */
     @Test
-    public void testStagingLocation() {
-        // TODO: test StagingLocation
+    public void testGarbageCollectionConfig() {
+        // TODO: test GarbageCollectionConfig
     }
 
     /**
-     * Test the property 'physicalAddress'
+     * Test the property 'gracePeriod'
      */
     @Test
-    public void physicalAddressTest() {
-        // TODO: test physicalAddress
-    }
-
-    /**
-     * Test the property 'token'
-     */
-    @Test
-    public void tokenTest() {
-        // TODO: test token
-    }
-
-    /**
-     * Test the property 'presignedUrl'
-     */
-    @Test
-    public void presignedUrlTest() {
-        // TODO: test presignedUrl
+    public void gracePeriodTest() {
+        // TODO: test gracePeriod
     }
 
 }

@@ -10,7 +10,7 @@ Method | HTTP request | Description
 
 <a name="getPhysicalAddress"></a>
 # **getPhysicalAddress**
-> StagingLocation getPhysicalAddress(repository, branch, path)
+> StagingLocation getPhysicalAddress(repository, branch, path, presign)
 
 get a physical address and a return token to write object to underlying storage
 
@@ -54,8 +54,9 @@ public class Example {
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
     String path = "path_example"; // String | relative to the branch
+    Boolean presign = true; // Boolean | 
     try {
-      StagingLocation result = apiInstance.getPhysicalAddress(repository, branch, path);
+      StagingLocation result = apiInstance.getPhysicalAddress(repository, branch, path, presign);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling StagingApi#getPhysicalAddress");
@@ -75,6 +76,7 @@ Name | Type | Description  | Notes
  **repository** | **String**|  |
  **branch** | **String**|  |
  **path** | **String**| relative to the branch |
+ **presign** | **Boolean**|  | [optional]
 
 ### Return type
 

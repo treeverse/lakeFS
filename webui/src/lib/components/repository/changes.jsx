@@ -1,3 +1,4 @@
+import React, {useState, Fragment} from "react";
 import React, {useState} from "react";
 
 import {
@@ -46,7 +47,6 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
         setResultsState({results: resultsState.results.concat(results), pagination: pagination})
         return {results:resultsState.results, pagination: pagination}
     }, [repo.id, reference.id, internalRefresh, afterUpdated, entry.path, delimiter, dirExpanded])
-
 
     const results = resultsState.results
     if (error)

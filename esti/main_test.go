@@ -64,10 +64,11 @@ const (
 )
 
 var (
-	logger logging.Logger
-	client api.ClientWithResponsesInterface
-	svc    *s3.S3
-	server *webhookServer
+	logger      logging.Logger
+	client      api.ClientWithResponsesInterface
+	endpointURL string
+	svc         *s3.S3
+	server      *webhookServer
 
 	testDirectDataAccess = Booleans{false}
 
@@ -79,6 +80,11 @@ var (
 	policiesToKeep     arrayFlags
 
 	testsToSkipRegex *regexp.Regexp
+)
+
+var (
+	azureStorageAccount   string
+	azureStorageAccessKey string
 )
 
 func arrayFlagsToMap(arr arrayFlags) map[interface{}]bool {
@@ -284,7 +290,6 @@ func TestMain(m *testing.M) {
 	if !*systemTests {
 		os.Exit(0)
 	}
-
 	params := testutil.SetupTestingEnvParams{
 		Name:      "esti",
 		StorageNS: "esti-system-testing",
@@ -296,7 +301,9 @@ func TestMain(m *testing.M) {
 	}
 	viper.SetDefault("post_migrate", false)
 
-	logger, client, svc = testutil.SetupTestingEnv(&params)
+	logger, client, svc, endpointURL = testutil.SetupTestingEnv(&params)
+	azureStorageAccount = viper.GetString("azure_storage_account")
+	azureStorageAccessKey = viper.GetString("azure_storage_access_key")
 
 	var err error
 	setupLakeFS := viper.GetBool("setup_lakefs")

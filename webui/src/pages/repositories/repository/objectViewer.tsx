@@ -132,7 +132,7 @@ export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loadin
                         <a 
                             href={objectUrl}
                             download={path.split('/').pop()}
-                            className="btn btn-primary btn-sm download-button mr-1">
+                            className="btn btn-primary btn-sm download-button me-1">
                                 <FaDownload />
                         </a>
                         <ClipboardButton
@@ -141,7 +141,7 @@ export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loadin
                             size="sm"
                             onSuccess={noop}
                             onError={noop}
-                            className={"mr-1"}
+                            className={"me-1"}
                             tooltip={"copy URI to clipboard"} />
                     </span>
                 </Card.Header>

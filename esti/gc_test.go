@@ -3,15 +3,13 @@ package esti
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/exec"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 type GCMode int
@@ -161,13 +159,38 @@ var testCases = []testCase{
 	},
 }
 
+func newSubmitConfig(repo string, blockstoreType string, doMark bool, doSweep bool) *sparkSubmitConfig {
+	extraSubmitArgs := make([]string, 0)
+	if !doMark {
+		extraSubmitArgs = append(extraSubmitArgs,
+			"--conf", "spark.hadoop.lakefs.gc.do_mark=false",
+			"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker-%s", repo))
+	}
+	if !doSweep {
+		extraSubmitArgs = append(extraSubmitArgs,
+			"--conf", "spark.hadoop.lakefs.gc.do_sweep=false",
+			"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker-%s", repo))
+	}
+	if blockstoreType == block.BlockstoreTypeAzure {
+		extraSubmitArgs = append(extraSubmitArgs,
+			"--packages", "org.apache.hadoop:hadoop-azure:3.2.1",
+			"--conf", "spark.hadoop.lakefs.api.connection.timeout_seconds=3", "--conf", "spark.hadoop.lakefs.api.read.timeout_seconds=8",
+			"--conf", fmt.Sprintf("spark.hadoop.fs.azure.account.key.%s.dfs.core.windows.net=%s", azureStorageAccount, azureStorageAccessKey))
+	}
+	return &sparkSubmitConfig{
+		sparkVersion:    sparkImageTag,
+		localJar:        metaclientJarPath,
+		entryPoint:      "io.treeverse.clients.GarbageCollector",
+		extraSubmitArgs: extraSubmitArgs,
+		programArgs:     []string{repo, "us-east-1"},
+		logSource:       fmt.Sprintf("gc-%s", repo),
+	}
+}
+
 func TestCommittedGC(t *testing.T) {
 	SkipTestIfAskedTo(t)
-	blockstoreType := viper.GetViper().GetString("blockstore_type")
-	// TODO lynn: change this for test also on Azure
-	if blockstoreType != block.BlockstoreTypeS3 {
-		t.Skip("Running on S3 only")
-	}
+	blockstoreType := viper.GetString("blockstore_type")
+	logger.Infof("Got blockstore type %s", blockstoreType)
 	ctx := context.Background()
 	for _, tst := range testCases {
 		tst := tst // re-define tst to be in the scope of the closure. See: https://gist.github.com/posener/92a55c4cd441fc5e5e85f27bca008721
@@ -176,21 +199,22 @@ func TestCommittedGC(t *testing.T) {
 			t.Parallel()
 			t.Logf("fileExistingRef %s", fileExistingRef)
 			repo := committedGCRepoName + tst.id
+
 			if tst.testMode == sweepOnlyMode || tst.testMode == markOnlyMode {
-				runGC(t, repo, "--conf", "spark.hadoop.lakefs.gc.do_sweep=false",
-					"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker%s", tst.id))
+				submitConfig := newSubmitConfig(repo, blockstoreType, true, false)
+				testutil.MustDo(t, "run GC with do_sweep=false", runSparkSubmit(submitConfig))
 			}
 			if tst.testMode == sweepOnlyMode {
-				runGC(t, repo, "--conf", "spark.hadoop.lakefs.gc.do_mark=false",
-					"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker%s", tst.id))
+				submitConfig := newSubmitConfig(repo, blockstoreType, false, true)
+				testutil.MustDo(t, "run GC with do_mark=false", runSparkSubmit(submitConfig))
 			}
 			if tst.testMode == fullGCMode {
-				runGC(t, repo)
+				submitConfig := newSubmitConfig(repo, blockstoreType, true, true)
+				testutil.MustDo(t, "run GC", runSparkSubmit(submitConfig))
 			}
 			validateGCJob(t, ctx, &tst, fileExistingRef)
 		})
 	}
-
 }
 
 func prepareForGC(t *testing.T, ctx context.Context, testCase *testCase, blockstoreType string) string {
@@ -261,25 +285,6 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase *testCase, blockst
 		}
 	}
 	return commitId
-}
-
-func runGC(t *testing.T, repo string, extraSparkArgs ...string) {
-	workingDirectory, err := os.Getwd()
-	if err != nil {
-		t.Fatal("Failed getting working directory: ", err)
-	}
-	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
-	dockerArgs := getDockerArgs(workingDirectory)
-	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/bitnami/spark:%s", sparkImageTag), "spark-submit")
-	sparkSubmitArgs := getSparkSubmitArgs()
-	sparkSubmitArgs = append(sparkSubmitArgs, extraSparkArgs...)
-	args := append(dockerArgs, sparkSubmitArgs...)
-	args = append(args, "/opt/metaclient/client.jar", repo, "us-east-1")
-	cmd := exec.Command("docker", args...)
-	err = runCommand(fmt.Sprintf("gc-%s", repo), cmd)
-	if err != nil {
-		t.Fatal("Running GC: ", err)
-	}
 }
 
 func validateGCJob(t *testing.T, ctx context.Context, testCase *testCase, existingRef string) {

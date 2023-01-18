@@ -10,7 +10,6 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/google/uuid"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
 )
@@ -144,18 +143,6 @@ func WithTicker(t FlushTicker) BufferedCollectorOpts {
 	}
 }
 
-func WithFlushInterval(d time.Duration) BufferedCollectorOpts {
-	return func(s *BufferedCollector) {
-		s.flushTicker = &TimeTicker{ticker: time.NewTicker(d)}
-	}
-}
-
-func WithSendTimeout(d time.Duration) BufferedCollectorOpts {
-	return func(s *BufferedCollector) {
-		s.sendTimeout = d
-	}
-}
-
 func WithExtended(b bool) BufferedCollectorOpts {
 	return func(s *BufferedCollector) {
 		s.extended = b
@@ -168,23 +155,28 @@ func WithLogger(l logging.Logger) BufferedCollectorOpts {
 	}
 }
 
-func NewBufferedCollector(installationID string, c *config.Config, opts ...BufferedCollectorOpts) *BufferedCollector {
-	statsEnabled := true
-	flushDuration := flushInterval
-	extended := false
-	flushSize := config.DefaultStatsFlushSize
-	if c != nil {
-		statsEnabled = c.Stats.Enabled && !strings.HasPrefix(version.Version, version.UnreleasedVersion)
-		flushDuration = c.Stats.FlushInterval
-		flushSize = c.Stats.FlushSize
-		extended = c.Stats.Extended
+type Config struct {
+	Enabled       bool
+	Address       string
+	FlushInterval time.Duration
+	FlushSize     int
+	Extended      bool
+}
+
+func NewBufferedCollector(installationID string, cfg Config, opts ...BufferedCollectorOpts) *BufferedCollector {
+	if cfg.Enabled && strings.HasPrefix(version.Version, version.UnreleasedVersion) {
+		cfg.Enabled = false
+	}
+	// must have flush interval setup
+	if cfg.FlushInterval == 0 {
+		cfg.FlushInterval = flushInterval
 	}
 	s := &BufferedCollector{
 		cache:           make(keyIndex),
 		writes:          make(chan Metric, collectorEventBufferSize),
 		runtimeStats:    map[string]string{},
-		flushTicker:     &TimeTicker{ticker: time.NewTicker(flushDuration)},
-		flushSize:       flushSize,
+		flushTicker:     &TimeTicker{ticker: time.NewTicker(cfg.FlushInterval)},
+		flushSize:       cfg.FlushSize,
 		heartbeatTicker: &TimeTicker{ticker: time.NewTicker(heartbeatInterval)},
 		installationID:  installationID,
 		processID:       uuid.Must(uuid.NewUUID()).String(),
@@ -193,7 +185,7 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 		ctxCancelled:    0,
 		done:            make(chan bool),
 		sendTimeout:     sendTimeout,
-		extended:        extended,
+		extended:        cfg.Extended,
 		log:             logging.Default(),
 	}
 	for _, opt := range opts {
@@ -205,8 +197,8 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 
 	// assign sender
 	if s.sender == nil {
-		if statsEnabled {
-			s.sender = NewHTTPSender(c.Stats.Address, s.sendTimeout, time.Now)
+		if cfg.Enabled {
+			s.sender = NewHTTPSender(cfg.Address, s.sendTimeout, time.Now)
 		} else {
 			s.sender = &dummySender{Log: s.log}
 		}

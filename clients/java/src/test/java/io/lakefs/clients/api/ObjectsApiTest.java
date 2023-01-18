@@ -106,7 +106,8 @@ public class ObjectsApiTest {
         String ref = null;
         String path = null;
         String range = null;
-                File response = api.getObject(repository, ref, path, range);
+        Boolean presign = null;
+                File response = api.getObject(repository, ref, path, range, presign);
         // TODO: test validations
     }
     
@@ -158,11 +159,12 @@ public class ObjectsApiTest {
         String repository = null;
         String ref = null;
         Boolean userMetadata = null;
+        Boolean presign = null;
         String after = null;
         Integer amount = null;
         String delimiter = null;
         String prefix = null;
-                ObjectStatsList response = api.listObjects(repository, ref, userMetadata, after, amount, delimiter, prefix);
+                ObjectStatsList response = api.listObjects(repository, ref, userMetadata, presign, after, amount, delimiter, prefix);
         // TODO: test validations
     }
     
@@ -198,7 +200,8 @@ public class ObjectsApiTest {
         String ref = null;
         String path = null;
         Boolean userMetadata = null;
-                ObjectStats response = api.statObject(repository, ref, path, userMetadata);
+        Boolean presign = null;
+                ObjectStats response = api.statObject(repository, ref, path, userMetadata, presign);
         // TODO: test validations
     }
     

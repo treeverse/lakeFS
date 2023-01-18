@@ -80,7 +80,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                         </div>
                         <Card>
                             <Card.Header>
-                                <span className="float-left">
+                                <span className="float-start">
                                     {(delimiter !== "") && (
                                         <URINavigator
                                             path={prefix}
@@ -153,7 +153,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                         withWorkspace={false}
                         selectRef={onSelectRef}/>
 
-                    <ArrowLeftIcon className="mr-2 mt-2" size="small" verticalAlign="middle"/>
+                    <ArrowLeftIcon className="me-2 mt-2" size="small" verticalAlign="middle"/>
 
                     <RefDropdown
                         prefix={'Compared to '}
