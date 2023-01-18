@@ -2382,24 +2382,26 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 	var (
 		copyType string           // copy type performed
 		entry    *catalog.DBEntry // set to the entry we created (shallow or copy)
+		srcEntry *catalog.DBEntry // in case we load entry from staging we can reuse on full-copy
 	)
 
-	// try getting source entry from staging - if not found we continue to fall to full copy
-	srcEntry, err := c.Catalog.GetEntry(ctx, repository, branch, srcPath, catalog.GetEntryParams{
-		ReturnExpired: true,
-		StageOnly:     true,
-	})
-	if !errors.Is(err, graveler.ErrNotFound) && c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
 	// try shallow copy if entry on staging and copy on the same branch
-	if srcEntry != nil && srcRef == branch {
+	if srcRef == branch {
 		copyType = httpHeaderCopyTypeShallow
-		entry, err = c.copyObjectShallow(ctx, repository, branch, srcEntry, destPath)
-		// for ErrTooManyTries we like to continue falling to full copy
-		if !errors.Is(err, graveler.ErrTooManyTries) && c.handleAPIError(ctx, w, r, err) {
+		// try getting source entry from staging - if not found we continue to fall to full copy
+		srcEntry, err = c.Catalog.GetEntry(ctx, repository, branch, srcPath, catalog.GetEntryParams{
+			ReturnExpired: true,
+			StageOnly:     true,
+		})
+		if !errors.Is(err, graveler.ErrNotFound) && c.handleAPIError(ctx, w, r, err) {
 			return
+		}
+		if srcEntry != nil {
+			entry, err = c.copyObjectShallow(ctx, repository, branch, srcEntry, destPath)
+			// for ErrTooManyTries we like to continue falling to full copy
+			if !errors.Is(err, graveler.ErrTooManyTries) && c.handleAPIError(ctx, w, r, err) {
+				return
+			}
 		}
 	}
 
@@ -2434,6 +2436,7 @@ func (c *Controller) copyObjectShallow(ctx context.Context, repository string, b
 
 	// create entry (copy) - try only once
 	dstEntry := *srcEntry
+	dstEntry.CreationDate = time.Now().UTC()
 	dstEntry.Path = destPath
 	err = c.Catalog.CreateEntry(ctx, repository, branch, dstEntry, graveler.WithMaxTries(1))
 	if err != nil {
@@ -2460,6 +2463,7 @@ func (c *Controller) copyObjectFull(ctx context.Context, repository string, bran
 
 	// copy data to a new physical address
 	dstEntry := *srcEntry
+	dstEntry.CreationDate = time.Now().UTC()
 	dstEntry.Path = destPath
 	dstEntry.AddressType = catalog.AddressTypeRelative
 	dstEntry.PhysicalAddress = c.PathProvider.NewPath()
@@ -2470,7 +2474,7 @@ func (c *Controller) copyObjectFull(ctx context.Context, repository string, bran
 		return nil, err
 	}
 
-	// create entry to the final copy
+	// create entry for the final copy
 	err = c.Catalog.CreateEntry(ctx, repository, branch, dstEntry, graveler.WithMaxTries(1))
 	if err != nil {
 		return nil, err
