@@ -1,9 +1,9 @@
-import React, {useMemo, useRef, useState} from "react";
+import React, {useCallback, useMemo, useRef, useState} from "react";
 
 import {
     GitBranchIcon,
     LinkIcon,
-    PackageIcon,
+    PackageIcon, SearchIcon,
     TrashIcon
 } from "@primer/octicons-react";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
@@ -17,7 +17,7 @@ import {
     ActionGroup,
     ActionsBar, ClipboardButton,
     Error, LinkButton,
-    Loading, RefreshButton
+    Loading, PrefixSearchWidget, RefreshButton
 } from "../../../lib/components/controls";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
@@ -32,6 +32,8 @@ import Alert from "react-bootstrap/Alert";
 import {Link} from "../../../lib/components/nav";
 import {useRouter} from "../../../lib/hooks/router";
 import {RepoError} from "./error";
+import InputGroup from "react-bootstrap/InputGroup";
+import {OverlayTrigger, Tooltip} from "react-bootstrap";
 
 const ImportBranchName = 'import-from-inventory';
 
@@ -198,8 +200,9 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, childr
     );
 };
 
-const BranchList = ({ repo, prefix, after, onPaginate }) => {
 
+const BranchList = ({ repo, prefix, after, onPaginate }) => {
+    const router = useRouter()
     const [refresh, setRefresh] = useState(true);
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         return branches.list(repo.id, prefix, after);
@@ -228,6 +231,15 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
         <div className="mb-5">
             <ActionsBar>
                 <ActionGroup orientation="right">
+
+                    <PrefixSearchWidget
+                        defaultValue={router.query.prefix}
+                        text="Find branch"
+                        onFilter={prefix => {
+                            const query = {prefix};
+                            router.push({pathname: '/repositories/:repoId/branches', params: {repoId: repo.id}, query});
+                        }}/>
+
                     <RefreshButton onClick={doRefresh}/>
 
                     <CreateBranchButton repo={repo} variant="success" onCreate={doRefresh}>
