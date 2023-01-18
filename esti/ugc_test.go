@@ -383,7 +383,7 @@ func getReportCutoffTime(s3Client *s3.S3, bucket, reportPath string) (time.Time,
 		Success           bool      `json:"success"`
 		FirstSlice        string    `json:"first_slice"`
 		StartTime         time.Time `json:"start_time,time"`
-		StartListTime     time.Time `json:"start_list_time,time"`
+		CutoffTime        time.Time `json:"cutoffTime,time"`
 		NumDeletedObjects int       `json:"num_deleted_objects"`
 	}
 
@@ -392,5 +392,5 @@ func getReportCutoffTime(s3Client *s3.S3, bucket, reportPath string) (time.Time,
 	if err != nil {
 		return time.Time{}, err
 	}
-	return report.StartListTime, nil
+	return report.CutoffTime, nil
 }
