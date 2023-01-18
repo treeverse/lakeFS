@@ -17,7 +17,7 @@ import {
     ActionGroup,
     ActionsBar, ClipboardButton,
     Error, LinkButton,
-    Loading, RefreshButton
+    Loading, PrefixSearchWidget, RefreshButton
 } from "../../../lib/components/controls";
 import { RepositoryPageLayout } from "../../../lib/components/repository/layout";
 import { RefContextProvider, useRefs } from "../../../lib/hooks/repo";
@@ -173,12 +173,12 @@ const CreateTagButton = ({ repo, variant = "success", onCreate = null, children 
 };
 
 
-const TagList = ({ repo, after, onPaginate }) => {
-
+const TagList = ({ repo, after, prefix, onPaginate }) => {
+    const router = useRouter()
     const [refresh, setRefresh] = useState(true);
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
-        return tags.list(repo.id, after);
-    }, [repo.id, refresh, after]);
+        return tags.list(repo.id, prefix, after);
+    }, [repo.id, prefix, refresh, after]);
 
     const doRefresh = () => setRefresh(!refresh);
 
@@ -204,6 +204,15 @@ const TagList = ({ repo, after, onPaginate }) => {
             <div className="mb-5">
                 <ActionsBar>
                     <ActionGroup orientation="right">
+                        <PrefixSearchWidget
+                            defaultValue={router.query.prefix}
+                            text="Find Tag"
+                            onFilter={prefix => router.push({
+                                pathname: '/repositories/:repoId/tags',
+                                params: {repoId: repo.id},
+                                query: {prefix}
+                            })}/>
+
                         <RefreshButton onClick={doRefresh} />
 
                         <CreateTagButton repo={repo} variant="success" onCreate={doRefresh}>
