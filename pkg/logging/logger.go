@@ -274,24 +274,24 @@ func (l logrusEntryWrapper) Logf(level logrus.Level, format string, args ...inte
 	l.e.Logf(level, format, args...)
 }
 
-func (*logrusEntryWrapper) IsTracing() bool {
+func (l *logrusEntryWrapper) IsTracing() bool {
 	return defaultLogger.IsLevelEnabled(logrus.TraceLevel)
 }
 
-func (*logrusEntryWrapper) IsDebugging() bool {
-	return defaultLogger.IsLevelEnabled(logrus.DebugLevel)
+func (l *logrusEntryWrapper) IsDebugging() bool {
+	return l.e.Logger.IsLevelEnabled(logrus.DebugLevel)
 }
 
-func (*logrusEntryWrapper) IsInfo() bool {
-	return defaultLogger.IsLevelEnabled(logrus.InfoLevel)
+func (l *logrusEntryWrapper) IsInfo() bool {
+	return l.e.Logger.IsLevelEnabled(logrus.InfoLevel)
 }
 
-func (*logrusEntryWrapper) IsError() bool {
-	return defaultLogger.IsLevelEnabled(logrus.ErrorLevel)
+func (l *logrusEntryWrapper) IsError() bool {
+	return l.e.Logger.IsLevelEnabled(logrus.ErrorLevel)
 }
 
-func (*logrusEntryWrapper) IsWarn() bool {
-	return defaultLogger.IsLevelEnabled(logrus.WarnLevel)
+func (l *logrusEntryWrapper) IsWarn() bool {
+	return l.e.Logger.IsLevelEnabled(logrus.WarnLevel)
 }
 
 type logrusCallerFormatter struct {
