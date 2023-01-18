@@ -2481,7 +2481,7 @@ func (c *Controller) copyObjectFull(ctx context.Context, repo *catalog.Repositor
 	}
 
 	// create entry for the final copy
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, dstEntry, graveler.WithMaxTries(1))
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, dstEntry)
 	if err != nil {
 		return nil, err
 	}

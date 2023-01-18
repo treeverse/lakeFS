@@ -137,7 +137,7 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 	}
 
 	if entry == nil {
-		entry, err = copyObjectFull(ctx, o, repository, branch, srcPath.Path, o.Path, srcEntry)
+		entry, err = copyObjectFull(ctx, o, srcPath, srcEntry)
 		if err != nil {
 			o.Log(req).WithError(err).Error("could create a full copy source")
 			_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopyDest))
@@ -169,17 +169,17 @@ func copyObjectShallow(ctx context.Context, c catalog.Interface, repository stri
 	return &dstEntry, nil
 }
 
-func copyObjectFull(ctx context.Context, c *PathOperation, repository string, branch string, srcPath string, destPath string, srcEntry *catalog.DBEntry) (*catalog.DBEntry, error) {
+func copyObjectFull(ctx context.Context, o *PathOperation, srcPath path.ResolvedAbsolutePath, srcEntry *catalog.DBEntry) (*catalog.DBEntry, error) {
 	var err error
 	// fetch src entry if needed - optimization in case we already have the entry
 	if srcEntry == nil {
-		srcEntry, err = c.Catalog.GetEntry(ctx, repository, branch, srcPath, catalog.GetEntryParams{ReturnExpired: true})
+		srcEntry, err = o.Catalog.GetEntry(ctx, srcPath.Repo, srcPath.Reference, srcPath.Path, catalog.GetEntryParams{ReturnExpired: true})
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	repo, err := c.Catalog.GetRepository(ctx, repository)
+	srcRepo, err := o.Catalog.GetRepository(ctx, srcPath.Repo)
 	if err != nil {
 		return nil, err
 	}
@@ -187,18 +187,18 @@ func copyObjectFull(ctx context.Context, c *PathOperation, repository string, br
 	// copy data to a new physical address
 	dstEntry := *srcEntry
 	dstEntry.CreationDate = time.Now().UTC()
-	dstEntry.Path = destPath
+	dstEntry.Path = o.Path
 	dstEntry.AddressType = catalog.AddressTypeRelative
-	dstEntry.PhysicalAddress = c.PathProvider.NewPath()
-	srcObject := block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: srcEntry.PhysicalAddress}
-	destObj := block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: dstEntry.PhysicalAddress}
-	err = c.BlockStore.Copy(ctx, srcObject, destObj)
+	dstEntry.PhysicalAddress = o.PathProvider.NewPath()
+	srcObject := block.ObjectPointer{StorageNamespace: srcRepo.StorageNamespace, Identifier: srcEntry.PhysicalAddress}
+	destObj := block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: dstEntry.PhysicalAddress}
+	err = o.BlockStore.Copy(ctx, srcObject, destObj)
 	if err != nil {
 		return nil, err
 	}
 
 	// create entry for the final copy
-	err = c.Catalog.CreateEntry(ctx, repository, branch, dstEntry, graveler.WithMaxTries(1))
+	err = o.Catalog.CreateEntry(ctx, o.Repository.Name, o.Reference, dstEntry)
 	if err != nil {
 		return nil, err
 	}
