@@ -82,7 +82,7 @@ func fakeGravelerBuildKey(repositoryID graveler.RepositoryID, ref graveler.Ref, 
 	return strings.Join([]string{repositoryID.String(), ref.String(), key.String()}, "/")
 }
 
-func (g *FakeGraveler) Get(_ context.Context, repository *graveler.RepositoryRecord, ref graveler.Ref, key graveler.Key) (*graveler.Value, error) {
+func (g *FakeGraveler) Get(_ context.Context, repository *graveler.RepositoryRecord, ref graveler.Ref, key graveler.Key, opts ...graveler.GetOptionsFunc) (*graveler.Value, error) {
 	if g.Err != nil {
 		return nil, g.Err
 	}

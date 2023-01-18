@@ -1109,7 +1109,7 @@ func TestManager_IsTokenExpired(t *testing.T) {
 		t.Fatalf("expected token expired")
 	}
 
-	expired, err = r.IsLinkAddressExpired(&graveler.LinkAddressData{Address: "aaa"})
+	_, err = r.IsLinkAddressExpired(&graveler.LinkAddressData{Address: "aaa"})
 	if !errors.Is(err, xid.ErrInvalidID) {
 		t.Fatalf("err = %s, expected invalid xid", err)
 	}
