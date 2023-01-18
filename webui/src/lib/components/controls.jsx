@@ -107,8 +107,9 @@ export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => 
 
 
 export const ActionGroup = ({ children, orientation = "left" }) => {
+    const side = (orientation === 'right') ? 'ms-auto' : '';
     return (
-        <div role="toolbar" className={`float-${orientation} mb-2 btn-toolbar`}>
+        <div role="toolbar" className={`${side} mb-2 btn-toolbar action-group-${orientation}`}>
             {children}
         </div>
     );
@@ -116,7 +117,7 @@ export const ActionGroup = ({ children, orientation = "left" }) => {
 
 export const ActionsBar = ({ children }) => {
     return (
-        <div className="action-bar clearfix">
+        <div className="action-bar d-flex mb-3">
             {children}
         </div>
     );
@@ -362,7 +363,7 @@ export const Warning = (props) =>
 </>;
 
 export const Warnings = ({ warnings = [] }) => {
-    return <ul className="pl-0 ml-0 warnings">
+    return <ul className="pl-0 ms-0 warnings">
            {warnings.map((warning, i) =>
            <Warning key={i}>{warning}</Warning>
            )}

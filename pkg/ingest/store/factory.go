@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/Azure/azure-pipeline-go/pipeline"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/block/params"
@@ -133,24 +133,24 @@ func (f *walkerFactory) buildGCSWalker(ctx context.Context) (*gcsWalker, error) 
 }
 
 func (f *walkerFactory) buildAzureWalker() (*azureBlobWalker, error) {
-	var p pipeline.Pipeline
+	var (
+		c   *service.Client
+		err error
+	)
 	if f.params != nil {
-		azureParams, err := f.params.BlockstoreAzureParams()
+		var azureParams params.Azure
+		azureParams, err = f.params.BlockstoreAzureParams()
 		if err != nil {
 			return nil, err
 		}
-		p, err = factory.BuildAzureClient(azureParams)
-		if err != nil {
-			return nil, err
-		}
+		c, err = factory.BuildAzureServiceClient(azureParams)
 	} else {
-		var err error
-		p, err = getAzureClient()
-		if err != nil {
-			return nil, err
-		}
+		c, err = getAzureClient()
 	}
-	return NewAzureBlobWalker(p)
+	if err != nil {
+		return nil, err
+	}
+	return NewAzureBlobWalker(c)
 }
 
 func (f *walkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*WalkerWrapper, error) {

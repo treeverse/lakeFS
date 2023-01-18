@@ -2,7 +2,6 @@ package plugins
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 
@@ -25,17 +24,20 @@ type ClosingFunc func()
 
 // PluginIdentity identifies the plugin's version and executable location.
 type PluginIdentity struct {
-	Version            int
+	Version int
+	// ExecutableLocation is the full path to the plugin executable on the local filesystem.
 	ExecutableLocation string
 }
 
-// PluginAuth includes authentication properties for the plugin.
-type PluginAuth struct {
+// PluginHandshake includes handshake properties for the plugin.
+type PluginHandshake struct {
 	Key   string
 	Value string
 }
 
-// The Manager holds a map for different kinds of possible plugin clients.
+// Manager maps the available plugin client names to the for different kinds of plugin clients.
+// Type T is the custom interface type that the plugin clients implement, e.g. "Differ" for plugin clients that
+// implement the Differ interface.
 // For example, the clients map might contain a mapping of "delta" -> plugin.Client to communicate with the Delta
 // plugin.
 type Manager[T any] struct {
@@ -49,7 +51,7 @@ func NewManager[T any]() *Manager[T] {
 }
 
 // RegisterPlugin is used to register a new plugin client with the corresponding plugin type.
-func (m *Manager[T]) RegisterPlugin(name string, id PluginIdentity, auth PluginAuth, p plugin.Plugin) error {
+func (m *Manager[T]) RegisterPlugin(name string, id PluginIdentity, auth PluginHandshake, p plugin.Plugin) error {
 	if m == nil {
 		return ErrUninitializedManager
 	}
@@ -59,7 +61,7 @@ func (m *Manager[T]) RegisterPlugin(name string, id PluginIdentity, auth PluginA
 		MagicCookieValue: auth.Value,
 	}
 	cmd := exec.Command(id.ExecutableLocation) //nolint:gosec
-	c, err := pluginClient(name, p, hc, cmd)
+	c, err := newPluginClient(name, p, hc, cmd)
 	if err != nil {
 		return err
 	}
@@ -71,7 +73,7 @@ func (m *Manager[T]) RegisterPlugin(name string, id PluginIdentity, auth PluginA
 	return nil
 }
 
-func pluginClient(name string, p plugin.Plugin, hc plugin.HandshakeConfig, cmd *exec.Cmd) (*plugin.Client, error) {
+func newPluginClient(name string, p plugin.Plugin, hc plugin.HandshakeConfig, cmd *exec.Cmd) (*plugin.Client, error) {
 	clientConfig := plugin.ClientConfig{
 		Plugins: map[string]plugin.Plugin{
 			name: p,
@@ -80,12 +82,8 @@ func pluginClient(name string, p plugin.Plugin, hc plugin.HandshakeConfig, cmd *
 		HandshakeConfig:  hc,
 		Cmd:              cmd,
 	}
-	return newPluginClient(name, clientConfig)
-}
-
-func newPluginClient(clientName string, clientConfig plugin.ClientConfig) (*plugin.Client, error) {
 	hl := hclog.New(&hclog.LoggerOptions{
-		Name:   fmt.Sprintf("%s_logger", clientName),
+		Name:   name,
 		Output: os.Stdout,
 		Level:  hclog.Debug,
 	})

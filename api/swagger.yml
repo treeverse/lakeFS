@@ -246,6 +246,10 @@ components:
           enum: [common_prefix, object]
         physical_address:
           type: string
+          description: |
+            The location of the object on the underlying object store.
+            Formatted as a native URI with the object store type as scheme ("s3://...", "gs://...", etc.)
+            Or, in the case of presign=true, will be an HTTP URL to be consumed via regular HTTP GET
         checksum:
           type: string
         size_bytes:
@@ -874,6 +878,12 @@ components:
           type: boolean
         upgrade_url:
           type: string
+    GarbageCollectionConfig:
+      type: object
+      properties:
+        grace_period:
+          description: Duration in seconds. Objects created in the recent grace_period will not be collected.
+          type: integer
 
     ActionRun:
       type: object
@@ -965,6 +975,11 @@ components:
         token:
           type: string
           description: opaque staging token to use to link uploaded object
+        presigned_url:
+          type: string
+          nullable: true
+          description: if presign=true is passed in the request, this field will contain a presigned URL to use when uploading
+
 
     StagingMetadata:
       type: object
@@ -2773,6 +2788,11 @@ paths:
           schema:
             type: string
             pattern: '^bytes=((\d*-\d*,? ?)+)$'
+        - in: query
+          name: presign
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: object content
@@ -2812,6 +2832,12 @@ paths:
               schema:
                 type: string
             ETag:
+              schema:
+                type: string
+        302:
+          description: Redirect to a pre-signed URL for the object
+          headers:
+            Location:
               schema:
                 type: string
         401:
@@ -2911,6 +2937,12 @@ paths:
         - staging
       operationId: getPhysicalAddress
       summary: get a physical address and a return token to write object to underlying storage
+      parameters:
+        - in: query
+          name: presign
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: physical address for staging area
@@ -3252,6 +3284,11 @@ paths:
         schema:
           type: boolean
           default: true
+      - in: query
+        name: presign
+        required: false
+        schema:
+          type: boolean
     get:
       tags:
         - objects
@@ -3330,6 +3367,11 @@ paths:
         schema:
           type: boolean
           default: true
+      - in: query
+        name: presign
+        required: false
+        schema:
+          type: boolean
       - $ref: "#/components/parameters/PaginationAfter"
       - $ref: "#/components/parameters/PaginationAmount"
       - $ref: "#/components/parameters/PaginationDelimiter"
@@ -3829,6 +3871,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StorageConfig"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+  /config/garbage-collection:
+    get:
+      tags:
+        - config
+      operationId: getGarbageCollectionConfig
+      description: get information of gc settings
+      responses:
+        200:
+          description: lakeFS garbage collection config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarbageCollectionConfig"
         401:
           $ref: "#/components/responses/Unauthorized"
   /templates/{template_location}:

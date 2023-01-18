@@ -15,11 +15,13 @@ import {
 } from "@primer/octicons-react";
 import Button from "react-bootstrap/Button";
 import dayjs from "dayjs";
+import  duration  from "dayjs/plugin/duration";
 import {ActionStatusIcon} from "../../../../../lib/components/repository/actions";
 import Table from "react-bootstrap/Table";
 import {Link} from "../../../../../lib/components/nav";
 import {useRouter} from "../../../../../lib/hooks/router";
 
+dayjs.extend(duration)
 
 const RunSummary = ({ repo, run }) => {
     return (
@@ -41,7 +43,7 @@ const RunSummary = ({ repo, run }) => {
                     <td><strong>Branch</strong></td>
                     <td>
                     {(!run.branch) ? <Na/> :
-                        <Link className="mr-2" href={{
+                        <Link className="me-2" href={{
                             pathname: '/repositories/:repoId/objects',
                             params: {repoId: repo.id},
                             query: {ref: run.branch}
@@ -54,7 +56,7 @@ const RunSummary = ({ repo, run }) => {
                 <tr>
                     <td><strong>Commit</strong></td>
                     <td>
-                        {(!run.commit_id) ? <Na/> : <Link className="mr-2" href={{
+                        {(!run.commit_id) ? <Na/> : <Link className="me-2" href={{
                         pathname: '/repositories/:repoId/commits/:commitId',
                         params: {repoId: repo.id, commitId: run.commit_id}
                         }}>

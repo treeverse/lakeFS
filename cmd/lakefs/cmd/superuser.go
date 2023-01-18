@@ -75,7 +75,7 @@ var superuserCmd = &cobra.Command{
 		}
 
 		ctx, cancelFn := context.WithCancel(ctx)
-		collector := stats.NewBufferedCollector(metadata.InstallationID, cfg, stats.WithLogger(logger))
+		collector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(cfg.Stats), stats.WithLogger(logger))
 		collector.Run(ctx)
 		defer collector.Close()
 

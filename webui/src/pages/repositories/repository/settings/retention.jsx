@@ -129,13 +129,13 @@ const GCPolicy = ({repo}) => {
     return <div className="mt-3 mb-5">
         <div className={"section-title"}>
             <h4 className={"mb-0"}>
-                <div className={"ml-1 mr-1 pl-0 row flex"}>
-                    <div className={"flex-fill"}>Garbage collection policy</div>
-                    <RefreshButton className={"ml-1"} onClick={doRefresh}/>
+                <div className={"ms-1 me-1 pl-0 d-flex"}>
+                    <div className="flex-grow-1">Garbage collection policy</div>
+                    <RefreshButton className={"ms-1"} onClick={doRefresh}/>
                     {!error && !loading && !isPolicyNotSet &&
-                        <Button className={"ml-2 btn-secondary"} disabled={isActionsDisabled} onClick={onDelete}>Delete
+                        <Button className={"ms-2 btn-secondary"} disabled={isActionsDisabled} onClick={onDelete}>Delete
                             Policy</Button>}
-                    <Button className={"ml-2"} disabled={isActionsDisabled} onClick={() => setShowCreate(true)}>Edit Policy</Button>
+                    <Button className={"ms-2"} disabled={isActionsDisabled} onClick={() => setShowCreate(true)}>Edit Policy</Button>
                 </div>
             </h4>
         </div>

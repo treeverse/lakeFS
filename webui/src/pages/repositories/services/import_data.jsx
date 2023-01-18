@@ -88,7 +88,7 @@ const ImportProgress = ({numObjects}) => {
 const ImportDone = ({numObjects, importBranch, currBranch = ''}) => {
     return (<Row>
         <Col>
-            <div className={"mt-10 mb-2 mr-2 row mt-4 import-success"}>
+            <div className={"mt-10 mb-2 me-2 row mt-4 import-success"}>
                 <p><strong>Success!</strong></p>
             </div>
             <div className='import-text'>
@@ -171,7 +171,7 @@ const ImportForm = ({
             {shouldAddPath &&
                 <Form.Group className='form-group'>
                     <Form.Label><strong>Destination:</strong></Form.Label>
-                    <Row noGutters={true}>
+                    <Row className="g-0">
                         <Col className="col-auto d-flex align-items-center justify-content-start">
                             {basePath}
                         </Col>

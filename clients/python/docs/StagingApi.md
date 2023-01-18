@@ -68,11 +68,21 @@ with lakefs_client.ApiClient(configuration) as api_client:
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
     path = "path_example" # str | relative to the branch
+    presign = True # bool |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
         # get a physical address and a return token to write object to underlying storage
         api_response = api_instance.get_physical_address(repository, branch, path)
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling StagingApi->get_physical_address: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # get a physical address and a return token to write object to underlying storage
+        api_response = api_instance.get_physical_address(repository, branch, path, presign=presign)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling StagingApi->get_physical_address: %s\n" % e)
@@ -86,6 +96,7 @@ Name | Type | Description  | Notes
  **repository** | **str**|  |
  **branch** | **str**|  |
  **path** | **str**| relative to the branch |
+ **presign** | **bool**|  | [optional]
 
 ### Return type
 
@@ -180,6 +191,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
         staging=StagingLocation(
             physical_address="physical_address_example",
             token="token_example",
+            presigned_url="presigned_url_example",
         ),
         checksum="checksum_example",
         size_bytes=1,

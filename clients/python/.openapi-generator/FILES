@@ -25,6 +25,7 @@ docs/Diff.md
 docs/DiffList.md
 docs/Error.md
 docs/ForgotPasswordRequest.md
+docs/GarbageCollectionConfig.md
 docs/GarbageCollectionPrepareRequest.md
 docs/GarbageCollectionPrepareResponse.md
 docs/GarbageCollectionRule.md
@@ -136,6 +137,7 @@ lakefs_client/model/diff.py
 lakefs_client/model/diff_list.py
 lakefs_client/model/error.py
 lakefs_client/model/forgot_password_request.py
+lakefs_client/model/garbage_collection_config.py
 lakefs_client/model/garbage_collection_prepare_request.py
 lakefs_client/model/garbage_collection_prepare_response.py
 lakefs_client/model/garbage_collection_rule.py
@@ -226,6 +228,7 @@ test/test_diff.py
 test/test_diff_list.py
 test/test_error.py
 test/test_forgot_password_request.py
+test/test_garbage_collection_config.py
 test/test_garbage_collection_prepare_request.py
 test/test_garbage_collection_prepare_response.py
 test/test_garbage_collection_rule.py

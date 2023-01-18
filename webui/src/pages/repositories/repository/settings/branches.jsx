@@ -29,10 +29,10 @@ const SettingsContainer = () => {
         <div className="mt-3 mb-5">
             <div className={"section-title"}>
                 <h4 className={"mb-0"}>
-                    <div className={"ml-1 mr-1 pl-0 row flex"}>
-                        <div className={"flex-fill"}>Branch protection rules</div>
-                        <RefreshButton className={"ml-1"} onClick={() => {setRefresh(!refresh)}}/>
-                        <Button className={"ml-2"} onClick={() => setShowCreateModal(true)}>Add</Button>
+                    <div className={"ms-1 me-1 pl-0 d-flex"}>
+                        <div className="flex-grow-1">Branch protection rules</div>
+                        <RefreshButton className={"ms-1"} onClick={() => {setRefresh(!refresh)}}/>
+                        <Button className={"ms-2"} onClick={() => setShowCreateModal(true)}>Add</Button>
                     </div>
                 </h4>
             </div>
@@ -42,16 +42,16 @@ const SettingsContainer = () => {
                 {/* eslint-disable-next-line react/jsx-no-target-blank */}
                 <a href="https://docs.lakefs.io/reference/protected_branches.html" target="_blank">Learn more.</a>
             </div>
-            {loading || rulesLoading ? <div className={"mt-3 ml-1 pr-5"}><Loading/></div> :
-                <div className={"row mt-3 ml-1 pr-5"}>
+            {loading || rulesLoading ? <div className={"mt-3 ms-1 pr-5"}><Loading/></div> :
+                <div className={"row mt-3 ms-1 pr-5"}>
                     <Card className={"w-100 rounded border-0"}>
                         <Card.Body className={"p-0 rounded"}>
                             <ListGroup>
                                 {rules && rules.length > 0 ? rules.map(r => {
                                     return <ListGroup.Item >
-                                        <div className={"d-flex"}>
+                                        <div className="d-flex">
                                             <code>{r.pattern}</code>
-                                            <Button disabled={deleteButtonDisabled} className={"ml-auto"} size={"sm"} variant="secondary" onClick={() => {
+                                            <Button disabled={deleteButtonDisabled} className="ms-auto" size="sm" variant="secondary" onClick={() => {
                                                 setDeleteButtonDisabled(true)
                                                 branchProtectionRules.deleteRule(repo.id, r.pattern).then(() => {
                                                     setRefresh(!refresh)

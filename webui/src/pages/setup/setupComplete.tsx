@@ -46,25 +46,25 @@ export const SetupComplete: FC<SetupCompleteProps> = ({
     return (
         <>
         <Row>
-            <Col md={{offset: 2, span: 8}}>
+            <Col md={{offset: 4, span: 4}}>
                 <Card className="setup-widget">
                     <Card.Body className="after-setup-card">
                         <h2>You&apos;re all set!</h2>
                         <Card.Text>
                             Here are the credentials for your first user:<br/>
                         </Card.Text>
-                        <div className="ml-2 row mt-4">
+                        <div className="ms-2 row mt-4">
                             <div className="col-3">Access Key ID:</div>
                             <div className="col-7"><code>{accessKeyId}</code> &#160;&#160;<ClipboardButton onSuccess={noop} onError={noop} className={"copy-button"} variant="outline-dark" text={accessKeyId} tooltip="Copy"/></div>
                         </div>
-                        <div className="ml-2 row mt-2">
+                        <div className="ms-2 row mt-2">
                             <div className="col-3">Secret Access Key:</div>
                             <div className="col-7"><code>{secretAccessKey}</code> &#160;&#160;<ClipboardButton onSuccess={noop} onError={noop} className={"copy-button"} variant="outline-dark" text={secretAccessKey} tooltip="Copy"/></div>
                         </div>
                         <Alert className="mt-4" variant="warning">
                             This is the <strong>only</strong> time that the secret access keys can be viewed or downloaded. You cannot recover them later.
                         </Alert>
-                        <div className="mt-4" style={{textAlign: "center"}}>
+                        <div className="mt-3 text-md-center">
                             <Button className="p-2 pl-3 pr-3 after-setup-btn" onClick={goToLoginHandler}>Go To Login</Button>
                         </div>
                     </Card.Body>
@@ -72,18 +72,19 @@ export const SetupComplete: FC<SetupCompleteProps> = ({
             </Col>
         </Row>
             <Row>
-                <Col md={{offset: 2, span: 8}}>
+                <Col md={{offset: 4, span: 4}}>
                     <Card className="mt-5">
                         <Card.Body className="after-setup-card">
                             <h5>Configure lakectl</h5>
-                            <div>Use the command-line tool to perform Git-like operations on your data. Save the configuration file under <code>~/.lakectl.yaml</code>:</div>
-                            <div className="mt-3" style={{textAlign: "center"}}>
-                                <a className="btn p-2 pl-3 pr-3 after-setup-btn" href={downloadContent}
-                                        target="_blank" rel="noreferrer" download="lakectl.yaml"><DownloadIcon/> Download Configuration
-                                </a>
-                            </div>
-                            <div className="mt-3">
+                            <div>Use the command-line tool to perform Git-like operations on your data.<br/> Save the configuration file under <code>~/.lakectl.yaml</code>:</div>
+                            <p className="mt-2">
                                 To use lakectl, you will need to download the binary. <a href="https://www.youtube.com/watch?v=8nO7RT411nA" rel="noreferrer" target={"_blank"}>Learn more</a>.
+                            </p>
+                            <div className="mt-3 text-md-center">
+                                <a className="btn p-2 pl-3 pr-3 after-setup-btn"
+                                   href={downloadContent}
+                                   target="_blank" rel="noreferrer" download="lakectl.yaml"><DownloadIcon/> Download Configuration
+                                </a>
                             </div>
                         </Card.Body>
                     </Card>
