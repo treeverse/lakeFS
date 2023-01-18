@@ -54,7 +54,7 @@ body:
     attributes:
       label: Affected Clients
       description: If applicable provide lakeFS client and version that was used
-      placeholder: ex. hadoop-lakefs 0.1.9, python lakefs-client 0.89.0
+      placeholder: ex. hadoop-lakefs 0.1.10, python lakefs-client 0.89.0
     validations:
       required: false
   - type: textarea
