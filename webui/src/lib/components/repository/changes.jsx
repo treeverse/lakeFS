@@ -126,11 +126,10 @@ function treeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
     // presented at the object level. Therefore, in case of tables that were added or removed we don't know
     // under which of the diff refs the table root is expected to be listed and therefore we try to get the table type
     // from both and take the one that returned results.
-    const tableTypeFromRight = tablesUtil.getTableType(entry.path, repo, rightDiffRefID);
-    const tableTypeFromLeft = tablesUtil.getTableType(entry.path, repo, leftDiffRefID);
-    const tableType = tableTypeFromRight !== null ? tableTypeFromRight : tableTypeFromLeft;
-    if (tableType !== null) {
-        return tablesUtil.tableTypetoTreeItemType(tableType);
+    const isDeltaTableFromRight = tablesUtil.isDeltaLakeTable(entry.path, repo, rightDiffRefID);
+    const isDeltaTableFromLeft = tablesUtil.isDeltaLakeTable(entry.path, repo, leftDiffRefID);
+    if (isDeltaTableFromLeft || isDeltaTableFromRight) {
+        return TreeItemType.DeltaLakeTable;
     }
     return TreeItemType.Prefix;
 }

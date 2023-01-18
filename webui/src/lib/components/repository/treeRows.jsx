@@ -50,7 +50,7 @@ export const ObjectTreeEntryRow = ({entry, relativeTo = "", diffExpanded, depth 
     const [showRevertConfirm, setShowRevertConfirm] = useState(false)
     let rowClass = 'tree-entry-row ' + diffType(entry);
     let pathSection = extractPathText(entry, relativeTo);
-    let diffIndicator = diffIndicatorIcon(entry);
+    const diffIndicator = <DiffIndicationIcon entry={entry}/>;
 
     const rowActions = []
     if (onClickExpandDiff) {
@@ -72,7 +72,7 @@ export const PrefixTreeEntryRow = ({entry, relativeTo = "", dirExpanded, depth =
     const [showRevertConfirm, setShowRevertConfirm] = useState(false)
     let rowClass = 'tree-entry-row ' + diffType(entry);
     let pathSection = extractPathText(entry, relativeTo);
-    let diffIndicator = diffIndicatorIcon(entry);
+    let diffIndicator = <DiffIndicationIcon entry={entry}/>;
     const [showSummary, setShowSummary] = useState(false);
     if (entry.path_type === "common_prefix") {
         pathSection = <Link href={onNavigate(entry)}>{pathSection}</Link>
@@ -88,9 +88,9 @@ export const PrefixTreeEntryRow = ({entry, relativeTo = "", dirExpanded, depth =
     return (
         <TableRow rowClass={rowClass} entry={entry} diffIndicator={diffIndicator} getMore={getMore} rowActions={rowActions}
                   onRevert={onRevert} depth={depth} loading={loading} pathSection={pathSection}
-                  pathExpensionSection={<PrefixExpansionSection dirExpanded={dirExpanded} onClick={onClick}
+                  pathExpensionSection={<PrefixExpansionSection dirExpanded={dirExpanded} onClick={onClick}/>}
                                                                 showRevertConfirm={showRevertConfirm} setShowRevertConfirm={() => setShowRevertConfirm(false)}
-        />}/>
+        />
     );
 };
 
@@ -98,8 +98,7 @@ export const TableTreeEntryRow = ({entry, relativeTo = "", onClickExpandDiff, de
     const [showRevertConfirm, setShowRevertConfirm] = useState(false)
     let rowClass = 'tree-entry-row ' + diffType(entry);
     let pathSection = extractTableName(entry, relativeTo);
-    const diffIndicator =  <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-prefix"}>Table changed</Tooltip>)}><span><TableIcon/></span>
-    </OverlayTrigger>
+    const diffIndicator = <DiffIndicationIcon entry={entry} isTableRow={true}/>
 
     const rowActions = []
     rowActions.push(new RowAction(<DiffIcon/>, "Show table changes", true, onClickExpandDiff))
@@ -167,45 +166,6 @@ function diffType(entry) {
     }
 }
 
-function diffIndicatorIcon(entry) {
-    if (entry.path_type === 'common_prefix') {
-        return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-prefix"}>Changes under prefix</Tooltip>)}>
-                        <span>
-                            <FileDirectoryIcon/>
-                        </span>
-        </OverlayTrigger>;
-    }
-
-    switch (entry.type) {
-        case 'removed':
-            return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-removed"}>Removed</Tooltip>)}>
-                        <span>
-                            <TrashIcon/>
-                        </span>
-            </OverlayTrigger>;
-        case 'added':
-            return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-added"}>Added</Tooltip>)}>
-                        <span>
-                            <PlusIcon/>
-                        </span>
-            </OverlayTrigger>;
-        case 'changed':
-            return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-changed"}>Changed</Tooltip>)}>
-                        <span>
-                            <PencilIcon/>
-                        </span>
-            </OverlayTrigger>;
-        case 'conflict':
-            return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-conflict"}>Conflict</Tooltip>)}>
-                        <span>
-                            <CircleSlashIcon/>
-                        </span>
-            </OverlayTrigger>;
-        default:
-            return '';
-    }
-}
-
 function extractTableName(entry, relativeTo) {
     let pathText = entry.path;
     if (pathText.startsWith(relativeTo)) {
@@ -215,4 +175,50 @@ function extractTableName(entry, relativeTo) {
         pathText = pathText.slice(0,-1)
     }
     return pathText;
+}
+
+export const DiffIndicationIcon = ({entry, isTableRow = false}) => {
+    let diffIcon;
+    let tooltipId;
+    let tooltipText;
+    if (entry.path_type === 'common_prefix') {
+        diffIcon = <FileDirectoryIcon/>;
+        tooltipId = "tooltip-prefix";
+        tooltipText = "Changes under prefix";
+    }
+    if (isTableRow) {
+        diffIcon = <TableIcon/>;
+        tooltipId = "tooltip-table";
+        tooltipText = "Table changed"
+    }
+
+    switch (entry.type) {
+        case 'removed':
+            diffIcon = <TrashIcon/>;
+            tooltipId = "tooltip-removed";
+            tooltipText = "Removed";
+            break;
+        case 'added':
+            diffIcon = <PlusIcon/>;
+            tooltipId = "tooltip-added";
+            tooltipText = "Added";
+            break;
+        case 'changed':
+            diffIcon = <PencilIcon/>;
+            tooltipId = "tooltip-changed";
+            tooltipText = "Changed";
+            break;
+        case 'conflict':
+            diffIcon = <CircleSlashIcon/>;
+            tooltipId = "tooltip-conflict";
+            tooltipText = "Conflict";
+            break;
+        default:
+    }
+
+    return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={tooltipId}>{tooltipText}</Tooltip>)}>
+                <span>
+                    {diffIcon}
+                </span>
+        </OverlayTrigger>;
 }

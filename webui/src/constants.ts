@@ -6,6 +6,3 @@ export enum TreeItemType {
     Prefix,
     DeltaLakeTable
 }
-export enum TableType {
-    DeltaLake
-}
