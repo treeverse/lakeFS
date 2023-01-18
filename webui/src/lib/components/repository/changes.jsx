@@ -1,9 +1,9 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 
 import {
     ClockIcon
 } from "@primer/octicons-react";
-import {useAPIWithPagination} from "../../hooks/api";
+import {useAPI, useAPIWithPagination} from "../../hooks/api";
 import {Error} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
 import {TreeItemType} from "../../../constants";
@@ -51,13 +51,13 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
     if (error)
         return <Error error={error}/>
 
-    const itemType = treeItemType(entry, repo, leftDiffRefID, rightDiffRefID);
+    const itemType = useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID);
 
-    if (loading && results.length === 0)
+    if (itemType.loading || (loading && results.length === 0))
         return <ObjectTreeEntryRow key={entry.path+"entry-row"} entry={entry} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference}
                                    getMore={getMore}/>
 
-    if (treeItemType === TreeItemType.Object) {
+    if (itemType.type === TreeItemType.Object) {
         return <>
             <ObjectTreeEntryRow key={entry.path + "entry-row"} entry={entry} relativeTo={relativeTo}
                                 depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert} repo={repo}
@@ -76,7 +76,7 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
             </tr>
             }
         </>
-    } else if (itemType === TreeItemType.Prefix) {
+    } else if (itemType.type === TreeItemType.Prefix) {
         return <>
             <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
             {dirExpanded && results &&
@@ -116,19 +116,35 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
     );
 };
 
-function treeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
-    if (entry.path_type === "object") {
-        return TreeItemType.Object;
-    }
+function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
+    const [treeItemType, setTreeItemType] = useState({type: null, loading: true});
 
     // Tree items that represent prefixes are always of entry.type = prefix_changed and the actual diff type is
     // presented at the object level. Therefore, in case of tables that were added or removed we don't know
     // under which of the diff refs the table root is expected to be listed and therefore we try to get the table type
     // from both and take the one that returned results.
-    const isDeltaTableFromRight = tablesUtil.isDeltaLakeTable(entry.path, repo, rightDiffRefID);
-    const isDeltaTableFromLeft = tablesUtil.isDeltaLakeTable(entry.path, repo, leftDiffRefID);
-    if (isDeltaTableFromLeft || isDeltaTableFromRight) {
-        return TreeItemType.DeltaLakeTable;
-    }
-    return TreeItemType.Prefix;
+    let leftResult = useAPI(() => {
+        if (entry.path_type === "object") {
+            return
+        }
+        return tablesUtil.isDeltaLakeTable(entry.path, repo, rightDiffRefID)
+    });
+    let rightResult = useAPI(() => {
+        if (entry.path_type === "object") {
+            return
+        }
+        return tablesUtil.isDeltaLakeTable(entry.path, repo, leftDiffRefID);
+    });
+
+    useEffect(() => {
+        if (entry.path_type === "object") {
+            setTreeItemType({type: TreeItemType.Object, loading: false});
+            return
+        }
+        if (!leftResult.loading && !rightResult.loading) {
+            setTreeItemType({type: leftResult.response || leftResult.response ? TreeItemType.DeltaLakeTable : TreeItemType.Prefix, loading: false});
+        }
+    }, [leftResult, rightResult])
+
+    return treeItemType;
 }

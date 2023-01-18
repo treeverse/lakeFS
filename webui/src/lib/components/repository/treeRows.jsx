@@ -62,7 +62,7 @@ export const ObjectTreeEntryRow = ({entry, relativeTo = "", diffExpanded, depth 
         }))
     }
     return (
-        <TableRow rowClass={rowClass} entry={entry} diffIndicator={diffIndicator} rowActions={rowActions}
+        <TableRow className={rowClass} entry={entry} diffIndicator={diffIndicator} rowActions={rowActions}
                   onRevert={onRevert} depth={depth} loading={loading} pathSection={pathSection}
                   showRevertConfirm={showRevertConfirm} setShowRevertConfirm={() => setShowRevertConfirm(false)}/>
     );
@@ -86,10 +86,10 @@ export const PrefixTreeEntryRow = ({entry, relativeTo = "", dirExpanded, depth =
     }
 
     return (
-        <TableRow rowClass={rowClass} entry={entry} diffIndicator={diffIndicator} getMore={getMore} rowActions={rowActions}
+        <TableRow className={rowClass} entry={entry} diffIndicator={diffIndicator} getMore={getMore} rowActions={rowActions}
                   onRevert={onRevert} depth={depth} loading={loading} pathSection={pathSection} showSummary={showSummary}
-                  pathExpensionSection={<PrefixExpansionSection dirExpanded={dirExpanded} onClick={onClick}/>}
-                                                                showRevertConfirm={showRevertConfirm} setShowRevertConfirm={() => setShowRevertConfirm(false)}
+                  dirExpanded={dirExpanded} onExpand={onClick}
+                  showRevertConfirm={showRevertConfirm} setShowRevertConfirm={() => setShowRevertConfirm(false)}
         />
     );
 };
@@ -108,7 +108,7 @@ export const TableTreeEntryRow = ({entry, relativeTo = "", onClickExpandDiff, de
         }))
     }
     return (
-        <TableRow rowClass={rowClass} entry={entry} diffIndicator={diffIndicator} rowActions={rowActions}
+        <TableRow className={rowClass} entry={entry} diffIndicator={diffIndicator} rowActions={rowActions}
                   onRevert={onRevert} depth={depth} loading={loading} pathSection={pathSection}
                   showRevertConfirm={showRevertConfirm} setShowRevertConfirm={() => setShowRevertConfirm(false)}/>
     );
@@ -120,13 +120,13 @@ const PrefixExpansionSection = ({dirExpanded, onClick}) => {
             </span>)
 }
 
-const TableRow = ({rowClass, diffIndicator, depth, loading, pathExpensionSection, showSummary, entry, getMore, rowActions,
-                      showRevertConfirm, setShowRevertConfirm, pathSection, onRevert}) => {
-    return (<tr className={rowClass}>
+const TableRow = ({diffIndicator, depth, loading, showSummary, entry, getMore, rowActions,
+                      showRevertConfirm, setShowRevertConfirm, pathSection, onRevert, dirExpanded, onExpand, ...rest}) => {
+    return (<tr {...rest}>
                 <td className="pl-4 col-auto p-2">{diffIndicator}</td>
                 <td className="col-9 tree-path">
                         <span style={{marginLeft: (depth * 20) + "px"}}>
-                            {pathExpensionSection}
+                            {onExpand && <PrefixExpansionSection dirExpanded={dirExpanded} onClick={onExpand}/>}
                             {loading ? <ClockIcon/> : ""}
                             {pathSection}
                         </span>
