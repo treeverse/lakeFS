@@ -69,21 +69,11 @@ with lakefs_client.ApiClient(configuration) as api_client:
     right_ref = "right_ref_example" # str | 
     table_path = "table_path_example" # str | a path to the table location under the specified ref.
     type = "type_example" # str | the type of otf
-    base_ref = "base_ref_example" # str | base ref to compare a three way diff (optional)
 
     # example passing only required values which don't have defaults set
     try:
         # perform otf diff
         api_response = api_instance.otf_diff(repository, left_ref, right_ref, table_path, type)
-        pprint(api_response)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling ExperimentalApi->otf_diff: %s\n" % e)
-
-    # example passing only required values which don't have defaults set
-    # and optional values
-    try:
-        # perform otf diff
-        api_response = api_instance.otf_diff(repository, left_ref, right_ref, table_path, type, base_ref=base_ref)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ExperimentalApi->otf_diff: %s\n" % e)
@@ -99,7 +89,6 @@ Name | Type | Description  | Notes
  **right_ref** | **str**|  |
  **table_path** | **str**| a path to the table location under the specified ref. |
  **type** | **str**| the type of otf |
- **base_ref** | **str**| base ref to compare a three way diff | [optional]
 
 ### Return type
 

@@ -19,6 +19,7 @@ func (d *GRPCClient) Diff(ctx context.Context, paths TablePaths, s3Creds S3Creds
 		Paths: &DiffPaths{
 			LeftPath:  paths.LeftTablePath,
 			RightPath: paths.RightTablePath,
+			// TODO: add base ref
 		},
 		GatewayConfig: &GatewayConfig{
 			Key:      s3Creds.Key,

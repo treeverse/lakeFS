@@ -9,7 +9,7 @@ Method | HTTP request | Description
 
 <a name="otfDiff"></a>
 # **otfDiff**
-> OtfDiffList otfDiff(repository, leftRef, rightRef, tablePath, type, baseRef)
+> OtfDiffList otfDiff(repository, leftRef, rightRef, tablePath, type)
 
 perform otf diff
 
@@ -55,9 +55,8 @@ public class Example {
     String rightRef = "rightRef_example"; // String | 
     String tablePath = "tablePath_example"; // String | a path to the table location under the specified ref.
     String type = "type_example"; // String | the type of otf
-    String baseRef = "baseRef_example"; // String | base ref to compare a three way diff
     try {
-      OtfDiffList result = apiInstance.otfDiff(repository, leftRef, rightRef, tablePath, type, baseRef);
+      OtfDiffList result = apiInstance.otfDiff(repository, leftRef, rightRef, tablePath, type);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ExperimentalApi#otfDiff");
@@ -79,7 +78,6 @@ Name | Type | Description  | Notes
  **rightRef** | **String**|  |
  **tablePath** | **String**| a path to the table location under the specified ref. |
  **type** | **String**| the type of otf |
- **baseRef** | **String**| base ref to compare a three way diff | [optional]
 
 ### Return type
 

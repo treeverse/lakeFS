@@ -2184,12 +2184,6 @@ paths:
         description: the type of otf
         schema:
           type: string
-      - in: query
-        name: base_ref
-        required: false
-        description: base ref to compare a three way diff
-        schema:
-          type: string
     get:
       tags:
         - experimental

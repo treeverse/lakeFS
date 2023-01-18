@@ -62,7 +62,6 @@ public class OtfDiffApi {
      * @param rightRef  (required)
      * @param tablePath a path to the table location under the specified ref. (required)
      * @param type the type of otf (required)
-     * @param baseRef base ref to compare a three way diff (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -76,7 +75,7 @@ public class OtfDiffApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call otfDiffCall(String repository, String leftRef, String rightRef, String tablePath, String type, String baseRef, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call otfDiffCall(String repository, String leftRef, String rightRef, String tablePath, String type, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -99,10 +98,6 @@ public class OtfDiffApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("type", type));
         }
 
-        if (baseRef != null) {
-            localVarQueryParams.addAll(localVarApiClient.parameterToPair("base_ref", baseRef));
-        }
-
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -122,7 +117,7 @@ public class OtfDiffApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call otfDiffValidateBeforeCall(String repository, String leftRef, String rightRef, String tablePath, String type, String baseRef, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call otfDiffValidateBeforeCall(String repository, String leftRef, String rightRef, String tablePath, String type, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -150,7 +145,7 @@ public class OtfDiffApi {
         }
         
 
-        okhttp3.Call localVarCall = otfDiffCall(repository, leftRef, rightRef, tablePath, type, baseRef, _callback);
+        okhttp3.Call localVarCall = otfDiffCall(repository, leftRef, rightRef, tablePath, type, _callback);
         return localVarCall;
 
     }
@@ -163,7 +158,6 @@ public class OtfDiffApi {
      * @param rightRef  (required)
      * @param tablePath a path to the table location under the specified ref. (required)
      * @param type the type of otf (required)
-     * @param baseRef base ref to compare a three way diff (optional)
      * @return OtfDiffList
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -176,8 +170,8 @@ public class OtfDiffApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public OtfDiffList otfDiff(String repository, String leftRef, String rightRef, String tablePath, String type, String baseRef) throws ApiException {
-        ApiResponse<OtfDiffList> localVarResp = otfDiffWithHttpInfo(repository, leftRef, rightRef, tablePath, type, baseRef);
+    public OtfDiffList otfDiff(String repository, String leftRef, String rightRef, String tablePath, String type) throws ApiException {
+        ApiResponse<OtfDiffList> localVarResp = otfDiffWithHttpInfo(repository, leftRef, rightRef, tablePath, type);
         return localVarResp.getData();
     }
 
@@ -189,7 +183,6 @@ public class OtfDiffApi {
      * @param rightRef  (required)
      * @param tablePath a path to the table location under the specified ref. (required)
      * @param type the type of otf (required)
-     * @param baseRef base ref to compare a three way diff (optional)
      * @return ApiResponse&lt;OtfDiffList&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -202,8 +195,8 @@ public class OtfDiffApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<OtfDiffList> otfDiffWithHttpInfo(String repository, String leftRef, String rightRef, String tablePath, String type, String baseRef) throws ApiException {
-        okhttp3.Call localVarCall = otfDiffValidateBeforeCall(repository, leftRef, rightRef, tablePath, type, baseRef, null);
+    public ApiResponse<OtfDiffList> otfDiffWithHttpInfo(String repository, String leftRef, String rightRef, String tablePath, String type) throws ApiException {
+        okhttp3.Call localVarCall = otfDiffValidateBeforeCall(repository, leftRef, rightRef, tablePath, type, null);
         Type localVarReturnType = new TypeToken<OtfDiffList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -216,7 +209,6 @@ public class OtfDiffApi {
      * @param rightRef  (required)
      * @param tablePath a path to the table location under the specified ref. (required)
      * @param type the type of otf (required)
-     * @param baseRef base ref to compare a three way diff (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -230,9 +222,9 @@ public class OtfDiffApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call otfDiffAsync(String repository, String leftRef, String rightRef, String tablePath, String type, String baseRef, final ApiCallback<OtfDiffList> _callback) throws ApiException {
+    public okhttp3.Call otfDiffAsync(String repository, String leftRef, String rightRef, String tablePath, String type, final ApiCallback<OtfDiffList> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = otfDiffValidateBeforeCall(repository, leftRef, rightRef, tablePath, type, baseRef, _callback);
+        okhttp3.Call localVarCall = otfDiffValidateBeforeCall(repository, leftRef, rightRef, tablePath, type, _callback);
         Type localVarReturnType = new TypeToken<OtfDiffList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

@@ -3870,11 +3870,9 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository 
 		writeError(w, r, http.StatusPreconditionFailed, "no programmatic credentials")
 		return
 	}
-	var br string
-	if params.BaseRef != nil {
-		br = *params.BaseRef
-	}
-	tp := buildS3TablePaths(repository, leftRef, rightRef, br, params.TablePath)
+
+	// TODO: pass correct base ref
+	tp := buildS3TablePaths(repository, leftRef, rightRef, "", params.TablePath)
 
 	diffParams := diff.Params{
 		TablePaths: tp,

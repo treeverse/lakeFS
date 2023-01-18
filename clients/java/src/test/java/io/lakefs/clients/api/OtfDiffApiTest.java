@@ -48,8 +48,7 @@ public class OtfDiffApiTest {
         String rightRef = null;
         String tablePath = null;
         String type = null;
-        String baseRef = null;
-                OtfDiffList response = api.otfDiff(repository, leftRef, rightRef, tablePath, type, baseRef);
+                OtfDiffList response = api.otfDiff(repository, leftRef, rightRef, tablePath, type);
         // TODO: test validations
     }
     

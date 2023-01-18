@@ -58,7 +58,6 @@ class OtfDiffApi(object):
                     'right_ref',
                     'table_path',
                     'type',
-                    'base_ref',
                 ],
                 'required': [
                     'repository',
@@ -90,8 +89,6 @@ class OtfDiffApi(object):
                         (str,),
                     'type':
                         (str,),
-                    'base_ref':
-                        (str,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
@@ -99,7 +96,6 @@ class OtfDiffApi(object):
                     'right_ref': 'right_ref',
                     'table_path': 'table_path',
                     'type': 'type',
-                    'base_ref': 'base_ref',
                 },
                 'location_map': {
                     'repository': 'path',
@@ -107,7 +103,6 @@ class OtfDiffApi(object):
                     'right_ref': 'path',
                     'table_path': 'query',
                     'type': 'query',
-                    'base_ref': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -146,7 +141,6 @@ class OtfDiffApi(object):
             type (str): the type of otf
 
         Keyword Args:
-            base_ref (str): base ref to compare a three way diff. [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
