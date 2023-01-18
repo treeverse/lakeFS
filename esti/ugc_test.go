@@ -150,12 +150,12 @@ func validateUncommittedGC(t *testing.T) {
 	const repo = uncommittedGCRepoName
 
 	findingPath := findingFilePath()
-	bytes, err := os.ReadFile(findingPath)
+	b, err := os.ReadFile(findingPath)
 	if err != nil {
 		t.Fatalf("Failed to read '%s': %s", findingPath, err)
 	}
 	var findings UncommittedFindings
-	err = json.Unmarshal(bytes, &findings)
+	err = json.Unmarshal(b, &findings)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal findings '%s': %s", findingPath, err)
 	}
@@ -304,7 +304,7 @@ func TestSafeUncommittedGC(t *testing.T) {
 		programArgs:     []string{uncommittedSafeGCRepoName, "us-east-1"},
 		logSource:       "ugc",
 	}
-	testutil.MustDo(t, "run uncommitted GC", runSparkSubmitLocal(submitConfig))
+	testutil.MustDo(t, "run uncommitted GC", runSparkSubmit(submitConfig))
 	done <- true
 
 	// post run
@@ -342,7 +342,7 @@ func validateSafeUncommittedGC(t *testing.T, ctx context.Context, s3Client *s3.S
 	runID := getLastUGCRunID(t, ctx, s3Client, qp.StorageNamespace, qp.Prefix)
 
 	reportPath := fmt.Sprintf("%s_lakefs/retention/gc/uncommitted/%s/summary.json", qp.Prefix, runID)
-	startListTime, err := getReportStartListTime(s3Client, qp.StorageNamespace, reportPath)
+	startListTime, err := getReportCutoffTime(s3Client, qp.StorageNamespace, reportPath)
 	if err != nil {
 		t.Fatalf("Failed to get start list time from ugc report %s", err)
 	}
@@ -361,7 +361,7 @@ func validateSafeUncommittedGC(t *testing.T, ctx context.Context, s3Client *s3.S
 
 }
 
-func getReportStartListTime(s3Client *s3.S3, bucket, reportPath string) (time.Time, error) {
+func getReportCutoffTime(s3Client *s3.S3, bucket, reportPath string) (time.Time, error) {
 	res, err := s3Client.GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(reportPath),
@@ -372,7 +372,10 @@ func getReportStartListTime(s3Client *s3.S3, bucket, reportPath string) (time.Ti
 	defer res.Body.Close()
 
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(res.Body)
+	_, err = buf.ReadFrom(res.Body)
+	if err != nil {
+		return time.Time{}, err
+	}
 	myFileContentAsString := buf.String()
 
 	type Report struct {

@@ -225,7 +225,7 @@ object UncommittedGarbageCollector {
       runID: String,
       firstSlice: String,
       startTime: java.time.Instant,
-      startListTime: java.time.Instant,
+      cutoffTime: java.time.Instant,
       success: Boolean,
       expiredAddresses: DataFrame
   ): Unit = {
@@ -235,7 +235,7 @@ object UncommittedGarbageCollector {
                        runID,
                        firstSlice,
                        startTime,
-                       startListTime,
+                       cutoffTime,
                        success,
                        expiredAddresses.count()
                       )
@@ -269,7 +269,7 @@ object UncommittedGarbageCollector {
       runID: String,
       firstSlice: String,
       startTime: java.time.Instant,
-      startListTime: java.time.Instant,
+      cutoffTime: java.time.Instant,
       success: Boolean,
       numDeletedObjects: Long
   ): String = {
@@ -280,7 +280,7 @@ object UncommittedGarbageCollector {
       "success" -> success,
       "first_slice" -> firstSlice,
       "start_time" -> DateTimeFormatter.ISO_INSTANT.format(startTime),
-      "start_list_time" -> DateTimeFormatter.ISO_INSTANT.format(startListTime),
+      "start_list_time" -> DateTimeFormatter.ISO_INSTANT.format(cutoffTime),
       "num_deleted_objects" -> numDeletedObjects
     )
     val summary = compact(render(jsonSummary))

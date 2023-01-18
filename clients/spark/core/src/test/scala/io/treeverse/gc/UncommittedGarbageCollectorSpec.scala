@@ -200,7 +200,8 @@ class UncommittedGarbageCollectorSpec
           new File(slice, filename).createNewFile()
 
           val dataDF = UncommittedGarbageCollector
-            .listObjects(dir.toString, DateUtils.addHours(new Date(), +1)).sort("address")
+            .listObjects(dir.toString, DateUtils.addHours(new Date(), +1))
+            .sort("address")
           dataDF.count() should be(3)
           dataDF.select("address").head.getString(0) should be(
             s"data/$legacyPath/$filename"
