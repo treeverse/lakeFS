@@ -83,47 +83,6 @@ func extractEntryFromCopyReq(w http.ResponseWriter, req *http.Request, o *PathOp
 	return ent
 }
 
-// CopyFromEntry create copy of the file
-func CopyFromEntry(w http.ResponseWriter, req *http.Request, o *PathOperation, copySource string) *catalog.DBEntry {
-	p, err := getPathFromSource(copySource)
-	if err != nil {
-		o.Log(req).WithError(err).Error("could not parse copy source path")
-		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
-		return nil
-	}
-	sourceRepo, err := o.Catalog.GetRepository(req.Context(), p.Repo)
-	if err != nil {
-		o.Log(req).WithError(err).Error("could not get copy source repository")
-		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
-		return nil
-	}
-	sourceEntry, err := o.Catalog.GetEntry(req.Context(), sourceRepo.Name, p.Reference, p.Path, catalog.GetEntryParams{})
-	if err != nil {
-		o.Log(req).WithError(err).Error("could not get source entry")
-		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
-		return nil
-	}
-	destAddress := o.PathProvider.NewPath()
-	blob, err := upload.CopyBlob(req.Context(), o.BlockStore, sourceRepo.StorageNamespace, o.Repository.StorageNamespace, sourceEntry.PhysicalAddress, sourceEntry.Checksum, destAddress, sourceEntry.Size)
-	if err != nil {
-		o.Log(req).WithError(err).Error("block adapter could not copy object")
-		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
-		return nil
-	}
-
-	writeTime := time.Now()
-	entry := catalog.DBEntry{
-		Path:            o.Path,
-		PhysicalAddress: blob.PhysicalAddress,
-		AddressType:     catalog.AddressTypeRelative,
-		Checksum:        blob.Checksum,
-		Metadata:        nil,
-		Size:            blob.Size,
-		CreationDate:    writeTime,
-	}
-	return &entry
-}
-
 func getPathFromSource(copySource string) (path.ResolvedAbsolutePath, error) {
 	copySourceDecoded, err := url.QueryUnescape(copySource)
 	if err != nil {
