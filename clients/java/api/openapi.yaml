@@ -131,6 +131,7 @@ paths:
       x-accepts: application/json
   /oidc/callback:
     get:
+      deprecated: true
       operationId: oauthCallback
       responses:
         "302":
@@ -5681,8 +5682,10 @@ components:
           - comm_prefs_done
           type: string
         oidc_enabled:
+          deprecated: true
           type: boolean
         oidc_default_login:
+          deprecated: true
           type: boolean
       type: object
     AccessKeyCredentials:

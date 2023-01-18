@@ -123,7 +123,9 @@ public class SetupState {
    /**
    * Get oidcEnabled
    * @return oidcEnabled
+   * @deprecated
   **/
+  @Deprecated
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
 
@@ -146,7 +148,9 @@ public class SetupState {
    /**
    * Get oidcDefaultLogin
    * @return oidcDefaultLogin
+   * @deprecated
   **/
+  @Deprecated
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
 

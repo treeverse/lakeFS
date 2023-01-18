@@ -3933,7 +3933,9 @@ public class AuthApi {
         <tr><td> 401 </td><td> failed to exchange authorization code for token </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public okhttp3.Call oauthCallbackCall(final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
@@ -3964,6 +3966,7 @@ public class AuthApi {
         return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
+    @Deprecated
     @SuppressWarnings("rawtypes")
     private okhttp3.Call oauthCallbackValidateBeforeCall(final ApiCallback _callback) throws ApiException {
         
@@ -3985,7 +3988,9 @@ public class AuthApi {
         <tr><td> 401 </td><td> failed to exchange authorization code for token </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public Error oauthCallback() throws ApiException {
         ApiResponse<Error> localVarResp = oauthCallbackWithHttpInfo();
         return localVarResp.getData();
@@ -4003,7 +4008,9 @@ public class AuthApi {
         <tr><td> 401 </td><td> failed to exchange authorization code for token </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public ApiResponse<Error> oauthCallbackWithHttpInfo() throws ApiException {
         okhttp3.Call localVarCall = oauthCallbackValidateBeforeCall(null);
         Type localVarReturnType = new TypeToken<Error>(){}.getType();
@@ -4023,7 +4030,9 @@ public class AuthApi {
         <tr><td> 401 </td><td> failed to exchange authorization code for token </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public okhttp3.Call oauthCallbackAsync(final ApiCallback<Error> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = oauthCallbackValidateBeforeCall(_callback);
