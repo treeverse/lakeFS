@@ -63,6 +63,8 @@ const (
 	// Total per entry ~52 bytes
 	// Deviation with gcPeriodicCheckSize = 100000 will be around 5 MB
 	gcPeriodicCheckSize = 100000
+
+	kvTrackPrefix = "track"
 )
 
 type Path string
@@ -138,11 +140,12 @@ type Config struct {
 type Catalog struct {
 	BlockAdapter             block.Adapter
 	Store                    Store
+	GCMaxUncommittedFileSize int
 	log                      logging.Logger
 	walkerFactory            WalkerFactory
 	managers                 []io.Closer
 	workPool                 *pond.WorkerPool
-	GCMaxUncommittedFileSize int
+	kvStore                  *kv.StoreMessage
 }
 
 const (
@@ -251,11 +254,12 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	return &Catalog{
 		BlockAdapter:             tierFSParams.Adapter,
 		Store:                    gStore,
+		GCMaxUncommittedFileSize: cfg.GCMaxUncommittedFileSize,
 		log:                      logging.Default().WithField("service_name", "entry_catalog"),
 		walkerFactory:            cfg.WalkerFactory,
 		workPool:                 workPool,
+		kvStore:                  cfg.KVStore,
 		managers:                 []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
-		GCMaxUncommittedFileSize: cfg.GCMaxUncommittedFileSize,
 	}, nil
 }
 
@@ -1921,6 +1925,16 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 			UncommittedLocation: uncommittedLocation,
 		},
 	}, nil
+}
+
+func (c *Catalog) TrackPhysicalAddress(ctx context.Context, repository, physicalAddress string) error {
+	repo, err := c.getRepository(ctx, repository)
+	if err != nil {
+		return err
+	}
+	repoPartition := graveler.RepoPartition(repo)
+	key := kv.FormatPath(kvTrackPrefix, physicalAddress)
+	return c.kvStore.Set(ctx, []byte(repoPartition), []byte(key), []byte{})
 }
 
 func (c *Catalog) SetLinkAddress(ctx context.Context, repository, token string) error {
