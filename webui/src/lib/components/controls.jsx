@@ -286,12 +286,12 @@ export const PrefixSearchWidget = ({ onFilter, text = "Search by Prefix", defaul
         })
     }, [setExpanded])
 
-    const handleSubmit =(e) => {
+    const ref = useRef(null);
+
+    const handleSubmit = useCallback((e) => {
         e.preventDefault()
         onFilter(ref.current.value)
-    }
-
-    const ref = useRef(null);
+    }, [ref])
 
     if (expanded) {
         return (
@@ -304,7 +304,7 @@ export const PrefixSearchWidget = ({ onFilter, text = "Search by Prefix", defaul
                         placeholder={text}
                         aria-label={text}
                     />
-                    <Button variant="outline-secondary" onClick={toggle}>
+                    <Button variant="light" onClick={toggle}>
                         <SearchIcon/>
                     </Button>
                 </InputGroup>

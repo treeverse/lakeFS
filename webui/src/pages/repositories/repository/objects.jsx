@@ -1,6 +1,6 @@
-import React, {useCallback, useEffect, useRef, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 
-import {SearchIcon, UploadIcon} from "@primer/octicons-react";
+import {UploadIcon} from "@primer/octicons-react";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {
@@ -36,8 +36,7 @@ import {
 import {Box} from "@mui/material";
 import {RepoError} from "./error";
 import { getContentType, getFileExtension, FileContents } from "./objectViewer";
-import {OverlayTrigger, Tooltip} from "react-bootstrap";
-import InputGroup from "react-bootstrap/InputGroup";
+
 
 const README_FILE_NAME = 'README.md';
 

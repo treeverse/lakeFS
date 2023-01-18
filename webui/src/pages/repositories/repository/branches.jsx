@@ -1,9 +1,9 @@
-import React, {useCallback, useMemo, useRef, useState} from "react";
+import React, {useMemo, useRef, useState} from "react";
 
 import {
     GitBranchIcon,
     LinkIcon,
-    PackageIcon, SearchIcon,
+    PackageIcon,
     TrashIcon
 } from "@primer/octicons-react";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
@@ -32,8 +32,6 @@ import Alert from "react-bootstrap/Alert";
 import {Link} from "../../../lib/components/nav";
 import {useRouter} from "../../../lib/hooks/router";
 import {RepoError} from "./error";
-import InputGroup from "react-bootstrap/InputGroup";
-import {OverlayTrigger, Tooltip} from "react-bootstrap";
 
 const ImportBranchName = 'import-from-inventory';
 
