@@ -612,9 +612,11 @@ components:
         oidc_enabled:
           deprecated: true
           type: boolean
+          description: "Deprecated: embedded OIDC support is now deprecated"
         oidc_default_login:
           deprecated: true
           type: boolean
+          description: "Deprecated: embedded OIDC support is now deprecated"
     AccessKeyCredentials:
       type: object
       properties:
@@ -1297,6 +1299,7 @@ paths:
   /oidc/callback:
     get:
       deprecated: true
+      description: "Deprecated: embedded OIDC support is now deprecated"
       tags:
         - auth
       operationId: oauthCallback

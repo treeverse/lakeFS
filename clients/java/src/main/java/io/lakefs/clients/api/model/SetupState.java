@@ -121,13 +121,13 @@ public class SetupState {
   }
 
    /**
-   * Get oidcEnabled
+   * Deprecated: embedded OIDC support is now deprecated
    * @return oidcEnabled
    * @deprecated
   **/
   @Deprecated
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(value = "Deprecated: embedded OIDC support is now deprecated")
 
   public Boolean getOidcEnabled() {
     return oidcEnabled;
@@ -146,13 +146,13 @@ public class SetupState {
   }
 
    /**
-   * Get oidcDefaultLogin
+   * Deprecated: embedded OIDC support is now deprecated
    * @return oidcDefaultLogin
    * @deprecated
   **/
   @Deprecated
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(value = "Deprecated: embedded OIDC support is now deprecated")
 
   public Boolean getOidcDefaultLogin() {
     return oidcDefaultLogin;

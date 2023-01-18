@@ -3975,6 +3975,7 @@ class AuthApi(object):
     ):
         """oauth_callback  # noqa: E501
 
+        Deprecated: embedded OIDC support is now deprecated  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 

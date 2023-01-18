@@ -3978,7 +3978,7 @@ public class AuthApi {
 
     /**
      * 
-     * 
+     * Deprecated: embedded OIDC support is now deprecated
      * @return Error
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -3998,7 +3998,7 @@ public class AuthApi {
 
     /**
      * 
-     * 
+     * Deprecated: embedded OIDC support is now deprecated
      * @return ApiResponse&lt;Error&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -4019,7 +4019,7 @@ public class AuthApi {
 
     /**
      *  (asynchronously)
-     * 
+     * Deprecated: embedded OIDC support is now deprecated
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
