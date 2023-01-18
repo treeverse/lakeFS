@@ -182,6 +182,7 @@ class Auth {
             throw new AuthenticationError('Unknown authentication error', response.status);
         }
 
+        this.clearCurrentUser();
         const user = await this.getCurrentUser();
 
         cache.set('user', user);
