@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -33,7 +32,7 @@ const (
 )
 
 type UncommittedFindings struct {
-	All     []string
+	All     []Object
 	Deleted []string
 }
 
@@ -167,7 +166,7 @@ func validateUncommittedGC(t *testing.T) {
 	// verify that all previous objects are found or deleted, if needed
 	for _, obj := range findings.All {
 		foundIt := slices.Contains(objects, obj)
-		expectDeleted := slices.Contains(findings.Deleted, obj)
+		expectDeleted := slices.Contains(findings.Deleted, obj.Key)
 		if foundIt && expectDeleted {
 			t.Errorf("Object '%s' FOUND - should have been deleted", obj)
 		} else if !foundIt && !expectDeleted {
@@ -178,7 +177,7 @@ func validateUncommittedGC(t *testing.T) {
 	// verify that we do not have new objects
 	for _, obj := range objects {
 		// skip uncommitted retention reports
-		if strings.Contains(obj, "/_lakefs/retention/gc/uncommitted/") {
+		if strings.Contains(obj.Key, "/_lakefs/retention/gc/uncommitted/") {
 			continue
 		}
 		// verify we know this object
@@ -188,7 +187,7 @@ func validateUncommittedGC(t *testing.T) {
 	}
 }
 
-func listRepositoryUnderlyingStorage(t *testing.T, ctx context.Context, repo string) ([]string, block.QualifiedPrefix) {
+func listRepositoryUnderlyingStorage(t *testing.T, ctx context.Context, repo string) ([]Object, block.QualifiedPrefix) {
 	// list all objects in the physical layer
 	repoResponse, err := client.GetRepositoryWithResponse(ctx, repo)
 	if err != nil {
@@ -210,7 +209,7 @@ func listRepositoryUnderlyingStorage(t *testing.T, ctx context.Context, repo str
 	return objects, qp
 }
 
-func listUnderlyingStorage(t *testing.T, ctx context.Context, s3Client *s3.S3, bucket, prefix string) []string {
+func listUnderlyingStorage(t *testing.T, ctx context.Context, s3Client *s3.S3, bucket, prefix string) []Object {
 	listInput := &s3.ListObjectsInput{
 		Bucket: aws.String(bucket),
 		Prefix: aws.String(prefix),
@@ -221,11 +220,18 @@ func listUnderlyingStorage(t *testing.T, ctx context.Context, s3Client *s3.S3, b
 	}
 
 	// sorted list of objects found on repository - before ugc
-	var objects []string
+	var objects []Object
 	for _, obj := range listOutput.Contents {
-		objects = append(objects, fmt.Sprintf("s3://%s/%s", bucket, aws.StringValue(obj.Key)))
+		objects = append(objects, Object{
+			Key:          fmt.Sprintf("s3://%s/%s", bucket, aws.StringValue(obj.Key)),
+			LastModified: *obj.LastModified})
 	}
 	return objects
+}
+
+type Object struct {
+	Key          string
+	LastModified time.Time
 }
 
 func newDefaultS3Client() *s3.S3 {
@@ -284,7 +290,7 @@ func TestSafeUncommittedGC(t *testing.T) {
 				ticker.Stop()
 				return
 			case <-ticker.C:
-				uploadSafeTestData(t, ctx, repo)
+				uploadAndDeleteSafeTestData(t, ctx, repo)
 			}
 		}
 	}()
@@ -321,8 +327,14 @@ func TestSafeUncommittedGC(t *testing.T) {
 	validateSafeUncommittedGC(t, ctx, s3Client, repo)
 }
 
-func uploadSafeTestData(t *testing.T, ctx context.Context, repository string) {
-	_, _ = uploadFileRandomData(ctx, t, repository, mainBranch, xid.New().String(), false)
+func uploadAndDeleteSafeTestData(t *testing.T, ctx context.Context, repository string) {
+	name := xid.New().String()
+	_, _ = uploadFileRandomData(ctx, t, repository, mainBranch, name, false)
+
+	_, err := client.DeleteObjectWithResponse(ctx, repository, mainBranch, &api.DeleteObjectParams{Path: name})
+	if err != nil {
+		t.Fatalf("Failed to delete object %s", err)
+	}
 }
 
 func validateSafeUncommittedGC(t *testing.T, ctx context.Context, s3Client *s3.S3, repository string) {
@@ -330,30 +342,26 @@ func validateSafeUncommittedGC(t *testing.T, ctx context.Context, s3Client *s3.S
 	runID := getLastUGCRunID(t, ctx, s3Client, qp.StorageNamespace, qp.Prefix)
 
 	reportPath := fmt.Sprintf("%s_lakefs/retention/gc/uncommitted/%s/summary.json", qp.Prefix, runID)
-	startListTime, err := getReportStartListTimeTime(s3Client, qp.StorageNamespace, reportPath)
+	startListTime, err := getReportStartListTime(s3Client, qp.StorageNamespace, reportPath)
 	if err != nil {
 		t.Fatalf("Failed to get start list time from ugc report %s", err)
 	}
 
 	// verify that all objects are deleted, if needed
-	listTime := startListTime.Add(-1 * time.Second) // uncommitted_min_age_seconds
 	for _, obj := range objects {
-		if strings.Contains(obj, "/_lakefs/retention/gc/uncommitted/") || strings.Contains(obj, "dummy") {
+		if strings.Contains(obj.Key, "/_lakefs/retention/gc/uncommitted/") || strings.Contains(obj.Key, "dummy") {
 			continue
 		}
-		addressTime, err := resolvePathTime(obj)
-		if err != nil {
-			t.Errorf("cannot parse time %s", obj)
-		}
 
-		if addressTime.Before(listTime) {
+		if obj.LastModified.Before(startListTime) {
+			t.Errorf("object time '%s' start list time %s", obj.LastModified.String(), startListTime.String())
 			t.Errorf("Object '%s' FOUND - should have been deleted", obj)
 		}
 	}
 
 }
 
-func getReportStartListTimeTime(s3Client *s3.S3, bucket, reportPath string) (time.Time, error) {
+func getReportStartListTime(s3Client *s3.S3, bucket, reportPath string) (time.Time, error) {
 	res, err := s3Client.GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(reportPath),
@@ -382,13 +390,4 @@ func getReportStartListTimeTime(s3Client *s3.S3, bucket, reportPath string) (tim
 		return time.Time{}, err
 	}
 	return report.StartListTime, nil
-}
-
-func resolvePathTime(address string) (time.Time, error) {
-	_, name := path.Split(address)
-	id, err := xid.FromString(name)
-	if err != nil {
-		return time.Time{}, err
-	}
-	return id.Time().UTC(), nil
 }

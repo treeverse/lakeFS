@@ -37,7 +37,7 @@ object UncommittedGarbageCollector {
    *  @param before Exclude objects which last_modified date is newer than before Date
    *  @return DF listing all objects under given storageNamespace
    */
-  def listObjects(storageNamespace: String, before: Date): (DataFrame, java.time.Instant) = {
+  def listObjects(storageNamespace: String, before: Date): DataFrame = {
     // TODO(niro): parallelize reads from root and data paths
     val sc = spark.sparkContext
     val oldDataPath = new Path(storageNamespace)
@@ -49,7 +49,6 @@ object UncommittedGarbageCollector {
       )
     )
     // Read objects from data path (new repository structure)
-    val startListTime = java.time.Instant.now()
     var dataDF = new ParallelDataLister().listData(configMapper, dataPath)
     dataDF = dataDF
       .withColumn(
@@ -66,7 +65,7 @@ object UncommittedGarbageCollector {
       .filter(!col("address").isin(excludeFromOldData: _*))
     dataDF = dataDF.union(oldDataDF).filter(col("last_modified") < before.getTime)
 
-    (dataDF, startListTime)
+    dataDF
   }
 
   def getFirstSlice(dataDF: DataFrame, repo: String): String = {
@@ -104,7 +103,6 @@ object UncommittedGarbageCollector {
     var runID = ""
     var firstSlice = ""
     var success = false
-    var listTime = java.time.Instant.now()
     var markedAddresses = spark.emptyDataFrame.withColumn("address", lit(""))
     var addressesToDelete = spark.emptyDataFrame.withColumn("address", lit(""))
     val repo = args(0)
@@ -148,8 +146,7 @@ object UncommittedGarbageCollector {
     try {
       if (shouldMark) {
         // Read objects directly from object storage
-        val (dataDF, startListTime) = listObjects(storageNamespace, cutoffTime)
-        listTime = startListTime
+        val dataDF = listObjects(storageNamespace, cutoffTime)
 
         // Get first Slice
         firstSlice = getFirstSlice(dataDF, repo)
@@ -214,7 +211,7 @@ object UncommittedGarbageCollector {
           runID,
           firstSlice,
           startTime,
-          listTime,
+          cutoffTime.toInstant,
           success,
           addressesToDelete
         )
