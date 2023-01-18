@@ -87,7 +87,7 @@ export const PrefixTreeEntryRow = ({entry, relativeTo = "", dirExpanded, depth =
 
     return (
         <TableRow rowClass={rowClass} entry={entry} diffIndicator={diffIndicator} getMore={getMore} rowActions={rowActions}
-                  onRevert={onRevert} depth={depth} loading={loading} pathSection={pathSection}
+                  onRevert={onRevert} depth={depth} loading={loading} pathSection={pathSection} showSummary={showSummary}
                   pathExpensionSection={<PrefixExpansionSection dirExpanded={dirExpanded} onClick={onClick}/>}
                                                                 showRevertConfirm={showRevertConfirm} setShowRevertConfirm={() => setShowRevertConfirm(false)}
         />
