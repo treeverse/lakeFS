@@ -1,9 +1,9 @@
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 
 import {
     ClockIcon
 } from "@primer/octicons-react";
-import {useAPI, useAPIWithPagination} from "../../hooks/api";
+import {useAPIWithPagination} from "../../hooks/api";
 import {Error} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
 import {TreeItemType} from "../../../constants";
@@ -51,13 +51,14 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
     if (error)
         return <Error error={error}/>
 
-    const itemType = useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID);
+    // const itemType = useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID);
+    const itemType = treeItemType(entry, repo, leftDiffRefID, rightDiffRefID);
 
-    if (itemType.loading || (loading && results.length === 0))
+    if (loading && results.length === 0)
         return <ObjectTreeEntryRow key={entry.path+"entry-row"} entry={entry} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference}
                                    getMore={getMore}/>
 
-    if (itemType.type === TreeItemType.Object) {
+    if (itemType === TreeItemType.Object) {
         return <>
             <ObjectTreeEntryRow key={entry.path + "entry-row"} entry={entry} relativeTo={relativeTo}
                                 depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert} repo={repo}
@@ -76,7 +77,7 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
             </tr>
             }
         </>
-    } else if (itemType.type === TreeItemType.Prefix) {
+    } else if (itemType === TreeItemType.Prefix) {
         return <>
             <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
             {dirExpanded && results &&
@@ -116,25 +117,46 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
     );
 };
 
-function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
-    const [treeItemType, setTreeItemType] = useState({type: null, loading: true});
+
+function treeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
+    if (entry.path_type === "object") {
+        return TreeItemType.Object;
+    }
 
     // Tree items that represent prefixes are always of entry.type = prefix_changed and the actual diff type is
     // presented at the object level. Therefore, in case of tables that were added or removed we don't know
     // under which of the diff refs the table root is expected to be listed and therefore we try to get the table type
     // from both and take the one that returned results.
-    let leftResult = useAPI(() => tablesUtil.isDeltaLakeTable(entry, repo, rightDiffRefID));
-    let rightResult = useAPI(() => tablesUtil.isDeltaLakeTable(entry, repo, leftDiffRefID));
-
-    useEffect(() => {
-        if (entry.path_type === "object") {
-            setTreeItemType({type: TreeItemType.Object, loading: false});
-            return
-        }
-        if (!leftResult.loading && !rightResult.loading) {
-            setTreeItemType({type: leftResult.response || rightResult.response ? TreeItemType.DeltaLakeTable : TreeItemType.Prefix, loading: false});
-        }
-    }, [leftResult, rightResult])
-
-    return treeItemType;
+    const isDeltaTableFromRight = tablesUtil.isDeltaLakeTable(entry.path, repo, rightDiffRefID);
+    const isDeltaTableFromLeft = tablesUtil.isDeltaLakeTable(entry.path, repo, leftDiffRefID);
+    if (isDeltaTableFromLeft || isDeltaTableFromRight) {
+        return TreeItemType.DeltaLakeTable;
+    }
+    return TreeItemType.Prefix;
 }
+
+// Tal (19/1/23) disable this because it leads to an infinite loop of dependency updates. probably need to fix this problem here https://stackoverflow.com/questions/57853288/react-warning-maximum-update-depth-exceeded
+// before re-enabling it.
+// TODO: fix before enabling.
+// function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
+//     const [treeItemType, setTreeItemType] = useState({type: null, loading: true});
+//
+//     // Tree items that represent prefixes are always of entry.type = prefix_changed and the actual diff type is
+//     // presented at the object level. Therefore, in case of tables that were added or removed we don't know
+//     // under which of the diff refs the table root is expected to be listed and therefore we try to get the table type
+//     // from both and take the one that returned results.
+//     let leftResult = useAPI(() => tablesUtil.isDeltaLakeTable(entry, repo, rightDiffRefID));
+//     let rightResult = useAPI(() => tablesUtil.isDeltaLakeTable(entry, repo, leftDiffRefID));
+//
+//     useEffect(() => {
+//         if (entry.path_type === "object") {
+//             setTreeItemType({type: TreeItemType.Object, loading: false});
+//             return
+//         }
+//         if (!leftResult.loading && !rightResult.loading) {
+//             setTreeItemType({type: leftResult.response || rightResult.response ? TreeItemType.DeltaLakeTable : TreeItemType.Prefix, loading: false});
+//         }
+//     }, [leftResult, rightResult])
+//
+//     return treeItemType;
+// }
