@@ -17,10 +17,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/rs/xid"
-	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"golang.org/x/exp/slices"
 )
@@ -32,16 +30,17 @@ const (
 )
 
 type UncommittedFindings struct {
-	All     []Object
-	Deleted []string
+	All            []Object
+	Deleted        []string
+	preLinkAddress api.StagingLocation
 }
 
 func TestUncommittedGC(t *testing.T) {
-	SkipTestIfAskedTo(t)
-	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
-	if blockstoreType != block.BlockstoreTypeS3 {
-		t.Skip("Running on S3 only")
-	}
+	//SkipTestIfAskedTo(t)
+	//blockstoreType := viper.GetString(config.BlockstoreTypeKey)
+	//if blockstoreType != block.BlockstoreTypeS3 {
+	//	t.Skip("Running on S3 only")
+	//}
 	prepareForUncommittedGC(t)
 	submitConfig := &sparkSubmitConfig{
 		sparkVersion:    sparkImageTag,
@@ -51,7 +50,7 @@ func TestUncommittedGC(t *testing.T) {
 		programArgs:     []string{uncommittedGCRepoName, "us-east-1"},
 		logSource:       "ugc",
 	}
-	testutil.MustDo(t, "run uncommitted GC", runSparkSubmit(submitConfig))
+	testutil.MustDo(t, "run uncommitted GC", runSparkSubmitLocal(submitConfig))
 
 	validateUncommittedGC(t)
 }
@@ -112,12 +111,25 @@ func prepareForUncommittedGC(t *testing.T) {
 		}
 	}
 
+	// getting physical address before the ugc run and linking it after
+	getPhysicalResp, err := client.GetPhysicalAddressWithResponse(ctx, repo, mainBranch, &api.GetPhysicalAddressParams{Path: "foo/bar"})
+	if err != nil {
+		t.Fatalf("Failed to get physical address %s", err)
+	}
+	if getPhysicalResp.JSON200 == nil {
+		t.Fatalf("Failed to get physical address information: status code %d", getPhysicalResp.StatusCode())
+	}
+
 	objects, _ := listRepositoryUnderlyingStorage(t, ctx, repo)
 	// write findings into a file
 	findings, err := json.MarshalIndent(
 		UncommittedFindings{
 			All:     objects,
 			Deleted: gone,
+			preLinkAddress: api.StagingLocation{
+				PhysicalAddress: getPhysicalResp.JSON200.PhysicalAddress,
+				Token:           getPhysicalResp.JSON200.Token,
+			},
 		}, "", "  ")
 	if err != nil {
 		t.Fatalf("failed to marshal findings: %s", err)
@@ -160,6 +172,22 @@ func validateUncommittedGC(t *testing.T) {
 		t.Fatalf("Failed to unmarshal findings '%s': %s", findingPath, err)
 	}
 
+	// link the pre physical address
+	const expectedSizeBytes = 38
+	_, err = client.LinkPhysicalAddressWithResponse(ctx, "repo1", "main", &api.LinkPhysicalAddressParams{
+		Path: "foo/bar",
+	}, api.LinkPhysicalAddressJSONRequestBody{
+		Checksum:  "afb0689fe58b82c5f762991453edbbec",
+		SizeBytes: expectedSizeBytes,
+		Staging: api.StagingLocation{
+			PhysicalAddress: findings.preLinkAddress.PhysicalAddress,
+			Token:           findings.preLinkAddress.Token,
+		},
+	})
+	if err != nil {
+		t.Fatalf("Failed to link physical address %s", err)
+	}
+
 	// list underlying storage
 	objects, _ := listRepositoryUnderlyingStorage(t, ctx, repo)
 
@@ -187,6 +215,7 @@ func validateUncommittedGC(t *testing.T) {
 	}
 }
 
+// listRepositoryUnderlyingStorage list on the repository storage namespace returns its objects, and the storage namespace
 func listRepositoryUnderlyingStorage(t *testing.T, ctx context.Context, repo string) ([]Object, block.QualifiedPrefix) {
 	// list all objects in the physical layer
 	repoResponse, err := client.GetRepositoryWithResponse(ctx, repo)
@@ -243,11 +272,12 @@ func newDefaultS3Client() *s3.S3 {
 
 func getLastUGCRunID(t *testing.T, ctx context.Context, s3Client *s3.S3, bucket, prefix string) string {
 	runIDPrefix := prefix + "_lakefs/retention/gc/uncommitted/"
-
+	listSize := int64(1)
 	listInput := &s3.ListObjectsInput{
 		Bucket:    aws.String(bucket),
 		Prefix:    aws.String(runIDPrefix),
 		Delimiter: aws.String("/"),
+		MaxKeys:   aws.Int64(listSize),
 	}
 	listOutput, err := s3Client.ListObjectsWithContext(ctx, listInput)
 	if err != nil {
@@ -263,15 +293,16 @@ func getLastUGCRunID(t *testing.T, ctx context.Context, s3Client *s3.S3, bucket,
 }
 
 func TestSafeUncommittedGC(t *testing.T) {
-	SkipTestIfAskedTo(t)
-	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
-	if blockstoreType != block.BlockstoreTypeS3 {
-		t.Skip("Running on S3 only")
-	}
+	//SkipTestIfAskedTo(t)
+	//blockstoreType := viper.GetString(config.BlockstoreTypeKey)
+	//if blockstoreType != block.BlockstoreTypeS3 {
+	//	t.Skip("Running on S3 only")
+	//}
 	ctx := context.Background()
 	repo := createRepositoryByName(ctx, t, uncommittedSafeGCRepoName)
 
 	// pre run
+	// getting physical address before the ugc run and linking it after
 	getPhysicalResp, err := client.GetPhysicalAddressWithResponse(ctx, repo, mainBranch, &api.GetPhysicalAddressParams{Path: "foo/bar"})
 	if err != nil {
 		t.Fatalf("Failed to get physical address %s", err)
@@ -304,7 +335,7 @@ func TestSafeUncommittedGC(t *testing.T) {
 		programArgs:     []string{uncommittedSafeGCRepoName, "us-east-1"},
 		logSource:       "ugc",
 	}
-	testutil.MustDo(t, "run uncommitted GC", runSparkSubmit(submitConfig))
+	testutil.MustDo(t, "run uncommitted GC", runSparkSubmitLocal(submitConfig))
 	done <- true
 
 	// post run
@@ -323,8 +354,7 @@ func TestSafeUncommittedGC(t *testing.T) {
 		t.Fatalf("Failed to link physical address %s", err)
 	}
 
-	s3Client := newDefaultS3Client()
-	validateSafeUncommittedGC(t, ctx, s3Client, repo)
+	validateSafeUncommittedGC(t, ctx, repo)
 }
 
 func uploadAndDeleteSafeTestData(t *testing.T, ctx context.Context, repository string) {
@@ -337,12 +367,13 @@ func uploadAndDeleteSafeTestData(t *testing.T, ctx context.Context, repository s
 	}
 }
 
-func validateSafeUncommittedGC(t *testing.T, ctx context.Context, s3Client *s3.S3, repository string) {
+func validateSafeUncommittedGC(t *testing.T, ctx context.Context, repository string) {
+	s3Client := newDefaultS3Client()
 	objects, qp := listRepositoryUnderlyingStorage(t, ctx, repository)
 	runID := getLastUGCRunID(t, ctx, s3Client, qp.StorageNamespace, qp.Prefix)
 
 	reportPath := fmt.Sprintf("%s_lakefs/retention/gc/uncommitted/%s/summary.json", qp.Prefix, runID)
-	startListTime, err := getReportCutoffTime(s3Client, qp.StorageNamespace, reportPath)
+	cutoffTime, err := getReportCutoffTime(s3Client, qp.StorageNamespace, reportPath)
 	if err != nil {
 		t.Fatalf("Failed to get start list time from ugc report %s", err)
 	}
@@ -353,8 +384,7 @@ func validateSafeUncommittedGC(t *testing.T, ctx context.Context, s3Client *s3.S
 			continue
 		}
 
-		if obj.LastModified.Before(startListTime) {
-			t.Errorf("object time '%s' start list time %s", obj.LastModified.String(), startListTime.String())
+		if obj.LastModified.Before(cutoffTime) {
 			t.Errorf("Object '%s' FOUND - should have been deleted", obj)
 		}
 	}
@@ -383,7 +413,7 @@ func getReportCutoffTime(s3Client *s3.S3, bucket, reportPath string) (time.Time,
 		Success           bool      `json:"success"`
 		FirstSlice        string    `json:"first_slice"`
 		StartTime         time.Time `json:"start_time,time"`
-		CutoffTime        time.Time `json:"cutoffTime,time"`
+		CutoffTime        time.Time `json:"cutoff_time,time"`
 		NumDeletedObjects int       `json:"num_deleted_objects"`
 	}
 

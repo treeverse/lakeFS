@@ -280,7 +280,7 @@ object UncommittedGarbageCollector {
       "success" -> success,
       "first_slice" -> firstSlice,
       "start_time" -> DateTimeFormatter.ISO_INSTANT.format(startTime),
-      "cutoffTime" -> DateTimeFormatter.ISO_INSTANT.format(cutoffTime),
+      "cutoff_time" -> DateTimeFormatter.ISO_INSTANT.format(cutoffTime),
       "num_deleted_objects" -> numDeletedObjects
     )
     val summary = compact(render(jsonSummary))
