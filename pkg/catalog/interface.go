@@ -56,9 +56,6 @@ type ExpiryRows interface {
 
 // GetEntryParams configures what entries GetEntry returns.
 type GetEntryParams struct {
-	// ReturnExpired - for entries to expired objects the Expired bit is set.  If true, GetEntry returns
-	// successfully for expired entries, otherwise it returns the entry with ErrExpired.
-	ReturnExpired bool
 	// StageOnly when true will return entry found on stage without checking committed data
 	StageOnly bool
 }
@@ -104,6 +101,7 @@ type Interface interface {
 	ListEntries(ctx context.Context, repository, reference string, prefix, after string, delimiter string, limit int) ([]*DBEntry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
+	CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string) (*DBEntry, bool, error)
 
 	Commit(ctx context.Context, repository, branch, message, committer string, metadata Metadata, date *int64, sourceMetarange *string) (*CommitLog, error)
 	GetCommit(ctx context.Context, repository, reference string) (*CommitLog, error)

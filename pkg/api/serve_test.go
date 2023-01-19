@@ -140,6 +140,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		KVStore:               kvStoreMessage,
 		WalkerFactory:         factory,
 		SettingsManagerOption: settings.WithCache(cache.NoCache),
+		PathProvider:          upload.DefaultPathProvider,
 	})
 	testutil.MustDo(t, "build catalog", err)
 

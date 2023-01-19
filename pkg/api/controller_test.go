@@ -3917,11 +3917,11 @@ func TestController_CopyObjectHandler(t *testing.T) {
 			destPath = "foo/bar-full-from-branch"
 		)
 		objStat := uploadContent(t, repo, "alt", srcPath)
-		copyResp, err := clt.CopyObjectWithResponse(ctx, repo, "alt", &api.CopyObjectParams{
+		copyResp, err := clt.CopyObjectWithResponse(ctx, repo, "main", &api.CopyObjectParams{
 			DestPath: destPath,
 		}, api.CopyObjectJSONRequestBody{
 			SrcPath: srcPath,
-			SrcRef:  api.StringPtr("main"),
+			SrcRef:  api.StringPtr("alt"),
 		})
 		verifyResponseOK(t, copyResp, err)
 
@@ -3942,7 +3942,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		require.Nil(t, deep.Equal(objStat, *copyStat))
 
 		// get back info
-		statResp, err := clt.StatObjectWithResponse(ctx, repo, "alt", &api.StatObjectParams{Path: destPath})
+		statResp, err := clt.StatObjectWithResponse(ctx, repo, "main", &api.StatObjectParams{Path: destPath})
 		verifyResponseOK(t, statResp, err)
 		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
 	})

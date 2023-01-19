@@ -2155,7 +2155,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 			return
 		}
 		// check if exists
-		_, err := c.Catalog.GetEntry(ctx, repo.Name, branch, params.Path, catalog.GetEntryParams{ReturnExpired: true})
+		_, err := c.Catalog.GetEntry(ctx, repo.Name, branch, params.Path, catalog.GetEntryParams{})
 		if err == nil {
 			writeError(w, r, http.StatusPreconditionFailed, "path already exists")
 			return
@@ -2368,7 +2368,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 		return
 	}
 
-	// verify branch exists
+	// verify destination is a branch (and exists)
 	branchExists, err := c.Catalog.BranchExists(ctx, repository, branch)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -2384,39 +2384,10 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 		srcRef = branch
 	}
 
-	var (
-		copyType string           // copy type performed
-		entry    *catalog.DBEntry // set to the entry we created (shallow or copy)
-		srcEntry *catalog.DBEntry // in case we load entry from staging we can reuse on full-copy
-	)
-
-	// try shallow copy if entry on staging and copy on the same branch
-	if srcRef == branch {
-		copyType = httpHeaderCopyTypeShallow
-		// try getting source entry from staging - if not found we continue to fall to full copy
-		srcEntry, err = c.Catalog.GetEntry(ctx, repository, branch, srcPath, catalog.GetEntryParams{
-			ReturnExpired: true,
-			StageOnly:     true,
-		})
-		if !errors.Is(err, graveler.ErrNotFound) && c.handleAPIError(ctx, w, r, err) {
-			return
-		}
-		if srcEntry != nil {
-			entry, err = c.copyObjectShallow(ctx, repository, branch, srcEntry, destPath)
-			// for ErrTooManyTries we like to continue falling to full copy
-			if !errors.Is(err, graveler.ErrTooManyTries) && c.handleAPIError(ctx, w, r, err) {
-				return
-			}
-		}
-	}
-
-	// full copy if no entry was created until here
-	if entry == nil {
-		copyType = httpHeaderCopyTypeFull
-		entry, err = c.copyObjectFull(ctx, repo, branch, srcPath, destPath, srcEntry)
-		if c.handleAPIError(ctx, w, r, err) {
-			return
-		}
+	// copy entry
+	entry, fullCopy, err := c.Catalog.CopyEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
 	}
 
 	qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, block.IdentifierTypeRelative)
@@ -2425,6 +2396,10 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 		return
 	}
 
+	copyType := httpHeaderCopyTypeShallow
+	if fullCopy {
+		copyType = httpHeaderCopyTypeFull
+	}
 	w.Header().Set(httpHeaderCopyType, copyType)
 	response := ObjectStats{
 		Checksum:        entry.Checksum,
@@ -2436,56 +2411,6 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 		ContentType:     StringPtr(entry.ContentType),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
-}
-
-func (c *Controller) copyObjectShallow(ctx context.Context, repository, branch string, srcEntry *catalog.DBEntry, destPath string) (*catalog.DBEntry, error) {
-	// track physical address (copy-table)
-	_, err := c.Catalog.TrackPhysicalAddress(ctx, repository, srcEntry.PhysicalAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	// create entry only once. in case the first try fails because of commit we need to fall back to full copy
-	dstEntry := *srcEntry
-	dstEntry.CreationDate = time.Now()
-	dstEntry.Path = destPath
-	err = c.Catalog.CreateEntry(ctx, repository, branch, dstEntry, graveler.WithMaxTries(1))
-	if err != nil {
-		return nil, err
-	}
-	return &dstEntry, nil
-}
-
-// copyObjectFull copy data from srcEntry's physical address (if set) or srcPath into destPath
-func (c *Controller) copyObjectFull(ctx context.Context, repo *catalog.Repository, branch string, srcPath string, destPath string, srcEntry *catalog.DBEntry) (*catalog.DBEntry, error) {
-	var err error
-	// fetch src entry if needed - optimization in case we already have the entry
-	if srcEntry == nil {
-		srcEntry, err = c.Catalog.GetEntry(ctx, repo.Name, branch, srcPath, catalog.GetEntryParams{ReturnExpired: true})
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// copy data to a new physical address
-	dstEntry := *srcEntry
-	dstEntry.CreationDate = time.Now()
-	dstEntry.Path = destPath
-	dstEntry.AddressType = catalog.AddressTypeRelative
-	dstEntry.PhysicalAddress = c.PathProvider.NewPath()
-	srcObject := block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: srcEntry.PhysicalAddress}
-	destObj := block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: dstEntry.PhysicalAddress}
-	err = c.BlockAdapter.Copy(ctx, srcObject, destObj)
-	if err != nil {
-		return nil, err
-	}
-
-	// create entry for the final copy
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, dstEntry)
-	if err != nil {
-		return nil, err
-	}
-	return &dstEntry, nil
 }
 
 func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body RevertBranchJSONRequestBody, repository string, branch string) {
@@ -3112,7 +3037,7 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	c.LogAction(ctx, "head_object", r, repository, ref, "")
 
 	// read the FS entry
-	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
+	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{})
 	if err != nil {
 		c.handleAPIErrorCallback(ctx, w, r, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
 			writeResponse(w, r, code, nil)
@@ -3164,7 +3089,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	}
 
 	// read the FS entry
-	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
+	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{})
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3355,7 +3280,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		return
 	}
 
-	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
+	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{})
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

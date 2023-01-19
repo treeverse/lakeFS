@@ -1,7 +1,6 @@
 package operations
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"net/url"
@@ -106,100 +105,18 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 		return
 	}
 
-	var (
-		entry    *catalog.DBEntry // set to the entry we created (shallow or copy)
-		srcEntry *catalog.DBEntry // in case we load entry from staging we can reuse on full-copy
-	)
-	// check if src and dst are in the same repository and branch
 	ctx := req.Context()
-	if repository == srcPath.Repo && branch == srcPath.Reference {
-		// try getting source entry from staging - if not found we continue to fall to full copy
-		srcEntry, err = o.Catalog.GetEntry(ctx, repository, branch, srcPath.Path, catalog.GetEntryParams{
-			StageOnly: true,
-		})
-		if err != nil && !errors.Is(err, graveler.ErrNotFound) {
-			o.Log(req).WithError(err).Error("could not read copy source")
-			_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
-			return
-		}
-		if srcEntry != nil {
-			entry, err = copyObjectShallow(ctx, o.Catalog, repository, branch, srcEntry, o.Path)
-			// for ErrTooManyTries we like to continue falling to full copy
-			if err != nil && !errors.Is(err, graveler.ErrTooManyTries) {
-				o.Log(req).WithError(err).Error("could create a shallow copy source")
-				_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopyDest))
-				return
-			}
-		}
-	}
-
-	if entry == nil {
-		entry, err = copyObjectFull(ctx, o, srcPath, srcEntry)
-		if err != nil {
-			o.Log(req).WithError(err).Error("could create a full copy source")
-			_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopyDest))
-			return
-		}
+	entry, _, err := o.Catalog.CopyEntry(ctx, srcPath.Repo, srcPath.Reference, srcPath.Path, repository, branch, o.Path)
+	if err != nil {
+		o.Log(req).WithError(err).Error("could create a copy")
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopyDest))
+		return
 	}
 
 	o.EncodeResponse(w, req, &serde.CopyObjectResult{
 		LastModified: serde.Timestamp(entry.CreationDate),
 		ETag:         httputil.ETag(entry.Checksum),
 	}, http.StatusOK)
-}
-
-func copyObjectShallow(ctx context.Context, c catalog.Interface, repository string, branch string, srcEntry *catalog.DBEntry, destPath string) (*catalog.DBEntry, error) {
-	// track physical address (copy-table)
-	_, err := c.TrackPhysicalAddress(ctx, repository, srcEntry.PhysicalAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	// create entry only once. in case the first try fails because of commit we need to fall back to full copy
-	dstEntry := *srcEntry
-	dstEntry.CreationDate = time.Now()
-	dstEntry.Path = destPath
-	err = c.CreateEntry(ctx, repository, branch, dstEntry, graveler.WithMaxTries(1))
-	if err != nil {
-		return nil, err
-	}
-	return &dstEntry, nil
-}
-
-func copyObjectFull(ctx context.Context, o *PathOperation, srcPath path.ResolvedAbsolutePath, srcEntry *catalog.DBEntry) (*catalog.DBEntry, error) {
-	var err error
-	// fetch src entry if needed - optimization in case we already have the entry
-	if srcEntry == nil {
-		srcEntry, err = o.Catalog.GetEntry(ctx, srcPath.Repo, srcPath.Reference, srcPath.Path, catalog.GetEntryParams{ReturnExpired: true})
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	srcRepo, err := o.Catalog.GetRepository(ctx, srcPath.Repo)
-	if err != nil {
-		return nil, err
-	}
-
-	// copy data to a new physical address
-	dstEntry := *srcEntry
-	dstEntry.CreationDate = time.Now()
-	dstEntry.Path = o.Path
-	dstEntry.AddressType = catalog.AddressTypeRelative
-	dstEntry.PhysicalAddress = o.PathProvider.NewPath()
-	srcObject := block.ObjectPointer{StorageNamespace: srcRepo.StorageNamespace, Identifier: srcEntry.PhysicalAddress}
-	destObj := block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: dstEntry.PhysicalAddress}
-	err = o.BlockStore.Copy(ctx, srcObject, destObj)
-	if err != nil {
-		return nil, err
-	}
-
-	// create entry for the final copy
-	err = o.Catalog.CreateEntry(ctx, o.Repository.Name, o.Reference, dstEntry)
-	if err != nil {
-		return nil, err
-	}
-	return &dstEntry, nil
 }
 
 func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation) {

@@ -25,7 +25,7 @@ func (controller *HeadObject) RequiredPermissions(_ *http.Request, repoID, _, pa
 
 func (controller *HeadObject) Handle(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("stat_object", o.Principal, o.Repository.Name, o.Reference)
-	entry, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{ReturnExpired: true})
+	entry, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
 	if errors.Is(err, graveler.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
 		o.Log(req).Debug("path not found")

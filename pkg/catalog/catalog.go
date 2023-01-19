@@ -36,6 +36,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/pyramid"
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
+	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/validator"
 	"github.com/xitongsys/parquet-go/parquet"
 	"github.com/xitongsys/parquet-go/writer"
@@ -131,13 +132,12 @@ const (
 )
 
 type Config struct {
-	Config                *config.Config
-	KVStore               *kv.StoreMessage
-	WalkerFactory         WalkerFactory
-	SettingsManagerOption settings.ManagerOption
-
-	// The maximum file size for uncommitted dump created during PrepareUncommittedGC
-	GCMaxUncommittedFileSize int
+	Config                   *config.Config
+	KVStore                  *kv.StoreMessage
+	WalkerFactory            WalkerFactory
+	SettingsManagerOption    settings.ManagerOption
+	GCMaxUncommittedFileSize int // The maximum file size for uncommitted dump created during PrepareUncommittedGC
+	PathProvider             *upload.PathPartitionProvider
 }
 
 type Catalog struct {
@@ -149,6 +149,7 @@ type Catalog struct {
 	managers                 []io.Closer
 	workPool                 *pond.WorkerPool
 	kvStore                  *kv.StoreMessage
+	PathProvider             *upload.PathPartitionProvider
 }
 
 const (
@@ -258,6 +259,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		BlockAdapter:             tierFSParams.Adapter,
 		Store:                    gStore,
 		GCMaxUncommittedFileSize: cfg.GCMaxUncommittedFileSize,
+		PathProvider:             cfg.PathProvider,
 		log:                      logging.Default().WithField("service_name", "entry_catalog"),
 		walkerFactory:            cfg.WalkerFactory,
 		workPool:                 workPool,
@@ -1930,6 +1932,92 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}, nil
 }
 
+// CopyEntry copy entry information - will try to perform shallow copy. Source on the same repository branch and in staging, or it will do full copy.
+// Full copy will use the block adapter to make a copy of the data to a new physical address.
+// The return boolean is true in case of full copy.
+func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string) (*DBEntry, bool, error) {
+	var (
+		entry    *DBEntry // set to the entry we created (shallow or copy)
+		srcEntry *DBEntry // in case we load entry from staging we can reuse on full-copy
+		err      error
+	)
+
+	// try shallow copy if we are copy from same repository and branch
+	if srcRepository == destRepository && srcRef == destBranch {
+		// get entry from staging (fallback in case not found)
+		srcEntry, err = c.GetEntry(ctx, srcRepository, srcRef, srcPath, GetEntryParams{StageOnly: true})
+		if err != nil && !errors.Is(err, graveler.ErrNotFound) {
+			return nil, false, err
+		}
+		if err == nil {
+			// track physical address (copy-table)
+			_, err := c.TrackPhysicalAddress(ctx, srcRepository, srcEntry.PhysicalAddress)
+			if err != nil {
+				return nil, false, err
+			}
+
+			// create entry only once. in case the first try fails because of commit we need to fall back to full copy
+			dstEntry := *srcEntry
+			dstEntry.CreationDate = time.Now()
+			dstEntry.Path = destPath
+			err = c.CreateEntry(ctx, destRepository, destBranch, dstEntry, graveler.WithMaxTries(1))
+			if err != nil {
+				return nil, false, err
+			}
+			entry = &dstEntry
+		}
+	}
+
+	// copyObjectFull copy data from srcEntry's physical address (if set) or srcPath into destPath
+	// fetch src entry if needed - optimization in case we already have the entry
+	fullCopy := false
+	if entry == nil {
+		fullCopy = true
+		// get an entry if needed
+		if srcEntry == nil {
+			srcEntry, err = c.GetEntry(ctx, srcRepository, srcRef, srcPath, GetEntryParams{})
+			if err != nil {
+				return nil, false, err
+			}
+		}
+
+		// load repositories information for storage namespace
+		destRepo, err := c.GetRepository(ctx, destRepository)
+		if err != nil {
+			return nil, false, err
+		}
+
+		srcRepo := destRepo
+		if srcRepository != destRepository {
+			srcRepo, err = c.GetRepository(ctx, srcRepository)
+			if err != nil {
+				return nil, false, err
+			}
+		}
+
+		// copy data to a new physical address
+		dstEntry := *srcEntry
+		dstEntry.CreationDate = time.Now()
+		dstEntry.Path = destPath
+		dstEntry.AddressType = AddressTypeRelative
+		dstEntry.PhysicalAddress = c.PathProvider.NewPath()
+		srcObject := block.ObjectPointer{StorageNamespace: srcRepo.StorageNamespace, Identifier: srcEntry.PhysicalAddress}
+		destObj := block.ObjectPointer{StorageNamespace: destRepo.StorageNamespace, Identifier: dstEntry.PhysicalAddress}
+		err = c.BlockAdapter.Copy(ctx, srcObject, destObj)
+		if err != nil {
+			return nil, false, err
+		}
+		entry = &dstEntry
+	}
+
+	// create entry for the final copy
+	err = c.CreateEntry(ctx, destRepository, destBranch, *entry)
+	if err != nil {
+		return nil, false, err
+	}
+	return entry, fullCopy, nil
+}
+
 // TrackPhysicalAddress store physical address under repository partition, key is unique identifier that we keep in
 // time based order to later delete old ones
 func (c *Catalog) TrackPhysicalAddress(ctx context.Context, repository, physicalAddress string) (string, error) {
@@ -2047,7 +2135,7 @@ func (c *Catalog) deleteRepoTrackedPhysicalAddressHelper(ctx context.Context, re
 	defer it.Close()
 
 	var (
-		keysToDelete = []string{}
+		keysToDelete []string
 		hasMore      = false
 	)
 	for it.Next() {
