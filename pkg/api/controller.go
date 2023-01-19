@@ -2440,7 +2440,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 
 func (c *Controller) copyObjectShallow(ctx context.Context, repository, branch string, srcEntry *catalog.DBEntry, destPath string) (*catalog.DBEntry, error) {
 	// track physical address (copy-table)
-	err := c.Catalog.TrackPhysicalAddress(ctx, repository, srcEntry.PhysicalAddress)
+	_, err := c.Catalog.TrackPhysicalAddress(ctx, repository, srcEntry.PhysicalAddress)
 	if err != nil {
 		return nil, err
 	}

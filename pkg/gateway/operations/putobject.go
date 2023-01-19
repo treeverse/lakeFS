@@ -153,7 +153,7 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 
 func copyObjectShallow(ctx context.Context, c catalog.Interface, repository string, branch string, srcEntry *catalog.DBEntry, destPath string) (*catalog.DBEntry, error) {
 	// track physical address (copy-table)
-	err := c.TrackPhysicalAddress(ctx, repository, srcEntry.PhysicalAddress)
+	_, err := c.TrackPhysicalAddress(ctx, repository, srcEntry.PhysicalAddress)
 	if err != nil {
 		return nil, err
 	}

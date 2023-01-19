@@ -200,9 +200,9 @@ var runCmd = &cobra.Command{
 		defer func() { _ = c.Close() }()
 
 		deleteScheduler := getScheduler()
-		err = scheduleExpiredAddressesJob(ctx, deleteScheduler, c)
+		err = scheduleCleanupJobs(ctx, deleteScheduler, c)
 		if err != nil {
-			logger.WithError(err).Fatal("Failed to initialize delete expired address tokens job")
+			logger.WithError(err).Fatal("Failed to schedule cleanup jobs")
 		}
 		deleteScheduler.StartAsync()
 
@@ -411,15 +411,29 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 	}
 }
 
-func scheduleExpiredAddressesJob(ctx context.Context, s *gocron.Scheduler, c *catalog.Catalog) error {
+func scheduleCleanupJobs(ctx context.Context, s *gocron.Scheduler, c *catalog.Catalog) error {
+	// delete expired link addresses
 	const deleteExpiredAddressPeriod = 3
-	job, err := s.Every(deleteExpiredAddressPeriod * ref.LinkAddressTime).Do(func() {
+	job1, err := s.Every(deleteExpiredAddressPeriod * ref.LinkAddressTime).Do(func() {
 		c.DeleteExpiredLinkAddresses(ctx)
 	})
 	if err != nil {
 		return err
 	}
-	job.SingletonMode()
+	job1.SingletonMode()
+
+	// delete expired tracked physical addresses
+	const (
+		deleteTrackedLowerTimeSec = 50
+		deleteTrackedUpperTimeSec = 80
+	)
+	job2, err := s.EveryRandom(deleteTrackedLowerTimeSec, deleteTrackedUpperTimeSec).Minute().Do(func() {
+		c.DeleteTrackedPhysicalAddresses(ctx)
+	})
+	if err != nil {
+		return err
+	}
+	job2.SingletonMode()
 	return nil
 }
 

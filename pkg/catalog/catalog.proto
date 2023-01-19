@@ -22,3 +22,8 @@ message Entry {
 	AddressType address_type = 6;
 	string content_type = 7;
 }
+
+message TrackedEntry {
+	string address = 1;
+	google.protobuf.Timestamp last_modified = 2;
+}

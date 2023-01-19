@@ -64,7 +64,10 @@ const (
 	// Deviation with gcPeriodicCheckSize = 100000 will be around 5 MB
 	gcPeriodicCheckSize = 100000
 
-	kvTrackPrefix = "track"
+	kvTrackPrefix                = "track/"
+	kvTrackDeleteBatchInterval   = 2 * time.Second
+	kvTrackDeleteBatchSize       = 1000
+	kvTrackDeleteAddressDuration = time.Hour
 )
 
 type Path string
@@ -1927,14 +1930,26 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}, nil
 }
 
-func (c *Catalog) TrackPhysicalAddress(ctx context.Context, repository, physicalAddress string) error {
+// TrackPhysicalAddress store physical address under repository partition, key is unique identifier that we keep in
+//
+//	time based order to later delete old ones
+func (c *Catalog) TrackPhysicalAddress(ctx context.Context, repository, physicalAddress string) (string, error) {
 	repo, err := c.getRepository(ctx, repository)
 	if err != nil {
-		return err
+		return "", err
 	}
 	repoPartition := graveler.RepoPartition(repo)
-	key := kv.FormatPath(kvTrackPrefix, physicalAddress)
-	return c.kvStore.Set(ctx, []byte(repoPartition), []byte(key), []byte{})
+	id := xid.New().String()
+	key := kvTrackPrefix + id
+	ent := &Entry{
+		Address:      physicalAddress,
+		LastModified: timestamppb.Now(),
+	}
+	err = c.kvStore.SetMsg(ctx, repoPartition, []byte(key), ent)
+	if err != nil {
+		return "", err
+	}
+	return id, nil
 }
 
 func (c *Catalog) SetLinkAddress(ctx context.Context, repository, token string) error {
@@ -1954,20 +1969,9 @@ func (c *Catalog) VerifyLinkAddress(ctx context.Context, repository, token strin
 }
 
 func (c *Catalog) DeleteExpiredLinkAddresses(ctx context.Context) {
-	it, err := c.Store.ListRepositories(ctx)
+	repos, err := c.listRepositoriesHelper(ctx)
 	if err != nil {
-		c.log.WithError(err).Warn("Failed to list repositories during delete expired addresses")
-		return
-	}
-	defer it.Close()
-
-	var repos []*graveler.RepositoryRecord
-	for it.Next() {
-		record := it.Value()
-		repos = append(repos, record)
-	}
-	if err := it.Err(); err != nil {
-		c.log.WithError(err).Warn("Failed to iterate over repositories during delete expired addresses")
+		c.log.WithError(err).Warn("Failed list repositories during delete expired addresses")
 		return
 	}
 
@@ -1977,6 +1981,104 @@ func (c *Catalog) DeleteExpiredLinkAddresses(ctx context.Context) {
 			c.log.WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired address tokens failed")
 		}
 	}
+}
+
+func (c *Catalog) listRepositoriesHelper(ctx context.Context) ([]*graveler.RepositoryRecord, error) {
+	it, err := c.Store.ListRepositories(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer it.Close()
+
+	var repos []*graveler.RepositoryRecord
+	for it.Next() {
+		repos = append(repos, it.Value())
+	}
+	if err := it.Err(); err != nil {
+		return nil, err
+	}
+	return repos, nil
+}
+
+func (c *Catalog) DeleteTrackedPhysicalAddresses(ctx context.Context) {
+	repos, err := c.listRepositoriesHelper(ctx)
+	if err != nil {
+		c.log.WithError(err).Warn("Failed list repositories during delete tracked physical addresses")
+		return
+	}
+
+	for _, repo := range repos {
+		if err := c.deleteRepoTrackedPhysicalAddresses(ctx, repo); err != nil {
+			c.log.WithError(err).
+				WithField("repository", repo.RepositoryID).
+				Warn("Repository delete tracked physical addresses failed")
+		}
+	}
+}
+
+func (c *Catalog) deleteRepoTrackedPhysicalAddresses(ctx context.Context, repo *graveler.RepositoryRecord) error {
+	// collect and delete old keys - work in 'kvTrackDeleteBatchSize' and interval of 5 min between if batch is bigger
+	// based on the last modified field.
+	for {
+		hasMore, err := c.deleteRepoTrackedPhysicalAddressHelper(ctx, repo)
+		if err != nil {
+			return err
+		}
+		if !hasMore {
+			break
+		}
+		// sleep and process more
+		select {
+		case <-time.After(kvTrackDeleteBatchInterval):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	return nil
+}
+
+func (c *Catalog) deleteRepoTrackedPhysicalAddressHelper(ctx context.Context, repo *graveler.RepositoryRecord) (bool, error) {
+	repoPartition := graveler.RepoPartition(repo)
+	msgType := (&Entry{}).ProtoReflect().Type()
+	it, err := kv.NewPrimaryIterator(ctx, c.kvStore.Store, msgType, repoPartition, []byte(kvTrackPrefix), kv.IteratorOptionsFrom([]byte{}))
+	if err != nil {
+		return false, err
+	}
+	defer it.Close()
+
+	var (
+		keysToDelete = []string{}
+		hasMore      = false
+	)
+	for it.Next() {
+		if len(keysToDelete) >= kvTrackDeleteBatchSize {
+			hasMore = true
+			break
+		}
+		e := it.Entry()
+		entry := e.Value.(*Entry)
+		addressTime := entry.LastModified.AsTime()
+		if time.Since(addressTime) < kvTrackDeleteAddressDuration {
+			break
+		}
+		keysToDelete = append(keysToDelete, string(e.Key))
+	}
+	if err := it.Err(); err != nil {
+		return false, err
+	}
+
+	// delete the collected keys
+	for _, key := range keysToDelete {
+		err := c.kvStore.Delete(ctx, []byte(repoPartition), []byte(key))
+		if err != nil {
+			c.log.WithError(err).
+				WithFields(logging.Fields{"repository": repo.RepositoryID, "key": key}).
+				Warn("Failed to delete key while clear tracked physical addresses")
+
+			return false, err
+		}
+	}
+	return hasMore, nil
 }
 
 func (c *Catalog) Close() error {

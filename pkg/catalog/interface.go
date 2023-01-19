@@ -126,8 +126,9 @@ type Interface interface {
 	LoadBranches(ctx context.Context, repositoryID, branchesMetaRangeID string) error
 	LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID string) error
 
-	// TrackPhysicalAddress track physical address (copy-table) to ensure physical address will not be collected by GC
-	TrackPhysicalAddress(ctx context.Context, repository, physicalAddress string) error
+	// TrackPhysicalAddress track physical address (copy-table) to ensure physical address will not be collected by GC.
+	// returns the id used to track the address.
+	TrackPhysicalAddress(ctx context.Context, repository, physicalAddress string) (string, error)
 
 	// forward metadata for thick clients
 	GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeAddress, error)
