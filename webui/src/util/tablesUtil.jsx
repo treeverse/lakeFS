@@ -1,4 +1,3 @@
-import React from "react";
 
 import {objects} from "../lib/api";
 
