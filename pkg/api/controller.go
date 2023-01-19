@@ -20,6 +20,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/plugins/diff"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/swag"
@@ -96,6 +98,7 @@ type Controller struct {
 	sessionStore          sessions.Store
 	oidcAuthenticator     *oidc.Authenticator
 	PathProvider          upload.PathProvider
+	OTFDiffService        *diff.Service
 }
 
 func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, r *http.Request, body PrepareGarbageCollectionUncommittedJSONRequestBody, repository string) {
@@ -3998,6 +4001,7 @@ func NewController(
 	oidcAuthenticator *oidc.Authenticator,
 	sessionStore sessions.Store,
 	pathProvider upload.PathProvider,
+	diffService *diff.Service,
 ) *Controller {
 	gob.Register(oidc.Claims{})
 	return &Controller{
@@ -4018,6 +4022,7 @@ func NewController(
 		sessionStore:          sessionStore,
 		oidcAuthenticator:     oidcAuthenticator,
 		PathProvider:          pathProvider,
+		OTFDiffService:        diffService,
 	}
 }
 

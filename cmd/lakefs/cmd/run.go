@@ -14,6 +14,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/plugins"
+	"github.com/treeverse/lakefs/pkg/plugins/diff"
+
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-co-op/gocron"
@@ -222,6 +225,7 @@ var runCmd = &cobra.Command{
 		defer actionsService.Stop()
 		c.SetHooksHandler(actionsService)
 
+		otfDiffService := initDiffService()
 		middlewareAuthenticator := auth.ChainAuthenticator{
 			auth.NewBuiltinAuthenticator(authService),
 		}
@@ -296,6 +300,7 @@ var runCmd = &cobra.Command{
 			oidcProvider,
 			oauthConfig,
 			upload.DefaultPathProvider,
+			otfDiffService,
 		)
 
 		// init gateway server
@@ -529,6 +534,18 @@ func enableKVParamsMetrics(p params.Config) params.Config {
 	pg.Metrics = true
 	p.Postgres = &pg
 	return p
+}
+
+func initDiffService() *diff.Service {
+	pluginsManager := plugins.NewManager[diff.Differ]()
+	hd, _ := os.UserHomeDir()
+	pid := plugins.PluginIdentity{Version: 0, ExecutableLocation: fmt.Sprintf("%s/.lakefs/plugins/delta", hd)}
+	pa := plugins.PluginHandshake{Key: "deltaKey", Value: "deltaValue"}
+	err := pluginsManager.RegisterPlugin("delta", pid, pa, diff.DeltaDiffGRPCPlugin{})
+	if err != nil {
+		return nil
+	}
+	return diff.NewService(pluginsManager)
 }
 
 //nolint:gochecknoinits

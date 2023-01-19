@@ -100,8 +100,18 @@ diff:
   <diff_type>:
     plugin: <plugin_name_1>
 plugins:
-  <plugin_name_1>: <location to the 'plugin_name_1' plugin - full path to the binary needed to execute>
-  <plugin_name_2>: <location to the 'plugin_name_1' plugin - full path to the binary needed to execute>    
+  <plugin_name_1>: 
+    path: <location to the 'plugin_name_1' plugin - full path to the binary needed to execute>,
+    handshake: 
+      key: <>,
+      value: <>,
+      version: <>
+  <plugin_name_2>: 
+    path: <location to the 'plugin_name_2' plugin - full path to the binary needed to execute>,
+    handshake: 
+      key: <>,
+      value: <>,
+      version: <>
 ```
 
 1. `LAKEFS_DIFF_{DIFF_TYPE}_PLUGIN`
