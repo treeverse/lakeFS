@@ -64,7 +64,7 @@ const (
 	// Deviation with gcPeriodicCheckSize = 100000 will be around 5 MB
 	gcPeriodicCheckSize = 100000
 
-	kvTrackPrefix                = "track/"
+	kvTrackPrefix                = "track"
 	kvTrackDeleteBatchInterval   = 2 * time.Second
 	kvTrackDeleteBatchSize       = 1000
 	kvTrackDeleteAddressDuration = time.Hour
@@ -1931,8 +1931,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 }
 
 // TrackPhysicalAddress store physical address under repository partition, key is unique identifier that we keep in
-//
-//	time based order to later delete old ones
+// time based order to later delete old ones
 func (c *Catalog) TrackPhysicalAddress(ctx context.Context, repository, physicalAddress string) (string, error) {
 	repo, err := c.getRepository(ctx, repository)
 	if err != nil {
@@ -1940,7 +1939,7 @@ func (c *Catalog) TrackPhysicalAddress(ctx context.Context, repository, physical
 	}
 	repoPartition := graveler.RepoPartition(repo)
 	id := xid.New().String()
-	key := kvTrackPrefix + id
+	key := kv.FormatPath(kvTrackPrefix, id)
 	ent := &Entry{
 		Address:      physicalAddress,
 		LastModified: timestamppb.Now(),
@@ -2040,7 +2039,8 @@ func (c *Catalog) deleteRepoTrackedPhysicalAddresses(ctx context.Context, repo *
 func (c *Catalog) deleteRepoTrackedPhysicalAddressHelper(ctx context.Context, repo *graveler.RepositoryRecord) (bool, error) {
 	repoPartition := graveler.RepoPartition(repo)
 	msgType := (&Entry{}).ProtoReflect().Type()
-	it, err := kv.NewPrimaryIterator(ctx, c.kvStore.Store, msgType, repoPartition, []byte(kvTrackPrefix), kv.IteratorOptionsFrom([]byte{}))
+	prefix := []byte(kv.FormatPath(kvTrackPrefix, ""))
+	it, err := kv.NewPrimaryIterator(ctx, c.kvStore.Store, msgType, repoPartition, prefix, kv.IteratorOptionsFrom([]byte{}))
 	if err != nil {
 		return false, err
 	}

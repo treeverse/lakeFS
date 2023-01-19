@@ -105,16 +105,13 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
 		return
 	}
-	ctx := req.Context()
 
-	// TODO(barak): verify that o.Reference must be a branch
-
-	// check if src and dst are in the same repository and branch
 	var (
 		entry    *catalog.DBEntry // set to the entry we created (shallow or copy)
 		srcEntry *catalog.DBEntry // in case we load entry from staging we can reuse on full-copy
 	)
-
+	// check if src and dst are in the same repository and branch
+	ctx := req.Context()
 	if repository == srcPath.Repo && branch == srcPath.Reference {
 		// try getting source entry from staging - if not found we continue to fall to full copy
 		srcEntry, err = o.Catalog.GetEntry(ctx, repository, branch, srcPath.Path, catalog.GetEntryParams{
@@ -158,9 +155,9 @@ func copyObjectShallow(ctx context.Context, c catalog.Interface, repository stri
 		return nil, err
 	}
 
-	// create entry (copy) - try only once
+	// create entry only once. in case the first try fails because of commit we need to fall back to full copy
 	dstEntry := *srcEntry
-	dstEntry.CreationDate = time.Now().UTC()
+	dstEntry.CreationDate = time.Now()
 	dstEntry.Path = destPath
 	err = c.CreateEntry(ctx, repository, branch, dstEntry, graveler.WithMaxTries(1))
 	if err != nil {
@@ -186,7 +183,7 @@ func copyObjectFull(ctx context.Context, o *PathOperation, srcPath path.Resolved
 
 	// copy data to a new physical address
 	dstEntry := *srcEntry
-	dstEntry.CreationDate = time.Now().UTC()
+	dstEntry.CreationDate = time.Now()
 	dstEntry.Path = o.Path
 	dstEntry.AddressType = catalog.AddressTypeRelative
 	dstEntry.PhysicalAddress = o.PathProvider.NewPath()

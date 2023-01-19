@@ -3911,7 +3911,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
 	})
 
-	t.Run("full_diff_branch", func(t *testing.T) {
+	t.Run("full_different_branch", func(t *testing.T) {
 		const (
 			srcPath  = "foo/bar2"
 			destPath = "foo/bar-full-from-branch"

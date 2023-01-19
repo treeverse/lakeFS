@@ -2445,9 +2445,9 @@ func (c *Controller) copyObjectShallow(ctx context.Context, repository, branch s
 		return nil, err
 	}
 
-	// create entry (copy) - try only once
+	// create entry only once. in case the first try fails because of commit we need to fall back to full copy
 	dstEntry := *srcEntry
-	dstEntry.CreationDate = time.Now().UTC()
+	dstEntry.CreationDate = time.Now()
 	dstEntry.Path = destPath
 	err = c.Catalog.CreateEntry(ctx, repository, branch, dstEntry, graveler.WithMaxTries(1))
 	if err != nil {
@@ -2469,7 +2469,7 @@ func (c *Controller) copyObjectFull(ctx context.Context, repo *catalog.Repositor
 
 	// copy data to a new physical address
 	dstEntry := *srcEntry
-	dstEntry.CreationDate = time.Now().UTC()
+	dstEntry.CreationDate = time.Now()
 	dstEntry.Path = destPath
 	dstEntry.AddressType = catalog.AddressTypeRelative
 	dstEntry.PhysicalAddress = c.PathProvider.NewPath()

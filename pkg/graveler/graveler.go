@@ -146,7 +146,9 @@ type MetaRangeInfo struct {
 	ID MetaRangeID
 }
 
+// GetOptions controls get request defaults
 type GetOptions struct {
+	// StageOnly fetch key from stage area only. Default (false) will lookup stage and committed data.
 	StageOnly bool
 }
 
@@ -381,6 +383,11 @@ func (d *Diff) Copy() *Diff {
 		Value:        d.Value,
 		LeftIdentity: append([]byte(nil), d.LeftIdentity...),
 	}
+}
+
+type safeBranchWriteOptions struct {
+	// MaxTries number of tries to perform operation while branch changes. Default: BranchWriteMaxTries
+	MaxTries int
 }
 
 type CommitParams struct {
@@ -1466,7 +1473,7 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 	}
 
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "set"})
-	return g.safeBranchWrite(ctx, log, repository, branchID, options.MaxTries, func(branch *Branch) error {
+	return g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
 		if !options.IfAbsent {
 			return g.StagingManager.Set(ctx, branch.StagingToken, key, &value, false)
 		}
@@ -1489,12 +1496,14 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 
 // safeBranchWrite is a helper function that wraps a branch write operation with validation that the staging token
 // didn't change while writing to the branch.
-func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repository *RepositoryRecord, branchID BranchID, maxTries int, stagingOperation func(branch *Branch) error) error {
-	if maxTries == 0 {
-		maxTries = BranchWriteMaxTries
+func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repository *RepositoryRecord, branchID BranchID,
+	options safeBranchWriteOptions, stagingOperation func(branch *Branch) error,
+) error {
+	if options.MaxTries == 0 {
+		options.MaxTries = BranchWriteMaxTries
 	}
 	var try int
-	for try = 0; try < maxTries; try++ {
+	for try = 0; try < options.MaxTries; try++ {
 		branchPreOp, err := g.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return err
@@ -1519,7 +1528,7 @@ func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repo
 			"branch_token_post": branchPostOp.StagingToken,
 		}).Debug("Retrying Set")
 	}
-	if try == maxTries {
+	if try == options.MaxTries {
 		return fmt.Errorf("safe branch write: %w", ErrTooManyTries)
 	}
 	return nil
@@ -1534,9 +1543,11 @@ func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, bra
 		return ErrWriteToProtectedBranch
 	}
 
-	return g.safeBranchWrite(ctx, g.log(ctx).WithField("key", key).WithField("operation", "delete"), repository, branchID, 0, func(branch *Branch) error {
-		return g.deleteUnsafe(ctx, repository, branch, key, nil)
-	})
+	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "delete"})
+	return g.safeBranchWrite(ctx, log, repository, branchID,
+		safeBranchWriteOptions{}, func(branch *Branch) error {
+			return g.deleteUnsafe(ctx, repository, branch, key, nil)
+		})
 }
 
 // DeleteBatch delete batch of keys. Keys length is limited to DeleteKeysMaxSize. Return error can be of type
@@ -1552,8 +1563,10 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 	if len(keys) > DeleteKeysMaxSize {
 		return fmt.Errorf("keys length (%d) passed the maximum allowed(%d): %w", len(keys), DeleteKeysMaxSize, ErrInvalidValue)
 	}
+
 	var m *multierror.Error
-	err = g.safeBranchWrite(ctx, g.log(ctx).WithField("operation", "delete_keys"), repository, branchID, 0, func(branch *Branch) error {
+	log := g.log(ctx).WithField("operation", "delete_keys")
+	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{}, func(branch *Branch) error {
 		var cachedMetaRangeID MetaRangeID // used to cache the committed branch metarange ID
 		for _, key := range keys {
 			err := g.deleteUnsafe(ctx, repository, branch, key, &cachedMetaRangeID)
