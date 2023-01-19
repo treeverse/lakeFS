@@ -123,18 +123,8 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
     // presented at the object level. Therefore, in case of tables that were added or removed we don't know
     // under which of the diff refs the table root is expected to be listed and therefore we try to get the table type
     // from both and take the one that returned results.
-    let leftResult = useAPI(() => {
-        if (entry.path_type === "object") {
-            return
-        }
-        return tablesUtil.isDeltaLakeTable(entry.path, repo, rightDiffRefID)
-    });
-    let rightResult = useAPI(() => {
-        if (entry.path_type === "object") {
-            return
-        }
-        return tablesUtil.isDeltaLakeTable(entry.path, repo, leftDiffRefID);
-    });
+    let leftResult = useAPI(() => tablesUtil.isDeltaLakeTable(entry, repo, rightDiffRefID));
+    let rightResult = useAPI(() => tablesUtil.isDeltaLakeTable(entry, repo, leftDiffRefID));
 
     useEffect(() => {
         if (entry.path_type === "object") {
@@ -142,7 +132,7 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
             return
         }
         if (!leftResult.loading && !rightResult.loading) {
-            setTreeItemType({type: leftResult.response || leftResult.response ? TreeItemType.DeltaLakeTable : TreeItemType.Prefix, loading: false});
+            setTreeItemType({type: leftResult.response || rightResult.response ? TreeItemType.DeltaLakeTable : TreeItemType.Prefix, loading: false});
         }
     }, [leftResult, rightResult])
 
