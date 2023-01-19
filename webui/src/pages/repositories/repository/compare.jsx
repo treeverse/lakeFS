@@ -84,10 +84,11 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                        onClick={() => {setTableDiffExpanded(false)}}>
                                         <ArrowLeftIcon/> Back to object comparison
                                 </Button>
-                        : ""}
+                            :
                         <div className="mr-1 mb-2">
                             <Alert variant={"info"}><InfoIcon/> You can now use lakeFS to compare Delta Lake tables</Alert>
                         </div>
+                        }
                         <Card>
                             <Card.Header>
                                 <span className="float-start">
