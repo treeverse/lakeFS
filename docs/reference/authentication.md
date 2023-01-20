@@ -13,6 +13,10 @@ has_children: false
 
 {% include toc.html %}
 
+**Note**
+This feature is deprecated. For authentication on top of lakeFS, try [lakeFS cloud](https://lakefs.cloud)
+{: .note }
+
 ## Authentication
 
 ### User Authentication

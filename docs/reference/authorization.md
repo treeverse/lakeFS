@@ -12,6 +12,11 @@ has_children: false
 {: .no_toc }
 
 {% include toc.html %}
+
+**Note**
+This feature is deprecated. For authorization on top of lakeFS, try [lakeFS cloud](https://lakefs.cloud)
+{: .note }
+
 ## Authorization
 
 ### Authorization Model
