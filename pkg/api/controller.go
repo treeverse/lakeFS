@@ -3861,7 +3861,7 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository 
 		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
-	c.LogAction(ctx, "table_format_diff", r, repository, rightRef, leftRef)
+	c.LogAction(ctx, fmt.Sprintf("table_format_%s_diff", params.Type), r, repository, rightRef, leftRef)
 	credentials, _, err := c.Auth.ListUserCredentials(ctx, user.Username, nil)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -3886,7 +3886,7 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository 
 	entries, err := c.otfDiffService.RunDiff(ctx, params.Type, diffParams)
 	if err != nil {
 		c.Logger.Error(err)
-		if errors.Is(err, diff.ErrOTFNotFound) {
+		if errors.Is(err, diff.ErrTableNotFound) {
 			writeError(w, r, http.StatusNotFound, err)
 		} else {
 			writeError(w, r, http.StatusInternalServerError, err)

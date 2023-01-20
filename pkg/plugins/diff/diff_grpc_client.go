@@ -30,7 +30,7 @@ func (d *GRPCClient) Diff(ctx context.Context, paths TablePaths, s3Creds S3Creds
 	if err != nil {
 		errStatus, _ := status.FromError(err)
 		if codes.NotFound == errStatus.Code() {
-			return nil, ErrOTFNotFound
+			return nil, ErrTableNotFound
 		}
 		return nil, err
 	}
