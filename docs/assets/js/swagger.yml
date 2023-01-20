@@ -246,6 +246,10 @@ components:
           enum: [common_prefix, object]
         physical_address:
           type: string
+          description: |
+            The location of the object on the underlying object store.
+            Formatted as a native URI with the object store type as scheme ("s3://...", "gs://...", etc.)
+            Or, in the case of presign=true, will be an HTTP URL to be consumed via regular HTTP GET
         checksum:
           type: string
         size_bytes:
@@ -377,6 +381,34 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Diff"
+
+    OtfDiff:
+      type: object
+      required:
+        - version
+        - operation
+        - timestamp
+        - operation_content
+      properties:
+        version:
+          type: string
+        timestamp:
+          type: integer
+        operation:
+          type: string
+        operation_content:
+          type: object
+          description: free form content describing the returned operation diff
+
+    OtfDiffList:
+      type: object
+      required:
+        - results
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/OtfDiff"
 
     ResetCreation:
       type: object
@@ -874,6 +906,12 @@ components:
           type: boolean
         upgrade_url:
           type: string
+    GarbageCollectionConfig:
+      type: object
+      properties:
+        grace_period:
+          description: Duration in seconds. Objects created in the recent grace_period will not be collected.
+          type: integer
 
     ActionRun:
       type: object
@@ -2114,6 +2152,57 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: left_ref
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: right_ref
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: table_path
+        required: true
+        description: a path to the table location under the specified ref.
+        schema:
+          type: string
+      - in: query
+        name: type
+        required: true
+        description: the type of otf
+        schema:
+          type: string
+    get:
+      tags:
+        - experimental
+        - otf diff
+      operationId: otfDiff
+      summary: perform otf diff
+      responses:
+        200:
+          description: diff list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OtfDiffList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        412:
+          $ref: "#/components/responses/PreconditionFailed"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3403,11 +3492,6 @@ paths:
         schema:
           type: string
         description: path to the table data
-      - in: query
-        name: presign
-        required: false
-        schema:
-          type: boolean
     post:
       tags:
         - metadata
@@ -3866,6 +3950,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StorageConfig"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+  /config/garbage-collection:
+    get:
+      tags:
+        - config
+      operationId: getGarbageCollectionConfig
+      description: get information of gc settings
+      responses:
+        200:
+          description: lakeFS garbage collection config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarbageCollectionConfig"
         401:
           $ref: "#/components/responses/Unauthorized"
   /templates/{template_location}:

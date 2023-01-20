@@ -3,8 +3,11 @@ package diff
 import (
 	"context"
 
+	"google.golang.org/grpc/codes"
+
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 )
 
 type GRPCClient struct {
@@ -16,6 +19,7 @@ func (d *GRPCClient) Diff(ctx context.Context, paths TablePaths, s3Creds S3Creds
 		Paths: &DiffPaths{
 			LeftPath:  paths.LeftTablePath,
 			RightPath: paths.RightTablePath,
+			// TODO: add base ref
 		},
 		GatewayConfig: &GatewayConfig{
 			Key:      s3Creds.Key,
@@ -24,6 +28,10 @@ func (d *GRPCClient) Diff(ctx context.Context, paths TablePaths, s3Creds S3Creds
 		},
 	})
 	if err != nil {
+		errStatus, _ := status.FromError(err)
+		if codes.NotFound == errStatus.Code() {
+			return nil, ErrTableNotFound
+		}
 		return nil, err
 	}
 	return dr.Diffs, nil
