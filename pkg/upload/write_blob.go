@@ -33,23 +33,3 @@ func WriteBlob(ctx context.Context, adapter block.Adapter, bucketName, address s
 		Size:            hashReader.CopiedSize,
 	}, nil
 }
-
-// CopyBlob copies file from sourceAddress to a generated UUID in destinationAddress
-func CopyBlob(ctx context.Context, adapter block.Adapter, sourceBucketName, destinationBucketName, sourceAddress, checksum, destAddress string, size int64) (*Blob, error) {
-	err := adapter.Copy(ctx, block.ObjectPointer{
-		StorageNamespace: sourceBucketName,
-		Identifier:       sourceAddress,
-	}, block.ObjectPointer{
-		StorageNamespace: destinationBucketName,
-		Identifier:       destAddress,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &Blob{
-		PhysicalAddress: destAddress,
-		RelativePath:    true,
-		Checksum:        checksum,
-		Size:            size,
-	}, nil
-}
