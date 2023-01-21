@@ -126,16 +126,14 @@ type BufferedCollector struct {
 	runtimeStats map[string]string
 	// inFlight monitor active calls to CollectEvents. Enables waiting until application code is no longer uses updatesCh.
 	inFlight sync.WaitGroup
-	// closed used as flag that the collector is closed. stop processing CollectEvents.
-	closed int32
+	// stopped used as flag that the collector is stopped. stop processing CollectEvents.
+	stopped int32
 	// extended stats indicate if we post extra stats on each BI or
 	extended bool
 	// log is the logger
 	log logging.Logger
 	// wg used to wait until two main goroutines are done
 	wg sync.WaitGroup
-	// cancel enables Close to trigger cancel to the background processing
-	cancel context.CancelFunc
 }
 
 type BufferedCollectorOpts func(s *BufferedCollector)
@@ -196,19 +194,16 @@ func NewBufferedCollector(installationID string, cfg Config, opts ...BufferedCol
 		installationID:  installationID,
 		processID:       uuid.Must(uuid.NewUUID()).String(),
 		inFlight:        sync.WaitGroup{},
-		closed:          0,
+		stopped:         1,
 		extended:        cfg.Extended,
-		log:             logging.Default(),
+		log:             logging.Dummy(),
 		sendCh:          make(chan *InputEvent, 1), // buffered as like to check if sender is free
 	}
 	for _, opt := range opts {
 		opt(s)
 	}
 
-	// re-assign logger with service name
-	s.log = s.log.WithField("service", "stats_collector")
-
-	// assign sender
+	// if no sender, assign default based on configuration
 	if s.sender == nil {
 		if cfg.Enabled {
 			s.sender = NewHTTPSender(cfg.Address, s.log)
@@ -245,7 +240,7 @@ func (s *BufferedCollector) newInputEvent() *InputEvent {
 }
 
 func (s *BufferedCollector) CollectEvents(ev Event, count uint64) {
-	if s.isClosed() {
+	if s.isStopped() {
 		return
 	}
 	s.inFlight.Add(1)
@@ -264,12 +259,15 @@ func (s *BufferedCollector) CollectEvent(ev Event) {
 	s.CollectEvents(ev, 1)
 }
 
-func (s *BufferedCollector) isClosed() bool {
-	return atomic.LoadInt32(&s.closed) == 1
+func (s *BufferedCollector) isStopped() bool {
+	return atomic.LoadInt32(&s.stopped) == 1
 }
 
-func (s *BufferedCollector) Run(ctx context.Context) {
-	ctx, s.cancel = context.WithCancel(ctx)
+func (s *BufferedCollector) Start(ctx context.Context) {
+	if !s.isStopped() {
+		return
+	}
+
 	const backgroundLoops = 2
 	s.wg.Add(backgroundLoops)
 	// update metrics sent on updatesCh
@@ -277,6 +275,8 @@ func (s *BufferedCollector) Run(ctx context.Context) {
 	// post metrics waiting in sendCh
 	// we use background context as we do not want to cancel posting based on context
 	go s.sendMetricsLoop(context.Background())
+
+	atomic.StoreInt32(&s.stopped, 0)
 }
 
 func (s *BufferedCollector) sendMetricsLoop(ctx context.Context) {
@@ -291,27 +291,28 @@ func (s *BufferedCollector) updateMetricsLoop(ctx context.Context) {
 	}()
 	for {
 		select {
-		case w := <-s.updatesCh:
-			// collect events, and flush if needed by size
+		case w, ok := <-s.updatesCh:
+			// process updates and flush if flush (send) if needed
+			if !ok {
+				return
+			}
 			s.update(w)
 			if len(s.cache) >= s.flushSize {
 				s.flush()
 			}
 
 		case <-s.heartbeatTicker.C:
-			// collect heartbeat
 			s.incr(Event{
 				Class: "global",
 				Name:  "heartbeat",
 			})
 
 		case <-s.flushTicker.Tick():
-			// every N seconds, send the collected events
+			// every N seconds, flush (send) the collected events and runtime stats (if needed)
 			s.flush()
-			// update runtime statistics
 			s.handleRuntimeStats()
 
-		case <-ctx.Done(): // we're done
+		case <-ctx.Done():
 			return
 		}
 	}
@@ -337,38 +338,38 @@ func (s *BufferedCollector) flush() {
 	}
 }
 
-func (s *BufferedCollector) Close() {
-	// mark as closed
-	if !atomic.CompareAndSwapInt32(&s.closed, 0, 1) {
+func (s *BufferedCollector) Stop() {
+	// stop, return if already marked as stopped
+	if !atomic.CompareAndSwapInt32(&s.stopped, 0, 1) {
 		return
 	}
 
-	// wait until no more in flight requests
+	// wait until no new  in-flight requests
 	s.inFlight.Wait()
 
 	// close update channel as no more updates will arrive,
 	// update loop will exit and close the sendCh.
 	// closing the sendCh will cause the sendLoop to exit.
 	close(s.updatesCh)
-
-	// stop main loop processing
-	s.cancel()
 	s.wg.Wait()
+}
 
-	// drain updates to cache and post last event
-	for w := range s.updatesCh {
-		s.update(w)
+func (s *BufferedCollector) Close() {
+	s.Stop()
+	// drain updates and send cache state anything that left
+	ctx := context.Background()
+	for upd := range s.updatesCh {
+		s.update(upd)
 	}
-	event := s.newInputEvent()
-	if event != nil {
-		s.sendEventHelper(context.Background(), event)
+	if evt := s.newInputEvent(); evt != nil {
+		s.sendEventHelper(ctx, evt)
 	}
 }
 
-// processSendCh post metrics waiting on sendCh. Stops when 'sendCh' is closed.
+// processSendCh post metrics waiting on sendCh. Stops when 'sendCh' is stopped.
 func (s *BufferedCollector) processSendCh(ctx context.Context) {
-	for event := range s.sendCh {
-		s.sendEventHelper(ctx, event)
+	for evt := range s.sendCh {
+		s.sendEventHelper(ctx, evt)
 	}
 }
 

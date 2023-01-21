@@ -67,7 +67,7 @@ func (m *memCollector) CollectEvent(ev stats.Event) {
 	m.CollectEvents(ev, 1)
 }
 
-func (m *memCollector) CollectMetadata(metadata *stats.Metadata) {
+func (m *memCollector) CollectMetadata(accountMetadata *stats.Metadata) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.Metadata = append(m.Metadata, metadata)

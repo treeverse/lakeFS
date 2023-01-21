@@ -13,6 +13,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
+const defaultRetryMax = 2
+
 var (
 	ErrSendError        = errors.New("stats: send error")
 	ErrNoInstallationID = fmt.Errorf("installation ID is missing: %w", ErrSendError)
@@ -36,12 +38,13 @@ type LoggerAdapter struct {
 }
 
 func (l *LoggerAdapter) Printf(msg string, args ...interface{}) {
-	l.Debugf(msg, args...)
+	l.Tracef(msg, args...)
 }
 
 func NewHTTPSender(addr string, log logging.Logger) *HTTPSender {
 	retryClient := retryablehttp.NewClient()
 	retryClient.Logger = &LoggerAdapter{Logger: log}
+	retryClient.RetryMax = defaultRetryMax
 	return &HTTPSender{
 		addr:   addr,
 		client: retryClient.StandardClient(),
@@ -61,11 +64,10 @@ func (s *HTTPSender) UpdateMetadata(ctx context.Context, m Metadata) error {
 	if err != nil {
 		return fmt.Errorf("failed to serialize account metadata: %w", err)
 	}
-	req, err := http.NewRequest(http.MethodPost, s.addr+"/installation", bytes.NewBuffer(serialized))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.addr+"/installation", bytes.NewBuffer(serialized))
 	if err != nil {
 		return fmt.Errorf("could not create HTTP request: %s: %w", err, ErrSendError)
 	}
-	req = req.WithContext(ctx)
 	res, err := s.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("could not make HTTP request: %s: %w", err, ErrSendError)
@@ -104,11 +106,10 @@ func (s *HTTPSender) UpdateCommPrefs(ctx context.Context, commPrefs *CommPrefsDa
 		return fmt.Errorf("could not serialize comm prefs: %s: %w", err, ErrSendError)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, s.addr+"/comm_prefs", bytes.NewBuffer(serialized))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.addr+"/comm_prefs", bytes.NewBuffer(serialized))
 	if err != nil {
 		return fmt.Errorf("could not create HTTP request: %s: %w", err, ErrSendError)
 	}
-	req = req.WithContext(ctx)
 	res, err := s.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("could not make HTTP request: %s: %w", err, ErrSendError)
