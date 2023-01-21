@@ -146,15 +146,38 @@ type MetaRangeInfo struct {
 	ID MetaRangeID
 }
 
-type WriteCondition struct {
-	IfAbsent bool
+// GetOptions controls get request defaults
+type GetOptions struct {
+	// StageOnly fetch key from stage area only. Default (false) will lookup stage and committed data.
+	StageOnly bool
 }
 
-type WriteConditionOption func(condition *WriteCondition)
+type GetOptionsFunc func(opts *GetOptions)
 
-func IfAbsent(v bool) WriteConditionOption {
-	return func(condition *WriteCondition) {
-		condition.IfAbsent = v
+func WithStageOnly(v bool) GetOptionsFunc {
+	return func(opts *GetOptions) {
+		opts.StageOnly = v
+	}
+}
+
+type SetOptions struct {
+	IfAbsent bool
+	// MaxTries set number of times we try to perform the operation before we fail with BranchWriteMaxTries.
+	// By default, 0 - we try BranchWriteMaxTries
+	MaxTries int
+}
+
+type SetOptionsFunc func(opts *SetOptions)
+
+func WithIfAbsent(v bool) SetOptionsFunc {
+	return func(opts *SetOptions) {
+		opts.IfAbsent = v
+	}
+}
+
+func WithMaxTries(n int) SetOptionsFunc {
+	return func(opts *SetOptions) {
+		opts.MaxTries = n
 	}
 }
 
@@ -362,6 +385,11 @@ func (d *Diff) Copy() *Diff {
 	}
 }
 
+type safeBranchWriteOptions struct {
+	// MaxTries number of tries to perform operation while branch changes. Default: BranchWriteMaxTries
+	MaxTries int
+}
+
 type CommitParams struct {
 	Committer string
 	Message   string
@@ -375,13 +403,13 @@ type CommitParams struct {
 type KeyValueStore interface {
 	// Get returns value from repository / reference by key, nil value is a valid value for tombstone
 	// returns error if value does not exist
-	Get(ctx context.Context, repository *RepositoryRecord, ref Ref, key Key) (*Value, error)
+	Get(ctx context.Context, repository *RepositoryRecord, ref Ref, key Key, opts ...GetOptionsFunc) (*Value, error)
 
 	// GetByCommitID returns value from repository / commit by key and error if value does not exist
 	GetByCommitID(ctx context.Context, repository *RepositoryRecord, commitID CommitID, key Key) (*Value, error)
 
 	// Set stores value on repository / branch by key. nil value is a valid value for tombstone
-	Set(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error
+	Set(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, value Value, opts ...SetOptionsFunc) error
 
 	// Delete value from repository / branch by key
 	Delete(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key) error
@@ -512,7 +540,7 @@ type VersionController interface {
 	// Note: Ancestors of previously expired commits may still be considered if they can be reached from a non-expired commit.
 	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, previousRunID string) (garbageCollectionRunMetadata *GarbageCollectionRunMetadata, err error)
 
-	// GCGetUncommittedLocation returns full uri of the stroage location of saved uncommitted files per runID
+	// GCGetUncommittedLocation returns full uri of the storage location of saved uncommitted files per runID
 	GCGetUncommittedLocation(repository *RepositoryRecord, runID string) (string, error)
 
 	GCNewRunID() string
@@ -1383,7 +1411,7 @@ func (g *Graveler) getFromStagingArea(ctx context.Context, b *Branch, key Key) (
 	return nil, ErrNotFound // Key not in staging area
 }
 
-func (g *Graveler) Get(ctx context.Context, repository *RepositoryRecord, ref Ref, key Key) (*Value, error) {
+func (g *Graveler) Get(ctx context.Context, repository *RepositoryRecord, ref Ref, key Key, opts ...GetOptionsFunc) (*Value, error) {
 	reference, err := g.Dereference(ctx, repository, ref)
 	if err != nil {
 		return nil, err
@@ -1404,6 +1432,14 @@ func (g *Graveler) Get(ctx context.Context, repository *RepositoryRecord, ref Re
 		}
 	}
 
+	var options GetOptions
+	for _, opt := range opts {
+		opt(&options)
+	}
+	if options.StageOnly {
+		return nil, ErrNotFound
+	}
+
 	// If key is not found in staging area (or reference is not a branch), return the key from committed
 	commitID := reference.CommitID
 	commit, err := g.RefManager.GetCommit(ctx, repository, commitID)
@@ -1422,7 +1458,7 @@ func (g *Graveler) GetByCommitID(ctx context.Context, repository *RepositoryReco
 	return g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
 }
 
-func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error {
+func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, value Value, opts ...SetOptionsFunc) error {
 	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 	if err != nil {
 		return err
@@ -1431,14 +1467,14 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 		return ErrWriteToProtectedBranch
 	}
 
-	writeCondition := &WriteCondition{}
-	for _, cond := range writeConditions {
-		cond(writeCondition)
+	options := &SetOptions{}
+	for _, opt := range opts {
+		opt(options)
 	}
 
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "set"})
-	return g.safeBranchWrite(ctx, log, repository, branchID, func(branch *Branch) error {
-		if !writeCondition.IfAbsent {
+	return g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
+		if !options.IfAbsent {
 			return g.StagingManager.Set(ctx, branch.StagingToken, key, &value, false)
 		}
 
@@ -1460,9 +1496,14 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 
 // safeBranchWrite is a helper function that wraps a branch write operation with validation that the staging token
 // didn't change while writing to the branch.
-func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repository *RepositoryRecord, branchID BranchID, stagingOperation func(branch *Branch) error) error {
+func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repository *RepositoryRecord, branchID BranchID,
+	options safeBranchWriteOptions, stagingOperation func(branch *Branch) error,
+) error {
+	if options.MaxTries == 0 {
+		options.MaxTries = BranchWriteMaxTries
+	}
 	var try int
-	for try = 0; try < BranchWriteMaxTries; try++ {
+	for try = 0; try < options.MaxTries; try++ {
 		branchPreOp, err := g.GetBranch(ctx, repository, branchID)
 		if err != nil {
 			return err
@@ -1487,7 +1528,7 @@ func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repo
 			"branch_token_post": branchPostOp.StagingToken,
 		}).Debug("Retrying Set")
 	}
-	if try == BranchWriteMaxTries {
+	if try == options.MaxTries {
 		return fmt.Errorf("safe branch write: %w", ErrTooManyTries)
 	}
 	return nil
@@ -1502,8 +1543,9 @@ func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, bra
 		return ErrWriteToProtectedBranch
 	}
 
-	return g.safeBranchWrite(ctx, g.log(ctx).WithField("key", key).WithField("operation", "delete"),
-		repository, branchID, func(branch *Branch) error {
+	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "delete"})
+	return g.safeBranchWrite(ctx, log, repository, branchID,
+		safeBranchWriteOptions{}, func(branch *Branch) error {
 			return g.deleteUnsafe(ctx, repository, branch, key, nil)
 		})
 }
@@ -1521,18 +1563,19 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 	if len(keys) > DeleteKeysMaxSize {
 		return fmt.Errorf("keys length (%d) passed the maximum allowed(%d): %w", len(keys), DeleteKeysMaxSize, ErrInvalidValue)
 	}
+
 	var m *multierror.Error
-	err = g.safeBranchWrite(ctx, g.log(ctx).WithField("operation", "delete_keys"),
-		repository, branchID, func(branch *Branch) error {
-			var cachedMetaRangeID MetaRangeID // used to cache the committed branch metarange ID
-			for _, key := range keys {
-				err := g.deleteUnsafe(ctx, repository, branch, key, &cachedMetaRangeID)
-				if err != nil {
-					m = multierror.Append(m, &DeleteError{Key: key, Err: err})
-				}
+	log := g.log(ctx).WithField("operation", "delete_keys")
+	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{}, func(branch *Branch) error {
+		var cachedMetaRangeID MetaRangeID // used to cache the committed branch metarange ID
+		for _, key := range keys {
+			err := g.deleteUnsafe(ctx, repository, branch, key, &cachedMetaRangeID)
+			if err != nil {
+				m = multierror.Append(m, &DeleteError{Key: key, Err: err})
 			}
-			return m.ErrorOrNil()
-		})
+		}
+		return m.ErrorOrNil()
+	})
 	return err
 }
 

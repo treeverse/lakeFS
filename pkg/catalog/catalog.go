@@ -36,6 +36,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/pyramid"
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
+	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/validator"
 	"github.com/xitongsys/parquet-go/parquet"
 	"github.com/xitongsys/parquet-go/writer"
@@ -63,6 +64,11 @@ const (
 	// Total per entry ~52 bytes
 	// Deviation with gcPeriodicCheckSize = 100000 will be around 5 MB
 	gcPeriodicCheckSize = 100000
+
+	kvTrackPrefix                = "track"
+	kvTrackDeleteBatchInterval   = 2 * time.Second
+	kvTrackDeleteBatchSize       = 1000
+	kvTrackDeleteAddressDuration = time.Hour
 )
 
 type Path string
@@ -126,23 +132,24 @@ const (
 )
 
 type Config struct {
-	Config                *config.Config
-	KVStore               *kv.StoreMessage
-	WalkerFactory         WalkerFactory
-	SettingsManagerOption settings.ManagerOption
-
-	// The maximum file size for uncommitted dump created during PrepareUncommittedGC
-	GCMaxUncommittedFileSize int
+	Config                   *config.Config
+	KVStore                  *kv.StoreMessage
+	WalkerFactory            WalkerFactory
+	SettingsManagerOption    settings.ManagerOption
+	GCMaxUncommittedFileSize int // The maximum file size for uncommitted dump created during PrepareUncommittedGC
+	PathProvider             *upload.PathPartitionProvider
 }
 
 type Catalog struct {
 	BlockAdapter             block.Adapter
 	Store                    Store
+	GCMaxUncommittedFileSize int
 	log                      logging.Logger
 	walkerFactory            WalkerFactory
 	managers                 []io.Closer
 	workPool                 *pond.WorkerPool
-	GCMaxUncommittedFileSize int
+	kvStore                  *kv.StoreMessage
+	PathProvider             *upload.PathPartitionProvider
 }
 
 const (
@@ -251,11 +258,13 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	return &Catalog{
 		BlockAdapter:             tierFSParams.Adapter,
 		Store:                    gStore,
+		GCMaxUncommittedFileSize: cfg.GCMaxUncommittedFileSize,
+		PathProvider:             cfg.PathProvider,
 		log:                      logging.Default().WithField("service_name", "entry_catalog"),
 		walkerFactory:            cfg.WalkerFactory,
 		workPool:                 workPool,
+		kvStore:                  cfg.KVStore,
 		managers:                 []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
-		GCMaxUncommittedFileSize: cfg.GCMaxUncommittedFileSize,
 	}, nil
 }
 
@@ -730,7 +739,7 @@ func (c *Catalog) GetTag(ctx context.Context, repositoryID string, tagID string)
 
 // GetEntry returns the current entry for path in repository branch reference.  Returns
 // the entry with ExpiredError if it has expired from underlying storage.
-func (c *Catalog) GetEntry(ctx context.Context, repositoryID string, reference string, path string, _ GetEntryParams) (*DBEntry, error) {
+func (c *Catalog) GetEntry(ctx context.Context, repositoryID string, reference string, path string, params GetEntryParams) (*DBEntry, error) {
 	refToGet := graveler.Ref(reference)
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
@@ -743,7 +752,7 @@ func (c *Catalog) GetEntry(ctx context.Context, repositoryID string, reference s
 	if err != nil {
 		return nil, err
 	}
-	val, err := c.Store.Get(ctx, repository, refToGet, graveler.Key(path))
+	val, err := c.Store.Get(ctx, repository, refToGet, graveler.Key(path), graveler.WithStageOnly(params.StageOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -794,7 +803,7 @@ func addressTypeToCatalog(t Entry_AddressType) AddressType {
 	}
 }
 
-func (c *Catalog) CreateEntry(ctx context.Context, repositoryID string, branch string, entry DBEntry, writeConditions ...graveler.WriteConditionOption) error {
+func (c *Catalog) CreateEntry(ctx context.Context, repositoryID string, branch string, entry DBEntry, opts ...graveler.SetOptionsFunc) error {
 	branchID := graveler.BranchID(branch)
 	ent := newEntryFromCatalogEntry(entry)
 	path := Path(entry.Path)
@@ -814,7 +823,7 @@ func (c *Catalog) CreateEntry(ctx context.Context, repositoryID string, branch s
 	if err != nil {
 		return err
 	}
-	return c.Store.Set(ctx, repository, branchID, key, *value, writeConditions...)
+	return c.Store.Set(ctx, repository, branchID, key, *value, opts...)
 }
 
 func (c *Catalog) DeleteEntry(ctx context.Context, repositoryID string, branch string, path string) error {
@@ -1923,6 +1932,113 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}, nil
 }
 
+// CopyEntry copy entry information - will try to perform shallow copy. Source on the same repository branch and in staging, or it will do full copy.
+// Full copy will use the block adapter to make a copy of the data to a new physical address.
+// The return boolean is true in case of full copy.
+func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string) (*DBEntry, bool, error) {
+	var (
+		entry    *DBEntry // set to the entry we created (shallow or copy)
+		srcEntry *DBEntry // in case we load entry from staging we can reuse on full-copy
+		err      error
+	)
+
+	// try shallow copy if we are copy from same repository and branch
+	if srcRepository == destRepository && srcRef == destBranch {
+		// get entry from staging (fallback in case not found)
+		srcEntry, err = c.GetEntry(ctx, srcRepository, srcRef, srcPath, GetEntryParams{StageOnly: true})
+		if err != nil && !errors.Is(err, graveler.ErrNotFound) {
+			return nil, false, err
+		}
+		if err == nil {
+			// track physical address (copy-table)
+			_, err := c.TrackPhysicalAddress(ctx, srcRepository, srcEntry.PhysicalAddress)
+			if err != nil {
+				return nil, false, err
+			}
+
+			// create entry only once. in case the first try fails because of commit we need to fall back to full copy
+			dstEntry := *srcEntry
+			dstEntry.CreationDate = time.Now()
+			dstEntry.Path = destPath
+			err = c.CreateEntry(ctx, destRepository, destBranch, dstEntry, graveler.WithMaxTries(1))
+			if err != nil {
+				return nil, false, err
+			}
+			entry = &dstEntry
+		}
+	}
+
+	// copyObjectFull copy data from srcEntry's physical address (if set) or srcPath into destPath
+	// fetch src entry if needed - optimization in case we already have the entry
+	fullCopy := false
+	if entry == nil {
+		fullCopy = true
+		// get an entry if needed
+		if srcEntry == nil {
+			srcEntry, err = c.GetEntry(ctx, srcRepository, srcRef, srcPath, GetEntryParams{})
+			if err != nil {
+				return nil, false, err
+			}
+		}
+
+		// load repositories information for storage namespace
+		destRepo, err := c.GetRepository(ctx, destRepository)
+		if err != nil {
+			return nil, false, err
+		}
+
+		srcRepo := destRepo
+		if srcRepository != destRepository {
+			srcRepo, err = c.GetRepository(ctx, srcRepository)
+			if err != nil {
+				return nil, false, err
+			}
+		}
+
+		// copy data to a new physical address
+		dstEntry := *srcEntry
+		dstEntry.CreationDate = time.Now()
+		dstEntry.Path = destPath
+		dstEntry.AddressType = AddressTypeRelative
+		dstEntry.PhysicalAddress = c.PathProvider.NewPath()
+		srcObject := block.ObjectPointer{StorageNamespace: srcRepo.StorageNamespace, Identifier: srcEntry.PhysicalAddress}
+		destObj := block.ObjectPointer{StorageNamespace: destRepo.StorageNamespace, Identifier: dstEntry.PhysicalAddress}
+		err = c.BlockAdapter.Copy(ctx, srcObject, destObj)
+		if err != nil {
+			return nil, false, err
+		}
+		entry = &dstEntry
+	}
+
+	// create entry for the final copy
+	err = c.CreateEntry(ctx, destRepository, destBranch, *entry)
+	if err != nil {
+		return nil, false, err
+	}
+	return entry, fullCopy, nil
+}
+
+// TrackPhysicalAddress store physical address under repository partition, key is unique identifier that we keep in
+// time based order to later delete old ones
+func (c *Catalog) TrackPhysicalAddress(ctx context.Context, repository, physicalAddress string) (string, error) {
+	repo, err := c.getRepository(ctx, repository)
+	if err != nil {
+		return "", err
+	}
+	repoPartition := graveler.RepoPartition(repo)
+	id := xid.New().String()
+	key := kv.FormatPath(kvTrackPrefix, id)
+	ent := &Entry{
+		Address:      physicalAddress,
+		LastModified: timestamppb.Now(),
+	}
+	err = c.kvStore.SetMsg(ctx, repoPartition, []byte(key), ent)
+	if err != nil {
+		return "", err
+	}
+	return id, nil
+}
+
 func (c *Catalog) SetLinkAddress(ctx context.Context, repository, token string) error {
 	repo, err := c.getRepository(ctx, repository)
 	if err != nil {
@@ -1940,20 +2056,9 @@ func (c *Catalog) VerifyLinkAddress(ctx context.Context, repository, token strin
 }
 
 func (c *Catalog) DeleteExpiredLinkAddresses(ctx context.Context) {
-	it, err := c.Store.ListRepositories(ctx)
+	repos, err := c.listRepositoriesHelper(ctx)
 	if err != nil {
-		c.log.WithError(err).Warn("Failed to list repositories during delete expired addresses")
-		return
-	}
-	defer it.Close()
-
-	var repos []*graveler.RepositoryRecord
-	for it.Next() {
-		record := it.Value()
-		repos = append(repos, record)
-	}
-	if err := it.Err(); err != nil {
-		c.log.WithError(err).Warn("Failed to iterate over repositories during delete expired addresses")
+		c.log.WithError(err).Warn("Failed list repositories during delete expired addresses")
 		return
 	}
 
@@ -1963,6 +2068,105 @@ func (c *Catalog) DeleteExpiredLinkAddresses(ctx context.Context) {
 			c.log.WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired address tokens failed")
 		}
 	}
+}
+
+func (c *Catalog) listRepositoriesHelper(ctx context.Context) ([]*graveler.RepositoryRecord, error) {
+	it, err := c.Store.ListRepositories(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer it.Close()
+
+	var repos []*graveler.RepositoryRecord
+	for it.Next() {
+		repos = append(repos, it.Value())
+	}
+	if err := it.Err(); err != nil {
+		return nil, err
+	}
+	return repos, nil
+}
+
+func (c *Catalog) DeleteTrackedPhysicalAddresses(ctx context.Context) {
+	repos, err := c.listRepositoriesHelper(ctx)
+	if err != nil {
+		c.log.WithError(err).Warn("Failed list repositories during delete tracked physical addresses")
+		return
+	}
+
+	for _, repo := range repos {
+		if err := c.deleteRepoTrackedPhysicalAddresses(ctx, repo); err != nil {
+			c.log.WithError(err).
+				WithField("repository", repo.RepositoryID).
+				Warn("Repository delete tracked physical addresses failed")
+		}
+	}
+}
+
+func (c *Catalog) deleteRepoTrackedPhysicalAddresses(ctx context.Context, repo *graveler.RepositoryRecord) error {
+	// collect and delete old keys - work in 'kvTrackDeleteBatchSize' and interval of 5 min between if batch is bigger
+	// based on the last modified field.
+	for {
+		hasMore, err := c.deleteRepoTrackedPhysicalAddressHelper(ctx, repo)
+		if err != nil {
+			return err
+		}
+		if !hasMore {
+			break
+		}
+		// sleep and process more
+		select {
+		case <-time.After(kvTrackDeleteBatchInterval):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	return nil
+}
+
+func (c *Catalog) deleteRepoTrackedPhysicalAddressHelper(ctx context.Context, repo *graveler.RepositoryRecord) (bool, error) {
+	repoPartition := graveler.RepoPartition(repo)
+	msgType := (&Entry{}).ProtoReflect().Type()
+	prefix := []byte(kv.FormatPath(kvTrackPrefix, ""))
+	it, err := kv.NewPrimaryIterator(ctx, c.kvStore.Store, msgType, repoPartition, prefix, kv.IteratorOptionsFrom([]byte{}))
+	if err != nil {
+		return false, err
+	}
+	defer it.Close()
+
+	var (
+		keysToDelete []string
+		hasMore      = false
+	)
+	for it.Next() {
+		if len(keysToDelete) >= kvTrackDeleteBatchSize {
+			hasMore = true
+			break
+		}
+		e := it.Entry()
+		entry := e.Value.(*Entry)
+		addressTime := entry.LastModified.AsTime()
+		if time.Since(addressTime) < kvTrackDeleteAddressDuration {
+			break
+		}
+		keysToDelete = append(keysToDelete, string(e.Key))
+	}
+	if err := it.Err(); err != nil {
+		return false, err
+	}
+
+	// delete the collected keys
+	for _, key := range keysToDelete {
+		err := c.kvStore.Delete(ctx, []byte(repoPartition), []byte(key))
+		if err != nil {
+			c.log.WithError(err).
+				WithFields(logging.Fields{"repository": repo.RepositoryID, "key": key}).
+				Warn("Failed to delete key while clear tracked physical addresses")
+
+			return false, err
+		}
+	}
+	return hasMore, nil
 }
 
 func (c *Catalog) Close() error {
