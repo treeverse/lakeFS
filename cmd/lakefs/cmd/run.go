@@ -115,7 +115,9 @@ var runCmd = &cobra.Command{
 			}
 		})
 
-		ctx := cmd.Context()
+		ctx, stop := signal.NotifyContext(cmd.Context(), syscall.SIGINT, syscall.SIGTERM)
+		defer stop()
+
 		logger.WithField("version", version.Version).Info("lakeFS run")
 
 		kvParams, err := cfg.DatabaseParams()
@@ -179,7 +181,8 @@ var runCmd = &cobra.Command{
 		}
 
 		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
-		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(cfg.Stats), stats.WithLogger(logger))
+		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(cfg.Stats),
+			stats.WithLogger(logger.WithField("service", "stats_collector")))
 
 		// init block store
 		blockStore, err := factory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
@@ -251,15 +254,11 @@ var runCmd = &cobra.Command{
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
 		// start API server
-		done := make(chan bool, 1)
-		quit := make(chan os.Signal, 1)
-		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-
 		var oauthConfig *oauth2.Config
 		var oidcProvider *oidc.Provider
 		if cfg.Auth.OIDC.Enabled {
 			oidcProvider, err = oidc.NewProvider(
-				cmd.Context(),
+				ctx,
 				cfg.Auth.OIDC.URL,
 			)
 			if err != nil {
@@ -329,13 +328,13 @@ var runCmd = &cobra.Command{
 			cfg.Logging.AuditLogLevel,
 			cfg.Logging.TraceRequestHeaders,
 		)
-		ctx, cancelFn := context.WithCancel(cmd.Context())
-		bufferedCollector.Run(ctx)
+
+		bufferedCollector.Start(ctx)
 		defer bufferedCollector.Close()
 
 		bufferedCollector.CollectEvent(stats.Event{Class: "global", Name: "run"})
 
-		logging.Default().WithField("listen_address", cfg.ListenAddress).Info("starting HTTP server")
+		logger.WithField("listen_address", cfg.ListenAddress).Info("starting HTTP server")
 		server := &http.Server{
 			Addr:              cfg.ListenAddress,
 			ReadHeaderTimeout: time.Minute,
@@ -357,15 +356,12 @@ var runCmd = &cobra.Command{
 
 		go func() {
 			if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				fmt.Printf("server failed to listen on %s: %v\n", cfg.ListenAddress, err)
+				_, _ = fmt.Fprintf(os.Stderr, "Failed to listen on %s: %v\n", cfg.ListenAddress, err)
 				os.Exit(1)
 			}
 		}()
 
-		go gracefulShutdown(cmd.Context(), quit, done, server)
-
-		<-done
-		cancelFn()
+		gracefulShutdown(ctx, server)
 	},
 }
 
@@ -514,24 +510,19 @@ func printLocalWarning(w io.Writer, msg string) {
 	_, _ = fmt.Fprintf(w, localWarningBanner, msg)
 }
 
-func gracefulShutdown(ctx context.Context, quit <-chan os.Signal, done chan<- bool, servers ...Shutter) {
-	logger := logging.Default()
-	logger.WithField("version", version.Version).Info("Up and running (^C to shutdown)...")
-
+func gracefulShutdown(ctx context.Context, services ...Shutter) {
+	_, _ = fmt.Fprintf(os.Stderr, "lakeFS %s - Up and running (^C to shutdown)...\n", version.Version)
 	printWelcome(os.Stderr)
+	<-ctx.Done()
 
-	<-quit
-	logger.Warn("shutting down...")
-
+	_, _ = fmt.Fprintf(os.Stderr, "Shutting down...\n")
 	ctx, cancel := context.WithTimeout(ctx, gracefulShutdownTimeout)
 	defer cancel()
-
-	for i, server := range servers {
-		if err := server.Shutdown(ctx); err != nil {
-			fmt.Printf("Error while shutting down service (%d): %s\n", i, err)
+	for i, service := range services {
+		if err := service.Shutdown(ctx); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Failed shutting down service [%d]: %s\n", i, err)
 		}
 	}
-	close(done)
 }
 
 // enableKVParamsMetrics returns a copy of params.KV with postgres metrics enabled.
