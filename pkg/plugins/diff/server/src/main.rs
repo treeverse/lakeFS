@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Error;
 use std::io::{self, Write};
+use std::net::SocketAddr;
 
 use deltalake::DeltaDataTypeVersion;
 use deltalake::builder::DeltaTableBuilder;
@@ -30,7 +31,6 @@ impl Differ for DifferService {
         };
         let left_table_path: String = ps.left_path;
         let right_table_path: String = ps.right_path;
-        let base_table_path_option: Option<String> = ps.base_path;
         eprintln!("Pre left table run");
         let mut left_table: DeltaTable = match create_table_with_config(&s3_config_map, left_table_path).await {
             Ok(table) => {
@@ -38,7 +38,6 @@ impl Differ for DifferService {
             },
             Err(err) => {
                 return Err(Status::new(Code::NotFound, format!("{:?}", err)));
-                // return Ok(Response::new(DiffResponse { diffs: vec![] }))
             }
         };
         eprintln!("Pre right table run");
@@ -52,10 +51,7 @@ impl Differ for DifferService {
         };
         eprintln!("Left table version: {}", left_table.version());
         eprintln!("Right table version: {}", right_table.version());
-        // let mut baseTable: DeltaTable = match create_table_with_config(&s3_config_map, base_table_path).await {
-        //     Ok(table) => table,
-        //     Err(err) => return Ok(Response::new(DiffResponse { diffs: vec![] }))
-        // };
+
         let left_table_history = history(&mut left_table, None);
         let mut left_table_history_v = match left_table_history.await {
             Ok(vec) => {
@@ -120,7 +116,6 @@ fn compare(left_table_vec: &mut Vec<Map<String, Value>>,
     eprintln!("RIGHT VECTOR:\n{:?}", right_table_vec);
     let left_earliest_version = left_table_version + 1 - i64::try_from(left_table_vec.len()).unwrap();
     let right_earliest_version = right_table_version + 1 - i64::try_from(right_table_vec.len()).unwrap();
-    // let right_earliest_version = right_table_vec.get(0).unwrap().get("version").unwrap().as_i64().unwrap();
     // The lower version of the two:
     let lower_limit = if left_earliest_version > right_earliest_version {left_earliest_version} else { right_earliest_version };
     let mut diff_list: Vec<Diff> = vec![];
@@ -134,10 +129,7 @@ fn compare(left_table_vec: &mut Vec<Map<String, Value>>,
         let left_iter = left_table_vec.iter();
         for commit_info in left_iter {
             if curr_version == right_table_version {
-                eprintln!("broke at version {}", curr_version);
-                eprintln!("Slicing left vector from {}.", (left_table_version - right_table_version));
                 left_commit_slice = &left_table_vec[(left_table_version - right_table_version) as usize..];
-                eprintln!("Left Slice: {:?}", left_commit_slice);
                 break;
             }
             match commit_info {
@@ -155,16 +147,13 @@ fn compare(left_table_vec: &mut Vec<Map<String, Value>>,
                         description: commit_info.get("operation").unwrap().as_str().unwrap().to_string(),
                         content: operation_content_hash,
                     };
-                    eprintln!("Pushing version {}", curr_version);
                     diff_list.push(d)
                 }
             }
             curr_version -= 1;
         }
     } else {
-        eprintln!("Slicing right vector from {}.", (right_table_version - left_table_version));
         right_commit_slice = &right_table_vec[(right_table_version - left_table_version) as usize..];
-        eprintln!("Right Slice: {:?}", right_commit_slice);
     }
 
     let mut i: usize = 0; // iterating over the vector while 'curr_version' is the real version of the
@@ -183,35 +172,28 @@ fn compare(left_table_vec: &mut Vec<Map<String, Value>>,
             description: left_commit_info.get("operation").unwrap().as_str().unwrap().to_string(),
             content: left_operation_content_hash,
         };
-        eprintln!("Left Diff:\n{:?}", l_diff);
-        if i+1 >= right_commit_slice.len() {
-            eprintln!("Reached end of right vector.");
+
+        let right_commit_info = right_commit_slice.get(i).unwrap();
+        let right_curr_op_params = right_commit_info.get("operationParameters").unwrap();
+        let right_curr_op_params_map = right_curr_op_params.as_object().unwrap();
+        let mut right_operation_content_hash: HashMap<String, String> = HashMap::new();
+        for (k, v) in right_curr_op_params_map {
+            let k_clone = k.clone();
+            right_operation_content_hash.insert(k_clone, v.to_string());
         }
-        else {
-            let right_commit_info = right_commit_slice.get(i).unwrap();
-            let right_curr_op_params = right_commit_info.get("operationParameters").unwrap();
-            let right_curr_op_params_map = right_curr_op_params.as_object().unwrap();
-            let mut right_operation_content_hash: HashMap<String, String> = HashMap::new();
-            for (k, v) in right_curr_op_params_map {
-                let k_clone = k.clone();
-                right_operation_content_hash.insert(k_clone, v.to_string());
-            }
-            let r_diff = Diff{
-                version: (curr_version as u32).to_string(),
-                timestamp: right_commit_info.get("timestamp").unwrap().as_i64().unwrap(),
-                description: right_commit_info.get("operation").unwrap().as_str().unwrap().to_string(),
-                content: right_operation_content_hash,
-            };
-            eprintln!("Right Diff:\n{:?}", r_diff);
-            eprintln!("r_diff == l_diff: {}", r_diff == l_diff);
-            if r_diff == l_diff {
-                eprintln!("Reached EQUALITY.\nBREAKING");
-                return Ok(diff_list);
-            } else {
-                eprintln!("Pushing version {}", curr_version);
-                diff_list.push(l_diff);
-            }
+        let r_diff = Diff{
+            version: (curr_version as u32).to_string(),
+            timestamp: right_commit_info.get("timestamp").unwrap().as_i64().unwrap(),
+            description: right_commit_info.get("operation").unwrap().as_str().unwrap().to_string(),
+            content: right_operation_content_hash,
+        };
+
+        if r_diff == l_diff {
+            return Ok(diff_list);
+        } else {
+            diff_list.push(l_diff);
         }
+
         curr_version -= 1;
         i += 1;
     }
@@ -220,22 +202,23 @@ fn compare(left_table_vec: &mut Vec<Map<String, Value>>,
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let address = "127.0.0.1:1234".parse().unwrap();
+    let address: SocketAddr = "127.0.0.1:1234".parse().unwrap();
     let differ_service = DifferService::default();
     let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
     health_reporter
         .set_serving::<DifferServer<DifferService>>()
         .await;
 
-    println!("1|1|tcp|127.0.0.1:1234|grpc");
-    io::stdout().flush().unwrap();
-    eprintln!("Starting plugin [stderr]");
-
-    Server::builder()
+    let serve = Server::builder()
         .add_service(health_service)
         .add_service(DifferServer::new(differ_service))
-        .serve(address)
-        .await?;
+        .serve(address);
+
+    // Communicating to the go-plugin application client
+    println!("1|1|tcp|{}|grpc", address.to_string());
+    io::stdout().flush().unwrap();
+
+    serve.await?;
 
     Ok(())
 }
