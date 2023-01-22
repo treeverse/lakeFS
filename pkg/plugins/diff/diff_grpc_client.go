@@ -45,12 +45,12 @@ type DeltaDiffGRPCPlugin struct {
 }
 
 // GRPCServer must be implemented even though we won't use it
-func (p *DeltaDiffGRPCPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
+func (p DeltaDiffGRPCPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
 	return nil
 }
 
 // GRPCClient will return the Delta diff GRPC custom client
-func (p *DeltaDiffGRPCPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
+func (p DeltaDiffGRPCPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
 	return &GRPCClient{
 		client: NewDifferClient(c), // This is the underlying GRPC client
 	}, nil
