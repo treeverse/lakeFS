@@ -30,6 +30,10 @@ Server or the S3 Gateway.
 
 #### LDAP server
 
+**Note**
+This feature is deprecated. For single sign-on with lakeFS, try [lakeFS cloud](https://lakefs.cloud)
+{: .note }
+
 Configure lakeFS to authenticate users on an LDAP server. Once configured,
 users can additionally log into lakeFS using their credentials LDAP. These
 users may then generate an access key and a secret access key on the Web UI
@@ -101,6 +105,10 @@ See [this example for authenticating with the AWS CLI](../integrations/aws_cli.m
 
 ## OIDC support
 
+**Note**
+This feature is deprecated. For single sign-on with lakeFS, try [lakeFS cloud](https://lakefs.cloud)
+{: .note }
+
 OpenID Connect (OIDC) is a simple identity layer on top of the OAuth 2.0 protocol.
 You can configure lakeFS to enable OIDC to manage your lakeFS users externally. 
 Essentially, once configured, this enables you the benefit of OpenID connect, such as a single sign-on (SSO), etc. 
@@ -131,7 +139,7 @@ OIDC provider. When a user first logs in through the provider, a corresponding u
 
 ## User permissions
 
-Authorization is still managed via [lakeFS groups and policies](./authorization.md).
+Authorization is managed via [lakeFS groups and policies](./authorization.md).
 
 By default, an externally managed user is assigned to the lakeFS groups configured in the _default_initial_groups_ property above.
 For a user to be assigned to other groups, add the _initial_groups_ claim to their **ID token** claims. The claim should contain a
