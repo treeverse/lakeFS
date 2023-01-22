@@ -85,7 +85,7 @@ func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 		Marker: &op.ContinuationToken,
 	})
 
-	for listBlob.More() {
+	if listBlob.More() {
 		resp, err := listBlob.NextPage(ctx)
 		if err != nil {
 			return err
@@ -108,12 +108,9 @@ func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 				return err
 			}
 		}
+		a.mark.ContinuationToken = *resp.Marker
 	}
-
-	a.mark = Mark{
-		HasMore: false,
-	}
-
+	a.mark.HasMore = listBlob.More()
 	return nil
 }
 
