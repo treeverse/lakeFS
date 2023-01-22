@@ -6,6 +6,17 @@ Deprecated:
 - Authorization using Role-Based Access Control
 - LDAP & OIDC Embedded Support
 
+## v0.90.1
+
+What's new:
+- UI: allow filtering tags and branches by prefix (#5060)
+- UI: Display email when adding users to groups (#4993)
+
+Bug fix:
+- Fix lua client routing (#5078)
+- Fix UI new repo getting started page (#5075)
+- Fix Azure ingest with pagination (#5066)
+
 ## v0.90.0
 
 What's new:
