@@ -84,7 +84,7 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
             results.map(child =>
                 (<TreeItem key={child.path + "-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
                            internalReferesh={internalRefresh} delimiter={delimiter} depth={depth + 1}
-                           relativeTo={entry.path} getMore={getMore}/>))}
+                           relativeTo={entry.path} getMore={getMore} setTableDiffExpanded={setTableDiffExpanded}/>))}
             {(!!nextPage || loading) &&
             <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage}
                                 setAfterUpdated={setAfterUpdated}/>

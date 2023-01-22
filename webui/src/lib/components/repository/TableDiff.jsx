@@ -3,8 +3,6 @@ import Table from "react-bootstrap/Table";
 import {ChevronDownIcon, ChevronRightIcon} from "@primer/octicons-react";
 import {OverlayTrigger} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
-import {Link} from "../nav";
-
 
 export const TableDiff = () => {
     // TODO: use otfDiffAPiEndpoint to get otfdiffList and populate results
