@@ -1,6 +1,9 @@
 import React, {useState} from "react";
 import Table from "react-bootstrap/Table";
 import {ChevronDownIcon, ChevronRightIcon} from "@primer/octicons-react";
+import {OverlayTrigger} from "react-bootstrap";
+import Tooltip from "react-bootstrap/Tooltip";
+import {Link} from "../nav";
 
 
 export const TableDiff = () => {
@@ -38,6 +41,8 @@ const OtfDiffRow = ({otfDiff}) => {
 // }
 
 const OperationExpansionSection = ({operationExpanded, onClick}) => {
-    return <span onClick={onClick}>{operationExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}</span>
+    return <OverlayTrigger placement="bottom" overlay={<Tooltip>{operationExpanded ? "Hide operation info" : "Show operation info"}</Tooltip>}>
+                <span onClick={onClick}>{operationExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}</span>
+           </OverlayTrigger>
 }
 
