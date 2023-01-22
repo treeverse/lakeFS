@@ -544,10 +544,11 @@ var (
 func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
-		name          string
-		numBranch     int
-		numRecords    int
-		expectedCalls int
+		name                   string
+		numBranch              int
+		numRecords             int
+		expectedCalls          int
+		expectedForUncommitted int
 	}{
 		{
 			name:          "no branches",
@@ -565,13 +566,13 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			name:          "Sanity",
 			numBranch:     5,
 			numRecords:    3,
-			expectedCalls: 1,
+			expectedCalls: 2,
 		},
 		{
 			name:          "Tokenized",
 			numBranch:     500,
 			numRecords:    500,
-			expectedCalls: 2,
+			expectedCalls: 3,
 		},
 	}
 	for _, tt := range tests {
@@ -675,10 +676,14 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 		})
 	}
 	test.GarbageCollectionManager.EXPECT().NewID().Return("TestRunID")
-	getRepositoryCalls := expectedCalls + 1 // adding one for  tracked links
-	test.RefManager.EXPECT().GetRepository(gomock.Any(), repoID).Times(getRepositoryCalls).Return(repository, nil)
-	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).Times(expectedCalls).Return(gUtils.NewFakeBranchIterator(branches), nil)
+	test.RefManager.EXPECT().GetRepository(gomock.Any(), repoID).Times(expectedCalls).Return(repository, nil)
 
+	// expect tracked addresses does not list branches, so remove one and keep at least the first
+	expectedCallsForStaging := expectedCalls
+	if expectedCallsForStaging > 1 {
+		expectedCallsForStaging--
+	}
+	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).Times(expectedCallsForStaging).Return(gUtils.NewFakeBranchIterator(branches), nil)
 	for i := 0; i < len(branches); i++ {
 		sort.Slice(records[i], func(ii, jj int) bool {
 			return bytes.Compare(records[i][ii].Key, records[i][jj].Key) < 0
@@ -686,8 +691,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, gomock.Any()).AnyTimes().Return(cUtils.NewFakeValueIterator(records[i]), nil)
 	}
 
-	getUncommittedLocationCalls := expectedCalls + 1 // adding one for  tracked links
-	test.GarbageCollectionManager.EXPECT().GetUncommittedLocation(gomock.Any(), gomock.Any()).Times(getUncommittedLocationCalls).DoAndReturn(func(runID string, sn graveler.StorageNamespace) (string, error) {
+	test.GarbageCollectionManager.EXPECT().GetUncommittedLocation(gomock.Any(), gomock.Any()).Times(expectedCalls).DoAndReturn(func(runID string, sn graveler.StorageNamespace) (string, error) {
 		return fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID), nil
 	})
 

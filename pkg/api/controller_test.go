@@ -3590,26 +3590,8 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 			t.Errorf("PrepareGarbageCollectionUncommittedWithResponse Location, value expected")
 		}
 		token := api.StringValue(resp.JSON201.ContinuationToken)
-		if token == "" {
-			t.Fatal("PrepareGarbageCollectionUncommittedWithResponse ContinuationToken, value expected")
-		}
-
-		resp, err = clt.PrepareGarbageCollectionUncommittedWithResponse(ctx, repo, api.PrepareGarbageCollectionUncommittedJSONRequestBody{
-			ContinuationToken: resp.JSON201.ContinuationToken,
-		})
-		verifyResponseOK(t, resp, err)
-		if resp.JSON201 == nil {
-			t.Fatalf("PrepareGarbageCollectionUncommitted status code:%d, expected 201", resp.StatusCode())
-		}
-		if resp.JSON201.RunId == "" {
-			t.Errorf("PrepareGarbageCollectionUncommitted empty RunID, value expected")
-		}
-		if resp.JSON201.GcUncommittedLocation == "" {
-			t.Errorf("PrepareGarbageCollectionUncommitted Location, value expected")
-		}
-		token = api.StringValue(resp.JSON201.ContinuationToken)
 		if token != "" {
-			t.Errorf("PrepareGarbageCollectionUncommitted token=%s, expected empty token", token)
+			t.Fatalf("PrepareGarbageCollectionUncommittedWithResponse ContinuationToken=%s, expected empty", token)
 		}
 	})
 }
