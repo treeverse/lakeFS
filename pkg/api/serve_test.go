@@ -70,7 +70,7 @@ func (m *memCollector) CollectEvent(ev stats.Event) {
 func (m *memCollector) CollectMetadata(accountMetadata *stats.Metadata) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.Metadata = append(m.Metadata, metadata)
+	m.Metadata = append(m.Metadata, accountMetadata)
 }
 
 func (m *memCollector) SetInstallationID(installationID string) {
