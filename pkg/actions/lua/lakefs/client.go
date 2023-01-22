@@ -10,9 +10,8 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	"github.com/go-chi/chi/v5"
-
 	"github.com/Shopify/go-lua"
+	"github.com/go-chi/chi/v5"
 	"github.com/treeverse/lakefs/pkg/actions/lua/util"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
@@ -44,12 +43,14 @@ func newLakeFSRequest(ctx context.Context, user *model.User, method, url string,
 
 	// Chi stores its routing information on the request context which breaks this sub-request's routing.
 	// We explicitly nullify any existing routing information before creating the new request
-	subCtx := auth.WithUser(context.WithValue(ctx, chi.RouteCtxKey, nil), user)
-	req, err := http.NewRequestWithContext(subCtx, method, url, body)
-	req.Header.Set("User-Agent", LuaClientUserAgent)
+	ctx = context.WithValue(ctx, chi.RouteCtxKey, nil)
+	// Add user to the request context
+	ctx = auth.WithUser(ctx, user)
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("User-Agent", LuaClientUserAgent)
 	return req, nil
 }
 
