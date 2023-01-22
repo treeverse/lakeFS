@@ -82,6 +82,7 @@ func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 	container := a.client.NewContainerClient(qk.ContainerName)
 	listBlob := container.NewListBlobsFlatPager(&azblob.ListBlobsFlatOptions{
 		Prefix: &prefix,
+		Marker: &op.ContinuationToken,
 	})
 
 	for listBlob.More() {
@@ -89,11 +90,13 @@ func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 		if err != nil {
 			return err
 		}
-
 		for _, blobInfo := range resp.Segment.BlobItems {
 			// skipping everything in the page which is before 'After' (without forgetting the possible empty string key!)
 			if op.After != "" && *blobInfo.Name <= op.After {
 				continue
+			}
+			if resp.Marker != nil {
+				a.mark.ContinuationToken = *resp.Marker
 			}
 			a.mark.LastKey = *blobInfo.Name
 			if err := walkFn(ObjectStoreEntry{
