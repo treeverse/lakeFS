@@ -13,13 +13,14 @@ has_children: false
 
 {% include toc.html %}
 
+## Role Based Access Control
+
 **Note**
-This feature is deprecated. For authorization on top of lakeFS, try [lakeFS cloud](https://lakefs.cloud)
+This feature is deprecated and will be replaced with a simpler ACL-based authorization mechanism.
+Role based access control will remain fully supported on [lakeFS cloud](https://lakefs.cloud)
 {: .note }
 
-## Authorization
-
-### Authorization Model
+### RBAC Model
 
 Access to resources is managed very much like [AWS IAM](https://docs.aws.amazon.com/IAM/latest/UserGuide/intro-structure.html){:target="_blank"}.
 
@@ -79,7 +80,6 @@ arn:lakefs:fs:::*
 this allows us to create fine-grained policies affecting only a specific subset of resources.
 
 See below for a full reference of ARNs and actions.
-
 
 
 ### Actions and Permissions
@@ -389,6 +389,6 @@ Policies: `["FSReadWriteAll", "AuthManageOwnCredentials", "RepoManagementReadAll
 
 Policies: `["FSReadAll", "AuthManageOwnCredentials"]`
 
-### SOC2 Compliance
+## SOC2 Compliance
 
 For a scalable managed lakeFS service with guaranteed SLAs, which is SOC 2 Compliant try [lakeFS cloud](https://lakefs.cloud)
