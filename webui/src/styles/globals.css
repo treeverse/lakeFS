@@ -284,6 +284,18 @@
   background-color: #ffffff;
 }
 
+.otf-diff-changed {
+  background-color: var(--color-bg-changed);
+}
+
+.otf-diff-added {
+  background-color: var(--color-bg-added)
+}
+
+.otf-diff-removed {
+  background-color: var(--color-bg-removed);
+}
+
 .table tr .row-hover {
   visibility: hidden;
   font-size: 0.7em;
