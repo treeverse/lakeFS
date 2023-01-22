@@ -10,16 +10,19 @@ import Table from "react-bootstrap/Table";
 import Alert from "react-bootstrap/Alert";
 import {TreeEntryPaginator, TreeItem} from "../../../../../lib/components/repository/changes";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
-import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-react";
+import {ArrowLeftIcon, BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-react";
 import {Link} from "../../../../../lib/components/nav";
 import {useRouter} from "../../../../../lib/hooks/router";
 import {URINavigator} from "../../../../../lib/components/repository/tree";
 import {appendMoreResults} from "../../changes";
+import Button from "react-bootstrap/Button";
+import {TableDiff} from "../../../../../lib/components/repository/TableDiff";
 
 const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
     const [actionError, setActionError] = useState(null);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
+    const [tableDiffExpanded, setTableDiffExpanded] = useState(false);
 
     const delimiter = "/"
 
@@ -43,7 +46,16 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
         <>
             {actionErrorDisplay}
             <div className="tree-container">
-                {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
+                {(results.length === 0) ? <Alert variant="info">No changes</Alert> :
+                    (<>
+                        {tableDiffExpanded
+                            ?  <Button className="action-bar"
+                                       variant="secondary"
+                                       disabled={false}
+                                       onClick={() => {setTableDiffExpanded(false)}}>
+                                <ArrowLeftIcon/> Back to object comparison
+                            </Button>
+                            : ""}
                     <Card>
                         <Card.Header>
                         <span className="float-start">
@@ -56,20 +68,26 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
                                                       params: {repoId: repo.id, commitId: commit.id},
                                                       query: {prefix: query.path}
                                                   }
-                                              }}/>
+                                              }}
+                                              setTableDiffExpanded={() => setTableDiffExpanded(true)}
+                                />
                             )}
                         </span>
                         </Card.Header>
                         <Card.Body>
                             <Table borderless size="sm">
                                 <tbody>
-                                {results.map(entry => (
+                                {tableDiffExpanded
+                                    ? <TableDiff/>
+                                    : results.map(entry => (
                                     <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo} reference={commit}
                                               leftDiffRefID={commit.parents[0]} rightDiffRefID={commit.id} delimiter={delimiter}
                                               after={afterUpdated} relativeTo={prefix} onNavigate={onNavigate}
                                               getMore={(afterUpdated, path, useDelimiter = true, amount = -1) => {
                                                   return refs.diff(repo.id, commit.parents[0], commit.id, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
-                                              }}/>
+                                              }}
+                                              setTableDiffExpanded={() => setTableDiffExpanded(true)}
+                                    />
                                 ))}
                                 { !!nextPage &&
                                     <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
@@ -77,7 +95,7 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
                                 </tbody>
                             </Table>
                         </Card.Body>
-                    </Card>
+                    </Card></>
                 )}
             </div>
         </>
