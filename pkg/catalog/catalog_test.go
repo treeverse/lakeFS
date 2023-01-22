@@ -20,6 +20,8 @@ import (
 	cUtils "github.com/treeverse/lakefs/pkg/catalog/testutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	gUtils "github.com/treeverse/lakefs/pkg/graveler/testutil"
+	"github.com/treeverse/lakefs/pkg/kv"
+	kvmock "github.com/treeverse/lakefs/pkg/kv/mock"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/xitongsys/parquet-go-source/local"
 	"github.com/xitongsys/parquet-go/reader"
@@ -580,9 +582,8 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 				Store:                    g.Sut,
 				BlockAdapter:             blockAdapter,
 				GCMaxUncommittedFileSize: 500 * 1024,
+				StoreMessage:             &kv.StoreMessage{Store: g.KVStore},
 			}
-			var result *catalog.PrepareGCUncommittedInfo
-
 			result, err := c.PrepareGCUncommitted(ctx, repoID.String(), nil)
 			require.NoError(t, err)
 
@@ -674,7 +675,8 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 		})
 	}
 	test.GarbageCollectionManager.EXPECT().NewID().Return("TestRunID")
-	test.RefManager.EXPECT().GetRepository(gomock.Any(), repoID).Times(expectedCalls).Return(repository, nil)
+	getRepositoryCalls := expectedCalls + 1 // adding one for  tracked links
+	test.RefManager.EXPECT().GetRepository(gomock.Any(), repoID).Times(getRepositoryCalls).Return(repository, nil)
 	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).Times(expectedCalls).Return(gUtils.NewFakeBranchIterator(branches), nil)
 
 	for i := 0; i < len(branches); i++ {
@@ -683,11 +685,18 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 		})
 		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, gomock.Any()).AnyTimes().Return(cUtils.NewFakeValueIterator(records[i]), nil)
 	}
-	if numRecords*numBranches > 0 {
-		test.GarbageCollectionManager.EXPECT().GetUncommittedLocation(gomock.Any(), gomock.Any()).Times(expectedCalls).DoAndReturn(func(runID string, sn graveler.StorageNamespace) (string, error) {
-			return fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID), nil
-		})
-	}
+
+	getUncommittedLocationCalls := expectedCalls + 1 // adding one for  tracked links
+	test.GarbageCollectionManager.EXPECT().GetUncommittedLocation(gomock.Any(), gomock.Any()).Times(getUncommittedLocationCalls).DoAndReturn(func(runID string, sn graveler.StorageNamespace) (string, error) {
+		return fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID), nil
+	})
+
+	repoPartition := graveler.RepoPartition(repository)
+	entIt := kvmock.NewMockEntriesIterator(test.Controller)
+	entIt.EXPECT().Next().AnyTimes().Return(false)
+	entIt.EXPECT().Err().AnyTimes().Return(nil)
+	entIt.EXPECT().Close().AnyTimes()
+	test.KVStore.EXPECT().Scan(gomock.Any(), []byte(repoPartition), gomock.Any()).Times(1).Return(entIt, nil)
 
 	sort.Strings(expectedRecords)
 	return test, expectedRecords

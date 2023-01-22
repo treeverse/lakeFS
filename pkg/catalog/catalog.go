@@ -38,8 +38,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/validator"
-	"github.com/xitongsys/parquet-go/parquet"
-	"github.com/xitongsys/parquet-go/writer"
 	"go.uber.org/atomic"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -148,7 +146,7 @@ type Catalog struct {
 	walkerFactory            WalkerFactory
 	managers                 []io.Closer
 	workPool                 *pond.WorkerPool
-	kvStore                  *kv.StoreMessage
+	StoreMessage             *kv.StoreMessage
 	PathProvider             *upload.PathPartitionProvider
 }
 
@@ -263,7 +261,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		log:                      logging.Default().WithField("service_name", "entry_catalog"),
 		walkerFactory:            cfg.WalkerFactory,
 		workPool:                 workPool,
-		kvStore:                  cfg.KVStore,
+		StoreMessage:             cfg.KVStore,
 		managers:                 []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
 	}, nil
 }
@@ -1759,6 +1757,8 @@ type GCUncommittedMark struct {
 	BranchID graveler.BranchID `json:"branch"`
 	Path     Path              `json:"path"`
 	RunID    string            `json:"run_id"`
+	Tracked  bool              `json:"tracked"`
+	Key      string            `json:"key"`
 }
 
 type PrepareGCUncommittedInfo struct {
@@ -1769,86 +1769,6 @@ type PrepareGCUncommittedInfo struct {
 type UncommittedParquetObject struct {
 	PhysicalAddress string `parquet:"name=physical_address, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
 	CreationDate    int64  `parquet:"name=creation_date, type=INT64, convertedtype=INT_64"`
-}
-
-func (c *Catalog) writeUncommittedLocal(ctx context.Context, repository *graveler.RepositoryRecord, w *UncommittedWriter, mark *GCUncommittedMark, runID string) (*GCUncommittedMark, bool, error) {
-	pw, err := writer.NewParquetWriterFromWriter(w, new(UncommittedParquetObject), gcParquetParallelNum) // TODO: Play with np count
-	if err != nil {
-		return nil, false, err
-	}
-	pw.CompressionType = parquet.CompressionCodec_GZIP
-
-	count := 0
-	itr, err := NewUncommittedIterator(ctx, c.Store, repository)
-	if err != nil {
-		return nil, false, err
-	}
-	defer itr.Close()
-
-	if mark != nil {
-		itr.SeekGE(mark.BranchID, mark.Path)
-	}
-
-	normalizedStorageNamespace := string(repository.StorageNamespace)
-	if !strings.HasSuffix(normalizedStorageNamespace, DefaultPathDelimiter) {
-		normalizedStorageNamespace += DefaultPathDelimiter
-	}
-
-	for itr.Next() {
-		entry := itr.Value()
-		// Skip if entry is tombstone
-		if entry.Entry == nil {
-			continue
-		}
-		// Skip non-relative that address outside the storage namespace
-		entryAddress := entry.Address
-		if entry.Entry.AddressType != Entry_RELATIVE {
-			if !strings.HasPrefix(entry.Address, normalizedStorageNamespace) {
-				continue
-			}
-			entryAddress = entryAddress[len(normalizedStorageNamespace):]
-		}
-
-		count += 1
-		if count%gcPeriodicCheckSize == 0 {
-			err := pw.Flush(true)
-			if err != nil {
-				return nil, false, err
-			}
-
-			if w.Size() > int64(c.GCMaxUncommittedFileSize) {
-				if itr.Err() != nil {
-					return nil, false, itr.Err()
-				}
-				err = pw.WriteStop()
-				if err != nil {
-					return nil, false, err
-				}
-				return &GCUncommittedMark{
-					BranchID: entry.branchID,
-					Path:     entry.Path,
-					RunID:    runID,
-				}, true, nil
-			}
-		}
-		if err = pw.Write(UncommittedParquetObject{
-			PhysicalAddress: entryAddress,
-			CreationDate:    entry.LastModified.AsTime().Unix(),
-		}); err != nil {
-			return nil, false, err
-		}
-	}
-	if itr.Err() != nil {
-		return nil, false, itr.Err()
-	}
-	err = pw.WriteStop()
-	if err != nil {
-		return nil, false, err
-	}
-
-	// Finished reading all staging area - no continuation token
-	hasData := count > 0
-	return nil, hasData, nil
 }
 
 func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, location string, fd *os.File, size int64) error {
@@ -1899,28 +1819,22 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	uw := NewUncommittedWriter(fd)
 
 	// Write parquet to local storage
-	newMark, hasData, err := c.writeUncommittedLocal(ctx, repository, uw, mark, runID)
+	newMark, hasData, err := gcWriteUncommitted(ctx, c.Store, c.StoreMessage.Store, repository, uw, mark, runID, int64(c.GCMaxUncommittedFileSize))
 	if err != nil {
 		return nil, err
 	}
 
-	if !hasData { // On empty file - skip upload
-		return &PrepareGCUncommittedInfo{
-			Metadata: graveler.GarbageCollectionRunMetadata{
-				RunId:               runID,
-				UncommittedLocation: "",
-			},
-		}, nil
-	}
-
-	// Upload parquet file to object store
 	uncommittedLocation, err := c.Store.GCGetUncommittedLocation(repository, runID)
 	if err != nil {
 		return nil, err
 	}
-	err = c.uploadFile(ctx, repository.StorageNamespace, uncommittedLocation, fd, uw.Size())
-	if err != nil {
-		return nil, err
+
+	// Upload parquet file to object store
+	if hasData {
+		err = c.uploadFile(ctx, repository.StorageNamespace, uncommittedLocation, fd, uw.Size())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &PrepareGCUncommittedInfo{
@@ -2032,7 +1946,7 @@ func (c *Catalog) TrackPhysicalAddress(ctx context.Context, repository, physical
 		Address:      physicalAddress,
 		LastModified: timestamppb.Now(),
 	}
-	err = c.kvStore.SetMsg(ctx, repoPartition, []byte(key), ent)
+	err = c.StoreMessage.SetMsg(ctx, repoPartition, []byte(key), ent)
 	if err != nil {
 		return "", err
 	}
@@ -2128,7 +2042,7 @@ func (c *Catalog) deleteRepoTrackedPhysicalAddressHelper(ctx context.Context, re
 	repoPartition := graveler.RepoPartition(repo)
 	msgType := (&Entry{}).ProtoReflect().Type()
 	prefix := []byte(kv.FormatPath(kvTrackPrefix, ""))
-	it, err := kv.NewPrimaryIterator(ctx, c.kvStore.Store, msgType, repoPartition, prefix, kv.IteratorOptionsFrom([]byte{}))
+	it, err := kv.NewPrimaryIterator(ctx, c.StoreMessage.Store, msgType, repoPartition, prefix, kv.IteratorOptionsFrom([]byte{}))
 	if err != nil {
 		return false, err
 	}
@@ -2157,7 +2071,7 @@ func (c *Catalog) deleteRepoTrackedPhysicalAddressHelper(ctx context.Context, re
 
 	// delete the collected keys
 	for _, key := range keysToDelete {
-		err := c.kvStore.Delete(ctx, []byte(repoPartition), []byte(key))
+		err := c.StoreMessage.Delete(ctx, []byte(repoPartition), []byte(key))
 		if err != nil {
 			c.log.WithError(err).
 				WithFields(logging.Fields{"repository": repo.RepositoryID, "key": key}).
