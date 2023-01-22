@@ -15,6 +15,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
@@ -35,6 +36,14 @@ Total Size: {{.Bytes}} bytes
 Human Total Size: {{.Bytes|human_bytes}}
 `
 
+type uploadMethod int
+
+const (
+	uploadMethodDefault = iota
+	uploadMethodDirect
+	uploadMethodPreSign
+)
+
 var ErrRequestFailed = errors.New("request failed")
 
 var fsStatCmd = &cobra.Command{
@@ -44,9 +53,11 @@ var fsStatCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
+		preSign := MustBool(cmd.Flags().GetBool("pre-sign"))
 		client := getClient()
 		resp, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StatObjectParams{
-			Path: *pathURI.Path,
+			Path:    *pathURI.Path,
+			Presign: swag.Bool(preSign),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
@@ -71,6 +82,7 @@ var fsListCmd = &cobra.Command{
 		client := getClient()
 		pathURI := MustParsePathURI("path", args[0])
 		recursive, _ := cmd.Flags().GetBool("recursive")
+		preSign := MustBool(cmd.Flags().GetBool("pre-sign"))
 		prefix := *pathURI.Path
 
 		// prefix we need to trim in ls output (non-recursive)
@@ -80,9 +92,7 @@ var fsListCmd = &cobra.Command{
 		}
 		// delimiter used for listing
 		var paramsDelimiter api.PaginationDelimiter
-		if recursive {
-			paramsDelimiter = ""
-		} else {
+		if !recursive {
 			paramsDelimiter = PathDelimiter
 		}
 		var from string
@@ -92,6 +102,7 @@ var fsListCmd = &cobra.Command{
 				Prefix:    &pfx,
 				After:     api.PaginationAfterPtr(from),
 				Delimiter: &paramsDelimiter,
+				Presign:   swag.Bool(preSign),
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
@@ -155,16 +166,22 @@ var fsCatCmd = &cobra.Command{
 	},
 }
 
-func upload(ctx context.Context, client api.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, direct bool) (*api.ObjectStats, error) {
+func upload(ctx context.Context, client api.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, method uploadMethod) (*api.ObjectStats, error) {
 	fp := OpenByPath(sourcePathname)
 	defer func() {
 		_ = fp.Close()
 	}()
 	objectPath := api.StringValue(destURI.Path)
-	if direct {
+	switch method {
+	case uploadMethodDefault:
+		return uploadObject(ctx, client, destURI.Repository, destURI.Ref, objectPath, contentType, fp)
+	case uploadMethodDirect:
 		return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
+	case uploadMethodPreSign:
+		return helpers.ClientUploadPreSign(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp), nil
+	default:
+		panic("unsupported upload method")
 	}
-	return uploadObject(ctx, client, destURI.Repository, destURI.Ref, objectPath, contentType, fp)
 }
 
 func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, objectPath, contentType string, fp io.Reader) (*api.ObjectStats, error) {
@@ -584,6 +601,8 @@ func init() {
 	fsCmd.AddCommand(fsRmCmd)
 	fsCmd.AddCommand(fsDownloadCmd)
 
+	fsStatCmd.Flags().Bool("pre-sign", false, "Request pre-sign for physical address")
+
 	fsCatCmd.Flags().BoolP("direct", "d", false, "read directly from backing store (faster but requires more credentials)")
 
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
@@ -591,6 +610,7 @@ func init() {
 	fsUploadCmd.Flags().BoolP("direct", "d", false, "write directly to backing store (faster but requires more credentials)")
 	_ = fsUploadCmd.MarkFlagRequired("source")
 	fsUploadCmd.Flags().StringP("content-type", "", "", "MIME type of contents")
+	fsUploadCmd.Flags().Bool("pre-sign", false, "Use pre-sign link to upload data")
 
 	fsStageCmd.Flags().String("location", "", "fully qualified storage location (i.e. \"s3://bucket/path/to/object\")")
 	fsStageCmd.Flags().Int64("size", 0, "Object size in bytes")
