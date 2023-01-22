@@ -67,11 +67,11 @@ func (s *Service) RunDiff(ctx context.Context, diffName string, diffParams Param
 }
 
 func buildEntries(diffs []*Diff) []Entry {
-	result := make([]Entry, len(diffs))
+	result := make([]Entry, 0, len(diffs))
 	for _, diff := range diffs {
 		result = append(result, Entry{
 			Version:          diff.Version,
-			Timestamp:        diff.Timestamp.AsTime(),
+			Timestamp:        time.UnixMilli(diff.Timestamp),
 			Operation:        diff.Description,
 			OperationContent: diff.Content,
 		})
