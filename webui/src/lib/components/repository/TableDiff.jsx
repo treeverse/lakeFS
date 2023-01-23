@@ -31,13 +31,13 @@ const deltaLakeOperationToDiffType = new Map([
 
 export const TableDiff = ({repo, leftRef, rightRef, tablePath}) => {
     let response = useAPI(() => repositories.otfDiff(repo.id, leftRef.id, rightRef.id, tablePath, OtfType.Delta), [])
-    if (response && response.loading) return <Loading/>;
+    if (response && response.loading) return <Loading style={{margin: 0+"px"}}/>;
     const err = response && response.error;
     if (err) return <Error error={err}/>;
 
     const otfDiffs = response.response.results;
     return <>
-        {(otfDiffs.length === 0) ?  <Alert variant="info">No changes</Alert> :
+        {(otfDiffs.length === 0) ?  <Alert variant="info" style={{margin: 0+"px"}}>No changes</Alert> :
                 <Table borderless size="md">
                     <tbody>
                     {
