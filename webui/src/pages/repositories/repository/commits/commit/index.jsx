@@ -77,7 +77,7 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
                             <Table borderless size="sm">
                                 <tbody>
                                 {tableDiffState.isExpanded
-                                    ? <TableDiff repo={repo} leftRef={commit.parents[0]} rightRef={commit.id} tablePath={tableDiffState.expandedTablePath}/>
+                                    ? <TableDiff repo={repo} leftRef={commit.parents[0].id} rightRef={commit.id} tablePath={tableDiffState.expandedTablePath}/>
                                     : results.map(entry => (
                                     <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo} reference={commit}
                                               leftDiffRefID={commit.parents[0]} rightDiffRefID={commit.id} delimiter={delimiter}
