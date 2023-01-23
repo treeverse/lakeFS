@@ -1,11 +1,12 @@
-FROM --platform=$BUILDPLATFORM golang:1.19.2-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.19.2-bullseye AS build
 
 ARG VERSION=dev
 
 WORKDIR /build
 
 # Packages required to build
-RUN apk add --no-cache build-base
+RUN apt-get update
+RUN apt-get install -o APT::Keep-Downloaded-Packages=false -y build-essential
 
 # Copy project deps first since they don't change often
 COPY go.mod go.sum ./
@@ -26,8 +27,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o lakectl ./cmd/lakectl
 
 # Build delta diff binary
-FROM --platform=$BUILDPLATFORM rust:1.66-alpine AS build-diff
-RUN apk add --no-cache musl-dev libressl-dev
+FROM --platform=$BUILDPLATFORM rust:1.66-bullseye AS build-diff
 RUN USER=root cargo new --bin delta-diff
 WORKDIR /delta-diff
 
@@ -47,22 +47,23 @@ RUN rm ./target/release/deps/delta_diff*
 RUN cargo build --release
 
 # lakectl image
-FROM --platform=$BUILDPLATFORM alpine:3.15.0 AS lakectl
-RUN apk add -U --no-cache ca-certificates
+FROM --platform=$BUILDPLATFORM debian:11.6-slim AS lakectl
+RUN apt-get update
+RUN apt-get install -o APT::Keep-Downloaded-Packages=false -y ca-certificates
 WORKDIR /app
 ENV PATH /app:$PATH
 COPY --from=build /build/lakectl ./
-RUN addgroup -S lakefs && adduser -S lakefs -G lakefs
+RUN addgroup --system lakefs && adduser --system lakefs --ingroup lakefs
 USER lakefs
 WORKDIR /home/lakefs
 ENTRYPOINT ["/app/lakectl"]
 
 # lakefs image
-FROM --platform=$BUILDPLATFORM alpine:3.15.0 AS lakefs
-
-RUN apk add -U --no-cache ca-certificates
+FROM --platform=$BUILDPLATFORM debian:11.6-slim AS lakefs
+RUN apt-get update
+RUN apt-get install -o APT::Keep-Downloaded-Packages=false -y ca-certificates
 # Be Docker compose friendly (i.e. support wait-for)
-RUN apk add netcat-openbsd
+RUN apt-get install -o APT::Keep-Downloaded-Packages=false -y netcat-openbsd
 
 WORKDIR /app
 COPY ./scripts/wait-for ./
@@ -73,7 +74,7 @@ COPY --from=build-diff /delta-diff/target/release/delta-diff ./
 EXPOSE 8000/tcp
 
 # Setup user
-RUN addgroup -S lakefs && adduser -S lakefs -G lakefs
+RUN addgroup --system lakefs && adduser --system lakefs --ingroup lakefs
 USER lakefs
 WORKDIR /home/lakefs
 
