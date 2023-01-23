@@ -93,8 +93,18 @@ jobs:
 
       - name: Trigger playground deploy
         run: |
-          curl -XPOST -u "${{ secrets.PAT_TOKEN }}" \
-          -H "Accept: application/vnd.github.everest-preview+json" \
+          curl \
+          -X POST \
+          -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}"\
+          -H "Accept: application/vnd.github+json" \
           -H "Content-Type: application/json" \
-          https://api.github.com/repos/${{ secrets.REPOSITORY_NAME }}/dispatches \
-          --data '{"event_type": "deploy_playground", "client_payload": { "lakefs_image": ${{ steps.version.outputs.tag }} }}'
+          https://api.github.com/repos/${{ secrets.REPOSITORY_NAME }}/actions/workflows/${{ secrets.WORKFLOW_ID_STAGING }}/dispatches \
+          --data '{"ref":"main", "inputs": { "lakefs_image": ${{ steps.version.outputs.tag }} }}'
+
+          curl \
+          -X POST \
+          -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}"\
+          -H "Accept: application/vnd.github+json" \
+          -H "Content-Type: application/json" \
+          https://api.github.com/repos/${{ secrets.REPOSITORY_NAME }}/actions/workflows/${{ secrets.WORKFLOW_ID_PRODUCTION }}/dispatches \
+          --data '{"ref":"main", "inputs": { "lakefs_image": ${{ steps.version.outputs.tag }} }}'
