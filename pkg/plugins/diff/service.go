@@ -54,13 +54,13 @@ func (s *Service) RunDiff(ctx context.Context, diffName string, diffParams Param
 	if s == nil {
 		return nil, ErrUninitializedDiffService
 	}
-	//d, closeClient, err := s.pluginManager.LoadPluginClient(diffName)
+	// d, closeClient, err := s.pluginManager.LoadPluginClient(diffName)
 	d, _, err := s.pluginManager.LoadPluginClient(diffName)
 	if err != nil {
 		return nil, err
 	}
 	// TODO(jonathan): initialize a "close client" array of functions that will be called once the service is terminated
-	//defer closeClient()
+	// defer closeClient()
 	diffs, err := (*d).Diff(ctx, diffParams.TablePaths, diffParams.S3Creds)
 	if err != nil {
 		return nil, err
