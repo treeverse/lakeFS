@@ -13,6 +13,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/pkg/config"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -36,11 +39,11 @@ type UncommittedFindings struct {
 }
 
 func TestUncommittedGC(t *testing.T) {
-	//SkipTestIfAskedTo(t)
-	//blockstoreType := viper.GetString(config.BlockstoreTypeKey)
-	//if blockstoreType != block.BlockstoreTypeS3 {
-	//	t.Skip("Running on S3 only")
-	//}
+	SkipTestIfAskedTo(t)
+	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
+	if blockstoreType != block.BlockstoreTypeS3 {
+		t.Skip("Running on S3 only")
+	}
 	prepareForUncommittedGC(t)
 	submitConfig := &sparkSubmitConfig{
 		sparkVersion:    sparkImageTag,
@@ -50,7 +53,7 @@ func TestUncommittedGC(t *testing.T) {
 		programArgs:     []string{uncommittedGCRepoName, "us-east-1"},
 		logSource:       "ugc",
 	}
-	testutil.MustDo(t, "run uncommitted GC", runSparkSubmitLocal(submitConfig))
+	testutil.MustDo(t, "run uncommitted GC", runSparkSubmit(submitConfig))
 
 	validateUncommittedGC(t)
 }
@@ -293,11 +296,11 @@ func getLastUGCRunID(t *testing.T, ctx context.Context, s3Client *s3.S3, bucket,
 }
 
 func TestSafeUncommittedGC(t *testing.T) {
-	//SkipTestIfAskedTo(t)
-	//blockstoreType := viper.GetString(config.BlockstoreTypeKey)
-	//if blockstoreType != block.BlockstoreTypeS3 {
-	//	t.Skip("Running on S3 only")
-	//}
+	SkipTestIfAskedTo(t)
+	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
+	if blockstoreType != block.BlockstoreTypeS3 {
+		t.Skip("Running on S3 only")
+	}
 	ctx := context.Background()
 	repo := createRepositoryByName(ctx, t, uncommittedSafeGCRepoName)
 
@@ -313,6 +316,7 @@ func TestSafeUncommittedGC(t *testing.T) {
 
 	// upload files while ugc is running
 	ticker := time.NewTicker(time.Second * 1)
+	var objects []string
 	done := make(chan bool)
 	go func() {
 		for {
@@ -321,7 +325,8 @@ func TestSafeUncommittedGC(t *testing.T) {
 				ticker.Stop()
 				return
 			case <-ticker.C:
-				uploadAndDeleteSafeTestData(t, ctx, repo)
+				obj := uploadAndDeleteSafeTestData(t, ctx, repo)
+				objects = append(objects, obj)
 			}
 		}
 	}()
@@ -335,7 +340,7 @@ func TestSafeUncommittedGC(t *testing.T) {
 		programArgs:     []string{uncommittedSafeGCRepoName, "us-east-1"},
 		logSource:       "ugc",
 	}
-	testutil.MustDo(t, "run uncommitted GC", runSparkSubmitLocal(submitConfig))
+	testutil.MustDo(t, "run uncommitted GC", runSparkSubmit(submitConfig))
 	done <- true
 
 	// post run
@@ -354,20 +359,23 @@ func TestSafeUncommittedGC(t *testing.T) {
 		t.Fatalf("Failed to link physical address %s", err)
 	}
 
-	validateSafeUncommittedGC(t, ctx, repo)
+	validateSafeUncommittedGC(t, ctx, repo, objects)
 }
 
-func uploadAndDeleteSafeTestData(t *testing.T, ctx context.Context, repository string) {
+func uploadAndDeleteSafeTestData(t *testing.T, ctx context.Context, repository string) string {
 	name := xid.New().String()
 	_, _ = uploadFileRandomData(ctx, t, repository, mainBranch, name, false)
+
+	addr := objectPhysicalAddress(t, ctx, repository, name)
 
 	_, err := client.DeleteObjectWithResponse(ctx, repository, mainBranch, &api.DeleteObjectParams{Path: name})
 	if err != nil {
 		t.Fatalf("Failed to delete object %s", err)
 	}
+	return addr
 }
 
-func validateSafeUncommittedGC(t *testing.T, ctx context.Context, repository string) {
+func validateSafeUncommittedGC(t *testing.T, ctx context.Context, repository string, durObjects []string) {
 	s3Client := newDefaultS3Client()
 	objects, qp := listRepositoryUnderlyingStorage(t, ctx, repository)
 	runID := getLastUGCRunID(t, ctx, s3Client, qp.StorageNamespace, qp.Prefix)
@@ -378,7 +386,27 @@ func validateSafeUncommittedGC(t *testing.T, ctx context.Context, repository str
 		t.Fatalf("Failed to get start list time from ugc report %s", err)
 	}
 
-	// verify that all objects are deleted, if needed
+	objectsMap := make(map[string]Object)
+	for _, obj := range objects {
+		objectsMap[obj.Key] = obj
+	}
+
+	// Validation that deleted objects that were created after the cutoff are not deleted
+	// and that deleted objects that were created before the cutoff are deleted
+	for _, obj := range durObjects {
+		x, foundIt := objectsMap[obj]
+		expectDeleted := true
+		if foundIt {
+			expectDeleted = x.LastModified.Before(cutoffTime)
+		}
+		if foundIt && expectDeleted {
+			t.Errorf("Object '%s' FOUND - should have been deleted", obj)
+		} else if !foundIt && !expectDeleted {
+			t.Errorf("Object '%s' NOT FOUND - should NOT been deleted", obj)
+		}
+	}
+
+	// verify that there aren't unknown objects on the repository storage namespace
 	for _, obj := range objects {
 		if strings.Contains(obj.Key, "/_lakefs/retention/gc/uncommitted/") || strings.Contains(obj.Key, "dummy") {
 			continue
@@ -388,7 +416,6 @@ func validateSafeUncommittedGC(t *testing.T, ctx context.Context, repository str
 			t.Errorf("Object '%s' FOUND - should have been deleted", obj)
 		}
 	}
-
 }
 
 func getReportCutoffTime(s3Client *s3.S3, bucket, reportPath string) (time.Time, error) {
