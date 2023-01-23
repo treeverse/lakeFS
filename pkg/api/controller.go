@@ -3917,7 +3917,7 @@ func buildS3TablePaths(repo, leftRef, rightRef, baseRef, tablePath string) diff.
 }
 
 func buildOtfDiffListResponse(entries []diff.Entry) OtfDiffList {
-	var ol []OtfDiff = make([]OtfDiff, 0)
+	ol := make([]OtfDiff, 0)
 	for _, entry := range entries {
 		content := make(map[string]interface{})
 		for k, v := range entry.OperationContent {
