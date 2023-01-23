@@ -18,17 +18,19 @@ func gcWriteUncommitted(ctx context.Context, store Store, kvStore kv.Store, repo
 	pw.CompressionType = parquet.CompressionCodec_GZIP
 
 	// write uncommitted data from branches
-	var hasData bool
 	if mark == nil || !mark.Tracked {
-		mark, hasData, err = gcWriteUncommittedBranches(ctx, store, pw, repository, w, mark, runID, maxFileSize)
+		nextMark, hasData, err := gcWriteUncommittedBranches(ctx, store, pw, repository, w, mark, runID, maxFileSize)
 		if err != nil {
 			return nil, false, err
 		}
-		// We like to return in case data is written data and not the final marker.
-		// This will enable processing tracked addresses in case there was no uncommitted entries, or we are processing
-		// the last chunk
-		if hasData && mark != nil {
-			return mark, true, nil
+		// return if we create any data and not on our final chunk
+		if nextMark != nil && hasData {
+			return nextMark, true, nil
+		}
+		// continue to tracked
+		mark = &GCUncommittedMark{
+			RunID:   runID,
+			Tracked: true,
 		}
 	}
 	// write tracked physical addresses
@@ -53,7 +55,7 @@ func gcWriteUncommittedBranches(ctx context.Context, store Store, pw *writer.Par
 	}
 
 	count := 0
-	nextMark := &GCUncommittedMark{RunID: runID, Tracked: true}
+	var nextMark *GCUncommittedMark
 	for it.Next() {
 		entry := it.Value()
 		// Skip if entry is tombstone
@@ -76,9 +78,11 @@ func gcWriteUncommittedBranches(ctx context.Context, store Store, pw *writer.Par
 			}
 		}
 		if w.Size() > maxFileSize {
-			nextMark.BranchID = entry.branchID
-			nextMark.Path = entry.Path
-			nextMark.Tracked = false
+			nextMark = &GCUncommittedMark{
+				RunID:    runID,
+				BranchID: entry.branchID,
+				Path:     entry.Path,
+			}
 			break
 		}
 		if err = pw.Write(UncommittedParquetObject{

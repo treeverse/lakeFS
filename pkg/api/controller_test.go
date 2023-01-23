@@ -3500,10 +3500,10 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 	t.Run("no_repository", func(t *testing.T) {
 		resp, err := clt.PrepareGarbageCollectionUncommittedWithResponse(ctx, "", api.PrepareGarbageCollectionUncommittedJSONRequestBody{})
 		if err != nil {
-			t.Fatalf("PrepareGarbageCollectionUncommittedWithResponse failed: %s", err)
+			t.Fatalf("PrepareGarbageCollectionUncommitted failed: %s", err)
 		}
 		if resp.JSON400 == nil {
-			t.Fatalf("PrepareGarbageCollectionUncommittedWithResponse expected BadRequest: %+v", resp)
+			t.Fatalf("PrepareGarbageCollectionUncommitted expected BadRequest: %+v", resp)
 		}
 	})
 
@@ -3511,10 +3511,10 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		repo := testUniqueRepoName()
 		resp, err := clt.PrepareGarbageCollectionUncommittedWithResponse(ctx, repo, api.PrepareGarbageCollectionUncommittedJSONRequestBody{})
 		if err != nil {
-			t.Fatalf("PrepareGarbageCollectionUncommittedWithResponse failed: %s", err)
+			t.Fatalf("PrepareGarbageCollectionUncommitted failed: %s", err)
 		}
 		if resp.JSON404 == nil {
-			t.Fatalf("PrepareGarbageCollectionUncommittedWithResponse expected NotFound: %+v", resp)
+			t.Fatalf("PrepareGarbageCollectionUncommitted expected NotFound: %+v", resp)
 		}
 	})
 
@@ -3532,17 +3532,17 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		resp, err := clt.PrepareGarbageCollectionUncommittedWithResponse(ctx, repo, api.PrepareGarbageCollectionUncommittedJSONRequestBody{})
 		verifyResponseOK(t, resp, err)
 		if resp.JSON201 == nil {
-			t.Fatalf("PrepareGarbageCollectionUncommittedWithResponse status code:%d, expected 201", resp.StatusCode())
+			t.Fatalf("PrepareGarbageCollectionUncommitted status code:%d, expected 201", resp.StatusCode())
 		}
 		if resp.JSON201.RunId == "" {
-			t.Errorf("PrepareGarbageCollectionUncommittedWithResponse empty RunID, value expected")
+			t.Errorf("PrepareGarbageCollectionUncommitted empty RunID, value expected")
 		}
 		if resp.JSON201.GcUncommittedLocation == "" {
-			t.Errorf("PrepareGarbageCollectionUncommittedWithResponse empty GcUncommittedLocation, value expected")
+			t.Errorf("PrepareGarbageCollectionUncommitted empty GcUncommittedLocation, value expected")
 		}
 		token := api.StringValue(resp.JSON201.ContinuationToken)
 		if token == "" {
-			t.Fatal("PrepareGarbageCollectionUncommittedWithResponse ContinuationToken, expected value")
+			t.Fatal("PrepareGarbageCollectionUncommitted ContinuationToken, expected value")
 		}
 
 		// second call should return the list tracked linked addresses
@@ -3551,17 +3551,17 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		})
 		verifyResponseOK(t, resp, err)
 		if resp.JSON201 == nil {
-			t.Fatalf("PrepareGarbageCollectionUncommittedWithResponse status code:%d, expected 201", resp.StatusCode())
+			t.Fatalf("PrepareGarbageCollectionUncommitted status code:%d, expected 201", resp.StatusCode())
 		}
 		if resp.JSON201.RunId == "" {
-			t.Errorf("PrepareGarbageCollectionUncommittedWithResponse empty RunID, value expected")
+			t.Errorf("PrepareGarbageCollectionUncommitted empty RunID, value expected")
 		}
 		if resp.JSON201.GcUncommittedLocation == "" {
-			t.Errorf("PrepareGarbageCollectionUncommittedWithResponse empty GcUncommittedLocation, value expected")
+			t.Errorf("PrepareGarbageCollectionUncommitted empty GcUncommittedLocation, value expected")
 		}
 		token = api.StringValue(resp.JSON201.ContinuationToken)
 		if token != "" {
-			t.Errorf("PrepareGarbageCollectionUncommittedWithResponse ContinuationToken=%s, expected no value", token)
+			t.Errorf("PrepareGarbageCollectionUncommitted ContinuationToken=%s, expected no value", token)
 		}
 	})
 
@@ -3581,17 +3581,52 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		resp, err := clt.PrepareGarbageCollectionUncommittedWithResponse(ctx, repo, api.PrepareGarbageCollectionUncommittedJSONRequestBody{})
 		verifyResponseOK(t, resp, err)
 		if resp.JSON201 == nil {
-			t.Fatalf("PrepareGarbageCollectionUncommittedWithResponse status code:%d, expected 201", resp.StatusCode())
+			t.Fatalf("PrepareGarbageCollectionUncommitted status code:%d, expected 201", resp.StatusCode())
 		}
 		if resp.JSON201.RunId == "" {
-			t.Errorf("PrepareGarbageCollectionUncommittedWithResponse empty RunID, value expected")
+			t.Errorf("PrepareGarbageCollectionUncommitted empty RunID, value expected")
 		}
 		if resp.JSON201.GcUncommittedLocation == "" {
-			t.Errorf("PrepareGarbageCollectionUncommittedWithResponse Location, value expected")
+			t.Errorf("PrepareGarbageCollectionUncommitted Location, value expected")
 		}
 		token := api.StringValue(resp.JSON201.ContinuationToken)
 		if token != "" {
-			t.Fatalf("PrepareGarbageCollectionUncommittedWithResponse ContinuationToken=%s, expected empty", token)
+			t.Fatalf("PrepareGarbageCollectionUncommitted ContinuationToken=%s, expected empty", token)
+		}
+	})
+
+	t.Run("uncommitted_copy", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.Must(t, err)
+		const items = 3
+		for i := 0; i < items; i++ {
+			path := fmt.Sprintf("uncommitted/obj%d", i)
+			uploadResp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(path), repo, "main")
+			verifyResponseOK(t, uploadResp, err)
+
+			copyResp, err := clt.CopyObjectWithResponse(ctx, repo, "main",
+				&api.CopyObjectParams{DestPath: fmt.Sprintf("copy/obj%d", i)},
+				api.CopyObjectJSONRequestBody{
+					SrcPath: path,
+				})
+			verifyResponseOK(t, copyResp, err)
+		}
+
+		resp, err := clt.PrepareGarbageCollectionUncommittedWithResponse(ctx, repo, api.PrepareGarbageCollectionUncommittedJSONRequestBody{})
+		verifyResponseOK(t, resp, err)
+		if resp.JSON201 == nil {
+			t.Fatalf("PrepareGarbageCollectionUncommitted status code:%d, expected 201", resp.StatusCode())
+		}
+		if resp.JSON201.RunId == "" {
+			t.Errorf("PrepareGarbageCollectionUncommitted empty RunID, value expected")
+		}
+		if resp.JSON201.GcUncommittedLocation == "" {
+			t.Errorf("PrepareGarbageCollectionUncommitted Location, value expected")
+		}
+		token := api.StringValue(resp.JSON201.ContinuationToken)
+		if token != "" {
+			t.Fatalf("PrepareGarbageCollectionUncommitted ContinuationToken=%s, expected empty", token)
 		}
 	})
 }
