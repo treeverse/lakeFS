@@ -54,11 +54,13 @@ func (s *Service) RunDiff(ctx context.Context, diffName string, diffParams Param
 	if s == nil {
 		return nil, ErrUninitializedDiffService
 	}
-	d, closeClient, err := s.pluginManager.LoadPluginClient(diffName)
+	// d, closeClient, err := s.pluginManager.LoadPluginClient(diffName)
+	d, _, err := s.pluginManager.LoadPluginClient(diffName)
 	if err != nil {
 		return nil, err
 	}
-	defer closeClient()
+	// TODO(jonathan): initialize a "close client" array of functions that will be called once the service is terminated
+	// defer closeClient()
 	diffs, err := (*d).Diff(ctx, diffParams.TablePaths, diffParams.S3Creds)
 	if err != nil {
 		return nil, err
@@ -67,11 +69,11 @@ func (s *Service) RunDiff(ctx context.Context, diffName string, diffParams Param
 }
 
 func buildEntries(diffs []*Diff) []Entry {
-	result := make([]Entry, len(diffs))
+	result := make([]Entry, 0, len(diffs))
 	for _, diff := range diffs {
 		result = append(result, Entry{
 			Version:          diff.Version,
-			Timestamp:        diff.Timestamp.AsTime(),
+			Timestamp:        time.UnixMilli(diff.Timestamp),
 			Operation:        diff.Description,
 			OperationContent: diff.Content,
 		})

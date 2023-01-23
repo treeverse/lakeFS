@@ -62,10 +62,6 @@ func (m *Manager[T]) RegisterPlugin(name string, id PluginIdentity, auth PluginH
 	}
 	cmd := exec.Command(id.ExecutableLocation) //nolint:gosec
 	c := newPluginClient(name, p, hc, cmd)
-	_, ok := any(c).(T)
-	if !ok {
-		return ErrInvalidPluginNotFound
-	}
 	m.clients[name] = c
 	return nil
 }

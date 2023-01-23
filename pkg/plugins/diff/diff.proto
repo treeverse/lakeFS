@@ -32,7 +32,7 @@ message DiffRequest {
 
 message Diff {
   string version = 1;
-  google.protobuf.Timestamp timestamp = 2;
+  int64 timestamp = 2;
   string description = 3;
   map<string, string> content = 4;
 }
