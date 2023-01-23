@@ -650,3 +650,11 @@ td .form-group {
 .required-field-label {
   color: red;
 }
+
+.otf-diff-operation-details {
+  margin-left: 300px;
+}
+
+.otf-diff-operation-details div {
+  padding: 0px;
+}
