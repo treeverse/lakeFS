@@ -25,6 +25,27 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     GOOS=$TARGETOS GOARCH=$TARGETARCH \
     go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o lakectl ./cmd/lakectl
 
+# Build delta diff binary
+FROM --platform=$BUILDPLATFORM rust:1.66-alpine AS build-diff
+RUN apk add --no-cache musl-dev libressl-dev
+RUN USER=root cargo new --bin delta-diff
+WORKDIR /delta-diff
+
+# 2. Copy our manifests
+COPY ./pkg/plugins/diff/server/Cargo.lock ./Cargo.lock
+COPY ./pkg/plugins/diff/server/Cargo.toml ./Cargo.toml
+
+# 3. Build only the dependencies to cache them
+RUN cargo build --release
+RUN rm src/*.rs
+
+# 4. Now that the dependency is built, copy your source code
+COPY ./pkg/plugins/diff/server/src ./src
+
+# 5. Build for release.
+RUN rm ./target/release/deps/delta_diff*
+RUN cargo build --release
+
 # lakectl image
 FROM --platform=$BUILDPLATFORM alpine:3.15.0 AS lakectl
 RUN apk add -U --no-cache ca-certificates
@@ -47,6 +68,7 @@ WORKDIR /app
 COPY ./scripts/wait-for ./
 ENV PATH /app:$PATH
 COPY --from=build /build/lakefs /build/lakectl ./
+COPY --from=build-diff /delta-diff/target/release/delta-diff ./
 
 EXPOSE 8000/tcp
 
@@ -54,6 +76,8 @@ EXPOSE 8000/tcp
 RUN addgroup -S lakefs && adduser -S lakefs -G lakefs
 USER lakefs
 WORKDIR /home/lakefs
+
+RUN mkdir -p /home/lakefs/.lakefs/plugins/ && ln -s /app/delta-diff /home/lakefs/.lakefs/plugins/delta
 
 ENTRYPOINT ["/app/lakefs"]
 CMD ["run"]
