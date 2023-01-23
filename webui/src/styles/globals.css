@@ -284,6 +284,18 @@
   background-color: #ffffff;
 }
 
+.otf-diff-changed {
+  background-color: var(--color-bg-changed);
+}
+
+.otf-diff-added {
+  background-color: var(--color-bg-added)
+}
+
+.otf-diff-removed {
+  background-color: var(--color-bg-removed);
+}
+
 .table tr .row-hover {
   visibility: hidden;
   font-size: 0.7em;
@@ -638,3 +650,19 @@ td .form-group {
 .required-field-label {
   color: red;
 }
+
+.otf-diff-operation-details {
+  margin-left: 300px;
+}
+
+.otf-diff-operation-details div {
+  padding: 0px;
+}
+
+.table .otf-diff-added,
+.table .otf-diff-removed,
+.table .otf-diff-changed {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+  height: 38px;
+}
+

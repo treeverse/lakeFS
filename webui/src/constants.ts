@@ -6,3 +6,13 @@ export enum TreeItemType {
     Prefix,
     DeltaLakeTable
 }
+export enum DiffType {
+    Changed = "changed",
+    Added = "added",
+    Removed = "removed",
+    Conflict = "conflict"
+}
+export enum OtfType {
+    Delta = "delta",
+}
+

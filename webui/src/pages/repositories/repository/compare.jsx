@@ -31,7 +31,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
-    const [tableDiffExpanded, setTableDiffExpanded] = useState(false);
+    const [tableDiffState, setTableDiffState] = useState({isExpanded: false, expandedTablePath: ""});
 
     const refresh = () => {
         setResultsState({prefix: prefix, results:[], pagination:{}})
@@ -51,6 +51,14 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
 
     let results = resultsState.results
     let content;
+    let leftCommittedRef = reference.id;
+    let rightCommittedRef = compareReference.id;
+    if (reference.type === RefTypeBranch) {
+        leftCommittedRef += "@";
+    }
+    if (compareReference.type === RefTypeBranch) {
+        rightCommittedRef += "@";
+    }
 
     const relativeTitle = (from, to) => {
         let fromId = from.id;
@@ -77,11 +85,11 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
             <div className="tree-container">
                 {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
                     <>
-                        {tableDiffExpanded
+                        {tableDiffState.isExpanded
                             ?  <Button className="action-bar"
                                        variant="secondary"
                                        disabled={false}
-                                       onClick={() => {setTableDiffExpanded(false)}}>
+                                       onClick={() => setTableDiffState( {isExpanded: false, expandedTablePath: ""})}>
                                         <ArrowLeftIcon/> Back to object comparison
                                 </Button>
                             :
@@ -119,18 +127,10 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                             <Card.Body>
                                 <Table borderless size="sm">
                                     <tbody>
-                                    {tableDiffExpanded
-                                        ? <TableDiff/>
+                                    {tableDiffState.isExpanded
+                                        ? <TableDiff repo={repo} leftRef={leftCommittedRef} rightRef={rightCommittedRef} tablePath={tableDiffState.expandedTablePath}/>
                                         :
                                         results.map(entry => {
-                                        let leftCommittedRef = reference.id;
-                                        let rightCommittedRef = compareReference.id;
-                                        if (reference.type === RefTypeBranch) {
-                                            leftCommittedRef += "@";
-                                        }
-                                        if (compareReference.type === RefTypeBranch) {
-                                            rightCommittedRef += "@";
-                                        }
                                         return (
                                             <TreeItem key={entry.path + "-item"} entry={entry} repo={repo}
                                                       reference={reference}
@@ -141,7 +141,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                                       getMore={(afterUpdatedChild, path, useDelimiter = true, amount = -1) => {
                                                           return refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined);
                                                       }}
-                                                      setTableDiffExpanded={() => setTableDiffExpanded(true)}
+                                                      setTableDiffExpanded={() => setTableDiffState({isExpanded: true,  expandedTablePath: entry.path})}
                                             />);
                                         })
                                     }

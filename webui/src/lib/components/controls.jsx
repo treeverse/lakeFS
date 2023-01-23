@@ -62,9 +62,9 @@ export const DebouncedFormControl = React.forwardRef((props, ref) => {
 });
 DebouncedFormControl.displayName = "DebouncedFormControl";
 
-export const Loading = () => {
+export const Loading = ({style}) => {
     return (
-        <Alert variant={"info"}>Loading...</Alert>
+        <Alert variant={"info"} style={style}>Loading...</Alert>
     );
 };
 
