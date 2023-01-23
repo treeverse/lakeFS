@@ -3861,13 +3861,22 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository 
 		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
-	c.LogAction(ctx, fmt.Sprintf("table_format_%s_diff", params.Type), r, repository, rightRef, leftRef)
-	credentials, _, err := c.Auth.ListUserCredentials(ctx, user.Username, nil)
+	c.LogAction(ctx, fmt.Sprintf("table_format_%s_diff\n", params.Type), r, repository, rightRef, leftRef)
+	credentials, _, err := c.Auth.ListUserCredentials(ctx, user.Username, &model.PaginationParams{
+		Prefix: "",
+		After:  "",
+		Amount: 1,
+	})
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 	if len(credentials) == 0 {
 		writeError(w, r, http.StatusPreconditionFailed, "no programmatic credentials")
+		return
+	}
+
+	secretCredentials, err := c.Auth.GetCredentials(ctx, credentials[0].AccessKeyID)
+	if err != nil {
 		return
 	}
 
@@ -3877,9 +3886,9 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository 
 	diffParams := diff.Params{
 		TablePaths: tp,
 		S3Creds: diff.S3Creds{
-			Key:      credentials[0].AccessKeyID,
-			Secret:   credentials[0].SecretAccessKey,
-			Endpoint: fmt.Sprintf("https://%s", c.Config.ListenAddress),
+			Key:      secretCredentials.AccessKeyID,
+			Secret:   secretCredentials.SecretAccessKey,
+			Endpoint: fmt.Sprintf("http://%s", c.Config.ListenAddress),
 		},
 	}
 
@@ -3917,7 +3926,7 @@ func buildOtfDiffListResponse(entries []diff.Entry) OtfDiffList {
 		ol = append(ol, OtfDiff{
 			Operation:        entry.Operation,
 			OperationContent: content,
-			Timestamp:        entry.Timestamp.Nanosecond(),
+			Timestamp:        int(entry.Timestamp.UnixMilli()),
 			Version:          entry.Version,
 		})
 	}
