@@ -29,7 +29,7 @@ export const TableDiff = () => {
     const mockRes = '{"results": [{"version": "1", "timestamp": 1515491537026, "operation": "INSERT", "operationContent": {"operationParameters": {"mode": "Append","partitionBy": "[]"}}}, {"version": "2", "timestamp": 1515491537346, "operation": "DELETE", "operationContent": {"operationParameters": {"mode": "Append","partitionBy": "[]"}}}]}'
 
     let response = JSON.parse(mockRes);
-    return <Table borderless size="sm">
+    return <Table borderless size="md">
             <tbody>
             {
                 response.results.map(otfDiff => {
@@ -53,9 +53,9 @@ const OtfDiffRow = ({otfDiff}) => {
 
 const OperationMetadataRow = ({otfDiff, operationExpanded, onExpand, ...rest}) => {
     return <tr {...rest}>
-        <td className="col-10 table-operation-type">{otfDiff.operation}</td>
-        <td className="col-1 table-version">Version = {otfDiff.version}</td>
-        <td className="col-1 operation-expansion">
+        <td className="pl-lg-10 col-10 table-operation-type">{otfDiff.operation}</td>
+        <td className="col-sm-1 table-version">Version = {otfDiff.version}</td>
+        <td className="col-sm-auto operation-expansion">
             <OperationExpansionSection operationExpanded={operationExpanded} onExpand={onExpand}/>
         </td>
     </tr>
@@ -70,7 +70,7 @@ const OperationDetailsRow = ({otfDiff}) => {
             Timestamp: {operationTimestamp}
         </div>
         <div>
-            Operation Content:
+            Commit Info:
             <br/>
             {operationContent}
         </div>
