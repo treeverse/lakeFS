@@ -539,7 +539,7 @@ func enableKVParamsMetrics(p params.Config) params.Config {
 func initDiffService() *diff.Service {
 	pluginsManager := plugins.NewManager[diff.Differ]()
 	hd, _ := os.UserHomeDir()
-	pid := plugins.PluginIdentity{Version: 0, ExecutableLocation: fmt.Sprintf("%s/.lakefs/plugins/delta", hd)}
+	pid := plugins.PluginIdentity{Version: 1, ExecutableLocation: fmt.Sprintf("%s/.lakefs/plugins/delta", hd)}
 	pa := plugins.PluginHandshake{Key: "deltaKey", Value: "deltaValue"}
 	err := pluginsManager.RegisterPlugin("delta", pid, pa, diff.DeltaDiffGRPCPlugin{})
 	if err != nil {
