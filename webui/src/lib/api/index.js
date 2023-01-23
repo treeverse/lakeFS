@@ -476,6 +476,18 @@ class Repositories {
             throw new Error(await extractError(response));
         }
     }
+
+    async otfDiff(repoId, leftRef, rightRef, table_path = "", type) {
+        const query = qs({table_path, type});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/otf/refs/${encodeURIComponent(leftRef)}/diff/${encodeURIComponent(rightRef)}?` + query);
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+        // const mockRes = '{"results": [{"version": "1", "timestamp": 1515491537026, "operation": "INSERT", "operation_content": {"operationParameters": {"mode": "Append","partitionBy": "[]"}}}, {"version": "2", "timestamp": 1515491537346, "operation": "DELETE", "operation_content": {"operationParameters": {"mode": "Append","partitionBy": "[]"}}}]}'
+        // const mockRes = '{"results": []}'
+        // return JSON.parse(mockRes);
+    }
 }
 
 class Branches {
