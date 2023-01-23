@@ -3,7 +3,10 @@ import Table from "react-bootstrap/Table";
 import {ChevronDownIcon, ChevronRightIcon} from "@primer/octicons-react";
 import {OverlayTrigger} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
-import {DiffType} from "../../../constants";
+import {DiffType, OtfType} from "../../../constants";
+import {useAPI} from "../../hooks/api";
+import {repositories} from "../../api";
+import {Error, Loading} from "../controls";
 
 // The list of available operations is based on: https://docs.databricks.com/delta/history.html#operation-metrics-keys
 const deltaLakeOperationToDiffType = new Map([
@@ -24,16 +27,21 @@ const deltaLakeOperationToDiffType = new Map([
     ["VACUUM" , DiffType.Removed],
 ]);
 
-export const TableDiff = () => {
+export const TableDiff = ({repo, leftRef, rightRef, tablePath}) => {
     // TODO: use otfDiffAPiEndpoint to get otfdiffList and populate results
-    const mockRes = '{"results": [{"version": "1", "timestamp": 1515491537026, "operation": "INSERT", "operationContent": {"operationParameters": {"mode": "Append","partitionBy": "[]"}}}, {"version": "2", "timestamp": 1515491537346, "operation": "DELETE", "operationContent": {"operationParameters": {"mode": "Append","partitionBy": "[]"}}}]}'
+    // const mockRes = '{"results": [{"version": "1", "timestamp": 1515491537026, "operation": "INSERT", "operationContent": {"operationParameters": {"mode": "Append","partitionBy": "[]"}}}, {"version": "2", "timestamp": 1515491537346, "operation": "DELETE", "operationContent": {"operationParameters": {"mode": "Append","partitionBy": "[]"}}}]}'
+    // let response = JSON.parse(mockRes);
 
-    let response = JSON.parse(mockRes);
+    let response = useAPI(() => repositories.otfDiff(repo.id, leftRef.id, rightRef.id, tablePath, OtfType.Delta), [])
+    if (response && response.loading) return <Loading/>;
+    const err = response && response.error;
+    if (err) return <Error error={err}/>;
+
     return <Table borderless size="md">
             <tbody>
             {
-                response.results.map(otfDiff => {
-                    return <OtfDiffRow key={otfDiff.timeStamp + "-diff-row"} otfDiff={otfDiff}/>;
+                response.response.results.map(otfDiff => {
+                    return <OtfDiffRow key={otfDiff.timestamp + "-diff-row"} otfDiff={otfDiff}/>;
                 })
             }
             </tbody>
