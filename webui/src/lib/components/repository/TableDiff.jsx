@@ -72,7 +72,7 @@ const OperationMetadataRow = ({otfDiff, operationExpanded, onExpand, ...rest}) =
 
 const OperationDetailsRow = ({otfDiff}) => {
     const operationTimestamp = otfDiff.timestamp;
-    const operationContent = JSON.stringify(otfDiff.operationContent, null, 2);
+    const operationContent = JSON.stringify(otfDiff.operation_content, null, 2);
     return <tr className="otf-diff-operation-details">
         <td className="pl-lg-10 col-10 operation-details">
             <div>
