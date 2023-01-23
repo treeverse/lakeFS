@@ -63,9 +63,9 @@ const OtfDiffRow = ({otfDiff}) => {
 
 const OperationMetadataRow = ({otfDiff, operationExpanded, onExpand, ...rest}) => {
     return <tr {...rest}>
-        <td className="pl-lg-10 col-10 table-operation-type">{otfDiff.operation}</td>
-        <td className="col-sm-1 table-version">Version = {otfDiff.version}</td>
-        <td className="col-sm-auto operation-expansion">
+        <td className="pl-lg-10 col-10 table-operation-type" style={{"padding-left": 30+"px"}}>{otfDiff.operation}</td>
+        <td className="col-sm-auto table-version" style={{"text-align": "right"}}>Version = {otfDiff.version}</td>
+        <td className="col-sm-auto operation-expansion" style={{"padding-right": 0 + "px"}}>
             <OperationExpansionSection operationExpanded={operationExpanded} onExpand={onExpand}/>
         </td>
     </tr>
@@ -76,7 +76,7 @@ const OperationDetailsRow = ({otfDiff}) => {
     const operationTimestamp = otfDiff.timestamp;
     const operationContent = JSON.stringify(otfDiff.operation_content, null, 2);
     return <tr className="otf-diff-operation-details">
-        <td className="pl-lg-10 col-10 operation-details">
+        <td className="pl-lg-10 col-10 operation-details" style={{"padding-left": 30+"px"}}>
             <div>
                 <strong>Timestamp:</strong> {operationTimestamp}
             </div>
