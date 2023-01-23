@@ -107,23 +107,21 @@ fn compare(left_table_vec: &mut Vec<Map<String, Value>>,
            left_table_version: DeltaDataTypeVersion,
            right_table_vec: &mut Vec<Map<String, Value>>,
            right_table_version: DeltaDataTypeVersion,) -> Result<Vec<Diff>, Error> {
-    eprintln!("LEFT VECTOR:\n{:?}", left_table_vec);
-    eprintln!("RIGHT VECTOR:\n{:?}", right_table_vec);
     let left_earliest_version = left_table_version + 1 - i64::try_from(left_table_vec.len()).unwrap();
     let right_earliest_version = right_table_version + 1 - i64::try_from(right_table_vec.len()).unwrap();
     // The lower version of the two:
-    let lower_limit = if left_earliest_version > right_earliest_version { left_earliest_version } else { right_earliest_version };
+    let lower_limit = if right_earliest_version > left_earliest_version { right_earliest_version } else { left_earliest_version };
     let mut diff_list: Vec<Diff> = vec![];
-    let mut curr_version = left_table_version;
+    let mut curr_version = right_table_version;
     left_table_vec.reverse();
     right_table_vec.reverse();
     let mut left_commit_slice = &left_table_vec[..];
     let mut right_commit_slice = &right_table_vec[..];
-    if left_table_version > right_table_version {
-        let left_iter = left_table_vec.iter();
-        for commit_info in left_iter {
-            if curr_version == right_table_version {
-                left_commit_slice = &left_table_vec[(left_table_version - right_table_version) as usize..];
+    if right_table_version > left_table_version {
+        let right_iter = right_table_vec.iter();
+        for commit_info in right_iter {
+            if curr_version == left_table_version {
+                right_commit_slice = &right_table_vec[(right_table_version - left_table_version) as usize..];
                 break;
             }
             match commit_info {
@@ -135,7 +133,7 @@ fn compare(left_table_vec: &mut Vec<Map<String, Value>>,
             curr_version -= 1;
         }
     } else {
-        right_commit_slice = &right_table_vec[(right_table_version - left_table_version) as usize..];
+        left_commit_slice = &left_table_vec[(left_table_version - right_table_version) as usize..];
     }
 
     compare_slices(left_commit_slice, right_commit_slice, curr_version, lower_limit, diff_list)
