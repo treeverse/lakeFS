@@ -225,6 +225,7 @@ class UncommittedGarbageCollectorSpec
                                                    runID,
                                                    firstSlice,
                                                    startTime,
+                                                   startTime,
                                                    success,
                                                    df
                                                   )
@@ -256,6 +257,7 @@ class UncommittedGarbageCollectorSpec
           UncommittedGarbageCollector.writeJsonSummary(runPath.toString,
                                                        runID,
                                                        "",
+                                                       java.time.Clock.systemUTC.instant(),
                                                        java.time.Clock.systemUTC.instant(),
                                                        false,
                                                        0
