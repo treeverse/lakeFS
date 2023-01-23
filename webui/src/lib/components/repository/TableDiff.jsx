@@ -30,7 +30,7 @@ const deltaLakeOperationToDiffType = new Map([
 ]);
 
 export const TableDiff = ({repo, leftRef, rightRef, tablePath}) => {
-    let response = useAPI(() => repositories.otfDiff(repo.id, leftRef.id, rightRef.id, tablePath, OtfType.Delta), [])
+    let response = useAPI(() => repositories.otfDiff(repo.id, leftRef, rightRef, tablePath, OtfType.Delta), [])
     if (response && response.loading) return <Loading style={{margin: 0+"px"}}/>;
     const err = response && response.error;
     if (err) return <Error error={err}/>;
