@@ -51,6 +51,14 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
 
     let results = resultsState.results
     let content;
+    let leftCommittedRef = reference.id;
+    let rightCommittedRef = compareReference.id;
+    if (reference.type === RefTypeBranch) {
+        leftCommittedRef += "@";
+    }
+    if (compareReference.type === RefTypeBranch) {
+        rightCommittedRef += "@";
+    }
 
     const relativeTitle = (from, to) => {
         let fromId = from.id;
@@ -120,17 +128,9 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                 <Table borderless size="sm">
                                     <tbody>
                                     {tableDiffState.isExpanded
-                                        ? <TableDiff repo={repo} leftRef={reference} rightRef={compareReference} tablePath={tableDiffState.expandedTablePath}/>
+                                        ? <TableDiff repo={repo} leftRef={leftCommittedRef} rightRef={rightCommittedRef} tablePath={tableDiffState.expandedTablePath}/>
                                         :
                                         results.map(entry => {
-                                        let leftCommittedRef = reference.id;
-                                        let rightCommittedRef = compareReference.id;
-                                        if (reference.type === RefTypeBranch) {
-                                            leftCommittedRef += "@";
-                                        }
-                                        if (compareReference.type === RefTypeBranch) {
-                                            rightCommittedRef += "@";
-                                        }
                                         return (
                                             <TreeItem key={entry.path + "-item"} entry={entry} repo={repo}
                                                       reference={reference}
