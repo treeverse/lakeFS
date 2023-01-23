@@ -27,9 +27,8 @@ import (
 )
 
 const (
-	uncommittedGCRepoName     = "ugc"
-	uncommittedSafeGCRepoName = "ugc-safe"
-	ugcFindingsFilename       = "ugc-findings.json"
+	uncommittedGCRepoName = "ugc"
+	ugcFindingsFilename   = "ugc-findings.json"
 )
 
 type UncommittedFindings struct {
@@ -44,7 +43,26 @@ func TestUncommittedGC(t *testing.T) {
 	if blockstoreType != block.BlockstoreTypeS3 {
 		t.Skip("Running on S3 only")
 	}
-	prepareForUncommittedGC(t)
+	ctx := context.Background()
+	prepareForUncommittedGC(t, ctx)
+
+	// upload files while ugc is running
+	ticker := time.NewTicker(time.Second * 1)
+	var durObjects []string
+	done := make(chan bool)
+	go func() {
+		for {
+			select {
+			case <-done:
+				ticker.Stop()
+				return
+			case <-ticker.C:
+				obj := uploadAndDeleteSafeTestData(t, ctx, uncommittedGCRepoName)
+				durObjects = append(durObjects, obj)
+			}
+		}
+	}()
+
 	submitConfig := &sparkSubmitConfig{
 		sparkVersion:    sparkImageTag,
 		localJar:        metaclientJarPath,
@@ -54,12 +72,12 @@ func TestUncommittedGC(t *testing.T) {
 		logSource:       "ugc",
 	}
 	testutil.MustDo(t, "run uncommitted GC", runSparkSubmit(submitConfig))
+	done <- true
 
-	validateUncommittedGC(t)
+	validateUncommittedGC(t, durObjects)
 }
 
-func prepareForUncommittedGC(t *testing.T) {
-	ctx := context.Background()
+func prepareForUncommittedGC(t *testing.T, ctx context.Context) {
 	repo := createRepositoryByName(ctx, t, uncommittedGCRepoName)
 	var gone []string
 
@@ -160,7 +178,7 @@ func objectPhysicalAddress(t *testing.T, ctx context.Context, repo, objPath stri
 	return resp.JSON200.PhysicalAddress
 }
 
-func validateUncommittedGC(t *testing.T) {
+func validateUncommittedGC(t *testing.T, durObjects []string) {
 	ctx := context.Background()
 	const repo = uncommittedGCRepoName
 
@@ -192,7 +210,7 @@ func validateUncommittedGC(t *testing.T) {
 	}
 
 	// list underlying storage
-	objects, _ := listRepositoryUnderlyingStorage(t, ctx, repo)
+	objects, qp := listRepositoryUnderlyingStorage(t, ctx, repo)
 
 	// verify that all previous objects are found or deleted, if needed
 	for _, obj := range findings.All {
@@ -212,8 +230,36 @@ func validateUncommittedGC(t *testing.T) {
 			continue
 		}
 		// verify we know this object
-		if !slices.Contains(findings.All, obj) {
+		if !slices.Contains(findings.All, obj) && !slices.Contains(durObjects, obj.Key) {
 			t.Errorf("Object '%s' FOUND KNOWN - was not found pre ugc", obj)
+		}
+	}
+
+	s3Client := newDefaultS3Client()
+	runID := getLastUGCRunID(t, ctx, s3Client, qp.StorageNamespace, qp.Prefix)
+	reportPath := fmt.Sprintf("%s_lakefs/retention/gc/uncommitted/%s/summary.json", qp.Prefix, runID)
+	cutoffTime, err := getReportCutoffTime(s3Client, qp.StorageNamespace, reportPath)
+	if err != nil {
+		t.Fatalf("Failed to get start list time from ugc report %s", err)
+	}
+
+	objectsMap := make(map[string]Object)
+	for _, obj := range objects {
+		objectsMap[obj.Key] = obj
+	}
+
+	// Validation that deleted objects that were created after the cutoff are not deleted
+	// and that deleted objects that were created before the cutoff are deleted
+	for _, obj := range durObjects {
+		x, foundIt := objectsMap[obj]
+		expectDeleted := true
+		if foundIt {
+			expectDeleted = x.LastModified.Before(cutoffTime)
+		}
+		if foundIt && expectDeleted {
+			t.Errorf("Object '%s' FOUND - should have been deleted", obj)
+		} else if !foundIt && !expectDeleted {
+			t.Errorf("Object '%s' NOT FOUND - should NOT been deleted", obj)
 		}
 	}
 }
@@ -295,73 +341,6 @@ func getLastUGCRunID(t *testing.T, ctx context.Context, s3Client *s3.S3, bucket,
 	return runID
 }
 
-func TestSafeUncommittedGC(t *testing.T) {
-	SkipTestIfAskedTo(t)
-	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
-	if blockstoreType != block.BlockstoreTypeS3 {
-		t.Skip("Running on S3 only")
-	}
-	ctx := context.Background()
-	repo := createRepositoryByName(ctx, t, uncommittedSafeGCRepoName)
-
-	// pre run
-	// getting physical address before the ugc run and linking it after
-	getPhysicalResp, err := client.GetPhysicalAddressWithResponse(ctx, repo, mainBranch, &api.GetPhysicalAddressParams{Path: "foo/bar"})
-	if err != nil {
-		t.Fatalf("Failed to get physical address %s", err)
-	}
-	if getPhysicalResp.JSON200 == nil {
-		t.Fatalf("Failed to get physical address information: status code %d", getPhysicalResp.StatusCode())
-	}
-
-	// upload files while ugc is running
-	ticker := time.NewTicker(time.Second * 1)
-	var objects []string
-	done := make(chan bool)
-	go func() {
-		for {
-			select {
-			case <-done:
-				ticker.Stop()
-				return
-			case <-ticker.C:
-				obj := uploadAndDeleteSafeTestData(t, ctx, repo)
-				objects = append(objects, obj)
-			}
-		}
-	}()
-
-	// run ugc
-	submitConfig := &sparkSubmitConfig{
-		sparkVersion:    sparkImageTag,
-		localJar:        metaclientJarPath,
-		entryPoint:      "io.treeverse.gc.UncommittedGarbageCollector",
-		extraSubmitArgs: []string{"--conf", "spark.hadoop.lakefs.debug.gc.uncommitted_min_age_seconds=1"},
-		programArgs:     []string{uncommittedSafeGCRepoName, "us-east-1"},
-		logSource:       "ugc",
-	}
-	testutil.MustDo(t, "run uncommitted GC", runSparkSubmit(submitConfig))
-	done <- true
-
-	// post run
-	const expectedSizeBytes = 38
-	_, err = client.LinkPhysicalAddressWithResponse(ctx, "repo1", "main", &api.LinkPhysicalAddressParams{
-		Path: "foo/bar",
-	}, api.LinkPhysicalAddressJSONRequestBody{
-		Checksum:  "afb0689fe58b82c5f762991453edbbec",
-		SizeBytes: expectedSizeBytes,
-		Staging: api.StagingLocation{
-			PhysicalAddress: getPhysicalResp.JSON200.PhysicalAddress,
-			Token:           getPhysicalResp.JSON200.Token,
-		},
-	})
-	if err != nil {
-		t.Fatalf("Failed to link physical address %s", err)
-	}
-
-	validateSafeUncommittedGC(t, ctx, repo, objects)
-}
-
 func uploadAndDeleteSafeTestData(t *testing.T, ctx context.Context, repository string) string {
 	name := xid.New().String()
 	_, _ = uploadFileRandomData(ctx, t, repository, mainBranch, name, false)
@@ -373,49 +352,6 @@ func uploadAndDeleteSafeTestData(t *testing.T, ctx context.Context, repository s
 		t.Fatalf("Failed to delete object %s", err)
 	}
 	return addr
-}
-
-func validateSafeUncommittedGC(t *testing.T, ctx context.Context, repository string, durObjects []string) {
-	s3Client := newDefaultS3Client()
-	objects, qp := listRepositoryUnderlyingStorage(t, ctx, repository)
-	runID := getLastUGCRunID(t, ctx, s3Client, qp.StorageNamespace, qp.Prefix)
-
-	reportPath := fmt.Sprintf("%s_lakefs/retention/gc/uncommitted/%s/summary.json", qp.Prefix, runID)
-	cutoffTime, err := getReportCutoffTime(s3Client, qp.StorageNamespace, reportPath)
-	if err != nil {
-		t.Fatalf("Failed to get start list time from ugc report %s", err)
-	}
-
-	objectsMap := make(map[string]Object)
-	for _, obj := range objects {
-		objectsMap[obj.Key] = obj
-	}
-
-	// Validation that deleted objects that were created after the cutoff are not deleted
-	// and that deleted objects that were created before the cutoff are deleted
-	for _, obj := range durObjects {
-		x, foundIt := objectsMap[obj]
-		expectDeleted := true
-		if foundIt {
-			expectDeleted = x.LastModified.Before(cutoffTime)
-		}
-		if foundIt && expectDeleted {
-			t.Errorf("Object '%s' FOUND - should have been deleted", obj)
-		} else if !foundIt && !expectDeleted {
-			t.Errorf("Object '%s' NOT FOUND - should NOT been deleted", obj)
-		}
-	}
-
-	// verify that there aren't unknown objects on the repository storage namespace
-	for _, obj := range objects {
-		if strings.Contains(obj.Key, "/_lakefs/retention/gc/uncommitted/") || strings.Contains(obj.Key, "dummy") {
-			continue
-		}
-
-		if obj.LastModified.Before(cutoffTime) {
-			t.Errorf("Object '%s' FOUND - should have been deleted", obj)
-		}
-	}
 }
 
 func getReportCutoffTime(s3Client *s3.S3, bucket, reportPath string) (time.Time, error) {
