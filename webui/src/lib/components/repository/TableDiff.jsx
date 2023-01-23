@@ -7,6 +7,7 @@ import {DiffType, OtfType} from "../../../constants";
 import {useAPI} from "../../hooks/api";
 import {repositories} from "../../api";
 import {Error, Loading} from "../controls";
+import Alert from "react-bootstrap/Alert";
 
 // The list of available operations is based on: https://docs.databricks.com/delta/history.html#operation-metrics-keys
 const deltaLakeOperationToDiffType = new Map([
@@ -28,24 +29,25 @@ const deltaLakeOperationToDiffType = new Map([
 ]);
 
 export const TableDiff = ({repo, leftRef, rightRef, tablePath}) => {
-    // TODO: use otfDiffAPiEndpoint to get otfdiffList and populate results
-    // const mockRes = '{"results": [{"version": "1", "timestamp": 1515491537026, "operation": "INSERT", "operationContent": {"operationParameters": {"mode": "Append","partitionBy": "[]"}}}, {"version": "2", "timestamp": 1515491537346, "operation": "DELETE", "operationContent": {"operationParameters": {"mode": "Append","partitionBy": "[]"}}}]}'
-    // let response = JSON.parse(mockRes);
-
     let response = useAPI(() => repositories.otfDiff(repo.id, leftRef.id, rightRef.id, tablePath, OtfType.Delta), [])
     if (response && response.loading) return <Loading/>;
     const err = response && response.error;
     if (err) return <Error error={err}/>;
 
-    return <Table borderless size="md">
-            <tbody>
-            {
-                response.response.results.map(otfDiff => {
-                    return <OtfDiffRow key={otfDiff.timestamp + "-diff-row"} otfDiff={otfDiff}/>;
-                })
-            }
-            </tbody>
-        </Table>
+    const otfDiffs = response.response.results;
+    return <>
+        {(otfDiffs.length === 0) ?  <Alert variant="info">No changes</Alert> :
+                <Table borderless size="md">
+                    <tbody>
+                    {
+                        response.response.results.map(otfDiff => {
+                            return <OtfDiffRow key={otfDiff.timestamp + "-diff-row"} otfDiff={otfDiff}/>;
+                        })
+                    }
+                    </tbody>
+                </Table>
+        }
+    </>
 }
 
 const OtfDiffRow = ({otfDiff}) => {
