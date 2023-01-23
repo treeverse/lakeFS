@@ -8,6 +8,7 @@ import {useAPI} from "../../hooks/api";
 import {repositories} from "../../api";
 import {Error, Loading} from "../controls";
 import Alert from "react-bootstrap/Alert";
+import Button from "react-bootstrap/Button";
 
 // The list of available operations is based on: https://docs.databricks.com/delta/history.html#operation-metrics-keys
 const deltaLakeOperationToDiffType = new Map([
@@ -90,7 +91,7 @@ const OperationDetailsRow = ({otfDiff}) => {
 
 const OperationExpansionSection = ({operationExpanded, onExpand}) => {
     return <OverlayTrigger placement="bottom" overlay={<Tooltip>{operationExpanded ? "Hide operation info" : "Show operation info"}</Tooltip>}>
-                <span onClick={onExpand}>{operationExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}</span>
+                <Button variant="link" style={{color: 'black'}} onClick={onExpand}>{operationExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}</Button>
            </OverlayTrigger>
 }
 
