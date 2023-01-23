@@ -24,8 +24,10 @@ func gcWriteUncommitted(ctx context.Context, store Store, kvStore kv.Store, repo
 		if err != nil {
 			return nil, false, err
 		}
-		// we like to return in case data was written and fallthrough to tracked physical addresses if not
-		if hasData {
+		// We like to return in case data is written data and not the final marker.
+		// This will enable processing tracked addresses in case there was no uncommitted entries, or we are processing
+		// the last chunk
+		if hasData && mark != nil {
 			return mark, true, nil
 		}
 	}
