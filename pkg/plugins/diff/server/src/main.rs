@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Error;
 use std::io::{self, Write};
 use std::net::SocketAddr;
+use config::{Config, File};
 
 use deltalake::DeltaDataTypeVersion;
 use deltalake::builder::DeltaTableBuilder;
@@ -31,7 +32,6 @@ impl Differ for DifferService {
         };
         let left_table_path: String = ps.left_path;
         let right_table_path: String = ps.right_path;
-        eprintln!("Pre left table run");
         let mut left_table: DeltaTable = match create_table_with_config(&s3_config_map, left_table_path).await {
             Ok(table) => {
                 table
@@ -40,7 +40,6 @@ impl Differ for DifferService {
                 return Err(Status::new(Code::NotFound, format!("{:?}", err)));
             }
         };
-        eprintln!("Pre right table run");
         let mut right_table: DeltaTable = match create_table_with_config(&s3_config_map, right_table_path).await {
             Ok(table) => {
                 table
@@ -49,11 +48,8 @@ impl Differ for DifferService {
                 return Err(Status::new(Code::NotFound, format!("{:?}", err)));
             }
         };
-        eprintln!("Left table version: {}", left_table.version());
-        eprintln!("Right table version: {}", right_table.version());
 
-        let left_table_history = history(&mut left_table, None);
-        let mut left_table_history_v = match left_table_history.await {
+        let mut left_table_history = match history(&mut left_table, None).await {
             Ok(vec) => {
                 vec
             },
@@ -61,8 +57,7 @@ impl Differ for DifferService {
                 return Err(Status::new(Code::NotFound, format!("{:?}", err)))
             }
         };
-        let right_table_history = history(&mut right_table, None);
-        let mut right_table_history_v = match right_table_history.await {
+        let mut right_table_history = match history(&mut right_table, None).await {
             Ok(vec) => {
                 vec
             },
@@ -71,8 +66,8 @@ impl Differ for DifferService {
             }
         };
 
-        let ans: Vec<Diff> = compare(&mut left_table_history_v, left_table.version(),
-                                     &mut right_table_history_v, right_table.version()).unwrap();
+        let ans: Vec<Diff> = compare(&mut left_table_history, left_table.version(),
+                                     &mut right_table_history, right_table.version()).unwrap();
         return Ok(Response::new(DiffResponse { diffs: ans }))
     }
 }
@@ -117,15 +112,14 @@ fn compare(left_table_vec: &mut Vec<Map<String, Value>>,
     let left_earliest_version = left_table_version + 1 - i64::try_from(left_table_vec.len()).unwrap();
     let right_earliest_version = right_table_version + 1 - i64::try_from(right_table_vec.len()).unwrap();
     // The lower version of the two:
-    let lower_limit = if left_earliest_version > right_earliest_version {left_earliest_version} else { right_earliest_version };
+    let lower_limit = if left_earliest_version > right_earliest_version { left_earliest_version } else { right_earliest_version };
     let mut diff_list: Vec<Diff> = vec![];
-    let left_version_bigger = left_table_version > right_table_version;
     let mut curr_version = left_table_version;
     left_table_vec.reverse();
     right_table_vec.reverse();
     let mut left_commit_slice = &left_table_vec[..];
     let mut right_commit_slice = &right_table_vec[..];
-    if left_version_bigger {
+    if left_table_version > right_table_version {
         let left_iter = left_table_vec.iter();
         for commit_info in left_iter {
             if curr_version == right_table_version {
@@ -134,19 +128,7 @@ fn compare(left_table_vec: &mut Vec<Map<String, Value>>,
             }
             match commit_info {
                 _operation_content => {
-                    let curr_op_params = commit_info.get("operationParameters").unwrap();
-                    let curr_op_params_map = curr_op_params.as_object().unwrap();
-                    let mut operation_content_hash: HashMap<String, String> = HashMap::new();
-                    for (k, v) in curr_op_params_map {
-                        let k_clone = k.clone();
-                        operation_content_hash.insert(k_clone, v.to_string());
-                    }
-                    let d = Diff{
-                        version: (curr_version as u32).to_string(),
-                        timestamp: commit_info.get("timestamp").unwrap().as_i64().unwrap(),
-                        description: commit_info.get("operation").unwrap().as_str().unwrap().to_string(),
-                        content: operation_content_hash,
-                    };
+                    let d = construct_diff(commit_info, curr_version);
                     diff_list.push(d)
                 }
             }
@@ -156,53 +138,54 @@ fn compare(left_table_vec: &mut Vec<Map<String, Value>>,
         right_commit_slice = &right_table_vec[(right_table_version - left_table_version) as usize..];
     }
 
+    compare_slices(left_commit_slice, right_commit_slice, curr_version, lower_limit, diff_list)
+}
+
+fn compare_slices(left_commit_slice: &[Map<String, Value>],
+            right_commit_slice: &[Map<String, Value>],
+            mut curr_version: DeltaDataTypeVersion,
+            lower_limit: DeltaDataTypeVersion,
+            mut diff_list: Vec<Diff>) -> Result<Vec<Diff>, Error> {
     let mut i: usize = 0; // iterating over the vector while 'curr_version' is the real version of the
     while i < left_commit_slice.len() && i < right_commit_slice.len() && curr_version >= lower_limit {
         let left_commit_info = left_commit_slice.get(i).unwrap();
-        let left_curr_op_params = left_commit_info.get("operationParameters").unwrap();
-        let left_curr_op_params_map = left_curr_op_params.as_object().unwrap();
-        let mut left_operation_content_hash: HashMap<String, String> = HashMap::new();
-        for (k, v) in left_curr_op_params_map {
-            let k_clone = k.clone();
-            left_operation_content_hash.insert(k_clone, v.to_string());
-        }
-        let l_diff = Diff{
-            version: (curr_version as u32).to_string(),
-            timestamp: left_commit_info.get("timestamp").unwrap().as_i64().unwrap(),
-            description: left_commit_info.get("operation").unwrap().as_str().unwrap().to_string(),
-            content: left_operation_content_hash,
-        };
-
         let right_commit_info = right_commit_slice.get(i).unwrap();
-        let right_curr_op_params = right_commit_info.get("operationParameters").unwrap();
-        let right_curr_op_params_map = right_curr_op_params.as_object().unwrap();
-        let mut right_operation_content_hash: HashMap<String, String> = HashMap::new();
-        for (k, v) in right_curr_op_params_map {
-            let k_clone = k.clone();
-            right_operation_content_hash.insert(k_clone, v.to_string());
-        }
-        let r_diff = Diff{
-            version: (curr_version as u32).to_string(),
-            timestamp: right_commit_info.get("timestamp").unwrap().as_i64().unwrap(),
-            description: right_commit_info.get("operation").unwrap().as_str().unwrap().to_string(),
-            content: right_operation_content_hash,
-        };
+        let l_diff = construct_diff(left_commit_info, curr_version);
+        let r_diff = construct_diff(right_commit_info, curr_version);
 
         if r_diff == l_diff {
             return Ok(diff_list);
         } else {
             diff_list.push(l_diff);
         }
-
         curr_version -= 1;
         i += 1;
     }
     Ok(diff_list)
 }
 
+fn construct_diff(commit_info: &Map<String, Value>, version: DeltaDataTypeVersion) -> Diff {
+    let op_params = commit_info.get("operationParameters").unwrap();
+    let op_params_map = op_params.as_object().unwrap();
+    let mut op_content_hash: HashMap<String, String> = HashMap::new();
+    for (k, v) in op_params_map {
+        let k_clone = k.clone();
+        op_content_hash.insert(k_clone, v.to_string());
+    }
+    Diff{
+        version: (version as u32).to_string(),
+        timestamp: commit_info.get("timestamp").unwrap().as_i64().unwrap(),
+        description: commit_info.get("operation").unwrap().as_str().unwrap().to_string(),
+        content: op_content_hash,
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let address: SocketAddr = "127.0.0.1:1234".parse().unwrap();
+    let config = load_config();
+    let port: &str = get_config(&config, "port","1234");
+    let version: &str = get_config(&config, "version", "1");
+    let address: SocketAddr = format!("127.0.0.1:{}", port).parse().unwrap();
     let differ_service = DifferService::default();
     let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
     health_reporter
@@ -215,10 +198,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .serve(address);
 
     // Communicating to the go-plugin application client
-    println!("1|1|tcp|{}|grpc", address.to_string());
+    println!("1|{}|tcp|{}|grpc", version, address.to_string());
     io::stdout().flush().unwrap();
 
     serve.await?;
 
     Ok(())
+}
+
+fn load_config() -> HashMap<String, String> {
+    let settings = match Config::builder()
+        .add_source(File::with_name("src/config.yml"))
+        .build() {
+        Ok(config) => {
+            config
+        }
+        Err(_) => {
+            Config::default()
+        }
+    };
+    settings
+        .try_deserialize::<HashMap<String, String>>()
+        .unwrap()
+}
+
+fn get_config<'a>(config: &'a HashMap<String, String>, name: &'a str, default: &'a str) -> &'a str {
+    match config.get(name) {
+        None => {
+            default
+        }
+        Some(port) => {
+            port.as_str()
+        }
+    }
 }
