@@ -346,7 +346,7 @@ func TestGraveler_Set(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			store := newGraveler(t, tt.committedMgr, tt.stagingMgr, tt.refMgr, nil, testutil.NewProtectedBranchesManagerFake())
-			err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(tt.ifAbsent))
+			err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.WithIfAbsent(tt.ifAbsent))
 			if err != tt.expectedErr {
 				t.Fatalf("Set() - error: %v, expected: %v", err, tt.expectedErr)
 			}
@@ -385,7 +385,7 @@ func TestGravelerSet_Advanced(t *testing.T) {
 		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{}, nil)
 		refExpectCommitNotFound()
 		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
-		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(true))
+		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.WithIfAbsent(true))
 		require.ErrorIs(t, err, ErrGravelerUpdate)
 		require.Nil(t, stagingMgr.LastSetValueRecord)
 	})
@@ -396,7 +396,7 @@ func TestGravelerSet_Advanced(t *testing.T) {
 		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, graveler.ErrNotFound)
 		stagingMgr := &testutil.StagingFake{}
 		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
-		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(true))
+		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.WithIfAbsent(true))
 		require.ErrorIs(t, err, graveler.ErrNotFound)
 		require.Equal(t, newSetVal, stagingMgr.LastSetValueRecord)
 	})
@@ -414,7 +414,7 @@ func TestGravelerSet_Advanced(t *testing.T) {
 		}, nil)
 		stagingMgr := &testutil.StagingFake{}
 		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
-		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(true))
+		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.WithIfAbsent(true))
 		require.Nil(t, err)
 		require.Equal(t, newSetVal, stagingMgr.LastSetValueRecord)
 	})
@@ -439,7 +439,7 @@ func TestGravelerSet_Advanced(t *testing.T) {
 		}, nil)
 		stagingMgr := &testutil.StagingFake{}
 		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
-		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(true))
+		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.WithIfAbsent(true))
 		require.Nil(t, err)
 		require.Equal(t, newSetVal, stagingMgr.LastSetValueRecord)
 	})
@@ -457,7 +457,7 @@ func TestGravelerSet_Advanced(t *testing.T) {
 		}
 		stagingMgr := &testutil.StagingFake{}
 		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
-		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.IfAbsent(true))
+		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.WithIfAbsent(true))
 		require.ErrorIs(t, err, graveler.ErrTooManyTries)
 		require.Equal(t, newSetVal, stagingMgr.LastSetValueRecord)
 	})

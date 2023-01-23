@@ -8,9 +8,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Azure/azure-pipeline-go/pipeline"
-	"github.com/Azure/azure-storage-blob-go/azblob"
-	"github.com/go-openapi/swag"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
+	"github.com/treeverse/lakefs/pkg/block/azure"
 )
 
 var (
@@ -18,22 +18,23 @@ var (
 	ErrAzureCredentials = errors.New("azure credentials error")
 )
 
-func getAzureClient() (pipeline.Pipeline, error) {
+func getAzureClient() (*service.Client, error) {
 	// From the Azure portal, get your storage account name and key and set environment variables.
 	accountName, accountKey := os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
 	if len(accountName) == 0 || len(accountKey) == 0 {
 		return nil, fmt.Errorf("%w: either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set", ErrAzureCredentials)
 	}
 
-	// Create a default request pipeline using your storage account name and account key.
+	// Create a default request client using your storage account name and account key.
 	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {
 		return nil, fmt.Errorf("invalid credentials with error: %w", err)
 	}
-	return azblob.NewPipeline(credential, azblob.PipelineOptions{}), nil
+	containerURL := fmt.Sprintf(azure.URLTemplate, accountName)
+	return service.NewClientWithSharedKeyCredential(containerURL, credential, nil)
 }
 
-func NewAzureBlobWalker(svc pipeline.Pipeline) (*azureBlobWalker, error) {
+func NewAzureBlobWalker(svc *service.Client) (*azureBlobWalker, error) {
 	return &azureBlobWalker{
 		client: svc,
 		mark:   Mark{HasMore: true},
@@ -41,7 +42,7 @@ func NewAzureBlobWalker(svc pipeline.Pipeline) (*azureBlobWalker, error) {
 }
 
 type azureBlobWalker struct {
-	client pipeline.Pipeline
+	client *service.Client
 	mark   Mark
 }
 
@@ -52,7 +53,7 @@ func extractAzurePrefix(storageURI *url.URL) (*url.URL, string, error) {
 	if len(path) == 0 {
 		return nil, "", fmt.Errorf("%w: could not parse container URL: %s", ErrAzureInvalidURL, storageURI)
 	}
-	parts := strings.SplitN(path, "/", 2) //nolint: gomnd
+	parts := strings.SplitN(path, "/", 2) // nolint: gomnd
 	if len(parts) == 1 {
 		// we only have a container
 		return storageURI, "", nil
@@ -73,34 +74,42 @@ func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 	if err != nil {
 		return err
 	}
-	container := azblob.NewContainerURL(*containerURL, a.client)
-	notDone := true
-	for marker := (azblob.Marker{Val: &op.ContinuationToken}); notDone; {
-		listBlob, err := container.ListBlobsFlatSegment(ctx, marker,
-			azblob.ListBlobsSegmentOptions{Prefix: prefix})
+	qk, err := azure.ResolveBlobURLInfoFromURL(containerURL)
+	if err != nil {
+		return err
+	}
+
+	container := a.client.NewContainerClient(qk.ContainerName)
+	listBlob := container.NewListBlobsFlatPager(&azblob.ListBlobsFlatOptions{
+		Prefix: &prefix,
+		Marker: &op.ContinuationToken,
+	})
+
+	for listBlob.More() {
+		resp, err := listBlob.NextPage(ctx)
 		if err != nil {
 			return err
 		}
-		a.mark.ContinuationToken = swag.StringValue(marker.Val)
-		marker = listBlob.NextMarker
-		for _, blobInfo := range listBlob.Segment.BlobItems {
+		for _, blobInfo := range resp.Segment.BlobItems {
 			// skipping everything in the page which is before 'After' (without forgetting the possible empty string key!)
-			if op.After != "" && blobInfo.Name <= op.After {
+			if op.After != "" && *blobInfo.Name <= op.After {
 				continue
 			}
-			a.mark.LastKey = blobInfo.Name
+			if resp.Marker != nil {
+				a.mark.ContinuationToken = *resp.Marker
+			}
+			a.mark.LastKey = *blobInfo.Name
 			if err := walkFn(ObjectStoreEntry{
-				FullKey:     blobInfo.Name,
-				RelativeKey: strings.TrimPrefix(blobInfo.Name, prefix),
-				Address:     getAzureBlobURL(containerURL, blobInfo.Name).String(),
-				ETag:        string(blobInfo.Properties.Etag),
-				Mtime:       blobInfo.Properties.LastModified,
+				FullKey:     *blobInfo.Name,
+				RelativeKey: strings.TrimPrefix(*blobInfo.Name, prefix),
+				Address:     getAzureBlobURL(containerURL, *blobInfo.Name).String(),
+				ETag:        string(*blobInfo.Properties.ETag),
+				Mtime:       *blobInfo.Properties.LastModified,
 				Size:        *blobInfo.Properties.ContentLength,
 			}); err != nil {
 				return err
 			}
 		}
-		notDone = marker.NotDone()
 	}
 
 	a.mark = Mark{

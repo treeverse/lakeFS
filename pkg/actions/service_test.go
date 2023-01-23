@@ -50,7 +50,8 @@ func (c *ActionStatsMockCollector) CollectEvents(ev stats.Event, count uint64) {
 	c.Hits[ev.Name] += int(count)
 }
 
-func (c *ActionStatsMockCollector) CollectMetadata(_ *stats.Metadata)       {}
+func (c *ActionStatsMockCollector) CollectMetadata(accountMetadata *stats.Metadata) {
+}
 func (c *ActionStatsMockCollector) SetInstallationID(_ string)              {}
 func (c *ActionStatsMockCollector) CollectCommPrefs(_, _ string, _, _ bool) {}
 func (c *ActionStatsMockCollector) Close()                                  {}

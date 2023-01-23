@@ -198,39 +198,39 @@ func (l *logrusEntryWrapper) WithError(err error) Logger {
 	return &logrusEntryWrapper{l.e.WithError(err)}
 }
 
-func (l logrusEntryWrapper) Trace(args ...interface{}) {
+func (l *logrusEntryWrapper) Trace(args ...interface{}) {
 	l.e.Trace(args...)
 }
 
-func (l logrusEntryWrapper) Debug(args ...interface{}) {
+func (l *logrusEntryWrapper) Debug(args ...interface{}) {
 	l.e.Debug(args...)
 }
 
-func (l logrusEntryWrapper) Info(args ...interface{}) {
+func (l *logrusEntryWrapper) Info(args ...interface{}) {
 	l.e.Info(args...)
 }
 
-func (l logrusEntryWrapper) Warn(args ...interface{}) {
+func (l *logrusEntryWrapper) Warn(args ...interface{}) {
 	l.e.Warn(args...)
 }
 
-func (l logrusEntryWrapper) Warning(args ...interface{}) {
+func (l *logrusEntryWrapper) Warning(args ...interface{}) {
 	l.e.Warning(args...)
 }
 
-func (l logrusEntryWrapper) Error(args ...interface{}) {
+func (l *logrusEntryWrapper) Error(args ...interface{}) {
 	l.e.Error(args...)
 }
 
-func (l logrusEntryWrapper) Fatal(args ...interface{}) {
+func (l *logrusEntryWrapper) Fatal(args ...interface{}) {
 	l.e.Fatal(args...)
 }
 
-func (l logrusEntryWrapper) Panic(args ...interface{}) {
+func (l *logrusEntryWrapper) Panic(args ...interface{}) {
 	l.e.Panic(args...)
 }
 
-func (l logrusEntryWrapper) Log(level logrus.Level, args ...interface{}) {
+func (l *logrusEntryWrapper) Log(level logrus.Level, args ...interface{}) {
 	l.e.Log(level, args...)
 }
 
@@ -266,7 +266,7 @@ func (l *logrusEntryWrapper) Panicf(format string, args ...interface{}) {
 	l.e.Panicf(format, args...)
 }
 
-func (l logrusEntryWrapper) Logf(level logrus.Level, format string, args ...interface{}) {
+func (l *logrusEntryWrapper) Logf(level logrus.Level, format string, args ...interface{}) {
 	l.e.Logf(level, format, args...)
 }
 

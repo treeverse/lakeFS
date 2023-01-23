@@ -56,9 +56,8 @@ type ExpiryRows interface {
 
 // GetEntryParams configures what entries GetEntry returns.
 type GetEntryParams struct {
-	// For entries to expired objects the Expired bit is set.  If true, GetEntry returns
-	// successfully for expired entries, otherwise it returns the entry with ErrExpired.
-	ReturnExpired bool
+	// StageOnly when true will return entry found on stage without checking committed data
+	StageOnly bool
 }
 
 type Interface interface {
@@ -96,12 +95,13 @@ type Interface interface {
 	// GetEntry returns the current entry for path in repository branch reference.  Returns
 	// the entry with ExpiredError if it has expired from underlying storage.
 	GetEntry(ctx context.Context, repository, reference string, path string, params GetEntryParams) (*DBEntry, error)
-	CreateEntry(ctx context.Context, repository, branch string, entry DBEntry, writeConditions ...graveler.WriteConditionOption) error
+	CreateEntry(ctx context.Context, repository, branch string, entry DBEntry, opts ...graveler.SetOptionsFunc) error
 	DeleteEntry(ctx context.Context, repository, branch string, path string) error
 	DeleteEntries(ctx context.Context, repository, branch string, paths []string) error
 	ListEntries(ctx context.Context, repository, reference string, prefix, after string, delimiter string, limit int) ([]*DBEntry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
+	CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string) (*DBEntry, bool, error)
 
 	Commit(ctx context.Context, repository, branch, message, committer string, metadata Metadata, date *int64, sourceMetarange *string) (*CommitLog, error)
 	GetCommit(ctx context.Context, repository, reference string) (*CommitLog, error)
@@ -123,6 +123,10 @@ type Interface interface {
 	LoadCommits(ctx context.Context, repositoryID, commitsMetaRangeID string) error
 	LoadBranches(ctx context.Context, repositoryID, branchesMetaRangeID string) error
 	LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID string) error
+
+	// TrackPhysicalAddress track physical address (copy-table) to ensure physical address will not be collected by GC.
+	// returns the id used to track the address.
+	TrackPhysicalAddress(ctx context.Context, repository, physicalAddress string) (string, error)
 
 	// forward metadata for thick clients
 	GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeAddress, error)

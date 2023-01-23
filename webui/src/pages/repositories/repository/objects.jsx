@@ -3,7 +3,15 @@ import React, {useEffect, useRef, useState} from "react";
 import {UploadIcon} from "@primer/octicons-react";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
-import {ActionGroup, ActionsBar, Error, Loading, RefreshButton, Warnings} from "../../../lib/components/controls";
+import {
+    ActionGroup,
+    ActionsBar,
+    Error,
+    Loading,
+    PrefixSearchWidget,
+    RefreshButton,
+    Warnings
+} from "../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
@@ -28,6 +36,7 @@ import {
 import {Box} from "@mui/material";
 import {RepoError} from "./error";
 import { getContentType, getFileExtension, FileContents } from "./objectViewer";
+
 
 const README_FILE_NAME = 'README.md';
 
@@ -190,11 +199,11 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
                         e.preventDefault();
                     }}>
                         {config?.warnings &&
-                            <Form.Group controlId="warnings">
+                            <Form.Group controlId="warnings" className="mb-3">
                                 <Warnings warnings={config.warnings}/>
                             </Form.Group>}
-                        <Form.Group controlId="path">
-                            <Row noGutters={true}>
+                        <Form.Group controlId="path" className="mb-3">
+                            <Row className="g-0">
                                 <Col className="col-auto d-flex align-items-center justify-content-start">
                                     {basePath}
                                 </Col>
@@ -205,7 +214,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
                             </Row>
                         </Form.Group>
 
-                        <Form.Group controlId="content">
+                        <Form.Group controlId="content" className="mb-3">
                             <Form.Control
                                 type="file"
                                 name="content"
@@ -360,6 +369,16 @@ const ObjectsBrowser = ({config, configError}) => {
                 </ActionGroup>
 
                 <ActionGroup orientation="right">
+                    <PrefixSearchWidget
+                        text="Search by Prefix"
+                        defaultValue={path}
+                        onFilter={prefix => {
+                            const query = {}
+                            if (prefix) query.path = prefix
+                            if (reference) query.ref = reference.id
+                            const url = {pathname: `/repositories/:repoId/objects`, query, params: {repoId: repo.id}}
+                            router.push(url)
+                        }}/>
                     <RefreshButton onClick={refresh}/>
                     <UploadButton
                         config={config}

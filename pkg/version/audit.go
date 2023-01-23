@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 )
 
 const (
-	auditCheckTimeout = 5 * time.Minute
+	auditCheckTimeout = 30 * time.Second
 )
 
 var (
@@ -44,7 +45,8 @@ type AuditChecker struct {
 	Version          string
 	InstallationID   string
 	periodicResponse atomic.Value
-	ticker           *time.Ticker
+	wg               sync.WaitGroup
+	cancel           context.CancelFunc
 }
 
 func NewDefaultAuditChecker(checkURL, installationID string) *AuditChecker {
@@ -140,25 +142,29 @@ func (a *AuditChecker) LastCheck() (*AuditResponse, error) {
 // check results will be found in the log and updated for 'LastCheck'
 // Return false if periodic check already ran
 func (a *AuditChecker) StartPeriodicCheck(ctx context.Context, interval time.Duration, log logging.Logger) bool {
-	if a.ticker != nil {
-		return false
-	}
-	a.CheckAndLog(ctx, log)
-	a.ticker = time.NewTicker(interval)
+	ctx, a.cancel = context.WithCancel(ctx)
+	a.wg.Add(1)
 	go func() {
-		for range a.ticker.C {
-			a.CheckAndLog(ctx, log)
+		defer a.wg.Done()
+		// check first and loop for checking every interval
+		a.CheckAndLog(ctx, log)
+		for {
+			select {
+			case <-time.After(interval):
+				a.CheckAndLog(ctx, log)
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
 	return true
 }
 
 func (a *AuditChecker) StopPeriodicCheck() {
-	if a.ticker == nil {
-		return
+	if a.cancel != nil {
+		a.cancel()
 	}
-	a.ticker.Stop()
-	a.ticker = nil
+	a.wg.Wait()
 }
 
 // Close release resources used by audit checker - ex: periodic check

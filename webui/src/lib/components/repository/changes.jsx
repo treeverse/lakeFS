@@ -1,7 +1,6 @@
-import React, {useState} from "react";
-
-import {OverlayTrigger} from "react-bootstrap";
-import Tooltip from "react-bootstrap/Tooltip";
+import React, {useState, Fragment} from "react";
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 import {
     ChevronDownIcon,
     ChevronRightIcon,
@@ -15,6 +14,7 @@ import {
     PlusIcon,
     TrashIcon
 } from "@primer/octicons-react";
+
 import {Link} from "../nav";
 import {useAPIWithPagination} from "../../hooks/api";
 import {Error} from "../controls";
@@ -40,20 +40,33 @@ class RowAction {
 /**
  * @param {[RowAction]} actions
  */
-const ChangeRowActions = ({actions}) => <>
-    {
-        actions.map(action => (
-            <><OverlayTrigger placement="bottom" overlay={<Tooltip>{action.tooltip}</Tooltip>}>
-                <Link className={"btn-link"} disabled={false} style={{visibility: action.visible ? "visible" : ""}}
-                        onClick={(e) => {
-                            e.preventDefault();
-                            action.onClick()
-                        }}>
-                    {action.icon}
-                </Link>
-            </OverlayTrigger>&#160;&#160;</>
-        ))}
-</>;
+const ChangeRowActions = ({actions}) => {
+    const actionFragments = actions.map((action, i) => (
+        <Fragment key={`action-${i}`}>
+            <OverlayTrigger placement="bottom" overlay={
+                <Tooltip id="tooltip-action-${i}">
+                    {action.tooltip}
+                </Tooltip>
+            }>
+                <span>
+                    <Link className={"btn-link"} disabled={false} style={{visibility: action.visible ? "visible" : ""}}
+                          onClick={e => {
+                              e.preventDefault();
+                              action.onClick()
+                          }}>
+                        {action.icon}
+                    </Link>
+                </span>
+            </OverlayTrigger>&#160;&#160;
+        </Fragment>
+    ));
+
+    return (
+        <>
+            {actionFragments}
+        </>
+    );
+}
 
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
@@ -166,7 +179,7 @@ export const TreeEntryRow = ({entry, relativeTo = "", leaf = false, dirExpanded,
                     {pathSection}
                 </span>
             </td>
-            <td className={"col-2 p-0 text-right"}>{showSummary && <ChangeSummary prefix={entry.path} getMore={getMore}/>}</td>
+            <td className={"col-2 p-0 text-end"}>{showSummary && <ChangeSummary prefix={entry.path} getMore={getMore}/>}</td>
             <td className={"col-1 change-entry-row-actions"}>
                 <ChangeRowActions actions={rowActions} />
                 <ConfirmationModal show={showRevertConfirm} onHide={() => setShowRevertConfirm(false)}

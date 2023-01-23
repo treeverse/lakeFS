@@ -18,6 +18,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -72,8 +73,9 @@ var entryCmd = &cobra.Command{
 		storeMessage := &kv.StoreMessage{Store: kvStore}
 
 		c, err := catalog.New(ctx, catalog.Config{
-			Config:  conf,
-			KVStore: storeMessage,
+			Config:       conf,
+			KVStore:      storeMessage,
+			PathProvider: upload.DefaultPathProvider,
 		})
 		if err != nil {
 			fmt.Printf("Cannot create catalog: %s\n", err)

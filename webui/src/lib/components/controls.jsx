@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import dayjs from "dayjs";
 
 import Form from "react-bootstrap/Form";
@@ -8,7 +8,7 @@ import Tooltip from "react-bootstrap/Tooltip";
 import Overlay from "react-bootstrap/Overlay";
 import Table from "react-bootstrap/Table";
 import {OverlayTrigger} from "react-bootstrap";
-import {CheckIcon, PasteIcon, SyncIcon} from "@primer/octicons-react";
+import {CheckIcon, PasteIcon, SearchIcon, SyncIcon} from "@primer/octicons-react";
 import {Link} from "./nav";
 import {
     Box,
@@ -21,6 +21,7 @@ import {
     DialogTitle,
     Typography
 } from "@mui/material";
+import InputGroup from "react-bootstrap/InputGroup";
 
 
 const defaultDebounceMs = 300;
@@ -107,8 +108,9 @@ export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => 
 
 
 export const ActionGroup = ({ children, orientation = "left" }) => {
+    const side = (orientation === 'right') ? 'ms-auto' : '';
     return (
-        <div role="toolbar" className={`float-${orientation} mb-2 btn-toolbar`}>
+        <div role="toolbar" className={`${side} mb-2 btn-toolbar action-group-${orientation}`}>
             {children}
         </div>
     );
@@ -116,7 +118,7 @@ export const ActionGroup = ({ children, orientation = "left" }) => {
 
 export const ActionsBar = ({ children }) => {
     return (
-        <div className="action-bar clearfix">
+        <div className="action-bar d-flex mb-3">
             {children}
         </div>
     );
@@ -273,6 +275,56 @@ export const ClipboardButton = ({ text, variant, onSuccess, icon = <PasteIcon/>,
     );
 };
 
+export const PrefixSearchWidget = ({ onFilter, text = "Search by Prefix", defaultValue = "" }) => {
+
+    const [expanded, setExpanded] = useState(!!defaultValue)
+
+    const toggle = useCallback((e) => {
+        e.preventDefault()
+        setExpanded((prev) => {
+            return !prev
+        })
+    }, [setExpanded])
+
+    const ref = useRef(null);
+
+    const handleSubmit = useCallback((e) => {
+        e.preventDefault()
+        onFilter(ref.current.value)
+    }, [ref])
+
+    if (expanded) {
+        return (
+            <Form onSubmit={handleSubmit}>
+                <InputGroup>
+                    <Form.Control
+                        ref={ref}
+                        autoFocus
+                        defaultValue={defaultValue}
+                        placeholder={text}
+                        aria-label={text}
+                    />
+                    <Button variant="light" onClick={toggle}>
+                        <SearchIcon/>
+                    </Button>
+                </InputGroup>
+            </Form>
+        )
+    }
+
+    return (
+        <OverlayTrigger placement="bottom" overlay={
+            <Tooltip>
+                {text}
+            </Tooltip>
+        }>
+            <Button variant="light" onClick={toggle}>
+                <SearchIcon/>
+            </Button>
+        </OverlayTrigger>
+    )
+}
+
 export const RefreshButton = ({ onClick, size = "md", variant = "light", tooltip = "Refresh", icon = <SyncIcon/> }) => {
     return (
         <TooltipButton
@@ -362,7 +414,7 @@ export const Warning = (props) =>
 </>;
 
 export const Warnings = ({ warnings = [] }) => {
-    return <ul className="pl-0 ml-0 warnings">
+    return <ul className="pl-0 ms-0 warnings">
            {warnings.map((warning, i) =>
            <Warning key={i}>{warning}</Warning>
            )}

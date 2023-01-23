@@ -5,6 +5,7 @@ import {useRouter} from "../hooks/router";
 import {Link} from "./nav";
 import {useAPI} from "../hooks/api";
 import {Navbar, Nav, NavDropdown} from "react-bootstrap";
+import Container from "react-bootstrap/Container";
 
 const NavUserInfo = () => {
     const { user, loading, error } = useUser();
@@ -14,29 +15,27 @@ const NavUserInfo = () => {
     if (loading) return <Navbar.Text>Loading...</Navbar.Text>;
     if (!user || !!error) return (<></>);
     return (
-        <Navbar.Collapse className="justify-content-end">
-            <NavDropdown title={user.friendly_name || user.id} className="navbar-username" alignRight>
-                <NavDropdown.Item
-                    onSelect={()=> {
-                        auth.clearCurrentUser();
-                        window.location = '/logout';
-                    }}>
-                    Logout
-                </NavDropdown.Item>
-                <NavDropdown.Divider/>
-                {!versionLoading && !versionError && <>
-                <NavDropdown.Item disabled={true}>
-                    <small>lakeFS {versionResponse.version}</small>
+        <NavDropdown title={user.friendly_name || user.id} className="navbar-username" align="end">
+            <NavDropdown.Item
+                onClick={()=> {
+                    auth.clearCurrentUser();
+                    window.location = '/logout';
+                }}>
+                Logout
+            </NavDropdown.Item>
+            <NavDropdown.Divider/>
+            {!versionLoading && !versionError && <>
+            <NavDropdown.Item disabled={true}>
+                <small>lakeFS {versionResponse.version}</small>
+            </NavDropdown.Item></>}
+            <NavDropdown.Item disabled={true}>
+                <small>Web UI __buildVersion</small>
+            </NavDropdown.Item>
+            {!versionLoading && !versionError && versionResponse.upgrade_recommended && <>
+                <NavDropdown.Item href={versionResponse.upgrade_url}>
+                    <small>upgrade recommended</small>
                 </NavDropdown.Item></>}
-                <NavDropdown.Item disabled={true}>
-                    <small>Web UI __buildVersion</small>
-                </NavDropdown.Item>
-                {!versionLoading && !versionError && versionResponse.upgrade_recommended && <>
-                    <NavDropdown.Item href={versionResponse.upgrade_url}>
-                        <small>upgrade recommended</small>
-                    </NavDropdown.Item></>}
-            </NavDropdown>
-        </Navbar.Collapse>
+        </NavDropdown>
     );
 };
 
@@ -63,16 +62,23 @@ const TopNav = ({logged = true}) => {
     }
     return (
         <Navbar variant="dark" bg="dark" expand="md">
-            <Link component={Navbar.Brand} href="/">
-                <img src="/logo.png" alt="lakeFS" className="logo"/>
-            </Link>
+            <Container fluid={true}>
+                <Link component={Navbar.Brand} href="/">
+                    <img src="/logo.png" alt="lakeFS" className="logo"/>
+                </Link>
+                <Navbar.Toggle aria-controls="navbarScroll" />
+                <Navbar.Collapse id="navbarScroll">
 
-            <Nav className="mr-auto">
-                <TopNavLink href="/repositories">Repositories</TopNavLink>
-                <TopNavLink href="/auth">Administration</TopNavLink>
-            </Nav>
+                    <Nav className="me-auto my-2 my-lg-0"
+                         style={{ maxHeight: '100px' }}
+                         navbarScroll>
+                        <TopNavLink href="/repositories">Repositories</TopNavLink>
+                        <TopNavLink href="/auth">Administration</TopNavLink>
+                    </Nav>
 
-            <NavUserInfo/>
+                    <NavUserInfo/>
+                </Navbar.Collapse>
+            </Container>
         </Navbar>
     );
 };

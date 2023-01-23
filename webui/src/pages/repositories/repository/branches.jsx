@@ -17,7 +17,7 @@ import {
     ActionGroup,
     ActionsBar, ClipboardButton,
     Error, LinkButton,
-    Loading, RefreshButton
+    Loading, PrefixSearchWidget, RefreshButton
 } from "../../../lib/components/controls";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
@@ -57,7 +57,7 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
     return (
         <ListGroup.Item>
             <div className="clearfix">
-                <div className="float-left">
+                <div className="float-start">
                     <h6>
                         <Link href={{
                             pathname: '/repositories/:repoId/objects',
@@ -76,7 +76,7 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
                 </div>
 
 
-                <div className="float-right">
+                <div className="float-end">
                     {!isDefault &&
                     <ButtonGroup className="commit-actions">
                         <ConfirmationButton
@@ -95,7 +95,7 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
                     </ButtonGroup>
                     }
 
-                    <ButtonGroup className="branch-actions ml-2">
+                    <ButtonGroup className="branch-actions ms-2">
                         <LinkButton
                             href={{
                                 pathname: '/repositories/:repoId/commits/:commitId',
@@ -165,10 +165,10 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, childr
                         onSubmit();
                         e.preventDefault();
                     }}>
-                        <Form.Group controlId="name">
+                        <Form.Group controlId="name" className="mb-3">
                             <Form.Control type="text" placeholder="Branch Name" name="text" ref={textRef}/>
                         </Form.Group>
-                        <Form.Group controlId="source">
+                        <Form.Group controlId="source" className="mb-3">
                             <RefDropdown
                                 repo={repo}
                                 emptyText={'Select Source Branch'}
@@ -198,8 +198,9 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, childr
     );
 };
 
-const BranchList = ({ repo, prefix, after, onPaginate }) => {
 
+const BranchList = ({ repo, prefix, after, onPaginate }) => {
+    const router = useRouter()
     const [refresh, setRefresh] = useState(true);
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         return branches.list(repo.id, prefix, after);
@@ -228,6 +229,15 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
         <div className="mb-5">
             <ActionsBar>
                 <ActionGroup orientation="right">
+
+                    <PrefixSearchWidget
+                        defaultValue={router.query.prefix}
+                        text="Find branch"
+                        onFilter={prefix => {
+                            const query = {prefix};
+                            router.push({pathname: '/repositories/:repoId/branches', params: {repoId: repo.id}, query});
+                        }}/>
+
                     <RefreshButton onClick={doRefresh}/>
 
                     <CreateBranchButton repo={repo} variant="success" onCreate={doRefresh}>

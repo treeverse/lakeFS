@@ -32,7 +32,7 @@ export const AdminUserSetup = forwardRef<HTMLInputElement, AdminUserSetupProps>(
                             <a href="https://docs.lakefs.io/quickstart/repository.html#create-the-first-user" target="_blank" rel="noopener noreferrer">Learn more.</a>
                         </Card.Text>
                         <Form onSubmit={submitHandler}>
-                            <Form.Group controlId="user-name">
+                            <Form.Group controlId="user-name" className="mb-3">
                                 <Form.Control type="text" placeholder="Admin Username" ref={inputRef} autoFocus/>
                             </Form.Group>
 

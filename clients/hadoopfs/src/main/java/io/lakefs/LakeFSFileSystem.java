@@ -426,6 +426,12 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     /**
+     * fallbackToStage determines whether the old StageObject API should be use,
+     * turn true when CopyObject API is not supported.
+     */
+    private boolean fallbackToStage = false;
+
+    /**
      * Non-atomic rename operation.
      *
      * @return true if rename succeeded, false otherwise
@@ -440,16 +446,37 @@ public class LakeFSFileSystem extends FileSystem {
 
         ObjectsApi objects = lfsClient.getObjects();
         //TODO (Tals): Can we add metadata? we currently don't have an API to get the metadata of an object.
-        ObjectStageCreation creationReq = new ObjectStageCreation()
-                .checksum(srcStatus.getChecksum())
-                .sizeBytes(srcStatus.getLen())
-                .physicalAddress(srcStatus.getPhysicalAddress());
 
-        try {
-            objects.stageObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
-                    creationReq);
-        } catch (ApiException e) {
-            throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst + ", failed to stage object", e);
+        if (!fallbackToStage) {
+            try {
+                ObjectCopyCreation creationReq = new ObjectCopyCreation()
+                        .srcRef(srcObjectLoc.getRef())
+                        .srcPath(srcObjectLoc.getPath());
+                objects.copyObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
+                        creationReq);
+            } catch (ApiException e) {
+                if (e.getCode() != HttpStatus.SC_INTERNAL_SERVER_ERROR ||
+                        !e.getMessage().contains("invalid API endpoint")) {
+                    throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst + ", failed to copy object", e);
+                }
+
+                LOG.warn("Copy API doesn't exist, falling back to stageObject");
+                fallbackToStage = true;
+            }
+        }
+
+        if (fallbackToStage) {
+            ObjectStageCreation stageCreationReq = new ObjectStageCreation()
+                    .checksum(srcStatus.getChecksum())
+                    .sizeBytes(srcStatus.getLen())
+                    .physicalAddress(srcStatus.getPhysicalAddress());
+            try {
+                objects.stageObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
+                        stageCreationReq);
+            } catch (ApiException e) {
+                throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst +
+                        ", failed to stage object", e);
+            }
         }
 
         // delete src path
