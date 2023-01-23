@@ -481,7 +481,8 @@ class Repositories {
         const query = qs({table_path, type});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/otf/refs/${encodeURIComponent(leftRef)}/diff/${encodeURIComponent(rightRef)}?` + query);
         if (response.status !== 200) {
-            throw new Error(await extractError(response));
+            //TODO (Tals): improve error handling
+            throw new NotFoundError(`table ${table_path} not found`);
         }
         // return response.json();
         // const mockRes = '{"results": []}'
