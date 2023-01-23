@@ -25,12 +25,14 @@ import Button from "react-bootstrap/Button";
 import {FormControl, FormHelperText, InputLabel, MenuItem, Select} from "@mui/material";
 import Modal from "react-bootstrap/Modal";
 import {RepoError} from "./error";
+import {TableDiff} from "../../../lib/components/repository/TableDiff";
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
-    
+    const [tableDiffExpanded, setTableDiffExpanded] = useState(false);
+
     const refresh = () => {
         setResultsState({prefix: prefix, results:[], pagination:{}})
         setInternalRefresh(!internalRefresh)
@@ -75,9 +77,18 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
             <div className="tree-container">
                 {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
                     <>
+                        {tableDiffExpanded
+                            ?  <Button className="action-bar"
+                                       variant="secondary"
+                                       disabled={false}
+                                       onClick={() => {setTableDiffExpanded(false)}}>
+                                        <ArrowLeftIcon/> Back to object comparison
+                                </Button>
+                            :
                         <div className="mr-1 mb-2">
                             <Alert variant={"info"}><InfoIcon/> You can now use lakeFS to compare Delta Lake tables</Alert>
                         </div>
+                        }
                         <Card>
                             <Card.Header>
                                 <span className="float-start">
@@ -108,7 +119,10 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                             <Card.Body>
                                 <Table borderless size="sm">
                                     <tbody>
-                                    {results.map(entry => {
+                                    {tableDiffExpanded
+                                        ? <TableDiff/>
+                                        :
+                                        results.map(entry => {
                                         let leftCommittedRef = reference.id;
                                         let rightCommittedRef = compareReference.id;
                                         if (reference.type === RefTypeBranch) {
@@ -126,8 +140,11 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                                       onNavigate={onNavigate}
                                                       getMore={(afterUpdatedChild, path, useDelimiter = true, amount = -1) => {
                                                           return refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined);
-                                                      }}/>);
-                                    })}
+                                                      }}
+                                                      setTableDiffExpanded={() => setTableDiffExpanded(true)}
+                                            />);
+                                        })
+                                    }
                                     {!!nextPage &&
                                         <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage}
                                                             setAfterUpdated={setAfterUpdated}/>}
