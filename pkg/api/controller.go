@@ -67,6 +67,10 @@ const (
 	httpStatusClientClosedRequest = 499
 	// httpStatusClientClosedRequestText text used for client closed request status code
 	httpStatusClientClosedRequestText = "Client closed request"
+
+	httpHeaderCopyType        = "X-Lakefs-Copy-Type"
+	httpHeaderCopyTypeFull    = "full"
+	httpHeaderCopyTypeShallow = "shallow"
 )
 
 type actionsHandler interface {
@@ -2146,7 +2150,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 
 	// before writing body, ensure preconditions - this means we essentially check for object existence twice:
 	// once before uploading the body to save resources and time,
-	//	and then graveler will check again when passed a WriteCondition.
+	//	and then graveler will check again when passed a SetOptions.
 	allowOverwrite := true
 	if params.IfNoneMatch != nil {
 		if StringValue(params.IfNoneMatch) != "*" {
@@ -2154,7 +2158,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 			return
 		}
 		// check if exists
-		_, err := c.Catalog.GetEntry(ctx, repo.Name, branch, params.Path, catalog.GetEntryParams{ReturnExpired: true})
+		_, err := c.Catalog.GetEntry(ctx, repo.Name, branch, params.Path, catalog.GetEntryParams{})
 		if err == nil {
 			writeError(w, r, http.StatusPreconditionFailed, "path already exists")
 			return
@@ -2234,7 +2238,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	}
 	entry := entryBuilder.Build()
 
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.IfAbsent(!allowOverwrite))
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithIfAbsent(!allowOverwrite))
 	if errors.Is(err, graveler.ErrPreconditionFailed) {
 		writeError(w, r, http.StatusPreconditionFailed, "path already exists")
 		return
@@ -2337,73 +2341,69 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 }
 
 func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body CopyObjectJSONRequestBody, repository string, branch string, params CopyObjectParams) {
+	srcPath := body.SrcPath
+	destPath := params.DestPath
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ReadActionsAction,
-					Resource: permissions.ObjectArn(repository, params.DestPath),
+					Resource: permissions.ObjectArn(repository, srcPath),
 				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.WriteObjectAction,
-					Resource: permissions.ObjectArn(repository, body.SrcPath),
+					Resource: permissions.ObjectArn(repository, destPath),
 				},
 			},
 		},
 	}) {
 		return
 	}
+
 	ctx := r.Context()
-	c.LogAction(ctx, "copy_object", r, repository, branch, params.DestPath)
+	c.LogAction(ctx, "copy_object", r, repository, branch, destPath)
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
-	ref := branch
-	if body.SrcRef != nil {
-		ref = *body.SrcRef
+	// verify destination is a branch (and exists)
+	branchExists, err := c.Catalog.BranchExists(ctx, repository, branch)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	if !branchExists {
+		writeError(w, r, http.StatusNotFound, fmt.Sprintf("branch '%s' not found", branch))
+		return
 	}
 
-	// TODO (niro): Naive copy object flow - real implementation still missing (https://github.com/treeverse/lakeFS/issues/4477)
-	src, err := c.Catalog.GetEntry(ctx, repository, ref, body.SrcPath, catalog.GetEntryParams{})
+	// use destination branch as source if not specified
+	srcRef := swag.StringValue(body.SrcRef)
+	if srcRef == "" {
+		srcRef = branch
+	}
+
+	// copy entry
+	entry, fullCopy, err := c.Catalog.CopyEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
-	destAddress := c.PathProvider.NewPath()
-	blob, err := upload.CopyBlob(ctx, c.BlockAdapter, repo.StorageNamespace, repo.StorageNamespace, src.PhysicalAddress, src.Checksum, destAddress, src.Size)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	writeTime := time.Now()
-	entryBuilder := catalog.NewDBEntryBuilder().
-		CommonLevel(false).
-		Path(params.DestPath).
-		PhysicalAddress(blob.PhysicalAddress).
-		AddressType(catalog.AddressTypeRelative).
-		CreationDate(writeTime).
-		Size(blob.Size).
-		Checksum(blob.Checksum).
-		ContentType(src.ContentType)
-	entry := entryBuilder.Build()
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress, block.IdentifierTypeRelative)
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	w.Header().Set("X-lakeFS-Copy-Type", "full") // update with the real implementation
-	// TODO: end of TODO
 
+	copyType := httpHeaderCopyTypeShallow
+	if fullCopy {
+		copyType = httpHeaderCopyTypeFull
+	}
+	w.Header().Set(httpHeaderCopyType, copyType)
 	response := ObjectStats{
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
@@ -2411,7 +2411,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
-		ContentType:     &entry.ContentType,
+		ContentType:     StringPtr(entry.ContentType),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -3040,7 +3040,7 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	c.LogAction(ctx, "head_object", r, repository, ref, "")
 
 	// read the FS entry
-	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
+	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{})
 	if err != nil {
 		c.handleAPIErrorCallback(ctx, w, r, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
 			writeResponse(w, r, code, nil)
@@ -3092,7 +3092,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	}
 
 	// read the FS entry
-	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
+	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{})
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3283,7 +3283,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		return
 	}
 
-	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
+	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{})
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -4216,12 +4216,11 @@ func encodeGCUncommittedMark(mark *catalog.GCUncommittedMark) (*string, error) {
 	if mark == nil {
 		return nil, nil
 	}
-	var buf bytes.Buffer
-	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
-	err := json.NewEncoder(encoder).Encode(mark)
+	raw, err := json.Marshal(mark)
 	if err != nil {
 		return nil, err
 	}
-	token := buf.String()
+
+	token := base64.StdEncoding.EncodeToString(raw)
 	return &token, nil
 }

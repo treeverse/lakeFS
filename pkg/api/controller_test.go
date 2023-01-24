@@ -3438,7 +3438,7 @@ func TestController_UpdatePolicy(t *testing.T) {
 	})
 }
 
-func TestController_GetPhysicalAddress_(t *testing.T) {
+func TestController_GetPhysicalAddress(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -3497,13 +3497,44 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
+	verifyPrepareGarbageCollection := func(t *testing.T, repo string, expectedCalls int) {
+		t.Helper()
+		var (
+			calls int
+			token *string
+		)
+		for {
+			calls++
+			resp, err := clt.PrepareGarbageCollectionUncommittedWithResponse(ctx, repo, api.PrepareGarbageCollectionUncommittedJSONRequestBody{
+				ContinuationToken: token,
+			})
+			verifyResponseOK(t, resp, err)
+			if resp.JSON201 == nil {
+				t.Fatalf("PrepareGarbageCollectionUncommitted status code:%d, expected 201", resp.StatusCode())
+			}
+			if resp.JSON201.RunId == "" {
+				t.Errorf("PrepareGarbageCollectionUncommitted empty RunID, value expected")
+			}
+			if resp.JSON201.GcUncommittedLocation == "" {
+				t.Errorf("PrepareGarbageCollectionUncommitted empty GcUncommittedLocation, value expected")
+			}
+			token = resp.JSON201.ContinuationToken
+			if token == nil || *token == "" {
+				break
+			}
+		}
+		if calls != expectedCalls {
+			t.Fatalf("PrepareGarbageCollectionUncommitted calls=%d, expected=%d", calls, expectedCalls)
+		}
+	}
+
 	t.Run("no_repository", func(t *testing.T) {
 		resp, err := clt.PrepareGarbageCollectionUncommittedWithResponse(ctx, "", api.PrepareGarbageCollectionUncommittedJSONRequestBody{})
 		if err != nil {
-			t.Fatalf("PrepareGarbageCollectionUncommittedWithResponse failed: %s", err)
+			t.Fatalf("PrepareGarbageCollectionUncommitted failed: %s", err)
 		}
 		if resp.JSON400 == nil {
-			t.Fatalf("PrepareGarbageCollectionUncommittedWithResponse expected BadRequest: %+v", resp)
+			t.Fatalf("PrepareGarbageCollectionUncommitted expected BadRequest: %+v", resp)
 		}
 	})
 
@@ -3511,14 +3542,14 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		repo := testUniqueRepoName()
 		resp, err := clt.PrepareGarbageCollectionUncommittedWithResponse(ctx, repo, api.PrepareGarbageCollectionUncommittedJSONRequestBody{})
 		if err != nil {
-			t.Fatalf("PrepareGarbageCollectionUncommittedWithResponse failed: %s", err)
+			t.Fatalf("PrepareGarbageCollectionUncommitted failed: %s", err)
 		}
 		if resp.JSON404 == nil {
-			t.Fatalf("PrepareGarbageCollectionUncommittedWithResponse expected NotFound: %+v", resp)
+			t.Fatalf("PrepareGarbageCollectionUncommitted expected NotFound: %+v", resp)
 		}
 	})
 
-	t.Run("uncommitted", func(t *testing.T) {
+	t.Run("uncommitted_data", func(t *testing.T) {
 		repo := testUniqueRepoName()
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 		testutil.Must(t, err)
@@ -3528,21 +3559,10 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 			uploadResp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(path), repo, "main")
 			verifyResponseOK(t, uploadResp, err)
 		}
-		resp, err := clt.PrepareGarbageCollectionUncommittedWithResponse(ctx, repo, api.PrepareGarbageCollectionUncommittedJSONRequestBody{})
-		verifyResponseOK(t, resp, err)
-		if resp.JSON201.RunId == "" {
-			t.Errorf("PrepareGarbageCollectionUncommittedWithResponse empty RunID, value expected")
-		}
-		if resp.JSON201.GcUncommittedLocation == "" {
-			t.Errorf("PrepareGarbageCollectionUncommittedWithResponse empty GcUncommittedLocation, value expected")
-		}
-		token := api.StringValue(resp.JSON201.ContinuationToken)
-		if token != "" {
-			t.Errorf("PrepareGarbageCollectionUncommittedWithResponse token=%s, expected empty token", token)
-		}
+		verifyPrepareGarbageCollection(t, repo, 1)
 	})
 
-	t.Run("committed", func(t *testing.T) {
+	t.Run("committed_data", func(t *testing.T) {
 		repo := testUniqueRepoName()
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 		testutil.Must(t, err)
@@ -3555,18 +3575,27 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		if _, err := deps.catalog.Commit(ctx, repo, "main", "committed objects", "some_user", nil, nil, nil); err != nil {
 			t.Fatalf("failed to commit objects: %s", err)
 		}
-		resp, err := clt.PrepareGarbageCollectionUncommittedWithResponse(ctx, repo, api.PrepareGarbageCollectionUncommittedJSONRequestBody{})
-		verifyResponseOK(t, resp, err)
-		if resp.JSON201.RunId == "" {
-			t.Errorf("PrepareGarbageCollectionUncommittedWithResponse empty RunID, value expected")
+		verifyPrepareGarbageCollection(t, repo, 1)
+	})
+
+	t.Run("uncommitted_copy", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.Must(t, err)
+		const items = 3
+		for i := 0; i < items; i++ {
+			path := fmt.Sprintf("uncommitted/obj%d", i)
+			uploadResp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(path), repo, "main")
+			verifyResponseOK(t, uploadResp, err)
+
+			copyResp, err := clt.CopyObjectWithResponse(ctx, repo, "main",
+				&api.CopyObjectParams{DestPath: fmt.Sprintf("copy/obj%d", i)},
+				api.CopyObjectJSONRequestBody{
+					SrcPath: path,
+				})
+			verifyResponseOK(t, copyResp, err)
 		}
-		if resp.JSON201.GcUncommittedLocation != "" {
-			t.Errorf("PrepareGarbageCollectionUncommittedWithResponse Location=%s, expected empty", resp.JSON201.GcUncommittedLocation)
-		}
-		token := api.StringValue(resp.JSON201.ContinuationToken)
-		if token != "" {
-			t.Errorf("PrepareGarbageCollectionUncommittedWithResponse token=%s, expected empty token", token)
-		}
+		verifyPrepareGarbageCollection(t, repo, 1)
 	})
 }
 
@@ -3860,64 +3889,157 @@ func TestController_CopyObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
-	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "bucket/prefix"), "main")
-	if err != nil {
-		t.Fatal(err)
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main")
+	require.NoError(t, err)
+	_, err = deps.catalog.CreateBranch(ctx, repo, "alt", "main")
+	require.NoError(t, err)
+
+	uploadContent := func(t *testing.T, repository, branch, objPath string) api.ObjectStats {
+		t.Helper()
+		const content = "hello world this is my awesome content"
+		uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(content), repository, branch)
+		verifyResponseOK(t, uploadResp, err)
+		require.NotNil(t, uploadResp.JSON201)
+		require.Equal(t, len(content), int(api.Int64Value(uploadResp.JSON201.SizeBytes)))
+		return *uploadResp.JSON201
 	}
 
-	const expectedSize = 38
-	const content = "hello world this is my awesome content"
-	uploadResp, err := uploadObjectHelper(t, ctx, clt, "foo/bar", strings.NewReader(content), "repo1", "main")
-	verifyResponseOK(t, uploadResp, err)
+	const copyTypeHeaderName = "X-Lakefs-Copy-Type"
 
-	sizeBytes := api.Int64Value(uploadResp.JSON201.SizeBytes)
-
-	if sizeBytes != expectedSize {
-		t.Fatalf("expected %d bytes to be written, got back %d", expectedSize, sizeBytes)
-	}
-
-	t.Run("copy object", func(t *testing.T) {
-		time.Sleep(1 * time.Second)
-		copyResp, err := clt.CopyObjectWithResponse(ctx, "repo1", "main", &api.CopyObjectParams{
-			DestPath: "bar/foo",
+	t.Run("shallow", func(t *testing.T) {
+		const (
+			srcPath  = "foo/bar"
+			destPath = "foo/bar-shallow-copy"
+		)
+		objStat := uploadContent(t, repo, "main", srcPath)
+		copyResp, err := clt.CopyObjectWithResponse(ctx, repo, "main", &api.CopyObjectParams{
+			DestPath: destPath,
 		}, api.CopyObjectJSONRequestBody{
-			SrcPath: "foo/bar",
+			SrcPath: srcPath,
 		})
 		verifyResponseOK(t, copyResp, err)
-		copyType := copyResp.HTTPResponse.Header.Get("X-lakeFS-Copy-Type")
-		// Verify copyType
-		require.Equal(t, copyType, "full")
+
+		copyType := copyResp.HTTPResponse.Header.Get(copyTypeHeaderName)
+		require.Equal(t, copyType, "shallow")
 		// Verify creation path, date and physical address are different
-		require.False(t, uploadResp.JSON201.PhysicalAddress == copyResp.JSON201.PhysicalAddress)
-		require.False(t, uploadResp.JSON201.Mtime == copyResp.JSON201.Mtime)
-		require.Equal(t, copyResp.JSON201.Path, "bar/foo")
+		copyStat := copyResp.JSON201
+		require.NotNil(t, copyStat)
+		require.Equal(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
+		require.GreaterOrEqual(t, objStat.Mtime, copyStat.Mtime)
+		require.Equal(t, destPath, copyStat.Path)
 
 		// Verify all else is equal
-		uploadResp.JSON201.PhysicalAddress = copyResp.JSON201.PhysicalAddress
-		uploadResp.JSON201.Mtime = copyResp.JSON201.Mtime
-		uploadResp.JSON201.Path = copyResp.JSON201.Path
-		require.Nil(t, deep.Equal(uploadResp.JSON201, copyResp.JSON201))
+		objStat.Mtime = copyStat.Mtime
+		objStat.Path = copyStat.Path
+		require.Nil(t, deep.Equal(objStat, *copyStat))
 
 		// get back info
-		statResp, err := clt.StatObjectWithResponse(ctx, "repo1", "main", &api.StatObjectParams{Path: "bar/foo"})
+		statResp, err := clt.StatObjectWithResponse(ctx, repo, "main", &api.StatObjectParams{Path: destPath})
 		verifyResponseOK(t, statResp, err)
-		require.Nil(t, deep.Equal(statResp.JSON200, copyResp.JSON201))
+		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
 	})
 
-	t.Run("copy object not found", func(t *testing.T) {
-		ref := "main"
-		resp, err := clt.CopyObjectWithResponse(ctx, "repo1", "main", &api.CopyObjectParams{
+	t.Run("full_different_branch", func(t *testing.T) {
+		const (
+			srcPath  = "foo/bar2"
+			destPath = "foo/bar-full-from-branch"
+		)
+		objStat := uploadContent(t, repo, "alt", srcPath)
+		copyResp, err := clt.CopyObjectWithResponse(ctx, repo, "main", &api.CopyObjectParams{
+			DestPath: destPath,
+		}, api.CopyObjectJSONRequestBody{
+			SrcPath: srcPath,
+			SrcRef:  api.StringPtr("alt"),
+		})
+		verifyResponseOK(t, copyResp, err)
+
+		copyType := copyResp.HTTPResponse.Header.Get(copyTypeHeaderName)
+		require.Equal(t, copyType, "full")
+		// Verify creation path, date and physical address are different
+		copyStat := copyResp.JSON201
+		require.NotNil(t, copyStat)
+		require.NotEmpty(t, copyStat.PhysicalAddress)
+		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
+		require.GreaterOrEqual(t, objStat.Mtime, copyStat.Mtime)
+		require.Equal(t, destPath, copyStat.Path)
+
+		// Verify all else is equal
+		objStat.Mtime = copyStat.Mtime
+		objStat.Path = copyStat.Path
+		objStat.PhysicalAddress = copyStat.PhysicalAddress
+		require.Nil(t, deep.Equal(objStat, *copyStat))
+
+		// get back info
+		statResp, err := clt.StatObjectWithResponse(ctx, repo, "main", &api.StatObjectParams{Path: destPath})
+		verifyResponseOK(t, statResp, err)
+		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
+	})
+
+	t.Run("full_committed", func(t *testing.T) {
+		const (
+			srcPath  = "foo/bar3"
+			destPath = "foo/bar-full-committed"
+		)
+		objStat := uploadContent(t, repo, "main", srcPath)
+		commitResp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
+			Message: "commit bar3",
+		})
+		verifyResponseOK(t, commitResp, err)
+		require.NotNil(t, commitResp.JSON201)
+
+		copyResp, err := clt.CopyObjectWithResponse(ctx, repo, "main", &api.CopyObjectParams{
+			DestPath: destPath,
+		}, api.CopyObjectJSONRequestBody{
+			SrcPath: srcPath,
+			SrcRef:  api.StringPtr("main"),
+		})
+		verifyResponseOK(t, copyResp, err)
+
+		copyType := copyResp.HTTPResponse.Header.Get(copyTypeHeaderName)
+		require.Equal(t, copyType, "full")
+		// Verify creation path, date and physical address are different
+		copyStat := copyResp.JSON201
+		require.NotNil(t, copyStat)
+		require.NotEmpty(t, copyStat.PhysicalAddress)
+		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
+		require.GreaterOrEqual(t, objStat.Mtime, copyStat.Mtime)
+		require.Equal(t, destPath, copyStat.Path)
+
+		// Verify all else is equal
+		objStat.Mtime = copyStat.Mtime
+		objStat.Path = copyStat.Path
+		objStat.PhysicalAddress = copyStat.PhysicalAddress
+		require.Nil(t, deep.Equal(objStat, *copyStat))
+
+		// get back info
+		statResp, err := clt.StatObjectWithResponse(ctx, repo, "main", &api.StatObjectParams{Path: destPath})
+		verifyResponseOK(t, statResp, err)
+		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
+	})
+
+	t.Run("not_found", func(t *testing.T) {
+		resp, err := clt.CopyObjectWithResponse(ctx, repo, "main", &api.CopyObjectParams{
 			DestPath: "bar/foo",
 		}, api.CopyObjectJSONRequestBody{
 			SrcPath: "not/found",
-			SrcRef:  &ref,
+			SrcRef:  api.StringPtr("main"),
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON404)
+
+		// without src ref
+		resp, err = clt.CopyObjectWithResponse(ctx, repo, "main", &api.CopyObjectParams{
+			DestPath: "bar/foo",
+		}, api.CopyObjectJSONRequestBody{
+			SrcPath: "not/found",
 		})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON404)
 	})
 
-	t.Run("copy object validation error", func(t *testing.T) {
-		resp, err := clt.CopyObjectWithResponse(ctx, "repo1", "main", &api.CopyObjectParams{
+	t.Run("empty_destination", func(t *testing.T) {
+		resp, err := clt.CopyObjectWithResponse(ctx, repo, "main", &api.CopyObjectParams{
 			DestPath: "",
 		}, api.CopyObjectJSONRequestBody{
 			SrcPath: "foo/bar",

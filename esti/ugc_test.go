@@ -1,6 +1,7 @@
 package esti
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -10,10 +11,12 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -28,8 +31,9 @@ const (
 )
 
 type UncommittedFindings struct {
-	All     []string
-	Deleted []string
+	All            []Object
+	Deleted        []string
+	preLinkAddress api.StagingLocation
 }
 
 func TestUncommittedGC(t *testing.T) {
@@ -38,7 +42,26 @@ func TestUncommittedGC(t *testing.T) {
 	if blockstoreType != block.BlockstoreTypeS3 {
 		t.Skip("Running on S3 only")
 	}
-	prepareForUncommittedGC(t)
+	ctx := context.Background()
+	prepareForUncommittedGC(t, ctx)
+
+	// upload files while ugc is running
+	ticker := time.NewTicker(time.Second * 1)
+	var durObjects []string
+	done := make(chan bool)
+	go func() {
+		for {
+			select {
+			case <-done:
+				ticker.Stop()
+				return
+			case <-ticker.C:
+				obj := uploadAndDeleteSafeTestData(t, ctx, uncommittedGCRepoName)
+				durObjects = append(durObjects, obj)
+			}
+		}
+	}()
+
 	submitConfig := &sparkSubmitConfig{
 		sparkVersion:    sparkImageTag,
 		localJar:        metaclientJarPath,
@@ -48,11 +71,12 @@ func TestUncommittedGC(t *testing.T) {
 		logSource:       "ugc",
 	}
 	testutil.MustDo(t, "run uncommitted GC", runSparkSubmit(submitConfig))
-	validateUncommittedGC(t)
+	done <- true
+
+	validateUncommittedGC(t, durObjects)
 }
 
-func prepareForUncommittedGC(t *testing.T) {
-	ctx := context.Background()
+func prepareForUncommittedGC(t *testing.T, ctx context.Context) {
 	repo := createRepositoryByName(ctx, t, uncommittedGCRepoName)
 	var gone []string
 
@@ -107,11 +131,25 @@ func prepareForUncommittedGC(t *testing.T) {
 		}
 	}
 
+	// getting physical address before the ugc run and linking it after
+	getPhysicalResp, err := client.GetPhysicalAddressWithResponse(ctx, repo, mainBranch, &api.GetPhysicalAddressParams{Path: "foo/bar"})
+	if err != nil {
+		t.Fatalf("Failed to get physical address %s", err)
+	}
+	if getPhysicalResp.JSON200 == nil {
+		t.Fatalf("Failed to get physical address information: status code %d", getPhysicalResp.StatusCode())
+	}
+
+	objects, _ := listRepositoryUnderlyingStorage(t, ctx, repo)
 	// write findings into a file
 	findings, err := json.MarshalIndent(
 		UncommittedFindings{
-			All:     listRepositoryUnderlyingStorage(t, ctx, repo),
+			All:     objects,
 			Deleted: gone,
+			preLinkAddress: api.StagingLocation{
+				PhysicalAddress: getPhysicalResp.JSON200.PhysicalAddress,
+				Token:           getPhysicalResp.JSON200.Token,
+			},
 		}, "", "  ")
 	if err != nil {
 		t.Fatalf("failed to marshal findings: %s", err)
@@ -139,28 +177,44 @@ func objectPhysicalAddress(t *testing.T, ctx context.Context, repo, objPath stri
 	return resp.JSON200.PhysicalAddress
 }
 
-func validateUncommittedGC(t *testing.T) {
+func validateUncommittedGC(t *testing.T, durObjects []string) {
 	ctx := context.Background()
 	const repo = uncommittedGCRepoName
 
 	findingPath := findingFilePath()
-	bytes, err := os.ReadFile(findingPath)
+	b, err := os.ReadFile(findingPath)
 	if err != nil {
 		t.Fatalf("Failed to read '%s': %s", findingPath, err)
 	}
 	var findings UncommittedFindings
-	err = json.Unmarshal(bytes, &findings)
+	err = json.Unmarshal(b, &findings)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal findings '%s': %s", findingPath, err)
 	}
 
+	// link the pre physical address
+	const expectedSizeBytes = 38
+	_, err = client.LinkPhysicalAddressWithResponse(ctx, "repo1", "main", &api.LinkPhysicalAddressParams{
+		Path: "foo/bar",
+	}, api.LinkPhysicalAddressJSONRequestBody{
+		Checksum:  "afb0689fe58b82c5f762991453edbbec",
+		SizeBytes: expectedSizeBytes,
+		Staging: api.StagingLocation{
+			PhysicalAddress: findings.preLinkAddress.PhysicalAddress,
+			Token:           findings.preLinkAddress.Token,
+		},
+	})
+	if err != nil {
+		t.Fatalf("Failed to link physical address %s", err)
+	}
+
 	// list underlying storage
-	objects := listRepositoryUnderlyingStorage(t, ctx, repo)
+	objects, qp := listRepositoryUnderlyingStorage(t, ctx, repo)
 
 	// verify that all previous objects are found or deleted, if needed
 	for _, obj := range findings.All {
 		foundIt := slices.Contains(objects, obj)
-		expectDeleted := slices.Contains(findings.Deleted, obj)
+		expectDeleted := slices.Contains(findings.Deleted, obj.Key)
 		if foundIt && expectDeleted {
 			t.Errorf("Object '%s' FOUND - should have been deleted", obj)
 		} else if !foundIt && !expectDeleted {
@@ -171,17 +225,46 @@ func validateUncommittedGC(t *testing.T) {
 	// verify that we do not have new objects
 	for _, obj := range objects {
 		// skip uncommitted retention reports
-		if strings.Contains(obj, "/_lakefs/retention/gc/uncommitted/") {
+		if strings.Contains(obj.Key, "/_lakefs/retention/gc/uncommitted/") {
 			continue
 		}
 		// verify we know this object
-		if !slices.Contains(findings.All, obj) {
+		if !slices.Contains(findings.All, obj) && !slices.Contains(durObjects, obj.Key) {
 			t.Errorf("Object '%s' FOUND KNOWN - was not found pre ugc", obj)
+		}
+	}
+
+	s3Client := newDefaultS3Client()
+	runID := getLastUGCRunID(t, ctx, s3Client, qp.StorageNamespace, qp.Prefix)
+	reportPath := fmt.Sprintf("%s_lakefs/retention/gc/uncommitted/%s/summary.json", qp.Prefix, runID)
+	cutoffTime, err := getReportCutoffTime(s3Client, qp.StorageNamespace, reportPath)
+	if err != nil {
+		t.Fatalf("Failed to get start list time from ugc report %s", err)
+	}
+
+	objectsMap := make(map[string]Object)
+	for _, obj := range objects {
+		objectsMap[obj.Key] = obj
+	}
+
+	// Validation that deleted objects that were created after the cutoff are not deleted
+	// and that deleted objects that were created before the cutoff are deleted
+	for _, obj := range durObjects {
+		x, foundIt := objectsMap[obj]
+		expectDeleted := true
+		if foundIt {
+			expectDeleted = x.LastModified.Before(cutoffTime)
+		}
+		if foundIt && expectDeleted {
+			t.Errorf("Object '%s' FOUND - should have been deleted", obj)
+		} else if !foundIt && !expectDeleted {
+			t.Errorf("Object '%s' NOT FOUND - should NOT been deleted", obj)
 		}
 	}
 }
 
-func listRepositoryUnderlyingStorage(t *testing.T, ctx context.Context, repo string) []string {
+// listRepositoryUnderlyingStorage list on the repository storage namespace returns its objects, and the storage namespace
+func listRepositoryUnderlyingStorage(t *testing.T, ctx context.Context, repo string) ([]Object, block.QualifiedPrefix) {
 	// list all objects in the physical layer
 	repoResponse, err := client.GetRepositoryWithResponse(ctx, repo)
 	if err != nil {
@@ -200,10 +283,10 @@ func listRepositoryUnderlyingStorage(t *testing.T, ctx context.Context, repo str
 
 	s3Client := newDefaultS3Client()
 	objects := listUnderlyingStorage(t, ctx, s3Client, qp.StorageNamespace, qp.Prefix)
-	return objects
+	return objects, qp
 }
 
-func listUnderlyingStorage(t *testing.T, ctx context.Context, s3Client *s3.S3, bucket, prefix string) []string {
+func listUnderlyingStorage(t *testing.T, ctx context.Context, s3Client *s3.S3, bucket, prefix string) []Object {
 	listInput := &s3.ListObjectsInput{
 		Bucket: aws.String(bucket),
 		Prefix: aws.String(prefix),
@@ -214,11 +297,18 @@ func listUnderlyingStorage(t *testing.T, ctx context.Context, s3Client *s3.S3, b
 	}
 
 	// sorted list of objects found on repository - before ugc
-	var objects []string
+	var objects []Object
 	for _, obj := range listOutput.Contents {
-		objects = append(objects, fmt.Sprintf("s3://%s/%s", bucket, aws.StringValue(obj.Key)))
+		objects = append(objects, Object{
+			Key:          fmt.Sprintf("s3://%s/%s", bucket, aws.StringValue(obj.Key)),
+			LastModified: *obj.LastModified})
 	}
 	return objects
+}
+
+type Object struct {
+	Key          string
+	LastModified time.Time
 }
 
 func newDefaultS3Client() *s3.S3 {
@@ -226,4 +316,73 @@ func newDefaultS3Client() *s3.S3 {
 	mySession := session.Must(session.NewSession())
 	s3Client := s3.New(mySession, aws.NewConfig().WithRegion("us-east-1"))
 	return s3Client
+}
+
+func getLastUGCRunID(t *testing.T, ctx context.Context, s3Client *s3.S3, bucket, prefix string) string {
+	runIDPrefix := prefix + "_lakefs/retention/gc/uncommitted/"
+	listSize := int64(1)
+	listInput := &s3.ListObjectsInput{
+		Bucket:    aws.String(bucket),
+		Prefix:    aws.String(runIDPrefix),
+		Delimiter: aws.String("/"),
+		MaxKeys:   aws.Int64(listSize),
+	}
+	listOutput, err := s3Client.ListObjectsWithContext(ctx, listInput)
+	if err != nil {
+		t.Fatalf("Failed ot list objects (bucket: %s, prefix: %s): %s", bucket, runIDPrefix, err)
+	}
+
+	if len(listOutput.CommonPrefixes) == 0 {
+		t.Fatalf("Failed to list last run id (bucket: %s, prefix: %s): %s", bucket, runIDPrefix, err)
+	}
+	key := strings.ReplaceAll(*listOutput.CommonPrefixes[0].Prefix, runIDPrefix, "")
+	runID := strings.ReplaceAll(key, "/", "")
+	return runID
+}
+
+func uploadAndDeleteSafeTestData(t *testing.T, ctx context.Context, repository string) string {
+	name := xid.New().String()
+	_, _ = uploadFileRandomData(ctx, t, repository, mainBranch, name, false)
+
+	addr := objectPhysicalAddress(t, ctx, repository, name)
+
+	_, err := client.DeleteObjectWithResponse(ctx, repository, mainBranch, &api.DeleteObjectParams{Path: name})
+	if err != nil {
+		t.Fatalf("Failed to delete object %s", err)
+	}
+	return addr
+}
+
+func getReportCutoffTime(s3Client *s3.S3, bucket, reportPath string) (time.Time, error) {
+	res, err := s3Client.GetObject(&s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(reportPath),
+	})
+	if err != nil {
+		return time.Time{}, err
+	}
+	defer res.Body.Close()
+
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(res.Body)
+	if err != nil {
+		return time.Time{}, err
+	}
+	myFileContentAsString := buf.String()
+
+	type Report struct {
+		RunId             string    `json:"run_id"`
+		Success           bool      `json:"success"`
+		FirstSlice        string    `json:"first_slice"`
+		StartTime         time.Time `json:"start_time,time"`
+		CutoffTime        time.Time `json:"cutoff_time,time"`
+		NumDeletedObjects int       `json:"num_deleted_objects"`
+	}
+
+	var report Report
+	err = json.Unmarshal([]byte(myFileContentAsString), &report)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return report.CutoffTime, nil
 }

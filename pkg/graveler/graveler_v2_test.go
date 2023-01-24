@@ -43,6 +43,12 @@ var (
 		StagingToken: stagingToken1,
 		SealedTokens: []graveler.StagingToken{stagingToken2, stagingToken3},
 	}
+
+	branch2 = graveler.Branch{
+		CommitID:     commit2ID,
+		StagingToken: stagingToken1,
+	}
+
 	commit1       = graveler.Commit{MetaRangeID: mr1ID, Parents: []graveler.CommitID{commit4ID}}
 	commit2       = graveler.Commit{MetaRangeID: mr2ID, Parents: []graveler.CommitID{commit4ID}}
 	commit3       = graveler.Commit{MetaRangeID: mr3ID}
@@ -55,6 +61,8 @@ var (
 	key2          = []byte("some/key/2")
 	value1        = &graveler.Value{Identity: []byte("id1"), Data: []byte("data1")}
 	value2        = &graveler.Value{Identity: []byte("id2"), Data: []byte("data2")}
+
+	ErrTestGraveler = errors.New("test error")
 )
 
 func TestGravelerGet(t *testing.T) {

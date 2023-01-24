@@ -47,8 +47,9 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	testutil.MustDo(t, "config", err)
 
 	c, err := catalog.New(ctx, catalog.Config{
-		Config:  conf,
-		KVStore: storeMessage,
+		Config:       conf,
+		KVStore:      storeMessage,
+		PathProvider: upload.DefaultPathProvider,
 	})
 	testutil.MustDo(t, "build catalog", err)
 	t.Cleanup(func() {

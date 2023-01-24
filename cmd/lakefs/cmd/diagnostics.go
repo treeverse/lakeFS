@@ -10,6 +10,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/diagnostics"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/upload"
 )
 
 // diagnosticsCmd represents the diagnostics command
@@ -39,8 +40,9 @@ var diagnosticsCmd = &cobra.Command{
 			log.Printf("Failed to create block adapter: %s", err)
 		}
 		c, err := catalog.New(ctx, catalog.Config{
-			Config:  cfg,
-			KVStore: storeMessage,
+			Config:       cfg,
+			KVStore:      storeMessage,
+			PathProvider: upload.DefaultPathProvider,
 		})
 		if err != nil {
 			log.Fatalf("Failed to create catalog: %s", err)

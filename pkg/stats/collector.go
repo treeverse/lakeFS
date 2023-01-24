@@ -17,10 +17,9 @@ import (
 const (
 	collectorEventBufferSize = 8 * 1024
 	flushInterval            = 10 * time.Minute
-	sendTimeout              = 5 * time.Second
 
 	// heartbeatInterval is the interval between 2 heartbeat events.
-	heartbeatInterval = 60 * time.Minute
+	heartbeatInterval = time.Hour
 )
 
 type Collector interface {
@@ -103,31 +102,45 @@ func (t *TimeTicker) Tick() <-chan time.Time {
 }
 
 type BufferedCollector struct {
-	cache            keyIndex
-	writes           chan Metric
-	sender           Sender
-	sendTimeout      time.Duration
-	flushTicker      FlushTicker
-	flushSize        int
-	heartbeatTicker  FlushTicker
-	installationID   string
-	processID        string
+	// cache used to count event occurrences until we flush and send the data
+	cache keyIndex
+	// updatesCh holds reported metrics by the application and update the cache
+	updatesCh chan Metric
+	// sender used to post the collected metrics collected in cache and metadata
+	sender Sender
+	// sendCh used to post collected metrics. enables to let the sender post data without blocking updates from the application
+	sendCh chan *InputEvent
+	// flushTicker triggers flush to send the collected events in cache so far
+	flushTicker FlushTicker
+	// flushSize when cache size gets to flushSize we flush data
+	flushSize int
+	// heartbeatTicker trigger sending heartbeat event
+	heartbeatTicker *time.Ticker
+	// installationID posted as part of each report
+	installationID string
+	// processID unique identifier to distinguish between processes from the same install
+	processID string
+	// runtimeCollector callback func (optional) enable reporting metadata collected using runtime. triggered each flush.
 	runtimeCollector func() map[string]string
-	runtimeStats     map[string]string
-	pendingWrites    sync.WaitGroup
-	pendingRequests  sync.WaitGroup
-	ctxCancelled     int32
-	done             chan bool
-	runCalled        int32
-	extended         bool
-	log              logging.Logger
+	// runtimeStats holds last values from runtimeCollector
+	runtimeStats map[string]string
+	// inFlight monitor active calls to CollectEvents. Enables waiting until application code is no longer uses updatesCh.
+	inFlight sync.WaitGroup
+	// stopped used as flag that the collector is stopped. stop processing CollectEvents.
+	stopped int32
+	// extended stats indicate if we post extra stats on each BI or
+	extended bool
+	// log is the logger
+	log logging.Logger
+	// wg used to wait until two main goroutines are done
+	wg sync.WaitGroup
 }
 
 type BufferedCollectorOpts func(s *BufferedCollector)
 
 func WithWriteBufferSize(bufferSize int) BufferedCollectorOpts {
 	return func(s *BufferedCollector) {
-		s.writes = make(chan Metric, bufferSize)
+		s.updatesCh = make(chan Metric, bufferSize)
 	}
 }
 
@@ -173,34 +186,29 @@ func NewBufferedCollector(installationID string, cfg Config, opts ...BufferedCol
 	}
 	s := &BufferedCollector{
 		cache:           make(keyIndex),
-		writes:          make(chan Metric, collectorEventBufferSize),
+		updatesCh:       make(chan Metric, collectorEventBufferSize),
 		runtimeStats:    map[string]string{},
 		flushTicker:     &TimeTicker{ticker: time.NewTicker(cfg.FlushInterval)},
 		flushSize:       cfg.FlushSize,
-		heartbeatTicker: &TimeTicker{ticker: time.NewTicker(heartbeatInterval)},
+		heartbeatTicker: time.NewTicker(heartbeatInterval),
 		installationID:  installationID,
 		processID:       uuid.Must(uuid.NewUUID()).String(),
-		pendingWrites:   sync.WaitGroup{},
-		pendingRequests: sync.WaitGroup{},
-		ctxCancelled:    0,
-		done:            make(chan bool),
-		sendTimeout:     sendTimeout,
+		inFlight:        sync.WaitGroup{},
+		stopped:         1,
 		extended:        cfg.Extended,
-		log:             logging.Default(),
+		log:             logging.Dummy(),
+		sendCh:          make(chan *InputEvent, 1), // buffered as like to check if sender is free
 	}
 	for _, opt := range opts {
 		opt(s)
 	}
 
-	// re-assign logger with service name
-	s.log = s.log.WithField("service", "stats_collector")
-
-	// assign sender
+	// if no sender, assign default based on configuration
 	if s.sender == nil {
 		if cfg.Enabled {
-			s.sender = NewHTTPSender(cfg.Address, s.sendTimeout, time.Now)
+			s.sender = NewHTTPSender(cfg.Address, s.log)
 		} else {
-			s.sender = &dummySender{Log: s.log}
+			s.sender = &dummySender{Logger: s.log}
 		}
 	}
 	return s
@@ -211,33 +219,32 @@ func (s *BufferedCollector) getInstallationID() string {
 }
 
 func (s *BufferedCollector) incr(k Event) {
-	s.update(Metric{Event: k, Value: 1})
+	s.cache[k]++
 }
 
 func (s *BufferedCollector) update(k Metric) {
 	s.cache[k.Event] += k.Value
 }
 
-func (s *BufferedCollector) send(metrics []Metric) {
-	s.pendingRequests.Add(1)
-	go func() {
-		defer s.pendingRequests.Done()
-		if len(metrics) == 0 {
-			return
-		}
-		err := s.sender.SendEvent(context.Background(), s.getInstallationID(), s.processID, metrics)
-		if err != nil {
-			s.log.WithError(err).WithField("service", "stats_collector").Debug("could not send stats")
-		}
-	}()
+func (s *BufferedCollector) newInputEvent() *InputEvent {
+	metrics := makeMetrics(s.cache)
+	if len(metrics) == 0 {
+		return nil
+	}
+	return &InputEvent{
+		InstallationID: s.getInstallationID(),
+		ProcessID:      s.processID,
+		Time:           time.Now().Format(time.RFC3339),
+		Metrics:        metrics,
+	}
 }
 
 func (s *BufferedCollector) CollectEvents(ev Event, count uint64) {
-	if s.isCtxCancelled() {
+	if s.isStopped() {
 		return
 	}
-	s.pendingWrites.Add(1)
-	defer s.pendingWrites.Done()
+	s.inFlight.Add(1)
+	defer s.inFlight.Done()
 
 	// hash or clear extended fields on the event
 	if s.extended {
@@ -245,120 +252,161 @@ func (s *BufferedCollector) CollectEvents(ev Event, count uint64) {
 	} else {
 		ev = ev.ClearExtended()
 	}
-	s.writes <- Metric{Event: ev, Value: count}
+	s.updatesCh <- Metric{Event: ev, Value: count}
 }
 
 func (s *BufferedCollector) CollectEvent(ev Event) {
 	s.CollectEvents(ev, 1)
 }
 
-func (s *BufferedCollector) isCtxCancelled() bool {
-	return atomic.LoadInt32(&s.ctxCancelled) == 1
+func (s *BufferedCollector) isStopped() bool {
+	return atomic.LoadInt32(&s.stopped) == 1
 }
 
-func (s *BufferedCollector) Run(ctx context.Context) {
-	if atomic.LoadInt32(&s.runCalled) != 0 {
+func (s *BufferedCollector) Start(ctx context.Context) {
+	if !s.isStopped() {
 		return
 	}
-	atomic.StoreInt32(&s.runCalled, 1)
-	go func() {
-		for {
-			select {
-			case w := <-s.writes:
-				// collect events, and flush if needed by size
-				s.update(w)
-				if len(s.cache) >= s.flushSize {
-					s.flush()
-				}
-			case <-s.heartbeatTicker.Tick():
-				// collect heartbeat
-				s.incr(Event{
-					Class: "global",
-					Name:  "heartbeat",
-				})
-			case <-s.flushTicker.Tick():
-				// every N seconds, send the collected events
-				s.flush()
-			case <-ctx.Done(): // we're done
-				close(s.done)
+
+	const backgroundLoops = 2
+	s.wg.Add(backgroundLoops)
+	// update metrics sent on updatesCh
+	go s.updateMetricsLoop(ctx)
+	// post metrics waiting in sendCh
+	// we use background context as we do not want to cancel posting based on context
+	go s.sendMetricsLoop(context.Background())
+
+	atomic.StoreInt32(&s.stopped, 0)
+}
+
+func (s *BufferedCollector) sendMetricsLoop(ctx context.Context) {
+	defer s.wg.Done()
+	s.processSendCh(ctx)
+}
+
+func (s *BufferedCollector) updateMetricsLoop(ctx context.Context) {
+	defer func() {
+		close(s.sendCh)
+		s.wg.Done()
+	}()
+	for {
+		select {
+		case w, ok := <-s.updatesCh:
+			// process updates and flush if flush (send) if needed
+			if !ok {
 				return
 			}
+			s.update(w)
+			if len(s.cache) >= s.flushSize {
+				s.flush()
+			}
+
+		case <-s.heartbeatTicker.C:
+			s.incr(Event{
+				Class: "global",
+				Name:  "heartbeat",
+			})
+
+		case <-s.flushTicker.Tick():
+			// every N seconds, flush (send) the collected events and runtime stats (if needed)
+			s.flush()
+			s.handleRuntimeStats()
+
+		case <-ctx.Done():
+			return
 		}
-	}()
+	}
 }
 
+// flush send the current cache information using SendEvents
 func (s *BufferedCollector) flush() {
-	s.handleRuntimeStats()
-	if len(s.cache) == 0 {
-		// nothing to flush
+	if len(s.sendCh) > 0 {
 		return
 	}
-	metrics := makeMetrics(s.cache)
-	s.cache = make(keyIndex)
-	s.send(metrics)
+	event := s.newInputEvent()
+	if event == nil {
+		return
+	}
+	// try passing the current metrics to the sender, if we fail
+	// we keep the current cache state and retry on the next flush
+	select {
+	case s.sendCh <- event:
+		// reset the cache if we managed to send the event
+		s.cache = make(keyIndex)
+	default:
+		// keep data in cache for the next time we try to send
+	}
+}
+
+func (s *BufferedCollector) Stop() {
+	// stop, return if already marked as stopped
+	if !atomic.CompareAndSwapInt32(&s.stopped, 0, 1) {
+		return
+	}
+
+	// wait until no new  in-flight requests
+	s.inFlight.Wait()
+
+	// close update channel as no more updates will arrive,
+	// update loop will exit and close the sendCh.
+	// closing the sendCh will cause the sendLoop to exit.
+	close(s.updatesCh)
+	s.wg.Wait()
 }
 
 func (s *BufferedCollector) Close() {
-	if atomic.LoadInt32(&s.runCalled) == 0 {
-		// nothing to do
-		return
+	s.Stop()
+	// drain updates and send cache state anything that left
+	ctx := context.Background()
+	for upd := range s.updatesCh {
+		s.update(upd)
 	}
-
-	// wait for main loop to exit
-	<-s.done
-
-	// block any new write
-	atomic.StoreInt32(&s.ctxCancelled, 1)
-
-	// wait until all writes were added
-	s.pendingWrites.Wait()
-
-	// drain writes
-	close(s.writes)
-	for w := range s.writes {
-		s.update(w)
+	if evt := s.newInputEvent(); evt != nil {
+		s.sendEventHelper(ctx, evt)
 	}
-	metrics := makeMetrics(s.cache)
-	s.send(metrics)
+}
 
-	// wait for http requests to complete
-	s.pendingRequests.Wait()
+// processSendCh post metrics waiting on sendCh. Stops when 'sendCh' is stopped.
+func (s *BufferedCollector) processSendCh(ctx context.Context) {
+	for evt := range s.sendCh {
+		s.sendEventHelper(ctx, evt)
+	}
+}
+
+func (s *BufferedCollector) sendEventHelper(ctx context.Context, event *InputEvent) {
+	err := s.sender.SendEvent(ctx, event)
+	if err != nil {
+		s.log.WithError(err).Debug("Failed sending stats event")
+	}
 }
 
 func makeMetrics(counters keyIndex) []Metric {
-	metrics := make([]Metric, len(counters))
-	i := 0
+	metrics := make([]Metric, 0, len(counters))
 	for k, v := range counters {
-		metrics[i] = Metric{
-			Event: k,
-			Value: v,
-		}
-		i++
+		metrics = append(metrics, Metric{Event: k, Value: v})
 	}
 	return metrics
 }
 
 func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
-	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
-	defer cancel()
+	ctx := context.Background()
 	err := s.sender.UpdateMetadata(ctx, *accountMetadata)
 	if err != nil {
-		s.log.WithError(err).WithField("service", "stats_collector").Debug("could not update metadata")
+		s.log.WithError(err).Debug("could not update metadata")
 	}
 }
 
 func (s *BufferedCollector) CollectCommPrefs(email, installationID string, featureUpdates, securityUpdates bool) {
-	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
-	defer cancel()
 	commPrefs := &CommPrefsData{
 		Email:           email,
 		InstallationID:  installationID,
 		FeatureUpdates:  featureUpdates,
 		SecurityUpdates: securityUpdates,
 	}
+	ctx := context.Background()
 	err := s.sender.UpdateCommPrefs(ctx, commPrefs)
 	if err != nil {
-		s.log.WithError(err).WithField("service", "stats_collector").Info("could not update comm prefs")
+		s.log.WithError(err).Info("could not update comm prefs")
 	}
 }
 
@@ -402,17 +450,11 @@ func (s *BufferedCollector) handleRuntimeStats() {
 }
 
 func (s *BufferedCollector) sendRuntimeStats() {
-	s.pendingRequests.Add(1)
-	go func() {
-		defer s.pendingRequests.Done()
-
-		m := Metadata{InstallationID: s.installationID}
-		for k, v := range s.runtimeStats {
-			m.Entries = append(m.Entries, MetadataEntry{Name: k, Value: v})
-		}
-
-		s.CollectMetadata(&m)
-	}()
+	m := Metadata{InstallationID: s.installationID}
+	for k, v := range s.runtimeStats {
+		m.Entries = append(m.Entries, MetadataEntry{Name: k, Value: v})
+	}
+	s.CollectMetadata(&m)
 }
 
 func HashMetricValue(s string) string {

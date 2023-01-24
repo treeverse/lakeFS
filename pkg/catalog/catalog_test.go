@@ -20,6 +20,7 @@ import (
 	cUtils "github.com/treeverse/lakefs/pkg/catalog/testutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	gUtils "github.com/treeverse/lakefs/pkg/graveler/testutil"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/xitongsys/parquet-go-source/local"
 	"github.com/xitongsys/parquet-go/reader"
@@ -542,10 +543,12 @@ var (
 func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
-		name          string
-		numBranch     int
-		numRecords    int
-		expectedCalls int
+		name                   string
+		numBranch              int
+		numRecords             int
+		numTracked             int
+		expectedCalls          int
+		expectedForUncommitted int
 	}{
 		{
 			name:          "no branches",
@@ -560,45 +563,73 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			expectedCalls: 1,
 		},
 		{
-			name:          "Sanity",
+			name:          "sanity_all",
+			numBranch:     5,
+			numRecords:    3,
+			numTracked:    7,
+			expectedCalls: 1,
+		},
+		{
+			name:          "sanity_uncommitted",
 			numBranch:     5,
 			numRecords:    3,
 			expectedCalls: 1,
 		},
 		{
-			name:          "Tokenized",
+			name:          "sanity_tracked",
+			numTracked:    7,
+			expectedCalls: 1,
+		},
+		{
+			name:          "tokenized",
 			numBranch:     500,
 			numRecords:    500,
+			expectedCalls: 2,
+		},
+		{
+			name:          "tokenized_mix",
+			numBranch:     500,
+			numRecords:    500,
+			numTracked:    500,
 			expectedCalls: 2,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g, expectedRecords := createPrepareUncommittedTestScenario(t, tt.numBranch, tt.numRecords, tt.expectedCalls)
+			g, expectedRecords := createPrepareUncommittedTestScenario(t, tt.numBranch, tt.numRecords, tt.numTracked, tt.expectedCalls)
 			blockAdapter := testutil.NewBlockAdapterByType(t, block.BlockstoreTypeMem)
 			c := &catalog.Catalog{
 				Store:                    g.Sut,
 				BlockAdapter:             blockAdapter,
 				GCMaxUncommittedFileSize: 500 * 1024,
+				StoreMessage:             &kv.StoreMessage{Store: g.KVStore},
 			}
-			var result *catalog.PrepareGCUncommittedInfo
+			repositoryID := repoID.String()
 
-			result, err := c.PrepareGCUncommitted(ctx, repoID.String(), nil)
-			require.NoError(t, err)
-
-			for result.Mark != nil {
-				runID := result.Metadata.RunId
-				require.Equal(t, runID, result.Mark.RunID)
-				result, err = c.PrepareGCUncommitted(ctx, repoID.String(), result.Mark)
+			var (
+				mark  *catalog.GCUncommittedMark
+				runID string
+			)
+			for {
+				result, err := c.PrepareGCUncommitted(ctx, repositoryID, mark)
 				require.NoError(t, err)
-				require.Equal(t, runID, result.Metadata.RunId)
+				if runID == "" {
+					runID = result.Metadata.RunId
+				} else {
+					require.Equal(t, runID, result.Metadata.RunId)
+				}
+				mark = result.Mark
+				if mark == nil {
+					break
+				}
+				require.Equal(t, runID, result.Mark.RunID)
 			}
-			verifyData(t, ctx, tt.numBranch, tt.numRecords, result.Metadata.RunId, c, expectedRecords)
+			verifyPrepareGCUncommittedData(t, ctx, runID, c, expectedRecords)
 		})
 	}
 }
 
-func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords, expectedCalls int) (*gUtils.GravelerTest, []string) {
+func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords, numTracked, expectedCalls int) (*gUtils.GravelerTest, []string) {
 	t.Helper()
 
 	test := gUtils.InitGravelerTest(t)
@@ -673,28 +704,57 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 			},
 		})
 	}
+
+	// tracked linked addresses
+	trackedEntries := make([]*kv.Entry, 0, numTracked)
+	for i := 0; i < numTracked; i++ {
+		address := fmt.Sprintf("tracked/record%04d", i)
+		e := catalog.Entry{
+			Address:      address,
+			LastModified: timestamppb.New(time.Now()),
+			AddressType:  catalog.Entry_RELATIVE,
+		}
+		val, err := proto.Marshal(&e)
+		require.NoError(t, err)
+		trackedEntries = append(trackedEntries, &kv.Entry{
+			Key:   []byte("track/" + xid.New().String()),
+			Value: val,
+		})
+		expectedRecords = append(expectedRecords, address)
+	}
+
 	test.GarbageCollectionManager.EXPECT().NewID().Return("TestRunID")
 	test.RefManager.EXPECT().GetRepository(gomock.Any(), repoID).Times(expectedCalls).Return(repository, nil)
-	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).Times(expectedCalls).Return(gUtils.NewFakeBranchIterator(branches), nil)
 
+	// expect tracked addresses does not list branches, so remove one and keep at least the first
+	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).Times(expectedCalls).Return(gUtils.NewFakeBranchIterator(branches), nil)
 	for i := 0; i < len(branches); i++ {
 		sort.Slice(records[i], func(ii, jj int) bool {
 			return bytes.Compare(records[i][ii].Key, records[i][jj].Key) < 0
 		})
 		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, gomock.Any()).AnyTimes().Return(cUtils.NewFakeValueIterator(records[i]), nil)
 	}
-	if numRecords*numBranches > 0 {
-		test.GarbageCollectionManager.EXPECT().GetUncommittedLocation(gomock.Any(), gomock.Any()).Times(expectedCalls).DoAndReturn(func(runID string, sn graveler.StorageNamespace) (string, error) {
+
+	test.GarbageCollectionManager.EXPECT().
+		GetUncommittedLocation(gomock.Any(), gomock.Any()).
+		Times(expectedCalls).
+		DoAndReturn(func(runID string, sn graveler.StorageNamespace) (string, error) {
 			return fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID), nil
 		})
-	}
+
+	repoPartition := graveler.RepoPartition(repository)
+	// TODO(barak): remove
+	// entIt := kvmock.NewMockEntriesIterator(test.Controller)
+	// entIt.EXPECT().Next().AnyTimes().Return(false)
+	// entIt.EXPECT().Err().AnyTimes().Return(nil)
+	// entIt.EXPECT().Close().AnyTimes()
+	test.KVStore.EXPECT().Scan(gomock.Any(), []byte(repoPartition), gomock.Any()).AnyTimes().Return(cUtils.NewFakeKVEntryIterator(trackedEntries), nil)
 
 	sort.Strings(expectedRecords)
 	return test, expectedRecords
 }
 
-func verifyData(t *testing.T, ctx context.Context, numBranches, numRecords int, runID string, c *catalog.Catalog, expectedRecords []string) {
-	totalCount := 0
+func verifyPrepareGCUncommittedData(t *testing.T, ctx context.Context, runID string, c *catalog.Catalog, expectedRecords []string) {
 	location := fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID)
 	var allRecords []string
 	err := c.BlockAdapter.Walk(context.Background(), block.WalkOpts{
@@ -744,7 +804,6 @@ func verifyData(t *testing.T, ctx context.Context, numBranches, numRecords int, 
 		for _, record := range u {
 			allRecords = append(allRecords, record.PhysicalAddress)
 		}
-		totalCount += len(u)
 		return nil
 	})
 
@@ -753,6 +812,4 @@ func verifyData(t *testing.T, ctx context.Context, numBranches, numRecords int, 
 	if diff := deep.Equal(allRecords, expectedRecords); diff != nil {
 		t.Errorf("Found diff in expected records: %s", diff)
 	}
-
-	require.Equal(t, numBranches*numRecords, totalCount)
 }

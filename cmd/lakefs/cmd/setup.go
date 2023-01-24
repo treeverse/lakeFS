@@ -93,8 +93,9 @@ var setupCmd = &cobra.Command{
 		}
 
 		ctx, cancelFn := context.WithCancel(ctx)
-		collector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(cfg.Stats), stats.WithLogger(logger))
-		collector.Run(ctx)
+		collector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(cfg.Stats),
+			stats.WithLogger(logger.WithField("service", "stats_collector")))
+		collector.Start(ctx)
 		defer collector.Close()
 
 		collector.CollectMetadata(metadata)

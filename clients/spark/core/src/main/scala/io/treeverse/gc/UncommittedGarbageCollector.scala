@@ -211,6 +211,7 @@ object UncommittedGarbageCollector {
           runID,
           firstSlice,
           startTime,
+          cutoffTime.toInstant,
           success,
           addressesToDelete
         )
@@ -224,12 +225,20 @@ object UncommittedGarbageCollector {
       runID: String,
       firstSlice: String,
       startTime: java.time.Instant,
+      cutoffTime: java.time.Instant,
       success: Boolean,
       expiredAddresses: DataFrame
   ): Unit = {
     val reportDst = formatRunPath(storageNamespace, runID)
     val summary =
-      writeJsonSummary(reportDst, runID, firstSlice, startTime, success, expiredAddresses.count())
+      writeJsonSummary(reportDst,
+                       runID,
+                       firstSlice,
+                       startTime,
+                       cutoffTime,
+                       success,
+                       expiredAddresses.count()
+                      )
     println(s"Report for mark_id=$runID summary=$summary")
 
     val cachedAddresses = expiredAddresses.cache()
@@ -260,6 +269,7 @@ object UncommittedGarbageCollector {
       runID: String,
       firstSlice: String,
       startTime: java.time.Instant,
+      cutoffTime: java.time.Instant,
       success: Boolean,
       numDeletedObjects: Long
   ): String = {
@@ -270,6 +280,7 @@ object UncommittedGarbageCollector {
       "success" -> success,
       "first_slice" -> firstSlice,
       "start_time" -> DateTimeFormatter.ISO_INSTANT.format(startTime),
+      "cutoff_time" -> DateTimeFormatter.ISO_INSTANT.format(cutoffTime),
       "num_deleted_objects" -> numDeletedObjects
     )
     val summary = compact(render(jsonSummary))

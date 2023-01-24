@@ -15,17 +15,17 @@ type mockSender struct {
 	metadata chan stats.Metadata
 }
 
-func (s *mockSender) SendEvent(ctx context.Context, installationID, processID string, m []stats.Metric) error {
-	s.metrics <- m
+func (s *mockSender) SendEvent(_ context.Context, evt *stats.InputEvent) error {
+	s.metrics <- evt.Metrics
 	return nil
 }
 
-func (s *mockSender) UpdateMetadata(ctx context.Context, m stats.Metadata) error {
+func (s *mockSender) UpdateMetadata(_ context.Context, m stats.Metadata) error {
 	s.metadata <- m
 	return nil
 }
 
-func (s *mockSender) UpdateCommPrefs(ctx context.Context, commPrefs *stats.CommPrefsData) error {
+func (s *mockSender) UpdateCommPrefs(context.Context, *stats.CommPrefsData) error {
 	return nil
 }
 
@@ -44,7 +44,7 @@ func (m *mockTicker) Tick() <-chan time.Time {
 	return m.tc
 }
 
-func setupTest(buffer int, opts ...stats.BufferedCollectorOpts) (*mockSender, *mockTicker, *stats.BufferedCollector) {
+func setupTest(ctx context.Context, buffer int, opts ...stats.BufferedCollectorOpts) (*mockSender, *mockTicker, *stats.BufferedCollector) {
 	sender := &mockSender{metrics: make(chan []stats.Metric, 10), metadata: make(chan stats.Metadata, 10)}
 	ticker := &mockTicker{tc: make(chan time.Time)}
 	opts = append(opts, stats.WithSender(sender), stats.WithTicker(ticker), stats.WithWriteBufferSize(buffer))
@@ -58,20 +58,19 @@ func setupTest(buffer int, opts ...stats.BufferedCollectorOpts) (*mockSender, *m
 	collector.SetRuntimeCollector(func() map[string]string {
 		return map[string]string{"runtime": "stat"}
 	})
-
+	collector.Start(ctx)
 	return sender, ticker, collector
 }
 
 func TestCallHomeCollector_QuickNoTick(t *testing.T) {
-	sender, _, collector := setupTest(10)
 	ctx, cancelFn := context.WithCancel(context.Background())
+	sender, _, collector := setupTest(ctx, 10)
 
 	// Forcing collector to run last so that we make sure a race between context and collector
 	// isn't impacting what's being sent
 	collector.CollectEvent(stats.Event{Class: "foo", Name: "bar"})
 	cancelFn()
 
-	collector.Run(ctx)
 	collector.Close()
 
 	counters, ok := <-sender.metrics
@@ -84,10 +83,8 @@ func TestCallHomeCollector_QuickNoTick(t *testing.T) {
 }
 
 func TestCallHomeCollector_Collect(t *testing.T) {
-	sender, ticker, collector := setupTest(0)
 	ctx, cancelFn := context.WithCancel(context.Background())
-
-	collector.Run(ctx)
+	sender, ticker, collector := setupTest(ctx, 0)
 
 	// add metrics
 	collector.CollectEvent(stats.Event{Class: "foo", Name: "bar"})
@@ -153,9 +150,8 @@ func TestCallHomeCollector_Collect(t *testing.T) {
 }
 
 func TestCallHomeCollector_ExtendedHashValues(t *testing.T) {
-	sender, ticker, collector := setupTest(0, stats.WithExtended(true))
 	ctx, cancelFn := context.WithCancel(context.Background())
-	collector.Run(ctx)
+	sender, ticker, collector := setupTest(ctx, 0, stats.WithExtended(true))
 
 	const events = 2
 	for i := 0; i < events; i++ {
@@ -201,9 +197,9 @@ func TestCallHomeCollector_ExtendedHashValues(t *testing.T) {
 }
 
 func TestCallHomeCollector_NoExtendedValues(t *testing.T) {
-	sender, ticker, collector := setupTest(0, stats.WithExtended(false))
 	ctx, cancelFn := context.WithCancel(context.Background())
-	collector.Run(ctx)
+	sender, ticker, collector := setupTest(ctx, 0, stats.WithExtended(false))
+	collector.Start(ctx)
 
 	const events = 2
 	for i := 0; i < events; i++ {

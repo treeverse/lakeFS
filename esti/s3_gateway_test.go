@@ -2,10 +2,8 @@ package esti
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"math/rand"
-	"net/http"
 	"strings"
 	"sync"
 	"testing"
@@ -251,122 +249,107 @@ func TestS3CopyObject(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
-	destRepoName := "tests3copyobjectdest"
+	// additional repository for copy between repos
+	const destRepoName = "tests3copyobjectdest"
 	destRepo := createRepositoryByName(ctx, t, destRepoName)
-	defer deleteRepositoryIfAskedTo(context.Background(), destRepoName)
+	defer deleteRepositoryIfAskedTo(ctx, destRepoName)
 
+	// content
 	r := rand.New(rand.NewSource(17))
+	objContent := testutil.RandomString(r, randomDataContentLength)
+	srcPath := prefix + "source-file"
+	destPath := prefix + "dest-file"
 
+	// upload data
 	minioClient := newClient(t, sigV2)
+	_, err := minioClient.PutObject(ctx, repo, srcPath, strings.NewReader(objContent), int64(len(objContent)),
+		minio.PutObjectOptions{})
+	require.NoError(t, err)
 
-	Content := testutil.RandomString(r, randomDataContentLength)
-	SourcePath := prefix + "source-file"
-	DestPath := prefix + "dest-file"
+	t.Run("same_branch", func(t *testing.T) {
+		// copy object to the same repository
+		_, err = minioClient.CopyObject(ctx,
+			minio.CopyDestOptions{
+				Bucket: repo,
+				Object: destPath,
+			},
+			minio.CopySrcOptions{
+				Bucket: repo,
+				Object: srcPath,
+			})
+		if err != nil {
+			t.Fatalf("minio.Client.CopyObject from(%s) to(%s): %s", srcPath, destPath, err)
+		}
 
-	_, err := minioClient.PutObject(
-		ctx, repo, SourcePath, strings.NewReader(Content), int64(len(Content)), minio.PutObjectOptions{})
-	if err != nil {
-		t.Errorf("minio.Client.PutObject(%s): %s", SourcePath, err)
-	}
-	// copy object to the same repository
-	_, err = minioClient.CopyObject(ctx,
-		minio.CopyDestOptions{
-			Bucket: repo,
-			Object: DestPath,
-		},
-		minio.CopySrcOptions{
-			Bucket: repo,
-			Object: SourcePath,
-		})
+		download, err := minioClient.GetObject(ctx, repo, destPath, minio.GetObjectOptions{})
+		if err != nil {
+			t.Fatalf("minio.Client.GetObject(%s): %s", destPath, err)
+		}
+		defer func() { _ = download.Close() }()
 
-	if err != nil {
-		t.Errorf("minio.Client.CopyObjectFrom(%s)To(%s): %s", SourcePath, DestPath, err)
-	}
+		// compere files content
+		var content bytes.Buffer
+		_, err = io.Copy(&content, download)
+		if err != nil {
+			t.Fatalf("Download '%s' failed: %s", destPath, err)
+		}
+		require.Equal(t, objContent, content.String())
 
-	download, err := minioClient.GetObject(
-		ctx, repo, DestPath, minio.GetObjectOptions{})
-	if err != nil {
-		t.Errorf("minio.Client.GetObject(%s): %s", DestPath, err)
-	}
-	// compere files content
-	contents := bytes.NewBuffer(nil)
-	_, err = io.Copy(contents, download)
-	if err != nil {
-		t.Fatalf("download %s: %s", DestPath, err)
-	}
-	if strings.Compare(contents.String(), Content) != 0 {
-		t.Errorf(
-			"Downloaded bytes %v from uploaded bytes %v", contents.Bytes(), Content)
-	}
+		resp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/source-file"})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON200)
 
-	resp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/source-file"})
-	if err != nil {
-		t.Fatalf("client.StatObject(%s): %s", SourcePath, err)
-	}
-	sourceObjectStats := resp.JSON200
-	require.Equal(t, http.StatusOK, resp.StatusCode())
+		resp, err = client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/dest-file"})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON200)
 
-	resp, err = client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/dest-file"})
-	if err != nil {
-		t.Fatalf("client.StatObject(%s): %s", DestPath, err)
-	}
-	destObjectStats := resp.JSON200
-	require.Equal(t, http.StatusOK, resp.StatusCode())
+		// assert that the physical addresses of the objects are the same
+		sourceObjectStats := resp.JSON200
+		destObjectStats := resp.JSON200
+		require.Equal(t, sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress, "source and dest physical address should match")
+	})
 
-	// assert that the physical addresses of the objects are the same
-	if strings.Compare(sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress) != 0 {
-		t.Fatalf(
-			"Source object address: %s Source destination address: %s", sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress)
-	}
+	t.Run("different_repo", func(t *testing.T) {
+		// copy object to different repository. should create another version of the file
+		_, err := minioClient.CopyObject(ctx,
+			minio.CopyDestOptions{
+				Bucket: destRepo,
+				Object: destPath,
+			},
+			minio.CopySrcOptions{
+				Bucket: repo,
+				Object: srcPath,
+			})
+		if err != nil {
+			t.Fatalf("minio.Client.CopyObjectFrom(%s)To(%s): %s", srcPath, destPath, err)
+		}
 
-	// copy object to different repository- create another version of the file
-	_, err = minioClient.CopyObject(ctx,
-		minio.CopyDestOptions{
-			Bucket: destRepo,
-			Object: DestPath,
-		},
-		minio.CopySrcOptions{
-			Bucket: repo,
-			Object: SourcePath,
-		})
+		download, err := minioClient.GetObject(ctx, destRepo, destPath, minio.GetObjectOptions{})
+		if err != nil {
+			t.Fatalf("minio.Client.GetObject(%s): %s", destPath, err)
+		}
+		defer func() { _ = download.Close() }()
+		var contents bytes.Buffer
+		_, err = io.Copy(&contents, download)
+		require.NoError(t, err)
 
-	if err != nil {
-		t.Fatalf("minio.Client.CopyObjectFrom(%s)To(%s): %s", SourcePath, DestPath, err)
-	}
+		// compere files content
+		require.Equal(t, contents.String(), objContent)
 
-	download, err = minioClient.GetObject(
-		ctx, destRepo, DestPath, minio.GetObjectOptions{})
-	if err != nil {
-		t.Fatalf("minio.Client.GetObject(%s): %s", DestPath, err)
-	}
-	contents = bytes.NewBuffer(nil)
-	_, err = io.Copy(contents, download)
-	if err != nil {
-		t.Fatalf("download %s: %s", DestPath, err)
-	}
-	// compere files content
-	if strings.Compare(contents.String(), Content) != 0 {
-		t.Fatalf(
-			"Downloaded bytes %v from uploaded bytes %v", contents.Bytes(), Content)
-	}
+		resp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/source-file"})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON200)
+		sourceObjectStats := resp.JSON200
 
-	resp, err = client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/source-file"})
-	if err != nil {
-		t.Fatalf("client.StatObject(%s): %s", SourcePath, err)
-	}
-	sourceObjectStats = resp.JSON200
-	require.Equal(t, http.StatusOK, resp.StatusCode())
+		resp, err = client.StatObjectWithResponse(ctx, destRepo, mainBranch, &api.StatObjectParams{Path: "data/dest-file"})
+		if err != nil {
+			t.Fatalf("client.StatObject(%s): %s", destPath, err)
+		}
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON200)
+		destObjectStats := resp.JSON200
 
-	resp, err = client.StatObjectWithResponse(ctx, destRepo, mainBranch, &api.StatObjectParams{Path: "data/dest-file"})
-	if err != nil {
-		t.Fatalf("client.StatObject(%s): %s", DestPath, err)
-	}
-	destObjectStats = resp.JSON200
-	require.Equal(t, http.StatusOK, resp.StatusCode())
-
-	// assert that the physical addresses of the objects are not the same
-	if strings.Compare(sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress) == 0 {
-		t.Fatalf(
-			"Source object address: %s Source destination address: %s", sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress)
-	}
+		// assert that the physical addresses of the objects are not the same
+		require.NotEqual(t, sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress)
+	})
 }

@@ -82,7 +82,7 @@ func fakeGravelerBuildKey(repositoryID graveler.RepositoryID, ref graveler.Ref, 
 	return strings.Join([]string{repositoryID.String(), ref.String(), key.String()}, "/")
 }
 
-func (g *FakeGraveler) Get(_ context.Context, repository *graveler.RepositoryRecord, ref graveler.Ref, key graveler.Key) (*graveler.Value, error) {
+func (g *FakeGraveler) Get(_ context.Context, repository *graveler.RepositoryRecord, ref graveler.Ref, key graveler.Key, opts ...graveler.GetOptionsFunc) (*graveler.Value, error) {
 	if g.Err != nil {
 		return nil, g.Err
 	}
@@ -98,7 +98,7 @@ func (g *FakeGraveler) GetByCommitID(ctx context.Context, repository *graveler.R
 	return g.Get(ctx, repository, graveler.Ref(commitID), key)
 }
 
-func (g *FakeGraveler) Set(_ context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, value graveler.Value, _ ...graveler.WriteConditionOption) error {
+func (g *FakeGraveler) Set(_ context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, value graveler.Value, _ ...graveler.SetOptionsFunc) error {
 	if g.Err != nil {
 		return g.Err
 	}
