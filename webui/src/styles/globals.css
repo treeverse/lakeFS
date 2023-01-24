@@ -658,3 +658,11 @@ td .form-group {
 .otf-diff-operation-details div {
   padding: 0px;
 }
+
+.table .otf-diff-added,
+.table .otf-diff-removed,
+.table .otf-diff-changed {
+  border: 1px solid rgba(0, 0, 0, 0.125);
+  height: 38px;
+}
+

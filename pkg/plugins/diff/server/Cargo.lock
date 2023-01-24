@@ -889,6 +889,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "delta-diff"
+version = "0.1.0"
+dependencies = [
+ "config",
+ "deltalake",
+ "prost",
+ "serde_json",
+ "tokio",
+ "tonic",
+ "tonic-build",
+ "tonic-health",
+]
+
+[[package]]
 name = "deltalake"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2666,20 +2680,6 @@ dependencies = [
  "itoa 1.0.5",
  "ryu",
  "serde",
-]
-
-[[package]]
-name = "server"
-version = "0.1.0"
-dependencies = [
- "config",
- "deltalake",
- "prost",
- "serde_json",
- "tokio",
- "tonic",
- "tonic-build",
- "tonic-health",
 ]
 
 [[package]]
