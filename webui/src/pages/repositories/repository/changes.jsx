@@ -1,6 +1,7 @@
 import React, {useRef, useState} from "react";
 
 import {
+    ArrowLeftIcon,
     GitCommitIcon,
     HistoryIcon,
     PlusIcon,
@@ -28,6 +29,7 @@ import {TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/c
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {RepoError} from "./error";
+import {TableDiff} from "../../../lib/components/repository/TableDiff";
 
 
 const CommitButton = ({repo, onCommit, enabled = false}) => {
@@ -171,6 +173,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
+    const [tableDiffState, setTableDiffState] = useState({isExpanded: false, expandedTablePath: ""});
 
     const delimiter = '/'
 
@@ -181,6 +184,8 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
     }, [repo.id, reference.id, internalRefresh, afterUpdated, delimiter, prefix])
 
     const results = resultsState.results
+    const committedRef = reference.id + "@"
+    const uncommittedRef = reference.id
 
     const refresh = () => {
         setResultsState({prefix: prefix, results:[], pagination:{}})
@@ -253,6 +258,15 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
             {actionErrorDisplay}
             <div className="tree-container">
                 {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
+                    <>
+                    {tableDiffState.isExpanded
+                        ?  <Button className="action-bar"
+                                   variant="secondary"
+                                   disabled={false}
+                                   onClick={() => setTableDiffState( {isExpanded: false, expandedTablePath: ""})}>
+                            <ArrowLeftIcon/> Back to object comparison
+                        </Button>
+                        : ""}
                     <Card>
                         <Card.Header>
                         <span className="float-start">
@@ -272,9 +286,10 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
                         <Card.Body>
                             <Table borderless size="sm">
                                 <tbody>
-                                {results.map(entry => {
-                                    const committedRef = reference.id + "@"
-                                    const uncommittedRef = reference.id
+                                {tableDiffState.isExpanded
+                                    ? <TableDiff repo={repo} leftRef={committedRef} rightRef={uncommittedRef} tablePath={tableDiffState.expandedTablePath}/>
+                                    :
+                                    results.map(entry => {
                                     return (
                                         <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo}
                                                   reference={reference}
@@ -284,7 +299,9 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
                                                   relativeTo={prefix}
                                                   getMore={(afterUpdated, path, useDelimiter= true, amount = -1) => {
                                                       return refs.changes(repo.id, reference.id, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
-                                                  }}/>
+                                                  }}
+                                                  setTableDiffExpanded={() => setTableDiffState({isExpanded: true,  expandedTablePath: entry.path})}
+                                        />
                                         )
                                 })}
                                 { !!nextPage &&
@@ -293,7 +310,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
                                 </tbody>
                             </Table>
                         </Card.Body>
-                    </Card>
+                    </Card></>
                 )}
             </div>
         </>

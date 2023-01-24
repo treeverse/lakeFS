@@ -65,8 +65,8 @@ const OtfDiffRow = ({otfDiff}) => {
 const OperationMetadataRow = ({otfDiff, operationExpanded, onExpand, ...rest}) => {
     return <tr {...rest}>
         <td className="pl-lg-10 col-10 table-operation-type" style={{"padding-left": 30+"px"}}>{otfDiff.operation}</td>
-        <td className="col-sm-auto table-version" style={{"text-align": "right"}}>Version = {otfDiff.version}</td>
-        <td className="col-sm-auto operation-expansion" style={{"padding-right": 0 + "px"}}>
+        <td className="col-sm-auto table-version" style={{"text-align": "left", "width": "8%"}}>Version = {otfDiff.version}</td>
+        <td className="col-sm-auto operation-expansion" style={{"padding-right": 0 + "px", "width": "4%"}}>
             <OperationExpansionSection operationExpanded={operationExpanded} onExpand={onExpand}/>
         </td>
     </tr>

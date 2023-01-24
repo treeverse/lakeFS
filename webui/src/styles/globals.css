@@ -662,7 +662,7 @@ td .form-group {
 .table .otf-diff-added,
 .table .otf-diff-removed,
 .table .otf-diff-changed {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+  border: 1px solid rgba(0, 0, 0, 0.125);
   height: 38px;
 }
 
