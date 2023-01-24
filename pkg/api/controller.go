@@ -3523,8 +3523,15 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 		State:            swag.String(state),
 		OidcEnabled:      swag.Bool(c.Config.Auth.OIDC.Enabled),
 		OidcDefaultLogin: swag.Bool(c.Config.Auth.OIDC.IsDefaultLogin),
+		// TODO(ariels): Merge defaults and configuration
 		LoginConfig: &LoginConfig{
 			RBAC: &c.Config.Auth.UIConfig.RBAC,
+			LoginCookies: []string{
+				"internal_auth_session",
+				// Add sso_auth_session for SSO
+			},
+			LoginUrl:  "/auth/login",
+			LogoutUrl: "/logout",
 		},
 	}
 	writeResponse(w, r, http.StatusOK, response)

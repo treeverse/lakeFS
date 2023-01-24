@@ -618,6 +618,32 @@ components:
             with an external auth service.
           type: string
           enum: [simplified, external]
+        login_url:
+          description: primary URL to use for login.
+          type: string
+        login_failed_message:
+          description: |
+            message to display to users who fail to login; a full sentence that is rendered
+            in HTML and may contain a link to a secondary login method
+          type: string
+        fallback_login_url:
+          description: secondary URL to offer users to use for login.
+          type: string
+        fallback_login_label:
+          description: label to place on fallback_login_url.
+          type: string
+        login_cookies:
+          description: cookies to store JWT
+          type: array
+          items:
+            type: string
+        logout_url:
+          description: URL to use for logging out.
+          type: string
+      required:
+      - login_url
+      - login_cookies
+      - logout_url
 
     SetupState:
       type: object

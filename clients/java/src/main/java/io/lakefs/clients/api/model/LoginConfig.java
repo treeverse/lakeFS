@@ -23,6 +23,8 @@ import com.google.gson.stream.JsonWriter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * LoginConfig
@@ -80,6 +82,30 @@ public class LoginConfig {
   @SerializedName(SERIALIZED_NAME_R_B_A_C)
   private RBACEnum RBAC;
 
+  public static final String SERIALIZED_NAME_LOGIN_URL = "login_url";
+  @SerializedName(SERIALIZED_NAME_LOGIN_URL)
+  private String loginUrl;
+
+  public static final String SERIALIZED_NAME_LOGIN_FAILED_MESSAGE = "login_failed_message";
+  @SerializedName(SERIALIZED_NAME_LOGIN_FAILED_MESSAGE)
+  private String loginFailedMessage;
+
+  public static final String SERIALIZED_NAME_FALLBACK_LOGIN_URL = "fallback_login_url";
+  @SerializedName(SERIALIZED_NAME_FALLBACK_LOGIN_URL)
+  private String fallbackLoginUrl;
+
+  public static final String SERIALIZED_NAME_FALLBACK_LOGIN_LABEL = "fallback_login_label";
+  @SerializedName(SERIALIZED_NAME_FALLBACK_LOGIN_LABEL)
+  private String fallbackLoginLabel;
+
+  public static final String SERIALIZED_NAME_LOGIN_COOKIES = "login_cookies";
+  @SerializedName(SERIALIZED_NAME_LOGIN_COOKIES)
+  private List<String> loginCookies = new ArrayList<String>();
+
+  public static final String SERIALIZED_NAME_LOGOUT_URL = "logout_url";
+  @SerializedName(SERIALIZED_NAME_LOGOUT_URL)
+  private String logoutUrl;
+
 
   public LoginConfig RBAC(RBACEnum RBAC) {
     
@@ -104,6 +130,149 @@ public class LoginConfig {
   }
 
 
+  public LoginConfig loginUrl(String loginUrl) {
+    
+    this.loginUrl = loginUrl;
+    return this;
+  }
+
+   /**
+   * primary URL to use for login.
+   * @return loginUrl
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "primary URL to use for login.")
+
+  public String getLoginUrl() {
+    return loginUrl;
+  }
+
+
+  public void setLoginUrl(String loginUrl) {
+    this.loginUrl = loginUrl;
+  }
+
+
+  public LoginConfig loginFailedMessage(String loginFailedMessage) {
+    
+    this.loginFailedMessage = loginFailedMessage;
+    return this;
+  }
+
+   /**
+   * message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method 
+   * @return loginFailedMessage
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method ")
+
+  public String getLoginFailedMessage() {
+    return loginFailedMessage;
+  }
+
+
+  public void setLoginFailedMessage(String loginFailedMessage) {
+    this.loginFailedMessage = loginFailedMessage;
+  }
+
+
+  public LoginConfig fallbackLoginUrl(String fallbackLoginUrl) {
+    
+    this.fallbackLoginUrl = fallbackLoginUrl;
+    return this;
+  }
+
+   /**
+   * secondary URL to offer users to use for login.
+   * @return fallbackLoginUrl
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "secondary URL to offer users to use for login.")
+
+  public String getFallbackLoginUrl() {
+    return fallbackLoginUrl;
+  }
+
+
+  public void setFallbackLoginUrl(String fallbackLoginUrl) {
+    this.fallbackLoginUrl = fallbackLoginUrl;
+  }
+
+
+  public LoginConfig fallbackLoginLabel(String fallbackLoginLabel) {
+    
+    this.fallbackLoginLabel = fallbackLoginLabel;
+    return this;
+  }
+
+   /**
+   * label to place on fallback_login_url.
+   * @return fallbackLoginLabel
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "label to place on fallback_login_url.")
+
+  public String getFallbackLoginLabel() {
+    return fallbackLoginLabel;
+  }
+
+
+  public void setFallbackLoginLabel(String fallbackLoginLabel) {
+    this.fallbackLoginLabel = fallbackLoginLabel;
+  }
+
+
+  public LoginConfig loginCookies(List<String> loginCookies) {
+    
+    this.loginCookies = loginCookies;
+    return this;
+  }
+
+  public LoginConfig addLoginCookiesItem(String loginCookiesItem) {
+    this.loginCookies.add(loginCookiesItem);
+    return this;
+  }
+
+   /**
+   * cookies to store JWT
+   * @return loginCookies
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "cookies to store JWT")
+
+  public List<String> getLoginCookies() {
+    return loginCookies;
+  }
+
+
+  public void setLoginCookies(List<String> loginCookies) {
+    this.loginCookies = loginCookies;
+  }
+
+
+  public LoginConfig logoutUrl(String logoutUrl) {
+    
+    this.logoutUrl = logoutUrl;
+    return this;
+  }
+
+   /**
+   * URL to use for logging out.
+   * @return logoutUrl
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "URL to use for logging out.")
+
+  public String getLogoutUrl() {
+    return logoutUrl;
+  }
+
+
+  public void setLogoutUrl(String logoutUrl) {
+    this.logoutUrl = logoutUrl;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -113,12 +282,18 @@ public class LoginConfig {
       return false;
     }
     LoginConfig loginConfig = (LoginConfig) o;
-    return Objects.equals(this.RBAC, loginConfig.RBAC);
+    return Objects.equals(this.RBAC, loginConfig.RBAC) &&
+        Objects.equals(this.loginUrl, loginConfig.loginUrl) &&
+        Objects.equals(this.loginFailedMessage, loginConfig.loginFailedMessage) &&
+        Objects.equals(this.fallbackLoginUrl, loginConfig.fallbackLoginUrl) &&
+        Objects.equals(this.fallbackLoginLabel, loginConfig.fallbackLoginLabel) &&
+        Objects.equals(this.loginCookies, loginConfig.loginCookies) &&
+        Objects.equals(this.logoutUrl, loginConfig.logoutUrl);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(RBAC);
+    return Objects.hash(RBAC, loginUrl, loginFailedMessage, fallbackLoginUrl, fallbackLoginLabel, loginCookies, logoutUrl);
   }
 
   @Override
@@ -126,6 +301,12 @@ public class LoginConfig {
     StringBuilder sb = new StringBuilder();
     sb.append("class LoginConfig {\n");
     sb.append("    RBAC: ").append(toIndentedString(RBAC)).append("\n");
+    sb.append("    loginUrl: ").append(toIndentedString(loginUrl)).append("\n");
+    sb.append("    loginFailedMessage: ").append(toIndentedString(loginFailedMessage)).append("\n");
+    sb.append("    fallbackLoginUrl: ").append(toIndentedString(fallbackLoginUrl)).append("\n");
+    sb.append("    fallbackLoginLabel: ").append(toIndentedString(fallbackLoginLabel)).append("\n");
+    sb.append("    loginCookies: ").append(toIndentedString(loginCookies)).append("\n");
+    sb.append("    logoutUrl: ").append(toIndentedString(logoutUrl)).append("\n");
     sb.append("}");
     return sb.toString();
   }

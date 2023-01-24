@@ -21,6 +21,8 @@ import com.google.gson.stream.JsonWriter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -46,6 +48,54 @@ public class LoginConfigTest {
     @Test
     public void RBACTest() {
         // TODO: test RBAC
+    }
+
+    /**
+     * Test the property 'loginUrl'
+     */
+    @Test
+    public void loginUrlTest() {
+        // TODO: test loginUrl
+    }
+
+    /**
+     * Test the property 'loginFailedMessage'
+     */
+    @Test
+    public void loginFailedMessageTest() {
+        // TODO: test loginFailedMessage
+    }
+
+    /**
+     * Test the property 'fallbackLoginUrl'
+     */
+    @Test
+    public void fallbackLoginUrlTest() {
+        // TODO: test fallbackLoginUrl
+    }
+
+    /**
+     * Test the property 'fallbackLoginLabel'
+     */
+    @Test
+    public void fallbackLoginLabelTest() {
+        // TODO: test fallbackLoginLabel
+    }
+
+    /**
+     * Test the property 'loginCookies'
+     */
+    @Test
+    public void loginCookiesTest() {
+        // TODO: test loginCookies
+    }
+
+    /**
+     * Test the property 'logoutUrl'
+     */
+    @Test
+    public void logoutUrlTest() {
+        // TODO: test logoutUrl
     }
 
 }
