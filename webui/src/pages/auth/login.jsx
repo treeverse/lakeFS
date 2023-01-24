@@ -12,7 +12,7 @@ import {useAPI} from "../../lib/hooks/api";
 
 const OIDC_LOGIN_URL = "/oidc/login?prompt=login";
 
-const LoginForm = ({oidcEnabled}) => {
+const LoginForm = ({oidcEnabled: boolean}) => {
     const router = useRouter();
     const [loginError, setLoginError] = useState(null);
     const { response, error, loading } = useAPI(() => auth.getAuthCapabilities());
@@ -90,12 +90,12 @@ const LoginPage = () => {
 
     if (!error && response && response.state !== SETUP_STATE_INITIALIZED) {
         router.push({pathname: '/setup', query: router.query})
-        return
+        return null;
     }
     if (router.query.redirected)  {
         if(!error && response && response.oidc_default_login) {
             window.location = OIDC_LOGIN_URL;
-            return
+            return null;
         }
         delete router.query.redirected;
         router.push({pathname: '/auth/login', query: router.query})
