@@ -18,8 +18,10 @@ func gcWriteUncommitted(ctx context.Context, store Store, kvStore kv.Store, repo
 	pw.CompressionType = parquet.CompressionCodec_GZIP
 
 	// write uncommitted data from branches
+	var hasData bool
 	if mark == nil || !mark.Tracked {
-		nextMark, hasData, err := gcWriteUncommittedBranches(ctx, store, pw, repository, w, mark, runID, maxFileSize)
+		var nextMark *GCUncommittedMark
+		nextMark, hasData, err = gcWriteUncommittedBranches(ctx, store, pw, repository, w, mark, runID, maxFileSize)
 		if err != nil {
 			return nil, false, err
 		}
@@ -34,7 +36,15 @@ func gcWriteUncommitted(ctx context.Context, store Store, kvStore kv.Store, repo
 		}
 	}
 	// write tracked physical addresses
-	return gcWriteUncommittedTracked(ctx, kvStore, pw, repository, w, mark.Key, runID, maxFileSize)
+	nextMark, hasTrackedData, err := gcWriteUncommittedTracked(ctx, kvStore, pw, repository, w, mark.Key, runID, maxFileSize)
+	if err != nil {
+		return nil, false, err
+	}
+	// mark hasData if needed (need to keep it true in case we processed data from branches)
+	if hasTrackedData {
+		hasData = hasTrackedData
+	}
+	return nextMark, hasData, nil
 }
 
 // gcWriteUncommittedBranches used by gcWriteUncommitted to write uncommitted entries by iterating over branches
