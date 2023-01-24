@@ -566,7 +566,7 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			name:          "Sanity",
 			numBranch:     5,
 			numRecords:    3,
-			expectedCalls: 2,
+			expectedCalls: 1,
 		},
 		{
 			name:          "Tokenized",
@@ -585,17 +585,27 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 				GCMaxUncommittedFileSize: 500 * 1024,
 				StoreMessage:             &kv.StoreMessage{Store: g.KVStore},
 			}
-			result, err := c.PrepareGCUncommitted(ctx, repoID.String(), nil)
-			require.NoError(t, err)
+			repositoryID := repoID.String()
 
-			for result.Mark != nil {
-				runID := result.Metadata.RunId
-				require.Equal(t, runID, result.Mark.RunID)
-				result, err = c.PrepareGCUncommitted(ctx, repoID.String(), result.Mark)
+			var (
+				mark  *catalog.GCUncommittedMark
+				runID string
+			)
+			for {
+				result, err := c.PrepareGCUncommitted(ctx, repositoryID, mark)
 				require.NoError(t, err)
-				require.Equal(t, runID, result.Metadata.RunId)
+				if runID == "" {
+					runID = result.Metadata.RunId
+				} else {
+					require.Equal(t, runID, result.Mark.RunID)
+					require.Equal(t, runID, result.Metadata.RunId)
+				}
+				mark = result.Mark
+				if mark == nil {
+					break
+				}
 			}
-			verifyData(t, ctx, tt.numBranch, tt.numRecords, result.Metadata.RunId, c, expectedRecords)
+			verifyData(t, ctx, tt.numBranch, tt.numRecords, runID, c, expectedRecords)
 		})
 	}
 }
@@ -691,9 +701,12 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, gomock.Any()).AnyTimes().Return(cUtils.NewFakeValueIterator(records[i]), nil)
 	}
 
-	test.GarbageCollectionManager.EXPECT().GetUncommittedLocation(gomock.Any(), gomock.Any()).Times(expectedCalls).DoAndReturn(func(runID string, sn graveler.StorageNamespace) (string, error) {
-		return fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID), nil
-	})
+	test.GarbageCollectionManager.EXPECT().
+		GetUncommittedLocation(gomock.Any(), gomock.Any()).
+		Times(expectedCalls).
+		DoAndReturn(func(runID string, sn graveler.StorageNamespace) (string, error) {
+			return fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID), nil
+		})
 
 	repoPartition := graveler.RepoPartition(repository)
 	entIt := kvmock.NewMockEntriesIterator(test.Controller)
