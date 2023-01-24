@@ -590,8 +590,8 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			name:          "tokenized_mix",
 			numBranch:     500,
 			numRecords:    500,
-			numTracked:    1000,
-			expectedCalls: 3,
+			numTracked:    500,
+			expectedCalls: 2,
 		},
 	}
 	for _, tt := range tests {
