@@ -4130,12 +4130,11 @@ func encodeGCUncommittedMark(mark *catalog.GCUncommittedMark) (*string, error) {
 	if mark == nil {
 		return nil, nil
 	}
-	var buf bytes.Buffer
-	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
-	err := json.NewEncoder(encoder).Encode(mark)
+	raw, err := json.Marshal(mark)
 	if err != nil {
 		return nil, err
 	}
-	token := buf.String()
+
+	token := base64.StdEncoding.EncodeToString(raw)
 	return &token, nil
 }
