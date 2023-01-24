@@ -11,19 +11,26 @@ import (
 )
 
 func gcWriteUncommitted(ctx context.Context, store Store, kvStore kv.Store, repository *graveler.RepositoryRecord, w *UncommittedWriter, mark *GCUncommittedMark, runID string, maxFileSize int64) (*GCUncommittedMark, bool, error) {
-	var (
-		hasData bool
-		err     error
-	)
+	pw, err := writer.NewParquetWriterFromWriter(w, new(UncommittedParquetObject), gcParquetParallelNum) // TODO: Play with np count
+	if err != nil {
+		return nil, false, err
+	}
+	pw.CompressionType = parquet.CompressionCodec_GZIP
+
+	var hasData bool
 	// write uncommitted data from branches
 	if mark == nil || !mark.Tracked {
 		var nextMark *GCUncommittedMark
-		nextMark, hasData, err = gcWriteUncommittedBranches(ctx, store, repository, w, mark, runID, maxFileSize)
+		nextMark, hasData, err = gcWriteUncommittedBranches(ctx, store, pw, repository, w, mark, runID, maxFileSize)
 		if err != nil {
 			return nil, false, err
 		}
 		// return if we create any data and not on our final chunk
 		if nextMark != nil && hasData {
+			// stop writer before we return
+			if err := pw.WriteStop(); err != nil {
+				return nil, false, err
+			}
 			return nextMark, true, nil
 		}
 		// continue to tracked
@@ -33,8 +40,12 @@ func gcWriteUncommitted(ctx context.Context, store Store, kvStore kv.Store, repo
 		}
 	}
 	// write tracked physical addresses
-	nextMark, hasTrackedData, err := gcWriteUncommittedTracked(ctx, kvStore, repository, w, mark.Key, runID, maxFileSize)
+	nextMark, hasTrackedData, err := gcWriteUncommittedTracked(ctx, kvStore, pw, repository, w, mark.Key, runID, maxFileSize)
 	if err != nil {
+		return nil, false, err
+	}
+	// stop writer before we return
+	if err := pw.WriteStop(); err != nil {
 		return nil, false, err
 	}
 	// mark hasData if needed (keep it true in case we processed data from uncommitted branches)
@@ -45,13 +56,7 @@ func gcWriteUncommitted(ctx context.Context, store Store, kvStore kv.Store, repo
 }
 
 // gcWriteUncommittedBranches used by gcWriteUncommitted to write uncommitted entries by iterating over branches
-func gcWriteUncommittedBranches(ctx context.Context, store Store, repository *graveler.RepositoryRecord, w *UncommittedWriter, mark *GCUncommittedMark, runID string, maxFileSize int64) (*GCUncommittedMark, bool, error) {
-	pw, err := writer.NewParquetWriterFromWriter(w, new(UncommittedParquetObject), gcParquetParallelNum) // TODO: Play with np count
-	if err != nil {
-		return nil, false, err
-	}
-	pw.CompressionType = parquet.CompressionCodec_GZIP
-
+func gcWriteUncommittedBranches(ctx context.Context, store Store, pw *writer.ParquetWriter, repository *graveler.RepositoryRecord, w *UncommittedWriter, mark *GCUncommittedMark, runID string, maxFileSize int64) (*GCUncommittedMark, bool, error) {
 	it, err := NewUncommittedIterator(ctx, store, repository)
 	if err != nil {
 		return nil, false, err
@@ -108,9 +113,6 @@ func gcWriteUncommittedBranches(ctx context.Context, store Store, repository *gr
 	if err := it.Err(); err != nil {
 		return nil, false, err
 	}
-	if err := pw.WriteStop(); err != nil {
-		return nil, false, err
-	}
 
 	// Finished reading all staging area - return marker to switch processing tracked physical addresses
 	hasData := count > 0
@@ -118,13 +120,7 @@ func gcWriteUncommittedBranches(ctx context.Context, store Store, repository *gr
 }
 
 // gcWriteUncommittedTracked used by gcWriteUncommitted to write down tracked physical addresses
-func gcWriteUncommittedTracked(ctx context.Context, kvStore kv.Store, repository *graveler.RepositoryRecord, w *UncommittedWriter, key string, runID string, maxFileSize int64) (*GCUncommittedMark, bool, error) {
-	pw, err := writer.NewParquetWriterFromWriter(w, new(UncommittedParquetObject), gcParquetParallelNum) // TODO: Play with np count
-	if err != nil {
-		return nil, false, err
-	}
-	pw.CompressionType = parquet.CompressionCodec_GZIP
-
+func gcWriteUncommittedTracked(ctx context.Context, kvStore kv.Store, pw *writer.ParquetWriter, repository *graveler.RepositoryRecord, w *UncommittedWriter, key string, runID string, maxFileSize int64) (*GCUncommittedMark, bool, error) {
 	repoPartition := graveler.RepoPartition(repository)
 	msgType := (&Entry{}).ProtoReflect().Type()
 	prefix := []byte(kv.FormatPath(kvTrackPrefix, ""))
@@ -162,9 +158,6 @@ func gcWriteUncommittedTracked(ctx context.Context, kvStore kv.Store, repository
 		}
 	}
 	if err := it.Err(); err != nil {
-		return nil, false, err
-	}
-	if err := pw.WriteStop(); err != nil {
 		return nil, false, err
 	}
 

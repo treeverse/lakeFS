@@ -572,7 +572,7 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			name:          "Tokenized",
 			numBranch:     500,
 			numRecords:    500,
-			expectedCalls: 3,
+			expectedCalls: 2,
 		},
 	}
 	for _, tt := range tests {
@@ -597,13 +597,13 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 				if runID == "" {
 					runID = result.Metadata.RunId
 				} else {
-					require.Equal(t, runID, result.Mark.RunID)
 					require.Equal(t, runID, result.Metadata.RunId)
 				}
 				mark = result.Mark
 				if mark == nil {
 					break
 				}
+				require.Equal(t, runID, result.Mark.RunID)
 			}
 			verifyData(t, ctx, tt.numBranch, tt.numRecords, runID, c, expectedRecords)
 		})
@@ -689,11 +689,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 	test.RefManager.EXPECT().GetRepository(gomock.Any(), repoID).Times(expectedCalls).Return(repository, nil)
 
 	// expect tracked addresses does not list branches, so remove one and keep at least the first
-	expectedCallsForStaging := expectedCalls
-	if expectedCallsForStaging > 1 {
-		expectedCallsForStaging--
-	}
-	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).Times(expectedCallsForStaging).Return(gUtils.NewFakeBranchIterator(branches), nil)
+	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).Times(expectedCalls).Return(gUtils.NewFakeBranchIterator(branches), nil)
 	for i := 0; i < len(branches); i++ {
 		sort.Slice(records[i], func(ii, jj int) bool {
 			return bytes.Compare(records[i][ii].Key, records[i][jj].Key) < 0
