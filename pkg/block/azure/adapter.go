@@ -15,8 +15,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -33,28 +33,17 @@ const (
 )
 
 type Adapter struct {
-	client                        *service.Client
-	configurations                configurations
 	preSignedURLDurationGenerator func() time.Time
+	clientCache                   *ClientContainerCache
 }
 
-type configurations struct {
-	retryReaderOptions azblob.RetryReaderOptions
-}
-
-func NewAdapter(client *service.Client, opts ...func(a *Adapter)) *Adapter {
-	a := &Adapter{
-		client:         client,
-		configurations: configurations{retryReaderOptions: azblob.RetryReaderOptions{MaxRetries: defaultMaxRetryRequests}},
+func NewAdapter(params params.Azure) *Adapter {
+	return &Adapter{
+		clientCache: NewCache(params),
 		preSignedURLDurationGenerator: func() time.Time {
 			return time.Now().UTC().Add(block.DefaultPreSignExpiryDuration)
 		},
 	}
-
-	for _, opt := range opts {
-		opt(a)
-	}
-	return a
 }
 
 type BlobURLInfo struct {
@@ -174,7 +163,11 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 		return err
 	}
 	o := a.translatePutOpts(ctx, opts)
-	_, err = a.client.NewContainerClient(qualifiedKey.ContainerName).NewBlockBlobClient(qualifiedKey.BlobURL).UploadStream(ctx, reader, &o)
+	containerClient, err := a.clientCache.NewContainerClient(obj.StorageNamespace, qualifiedKey.ContainerName)
+	if err != nil {
+		return err
+	}
+	_, err = containerClient.NewBlockBlobClient(qualifiedKey.BlobURL).UploadStream(ctx, reader, &o)
 	return err
 }
 
@@ -203,7 +196,12 @@ func (a *Adapter) getPreSignedURL(obj block.ObjectPointer, permissions sas.BlobP
 		return "", err
 	}
 
-	blobURL := a.client.NewContainerClient(qualifiedKey.ContainerName).NewBlobClient(qualifiedKey.BlobURL)
+	containerClient, err := a.clientCache.NewContainerClient(obj.StorageNamespace, qualifiedKey.ContainerName)
+	if err != nil {
+		return "", err
+	}
+
+	blobURL := containerClient.NewBlobClient(qualifiedKey.BlobURL)
 	u, err := blobURL.GetSASURL(permissions, time.Time{}, a.preSignedURLDurationGenerator())
 	if err != nil {
 		return "", err
@@ -224,7 +222,10 @@ func (a *Adapter) Download(ctx context.Context, obj block.ObjectPointer, offset,
 	if err != nil {
 		return nil, err
 	}
-	container := a.client.NewContainerClient(qualifiedKey.ContainerName)
+	container, err := a.clientCache.NewContainerClient(obj.StorageNamespace, qualifiedKey.ContainerName)
+	if err != nil {
+		return nil, err
+	}
 	blobURL := container.NewBlockBlobClient(qualifiedKey.BlobURL)
 
 	downloadResponse, err := blobURL.DownloadStream(ctx, &azblob.DownloadStreamOptions{
@@ -253,10 +254,14 @@ func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block
 		return err
 	}
 
-	containerURL := a.client.NewContainerClient(qualifiedPrefix.ContainerName)
+	containerClient, err := a.clientCache.NewContainerClient(walkOpt.StorageNamespace, qualifiedPrefix.ContainerName)
+	if err != nil {
+		return err
+	}
+
 	var marker *string
 	for {
-		listBlob := containerURL.NewListBlobsFlatPager(&azblob.ListBlobsFlatOptions{
+		listBlob := containerClient.NewListBlobsFlatPager(&azblob.ListBlobsFlatOptions{
 			Prefix: &qualifiedPrefix.Prefix,
 			Marker: marker,
 		})
@@ -287,7 +292,11 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 		return false, err
 	}
 
-	blobURL := a.client.NewContainerClient(qualifiedKey.ContainerName).NewBlobClient(qualifiedKey.BlobURL)
+	containerClient, err := a.clientCache.NewContainerClient(obj.StorageNamespace, qualifiedKey.ContainerName)
+	if err != nil {
+		return false, err
+	}
+	blobURL := containerClient.NewBlobClient(qualifiedKey.BlobURL)
 
 	_, err = blobURL.GetProperties(ctx, nil)
 
@@ -309,8 +318,11 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 		return block.Properties{}, err
 	}
 
-	container := a.client.NewContainerClient(qualifiedKey.ContainerName)
-	blobURL := container.NewBlobClient(qualifiedKey.BlobURL)
+	containerClient, err := a.clientCache.NewContainerClient(obj.StorageNamespace, qualifiedKey.ContainerName)
+	if err != nil {
+		return block.Properties{}, err
+	}
+	blobURL := containerClient.NewBlobClient(qualifiedKey.BlobURL)
 
 	props, err := blobURL.GetProperties(ctx, nil)
 	if err != nil {
@@ -326,9 +338,11 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	if err != nil {
 		return err
 	}
-
-	container := a.client.NewContainerClient(qualifiedKey.ContainerName)
-	blobURL := container.NewBlobClient(qualifiedKey.BlobURL)
+	containerClient, err := a.clientCache.NewContainerClient(obj.StorageNamespace, qualifiedKey.ContainerName)
+	if err != nil {
+		return err
+	}
+	blobURL := containerClient.NewBlobClient(qualifiedKey.BlobURL)
 
 	_, err = blobURL.Delete(ctx, nil)
 	return err
@@ -347,8 +361,18 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 		return err
 	}
 
-	destClient := a.client.NewContainerClient(qualifiedDestinationKey.ContainerName).NewBlobClient(qualifiedDestinationKey.BlobURL)
-	sourceClient := a.client.NewContainerClient(qualifiedSourceKey.ContainerName).NewBlobClient(qualifiedSourceKey.BlobURL)
+	destContainerClient, err := a.clientCache.NewContainerClient(destinationObj.StorageNamespace, qualifiedDestinationKey.ContainerName)
+	if err != nil {
+		return err
+	}
+	destClient := destContainerClient.NewBlobClient(qualifiedDestinationKey.BlobURL)
+
+	srcContainerClient, err := a.clientCache.NewContainerClient(sourceObj.StorageNamespace, qualifiedSourceKey.ContainerName)
+	if err != nil {
+		return err
+	}
+	sourceClient := srcContainerClient.NewBlobClient(qualifiedSourceKey.BlobURL)
+
 	sasKey, err := sourceClient.GetSASURL(sas.BlobPermissions{
 		Read: true,
 	}, time.Time{}, a.preSignedURLDurationGenerator())
@@ -385,7 +409,10 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int
 		return nil, err
 	}
 
-	container := a.client.NewContainerClient(qualifiedKey.ContainerName)
+	container, err := a.clientCache.NewContainerClient(obj.StorageNamespace, qualifiedKey.ContainerName)
+	if err != nil {
+		return nil, err
+	}
 	hashReader := block.NewHashingReader(reader, block.HashFunctionMD5)
 
 	multipartBlockWriter := NewMultipartBlockWriter(hashReader, *container, qualifiedKey.BlobURL)
@@ -425,8 +452,15 @@ func (a *Adapter) copyPartRange(ctx context.Context, sourceObj, destinationObj b
 		return nil, err
 	}
 
-	destinationContainer := a.client.NewContainerClient(qualifiedDestinationKey.ContainerName)
-	sourceContainer := a.client.NewContainerClient(qualifiedSourceKey.ContainerName)
+	destinationContainer, err := a.clientCache.NewContainerClient(destinationObj.StorageNamespace, qualifiedDestinationKey.ContainerName)
+	if err != nil {
+		return nil, err
+	}
+	sourceContainer, err := a.clientCache.NewContainerClient(sourceObj.StorageNamespace, qualifiedSourceKey.ContainerName)
+	if err != nil {
+		return nil, err
+	}
+
 	sourceBlobURL := sourceContainer.NewBlockBlobClient(qualifiedSourceKey.BlobURL)
 
 	return copyPartRange(ctx, *destinationContainer, qualifiedDestinationKey.BlobURL, *sourceBlobURL, startPosition, count)
@@ -448,7 +482,11 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	if err != nil {
 		return nil, err
 	}
-	containerURL := a.client.NewContainerClient(qualifiedKey.ContainerName)
+	containerURL, err := a.clientCache.NewContainerClient(obj.StorageNamespace, qualifiedKey.ContainerName)
+	if err != nil {
+		return nil, err
+	}
+
 	return completeMultipart(ctx, multipartList.Part, *containerURL, qualifiedKey.BlobURL)
 }
 

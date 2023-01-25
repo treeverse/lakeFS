@@ -10,11 +10,14 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/treeverse/lakefs/pkg/block/azure"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/block/params"
 )
 
-var ErrNotSupported = errors.New("no storage adapter found")
+var (
+	ErrNotSupported = errors.New("no storage adapter found")
+)
 
 type ObjectStoreEntry struct {
 	// FullKey represents the fully qualified path in the object store namespace for the given entry
@@ -132,18 +135,25 @@ func (f *walkerFactory) buildGCSWalker(ctx context.Context) (*gcsWalker, error) 
 	return NewGCSWalker(svc), nil
 }
 
-func (f *walkerFactory) buildAzureWalker() (*azureBlobWalker, error) {
+func (f *walkerFactory) buildAzureWalker(importURL string) (*azureBlobWalker, error) {
 	var (
 		c   *service.Client
 		err error
 	)
+
+	storageAccount, err := azure.ExtractStorageAccount(importURL)
+	if err != nil {
+		return nil, err
+	}
 	if f.params != nil {
 		var azureParams params.Azure
 		azureParams, err = f.params.BlockstoreAzureParams()
 		if err != nil {
 			return nil, err
 		}
-		c, err = factory.BuildAzureServiceClient(azureParams)
+		azureParams.StorageAccount = storageAccount
+
+		c, err = azure.BuildAzureServiceClient(azureParams)
 	} else {
 		c, err = getAzureClient()
 	}
@@ -171,7 +181,7 @@ func (f *walkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*Wal
 			return nil, fmt.Errorf("creating gs walker: %w", err)
 		}
 	case "http", "https":
-		walker, err = f.buildAzureWalker()
+		walker, err = f.buildAzureWalker(uri.String())
 		if err != nil {
 			return nil, fmt.Errorf("creating Azure walker: %w", err)
 		}
