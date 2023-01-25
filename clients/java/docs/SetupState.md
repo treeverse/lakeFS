@@ -8,8 +8,8 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **state** | [**StateEnum**](#StateEnum) |  |  [optional]
-**oidcEnabled** | **Boolean** |  |  [optional]
-**oidcDefaultLogin** | **Boolean** |  |  [optional]
+**oidcEnabled** | **Boolean** | Deprecated: embedded OIDC support is now deprecated |  [optional]
+**oidcDefaultLogin** | **Boolean** | Deprecated: embedded OIDC support is now deprecated |  [optional]
 
 
 
