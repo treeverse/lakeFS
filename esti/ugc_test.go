@@ -20,7 +20,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"golang.org/x/exp/slices"
 )
@@ -38,7 +37,7 @@ type UncommittedFindings struct {
 
 func TestUncommittedGC(t *testing.T) {
 	SkipTestIfAskedTo(t)
-	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
+	blockstoreType := viper.GetString("blockstore_type") // esti configuration, not to be confused with blockstore.type
 	if blockstoreType != block.BlockstoreTypeS3 {
 		t.Skip("Running on S3 only")
 	}
@@ -301,7 +300,8 @@ func listUnderlyingStorage(t *testing.T, ctx context.Context, s3Client *s3.S3, b
 	for _, obj := range listOutput.Contents {
 		objects = append(objects, Object{
 			Key:          fmt.Sprintf("s3://%s/%s", bucket, aws.StringValue(obj.Key)),
-			LastModified: *obj.LastModified})
+			LastModified: *obj.LastModified,
+		})
 	}
 	return objects
 }
