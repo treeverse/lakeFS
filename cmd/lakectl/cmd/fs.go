@@ -36,12 +36,12 @@ Total Size: {{.Bytes}} bytes
 Human Total Size: {{.Bytes|human_bytes}}
 `
 
-type uploadMethod int
+type transportMethod int
 
 const (
-	uploadMethodDefault = iota
-	uploadMethodDirect
-	uploadMethodPreSign
+	transportMethodDefault = iota
+	transportMethodDirect
+	transportMethodPreSign
 )
 
 var ErrRequestFailed = errors.New("request failed")
@@ -82,7 +82,6 @@ var fsListCmd = &cobra.Command{
 		client := getClient()
 		pathURI := MustParsePathURI("path", args[0])
 		recursive, _ := cmd.Flags().GetBool("recursive")
-		preSign := MustBool(cmd.Flags().GetBool("pre-sign"))
 		prefix := *pathURI.Path
 
 		// prefix we need to trim in ls output (non-recursive)
@@ -102,7 +101,6 @@ var fsListCmd = &cobra.Command{
 				Prefix:    &pfx,
 				After:     api.PaginationAfterPtr(from),
 				Delimiter: &paramsDelimiter,
-				Presign:   swag.Bool(preSign),
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
@@ -136,16 +134,22 @@ var fsCatCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
-		direct, _ := cmd.Flags().GetBool("direct")
+		flagSet := cmd.Flags()
+		direct := MustBool(flagSet.GetBool("direct"))
+		preSignMode := MustBool(flagSet.GetBool("pre-sign"))
+		transport := transportMethodFromFlags(direct, preSignMode)
+
 		var err error
 		var body io.ReadCloser
 		client := getClient()
-		if direct {
+		if transport == transportMethodDirect {
 			_, body, err = helpers.ClientDownload(cmd.Context(), client, pathURI.Repository, pathURI.Ref, *pathURI.Path)
 		} else {
+			preSign := swag.Bool(transport == transportMethodPreSign)
 			var resp *http.Response
 			resp, err = client.GetObject(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.GetObjectParams{
-				Path: *pathURI.Path,
+				Path:    *pathURI.Path,
+				Presign: preSign,
 			})
 			DieOnHTTPError(resp)
 			body = resp.Body
@@ -166,19 +170,19 @@ var fsCatCmd = &cobra.Command{
 	},
 }
 
-func upload(ctx context.Context, client api.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, method uploadMethod) (*api.ObjectStats, error) {
+func upload(ctx context.Context, client api.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, method transportMethod) (*api.ObjectStats, error) {
 	fp := OpenByPath(sourcePathname)
 	defer func() {
 		_ = fp.Close()
 	}()
 	objectPath := api.StringValue(destURI.Path)
 	switch method {
-	case uploadMethodDefault:
+	case transportMethodDefault:
 		return uploadObject(ctx, client, destURI.Repository, destURI.Ref, objectPath, contentType, fp)
-	case uploadMethodDirect:
+	case transportMethodDirect:
 		return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
-	case uploadMethodPreSign:
-		return helpers.ClientUploadPreSign(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp), nil
+	case transportMethodPreSign:
+		return helpers.ClientUploadPreSign(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
 	default:
 		panic("unsupported upload method")
 	}
@@ -238,12 +242,17 @@ var fsUploadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := MustParsePathURI("path", args[0])
-		source, _ := cmd.Flags().GetString("source")
-		recursive, _ := cmd.Flags().GetBool("recursive")
-		direct, _ := cmd.Flags().GetBool("direct")
-		contentType, _ := cmd.Flags().GetString("content-type")
+		flagSet := cmd.Flags()
+		source := MustString(flagSet.GetString("source"))
+		recursive := MustBool(flagSet.GetBool("recursive"))
+		direct := MustBool(flagSet.GetBool("direct"))
+		preSignMode := MustBool(flagSet.GetBool("pre-sign"))
+		contentType := MustString(flagSet.GetString("content-type"))
+
+		ctx := cmd.Context()
+		transport := transportMethodFromFlags(direct, preSignMode)
 		if !recursive {
-			stat, err := upload(cmd.Context(), client, source, pathURI, contentType, direct)
+			stat, err := upload(ctx, client, source, pathURI, contentType, transport)
 			if err != nil {
 				DieErr(err)
 			}
@@ -266,7 +275,7 @@ var fsUploadCmd = &cobra.Command{
 			uri := *pathURI
 			p := filepath.ToSlash(filepath.Join(*uri.Path, relPath))
 			uri.Path = &p
-			stat, err := upload(cmd.Context(), client, path, &uri, contentType, direct)
+			stat, err := upload(ctx, client, path, &uri, contentType, transport)
 			if err != nil {
 				return fmt.Errorf("upload %s: %w", path, err)
 			}
@@ -281,6 +290,18 @@ var fsUploadCmd = &cobra.Command{
 		}
 		Write(fsRecursiveTemplate, totals)
 	},
+}
+
+func transportMethodFromFlags(direct bool, preSign bool) transportMethod {
+	switch {
+	case direct && preSign:
+		Die("Can't enable both direct and pre-sign", 1)
+	case direct:
+		return transportMethodDirect
+	case preSign:
+		return transportMethodPreSign
+	}
+	return transportMethodDefault
 }
 
 var fsStageCmd = &cobra.Command{
@@ -445,8 +466,10 @@ var fsDownloadCmd = &cobra.Command{
 		pathURI := MustParsePathURI("path", args[0])
 		flagSet := cmd.Flags()
 		direct := MustBool(flagSet.GetBool("direct"))
+		preSignMode := MustBool(flagSet.GetBool("pre-sign"))
 		recursive := MustBool(flagSet.GetBool("recursive"))
 		parallel := MustInt(flagSet.GetInt("parallel"))
+		transport := transportMethodFromFlags(direct, preSignMode)
 
 		if parallel < 1 {
 			DieFmt("Invalid value for parallel (%d), minimum is 1.\n", parallel)
@@ -501,7 +524,7 @@ var fsDownloadCmd = &cobra.Command{
 					}
 					// destination is without the source URI
 					dst := filepath.Join(dest, strings.TrimPrefix(downloadPath, prefix))
-					err := downloadHelper(ctx, client, direct, src, dst)
+					err := downloadHelper(ctx, client, transport, src, dst)
 					if err == nil {
 						fmt.Printf("Download: %s to %s\n", src.String(), dst)
 					} else {
@@ -542,8 +565,8 @@ func listRecursiveHelper(ctx context.Context, client *api.ClientWithResponses, r
 	}
 }
 
-func downloadHelper(ctx context.Context, client *api.ClientWithResponses, direct bool, src uri.URI, dst string) error {
-	body, err := getObjectHelper(ctx, client, direct, src)
+func downloadHelper(ctx context.Context, client *api.ClientWithResponses, method transportMethod, src uri.URI, dst string) error {
+	body, err := getObjectHelper(ctx, client, method, src)
 	if err != nil {
 		return err
 	}
@@ -563,8 +586,8 @@ func downloadHelper(ctx context.Context, client *api.ClientWithResponses, direct
 	return err
 }
 
-func getObjectHelper(ctx context.Context, client *api.ClientWithResponses, direct bool, src uri.URI) (io.ReadCloser, error) {
-	if direct {
+func getObjectHelper(ctx context.Context, client *api.ClientWithResponses, method transportMethod, src uri.URI) (io.ReadCloser, error) {
+	if method == transportMethodDirect {
 		// download directly from storage
 		_, body, err := helpers.ClientDownload(ctx, client, src.Repository, src.Ref, *src.Path)
 		if err != nil {
@@ -572,8 +595,13 @@ func getObjectHelper(ctx context.Context, client *api.ClientWithResponses, direc
 		}
 		return body, nil
 	}
+
 	// download from lakefs
-	resp, err := client.GetObject(ctx, src.Repository, src.Ref, &api.GetObjectParams{Path: *src.Path})
+	preSign := swag.Bool(method == transportMethodPreSign)
+	resp, err := client.GetObject(ctx, src.Repository, src.Ref, &api.GetObjectParams{
+		Path:    *src.Path,
+		Presign: preSign,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -604,13 +632,14 @@ func init() {
 	fsStatCmd.Flags().Bool("pre-sign", false, "Request pre-sign for physical address")
 
 	fsCatCmd.Flags().BoolP("direct", "d", false, "read directly from backing store (faster but requires more credentials)")
+	fsCatCmd.Flags().Bool("pre-sign", false, "Use pre-sign link to access the data")
 
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
 	fsUploadCmd.Flags().BoolP("recursive", "r", false, "recursively copy all files under local source")
 	fsUploadCmd.Flags().BoolP("direct", "d", false, "write directly to backing store (faster but requires more credentials)")
 	_ = fsUploadCmd.MarkFlagRequired("source")
 	fsUploadCmd.Flags().StringP("content-type", "", "", "MIME type of contents")
-	fsUploadCmd.Flags().Bool("pre-sign", false, "Use pre-sign link to upload data")
+	fsUploadCmd.Flags().Bool("pre-sign", false, "Use pre-sign link to access the data")
 
 	fsStageCmd.Flags().String("location", "", "fully qualified storage location (i.e. \"s3://bucket/path/to/object\")")
 	fsStageCmd.Flags().Int64("size", 0, "Object size in bytes")
@@ -630,4 +659,5 @@ func init() {
 	fsDownloadCmd.Flags().BoolP("direct", "d", false, "read directly from backing store (requires credentials)")
 	fsDownloadCmd.Flags().BoolP("recursive", "r", false, "recursively all objects under path")
 	fsDownloadCmd.Flags().IntP("parallel", "p", fsDownloadParallelDefault, "max concurrent downloads")
+	fsDownloadCmd.Flags().Bool("pre-sign", false, "Request pre-sign link to access the data")
 }

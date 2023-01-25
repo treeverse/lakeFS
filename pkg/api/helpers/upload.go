@@ -3,9 +3,12 @@ package helpers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -68,6 +71,28 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 }
 
 func ClientUploadPreSign(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker) (*api.ObjectStats, error) {
+	// calculate size using seek
+	contentLength, err := contents.Seek(0, io.SeekEnd)
+	if err != nil {
+		return nil, err
+	}
+
+	// upload loop, retry on conflict
+	for {
+		stats, err := clientUploadPreSignHelper(ctx, client, repoID, branchID, objPath, metadata, contentType, contents, contentLength)
+		if errors.Is(err, ErrConflict) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		return stats, nil
+	}
+}
+
+// clientUploadPreSignHelper helper func to get physical address an upload content. Special case if conflict that
+// ErrConflict is returned where a re-try is required.
+func clientUploadPreSignHelper(ctx context.Context, client api.ClientWithResponsesInterface, repoID string, branchID string, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker, contentLength int64) (*api.ObjectStats, error) {
 	stagingLocation, err := getPhysicalAddress(ctx, client, repoID, branchID, &api.GetPhysicalAddressParams{
 		Path:    objPath,
 		Presign: swag.Bool(true),
@@ -75,10 +100,58 @@ func ClientUploadPreSign(ctx context.Context, client api.ClientWithResponsesInte
 	if err != nil {
 		return nil, err
 	}
-	// TODO(barak): upload content using pre-sign URL
 	preSignURL := swag.StringValue(stagingLocation.PresignedUrl)
-	_ = preSignURL
-	return nil
+	if _, err := contents.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, preSignURL, contents)
+	if err != nil {
+		return nil, err
+	}
+	req.ContentLength = contentLength
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+
+	putResp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = putResp.Body.Close() }()
+	if putResp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("upload %w %s: %s", ErrRequestFailed, preSignURL, putResp.Status)
+	}
+
+	etag := putResp.Header.Get("Etag")
+	etag = strings.TrimSpace(etag)
+	if etag == "" {
+		return nil, fmt.Errorf("etag is missing: %w", ErrRequestFailed)
+	}
+
+	linkReqBody := api.LinkPhysicalAddressJSONRequestBody{
+		Checksum:  etag,
+		SizeBytes: contentLength,
+		Staging:   *stagingLocation,
+		UserMetadata: &api.StagingMetadata_UserMetadata{
+			AdditionalProperties: metadata,
+		},
+		ContentType: api.StringPtr(contentType),
+	}
+	linkResp, err := client.LinkPhysicalAddressWithResponse(ctx, repoID, branchID,
+		&api.LinkPhysicalAddressParams{
+			Path: objPath,
+		}, linkReqBody)
+	if err != nil {
+		return nil, fmt.Errorf("link object to backing store: %w", err)
+	}
+	if linkResp.JSON200 != nil {
+		return linkResp.JSON200, nil
+	}
+	if linkResp.JSON409 != nil {
+		return nil, ErrConflict
+	}
+	return nil, fmt.Errorf("link object to backing store: %w (%s)", ErrRequestFailed, linkResp.Status())
 }
 
 func getPhysicalAddress(ctx context.Context, client api.ClientWithResponsesInterface, repoID string, branchID string, params *api.GetPhysicalAddressParams) (*api.StagingLocation, error) {
