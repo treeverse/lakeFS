@@ -261,6 +261,9 @@ var runCmd = &cobra.Command{
 		var oauthConfig *oauth2.Config
 		var oidcProvider *oidc.Provider
 		if cfg.Auth.OIDC.Enabled {
+			logger.
+				WithField("feature", "oidc").
+				Warn("Enabling OIDC on lakeFS server, but this functionality is deprecated")
 			oidcProvider, err = oidc.NewProvider(
 				ctx,
 				cfg.Auth.OIDC.URL,

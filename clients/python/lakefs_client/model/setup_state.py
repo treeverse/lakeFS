@@ -145,8 +145,8 @@ class SetupState(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             state (str): [optional]  # noqa: E501
-            oidc_enabled (bool): [optional]  # noqa: E501
-            oidc_default_login (bool): [optional]  # noqa: E501
+            oidc_enabled (bool): Deprecated: embedded OIDC support is now deprecated. [optional]  # noqa: E501
+            oidc_default_login (bool): Deprecated: embedded OIDC support is now deprecated. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -229,8 +229,8 @@ class SetupState(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             state (str): [optional]  # noqa: E501
-            oidc_enabled (bool): [optional]  # noqa: E501
-            oidc_default_login (bool): [optional]  # noqa: E501
+            oidc_enabled (bool): Deprecated: embedded OIDC support is now deprecated. [optional]  # noqa: E501
+            oidc_default_login (bool): Deprecated: embedded OIDC support is now deprecated. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

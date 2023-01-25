@@ -530,7 +530,7 @@ public class AuthApiTest {
     /**
      * 
      *
-     * 
+     * Deprecated: embedded OIDC support is now deprecated
      *
      * @throws ApiException
      *          if the Api call fails

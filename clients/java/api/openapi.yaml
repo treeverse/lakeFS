@@ -131,6 +131,8 @@ paths:
       x-accepts: application/json
   /oidc/callback:
     get:
+      deprecated: true
+      description: 'Deprecated: embedded OIDC support is now deprecated'
       operationId: oauthCallback
       responses:
         "302":
@@ -5799,8 +5801,12 @@ components:
           - comm_prefs_done
           type: string
         oidc_enabled:
+          deprecated: true
+          description: 'Deprecated: embedded OIDC support is now deprecated'
           type: boolean
         oidc_default_login:
+          deprecated: true
+          description: 'Deprecated: embedded OIDC support is now deprecated'
           type: boolean
       type: object
     AccessKeyCredentials:
