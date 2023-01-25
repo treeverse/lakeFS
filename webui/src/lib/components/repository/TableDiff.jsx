@@ -38,7 +38,7 @@ export const TableDiff = ({repo, leftRef, rightRef, tablePath}) => {
     const otfDiffs = response.response.results;
     return <>
         {(otfDiffs.length === 0) ?  <Alert variant="info" style={{margin: 0+"px"}}>No changes</Alert> :
-                <Table borderless size="md">
+                <Table classname="table-diff" borderless size="md" style={{"table-layout": "fixed"}}>
                     <tbody>
                     {
                         response.response.results.map(otfDiff => {
@@ -75,16 +75,14 @@ const OperationMetadataRow = ({otfDiff, operationExpanded, onExpand, ...rest}) =
 
 const OperationDetailsRow = ({otfDiff}) => {
     const operationTimestamp = otfDiff.timestamp;
-    const operationContent = JSON.stringify(otfDiff.operation_content, null, 2);
+    const operationContent = parseOperationContent(otfDiff.operation_content);
     return <tr className="otf-diff-operation-details">
         <td className="pl-lg-10 col-10 operation-details" style={{"padding-left": 30+"px"}}>
-            <div>
-                <strong>Timestamp:</strong> {operationTimestamp}
-            </div>
-            <div>
-                <strong>Commit Info:</strong>
-                <pre>{operationContent}</pre>
-            </div>
+            <strong>Timestamp:</strong> {operationTimestamp}
+            <br/>
+            <strong>Commit Info:</strong>
+            <br/>
+            <pre>{operationContent}</pre>
         </td>
     </tr>
 }
@@ -98,4 +96,21 @@ const OperationExpansionSection = ({operationExpanded, onExpand}) => {
 function operationToDiffType(operation) {
     const diffType = deltaLakeOperationToDiffType.get(operation);
     return diffType !== undefined ? diffType : DiffType.Changed;
+}
+
+function parseOperationContent(content) {
+    let parsedContent = "";
+    const JSONContent = JSON.parse(JSON.stringify(content, null, 2));
+    for (let key in JSONContent) {
+        const val = JSONContent[key];
+        parsedContent += `${key}: `
+        let parsedVal = "";
+        try {
+            parsedVal = JSON.parse(val);
+        } catch (err) {
+            parsedVal = val;
+        }
+        parsedContent += parsedVal + "\n";
+    }
+    return parsedContent;
 }
