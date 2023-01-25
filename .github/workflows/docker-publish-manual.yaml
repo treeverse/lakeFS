@@ -1,4 +1,4 @@
-name: Docker manual
+name: Docker - publish experimental image
 on:
   workflow_dispatch:
     inputs:
