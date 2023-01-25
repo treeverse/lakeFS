@@ -38,7 +38,7 @@ export const TableDiff = ({repo, leftRef, rightRef, tablePath}) => {
     const otfDiffs = response.response.results;
     return <>
         {(otfDiffs.length === 0) ?  <Alert variant="info" style={{margin: 0+"px"}}>No changes</Alert> :
-                <Table borderless size="md">
+                <Table classname="table-diff" borderless size="md" style={{"table-layout": "fixed"}}>
                     <tbody>
                     {
                         response.response.results.map(otfDiff => {
@@ -78,13 +78,11 @@ const OperationDetailsRow = ({otfDiff}) => {
     const operationContent = JSON.stringify(otfDiff.operation_content, null, 2);
     return <tr className="otf-diff-operation-details">
         <td className="pl-lg-10 col-10 operation-details" style={{"padding-left": 30+"px"}}>
-            <div>
-                <strong>Timestamp:</strong> {operationTimestamp}
-            </div>
-            <div>
-                <strong>Commit Info:</strong>
-                <pre>{operationContent}</pre>
-            </div>
+            <strong>Timestamp:</strong> {operationTimestamp}
+            <br/>
+            <strong>Commit Info:</strong>
+            <br/>
+            <pre>{operationContent}</pre>
         </td>
     </tr>
 }

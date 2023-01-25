@@ -486,9 +486,6 @@ class Repositories {
             throw new NotFoundError(`table ${table_path} not found`);
         }
         return response.json();
-        // const mockRes = '{"results": []}'
-        // const mockRes = '{"results": [{"version": "1", "timestamp": 1515491537026, "operation": "INSERT", "operation_content": {"operationParameters": {"mode": "Append","partitionBy": "[]"}}}, {"version": "2", "timestamp": 1515491537346, "operation": "DELETE", "operation_content": {"operationParameters": {"mode": "Append","partitionBy": "[]"}}}]}'
-        // return JSON.parse(mockRes);
     }
 }
 
