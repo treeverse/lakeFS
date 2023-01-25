@@ -33,7 +33,7 @@ export const TableDiff = ({repo, leftRef, rightRef, tablePath}) => {
     let response = useAPI(() => repositories.otfDiff(repo.id, leftRef, rightRef, tablePath, OtfType.Delta), [])
     if (response && response.loading) return <Loading style={{margin: 0+"px"}}/>;
     const err = response && response.error;
-    if (err) return <Error error={err}/>;
+    if (err) return <Error error={"Table not found"}/>;
 
     const otfDiffs = response.response.results;
     return <>
