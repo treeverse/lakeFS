@@ -18,6 +18,9 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          # This is used to fetch all the history in order to get the latest tag (for step "Extract Version")
+          fetch-depth: 0
 
       - name: Set up NodeJS
         uses: actions/setup-node@v3
