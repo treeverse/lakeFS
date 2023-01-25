@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 **blockstore_type** | **str** |  | 
 **blockstore_namespace_example** | **str** |  | 
 **blockstore_namespace_validity_regex** | **str** |  | 
+**pre_sign_support** | **bool** |  | 
 **default_namespace_prefix** | **str** |  | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
