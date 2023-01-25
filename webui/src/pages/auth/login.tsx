@@ -14,6 +14,8 @@ import {useAPI} from "../../lib/hooks/api";
 
 interface LoginConfig {
     login_url: string;
+    login_failed_message?: string;
+    fallback_login_url?: string;
     fallback_login_label?: string;
     login_cookies: string[];
     logout_url: string;
@@ -46,13 +48,10 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                                 router.push(next ? next : '/');
                             } catch(err) {
                                 if (err instanceof AuthenticationError && err.status === 401) {
-                                    setLoginError("Credentials don't match.");
-                                    if (loginConfig.fallback_login_url) {
-                                        setLoginError(loginConfig.fallback_login_label ||
-                                            "Credentials don&apos;t match.  Try another login method?");
-                                    }
+                                    const contents = {__html: `${loginConfig.login_failed_message}` ||
+                                        "Credentials don't match."};
+                                    setLoginError(<span dangerouslySetInnerHTML={contents}/>);
                                 }
-
                             }
                         }}>
                             <Form.Group controlId="username" className="mb-3">
@@ -105,7 +104,7 @@ const LoginPage = () => {
     }
     if (router.query.redirected)  {
         if(!error && response?.loginConfig?.login_url) {
-            window.location = reponse.loginConfig.login_url;
+            window.location = response.loginConfig.login_url;
             return null;
         }
         delete router.query.redirected;

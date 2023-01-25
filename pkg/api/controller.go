@@ -3503,6 +3503,40 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository s
 	writeResponse(w, r, http.StatusOK, response)
 }
 
+func makeLoginConfig(c *config.Config) *LoginConfig {
+	// TODO(ariels): Configure by c.Auth.OIDC.Enabled if set, otherwise
+	// from C.Auth.UIConfig
+	var (
+		cookies = c.Auth.UIConfig.LoginCookies
+		// []string{
+		// 	"internal_auth_session",
+		// }
+		loginFailedMessage = c.Auth.UIConfig.LoginFailedMessage // "The credentials don't match."
+		fallbackLoginURL   = c.Auth.UIConfig.FallbackLoginURL   // nil
+		fallbackLoginLabel = c.Auth.UIConfig.FallbackLoginLabel // nil
+
+		defaultFallbackLoginURL   = "/oidc/login?prompt=login"
+		defaultFallbackLoginLabel = "Sign in with SSO provider"
+	)
+	if c.Auth.OIDC.Enabled {
+		cookies = append(cookies, "oidc_auth_session")
+		loginFailedMessage = `The credentials don&apos;t match. You may be registered through our <a href={"/oidc/login?prompt=login"}>SSO Provider.</a>`
+		fallbackLoginURL = &defaultFallbackLoginURL
+		fallbackLoginLabel = &defaultFallbackLoginLabel
+	}
+
+	// "/oidc/login?prompt=login"
+	return &LoginConfig{
+		RBAC:               &c.Config.Auth.UIConfig.RBAC,
+		LoginUrl:           c.Auth.UIConfig.LoginURL,
+		LoginFailedMessage: &loginFailedMessage,
+		FallbackLoginUrl:   fallbackLoginURL,
+		FallbackLoginLabel: fallbackLoginLabel,
+		LoginCookies:       cookies,
+		LogoutUrl:          c.Auth.UIConfig.LogoutURL,
+	}
+}
+
 func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	emailSubscriptionEnabled := c.Config.EmailSubscription.Enabled
@@ -3519,20 +3553,12 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	} else if savedState == auth.SetupStateNotInitialized {
 		c.Collector.CollectEvent(stats.Event{Class: "global", Name: "preinit", Client: httputil.GetRequestLakeFSClient(r)})
 	}
+	lc := makeLoginConfig(c.Config)
 	response := SetupState{
 		State:            swag.String(state),
 		OidcEnabled:      swag.Bool(c.Config.Auth.OIDC.Enabled),
 		OidcDefaultLogin: swag.Bool(c.Config.Auth.OIDC.IsDefaultLogin),
-		// TODO(ariels): Merge defaults and configuration
-		LoginConfig: &LoginConfig{
-			RBAC: &c.Config.Auth.UIConfig.RBAC,
-			LoginCookies: []string{
-				"internal_auth_session",
-				// Add sso_auth_session for SSO
-			},
-			LoginUrl:  "/auth/login",
-			LogoutUrl: "/logout",
-		},
+		LoginConfig:      lc,
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
