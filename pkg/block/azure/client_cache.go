@@ -13,12 +13,14 @@ import (
 )
 
 type ClientContainerCache struct {
+	serviceToClient   *xsync.MapOf[string, *service.Client]
 	containerToClient *xsync.MapOf[string, *container.Client]
 	params            params.Azure
 }
 
 func NewCache(p params.Azure) *ClientContainerCache {
 	return &ClientContainerCache{
+		serviceToClient:   xsync.NewMapOf[*service.Client](),
 		containerToClient: xsync.NewMapOf[*container.Client](),
 		params:            p,
 	}
@@ -29,6 +31,25 @@ func mapKey(storageAccount, containerName string) string {
 }
 
 func (c *ClientContainerCache) NewContainerClient(storageAccount, containerName string) (*container.Client, error) {
+	key := mapKey(storageAccount, containerName)
+
+	var err error
+	cl, _ := c.containerToClient.LoadOrCompute(key, func() *container.Client {
+		var svc *service.Client
+		svc, err = c.NewServiceClient(storageAccount)
+		if err != nil {
+			return nil
+		}
+		return svc.NewContainerClient(containerName)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return cl, nil
+}
+
+func (c *ClientContainerCache) NewServiceClient(storageAccount string) (*service.Client, error) {
 	p := c.params
 	// Use StorageAccessKey to initialize storage account client only if it was provided for this given storage account
 	// Otherwise fall back to the default credentials
@@ -36,16 +57,15 @@ func (c *ClientContainerCache) NewContainerClient(storageAccount, containerName 
 		p.StorageAccount = storageAccount
 		p.StorageAccessKey = ""
 	}
-	key := mapKey(storageAccount, containerName)
 
 	var err error
-	cl, _ := c.containerToClient.LoadOrCompute(key, func() *container.Client {
+	cl, _ := c.serviceToClient.LoadOrCompute(storageAccount, func() *service.Client {
 		var svc *service.Client
 		svc, err = BuildAzureServiceClient(p)
 		if err != nil {
 			return nil
 		}
-		return svc.NewContainerClient(containerName)
+		return svc
 	})
 	if err != nil {
 		return nil, err

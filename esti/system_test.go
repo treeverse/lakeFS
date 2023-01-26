@@ -19,6 +19,7 @@ import (
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -63,6 +64,7 @@ func makeRepositoryName(name string) string {
 }
 
 func setupTest(t *testing.T) (context.Context, logging.Logger, string) {
+	SkipTestIfAskedTo(t)
 	ctx := context.Background()
 	name := makeRepositoryName(t.Name())
 	logger := logger.WithField("testName", name)
@@ -244,4 +246,12 @@ func listRepositories(t *testing.T, ctx context.Context) []api.Repository {
 		after = payload.Pagination.NextOffset
 	}
 	return listedRepos
+}
+
+// requireBlockstoreType Skips test if blockstore type doesn't match required type
+func requireBlockstoreType(t *testing.T, requiredType string) {
+	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
+	if blockstoreType != requiredType {
+		t.Skip(fmt.Sprintf("Test %s requires blockstore type: %s, got: %s", t.Name(), requiredType, blockstoreType))
+	}
 }

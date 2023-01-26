@@ -22,7 +22,6 @@ const (
 )
 
 func TestImport(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	importPath := ""
 	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
 	switch blockstoreType {

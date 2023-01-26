@@ -56,7 +56,6 @@ services:
       - ESTI_ENDPOINT_URL=http://lakefs:8000
       - ESTI_LAKECTL_DIR=/app
       - ESTI_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
-      - ESTI_POST_MIGRATE
       - ESTI_GOTEST_FLAGS
       - ESTI_FLAGS
       - ESTI_FORCE_PATH_STYLE

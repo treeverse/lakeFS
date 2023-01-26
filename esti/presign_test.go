@@ -27,7 +27,6 @@ func matchPreSignedURLContent(t *testing.T, preSignedURL, content string) {
 }
 
 func TestPreSign(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 

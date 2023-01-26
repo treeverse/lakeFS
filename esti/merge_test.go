@@ -12,7 +12,6 @@ import (
 )
 
 func TestMergeAndList(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	const branch = "feature-1"

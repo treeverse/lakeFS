@@ -199,7 +199,6 @@ type Config struct {
 			TryTimeout       time.Duration `mapstructure:"try_timeout"`
 			StorageAccount   string        `mapstructure:"storage_account"`
 			StorageAccessKey string        `mapstructure:"storage_access_key"`
-			AuthMethod       string        `mapstructure:"auth_method"`
 		}
 		GS *struct {
 			S3Endpoint      string `mapstructure:"s3_endpoint"`
@@ -482,7 +481,6 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 	return blockparams.Azure{
 		StorageAccount:   c.Blockstore.Azure.StorageAccount,
 		StorageAccessKey: c.Blockstore.Azure.StorageAccessKey,
-		AuthMethod:       c.Blockstore.Azure.AuthMethod,
 		TryTimeout:       c.Blockstore.Azure.TryTimeout,
 	}, nil
 }

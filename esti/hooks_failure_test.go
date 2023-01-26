@@ -30,12 +30,10 @@ hooks:
 const hooksTimeout = 2 * time.Second
 
 func TestHooksTimeout(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	hookFailToCommit(t, "timeout")
 }
 
 func TestHooksFail(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	hookFailToCommit(t, "fail")
 }
 

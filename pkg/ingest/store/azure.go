@@ -66,7 +66,7 @@ func (a *AzureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 
 	container := a.client.NewContainerClient(qk.ContainerName)
 	listBlob := container.NewListBlobsFlatPager(&azblob.ListBlobsFlatOptions{
-		Prefix: &basePath,
+		Prefix: &prefix,
 		Marker: &op.ContinuationToken,
 	})
 

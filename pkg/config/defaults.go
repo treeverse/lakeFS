@@ -76,7 +76,6 @@ func setDefaults(local bool) {
 	viper.SetDefault("email_subscription.enabled", true)
 
 	viper.SetDefault("blockstore.azure.try_timeout", 10*time.Minute)
-	viper.SetDefault("blockstore.azure.auth_method", "access-key")
 
 	viper.SetDefault("security.audit_check_interval", 24*time.Hour)
 	viper.SetDefault("security.audit_check_url", "https://audit.lakefs.io/audit")
