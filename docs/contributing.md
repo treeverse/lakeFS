@@ -128,7 +128,7 @@ Customizing the lakeFS docs site should follow the following guidelines: [Just T
 * You can explain things better by including examples. Show, not tell. Use illustrations, images, gifs, code snippets, etc.
 * Establish a visual hierarchy to help people quickly find the information they need. Use text formatting to create levels of title and subtitle (such as h1 to h6 headings in HTML).
 
-### Test your changes localy
+### Test your changes locally
 To render the documentation locally and preview changes, use the following command and [browse the documentation locally](http://localhost:4000):
 
 ```sh
