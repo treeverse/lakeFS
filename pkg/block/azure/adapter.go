@@ -76,15 +76,13 @@ func ResolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
 		return qk, fmt.Errorf("wrong path parts(%d): %w", len(pathParts), block.ErrInvalidNamespace)
 	}
 
-	// In azure the subdomain is the storage account
-	const expectedHostParts = 2
-	hostParts := strings.SplitN(pathURL.Host, ".", expectedHostParts)
-	if len(hostParts) != expectedHostParts {
-		return qk, fmt.Errorf("wrong host parts(%d): %w", len(pathParts), block.ErrInvalidNamespace)
+	storageAccount, err := ExtractStorageAccount(pathURL)
+	if err != nil {
+		return qk, err
 	}
 
 	return BlobURLInfo{
-		StorageAccountName: hostParts[0],
+		StorageAccountName: storageAccount,
 		ContainerURL:       fmt.Sprintf("%s://%s/%s", pathURL.Scheme, pathURL.Host, pathParts[0]),
 		ContainerName:      pathParts[0],
 		BlobURL:            strings.Join(pathParts[1:], "/"),

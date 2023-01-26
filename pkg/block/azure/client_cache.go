@@ -3,7 +3,8 @@ package azure
 import (
 	"errors"
 	"fmt"
-	"regexp"
+	"net/url"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
@@ -11,6 +12,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/puzpuzpuz/xsync"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/params"
 )
 
@@ -28,16 +30,15 @@ func NewCache(p params.Azure) *ClientContainerCache {
 	}
 }
 
-// storageAccountRegex is used to extract the storage account from azure storage url.
-// Following rules from https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview#storage-account-name
-var storageAccountRegex = regexp.MustCompile("https://([a-z0-9]{3,24}).blob.core.windows.net/.*")
-
-func ExtractStorageAccount(storageAccountURL string) (string, error) {
-	matches := storageAccountRegex.FindAllStringSubmatch(storageAccountURL, -1)
-	if len(matches) != 1 || len(matches[0]) != 2 {
-		return "", ErrUnknownAzureURL
+func ExtractStorageAccount(storageAccount *url.URL) (string, error) {
+	// In azure the subdomain is the storage account
+	const expectedHostParts = 2
+	hostParts := strings.SplitN(storageAccount.Host, ".", expectedHostParts)
+	if len(hostParts) != expectedHostParts {
+		return "", fmt.Errorf("wrong host parts(%d): %w", len(hostParts), block.ErrInvalidNamespace)
 	}
-	return matches[0][1], nil
+
+	return hostParts[0], nil
 }
 
 func mapKey(storageAccount, containerName string) string {

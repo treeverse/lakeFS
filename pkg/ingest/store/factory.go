@@ -133,7 +133,7 @@ func (f *walkerFactory) buildGCSWalker(ctx context.Context) (*gcsWalker, error) 
 	return NewGCSWalker(svc), nil
 }
 
-func (f *walkerFactory) buildAzureWalker(importURL string) (*azureBlobWalker, error) {
+func (f *walkerFactory) buildAzureWalker(importURL *url.URL) (*azureBlobWalker, error) {
 	var (
 		c   *service.Client
 		err error
@@ -180,7 +180,7 @@ func (f *walkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*Wal
 			return nil, fmt.Errorf("creating gs walker: %w", err)
 		}
 	case "http", "https":
-		walker, err = f.buildAzureWalker(uri.String())
+		walker, err = f.buildAzureWalker(uri)
 		if err != nil {
 			return nil, fmt.Errorf("creating Azure walker: %w", err)
 		}
