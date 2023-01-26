@@ -33,6 +33,7 @@ var (
 	reEndpoint        = regexp.MustCompile(`https?://\w+(:\d+)?/api/v\d+/`)
 	rePhysicalAddress = regexp.MustCompile(`/data/[0-9a-v]{20}/[0-9a-v]{20}`)
 	reVariable        = regexp.MustCompile(`\$\{([^${}]+)}`)
+	rePreSignURL      = regexp.MustCompile(`https://\S+data\S+`)
 )
 
 func lakectlLocation() string {
@@ -133,6 +134,7 @@ func sanitize(output string, vars map[string]string) string {
 	s = normalizeChecksum(s)
 	s = normalizeShortCommitID(s)
 	s = normalizeEndpoint(s, vars["LAKEFS_ENDPOINT"])
+	s = normalizePreSignURL(s) // should be after storage and endpoint to enable non pre-sign url on azure
 	return s
 }
 
@@ -237,4 +239,8 @@ func normalizeChecksum(output string) string {
 
 func normalizeEndpoint(output string, endpoint string) string {
 	return reEndpoint.ReplaceAllString(output, endpoint)
+}
+
+func normalizePreSignURL(output string) string {
+	return rePreSignURL.ReplaceAllString(output, "<PRE_SIGN_URL>")
 }
