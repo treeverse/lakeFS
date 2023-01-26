@@ -54,9 +54,10 @@ type BlobURLInfo struct {
 }
 
 type PrefixURLInfo struct {
-	ContainerURL  string
-	ContainerName string
-	Prefix        string
+	StorageAccountName string
+	ContainerURL       string
+	ContainerName      string
+	Prefix             string
 }
 
 func ResolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
@@ -131,9 +132,10 @@ func resolveNamespacePrefix(lsOpts block.WalkOpts) (PrefixURLInfo, error) {
 	}
 
 	return PrefixURLInfo{
-		ContainerURL:  qualifiedPrefix.ContainerURL,
-		ContainerName: qualifiedPrefix.ContainerName,
-		Prefix:        qualifiedPrefix.BlobURL,
+		StorageAccountName: qualifiedPrefix.StorageAccountName,
+		ContainerURL:       qualifiedPrefix.ContainerURL,
+		ContainerName:      qualifiedPrefix.ContainerName,
+		Prefix:             qualifiedPrefix.BlobURL,
 	}, nil
 }
 
@@ -174,7 +176,7 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 		return err
 	}
 	o := a.translatePutOpts(ctx, opts)
-	containerClient, err := a.clientCache.NewContainerClient(qualifiedKey.ContainerURL, qualifiedKey.ContainerName)
+	containerClient, err := a.clientCache.NewContainerClient(qualifiedKey.StorageAccountName, qualifiedKey.ContainerName)
 	if err != nil {
 		return err
 	}
@@ -207,7 +209,7 @@ func (a *Adapter) getPreSignedURL(obj block.ObjectPointer, permissions sas.BlobP
 		return "", err
 	}
 
-	containerClient, err := a.clientCache.NewContainerClient(qualifiedKey.ContainerURL, qualifiedKey.ContainerName)
+	containerClient, err := a.clientCache.NewContainerClient(qualifiedKey.StorageAccountName, qualifiedKey.ContainerName)
 	if err != nil {
 		return "", err
 	}
@@ -233,7 +235,7 @@ func (a *Adapter) Download(ctx context.Context, obj block.ObjectPointer, offset,
 	if err != nil {
 		return nil, err
 	}
-	container, err := a.clientCache.NewContainerClient(qualifiedKey.ContainerURL, qualifiedKey.ContainerName)
+	container, err := a.clientCache.NewContainerClient(qualifiedKey.StorageAccountName, qualifiedKey.ContainerName)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +267,7 @@ func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block
 		return err
 	}
 
-	containerClient, err := a.clientCache.NewContainerClient(qualifiedPrefix.ContainerURL, qualifiedPrefix.ContainerName)
+	containerClient, err := a.clientCache.NewContainerClient(qualifiedPrefix.StorageAccountName, qualifiedPrefix.ContainerName)
 	if err != nil {
 		return err
 	}
@@ -303,7 +305,7 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 		return false, err
 	}
 
-	containerClient, err := a.clientCache.NewContainerClient(qualifiedKey.ContainerURL, qualifiedKey.ContainerName)
+	containerClient, err := a.clientCache.NewContainerClient(qualifiedKey.StorageAccountName, qualifiedKey.ContainerName)
 	if err != nil {
 		return false, err
 	}
@@ -329,7 +331,7 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 		return block.Properties{}, err
 	}
 
-	containerClient, err := a.clientCache.NewContainerClient(qualifiedKey.ContainerURL, qualifiedKey.ContainerName)
+	containerClient, err := a.clientCache.NewContainerClient(qualifiedKey.StorageAccountName, qualifiedKey.ContainerName)
 	if err != nil {
 		return block.Properties{}, err
 	}
@@ -349,7 +351,7 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	if err != nil {
 		return err
 	}
-	containerClient, err := a.clientCache.NewContainerClient(qualifiedKey.ContainerURL, qualifiedKey.ContainerName)
+	containerClient, err := a.clientCache.NewContainerClient(qualifiedKey.StorageAccountName, qualifiedKey.ContainerName)
 	if err != nil {
 		return err
 	}
@@ -372,13 +374,13 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 		return err
 	}
 
-	destContainerClient, err := a.clientCache.NewContainerClient(qualifiedDestinationKey.ContainerURL, qualifiedDestinationKey.ContainerName)
+	destContainerClient, err := a.clientCache.NewContainerClient(qualifiedDestinationKey.StorageAccountName, qualifiedDestinationKey.ContainerName)
 	if err != nil {
 		return err
 	}
 	destClient := destContainerClient.NewBlobClient(qualifiedDestinationKey.BlobURL)
 
-	srcContainerClient, err := a.clientCache.NewContainerClient(qualifiedSourceKey.ContainerURL, qualifiedSourceKey.ContainerName)
+	srcContainerClient, err := a.clientCache.NewContainerClient(qualifiedSourceKey.StorageAccountName, qualifiedSourceKey.ContainerName)
 	if err != nil {
 		return err
 	}
@@ -420,7 +422,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int
 		return nil, err
 	}
 
-	container, err := a.clientCache.NewContainerClient(qualifiedKey.ContainerURL, qualifiedKey.ContainerName)
+	container, err := a.clientCache.NewContainerClient(qualifiedKey.StorageAccountName, qualifiedKey.ContainerName)
 	if err != nil {
 		return nil, err
 	}
@@ -463,11 +465,11 @@ func (a *Adapter) copyPartRange(ctx context.Context, sourceObj, destinationObj b
 		return nil, err
 	}
 
-	destinationContainer, err := a.clientCache.NewContainerClient(qualifiedDestinationKey.ContainerURL, qualifiedDestinationKey.ContainerName)
+	destinationContainer, err := a.clientCache.NewContainerClient(qualifiedDestinationKey.StorageAccountName, qualifiedDestinationKey.ContainerName)
 	if err != nil {
 		return nil, err
 	}
-	sourceContainer, err := a.clientCache.NewContainerClient(qualifiedSourceKey.ContainerURL, qualifiedSourceKey.ContainerName)
+	sourceContainer, err := a.clientCache.NewContainerClient(qualifiedSourceKey.StorageAccountName, qualifiedSourceKey.ContainerName)
 	if err != nil {
 		return nil, err
 	}
@@ -493,7 +495,7 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	if err != nil {
 		return nil, err
 	}
-	containerURL, err := a.clientCache.NewContainerClient(qualifiedKey.ContainerURL, qualifiedKey.ContainerName)
+	containerURL, err := a.clientCache.NewContainerClient(qualifiedKey.StorageAccountName, qualifiedKey.ContainerName)
 	if err != nil {
 		return nil, err
 	}
