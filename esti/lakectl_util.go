@@ -129,12 +129,12 @@ func sanitize(output string, vars map[string]string) string {
 	if _, ok := vars["DATE"]; !ok {
 		s = normalizeProgramTimestamp(s)
 	}
-	s = normalizePreSignURL(s)
 	s = normalizeRandomObjectKey(s, vars["STORAGE"])
 	s = normalizeCommitID(s)
 	s = normalizeChecksum(s)
 	s = normalizeShortCommitID(s)
 	s = normalizeEndpoint(s, vars["LAKEFS_ENDPOINT"])
+	s = normalizePreSignURL(s) // should be after storage and endpoint to enable non pre-sign url on azure
 	return s
 }
 
