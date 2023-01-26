@@ -34,6 +34,17 @@ If you already have a database, take note of the connection string and skip to t
 
 ## Run the lakeFS server
 
+### Storage account access
+
+lakeFS uses [Azure SDK for go](https://github.com/Azure/azure-sdk-for-go/) 
+under the hood. The environment variables listed in options 1&2 in the Azure 
+[docs](https://learn.microsoft.
+com/en-us/azure/developer/go/azure-sdk-authentication#2-authenticate-with
+-azure) are supported by lakeFS. You may still pass storage accounts 
+credentials directly to lakeFS by setting the `blockstore.azure.
+storage_account` & `blockstore.azure.storage_access_key`.  
+
+
 <div class="tabs">
   <ul>
     <li><a href="#vm">Azure VM</a></li>
