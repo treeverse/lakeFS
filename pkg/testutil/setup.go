@@ -35,6 +35,11 @@ type SetupTestingEnvParams struct {
 
 func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientWithResponsesInterface, *s3.S3, string) {
 	logger := logging.Default()
+	viper.AddConfigPath(".")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
+	viper.SetEnvPrefix(strings.ToUpper(params.Name))
+	viper.SetConfigName(strings.ToLower(params.Name))
+	viper.AutomaticEnv()
 
 	viper.SetDefault("setup_lakefs", true)
 	viper.SetDefault("setup_lakefs_timeout", defaultSetupTimeout)
@@ -46,10 +51,6 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	viper.SetDefault("lakectl_dir", "..")
 	viper.SetDefault("azure_storage_account", "")
 	viper.SetDefault("azure_storage_access_key", "")
-	viper.AddConfigPath(".")
-	viper.SetEnvPrefix(strings.ToUpper(params.Name))
-	viper.SetConfigName(strings.ToLower(params.Name))
-	viper.AutomaticEnv()
 
 	err := viper.ReadInConfig()
 	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {
