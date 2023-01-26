@@ -286,7 +286,7 @@ using the feature you may want to first gain confidence in the decisions GC make
 * Backup: copy expired objects from your repository's storage namespace to an external location before running GC in [sweep only mode](#sweep-only-mode).  
 * Restore: copy objects that were hard-deleted by GC from an external location you used for saving your backup into your repository's storage namespace.
 
-Follow [**rclone** documentation](https://rclone.org/docs/) to configure remote access to the underlying storage used by lakeFS.
+Follow [rclone documentation](https://rclone.org/docs/) to configure remote access to the underlying storage used by lakeFS.
 Replace `LAKEFS_STORAGE_NAMESPACE` with remote:bucket/path which points to the lakeFS repository storage namespace.
 The `BACKUP_STORAGE_LOCATION` attribute points to a storage location outside your lakeFS storage namespace into which you want to save the backup.
 
