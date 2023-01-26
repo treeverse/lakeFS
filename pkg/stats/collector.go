@@ -405,14 +405,14 @@ func (s *BufferedCollector) CollectCommPrefs(email, installationID string, featu
 	}
 	ctx := context.Background()
 	err := s.sender.UpdateCommPrefs(ctx, commPrefs)
-	status := "success"
+	eventName := "update_comm_prefs_success"
 	if err != nil {
 		s.log.WithError(err).Info("could not update comm prefs")
-		status = "failed"
+		eventName = "update_comm_prefs_failed"
 	}
 	s.CollectEvent(Event{
 		Class: "global",
-		Name:  fmt.Sprintf("update_comm_prefs_%s", status),
+		Name:  eventName,
 	})
 }
 
