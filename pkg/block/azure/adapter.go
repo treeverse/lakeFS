@@ -47,9 +47,10 @@ func NewAdapter(params params.Azure) *Adapter {
 }
 
 type BlobURLInfo struct {
-	ContainerURL  string
-	ContainerName string
-	BlobURL       string
+	StorageAccountName string
+	ContainerURL       string
+	ContainerName      string
+	BlobURL            string
 }
 
 type PrefixURLInfo struct {
@@ -65,18 +66,27 @@ func ResolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
 		return qk, err
 	}
 	if storageType != block.StorageTypeAzure {
-		return qk, block.ErrInvalidNamespace
+		return qk, fmt.Errorf("wrong storage type: %w", block.ErrInvalidNamespace)
 	}
 	// In azure the first part of the path is part of the storage namespace
 	trimmedPath := strings.Trim(pathURL.Path, "/")
-	parts := strings.Split(trimmedPath, "/")
-	if len(parts) == 0 {
-		return qk, block.ErrInvalidNamespace
+	pathParts := strings.Split(trimmedPath, "/")
+	if len(pathParts) == 0 {
+		return qk, fmt.Errorf("wrong path parts(%d): %w", len(pathParts), block.ErrInvalidNamespace)
 	}
+
+	// In azure the subdomain is the storage account
+	const expectedHostParts = 2
+	hostParts := strings.SplitN(pathURL.Host, ".", expectedHostParts)
+	if len(hostParts) != expectedHostParts {
+		return qk, fmt.Errorf("wrong host parts(%d): %w", len(pathParts), block.ErrInvalidNamespace)
+	}
+
 	return BlobURLInfo{
-		ContainerURL:  fmt.Sprintf("%s://%s/%s", pathURL.Scheme, pathURL.Host, parts[0]),
-		ContainerName: parts[0],
-		BlobURL:       strings.Join(parts[1:], "/"),
+		StorageAccountName: hostParts[0],
+		ContainerURL:       fmt.Sprintf("%s://%s/%s", pathURL.Scheme, pathURL.Host, pathParts[0]),
+		ContainerName:      pathParts[0],
+		BlobURL:            strings.Join(pathParts[1:], "/"),
 	}, nil
 }
 
@@ -98,9 +108,10 @@ func resolveBlobURLInfo(obj block.ObjectPointer) (BlobURLInfo, error) {
 			return qk, err
 		}
 		info := BlobURLInfo{
-			ContainerURL:  qp.ContainerURL,
-			ContainerName: qp.ContainerName,
-			BlobURL:       qp.BlobURL + "/" + key,
+			StorageAccountName: qp.StorageAccountName,
+			ContainerURL:       qp.ContainerURL,
+			ContainerName:      qp.ContainerName,
+			BlobURL:            qp.BlobURL + "/" + key,
 		}
 		if qp.BlobURL == "" {
 			info.BlobURL = key

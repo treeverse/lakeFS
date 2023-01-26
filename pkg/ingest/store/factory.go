@@ -15,9 +15,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/params"
 )
 
-var (
-	ErrNotSupported = errors.New("no storage adapter found")
-)
+var ErrNotSupported = errors.New("no storage adapter found")
 
 type ObjectStoreEntry struct {
 	// FullKey represents the fully qualified path in the object store namespace for the given entry
@@ -145,21 +143,22 @@ func (f *walkerFactory) buildAzureWalker(importURL string) (*azureBlobWalker, er
 	if err != nil {
 		return nil, err
 	}
+	var azureParams params.Azure
+
 	if f.params != nil {
-		var azureParams params.Azure
+		// server settings
 		azureParams, err = f.params.BlockstoreAzureParams()
 		if err != nil {
 			return nil, err
 		}
-		azureParams.StorageAccount = storageAccount
-
-		c, err = azure.BuildAzureServiceClient(azureParams)
-	} else {
-		c, err = getAzureClient()
 	}
+
+	azureParams.StorageAccount = storageAccount
+	c, err = azure.BuildAzureServiceClient(azureParams)
 	if err != nil {
 		return nil, err
 	}
+
 	return NewAzureBlobWalker(c)
 }
 

@@ -44,19 +44,12 @@ func mapKey(storageAccount, containerName string) string {
 	return fmt.Sprintf("%s#%s", storageAccount, containerName)
 }
 
-func (c *ClientContainerCache) NewContainerClient(storageAccountURL, containerName string) (*container.Client, error) {
-	storageAccount, err := ExtractStorageAccount(storageAccountURL)
-	if err != nil {
-		return nil, err
-	}
+func (c *ClientContainerCache) NewContainerClient(storageAccount, containerName string) (*container.Client, error) {
 	p := c.params
 	p.StorageAccount = storageAccount
-
 	key := mapKey(storageAccount, containerName)
-	if err != nil {
-		return nil, err
-	}
 
+	var err error
 	cl, _ := c.containerToClient.LoadOrCompute(key, func() *container.Client {
 		var svc *service.Client
 		svc, err = BuildAzureServiceClient(p)
