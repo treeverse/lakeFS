@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **blockstoreNamespaceExample** | **String** |  | 
 **blockstoreNamespaceValidityRegex** | **String** |  | 
 **defaultNamespacePrefix** | **String** |  |  [optional]
+**preSignSupport** | **Boolean** |  | 
 
 
 

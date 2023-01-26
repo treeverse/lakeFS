@@ -1311,6 +1311,7 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
 		DefaultNamespacePrefix:           swag.String(c.Config.Blockstore.DefaultNamespacePrefix),
+		PreSignSupport:                   info.PreSignSupport,
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }

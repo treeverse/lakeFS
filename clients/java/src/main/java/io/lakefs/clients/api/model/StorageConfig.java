@@ -45,6 +45,10 @@ public class StorageConfig {
   @SerializedName(SERIALIZED_NAME_DEFAULT_NAMESPACE_PREFIX)
   private String defaultNamespacePrefix;
 
+  public static final String SERIALIZED_NAME_PRE_SIGN_SUPPORT = "pre_sign_support";
+  @SerializedName(SERIALIZED_NAME_PRE_SIGN_SUPPORT)
+  private Boolean preSignSupport;
+
 
   public StorageConfig blockstoreType(String blockstoreType) {
     
@@ -138,6 +142,29 @@ public class StorageConfig {
   }
 
 
+  public StorageConfig preSignSupport(Boolean preSignSupport) {
+    
+    this.preSignSupport = preSignSupport;
+    return this;
+  }
+
+   /**
+   * Get preSignSupport
+   * @return preSignSupport
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+
+  public Boolean getPreSignSupport() {
+    return preSignSupport;
+  }
+
+
+  public void setPreSignSupport(Boolean preSignSupport) {
+    this.preSignSupport = preSignSupport;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -150,12 +177,13 @@ public class StorageConfig {
     return Objects.equals(this.blockstoreType, storageConfig.blockstoreType) &&
         Objects.equals(this.blockstoreNamespaceExample, storageConfig.blockstoreNamespaceExample) &&
         Objects.equals(this.blockstoreNamespaceValidityRegex, storageConfig.blockstoreNamespaceValidityRegex) &&
-        Objects.equals(this.defaultNamespacePrefix, storageConfig.defaultNamespacePrefix);
+        Objects.equals(this.defaultNamespacePrefix, storageConfig.defaultNamespacePrefix) &&
+        Objects.equals(this.preSignSupport, storageConfig.preSignSupport);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix);
+    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport);
   }
 
   @Override
@@ -166,6 +194,7 @@ public class StorageConfig {
     sb.append("    blockstoreNamespaceExample: ").append(toIndentedString(blockstoreNamespaceExample)).append("\n");
     sb.append("    blockstoreNamespaceValidityRegex: ").append(toIndentedString(blockstoreNamespaceValidityRegex)).append("\n");
     sb.append("    defaultNamespacePrefix: ").append(toIndentedString(defaultNamespacePrefix)).append("\n");
+    sb.append("    preSignSupport: ").append(toIndentedString(preSignSupport)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -864,6 +864,7 @@ components:
         - blockstore_type
         - blockstore_namespace_example
         - blockstore_namespace_ValidityRegex
+        - pre_sign_support
       properties:
         blockstore_type:
           type: string
@@ -873,6 +874,9 @@ components:
           type: string
         default_namespace_prefix:
           type: string
+        pre_sign_support:
+          type: boolean
+
     VersionConfig:
       type: object
       properties:
