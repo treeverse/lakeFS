@@ -33,7 +33,7 @@ var (
 	reEndpoint        = regexp.MustCompile(`https?://\w+(:\d+)?/api/v\d+/`)
 	rePhysicalAddress = regexp.MustCompile(`/data/[0-9a-v]{20}/[0-9a-v]{20}`)
 	reVariable        = regexp.MustCompile(`\$\{([^${}]+)}`)
-	rePreSignURL      = regexp.MustCompile(`https://[\w-./]+\?\S+`)
+	rePreSignURL      = regexp.MustCompile(`https://\S+data\S+`)
 )
 
 func lakectlLocation() string {
