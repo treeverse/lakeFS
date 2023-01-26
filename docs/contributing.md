@@ -40,7 +40,8 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
    1. [Go](https://golang.org/doc/install)
    1. [Node.js & npm](https://www.npmjs.com/get-npm)
    1. [Maven](https://maven.apache.org/) to build and test Spark client codes.
-   1. Java 8, which you can install from [Azul Zulu Builds for Java JDK](https://www.azul.com/downloads/?package=jdk)
+   1. Java 8
+     * Apple M1 users can install this from [Azul Zulu Builds for Java JDK](https://www.azul.com/downloads/?package=jdk). Builds for Intel-based Macs are available from [java.com](https://www.java.com/en/download/help/mac_install.html).
    1. *Optional* - [PostgreSQL 11](https://www.postgresql.org/docs/11/tutorial-install.html) (useful for running and debugging locally)
 
 1. [Clone](https://github.com/git-guides/git-clone) the [repository from GitHub](https://github.com/treeverse/lakeFS). 
