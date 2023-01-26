@@ -6,11 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/config"
-
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 

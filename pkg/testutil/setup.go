@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/config"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -19,6 +17,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
