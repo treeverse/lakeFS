@@ -1,48 +1,46 @@
 package azure_test
 
 import (
+	"errors"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/azure"
 )
 
 func TestExtraction(t *testing.T) {
+	parse := func(u string) *url.URL {
+		url, err := url.Parse(u)
+		require.NoError(t, err)
+		return url
+	}
 	tests := []struct {
 		name                   string
-		url                    string
+		url                    *url.URL
 		expectedErr            error
 		expectedStorageAccount string
 	}{
 		{
 			name:                   "simple",
-			url:                    "https://somestorageaccount.blob.core.windows.net/newcontainer/2023/",
+			url:                    parse("https://somestorageaccount.blob.core.windows.net/newcontainer/2023/"),
 			expectedStorageAccount: "somestorageaccount",
 		},
 		{
 			name:                   "no container",
-			url:                    "https://somestorageaccount.blob.core.windows.net/",
+			url:                    parse("https://somestorageaccount.blob.core.windows.net/"),
 			expectedStorageAccount: "somestorageaccount",
 		},
 		{
 			name:                   "long prefix",
-			url:                    "https://somestorageaccount.blob.core.windows.net/container/somestorageaccount.blob.core.windows.net",
+			url:                    parse("https://somestorageaccount.blob.core.windows.net/container/somestorageaccount.blob.core.windows.net"),
 			expectedStorageAccount: "somestorageaccount",
 		},
 		{
-			name:        "capital letters",
-			url:         "https://Rgeaccount.blob.core.windows.net/newcontainer/2023/",
-			expectedErr: azure.ErrUnknownAzureURL,
-		},
-		{
-			name:        "different host",
-			url:         "https://somestorgeaccount.dark.web/newcontainer/2023/",
-			expectedErr: azure.ErrUnknownAzureURL,
-		},
-		{
-			name:        "different host",
-			url:         "https://somestorgeaccount.dark.web/newcontainer/2023/",
-			expectedErr: azure.ErrUnknownAzureURL,
+			name:        "No subdomains",
+			url:         parse("https://Rgeaccountblobcorewindowsnet/newcontainer/2023/"),
+			expectedErr: block.ErrInvalidNamespace,
 		},
 	}
 
@@ -53,7 +51,7 @@ func TestExtraction(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tt.expectedStorageAccount, actualStorageAccount)
 			} else {
-				require.Equal(t, tt.expectedErr, err)
+				require.True(t, errors.Is(err, tt.expectedErr))
 			}
 		})
 	}
