@@ -362,7 +362,12 @@ func TestLakectlAuthUsers(t *testing.T) {
 
 func TestLakectlIngestS3(t *testing.T) {
 	SkipTestIfAskedTo(t)
+
 	importPath := testImportBucketPath(t)
+	if !strings.HasPrefix(importPath, "s3://") {
+		t.Skip("Skip, relevant for S3")
+	}
+
 	// remove leading '/' following code will test with and without it
 	importPath = strings.TrimSuffix(importPath, "/")
 
