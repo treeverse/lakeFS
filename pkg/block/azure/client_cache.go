@@ -1,10 +1,7 @@
 package azure
 
 import (
-	"errors"
 	"fmt"
-	"net/url"
-	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
@@ -12,7 +9,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/puzpuzpuz/xsync"
-	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/params"
 )
 
@@ -21,24 +17,11 @@ type ClientContainerCache struct {
 	params            params.Azure
 }
 
-var ErrUnknownAzureURL = errors.New("unable to parse storage account")
-
 func NewCache(p params.Azure) *ClientContainerCache {
 	return &ClientContainerCache{
 		containerToClient: xsync.NewMapOf[*container.Client](),
 		params:            p,
 	}
-}
-
-func ExtractStorageAccount(storageAccount *url.URL) (string, error) {
-	// In azure the subdomain is the storage account
-	const expectedHostParts = 2
-	hostParts := strings.SplitN(storageAccount.Host, ".", expectedHostParts)
-	if len(hostParts) != expectedHostParts {
-		return "", fmt.Errorf("wrong host parts(%d): %w", len(hostParts), block.ErrInvalidNamespace)
-	}
-
-	return hostParts[0], nil
 }
 
 func mapKey(storageAccount, containerName string) string {

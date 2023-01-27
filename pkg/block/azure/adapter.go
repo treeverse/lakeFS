@@ -23,11 +23,10 @@ import (
 var ErrNotImplemented = errors.New("not implemented")
 
 const (
-	sizeSuffix              = "_size"
-	idSuffix                = "_id"
-	_1MiB                   = 1024 * 1024
-	MaxBuffers              = 1
-	defaultMaxRetryRequests = 0
+	sizeSuffix = "_size"
+	idSuffix   = "_id"
+	_1MiB      = 1024 * 1024
+	MaxBuffers = 1
 
 	URLTemplate = "https://%s.blob.core.windows.net/"
 )
@@ -58,6 +57,17 @@ type PrefixURLInfo struct {
 	ContainerURL       string
 	ContainerName      string
 	Prefix             string
+}
+
+func ExtractStorageAccount(storageAccount *url.URL) (string, error) {
+	// In azure the subdomain is the storage account
+	const expectedHostParts = 2
+	hostParts := strings.SplitN(storageAccount.Host, ".", expectedHostParts)
+	if len(hostParts) != expectedHostParts {
+		return "", fmt.Errorf("wrong host parts(%d): %w", len(hostParts), block.ErrInvalidNamespace)
+	}
+
+	return hostParts[0], nil
 }
 
 func ResolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
