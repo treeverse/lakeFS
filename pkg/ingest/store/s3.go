@@ -69,6 +69,9 @@ func (s *s3Walker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions
 			Prefix:            aws.String(prefix),
 			StartAfter:        aws.String(op.After),
 		})
+		if continuation != nil {
+			s.mark.ContinuationToken = *continuation
+		}
 		if err != nil {
 			return err
 		}
@@ -83,10 +86,7 @@ func (s *s3Walker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions
 				Mtime:       aws.TimeValue(record.LastModified),
 				Size:        aws.Int64Value(record.Size),
 			}
-			s.mark = Mark{
-				LastKey: key,
-				HasMore: true,
-			}
+			s.mark.LastKey = key
 			err := walkFn(ent)
 			if err != nil {
 				return err
