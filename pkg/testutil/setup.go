@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -33,21 +34,22 @@ type SetupTestingEnvParams struct {
 
 func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientWithResponsesInterface, *s3.S3, string) {
 	logger := logging.Default()
+	viper.AddConfigPath(".")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
+	viper.SetEnvPrefix(strings.ToUpper(params.Name))
+	viper.SetConfigName(strings.ToLower(params.Name))
+	viper.AutomaticEnv()
 
 	viper.SetDefault("setup_lakefs", true)
 	viper.SetDefault("setup_lakefs_timeout", defaultSetupTimeout)
 	viper.SetDefault("endpoint_url", "http://localhost:8000")
 	viper.SetDefault("s3_endpoint", "s3.local.lakefs.io:8000")
 	viper.SetDefault("storage_namespace", fmt.Sprintf("s3://%s", params.StorageNS))
-	viper.SetDefault("blockstore_type", block.BlockstoreTypeS3)
+	viper.SetDefault(config.BlockstoreTypeKey, block.BlockstoreTypeS3)
 	viper.SetDefault("version", "dev")
 	viper.SetDefault("lakectl_dir", "..")
 	viper.SetDefault("azure_storage_account", "")
 	viper.SetDefault("azure_storage_access_key", "")
-	viper.AddConfigPath(".")
-	viper.SetEnvPrefix(strings.ToUpper(params.Name))
-	viper.SetConfigName(strings.ToLower(params.Name))
-	viper.AutomaticEnv()
 
 	err := viper.ReadInConfig()
 	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {

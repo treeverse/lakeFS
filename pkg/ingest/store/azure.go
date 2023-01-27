@@ -72,13 +72,13 @@ func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 		if err != nil {
 			return err
 		}
+		if resp.Marker != nil {
+			a.mark.ContinuationToken = *resp.Marker
+		}
 		for _, blobInfo := range resp.Segment.BlobItems {
 			// skipping everything in the page which is before 'After' (without forgetting the possible empty string key!)
 			if op.After != "" && *blobInfo.Name <= op.After {
 				continue
-			}
-			if resp.Marker != nil {
-				a.mark.ContinuationToken = *resp.Marker
 			}
 			a.mark.LastKey = *blobInfo.Name
 			if err := walkFn(ObjectStoreEntry{
