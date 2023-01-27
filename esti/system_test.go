@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -29,23 +28,6 @@ const minHTTPErrorStatusCode = 400
 var errNotVerified = errors.New("lakeFS failed")
 
 var nonAlphanumericSequence = regexp.MustCompile("[^a-zA-Z0-9]+")
-
-// skipOnSchemaMismatch matches the rawURL schema to the current tested storage namespace schema
-func skipOnSchemaMismatch(t *testing.T, rawURL string) {
-	t.Helper()
-	namespaceURL, err := url.Parse(viper.GetString("storage_namespace"))
-	if err != nil {
-		t.Fatal("Failed to parse configured storage_namespace", err)
-	}
-	pathURL, err := url.Parse(rawURL)
-	if err != nil {
-		t.Fatal("Failed to parse rawURL", err)
-	}
-
-	if namespaceURL.Scheme != pathURL.Scheme {
-		t.Skip("Skip test on different URL schema type")
-	}
-}
 
 // verifyResponse returns an error based on failed if resp failed to perform action.  It uses
 // body in errors.

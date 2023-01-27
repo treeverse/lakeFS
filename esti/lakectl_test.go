@@ -3,6 +3,7 @@ package esti
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 )
@@ -361,9 +362,9 @@ func TestLakectlAuthUsers(t *testing.T) {
 
 func TestLakectlIngestS3(t *testing.T) {
 	SkipTestIfAskedTo(t)
-	// Specific S3 test - due to the limitation on ingest source type that has to match lakefs underlying block store,
-	// this test can only run on AWS setup, and therefore is skipped for other store types
-	skipOnSchemaMismatch(t, IngestTestBucketPath)
+	importPath := testImportBucketPath(t)
+	// remove leading '/' following code will test with and without it
+	importPath = strings.TrimSuffix(importPath, "/")
 
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
@@ -373,24 +374,20 @@ func TestLakectlIngestS3(t *testing.T) {
 		"BRANCH":  mainBranch,
 	}
 
-	const (
-		lakectlIngestBucket  = "lakectl-ingest-test-data"
-		expectedIngestOutput = "Staged 10 external objects (total of 10.2 kB)"
-	)
-
+	const expectedIngestOutput = "Staged 10 external objects (total of 10.2 kB)"
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
-	RunCmdAndVerifyContainsText(t, Lakectl()+" ingest --from s3://"+lakectlIngestBucket+" --to lakefs://"+repoName+"/"+mainBranch+"/", false, expectedIngestOutput, vars)
-	RunCmdAndVerifyContainsText(t, Lakectl()+" ingest --from s3://"+lakectlIngestBucket+" --to lakefs://"+repoName+"/"+mainBranch+"/to-pref/", false, expectedIngestOutput, vars)
+	RunCmdAndVerifyContainsText(t, Lakectl()+" ingest --from "+importPath+" --to lakefs://"+repoName+"/"+mainBranch+"/", false, expectedIngestOutput, vars)
+	RunCmdAndVerifyContainsText(t, Lakectl()+" ingest --from "+importPath+" --to lakefs://"+repoName+"/"+mainBranch+"/to-pref/", false, expectedIngestOutput, vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_fs_ls_after_ingest", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/ --recursive", false, "lakectl_fs_ls_after_ingest_recursive", vars)
 
 	// rerunning the same ingest command should succeed and have no effect
-	RunCmdAndVerifyContainsText(t, Lakectl()+" ingest --from s3://"+lakectlIngestBucket+" --to lakefs://"+repoName+"/"+mainBranch+"/", false, expectedIngestOutput, vars)
+	RunCmdAndVerifyContainsText(t, Lakectl()+" ingest --from "+importPath+" --to lakefs://"+repoName+"/"+mainBranch+"/", false, expectedIngestOutput, vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_fs_ls_after_ingest", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/ --recursive", false, "lakectl_fs_ls_after_ingest_recursive", vars)
 
 	// 'from' can also be specified with terminating "/"
-	RunCmdAndVerifyContainsText(t, Lakectl()+" ingest --from s3://"+lakectlIngestBucket+"/ --to lakefs://"+repoName+"/"+mainBranch+"/", false, expectedIngestOutput, vars)
+	RunCmdAndVerifyContainsText(t, Lakectl()+" ingest --from "+importPath+"/ --to lakefs://"+repoName+"/"+mainBranch+"/", false, expectedIngestOutput, vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_fs_ls_after_ingest", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/ --recursive", false, "lakectl_fs_ls_after_ingest_recursive", vars)
 }
@@ -509,10 +506,7 @@ func TestLakectlFsStat(t *testing.T) {
 
 func TestLakectlImport(t *testing.T) {
 	SkipTestIfAskedTo(t)
-
-	// TODO(barak): generalize test to work all supported object stores
-	skipOnSchemaMismatch(t, IngestTestBucketPath)
-
+	from := testImportBucketPath(t)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
@@ -523,7 +517,6 @@ func TestLakectlImport(t *testing.T) {
 		"OBJECTS":         "10",
 	}
 
-	const from = "s3://lakectl-ingest-test-data"
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" import --no-progress --from "+from+" --to lakefs://"+repoName+"/"+mainBranch+"/to/", false, "lakectl_import", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" import --no-progress --from "+from+" --to lakefs://"+repoName+"/"+mainBranch+"/too/ --message \"import too\"", false, "lakectl_import_with_message", vars)

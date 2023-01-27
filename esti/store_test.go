@@ -4,17 +4,32 @@ import (
 	"context"
 	"testing"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
 
-// Currently, this test accesses the following bucket, and so AWS should be configured to allow it
-const IngestTestBucketPath = "s3://esti-system-testing-data/ingest-test-data/"
+func testImportBucketPath(t *testing.T) string {
+	t.Helper()
+	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
+	switch blockstoreType {
+	case block.BlockstoreTypeS3:
+		return "s3://esti-system-testing-data/ingest-test-data/"
+	case block.BlockstoreTypeGS:
+		return "gs://esti-system-testing-data/"
+	case block.BlockstoreTypeAzure:
+		return "https://esti.blob.core.windows.net/esti-system-testing-data/"
+	default:
+		t.Skipf("No import bucket path for '%s' blockstore", blockstoreType)
+	}
+	return ""
+}
 
-func TestS3Walk(t *testing.T) {
+func TestWalk(t *testing.T) {
 	SkipTestIfAskedTo(t)
-	// Specific S3 test, this test can only run on AWS setup, and therefore is skipped for other store types
-	skipOnSchemaMismatch(t, IngestTestBucketPath)
+	storageURI := testImportBucketPath(t)
 
 	// Test bucket was uploaded with 2100 as the test is written. If the test fails on this number,
 	// make sure there were no changes made to the bucket, or update this number accordingly
@@ -23,7 +38,7 @@ func TestS3Walk(t *testing.T) {
 
 	walker, err := store.NewFactory(nil).GetWalker(context.Background(), store.WalkerOptions{
 		S3EndpointURL: "",
-		StorageURI:    IngestTestBucketPath,
+		StorageURI:    storageURI,
 	})
 	require.NoError(t, err)
 	err = walker.Walk(context.Background(), store.WalkOptions{}, func(e store.ObjectStoreEntry) error {
