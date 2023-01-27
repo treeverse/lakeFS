@@ -8,10 +8,6 @@ import (
 	"net/http"
 
 	"cloud.google.com/go/storage"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -67,7 +63,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 		if err != nil {
 			return nil, err
 		}
-		return buildAzureAdapter(p)
+		return azure.NewAdapter(p), nil
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
 			ErrInvalidBlockstoreType, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeTransient, block.BlockstoreTypeGS})
@@ -146,30 +142,4 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 	adapter := gs.NewAdapter(client)
 	logging.Default().WithField("type", "gs").Info("initialized blockstore adapter")
 	return adapter, nil
-}
-
-func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
-	p, err := BuildAzureServiceClient(params)
-	if err != nil {
-		return nil, err
-	}
-	return azure.NewAdapter(p), nil
-}
-
-func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
-	url := fmt.Sprintf(azure.URLTemplate, params.StorageAccount)
-	options := service.ClientOptions{ClientOptions: azcore.ClientOptions{Retry: policy.RetryOptions{TryTimeout: params.TryTimeout}}}
-	if params.StorageAccessKey != "" {
-		cred, err := service.NewSharedKeyCredential(params.StorageAccount, params.StorageAccessKey)
-		if err != nil {
-			return nil, fmt.Errorf("invalid credentials: %w", err)
-		}
-		return service.NewClientWithSharedKeyCredential(url, cred, &options)
-	}
-
-	defaultCreds, err := azidentity.NewDefaultAzureCredential(nil)
-	if err != nil {
-		return nil, fmt.Errorf("missing credentials: %w", err)
-	}
-	return service.NewClient(url, defaultCreds, &options)
 }
