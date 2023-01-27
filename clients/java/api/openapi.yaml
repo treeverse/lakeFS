@@ -131,6 +131,8 @@ paths:
       x-accepts: application/json
   /oidc/callback:
     get:
+      deprecated: true
+      description: 'Deprecated: embedded OIDC support is now deprecated'
       operationId: oauthCallback
       responses:
         "302":
@@ -5681,8 +5683,12 @@ components:
           - comm_prefs_done
           type: string
         oidc_enabled:
+          deprecated: true
+          description: 'Deprecated: embedded OIDC support is now deprecated'
           type: boolean
         oidc_default_login:
+          deprecated: true
+          description: 'Deprecated: embedded OIDC support is now deprecated'
           type: boolean
       type: object
     AccessKeyCredentials:
@@ -6043,6 +6049,7 @@ components:
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
         blockstore_type: blockstore_type
         default_namespace_prefix: default_namespace_prefix
+        pre_sign_support: true
       properties:
         blockstore_type:
           type: string
@@ -6052,10 +6059,13 @@ components:
           type: string
         default_namespace_prefix:
           type: string
+        pre_sign_support:
+          type: boolean
       required:
       - blockstore_namespace_ValidityRegex
       - blockstore_namespace_example
       - blockstore_type
+      - pre_sign_support
       type: object
     VersionConfig:
       example:

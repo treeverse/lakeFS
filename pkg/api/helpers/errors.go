@@ -20,6 +20,7 @@ var (
 
 	// ErrRequestFailed is an error returned for failing lakeFS server replies.
 	ErrRequestFailed = errors.New("request failed")
+	ErrConflict      = errors.New("conflict")
 )
 
 const minHTTPErrorStatusCode = 400

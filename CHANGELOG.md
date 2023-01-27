@@ -6,6 +6,9 @@ Deprecated:
 - Authorization using Role-Based Access Control
 - LDAP & OIDC Embedded Support
 
+## Upcoming (ASSIGN NEXT VERSION NUMBER to release!)
+- Deprecate embedded support for OIDC (#5061)
+
 ## v0.90.1
 
 What's new:

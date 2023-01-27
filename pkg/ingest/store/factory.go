@@ -10,6 +10,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/treeverse/lakefs/pkg/block/azure"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/block/params"
 )
@@ -132,24 +133,32 @@ func (f *walkerFactory) buildGCSWalker(ctx context.Context) (*gcsWalker, error) 
 	return NewGCSWalker(svc), nil
 }
 
-func (f *walkerFactory) buildAzureWalker() (*azureBlobWalker, error) {
+func (f *walkerFactory) buildAzureWalker(importURL *url.URL) (*azureBlobWalker, error) {
 	var (
 		c   *service.Client
 		err error
 	)
+
+	storageAccount, err := azure.ExtractStorageAccount(importURL)
+	if err != nil {
+		return nil, err
+	}
+	var azureParams params.Azure
+
 	if f.params != nil {
-		var azureParams params.Azure
+		// server settings
 		azureParams, err = f.params.BlockstoreAzureParams()
 		if err != nil {
 			return nil, err
 		}
-		c, err = factory.BuildAzureServiceClient(azureParams)
-	} else {
-		c, err = getAzureClient()
 	}
+
+	azureParams.StorageAccount = storageAccount
+	c, err = azure.BuildAzureServiceClient(azureParams)
 	if err != nil {
 		return nil, err
 	}
+
 	return NewAzureBlobWalker(c)
 }
 
@@ -171,7 +180,7 @@ func (f *walkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*Wal
 			return nil, fmt.Errorf("creating gs walker: %w", err)
 		}
 	case "http", "https":
-		walker, err = f.buildAzureWalker()
+		walker, err = f.buildAzureWalker(uri)
 		if err != nil {
 			return nil, fmt.Errorf("creating Azure walker: %w", err)
 		}

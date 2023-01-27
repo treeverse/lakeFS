@@ -3048,6 +3048,8 @@ No authorization required
 
 
 
+Deprecated: embedded OIDC support is now deprecated
+
 ### Example
 
 

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -14,25 +13,8 @@ import (
 )
 
 var (
-	ErrAzureInvalidURL  = errors.New("invalid Azure storage URL")
-	ErrAzureCredentials = errors.New("azure credentials error")
+	ErrAzureInvalidURL = errors.New("invalid Azure storage URL")
 )
-
-func getAzureClient() (*service.Client, error) {
-	// From the Azure portal, get your storage account name and key and set environment variables.
-	accountName, accountKey := os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
-	if len(accountName) == 0 || len(accountKey) == 0 {
-		return nil, fmt.Errorf("%w: either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set", ErrAzureCredentials)
-	}
-
-	// Create a default request client using your storage account name and account key.
-	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
-	if err != nil {
-		return nil, fmt.Errorf("invalid credentials with error: %w", err)
-	}
-	containerURL := fmt.Sprintf(azure.URLTemplate, accountName)
-	return service.NewClientWithSharedKeyCredential(containerURL, credential, nil)
-}
 
 func NewAzureBlobWalker(svc *service.Client) (*azureBlobWalker, error) {
 	return &azureBlobWalker{
