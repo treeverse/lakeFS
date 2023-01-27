@@ -30,7 +30,12 @@ func mapKey(storageAccount, containerName string) string {
 
 func (c *ClientContainerCache) NewContainerClient(storageAccount, containerName string) (*container.Client, error) {
 	p := c.params
-	p.StorageAccount = storageAccount
+	// Use StorageAccessKey to initialize storage account client only if it was provided for this given storage account
+	// Otherwise fall back to the default credentials
+	if p.StorageAccount != storageAccount {
+		p.StorageAccount = storageAccount
+		p.StorageAccessKey = ""
+	}
 	key := mapKey(storageAccount, containerName)
 
 	var err error

@@ -153,7 +153,12 @@ func (f *walkerFactory) buildAzureWalker(importURL *url.URL) (*azureBlobWalker, 
 		}
 	}
 
-	azureParams.StorageAccount = storageAccount
+	// Use StorageAccessKey to initialize storage account client only if it was provided for this given storage account
+	// Otherwise fall back to the default credentials
+	if azureParams.StorageAccount != storageAccount {
+		azureParams.StorageAccount = storageAccount
+		azureParams.StorageAccessKey = ""
+	}
 	c, err = azure.BuildAzureServiceClient(azureParams)
 	if err != nil {
 		return nil, err
