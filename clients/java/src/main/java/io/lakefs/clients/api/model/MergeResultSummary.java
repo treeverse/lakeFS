@@ -25,8 +25,9 @@ import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 
 /**
- * MergeResultSummary
+ * Deprecated: merge summary will be removed
  */
+@ApiModel(description = "Deprecated: merge summary will be removed")
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class MergeResultSummary {
   public static final String SERIALIZED_NAME_ADDED = "added";
@@ -56,8 +57,8 @@ public class MergeResultSummary {
    * Get added
    * @return added
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public Integer getAdded() {
     return added;
@@ -79,8 +80,8 @@ public class MergeResultSummary {
    * Get removed
    * @return removed
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public Integer getRemoved() {
     return removed;
@@ -102,8 +103,8 @@ public class MergeResultSummary {
    * Get changed
    * @return changed
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public Integer getChanged() {
     return changed;
@@ -125,8 +126,8 @@ public class MergeResultSummary {
    * Get conflict
    * @return conflict
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public Integer getConflict() {
     return conflict;

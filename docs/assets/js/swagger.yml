@@ -176,28 +176,26 @@ components:
           items:
             $ref: "#/components/schemas/Repository"
 
+    MergeResultSummary:
+      description: "Deprecated: merge summary will be removed"
+      type: object
+      properties:
+        added:
+          type: integer
+        removed:
+          type: integer
+        changed:
+          type: integer
+        conflict:
+          type: integer
+
     MergeResult:
       type: object
       required:
-        - summary
         - reference
       properties:
         summary:
-          type: object
-          required:
-            - added
-            - removed
-            - changed
-            - conflict
-          properties:
-            added:
-              type: integer
-            removed:
-              type: integer
-            changed:
-              type: integer
-            conflict:
-              type: integer
+          $ref: "#/components/schemas/MergeResultSummary"
         reference:
           type: string
 
@@ -2635,7 +2633,9 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         409:
-          description: conflict
+          description: |
+            Conflict
+            Deprecated: content schema will return Error format and not an empty MergeResult
           content:
             application/json:
               schema:

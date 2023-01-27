@@ -2,15 +2,16 @@
 
 # MergeResultSummary
 
+Deprecated: merge summary will be removed
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**added** | **Integer** |  | 
-**removed** | **Integer** |  | 
-**changed** | **Integer** |  | 
-**conflict** | **Integer** |  | 
+**added** | **Integer** |  |  [optional]
+**removed** | **Integer** |  |  [optional]
+**changed** | **Integer** |  |  [optional]
+**conflict** | **Integer** |  |  [optional]
 
 
 
