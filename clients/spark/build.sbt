@@ -95,13 +95,13 @@ lazy val spark3Type =
 // EMR-6.5.0 beta, managed GC
 lazy val spark312Type =
   new BuildType("312-hadoop3",
-    scala212Version,
-    "3.1.2",
-    "0.10.11",
-    "3.2.1",
-    "hadoop3",
-    "hadoop3-2.0.1"
-  )
+                scala212Version,
+                "3.1.2",
+                "0.10.11",
+                "3.2.1",
+                "hadoop3",
+                "hadoop3-2.0.1"
+               )
 
 lazy val core2 = generateCoreProject(spark2Type)
 lazy val core3 = generateCoreProject(spark3Type)
@@ -113,9 +113,9 @@ lazy val examples312 = generateExamplesProject(spark312Type).dependsOn(core312)
 lazy val root =
   (project in file(".")).aggregate(core2, core3, core312, examples2, examples3, examples312)
 
-def getSharedLibraryDependencies(buildType: BuildType) : Seq[ModuleID]  = {
+def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
   Seq(
-    "io.lakefs" % "api-client" % "0.85.0-RC1",
+    "io.lakefs" % "api-client" % "0.91.0",
     "commons-codec" % "commons-codec" % "1.15",
     "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
     "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
@@ -156,7 +156,7 @@ def getSharedLibraryDependencies(buildType: BuildType) : Seq[ModuleID]  = {
   )
 }
 
-def getLibraryDependenciesByHadoopFlavour(hadoopFlavour: String) : Seq[ModuleID]  = {
+def getLibraryDependenciesByHadoopFlavour(hadoopFlavour: String): Seq[ModuleID] = {
   if (hadoopFlavour == "hadoop2") {
     // hadoop-aws provides AWS SDK at version >= 1.7.4.  So declare this
     // version, but ask to use whatever is provided so we do not
@@ -172,31 +172,31 @@ def rename(prefix: String) = ShadeRule.rename(prefix -> "io.lakefs.spark.shade.@
 // We are using the default sbt assembly merge strategy https://github.com/sbt/sbt-assembly#merge-strategy with a change
 // to the general case: use MergeStrategy.first instead of MergeStrategy.deduplicate.
 lazy val sharedAssemblyMergeStrategy =
-assembly / assemblyMergeStrategy := {
-  case PathList("META-INF", xs @ _*) =>
-    (xs map { _.toLowerCase }) match {
-      case ("manifest.mf" :: Nil) | ("index.list" :: Nil) | ("dependencies" :: Nil) =>
-        MergeStrategy.discard
-      case ps @ (x :: xs) if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") =>
-        MergeStrategy.discard
-      case "plexus" :: xs =>
-        MergeStrategy.discard
-      case "services" :: xs =>
-        MergeStrategy.filterDistinctLines
-      case ("spring.schemas" :: Nil) | ("spring.handlers" :: Nil) =>
-        MergeStrategy.filterDistinctLines
-      case _ => MergeStrategy.first
-    }
-  case _ => MergeStrategy.first
-}
+  assembly / assemblyMergeStrategy := {
+    case PathList("META-INF", xs @ _*) =>
+      (xs map { _.toLowerCase }) match {
+        case ("manifest.mf" :: Nil) | ("index.list" :: Nil) | ("dependencies" :: Nil) =>
+          MergeStrategy.discard
+        case ps @ (x :: xs) if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") =>
+          MergeStrategy.discard
+        case "plexus" :: xs =>
+          MergeStrategy.discard
+        case "services" :: xs =>
+          MergeStrategy.filterDistinctLines
+        case ("spring.schemas" :: Nil) | ("spring.handlers" :: Nil) =>
+          MergeStrategy.filterDistinctLines
+        case _ => MergeStrategy.first
+      }
+    case _ => MergeStrategy.first
+  }
 
 lazy val sharedShadeRules = Seq(
   rename("org.apache.http.**").inAll,
   rename("com.google.protobuf.**").inAll,
   rename("com.google.common.**")
     .inLibrary("com.google.guava" % "guava" % "30.1-jre",
-      "com.google.guava" % "failureaccess" % "1.0.1"
-    )
+               "com.google.guava" % "failureaccess" % "1.0.1"
+              )
     .inProject,
   rename("scala.collection.compat.**").inAll,
   rename("okio.**").inAll,
@@ -205,13 +205,13 @@ lazy val sharedShadeRules = Seq(
   rename("reactor.util.**").inAll
 )
 
-lazy val hadoop2ShadeRules = sharedShadeRules ++ Seq( rename("com.amazonaws.**").inAll)
+lazy val hadoop2ShadeRules = sharedShadeRules ++ Seq(rename("com.amazonaws.**").inAll)
 lazy val hadoop3ShadeRules = sharedShadeRules
 
-lazy val hadoop2AssemblySettings = Seq(sharedAssemblyMergeStrategy,
-  assembly / assemblyShadeRules := hadoop2ShadeRules)
-lazy val hadoop3AssemblySettings = Seq(sharedAssemblyMergeStrategy,
-  assembly / assemblyShadeRules := hadoop3ShadeRules)
+lazy val hadoop2AssemblySettings =
+  Seq(sharedAssemblyMergeStrategy, assembly / assemblyShadeRules := hadoop2ShadeRules)
+lazy val hadoop3AssemblySettings =
+  Seq(sharedAssemblyMergeStrategy, assembly / assemblyShadeRules := hadoop3ShadeRules)
 
 // Upload assembly jars to S3
 lazy val s3UploadSettings = Seq(
