@@ -2307,9 +2307,8 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 	}
 
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
-
-	var sizeBytes int64
-	var checksum string
+	sizeBytes := swag.Int64Value(body.SizeBytes)
+	checksum := swag.StringValue(body.Checksum)
 	if body.SizeBytes == nil || body.Checksum == nil {
 		props, err := c.BlockAdapter.GetProperties(ctx, block.ObjectPointer{
 			StorageNamespace: qk.StorageNamespace,
