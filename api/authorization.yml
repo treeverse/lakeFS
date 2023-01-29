@@ -24,6 +24,7 @@ components:
       in: query
       name: prefix
       description: return items prefixed with this value
+      allowEmptyValue: true
       schema:
         type: string
 
@@ -31,6 +32,7 @@ components:
       in: query
       name: after
       description: return items after this value
+      allowEmptyValue: true
       schema:
         type: string
 
@@ -112,15 +114,11 @@ components:
     User:
       type: object
       required:
-        - id
         - name
         - username
         - creation_date
         - encryptedPassword
       properties:
-        id:
-          type: integer
-          format: int64
         username:
           type: string
           description: a unique identifier for the user. In password-based authentication, this is the email.
@@ -154,7 +152,7 @@ components:
         username:
           type: string
           minLength: 1
-          description: A unique identifier for the user. For password-based authentication, it is the email.
+          description: A unique identifier for the user. In password-based authentication should be the email.
         email:
           type: string
         friendlyName:
@@ -205,7 +203,6 @@ components:
         - access_key_id
         - creation_date
         - secret_access_key
-        - user_id
       properties:
         access_key_id:
           type: string
@@ -218,7 +215,9 @@ components:
         user_id:
           type: integer
           format: int64
-
+          deprecated: true
+        user_name:
+          type: string
     Group:
       type: object
       required:
@@ -341,11 +340,13 @@ paths:
         - $ref: "#/components/parameters/PaginationAmount"
         - in: query
           name: id
+          allowEmptyValue: true
           schema:
             type: integer
             format: int64
         - in: query
           name: email
+          allowEmptyValue: true
           schema:
             type: string
         - in: query
