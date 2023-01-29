@@ -102,9 +102,10 @@ const LoginPage = () => {
         router.push({pathname: '/setup', query: router.query})
         return null;
     }
+    const loginConfig = response?.login_config;
     if (router.query.redirected)  {
-        if(!error && response?.loginConfig?.login_url) {
-            window.location = response.loginConfig.login_url;
+        if(!error && loginConfig?.login_url) {
+            window.location = loginConfig.login_url;
             return null;
         }
         delete router.query.redirected;
@@ -112,7 +113,7 @@ const LoginPage = () => {
     }
     return (
         <Layout logged={false}>
-            <LoginForm loginConfig={response?.login_config}/>
+            <LoginForm loginConfig={loginConfig}/>
         </Layout>
     );
 };
