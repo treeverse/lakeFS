@@ -23,6 +23,10 @@ func NewGCSWalker(client *storage.Client) *gcsWalker {
 
 func (w *gcsWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
 	prefix := strings.TrimLeft(storageURI.Path, "/")
+	var basePath string
+	if idx := strings.LastIndex(prefix, "/"); idx != -1 {
+		basePath = prefix[:idx+1]
+	}
 	iter := w.client.
 		Bucket(storageURI.Host).
 		Objects(ctx, &storage.Query{
@@ -32,7 +36,6 @@ func (w *gcsWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOption
 
 	for {
 		attrs, err := iter.Next()
-
 		if errors.Is(err, iterator.Done) {
 			break
 		}
@@ -51,7 +54,7 @@ func (w *gcsWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOption
 		}
 		if err := walkFn(ObjectStoreEntry{
 			FullKey:     attrs.Name,
-			RelativeKey: strings.TrimPrefix(attrs.Name, prefix),
+			RelativeKey: strings.TrimPrefix(attrs.Name, basePath),
 			Address:     fmt.Sprintf("gs://%s/%s", attrs.Bucket, attrs.Name),
 			ETag:        hex.EncodeToString(attrs.MD5),
 			Mtime:       attrs.Updated,
