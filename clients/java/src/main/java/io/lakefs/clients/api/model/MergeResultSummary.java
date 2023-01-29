@@ -53,11 +53,13 @@ public class MergeResultSummary {
   }
 
    /**
-   * Get added
+   * Deprecated: inaccurate and will be removed.
    * @return added
+   * @deprecated
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @Deprecated
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Deprecated: inaccurate and will be removed.")
 
   public Integer getAdded() {
     return added;
@@ -76,11 +78,13 @@ public class MergeResultSummary {
   }
 
    /**
-   * Get removed
+   * Deprecated: inaccurate and will be removed.
    * @return removed
+   * @deprecated
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @Deprecated
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Deprecated: inaccurate and will be removed.")
 
   public Integer getRemoved() {
     return removed;
@@ -99,11 +103,13 @@ public class MergeResultSummary {
   }
 
    /**
-   * Get changed
+   * Deprecated: inaccurate and will be removed.
    * @return changed
+   * @deprecated
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @Deprecated
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Deprecated: inaccurate and will be removed.")
 
   public Integer getChanged() {
     return changed;
@@ -122,11 +128,13 @@ public class MergeResultSummary {
   }
 
    /**
-   * Get conflict
+   * Deprecated: inaccurate and will be removed.
    * @return conflict
+   * @deprecated
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @Deprecated
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Deprecated: inaccurate and will be removed.")
 
   public Integer getConflict() {
     return conflict;
