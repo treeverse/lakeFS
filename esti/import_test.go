@@ -1,7 +1,9 @@
 package esti
 
 import (
+	"context"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -12,10 +14,11 @@ import (
 )
 
 const (
-	s3ImportPath    = "s3://esti-system-testing-data/import-test-data/"
-	gsImportPath    = "gs://esti-system-testing-data/import-test-data/"
-	azureImportPath = "https://esti.blob.core.windows.net/esti-system-testing-data/import-test-data/"
-	prefixImport    = "imported/new-prefix/"
+	s3ImportPath       = "s3://esti-system-testing-data/import-test-data/"
+	gsImportPath       = "gs://esti-system-testing-data/import-test-data/"
+	azureImportPath    = "https://esti.blob.core.windows.net/esti-system-testing-data/import-test-data/"
+	importTargetPrefix = "imported/new-prefix/"
+	importBranchName   = "ingestion"
 )
 
 func TestImport(t *testing.T) {
@@ -33,10 +36,56 @@ func TestImport(t *testing.T) {
 		t.Skip("import isn't supported for non-production block adapters")
 	}
 
-	ctx, log, repoName := setupTest(t)
+	ctx, _, repoName := setupTest(t)
 	defer tearDownTest(repoName)
+
+	importFilesToCheck := []string{
+		"nested/prefix-1/file002005",
+		"nested/prefix-2/file001894",
+		"nested/prefix-3/file000005",
+		"nested/prefix-4/file000645",
+		"nested/prefix-5/file001566",
+		"nested/prefix-6/file002011",
+		"nested/prefix-7/file000101",
+		"prefix-1/file002100",
+		"prefix-2/file000568",
+		"prefix-3/file001331",
+		"prefix-4/file001888",
+		"prefix-5/file000987",
+		"prefix-6/file001556",
+		"prefix-7/file000001",
+	}
+
+	t.Run("default", func(t *testing.T) {
+		testImport(t, ctx, repoName, importPath)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importFilesToCheck)
+	})
+
+	t.Run("parent", func(t *testing.T) {
+		// import without the directory separator as suffix to include the parent directory
+		importPathParent := strings.TrimSuffix(importPath, "/")
+		testImport(t, ctx, repoName, importPathParent)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", importFilesToCheck)
+	})
+}
+
+func verifyImportObjects(t *testing.T, ctx context.Context, repoName string, prefix string, importFilesToCheck []string) {
+	const expectedContentLength = 1024
+	for _, k := range importFilesToCheck {
+		// try to read some values from that ingested branch
+		objPath := prefix + k
+		objResp, err := client.GetObjectWithResponse(ctx, repoName, importBranchName, &api.GetObjectParams{
+			Path: objPath,
+		})
+		require.NoError(t, err, "get object failed: %s", objPath)
+		require.Equal(t, http.StatusOK, objResp.StatusCode(), "get object %s", objPath)
+		require.Equal(t, expectedContentLength, int(objResp.HTTPResponse.ContentLength), "object content length %s", objPath)
+	}
+}
+
+func testImport(t *testing.T, ctx context.Context, repoName string, importPath string) {
 	var (
-		after  = ""
+		after  string
 		token  *string
 		ranges []api.RangeMetadata
 	)
@@ -45,10 +94,9 @@ func TestImport(t *testing.T) {
 			After:             after,
 			ContinuationToken: token,
 			FromSourceURI:     importPath,
-			Prepend:           prefixImport,
+			Prepend:           importTargetPrefix,
 		})
 		require.NoError(t, err, "failed to ingest range")
-		log.Infof("Ingest range response body: %s", string(resp.Body))
 		require.Equal(t, http.StatusCreated, resp.StatusCode())
 		require.NotNil(t, resp.JSON201)
 		ranges = append(ranges, *resp.JSON201.Range)
@@ -67,14 +115,13 @@ func TestImport(t *testing.T) {
 	require.Equal(t, http.StatusCreated, metarangeResp.StatusCode())
 	require.NotNil(t, metarangeResp.JSON201.Id)
 
-	const ingestionBranch = "ingestion"
 	_, err = client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
-		Name:   ingestionBranch,
+		Name:   importBranchName,
 		Source: "main",
 	})
 	require.NoError(t, err, "failed to create branch")
 
-	commitResp, err := client.CommitWithResponse(ctx, repoName, ingestionBranch, &api.CommitParams{
+	commitResp, err := client.CommitWithResponse(ctx, repoName, importBranchName, &api.CommitParams{
 		SourceMetarange: metarangeResp.JSON201.Id,
 	}, api.CommitJSONRequestBody{
 		Message: "created by import",
@@ -84,30 +131,4 @@ func TestImport(t *testing.T) {
 	})
 	require.NoError(t, err, "failed to commit")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
-
-	importFilesToCheck := []string{
-		"nested/prefix-1/file002005",
-		"nested/prefix-2/file001894",
-		"nested/prefix-3/file000005",
-		"nested/prefix-4/file000645",
-		"nested/prefix-5/file001566",
-		"nested/prefix-6/file002011",
-		"nested/prefix-7/file000101",
-		"prefix-1/file002100",
-		"prefix-2/file000568",
-		"prefix-3/file001331",
-		"prefix-4/file001888",
-		"prefix-5/file000987",
-		"prefix-6/file001556",
-		"prefix-7/file000001",
-	}
-	for _, k := range importFilesToCheck {
-		// try to read some values from that ingested branch
-		objResp, err := client.GetObjectWithResponse(ctx, repoName, ingestionBranch, &api.GetObjectParams{
-			Path: prefixImport + k,
-		})
-		require.NoError(t, err, "failed to get object")
-		require.Equal(t, http.StatusOK, objResp.StatusCode())
-		require.Equal(t, 1024, int(objResp.HTTPResponse.ContentLength))
-	}
 }
