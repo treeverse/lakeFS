@@ -219,14 +219,17 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	if err != nil {
 		return props, err
 	}
-	_, err = a.client.
+	attr, err := a.client.
 		Bucket(qualifiedKey.StorageNamespace).
 		Object(qualifiedKey.Key).
 		Attrs(ctx)
 	if err != nil {
-		return props, err
+		return block.Properties{}, err
 	}
-	return props, nil
+	return block.Properties{
+		SizeBytes: &attr.Size,
+		Checksum:  &attr.Etag,
+	}, nil
 }
 
 func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {

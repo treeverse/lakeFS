@@ -327,10 +327,10 @@ var fsStageCmd = &cobra.Command{
 		}
 
 		obj := api.ObjectStageCreation{
-			Checksum:        checksum,
+			Checksum:        &checksum,
 			Mtime:           mtime,
 			PhysicalAddress: location,
-			SizeBytes:       size,
+			SizeBytes:       &size,
 			ContentType:     &contentType,
 		}
 		if metaErr == nil {

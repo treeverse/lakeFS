@@ -453,7 +453,11 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	if err != nil {
 		return block.Properties{}, err
 	}
-	return block.Properties{StorageClass: s3Props.StorageClass}, nil
+	return block.Properties{
+		StorageClass: s3Props.StorageClass,
+		Checksum:     s3Props.ETag,
+		SizeBytes:    s3Props.ContentLength,
+	}, nil
 }
 
 func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {

@@ -294,8 +294,6 @@ components:
       type: object
       required:
         - physical_address
-        - checksum
-        - size_bytes
       properties:
         physical_address:
           type: string

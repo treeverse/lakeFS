@@ -117,13 +117,11 @@ class ObjectStageCreation(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, physical_address, checksum, size_bytes, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, physical_address, *args, **kwargs):  # noqa: E501
         """ObjectStageCreation - a model defined in OpenAPI
 
         Args:
             physical_address (str):
-            checksum (str):
-            size_bytes (int):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -156,6 +154,8 @@ class ObjectStageCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            checksum (str): [optional]  # noqa: E501
+            size_bytes (int): [optional]  # noqa: E501
             mtime (int): Unix Epoch in seconds. [optional]  # noqa: E501
             metadata (ObjectUserMetadata): [optional]  # noqa: E501
             content_type (str): Object media type. [optional]  # noqa: E501
@@ -187,8 +187,6 @@ class ObjectStageCreation(ModelNormal):
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
         self.physical_address = physical_address
-        self.checksum = checksum
-        self.size_bytes = size_bytes
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -209,13 +207,11 @@ class ObjectStageCreation(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, physical_address, checksum, size_bytes, *args, **kwargs):  # noqa: E501
+    def __init__(self, physical_address, *args, **kwargs):  # noqa: E501
         """ObjectStageCreation - a model defined in OpenAPI
 
         Args:
             physical_address (str):
-            checksum (str):
-            size_bytes (int):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -248,6 +244,8 @@ class ObjectStageCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            checksum (str): [optional]  # noqa: E501
+            size_bytes (int): [optional]  # noqa: E501
             mtime (int): Unix Epoch in seconds. [optional]  # noqa: E501
             metadata (ObjectUserMetadata): [optional]  # noqa: E501
             content_type (str): Object media type. [optional]  # noqa: E501
@@ -277,8 +275,6 @@ class ObjectStageCreation(ModelNormal):
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
         self.physical_address = physical_address
-        self.checksum = checksum
-        self.size_bytes = size_bytes
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

@@ -5249,9 +5249,7 @@ components:
           description: Object media type
           type: string
       required:
-      - checksum
       - physical_address
-      - size_bytes
       type: object
     ObjectUserMetadata:
       additionalProperties:

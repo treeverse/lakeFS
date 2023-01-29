@@ -2308,14 +2308,29 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 
+	var sizeBytes int64
+	var checksum string
+	if body.SizeBytes == nil || body.Checksum == nil {
+		props, err := c.BlockAdapter.GetProperties(ctx, block.ObjectPointer{
+			StorageNamespace: qk.StorageNamespace,
+			Identifier:       qk.Key,
+		})
+		if err != nil {
+			writeError(w, r, http.StatusInternalServerError, fmt.Sprintf("Unable to get object properties: %s", err))
+			return
+		}
+		sizeBytes = swag.Int64Value(props.SizeBytes)
+		checksum = swag.StringValue(props.Checksum)
+	}
+
 	entryBuilder := catalog.NewDBEntryBuilder().
 		CommonLevel(false).
 		Path(params.Path).
 		PhysicalAddress(physicalAddress).
 		AddressType(addressType).
 		CreationDate(writeTime).
-		Size(body.SizeBytes).
-		Checksum(body.Checksum).
+		Size(sizeBytes).
+		Checksum(checksum).
 		ContentType(StringValue(body.ContentType))
 	if body.Metadata != nil {
 		entryBuilder.Metadata(body.Metadata.AdditionalProperties)

@@ -302,12 +302,15 @@ func (l *Adapter) GetProperties(_ context.Context, obj block.ObjectPointer) (blo
 	if err != nil {
 		return block.Properties{}, err
 	}
-	_, err = os.Stat(p)
+	stats, err := os.Stat(p)
 	if err != nil {
 		return block.Properties{}, err
 	}
+	size := stats.Size()
 	// No properties, just return that it exists
-	return block.Properties{}, nil
+	return block.Properties{
+		SizeBytes: &size,
+	}, nil
 }
 
 // isDirectoryWritable tests that pth, which must not be controllable by user input, is a

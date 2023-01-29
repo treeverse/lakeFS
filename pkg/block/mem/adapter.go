@@ -76,7 +76,7 @@ func getKey(obj block.ObjectPointer) string {
 	if obj.IdentifierType == block.IdentifierTypeFull {
 		return obj.Identifier
 	}
-	return fmt.Sprintf("%s:%s", obj.StorageNamespace, obj.Identifier)
+	return fmt.Sprintf("%s:%s", strings.TrimRight(obj.StorageNamespace, "/"), obj.Identifier)
 }
 
 func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {
@@ -88,7 +88,13 @@ func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reade
 	}
 	key := getKey(obj)
 	a.data[key] = data
-	a.properties[key] = block.Properties(opts)
+
+	size := int64(len(data))
+
+	a.properties[key] = block.Properties{
+		StorageClass: opts.StorageClass,
+		SizeBytes:    &size,
+	}
 	return nil
 }
 

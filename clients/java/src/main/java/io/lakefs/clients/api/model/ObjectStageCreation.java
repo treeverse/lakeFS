@@ -90,8 +90,8 @@ public class ObjectStageCreation {
    * Get checksum
    * @return checksum
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public String getChecksum() {
     return checksum;
@@ -113,8 +113,8 @@ public class ObjectStageCreation {
    * Get sizeBytes
    * @return sizeBytes
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public Long getSizeBytes() {
     return sizeBytes;

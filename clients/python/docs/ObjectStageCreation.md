@@ -5,8 +5,8 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **physical_address** | **str** |  | 
-**checksum** | **str** |  | 
-**size_bytes** | **int** |  | 
+**checksum** | **str** |  | [optional] 
+**size_bytes** | **int** |  | [optional] 
 **mtime** | **int** | Unix Epoch in seconds | [optional] 
 **metadata** | [**ObjectUserMetadata**](ObjectUserMetadata.md) |  | [optional] 
 **content_type** | **str** | Object media type | [optional] 

@@ -2277,9 +2277,9 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 	t.Run("stage object", func(t *testing.T) {
 		const expectedSizeBytes = 38
 		resp, err := clt.StageObjectWithResponse(ctx, "repo1", "main", &api.StageObjectParams{Path: "foo/bar"}, api.StageObjectJSONRequestBody{
-			Checksum:        "afb0689fe58b82c5f762991453edbbec",
+			Checksum:        swag.String("afb0689fe58b82c5f762991453edbbec"),
 			PhysicalAddress: onBlock(deps, "another-bucket/some/location"),
-			SizeBytes:       expectedSizeBytes,
+			SizeBytes:       swag.Int64(expectedSizeBytes),
 		})
 		verifyResponseOK(t, resp, err)
 
@@ -2336,9 +2336,9 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 	t.Run("upload object missing branch", func(t *testing.T) {
 		resp, err := clt.StageObjectWithResponse(ctx, "repo1", "main1234", &api.StageObjectParams{Path: "foo/bar"},
 			api.StageObjectJSONRequestBody{
-				Checksum:        "afb0689fe58b82c5f762991453edbbec",
+				Checksum:        swag.String("afb0689fe58b82c5f762991453edbbec"),
 				PhysicalAddress: onBlock(deps, "another-bucket/some/location"),
-				SizeBytes:       38,
+				SizeBytes:       swag.Int64(38),
 			})
 		testutil.Must(t, err)
 		if resp.JSON404 == nil {
@@ -2350,13 +2350,43 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 		resp, err := clt.StageObjectWithResponse(ctx, "repo1", "main1234", &api.StageObjectParams{
 			Path: "foo/bar",
 		}, api.StageObjectJSONRequestBody{
-			Checksum:        "afb0689fe58b82c5f762991453edbbec",
+			Checksum:        swag.String("afb0689fe58b82c5f762991453edbbec"),
 			PhysicalAddress: "gs://another-bucket/some/location",
-			SizeBytes:       38,
+			SizeBytes:       swag.Int64(38),
 		})
 		testutil.Must(t, err)
 		if resp.JSON400 == nil {
 			t.Fatalf("Wrong storage adapter should return 400, got status %s [%d]\n\tbody: %s", resp.Status(), resp.StatusCode(), string(resp.Body))
+		}
+	})
+
+	t.Run("stage object without props", func(t *testing.T) {
+		obj := block.ObjectPointer{
+			StorageNamespace: "some-bucket/",
+			Identifier:       "this/is/the/key",
+			IdentifierType:   block.IdentifierTypeRelative,
+		}
+		content := "this is some content"
+		fullAddr := obj.StorageNamespace + obj.Identifier
+		err := deps.blocks.Put(ctx, obj, int64(len(content)), bytes.NewReader([]byte(content)), block.PutOpts{})
+
+		require.NoError(t, err)
+		resp, err := clt.StageObjectWithResponse(ctx, "repo1", "main", &api.StageObjectParams{Path: "foo/bar"}, api.StageObjectJSONRequestBody{
+			PhysicalAddress: onBlock(deps, fullAddr),
+		})
+		verifyResponseOK(t, resp, err)
+
+		sizeBytes := api.Int64Value(resp.JSON201.SizeBytes)
+		if sizeBytes != int64(len(content)) {
+			t.Fatalf("expected %d bytes to be written, got back %d", len(content), sizeBytes)
+		}
+
+		// get back info
+		statResp, err := clt.StatObjectWithResponse(ctx, "repo1", "main", &api.StatObjectParams{Path: "foo/bar"})
+		verifyResponseOK(t, statResp, err)
+		objectStat := statResp.JSON200
+		if objectStat.PhysicalAddress != onBlock(deps, fullAddr) {
+			t.Fatalf("unexpected physical address: %s", objectStat.PhysicalAddress)
 		}
 	})
 }

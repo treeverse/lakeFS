@@ -126,6 +126,8 @@ type CreateMultiPartUploadOpts struct {
 // actually reported.
 type Properties struct {
 	StorageClass *string
+	SizeBytes    *int64
+	Checksum     *string
 }
 
 // WalkFunc is called for each object visited by the Walk.

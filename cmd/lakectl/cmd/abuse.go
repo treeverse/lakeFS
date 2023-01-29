@@ -201,9 +201,9 @@ var abuseRandomWritesCmd = &cobra.Command{
 		checksum := "00695c7307b0480c7b6bdc873cf05c15"
 		addr := storagePrefix + "/random-write"
 		creationInfo := api.ObjectStageCreation{
-			Checksum:        checksum,
+			Checksum:        &checksum,
 			PhysicalAddress: addr,
-			SizeBytes:       size,
+			SizeBytes:       &size,
 		}
 
 		// execute the things!

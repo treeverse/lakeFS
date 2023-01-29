@@ -349,7 +349,17 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	if err != nil {
 		return block.Properties{}, err
 	}
-	return block.Properties{StorageClass: props.AccessTier}, nil
+
+	var checksum *string
+	if props.ETag != nil {
+		c := string(*props.ETag)
+		checksum = &c
+	}
+	return block.Properties{
+		StorageClass: props.AccessTier,
+		SizeBytes:    props.ContentLength,
+		Checksum:     checksum,
+	}, nil
 }
 
 func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {

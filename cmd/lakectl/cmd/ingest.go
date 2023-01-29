@@ -93,10 +93,10 @@ var ingestCmd = &cobra.Command{
 						Path: path + key,
 					},
 					body: api.StageObjectJSONRequestBody{
-						Checksum:        e.ETag,
+						Checksum:        &e.ETag,
 						Mtime:           &mtime,
 						PhysicalAddress: e.Address,
-						SizeBytes:       e.Size,
+						SizeBytes:       &e.Size,
 					},
 				}
 				return nil
