@@ -2,16 +2,15 @@
 
 # MergeResultSummary
 
-Deprecated: merge summary will be removed
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**added** | **Integer** |  |  [optional]
-**removed** | **Integer** |  |  [optional]
-**changed** | **Integer** |  |  [optional]
-**conflict** | **Integer** |  |  [optional]
+**added** | **Integer** | Deprecated: inaccurate and will be removed. |  [optional]
+**removed** | **Integer** | Deprecated: inaccurate and will be removed. |  [optional]
+**changed** | **Integer** | Deprecated: inaccurate and will be removed. |  [optional]
+**conflict** | **Integer** | Deprecated: inaccurate and will be removed. |  [optional]
 
 
 

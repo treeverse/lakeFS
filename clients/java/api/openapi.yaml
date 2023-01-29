@@ -5072,7 +5072,6 @@ components:
       - results
       type: object
     MergeResultSummary:
-      description: 'Deprecated: merge summary will be removed'
       example:
         removed: 6
         added: 0
@@ -5080,12 +5079,20 @@ components:
         conflict: 5
       properties:
         added:
+          deprecated: true
+          description: 'Deprecated: inaccurate and will be removed.'
           type: integer
         removed:
+          deprecated: true
+          description: 'Deprecated: inaccurate and will be removed.'
           type: integer
         changed:
+          deprecated: true
+          description: 'Deprecated: inaccurate and will be removed.'
           type: integer
         conflict:
+          deprecated: true
+          description: 'Deprecated: inaccurate and will be removed.'
           type: integer
       type: object
     MergeResult:

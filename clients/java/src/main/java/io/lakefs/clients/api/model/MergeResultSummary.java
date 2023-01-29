@@ -25,9 +25,8 @@ import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 
 /**
- * Deprecated: merge summary will be removed
+ * MergeResultSummary
  */
-@ApiModel(description = "Deprecated: merge summary will be removed")
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class MergeResultSummary {
   public static final String SERIALIZED_NAME_ADDED = "added";
@@ -54,11 +53,13 @@ public class MergeResultSummary {
   }
 
    /**
-   * Get added
+   * Deprecated: inaccurate and will be removed.
    * @return added
+   * @deprecated
   **/
+  @Deprecated
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(value = "Deprecated: inaccurate and will be removed.")
 
   public Integer getAdded() {
     return added;
@@ -77,11 +78,13 @@ public class MergeResultSummary {
   }
 
    /**
-   * Get removed
+   * Deprecated: inaccurate and will be removed.
    * @return removed
+   * @deprecated
   **/
+  @Deprecated
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(value = "Deprecated: inaccurate and will be removed.")
 
   public Integer getRemoved() {
     return removed;
@@ -100,11 +103,13 @@ public class MergeResultSummary {
   }
 
    /**
-   * Get changed
+   * Deprecated: inaccurate and will be removed.
    * @return changed
+   * @deprecated
   **/
+  @Deprecated
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(value = "Deprecated: inaccurate and will be removed.")
 
   public Integer getChanged() {
     return changed;
@@ -123,11 +128,13 @@ public class MergeResultSummary {
   }
 
    /**
-   * Get conflict
+   * Deprecated: inaccurate and will be removed.
    * @return conflict
+   * @deprecated
   **/
+  @Deprecated
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(value = "Deprecated: inaccurate and will be removed.")
 
   public Integer getConflict() {
     return conflict;

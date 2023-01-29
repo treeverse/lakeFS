@@ -141,10 +141,10 @@ class MergeResultSummary(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            added (int): [optional]  # noqa: E501
-            removed (int): [optional]  # noqa: E501
-            changed (int): [optional]  # noqa: E501
-            conflict (int): [optional]  # noqa: E501
+            added (int): Deprecated: inaccurate and will be removed.. [optional]  # noqa: E501
+            removed (int): Deprecated: inaccurate and will be removed.. [optional]  # noqa: E501
+            changed (int): Deprecated: inaccurate and will be removed.. [optional]  # noqa: E501
+            conflict (int): Deprecated: inaccurate and will be removed.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -226,10 +226,10 @@ class MergeResultSummary(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            added (int): [optional]  # noqa: E501
-            removed (int): [optional]  # noqa: E501
-            changed (int): [optional]  # noqa: E501
-            conflict (int): [optional]  # noqa: E501
+            added (int): Deprecated: inaccurate and will be removed.. [optional]  # noqa: E501
+            removed (int): Deprecated: inaccurate and will be removed.. [optional]  # noqa: E501
+            changed (int): Deprecated: inaccurate and will be removed.. [optional]  # noqa: E501
+            conflict (int): Deprecated: inaccurate and will be removed.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
