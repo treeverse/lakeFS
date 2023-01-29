@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/ratelimit"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -238,6 +240,9 @@ type Config struct {
 			Expiry time.Duration `mapstructure:"expiry"`
 			Jitter time.Duration `mapstructure:"jitter"`
 		} `mapstructure:"commit_cache"`
+		Background struct {
+			RateLimit int `mapstructure:"rate_limit"`
+		} `mapstructure:"background"`
 	} `mapstructure:"graveler"`
 	Gateways struct {
 		S3 struct {
@@ -551,4 +556,12 @@ func (c *Config) UISnippets() []apiparams.CodeSnippet {
 		})
 	}
 	return snippets
+}
+
+func (c *Config) NewGravelerBackgroundLimiter() ratelimit.Limiter {
+	rateLimit := c.Graveler.Background.RateLimit
+	if rateLimit == 0 {
+		return ratelimit.NewUnlimited()
+	}
+	return ratelimit.New(rateLimit)
 }

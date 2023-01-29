@@ -29,18 +29,8 @@ const MaxBatchDelay = time.Millisecond * 3
 // commitIDStringLength string representation length of commit ID - based on hex representation of sha256
 const commitIDStringLength = 64
 
-const (
-	DefaultRepositoryCacheSize   = 1000
-	DefaultRepositoryCacheExpiry = 5 * time.Second
-	DefaultRepositoryCacheJitter = DefaultRepositoryCacheExpiry / 2
-
-	DefaultCommitCacheSize   = 1000
-	DefaultCommitCacheExpiry = 30 * time.Second
-	DefaultCommitCacheJitter = DefaultRepositoryCacheExpiry / 2
-
-	// LinkAddressTime the time address is valid from get to link
-	LinkAddressTime = 6 * time.Hour
-)
+// LinkAddressTime the time address is valid from get to link
+const LinkAddressTime = 6 * time.Hour
 
 type CacheConfig struct {
 	Size   int
@@ -50,6 +40,7 @@ type CacheConfig struct {
 
 type Manager struct {
 	kvStore         *kv.StoreMessage
+	kvStoreLimited  kv.Store
 	addressProvider ident.AddressProvider
 	batchExecutor   batch.Batcher
 	repoCache       cache.Cache
@@ -85,7 +76,8 @@ func protoFromBranch(branchID graveler.BranchID, b *graveler.Branch) *graveler.B
 
 type ManagerConfig struct {
 	Executor              batch.Batcher
-	KvStore               *kv.StoreMessage
+	KVStore               *kv.StoreMessage
+	KVStoreLimited        kv.Store
 	AddressProvider       ident.AddressProvider
 	RepositoryCacheConfig CacheConfig
 	CommitCacheConfig     CacheConfig
@@ -93,7 +85,8 @@ type ManagerConfig struct {
 
 func NewRefManager(cfg ManagerConfig) *Manager {
 	return &Manager{
-		kvStore:         cfg.KvStore,
+		kvStore:         cfg.KVStore,
+		kvStoreLimited:  cfg.KVStoreLimited,
 		addressProvider: cfg.AddressProvider,
 		batchExecutor:   cfg.Executor,
 		repoCache:       newCache(cfg.RepositoryCacheConfig),
@@ -575,12 +568,12 @@ func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.Re
 	if err != nil {
 		return err
 	}
-	return m.deleteLinkAddress(ctx, repository, token)
+	return deleteLinkAddress(ctx, m.kvStore.Store, repository, token)
 }
 
-func (m *Manager) deleteLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+func deleteLinkAddress(ctx context.Context, kvStore kv.Store, repository *graveler.RepositoryRecord, token string) error {
 	addrPath := []byte(graveler.LinkedAddressPath(token))
-	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repository), addrPath)
+	return kvStore.Delete(ctx, []byte(graveler.RepoPartition(repository)), addrPath)
 }
 
 func (m *Manager) ListLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
@@ -607,8 +600,11 @@ func (m *Manager) resolveLinkAddressTime(address string) (time.Time, error) {
 	return id.Time(), nil
 }
 
+// DeleteExpiredLinkAddresses delete expired link addresses from kv store. This call uses limiter to access
+// kv, assuming the call does in the background.
 func (m *Manager) DeleteExpiredLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) error {
-	itr, err := m.ListLinkAddresses(ctx, repository)
+	store := m.kvStoreLimited
+	itr, err := NewAddressTokenIterator(ctx, &kv.StoreMessage{Store: store}, repository)
 	if err != nil {
 		return err
 	}
@@ -620,7 +616,7 @@ func (m *Manager) DeleteExpiredLinkAddresses(ctx context.Context, repository *gr
 			return err
 		}
 		if expired {
-			err := m.deleteLinkAddress(ctx, repository, token.Address)
+			err := deleteLinkAddress(ctx, store, repository, token.Address)
 			if err != nil {
 				return err
 			}

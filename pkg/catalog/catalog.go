@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/ratelimit"
+
 	"github.com/alitto/pond"
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
@@ -136,6 +138,7 @@ type Config struct {
 	SettingsManagerOption    settings.ManagerOption
 	GCMaxUncommittedFileSize int // The maximum file size for uncommitted dump created during PrepareUncommittedGC
 	PathProvider             *upload.PathPartitionProvider
+	Limiter                  ratelimit.Limiter
 }
 
 type Catalog struct {
@@ -146,8 +149,10 @@ type Catalog struct {
 	walkerFactory            WalkerFactory
 	managers                 []io.Closer
 	workPool                 *pond.WorkerPool
-	StoreMessage             *kv.StoreMessage
 	PathProvider             *upload.PathPartitionProvider
+	BackgroundLimiter        ratelimit.Limiter
+	KVStore                  kv.Store
+	KVStoreLimited           kv.Store
 }
 
 const (
@@ -233,10 +238,12 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	executor := batch.NewConditionalExecutor(logging.Default())
 	go executor.Run(ctx)
 
+	storeLimiter := kv.NewStoreLimiter(cfg.KVStore.Store, cfg.Limiter)
 	refManager := ref.NewRefManager(
 		ref.ManagerConfig{
 			Executor:              executor,
-			KvStore:               cfg.KVStore,
+			KVStore:               cfg.KVStore,
+			KVStoreLimited:        storeLimiter,
 			AddressProvider:       ident.NewHexAddressProvider(),
 			RepositoryCacheConfig: ref.CacheConfig(cfg.Config.Graveler.RepositoryCache),
 			CommitCacheConfig:     ref.CacheConfig(cfg.Config.Graveler.CommitCache),
@@ -258,11 +265,13 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		Store:                    gStore,
 		GCMaxUncommittedFileSize: cfg.GCMaxUncommittedFileSize,
 		PathProvider:             cfg.PathProvider,
+		BackgroundLimiter:        cfg.Limiter,
 		log:                      logging.Default().WithField("service_name", "entry_catalog"),
 		walkerFactory:            cfg.WalkerFactory,
 		workPool:                 workPool,
-		StoreMessage:             cfg.KVStore,
+		KVStore:                  cfg.KVStore.Store,
 		managers:                 []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
+		KVStoreLimited:           storeLimiter,
 	}, nil
 }
 
@@ -1819,7 +1828,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	uw := NewUncommittedWriter(fd)
 
 	// Write parquet to local storage
-	newMark, hasData, err := gcWriteUncommitted(ctx, c.Store, c.StoreMessage.Store, repository, uw, mark, runID, int64(c.GCMaxUncommittedFileSize))
+	newMark, hasData, err := gcWriteUncommitted(ctx, c.Store, c.KVStore, repository, uw, mark, runID, int64(c.GCMaxUncommittedFileSize))
 	if err != nil {
 		return nil, err
 	}
@@ -1946,7 +1955,7 @@ func (c *Catalog) TrackPhysicalAddress(ctx context.Context, repository, physical
 		Address:      physicalAddress,
 		LastModified: timestamppb.Now(),
 	}
-	err = c.StoreMessage.SetMsg(ctx, repoPartition, []byte(key), ent)
+	err = kv.SetMsg(ctx, c.KVStore, repoPartition, []byte(key), ent)
 	if err != nil {
 		return "", err
 	}
@@ -2042,7 +2051,7 @@ func (c *Catalog) deleteRepoTrackedPhysicalAddressHelper(ctx context.Context, re
 	repoPartition := graveler.RepoPartition(repo)
 	msgType := (&Entry{}).ProtoReflect().Type()
 	prefix := []byte(kv.FormatPath(kvTrackPrefix, ""))
-	it, err := kv.NewPrimaryIterator(ctx, c.StoreMessage.Store, msgType, repoPartition, prefix, kv.IteratorOptionsFrom([]byte{}))
+	it, err := kv.NewPrimaryIterator(ctx, c.KVStoreLimited, msgType, repoPartition, prefix, kv.IteratorOptionsFrom([]byte{}))
 	if err != nil {
 		return false, err
 	}
@@ -2071,7 +2080,7 @@ func (c *Catalog) deleteRepoTrackedPhysicalAddressHelper(ctx context.Context, re
 
 	// delete the collected keys
 	for _, key := range keysToDelete {
-		err := c.StoreMessage.Delete(ctx, []byte(repoPartition), []byte(key))
+		err := c.KVStoreLimited.Delete(ctx, []byte(repoPartition), []byte(key))
 		if err != nil {
 			c.log.WithError(err).
 				WithFields(logging.Fields{"repository": repo.RepositoryID, "key": key}).

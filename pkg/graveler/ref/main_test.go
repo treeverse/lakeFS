@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/ratelimit"
+
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
@@ -35,7 +37,8 @@ func testRefManager(t testing.TB) (graveler.RefManager, *kv.StoreMessage) {
 	storeMessage := &kv.StoreMessage{Store: kvStore}
 	cfg := ref.ManagerConfig{
 		Executor:              batch.NopExecutor(),
-		KvStore:               storeMessage,
+		KVStore:               storeMessage,
+		KVStoreLimited:        kv.NewStoreLimiter(kvStore, ratelimit.NewUnlimited()),
 		AddressProvider:       ident.NewHexAddressProvider(),
 		RepositoryCacheConfig: testRepoCacheConfig,
 		CommitCacheConfig:     testCommitCacheConfig,
@@ -50,7 +53,7 @@ func testRefManagerWithAddressProvider(t testing.TB, addressProvider ident.Addre
 	storeMessage := &kv.StoreMessage{Store: kvStore}
 	cfg := ref.ManagerConfig{
 		Executor:              batch.NopExecutor(),
-		KvStore:               storeMessage,
+		KVStore:               storeMessage,
 		AddressProvider:       addressProvider,
 		RepositoryCacheConfig: testRepoCacheConfig,
 		CommitCacheConfig:     testCommitCacheConfig,
