@@ -180,7 +180,7 @@ func upload(ctx context.Context, client api.ClientWithResponsesInterface, source
 	case transportMethodDefault:
 		return uploadObject(ctx, client, destURI.Repository, destURI.Ref, objectPath, contentType, fp)
 	case transportMethodDirect:
-		return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
+		return helpers.ClientUploadDirect(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
 	case transportMethodPreSign:
 		return helpers.ClientUploadPreSign(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
 	default:
