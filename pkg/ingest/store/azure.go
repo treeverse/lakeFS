@@ -56,6 +56,11 @@ func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 	if err != nil {
 		return err
 	}
+	var basePath string
+	if idx := strings.LastIndex(prefix, "/"); idx != -1 {
+		basePath = prefix[:idx+1]
+	}
+
 	qk, err := azure.ResolveBlobURLInfoFromURL(containerURL)
 	if err != nil {
 		return err
@@ -63,7 +68,7 @@ func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 
 	container := a.client.NewContainerClient(qk.ContainerName)
 	listBlob := container.NewListBlobsFlatPager(&azblob.ListBlobsFlatOptions{
-		Prefix: &prefix,
+		Prefix: &basePath,
 		Marker: &op.ContinuationToken,
 	})
 
@@ -83,7 +88,7 @@ func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 			a.mark.LastKey = *blobInfo.Name
 			if err := walkFn(ObjectStoreEntry{
 				FullKey:     *blobInfo.Name,
-				RelativeKey: strings.TrimPrefix(*blobInfo.Name, prefix),
+				RelativeKey: strings.TrimPrefix(*blobInfo.Name, basePath),
 				Address:     getAzureBlobURL(containerURL, *blobInfo.Name).String(),
 				ETag:        string(*blobInfo.Properties.ETag),
 				Mtime:       *blobInfo.Properties.LastModified,
