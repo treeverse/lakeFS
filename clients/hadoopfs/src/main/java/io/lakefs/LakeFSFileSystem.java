@@ -1039,4 +1039,8 @@ public class LakeFSFileSystem extends FileSystem {
             return this.create(path, permission, flags.contains(CreateFlag.OVERWRITE), bufferSize, replication, blockSize, progress);
         }
     }
+
+    public LakeFSClient getLakeFSClient() {
+        return lfsClient;
+    }
 }

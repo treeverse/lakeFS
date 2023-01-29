@@ -56,7 +56,7 @@ To export to S3:
             <properties>
                 <exclude.tests>io/lakefs/contract/hadoop3/**</exclude.tests>
                 <contract_tests.resource_dir>../../test/lakefsfs_contract/</contract_tests.resource_dir>
-                <hadoop.version>2.7.7</hadoop.version>
+                <hadoop.version>3.3.2</hadoop.version>
             </properties>
             <build>
                 <resources>
@@ -222,12 +222,21 @@ To export to S3:
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <name-suffix/>          <!-- Set via profile to rename JAR -->
-        <hadoop.version>2.7.7</hadoop.version>
+        <hadoop.version>3.3.2</hadoop.version>
         <finalName>${project.artifactId}-${project.version}</finalName>
     </properties>
     <build>
         <finalName>${finalName}</finalName>
         <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <mainClass>io.lakefs.Benchmark</mainClass>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -289,7 +298,7 @@ To export to S3:
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <version>${hadoop.version}</version>
-            <scope>provided</scope>
+            <!-- <scope>provided</scope> -->
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -302,7 +311,7 @@ To export to S3:
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-aws</artifactId>
             <version>${hadoop.version}</version>
-            <scope>provided</scope>
+            <!-- <scope>provided</scope> -->
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
         <dependency>
@@ -352,19 +361,21 @@ To export to S3:
 	  <groupId>com.fasterxml.jackson.core</groupId>
 	  <artifactId>jackson-databind</artifactId>
 	  <version>2.13.4.1</version>
-	  <scope>test</scope>
 	</dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.dataformat</groupId>
+        <artifactId>jackson-dataformat-xml</artifactId>
+        <version>2.8.5</version>
+    </dependency>
 	<dependency>
 	  <groupId>com.fasterxml.jackson.core</groupId>
 	  <artifactId>jackson-core</artifactId>
 	  <version>2.12.3</version>
-	  <scope>test</scope>
 	</dependency>
 	<dependency>
 	  <groupId>com.fasterxml.jackson.core</groupId>
 	  <artifactId>jackson-annotations</artifactId>
 	  <version>2.12.3</version>
-	  <scope>test</scope>
 	</dependency>
 
         <dependency>
