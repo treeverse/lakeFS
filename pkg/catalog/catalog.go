@@ -255,7 +255,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}
 
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
-	stagingManager := staging.NewManager(ctx, *cfg.KVStore)
+	stagingManager := staging.NewManager(ctx, cfg.KVStore.Store, storeLimiter)
 	gStore := graveler.NewGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
