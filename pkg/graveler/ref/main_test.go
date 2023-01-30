@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/ratelimit"
-
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
@@ -16,6 +14,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"go.uber.org/ratelimit"
 )
 
 var (

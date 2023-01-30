@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"go.uber.org/ratelimit"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -24,6 +22,7 @@ import (
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	pyramidparams "github.com/treeverse/lakefs/pkg/pyramid/params"
+	"go.uber.org/ratelimit"
 )
 
 var (
