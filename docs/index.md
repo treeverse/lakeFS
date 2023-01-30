@@ -174,16 +174,6 @@ Git had conquered the world of code because it had best supported engineering be
 
 lakeFS provides these exact benefits, that are data practitioners are missing today, and enables them a clear intuitive git-like inetrface to easily manage their data like they manage code. Therefore, lakeFS can definitely be regarded as git for data.
 
-### How is lakeFS different from Git?
-
-An obvious question might be: Why not actually use “Git”, for data (...as opposed to a solution that provides “Git for data” :) )
-
-A basic requirement of working with big data, is that the data stays in place. When writing code, it is common to “check out” a local version of the code to your desktop and work against a copy of the code. However, when working with data, it is unreasonable to copy terabytes (or more) of files locally to experiment, develop, test or transform the data.
-
-Working with lakeFS, the data stays in place and the [branch isolation is achieved via pointers manipulations](https://docs.lakefs.io/understand/model.html#objects), pointing to the data staying on the object store. Meaning, you won’t check out a local copy of the data, but rather create a separate branch and work against that branch. Once done, if you want to “push” the changes back, merge back your isolated branch. 
-
-On the other hand, unlike Git, lakeFS is not typically used to version control code. Instead, add metadata to your commit to link a data version (commit) with a code version (or an execution step in a DAG, or anything else that could be useful to understand the context of the data).
-
 ### Downloads
 
 #### Binary Releases
