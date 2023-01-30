@@ -427,7 +427,7 @@ func scheduleCleanupJobs(ctx context.Context, s *gocron.Scheduler, c *catalog.Ca
 		deleteTrackedLowerTimeMin = 50
 		deleteTrackedUpperTimeMin = 70
 	)
-	job2, err := s.EveryRandom(deleteTrackedLowerTimeSec, deleteTrackedUpperTimeSec).Minute().Do(func() {
+	job2, err := s.EveryRandom(deleteTrackedLowerTimeMin, deleteTrackedUpperTimeMin).Minute().Do(func() {
 		c.DeleteTrackedPhysicalAddresses(ctx)
 	})
 	if err != nil {
