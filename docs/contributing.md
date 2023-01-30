@@ -134,6 +134,7 @@ To render the documentation locally and preview changes you can run the Jeykll s
 
    ```sh
    docker run --rm \
+              --name lakefs_docs \
               --publish 4000:4000 --publish 35729:35729 \
               --volume="$PWD/docs:/srv/jekyll:Z" \
               --volume="$PWD/docs/.jekyll-bundle-cache:/usr/local/bundle:Z" \
@@ -166,7 +167,7 @@ To render the documentation locally and preview changes you can run the Jeykll s
 
    Your page will automatically reload to show the changes.
 
-_If you are doing lots of work on the docs you may want to leave the Docker container in place (so that you don't have to wait for the dependencies to load each time you re-create it). To do this remove the `--rm` from the `docker run` command._
+_If you are doing lots of work on the docs you may want to leave the Docker container in place (so that you don't have to wait for the dependencies to load each time you re-create it). To do this replace the `--rm` with `--detach` in the `docker run` command, and use `docker logs -f lakefs_docs` to view the server log._
 
 ### CHANGELOG.md
 
