@@ -25,7 +25,7 @@ func (s *StoreLimiter) Get(ctx context.Context, partitionKey, key []byte) (*Valu
 
 func (s *StoreLimiter) Set(ctx context.Context, partitionKey, key, value []byte) error {
 	_ = s.Limiter.Take()
-	return s.Set(ctx, partitionKey, key, value)
+	return s.Store.Set(ctx, partitionKey, key, value)
 }
 
 func (s *StoreLimiter) SetIf(ctx context.Context, partitionKey, key, value []byte, valuePredicate Predicate) error {
