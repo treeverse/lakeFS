@@ -424,8 +424,8 @@ func scheduleCleanupJobs(ctx context.Context, s *gocron.Scheduler, c *catalog.Ca
 
 	// delete expired tracked physical addresses
 	const (
-		deleteTrackedLowerTimeSec = 50
-		deleteTrackedUpperTimeSec = 80
+		deleteTrackedLowerTimeMin = 50
+		deleteTrackedUpperTimeMin = 70
 	)
 	job2, err := s.EveryRandom(deleteTrackedLowerTimeSec, deleteTrackedUpperTimeSec).Minute().Do(func() {
 		c.DeleteTrackedPhysicalAddresses(ctx)
