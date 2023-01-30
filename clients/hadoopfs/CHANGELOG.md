@@ -6,7 +6,7 @@
 
 What's new:
 * Upgrade lakeFS client to v0.91.0
-* Use CopyObject instead of StageObject
+* Prefer to use CopyObject instead of StageObject if possible in rename operation.
 
 ## 0.1.10
 
