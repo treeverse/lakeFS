@@ -9,10 +9,6 @@ option go_package = "github.com/treeverse/lakefs/plugins/diff";
 
 import "google/protobuf/timestamp.proto";
 
-/* Examples:
-    s3://repo/branch/path/to/dataset
-    lakefs://repo/branch/path/to/dataset
- */
 message DiffProps {
   string repo = 1;
   string branch_one = 2;
@@ -35,7 +31,7 @@ message DiffRequest {
 }
 
 message Diff {
-  uint32 version = 1;
+  uint32 id = 1;
   google.protobuf.Timestamp timestamp = 2;
   string description = 3;
   map<string, string> content = 4;
