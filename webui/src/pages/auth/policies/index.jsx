@@ -15,7 +15,8 @@ import {
     DataTable,
     Error, FormattedDate,
     Loading,
-    RefreshButton
+    RefreshButton,
+    Warning,
 } from "../../../lib/components/controls";
 import {useRouter} from "../../../lib/hooks/router";
 import {Link} from "../../../lib/components/nav";
@@ -71,6 +72,12 @@ const PoliciesContainer = () => {
                     <RefreshButton onClick={() => setRefresh(!refresh)}/>
                 </ActionGroup>
             </ActionsBar>
+            <Warning>
+                <b>Deprecation Notice:</b> RBAC (Role-Based Access Control) is being deprecated
+                and will be replaced by ACL (Access Control Lists) in future releases.
+                For more information on the transition from RBAC to ACL, please visit
+                our <a href="https://docs.lakefs.io/posts/security_update.html">documentation page</a>.
+            </Warning>
             <div className="auth-learn-more">
                 A policy defines the permissions of a user or a group. <a href="https://docs.lakefs.io/reference/authorization.html#authorization" target="_blank" rel="noopener noreferrer">Learn more.</a>
             </div>
