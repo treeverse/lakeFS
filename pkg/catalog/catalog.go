@@ -13,8 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"go.uber.org/ratelimit"
-
 	"github.com/alitto/pond"
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
@@ -41,6 +39,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/validator"
 	"go.uber.org/atomic"
+	"go.uber.org/ratelimit"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
