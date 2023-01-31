@@ -2,11 +2,12 @@ package plugins
 
 import (
 	"errors"
+	"os"
+	"os/exec"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"os"
-	"os/exec"
 )
 
 var (
