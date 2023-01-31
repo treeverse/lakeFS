@@ -86,12 +86,20 @@ func pluginServerCmd(version int, auth PluginHandshake) *exec.Cmd {
 	cs := []string{"-test.run=TestPluginServer", "--"}
 	cs = append(cs, auth.Key, auth.Value, strconv.Itoa(version))
 	cmd := exec.Command(os.Args[0], cs...)
-	cmd.Env = os.Environ()
+
+	env := []string{
+		"RUN_PLUGIN_SERVER=1",
+	}
+	cmd.Env = append(env, os.Environ()...)
 	return cmd
 }
 
 // This is not a real test. This is the plugin server that will be initialized by the tests
 func TestPluginServer(*testing.T) {
+	if os.Getenv("RUN_PLUGIN_SERVER") != "1" {
+		return
+	}
+
 	defer os.Exit(0)
 
 	args := os.Args
