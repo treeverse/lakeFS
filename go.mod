@@ -86,6 +86,7 @@ require (
 	github.com/gorilla/sessions v1.2.1
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/puzpuzpuz/xsync v1.5.2
+	go.uber.org/ratelimit v0.2.0
 )
 
 require (
@@ -97,6 +98,7 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.7.0 // indirect
 	github.com/GaijinEntertainment/go-exhaustruct/v2 v2.3.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
+	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
 	github.com/breml/bidichk v0.2.3 // indirect
 	github.com/breml/errchkjson v0.3.0 // indirect

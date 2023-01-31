@@ -141,6 +141,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		WalkerFactory:         factory,
 		SettingsManagerOption: settings.WithCache(cache.NoCache),
 		PathProvider:          upload.DefaultPathProvider,
+		Limiter:               cfg.NewGravelerBackgroundLimiter(),
 	})
 	testutil.MustDo(t, "build catalog", err)
 
