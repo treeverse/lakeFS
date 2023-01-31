@@ -1311,6 +1311,7 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
 		DefaultNamespacePrefix:           swag.String(c.Config.Blockstore.DefaultNamespacePrefix),
+		PreSignSupport:                   info.PreSignSupport,
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
@@ -3376,27 +3377,36 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	if body.Metadata != nil {
 		metadata = body.Metadata.AdditionalProperties
 	}
-	res, err := c.Catalog.Merge(ctx,
+	reference, err := c.Catalog.Merge(ctx,
 		repository, destinationBranch, sourceRef,
 		user.Username,
 		StringValue(body.Message),
 		metadata,
 		StringValue(body.Strategy))
 
-	var hookAbortErr *graveler.HookAbortError
+	var (
+		hookAbortErr *graveler.HookAbortError
+		zero         int
+	)
 	switch {
 	case errors.As(err, &hookAbortErr):
 		c.Logger.WithError(err).WithField("run_id", hookAbortErr.RunID).Warn("aborted by hooks")
 		writeError(w, r, http.StatusPreconditionFailed, err)
 		return
 	case errors.Is(err, graveler.ErrConflictFound):
-		writeResponse(w, r, http.StatusConflict, MergeResult{Reference: res})
+		writeResponse(w, r, http.StatusConflict, MergeResult{
+			Reference: reference,
+			Summary:   &MergeResultSummary{Added: &zero, Changed: &zero, Conflict: &zero, Removed: &zero},
+		})
 		return
 	}
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	writeResponse(w, r, http.StatusOK, MergeResult{Reference: res})
+	writeResponse(w, r, http.StatusOK, MergeResult{
+		Reference: reference,
+		Summary:   &MergeResultSummary{Added: &zero, Changed: &zero, Conflict: &zero, Removed: &zero},
+	})
 }
 
 func (c *Controller) ListTags(w http.ResponseWriter, r *http.Request, repository string, params ListTagsParams) {
@@ -3625,7 +3635,7 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 	}
 
 	// collect comm prefs
-	c.Collector.CollectCommPrefs(commPrefs.UserEmail, installationID, commPrefs.FeatureUpdates, commPrefs.SecurityUpdates)
+	go c.Collector.CollectCommPrefs(commPrefs.UserEmail, installationID, commPrefs.FeatureUpdates, commPrefs.SecurityUpdates)
 
 	writeResponse(w, r, http.StatusOK, response)
 }

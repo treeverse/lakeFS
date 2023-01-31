@@ -602,7 +602,7 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 				Store:                    g.Sut,
 				BlockAdapter:             blockAdapter,
 				GCMaxUncommittedFileSize: 500 * 1024,
-				StoreMessage:             &kv.StoreMessage{Store: g.KVStore},
+				KVStore:                  g.KVStore,
 			}
 			repositoryID := repoID.String()
 

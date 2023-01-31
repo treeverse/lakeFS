@@ -44,7 +44,7 @@ func TestManager_GetRepositoryCache(t *testing.T) {
 	}
 	cfg := ref.ManagerConfig{
 		Executor:              batch.NopExecutor(),
-		KvStore:               storeMessage,
+		KVStore:               storeMessage,
 		AddressProvider:       ident.NewHexAddressProvider(),
 		RepositoryCacheConfig: cacheConfig,
 		CommitCacheConfig:     cacheConfig,
@@ -91,7 +91,7 @@ func TestManager_GetCommitCache(t *testing.T) {
 	}
 	cfg := ref.ManagerConfig{
 		Executor:              batch.NopExecutor(),
-		KvStore:               storeMessage,
+		KVStore:               storeMessage,
 		AddressProvider:       ident.NewHexAddressProvider(),
 		RepositoryCacheConfig: cacheConfig,
 		CommitCacheConfig:     cacheConfig,

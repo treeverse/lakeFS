@@ -1,0 +1,7 @@
+Path: ${PATH}/${FILE}
+Modified Time: <DATE> <TIME> <TZ>
+Size: 1024 bytes
+Human Size: 1.0 kB
+Physical Address: <PRE_SIGN_URL>
+Checksum: <CHECKSUM>
+Content-Type: application/octet-stream

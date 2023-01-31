@@ -9,19 +9,17 @@ import (
 
 type Iterator struct {
 	ctx   context.Context
-	store kv.StoreMessage
 	itr   *kv.PartitionIterator
 	entry *graveler.ValueRecord
 	err   error
 }
 
 // NewStagingIterator initiates the staging iterator with a batchSize
-func NewStagingIterator(ctx context.Context, store kv.StoreMessage, st graveler.StagingToken, batchSize int) (*Iterator, error) {
-	itr := kv.NewPartitionIterator(ctx, store.Store, (&graveler.StagedEntryData{}).ProtoReflect().Type(), graveler.StagingTokenPartition(st), batchSize)
+func NewStagingIterator(ctx context.Context, kvStore kv.Store, st graveler.StagingToken, batchSize int) (*Iterator, error) {
+	itr := kv.NewPartitionIterator(ctx, kvStore, (&graveler.StagedEntryData{}).ProtoReflect().Type(), graveler.StagingTokenPartition(st), batchSize)
 	return &Iterator{
-		ctx:   ctx,
-		store: store,
-		itr:   itr,
+		ctx: ctx,
+		itr: itr,
 	}, nil
 }
 

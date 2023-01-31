@@ -148,7 +148,7 @@ func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath st
 
 func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent string, direct bool) (checksum string, err error) {
 	if direct {
-		stats, err := helpers.ClientUpload(ctx, client, repo, branch, objPath, nil, "", strings.NewReader(objContent))
+		stats, err := helpers.ClientUploadDirect(ctx, client, repo, branch, objPath, nil, "", strings.NewReader(objContent))
 		if err != nil {
 			return "", err
 		}
