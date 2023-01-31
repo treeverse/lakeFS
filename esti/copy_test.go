@@ -27,14 +27,16 @@ const (
 	largeObject               = "squash.tar"
 )
 
-var azureCopyDataPath = ""
-
 func TestCopyObject(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	t.Run("copy_large_size_file", func(t *testing.T) {
 		blockstoreType := viper.GetString(config.BlockstoreTypeKey)
+		var (
+			accountName string
+			err         error
+		)
 		// Copying from same account occurs immediately even for large files (async)
 		if blockstoreType == block.BlockstoreTypeAzure { // Extract storage account
 			resp, err := client.GetRepositoryWithResponse(ctx, repo)
@@ -42,12 +44,11 @@ func TestCopyObject(t *testing.T) {
 			require.Equal(t, http.StatusOK, resp.StatusCode())
 			u, err := url.Parse(resp.JSON200.StorageNamespace)
 			require.NoError(t, err)
-			accountName, err := azure.ExtractStorageAccount(u)
+			accountName, err = azure.ExtractStorageAccount(u)
 			require.NoError(t, err)
-			azureCopyDataPath = fmt.Sprintf(azureCopyDataPathTemplate, accountName)
 		}
 
-		importTestData(t, ctx, client, repo)
+		importTestData(t, ctx, client, repo, accountName)
 		res, err := client.StatObjectWithResponse(ctx, repo, ingestionBranch, &api.StatObjectParams{
 			Path: largeObject,
 		})
@@ -64,11 +65,10 @@ func TestCopyObject(t *testing.T) {
 			SrcRef:  &srcBranch,
 		})
 		require.NoError(t, err, "failed to copy")
-		require.Equal(t, http.StatusCreated, copyResp.StatusCode())
+		require.NotNil(t, copyResp.JSON201)
 
 		// Verify creation path, date and physical address are different
 		copyStat := copyResp.JSON201
-		require.NotNil(t, copyStat)
 		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
 		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
 		require.Equal(t, destPath, copyStat.Path)
@@ -89,8 +89,7 @@ func TestCopyObject(t *testing.T) {
 	// Copying different accounts takes more time and allows us to abort the copy in the middle
 	t.Run("copy_large_size_file_abort", func(t *testing.T) {
 		requireBlockstoreType(t, block.BlockstoreTypeAzure)
-		azureCopyDataPath = fmt.Sprintf(azureCopyDataPathTemplate, azureAbortAccount)
-		importTestData(t, ctx, client, repo)
+		importTestData(t, ctx, client, repo, azureAbortAccount)
 		var err error
 		res, err := client.StatObjectWithResponse(ctx, repo, ingestionBranch, &api.StatObjectParams{
 			Path: largeObject,
@@ -132,7 +131,7 @@ func TestCopyObject(t *testing.T) {
 	})
 }
 
-func importTestData(t *testing.T, ctx context.Context, client api.ClientWithResponsesInterface, repoName string) {
+func importTestData(t *testing.T, ctx context.Context, client api.ClientWithResponsesInterface, repoName, azAccountName string) {
 	t.Helper()
 	importPath := ""
 	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
@@ -142,7 +141,7 @@ func importTestData(t *testing.T, ctx context.Context, client api.ClientWithResp
 	case block.BlockstoreTypeGS:
 		importPath = gsCopyDataPath
 	case block.BlockstoreTypeAzure:
-		importPath = azureCopyDataPath
+		importPath = fmt.Sprintf(azureCopyDataPathTemplate, azAccountName)
 	default:
 		t.Skip("import isn't supported for non-production block adapters")
 	}
