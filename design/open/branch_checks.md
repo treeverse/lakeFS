@@ -96,25 +96,17 @@ Like hooks, checks could have multiple type implementations (Airflow, Webhooks, 
 
 ```mermaid
 stateDiagram-v2
-    state start_failed <<choice>>
-    state execute_failed <<choice>>
-    state timed_out <<choice>>
-    [*] --> starting
-    starting --> start_failed
-    starting --> timed_out: no response from Airflow
-    start_failed --> executing: OK from airflow
-    start_failed --> failed: error from airflow
-    executing --> execute_failed
-    execute_failed --> success: execution callback returns success
-    execute_failed --> failed: execution callback returns failure
-    executing --> timed_out
-    timed_out --> lost: no response from Airflow within execute_timeout
-    failed --> retry
-    lost --> retry
-    retry --> starting
-    success --> [*]
+    direction LR
+    [*] --> STARTING: execute()
+    STARTING --> FAILED: error calling Airflow
+    STARTING --> EXECUTING
+    EXECUTING --> SUCCESS: callback(success)
+    EXECUTING --> FAILED: callback(error)
+    EXECUTING --> LOST: timeout
+    LOST --> STARTING: retry
+    FAILED --> STARTING: retry
+    SUCCESS --> [*]
 ```
-
 
 #### Retrying checks
 
