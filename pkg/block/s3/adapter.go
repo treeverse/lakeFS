@@ -66,6 +66,7 @@ type Adapter struct {
 	respServerLock               sync.Mutex
 	ServerSideEncryption         string
 	ServerSideEncryptionKmsKeyID string
+	preSignedExpiry              time.Duration
 }
 
 func WithStreamingChunkSize(sz int) func(a *Adapter) {
@@ -92,6 +93,12 @@ func WithDiscoverBucketRegion(b bool) func(a *Adapter) {
 	}
 }
 
+func WithPreSignedExpiry(v time.Duration) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.preSignedExpiry = v
+	}
+}
+
 func WithServerSideEncryption(s string) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.ServerSideEncryption = s
@@ -112,6 +119,7 @@ func NewAdapter(awsSession *session.Session, opts ...AdapterOption) *Adapter {
 		httpClient:            awsSession.Config.HTTPClient,
 		streamingChunkSize:    DefaultStreamingChunkSize,
 		streamingChunkTimeout: DefaultStreamingChunkTimeout,
+		preSignedExpiry:       block.DefaultPreSignExpiryDuration,
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -307,7 +315,7 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 }
 
 func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
-	log := a.log(ctx).WithField("operation", "GetPresignedURL")
+	log := a.log(ctx).WithField("operation", "GetPreSignedURL")
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		log.WithField("namespace", obj.StorageNamespace).
@@ -323,14 +331,14 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 			Key:    aws.String(qualifiedKey.Key),
 		}
 		req, _ := client.PutObjectRequest(putObjectInput)
-		preSignedURL, err = req.Presign(block.DefaultPreSignExpiryDuration)
+		preSignedURL, err = req.Presign(a.preSignedExpiry)
 	} else {
 		getObjectInput := &s3.GetObjectInput{
 			Bucket: aws.String(qualifiedKey.StorageNamespace),
 			Key:    aws.String(qualifiedKey.Key),
 		}
 		req, _ := client.GetObjectRequest(getObjectInput)
-		preSignedURL, err = req.Presign(block.DefaultPreSignExpiryDuration)
+		preSignedURL, err = req.Presign(a.preSignedExpiry)
 	}
 	if err != nil {
 		log.WithField("namespace", obj.StorageNamespace).

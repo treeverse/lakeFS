@@ -33,16 +33,24 @@ var (
 )
 
 type Adapter struct {
-	client                   *storage.Client
-	presignDurationGenerator func() time.Time
+	client          *storage.Client
+	preSignedExpiry time.Duration
 }
 
-func NewAdapter(client *storage.Client, opts ...func(a *Adapter)) *Adapter {
+func WithPreSignedExpiry(v time.Duration) func(a *Adapter) {
+	return func(a *Adapter) {
+		if v == 0 {
+			a.preSignedExpiry = block.DefaultPreSignExpiryDuration
+		} else {
+			a.preSignedExpiry = v
+		}
+	}
+}
+
+func NewAdapter(client *storage.Client, opts ...func(adapter *Adapter)) *Adapter {
 	a := &Adapter{
-		client: client,
-		presignDurationGenerator: func() time.Time {
-			return time.Now().Add(block.DefaultPreSignExpiryDuration)
-		},
+		client:          client,
+		preSignedExpiry: block.DefaultPreSignExpiryDuration,
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -52,6 +60,10 @@ func NewAdapter(client *storage.Client, opts ...func(a *Adapter)) *Adapter {
 
 func (a *Adapter) log(ctx context.Context) logging.Logger {
 	return logging.FromContext(ctx)
+}
+
+func (a *Adapter) newPreSignedTime() time.Time {
+	return time.Now().UTC().Add(a.preSignedExpiry)
 }
 
 func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
@@ -130,7 +142,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	opts := &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,
 		Method:  method,
-		Expires: a.presignDurationGenerator(),
+		Expires: a.newPreSignedTime(),
 	}
 	k, err := a.client.Bucket(qualifiedKey.StorageNamespace).SignedURL(qualifiedKey.Key, opts)
 	if err != nil {
@@ -261,7 +273,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	sourceObjectHandle := a.client.Bucket(qualifiedSourceKey.StorageNamespace).Object(qualifiedSourceKey.Key)
 	_, err = destinationObjectHandle.CopierFrom(sourceObjectHandle).Run(ctx)
 	if err != nil {
-		return fmt.Errorf("Copy: %w", err)
+		return fmt.Errorf("copy: %w", err)
 	}
 	return nil
 }
@@ -375,7 +387,7 @@ func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinatio
 	w := o.NewWriter(ctx)
 	_, err = io.Copy(w, reader)
 	if err != nil {
-		return nil, fmt.Errorf("Copy: %w", err)
+		return nil, fmt.Errorf("copy: %w", err)
 	}
 	err = w.Close()
 	if err != nil {

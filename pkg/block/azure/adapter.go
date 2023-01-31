@@ -32,16 +32,19 @@ const (
 )
 
 type Adapter struct {
-	preSignedURLDurationGenerator func() time.Time
-	clientCache                   *ClientContainerCache
+	clientCache     *ClientContainerCache
+	preSignedExpiry time.Duration
 }
 
 func NewAdapter(params params.Azure) *Adapter {
+	preSignedExpiry := params.PreSignedExpiry
+	if preSignedExpiry == 0 {
+		preSignedExpiry = block.DefaultPreSignExpiryDuration
+	}
+
 	return &Adapter{
-		clientCache: NewCache(params),
-		preSignedURLDurationGenerator: func() time.Time {
-			return time.Now().UTC().Add(block.DefaultPreSignExpiryDuration)
-		},
+		clientCache:     NewCache(params),
+		preSignedExpiry: preSignedExpiry,
 	}
 }
 
@@ -223,7 +226,7 @@ func (a *Adapter) getPreSignedURL(obj block.ObjectPointer, permissions sas.BlobP
 	}
 
 	blobURL := containerClient.NewBlobClient(qualifiedKey.BlobURL)
-	u, err := blobURL.GetSASURL(permissions, time.Time{}, a.preSignedURLDurationGenerator())
+	u, err := blobURL.GetSASURL(permissions, time.Time{}, a.newPreSignedTime())
 	if err != nil {
 		return "", err
 	}
@@ -396,7 +399,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 
 	sasKey, err := sourceClient.GetSASURL(sas.BlobPermissions{
 		Read: true,
-	}, time.Time{}, a.preSignedURLDurationGenerator())
+	}, time.Time{}, a.newPreSignedTime())
 	if err != nil {
 		return err
 	}
@@ -521,4 +524,8 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 
 func (a *Adapter) RuntimeStats() map[string]string {
 	return nil
+}
+
+func (a *Adapter) newPreSignedTime() time.Time {
+	return time.Now().UTC().Add(a.preSignedExpiry)
 }
