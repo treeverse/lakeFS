@@ -83,10 +83,12 @@ type Migrator interface {
 }
 
 type Controller struct {
-	Config                *config.Config
-	Catalog               catalog.Interface
-	Authenticator         auth.Authenticator
-	Auth                  auth.Service
+	Config        *config.Config
+	Catalog       catalog.Interface
+	Authenticator auth.Authenticator
+	Auth          auth.Service
+	ExternalAuth  auth.External
+
 	BlockAdapter          block.Adapter
 	MetadataManager       auth.MetadataManager
 	Migrator              Migrator
@@ -675,7 +677,7 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 
 	ctx := r.Context()
 	c.LogAction(ctx, "list_group_policies", r, "", "", "")
-	policies, paginator, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
+	policies, paginator, err := c.ExternalAuth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
@@ -727,7 +729,7 @@ func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Reques
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "detach_policy_from_group", r, "", "", "")
-	err := c.Auth.DetachPolicyFromGroup(ctx, policyID, groupID)
+	err := c.ExternalAuth.DetachPolicyFromGroup(ctx, policyID, groupID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -746,7 +748,7 @@ func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request,
 
 	ctx := r.Context()
 	c.LogAction(ctx, "attach_policy_to_group", r, "", "", "")
-	err := c.Auth.AttachPolicyToGroup(ctx, policyID, groupID)
+	err := c.ExternalAuth.AttachPolicyToGroup(ctx, policyID, groupID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -765,7 +767,7 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 
 	ctx := r.Context()
 	c.LogAction(ctx, "list_policies", r, "", "", "")
-	policies, paginator, err := c.Auth.ListPolicies(ctx, &model.PaginationParams{
+	policies, paginator, err := c.ExternalAuth.ListPolicies(ctx, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
@@ -822,7 +824,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 		Statement:   stmts,
 	}
 
-	err := c.Auth.WritePolicy(ctx, p, false)
+	err := c.ExternalAuth.WritePolicy(ctx, p, false)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -841,7 +843,7 @@ func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policy
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_policy", r, "", "", "")
-	err := c.Auth.DeletePolicy(ctx, policyID)
+	err := c.ExternalAuth.DeletePolicy(ctx, policyID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "policy not found")
 		return
@@ -863,7 +865,7 @@ func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID 
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "get_policy", r, "", "", "")
-	p, err := c.Auth.GetPolicy(ctx, policyID)
+	p, err := c.ExternalAuth.GetPolicy(ctx, policyID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "policy not found")
 		return
@@ -908,7 +910,7 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body U
 		DisplayName: policyID,
 		Statement:   stmts,
 	}
-	err := c.Auth.WritePolicy(ctx, p, true)
+	err := c.ExternalAuth.WritePolicy(ctx, p, true)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -1232,9 +1234,9 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 	c.LogAction(ctx, "list_user_policies", r, "", "", "")
 	var listPolicies func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 	if params.Effective != nil && *params.Effective {
-		listPolicies = c.Auth.ListEffectivePolicies
+		listPolicies = c.ExternalAuth.ListEffectivePolicies
 	} else {
-		listPolicies = c.Auth.ListUserPolicies
+		listPolicies = c.ExternalAuth.ListUserPolicies
 	}
 	policies, paginator, err := listPolicies(ctx, userID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
@@ -1270,7 +1272,7 @@ func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "detach_policy_from_user", r, "", "", "")
-	err := c.Auth.DetachPolicyFromUser(ctx, policyID, userID)
+	err := c.ExternalAuth.DetachPolicyFromUser(ctx, policyID, userID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -1289,7 +1291,7 @@ func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, 
 
 	ctx := r.Context()
 	c.LogAction(ctx, "attach_policy_to_user", r, "", "", "")
-	err := c.Auth.AttachPolicyToUser(ctx, policyID, userID)
+	err := c.ExternalAuth.AttachPolicyToUser(ctx, policyID, userID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

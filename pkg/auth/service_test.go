@@ -72,15 +72,27 @@ func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) st
 	if err != nil {
 		t.Fatal(err)
 	}
+	groupName := fmt.Sprintf("group-%s", userName)
+	err = s.CreateGroup(ctx, &model.Group{
+		DisplayName: groupName,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = s.AddUserToGroup(ctx, userName, groupName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := auth.ForwardForTestService{s}
 	for _, policy := range policies {
 		if policy.DisplayName == "" {
 			policy.DisplayName = model.CreateID()
 		}
-		err := s.WritePolicy(ctx, policy, false)
+		err := f.WritePolicy(ctx, policy, false)
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = s.AttachPolicyToUser(ctx, policy.DisplayName, userName)
+		err = f.AttachPolicyToGroup(ctx, policy.DisplayName, groupName)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -202,6 +214,7 @@ func TestAuthService_DeleteUserWithRelations(t *testing.T) {
 
 	ctx := context.Background()
 	authService := setupService(t, ctx)
+	f := auth.ForwardForTestService{authService}
 
 	// create initial data set and verify users groups and policies are create and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
@@ -220,12 +233,12 @@ func TestAuthService_DeleteUserWithRelations(t *testing.T) {
 		require.NotNil(t, groups)
 		require.Equal(t, len(groupNames), len(groups))
 
-		policies, _, err := authService.ListUserPolicies(ctx, userName, &model.PaginationParams{Amount: 100})
+		policies, _, err := f.ListUserPolicies(ctx, userName, &model.PaginationParams{Amount: 100})
 		require.NoError(t, err)
 		require.NotNil(t, policies)
 		require.Equal(t, len(policyNames)/2, len(policies))
 
-		policies, _, err = authService.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: 100})
+		policies, _, err = f.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: 100})
 		require.NoError(t, err)
 		require.NotNil(t, policies)
 		require.Equal(t, len(policyNames), len(policies))
@@ -270,6 +283,7 @@ func TestAuthService_DeleteGroupWithRelations(t *testing.T) {
 
 	ctx := context.Background()
 	authService := setupService(t, ctx)
+	f := auth.ForwardForTestService{authService}
 
 	// create initial data set and verify users groups and policies are created and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
@@ -277,6 +291,7 @@ func TestAuthService_DeleteGroupWithRelations(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, groups)
 	require.Equal(t, len(groupNames), len(groups))
+
 	for _, userName := range userNames {
 		user, err := authService.GetUser(ctx, userName)
 		require.NoError(t, err)
@@ -288,12 +303,12 @@ func TestAuthService_DeleteGroupWithRelations(t *testing.T) {
 		require.NotNil(t, groups)
 		require.Equal(t, len(groupNames), len(groups))
 
-		policies, _, err := authService.ListUserPolicies(ctx, userName, &model.PaginationParams{Amount: 100})
+		policies, _, err := f.ListUserPolicies(ctx, userName, &model.PaginationParams{Amount: 100})
 		require.NoError(t, err)
 		require.NotNil(t, policies)
 		require.Equal(t, len(policyNames)/2, len(policies))
 
-		policies, _, err = authService.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: 100})
+		policies, _, err = f.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: 100})
 		require.NoError(t, err)
 		require.NotNil(t, policies)
 		require.Equal(t, len(policyNames), len(policies))
@@ -309,7 +324,7 @@ func TestAuthService_DeleteGroupWithRelations(t *testing.T) {
 		require.NotNil(t, users)
 		require.Equal(t, len(userNames), len(users))
 
-		policies, _, err := authService.ListGroupPolicies(ctx, groupName, &model.PaginationParams{Amount: 100})
+		policies, _, err := f.ListGroupPolicies(ctx, groupName, &model.PaginationParams{Amount: 100})
 		require.NoError(t, err)
 		require.NotNil(t, policies)
 		require.Equal(t, len(policyNames)-len(policyNames)/2, len(policies))
@@ -347,132 +362,6 @@ func TestAuthService_DeleteGroupWithRelations(t *testing.T) {
 	}
 }
 
-func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
-	userNames := []string{"first", "second", "third"}
-	groupNames := []string{"groupA", "groupB", "groupC"}
-	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
-
-	ctx := context.Background()
-	authService := setupService(t, ctx)
-
-	// create initial data set and verify users groups and policies are create and related as expected
-	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
-	policies, _, err := authService.ListPolicies(ctx, &model.PaginationParams{Amount: 100})
-	require.NoError(t, err)
-	require.NotNil(t, policies)
-	require.Equal(t, len(policyNames), len(policies))
-	for _, policyName := range policyNames {
-		policy, err := authService.GetPolicy(ctx, policyName)
-		require.NoError(t, err)
-		require.NotNil(t, policy)
-		require.Equal(t, policyName, policy.DisplayName)
-	}
-
-	for _, groupName := range groupNames {
-		policies, _, err := authService.ListGroupPolicies(ctx, groupName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)-len(policyNames)/2, len(policies))
-	}
-	for _, userName := range userNames {
-		policies, _, err := authService.ListUserPolicies(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)/2, len(policies))
-
-		policies, _, err = authService.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames), len(policies))
-	}
-
-	// delete a user policy (beginning of the names list)
-	err = authService.DeletePolicy(ctx, policyNames[0])
-	require.NoError(t, err)
-
-	// verify policy does not exist
-	policy, err := authService.GetPolicy(ctx, policyNames[0])
-	require.Error(t, err)
-	require.Nil(t, policy)
-
-	// verify policy is removed from all lists and relations
-	policies, _, err = authService.ListPolicies(ctx, &model.PaginationParams{Amount: 100})
-	require.NoError(t, err)
-	require.NotNil(t, policies)
-	require.Equal(t, len(policyNames)-1, len(policies))
-
-	for _, userName := range userNames {
-		policies, _, err := authService.ListUserPolicies(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)/2-1, len(policies))
-		for _, policy := range policies {
-			require.NotEqual(t, policyNames[0], policy.DisplayName)
-		}
-
-		policies, _, err = authService.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)-1, len(policies))
-		for _, policy := range policies {
-			require.NotEqual(t, policyNames[0], policy.DisplayName)
-		}
-	}
-
-	for _, groupName := range groupNames {
-		policies, _, err := authService.ListGroupPolicies(ctx, groupName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)-len(policyNames)/2, len(policies))
-		for _, policy := range policies {
-			require.NotEqual(t, policyNames[0], policy.DisplayName)
-		}
-	}
-
-	// delete a group policy (end of the names list)
-	err = authService.DeletePolicy(ctx, policyNames[len(policyNames)-1])
-	require.NoError(t, err)
-
-	// verify policy does not exist
-	policy, err = authService.GetPolicy(ctx, policyNames[len(policyNames)-1])
-	require.Error(t, err)
-	require.Nil(t, policy)
-
-	// verify policy is removed from all lists and relations
-	policies, _, err = authService.ListPolicies(ctx, &model.PaginationParams{Amount: 100})
-	require.NoError(t, err)
-	require.NotNil(t, policies)
-	require.Equal(t, len(policyNames)-2, len(policies))
-
-	for _, userName := range userNames {
-		policies, _, err := authService.ListUserPolicies(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)/2-1, len(policies))
-		for _, policy := range policies {
-			require.NotEqual(t, policyNames[len(policyNames)-1], policy.DisplayName)
-		}
-
-		policies, _, err = authService.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)-2, len(policies))
-		for _, policy := range policies {
-			require.NotEqual(t, policyNames[len(policyNames)-1], policy.DisplayName)
-		}
-	}
-
-	for _, groupName := range groupNames {
-		policies, _, err := authService.ListGroupPolicies(ctx, groupName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)-len(policyNames)/2-1, len(policies))
-		for _, policy := range policies {
-			require.NotEqual(t, policyNames[len(policyNames)-1], policy.DisplayName)
-		}
-	}
-}
-
 // createInitialDataSet -
 // Creates K users with 2 credentials each, L groups and M policies
 // Adds all users to all groups
@@ -501,20 +390,22 @@ func createInitialDataSet(t *testing.T, ctx context.Context, svc auth.Service, u
 		}
 	}
 
+	f := auth.ForwardForTestService{svc}
+
 	numPolicies := len(policyNames)
 	for i, policyName := range policyNames {
-		if err := svc.WritePolicy(ctx, &model.Policy{DisplayName: policyName, Statement: userPoliciesForTesting[0].Statement}, false); err != nil {
+		if err := f.WritePolicy(ctx, &model.Policy{DisplayName: policyName, Statement: userPoliciesForTesting[0].Statement}, false); err != nil {
 			t.Fatalf("WritePolicy(%s): %s", policyName, err)
 		}
 		if i < numPolicies/2 {
 			for _, userName := range userNames {
-				if err := svc.AttachPolicyToUser(ctx, policyName, userName); err != nil {
+				if err := f.AttachPolicyToUser(ctx, policyName, userName); err != nil {
 					t.Fatalf("AttachPolicyToUser(%s, %s): %s", policyName, userName, err)
 				}
 			}
 		} else {
 			for _, groupName := range groupNames {
-				if err := svc.AttachPolicyToGroup(ctx, policyName, groupName); err != nil {
+				if err := f.AttachPolicyToGroup(ctx, policyName, groupName); err != nil {
 					t.Fatalf("AttachPolicyToGroup(%s, %s): %s", policyName, groupName, err)
 				}
 			}
@@ -558,9 +449,10 @@ func BenchmarkKVAuthService_ListEffectivePolicies(b *testing.B) {
 
 func benchmarkKVListEffectivePolicies(b *testing.B, s *auth.AuthService, userName string) {
 	b.ResetTimer()
+	f := auth.ForwardForTestService{s}
 	ctx := context.Background()
 	for n := 0; n < b.N; n++ {
-		_, _, err := s.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: -1})
+		_, _, err := f.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: -1})
 		if err != nil {
 			b.Fatal("Failed to list effective policies", err)
 		}

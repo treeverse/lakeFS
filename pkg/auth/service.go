@@ -31,6 +31,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+var ErrNotImplemented = errors.New("not implemented")
+
 type AuthorizationRequest struct {
 	Username            string
 	RequiredPermissions permissions.Node
@@ -77,7 +79,7 @@ type Service interface {
 	SecretStore() crypt.SecretStore
 	Cache() Cache
 
-	// users
+	/* users */
 	CreateUser(ctx context.Context, user *model.User) (string, error)
 	DeleteUser(ctx context.Context, username string) error
 	GetUserByID(ctx context.Context, userID string) (*model.User, error)
@@ -86,23 +88,17 @@ type Service interface {
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 	ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
-	// groups
+	/* groups */
 	CreateGroup(ctx context.Context, group *model.Group) error
 	DeleteGroup(ctx context.Context, groupDisplayName string) error
 	GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error)
 	ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error)
 
-	// group<->user memberships
+	/* group<->user memberships */
 	AddUserToGroup(ctx context.Context, username, groupDisplayName string) error
 	RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error
 	ListUserGroups(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error)
 	ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
-
-	// policies
-	WritePolicy(ctx context.Context, policy *model.Policy, update bool) error
-	GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error)
-	DeletePolicy(ctx context.Context, policyDisplayName string) error
-	ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	// credentials
 	CredentialsCreator
@@ -113,20 +109,91 @@ type Service interface {
 	ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error)
 	HashAndUpdatePassword(ctx context.Context, username string, password string) error
 
-	// policy<->user attachments
+	/* policies (internal use) */
+	getPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error)
+	writePolicy(ctx context.Context, policy *model.Policy, update bool) error
+	listUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+	listGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+	//deletePolicy(ctx context.Context, policyDisplayName string) error
+	//listPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+	listEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+
+	/* policy<->user attachments */
+	attachPolicyToUser(ctx context.Context, policyDisplayName, username string) error
+
+	/* policy<->group attachments */
+	attachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error
+
+	Authorizer
+
+	ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error
+}
+
+type External interface {
+	/* policies */
+	GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error)
+	WritePolicy(ctx context.Context, policy *model.Policy, update bool) error
+	DeletePolicy(ctx context.Context, policyDisplayName string) error
+	ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+
+	/* policy<->user attachments */
 	AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error
 	DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error
 	ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 	ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
-	// policy<->group attachments
+	/* policy<->group attachments */
 	AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error
 	DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error
 	ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+}
 
-	Authorizer
+// UnimplementedExternal implements External by returning ErrNotImplemented
+// for all operations.
+type UnimplementedExternal struct{}
 
-	ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error
+func NewUnimplementedExternal() UnimplementedExternal {
+	return UnimplementedExternal{}
+}
+
+func (u UnimplementedExternal) GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
+	return nil, fmt.Errorf("GetPolicy: %w", ErrNotImplemented)
+}
+
+func (u UnimplementedExternal) WritePolicy(ctx context.Context, policy *model.Policy, update bool) error {
+	return fmt.Errorf("WritePolicy: %w", ErrNotImplemented)
+}
+
+func (u UnimplementedExternal) DeletePolicy(ctx context.Context, policyDisplayName string) error {
+	return fmt.Errorf("DeletePolicy: %w", ErrNotImplemented)
+}
+
+func (u UnimplementedExternal) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	return nil, nil, fmt.Errorf("ListPolicies: %w", ErrNotImplemented)
+}
+
+func (u UnimplementedExternal) AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error {
+	return fmt.Errorf("AttachPolicyToUser: %w", ErrNotImplemented)
+}
+
+func (u UnimplementedExternal) DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error {
+	return fmt.Errorf("DetachPolicyFromUser: %w", ErrNotImplemented)
+}
+
+func (u UnimplementedExternal) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	return nil, nil, fmt.Errorf("ListUserPolicies: %w", ErrNotImplemented)
+}
+
+func (u UnimplementedExternal) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
+	return fmt.Errorf("AttachPolicyToGroup: %w", ErrNotImplemented)
+}
+
+func (u UnimplementedExternal) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
+	return fmt.Errorf("DetachPolicyFromGroup: %w", ErrNotImplemented)
+}
+
+func (u UnimplementedExternal) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	return nil, nil, fmt.Errorf("ListGroupPolicies: %w", ErrNotImplemented)
 }
 
 func (s *AuthService) ListKVPaged(ctx context.Context, protoType protoreflect.MessageType, params *model.PaginationParams, prefix []byte, secondary bool) ([]proto.Message, *model.Paginator, error) {
@@ -240,7 +307,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, username string) error {
 	for it.Next() {
 		entry := it.Entry()
 		policy := entry.Value.(*model.PolicyData)
-		if err = s.DetachPolicyFromUserNoValidation(ctx, policy.DisplayName, username); err != nil {
+		if err = s.detachPolicyFromUserNoValidation(ctx, policy.DisplayName, username); err != nil {
 			return err
 		}
 	}
@@ -358,11 +425,11 @@ func (s *AuthService) ListUserCredentials(ctx context.Context, username string, 
 	return creds, paginator, nil
 }
 
-func (s *AuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName string, username string) error {
+func (s *AuthService) attachPolicyToUser(ctx context.Context, policyDisplayName string, username string) error {
 	if _, err := s.GetUser(ctx, username); err != nil {
 		return err
 	}
-	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
+	if _, err := s.getPolicy(ctx, policyDisplayName); err != nil {
 		return err
 	}
 
@@ -379,7 +446,7 @@ func (s *AuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName 
 	return nil
 }
 
-func (s *AuthService) DetachPolicyFromUserNoValidation(ctx context.Context, policyDisplayName, username string) error {
+func (s *AuthService) detachPolicyFromUserNoValidation(ctx context.Context, policyDisplayName, username string) error {
 	pu := model.UserPolicyPath(username, policyDisplayName)
 	err := s.store.DeleteMsg(ctx, model.PartitionKey, pu)
 	if err != nil {
@@ -388,17 +455,7 @@ func (s *AuthService) DetachPolicyFromUserNoValidation(ctx context.Context, poli
 	return nil
 }
 
-func (s *AuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error {
-	if _, err := s.GetUser(ctx, username); err != nil {
-		return err
-	}
-	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
-		return err
-	}
-	return s.DetachPolicyFromUserNoValidation(ctx, policyDisplayName, username)
-}
-
-func (s *AuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+func (s *AuthService) listUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.PolicyData
 	userPolicyKey := model.UserPolicyPath(username, params.Prefix)
 
@@ -420,7 +477,7 @@ func (s *AuthService) getEffectivePolicies(ctx context.Context, username string,
 	policiesSet := make(map[string]*model.Policy)
 	// get policies attracted to user
 	for hasMoreUserPolicy {
-		policies, userPaginator, err := s.ListUserPolicies(ctx, username, &model.PaginationParams{
+		policies, userPaginator, err := s.listUserPolicies(ctx, username, &model.PaginationParams{
 			After:  afterUserPolicy,
 			Amount: amount,
 		})
@@ -450,7 +507,7 @@ func (s *AuthService) getEffectivePolicies(ctx context.Context, username string,
 			hasMoreGroupPolicy := true
 			afterGroupPolicy := ""
 			for hasMoreGroupPolicy {
-				groupPolicies, groupPoliciesPaginator, err := s.ListGroupPolicies(ctx, group.DisplayName, &model.PaginationParams{
+				groupPolicies, groupPoliciesPaginator, err := s.listGroupPolicies(ctx, group.DisplayName, &model.PaginationParams{
 					After:  afterGroupPolicy,
 					Amount: amount,
 				})
@@ -493,13 +550,9 @@ func (s *AuthService) getEffectivePolicies(ctx context.Context, username string,
 	return resPolicies, &resPaginator, nil
 }
 
-func (s *AuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
-	return ListEffectivePolicies(ctx, username, params, s.getEffectivePolicies, s.cache)
-}
-
 type effectivePoliciesGetter func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
-func ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams, getEffectivePolicies effectivePoliciesGetter, cache Cache) ([]*model.Policy, *model.Paginator, error) {
+func listEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams, getEffectivePolicies effectivePoliciesGetter, cache Cache) ([]*model.Policy, *model.Paginator, error) {
 	if params.Amount == -1 {
 		// read through the cache when requesting the full list
 		policies, err := cache.GetUserPolicies(username, func() ([]*model.Policy, error) {
@@ -515,7 +568,7 @@ func ListEffectivePolicies(ctx context.Context, username string, params *model.P
 	return getEffectivePolicies(ctx, username, params)
 }
 
-func (s *AuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+func (s *AuthService) listGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.PolicyData
 	groupPolicyKey := model.GroupPolicyPath(groupDisplayName, params.Prefix)
 
@@ -575,7 +628,7 @@ func (s *AuthService) DeleteGroup(ctx context.Context, groupDisplayName string) 
 	for itr.Next() {
 		entry := itr.Entry()
 		policy := entry.Value.(*model.PolicyData)
-		if err = s.DetachPolicyFromGroupNoValidation(ctx, policy.DisplayName, groupDisplayName); err != nil {
+		if err = s.detachPolicyFromGroupNoValidation(ctx, policy.DisplayName, groupDisplayName); err != nil {
 			return err
 		}
 	}
@@ -729,102 +782,6 @@ func ValidatePolicy(policy *model.Policy) error {
 	return nil
 }
 
-func (s *AuthService) WritePolicy(ctx context.Context, policy *model.Policy, update bool) error {
-	if err := ValidatePolicy(policy); err != nil {
-		return err
-	}
-	policyKey := model.PolicyPath(policy.DisplayName)
-	m := model.ProtoFromPolicy(policy)
-
-	if update {
-		_, err := s.store.GetMsg(ctx, model.PartitionKey, policyKey, &model.PolicyData{})
-		if err != nil {
-			return err
-		}
-		err = s.store.SetMsg(ctx, model.PartitionKey, policyKey, m)
-		if err != nil {
-			return err
-		}
-	} else {
-		err := s.store.SetMsgIf(ctx, model.PartitionKey, policyKey, m, nil)
-		if err != nil {
-			if errors.Is(err, kv.ErrPredicateFailed) {
-				err = ErrAlreadyExists
-			}
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *AuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
-	policyKey := model.PolicyPath(policyDisplayName)
-	p := model.PolicyData{}
-	_, err := s.store.GetMsg(ctx, model.PartitionKey, policyKey, &p)
-	if err != nil {
-		if errors.Is(err, kv.ErrNotFound) {
-			err = ErrNotFound
-		}
-		return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
-	}
-	return model.PolicyFromProto(&p), nil
-}
-
-func (s *AuthService) DeletePolicy(ctx context.Context, policyDisplayName string) error {
-	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
-		return err
-	}
-	policyPath := model.PolicyPath(policyDisplayName)
-
-	// delete policy attachment to user
-	usersKey := model.UserPath("")
-	it, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, kv.IteratorOptionsAfter([]byte("")))
-	if err != nil {
-		return err
-	}
-	defer it.Close()
-	for it.Next() {
-		entry := it.Entry()
-		user := entry.Value.(*model.UserData)
-		if err = s.DetachPolicyFromUserNoValidation(ctx, policyDisplayName, user.Username); err != nil {
-			return err
-		}
-	}
-
-	// delete policy attachment to group
-	groupKey := model.GroupPath("")
-	it, err = kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, kv.IteratorOptionsAfter([]byte("")))
-	if err != nil {
-		return err
-	}
-	defer it.Close()
-	for it.Next() {
-		entry := it.Entry()
-		group := entry.Value.(*model.GroupData)
-		if err = s.DetachPolicyFromGroupNoValidation(ctx, policyDisplayName, group.DisplayName); err != nil {
-			return err
-		}
-	}
-
-	// delete policy
-	err = s.store.DeleteMsg(ctx, model.PartitionKey, policyPath)
-	if err != nil {
-		return fmt.Errorf("delete policy (policyKey %s): %w", policyPath, err)
-	}
-	return err
-}
-
-func (s *AuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
-	var policy model.PolicyData
-	policyKey := model.PolicyPath(params.Prefix)
-
-	msgs, paginator, err := s.ListKVPaged(ctx, (&policy).ProtoReflect().Type(), params, policyKey, false)
-	if msgs == nil {
-		return nil, paginator, err
-	}
-	return model.ConvertPolicyDataList(msgs), paginator, err
-}
-
 func (s *AuthService) CreateCredentials(ctx context.Context, username string) (*model.Credential, error) {
 	accessKeyID := keys.GenAccessKeyID()
 	secretAccessKey := keys.GenSecretAccessKey()
@@ -890,44 +847,13 @@ func (s *AuthService) DeleteCredentials(ctx context.Context, username, accessKey
 	return err
 }
 
-func (s *AuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
-	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
-		return err
-	}
-	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
-		return err
-	}
-
-	policyKey := model.PolicyPath(policyDisplayName)
-	pg := model.GroupPolicyPath(groupDisplayName, policyDisplayName)
-
-	err := s.store.SetMsgIf(ctx, model.PartitionKey, pg, &kv.SecondaryIndex{PrimaryKey: policyKey}, nil)
-	if err != nil {
-		if errors.Is(err, kv.ErrPredicateFailed) {
-			err = ErrAlreadyExists
-		}
-		return fmt.Errorf("policy attachment to group: (key %s): %w", pg, err)
-	}
-	return err
-}
-
-func (s *AuthService) DetachPolicyFromGroupNoValidation(ctx context.Context, policyDisplayName, groupDisplayName string) error {
+func (s *AuthService) detachPolicyFromGroupNoValidation(ctx context.Context, policyDisplayName, groupDisplayName string) error {
 	pg := model.GroupPolicyPath(groupDisplayName, policyDisplayName)
 	err := s.store.DeleteMsg(ctx, model.PartitionKey, pg)
 	if err != nil {
 		return fmt.Errorf("policy detachment to group: (key %s): %w", pg, err)
 	}
 	return err
-}
-
-func (s *AuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
-	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
-		return err
-	}
-	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
-		return err
-	}
-	return s.DetachPolicyFromGroupNoValidation(ctx, policyDisplayName, groupDisplayName)
 }
 
 func (s *AuthService) GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error) {
@@ -1075,7 +1001,7 @@ func checkPermissions(node permissions.Node, username string, policies []*model.
 }
 
 func (s *AuthService) Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error) {
-	policies, _, err := s.ListEffectivePolicies(ctx, req.Username, &model.PaginationParams{
+	policies, _, err := s.listEffectivePolicies(ctx, req.Username, &model.PaginationParams{
 		After:  "", // all
 		Amount: -1, // all
 	})
@@ -1499,6 +1425,10 @@ func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupDisplayName st
 }
 
 func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy, update bool) error {
+	return a.writePolicy(ctx, policy, update)
+}
+
+func (a *APIAuthService) writePolicy(ctx context.Context, policy *model.Policy, update bool) error {
 	if err := model.ValidateAuthEntityID(policy.DisplayName); err != nil {
 		return err
 	}
@@ -1556,6 +1486,10 @@ func serializePolicyToModalPolicy(p Policy) *model.Policy {
 }
 
 func (a *APIAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
+	return a.getPolicy(ctx, policyDisplayName)
+}
+
+func (a *APIAuthService) getPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
 	resp, err := a.apiClient.GetPolicyWithResponse(ctx, policyDisplayName)
 	if err != nil {
 		return nil, err
@@ -1716,7 +1650,77 @@ func (a *APIAuthService) ListUserCredentials(ctx context.Context, username strin
 	return credentials, toPagination(resp.JSON200.Pagination), nil
 }
 
+func (s *AuthService) getPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
+	policyKey := model.PolicyPath(policyDisplayName)
+	p := model.PolicyData{}
+	_, err := s.store.GetMsg(ctx, model.PartitionKey, policyKey, &p)
+	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			err = ErrNotFound
+		}
+		return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
+	}
+	return model.PolicyFromProto(&p), nil
+}
+
+func (s *AuthService) writePolicy(ctx context.Context, policy *model.Policy, update bool) error {
+	if err := ValidatePolicy(policy); err != nil {
+		return err
+	}
+	policyKey := model.PolicyPath(policy.DisplayName)
+	m := model.ProtoFromPolicy(policy)
+
+	if update {
+		_, err := s.store.GetMsg(ctx, model.PartitionKey, policyKey, &model.PolicyData{})
+		if err != nil {
+			return err
+		}
+		err = s.store.SetMsg(ctx, model.PartitionKey, policyKey, m)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := s.store.SetMsgIf(ctx, model.PartitionKey, policyKey, m, nil)
+		if err != nil {
+			if errors.Is(err, kv.ErrPredicateFailed) {
+				err = ErrAlreadyExists
+			}
+			return err
+		}
+	}
+	return nil
+}
+
+func (f *ForwardForTestService) AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error {
+	return f.S.attachPolicyToUser(ctx, policyDisplayName, username)
+}
+
+func (s *AuthService) attachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
+	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
+		return err
+	}
+	if _, err := s.getPolicy(ctx, policyDisplayName); err != nil {
+		return err
+	}
+
+	policyKey := model.PolicyPath(policyDisplayName)
+	pg := model.GroupPolicyPath(groupDisplayName, policyDisplayName)
+
+	err := s.store.SetMsgIf(ctx, model.PartitionKey, pg, &kv.SecondaryIndex{PrimaryKey: policyKey}, nil)
+	if err != nil {
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			err = ErrAlreadyExists
+		}
+		return fmt.Errorf("policy attachment to group: (key %s): %w", pg, err)
+	}
+	return err
+}
+
 func (a *APIAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error {
+	return a.attachPolicyToUser(ctx, policyDisplayName, username)
+}
+
+func (a *APIAuthService) attachPolicyToUser(ctx context.Context, policyDisplayName, username string) error {
 	resp, err := a.apiClient.AttachPolicyToUserWithResponse(ctx, username, policyDisplayName)
 	if err != nil {
 		return err
@@ -1732,7 +1736,11 @@ func (a *APIAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplay
 	return a.validateResponse(resp, http.StatusNoContent)
 }
 
-func (a *APIAuthService) listUserPolicies(ctx context.Context, username string, params *model.PaginationParams, effective bool) ([]*model.Policy, *model.Paginator, error) {
+func (a *APIAuthService) listUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	return a.listUserPoliciesEffectively(ctx, username, params, false)
+}
+
+func (a *APIAuthService) listUserPoliciesEffectively(ctx context.Context, username string, params *model.PaginationParams, effective bool) ([]*model.Policy, *model.Paginator, error) {
 	resp, err := a.apiClient.ListUserPoliciesWithResponse(ctx, username, &ListUserPoliciesParams{
 		Prefix:    paginationPrefix(params.Prefix),
 		After:     paginationAfter(params.After),
@@ -1754,7 +1762,7 @@ func (a *APIAuthService) listUserPolicies(ctx context.Context, username string, 
 }
 
 func (a *APIAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
-	return a.listUserPolicies(ctx, username, params, false)
+	return a.listUserPolicies(ctx, username, params)
 }
 
 func (a *APIAuthService) listAllEffectivePolicies(ctx context.Context, username string) ([]*model.Policy, error) {
@@ -1777,7 +1785,31 @@ func (a *APIAuthService) listAllEffectivePolicies(ctx context.Context, username 
 	return policies, nil
 }
 
+func (s *AuthService) listEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	return ListEffectivePolicies(ctx, username, params, s.getEffectivePolicies, s.cache)
+}
+
+func ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams, getEffectivePolicies effectivePoliciesGetter, cache Cache) ([]*model.Policy, *model.Paginator, error) {
+	if params.Amount == -1 {
+		// read through the cache when requesting the full list
+		policies, err := cache.GetUserPolicies(username, func() ([]*model.Policy, error) {
+			policies, _, err := getEffectivePolicies(ctx, username, params)
+			return policies, err
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		return policies, &model.Paginator{Amount: len(policies)}, nil
+	}
+
+	return getEffectivePolicies(ctx, username, params)
+}
+
 func (a *APIAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	return a.listEffectivePolicies(ctx, username, params)
+}
+
+func (a *APIAuthService) listEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	if params.Amount == -1 {
 		// read through the cache when requesting the full list
 		policies, err := a.cache.GetUserPolicies(username, func() ([]*model.Policy, error) {
@@ -1788,10 +1820,14 @@ func (a *APIAuthService) ListEffectivePolicies(ctx context.Context, username str
 		}
 		return policies, &model.Paginator{Amount: len(policies)}, nil
 	}
-	return a.listUserPolicies(ctx, username, params, true)
+	return a.listUserPoliciesEffectively(ctx, username, params, true)
 }
 
 func (a *APIAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
+	return a.attachPolicyToGroup(ctx, policyDisplayName, groupDisplayName)
+}
+
+func (a *APIAuthService) attachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
 	resp, err := a.apiClient.AttachPolicyToGroupWithResponse(ctx, groupDisplayName, policyDisplayName)
 	if err != nil {
 		return err
@@ -1808,6 +1844,10 @@ func (a *APIAuthService) DetachPolicyFromGroup(ctx context.Context, policyDispla
 }
 
 func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	return a.listGroupPolicies(ctx, groupDisplayName, params)
+}
+
+func (a *APIAuthService) listGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	resp, err := a.apiClient.ListGroupPoliciesWithResponse(ctx, groupDisplayName, &ListGroupPoliciesParams{
 		Prefix: paginationPrefix(params.Prefix),
 		After:  paginationAfter(params.After),
@@ -1911,4 +1951,30 @@ func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, secretStor
 		secretStore: secretStore,
 		cache:       cache,
 	}, nil
+}
+
+// ForwardForTestService allows tests to set up users by calling some
+// internal AuthService methods.
+type ForwardForTestService struct {
+	S Service
+}
+
+func (f *ForwardForTestService) WritePolicy(ctx context.Context, policy *model.Policy, update bool) error {
+	return f.S.writePolicy(ctx, policy, update)
+}
+
+func (f *ForwardForTestService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupname string) error {
+	return f.S.attachPolicyToGroup(ctx, policyDisplayName, groupname)
+}
+
+func (f *ForwardForTestService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	return f.S.listUserPolicies(ctx, username, params)
+}
+
+func (f *ForwardForTestService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	return f.S.listGroupPolicies(ctx, groupDisplayName, params)
+}
+
+func (f *ForwardForTestService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	return f.S.listEffectivePolicies(ctx, username, params)
 }
