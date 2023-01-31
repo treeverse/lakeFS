@@ -2,18 +2,17 @@ package plugins
 
 import (
 	"errors"
-	"os"
-	"os/exec"
-
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"os"
+	"os/exec"
 )
 
 var (
-	ErrInvalidPluginNotFound = errors.New("invalid plugin type")
-	ErrPluginNameNotFound    = errors.New("unknown plugin name")
-	ErrUninitializedManager  = errors.New("uninitialized plugins manager")
+	ErrPluginOfWrongType    = errors.New("plugin of the wrong type")
+	ErrPluginNameNotFound   = errors.New("unknown plugin name")
+	ErrUninitializedManager = errors.New("uninitialized plugins manager")
 )
 
 var allowedProtocols = []plugin.Protocol{
@@ -53,7 +52,7 @@ func NewManager[T any]() *Manager[T] {
 
 // RegisterPlugin is used to register a new plugin client with the corresponding plugin type.
 func (m *Manager[T]) RegisterPlugin(name string, id PluginIdentity, auth PluginHandshake, p plugin.Plugin) error {
-	if m == nil {
+	if m == nil || m.pluginApplicationClients == nil {
 		return ErrUninitializedManager
 	}
 	hc := plugin.HandshakeConfig{
@@ -63,10 +62,6 @@ func (m *Manager[T]) RegisterPlugin(name string, id PluginIdentity, auth PluginH
 	}
 	cmd := id.Cmd
 	c := newPluginClient(name, p, hc, cmd)
-	_, ok := any(c).(T)
-	if !ok {
-		return ErrInvalidPluginNotFound
-	}
 	m.pluginApplicationClients[name] = c
 	return nil
 }
@@ -93,7 +88,7 @@ func newPluginClient(name string, p plugin.Plugin, hc plugin.HandshakeConfig, cm
 
 // LoadPluginClient loads a Client of type T.
 func (m *Manager[T]) LoadPluginClient(name string) (*T, error) {
-	if m == nil {
+	if m == nil || m.pluginApplicationClients == nil {
 		return nil, ErrUninitializedManager
 	}
 	c, ok := m.pluginApplicationClients[name]
@@ -108,6 +103,10 @@ func (m *Manager[T]) LoadPluginClient(name string) (*T, error) {
 	if err != nil {
 		return nil, err
 	}
-	stub, _ := rawGrpcClientStub.(T)
+	stub, ok := rawGrpcClientStub.(T)
+	if !ok {
+		delete(m.pluginApplicationClients, name)
+		return nil, ErrPluginOfWrongType
+	}
 	return &stub, nil
 }
