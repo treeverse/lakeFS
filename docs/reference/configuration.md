@@ -130,6 +130,7 @@ This reference uses `.` to denote the nesting of values.
 * `graveler.commit_cache.size` `(int : 50000)` - How many items to store in the commit cache.
 * `graveler.commit_cache.ttl` `(time duration : "10m")` - How long to store an item in the commit cache.
 * `graveler.commit_cache.jitter` `(time duration : "2s")` - A random amount of time between 0 and this value is added to each item's TTL.
+* `graveler.background.rate_limit` `(int : 0)` - Advence configuration to control background work done rate limit in requests per second (default: 0 - unlimited).
 * `committed.local_cache` - an object describing the local (on-disk) cache of metadata from
   permanent storage:
   + `committed.local_cache.size_bytes` (`int` : `1073741824`) - bytes for local cache to use on disk.  The cache may use more storage for short periods of time.
