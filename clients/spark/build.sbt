@@ -37,9 +37,9 @@ def generateCoreProject(buildType: BuildType) =
     .settings(
       sharedSettings,
       if (buildType.hadoopFlavour == "hadoop2") {
-        hadoop2AssemblySettings
+        hadoop2ShadingSettings
       } else {
-        hadoop3AssemblySettings
+        hadoop3ShadingSettings
       },
       s3UploadSettings,
       settingsToCompileIn("core", buildType.hadoopFlavour),
@@ -208,10 +208,8 @@ lazy val sharedShadeRules = Seq(
 lazy val hadoop2ShadeRules = sharedShadeRules ++ Seq(rename("com.amazonaws.**").inAll)
 lazy val hadoop3ShadeRules = sharedShadeRules
 
-lazy val hadoop2AssemblySettings =
-  Seq(sharedAssemblyMergeStrategy, assembly / assemblyShadeRules := hadoop2ShadeRules)
-lazy val hadoop3AssemblySettings =
-  Seq(sharedAssemblyMergeStrategy, assembly / assemblyShadeRules := hadoop3ShadeRules)
+lazy val hadoop2ShadingSettings = assembly / assemblyShadeRules := hadoop2ShadeRules
+lazy val hadoop3ShadingSettings = assembly / assemblyShadeRules := hadoop3ShadeRules
 
 // Upload assembly jars to S3
 lazy val s3UploadSettings = Seq(
@@ -247,7 +245,7 @@ lazy val publishSettings = Seq(
   )
 )
 
-lazy val sharedSettings = commonSettings ++ publishSettings
+lazy val sharedSettings = commonSettings ++ sharedAssemblyMergeStrategy ++ publishSettings
 
 ThisBuild / scmInfo := Some(
   ScmInfo(

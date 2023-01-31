@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6.1 - 2022-01-30
+
+What's new:
+* Upgrade lakeFS client to v0.91.0
+* Add UGC cutoff time to the report
+
 ## v0.6.0 - 2022-12-14
 
 What's new:
