@@ -16,7 +16,7 @@ has_children: false
 ## Role Based Access Control
 
 **Note**
-This feature is deprecated and will be replaced with a simpler ACL-based authorization mechanism.
+This feature is deprecated and will be replaced with a simpler ACL-based authorization mechanism ([learn more](../posts/security_update.html)).<br/>
 Role based access control will remain fully supported on [lakeFS cloud](https://lakefs.cloud)
 {: .note }
 
