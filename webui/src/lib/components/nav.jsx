@@ -39,6 +39,9 @@ const wrapComponent = (component) => {
 }
 
 export const Link = (props) => {
+    if (props.hidden) {
+        return (<></>);
+    }
     const dontPassTheseProps = ['href', 'to', 'children', 'components', 'component'];
     const filteredProps = Object.entries(props).filter(([key]) => {
         return !dontPassTheseProps.includes(key);
@@ -52,10 +55,10 @@ export const Link = (props) => {
     return React.createElement(RouterLink, linkProps, props.children);
 }
 
-export const NavItem = ({href, active, children}) => {
+export const NavItem = ({href, active, children, hidden}) => {
     return (
         <Nav.Item>
-            <Link href={href} component={Nav.Link} active={active}>
+            <Link href={href} component={Nav.Link} active={active} hidden={hidden}>
                 <>{children}</>
             </Link>
         </Nav.Item>

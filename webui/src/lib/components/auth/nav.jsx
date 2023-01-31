@@ -5,18 +5,20 @@ import Breadcrumb from "react-bootstrap/Breadcrumb";
 import {BreadcrumbItem} from "react-bootstrap";
 
 import {Link, NavItem} from "../nav";
+import {useSimplified} from '../../../pages/context.jsx';
 
 
 export const UserNav = ({ userId, page = 'groups' }) => {
+    const simplifiedPolicies = useSimplified();
     return (
         <Nav justify variant="tabs">
             <Link component={NavItem} active={page === 'groups'} href={{pathname: '/auth/users/:userId/groups', params: {userId}}}>
                 Group Memberships
             </Link>
-            <Link component={NavItem} active={page === 'policies'} href={{pathname: '/auth/users/:userId/policies', params: {userId}}}>
+            <Link component={NavItem} active={page === 'policies'} href={{pathname: '/auth/users/:userId/policies', params: {userId}}} hidden={simplifiedPolicies}>
                 Directly Attached Policies
             </Link>
-            <Link component={NavItem} active={page === 'effectivePolicies'} href={{pathname: '/auth/users/:userId/policies/effective', params: {userId}}}>
+            <Link component={NavItem} active={page === 'effectivePolicies'} href={{pathname: '/auth/users/:userId/policies/effective', params: {userId}}} hidden={simplifiedPolicies}>
                 Effective Attached Policies
             </Link>
             <Link component={NavItem} active={page === 'credentials'} href={{pathname: '/auth/users/:userId/credentials', params: {userId}}}>
@@ -28,12 +30,13 @@ export const UserNav = ({ userId, page = 'groups' }) => {
 
 
 export const GroupNav = ({ groupId, page = 'groups' }) => {
+    const simplifiedPolicies = useSimplified();
     return (
         <Nav justify variant="tabs">
             <Link component={NavItem} active={page === 'members'} href={{pathname: '/auth/groups/:groupId/members', params: {groupId}}}>
                 Group Memberships
             </Link>
-            <Link component={NavItem} active={page === 'policies'} href={{pathname: '/auth/groups/:groupId/policies', params: {groupId}}}>
+            <Link component={NavItem} active={page === 'policies'} href={{pathname: '/auth/groups/:groupId/policies', params: {groupId}}} hidden={simplifiedPolicies}>
                 Attached Policies
             </Link>
         </Nav>

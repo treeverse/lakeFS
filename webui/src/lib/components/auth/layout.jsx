@@ -8,9 +8,11 @@ import Card from "react-bootstrap/Card";
 
 import Layout from "../layout";
 import {Link} from "../nav";
+import {useSimplified} from '../../../pages/context.jsx';
 
 
 export const AuthLayout = ({ children, activeTab }) => {
+    const simplifiedPolicies = useSimplified();
     return (
         <Layout>
             <Container fluid="xl">
@@ -37,7 +39,7 @@ export const AuthLayout = ({ children, activeTab }) => {
                                     <Link component={Nav.Link} href="/auth/groups" active={activeTab === 'groups'}>
                                         Groups
                                     </Link>
-                                    <Link component={Nav.Link} href="/auth/policies" active={activeTab === 'policies'}>
+                                    <Link component={Nav.Link} href="/auth/policies" active={activeTab === 'policies'} hidden={simplifiedPolicies}>
                                         Policies
                                     </Link>
                                 </Nav>

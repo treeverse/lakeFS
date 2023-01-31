@@ -8,8 +8,10 @@ import PoliciesIndexPage from "./policies";
 import LoginPage from "./login";
 import ResetPasswordPage from "./reset-password";
 import ActivateInvitedUserPage from "./users/create-user-with-password";
+import {useSimplified} from '../context.jsx';
 
 const Auth = () => {
+    const simplifiedPolicies = useSimplified();
     return (
         <Routes>
             <Route path="" element={<Navigate to="credentials"/>} />
@@ -19,7 +21,7 @@ const Auth = () => {
             <Route path="users/create" element={<ActivateInvitedUserPage/>} />
             <Route path="users/*" element={<UsersIndexPage/>} />
             <Route path="groups/*" element={<GroupsIndexPage/>} />
-            <Route path="policies/*" element={<PoliciesIndexPage/>} />
+            <Route path="policies/*" element={<PoliciesIndexPage/>} hidden={simplifiedPolicies} />
         </Routes>
     )
 }
