@@ -22,6 +22,7 @@ import (
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	pyramidparams "github.com/treeverse/lakefs/pkg/pyramid/params"
+	"go.uber.org/ratelimit"
 )
 
 var (
@@ -241,6 +242,9 @@ type Config struct {
 			Expiry time.Duration `mapstructure:"expiry"`
 			Jitter time.Duration `mapstructure:"jitter"`
 		} `mapstructure:"commit_cache"`
+		Background struct {
+			RateLimit int `mapstructure:"rate_limit"`
+		} `mapstructure:"background"`
 	} `mapstructure:"graveler"`
 	Gateways struct {
 		S3 struct {
@@ -557,4 +561,12 @@ func (c *Config) UISnippets() []apiparams.CodeSnippet {
 		})
 	}
 	return snippets
+}
+
+func (c *Config) NewGravelerBackgroundLimiter() ratelimit.Limiter {
+	rateLimit := c.Graveler.Background.RateLimit
+	if rateLimit == 0 {
+		return ratelimit.NewUnlimited()
+	}
+	return ratelimit.New(rateLimit)
 }

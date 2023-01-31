@@ -95,7 +95,6 @@ func newLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAuth
 	}
 }
 
-// runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run lakeFS",
@@ -197,6 +196,7 @@ var runCmd = &cobra.Command{
 			Config:       cfg,
 			KVStore:      storeMessage,
 			PathProvider: upload.DefaultPathProvider,
+			Limiter:      cfg.NewGravelerBackgroundLimiter(),
 		})
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create catalog")
@@ -424,10 +424,10 @@ func scheduleCleanupJobs(ctx context.Context, s *gocron.Scheduler, c *catalog.Ca
 
 	// delete expired tracked physical addresses
 	const (
-		deleteTrackedLowerTimeSec = 50
-		deleteTrackedUpperTimeSec = 80
+		deleteTrackedLowerTimeMin = 50
+		deleteTrackedUpperTimeMin = 70
 	)
-	job2, err := s.EveryRandom(deleteTrackedLowerTimeSec, deleteTrackedUpperTimeSec).Minute().Do(func() {
+	job2, err := s.EveryRandom(deleteTrackedLowerTimeMin, deleteTrackedUpperTimeMin).Minute().Do(func() {
 		c.DeleteTrackedPhysicalAddresses(ctx)
 	})
 	if err != nil {
