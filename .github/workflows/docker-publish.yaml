@@ -42,7 +42,7 @@ jobs:
           GOLANGCI_LINT_FLAGS: --out-format github-actions
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
+        uses: aws-actions/configure-aws-credentials@v1.7.0
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
@@ -90,3 +90,13 @@ jobs:
             ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ steps.version.outputs.tag }}
             treeverse/lakefs:${{ steps.version.outputs.tag }}
             treeverse/lakefs:latest
+
+      - name: Trigger playground deploy
+        run: |
+          curl \
+          -X POST \
+          -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}"\
+          -H "Accept: application/vnd.github+json" \
+          -H "Content-Type: application/json" \
+          https://api.github.com/repos/${{ secrets.REPOSITORY_NAME }}/actions/workflows/${{ secrets.WORKFLOW_ID }}/dispatches \
+          --data '{"ref":"main", "inputs": { "lakefs_image": ${{ steps.version.outputs.tag }} }}'

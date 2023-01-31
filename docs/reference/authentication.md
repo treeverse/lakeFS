@@ -31,7 +31,7 @@ Server or the S3 Gateway.
 #### LDAP server
 
 **Note**
-This feature is deprecated. For single sign-on with lakeFS, try [lakeFS cloud](https://lakefs.cloud)
+This feature is deprecated ([learn more](../posts/security_update.html)). For single sign-on with lakeFS, try [lakeFS cloud](https://lakefs.cloud)
 {: .note }
 
 Configure lakeFS to authenticate users on an LDAP server. Once configured,

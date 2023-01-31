@@ -7,10 +7,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**added** | **Integer** |  | 
-**removed** | **Integer** |  | 
-**changed** | **Integer** |  | 
-**conflict** | **Integer** |  | 
+**added** | **Integer** | Deprecated: inaccurate and will be removed. |  [optional]
+**removed** | **Integer** | Deprecated: inaccurate and will be removed. |  [optional]
+**changed** | **Integer** | Deprecated: inaccurate and will be removed. |  [optional]
+**conflict** | **Integer** | Deprecated: inaccurate and will be removed. |  [optional]
 
 
 

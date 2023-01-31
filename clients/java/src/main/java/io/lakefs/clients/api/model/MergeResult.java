@@ -49,8 +49,8 @@ public class MergeResult {
    * Get summary
    * @return summary
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public MergeResultSummary getSummary() {
     return summary;

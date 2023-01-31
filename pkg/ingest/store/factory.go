@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/treeverse/lakefs/pkg/block/azure"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/block/params"
 )
@@ -82,15 +82,15 @@ func (ww *WalkerWrapper) Marker() Mark {
 	return ww.walker.Marker()
 }
 
-type walkerFactory struct {
+type WalkerFactory struct {
 	params params.AdapterConfig
 }
 
-func NewFactory(params params.AdapterConfig) *walkerFactory {
-	return &walkerFactory{params: params}
+func NewFactory(params params.AdapterConfig) *WalkerFactory {
+	return &WalkerFactory{params: params}
 }
 
-func (f *walkerFactory) buildS3Walker(opts WalkerOptions) (*s3Walker, error) {
+func (f *WalkerFactory) buildS3Walker(opts WalkerOptions) (*S3Walker, error) {
 	var sess *session.Session
 	if f.params != nil {
 		s3params, err := f.params.BlockstoreS3Params()
@@ -111,7 +111,7 @@ func (f *walkerFactory) buildS3Walker(opts WalkerOptions) (*s3Walker, error) {
 	return NewS3Walker(sess), nil
 }
 
-func (f *walkerFactory) buildGCSWalker(ctx context.Context) (*gcsWalker, error) {
+func (f *WalkerFactory) buildGCSWalker(ctx context.Context) (*GCSWalker, error) {
 	var svc *storage.Client
 	if f.params != nil {
 		gsParams, err := f.params.BlockstoreGSParams()
@@ -132,33 +132,42 @@ func (f *walkerFactory) buildGCSWalker(ctx context.Context) (*gcsWalker, error) 
 	return NewGCSWalker(svc), nil
 }
 
-func (f *walkerFactory) buildAzureWalker() (*azureBlobWalker, error) {
-	var (
-		c   *service.Client
-		err error
-	)
+func (f *WalkerFactory) buildAzureWalker(importURL *url.URL) (*AzureBlobWalker, error) {
+	storageAccount, err := azure.ExtractStorageAccount(importURL)
+	if err != nil {
+		return nil, err
+	}
+
+	var azureParams params.Azure
 	if f.params != nil {
-		var azureParams params.Azure
+		// server settings
 		azureParams, err = f.params.BlockstoreAzureParams()
 		if err != nil {
 			return nil, err
 		}
-		c, err = factory.BuildAzureServiceClient(azureParams)
-	} else {
-		c, err = getAzureClient()
 	}
+
+	// Use StorageAccessKey to initialize storage account client only if it was provided for this given storage account
+	// Otherwise fall back to the default credentials
+	if azureParams.StorageAccount != storageAccount {
+		azureParams.StorageAccount = storageAccount
+		azureParams.StorageAccessKey = ""
+	}
+	c, err := azure.BuildAzureServiceClient(azureParams)
 	if err != nil {
 		return nil, err
 	}
+
 	return NewAzureBlobWalker(c)
 }
 
-func (f *walkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*WalkerWrapper, error) {
-	var walker Walker
+func (f *WalkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*WalkerWrapper, error) {
 	uri, err := url.Parse(opts.StorageURI)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse storage URI %s: %w", uri, err)
 	}
+
+	var walker Walker
 	switch uri.Scheme {
 	case "s3":
 		walker, err = f.buildS3Walker(opts)
@@ -171,13 +180,12 @@ func (f *walkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*Wal
 			return nil, fmt.Errorf("creating gs walker: %w", err)
 		}
 	case "http", "https":
-		walker, err = f.buildAzureWalker()
+		walker, err = f.buildAzureWalker(uri)
 		if err != nil {
 			return nil, fmt.Errorf("creating Azure walker: %w", err)
 		}
 	default:
 		return nil, fmt.Errorf("%w: for scheme: %s", ErrNotSupported, uri.Scheme)
 	}
-
 	return NewWrapper(walker, uri), nil
 }
