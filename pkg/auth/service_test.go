@@ -670,6 +670,7 @@ func TestAuthApiGetCredentialsCache(t *testing.T) {
 	ctx := context.Background()
 	mockClient, s := NewTestApiService(t, true)
 	const username = "foo"
+	userID := int64(1234)
 	accessKey := "ACCESS"
 	secretKey := "SECRET"
 	response := &auth.GetCredentialsResponse{
@@ -679,6 +680,7 @@ func TestAuthApiGetCredentialsCache(t *testing.T) {
 		JSON200: &auth.CredentialsWithSecret{
 			AccessKeyId:     accessKey,
 			SecretAccessKey: secretKey,
+			UserId:          &userID,
 		},
 	}
 	mockClient.EXPECT().GetCredentialsWithResponse(gomock.Any(), gomock.Any()).Return(response, nil)
@@ -703,6 +705,33 @@ func TestAuthApiGetCredentialsCache(t *testing.T) {
 	}
 }
 
+func TestAuthApiGetCredentialsCacheWithReturnName(t *testing.T) {
+	ctx := context.Background()
+	mockClient, s := NewTestApiService(t, true)
+	var username = "foo"
+	accessKey := "ACCESS"
+	secretKey := "SECRET"
+	response := &auth.GetCredentialsResponse{
+		HTTPResponse: &http.Response{
+			StatusCode: http.StatusOK,
+		},
+		JSON200: &auth.CredentialsWithSecret{
+			AccessKeyId:     accessKey,
+			SecretAccessKey: secretKey,
+			UserName:        &username,
+		},
+	}
+	mockClient.EXPECT().GetCredentialsWithResponse(gomock.Any(), gomock.Any()).Return(response, nil)
+
+	res1, err := s.GetCredentials(ctx, accessKey)
+	testutil.Must(t, err)
+	res2, err := s.GetCredentials(ctx, accessKey)
+	testutil.Must(t, err)
+	if diff := deep.Equal(res1, res2); diff != nil {
+		t.Error("cache returned different result than api", diff)
+	}
+}
+
 func TestAuthApiGetUserCache(t *testing.T) {
 	ctx := context.Background()
 	mockClient, s := NewTestApiService(t, true)
@@ -714,7 +743,6 @@ func TestAuthApiGetUserCache(t *testing.T) {
 	externalId := "1234"
 	userResult := auth.User{
 		Username:   username,
-		Id:         uid,
 		Email:      &userMail,
 		ExternalId: &externalId,
 	}
@@ -795,55 +823,55 @@ func TestAuthApiGetUserCache(t *testing.T) {
 func TestAPIAuthService_CreateUser(t *testing.T) {
 	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
-		name               string
-		userName           string
-		email              string
-		friendlyName       string
-		source             string
-		responseStatusCode int
-		responseID         int64
-		expectedResponseID string
-		expectedErr        error
+		name                 string
+		userName             string
+		email                string
+		friendlyName         string
+		source               string
+		responseStatusCode   int
+		responseName         string
+		expectedResponseName string
+		expectedErr          error
 	}{
 		{
-			name:               "successful",
-			userName:           "foo",
-			email:              "foo@gmail.com",
-			friendlyName:       "friendly foo",
-			source:             "internal",
-			responseID:         1,
-			responseStatusCode: http.StatusCreated,
-			expectedResponseID: "1",
-			expectedErr:        nil,
+			name:                 "successful",
+			userName:             "foo",
+			email:                "foo@gmail.com",
+			friendlyName:         "friendly foo",
+			source:               "internal",
+			responseName:         "foo",
+			responseStatusCode:   http.StatusCreated,
+			expectedResponseName: "foo",
+			expectedErr:          nil,
 		},
 		{
-			name:               "invalid_user",
-			userName:           "",
-			email:              "foo@gmail.com",
-			friendlyName:       "friendly foo",
-			source:             "internal",
-			responseStatusCode: http.StatusBadRequest,
-			expectedResponseID: auth.InvalidUserID,
-			expectedErr:        auth.ErrInvalidRequest,
+			name:                 "invalid_user",
+			userName:             "",
+			email:                "foo@gmail.com",
+			friendlyName:         "friendly foo",
+			source:               "internal",
+			responseStatusCode:   http.StatusBadRequest,
+			expectedResponseName: auth.InvalidUserID,
+			expectedErr:          auth.ErrInvalidRequest,
 		},
 		{
-			name:               "user_exists",
-			userName:           "existingUser",
-			email:              "foo@gmail.com",
-			friendlyName:       "friendly foo",
-			source:             "internal",
-			responseStatusCode: http.StatusConflict,
-			expectedResponseID: auth.InvalidUserID,
-			expectedErr:        auth.ErrAlreadyExists,
+			name:                 "user_exists",
+			userName:             "existingUser",
+			email:                "foo@gmail.com",
+			friendlyName:         "friendly foo",
+			source:               "internal",
+			responseStatusCode:   http.StatusConflict,
+			expectedResponseName: auth.InvalidUserID,
+			expectedErr:          auth.ErrAlreadyExists,
 		},
 		{
-			name:               "internal_error",
-			userName:           "user",
-			email:              "foo@gmail.com",
-			source:             "internal",
-			responseStatusCode: http.StatusInternalServerError,
-			expectedResponseID: auth.InvalidUserID,
-			expectedErr:        auth.ErrUnexpectedStatusCode,
+			name:                 "internal_error",
+			userName:             "user",
+			email:                "foo@gmail.com",
+			source:               "internal",
+			responseStatusCode:   http.StatusInternalServerError,
+			expectedResponseName: auth.InvalidUserID,
+			expectedErr:          auth.ErrUnexpectedStatusCode,
 		},
 	}
 	for _, tt := range tests {
@@ -853,7 +881,7 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 					StatusCode: tt.responseStatusCode,
 				},
 				JSON201: &auth.User{
-					Id: tt.responseID,
+					Username: tt.responseName,
 				},
 			}
 			mockClient.EXPECT().CreateUserWithResponse(gomock.Any(), auth.CreateUserJSONRequestBody{
@@ -872,8 +900,8 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("CreateUser: expected err: %v got: %v", tt.expectedErr, err)
 			}
-			if res != tt.expectedResponseID {
-				t.Fatalf("CreateUser: expected user.id: %s got: %s", tt.expectedResponseID, res)
+			if res != tt.expectedResponseName {
+				t.Fatalf("CreateUser: expected user.id: %s got: %s", tt.expectedResponseName, res)
 			}
 		})
 	}
@@ -1193,20 +1221,10 @@ func TestAPIAuthService_GetCredentials(t *testing.T) {
 				JSON200: &auth.CredentialsWithSecret{
 					AccessKeyId:     tt.accessKey,
 					SecretAccessKey: tt.secretKey,
+					UserName:        &tt.username,
 				},
 			}
 			mockClient.EXPECT().GetCredentialsWithResponse(gomock.Any(), tt.accessKey).Return(response, nil)
-			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(&auth.ListUsersResponse{
-				HTTPResponse: &http.Response{
-					StatusCode: http.StatusOK,
-				},
-				JSON200: &auth.UserList{
-					Pagination: auth.Pagination{},
-					Results: []auth.User{{
-						Username: tt.username,
-					}},
-				},
-			}, nil)
 			ctx := context.Background()
 			credentials, err := s.GetCredentials(ctx, tt.accessKey)
 			if !errors.Is(err, tt.expectedErr) {
