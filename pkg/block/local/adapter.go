@@ -306,10 +306,9 @@ func (l *Adapter) GetProperties(_ context.Context, obj block.ObjectPointer) (blo
 	if err != nil {
 		return block.Properties{}, err
 	}
-	size := stats.Size()
 	// No properties, just return that it exists
 	return block.Properties{
-		SizeBytes: &size,
+		SizeBytes: stats.Size(),
 	}, nil
 }
 

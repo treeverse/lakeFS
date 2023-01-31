@@ -126,7 +126,7 @@ type CreateMultiPartUploadOpts struct {
 // actually reported.
 type Properties struct {
 	StorageClass *string
-	SizeBytes    *int64
+	SizeBytes    int64
 	Checksum     *string
 }
 

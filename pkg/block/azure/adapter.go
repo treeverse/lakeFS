@@ -357,7 +357,7 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	}
 	return block.Properties{
 		StorageClass: props.AccessTier,
-		SizeBytes:    props.ContentLength,
+		SizeBytes:    *props.ContentLength,
 		Checksum:     checksum,
 	}, nil
 }

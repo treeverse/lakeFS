@@ -89,11 +89,9 @@ func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reade
 	key := getKey(obj)
 	a.data[key] = data
 
-	size := int64(len(data))
-
 	a.properties[key] = block.Properties{
 		StorageClass: opts.StorageClass,
-		SizeBytes:    &size,
+		SizeBytes:    int64(len(data)),
 	}
 	return nil
 }

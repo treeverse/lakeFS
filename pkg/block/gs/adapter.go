@@ -214,10 +214,9 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (block.Properties, error) {
 	var err error
 	defer reportMetrics("GetProperties", time.Now(), nil, &err)
-	var props block.Properties
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
-		return props, err
+		return block.Properties{}, err
 	}
 	attr, err := a.client.
 		Bucket(qualifiedKey.StorageNamespace).
@@ -227,7 +226,7 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 		return block.Properties{}, err
 	}
 	return block.Properties{
-		SizeBytes: &attr.Size,
+		SizeBytes: attr.Size,
 		Checksum:  &attr.Etag,
 	}, nil
 }

@@ -2314,11 +2314,13 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 			StorageNamespace: qk.StorageNamespace,
 			Identifier:       qk.Key,
 		})
-		if err != nil {
-			writeError(w, r, http.StatusInternalServerError, fmt.Sprintf("Unable to get object properties: %s", err))
+		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
-		sizeBytes = swag.Int64Value(props.SizeBytes)
+		if err != nil {
+			writeError(w, r, http.StatusInternalServerError, fmt.Sprintf("Unable to get object properties: %s", err))
+		}
+		sizeBytes = props.SizeBytes
 		checksum = swag.StringValue(props.Checksum)
 	}
 

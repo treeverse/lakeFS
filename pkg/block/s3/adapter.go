@@ -456,7 +456,7 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	return block.Properties{
 		StorageClass: s3Props.StorageClass,
 		Checksum:     s3Props.ETag,
-		SizeBytes:    s3Props.ContentLength,
+		SizeBytes:    *s3Props.ContentLength,
 	}, nil
 }
 

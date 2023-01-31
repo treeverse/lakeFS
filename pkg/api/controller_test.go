@@ -2368,7 +2368,7 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 		}
 		content := "this is some content"
 		fullAddr := obj.StorageNamespace + obj.Identifier
-		err := deps.blocks.Put(ctx, obj, int64(len(content)), bytes.NewReader([]byte(content)), block.PutOpts{})
+		err := deps.blocks.Put(ctx, obj, int64(len(content)), strings.NewReader(content), block.PutOpts{})
 
 		require.NoError(t, err)
 		resp, err := clt.StageObjectWithResponse(ctx, "repo1", "main", &api.StageObjectParams{Path: "foo/bar"}, api.StageObjectJSONRequestBody{
