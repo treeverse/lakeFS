@@ -81,6 +81,18 @@ func verifyImportObjects(t *testing.T, ctx context.Context, repoName string, pre
 		require.Equal(t, http.StatusOK, objResp.StatusCode(), "get object %s", objPath)
 		require.Equal(t, expectedContentLength, int(objResp.HTTPResponse.ContentLength), "object content length %s", objPath)
 	}
+	hasMore := true
+	after := api.PaginationAfter("")
+	for hasMore {
+		listResp, err := client.ListObjectsWithResponse(ctx, repoName, importBranchName, &api.ListObjectsParams{After: &after})
+		require.NoError(t, err, "list objects failed")
+		require.NotNil(t, listResp.JSON200)
+
+		hasMore = listResp.JSON200.Pagination.HasMore
+		for _, obj := range listResp.JSON200.Results {
+			require.True(t, strings.HasPrefix(obj.Path, prefix), "obj with wrong prefix imported", obj.Path, prefix)
+		}
+	}
 }
 
 func testImport(t *testing.T, ctx context.Context, repoName string, importPath string) {
