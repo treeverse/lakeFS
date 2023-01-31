@@ -2127,7 +2127,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 			writeError(w, r, http.StatusPreconditionFailed, "path already exists")
 			return
 		}
-		if !errors.Is(err, catalog.ErrNotFound) {
+		if !errors.Is(err, catalog.ErrNotFound) && !errors.Is(err, graveler.ErrNotFound) {
 			writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}

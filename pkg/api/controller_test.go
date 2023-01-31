@@ -1554,6 +1554,24 @@ func TestController_UploadObject(t *testing.T) {
 		}
 	})
 
+	t.Run("disable overwrite with if-none-match (missing)", func(t *testing.T) {
+		_, err := deps.catalog.CreateBranch(ctx, "my-new-repo", "another-branch-2", "main")
+		testutil.Must(t, err)
+
+		// overwrite after commit
+		all := "*"
+		contentType, buf := writeMultipart("content", "baz3", "something else!")
+		b, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "another-branch-2", &api.UploadObjectParams{
+			Path:        "foo/baz3",
+			IfNoneMatch: &all,
+		}, contentType, buf)
+
+		testutil.Must(t, err)
+		if b.StatusCode() != 201 {
+			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
+		}
+	})
+
 	t.Run("upload object missing 'content' key", func(t *testing.T) {
 		// write
 		contentType, buf := writeMultipart("this-is-not-content", "bar", "hello world!")
