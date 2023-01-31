@@ -179,8 +179,6 @@ jobs:
 
   login-to-amazon-ecr:
     runs-on: ubuntu-latest
-    needs: [check-secrets]
-    if: needs.check-secrets.outputs.secretsavailable == 'true'
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1.7.0
