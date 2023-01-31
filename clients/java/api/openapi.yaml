@@ -2675,7 +2675,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MergeResult'
-          description: conflict
+          description: |
+            Conflict
+            Deprecated: content schema will return Error format and not an empty MergeResult
         "412":
           content:
             application/json:
@@ -5069,6 +5071,30 @@ components:
       - pagination
       - results
       type: object
+    MergeResultSummary:
+      example:
+        removed: 6
+        added: 0
+        changed: 1
+        conflict: 5
+      properties:
+        added:
+          deprecated: true
+          description: 'Deprecated: inaccurate and will be removed.'
+          type: integer
+        removed:
+          deprecated: true
+          description: 'Deprecated: inaccurate and will be removed.'
+          type: integer
+        changed:
+          deprecated: true
+          description: 'Deprecated: inaccurate and will be removed.'
+          type: integer
+        conflict:
+          deprecated: true
+          description: 'Deprecated: inaccurate and will be removed.'
+          type: integer
+      type: object
     MergeResult:
       example:
         summary:
@@ -5079,12 +5105,11 @@ components:
         reference: reference
       properties:
         summary:
-          $ref: '#/components/schemas/MergeResult_summary'
+          $ref: '#/components/schemas/MergeResultSummary'
         reference:
           type: string
       required:
       - reference
-      - summary
       type: object
     RepositoryCreation:
       example:
@@ -6540,27 +6565,6 @@ components:
           type: string
       required:
       - pattern
-      type: object
-    MergeResult_summary:
-      example:
-        removed: 6
-        added: 0
-        changed: 1
-        conflict: 5
-      properties:
-        added:
-          type: integer
-        removed:
-          type: integer
-        changed:
-          type: integer
-        conflict:
-          type: integer
-      required:
-      - added
-      - changed
-      - conflict
-      - removed
       type: object
   securitySchemes:
     basic_auth:

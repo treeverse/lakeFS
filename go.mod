@@ -85,6 +85,7 @@ require (
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/hashicorp/go-retryablehttp v0.7.2
+	github.com/puzpuzpuz/xsync v1.5.2
 )
 
 require (

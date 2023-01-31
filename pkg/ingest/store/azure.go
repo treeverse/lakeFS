@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -13,35 +12,16 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/azure"
 )
 
-var (
-	ErrAzureInvalidURL  = errors.New("invalid Azure storage URL")
-	ErrAzureCredentials = errors.New("azure credentials error")
-)
+var ErrAzureInvalidURL = errors.New("invalid Azure storage URL")
 
-func getAzureClient() (*service.Client, error) {
-	// From the Azure portal, get your storage account name and key and set environment variables.
-	accountName, accountKey := os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
-	if len(accountName) == 0 || len(accountKey) == 0 {
-		return nil, fmt.Errorf("%w: either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set", ErrAzureCredentials)
-	}
-
-	// Create a default request client using your storage account name and account key.
-	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
-	if err != nil {
-		return nil, fmt.Errorf("invalid credentials with error: %w", err)
-	}
-	containerURL := fmt.Sprintf(azure.URLTemplate, accountName)
-	return service.NewClientWithSharedKeyCredential(containerURL, credential, nil)
-}
-
-func NewAzureBlobWalker(svc *service.Client) (*azureBlobWalker, error) {
-	return &azureBlobWalker{
+func NewAzureBlobWalker(svc *service.Client) (*AzureBlobWalker, error) {
+	return &AzureBlobWalker{
 		client: svc,
 		mark:   Mark{HasMore: true},
 	}, nil
 }
 
-type azureBlobWalker struct {
+type AzureBlobWalker struct {
 	client *service.Client
 	mark   Mark
 }
@@ -68,12 +48,17 @@ func getAzureBlobURL(containerURL *url.URL, blobName string) *url.URL {
 	return containerURL.ResolveReference(&relativePath)
 }
 
-func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
+func (a *AzureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
 	// we use bucket as container and prefix as path
 	containerURL, prefix, err := extractAzurePrefix(storageURI)
 	if err != nil {
 		return err
 	}
+	var basePath string
+	if idx := strings.LastIndex(prefix, "/"); idx != -1 {
+		basePath = prefix[:idx+1]
+	}
+
 	qk, err := azure.ResolveBlobURLInfoFromURL(containerURL)
 	if err != nil {
 		return err
@@ -90,18 +75,18 @@ func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 		if err != nil {
 			return err
 		}
+		if resp.Marker != nil {
+			a.mark.ContinuationToken = *resp.Marker
+		}
 		for _, blobInfo := range resp.Segment.BlobItems {
 			// skipping everything in the page which is before 'After' (without forgetting the possible empty string key!)
 			if op.After != "" && *blobInfo.Name <= op.After {
 				continue
 			}
-			if resp.Marker != nil {
-				a.mark.ContinuationToken = *resp.Marker
-			}
 			a.mark.LastKey = *blobInfo.Name
 			if err := walkFn(ObjectStoreEntry{
 				FullKey:     *blobInfo.Name,
-				RelativeKey: strings.TrimPrefix(*blobInfo.Name, prefix),
+				RelativeKey: strings.TrimPrefix(*blobInfo.Name, basePath),
 				Address:     getAzureBlobURL(containerURL, *blobInfo.Name).String(),
 				ETag:        string(*blobInfo.Properties.ETag),
 				Mtime:       *blobInfo.Properties.LastModified,
@@ -119,6 +104,6 @@ func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 	return nil
 }
 
-func (a *azureBlobWalker) Marker() Mark {
+func (a *AzureBlobWalker) Marker() Mark {
 	return a.mark
 }

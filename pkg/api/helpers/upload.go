@@ -14,10 +14,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
-// ClientUpload uploads contents as a file using client-side ("direct") access to underlying
+// ClientUploadDirect uploads contents as a file using client-side ("direct") access to underlying
 // storage.  It requires credentials both to lakeFS and to underlying storage, but
 // considerably reduces the load on the lakeFS server.
-func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker) (*api.ObjectStats, error) {
+func ClientUploadDirect(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker) (*api.ObjectStats, error) {
 	stagingLocation, err := getPhysicalAddress(ctx, client, repoID, branchID, &api.GetPhysicalAddressParams{
 		Path:    objPath,
 		Presign: swag.Bool(true),
