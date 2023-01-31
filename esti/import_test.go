@@ -89,6 +89,7 @@ func verifyImportObjects(t *testing.T, ctx context.Context, repoName string, pre
 		require.NotNil(t, listResp.JSON200)
 
 		hasMore = listResp.JSON200.Pagination.HasMore
+		after = api.PaginationAfter(listResp.JSON200.Pagination.NextOffset)
 		for _, obj := range listResp.JSON200.Results {
 			require.True(t, strings.HasPrefix(obj.Path, prefix), "obj with wrong prefix imported", obj.Path, prefix)
 		}
