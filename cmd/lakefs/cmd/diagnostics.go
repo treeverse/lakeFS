@@ -43,6 +43,7 @@ var diagnosticsCmd = &cobra.Command{
 			Config:       cfg,
 			KVStore:      storeMessage,
 			PathProvider: upload.DefaultPathProvider,
+			Limiter:      cfg.NewGravelerBackgroundLimiter(),
 		})
 		if err != nil {
 			log.Fatalf("Failed to create catalog: %s", err)

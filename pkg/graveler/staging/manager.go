@@ -11,9 +11,10 @@ import (
 )
 
 type Manager struct {
-	store  kv.StoreMessage
-	log    logging.Logger
-	wakeup chan asyncEvent
+	kvStore        kv.Store
+	kvStoreLimited kv.Store
+	log            logging.Logger
+	wakeup         chan asyncEvent
 
 	// cleanupCallback is being called with every successful cleanup cycle
 	cleanupCallback func()
@@ -25,12 +26,13 @@ type asyncEvent string
 // cleanTokens is async cleaning of deleted staging tokens
 const cleanTokens = asyncEvent("clean_tokens")
 
-func NewManager(ctx context.Context, store kv.StoreMessage) *Manager {
+func NewManager(ctx context.Context, store, storeLimited kv.Store) *Manager {
 	const wakeupChanCapacity = 100
 	m := &Manager{
-		store:  store,
-		log:    logging.Default().WithField("service_name", "staging_manager"),
-		wakeup: make(chan asyncEvent, wakeupChanCapacity),
+		kvStore:        store,
+		kvStoreLimited: storeLimited,
+		log:            logging.Default().WithField("service_name", "staging_manager"),
+		wakeup:         make(chan asyncEvent, wakeupChanCapacity),
 	}
 	go m.asyncLoop(ctx)
 	return m
@@ -42,7 +44,7 @@ func (m *Manager) OnCleanup(cleanupCallback func()) {
 
 func (m *Manager) Get(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.Value, error) {
 	data := &graveler.StagedEntryData{}
-	_, err := m.store.GetMsg(ctx, graveler.StagingTokenPartition(st), key, data)
+	_, err := kv.GetMsg(ctx, m.kvStore, graveler.StagingTokenPartition(st), key, data)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrNotFound
@@ -67,16 +69,15 @@ func (m *Manager) Set(ctx context.Context, st graveler.StagingToken, key gravele
 	pb := graveler.ProtoFromStagedEntry(key, value)
 	stPartition := graveler.StagingTokenPartition(st)
 	if requireExists {
-		return m.store.SetMsgIf(ctx, stPartition, key, pb, kv.PrecondConditionalExists)
+		return kv.SetMsgIf(ctx, m.kvStore, stPartition, key, pb, kv.PrecondConditionalExists)
 	}
-
-	return m.store.SetMsg(ctx, stPartition, key, pb)
+	return kv.SetMsg(ctx, m.kvStore, stPartition, key, pb)
 }
 
 func (m *Manager) Update(ctx context.Context, st graveler.StagingToken, key graveler.Key, updateFunc graveler.ValueUpdateFunc) error {
 	oldValueProto := &graveler.StagedEntryData{}
 	var oldValue *graveler.Value
-	pred, err := m.store.GetMsg(ctx, graveler.StagingTokenPartition(st), key, oldValueProto)
+	pred, err := kv.GetMsg(ctx, m.kvStore, graveler.StagingTokenPartition(st), key, oldValueProto)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			oldValue = nil
@@ -94,16 +95,16 @@ func (m *Manager) Update(ctx context.Context, st graveler.StagingToken, key grav
 		}
 		return err
 	}
-	return m.store.SetMsgIf(ctx, graveler.StagingTokenPartition(st), key, graveler.ProtoFromStagedEntry(key, updatedValue), pred)
+	return kv.SetMsgIf(ctx, m.kvStore, graveler.StagingTokenPartition(st), key, graveler.ProtoFromStagedEntry(key, updatedValue), pred)
 }
 
 func (m *Manager) DropKey(ctx context.Context, st graveler.StagingToken, key graveler.Key) error {
-	return m.store.DeleteMsg(ctx, graveler.StagingTokenPartition(st), key)
+	return m.kvStore.Delete(ctx, []byte(graveler.StagingTokenPartition(st)), key)
 }
 
 // List returns an iterator of staged values on the staging token st
 func (m *Manager) List(ctx context.Context, st graveler.StagingToken, batchSize int) (graveler.ValueIterator, error) {
-	return NewStagingIterator(ctx, m.store, st, batchSize)
+	return NewStagingIterator(ctx, m.kvStore, st, batchSize)
 }
 
 func (m *Manager) Drop(ctx context.Context, st graveler.StagingToken) error {
@@ -111,19 +112,19 @@ func (m *Manager) Drop(ctx context.Context, st graveler.StagingToken) error {
 }
 
 func (m *Manager) DropAsync(ctx context.Context, st graveler.StagingToken) error {
-	err := m.store.Store.Set(ctx, []byte(graveler.CleanupTokensPartition()), []byte(st), []byte("stub-value"))
+	err := m.kvStore.Set(ctx, []byte(graveler.CleanupTokensPartition()), []byte(st), []byte("stub-value"))
 	m.wakeup <- cleanTokens
 	return err
 }
 
 func (m *Manager) DropByPrefix(ctx context.Context, st graveler.StagingToken, prefix graveler.Key) error {
-	itr, err := kv.ScanPrefix(ctx, m.store.Store, []byte(graveler.StagingTokenPartition(st)), prefix, []byte(""))
+	itr, err := kv.ScanPrefix(ctx, m.kvStore, []byte(graveler.StagingTokenPartition(st)), prefix, []byte(""))
 	if err != nil {
 		return err
 	}
 	defer itr.Close()
 	for itr.Next() {
-		err = m.store.Delete(ctx, []byte(graveler.StagingTokenPartition(st)), itr.Entry().Key)
+		err = m.kvStore.Delete(ctx, []byte(graveler.StagingTokenPartition(st)), itr.Entry().Key)
 		if err != nil {
 			return err
 		}
@@ -153,8 +154,10 @@ func (m *Manager) asyncLoop(ctx context.Context) {
 	}
 }
 
+// findAndDrop lookup for staging tokens to delete and drop keys by prefix. Uses store limited to rate limit the access.
+// it assumes we are processing the data in the background.
 func (m *Manager) findAndDrop(ctx context.Context) error {
-	it, err := m.store.Store.Scan(ctx, []byte(graveler.CleanupTokensPartition()), kv.ScanOptions{})
+	it, err := m.kvStoreLimited.Scan(ctx, []byte(graveler.CleanupTokensPartition()), kv.ScanOptions{})
 	if err != nil {
 		return err
 	}
@@ -163,7 +166,7 @@ func (m *Manager) findAndDrop(ctx context.Context) error {
 		if err := m.DropByPrefix(ctx, graveler.StagingToken(it.Entry().Key), []byte("")); err != nil {
 			return err
 		}
-		if err := m.store.Store.Delete(ctx, []byte(graveler.CleanupTokensPartition()), it.Entry().Key); err != nil {
+		if err := m.kvStoreLimited.Delete(ctx, []byte(graveler.CleanupTokensPartition()), it.Entry().Key); err != nil {
 			return err
 		}
 	}
