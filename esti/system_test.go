@@ -252,6 +252,6 @@ func listRepositories(t *testing.T, ctx context.Context) []api.Repository {
 func requireBlockstoreType(t *testing.T, requiredType string) {
 	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
 	if blockstoreType != requiredType {
-		t.Skip(fmt.Sprintf("Test %s requires blockstore type: %s, got: %s", t.Name(), requiredType, blockstoreType))
+		t.Skipf("Test %s requires blockstore type: %s, got: %s", t.Name(), requiredType, blockstoreType)
 	}
 }
