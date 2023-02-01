@@ -133,7 +133,7 @@ package-python: client-python
 package: package-python
 
 .PHONY: gen-api
-gen-api: ## Run the swagger code generator
+gen-api: docs/assets/js/swagger.yml ## Run the swagger code generator
 	$(GOGENERATE) \
 		./pkg/api \
 		./pkg/auth

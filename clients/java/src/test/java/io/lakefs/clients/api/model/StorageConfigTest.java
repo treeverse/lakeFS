@@ -72,4 +72,12 @@ public class StorageConfigTest {
         // TODO: test defaultNamespacePrefix
     }
 
+    /**
+     * Test the property 'preSignSupport'
+     */
+    @Test
+    public void preSignSupportTest() {
+        // TODO: test preSignSupport
+    }
+
 }

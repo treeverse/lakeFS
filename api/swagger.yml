@@ -176,28 +176,33 @@ components:
           items:
             $ref: "#/components/schemas/Repository"
 
+    MergeResultSummary:
+      type: object
+      properties:
+        added:
+          type: integer
+          deprecated: true
+          description: "Deprecated: inaccurate and will be removed."
+        removed:
+          type: integer
+          deprecated: true
+          description: "Deprecated: inaccurate and will be removed."
+        changed:
+          type: integer
+          deprecated: true
+          description: "Deprecated: inaccurate and will be removed."
+        conflict:
+          type: integer
+          deprecated: true
+          description: "Deprecated: inaccurate and will be removed."
+
     MergeResult:
       type: object
       required:
-        - summary
         - reference
       properties:
         summary:
-          type: object
-          required:
-            - added
-            - removed
-            - changed
-            - conflict
-          properties:
-            added:
-              type: integer
-            removed:
-              type: integer
-            changed:
-              type: integer
-            conflict:
-              type: integer
+          $ref: "#/components/schemas/MergeResultSummary"
         reference:
           type: string
 
@@ -864,6 +869,7 @@ components:
         - blockstore_type
         - blockstore_namespace_example
         - blockstore_namespace_ValidityRegex
+        - pre_sign_support
       properties:
         blockstore_type:
           type: string
@@ -873,6 +879,9 @@ components:
           type: string
         default_namespace_prefix:
           type: string
+        pre_sign_support:
+          type: boolean
+
     VersionConfig:
       type: object
       properties:
@@ -2631,7 +2640,9 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         409:
-          description: conflict
+          description: |
+            Conflict
+            Deprecated: content schema will return Error format and not an empty MergeResult
           content:
             application/json:
               schema:

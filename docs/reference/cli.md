@@ -1868,8 +1868,9 @@ lakectl fs cat <path uri> [flags]
 {:.no_toc}
 
 ```
-  -d, --direct   read directly from backing store (faster but requires more credentials)
-  -h, --help     help for cat
+  -d, --direct     read directly from backing store (faster but requires more credentials)
+  -h, --help       help for cat
+      --pre-sign   Use pre-sign link to access the data
 ```
 
 
@@ -1889,6 +1890,7 @@ lakectl fs download <path uri> [<destination path>] [flags]
   -d, --direct         read directly from backing store (requires credentials)
   -h, --help           help for download
   -p, --parallel int   max concurrent downloads (default 6)
+      --pre-sign       Request pre-sign link to access the data
   -r, --recursive      recursively all objects under path
 ```
 
@@ -1992,7 +1994,8 @@ lakectl fs stat <path uri> [flags]
 {:.no_toc}
 
 ```
-  -h, --help   help for stat
+  -h, --help       help for stat
+      --pre-sign   Request pre-sign for physical address
 ```
 
 
@@ -2012,6 +2015,7 @@ lakectl fs upload <path uri> [flags]
       --content-type string   MIME type of contents
   -d, --direct                write directly to backing store (faster but requires more credentials)
   -h, --help                  help for upload
+      --pre-sign              Use pre-sign link to access the data
   -r, --recursive             recursively copy all files under local source
   -s, --source string         local file to upload, or "-" for stdin
 ```

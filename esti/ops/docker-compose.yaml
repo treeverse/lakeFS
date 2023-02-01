@@ -22,6 +22,9 @@ services:
       - LAKEFS_STATS_ENABLED
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
+      - AZURE_CLIENT_ID
+      - AZURE_CLIENT_SECRET
+      - AZURE_TENANT_ID
       - ACTIONS_VAR=this_is_actions_var
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   postgres:
@@ -53,8 +56,6 @@ services:
       - ESTI_ENDPOINT_URL=http://lakefs:8000
       - ESTI_LAKECTL_DIR=/app
       - ESTI_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
-      - ESTI_DATABASE_KV_ENABLED
-      - ESTI_KV_MIGRATION=${ESTI_KV_MIGRATION:-none}
       - ESTI_POST_MIGRATE
       - ESTI_GOTEST_FLAGS
       - ESTI_FLAGS

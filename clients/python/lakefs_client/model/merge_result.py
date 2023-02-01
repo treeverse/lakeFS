@@ -88,8 +88,8 @@ class MergeResult(ModelNormal):
         """
         lazy_import()
         return {
-            'summary': (MergeResultSummary,),  # noqa: E501
             'reference': (str,),  # noqa: E501
+            'summary': (MergeResultSummary,),  # noqa: E501
         }
 
     @cached_property
@@ -98,8 +98,8 @@ class MergeResult(ModelNormal):
 
 
     attribute_map = {
-        'summary': 'summary',  # noqa: E501
         'reference': 'reference',  # noqa: E501
+        'summary': 'summary',  # noqa: E501
     }
 
     read_only_vars = {
@@ -109,11 +109,10 @@ class MergeResult(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, summary, reference, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, reference, *args, **kwargs):  # noqa: E501
         """MergeResult - a model defined in OpenAPI
 
         Args:
-            summary (MergeResultSummary):
             reference (str):
 
         Keyword Args:
@@ -147,6 +146,7 @@ class MergeResult(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            summary (MergeResultSummary): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -174,7 +174,6 @@ class MergeResult(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.summary = summary
         self.reference = reference
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
@@ -196,11 +195,10 @@ class MergeResult(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, summary, reference, *args, **kwargs):  # noqa: E501
+    def __init__(self, reference, *args, **kwargs):  # noqa: E501
         """MergeResult - a model defined in OpenAPI
 
         Args:
-            summary (MergeResultSummary):
             reference (str):
 
         Keyword Args:
@@ -234,6 +232,7 @@ class MergeResult(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            summary (MergeResultSummary): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -259,7 +258,6 @@ class MergeResult(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.summary = summary
         self.reference = reference
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
