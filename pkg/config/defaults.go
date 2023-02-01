@@ -44,6 +44,8 @@ func setDefaults(local bool) {
 	viper.SetDefault("auth.logout_redirect_url", "/auth/login")
 	viper.SetDefault("auth.login_duration", 7*24*time.Hour)
 
+	viper.SetDefault("auth.ui_config.rbac", "simplified")
+
 	viper.SetDefault("blockstore.local.path", "~/lakefs/data/block")
 	viper.SetDefault("blockstore.s3.region", "us-east-1")
 	viper.SetDefault("blockstore.s3.streaming_chunk_size", 2<<19)          // 1MiB by default per chunk

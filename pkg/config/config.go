@@ -176,6 +176,9 @@ type Config struct {
 		OIDC              OIDC
 		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
 		LoginDuration     time.Duration `mapstructure:"login_duration"`
+		UIConfig          struct {
+			RBAC string `mapstructure:"rbac"`
+		} `mapstructure:"ui_config"`
 	}
 	Blockstore struct {
 		Type                   string `mapstructure:"type" validate:"required"`
