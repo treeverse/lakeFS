@@ -29,8 +29,8 @@ const (
 	_1MiB      = 1024 * 1024
 	MaxBuffers = 1
 	// udcCacheSize - Arbitrary number: exceeding this number means that in the expiry timeframe we requested pre-signed urls from
-	// more the 30 different accounts which is highly unlikely
-	udcCacheSize = 30
+	// more the 5000 different accounts which is highly unlikely
+	udcCacheSize = 5000
 
 	URLTemplate = "https://%s.blob.core.windows.net/"
 )

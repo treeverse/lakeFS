@@ -13,8 +13,6 @@ import (
 	"strings"
 	"testing"
 
-	"golang.org/x/exp/slices"
-
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -23,6 +21,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"golang.org/x/exp/slices"
 )
 
 const mainBranch = "main"
