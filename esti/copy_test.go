@@ -74,7 +74,6 @@ func TestCopyObject(t *testing.T) {
 		requireBlockstoreType(t, block.BlockstoreTypeAzure)
 		importPath := strings.Replace(azureImportPath, "esti", azureAbortAccount, 1)
 		importTestData(t, ctx, client, repo, importPath)
-		var err error
 		res, err := client.StatObjectWithResponse(ctx, repo, ingestionBranch, &api.StatObjectParams{
 			Path: largeObject,
 		})
@@ -88,12 +87,13 @@ func TestCopyObject(t *testing.T) {
 		var (
 			wg       sync.WaitGroup
 			copyResp *api.CopyObjectResponse
+			copyErr  error
 		)
 		// Run copy object async and cancel context after 5 seconds
 		go func() {
 			wg.Add(1)
 			defer wg.Done()
-			copyResp, err = client.CopyObjectWithResponse(cancelCtx, repo, "main", &api.CopyObjectParams{
+			copyResp, copyErr = client.CopyObjectWithResponse(cancelCtx, repo, "main", &api.CopyObjectParams{
 				DestPath: destPath,
 			}, api.CopyObjectJSONRequestBody{
 				SrcPath: largeObject,
@@ -104,7 +104,7 @@ func TestCopyObject(t *testing.T) {
 		time.Sleep(5 * time.Second)
 		cancel()
 		wg.Wait()
-		require.ErrorIs(t, err, context.Canceled)
+		require.ErrorIs(t, copyErr, context.Canceled)
 		require.Nil(t, copyResp)
 
 		// Verify object doesn't exist
