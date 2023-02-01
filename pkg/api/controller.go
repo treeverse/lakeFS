@@ -3512,13 +3512,12 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !c.Config.IsAuthTypeAPI() && savedState == auth.SetupStateNotInitialized {
-		c.Collector.CollectEvent(stats.Event{Class: "global", Name: "preinit", Client: httputil.GetRequestLakeFSClient(r)})
-	}
 	state := string(savedState)
 	// no need to create an admin user if users are managed externally
 	if c.Config.IsAuthTypeAPI() {
 		state = string(auth.SetupStateInitialized)
+	} else if savedState == auth.SetupStateNotInitialized {
+		c.Collector.CollectEvent(stats.Event{Class: "global", Name: "preinit", Client: httputil.GetRequestLakeFSClient(r)})
 	}
 	response := SetupState{
 		State:            swag.String(state),
