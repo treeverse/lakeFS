@@ -35,6 +35,12 @@ Bug fix:
 - Reduce the use of specific catalog errors to fix missing checks (#4995)
 - Fix graveler to work with empty key (#4986)
 
+## v0.89.1
+
+Bug fixes:
+
+- Fix missing path for if-none-match in putObject #5156
+
 ## v0.89.0
 
 What's new:
