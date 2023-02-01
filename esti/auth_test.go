@@ -15,7 +15,6 @@ import (
 
 // Test Admin Policies: AuthFullAccess, ExportSetConfiguration, FSFullAccess, RepoManagementFullAccess
 func TestAdminPolicies(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	adminClient := client
@@ -69,7 +68,6 @@ func TestAdminPolicies(t *testing.T) {
 
 // Test Super User Policies: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestSuperUserPolicies(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	ctx, logger, repo := setupTest(t)
 	gid := "SuperUsers"
 
@@ -120,7 +118,6 @@ func TestSuperUserPolicies(t *testing.T) {
 
 // Test Developer Policies: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestDeveloperPolicies(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	ctx, logger, repo := setupTest(t)
 	gid := "Developers"
 
@@ -166,7 +163,6 @@ func TestDeveloperPolicies(t *testing.T) {
 
 // Test Viewer Policies: AuthManageOwnCredentials, FSReadAll
 func TestViewerPolicies(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	ctx, logger, repo := setupTest(t)
 	gid := "Viewers"
 

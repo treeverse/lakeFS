@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
@@ -27,25 +28,32 @@ const (
 	idSuffix   = "_id"
 	_1MiB      = 1024 * 1024
 	MaxBuffers = 1
+	// udcCacheSize - Arbitrary number: exceeding this number means that in the expiry timeframe we requested pre-signed urls from
+	// more the 5000 different accounts which is highly unlikely
+	udcCacheSize = 5000
 
 	URLTemplate = "https://%s.blob.core.windows.net/"
 )
 
 type Adapter struct {
-	clientCache     *ClientContainerCache
+	clientCache     *ClientCache
 	preSignedExpiry time.Duration
 }
 
-func NewAdapter(params params.Azure) *Adapter {
+func NewAdapter(params params.Azure) (*Adapter, error) {
+	logging.Default().WithField("type", "azure").Info("initialized blockstore adapter")
 	preSignedExpiry := params.PreSignedExpiry
 	if preSignedExpiry == 0 {
 		preSignedExpiry = block.DefaultPreSignExpiryDuration
 	}
-
-	return &Adapter{
-		clientCache:     NewCache(params),
-		preSignedExpiry: preSignedExpiry,
+	cache, err := NewCache(params)
+	if err != nil {
+		return nil, err
 	}
+	return &Adapter{
+		clientCache:     cache,
+		preSignedExpiry: preSignedExpiry,
+	}, nil
 }
 
 type BlobURLInfo struct {
@@ -202,7 +210,7 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	return a.Download(ctx, obj, 0, blockblob.CountToEnd)
 }
 
-func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
 	permissions := sas.BlobPermissions{Read: true}
 	if mode == block.PreSignModeWrite {
 		permissions = sas.BlobPermissions{
@@ -211,25 +219,42 @@ func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer, mo
 			Write: true,
 		}
 	}
-	return a.getPreSignedURL(obj, permissions)
+	return a.getPreSignedURL(ctx, obj, permissions)
 }
 
-func (a *Adapter) getPreSignedURL(obj block.ObjectPointer, permissions sas.BlobPermissions) (string, error) {
+func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions sas.BlobPermissions) (string, error) {
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return "", err
 	}
 
-	containerClient, err := a.clientCache.NewContainerClient(qualifiedKey.StorageAccountName, qualifiedKey.ContainerName)
+	// Use shared credential for clients initialized with storage access key
+	if qualifiedKey.StorageAccountName == a.clientCache.params.StorageAccount && a.clientCache.params.StorageAccessKey != "" {
+		container, err := a.clientCache.NewContainerClient(qualifiedKey.StorageAccountName, qualifiedKey.ContainerName)
+		if err != nil {
+			return "", err
+		}
+		return container.NewBlobClient(qualifiedKey.BlobURL).GetSASURL(permissions, time.Time{}, a.newPreSignedTime())
+	}
+
+	urlExpiry := a.newPreSignedTime()
+	udc, err := a.clientCache.NewUDC(ctx, qualifiedKey.StorageAccountName, &urlExpiry)
 	if err != nil {
 		return "", err
 	}
 
-	blobURL := containerClient.NewBlobClient(qualifiedKey.BlobURL)
-	u, err := blobURL.GetSASURL(permissions, time.Time{}, a.newPreSignedTime())
+	// Create Blob Signature Values with desired permissions and sign with user delegation credential
+	sasQueryParams, err := sas.BlobSignatureValues{
+		Protocol:      sas.ProtocolHTTPS,
+		ExpiryTime:    urlExpiry,
+		Permissions:   to.Ptr(permissions).String(),
+		ContainerName: qualifiedKey.ContainerName,
+		BlobName:      qualifiedKey.BlobURL,
+	}.SignWithUserDelegation(udc)
 	if err != nil {
 		return "", err
 	}
+	u := fmt.Sprintf("%s/%s?%s", qualifiedKey.ContainerURL, qualifiedKey.BlobURL, sasQueryParams.Encode())
 
 	return u, nil
 }
@@ -380,10 +405,6 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	if err != nil {
 		return err
 	}
-	qualifiedSourceKey, err := resolveBlobURLInfo(sourceObj)
-	if err != nil {
-		return err
-	}
 
 	destContainerClient, err := a.clientCache.NewContainerClient(qualifiedDestinationKey.StorageAccountName, qualifiedDestinationKey.ContainerName)
 	if err != nil {
@@ -391,22 +412,80 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	}
 	destClient := destContainerClient.NewBlobClient(qualifiedDestinationKey.BlobURL)
 
-	srcContainerClient, err := a.clientCache.NewContainerClient(qualifiedSourceKey.StorageAccountName, qualifiedSourceKey.ContainerName)
-	if err != nil {
-		return err
-	}
-	sourceClient := srcContainerClient.NewBlobClient(qualifiedSourceKey.BlobURL)
-
-	sasKey, err := sourceClient.GetSASURL(sas.BlobPermissions{
-		Read: true,
-	}, time.Time{}, a.newPreSignedTime())
+	sasKey, err := a.GetPreSignedURL(ctx, sourceObj, block.PreSignModeRead)
 	if err != nil {
 		return err
 	}
 
-	// TODO (niro): copy is limited to 256MB, should we handle it somehow?
+	// Optimistic flow - try to copy synchronously
 	_, err = destClient.CopyFromURL(ctx, sasKey, nil)
-	return err
+	if err == nil {
+		return nil
+	}
+	// Azure API (backend) returns ambiguous error code which requires us to parse the error message to understand what is the nature of the error
+	// See: https://github.com/Azure/azure-sdk-for-go/issues/19880
+	if !bloberror.HasCode(err, bloberror.CannotVerifyCopySource) ||
+		!strings.Contains(err.Error(), "The source request body for synchronous copy is too large and exceeds the maximum permissible limit") {
+		return err
+	}
+
+	// Blob too big for synchronous copy. Perform async copy
+	logger := a.log(ctx).WithFields(logging.Fields{
+		"sourceObj": sourceObj.Identifier,
+		"destObj":   destinationObj.Identifier,
+	})
+	logger.Debug("Perform async copy")
+	res, err := destClient.StartCopyFromURL(ctx, sasKey, nil)
+	if err != nil {
+		return err
+	}
+	copyStatus := res.CopyStatus
+	if copyStatus == nil {
+		return fmt.Errorf("%w: failed to get copy status", block.ErrAsyncCopyFailed)
+	}
+
+	progress := ""
+	const asyncPollInterval = 5 * time.Second
+	for {
+		select {
+		case <-ctx.Done():
+			logger.WithField("copy_progress", progress).Warn("context canceled, aborting copy")
+			// Context canceled - perform abort on copy use a different context for the abort
+			_, err := destClient.AbortCopyFromURL(context.Background(), *res.CopyID, nil)
+			if err != nil {
+				logger.WithError(err).Error("failed to abort copy")
+			}
+			return ctx.Err()
+
+		case <-time.After(asyncPollInterval):
+			p, err := destClient.GetProperties(ctx, nil)
+			if err != nil {
+				return err
+			}
+			copyStatus = p.CopyStatus
+			if copyStatus == nil {
+				return fmt.Errorf("%w: failed to get copy status", block.ErrAsyncCopyFailed)
+			}
+			progress = *p.CopyProgress
+			switch *copyStatus {
+			case blob.CopyStatusTypeSuccess:
+				logger.WithField("object_properties", p).Debug("Async copy successful")
+				return nil
+
+			case blob.CopyStatusTypeAborted:
+				return fmt.Errorf("%w: unexpected abort", block.ErrAsyncCopyFailed)
+
+			case blob.CopyStatusTypeFailed:
+				return fmt.Errorf("%w: copy status failed", block.ErrAsyncCopyFailed)
+
+			case blob.CopyStatusTypePending:
+				logger.WithField("copy_progress", progress).Debug("Copy pending")
+
+			default:
+				return fmt.Errorf("%w: invalid copy status: %s", block.ErrAsyncCopyFailed, *copyStatus)
+			}
+		}
+	}
 }
 
 func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
