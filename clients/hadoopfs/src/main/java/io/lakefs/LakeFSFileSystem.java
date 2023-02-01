@@ -456,6 +456,7 @@ public class LakeFSFileSystem extends FileSystem {
                         creationReq);
             } catch (ApiException e) {
                 if (e.getCode() != HttpStatus.SC_INTERNAL_SERVER_ERROR ||
+                        e.getResponseBody() == null ||
                         !e.getResponseBody().contains("invalid API endpoint")) {
                     throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst + ", failed to copy object", e);
                 }
