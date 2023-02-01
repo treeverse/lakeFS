@@ -55,6 +55,7 @@
 # Docs
 /docs/_site/
 /docs/.jekyll-metadata
+/docs/.jekyll-bundle-cache
 
 # terraform
 # Local .terraform directories

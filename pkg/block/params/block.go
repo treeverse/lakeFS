@@ -29,15 +29,18 @@ type S3 struct {
 	SkipVerifyCertificateTestOnly bool
 	ServerSideEncryption          string
 	ServerSideEncryptionKmsKeyID  string
+	PreSignedExpiry               time.Duration
 }
 
 type GS struct {
 	CredentialsFile string
 	CredentialsJSON string
+	PreSignedExpiry time.Duration
 }
 
 type Azure struct {
 	StorageAccount   string
 	StorageAccessKey string
 	TryTimeout       time.Duration
+	PreSignedExpiry  time.Duration
 }

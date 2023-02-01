@@ -35,25 +35,28 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
 
 1. Install the required dependencies for your OS:
    1. [Git](https://git-scm.com/downloads)
-   1. [GNU make](https://www.gnu.org/software/make/) (probably best to install from your OS package manager such as apt or brew)
+   1. [GNU make](https://www.gnu.org/software/make/) (probably best to install from your OS package manager such as [apt](https://en.wikipedia.org/wiki/APT_(software)) or [brew](https://brew.sh/))
    1. [Docker](https://docs.docker.com/get-docker/)
    1. [Go](https://golang.org/doc/install)
    1. [Node.js & npm](https://www.npmjs.com/get-npm)
    1. [Maven](https://maven.apache.org/) to build and test Spark client codes.
+   1. Java 8
+     * Apple M1 users can install this from [Azul Zulu Builds for Java JDK](https://www.azul.com/downloads/?package=jdk). Builds for Intel-based Macs are available from [java.com](https://www.java.com/en/download/help/mac_install.html).
    1. *Optional* - [PostgreSQL 11](https://www.postgresql.org/docs/11/tutorial-install.html) (useful for running and debugging locally)
 
-   * With Apple M1, you can install Java from [Azul Zulu Builds for Java JDK](https://www.azul.com/downloads/?package=jdk).
+1. [Clone](https://github.com/git-guides/git-clone) the [repository from GitHub](https://github.com/treeverse/lakeFS). 
 
-1. Clone the repository from https://github.com/treeverse/lakeFS (gives you read-only access to the repository. To contribute, see the next section).
+    _This gives you read-only access to the repository. To contribute, see the next section._
+
 1. Build the project:
 
    ```shell
    make build
    ```
 
-Note: Make build won't work for Windows user for building lakeFS.
+   _Note: `make build` won't work for Windows users._
 
-1. Make sure tests are passing:
+1. Make sure tests are passing. The following should not return any errors: 
 
    ```shell
    make test
@@ -62,8 +65,8 @@ Note: Make build won't work for Windows user for building lakeFS.
 ## Before creating a pull request
 
 1. Review this document in full.
-1. Make sure there's an open issue on GitHub that this pull request addresses, and that it isn't labeled `x/wontfix`.
-1. Fork the [lakeFS repository](https://github.com/treeverse/lakeFS).
+1. Make sure there's an open [issue on GitHub](https://github.com/treeverse/lakeFS/issues) that this pull request addresses, and that it isn't labeled `x/wontfix`.
+1. [Fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo) the [lakeFS repository](https://github.com/treeverse/lakeFS).
 1. If you're adding new functionality, create a new branch named `feature/<DESCRIPTIVE NAME>`.
 1. If you're fixing a bug, create a new branch named `fix/<DESCRIPTIVE NAME>-<ISSUE NUMBER>`.
 
@@ -126,16 +129,48 @@ Customizing the lakeFS docs site should follow the following guidelines: [Just T
 * You can explain things better by including examples. Show, not tell. Use illustrations, images, gifs, code snippets, etc.
 * Establish a visual hierarchy to help people quickly find the information they need. Use text formatting to create levels of title and subtitle (such as h1 to h6 headings in HTML).
 
-### Test your changes localy
-To render the documentation locally and preview changes, use the following command and [browse the documentation locally](http://localhost:4000):
+### Test your changes locally
 
-```sh
-cd docs
-docker run --rm -p 4000:4000 --volume="$PWD:/srv/jekyll:Z" -it jekyll/jekyll:3.8 jekyll serve
-```
+To render the documentation locally and preview changes you can run the Jeykll server under Docker. 
 
+1. Launch the Docker container:
 
+   ```sh
+   docker run --rm \
+              --name lakefs_docs \
+              --publish 4000:4000 --publish 35729:35729 \
+              --volume="$PWD/docs:/srv/jekyll:Z" \
+              --volume="$PWD/docs/.jekyll-bundle-cache:/usr/local/bundle:Z" \
+              --interactive --tty \
+              jekyll/jekyll:3.8 \
+              jekyll serve --livereload
+   ```
 
+2. The first time you run the container it will need to download dependencies and will take several minutes to be ready. 
+
+   Once you see the following output, the docs server is ready to [open in your web browser](http://localhost:4000): 
+
+   ```
+   Server running... press ctrl-c to stop.
+   ```
+
+3. When you make a change to a page's source the server will automatically rebuild the page which will be shown in the server log by this entry:
+
+   ```
+   Regenerating: 1 file(s) changed at 2023-01-26 08:34:47
+                  contributing.md
+   Remote Theme: Using theme pmarsceill/just-the-docs
+   ```
+
+   This can take a short while—you'll see something like this in the server's output when it's done. 
+   
+   ```
+   ...done in 34.714073461 seconds.
+   ```
+
+   Your page will automatically reload to show the changes.
+
+_If you are doing lots of work on the docs you may want to leave the Docker container in place (so that you don't have to wait for the dependencies to load each time you re-create it). To do this replace the `--rm` with `--detach` in the `docker run` command, and use `docker logs -f lakefs_docs` to view the server log._
 
 ### CHANGELOG.md
 

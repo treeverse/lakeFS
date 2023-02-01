@@ -34,17 +34,20 @@ const (
 )
 
 type Adapter struct {
-	preSignedURLDurationGenerator func() time.Time
-	clientCache                   *ClientContainerCache
+	clientCache     *ClientContainerCache
+	preSignedExpiry time.Duration
 }
 
 func NewAdapter(params params.Azure) *Adapter {
 	logging.Default().WithField("type", "azure").Info("initialized blockstore adapter")
+	preSignedExpiry := params.PreSignedExpiry
+	if preSignedExpiry == 0 {
+		preSignedExpiry = block.DefaultPreSignExpiryDuration
+	}
+
 	return &Adapter{
-		clientCache: NewCache(params),
-		preSignedURLDurationGenerator: func() time.Time {
-			return time.Now().UTC().Add(block.DefaultPreSignExpiryDuration)
-		},
+		clientCache:     NewCache(params),
+		preSignedExpiry: preSignedExpiry,
 	}
 }
 
@@ -232,7 +235,7 @@ func (a *Adapter) getPreSignedURL(obj block.ObjectPointer, permissions sas.BlobP
 			if err != nil {
 				return "", err
 			}
-			return container.NewBlobClient(qualifiedKey.BlobURL).GetSASURL(permissions, time.Time{}, a.preSignedURLDurationGenerator())
+			return container.NewBlobClient(qualifiedKey.BlobURL).GetSASURL(permissions, time.Time{}, a.newPreSignedTime())
 		}
 	}
 
@@ -240,7 +243,7 @@ func (a *Adapter) getPreSignedURL(obj block.ObjectPointer, permissions sas.BlobP
 	currentTime := time.Now().UTC().Add(-10 * time.Second)
 	info := service.KeyInfo{
 		Start:  to.Ptr(currentTime.UTC().Format(sas.TimeFormat)),
-		Expiry: to.Ptr(a.preSignedURLDurationGenerator().UTC().Format(sas.TimeFormat)),
+		Expiry: to.Ptr(a.newPreSignedTime().Format(sas.TimeFormat)),
 	}
 
 	udc, err := svc.GetUserDelegationCredential(context.Background(), info, nil)
@@ -251,7 +254,7 @@ func (a *Adapter) getPreSignedURL(obj block.ObjectPointer, permissions sas.BlobP
 	// Create Blob Signature Values with desired permissions and sign with user delegation credential
 	sasQueryParams, err := sas.BlobSignatureValues{
 		Protocol:      sas.ProtocolHTTPS,
-		ExpiryTime:    a.preSignedURLDurationGenerator().UTC(),
+		ExpiryTime:    a.newPreSignedTime(),
 		Permissions:   to.Ptr(permissions).String(),
 		ContainerName: qualifiedKey.ContainerName,
 		BlobName:      qualifiedKey.BlobURL,
@@ -605,4 +608,8 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 
 func (a *Adapter) RuntimeStats() map[string]string {
 	return nil
+}
+
+func (a *Adapter) newPreSignedTime() time.Time {
+	return time.Now().UTC().Add(a.preSignedExpiry)
 }

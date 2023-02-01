@@ -22,6 +22,7 @@ import (
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	pyramidparams "github.com/treeverse/lakefs/pkg/pyramid/params"
+	"go.uber.org/ratelimit"
 )
 
 var (
@@ -194,17 +195,21 @@ type Config struct {
 			SkipVerifyCertificateTestOnly bool          `mapstructure:"skip_verify_certificate_test_only"`
 			ServerSideEncryption          string        `mapstructure:"server_side_encryption"`
 			ServerSideEncryptionKmsKeyID  string        `mapstructure:"server_side_encryption_kms_key_id"`
-		}
+			PreSignedExpiry               time.Duration `mapstructure:"pre_signed_expiry"`
+		} `mapstructure:"s3"`
 		Azure *struct {
 			TryTimeout       time.Duration `mapstructure:"try_timeout"`
 			StorageAccount   string        `mapstructure:"storage_account"`
 			StorageAccessKey string        `mapstructure:"storage_access_key"`
-		}
+			AuthMethod       string        `mapstructure:"auth_method"`
+			PreSignedExpiry  time.Duration `mapstructure:"pre_signed_expiry"`
+		} `mapstructure:"azure"`
 		GS *struct {
-			S3Endpoint      string `mapstructure:"s3_endpoint"`
-			CredentialsFile string `mapstructure:"credentials_file"`
-			CredentialsJSON string `mapstructure:"credentials_json"`
-		}
+			S3Endpoint      string        `mapstructure:"s3_endpoint"`
+			CredentialsFile string        `mapstructure:"credentials_file"`
+			CredentialsJSON string        `mapstructure:"credentials_json"`
+			PreSignedExpiry time.Duration `mapstructure:"pre_signed_expiry"`
+		} `mapstructure:"gs"`
 	}
 	Committed struct {
 		LocalCache struct {
@@ -237,6 +242,9 @@ type Config struct {
 			Expiry time.Duration `mapstructure:"expiry"`
 			Jitter time.Duration `mapstructure:"jitter"`
 		} `mapstructure:"commit_cache"`
+		Background struct {
+			RateLimit int `mapstructure:"rate_limit"`
+		} `mapstructure:"background"`
 	} `mapstructure:"graveler"`
 	Gateways struct {
 		S3 struct {
@@ -457,6 +465,7 @@ func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 		SkipVerifyCertificateTestOnly: c.Blockstore.S3.SkipVerifyCertificateTestOnly,
 		ServerSideEncryption:          c.Blockstore.S3.ServerSideEncryption,
 		ServerSideEncryptionKmsKeyID:  c.Blockstore.S3.ServerSideEncryptionKmsKeyID,
+		PreSignedExpiry:               c.Blockstore.S3.PreSignedExpiry,
 	}, nil
 }
 
@@ -474,6 +483,7 @@ func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {
 	return blockparams.GS{
 		CredentialsFile: c.Blockstore.GS.CredentialsFile,
 		CredentialsJSON: c.Blockstore.GS.CredentialsJSON,
+		PreSignedExpiry: c.Blockstore.GS.PreSignedExpiry,
 	}, nil
 }
 
@@ -481,7 +491,9 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 	return blockparams.Azure{
 		StorageAccount:   c.Blockstore.Azure.StorageAccount,
 		StorageAccessKey: c.Blockstore.Azure.StorageAccessKey,
+		AuthMethod:       c.Blockstore.Azure.AuthMethod,
 		TryTimeout:       c.Blockstore.Azure.TryTimeout,
+		PreSignedExpiry:  c.Blockstore.Azure.PreSignedExpiry,
 	}, nil
 }
 
@@ -549,4 +561,12 @@ func (c *Config) UISnippets() []apiparams.CodeSnippet {
 		})
 	}
 	return snippets
+}
+
+func (c *Config) NewGravelerBackgroundLimiter() ratelimit.Limiter {
+	rateLimit := c.Graveler.Background.RateLimit
+	if rateLimit == 0 {
+		return ratelimit.NewUnlimited()
+	}
+	return ratelimit.New(rateLimit)
 }

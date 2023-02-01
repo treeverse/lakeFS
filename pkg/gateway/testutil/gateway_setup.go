@@ -50,6 +50,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 		Config:       conf,
 		KVStore:      storeMessage,
 		PathProvider: upload.DefaultPathProvider,
+		Limiter:      conf.NewGravelerBackgroundLimiter(),
 	})
 	testutil.MustDo(t, "build catalog", err)
 	t.Cleanup(func() {
