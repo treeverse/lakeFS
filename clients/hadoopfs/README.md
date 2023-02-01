@@ -5,4 +5,4 @@ It uses the lakeFS server for metadata operations only.
 
 ## Publishing
 
-Use the Github [Action](https://github.com/treeverse/lakeFS/actions/workflows/publish-hadoop-lakefs.yaml) to publish a new version to Maven Central.
+Follow the [HadoopFS release checklist](https://github.com/treeverse/dev/blob/main/pages/lakefs-clients-release.md#lakefs-hadoop-filesystem)

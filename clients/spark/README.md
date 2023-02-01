@@ -81,41 +81,8 @@ spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v
 
 ## Publishing a new version
 
-### Update version
-First, we need to update the version of the client in `build.sbt`. Follow [semVer](https://semver.org/), and update the value of `projectVersion`.
+Follow the [Aprk client release checklist](https://github.com/treeverse/dev/blob/main/pages/lakefs-clients-release.md#spark-metadata-client)
 
-### Publishing
-
-We publish the client to Sonatype, and an Uber-Jar of the client to S3.
-
-To do it, you should trigger the [GitHub Action](https://github.com/treeverse/lakeFS/actions/workflows/publish-spark-metadata-client.yaml).
-
-#### Manual publish
-
-1. Have the following files ready:
-
-   1. `~/.sbt/sonatype_credentials`, with the content:
-      ```
-       realm=Sonatype Nexus Repository Manager
-       host=s01.oss.sonatype.org
-       user=<your sonatype username>
-       password=<your sonatype password>
-      ```
-
-   1. `~/.sbt/credentials`, with the content:
-      ```
-      realm=Amazon S3
-      host=treeverse-clients-us-east.s3.amazonaws.com
-      user=<AWS access key>
-      password=<AWS secret key>
-      ```
-1. Increment the version in the build.sbt file.
-
-1. From the lakeFS project root, run:
-   ```bash
-   make publish-scala
-   ```
-   
 ## Debugging
 
 To debug the Exporter or the Garbage Collector using your IDE you can use a remote JVM debugger. You can follow [these](https://sparkbyexamples.com/spark/how-to-debug-spark-application-locally-or-remote/) instructions to connect one. 
