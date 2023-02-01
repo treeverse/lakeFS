@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	lru "github.com/hnlq715/golang-lru"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
@@ -29,26 +31,36 @@ const (
 	idSuffix   = "_id"
 	_1MiB      = 1024 * 1024
 	MaxBuffers = 1
+	// udcCacheSize - Arbitrary number: exceeding this number means that in the expiry timeframe we requested pre-signed urls from
+	// more the 30 different accounts which is highly unlikely
+	udcCacheSize = 30
 
 	URLTemplate = "https://%s.blob.core.windows.net/"
 )
 
 type Adapter struct {
-	clientCache     *ClientContainerCache
+	clientCache *ClientCache
+	// udCredCache - User Delegation Credential cache used to reduce POST requests while creating pre-signed URLs
+	udCredCache     *lru.ARCCache
 	preSignedExpiry time.Duration
 }
 
-func NewAdapter(params params.Azure) *Adapter {
+func NewAdapter(params params.Azure) (*Adapter, error) {
 	logging.Default().WithField("type", "azure").Info("initialized blockstore adapter")
 	preSignedExpiry := params.PreSignedExpiry
 	if preSignedExpiry == 0 {
 		preSignedExpiry = block.DefaultPreSignExpiryDuration
 	}
+	l, err := lru.NewARC(udcCacheSize)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Adapter{
 		clientCache:     NewCache(params),
+		udCredCache:     l,
 		preSignedExpiry: preSignedExpiry,
-	}
+	}, nil
 }
 
 type BlobURLInfo struct {
@@ -241,14 +253,25 @@ func (a *Adapter) getPreSignedURL(obj block.ObjectPointer, permissions sas.BlobP
 
 	// Otherwise assume using role based credentials and build signed URL using user delegation credentials
 	currentTime := time.Now().UTC().Add(-10 * time.Second)
+	urlExpiry := a.newPreSignedTime()
+	// UDC expiry 2 time of pre-sign expiry
+	udcExpiry := urlExpiry.Add(a.preSignedExpiry)
 	info := service.KeyInfo{
 		Start:  to.Ptr(currentTime.UTC().Format(sas.TimeFormat)),
-		Expiry: to.Ptr(a.newPreSignedTime().Format(sas.TimeFormat)),
+		Expiry: to.Ptr(udcExpiry.Format(sas.TimeFormat)),
 	}
-
-	udc, err := svc.GetUserDelegationCredential(context.Background(), info, nil)
-	if err != nil {
-		return "", err
+	var udc *service.UserDelegationCredential
+	// Check udcCache
+	res, ok := a.udCredCache.Get(qualifiedKey.StorageAccountName)
+	if !ok {
+		udc, err = svc.GetUserDelegationCredential(context.Background(), info, nil)
+		if err != nil {
+			return "", err
+		}
+		// UDC expires after 2 * a.preSignedExpiry but cache entry expires after a.preSignedExpiry
+		a.udCredCache.AddEx(qualifiedKey.StorageAccountName, udc, a.preSignedExpiry)
+	} else {
+		udc = res.(*service.UserDelegationCredential)
 	}
 
 	// Create Blob Signature Values with desired permissions and sign with user delegation credential

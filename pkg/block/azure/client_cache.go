@@ -12,14 +12,14 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/params"
 )
 
-type ClientContainerCache struct {
+type ClientCache struct {
 	serviceToClient   *xsync.MapOf[string, *service.Client]
 	containerToClient *xsync.MapOf[string, *container.Client]
 	params            params.Azure
 }
 
-func NewCache(p params.Azure) *ClientContainerCache {
-	return &ClientContainerCache{
+func NewCache(p params.Azure) *ClientCache {
+	return &ClientCache{
 		serviceToClient:   xsync.NewMapOf[*service.Client](),
 		containerToClient: xsync.NewMapOf[*container.Client](),
 		params:            p,
@@ -30,7 +30,7 @@ func mapKey(storageAccount, containerName string) string {
 	return fmt.Sprintf("%s#%s", storageAccount, containerName)
 }
 
-func (c *ClientContainerCache) NewContainerClient(storageAccount, containerName string) (*container.Client, error) {
+func (c *ClientCache) NewContainerClient(storageAccount, containerName string) (*container.Client, error) {
 	key := mapKey(storageAccount, containerName)
 
 	var err error
@@ -49,7 +49,7 @@ func (c *ClientContainerCache) NewContainerClient(storageAccount, containerName 
 	return cl, nil
 }
 
-func (c *ClientContainerCache) NewServiceClient(storageAccount string) (*service.Client, error) {
+func (c *ClientCache) NewServiceClient(storageAccount string) (*service.Client, error) {
 	p := c.params
 	// Use StorageAccessKey to initialize storage account client only if it was provided for this given storage account
 	// Otherwise fall back to the default credentials
