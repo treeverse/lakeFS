@@ -29,28 +29,20 @@ lakeFS supports the following storage account types:
 Other Azure storage types have not been tested, and specifically Data Lake Storage Gen1 is not supported.  
 For more information see: [Introduction to Azure Storage](https://learn.microsoft.com/en-us/azure/storage/common/storage-introduction)
 
-## Create a database
-
-lakeFS metadata to synchronize actions in your repositories. This is done via a Key-Value interface that can be implemented on any DB engine, but lakeFS comes with several built-in driver implementations (You can read more about it [here](https://docs.lakefs.io/understand/how/kv.html).  
-One of these is a PostgreSQL implementation which can be used in the Azure ecosystem.
-We will show you how to create a database on Azure Database, but you can use any PostgreSQL database as long as it's accessible by your lakeFS installation.
-
-If you already have a database, take note of the connection string and skip to the [next step](#run-the-lakefs-server)
-
-1. Follow the official [Azure documentation](https://docs.microsoft.com/en-us/azure/postgresql/quickstart-create-server-database-portal){: target="_blank" } on how to create a PostgreSQL instance and connect to it.
-   Make sure that you're using PostgreSQL version >= 11.
-1. Once your Azure Database for PostgreSQL server is set up and the server is in the `Available` state, take note of the endpoint and username.
-   ![Azure postgres Connection String]({{ site.baseurl }}/assets/img/azure_postgres_conn.png)
-1. Make sure your Access control roles allow you to connect to the database instance.
-
 ## Authentication methods
 
-lakeFS supports two ways to authenticate with Azure - storage account based authentication, and identity based authentication.
+lakeFS supports two ways to authenticate with Azure:
+* **Storage account based authentication**
+* **Identity based authentication**
 
 ### Storage Account Credentials
 
-Storage account credentials can be passed directly to lakeFS by setting the `blockstore.azure.storage_account` & `blockstore.azure.storage_access_key` configuration parameters
-Please note that using this authentication method limits lakeFS to the scope of the given storage account. Specifically the following operations will not work:
+Storage account credentials can be set directly in the lakeFS configuration using the following parameters:
+
+* `blockstore.azure.storage_account`
+* `blockstore.azure.storage_access_key`  
+
+Please note that using this authentication method limits lakeFS to the scope of the given storage account. Specifically, **the following operations will not work**:
 
 1. Import of data from different storage accounts
 2. Copy/Read/Write of data that was imported from a different storage account
@@ -63,21 +55,21 @@ lakeFS uses environment variables to determine credentials to use for authentica
 2. Service Principal RBAC
 3. Azure CLI
 
-For deployments inside the Azure ecosystem it is recommended to use a managed identity
-More information on authentication method and environment variables can be found under [docs](https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication)
+For deployments inside the Azure ecosystem it is recommended to use a managed identity.  
+More information on authentication methods and environment variables can be found [here](https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication)
 
-### How to create Service Principal for Resource Group
+### How to Create Service Principal for Resource Group
 
 It is recommended to create a resource group that consists of all the resources lakeFS should have access to.
-Using a resource group will allow dynamic removal/addition of services from the group - 
-effectively providing/preventing access for lakeFS to these resources without requiring any changes in configuration in lakeFS or providing lakeFS with any additional credentials.
-The minimal role required for the service principal is "Storage Blob Data Contributor" 
+Using a resource group will allow dynamic removal/addition of services from the group, effectively providing/preventing 
+access for lakeFS to these resources without requiring any changes in configuration in lakeFS or providing lakeFS with any additional credentials.
+The minimal role required for the service principal is "Storage Blob Data Contributor"
 
-The following Azure CLI command creates a service principal for a resource group called "lakeFS" with permission to access (read/write/delete) 
+The following Azure CLI command creates a service principal for a resource group called "lakeFS" with permission to access (read/write/delete)
 Blob Storage resources in the resource group and with an expiry of 5 years
 
-```bash
-% az ad sp create-for-rbac \
+``` shell
+az ad sp create-for-rbac \
   --role "Storage Blob Data Contributor" \
   --scopes /subscriptions/XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX/resourceGroups/lakeFS --years 5
     
@@ -92,19 +84,32 @@ The output includes credentials that you must protect. Be sure that you do not i
 ```
 
 The command output should be used to populate the following environment variables:
-```bash
-   AZURE_CLIENT_ID      = $appId
-   AZURE_TENANT_ID      = $tenant
-   AZURE_CLIENT_SECRET  = $password
 
+```
+AZURE_CLIENT_ID      =  $appId
+AZURE_TENANT_ID      =  $tenant
+AZURE_CLIENT_SECRET  =  $password
 ````
 **Note:** Service Principal credentials have an expiry date and lakeFS will lose access to resources unless credentials are renewed on time.
 {: .note }
 
 
-**Note:** It is possible to provide both account based credentials and environment variables to lakeFS. In that case - lakeFS will use 
+**Note:** It is possible to provide both account based credentials and environment variables to lakeFS. In that case - lakeFS will use
 the account credentials for any access to data located in the given account, and will try to use the identity credentials for any data located outside the given account.
 {: .note }
+
+## Create a database
+
+lakeFS stores metadata in a database for its versioning engine. This is done via a Key-Value interface that can be implemented on any DB engine and lakeFS comes with several built-in driver implementations (You can read more about it [here](https://docs.lakefs.io/understand/how/kv.html)).  
+One of these is a PostgreSQL implementation which can be used in the Azure ecosystem.  
+We will show you how to create a database on Azure Database, but you can use any PostgreSQL database as long as it's accessible by your lakeFS installation.
+If you already have a database, take note of the connection string and skip to the [next step](#run-the-lakefs-server)
+
+1. Follow the official [Azure documentation](https://docs.microsoft.com/en-us/azure/postgresql/quickstart-create-server-database-portal){: target="_blank" } on how to create a PostgreSQL instance and connect to it.
+   Make sure that you're using PostgreSQL version >= 11.
+1. Once your Azure Database for PostgreSQL server is set up and the server is in the `Available` state, take note of the endpoint and username.
+   ![Azure postgres Connection String]({{ site.baseurl }}/assets/img/azure_postgres_conn.png)
+1. Make sure your Access control roles allow you to connect to the database instance.
 
 ## Run the lakeFS server
 
