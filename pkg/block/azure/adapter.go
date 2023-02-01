@@ -510,7 +510,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 				logger.WithField("copy_progress", progress).Debug("Copy pending")
 
 			default:
-				return fmt.Errorf("invalid copy status: %s", *copyStatus)
+				return fmt.Errorf("%w: invalid copy status: %s", block.ErrAsyncCopy, *copyStatus)
 			}
 		}
 	}
