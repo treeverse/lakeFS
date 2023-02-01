@@ -299,7 +299,6 @@ func TestMain(m *testing.M) {
 		params.AdminAccessKeyID = *adminAccessKeyID
 		params.AdminSecretAccessKey = *adminSecretAccessKey
 	}
-	viper.SetDefault("post_migrate", false)
 
 	logger, client, svc, endpointURL = testutil.SetupTestingEnv(&params)
 	azureStorageAccount = viper.GetString("azure_storage_account")

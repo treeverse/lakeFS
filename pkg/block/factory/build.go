@@ -63,7 +63,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 		if err != nil {
 			return nil, err
 		}
-		return azure.NewAdapter(p), nil
+		return azure.NewAdapter(p)
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
 			ErrInvalidBlockstoreType, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeTransient, block.BlockstoreTypeGS})

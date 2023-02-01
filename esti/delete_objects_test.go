@@ -15,7 +15,6 @@ import (
 )
 
 func TestDeleteObjects(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	const numOfObjects = 10
