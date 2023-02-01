@@ -40,6 +40,7 @@ docs/ImportApi.md
 docs/ImportPagination.md
 docs/IngestRangeCreationResponse.md
 docs/InlineObject1.md
+docs/LoginConfig.md
 docs/LoginInformation.md
 docs/Merge.md
 docs/MergeResult.md
@@ -150,6 +151,7 @@ lakefs_client/model/hook_run_list.py
 lakefs_client/model/import_pagination.py
 lakefs_client/model/ingest_range_creation_response.py
 lakefs_client/model/inline_object1.py
+lakefs_client/model/login_config.py
 lakefs_client/model/login_information.py
 lakefs_client/model/merge.py
 lakefs_client/model/merge_result.py
@@ -243,6 +245,7 @@ test/test_import_api.py
 test/test_import_pagination.py
 test/test_ingest_range_creation_response.py
 test/test_inline_object1.py
+test/test_login_config.py
 test/test_login_information.py
 test/test_merge.py
 test/test_merge_result.py

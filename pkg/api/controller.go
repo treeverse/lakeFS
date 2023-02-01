@@ -3521,6 +3521,11 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 		OidcEnabled:      swag.Bool(c.Config.Auth.OIDC.Enabled),
 		OidcDefaultLogin: swag.Bool(c.Config.Auth.OIDC.IsDefaultLogin),
 	}
+	if c.Config.Auth.UIConfig.RBAC == "external" {
+		response.LoginConfig = &LoginConfig{
+			RBAC: swag.String("external"),
+		}
+	}
 	writeResponse(w, r, http.StatusOK, response)
 }
 
