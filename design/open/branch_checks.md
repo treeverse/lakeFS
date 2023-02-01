@@ -36,7 +36,7 @@ sequenceDiagram
     user1->>lakeFS: commit1(branch_a)
     user1->>lakeFS: commit2(branch_a)
     user1->>lakeFS: commitN(branch_a)
-    user1->>lakeFS: check(branch_a)
+    user1->>lakeFS: check(branch_a) // will be dereferenced
     loop For every configured check
       lakeFS->>+External Executor: execute(event details, callback URL)
       External Executor->>-lakeFS: callback(status)
@@ -82,9 +82,9 @@ checks:
 
 #### Check triggering
 
-Checks are triggered when the `check(repository_id, source_branch_id)` endpoint is called in the lakeFS API.
+Checks are triggered when the `check(repository_id, ref_id)` endpoint is called in the lakeFS API.
+When running check() with a branch or tag, it will be dereferenced: checks are valid for a given commit ID.
 
-lakeFS will store the state of all checks that were initiated by this action for the given HEAD of `source_branch_id`.
 
 #### Check execution
 
@@ -110,7 +110,7 @@ stateDiagram-v2
 
 #### Retrying checks
 
-From the `lost` and `failed` statuses, a retry operation is available that will cause the execute function to run again.
+From the `lost` and `failed` statuses, users can trigger a retry operationthat will cause the execute function to run again for the given check.
 This is used when transient errors occur (or a timeout).
 
 #### Getting check status
@@ -141,6 +141,9 @@ Each execution will send a `callback_token` to the executing system (Airflow, fo
 ```
 
 Where metadata is a simple `Map<string, string>` mapping to be sent by the executing system.
+
+When lakeFS receives a callback, it checks that the provided token is the last one issued for that (check, commit). 
+Any previous token issued will be ignored.
 
 #### Merging into a protected branch
 
