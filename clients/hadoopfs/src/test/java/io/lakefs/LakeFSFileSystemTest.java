@@ -784,7 +784,7 @@ public class LakeFSFileSystemTest {
     }
 
     private void mockMissingCopyAPI() throws ApiException {
-        when(objectsApi.copyObject(any(), any(), any(), any())).thenThrow(new ApiException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "{\"message\":\"invalid API endpoint\"}"));
+        when(objectsApi.copyObject(any(), any(), any(), any())).thenThrow(new ApiException(HttpStatus.SC_INTERNAL_SERVER_ERROR, null, "{\"message\":\"invalid API endpoint\"}"));
         when(objectsApi.stageObject(any(), any(), any(), any())).thenReturn(new ObjectStats());
     }
 
