@@ -154,7 +154,7 @@ This could be done using a pre-merge hook that runs this validation, or at a hig
 
 #### CLI
 
-`lakectl check <ref uri>` to run the checks for the given ref
+`lakectl checks run <ref uri> [--id <check id>] ` to run the checks for the given ref
 
 `lakectl checks list <ref uri>` to show checks and their state for the given ref
 
