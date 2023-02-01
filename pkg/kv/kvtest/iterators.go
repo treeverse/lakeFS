@@ -18,9 +18,6 @@ const (
 func testPartitionIterator(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
 	store := ms(t, ctx)
-	sm := kv.StoreMessage{
-		Store: store,
-	}
 	m := []TestModel{
 		{Name: []byte("a")},
 		{Name: []byte("aa")},
@@ -31,12 +28,12 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 
 	// prepare data
 	for i := 0; i < len(m); i++ {
-		err := sm.SetMsg(ctx, firstPartitionKey, m[i].Name, &m[i])
+		err := kv.SetMsg(ctx, store, firstPartitionKey, m[i].Name, &m[i])
 		if err != nil {
 			t.Fatal("failed to set model", err)
 		}
 
-		err = sm.SetMsg(ctx, secondPartitionKey, m[i].Name, &m[i])
+		err = kv.SetMsg(ctx, store, secondPartitionKey, m[i].Name, &m[i])
 		if err != nil {
 			t.Fatal("failed to set model", err)
 		}
@@ -112,9 +109,6 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 func testPrimaryIterator(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
 	store := ms(t, ctx)
-	sm := kv.StoreMessage{
-		Store: store,
-	}
 	m := []TestModel{
 		{Name: []byte("a")},
 		{Name: []byte("aa")},
@@ -125,12 +119,12 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 
 	// prepare data
 	for i := 0; i < len(m); i++ {
-		err := sm.SetMsg(ctx, firstPartitionKey, m[i].Name, &m[i])
+		err := kv.SetMsg(ctx, store, firstPartitionKey, m[i].Name, &m[i])
 		if err != nil {
 			t.Fatal("failed to set model", err)
 		}
 
-		err = sm.SetMsg(ctx, secondPartitionKey, m[i].Name, &m[i])
+		err = kv.SetMsg(ctx, store, secondPartitionKey, m[i].Name, &m[i])
 		if err != nil {
 			t.Fatal("failed to set model", err)
 		}
@@ -258,9 +252,6 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 
 	// prepare data
 	store := ms(t, ctx)
-	sm := kv.StoreMessage{
-		Store: store,
-	}
 	m := []TestModel{
 		{Name: []byte("a"), JustAString: "one"},
 		{Name: []byte("b"), JustAString: "two"},
@@ -271,21 +262,21 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 
 	for i := 0; i < len(m); i++ {
 		primaryKey := append([]byte("name/"), m[i].Name...)
-		err := sm.SetMsg(ctx, firstPartitionKey, primaryKey, &m[i])
+		err := kv.SetMsg(ctx, store, firstPartitionKey, primaryKey, &m[i])
 		if err != nil {
 			t.Fatal("failed to set model", err)
 		}
 		secondaryKey := append([]byte("just_a_string/"), m[i].JustAString...)
-		err = sm.SetMsg(ctx, firstPartitionKey, secondaryKey, &kv.SecondaryIndex{PrimaryKey: primaryKey})
+		err = kv.SetMsg(ctx, store, firstPartitionKey, secondaryKey, &kv.SecondaryIndex{PrimaryKey: primaryKey})
 		if err != nil {
 			t.Fatal("failed to set model", err)
 		}
 	}
-	err := sm.SetMsg(ctx, secondPartitionKey, []byte("just_a_string/e"), &kv.SecondaryIndex{})
+	err := kv.SetMsg(ctx, store, secondPartitionKey, []byte("just_a_string/e"), &kv.SecondaryIndex{})
 	if err != nil {
 		t.Fatal("failed to set key", err)
 	}
-	err = sm.SetMsg(ctx, secondPartitionKey, []byte("just_a_string/f"), &kv.SecondaryIndex{PrimaryKey: []byte("name/no-name")})
+	err = kv.SetMsg(ctx, store, secondPartitionKey, []byte("just_a_string/f"), &kv.SecondaryIndex{PrimaryKey: []byte("name/no-name")})
 	if err != nil {
 		t.Fatal("failed to set model", err)
 	}

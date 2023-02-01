@@ -21,7 +21,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/mock"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -57,8 +56,7 @@ func TestMain(m *testing.M) {
 func setupService(t *testing.T, ctx context.Context) *auth.AuthService {
 	t.Helper()
 	kvStore := kvtest.GetStore(ctx, t)
-	storeMessage := &kv.StoreMessage{Store: kvStore}
-	return auth.NewAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+	return auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
 }
@@ -92,8 +90,7 @@ func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) st
 func TestAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
-	storeMessage := &kv.StoreMessage{Store: kvStore}
-	s := auth.NewAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+	s := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
 
@@ -143,8 +140,7 @@ func TestAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
 func TestAuthService_ListPaged(t *testing.T) {
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
-	storeMessage := &kv.StoreMessage{Store: kvStore}
-	s := auth.NewAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+	s := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
 
@@ -526,18 +522,17 @@ func BenchmarkKVAuthService_ListEffectivePolicies(b *testing.B) {
 	// setup user with policies for benchmark
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, b)
-	storeMessage := &kv.StoreMessage{Store: kvStore}
 
-	serviceWithoutCache := auth.NewAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+	serviceWithoutCache := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
-	serviceWithCache := auth.NewAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+	serviceWithCache := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: true,
 		Size:    1024,
 		TTL:     20 * time.Second,
 		Jitter:  3 * time.Second,
 	}, logging.Default())
-	serviceWithCacheLowTTL := auth.NewAuthService(storeMessage, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+	serviceWithCacheLowTTL := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: true,
 		Size:    1024,
 		TTL:     1 * time.Millisecond,

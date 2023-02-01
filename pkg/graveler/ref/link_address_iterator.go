@@ -18,9 +18,9 @@ type AddressTokenIterator struct {
 	closed        bool
 }
 
-func NewAddressTokenIterator(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord) (*AddressTokenIterator, error) {
+func NewAddressTokenIterator(ctx context.Context, store kv.Store, repo *graveler.RepositoryRecord) (*AddressTokenIterator, error) {
 	repoPartition := graveler.RepoPartition(repo)
-	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.LinkAddressData{}).ProtoReflect().Type(),
+	it, err := kv.NewPrimaryIterator(ctx, store, (&graveler.LinkAddressData{}).ProtoReflect().Type(),
 		repoPartition, []byte(graveler.LinkedAddressPath("")), kv.IteratorOptionsFrom([]byte("")))
 	if err != nil {
 		return nil, err
@@ -28,7 +28,7 @@ func NewAddressTokenIterator(ctx context.Context, store *kv.StoreMessage, repo *
 
 	return &AddressTokenIterator{
 		ctx:           ctx,
-		store:         store.Store,
+		store:         store,
 		it:            it,
 		repoPartition: repoPartition,
 		value:         nil,

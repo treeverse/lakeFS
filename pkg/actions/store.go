@@ -25,17 +25,17 @@ type Store interface {
 }
 
 type KVStore struct {
-	store kv.StoreMessage
+	store kv.Store
 }
 
-func NewActionsKVStore(store kv.StoreMessage) Store {
+func NewActionsKVStore(store kv.Store) Store {
 	return &KVStore{store: store}
 }
 
 func (kvs *KVStore) GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {
 	runKey := RunPath(repositoryID, runID)
 	m := RunResultData{}
-	_, err := kvs.store.GetMsg(ctx, PartitionKey, runKey, &m)
+	_, err := kv.GetMsg(ctx, kvs.store, PartitionKey, runKey, &m)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = fmt.Errorf("%s: %w", err, ErrNotFound) // Wrap error for compatibility with DBService
@@ -48,7 +48,7 @@ func (kvs *KVStore) GetRunResult(ctx context.Context, repositoryID string, runID
 func (kvs *KVStore) GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*TaskResult, error) {
 	runKey := kv.FormatPath(TasksPath(repositoryID, runID), hookRunID)
 	m := TaskResultData{}
-	_, err := kvs.store.GetMsg(ctx, PartitionKey, []byte(runKey), &m)
+	_, err := kv.GetMsg(ctx, kvs.store, PartitionKey, []byte(runKey), &m)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (kvs *KVStore) UpdateCommitID(ctx context.Context, repositoryID string, run
 
 	runKey := RunPath(repositoryID, runID)
 	run := RunResultData{}
-	_, err := kvs.store.GetMsg(ctx, PartitionKey, runKey, &run)
+	_, err := kv.GetMsg(ctx, kvs.store, PartitionKey, runKey, &run)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) { // no pre action run
 			return nil, nil
@@ -120,7 +120,7 @@ func (kvs *KVStore) saveRunManifest(ctx context.Context, repositoryID graveler.R
 	for i := range manifest.HooksRun {
 		hookRun := manifest.HooksRun[i]
 		taskKey := []byte(kv.FormatPath(TasksPath(repositoryID.String(), manifest.Run.RunID), hookRun.HookRunID))
-		err := kvs.store.SetMsgIf(ctx, PartitionKey, taskKey, protoFromTaskResult(&hookRun), nil)
+		err := kv.SetMsgIf(ctx, kvs.store, PartitionKey, taskKey, protoFromTaskResult(&hookRun), nil)
 		if err != nil {
 			return fmt.Errorf("save task result (runID: %s taskKey %s): %w", manifest.Run.RunID, taskKey, err)
 		}
@@ -135,7 +135,7 @@ func (kvs *KVStore) storeRun(ctx context.Context, run *RunResultData, repoID str
 	// Save secondary index by BranchID
 	if run.BranchId != "" {
 		bk := RunByBranchPath(repoID, run.BranchId, run.RunId)
-		err := kvs.store.SetMsg(ctx, PartitionKey, bk, &kv.SecondaryIndex{PrimaryKey: runKey})
+		err := kv.SetMsg(ctx, kvs.store, PartitionKey, bk, &kv.SecondaryIndex{PrimaryKey: runKey})
 		if err != nil {
 			return fmt.Errorf("save secondary index by branch (key %s): %w", bk, err)
 		}
@@ -144,13 +144,13 @@ func (kvs *KVStore) storeRun(ctx context.Context, run *RunResultData, repoID str
 	// Save secondary index by CommitID
 	if run.CommitId != "" {
 		ck := RunByCommitPath(repoID, run.CommitId, run.RunId)
-		err := kvs.store.SetMsg(ctx, PartitionKey, ck, &kv.SecondaryIndex{PrimaryKey: runKey})
+		err := kv.SetMsg(ctx, kvs.store, PartitionKey, ck, &kv.SecondaryIndex{PrimaryKey: runKey})
 		if err != nil {
 			return fmt.Errorf("save secondary index by commit (key %s): %w", ck, err)
 		}
 	}
 
-	err := kvs.store.SetMsg(ctx, PartitionKey, runKey, run)
+	err := kv.SetMsg(ctx, kvs.store, PartitionKey, runKey, run)
 	if err != nil {
 		return fmt.Errorf("save run result (runKey %s): %w", runKey, err)
 	}

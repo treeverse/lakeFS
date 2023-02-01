@@ -132,7 +132,7 @@ const (
 
 type Config struct {
 	Config                   *config.Config
-	KVStore                  *kv.StoreMessage
+	KVStore                  kv.Store
 	WalkerFactory            WalkerFactory
 	SettingsManagerOption    settings.ManagerOption
 	GCMaxUncommittedFileSize int // The maximum file size for uncommitted dump created during PrepareUncommittedGC
@@ -237,7 +237,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	executor := batch.NewConditionalExecutor(logging.Default())
 	go executor.Run(ctx)
 
-	storeLimiter := kv.NewStoreLimiter(cfg.KVStore.Store, cfg.Limiter)
+	storeLimiter := kv.NewStoreLimiter(cfg.KVStore, cfg.Limiter)
 	refManager := ref.NewRefManager(
 		ref.ManagerConfig{
 			Executor:              executor,
@@ -248,13 +248,13 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 			CommitCacheConfig:     ref.CacheConfig(cfg.Config.Graveler.CommitCache),
 		})
 	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.Committed.BlockStoragePrefix)
-	settingManager := settings.NewManager(refManager, *cfg.KVStore)
+	settingManager := settings.NewManager(refManager, cfg.KVStore)
 	if cfg.SettingsManagerOption != nil {
 		cfg.SettingsManagerOption(settingManager)
 	}
 
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
-	stagingManager := staging.NewManager(ctx, cfg.KVStore.Store, storeLimiter)
+	stagingManager := staging.NewManager(ctx, cfg.KVStore, storeLimiter)
 	gStore := graveler.NewGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
@@ -268,7 +268,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		log:                      logging.Default().WithField("service_name", "entry_catalog"),
 		walkerFactory:            cfg.WalkerFactory,
 		workPool:                 workPool,
-		KVStore:                  cfg.KVStore.Store,
+		KVStore:                  cfg.KVStore,
 		managers:                 []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
 		KVStoreLimited:           storeLimiter,
 	}, nil

@@ -25,27 +25,24 @@ func TestStoreMessage(t *testing.T) {
 	ctx := context.Background()
 	store := kvtest.GetStore(ctx, t)
 
-	sm := kv.StoreMessage{
-		Store: store,
-	}
 	t.Run("set-get test", func(t *testing.T) {
-		testStoreMessageSetGet(t, ctx, sm)
+		testStoreMessageSetGet(t, ctx, store)
 	})
 	t.Run("set-if test", func(t *testing.T) {
-		testStoreMessageSetIf(t, ctx, sm)
+		testStoreMessageSetIf(t, ctx, store)
 	})
 	t.Run("delete test", func(t *testing.T) {
-		testStoreMessageDelete(t, ctx, sm)
+		testStoreMessageDelete(t, ctx, store)
 	})
 	t.Run("scan test", func(t *testing.T) {
-		testStoreMessageScan(t, ctx, sm)
+		testStoreMessageScan(t, ctx, store)
 	})
 	t.Run("scan wrong format test", func(t *testing.T) {
-		testStoreMessageScanWrongFormat(t, ctx, sm)
+		testStoreMessageScanWrongFormat(t, ctx, store)
 	})
 }
 
-func testStoreMessageSetGet(t testing.TB, ctx context.Context, sm kv.StoreMessage) {
+func testStoreMessageSetGet(t testing.TB, ctx context.Context, store kv.Store) {
 	// set model info
 	setModel := &kvtest.TestModel{
 		Name:        []byte("SetGetModel"),
@@ -59,14 +56,14 @@ func testStoreMessageSetGet(t testing.TB, ctx context.Context, sm kv.StoreMessag
 		},
 		TestList: []bool{true, true, false, true, false},
 	}
-	err := sm.SetMsg(ctx, modelPartitionKey, setModel.Name, setModel)
+	err := kv.SetMsg(ctx, store, modelPartitionKey, setModel.Name, setModel)
 	if err != nil {
 		t.Fatal("failed to set model", err)
 	}
 
 	// get model info
 	m := &kvtest.TestModel{}
-	_, err = sm.GetMsg(ctx, modelPartitionKey, setModel.Name, m)
+	_, err = kv.GetMsg(ctx, store, modelPartitionKey, setModel.Name, m)
 	if err != nil {
 		t.Fatal("failed to get message", err)
 	}
@@ -76,7 +73,7 @@ func testStoreMessageSetGet(t testing.TB, ctx context.Context, sm kv.StoreMessag
 	}
 }
 
-func testStoreMessageSetIf(t testing.TB, ctx context.Context, sm kv.StoreMessage) {
+func testStoreMessageSetIf(t testing.TB, ctx context.Context, store kv.Store) {
 	// set model info
 	setModel := &kvtest.TestModel{
 		Name:        []byte("SetIfModel"),
@@ -90,11 +87,11 @@ func testStoreMessageSetIf(t testing.TB, ctx context.Context, sm kv.StoreMessage
 		},
 		TestList: []bool{true, true, false, true, false},
 	}
-	err := sm.SetMsgIf(ctx, modelPartitionKey, setModel.Name, setModel, nil)
+	err := kv.SetMsgIf(ctx, store, modelPartitionKey, setModel.Name, setModel, nil)
 	if err != nil {
 		t.Fatal("failed to set model with nil predicate", err)
 	}
-	pred, err := sm.GetMsg(ctx, modelPartitionKey, setModel.Name, nil)
+	pred, err := kv.GetMsg(ctx, store, modelPartitionKey, setModel.Name, nil)
 	if err != nil {
 		t.Fatal("failed to get model without msg", err)
 	}
@@ -114,12 +111,12 @@ func testStoreMessageSetIf(t testing.TB, ctx context.Context, sm kv.StoreMessage
 	}
 
 	// SetMsgIf fails nil
-	err = sm.SetMsgIf(ctx, modelPartitionKey, setModel.Name, m1, nil)
+	err = kv.SetMsgIf(ctx, store, modelPartitionKey, setModel.Name, m1, nil)
 	require.Error(t, kv.ErrPredicateFailed, err)
 
 	// get model info
 	m2 := &kvtest.TestModel{}
-	_, err = sm.GetMsg(ctx, modelPartitionKey, setModel.Name, m2)
+	_, err = kv.GetMsg(ctx, store, modelPartitionKey, setModel.Name, m2)
 	if err != nil {
 		t.Fatal("failed to get message", err)
 	}
@@ -129,12 +126,12 @@ func testStoreMessageSetIf(t testing.TB, ctx context.Context, sm kv.StoreMessage
 	}
 
 	// SetIf succeeds
-	err = sm.SetMsgIf(ctx, modelPartitionKey, setModel.Name, m1, pred)
+	err = kv.SetMsgIf(ctx, store, modelPartitionKey, setModel.Name, m1, pred)
 	if err != nil {
 		t.Fatal("failed on SetIf", err)
 	}
 
-	_, err = sm.GetMsg(ctx, modelPartitionKey, setModel.Name, m2)
+	_, err = kv.GetMsg(ctx, store, modelPartitionKey, setModel.Name, m2)
 	if err != nil {
 		t.Fatal("failed to get message", err)
 	}
@@ -144,10 +141,10 @@ func testStoreMessageSetIf(t testing.TB, ctx context.Context, sm kv.StoreMessage
 	}
 
 	// Cleanup
-	testutil.MustDo(t, "cleanup", sm.DeleteMsg(ctx, modelPartitionKey, setModel.Name))
+	testutil.MustDo(t, "cleanup", store.Delete(ctx, []byte(modelPartitionKey), setModel.Name))
 }
 
-func testStoreMessageDelete(t testing.TB, ctx context.Context, sm kv.StoreMessage) {
+func testStoreMessageDelete(t testing.TB, ctx context.Context, store kv.Store) {
 	// set model info
 	m1 := &kvtest.TestModel{
 		Name:        []byte("DeleteModel"),
@@ -161,7 +158,7 @@ func testStoreMessageDelete(t testing.TB, ctx context.Context, sm kv.StoreMessag
 		},
 		TestList: []bool{true, true, false, true, false},
 	}
-	err := sm.SetMsg(ctx, modelPartitionKey, m1.Name, m1)
+	err := kv.SetMsg(ctx, store, modelPartitionKey, m1.Name, m1)
 	if err != nil {
 		t.Fatal("failed to set model", err)
 	}
@@ -174,29 +171,29 @@ func testStoreMessageDelete(t testing.TB, ctx context.Context, sm kv.StoreMessag
 		TestMap:     nil,
 		TestList:    nil,
 	}
-	err = sm.SetMsg(ctx, modelPartitionKey, m2.Name, m2)
+	err = kv.SetMsg(ctx, store, modelPartitionKey, m2.Name, m2)
 	if err != nil {
 		t.Fatal("failed to set model", err)
 	}
 
 	// delete model2
-	err = sm.DeleteMsg(ctx, modelPartitionKey, m2.Name)
+	err = store.Delete(ctx, []byte(modelPartitionKey), m2.Name)
 	if err != nil {
 		t.Fatal("failed to delete message", err)
 	}
 
 	// Get deleted key
 	m3 := &kvtest.TestModel{}
-	_, err = sm.GetMsg(ctx, modelPartitionKey, m2.Name, m3)
+	_, err = kv.GetMsg(ctx, store, modelPartitionKey, m2.Name, m3)
 	require.Error(t, kv.ErrNotFound, err)
 
 	// delete twice - expect nop
-	err = sm.DeleteMsg(ctx, modelPartitionKey, m2.Name)
+	err = store.Delete(ctx, []byte(modelPartitionKey), m2.Name)
 	if err != nil {
 		t.Fatal("error trying to delete non-existing key", err)
 	}
 
-	_, err = sm.GetMsg(ctx, modelPartitionKey, m1.Name, m3)
+	_, err = kv.GetMsg(ctx, store, modelPartitionKey, m1.Name, m3)
 	if err != nil {
 		t.Fatal("failed to get message", err)
 	}
@@ -206,23 +203,23 @@ func testStoreMessageDelete(t testing.TB, ctx context.Context, sm kv.StoreMessag
 	}
 
 	// delete model1
-	err = sm.DeleteMsg(ctx, modelPartitionKey, m1.Name)
+	err = store.Delete(ctx, []byte(modelPartitionKey), m1.Name)
 	if err != nil {
 		t.Fatal("failed to delete message", err)
 	}
 
 	// delete twice - expect nop
-	err = sm.DeleteMsg(ctx, modelPartitionKey, m1.Name)
+	err = store.Delete(ctx, []byte(modelPartitionKey), m1.Name)
 	if err != nil {
 		t.Fatal("error trying to delete non-existing key", err)
 	}
 
 	// Get deleted key (empty Store)
-	_, err = sm.GetMsg(ctx, modelPartitionKey, m1.Name, m3)
+	_, err = kv.GetMsg(ctx, store, modelPartitionKey, m1.Name, m3)
 	require.Error(t, kv.ErrNotFound, err)
 }
 
-func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage) {
+func testStoreMessageScan(t *testing.T, ctx context.Context, store kv.Store) {
 	// set model info
 	m := &kvtest.TestModel{
 		Name:        []byte("ScanModel"),
@@ -246,38 +243,38 @@ func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage)
 		msgNew.TestMap["special"] = int32(i)
 		key := kv.FormatPath(string(modelKeyPrefix), strconv.Itoa(i))
 		testData = append(testData, testItem{[]byte(key), msgNew})
-		require.NoError(t, sm.SetMsg(ctx, modelPartitionKey, []byte(key), msgNew))
+		require.NoError(t, kv.SetMsg(ctx, store, modelPartitionKey, []byte(key), msgNew))
 	}
 
 	preModelKey := "l"
 	preModelData := "This is pre test model"
-	require.NoError(t, sm.Store.Set(ctx, []byte(modelPartitionKey), []byte(preModelKey), []byte(preModelData)))
+	require.NoError(t, store.Set(ctx, []byte(modelPartitionKey), []byte(preModelKey), []byte(preModelData)))
 	postModelKey := "n"
 	postModelData := "This is post test model"
-	require.NoError(t, sm.Store.Set(ctx, []byte(modelPartitionKey), []byte(postModelKey), []byte(postModelData)))
+	require.NoError(t, store.Set(ctx, []byte(modelPartitionKey), []byte(postModelKey), []byte(postModelData)))
 
 	t.Run("skip just some", func(t *testing.T) {
 		skip := 2
 		after := testData[skip-1].key
 
-		testScan(t, sm, ctx, testData, modelKeyPrefix, after, skip)
+		testScan(t, store, ctx, testData, modelKeyPrefix, after, skip)
 	})
 	t.Run("skip not equal", func(t *testing.T) {
 		skip := 2
 		after := []byte(string(testData[skip-1].key) + "_00000000000")
 
-		testScan(t, sm, ctx, testData, modelKeyPrefix, after, skip)
+		testScan(t, store, ctx, testData, modelKeyPrefix, after, skip)
 	})
 	t.Run("skip all", func(t *testing.T) {
 		skip := 5
 		after := testData[skip-1].key
 
-		testScan(t, sm, ctx, testData, modelKeyPrefix, after, skip)
+		testScan(t, store, ctx, testData, modelKeyPrefix, after, skip)
 	})
 	t.Run("skip none", func(t *testing.T) {
 		skip := 0
 
-		testScan(t, sm, ctx, testData, modelKeyPrefix, []byte(""), skip)
+		testScan(t, store, ctx, testData, modelKeyPrefix, []byte(""), skip)
 	})
 }
 
@@ -286,8 +283,8 @@ type testItem struct {
 	msg *kvtest.TestModel
 }
 
-func testScan(t *testing.T, sm kv.StoreMessage, ctx context.Context, testData []testItem, modelKeyPrefix, after []byte, skip int) {
-	itr, err := sm.Scan(ctx, testData[0].msg.ProtoReflect().Type(), modelPartitionKey, modelKeyPrefix, after)
+func testScan(t *testing.T, store kv.Store, ctx context.Context, testData []testItem, modelKeyPrefix, after []byte, skip int) {
+	itr, err := kv.NewPrimaryIterator(ctx, store, testData[0].msg.ProtoReflect().Type(), modelPartitionKey, modelKeyPrefix, kv.IteratorOptionsAfter(after))
 	testutil.MustDo(t, "get iterator", err)
 	defer itr.Close()
 	count := 0
@@ -305,7 +302,7 @@ func testScan(t *testing.T, sm kv.StoreMessage, ctx context.Context, testData []
 	require.Equal(t, len(testData)-skip, count)
 }
 
-func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.StoreMessage) {
+func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, store kv.Store) {
 	// set model info
 	m := &kvtest.TestModel{
 		Name:        []byte("DeleteModel"),
@@ -324,13 +321,13 @@ func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.St
 
 	// Add test models to Store
 	for i := 0; i < modelNum; i++ {
-		require.NoError(t, sm.SetMsg(ctx, modelPartitionKey, []byte(kv.FormatPath(modelKeyPrefix, strconv.Itoa(i))), m))
+		require.NoError(t, kv.SetMsg(ctx, store, modelPartitionKey, []byte(kv.FormatPath(modelKeyPrefix, strconv.Itoa(i))), m))
 	}
 
 	badModelData := "This is a bad model data"
-	require.NoError(t, sm.Store.Set(ctx, []byte(modelPartitionKey), []byte(kv.FormatPath(modelKeyPrefix, strconv.Itoa(modelNum))), []byte(badModelData)))
+	require.NoError(t, store.Set(ctx, []byte(modelPartitionKey), []byte(kv.FormatPath(modelKeyPrefix, strconv.Itoa(modelNum))), []byte(badModelData)))
 
-	itr, err := sm.Scan(ctx, m.ProtoReflect().Type(), modelPartitionKey, []byte(modelKeyPrefix), []byte(""))
+	itr, err := kv.NewPrimaryIterator(ctx, store, m.ProtoReflect().Type(), modelPartitionKey, []byte(modelKeyPrefix), kv.IteratorOptionsAfter([]byte("")))
 	testutil.MustDo(t, "get iterator", err)
 	defer itr.Close()
 
@@ -368,15 +365,15 @@ func BenchmarkDrivers(b *testing.B) {
 
 	tests := []struct {
 		name  string
-		store kv.StoreMessage
+		store kv.Store
 	}{
 		{
 			name:  "postgres",
-			store: kv.StoreMessage{Store: postgresStore},
+			store: postgresStore,
 		},
 		{
 			name:  "dynamoDB",
-			store: kv.StoreMessage{Store: dynamoStore},
+			store: dynamoStore,
 		},
 	}
 	for _, tt := range tests {

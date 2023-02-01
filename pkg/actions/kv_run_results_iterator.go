@@ -18,7 +18,7 @@ type KVRunResultIterator struct {
 
 // NewKVRunResultIterator returns a new iterator over actions run results
 // 'after' determines the runID which we should start the scan from, used for pagination
-func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, repositoryID, branchID, commitID, after string) (*KVRunResultIterator, error) {
+func NewKVRunResultIterator(ctx context.Context, store kv.Store, repositoryID, branchID, commitID, after string) (*KVRunResultIterator, error) {
 	if branchID != "" && commitID != "" {
 		return nil, fmt.Errorf("can't use both branchID and CommitID: %w", ErrParamConflict)
 	}
@@ -44,9 +44,9 @@ func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, reposito
 
 	var it kv.MessageIterator
 	if secondary {
-		it, err = kv.NewSecondaryIterator(ctx, store.Store, (&RunResultData{}).ProtoReflect().Type(), PartitionKey, []byte(prefix), []byte(after))
+		it, err = kv.NewSecondaryIterator(ctx, store, (&RunResultData{}).ProtoReflect().Type(), PartitionKey, []byte(prefix), []byte(after))
 	} else {
-		it, err = kv.NewPrimaryIterator(ctx, store.Store, (&RunResultData{}).ProtoReflect().Type(), PartitionKey, []byte(prefix), kv.IteratorOptionsAfter([]byte(after)))
+		it, err = kv.NewPrimaryIterator(ctx, store, (&RunResultData{}).ProtoReflect().Type(), PartitionKey, []byte(prefix), kv.IteratorOptionsAfter([]byte(after)))
 	}
 	if err != nil {
 		return nil, err
