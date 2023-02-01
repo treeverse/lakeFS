@@ -1,4 +1,4 @@
-import React, {ChangeEvent, FC, useCallback, useState} from "react";
+import React, {ChangeEvent, FC, FormEvent, useCallback, useState} from "react";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Col from "react-bootstrap/Col";
@@ -21,7 +21,7 @@ export const CommunicationPreferencesSetup: FC<CommunicationPreferencesSetupProp
     const [updatesCheck, setUpdatesCheck] = useState<boolean>(false);
     const [securityCheck, setSecurityCheck] = useState<boolean>(false);
 
-    const submitHandler = useCallback((e) => {
+    const submitHandler = useCallback((e: FormEvent) => {
         onSubmit(userEmail, updatesCheck, securityCheck);
         e.preventDefault();
     }, [onSubmit, userEmail, updatesCheck, securityCheck]);
