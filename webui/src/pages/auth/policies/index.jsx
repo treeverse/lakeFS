@@ -19,6 +19,7 @@ import {
     Warning,
 } from "../../../lib/components/controls";
 import {useRouter} from "../../../lib/hooks/router";
+import {useLoginContext} from "../../../lib/hooks/conf";
 import {Link} from "../../../lib/components/nav";
 import {Route, Routes} from "react-router-dom";
 import PolicyPage from "./policy";
@@ -42,6 +43,8 @@ const PoliciesContainer = () => {
 
     if (error) return <Error error={error}/>;
     if (loading) return <Loading/>;
+
+    const showRBACWarning = useLoginContext()?.RBAC === 'simplified';
 
     return (
         <>
@@ -72,12 +75,12 @@ const PoliciesContainer = () => {
                     <RefreshButton onClick={() => setRefresh(!refresh)}/>
                 </ActionGroup>
             </ActionsBar>
-            <Warning>
-                <b>Deprecation Notice:</b> RBAC (Role-Based Access Control) is being deprecated
-                and will be replaced by ACL (Access Control Lists) in future releases.
-                For more information on the transition from RBAC to ACL, please visit
-                our <a href="https://docs.lakefs.io/posts/security_update.html">documentation page</a>.
-            </Warning>
+            {showRBACWarning && <Warning>
+                                <b>Deprecation Notice:</b> RBAC (Role-Based Access Control) is being deprecated
+                                and will be replaced by ACL (Access Control Lists) in future releases.
+                                For more information on the transition from RBAC to ACL, please visit
+                                our <a href="https://docs.lakefs.io/posts/security_update.html">documentation page</a>.
+                            </Warning>}
             <div className="auth-learn-more">
                 A policy defines the permissions of a user or a group. <a href="https://docs.lakefs.io/reference/authorization.html#authorization" target="_blank" rel="noopener noreferrer">Learn more.</a>
             </div>
