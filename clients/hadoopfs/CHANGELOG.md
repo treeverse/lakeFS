@@ -2,6 +2,11 @@
 
 ## _Upcoming_
 
+## 0.1.12
+
+Notable bugfixes:
+* Fixing CopyObject -> StageObject fallback mechanism to support old lakeFS versions
+
 ## 0.1.11
 
 What's new:
