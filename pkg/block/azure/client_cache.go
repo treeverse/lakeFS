@@ -90,8 +90,8 @@ func (c *ClientCache) NewServiceClient(storageAccount string) (*service.Client, 
 func (c *ClientCache) NewUDC(ctx context.Context, storageAccount string, expiry *time.Time) (*service.UserDelegationCredential, error) {
 	// Otherwise assume using role based credentials and build signed URL using user delegation credentials
 	currentTime := time.Now().UTC().Add(-10 * time.Second)
-	// UDC expiry 2 time of pre-sign expiry
-	udcExpiry := expiry.Add(c.params.PreSignedExpiry)
+	// UDC expiry time of PreSignedExpiry + hour
+	udcExpiry := expiry.Add(time.Hour)
 	info := service.KeyInfo{
 		Start:  to.Ptr(currentTime.UTC().Format(sas.TimeFormat)),
 		Expiry: to.Ptr(udcExpiry.Format(sas.TimeFormat)),
@@ -109,8 +109,8 @@ func (c *ClientCache) NewUDC(ctx context.Context, storageAccount string, expiry 
 		if err != nil {
 			return nil, err
 		}
-		// UDC expires after 2 * PreSignedExpiry but cache entry expires after PreSignedExpiry
-		c.udcCache.AddEx(storageAccount, udc, c.params.PreSignedExpiry)
+		// UDC expires after PreSignedExpiry + hour but cache entry expires after an hour
+		c.udcCache.AddEx(storageAccount, udc, time.Hour)
 	} else {
 		udc = res.(*service.UserDelegationCredential)
 	}
