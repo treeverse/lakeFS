@@ -17,12 +17,12 @@ import (
 )
 
 const (
-	s3CopyDataPath            = "s3://esti-system-testing-data/copy-test-data/"
-	gsCopyDataPath            = "gs://esti-system-testing-data/copy-test-data/"
-	azureCopyDataPathTemplate = "https://esti.blob.core.windows.net/esti-system-testing-data/copy-test-data/"
-	azureAbortAccount         = "esti4multipleaccounts"
-	ingestionBranch           = "test-data"
-	largeObject               = "squash.tar"
+	s3CopyDataPath    = "s3://esti-system-testing-data/copy-test-data/"
+	gsCopyDataPath    = "gs://esti-system-testing-data/copy-test-data/"
+	azureCopyDataPath = "https://esti.blob.core.windows.net/esti-system-testing-data/copy-test-data/"
+	azureAbortAccount = "esti4multipleaccounts"
+	ingestionBranch   = "test-data"
+	largeObject       = "squash.tar"
 )
 
 func TestCopyObject(t *testing.T) {
@@ -72,7 +72,7 @@ func TestCopyObject(t *testing.T) {
 	// Copying different accounts takes more time and allows us to abort the copy in the middle
 	t.Run("copy_large_size_file_abort", func(t *testing.T) {
 		requireBlockstoreType(t, block.BlockstoreTypeAzure)
-		importPath := strings.Replace(azureImportPath, "esti", azureAbortAccount, 1)
+		importPath := strings.Replace(azureCopyDataPath, "esti", azureAbortAccount, 1)
 		importTestData(t, ctx, client, repo, importPath)
 		res, err := client.StatObjectWithResponse(ctx, repo, ingestionBranch, &api.StatObjectParams{
 			Path: largeObject,
@@ -124,7 +124,7 @@ func getImportPath(t *testing.T) string {
 	case block.BlockstoreTypeGS:
 		importPath = gsCopyDataPath
 	case block.BlockstoreTypeAzure:
-		importPath = azureImportPath
+		importPath = azureCopyDataPath
 	default:
 		t.Skip("import isn't supported for non-production block adapters")
 	}
