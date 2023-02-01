@@ -35,25 +35,28 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
 
 1. Install the required dependencies for your OS:
    1. [Git](https://git-scm.com/downloads)
-   1. [GNU make](https://www.gnu.org/software/make/) (probably best to install from your OS package manager such as apt or brew)
+   1. [GNU make](https://www.gnu.org/software/make/) (probably best to install from your OS package manager such as [apt](https://en.wikipedia.org/wiki/APT_(software)) or [brew](https://brew.sh/))
    1. [Docker](https://docs.docker.com/get-docker/)
    1. [Go](https://golang.org/doc/install)
    1. [Node.js & npm](https://www.npmjs.com/get-npm)
    1. [Maven](https://maven.apache.org/) to build and test Spark client codes.
+   1. Java 8
+     * Apple M1 users can install this from [Azul Zulu Builds for Java JDK](https://www.azul.com/downloads/?package=jdk). Builds for Intel-based Macs are available from [java.com](https://www.java.com/en/download/help/mac_install.html).
    1. *Optional* - [PostgreSQL 11](https://www.postgresql.org/docs/11/tutorial-install.html) (useful for running and debugging locally)
 
-   * With Apple M1, you can install Java from [Azul Zulu Builds for Java JDK](https://www.azul.com/downloads/?package=jdk).
+1. [Clone](https://github.com/git-guides/git-clone) the [repository from GitHub](https://github.com/treeverse/lakeFS). 
 
-1. Clone the repository from https://github.com/treeverse/lakeFS (gives you read-only access to the repository. To contribute, see the next section).
+    _This gives you read-only access to the repository. To contribute, see the next section._
+
 1. Build the project:
 
    ```shell
    make build
    ```
 
-Note: Make build won't work for Windows user for building lakeFS.
+   _Note: `make build` won't work for Windows users._
 
-1. Make sure tests are passing:
+1. Make sure tests are passing. The following should not return any errors: 
 
    ```shell
    make test
@@ -62,8 +65,8 @@ Note: Make build won't work for Windows user for building lakeFS.
 ## Before creating a pull request
 
 1. Review this document in full.
-1. Make sure there's an open issue on GitHub that this pull request addresses, and that it isn't labeled `x/wontfix`.
-1. Fork the [lakeFS repository](https://github.com/treeverse/lakeFS).
+1. Make sure there's an open [issue on GitHub](https://github.com/treeverse/lakeFS/issues) that this pull request addresses, and that it isn't labeled `x/wontfix`.
+1. [Fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo) the [lakeFS repository](https://github.com/treeverse/lakeFS).
 1. If you're adding new functionality, create a new branch named `feature/<DESCRIPTIVE NAME>`.
 1. If you're fixing a bug, create a new branch named `fix/<DESCRIPTIVE NAME>-<ISSUE NUMBER>`.
 
