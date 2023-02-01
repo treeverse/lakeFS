@@ -235,20 +235,13 @@ func (a *Adapter) getPreSignedURL(obj block.ObjectPointer, permissions sas.BlobP
 		return "", err
 	}
 
-	svc, err := a.clientCache.NewServiceClient(qualifiedKey.StorageAccountName)
-	if err != nil {
-		return "", err
-	}
-
 	// Use shared credential for clients initialized with storage access key
-	if qualifiedKey.StorageAccountName == a.clientCache.params.StorageAccount {
-		if a.clientCache.params.StorageAccessKey != "" {
-			container, err := a.clientCache.NewContainerClient(qualifiedKey.StorageAccountName, qualifiedKey.ContainerName)
-			if err != nil {
-				return "", err
-			}
-			return container.NewBlobClient(qualifiedKey.BlobURL).GetSASURL(permissions, time.Time{}, a.newPreSignedTime())
+	if qualifiedKey.StorageAccountName == a.clientCache.params.StorageAccount && a.clientCache.params.StorageAccessKey != "" {
+		container, err := a.clientCache.NewContainerClient(qualifiedKey.StorageAccountName, qualifiedKey.ContainerName)
+		if err != nil {
+			return "", err
 		}
+		return container.NewBlobClient(qualifiedKey.BlobURL).GetSASURL(permissions, time.Time{}, a.newPreSignedTime())
 	}
 
 	// Otherwise assume using role based credentials and build signed URL using user delegation credentials
@@ -264,6 +257,10 @@ func (a *Adapter) getPreSignedURL(obj block.ObjectPointer, permissions sas.BlobP
 	// Check udcCache
 	res, ok := a.udCredCache.Get(qualifiedKey.StorageAccountName)
 	if !ok {
+		svc, err := a.clientCache.NewServiceClient(qualifiedKey.StorageAccountName)
+		if err != nil {
+			return "", err
+		}
 		udc, err = svc.GetUserDelegationCredential(context.Background(), info, nil)
 		if err != nil {
 			return "", err
@@ -429,7 +426,6 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 }
 
 func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.ObjectPointer) error {
-	const asyncPollInterval = 5 * time.Second
 	var err error
 	defer reportMetrics("Copy", time.Now(), nil, &err)
 
@@ -454,7 +450,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	if err == nil {
 		return nil
 	}
-	// AWS API returns ambiguous error code which requires us to parse the error message to understand what is the nature of the error
+	// Azure API (backend) returns ambiguous error code which requires us to parse the error message to understand what is the nature of the error
 	// See: https://github.com/Azure/azure-sdk-for-go/issues/19880
 	if !bloberror.HasCode(err, bloberror.CannotVerifyCopySource) ||
 		!strings.Contains(err.Error(), "The source request body for synchronous copy is too large and exceeds the maximum permissible limit") {
@@ -462,7 +458,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	}
 
 	// Blob too big for synchronous copy. Perform async copy
-	logger := a.log(ctx).WithFields(map[string]interface{}{
+	logger := a.log(ctx).WithFields(logging.Fields{
 		"sourceObj": sourceObj.Identifier,
 		"destObj":   destinationObj.Identifier,
 	})
@@ -473,28 +469,30 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	}
 	copyStatus := res.CopyStatus
 	if copyStatus == nil {
-		return block.ErrAsyncCopyInfo
+		return fmt.Errorf("%w: failed to get copy status", block.ErrAsyncCopy)
 	}
+
 	progress := ""
+	const asyncPollInterval = 5 * time.Second
 	for {
 		select {
 		case <-ctx.Done():
-			logger.WithField("copy progress", progress).Warn("context canceled, aborting copy")
+			logger.WithField("copy_progress", progress).Warn("context canceled, aborting copy")
 			// Context canceled - perform abort on copy use a different context for the abort
 			_, err := destClient.AbortCopyFromURL(context.Background(), *res.CopyID, nil)
 			if err != nil {
-				logger.Error("failed to abort copy: %w", err)
+				logger.WithError(err).Error("failed to abort copy")
 			}
 			return ctx.Err()
 
-		default:
+		case <-time.After(asyncPollInterval):
 			p, err := destClient.GetProperties(ctx, nil)
 			if err != nil {
 				return err
 			}
 			copyStatus = p.CopyStatus
 			if copyStatus == nil {
-				return block.ErrAsyncCopyInfo
+				return fmt.Errorf("%w: failed to get copy status", block.ErrAsyncCopy)
 			}
 			progress = *p.CopyProgress
 			switch *copyStatus {
@@ -503,15 +501,17 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 				return nil
 
 			case blob.CopyStatusTypeAborted:
-				return block.ErrAsyncCopyAborted
+				return fmt.Errorf("%w: unexpected abort", block.ErrAsyncCopy)
 
 			case blob.CopyStatusTypeFailed:
-				return block.ErrAsyncCopyFailed
+				return fmt.Errorf("%w: copy status failed", block.ErrAsyncCopy)
 
 			case blob.CopyStatusTypePending:
-				logger.Debug("Copy pending", progress)
+				logger.WithField("copy_progress", progress).Debug("Copy pending")
+
+			default:
+				return fmt.Errorf("invalid copy status: %s", *copyStatus)
 			}
-			time.Sleep(asyncPollInterval)
 		}
 	}
 }

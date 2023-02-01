@@ -249,9 +249,12 @@ func listRepositories(t *testing.T, ctx context.Context) []api.Repository {
 }
 
 // requireBlockstoreType Skips test if blockstore type doesn't match required type
-func requireBlockstoreType(t *testing.T, requiredType string) {
+func requireBlockstoreType(t *testing.T, requiredTypes ...string) {
 	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
-	if blockstoreType != requiredType {
-		t.Skipf("Test %s requires blockstore type: %s, got: %s", t.Name(), requiredType, blockstoreType)
+	for _, requiredType := range requiredTypes {
+		if blockstoreType == requiredType {
+			return
+		}
 	}
+	t.Skipf("Required blockstore types: %v, got: %s", requiredTypes, blockstoreType)
 }
