@@ -2,9 +2,8 @@ package esti
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"net/url"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -14,14 +13,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/block/azure"
 	"github.com/treeverse/lakefs/pkg/config"
 )
 
 const (
 	s3CopyDataPath            = "s3://esti-system-testing-data/copy-test-data/"
 	gsCopyDataPath            = "gs://esti-system-testing-data/copy-test-data/"
-	azureCopyDataPathTemplate = "https://%s.blob.core.windows.net/esti-system-testing-data/copy-test-data/"
+	azureCopyDataPathTemplate = "https://esti.blob.core.windows.net/esti-system-testing-data/copy-test-data/"
 	azureAbortAccount         = "esti4multipleaccounts"
 	ingestionBranch           = "test-data"
 	largeObject               = "squash.tar"
@@ -32,23 +30,8 @@ func TestCopyObject(t *testing.T) {
 	defer tearDownTest(repo)
 
 	t.Run("copy_large_size_file", func(t *testing.T) {
-		blockstoreType := viper.GetString(config.BlockstoreTypeKey)
-		var (
-			accountName string
-			err         error
-		)
-		// Copying from same account occurs immediately even for large files (async)
-		if blockstoreType == block.BlockstoreTypeAzure { // Extract storage account
-			resp, err := client.GetRepositoryWithResponse(ctx, repo)
-			require.NoError(t, err)
-			require.Equal(t, http.StatusOK, resp.StatusCode())
-			u, err := url.Parse(resp.JSON200.StorageNamespace)
-			require.NoError(t, err)
-			accountName, err = azure.ExtractStorageAccount(u)
-			require.NoError(t, err)
-		}
-
-		importTestData(t, ctx, client, repo, accountName)
+		importPath := getImportPath(t)
+		importTestData(t, ctx, client, repo, importPath)
 		res, err := client.StatObjectWithResponse(ctx, repo, ingestionBranch, &api.StatObjectParams{
 			Path: largeObject,
 		})
@@ -89,17 +72,19 @@ func TestCopyObject(t *testing.T) {
 	// Copying different accounts takes more time and allows us to abort the copy in the middle
 	t.Run("copy_large_size_file_abort", func(t *testing.T) {
 		requireBlockstoreType(t, block.BlockstoreTypeAzure)
-		importTestData(t, ctx, client, repo, azureAbortAccount)
+		importPath := strings.Replace(azureImportPath, "esti", azureAbortAccount, 1)
+		importTestData(t, ctx, client, repo, importPath)
 		var err error
 		res, err := client.StatObjectWithResponse(ctx, repo, ingestionBranch, &api.StatObjectParams{
 			Path: largeObject,
 		})
 		require.NoError(t, err)
-		require.Equal(t, http.StatusOK, res.StatusCode())
+		require.NotNil(t, res.JSON200)
 
 		destPath := "bar"
 		srcBranch := ingestionBranch
 		cancelCtx, cancel := context.WithCancel(ctx)
+		defer cancel()
 		var (
 			wg       sync.WaitGroup
 			copyResp *api.CopyObjectResponse
@@ -107,13 +92,13 @@ func TestCopyObject(t *testing.T) {
 		// Run copy object async and cancel context after 5 seconds
 		go func() {
 			wg.Add(1)
+			defer wg.Done()
 			copyResp, err = client.CopyObjectWithResponse(cancelCtx, repo, "main", &api.CopyObjectParams{
 				DestPath: destPath,
 			}, api.CopyObjectJSONRequestBody{
 				SrcPath: largeObject,
 				SrcRef:  &srcBranch,
 			})
-			defer wg.Done()
 		}()
 
 		time.Sleep(5 * time.Second)
@@ -123,15 +108,13 @@ func TestCopyObject(t *testing.T) {
 		require.Nil(t, copyResp)
 
 		// Verify object doesn't exist
-
-		// get back info
 		statResp, err := client.StatObjectWithResponse(ctx, repo, "main", &api.StatObjectParams{Path: destPath})
 		require.NoError(t, err)
 		require.Equal(t, http.StatusNotFound, statResp.StatusCode())
 	})
 }
 
-func importTestData(t *testing.T, ctx context.Context, client api.ClientWithResponsesInterface, repoName, azAccountName string) {
+func getImportPath(t *testing.T) string {
 	t.Helper()
 	importPath := ""
 	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
@@ -141,10 +124,14 @@ func importTestData(t *testing.T, ctx context.Context, client api.ClientWithResp
 	case block.BlockstoreTypeGS:
 		importPath = gsCopyDataPath
 	case block.BlockstoreTypeAzure:
-		importPath = fmt.Sprintf(azureCopyDataPathTemplate, azAccountName)
+		importPath = azureImportPath
 	default:
 		t.Skip("import isn't supported for non-production block adapters")
 	}
+	return importPath
+}
+
+func importTestData(t *testing.T, ctx context.Context, client api.ClientWithResponsesInterface, repoName, importPath string) {
 	var (
 		after  = ""
 		token  *string
@@ -172,7 +159,7 @@ func importTestData(t *testing.T, ctx context.Context, client api.ClientWithResp
 	})
 
 	require.NoError(t, err, "failed to create metarange")
-	require.Equal(t, http.StatusCreated, metarangeResp.StatusCode())
+	require.NotNil(t, metarangeResp.JSON201)
 	require.NotNil(t, metarangeResp.JSON201.Id)
 
 	_, err = client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
@@ -190,5 +177,5 @@ func importTestData(t *testing.T, ctx context.Context, client api.ClientWithResp
 		},
 	})
 	require.NoError(t, err, "failed to commit")
-	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
+	require.NotNil(t, commitResp.JSON201)
 }

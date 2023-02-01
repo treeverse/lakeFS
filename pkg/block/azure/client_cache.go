@@ -1,13 +1,18 @@
 package azure
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
+	lru "github.com/hnlq715/golang-lru"
 	"github.com/puzpuzpuz/xsync"
 	"github.com/treeverse/lakefs/pkg/block/params"
 )
@@ -15,15 +20,23 @@ import (
 type ClientCache struct {
 	serviceToClient   *xsync.MapOf[string, *service.Client]
 	containerToClient *xsync.MapOf[string, *container.Client]
-	params            params.Azure
+	// udcCache - User Delegation Credential cache used to reduce POST requests while creating pre-signed URLs
+	udcCache *lru.ARCCache
+	params   params.Azure
 }
 
-func NewCache(p params.Azure) *ClientCache {
+func NewCache(p params.Azure) (*ClientCache, error) {
+	l, err := lru.NewARC(udcCacheSize)
+	if err != nil {
+		return nil, err
+	}
+
 	return &ClientCache{
 		serviceToClient:   xsync.NewMapOf[*service.Client](),
 		containerToClient: xsync.NewMapOf[*container.Client](),
+		udcCache:          l,
 		params:            p,
-	}
+	}, nil
 }
 
 func mapKey(storageAccount, containerName string) string {
@@ -72,6 +85,36 @@ func (c *ClientCache) NewServiceClient(storageAccount string) (*service.Client, 
 	}
 
 	return cl, nil
+}
+
+func (c *ClientCache) NewUDC(ctx context.Context, storageAccount string, expiry *time.Time) (*service.UserDelegationCredential, error) {
+	// Otherwise assume using role based credentials and build signed URL using user delegation credentials
+	currentTime := time.Now().UTC().Add(-10 * time.Second)
+	// UDC expiry 2 time of pre-sign expiry
+	udcExpiry := expiry.Add(c.params.PreSignedExpiry)
+	info := service.KeyInfo{
+		Start:  to.Ptr(currentTime.UTC().Format(sas.TimeFormat)),
+		Expiry: to.Ptr(udcExpiry.Format(sas.TimeFormat)),
+	}
+
+	var udc *service.UserDelegationCredential
+	// Check udcCache
+	res, ok := c.udcCache.Get(storageAccount)
+	if !ok {
+		svc, err := c.NewServiceClient(storageAccount)
+		if err != nil {
+			return nil, err
+		}
+		udc, err = svc.GetUserDelegationCredential(ctx, info, nil)
+		if err != nil {
+			return nil, err
+		}
+		// UDC expires after 2 * PreSignedExpiry but cache entry expires after PreSignedExpiry
+		c.udcCache.AddEx(storageAccount, udc, c.params.PreSignedExpiry)
+	} else {
+		udc = res.(*service.UserDelegationCredential)
+	}
+	return udc, nil
 }
 
 func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {

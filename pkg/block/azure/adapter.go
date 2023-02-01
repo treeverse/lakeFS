@@ -10,15 +10,12 @@ import (
 	"strings"
 	"time"
 
-	lru "github.com/hnlq715/golang-lru"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -39,9 +36,7 @@ const (
 )
 
 type Adapter struct {
-	clientCache *ClientCache
-	// udCredCache - User Delegation Credential cache used to reduce POST requests while creating pre-signed URLs
-	udCredCache     *lru.ARCCache
+	clientCache     *ClientCache
 	preSignedExpiry time.Duration
 }
 
@@ -51,14 +46,12 @@ func NewAdapter(params params.Azure) (*Adapter, error) {
 	if preSignedExpiry == 0 {
 		preSignedExpiry = block.DefaultPreSignExpiryDuration
 	}
-	l, err := lru.NewARC(udcCacheSize)
+	cache, err := NewCache(params)
 	if err != nil {
 		return nil, err
 	}
-
 	return &Adapter{
-		clientCache:     NewCache(params),
-		udCredCache:     l,
+		clientCache:     cache,
 		preSignedExpiry: preSignedExpiry,
 	}, nil
 }
@@ -217,7 +210,7 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	return a.Download(ctx, obj, 0, blockblob.CountToEnd)
 }
 
-func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
 	permissions := sas.BlobPermissions{Read: true}
 	if mode == block.PreSignModeWrite {
 		permissions = sas.BlobPermissions{
@@ -226,10 +219,10 @@ func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer, mo
 			Write: true,
 		}
 	}
-	return a.getPreSignedURL(obj, permissions)
+	return a.getPreSignedURL(ctx, obj, permissions)
 }
 
-func (a *Adapter) getPreSignedURL(obj block.ObjectPointer, permissions sas.BlobPermissions) (string, error) {
+func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions sas.BlobPermissions) (string, error) {
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return "", err
@@ -244,37 +237,16 @@ func (a *Adapter) getPreSignedURL(obj block.ObjectPointer, permissions sas.BlobP
 		return container.NewBlobClient(qualifiedKey.BlobURL).GetSASURL(permissions, time.Time{}, a.newPreSignedTime())
 	}
 
-	// Otherwise assume using role based credentials and build signed URL using user delegation credentials
-	currentTime := time.Now().UTC().Add(-10 * time.Second)
 	urlExpiry := a.newPreSignedTime()
-	// UDC expiry 2 time of pre-sign expiry
-	udcExpiry := urlExpiry.Add(a.preSignedExpiry)
-	info := service.KeyInfo{
-		Start:  to.Ptr(currentTime.UTC().Format(sas.TimeFormat)),
-		Expiry: to.Ptr(udcExpiry.Format(sas.TimeFormat)),
-	}
-	var udc *service.UserDelegationCredential
-	// Check udcCache
-	res, ok := a.udCredCache.Get(qualifiedKey.StorageAccountName)
-	if !ok {
-		svc, err := a.clientCache.NewServiceClient(qualifiedKey.StorageAccountName)
-		if err != nil {
-			return "", err
-		}
-		udc, err = svc.GetUserDelegationCredential(context.Background(), info, nil)
-		if err != nil {
-			return "", err
-		}
-		// UDC expires after 2 * a.preSignedExpiry but cache entry expires after a.preSignedExpiry
-		a.udCredCache.AddEx(qualifiedKey.StorageAccountName, udc, a.preSignedExpiry)
-	} else {
-		udc = res.(*service.UserDelegationCredential)
+	udc, err := a.clientCache.NewUDC(ctx, qualifiedKey.StorageAccountName, &urlExpiry)
+	if err != nil {
+		return "", err
 	}
 
 	// Create Blob Signature Values with desired permissions and sign with user delegation credential
 	sasQueryParams, err := sas.BlobSignatureValues{
 		Protocol:      sas.ProtocolHTTPS,
-		ExpiryTime:    a.newPreSignedTime(),
+		ExpiryTime:    urlExpiry,
 		Permissions:   to.Ptr(permissions).String(),
 		ContainerName: qualifiedKey.ContainerName,
 		BlobName:      qualifiedKey.BlobURL,
@@ -469,7 +441,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	}
 	copyStatus := res.CopyStatus
 	if copyStatus == nil {
-		return fmt.Errorf("%w: failed to get copy status", block.ErrAsyncCopy)
+		return fmt.Errorf("%w: failed to get copy status", block.ErrAsyncCopyFailed)
 	}
 
 	progress := ""
@@ -492,7 +464,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 			}
 			copyStatus = p.CopyStatus
 			if copyStatus == nil {
-				return fmt.Errorf("%w: failed to get copy status", block.ErrAsyncCopy)
+				return fmt.Errorf("%w: failed to get copy status", block.ErrAsyncCopyFailed)
 			}
 			progress = *p.CopyProgress
 			switch *copyStatus {
@@ -501,16 +473,16 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 				return nil
 
 			case blob.CopyStatusTypeAborted:
-				return fmt.Errorf("%w: unexpected abort", block.ErrAsyncCopy)
+				return fmt.Errorf("%w: unexpected abort", block.ErrAsyncCopyFailed)
 
 			case blob.CopyStatusTypeFailed:
-				return fmt.Errorf("%w: copy status failed", block.ErrAsyncCopy)
+				return fmt.Errorf("%w: copy status failed", block.ErrAsyncCopyFailed)
 
 			case blob.CopyStatusTypePending:
 				logger.WithField("copy_progress", progress).Debug("Copy pending")
 
 			default:
-				return fmt.Errorf("%w: invalid copy status: %s", block.ErrAsyncCopy, *copyStatus)
+				return fmt.Errorf("%w: invalid copy status: %s", block.ErrAsyncCopyFailed, *copyStatus)
 			}
 		}
 	}

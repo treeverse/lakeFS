@@ -13,6 +13,8 @@ import (
 	"strings"
 	"testing"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -251,10 +253,7 @@ func listRepositories(t *testing.T, ctx context.Context) []api.Repository {
 // requireBlockstoreType Skips test if blockstore type doesn't match required type
 func requireBlockstoreType(t *testing.T, requiredTypes ...string) {
 	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
-	for _, requiredType := range requiredTypes {
-		if blockstoreType == requiredType {
-			return
-		}
+	if !slices.Contains(requiredTypes, blockstoreType) {
+		t.Skipf("Required blockstore types: %v, got: %s", requiredTypes, blockstoreType)
 	}
-	t.Skipf("Required blockstore types: %v, got: %s", requiredTypes, blockstoreType)
 }
