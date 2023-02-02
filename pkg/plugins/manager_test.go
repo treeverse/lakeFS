@@ -30,7 +30,7 @@ type testCases []testCase
 
 func TestManager_LoadPluginClient(t *testing.T) {
 	id := PluginIdentity{
-		Version: 1,
+		ProtocolVersion: 1,
 	}
 	cases := testCases{
 		{
@@ -65,7 +65,7 @@ func TestManager_LoadPluginClient(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.description, func(t *testing.T) {
 			// Necessary to redefine in every test due to future setting of stdout by the go-plugin package
-			id.Cmd = pluginServerCmd(id.Version, basicHS)
+			id.Cmd = *pluginServerCmd(id.ProtocolVersion, basicHS)
 			if tc.p != nil {
 				assertErr(t, tc.m.RegisterPlugin(registeredPluginName, id, basicHS, tc.p), tc.err, tc.description)
 			}
@@ -82,9 +82,9 @@ func assertErr(t *testing.T, err, cmpErr error, desc string) {
 }
 
 // Used to run the plugin server
-func pluginServerCmd(version int, auth PluginHandshake) *exec.Cmd {
+func pluginServerCmd(version uint, auth PluginHandshake) *exec.Cmd {
 	cs := []string{"-test.run=TestPluginServer", "--"}
-	cs = append(cs, auth.Key, auth.Value, strconv.Itoa(version))
+	cs = append(cs, auth.Key, auth.Value, strconv.Itoa(int(version)))
 	cmd := exec.Command(os.Args[0], cs...)
 
 	env := []string{

@@ -24,7 +24,7 @@ var allowedProtocols = []plugin.Protocol{
 type PluginIdentity struct {
 	ProtocolVersion uint
 	// Cmd is the command that is used to run the plugin executable on the local filesystem.
-	Cmd *exec.Cmd
+	Cmd exec.Cmd
 }
 
 // PluginHandshake includes handshake properties for the plugin.
@@ -62,7 +62,7 @@ func (m *Manager[T]) RegisterPlugin(name string, id PluginIdentity, auth PluginH
 		MagicCookieValue: auth.Value,
 	}
 	cmd := id.Cmd
-	c := newPluginClient(name, p, hc, cmd)
+	c := newPluginClient(name, p, hc, &cmd)
 	m.pluginApplicationClients[name] = c
 	return nil
 }
