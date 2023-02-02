@@ -67,7 +67,7 @@ func TestManager_LoadPluginClient(t *testing.T) {
 			// Necessary to redefine in every test due to future setting of stdout by the go-plugin package
 			id.Cmd = *pluginServerCmd(id.ProtocolVersion, basicHS)
 			if tc.p != nil {
-				assertErr(t, tc.m.RegisterPlugin(registeredPluginName, id, basicHS, tc.p), tc.err, tc.description)
+				tc.m.RegisterPlugin(registeredPluginName, id, basicHS, tc.p)
 			}
 			_, err := tc.m.LoadPluginClient(tc.name)
 			assertErr(t, err, tc.err, tc.description)
