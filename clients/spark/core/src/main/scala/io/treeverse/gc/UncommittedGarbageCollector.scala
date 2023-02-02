@@ -2,7 +2,6 @@ package io.treeverse.gc
 
 import io.treeverse.clients.APIConfigurations
 import io.treeverse.clients.ApiClient
-import io.treeverse.clients.GarbageCollector._
 import io.treeverse.clients.LakeFSContext._
 import io.treeverse.clients._
 import org.apache.commons.lang3.time.DateUtils
@@ -103,7 +102,6 @@ object UncommittedGarbageCollector {
     var runID = ""
     var firstSlice = ""
     var success = false
-    var markedAddresses = spark.emptyDataFrame.withColumn("address", lit(""))
     var addressesToDelete = spark.emptyDataFrame.withColumn("address", lit(""))
     val repo = args(0)
     val hc = spark.sparkContext.hadoopConfiguration
@@ -122,8 +120,8 @@ object UncommittedGarbageCollector {
     val cutoffTime = DateUtils.addSeconds(new Date(), -minAgeSeconds)
     val startTime = java.time.Clock.systemUTC.instant()
 
+    val shouldSweep = false
     val shouldMark = hc.getBoolean(LAKEFS_CONF_GC_DO_MARK, true)
-    val shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, true)
     val markID = hc.get(LAKEFS_CONF_GC_MARK_ID, "")
 
     validateRunModeConfigs(shouldMark, shouldSweep, markID)
@@ -180,27 +178,7 @@ object UncommittedGarbageCollector {
           .select("address")
           .except(committedDF)
           .except(uncommittedDF)
-      }
-      if (shouldSweep) {
-        if (shouldMark) { // get the expired addresses from the mark id run
-          markedAddresses = addressesToDelete
-          println("deleting marked addresses: " + runID)
-        } else {
-          markedAddresses = readMarkedAddresses(storageNamespace, markID)
-          println("deleting marked addresses: " + markID)
-        }
 
-        val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
-        val region = getRegion(args)
-        val hcValues = spark.sparkContext.broadcast(
-          HadoopUtils.getHadoopConfigurationValues(hc, "fs.", "lakefs.")
-        )
-        val configMapper = new ConfigMapper(hcValues)
-
-        val removed = GarbageCollector
-          .bulkRemove(configMapper, markedAddresses, storageNSForSdkClient, region, storageType)
-          .toDF()
-        removed.collect()
       }
       // Flow completed successfully - set success to true
       success = true
