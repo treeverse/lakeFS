@@ -19,7 +19,7 @@ import {
     Warning,
 } from "../../../lib/components/controls";
 import {useRouter} from "../../../lib/hooks/router";
-import {useLoginContext} from "../../../lib/hooks/conf";
+import {useLoginConfigContext} from "../../../lib/hooks/conf";
 import {Link} from "../../../lib/components/nav";
 import {Route, Routes} from "react-router-dom";
 import PolicyPage from "./policy";
@@ -41,10 +41,10 @@ const PoliciesContainer = () => {
 
     useEffect(() => { setSelected([]); }, [after, refresh]);
 
+    const showRBACWarning = useLoginConfigContext()?.RBAC === 'simplified';
+
     if (error) return <Error error={error}/>;
     if (loading) return <Loading/>;
-
-    const showRBACWarning = useLoginContext()?.RBAC === 'simplified';
 
     return (
         <>

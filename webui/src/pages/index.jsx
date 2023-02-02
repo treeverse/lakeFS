@@ -1,7 +1,7 @@
 import React from 'react';
 
 import {BrowserRouter as Router, Routes, Route, Navigate} from 'react-router-dom';
-import {WithLoginContext} from "../lib/hooks/conf";
+import {WithLoginConfigContext} from "../lib/hooks/conf";
 
 
 // pages
@@ -12,7 +12,7 @@ import Setup from './setup';
 export const IndexPage = () => {
     return (
         <Router>
-            <WithLoginContext>
+            <WithLoginConfigContext>
                 <Routes>
                     <Route path="/" element={<Navigate to="/repositories"/>} />
                     <Route path="/repositories/*" element={<Repositories/>} />
@@ -20,7 +20,7 @@ export const IndexPage = () => {
                     <Route path="/setup/*" element={<Setup/>} />
                     <Route path="*" element={<Navigate to="/repositories" replace />} />
                 </Routes>
-            </WithLoginContext>
+            </WithLoginConfigContext>
         </Router>
     );
 };
