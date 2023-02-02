@@ -6,8 +6,31 @@ Deprecated:
 - Authorization using Role-Based Access Control
 - LDAP & OIDC Embedded Support
 
-## Upcoming (ASSIGN NEXT VERSION NUMBER to release!)
+## v0.92.0
+
+:new: What's new
+
 - Deprecate embedded support for OIDC (#5061)
+- Update policies page with note about RBAC deprecation (#5150)
+- Configurable pre-signed url expiry (#5144)
+- Azure: Add support for async copy (#5118)
+- Allow configuration of GUI warning message for deprecating RBAC (#5169)
+
+:ladybug: Bug Fixes
+- UI: fix lakectl configuration download format after setup (#5167)
+- Measure email subscription drop rate (#5145)
+
+## v0.91.0
+
+:new: What's new
+- Support lakectl pre-signed URLs for upload/download/stat (#5099)
+- Deprecate OIDC (#5063)
+- Deprecate merge API result summary - mark for deprecation (#5119)
+- Support multiple storage accounts in Azure (#5096)
+
+:ladybug: Bug Fixes
+- Fix Google Storage import with relative key (#5114)
+- Fix Azure import with relative key (#5123)
 
 ## v0.90.1
 
