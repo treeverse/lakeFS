@@ -22,7 +22,7 @@ var allowedProtocols = []plugin.Protocol{
 
 // PluginIdentity identifies the plugin's version and executable location.
 type PluginIdentity struct {
-	Version int
+	ProtocolVersion uint
 	// Cmd is the command that is used to run the plugin executable on the local filesystem.
 	Cmd *exec.Cmd
 }
