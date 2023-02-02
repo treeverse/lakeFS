@@ -22,7 +22,7 @@ type testCase struct {
 	m           *Manager[PingPongStub]
 	name        string
 	p           plugin.Plugin
-	err         error
+	expectedErr error
 	description string
 }
 
@@ -70,7 +70,7 @@ func TestManager_LoadPluginClient(t *testing.T) {
 				tc.m.RegisterPlugin(registeredPluginName, id, basicHS, tc.p)
 			}
 			_, err := tc.m.LoadPluginClient(tc.name)
-			assertErr(t, err, tc.err, tc.description)
+			assertErr(t, err, tc.expectedErr, tc.description)
 		})
 	}
 }
