@@ -33,7 +33,7 @@ type PluginHandshake struct {
 	Value string
 }
 
-// Manager maps the available plugin names to the for different kinds of plugin.Client plugin controllers.
+// Manager maps the available plugin names to the different kinds of plugin.Client plugin controllers.
 // T is the custom interface type that the returned GRPCClient implementation implements, e.g. "Differ" for `plugin.Client`s that
 // include a GRPCClient that implements the "Differ" interface:
 // grpcPluginClient, err := c.Client() // Returns a plugin.GRPCClient
