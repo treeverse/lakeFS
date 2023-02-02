@@ -57,7 +57,7 @@ func (m *Manager[T]) RegisterPlugin(name string, id PluginIdentity, auth PluginH
 		return ErrUninitializedManager
 	}
 	hc := plugin.HandshakeConfig{
-		ProtocolVersion:  uint(id.Version),
+		ProtocolVersion:  uint(id.ProtocolVersion),
 		MagicCookieKey:   auth.Key,
 		MagicCookieValue: auth.Value,
 	}
