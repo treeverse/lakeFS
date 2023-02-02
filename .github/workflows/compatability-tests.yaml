@@ -1,0 +1,300 @@
+name: Compatability Tests
+
+on:
+  pull_request:
+
+# These permissions are needed to interact with GitHub's OIDC Token endpoint.
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  gen-code:
+    name: Generate code from latest lakeFS app
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v3
+
+      # No way to share code between workflows :-( If you change this, find and change the
+      # same code wherever "Find Go module and build caches" appears!
+      - name: Find Go module and build caches
+        run: |
+          echo GOMODCACHE=`go env GOMODCACHE` >> $GITHUB_ENV
+          echo GOCACHE=`go env GOCACHE` >> $GITHUB_ENV
+          cat $GITHUB_ENV
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.2
+        id: go
+
+      - name: Cache Go modules and builds
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-go-modules
+        with:
+          path: |
+            ${{ env.GOMODCACHE }}
+            ${{ env.GOCACHE }}
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('go.mod', 'go.sum') }}
+          restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "16.17.1"
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: "adopt-hotspot"
+          java-version: "8"
+          cache: "sbt"
+
+      - name: Generate code
+        run: |
+          make -j3 gen-api VERSION=${{ steps.version.outputs.tag }}
+          mkdir webui/dist
+          touch webui/dist/index.html
+          tar -cf /tmp/generated.tar.gz .
+
+      - name: Store generated code
+        uses: actions/upload-artifact@v3
+        with:
+            name: generated-code
+            path: /tmp/generated.tar.gz
+
+#      - name: Package Spark App
+#        working-directory: test/spark/app
+#        run: sbt sonnets-311/package
+#
+#      - name: Store Sonnets Spark app
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: generated-sonnets
+#          path: test/spark/app/target/sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
+
+      - name: Build Spark direct-access client
+        working-directory: clients/hadoopfs
+        run: |
+          mvn -Passembly -Djar.finalName=client -DskipTests --batch-mode --update-snapshots package
+
+      - name: Store client assembly
+        uses: actions/upload-artifact@v3
+        with:
+          name: client-assembly
+          path: clients/hadoopfs/target/client.jar
+
+  deploy-image:
+    name: Build and cache Docker image
+    needs: [gen-code]
+    runs-on: ubuntu-20.04
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      image_id: ${{ steps.build_export.outputs.ImageID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16.17.1"
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.2
+        id: go
+
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v3
+        with:
+          name: generated-code
+          path: /tmp/
+
+      - name: Unpack generated code
+        run: tar -xf /tmp/generated.tar.gz
+
+      - name: Extract version
+        shell: bash
+        run: echo "tag=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_OUTPUT
+        id: version
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build and export
+        uses: docker/build-push-action@v2
+        id: build_export
+        with:
+          context: .
+          file: ./Dockerfile
+          tags: treeverse/lakefs:${{ steps.version.outputs.tag }}
+          outputs: type=docker,dest=/tmp/lakefs.tar
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: lakefs-image
+          path: /tmp/lakefs.tar
+
+  compatibility-checks-client:
+    name: Test lakeFS Hadoop FileSystem compatibility
+    needs: gen-code
+    strategy:
+      fail-fast: false
+      matrix:
+        # Removing a version from this list means the published client is no longer compatible with
+        # that lakeFS version.
+        lakeFS_version: [ 0.89.1, 0.90.0, 0.91.0, 0.92.0 ]
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ matrix.lakeFS_version }}
+      REPO: treeverse
+      SPARK_TAG: 3
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v3
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: "adopt-hotspot"
+          java-version: "8"
+          cache: "sbt"
+
+      - name: Package Spark App
+        working-directory: test/spark/app
+        run: sbt sonnets-311/package
+
+      - name: Generate uniquifying value
+        id: unique
+        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
+
+      - name: Start lakeFS for Spark tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-directory: test/spark
+        env:
+          REPO: treeverse
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_DATABASE_TYPE: postgres
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+
+      - name: Setup lakeFS for tests
+        working-directory: test/spark
+        run: ./setup-test.sh
+
+      - name: Retrieve client
+        uses: actions/download-artifact@v3
+        with:
+          name: client-assembly
+          path: clients/hadoopfs/target
+
+      - name: Test lakeFS S3 with Spark 3.x thick client
+        timeout-minutes: 8
+        env:
+          JARS: clients/hadoopfs/
+          STORAGE_NAMESPACE: s3://esti-system-testing/compatibility/${{ github.run_number }}-spark3-client/${{ steps.unique.outputs.value }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          USE_DIRECT_ACCESS: "true"
+          REPOSITORY: thick-client-test
+          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
+        working-directory: test/spark
+        run: ./run-test.sh
+
+      - name: lakeFS Logs on Spark with client failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=15000 lakefs
+
+  compatibility-checks-server:
+    name: Test lakeFS server FileSystem ccompatibility
+    needs: [gen-code, deploy-image]
+    strategy:
+      fail-fast: false
+      matrix:
+        # Removing a version from this list means the current lakeFS is no longer compatible with
+        # that Hadoop lakeFS client version.
+        client_version: [ 0.1.10, 0.1.11, 0.1.12 ]
+    runs-on: ubuntu-20.04
+    env:
+      CLIENT_VERSION: ${{ matrix.client_version }}
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      IMAGE_ID: ${{ needs.deploy-image.outputs.image_id }}
+      REPO: treeverse
+      SPARK_TAG: 3
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: lakefs-image
+          path: /tmp
+
+      - name: Load Docker image
+        run: |
+          docker load --input /tmp/lakefs.tar
+          docker image ls -a
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: "adopt-hotspot"
+          java-version: "8"
+          cache: "sbt"
+
+      - name: Package Spark App
+        working-directory: test/spark/app
+        run: sbt sonnets-311/package
+
+      - name: Generate uniquifying value
+        id: unique
+        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
+
+      - name: Start lakeFS for Spark tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-directory: test/spark
+        env:
+          REPO: treeverse
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_DATABASE_TYPE: postgres
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+
+      - name: Setup lakeFS for tests
+        working-directory: test/spark
+        run: ./setup-test.sh
+
+      - name: Test lakeFS S3 with Spark 3.x thick client
+        timeout-minutes: 8
+        env:
+          JARS: clients/hadoopfs/
+          STORAGE_NAMESPACE: s3://esti-system-testing/compatibility/${{ github.run_number }}-spark3-client/${{ steps.unique.outputs.value }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          USE_DIRECT_ACCESS: "true"
+          REPOSITORY: thick-client-test
+          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
+        working-directory: test/spark
+        run: ./run-test.sh
+
+      - name: lakeFS Logs on Spark with client failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=15000 lakefs
