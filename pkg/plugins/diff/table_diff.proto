@@ -1,0 +1,49 @@
+/*
+Run from lakeFS root:
+    protoc --proto_path=pkg/plugins/diff --go_out=pkg/plugins/diff --go_opt=paths=source_relative \
+        --go-grpc_out=pkg/plugins/diff --go-grpc_opt=paths=source_relative table_diff.proto
+ */
+syntax = "proto3";
+package diff;
+option go_package = "github.com/treeverse/lakefs/plugins/table_diff";
+
+import "google/protobuf/timestamp.proto";
+
+message TablePath {
+  string branch = 1;
+  string path = 2;
+}
+
+message DiffProps {
+  string repo = 1;
+  TablePath left_table_path = 2;
+  TablePath right_table_path = 3;
+  optional TablePath base_table_path = 4;
+}
+
+message GatewayConfig {
+  string key = 1;
+  string secret = 2;
+  string endpoint = 3;
+}
+
+message DiffRequest {
+  DiffProps props = 1;
+  GatewayConfig gateway_config = 2;
+}
+
+message TableOperation {
+  uint32 id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  string operation = 3;
+  map<string, string> content = 4;
+}
+
+message TableOperations {
+  repeated TableOperation records = 1;
+}
+
+service TableDiffer {
+  rpc TableDiff(DiffRequest) returns (TableOperations);
+  rpc ShowHistory(TablePath) returns (TableOperations);
+}
