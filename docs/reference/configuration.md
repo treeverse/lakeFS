@@ -100,6 +100,10 @@ This reference uses `.` to denote the nesting of values.
 * `auth.oidc.authorize_endpoint_query_parameters` `(map[string]string : )` - Add these parameters when calling the provider's `/authorize` endpoint
 * `auth.oidc.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
 * `auth.oidc.additional_scope_claims` `(string[]: [])` - Add these additional scopes/claims to the OIDC user token. `openid` and `profile` are provided already. 
+* `auth.ui_config.RBAC` `(string: "simplified")` - "simplified" or
+  "external".  In simplified mode, do not display policy in GUI.  If you
+  have configured an external auth server you can set this to "external" to
+  support the policy editor.
 * `blockstore.type` `(one of ["local", "s3", "gs", "azure", "mem"] : required)`. Block adapter to use. This controls where the underlying data will be stored
 * `blockstore.default_namespace_prefix` `(string : )` - Use this to help your users choose a storage namespace for their repositories. 
    If specified, the storage namespace will be filled with this default value as a prefix when creating a repository from the UI.

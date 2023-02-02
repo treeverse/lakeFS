@@ -8,6 +8,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **state** | [**StateEnum**](#StateEnum) |  |  [optional]
+**loginConfig** | [**LoginConfig**](LoginConfig.md) |  |  [optional]
 **oidcEnabled** | **Boolean** | Deprecated: embedded OIDC support is now deprecated |  [optional]
 **oidcDefaultLogin** | **Boolean** | Deprecated: embedded OIDC support is now deprecated |  [optional]
 
