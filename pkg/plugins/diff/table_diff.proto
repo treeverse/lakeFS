@@ -10,7 +10,7 @@ option go_package = "github.com/treeverse/lakefs/plugins/table_diff";
 import "google/protobuf/timestamp.proto";
 
 message TablePath {
-  string branch = 1;
+  string ref = 1;
   string path = 2;
 }
 
