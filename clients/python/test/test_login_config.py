@@ -14,12 +14,10 @@ import unittest
 
 import lakefs_client
 from lakefs_client.model.login_config import LoginConfig
-globals()['LoginConfig'] = LoginConfig
-from lakefs_client.model.setup_state import SetupState
 
 
-class TestSetupState(unittest.TestCase):
-    """SetupState unit test stubs"""
+class TestLoginConfig(unittest.TestCase):
+    """LoginConfig unit test stubs"""
 
     def setUp(self):
         pass
@@ -27,10 +25,10 @@ class TestSetupState(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testSetupState(self):
-        """Test SetupState"""
+    def testLoginConfig(self):
+        """Test LoginConfig"""
         # FIXME: construct object with mandatory attributes with example values
-        # model = SetupState()  # noqa: E501
+        # model = LoginConfig()  # noqa: E501
         pass
 
 

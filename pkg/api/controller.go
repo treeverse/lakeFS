@@ -3523,6 +3523,9 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 		State:            swag.String(state),
 		OidcEnabled:      swag.Bool(c.Config.Auth.OIDC.Enabled),
 		OidcDefaultLogin: swag.Bool(c.Config.Auth.OIDC.IsDefaultLogin),
+		LoginConfig: &LoginConfig{
+			RBAC: &c.Config.Auth.UIConfig.RBAC,
+		},
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
