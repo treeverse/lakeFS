@@ -94,7 +94,7 @@ func pluginServerCmd(version uint, auth PluginHandshake) *exec.Cmd {
 	return cmd
 }
 
-// This is not a real test. This is the plugin server that will be initialized by the tests
+// This is not a real test. This is the plugin server that will be triggered by the tests
 func TestPluginServer(*testing.T) {
 	if os.Getenv("RUN_PLUGIN_SERVER") != "1" {
 		return
