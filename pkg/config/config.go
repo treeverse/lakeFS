@@ -184,7 +184,7 @@ type Config struct {
 			LoginFailedMessage string   `mapstructure:"login_failed_message"`
 			FallbackLoginURL   *string  `mapstructure:"fallback_login_url"`
 			FallbackLoginLabel *string  `mapstructure:"fallback_login_label"`
-			LoginCookies       []string `mapstructure:"login_cookies"`
+			LoginCookieNames   []string `mapstructure:"login_cookie_names"`
 			LogoutURL          string   `mapstructure:"logout_url"`
 		} `mapstructure:"ui_config"`
 	}

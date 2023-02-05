@@ -3507,7 +3507,7 @@ func makeLoginConfig(c *config.Config) *LoginConfig {
 	// TODO(ariels): Configure by c.Auth.OIDC.Enabled if set, otherwise
 	// from C.Auth.UIConfig
 	var (
-		cookies = c.Auth.UIConfig.LoginCookies
+		cookieNames = c.Auth.UIConfig.LoginCookieNames
 		// []string{
 		// 	"internal_auth_session",
 		// }
@@ -3519,7 +3519,7 @@ func makeLoginConfig(c *config.Config) *LoginConfig {
 		defaultFallbackLoginLabel = "Sign in with SSO provider"
 	)
 	if c.Auth.OIDC.Enabled {
-		cookies = append(cookies, "oidc_auth_session")
+		cookieNames = append(cookieNames, "oidc_auth_session")
 		loginFailedMessage = `The credentials don&apos;t match. You may be registered through our <a href={"/oidc/login?prompt=login"}>SSO Provider.</a>`
 		fallbackLoginURL = &defaultFallbackLoginURL
 		fallbackLoginLabel = &defaultFallbackLoginLabel
@@ -3532,7 +3532,7 @@ func makeLoginConfig(c *config.Config) *LoginConfig {
 		LoginFailedMessage: &loginFailedMessage,
 		FallbackLoginUrl:   fallbackLoginURL,
 		FallbackLoginLabel: fallbackLoginLabel,
-		LoginCookies:       cookies,
+		LoginCookieNames:   cookieNames,
 		LogoutUrl:          c.Auth.UIConfig.LogoutURL,
 	}
 }

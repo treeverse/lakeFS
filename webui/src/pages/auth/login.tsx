@@ -17,7 +17,7 @@ interface LoginConfig {
     login_failed_message?: string;
     fallback_login_url?: string;
     fallback_login_label?: string;
-    login_cookies: string[];
+    login_cookie_names: string[];
     logout_url: string;
 }
 
@@ -73,7 +73,7 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             }
                             { loginConfig.fallback_login_url ?
                                 <Button variant="link" className="text-secondary mt-2" onClick={async ()=> {
-                                    loginConfig.login_cookies?.forEach(
+                                    loginConfig.login_cookie_names?.forEach(
                                         cookie => {
                                             document.cookie = `${cookie}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
                                         }
