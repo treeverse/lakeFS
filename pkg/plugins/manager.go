@@ -11,9 +11,8 @@ import (
 )
 
 var (
-	ErrPluginOfWrongType    = errors.New("plugin of the wrong type")
-	ErrPluginNameNotFound   = errors.New("unknown plugin name")
-	ErrUninitializedManager = errors.New("uninitialized plugins manager")
+	ErrPluginOfWrongType  = errors.New("plugin of the wrong type")
+	ErrPluginNameNotFound = errors.New("unknown plugin name")
 )
 
 var allowedProtocols = []plugin.Protocol{
@@ -86,9 +85,6 @@ func newPluginClient(name string, p plugin.Plugin, hc plugin.HandshakeConfig, cm
 // LoadPluginClient loads a Client of type T.
 func (m *Manager[T]) LoadPluginClient(name string) (T, error) {
 	var zero T
-	if m == nil || m.pluginApplicationClients == nil {
-		return zero, ErrUninitializedManager
-	}
 	c, ok := m.pluginApplicationClients[name]
 	if !ok {
 		return zero, ErrPluginNameNotFound

@@ -13,6 +13,8 @@ import (
 
 const registeredPluginName = "plugin"
 
+var errPanic = errors.New("")
+
 var basicHS = PluginHandshake{
 	Key:   "key",
 	Value: "value",
@@ -44,7 +46,7 @@ func TestManager_LoadPluginClient(t *testing.T) {
 			&Manager[PingPongStub]{},
 			registeredPluginName,
 			GRPCPlugin{Impl: &PingPongPlayer{}},
-			ErrUninitializedManager,
+			errPanic,
 			"uninitialized manager",
 		},
 		{
@@ -64,6 +66,13 @@ func TestManager_LoadPluginClient(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.description, func(t *testing.T) {
+			if errors.Is(tc.expectedErr, errPanic) {
+				defer func(c testCase) {
+					if r := recover(); r == nil {
+						t.Errorf("'%s' failed: should have paniced", c.description)
+					}
+				}(tc)
+			}
 			// Necessary to redefine in every test due to future setting of stdout by the go-plugin package
 			id.Cmd = *pluginServerCmd(id.ProtocolVersion, basicHS)
 			if tc.p != nil {
@@ -76,7 +85,7 @@ func TestManager_LoadPluginClient(t *testing.T) {
 }
 
 func assertErr(t *testing.T, err, cmpErr error, desc string) {
-	if err != nil && !errors.Is(err, cmpErr) {
+	if !errors.Is(cmpErr, errPanic) && err != nil && !errors.Is(err, cmpErr) {
 		t.Errorf("'%s' failed: %v", desc, err)
 	}
 }
