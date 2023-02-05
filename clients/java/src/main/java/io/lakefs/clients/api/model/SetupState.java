@@ -20,6 +20,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.lakefs.clients.api.model.LoginConfig;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
@@ -82,6 +83,10 @@ public class SetupState {
   @SerializedName(SERIALIZED_NAME_STATE)
   private StateEnum state;
 
+  public static final String SERIALIZED_NAME_LOGIN_CONFIG = "login_config";
+  @SerializedName(SERIALIZED_NAME_LOGIN_CONFIG)
+  private LoginConfig loginConfig;
+
   public static final String SERIALIZED_NAME_OIDC_ENABLED = "oidc_enabled";
   @SerializedName(SERIALIZED_NAME_OIDC_ENABLED)
   private Boolean oidcEnabled;
@@ -111,6 +116,29 @@ public class SetupState {
 
   public void setState(StateEnum state) {
     this.state = state;
+  }
+
+
+  public SetupState loginConfig(LoginConfig loginConfig) {
+    
+    this.loginConfig = loginConfig;
+    return this;
+  }
+
+   /**
+   * Get loginConfig
+   * @return loginConfig
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public LoginConfig getLoginConfig() {
+    return loginConfig;
+  }
+
+
+  public void setLoginConfig(LoginConfig loginConfig) {
+    this.loginConfig = loginConfig;
   }
 
 
@@ -174,13 +202,14 @@ public class SetupState {
     }
     SetupState setupState = (SetupState) o;
     return Objects.equals(this.state, setupState.state) &&
+        Objects.equals(this.loginConfig, setupState.loginConfig) &&
         Objects.equals(this.oidcEnabled, setupState.oidcEnabled) &&
         Objects.equals(this.oidcDefaultLogin, setupState.oidcDefaultLogin);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(state, oidcEnabled, oidcDefaultLogin);
+    return Objects.hash(state, loginConfig, oidcEnabled, oidcDefaultLogin);
   }
 
   @Override
@@ -188,6 +217,7 @@ public class SetupState {
     StringBuilder sb = new StringBuilder();
     sb.append("class SetupState {\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
+    sb.append("    loginConfig: ").append(toIndentedString(loginConfig)).append("\n");
     sb.append("    oidcEnabled: ").append(toIndentedString(oidcEnabled)).append("\n");
     sb.append("    oidcDefaultLogin: ").append(toIndentedString(oidcDefaultLogin)).append("\n");
     sb.append("}");

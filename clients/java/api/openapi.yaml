@@ -5695,9 +5695,24 @@ components:
       required:
       - id
       type: object
+    LoginConfig:
+      example:
+        RBAC: simplified
+      properties:
+        RBAC:
+          description: |
+            RBAC will remain enabled on GUI if "external".  That only works
+            with an external auth service.
+          enum:
+          - simplified
+          - external
+          type: string
+      type: object
     SetupState:
       example:
         oidc_enabled: true
+        login_config:
+          RBAC: simplified
         oidc_default_login: true
         state: initialized
       properties:
@@ -5707,6 +5722,8 @@ components:
           - not_initialized
           - comm_prefs_done
           type: string
+        login_config:
+          $ref: '#/components/schemas/LoginConfig'
         oidc_enabled:
           deprecated: true
           description: 'Deprecated: embedded OIDC support is now deprecated'

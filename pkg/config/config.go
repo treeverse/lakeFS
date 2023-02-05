@@ -176,6 +176,9 @@ type Config struct {
 		OIDC              OIDC
 		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
 		LoginDuration     time.Duration `mapstructure:"login_duration"`
+		UIConfig          struct {
+			RBAC string `mapstructure:"rbac"`
+		} `mapstructure:"ui_config"`
 	}
 	Blockstore struct {
 		Type                   string `mapstructure:"type" validate:"required"`
@@ -201,8 +204,9 @@ type Config struct {
 			TryTimeout       time.Duration `mapstructure:"try_timeout"`
 			StorageAccount   string        `mapstructure:"storage_account"`
 			StorageAccessKey string        `mapstructure:"storage_access_key"`
-			AuthMethod       string        `mapstructure:"auth_method"`
-			PreSignedExpiry  time.Duration `mapstructure:"pre_signed_expiry"`
+			// Deprecated: Value ignored
+			AuthMethod      string        `mapstructure:"auth_method"`
+			PreSignedExpiry time.Duration `mapstructure:"pre_signed_expiry"`
 		} `mapstructure:"azure"`
 		GS *struct {
 			S3Endpoint      string        `mapstructure:"s3_endpoint"`
@@ -488,10 +492,12 @@ func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {
 }
 
 func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
+	if c.Blockstore.Azure.AuthMethod != "" {
+		logging.Default().Warn("blockstore.azure.auth_method is deprecated. Value is no longer used.")
+	}
 	return blockparams.Azure{
 		StorageAccount:   c.Blockstore.Azure.StorageAccount,
 		StorageAccessKey: c.Blockstore.Azure.StorageAccessKey,
-		AuthMethod:       c.Blockstore.Azure.AuthMethod,
 		TryTimeout:       c.Blockstore.Azure.TryTimeout,
 		PreSignedExpiry:  c.Blockstore.Azure.PreSignedExpiry,
 	}, nil

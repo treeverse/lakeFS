@@ -44,6 +44,8 @@ func setDefaults(local bool) {
 	viper.SetDefault("auth.logout_redirect_url", "/auth/login")
 	viper.SetDefault("auth.login_duration", 7*24*time.Hour)
 
+	viper.SetDefault("auth.ui_config.rbac", "simplified")
+
 	viper.SetDefault("blockstore.local.path", "~/lakefs/data/block")
 	viper.SetDefault("blockstore.s3.region", "us-east-1")
 	viper.SetDefault("blockstore.s3.streaming_chunk_size", 2<<19)          // 1MiB by default per chunk
@@ -78,7 +80,6 @@ func setDefaults(local bool) {
 	viper.SetDefault("email_subscription.enabled", true)
 
 	viper.SetDefault("blockstore.azure.try_timeout", 10*time.Minute)
-	viper.SetDefault("blockstore.azure.auth_method", "access-key")
 	viper.SetDefault("blockstore.azure.pre_signed_expiry", 15*time.Minute)
 
 	viper.SetDefault("security.audit_check_interval", 24*time.Hour)

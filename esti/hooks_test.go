@@ -38,7 +38,6 @@ func appendRes(info webhookEventInfo) {
 }
 
 func TestHooksSuccess(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	parseAndUploadActions(t, ctx, repo, mainBranch)

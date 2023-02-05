@@ -3511,15 +3511,21 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
+
 	state := string(savedState)
 	// no need to create an admin user if users are managed externally
 	if c.Config.IsAuthTypeAPI() {
 		state = string(auth.SetupStateInitialized)
+	} else if savedState == auth.SetupStateNotInitialized {
+		c.Collector.CollectEvent(stats.Event{Class: "global", Name: "preinit", Client: httputil.GetRequestLakeFSClient(r)})
 	}
 	response := SetupState{
 		State:            swag.String(state),
 		OidcEnabled:      swag.Bool(c.Config.Auth.OIDC.Enabled),
 		OidcDefaultLogin: swag.Bool(c.Config.Auth.OIDC.IsDefaultLogin),
+		LoginConfig: &LoginConfig{
+			RBAC: &c.Config.Auth.UIConfig.RBAC,
+		},
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
@@ -3605,8 +3611,14 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 		return
 	}
 
+	// this is the "natural" next step in the setup process
+	nextStep := auth.SetupStateCommPrefsDone
+	// if users are managed externally, we can skip the admin user creation step
+	if c.Config.IsAuthTypeAPI() {
+		nextStep = auth.SetupStateInitialized
+	}
 	response := NextStep{
-		NextStep: string(auth.SetupStateCommPrefsDone),
+		NextStep: string(nextStep),
 	}
 
 	if *body.Email == "" {

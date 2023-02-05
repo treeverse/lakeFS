@@ -13,6 +13,8 @@ import sys
 import unittest
 
 import lakefs_client
+from lakefs_client.model.login_config import LoginConfig
+globals()['LoginConfig'] = LoginConfig
 from lakefs_client.model.setup_state import SetupState
 
 

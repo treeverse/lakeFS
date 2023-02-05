@@ -10,7 +10,6 @@ import (
 )
 
 func TestSanityAPI(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	ctx, log, repo := setupTest(t)
 
 	log.Debug("list entries")
