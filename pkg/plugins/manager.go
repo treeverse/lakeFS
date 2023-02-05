@@ -50,7 +50,7 @@ func NewManager[T any]() *Manager[T] {
 	}
 }
 
-// RegisterPlugin is used to register a new plugin client with the corresponding plugin type.
+// RegisterPlugin registers a new plugin client with the corresponding plugin type.
 func (m *Manager[T]) RegisterPlugin(name string, id PluginIdentity, auth PluginHandshake, p plugin.Plugin) {
 	hc := plugin.HandshakeConfig{
 		ProtocolVersion:  id.ProtocolVersion,
