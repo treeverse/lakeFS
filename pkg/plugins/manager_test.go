@@ -139,7 +139,4 @@ func TestPluginServer(*testing.T) {
 		Plugins:         testGRPCPluginMap,
 		GRPCServer:      plugin.DefaultGRPCServer,
 	})
-
-	// Shouldn't reach here but make sure we exit anyway
-	os.Exit(0)
 }

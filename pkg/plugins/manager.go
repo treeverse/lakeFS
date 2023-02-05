@@ -53,9 +53,6 @@ func NewManager[T any]() *Manager[T] {
 
 // RegisterPlugin is used to register a new plugin client with the corresponding plugin type.
 func (m *Manager[T]) RegisterPlugin(name string, id PluginIdentity, auth PluginHandshake, p plugin.Plugin) {
-	if m == nil || m.pluginApplicationClients == nil {
-		return
-	}
 	hc := plugin.HandshakeConfig{
 		ProtocolVersion:  id.ProtocolVersion,
 		MagicCookieKey:   auth.Key,
@@ -87,26 +84,27 @@ func newPluginClient(name string, p plugin.Plugin, hc plugin.HandshakeConfig, cm
 }
 
 // LoadPluginClient loads a Client of type T.
-func (m *Manager[T]) LoadPluginClient(name string) (*T, error) {
+func (m *Manager[T]) LoadPluginClient(name string) (T, error) {
+	var zero T
 	if m == nil || m.pluginApplicationClients == nil {
-		return nil, ErrUninitializedManager
+		return zero, ErrUninitializedManager
 	}
 	c, ok := m.pluginApplicationClients[name]
 	if !ok {
-		return nil, ErrPluginNameNotFound
+		return zero, ErrPluginNameNotFound
 	}
 	grpcPluginClient, err := c.Client()
 	if err != nil {
-		return nil, err
+		return zero, err
 	}
 	rawGrpcClientStub, err := grpcPluginClient.Dispense(name) // Returns an implementation of the stub service.
 	if err != nil {
-		return nil, err
+		return zero, err
 	}
 	stub, ok := rawGrpcClientStub.(T)
 	if !ok {
 		delete(m.pluginApplicationClients, name)
-		return nil, ErrPluginOfWrongType
+		return zero, ErrPluginOfWrongType
 	}
-	return &stub, nil
+	return stub, nil
 }
