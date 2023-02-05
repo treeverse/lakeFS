@@ -34,10 +34,11 @@ type PluginHandshake struct {
 
 // Manager maps the available plugin names to the different kinds of plugin.Client plugin controllers.
 // T is the custom interface type that the returned GRPCClient implementation implements, e.g. "Differ" for `plugin.Client`s that
-// include a GRPCClient that implements the "Differ" interface:
-// grpcPluginClient, err := c.Client() // Returns a plugin.GRPCClient
-// rawGrpcClientStub, err := grpcPluginClient.Dispense(name) // Calls grpcPluginClient's GRPCClient method and returns the gRPC stub.
-// grpcClient, ok := rawGrpcClientStub.(Differ) // Asserts the expected type of stub client.
+//
+// 	include a GRPCClient that implements the "Differ" interface:
+// 	grpcPluginClient, err := c.Client() // Returns a plugin.GRPCClient
+// 	rawGrpcClientStub, err := grpcPluginClient.Dispense(name) // Calls grpcPluginClient's GRPCClient method and returns the gRPC stub.
+// 	grpcClient, ok := rawGrpcClientStub.(Differ) // Asserts the expected type of stub client.
 //
 // The map might include a mapping of "delta" -> plugin.Client to communicate with the Delta plugin.
 type Manager[T any] struct {
