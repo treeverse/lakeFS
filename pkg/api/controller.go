@@ -3504,28 +3504,24 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository s
 }
 
 func makeLoginConfig(c *config.Config) *LoginConfig {
-	// TODO(ariels): Configure by c.Auth.OIDC.Enabled if set, otherwise
-	// from C.Auth.UIConfig
 	var (
-		cookieNames = c.Auth.UIConfig.LoginCookieNames
-		// []string{
-		// 	"internal_auth_session",
-		// }
-		loginFailedMessage = c.Auth.UIConfig.LoginFailedMessage // "The credentials don't match."
-		fallbackLoginURL   = c.Auth.UIConfig.FallbackLoginURL   // nil
-		fallbackLoginLabel = c.Auth.UIConfig.FallbackLoginLabel // nil
-
-		defaultFallbackLoginURL   = "/oidc/login?prompt=login"
-		defaultFallbackLoginLabel = "Sign in with SSO provider"
+		cookieNames        = c.Auth.UIConfig.LoginCookieNames
+		loginFailedMessage = c.Auth.UIConfig.LoginFailedMessage
+		fallbackLoginURL   = c.Auth.UIConfig.FallbackLoginURL
+		fallbackLoginLabel = c.Auth.UIConfig.FallbackLoginLabel
 	)
 	if c.Auth.OIDC.Enabled {
+		var (
+			oidcFallbackLoginURL   = "/oidc/login?prompt=login"
+			oidcFallbackLoginLabel = "Sign in with SSO provider"
+		)
+
 		cookieNames = append(cookieNames, "oidc_auth_session")
 		loginFailedMessage = `The credentials don&apos;t match. You may be registered through our <a href={"/oidc/login?prompt=login"}>SSO Provider.</a>`
-		fallbackLoginURL = &defaultFallbackLoginURL
-		fallbackLoginLabel = &defaultFallbackLoginLabel
+		fallbackLoginURL = &oidcFallbackLoginURL
+		fallbackLoginLabel = &oidcFallbackLoginLabel
 	}
 
-	// "/oidc/login?prompt=login"
 	return &LoginConfig{
 		RBAC:               &c.Config.Auth.UIConfig.RBAC,
 		LoginUrl:           c.Auth.UIConfig.LoginURL,

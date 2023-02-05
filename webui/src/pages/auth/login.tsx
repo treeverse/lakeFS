@@ -10,8 +10,6 @@ import {Error} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 
-//const OIDC_LOGIN_URL = "/oidc/login?prompt=login";
-
 interface LoginConfig {
     login_url: string;
     login_failed_message?: string;
