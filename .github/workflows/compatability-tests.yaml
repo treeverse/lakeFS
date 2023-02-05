@@ -66,16 +66,6 @@ jobs:
             name: generated-code
             path: /tmp/generated.tar.gz
 
-#      - name: Package Spark App
-#        working-directory: test/spark/app
-#        run: sbt sonnets-311/package
-#
-#      - name: Store Sonnets Spark app
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: generated-sonnets
-#          path: test/spark/app/target/sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
-
       - name: Build Spark direct-access client
         working-directory: clients/hadoopfs
         run: |
@@ -216,7 +206,7 @@ jobs:
         run: docker-compose logs --tail=15000 lakefs
 
   compatibility-checks-server:
-    name: Test lakeFS server FileSystem ccompatibility
+    name: Test lakeFS server FileSystem compatibility
     needs: [gen-code, deploy-image]
     strategy:
       fail-fast: false
