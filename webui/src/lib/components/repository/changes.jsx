@@ -57,6 +57,8 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
         return <ObjectTreeEntryRow key={entry.path+"entry-row"} entry={entry} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference}
                                    getMore={getMore}/>
 
+    // TODO (Tals): remove to enable delta diff
+    const disableDeltaDiff = true;
     if (itemType.type === TreeItemType.Object) {
         return <>
             <ObjectTreeEntryRow key={entry.path + "entry-row"} entry={entry} relativeTo={relativeTo}
@@ -77,7 +79,7 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
             }
         </>
 
-    } else if (itemType.type === TreeItemType.Prefix) {
+    } else if (itemType.type === TreeItemType.Prefix || disableDeltaDiff) {
         return <>
             <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
             {dirExpanded && results &&
