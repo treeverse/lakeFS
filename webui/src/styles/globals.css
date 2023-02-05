@@ -49,6 +49,10 @@
   border-bottom: none;
 }
 
+.float-start {
+  width: 100%;
+}
+
 .action-bar .float-start .btn {
   margin-right: 10px;
 }
