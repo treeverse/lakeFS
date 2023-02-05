@@ -10,7 +10,6 @@ type clientProps struct {
 	ID   PluginIdentity
 	Auth PluginHandshake
 	P    plugin.Plugin
-	L    sync.Mutex
 }
 
 type Client struct {
@@ -49,22 +48,12 @@ func (cs *clientStore) Remove(name string) {
 	delete(cs.pluginApplicationClients, name)
 }
 
-func (cs *clientStore) Client(name string) (*plugin.Client, error) {
+func (cs *clientStore) Client(name string) (*plugin.Client, *clientProps, error) {
 	cs.rwl.RLock()
 	defer cs.rwl.RUnlock()
 	cl, ok := cs.pluginApplicationClients[name]
 	if !ok {
-		return nil, ErrPluginNotFound
+		return nil, nil, ErrPluginNotFound
 	}
-	return cl.PluginClient, nil
-}
-
-func (cs *clientStore) ClientProps(name string) (*clientProps, error) {
-	cs.rwl.RLock()
-	defer cs.rwl.RUnlock()
-	cl, ok := cs.pluginApplicationClients[name]
-	if !ok {
-		return nil, ErrPluginNotFound
-	}
-	return cl.ClientProps, nil
+	return cl.PluginClient, cl.ClientProps, nil
 }

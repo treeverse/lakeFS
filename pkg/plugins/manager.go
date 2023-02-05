@@ -39,10 +39,11 @@ type PluginHandshake struct {
 // Manager holds a clientStore and is responsible to register and unregister `plugin.Client`s, and to load
 // the underlying GRPC Client.
 // T is the custom interface type that the returned GRPC Client implementation implements, e.g. "Differ" for `plugin.Client`s that
-// 	include a GRPCClient that implements the "Differ" interface:
-// 	grpcPluginClient, err := c.Client() // Returns a plugin.GRPCClient
-// 	rawGrpcClientStub, err := grpcPluginClient.Dispense(name) // Calls grpcPluginClient's GRPCClient method and returns the gRPC stub.
-// 	grpcClient, ok := rawGrpcClientStub.(Differ) // Asserts the expected type of stub client.
+//
+//	include a GRPCClient that implements the "Differ" interface:
+//	grpcPluginClient, err := c.Client() // Returns a plugin.GRPCClient
+//	rawGrpcClientStub, err := grpcPluginClient.Dispense(name) // Calls grpcPluginClient's GRPCClient method and returns the gRPC stub.
+//	grpcClient, ok := rawGrpcClientStub.(Differ) // Asserts the expected type of stub client.
 type Manager[T any] struct {
 	pluginApplicationClients *clientStore
 }
@@ -97,16 +98,10 @@ func newPluginClient(name string, p plugin.Plugin, hc plugin.HandshakeConfig, cm
 // and won't allow to run the Client again.
 func (m *Manager[T]) LoadPluginClient(name string) (T, func(), error) {
 	var ans T
-	c, err := m.pluginApplicationClients.Client(name)
+	c, _, err := m.pluginApplicationClients.Client(name)
 	if err != nil {
 		return ans, nil, err
 	}
-	cp, _ := m.pluginApplicationClients.ClientProps(name)
-	if err != nil {
-		return ans, nil, err
-	}
-	cp.L.Lock()
-	defer cp.L.Unlock()
 	grpcPluginClient, err := c.Client()
 	if err != nil {
 		return ans, nil, err
@@ -121,16 +116,13 @@ func (m *Manager[T]) LoadPluginClient(name string) (T, func(), error) {
 		return ans, nil, ErrPluginOfWrongType
 	}
 	return ans, func() {
-		cp = m.closePluginClient(name)
+		cp := m.closePluginClient(name)
 		m.RegisterPlugin(name, cp.ID, cp.Auth, cp.P)
 	}, nil
 }
 
 func (m *Manager[T]) closePluginClient(name string) *clientProps {
-	cp, _ := m.pluginApplicationClients.ClientProps(name)
-	c, _ := m.pluginApplicationClients.Client(name)
-	cp.L.Lock()
-	defer cp.L.Unlock()
+	c, cp, _ := m.pluginApplicationClients.Client(name)
 	c.Kill()
 	return cp
 }
