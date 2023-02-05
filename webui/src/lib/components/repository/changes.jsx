@@ -128,12 +128,19 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
     let rightResult = useAPI(() => tablesUtil.isDeltaLakeTable(entry, repo, leftDiffRefID));
     useEffect(() => {
         if (entry.path_type === "object") {
-            setTreeItemType({type: TreeItemType.Object, loading: false});
-            return
+            setTreeItemType({ type: TreeItemType.Object, loading: false });
         }
-        if (!leftResult.loading && !rightResult.loading) {
-            setTreeItemType({type: leftResult.response || rightResult.response ? TreeItemType.DeltaLakeTable : TreeItemType.Prefix, loading: false});
+    }, [entry]);
+    useEffect(() => {
+        if (treeItemType.loading && !leftResult.loading && !rightResult.loading) {
+            setTreeItemType({
+                type:
+                    leftResult.response || rightResult.response
+                        ? TreeItemType.DeltaLakeTable
+                        : TreeItemType.Prefix,
+                loading: false,
+            });
         }
-    }, [leftResult, rightResult])
+    }, [leftResult, rightResult]);
     return treeItemType;
 }
