@@ -126,6 +126,22 @@ func (m *MemLogger) IsTracing() bool {
 	return true
 }
 
+func (m *MemLogger) IsDebugging() bool {
+	return true
+}
+
+func (m *MemLogger) IsInfo() bool {
+	return true
+}
+
+func (m *MemLogger) IsError() bool {
+	return true
+}
+
+func (m *MemLogger) IsWarn() bool {
+	return true
+}
+
 func (m *MemLogger) logLine(level string, args ...interface{}) {
 	m.log = append(m.log, &LogLine{
 		Fields: m.fields,

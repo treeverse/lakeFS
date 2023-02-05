@@ -98,6 +98,22 @@ func (d DummyLogger) IsTracing() bool {
 	return true
 }
 
+func (d DummyLogger) IsDebugging() bool {
+	return true
+}
+
+func (d DummyLogger) IsInfo() bool {
+	return true
+}
+
+func (d DummyLogger) IsError() bool {
+	return true
+}
+
+func (d DummyLogger) IsWarn() bool {
+	return true
+}
+
 func Dummy() Logger {
 	return DummyLogger{}
 }
