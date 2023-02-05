@@ -33,6 +33,8 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
     const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
 
+    const itemType = useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID);
+
     const { error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!dirExpanded) return
         if (!repo) return
@@ -50,8 +52,6 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
     const results = resultsState.results
     if (error)
         return <Error error={error}/>
-
-    const itemType = useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID);
 
     if (itemType.loading || (loading && results.length === 0))
         return <ObjectTreeEntryRow key={entry.path+"entry-row"} entry={entry} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference}
