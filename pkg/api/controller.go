@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -4021,7 +4020,6 @@ func NewController(
 	sessionStore sessions.Store,
 	pathProvider upload.PathProvider,
 ) *Controller {
-	gob.Register(oidc.Claims{})
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,
