@@ -12,6 +12,7 @@ import ChangeSummary from "./ChangeSummary";
 import {ConfirmationModal} from "../modals";
 import {OverlayTrigger} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
+import Button from "react-bootstrap/Button";
 
 class RowAction {
     /**
@@ -35,13 +36,13 @@ const ChangeRowActions = ({actions}) => <>
     {
         actions.map(action => (
             <><OverlayTrigger placement="bottom" overlay={<Tooltip>{action.tooltip}</Tooltip>}>
-                <Link className={"btn-link"} disabled={false} style={{visibility: action.visible ? "visible" : ""}}
+                <Button variant="link" disabled={false} style={{visibility: action.visible ? "visible" : ""}}
                       onClick={(e) => {
                           e.preventDefault();
                           action.onClick()
                       }}>
                     {action.icon}
-                </Link>
+                </Button>
             </OverlayTrigger>&#160;&#160;</>
         ))}
 </>;
