@@ -39,7 +39,10 @@ type PluginHandshake struct {
 // Manager holds a clientStore and is responsible to register and unregister `plugin.Client`s, and to load
 // the underlying GRPC Client.
 // T is the custom interface type that the returned GRPC Client implementation implements, e.g. "Differ" for `plugin.Client`s that
-// include a GRPCClient that implements the "Differ" interface.
+// 	include a GRPCClient that implements the "Differ" interface:
+// 	grpcPluginClient, err := c.Client() // Returns a plugin.GRPCClient
+// 	rawGrpcClientStub, err := grpcPluginClient.Dispense(name) // Calls grpcPluginClient's GRPCClient method and returns the gRPC stub.
+// 	grpcClient, ok := rawGrpcClientStub.(Differ) // Asserts the expected type of stub client.
 type Manager[T any] struct {
 	pluginApplicationClients *clientStore
 }
@@ -50,7 +53,7 @@ func NewManager[T any]() *Manager[T] {
 	}
 }
 
-// RegisterPlugin is used to register a new plugin Client with the corresponding plugin type.
+// RegisterPlugin registers a new plugin client with the corresponding plugin type.
 func (m *Manager[T]) RegisterPlugin(name string, id PluginIdentity, auth PluginHandshake, p plugin.Plugin) {
 	hc := plugin.HandshakeConfig{
 		ProtocolVersion:  id.ProtocolVersion,
