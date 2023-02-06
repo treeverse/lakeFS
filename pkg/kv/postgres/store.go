@@ -155,7 +155,7 @@ func parseStoreConfig(runtimeParams map[string]string, pgParams *kvparams.Postgr
 // setupKeyValueDatabase setup everything required to enable kv over postgres
 func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, table string, partitionsAmount int) (err error) {
 	var aid string
-	aid, err = generateAdvisoryLockId("lakefs:" + table)
+	aid, err = generateAdvisoryLockID("lakefs:" + table)
 	if err != nil {
 		return err
 	}
@@ -202,7 +202,7 @@ func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, table string
 	return err
 }
 
-func generateAdvisoryLockId(name string) (string, error) {
+func generateAdvisoryLockID(name string) (string, error) {
 	h := fnv.New32a()
 	if _, err := h.Write([]byte(name)); err != nil {
 		return "", err
