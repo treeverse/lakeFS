@@ -32,6 +32,7 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
     const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
+    const enableDeltaDiff = localStorage.getItem(`enable_delta_diff`);
 
     const itemType = useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID);
 
@@ -57,8 +58,6 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
         return <ObjectTreeEntryRow key={entry.path+"entry-row"} entry={entry} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference}
                                    getMore={getMore}/>
 
-    // TODO (Tals): remove to enable delta diff
-    const disableDeltaDiff = true;
     if (itemType.type === TreeItemType.Object) {
         return <>
             <ObjectTreeEntryRow key={entry.path + "entry-row"} entry={entry} relativeTo={relativeTo}
@@ -79,7 +78,7 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
             }
         </>
 
-    } else if (itemType.type === TreeItemType.Prefix || disableDeltaDiff) {
+    } else if (itemType.type === TreeItemType.Prefix || !enableDeltaDiff) {
         return <>
             <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
             {dirExpanded && results &&
