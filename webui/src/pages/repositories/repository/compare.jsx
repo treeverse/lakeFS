@@ -32,7 +32,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
     const [showComingSoonModal, setShowComingSoonModal] = useState(false);
-    const enableDeltaDiff = localStorage.getItem(`enable_delta_diff`);
+    const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
 
     const sendDeltaDiffStats = async () => {
         const deltaDiffStatEvents = [

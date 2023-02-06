@@ -32,7 +32,7 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
     const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
-    const enableDeltaDiff = localStorage.getItem(`enable_delta_diff`);
+    const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
 
     const itemType = useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID);
 
