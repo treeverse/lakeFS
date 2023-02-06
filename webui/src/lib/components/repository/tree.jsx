@@ -32,7 +32,6 @@ import { RefTypeBranch, RefTypeCommit } from "../../../constants";
 import {ClipboardButton, copyTextToClipboard, Error, Loading} from "../controls";
 import Modal from "react-bootstrap/Modal";
 import { useAPI } from "../../hooks/api";
-import ButtonGroup from "react-bootstrap/ButtonGroup";
 import noop from "lodash/noop";
 
 export const humanSize = (bytes) => {
