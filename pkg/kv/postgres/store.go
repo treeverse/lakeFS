@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"hash/fnv"
-	"os"
 	"strconv"
 
 	"github.com/IBM/pgxpoolprometheus"
@@ -154,8 +153,9 @@ func parseStoreConfig(runtimeParams map[string]string, pgParams *kvparams.Postgr
 }
 
 // setupKeyValueDatabase setup everything required to enable kv over postgres
-func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, table string, partitionsAmount int) error {
-	aid, err := generateAdvisoryLockId("lakefs:" + table)
+func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, table string, partitionsAmount int) (err error) {
+	var aid string
+	aid, err = generateAdvisoryLockId("lakefs:" + table)
 	if err != nil {
 		return err
 	}
@@ -166,9 +166,10 @@ func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, table string
 		return fmt.Errorf("try lock failed: %w", err)
 	}
 	defer func(ctx context.Context) {
-		_, err := conn.Exec(ctx, `SELECT pg_advisory_unlock($1)`, aid)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "pg_advisory_unlock failed (%s): %s", aid, err)
+		_, unlockErr := conn.Exec(ctx, `SELECT pg_advisory_unlock($1)`, aid)
+		// prefer the last error over unlock error
+		if err == nil {
+			err = unlockErr
 		}
 	}(ctx)
 
@@ -187,7 +188,7 @@ func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, table string
 	// partitions
 	partitions := getTablePartitions(table, partitionsAmount)
 	for i := 0; i < len(partitions); i++ {
-		_, err := conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS`+
+		_, err = conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS`+
 			pgx.Identifier{partitions[i]}.Sanitize()+` PARTITION OF `+
 			tableSanitize+` FOR VALUES WITH (MODULUS `+strconv.Itoa(partitionsAmount)+
 			`,REMAINDER `+strconv.Itoa(i)+`)`)
