@@ -14,9 +14,15 @@ Closes #(Insert issue number closed by this PR)
 
 ## Change Description
 
+### Background
+
+Share context and relevant information for the PR: offline discussions, considerations, design decisions etc.
+
 ### Bug Fix
 
-How was the bug fixed - describe the solution
+1. Problem - The reason for opening the bug
+2. Root cause - Discovered root cause after investigation
+3. solution - How was the bug fixed
       
 ### New Feature
 
