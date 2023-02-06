@@ -11,7 +11,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/branch"
 	"github.com/treeverse/lakefs/pkg/graveler/mock"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -147,7 +146,7 @@ func prepareTest(t *testing.T, ctx context.Context) *branch.ProtectionManager {
 	branchLock.EXPECT().MetadataUpdater(ctx, gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(cb).AnyTimes()
 	refManager.EXPECT().GetRepository(ctx, gomock.Any()).AnyTimes().Return(repository, nil)
 	kvStore := kvtest.GetStore(ctx, t)
-	m := settings.NewManager(refManager, kv.StoreMessage{Store: kvStore})
+	m := settings.NewManager(refManager, kvStore)
 
 	return branch.NewProtectionManager(m)
 }

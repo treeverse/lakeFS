@@ -13,7 +13,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/mock"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -308,7 +307,6 @@ func TestOrderedCommitIterator_CloseTwice(t *testing.T) {
 	entIt.EXPECT().Close().Times(1)
 	store := mock.NewMockStore(ctrl)
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
-	msgStore := kv.StoreMessage{Store: store}
 	repository := &graveler.RepositoryRecord{
 		RepositoryID: "CommitIterClose",
 		Repository: &graveler.Repository{
@@ -319,7 +317,7 @@ func TestOrderedCommitIterator_CloseTwice(t *testing.T) {
 			InstanceUID:      "rid",
 		},
 	}
-	it, err := ref.NewOrderedCommitIterator(ctx, &msgStore, repository, false)
+	it, err := ref.NewOrderedCommitIterator(ctx, store, repository, false)
 	if err != nil {
 		t.Fatal("failed to create ordered commit iterator", err)
 	}
@@ -335,14 +333,13 @@ func TestOrderedCommitIterator_NextAfterClose(t *testing.T) {
 	entIt.EXPECT().Close().Times(1)
 	store := mock.NewMockStore(ctrl)
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
-	msgStore := kv.StoreMessage{Store: store}
 	repository := &graveler.RepositoryRecord{
 		RepositoryID: "CommitIterClose",
 		Repository: &graveler.Repository{
 			InstanceUID: "rid",
 		},
 	}
-	it, err := ref.NewOrderedCommitIterator(ctx, &msgStore, repository, false)
+	it, err := ref.NewOrderedCommitIterator(ctx, store, repository, false)
 	if err != nil {
 		t.Fatal("failed to create kv ordered commit iterator", err)
 	}

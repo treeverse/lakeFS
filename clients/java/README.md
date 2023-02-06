@@ -259,6 +259,7 @@ Class | Method | HTTP request | Description
  - [ImportPagination](docs/ImportPagination.md)
  - [IngestRangeCreationResponse](docs/IngestRangeCreationResponse.md)
  - [InlineObject1](docs/InlineObject1.md)
+ - [LoginConfig](docs/LoginConfig.md)
  - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
  - [MergeResult](docs/MergeResult.md)

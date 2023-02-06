@@ -13,13 +13,14 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"go.uber.org/ratelimit"
 )
 
 func newTestStagingManager(t *testing.T) (context.Context, graveler.StagingManager) {
 	t.Helper()
 	ctx := context.Background()
 	store := kvtest.GetStore(ctx, t)
-	return ctx, staging.NewManager(ctx, kv.StoreMessage{Store: store})
+	return ctx, staging.NewManager(ctx, store, kv.NewStoreLimiter(store, ratelimit.NewUnlimited()))
 }
 
 func TestUpdate(t *testing.T) {
@@ -157,7 +158,7 @@ func TestDropAsync(t *testing.T) {
 	ctx := context.Background()
 	store := kvtest.GetStore(ctx, t)
 	ch := make(chan bool)
-	s := staging.NewManager(ctx, kv.StoreMessage{Store: store})
+	s := staging.NewManager(ctx, store, kv.NewStoreLimiter(store, ratelimit.NewUnlimited()))
 	s.OnCleanup(func() {
 		close(ch)
 	})

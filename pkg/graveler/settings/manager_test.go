@@ -16,7 +16,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/mock"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"google.golang.org/protobuf/proto"
@@ -251,7 +250,7 @@ func prepareTest(t *testing.T, ctx context.Context, refCache cache.Cache, branch
 	opts = append(opts, settings.WithCache(refCache))
 	branchLock.EXPECT().MetadataUpdater(ctx, gomock.Eq(repository), graveler.BranchID("main"), gomock.Any()).DoAndReturn(cb).AnyTimes()
 	kvStore := kvtest.GetStore(ctx, t)
-	m := settings.NewManager(refManager, kv.StoreMessage{Store: kvStore}, opts...)
+	m := settings.NewManager(refManager, kvStore, opts...)
 
 	refManager.EXPECT().GetRepository(ctx, gomock.Eq(repository.RepositoryID)).AnyTimes().Return(repository, nil)
 	return m, blockAdapter

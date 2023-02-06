@@ -14,6 +14,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"go.uber.org/ratelimit"
 )
 
 var (
@@ -28,34 +29,33 @@ var (
 	}
 )
 
-func testRefManager(t testing.TB) (graveler.RefManager, *kv.StoreMessage) {
+func testRefManager(t testing.TB) (graveler.RefManager, kv.Store) {
 	t.Helper()
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
-	storeMessage := &kv.StoreMessage{Store: kvStore}
 	cfg := ref.ManagerConfig{
 		Executor:              batch.NopExecutor(),
-		KvStore:               storeMessage,
+		KVStore:               kvStore,
+		KVStoreLimited:        kv.NewStoreLimiter(kvStore, ratelimit.NewUnlimited()),
 		AddressProvider:       ident.NewHexAddressProvider(),
 		RepositoryCacheConfig: testRepoCacheConfig,
 		CommitCacheConfig:     testCommitCacheConfig,
 	}
-	return ref.NewRefManager(cfg), storeMessage
+	return ref.NewRefManager(cfg), kvStore
 }
 
-func testRefManagerWithAddressProvider(t testing.TB, addressProvider ident.AddressProvider) (graveler.RefManager, *kv.StoreMessage) {
+func testRefManagerWithAddressProvider(t testing.TB, addressProvider ident.AddressProvider) (graveler.RefManager, kv.Store) {
 	t.Helper()
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
-	storeMessage := &kv.StoreMessage{Store: kvStore}
 	cfg := ref.ManagerConfig{
 		Executor:              batch.NopExecutor(),
-		KvStore:               storeMessage,
+		KVStore:               kvStore,
 		AddressProvider:       addressProvider,
 		RepositoryCacheConfig: testRepoCacheConfig,
 		CommitCacheConfig:     testCommitCacheConfig,
 	}
-	return ref.NewRefManager(cfg), storeMessage
+	return ref.NewRefManager(cfg), kvStore
 }
 
 func TestMain(m *testing.M) {

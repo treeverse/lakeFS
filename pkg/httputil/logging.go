@@ -59,6 +59,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 			startTime := time.Now()
 			writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
 			r, reqID := RequestID(r)
+			client := GetRequestLakeFSClient(r)
 
 			// add default fields to context
 			requestFields := logging.Fields{
@@ -78,6 +79,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 				"took":           time.Since(startTime),
 				"status_code":    writer.StatusCode,
 				"sent_bytes":     writer.ResponseSize,
+				"client":         client,
 				logging.LogAudit: true,
 			}
 

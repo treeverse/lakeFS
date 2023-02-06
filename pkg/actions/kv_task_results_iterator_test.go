@@ -8,13 +8,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/actions"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 )
 
 func TestTaskResultsIterator(t *testing.T) {
 	ctx := context.Background()
-	kvStore := kv.StoreMessage{Store: kvtest.GetStore(ctx, t)}
+	kvStore := kvtest.GetStore(ctx, t)
 	_, keyList := createTestData(t, ctx, kvStore)
 
 	tests := []struct {

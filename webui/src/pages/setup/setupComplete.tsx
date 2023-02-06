@@ -21,14 +21,13 @@ export const SetupComplete: FC<SetupCompleteProps> = ({
     apiEndpoint,
 }) => {
     const router = useRouter();
-    const downloadContent = 'data:application/octet-stream,' + encodeURIComponent(
-        `# lakectl command line configuration - save under the filename $HOME/.lakectl.yaml
-            credentials:
-            access_key_id: ${accessKeyId}
-            secret_access_key: ${secretAccessKey}
-            server:
-            endpoint_url: ${window.location.protocol}//${window.location.host}${apiEndpoint}
-    `);
+    const downloadContent = 'data:application/octet-stream,' + encodeURIComponent(`# lakectl command line configuration - save under the filename $HOME/.lakectl.yaml
+credentials:
+    access_key_id: ${accessKeyId}
+    secret_access_key: ${secretAccessKey}
+server:
+    endpoint_url: ${window.location.protocol}//${window.location.host}${apiEndpoint}
+`);
     
     const goToLoginHandler = useCallback(() => {
         let nextUrl = "/auth/login";

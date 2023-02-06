@@ -2,6 +2,17 @@
 
 ## _Upcoming_
 
+## 0.1.12
+
+Notable bugfixes:
+* Fixing CopyObject -> StageObject fallback mechanism to support old lakeFS versions
+
+## 0.1.11
+
+What's new:
+* Upgrade lakeFS client to v0.91.0
+* Prefer to use CopyObject instead of StageObject if possible in rename operation.
+
 ## 0.1.10
 
 * Performs fewer API calls, leading to some performance improvement.

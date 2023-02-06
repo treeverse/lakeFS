@@ -22,7 +22,6 @@ const (
 )
 
 func TestImport(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	importPath := ""
 	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
 	switch blockstoreType {
@@ -80,6 +79,19 @@ func verifyImportObjects(t *testing.T, ctx context.Context, repoName string, pre
 		require.NoError(t, err, "get object failed: %s", objPath)
 		require.Equal(t, http.StatusOK, objResp.StatusCode(), "get object %s", objPath)
 		require.Equal(t, expectedContentLength, int(objResp.HTTPResponse.ContentLength), "object content length %s", objPath)
+	}
+	hasMore := true
+	after := api.PaginationAfter("")
+	for hasMore {
+		listResp, err := client.ListObjectsWithResponse(ctx, repoName, importBranchName, &api.ListObjectsParams{After: &after})
+		require.NoError(t, err, "list objects failed")
+		require.NotNil(t, listResp.JSON200)
+
+		hasMore = listResp.JSON200.Pagination.HasMore
+		after = api.PaginationAfter(listResp.JSON200.Pagination.NextOffset)
+		for _, obj := range listResp.JSON200.Results {
+			require.True(t, strings.HasPrefix(obj.Path, prefix), "obj with wrong prefix imported", obj.Path, prefix)
+		}
 	}
 }
 

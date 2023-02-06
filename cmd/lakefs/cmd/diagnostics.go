@@ -31,9 +31,6 @@ var diagnosticsCmd = &cobra.Command{
 			log.Fatalf("Failed to open KV store: %s", err)
 		}
 		defer kvStore.Close()
-		storeMessage := &kv.StoreMessage{
-			Store: kvStore,
-		}
 
 		adapter, err := factory.BuildBlockAdapter(ctx, &stats.NullCollector{}, cfg)
 		if err != nil {
@@ -41,8 +38,9 @@ var diagnosticsCmd = &cobra.Command{
 		}
 		c, err := catalog.New(ctx, catalog.Config{
 			Config:       cfg,
-			KVStore:      storeMessage,
+			KVStore:      kvStore,
 			PathProvider: upload.DefaultPathProvider,
+			Limiter:      cfg.NewGravelerBackgroundLimiter(),
 		})
 		if err != nil {
 			log.Fatalf("Failed to create catalog: %s", err)

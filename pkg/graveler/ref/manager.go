@@ -29,18 +29,8 @@ const MaxBatchDelay = time.Millisecond * 3
 // commitIDStringLength string representation length of commit ID - based on hex representation of sha256
 const commitIDStringLength = 64
 
-const (
-	DefaultRepositoryCacheSize   = 1000
-	DefaultRepositoryCacheExpiry = 5 * time.Second
-	DefaultRepositoryCacheJitter = DefaultRepositoryCacheExpiry / 2
-
-	DefaultCommitCacheSize   = 1000
-	DefaultCommitCacheExpiry = 30 * time.Second
-	DefaultCommitCacheJitter = DefaultRepositoryCacheExpiry / 2
-
-	// LinkAddressTime the time address is valid from get to link
-	LinkAddressTime = 6 * time.Hour
-)
+// LinkAddressTime the time address is valid from get to link
+const LinkAddressTime = 6 * time.Hour
 
 type CacheConfig struct {
 	Size   int
@@ -49,7 +39,8 @@ type CacheConfig struct {
 }
 
 type Manager struct {
-	kvStore         *kv.StoreMessage
+	kvStore         kv.Store
+	kvStoreLimited  kv.Store
 	addressProvider ident.AddressProvider
 	batchExecutor   batch.Batcher
 	repoCache       cache.Cache
@@ -85,7 +76,8 @@ func protoFromBranch(branchID graveler.BranchID, b *graveler.Branch) *graveler.B
 
 type ManagerConfig struct {
 	Executor              batch.Batcher
-	KvStore               *kv.StoreMessage
+	KVStore               kv.Store
+	KVStoreLimited        kv.Store
 	AddressProvider       ident.AddressProvider
 	RepositoryCacheConfig CacheConfig
 	CommitCacheConfig     CacheConfig
@@ -93,7 +85,8 @@ type ManagerConfig struct {
 
 func NewRefManager(cfg ManagerConfig) *Manager {
 	return &Manager{
-		kvStore:         cfg.KvStore,
+		kvStore:         cfg.KVStore,
+		kvStoreLimited:  cfg.KVStoreLimited,
 		addressProvider: cfg.AddressProvider,
 		batchExecutor:   cfg.Executor,
 		repoCache:       newCache(cfg.RepositoryCacheConfig),
@@ -103,7 +96,7 @@ func NewRefManager(cfg ManagerConfig) *Manager {
 
 func (m *Manager) getRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
 	data := graveler.RepositoryData{}
-	_, err := m.kvStore.GetMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID)), &data)
+	_, err := kv.GetMsg(ctx, m.kvStore, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID)), &data)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrRepositoryNotFound
@@ -153,7 +146,7 @@ func (m *Manager) createBareRepository(ctx context.Context, repositoryID gravele
 	}
 	repo := graveler.ProtoFromRepo(repoRecord)
 
-	err := m.kvStore.SetMsgIf(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID)), repo, nil)
+	err := kv.SetMsgIf(ctx, m.kvStore, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID)), repo, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = graveler.ErrNotUnique
@@ -204,7 +197,7 @@ func (m *Manager) ListRepositories(ctx context.Context) (graveler.RepositoryIter
 
 func (m *Manager) updateRepoState(ctx context.Context, repo *graveler.RepositoryRecord, state graveler.RepositoryState) error {
 	repo.State = state
-	return m.kvStore.SetMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repo.RepositoryID)), graveler.ProtoFromRepo(repo))
+	return kv.SetMsg(ctx, m.kvStore, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repo.RepositoryID)), graveler.ProtoFromRepo(repo))
 }
 
 func (m *Manager) deleteRepositoryBranches(ctx context.Context, repository *graveler.RepositoryRecord) error {
@@ -273,7 +266,7 @@ func (m *Manager) deleteRepository(ctx context.Context, repo *graveler.Repositor
 	}
 
 	// Finally delete the repository record itself
-	return m.kvStore.DeleteMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repo.RepositoryID)))
+	return m.kvStore.Delete(ctx, []byte(graveler.RepositoriesPartition()), []byte(graveler.RepoPath(repo.RepositoryID)))
 }
 
 func (m *Manager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
@@ -311,7 +304,7 @@ func (m *Manager) getBranchWithPredicate(ctx context.Context, repository *gravel
 	result, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
 		key := graveler.BranchPath(branchID)
 		data := graveler.BranchData{}
-		pred, err := m.kvStore.GetMsg(ctx, graveler.RepoPartition(repository), []byte(key), &data)
+		pred, err := kv.GetMsg(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(key), &data)
 		if err != nil {
 			return nil, err
 		}
@@ -333,7 +326,7 @@ func (m *Manager) GetBranch(ctx context.Context, repository *graveler.Repository
 }
 
 func (m *Manager) createBranch(ctx context.Context, repositoryPartition string, branchID graveler.BranchID, branch graveler.Branch) error {
-	err := m.kvStore.SetMsgIf(ctx, repositoryPartition, []byte(graveler.BranchPath(branchID)), protoFromBranch(branchID, &branch), nil)
+	err := kv.SetMsgIf(ctx, m.kvStore, repositoryPartition, []byte(graveler.BranchPath(branchID)), protoFromBranch(branchID, &branch), nil)
 	if errors.Is(err, kv.ErrPredicateFailed) {
 		err = graveler.ErrBranchExists
 	}
@@ -345,7 +338,7 @@ func (m *Manager) CreateBranch(ctx context.Context, repository *graveler.Reposit
 }
 
 func (m *Manager) SetBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, branch graveler.Branch) error {
-	return m.kvStore.SetMsg(ctx, graveler.RepoPartition(repository), []byte(graveler.BranchPath(branchID)), protoFromBranch(branchID, &branch))
+	return kv.SetMsg(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(graveler.BranchPath(branchID)), protoFromBranch(branchID, &branch))
 }
 
 func (m *Manager) BranchUpdate(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, f graveler.BranchUpdateFunc) error {
@@ -358,7 +351,7 @@ func (m *Manager) BranchUpdate(ctx context.Context, repository *graveler.Reposit
 	if err != nil || newBranch == nil {
 		return err
 	}
-	return m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(repository), []byte(graveler.BranchPath(branchID)), protoFromBranch(branchID, newBranch), pred)
+	return kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(graveler.BranchPath(branchID)), protoFromBranch(branchID, newBranch), pred)
 }
 
 func (m *Manager) DeleteBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) error {
@@ -366,7 +359,7 @@ func (m *Manager) DeleteBranch(ctx context.Context, repository *graveler.Reposit
 	if err != nil {
 		return err
 	}
-	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repository), []byte(graveler.BranchPath(branchID)))
+	return m.kvStore.Delete(ctx, []byte(graveler.RepoPartition(repository)), []byte(graveler.BranchPath(branchID)))
 }
 
 func (m *Manager) ListBranches(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.BranchIterator, error) {
@@ -382,7 +375,7 @@ func (m *Manager) GetTag(ctx context.Context, repository *graveler.RepositoryRec
 	commitID, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
 		tagKey := graveler.TagPath(tagID)
 		t := graveler.TagData{}
-		_, err := m.kvStore.GetMsg(ctx, graveler.RepoPartition(repository), []byte(tagKey), &t)
+		_, err := kv.GetMsg(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(tagKey), &t)
 		if err != nil {
 			return nil, err
 		}
@@ -404,7 +397,7 @@ func (m *Manager) CreateTag(ctx context.Context, repository *graveler.Repository
 		CommitId: commitID.String(),
 	}
 	tagKey := graveler.TagPath(tagID)
-	err := m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(repository), []byte(tagKey), t, nil)
+	err := kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(tagKey), t, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = graveler.ErrTagAlreadyExists
@@ -417,7 +410,7 @@ func (m *Manager) CreateTag(ctx context.Context, repository *graveler.Repository
 func (m *Manager) DeleteTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID) error {
 	tagKey := graveler.TagPath(tagID)
 	// TODO (issue 3640) align with delete tag DB - return ErrNotFound when tag does not exist
-	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repository), []byte(tagKey))
+	return m.kvStore.Delete(ctx, []byte(graveler.RepoPartition(repository)), []byte(tagKey))
 }
 
 func (m *Manager) ListTags(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.TagIterator, error) {
@@ -488,7 +481,7 @@ func (m *Manager) getCommitBatch(ctx context.Context, repository *graveler.Repos
 func (m *Manager) getCommit(commitID graveler.CommitID, ctx context.Context, repository *graveler.RepositoryRecord) (interface{}, error) {
 	commitKey := graveler.CommitPath(commitID)
 	c := graveler.CommitData{}
-	_, err := m.kvStore.GetMsg(ctx, graveler.RepoPartition(repository), []byte(commitKey), &c)
+	_, err := kv.GetMsg(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(commitKey), &c)
 	if errors.Is(err, kv.ErrNotFound) {
 		err = graveler.ErrCommitNotFound
 	}
@@ -502,7 +495,7 @@ func (m *Manager) addCommit(ctx context.Context, repoPartition string, commit gr
 	commitID := m.addressProvider.ContentAddress(commit)
 	c := graveler.ProtoFromCommit(graveler.CommitID(commitID), &commit)
 	commitKey := graveler.CommitPath(graveler.CommitID(commitID))
-	err := m.kvStore.SetMsgIf(ctx, repoPartition, []byte(commitKey), c, nil)
+	err := kv.SetMsgIf(ctx, m.kvStore, repoPartition, []byte(commitKey), c, nil)
 	// commits are written based on their content hash, if we insert the same ID again,
 	// it will necessarily have the same attributes as the existing one, so if a commit already exists doesn't return an error
 	if err != nil && !errors.Is(err, kv.ErrPredicateFailed) {
@@ -517,7 +510,7 @@ func (m *Manager) AddCommit(ctx context.Context, repository *graveler.Repository
 
 func (m *Manager) RemoveCommit(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) error {
 	commitKey := graveler.CommitPath(commitID)
-	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repository), []byte(commitKey))
+	return m.kvStore.Delete(ctx, []byte(graveler.RepoPartition(repository)), []byte(commitKey))
 }
 
 func (m *Manager) FindMergeBase(ctx context.Context, repository *graveler.RepositoryRecord, commitIDs ...graveler.CommitID) (*graveler.Commit, error) {
@@ -551,7 +544,7 @@ func (m *Manager) SetLinkAddress(ctx context.Context, repository *graveler.Repos
 	a := &graveler.LinkAddressData{
 		Address: token,
 	}
-	err := m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(repository), []byte(graveler.LinkedAddressPath(token)), a, nil)
+	err := kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(graveler.LinkedAddressPath(token)), a, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = graveler.ErrAddressTokenAlreadyExists
@@ -564,7 +557,7 @@ func (m *Manager) SetLinkAddress(ctx context.Context, repository *graveler.Repos
 func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
 	data := graveler.LinkAddressData{}
 	addrPath := []byte(graveler.LinkedAddressPath(token))
-	_, err := m.kvStore.GetMsg(ctx, graveler.RepoPartition(repository), addrPath, &data)
+	_, err := kv.GetMsg(ctx, m.kvStore, graveler.RepoPartition(repository), addrPath, &data)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrAddressTokenNotFound
@@ -575,12 +568,12 @@ func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.Re
 	if err != nil {
 		return err
 	}
-	return m.deleteLinkAddress(ctx, repository, token)
+	return deleteLinkAddress(ctx, m.kvStore, repository, token)
 }
 
-func (m *Manager) deleteLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+func deleteLinkAddress(ctx context.Context, kvStore kv.Store, repository *graveler.RepositoryRecord, token string) error {
 	addrPath := []byte(graveler.LinkedAddressPath(token))
-	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(repository), addrPath)
+	return kvStore.Delete(ctx, []byte(graveler.RepoPartition(repository)), addrPath)
 }
 
 func (m *Manager) ListLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
@@ -607,8 +600,10 @@ func (m *Manager) resolveLinkAddressTime(address string) (time.Time, error) {
 	return id.Time(), nil
 }
 
+// DeleteExpiredLinkAddresses delete expired link addresses from kv store. This call uses limiter to access
+// kv, assuming the call does in the background.
 func (m *Manager) DeleteExpiredLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) error {
-	itr, err := m.ListLinkAddresses(ctx, repository)
+	itr, err := NewAddressTokenIterator(ctx, m.kvStoreLimited, repository)
 	if err != nil {
 		return err
 	}
@@ -620,7 +615,7 @@ func (m *Manager) DeleteExpiredLinkAddresses(ctx context.Context, repository *gr
 			return err
 		}
 		if expired {
-			err := m.deleteLinkAddress(ctx, repository, token.Address)
+			err := deleteLinkAddress(ctx, m.kvStoreLimited, repository, token.Address)
 			if err != nil {
 				return err
 			}

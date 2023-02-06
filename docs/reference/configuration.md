@@ -100,6 +100,10 @@ This reference uses `.` to denote the nesting of values.
 * `auth.oidc.authorize_endpoint_query_parameters` `(map[string]string : )` - Add these parameters when calling the provider's `/authorize` endpoint
 * `auth.oidc.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
 * `auth.oidc.additional_scope_claims` `(string[]: [])` - Add these additional scopes/claims to the OIDC user token. `openid` and `profile` are provided already. 
+* `auth.ui_config.RBAC` `(string: "simplified")` - "simplified" or
+  "external".  In simplified mode, do not display policy in GUI.  If you
+  have configured an external auth server you can set this to "external" to
+  support the policy editor.
 * `blockstore.type` `(one of ["local", "s3", "gs", "azure", "mem"] : required)`. Block adapter to use. This controls where the underlying data will be stored
 * `blockstore.default_namespace_prefix` `(string : )` - Use this to help your users choose a storage namespace for their repositories. 
    If specified, the storage namespace will be filled with this default value as a prefix when creating a repository from the UI.
@@ -107,9 +111,10 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.local.path` `(string: "~/lakefs/data")` - When using the local Block Adapter, which directory to store files in
 * `blockstore.gs.credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key
 * `blockstore.gs.credentials_json` `(string : )` - If specified will be used as JSON string that contains your Google service account key (when credentials_file is not set)
+* `blockstore.gs.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
 * `blockstore.azure.storage_account` `(string : )` - If specified, will be used as the Azure storage account
 * `blockstore.azure.storage_access_key` `(string : )` - If specified, will be used as the Azure storage access key
-* `blockstore.azure.auth_method` `(one of ["msi", "access-key"]: "access-key" )` - Authentication method to use (msi is used for Azure AD authentication). 
+* `blockstore.azure.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
 * `blockstore.s3.region` `(string : "us-east-1")` - Default region for lakeFS to use when interacting with S3.
 * `blockstore.s3.profile` `(string : )` - If specified, will be used as a [named credentials profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)
 * `blockstore.s3.credentials_file` `(string : )` - If specified, will be used as a [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
@@ -124,12 +129,14 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.skip_verify_certificate_test_only` `(boolean : false)` - Skip certificate verification while connecting to the storage endpoint. Should be used only for testing.
 * `blockstore.s3.server_side_encryption` `(string : )` - Server side encryption format used (Example on AWS using SSE-KMS while passing "aws:kms")
 * `blockstore.s3.server_side_encryption_kms_key_id` `(string : )` - Server side encryption KMS key ID
+* `blockstore.s3.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
 * `graveler.reposiory_cache.size` `(int : 1000)` - How many items to store in the repository cache.
 * `graveler.reposiory_cache.ttl` `(time duration : "5s")` - How long to store an item in the repository cache.
 * `graveler.reposiory_cache.jitter` `(time duration : "2s")` - A random amount of time between 0 and this value is added to each item's TTL.
 * `graveler.commit_cache.size` `(int : 50000)` - How many items to store in the commit cache.
 * `graveler.commit_cache.ttl` `(time duration : "10m")` - How long to store an item in the commit cache.
 * `graveler.commit_cache.jitter` `(time duration : "2s")` - A random amount of time between 0 and this value is added to each item's TTL.
+* `graveler.background.rate_limit` `(int : 0)` - Advence configuration to control background work done rate limit in requests per second (default: 0 - unlimited).
 * `committed.local_cache` - an object describing the local (on-disk) cache of metadata from
   permanent storage:
   + `committed.local_cache.size_bytes` (`int` : `1073741824`) - bytes for local cache to use on disk.  The cache may use more storage for short periods of time.
@@ -326,7 +333,6 @@ auth:
 blockstore:
   type: azure
   azure:
-    auth_method: access-key
     storage_account: exampleStorageAcount
     storage_access_key: ExampleAcessKeyMD7nkPOWgV7d4BUjzLw==
 
