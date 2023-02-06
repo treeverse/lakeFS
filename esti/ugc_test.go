@@ -41,7 +41,7 @@ func TestUncommittedGC(t *testing.T) {
 	prepareForUncommittedGC(t, ctx)
 
 	// upload files while ugc is running
-	ticker := time.NewTicker(time.Second * 1)
+	ticker := time.NewTicker(time.Second)
 	var durObjects []string
 	done := make(chan bool)
 	go func() {
@@ -370,8 +370,8 @@ func getReportCutoffTime(s3Client *s3.S3, bucket, reportPath string) (time.Time,
 		RunId             string    `json:"run_id"`
 		Success           bool      `json:"success"`
 		FirstSlice        string    `json:"first_slice"`
-		StartTime         time.Time `json:"start_time,time"`
-		CutoffTime        time.Time `json:"cutoff_time,time"`
+		StartTime         time.Time `json:"start_time"`
+		CutoffTime        time.Time `json:"cutoff_time"`
 		NumDeletedObjects int       `json:"num_deleted_objects"`
 	}
 
