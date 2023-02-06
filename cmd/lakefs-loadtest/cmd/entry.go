@@ -70,11 +70,10 @@ var entryCmd = &cobra.Command{
 			logging.Default().WithError(err).Fatal("failed to open KV store")
 		}
 		defer kvStore.Close()
-		storeMessage := &kv.StoreMessage{Store: kvStore}
 
 		c, err := catalog.New(ctx, catalog.Config{
 			Config:       conf,
-			KVStore:      storeMessage,
+			KVStore:      kvStore,
 			PathProvider: upload.DefaultPathProvider,
 			Limiter:      conf.NewGravelerBackgroundLimiter(),
 		})

@@ -48,8 +48,7 @@ func TestLocalLoad(t *testing.T) {
 	}
 
 	kvStore := kvtest.GetStore(ctx, t)
-	storeMessage := &kv.StoreMessage{Store: kvStore}
-	authService := auth.NewAuthService(storeMessage, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
+	authService := auth.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
 	meta := auth.NewKVMetadataManager("local_load_test", conf.Installation.FixedID, conf.Database.Type, kvStore)
 
 	blockstoreType := os.Getenv(testutil.EnvKeyUseBlockAdapter)
@@ -60,7 +59,7 @@ func TestLocalLoad(t *testing.T) {
 	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
 	c, err := catalog.New(ctx, catalog.Config{
 		Config:       conf,
-		KVStore:      storeMessage,
+		KVStore:      kvStore,
 		PathProvider: upload.DefaultPathProvider,
 		Limiter:      conf.NewGravelerBackgroundLimiter(),
 	})
@@ -70,7 +69,7 @@ func TestLocalLoad(t *testing.T) {
 	outputWriter := catalog.NewActionsOutputWriter(c.BlockAdapter)
 
 	// wire actions
-	actionsService := actions.NewService(ctx, actions.NewActionsKVStore(*storeMessage), source, outputWriter, &actions.DecreasingIDGenerator{}, &stats.NullCollector{}, true)
+	actionsService := actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, outputWriter, &actions.DecreasingIDGenerator{}, &stats.NullCollector{}, true)
 	c.SetHooksHandler(actionsService)
 
 	credentials, err := auth.SetupAdminUser(ctx, authService, superuser)

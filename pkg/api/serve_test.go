@@ -126,10 +126,9 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	cfg, err := config.NewConfig()
 	testutil.MustDo(t, "config", err)
 	kvStore := kvtest.GetStore(ctx, t)
-	kvStoreMessage := &kv.StoreMessage{Store: kvStore}
-	actionsStore := actions.NewActionsKVStore(*kvStoreMessage)
+	actionsStore := actions.NewActionsKVStore(kvStore)
 	idGen := &actions.DecreasingIDGenerator{}
-	authService := auth.NewAuthService(kvStoreMessage, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
+	authService := auth.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
 	meta := auth.NewKVMetadataManager("serve_test", cfg.Installation.FixedID, cfg.Database.Type, kvStore)
@@ -137,7 +136,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	// Do not validate invalid config (missing required fields).
 	c, err := catalog.New(ctx, catalog.Config{
 		Config:                cfg,
-		KVStore:               kvStoreMessage,
+		KVStore:               kvStore,
 		WalkerFactory:         factory,
 		SettingsManagerOption: settings.WithCache(cache.NoCache),
 		PathProvider:          upload.DefaultPathProvider,

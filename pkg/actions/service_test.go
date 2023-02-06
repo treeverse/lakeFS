@@ -19,7 +19,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/actions/mock"
 	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -50,8 +49,7 @@ func (c *ActionStatsMockCollector) CollectEvents(ev stats.Event, count uint64) {
 	c.Hits[ev.Name] += int(count)
 }
 
-func (c *ActionStatsMockCollector) CollectMetadata(accountMetadata *stats.Metadata) {
-}
+func (c *ActionStatsMockCollector) CollectMetadata(_ *stats.Metadata)       {}
 func (c *ActionStatsMockCollector) SetInstallationID(_ string)              {}
 func (c *ActionStatsMockCollector) CollectCommPrefs(_, _ string, _, _ bool) {}
 func (c *ActionStatsMockCollector) Close()                                  {}
@@ -61,7 +59,7 @@ type getService func(t *testing.T, ctx context.Context, source actions.Source, w
 func GetKVService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
 	t.Helper()
 	kvStore := kvtest.GetStore(ctx, t)
-	return actions.NewService(ctx, actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore}), source, writer, &actions.DecreasingIDGenerator{}, stats, runHooks)
+	return actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, writer, &actions.DecreasingIDGenerator{}, stats, runHooks)
 }
 
 func TestServiceRun(t *testing.T) {

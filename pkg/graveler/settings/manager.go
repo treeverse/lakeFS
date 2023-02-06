@@ -31,7 +31,7 @@ type updateFunc func(proto.Message) (proto.Message, error)
 // Each setting is stored under a key, and can be any proto.Message.
 // Fetched settings are cached using cache.Cache with a default expiry time of 1 second. Hence, the store is eventually consistent.
 type Manager struct {
-	store      kv.StoreMessage
+	store      kv.Store
 	refManager graveler.RefManager
 	cache      cache.Cache
 }
@@ -48,7 +48,7 @@ func (m *Manager) WithCache(cache cache.Cache) {
 	m.cache = cache
 }
 
-func NewManager(refManager graveler.RefManager, store kv.StoreMessage, options ...ManagerOption) *Manager {
+func NewManager(refManager graveler.RefManager, store kv.Store, options ...ManagerOption) *Manager {
 	m := &Manager{
 		refManager: refManager,
 		store:      store,
@@ -64,11 +64,11 @@ func NewManager(refManager graveler.RefManager, store kv.StoreMessage, options .
 func (m *Manager) Save(ctx context.Context, repository *graveler.RepositoryRecord, key string, setting proto.Message) error {
 	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, setting, "saving repository-level setting")
 	// Write key in KV Store
-	return m.store.SetMsg(ctx, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting)
+	return kv.SetMsg(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting)
 }
 
 func (m *Manager) getWithPredicate(ctx context.Context, repo *graveler.RepositoryRecord, key string, data proto.Message) (kv.Predicate, error) {
-	pred, err := m.store.GetMsg(ctx, graveler.RepoPartition(repo), []byte(graveler.SettingsPath(key)), data)
+	pred, err := kv.GetMsg(ctx, m.store, graveler.RepoPartition(repo), []byte(graveler.SettingsPath(key)), data)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrNotFound
@@ -140,7 +140,7 @@ func (m *Manager) Update(ctx context.Context, repository *graveler.RepositoryRec
 		if err != nil {
 			return backoff.Permanent(err)
 		}
-		err = m.store.SetMsgIf(ctx, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), newData, pred)
+		err = kv.SetMsgIf(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), newData, pred)
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			logging.Default().WithError(err).Warn("Predicate failed on settings update. Retrying")
 			return graveler.ErrPreconditionFailed

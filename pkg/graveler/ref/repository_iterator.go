@@ -17,15 +17,15 @@ type RepositoryIterator struct {
 	closed bool
 }
 
-func NewRepositoryIterator(ctx context.Context, store *kv.StoreMessage) (*RepositoryIterator, error) {
-	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.RepositoryData{}).ProtoReflect().Type(), graveler.RepositoriesPartition(), []byte(graveler.RepoPath("")), kv.IteratorOptionsAfter([]byte{}))
+func NewRepositoryIterator(ctx context.Context, store kv.Store) (*RepositoryIterator, error) {
+	it, err := kv.NewPrimaryIterator(ctx, store, (&graveler.RepositoryData{}).ProtoReflect().Type(), graveler.RepositoriesPartition(), []byte(graveler.RepoPath("")), kv.IteratorOptionsAfter([]byte{}))
 	if err != nil {
 		return nil, err
 	}
 	return &RepositoryIterator{
 		ctx:    ctx,
 		it:     it,
-		store:  store.Store,
+		store:  store,
 		closed: false,
 	}, nil
 }
