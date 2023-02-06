@@ -172,12 +172,20 @@ type Config struct {
 			Token           string
 			SupportsInvites bool `mapstructure:"supports_invites"`
 		}
-		LDAP              *LDAP
-		OIDC              OIDC
+		LDAP *LDAP
+		OIDC OIDC
+		// LogoutRedirectURL is the URL on which to mount the
+		// server-side logout.
 		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
 		LoginDuration     time.Duration `mapstructure:"login_duration"`
 		UIConfig          struct {
-			RBAC string `mapstructure:"rbac"`
+			RBAC               string   `mapstructure:"rbac"`
+			LoginURL           string   `mapstructure:"login_url"`
+			LoginFailedMessage string   `mapstructure:"login_failed_message"`
+			FallbackLoginURL   *string  `mapstructure:"fallback_login_url"`
+			FallbackLoginLabel *string  `mapstructure:"fallback_login_label"`
+			LoginCookieNames   []string `mapstructure:"login_cookie_names"`
+			LogoutURL          string   `mapstructure:"logout_url"`
 		} `mapstructure:"ui_config"`
 	}
 	Blockstore struct {
