@@ -98,9 +98,9 @@ public class LoginConfig {
   @SerializedName(SERIALIZED_NAME_FALLBACK_LOGIN_LABEL)
   private String fallbackLoginLabel;
 
-  public static final String SERIALIZED_NAME_LOGIN_COOKIES = "login_cookies";
-  @SerializedName(SERIALIZED_NAME_LOGIN_COOKIES)
-  private List<String> loginCookies = new ArrayList<String>();
+  public static final String SERIALIZED_NAME_LOGIN_COOKIE_NAMES = "login_cookie_names";
+  @SerializedName(SERIALIZED_NAME_LOGIN_COOKIE_NAMES)
+  private List<String> loginCookieNames = new ArrayList<String>();
 
   public static final String SERIALIZED_NAME_LOGOUT_URL = "logout_url";
   @SerializedName(SERIALIZED_NAME_LOGOUT_URL)
@@ -222,31 +222,31 @@ public class LoginConfig {
   }
 
 
-  public LoginConfig loginCookies(List<String> loginCookies) {
+  public LoginConfig loginCookieNames(List<String> loginCookieNames) {
     
-    this.loginCookies = loginCookies;
+    this.loginCookieNames = loginCookieNames;
     return this;
   }
 
-  public LoginConfig addLoginCookiesItem(String loginCookiesItem) {
-    this.loginCookies.add(loginCookiesItem);
+  public LoginConfig addLoginCookieNamesItem(String loginCookieNamesItem) {
+    this.loginCookieNames.add(loginCookieNamesItem);
     return this;
   }
 
    /**
-   * cookies to store JWT
-   * @return loginCookies
+   * cookie names used to store JWT
+   * @return loginCookieNames
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "cookies to store JWT")
+  @ApiModelProperty(required = true, value = "cookie names used to store JWT")
 
-  public List<String> getLoginCookies() {
-    return loginCookies;
+  public List<String> getLoginCookieNames() {
+    return loginCookieNames;
   }
 
 
-  public void setLoginCookies(List<String> loginCookies) {
-    this.loginCookies = loginCookies;
+  public void setLoginCookieNames(List<String> loginCookieNames) {
+    this.loginCookieNames = loginCookieNames;
   }
 
 
@@ -287,13 +287,13 @@ public class LoginConfig {
         Objects.equals(this.loginFailedMessage, loginConfig.loginFailedMessage) &&
         Objects.equals(this.fallbackLoginUrl, loginConfig.fallbackLoginUrl) &&
         Objects.equals(this.fallbackLoginLabel, loginConfig.fallbackLoginLabel) &&
-        Objects.equals(this.loginCookies, loginConfig.loginCookies) &&
+        Objects.equals(this.loginCookieNames, loginConfig.loginCookieNames) &&
         Objects.equals(this.logoutUrl, loginConfig.logoutUrl);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(RBAC, loginUrl, loginFailedMessage, fallbackLoginUrl, fallbackLoginLabel, loginCookies, logoutUrl);
+    return Objects.hash(RBAC, loginUrl, loginFailedMessage, fallbackLoginUrl, fallbackLoginLabel, loginCookieNames, logoutUrl);
   }
 
   @Override
@@ -305,7 +305,7 @@ public class LoginConfig {
     sb.append("    loginFailedMessage: ").append(toIndentedString(loginFailedMessage)).append("\n");
     sb.append("    fallbackLoginUrl: ").append(toIndentedString(fallbackLoginUrl)).append("\n");
     sb.append("    fallbackLoginLabel: ").append(toIndentedString(fallbackLoginLabel)).append("\n");
-    sb.append("    loginCookies: ").append(toIndentedString(loginCookies)).append("\n");
+    sb.append("    loginCookieNames: ").append(toIndentedString(loginCookieNames)).append("\n");
     sb.append("    logoutUrl: ").append(toIndentedString(logoutUrl)).append("\n");
     sb.append("}");
     return sb.toString();

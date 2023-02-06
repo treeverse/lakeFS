@@ -87,7 +87,7 @@ class LoginConfig(ModelNormal):
         """
         return {
             'login_url': (str,),  # noqa: E501
-            'login_cookies': ([str],),  # noqa: E501
+            'login_cookie_names': ([str],),  # noqa: E501
             'logout_url': (str,),  # noqa: E501
             'rbac': (str,),  # noqa: E501
             'login_failed_message': (str,),  # noqa: E501
@@ -102,7 +102,7 @@ class LoginConfig(ModelNormal):
 
     attribute_map = {
         'login_url': 'login_url',  # noqa: E501
-        'login_cookies': 'login_cookies',  # noqa: E501
+        'login_cookie_names': 'login_cookie_names',  # noqa: E501
         'logout_url': 'logout_url',  # noqa: E501
         'rbac': 'RBAC',  # noqa: E501
         'login_failed_message': 'login_failed_message',  # noqa: E501
@@ -117,12 +117,12 @@ class LoginConfig(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, login_url, login_cookies, logout_url, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, login_url, login_cookie_names, logout_url, *args, **kwargs):  # noqa: E501
         """LoginConfig - a model defined in OpenAPI
 
         Args:
             login_url (str): primary URL to use for login.
-            login_cookies ([str]): cookies to store JWT
+            login_cookie_names ([str]): cookie names used to store JWT
             logout_url (str): URL to use for logging out.
 
         Keyword Args:
@@ -188,7 +188,7 @@ class LoginConfig(ModelNormal):
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
         self.login_url = login_url
-        self.login_cookies = login_cookies
+        self.login_cookie_names = login_cookie_names
         self.logout_url = logout_url
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
@@ -210,12 +210,12 @@ class LoginConfig(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, login_url, login_cookies, logout_url, *args, **kwargs):  # noqa: E501
+    def __init__(self, login_url, login_cookie_names, logout_url, *args, **kwargs):  # noqa: E501
         """LoginConfig - a model defined in OpenAPI
 
         Args:
             login_url (str): primary URL to use for login.
-            login_cookies ([str]): cookies to store JWT
+            login_cookie_names ([str]): cookie names used to store JWT
             logout_url (str): URL to use for logging out.
 
         Keyword Args:
@@ -279,7 +279,7 @@ class LoginConfig(ModelNormal):
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
         self.login_url = login_url
-        self.login_cookies = login_cookies
+        self.login_cookie_names = login_cookie_names
         self.logout_url = logout_url
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \

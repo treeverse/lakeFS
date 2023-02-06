@@ -12,7 +12,7 @@ Name | Type | Description | Notes
 **loginFailedMessage** | **String** | message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method  |  [optional]
 **fallbackLoginUrl** | **String** | secondary URL to offer users to use for login. |  [optional]
 **fallbackLoginLabel** | **String** | label to place on fallback_login_url. |  [optional]
-**loginCookies** | **List&lt;String&gt;** | cookies to store JWT | 
+**loginCookieNames** | **List&lt;String&gt;** | cookie names used to store JWT | 
 **logoutUrl** | **String** | URL to use for logging out. | 
 
 

@@ -83,11 +83,11 @@ public class LoginConfigTest {
     }
 
     /**
-     * Test the property 'loginCookies'
+     * Test the property 'loginCookieNames'
      */
     @Test
-    public void loginCookiesTest() {
-        // TODO: test loginCookies
+    public void loginCookieNamesTest() {
+        // TODO: test loginCookieNames
     }
 
     /**

@@ -5,7 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **login_url** | **str** | primary URL to use for login. | 
-**login_cookies** | **[str]** | cookies to store JWT | 
+**login_cookie_names** | **[str]** | cookie names used to store JWT | 
 **logout_url** | **str** | URL to use for logging out. | 
 **rbac** | **str** | RBAC will remain enabled on GUI if \&quot;external\&quot;.  That only works with an external auth service.  | [optional] 
 **login_failed_message** | **str** | message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method  | [optional] 
