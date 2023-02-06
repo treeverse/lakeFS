@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"strconv"
 
 	"github.com/IBM/pgxpoolprometheus"
@@ -152,26 +153,45 @@ func parseStoreConfig(runtimeParams map[string]string, pgParams *kvparams.Postgr
 }
 
 // setupKeyValueDatabase setup everything required to enable kv over postgres
-func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, table string, partitionsAmount int) error {
-	// main kv table
-	tableSanitize := pgx.Identifier{table}.Sanitize()
-	_, err := conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS `+tableSanitize+` (
-		partition_key BYTEA NOT NULL,
-		key BYTEA NOT NULL,
-		value BYTEA NOT NULL,
-		PRIMARY KEY (partition_key, key))
-	PARTITION BY HASH (partition_key);
-	`)
+func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, table string, partitionsAmount int) (err error) {
+	var aid string
+	aid, err = generateAdvisoryLockID("lakefs:" + table)
 	if err != nil {
 		return err
 	}
 
+	// This will wait indefinitely until the lock can be acquired.
+	_, err = conn.Exec(ctx, `SELECT pg_advisory_lock($1)`, aid)
+	if err != nil {
+		return fmt.Errorf("try lock failed: %w", err)
+	}
+	defer func(ctx context.Context) {
+		_, unlockErr := conn.Exec(ctx, `SELECT pg_advisory_unlock($1)`, aid)
+		// prefer the last error over unlock error
+		if err == nil {
+			err = unlockErr
+		}
+	}(ctx)
+
+	// main kv table
+	tableSanitize := pgx.Identifier{table}.Sanitize()
+	_, err = conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS `+tableSanitize+` (
+		partition_key BYTEA NOT NULL,
+		key BYTEA NOT NULL,
+		value BYTEA NOT NULL,
+		PRIMARY KEY (partition_key, key))
+	PARTITION BY HASH (partition_key)`)
+	if err != nil {
+		return err
+	}
+
+	// partitions
 	partitions := getTablePartitions(table, partitionsAmount)
 	for i := 0; i < len(partitions); i++ {
-		_, err := conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS`+
+		_, err = conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS`+
 			pgx.Identifier{partitions[i]}.Sanitize()+` PARTITION OF `+
 			tableSanitize+` FOR VALUES WITH (MODULUS `+strconv.Itoa(partitionsAmount)+
-			`,REMAINDER `+strconv.Itoa(i)+`);`)
+			`,REMAINDER `+strconv.Itoa(i)+`)`)
 		if err != nil {
 			return err
 		}
@@ -180,6 +200,15 @@ func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, table string
 	_, err = conn.Exec(ctx, `CREATE OR REPLACE VIEW `+pgx.Identifier{table + "_v"}.Sanitize()+
 		` AS SELECT ENCODE(partition_key, 'escape') AS partition_key, ENCODE(key, 'escape') AS key, value FROM `+tableSanitize)
 	return err
+}
+
+func generateAdvisoryLockID(name string) (string, error) {
+	h := fnv.New32a()
+	if _, err := h.Write([]byte(name)); err != nil {
+		return "", err
+	}
+	aid := fmt.Sprint(h.Sum32())
+	return aid, nil
 }
 
 func getTablePartitions(tableName string, partitionsAmount int) []string {

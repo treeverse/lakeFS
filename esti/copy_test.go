@@ -90,8 +90,8 @@ func TestCopyObject(t *testing.T) {
 			copyErr  error
 		)
 		// Run copy object async and cancel context after 5 seconds
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
 			defer wg.Done()
 			copyResp, copyErr = client.CopyObjectWithResponse(cancelCtx, repo, "main", &api.CopyObjectParams{
 				DestPath: destPath,

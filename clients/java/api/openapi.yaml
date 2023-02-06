@@ -5697,7 +5697,15 @@ components:
       type: object
     LoginConfig:
       example:
+        login_failed_message: login_failed_message
+        logout_url: logout_url
+        login_url: login_url
         RBAC: simplified
+        fallback_login_url: fallback_login_url
+        login_cookie_names:
+        - login_cookie_names
+        - login_cookie_names
+        fallback_login_label: fallback_login_label
       properties:
         RBAC:
           description: |
@@ -5707,12 +5715,46 @@ components:
           - simplified
           - external
           type: string
+        login_url:
+          description: primary URL to use for login.
+          type: string
+        login_failed_message:
+          description: |
+            message to display to users who fail to login; a full sentence that is rendered
+            in HTML and may contain a link to a secondary login method
+          type: string
+        fallback_login_url:
+          description: secondary URL to offer users to use for login.
+          type: string
+        fallback_login_label:
+          description: label to place on fallback_login_url.
+          type: string
+        login_cookie_names:
+          description: cookie names used to store JWT
+          items:
+            type: string
+          type: array
+        logout_url:
+          description: URL to use for logging out.
+          type: string
+      required:
+      - login_cookie_names
+      - login_url
+      - logout_url
       type: object
     SetupState:
       example:
         oidc_enabled: true
         login_config:
+          login_failed_message: login_failed_message
+          logout_url: logout_url
+          login_url: login_url
           RBAC: simplified
+          fallback_login_url: fallback_login_url
+          login_cookie_names:
+          - login_cookie_names
+          - login_cookie_names
+          fallback_login_label: fallback_login_label
         oidc_default_login: true
         state: initialized
       properties:
