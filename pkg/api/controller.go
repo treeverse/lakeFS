@@ -3523,7 +3523,7 @@ func makeLoginConfig(c *config.Config) *LoginConfig {
 	}
 
 	return &LoginConfig{
-		RBAC:               &c.Config.Auth.UIConfig.RBAC,
+		RBAC:               &c.Auth.UIConfig.RBAC,
 		LoginUrl:           c.Auth.UIConfig.LoginURL,
 		LoginFailedMessage: &loginFailedMessage,
 		FallbackLoginUrl:   fallbackLoginURL,
