@@ -32,18 +32,36 @@ message DiffRequest {
   GatewayConfig gateway_config = 2;
 }
 
+message DiffResponse {
+  repeated TableOperation records = 1;
+}
+
+message HistoryRequest {
+  TablePath path = 1;
+}
+
+message HistoryResponse {
+  repeated TableOperation records = 1;
+}
+
+/*
+Example
+  id: "2"
+  timestamp: 2023-02-05T01:30:15.01Z
+  operation: "DELETE"
+  content: {
+    "predicate": "[\"(spark_catalog.delta.lakefs://repo/branch/my-delta-lake-table/.`feature` < 5.0D)\"]"}
+  }
+ */
+
 message TableOperation {
-  uint32 id = 1;
+  string id = 1;
   google.protobuf.Timestamp timestamp = 2;
   string operation = 3;
   map<string, string> content = 4;
 }
 
-message TableOperations {
-  repeated TableOperation records = 1;
-}
-
 service TableDiffer {
-  rpc TableDiff(DiffRequest) returns (TableOperations);
-  rpc ShowHistory(TablePath) returns (TableOperations);
+  rpc TableDiff(DiffRequest) returns (DiffResponse);
+  rpc ShowHistory(HistoryRequest) returns (HistoryResponse);
 }

@@ -22,8 +22,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TableDifferClient interface {
-	TableDiff(ctx context.Context, in *DiffRequest, opts ...grpc.CallOption) (*TableOperations, error)
-	ShowHistory(ctx context.Context, in *TablePath, opts ...grpc.CallOption) (*TableOperations, error)
+	TableDiff(ctx context.Context, in *DiffRequest, opts ...grpc.CallOption) (*DiffResponse, error)
+	ShowHistory(ctx context.Context, in *HistoryRequest, opts ...grpc.CallOption) (*HistoryResponse, error)
 }
 
 type tableDifferClient struct {
@@ -34,8 +34,8 @@ func NewTableDifferClient(cc grpc.ClientConnInterface) TableDifferClient {
 	return &tableDifferClient{cc}
 }
 
-func (c *tableDifferClient) TableDiff(ctx context.Context, in *DiffRequest, opts ...grpc.CallOption) (*TableOperations, error) {
-	out := new(TableOperations)
+func (c *tableDifferClient) TableDiff(ctx context.Context, in *DiffRequest, opts ...grpc.CallOption) (*DiffResponse, error) {
+	out := new(DiffResponse)
 	err := c.cc.Invoke(ctx, "/diff.TableDiffer/TableDiff", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -43,8 +43,8 @@ func (c *tableDifferClient) TableDiff(ctx context.Context, in *DiffRequest, opts
 	return out, nil
 }
 
-func (c *tableDifferClient) ShowHistory(ctx context.Context, in *TablePath, opts ...grpc.CallOption) (*TableOperations, error) {
-	out := new(TableOperations)
+func (c *tableDifferClient) ShowHistory(ctx context.Context, in *HistoryRequest, opts ...grpc.CallOption) (*HistoryResponse, error) {
+	out := new(HistoryResponse)
 	err := c.cc.Invoke(ctx, "/diff.TableDiffer/ShowHistory", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -56,8 +56,8 @@ func (c *tableDifferClient) ShowHistory(ctx context.Context, in *TablePath, opts
 // All implementations must embed UnimplementedTableDifferServer
 // for forward compatibility
 type TableDifferServer interface {
-	TableDiff(context.Context, *DiffRequest) (*TableOperations, error)
-	ShowHistory(context.Context, *TablePath) (*TableOperations, error)
+	TableDiff(context.Context, *DiffRequest) (*DiffResponse, error)
+	ShowHistory(context.Context, *HistoryRequest) (*HistoryResponse, error)
 	mustEmbedUnimplementedTableDifferServer()
 }
 
@@ -65,10 +65,10 @@ type TableDifferServer interface {
 type UnimplementedTableDifferServer struct {
 }
 
-func (UnimplementedTableDifferServer) TableDiff(context.Context, *DiffRequest) (*TableOperations, error) {
+func (UnimplementedTableDifferServer) TableDiff(context.Context, *DiffRequest) (*DiffResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TableDiff not implemented")
 }
-func (UnimplementedTableDifferServer) ShowHistory(context.Context, *TablePath) (*TableOperations, error) {
+func (UnimplementedTableDifferServer) ShowHistory(context.Context, *HistoryRequest) (*HistoryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ShowHistory not implemented")
 }
 func (UnimplementedTableDifferServer) mustEmbedUnimplementedTableDifferServer() {}
@@ -103,7 +103,7 @@ func _TableDiffer_TableDiff_Handler(srv interface{}, ctx context.Context, dec fu
 }
 
 func _TableDiffer_ShowHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TablePath)
+	in := new(HistoryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func _TableDiffer_ShowHistory_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: "/diff.TableDiffer/ShowHistory",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TableDifferServer).ShowHistory(ctx, req.(*TablePath))
+		return srv.(TableDifferServer).ShowHistory(ctx, req.(*HistoryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
