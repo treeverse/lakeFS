@@ -4,13 +4,14 @@ import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {
     ActionGroup,
     ActionsBar,
-    Error, ExperimentalOverlayTooltip,
+    Error,
+    ExperimentalOverlayTooltip,
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
-import {ArrowLeftIcon, DiffIcon, GitMergeIcon, InfoIcon} from "@primer/octicons-react";
+import {ArrowLeftIcon, DiffIcon, GitMergeIcon, ArrowSwitchIcon, InfoIcon} from "@primer/octicons-react";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {refs, statistics} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
@@ -26,6 +27,8 @@ import {FormControl, FormHelperText, InputLabel, MenuItem, Select} from "@mui/ma
 import Modal from "react-bootstrap/Modal";
 import {RepoError} from "./error";
 import {ComingSoonModal} from "../../../lib/components/modals";
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import Tooltip from "react-bootstrap/Tooltip";
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
@@ -43,6 +46,12 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
             }
         ];
         await statistics.postStatsEvents(deltaDiffStatEvents);
+    }
+
+    const router = useRouter();
+    const handleExchangeRefs = () => {
+        router.push({pathname: `/repositories/:repoId/compare`, params: {repoId: repo.id},
+            query: {ref: compareReference.id, compare: reference.id}});
     }
 
     const refresh = () => {
@@ -197,6 +206,20 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                         withCommits={true}
                         withWorkspace={false}
                         selectRef={onSelectCompare}/>
+
+                    <OverlayTrigger placement="bottom" overlay={
+                        <Tooltip>Exchange directions</Tooltip>
+                    }>
+                    <span>
+                        <Button variant={"link"} disabled={false}
+                              onClick={e => {
+                                  e.preventDefault();
+                                  handleExchangeRefs()
+                              }}>
+                            <ArrowSwitchIcon className="me-2 mt-2" size="small" verticalAlign="middle"/>
+                        </Button>
+                    </span>
+                    </OverlayTrigger>&#160;&#160;
                 </ActionGroup>
 
                 <ActionGroup orientation="right">
