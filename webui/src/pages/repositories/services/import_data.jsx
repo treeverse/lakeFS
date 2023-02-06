@@ -99,7 +99,7 @@ const ImportDone = ({numObjects, importBranch, currBranch = ''}) => {
             </div>
             {(currBranch && importBranch !== currBranch) &&
                 <div className='import-text'>
-                    <p> Use the&nbsp;<Link to={`compare?ref=${currBranch}&compare=${importBranch}`}
+                    <p> Use the&nbsp;<Link to={`${location.pathname.replace(/[^/]*$/, "compare")}?ref=${currBranch}&compare=${importBranch}`}
                                            variant="success">Compare tab</Link>&nbsp;to view the changes and merge
                         them to {currBranch}.
                     </p>
