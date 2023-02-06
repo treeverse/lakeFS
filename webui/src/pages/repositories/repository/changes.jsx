@@ -258,7 +258,6 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
                         <span className="float-start">
                             {(delimiter !== "") && (
                                 <URINavigator path={prefix} reference={reference} repo={repo}
-                                              relativeTo={`${reference.id} workspace`}
                                               pathURLBuilder={(params, query) => {
                                                   return {
                                                       pathname: '/repositories/:repoId/changes',
