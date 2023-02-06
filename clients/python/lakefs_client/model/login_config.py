@@ -86,7 +86,13 @@ class LoginConfig(ModelNormal):
                 and the value is attribute type.
         """
         return {
+            'login_url': (str,),  # noqa: E501
+            'login_cookie_names': ([str],),  # noqa: E501
+            'logout_url': (str,),  # noqa: E501
             'rbac': (str,),  # noqa: E501
+            'login_failed_message': (str,),  # noqa: E501
+            'fallback_login_url': (str,),  # noqa: E501
+            'fallback_login_label': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -95,7 +101,13 @@ class LoginConfig(ModelNormal):
 
 
     attribute_map = {
+        'login_url': 'login_url',  # noqa: E501
+        'login_cookie_names': 'login_cookie_names',  # noqa: E501
+        'logout_url': 'logout_url',  # noqa: E501
         'rbac': 'RBAC',  # noqa: E501
+        'login_failed_message': 'login_failed_message',  # noqa: E501
+        'fallback_login_url': 'fallback_login_url',  # noqa: E501
+        'fallback_login_label': 'fallback_login_label',  # noqa: E501
     }
 
     read_only_vars = {
@@ -105,8 +117,13 @@ class LoginConfig(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, login_url, login_cookie_names, logout_url, *args, **kwargs):  # noqa: E501
         """LoginConfig - a model defined in OpenAPI
+
+        Args:
+            login_url (str): primary URL to use for login.
+            login_cookie_names ([str]): cookie names used to store JWT
+            logout_url (str): URL to use for logging out.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -140,6 +157,9 @@ class LoginConfig(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             rbac (str): RBAC will remain enabled on GUI if \"external\".  That only works with an external auth service. . [optional]  # noqa: E501
+            login_failed_message (str): message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method . [optional]  # noqa: E501
+            fallback_login_url (str): secondary URL to offer users to use for login.. [optional]  # noqa: E501
+            fallback_login_label (str): label to place on fallback_login_url.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -167,6 +187,9 @@ class LoginConfig(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
+        self.login_url = login_url
+        self.login_cookie_names = login_cookie_names
+        self.logout_url = logout_url
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -187,8 +210,13 @@ class LoginConfig(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, *args, **kwargs):  # noqa: E501
+    def __init__(self, login_url, login_cookie_names, logout_url, *args, **kwargs):  # noqa: E501
         """LoginConfig - a model defined in OpenAPI
+
+        Args:
+            login_url (str): primary URL to use for login.
+            login_cookie_names ([str]): cookie names used to store JWT
+            logout_url (str): URL to use for logging out.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -222,6 +250,9 @@ class LoginConfig(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             rbac (str): RBAC will remain enabled on GUI if \"external\".  That only works with an external auth service. . [optional]  # noqa: E501
+            login_failed_message (str): message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method . [optional]  # noqa: E501
+            fallback_login_url (str): secondary URL to offer users to use for login.. [optional]  # noqa: E501
+            fallback_login_label (str): label to place on fallback_login_url.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -247,6 +278,9 @@ class LoginConfig(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
+        self.login_url = login_url
+        self.login_cookie_names = login_cookie_names
+        self.logout_url = logout_url
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

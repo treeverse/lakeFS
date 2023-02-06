@@ -45,6 +45,8 @@ func setDefaults(local bool) {
 	viper.SetDefault("auth.login_duration", 7*24*time.Hour)
 
 	viper.SetDefault("auth.ui_config.rbac", "simplified")
+	viper.SetDefault("auth.ui_config.login_failed_message", "The credentials don't match.")
+	viper.SetDefault("auth.ui_config.login_cookie_names", "internal_auth_session")
 
 	viper.SetDefault("blockstore.local.path", "~/lakefs/data/block")
 	viper.SetDefault("blockstore.s3.region", "us-east-1")
