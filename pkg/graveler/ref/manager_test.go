@@ -34,7 +34,6 @@ func TestManager_GetRepositoryCache(t *testing.T) {
 	)
 	ctrl := gomock.NewController(t)
 	mockStore := mock.NewMockStore(ctrl)
-	storeMessage := &kv.StoreMessage{Store: mockStore}
 	ctx := context.Background()
 	mockStore.EXPECT().Get(ctx, []byte("graveler"), []byte("repos/repo1")).Times(times).Return(&kv.ValueWithPredicate{}, nil)
 	cacheConfig := ref.CacheConfig{
@@ -44,7 +43,7 @@ func TestManager_GetRepositoryCache(t *testing.T) {
 	}
 	cfg := ref.ManagerConfig{
 		Executor:              batch.NopExecutor(),
-		KVStore:               storeMessage,
+		KVStore:               mockStore,
 		AddressProvider:       ident.NewHexAddressProvider(),
 		RepositoryCacheConfig: cacheConfig,
 		CommitCacheConfig:     cacheConfig,
@@ -74,7 +73,6 @@ func TestManager_GetCommitCache(t *testing.T) {
 	)
 	ctrl := gomock.NewController(t)
 	mockStore := mock.NewMockStore(ctrl)
-	storeMessage := &kv.StoreMessage{Store: mockStore}
 	ctx := context.Background()
 
 	const commitID = "8a3e3f677ed588ab1e19b6cdb050cbce383f9f1166200e7b7252932ceb61189c"
@@ -91,7 +89,7 @@ func TestManager_GetCommitCache(t *testing.T) {
 	}
 	cfg := ref.ManagerConfig{
 		Executor:              batch.NopExecutor(),
-		KVStore:               storeMessage,
+		KVStore:               mockStore,
 		AddressProvider:       ident.NewHexAddressProvider(),
 		RepositoryCacheConfig: cacheConfig,
 		CommitCacheConfig:     cacheConfig,

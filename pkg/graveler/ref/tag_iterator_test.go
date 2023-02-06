@@ -9,13 +9,12 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/mock"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 func TestTagIterator(t *testing.T) {
-	r, kvstore := testRefManager(t)
+	r, kvStore := testRefManager(t)
 	tags := []graveler.TagID{"a", "aa", "b", "c", "e", "d", "f", "g"}
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -32,7 +31,7 @@ func TestTagIterator(t *testing.T) {
 	}
 
 	t.Run("listing all tags", func(t *testing.T) {
-		iter, err := ref.NewTagIterator(ctx, kvstore, repository)
+		iter, err := ref.NewTagIterator(ctx, kvStore, repository)
 		testutil.Must(t, err)
 		ids := make([]graveler.TagID, 0)
 		for iter.Next() {
@@ -50,7 +49,7 @@ func TestTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags using prefix", func(t *testing.T) {
-		iter, err := ref.NewTagIterator(ctx, kvstore, repository)
+		iter, err := ref.NewTagIterator(ctx, kvStore, repository)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
@@ -69,7 +68,7 @@ func TestTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags SeekGE", func(t *testing.T) {
-		iter, err := ref.NewTagIterator(ctx, kvstore, repository)
+		iter, err := ref.NewTagIterator(ctx, kvStore, repository)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
@@ -103,7 +102,7 @@ func TestTagIterator(t *testing.T) {
 	})
 
 	t.Run("empty value SeekGE", func(t *testing.T) {
-		iter, err := ref.NewTagIterator(ctx, kvstore, repository)
+		iter, err := ref.NewTagIterator(ctx, kvStore, repository)
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 
@@ -120,14 +119,13 @@ func TestTagIterator_CloseTwice(t *testing.T) {
 	entIt.EXPECT().Close().Times(1)
 	store := mock.NewMockStore(ctrl)
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
-	msgStore := kv.StoreMessage{Store: store}
 	repo := &graveler.RepositoryRecord{
 		RepositoryID: "repo",
 		Repository: &graveler.Repository{
 			InstanceUID: "rid",
 		},
 	}
-	it, err := ref.NewTagIterator(ctx, &msgStore, repo)
+	it, err := ref.NewTagIterator(ctx, store, repo)
 	if err != nil {
 		t.Fatal("TestTagIterator failed", err)
 	}
@@ -143,14 +141,13 @@ func TestTagIterator_NextClosed(t *testing.T) {
 	entIt.EXPECT().Close().Times(1)
 	store := mock.NewMockStore(ctrl)
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
-	msgStore := kv.StoreMessage{Store: store}
 	repo := &graveler.RepositoryRecord{
 		RepositoryID: "repo",
 		Repository: &graveler.Repository{
 			InstanceUID: "rid",
 		},
 	}
-	it, err := ref.NewTagIterator(ctx, &msgStore, repo)
+	it, err := ref.NewTagIterator(ctx, store, repo)
 	if err != nil {
 		t.Fatal("TestTagIterator failed", err)
 	}

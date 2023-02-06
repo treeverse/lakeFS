@@ -29,7 +29,7 @@ const (
 
 func TestRunResultsIterator(t *testing.T) {
 	ctx := context.Background()
-	kvStore := kv.StoreMessage{Store: kvtest.GetStore(ctx, t)}
+	kvStore := kvtest.GetStore(ctx, t)
 
 	keyMap, keyList := createTestData(t, ctx, kvStore)
 
@@ -130,7 +130,7 @@ func (gen *TestDecreasingIDGenerator) NewRunID() string {
 	return fmt.Sprintf("%013d", gen.num)
 }
 
-func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) (map[string]int, []string) {
+func createTestData(t *testing.T, ctx context.Context, kvStore kv.Store) (map[string]int, []string) {
 	keyMap := make(map[string]int, 0)
 	var keyList []string
 
@@ -167,14 +167,14 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 		keyList = append(keyList, runID)
 		key := actions.RunPath(iteratorTestRepoID, runID)
 		run.RunId = runID
-		require.NoError(t, kvStore.SetMsg(ctx, actions.PartitionKey, key, &run))
+		require.NoError(t, kv.SetMsg(ctx, kvStore, actions.PartitionKey, key, &run))
 		for j := 0; j < 100; j++ {
 			HookRunId := actions.NewHookRunID(msgIdx, j)
 			taskKey := kv.FormatPath(actions.TasksPath(iteratorTestRepoID, runID), HookRunId)
 			task.HookRunId = HookRunId
 			task.HookId = strconv.Itoa(j)
 			task.RunId = runID
-			require.NoError(t, kvStore.SetMsg(ctx, actions.PartitionKey, []byte(taskKey), &task))
+			require.NoError(t, kv.SetMsg(ctx, kvStore, actions.PartitionKey, []byte(taskKey), &task))
 		}
 	}
 
@@ -186,10 +186,10 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 		keyList = append(keyList, runID)
 		key := actions.RunPath(iteratorTestRepoID, runID)
 		run.RunId = runID
-		require.NoError(t, kvStore.SetMsg(ctx, actions.PartitionKey, key, &run))
+		require.NoError(t, kv.SetMsg(ctx, kvStore, actions.PartitionKey, key, &run))
 		keyByBranch := actions.RunByBranchPath(iteratorTestRepoID, testByBranch, runID)
 		s.PrimaryKey = key
-		require.NoError(t, kvStore.SetMsg(ctx, actions.PartitionKey, keyByBranch, &s))
+		require.NoError(t, kv.SetMsg(ctx, kvStore, actions.PartitionKey, keyByBranch, &s))
 	}
 
 	// By commit
@@ -199,10 +199,10 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 		keyList = append(keyList, runID)
 		key := actions.RunPath(iteratorTestRepoID, runID)
 		run.RunId = runID
-		require.NoError(t, kvStore.SetMsg(ctx, actions.PartitionKey, key, &run))
+		require.NoError(t, kv.SetMsg(ctx, kvStore, actions.PartitionKey, key, &run))
 		keyByCommit := actions.RunByCommitPath(iteratorTestRepoID, testByCommit, runID)
 		s.PrimaryKey = key
-		require.NoError(t, kvStore.SetMsg(ctx, actions.PartitionKey, keyByCommit, &s))
+		require.NoError(t, kv.SetMsg(ctx, kvStore, actions.PartitionKey, keyByCommit, &s))
 	}
 
 	// Missing Primary
@@ -213,13 +213,13 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 		primaryKey := actions.RunPath(iteratorTestRepoID, runID)
 		keyNoPrimary := actions.RunByBranchPath(iteratorTestRepoID, testMissingPrimary, runID)
 		s.PrimaryKey = primaryKey
-		require.NoError(t, kvStore.SetMsg(ctx, actions.PartitionKey, keyNoPrimary, &s))
+		require.NoError(t, kv.SetMsg(ctx, kvStore, actions.PartitionKey, keyNoPrimary, &s))
 
 		// Key with primary
 		primaryKey = actions.RunPath(iteratorTestRepoID, keyList[msgIdx%100])
 		keyWithPrimary := actions.RunByBranchPath(iteratorTestRepoID, testMissingPrimary, keyList[msgIdx%100])
 		s.PrimaryKey = primaryKey
-		require.NoError(t, kvStore.SetMsg(ctx, actions.PartitionKey, keyWithPrimary, &s))
+		require.NoError(t, kv.SetMsg(ctx, kvStore, actions.PartitionKey, keyWithPrimary, &s))
 	}
 
 	// Out of range

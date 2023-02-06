@@ -15,7 +15,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multipart"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
@@ -37,8 +36,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 
 	store := kvtest.MakeStoreByName("mem", kvparams.Config{})(t, ctx)
 	defer store.Close()
-	storeMessage := &kv.StoreMessage{Store: store}
-	multipartTracker := multipart.NewTracker(*storeMessage)
+	multipartTracker := multipart.NewTracker(store)
 
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
@@ -48,7 +46,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 
 	c, err := catalog.New(ctx, catalog.Config{
 		Config:       conf,
-		KVStore:      storeMessage,
+		KVStore:      store,
 		PathProvider: upload.DefaultPathProvider,
 		Limiter:      conf.NewGravelerBackgroundLimiter(),
 	})

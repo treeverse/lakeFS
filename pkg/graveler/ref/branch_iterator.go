@@ -18,16 +18,16 @@ var ErrIteratorClosed = errors.New("iterator already closed")
 // BranchSimpleIterator Iterates over repository's branches in a sorted way, since the branches are already sorted in DB according to BranchID
 type BranchSimpleIterator struct {
 	ctx           context.Context
-	store         *kv.StoreMessage
+	store         kv.Store
 	itr           *kv.PrimaryIterator
 	repoPartition string
 	value         *graveler.BranchRecord
 	err           error
 }
 
-func NewBranchSimpleIterator(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord) (*BranchSimpleIterator, error) {
+func NewBranchSimpleIterator(ctx context.Context, store kv.Store, repo *graveler.RepositoryRecord) (*BranchSimpleIterator, error) {
 	repoPartition := graveler.RepoPartition(repo)
-	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.BranchData{}).ProtoReflect().Type(),
+	it, err := kv.NewPrimaryIterator(ctx, store, (&graveler.BranchData{}).ProtoReflect().Type(),
 		repoPartition, []byte(graveler.BranchPath("")), kv.IteratorOptionsFrom([]byte("")))
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (bi *BranchSimpleIterator) Next() bool {
 func (bi *BranchSimpleIterator) SeekGE(id graveler.BranchID) {
 	if bi.Err() == nil {
 		bi.itr.Close() // Close previous before creating new iterator
-		bi.itr, bi.err = kv.NewPrimaryIterator(bi.ctx, bi.store.Store, (&graveler.BranchData{}).ProtoReflect().Type(),
+		bi.itr, bi.err = kv.NewPrimaryIterator(bi.ctx, bi.store, (&graveler.BranchData{}).ProtoReflect().Type(),
 			bi.repoPartition, []byte(graveler.BranchPath("")), kv.IteratorOptionsFrom([]byte(graveler.BranchPath(id))))
 	}
 }
@@ -109,7 +109,7 @@ func (b *BranchByCommitIterator) SortByCommitID(i, j int) bool {
 	return b.values[i].CommitID.String() <= b.values[j].CommitID.String()
 }
 
-func NewBranchByCommitIterator(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord) (*BranchByCommitIterator, error) {
+func NewBranchByCommitIterator(ctx context.Context, store kv.Store, repo *graveler.RepositoryRecord) (*BranchByCommitIterator, error) {
 	bi := &BranchByCommitIterator{
 		ctx:    ctx,
 		values: make([]*graveler.BranchRecord, 0),

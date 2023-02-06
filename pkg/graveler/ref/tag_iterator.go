@@ -17,9 +17,9 @@ type TagIterator struct {
 	closed        bool
 }
 
-func NewTagIterator(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord) (*TagIterator, error) {
+func NewTagIterator(ctx context.Context, store kv.Store, repo *graveler.RepositoryRecord) (*TagIterator, error) {
 	repoPartition := graveler.RepoPartition(repo)
-	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.TagData{}).ProtoReflect().Type(),
+	it, err := kv.NewPrimaryIterator(ctx, store, (&graveler.TagData{}).ProtoReflect().Type(),
 		graveler.RepoPartition(repo),
 		[]byte(graveler.TagPath("")), kv.IteratorOptionsFrom([]byte("")))
 	if err != nil {
@@ -28,7 +28,7 @@ func NewTagIterator(ctx context.Context, store *kv.StoreMessage, repo *graveler.
 	return &TagIterator{
 		ctx:           ctx,
 		it:            it,
-		store:         store.Store,
+		store:         store,
 		repoPartition: repoPartition,
 		closed:        false,
 	}, nil

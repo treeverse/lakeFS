@@ -140,9 +140,8 @@ var runCmd = &cobra.Command{
 		}
 
 		migrator := kv.NewDatabaseMigrator(kvParams)
-		storeMessage := &kv.StoreMessage{Store: kvStore}
-		multipartTracker := multipart.NewTracker(*storeMessage)
-		actionsStore := actions.NewActionsKVStore(*storeMessage)
+		multipartTracker := multipart.NewTracker(kvStore)
+		actionsStore := actions.NewActionsKVStore(kvStore)
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
@@ -164,7 +163,7 @@ var runCmd = &cobra.Command{
 			}
 		} else {
 			authService = auth.NewAuthService(
-				storeMessage,
+				kvStore,
 				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
 				emailer,
 				cfg.Auth.Cache,
@@ -194,7 +193,7 @@ var runCmd = &cobra.Command{
 
 		c, err := catalog.New(ctx, catalog.Config{
 			Config:       cfg,
-			KVStore:      storeMessage,
+			KVStore:      kvStore,
 			PathProvider: upload.DefaultPathProvider,
 			Limiter:      cfg.NewGravelerBackgroundLimiter(),
 		})
