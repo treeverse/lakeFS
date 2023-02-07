@@ -282,5 +282,5 @@ jobs:
         payload: |
           {
             "mrkdwn": true,
-            "text": ("Compatibility tests failure in master branch <https://github.com/treeverse/lakeFS/actions/workflows/compatability-tests.yaml+"|View>")
+            "text": "Compatibility tests failure in master branch, [link](https://github.com/treeverse/lakeFS/actions/workflows/compatability-tests.yaml)"
           }
