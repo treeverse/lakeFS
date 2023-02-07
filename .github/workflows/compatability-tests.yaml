@@ -279,4 +279,8 @@ jobs:
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       with:
-        slack-message: "Compatibility tests failure in master branch: https://github.com/treeverse/lakeFS/actions/workflows/compatability-tests.yaml"
+        payload: |
+          {
+            "mrkdwn": true,
+            "text": ("Compatibility tests failure in master branch <https://github.com/treeverse/lakeFS/actions/workflows/compatability-tests.yaml+"|View>")
+          }

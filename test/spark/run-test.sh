@@ -10,7 +10,7 @@
 # 
 # NOTE that this script should be run from the root project in order for docker compose to volume mount the project
 
-./fail
+./vfld
 
 STORAGE_NAMESPACE=${STORAGE_NAMESPACE:-local://}
 REPOSITORY=${REPOSITORY:-example}
