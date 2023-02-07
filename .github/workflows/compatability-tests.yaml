@@ -272,7 +272,7 @@ jobs:
     name: Notify slack on workflow failures
     needs: [compatibility-checks-client, compatibility-checks-server]
     runs-on: ubuntu-20.04
-#    if: ${{ always() && contains(needs.*.result, 'failure') }}
+    if: ${{ always() && contains(needs.*.result, 'failure') }}
     steps:
     - name: slack-send
       uses: slackapi/slack-github-action@v1.23.0

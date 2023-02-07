@@ -10,6 +10,8 @@
 # 
 # NOTE that this script should be run from the root project in order for docker compose to volume mount the project
 
+./fail
+
 STORAGE_NAMESPACE=${STORAGE_NAMESPACE:-local://}
 REPOSITORY=${REPOSITORY:-example}
 SONNET_JAR=${SONNET_JAR:-sonnets-246/target/sonnets/246/scala-2.12/sonnets-246_2.12-0.1.jar}
