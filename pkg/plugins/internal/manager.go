@@ -97,10 +97,11 @@ func newPluginClient(name string, p plugin.Plugin, hc plugin.HandshakeConfig, cm
 	return plugin.NewClient(&clientConfig)
 }
 
-// LoadPluginClient loads a Client of type T.
-// Also returns a function used to close the Client and reset it. The reset is needed because after
+// LoadPluginClient returns a GRPCClient which also implements the custom plugin interface T.
+// The returned function is used to close the Client and reset it. The reset is needed because after
 // plugin.Client.Client() is called, it's internally creating channels that are closed when we Kill the Client,
 // and won't allow to run the Client again.
+// The close function should be called when the plugin is no longer of use.
 func (m *Manager[T]) LoadPluginClient(name string) (T, func(), error) {
 	var ans T
 	c, _, err := m.pluginApplicationClients.Client(name)
