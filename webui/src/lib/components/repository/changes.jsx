@@ -173,8 +173,10 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
         <div className="tree-container">
             {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
                 <>
-                    {(!enableDeltaDiff && showExperimentalDeltaDiffButton) ?
+                    {!enableDeltaDiff ?
                         <>
+                        {showExperimentalDeltaDiffButton
+                            ? <>
                             <ComingSoonModal display={showComingSoonModal}
                                              onCancel={() => setShowComingSoonModal(false)}>
                                 <div>lakeFS Delta Lake tables diff is under development</div>
@@ -190,7 +192,8 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                     <DiffIcon/> Compare Delta Lake tables
                                 </Button>
                             </ExperimentalOverlayTooltip>
-                        </>
+                            </>
+                            : ""}</>
                         :
                         <div className="mr-1 mb-2">
                             <Alert variant={"info"}><InfoIcon/> You can now use lakeFS to compare Delta Lake tables</Alert>
