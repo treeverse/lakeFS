@@ -17,7 +17,7 @@ import {refs, statistics} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
-import {TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/changes";
+import {ChangesTreeContainer, TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {appendMoreResults} from "./changes";
@@ -35,7 +35,6 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
     const [showComingSoonModal, setShowComingSoonModal] = useState(false);
-    const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
 
     const sendDeltaDiffStats = async () => {
         const deltaDiffStatEvents = [
@@ -97,93 +96,30 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
             You’ll need to use two different sources to get a valid comparison.
         </Alert>
     )
-    else content = (
-            <div className="tree-container">
-                {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
-                    <>
-                        {!enableDeltaDiff ?
-                            <>
-                                <ComingSoonModal display={showComingSoonModal}
-                                                 onCancel={() => setShowComingSoonModal(false)}>
-                                    <div>lakeFS Delta Lake tables diff is under development</div>
-                                </ComingSoonModal>
-                                <ExperimentalOverlayTooltip>
-                                    <Button className="action-bar"
-                                            variant="primary"
-                                            disabled={false}
-                                            onClick={async () => {
-                                                setShowComingSoonModal(true);
-                                                await sendDeltaDiffStats();
-                                            }}>
-                                        <DiffIcon/> Compare Delta Lake tables
-                                    </Button>
-                                </ExperimentalOverlayTooltip>
-                            </>
-                            :
-                            <div className="mr-1 mb-2">
-                                <Alert variant={"info"}><InfoIcon/> You can now use lakeFS to compare Delta Lake tables</Alert>
-                            </div>
-                        }
-                        <Card>
-                            <Card.Header>
-                                <span className="float-start">
-                                    {(delimiter !== "") && (
-                                        <URINavigator
-                                            path={prefix}
-                                            reference={reference}
-                                            relativeTo={relativeTitle(reference, compareReference)}
-                                            repo={repo}
-                                            pathURLBuilder={(params, query) => {
-                                                const q = {
-                                                    delimiter: "/",
-                                                    prefix: query.path,
-                                                };
-                                                if (compareReference)
-                                                    q.compare = compareReference.id;
-                                                if (reference)
-                                                    q.ref = reference.id;
-                                                return {
-                                                    pathname: '/repositories/:repoId/compare',
-                                                    params: {repoId: repo.id},
-                                                    query: q
-                                                };
-                                            }}/>
-                                    )}
-                                </span>
-                            </Card.Header>
-                            <Card.Body>
-                                <Table borderless size="sm">
-                                    <tbody>
-                                    {results.map(entry => {
-                                        let leftCommittedRef = reference.id;
-                                        let rightCommittedRef = compareReference.id;
-                                        if (reference.type === RefTypeBranch) {
-                                            leftCommittedRef += "@";
-                                        }
-                                        if (compareReference.type === RefTypeBranch) {
-                                            rightCommittedRef += "@";
-                                        }
-                                        return (
-                                            <TreeItem key={entry.path + "-item"} entry={entry} repo={repo}
-                                                      reference={reference}
-                                                      internalReferesh={internalRefresh} leftDiffRefID={leftCommittedRef}
-                                                      rightDiffRefID={rightCommittedRef} delimiter={delimiter}
-                                                      relativeTo={prefix}
-                                                      onNavigate={onNavigate}
-                                                      getMore={(afterUpdatedChild, path, useDelimiter = true, amount = -1) => {
-                                                          return refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined);
-                                                      }}/>);
-                                    })}
-                                    {!!nextPage &&
-                                        <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage}
-                                                            setAfterUpdated={setAfterUpdated}/>}
-                                    </tbody>
-                                </Table>
-                            </Card.Body>
-                    </Card></>
-                )}
-            </div>
-    )
+
+    const uriNavigator = <URINavigator
+            path={prefix}
+            reference={reference}
+            relativeTo={relativeTitle(reference, compareReference)}
+            repo={repo}
+            pathURLBuilder={(params, query) => {
+                const q = {
+                    delimiter: "/",
+                    prefix: query.path,
+                };
+                if (compareReference)
+                    q.compare = compareReference.id;
+                if (reference)
+                    q.ref = reference.id;
+                return {
+                    pathname: '/repositories/:repoId/compare',
+                    params: {repoId: repo.id},
+                    query: q
+                };
+            }}/>
+
+    else content = <ChangesTreeContainer results={results} showComingSoonModal={showComingSoonModal} setShowComingSoonModal={setShowComingSoonModal} delimiter={delimiter}
+    uriNavigator={uriNavigator}/>
 
     const emptyDiff = (!loading && !error && !!results && results.length === 0);
 
