@@ -24,7 +24,7 @@ import {ActionGroup, ActionsBar, Error, Loading, RefreshButton} from "../../../l
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {formatAlertText} from "../../../lib/components/repository/errors";
-import {TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/changes";
+import {ChangesTreeContainer, TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {RepoError} from "./error";
@@ -210,6 +210,16 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
         }
     }
 
+   const uriNavigator =  <URINavigator path={prefix} reference={reference} repo={repo}
+                                      pathURLBuilder={(params, query) => {
+                                          return {
+                                              pathname: '/repositories/:repoId/changes',
+                                              params: params,
+                                              query: {ref: reference.id, prefix: query.path ?? ""},
+                                          }}}/>
+    const committedRef = reference.id + "@"
+    const uncommittedRef = reference.id
+
    const actionErrorDisplay = (actionError) ?
         <Error error={actionError} onDismiss={() => setActionError(null)}/> : <></>
 
@@ -251,50 +261,12 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
             </ActionsBar>
 
             {actionErrorDisplay}
-            <div className="tree-container">
-                {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
-                    <Card>
-                        <Card.Header>
-                        <span className="float-start">
-                            {(delimiter !== "") && (
-                                <URINavigator path={prefix} reference={reference} repo={repo}
-                                              pathURLBuilder={(params, query) => {
-                                                  return {
-                                                      pathname: '/repositories/:repoId/changes',
-                                                      params: params,
-                                                      query: {ref: reference.id, prefix: query.path ?? ""},
-                                                  }
-                                              }}/>
-                            )}
-                        </span>
-                        </Card.Header>
-                        <Card.Body>
-                            <Table borderless size="sm">
-                                <tbody>
-                                {results.map(entry => {
-                                    const committedRef = reference.id + "@"
-                                    const uncommittedRef = reference.id
-                                    return (
-                                        <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo}
-                                                  reference={reference}
-                                                  leftDiffRefID={committedRef} rightDiffRefID={uncommittedRef}
-                                                  internalReferesh={internalRefresh}
-                                                  onNavigate={onNavigate} onRevert={onRevert} delimiter={delimiter}
-                                                  relativeTo={prefix}
-                                                  getMore={(afterUpdated, path, useDelimiter= true, amount = -1) => {
-                                                      return refs.changes(repo.id, reference.id, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
-                                                  }}/>
-                                        )
-                                })}
-                                { !!nextPage &&
-                                    <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
-                                }
-                                </tbody>
-                            </Table>
-                        </Card.Body>
-                    </Card>
-                )}
-            </div>
+            <ChangesTreeContainer results={results} delimiter={delimiter}
+                                  uriNavigator={uriNavigator} leftDiffRefID={committedRef} rightDiffRefID={uncommittedRef}
+                                  repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
+                                  getMore={(afterUpdated, path, useDelimiter= true, amount = -1) => {
+                                      return refs.changes(repo.id, reference.id, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
+                                  }} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}/>
         </>
     )
 }

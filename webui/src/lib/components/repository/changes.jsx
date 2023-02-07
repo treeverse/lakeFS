@@ -155,7 +155,7 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
 
 export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton = false, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
-                                         getMore, loading, nextPage, setAfterUpdated, onNavigate}) => {
+                                         getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert}) => {
     const [showComingSoonModal, setShowComingSoonModal] = useState(false);
     const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
     const sendDeltaDiffStats = async () => {
@@ -214,6 +214,7 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                                   relativeTo={prefix}
                                                   onNavigate={onNavigate}
                                                   getMore={getMore}
+                                                  onRevert={onRevert}
                                                  />);
                                 })}
                                 {!!nextPage &&
