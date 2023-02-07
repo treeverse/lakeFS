@@ -980,7 +980,7 @@ func (s *AuthService) GetCredentials(ctx context.Context, accessKeyID string) (*
 		if err = itr.Err(); err != nil {
 			return nil, err
 		}
-		return nil, ErrNotFound
+		return nil, ErrCredentialsNotFound
 	})
 }
 
