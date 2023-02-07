@@ -267,3 +267,16 @@ jobs:
         continue-on-error: true
         working-directory: test/spark
         run: docker-compose logs --tail=15000 lakefs
+
+  notify-slack:
+    name: Notify slack on workflow failures
+    needs: [compatibility-checks-client, compatibility-checks-server]
+    runs-on: ubuntu-20.04
+#    if: ${{ always() && contains(needs.*.result, 'failure') }}
+    steps:
+    - name: slack-send
+      uses: slackapi/slack-github-action@v1.23.0
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      with:
+        slack-message: "Compatibility tests failure in master branch: https://github.com/treeverse/lakeFS/actions/workflows/compatability-tests.yaml"
