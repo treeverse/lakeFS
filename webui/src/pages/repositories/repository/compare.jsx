@@ -208,7 +208,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                         selectRef={onSelectCompare}/>
 
                     <OverlayTrigger placement="bottom" overlay={
-                        <Tooltip>Exchange directions</Tooltip>
+                        <Tooltip>Switch directions</Tooltip>
                     }>
                     <span>
                         <Button variant={"link"} disabled={false}
