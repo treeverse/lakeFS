@@ -1,4 +1,4 @@
-name: Compatability Tests
+name: lakeFS HadoopFS Compatability Tests
 
 on:
   pull_request:
@@ -16,32 +16,11 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v3
 
-      # No way to share code between workflows :-( If you change this, find and change the
-      # same code wherever "Find Go module and build caches" appears!
-      - name: Find Go module and build caches
-        run: |
-          echo GOMODCACHE=`go env GOMODCACHE` >> $GITHUB_ENV
-          echo GOCACHE=`go env GOCACHE` >> $GITHUB_ENV
-          cat $GITHUB_ENV
-
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
           go-version: 1.19.2
         id: go
-
-      - name: Cache Go modules and builds
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-go-modules
-        with:
-          path: |
-            ${{ env.GOMODCACHE }}
-            ${{ env.GOCACHE }}
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('go.mod', 'go.sum') }}
-          restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
 
       - uses: actions/setup-node@v3
         with:
@@ -139,10 +118,10 @@ jobs:
       matrix:
         # Removing a version from this list means the published client is no longer compatible with
         # that lakeFS version.
-        lakeFS_version: [ 0.89.1, 0.90.0, 0.91.0, 0.92.0 ]
+        lakefs_version: [ 0.89.1, 0.90.0, 0.91.0, 0.92.0 ]
     runs-on: ubuntu-20.04
     env:
-      TAG: ${{ matrix.lakeFS_version }}
+      TAG: ${{ matrix.lakefs_version }}
       REPO: treeverse
       SPARK_TAG: 3
     steps:
