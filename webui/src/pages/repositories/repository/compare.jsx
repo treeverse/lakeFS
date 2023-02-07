@@ -5,19 +5,16 @@ import {
     ActionGroup,
     ActionsBar,
     Error,
-    ExperimentalOverlayTooltip,
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
-import {ArrowLeftIcon, DiffIcon, GitMergeIcon, ArrowSwitchIcon, InfoIcon} from "@primer/octicons-react";
+import {ArrowLeftIcon, GitMergeIcon, ArrowSwitchIcon} from "@primer/octicons-react";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
-import {refs, statistics} from "../../../lib/api";
+import {refs} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
-import Card from "react-bootstrap/Card";
-import Table from "react-bootstrap/Table";
-import {ChangesTreeContainer, TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/changes";
+import {ChangesTreeContainer} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {appendMoreResults} from "./changes";
@@ -26,7 +23,6 @@ import Button from "react-bootstrap/Button";
 import {FormControl, FormHelperText, InputLabel, MenuItem, Select} from "@mui/material";
 import Modal from "react-bootstrap/Modal";
 import {RepoError} from "./error";
-import {ComingSoonModal} from "../../../lib/components/modals";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 
@@ -34,18 +30,6 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
-    const [showComingSoonModal, setShowComingSoonModal] = useState(false);
-
-    const sendDeltaDiffStats = async () => {
-        const deltaDiffStatEvents = [
-            {
-                "class": "experimental-feature",
-                "name": "delta-diff",
-                "count": 1,
-            }
-        ];
-        await statistics.postStatsEvents(deltaDiffStatEvents);
-    }
 
     const router = useRouter();
     const handleSwitchRefs = useCallback(
@@ -87,16 +71,6 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
 
         return `${fromId}...${toId}`
     }
-
-    if (loading) content = <Loading/>
-    else if (error) content = <Error error={error}/>
-    else if (compareReference.id === reference.id) content = (
-        <Alert variant="warning">
-            <Alert.Heading>There isn’t anything to compare.</Alert.Heading>
-            You’ll need to use two different sources to get a valid comparison.
-        </Alert>
-    )
-
     const uriNavigator = <URINavigator
             path={prefix}
             reference={reference}
@@ -118,8 +92,29 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                 };
             }}/>
 
-    else content = <ChangesTreeContainer results={results} showComingSoonModal={showComingSoonModal} setShowComingSoonModal={setShowComingSoonModal} delimiter={delimiter}
-    uriNavigator={uriNavigator}/>
+    let leftCommittedRef = reference.id;
+    let rightCommittedRef = compareReference.id;
+    if (reference.type === RefTypeBranch) {
+        leftCommittedRef += "@";
+    }
+    if (compareReference.type === RefTypeBranch) {
+        rightCommittedRef += "@";
+    }
+
+    if (loading) content = <Loading/>
+    else if (error) content = <Error error={error}/>
+    else if (compareReference.id === reference.id) content = (
+        <Alert variant="warning">
+            <Alert.Heading>There isn’t anything to compare.</Alert.Heading>
+            You’ll need to use two different sources to get a valid comparison.
+        </Alert>
+    )
+    else content = <ChangesTreeContainer results={results} showExperimentalDeltaDiffButton={true} delimiter={delimiter}
+                                         uriNavigator={uriNavigator} leftDiffRefID={leftCommittedRef} rightDiffRefID={rightCommittedRef}
+                                         repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
+                                         getMore={(afterUpdatedChild, path, useDelimiter = true, amount = -1) => {
+                                            return refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined);
+                                         }} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}/>
 
     const emptyDiff = (!loading && !error && !!results && results.length === 0);
 
@@ -173,7 +168,6 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                     }
                 </ActionGroup>
             </ActionsBar>
-
             {content}
         </>
     );

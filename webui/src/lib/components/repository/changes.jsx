@@ -16,7 +16,7 @@ import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import {URINavigator} from "./tree";
 import Table from "react-bootstrap/Table";
-import {refs} from "../../api";
+import {refs, statistics} from "../../api";
 
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
@@ -153,14 +153,27 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
     return treeItemType;
 }
 
-export const ChangesTreeContainer = ({results, showComingSoonModal, setShowComingSoonModal, delimiter, uriNavigator}) => {
+export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton = false, delimiter, uriNavigator,
+                                         leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
+                                         getMore, loading, nextPage, setAfterUpdated, onNavigate}) => {
+    const [showComingSoonModal, setShowComingSoonModal] = useState(false);
     const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
+    const sendDeltaDiffStats = async () => {
+        const deltaDiffStatEvents = [
+            {
+                "class": "experimental-feature",
+                "name": "delta-diff",
+                "count": 1,
+            }
+        ];
+        await statistics.postStatsEvents(deltaDiffStatEvents);
+    }
 
     return <>
         <div className="tree-container">
             {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
                 <>
-                    {!enableDeltaDiff ?
+                    {(!enableDeltaDiff && showExperimentalDeltaDiffButton) ?
                         <>
                             <ComingSoonModal display={showComingSoonModal}
                                              onCancel={() => setShowComingSoonModal(false)}>
@@ -186,33 +199,22 @@ export const ChangesTreeContainer = ({results, showComingSoonModal, setShowComin
                     <Card>
                         <Card.Header>
                                 <span className="float-start">
-                                    {(delimiter !== "") && (
-
-                                    )}
+                                    {(delimiter !== "") && uriNavigator}
                                 </span>
                         </Card.Header>
                         <Card.Body>
                             <Table borderless size="sm">
                                 <tbody>
                                 {results.map(entry => {
-                                    let leftCommittedRef = reference.id;
-                                    let rightCommittedRef = compareReference.id;
-                                    if (reference.type === RefTypeBranch) {
-                                        leftCommittedRef += "@";
-                                    }
-                                    if (compareReference.type === RefTypeBranch) {
-                                        rightCommittedRef += "@";
-                                    }
                                     return (
                                         <TreeItem key={entry.path + "-item"} entry={entry} repo={repo}
                                                   reference={reference}
-                                                  internalReferesh={internalRefresh} leftDiffRefID={leftCommittedRef}
-                                                  rightDiffRefID={rightCommittedRef} delimiter={delimiter}
+                                                  internalReferesh={internalRefresh} leftDiffRefID={leftDiffRefID}
+                                                  rightDiffRefID={rightDiffRefID} delimiter={delimiter}
                                                   relativeTo={prefix}
                                                   onNavigate={onNavigate}
-                                                  getMore={(afterUpdatedChild, path, useDelimiter = true, amount = -1) => {
-                                                      return refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined);
-                                                  }}/>);
+                                                  getMore={getMore}
+                                                 />);
                                 })}
                                 {!!nextPage &&
                                 <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage}
