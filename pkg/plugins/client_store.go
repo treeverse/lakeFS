@@ -23,7 +23,7 @@ type Client struct {
 // communicate with the Delta plugin.
 type clientStore struct {
 	pluginApplicationClients map[string]*Client
-	rwl                      sync.RWMutex
+	l                        sync.Mutex
 }
 
 func newClientsMap() *clientStore {
@@ -33,8 +33,8 @@ func newClientsMap() *clientStore {
 }
 
 func (cs *clientStore) Insert(name string, c *plugin.Client, cp *clientProps) {
-	cs.rwl.Lock()
-	defer cs.rwl.Unlock()
+	cs.l.Lock()
+	defer cs.l.Unlock()
 	cl := &Client{
 		c,
 		cp,
@@ -43,14 +43,14 @@ func (cs *clientStore) Insert(name string, c *plugin.Client, cp *clientProps) {
 }
 
 func (cs *clientStore) Remove(name string) {
-	cs.rwl.Lock()
-	defer cs.rwl.Unlock()
+	cs.l.Lock()
+	defer cs.l.Unlock()
 	delete(cs.pluginApplicationClients, name)
 }
 
 func (cs *clientStore) Client(name string) (*plugin.Client, *clientProps, error) {
-	cs.rwl.RLock()
-	defer cs.rwl.RUnlock()
+	cs.l.Lock()
+	defer cs.l.Unlock()
 	cl, ok := cs.pluginApplicationClients[name]
 	if !ok {
 		return nil, nil, ErrPluginNotFound
