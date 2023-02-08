@@ -40,7 +40,7 @@ func AuthenticationHandler(authService auth.GatewayService, next http.Handler) h
 		creds, err := authService.GetCredentials(ctx, accessKeyID)
 		logger := o.Log(req).WithField("key", accessKeyID)
 		if err != nil {
-			if !errors.Is(err, auth.ErrCredentialsNotFound) {
+			if !errors.Is(err, auth.ErrNotFound) {
 				logger.WithError(err).Warn("error getting access key")
 				_ = o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
 			} else {
