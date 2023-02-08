@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useCallback, useState} from "react";
 
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {
@@ -49,10 +49,13 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     }
 
     const router = useRouter();
-    const handleExchangeRefs = () => {
-        router.push({pathname: `/repositories/:repoId/compare`, params: {repoId: repo.id},
-            query: {ref: compareReference.id, compare: reference.id}});
-    }
+    const handleSwitchRefs = useCallback(
+        (e) => {
+            e.preventDefault();
+            router.push({pathname: `/repositories/:repoId/compare`, params: {repoId: repo.id},
+                query: {ref: compareReference.id, compare: reference.id}});
+        },[]
+    );
 
     const refresh = () => {
         setResultsState({prefix: prefix, results:[], pagination:{}})
@@ -211,11 +214,8 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                         <Tooltip>Switch directions</Tooltip>
                     }>
                     <span>
-                        <Button variant={"link"} disabled={false}
-                              onClick={e => {
-                                  e.preventDefault();
-                                  handleExchangeRefs()
-                              }}>
+                        <Button variant={"link"}
+                              onClick={handleSwitchRefs}>
                             <ArrowSwitchIcon className="me-2 mt-2" size="small" verticalAlign="middle"/>
                         </Button>
                     </span>
