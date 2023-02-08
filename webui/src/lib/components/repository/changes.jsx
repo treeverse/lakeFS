@@ -7,16 +7,15 @@ import {
 import {useAPI, useAPIWithPagination} from "../../hooks/api";
 import {Error, ExperimentalOverlayTooltip} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
-import {RefTypeBranch, TreeItemType} from "../../../constants";
+import {TreeItemType} from "../../../constants";
 import * as tablesUtil from "../../../util/tablesUtil";
 import {ObjectTreeEntryRow, PrefixTreeEntryRow, TableTreeEntryRow} from "./treeRows";
 import Alert from "react-bootstrap/Alert";
 import {ComingSoonModal} from "../modals";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
-import {URINavigator} from "./tree";
 import Table from "react-bootstrap/Table";
-import {refs, statistics} from "../../api";
+import {statistics} from "../../api";
 
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
@@ -62,7 +61,7 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
         return <Error error={error}/>
 
     if (itemType.loading || (loading && results.length === 0))
-        return <ObjectTreeEntryRow key={entry.path+"entry-row"} entry={entry} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference}
+        return <ObjectTreeEntryRow key={entry.path+"entry-row"} entry={entry} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} repo={repo} reference={reference}
                                    getMore={getMore}/>
 
     if (itemType.type === TreeItemType.Object) {
@@ -153,6 +152,27 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
     return treeItemType;
 }
 
+/**
+ * A container component for entries that represent diff between refs. this container is use by compare, commit changes,
+ * and uncommitted changes views.
+ *
+ * @param results to be displayed in the changes tree container
+ * @param showExperimentalDeltaDiffButton whether or not to display a delta-specific experimental feature button. TODO (Tals): remove when enabling the delta diff feature.
+ * @param delimiter objects delimiter ('' or '/')
+ * @param uriNavigator to navigate in the page using the changes container
+ * @param leftDiffRefID commitID / branch
+ * @param rightDiffRefID commitID / branch
+ * @param repo Repository
+ * @param reference commitID / branch
+ * @param internalRefresh to be called when the page refreshes manually
+ * @param prefix for which changes are displayed
+ * @param getMore to be called when requesting more diff results for a prefix
+ * @param loading of API response state to get changes
+ * @param nextPage of API response state to get changes
+ * @param setAfterUpdated state of pagination of the item's children
+ * @param onNavigate to be called when navigating to a prefix
+ * @param onRevert to be called when an object/prefix is requested to be reverted
+ */
 export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton = false, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
                                          getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert}) => {
