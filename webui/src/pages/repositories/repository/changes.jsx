@@ -12,8 +12,6 @@ import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Alert from "react-bootstrap/Alert";
-import Table from "react-bootstrap/Table";
-import Card from "react-bootstrap/Card";
 import Button from "react-bootstrap/Button";
 
 import {refs, branches, commits} from "../../../lib/api";
@@ -24,7 +22,7 @@ import {ActionGroup, ActionsBar, Error, Loading, RefreshButton} from "../../../l
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {formatAlertText} from "../../../lib/components/repository/errors";
-import {ChangesTreeContainer, TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/changes";
+import {ChangesTreeContainer} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {RepoError} from "./error";
@@ -266,7 +264,8 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
                                   repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
                                   getMore={(afterUpdated, path, useDelimiter= true, amount = -1) => {
                                       return refs.changes(repo.id, reference.id, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
-                                  }} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}/>
+                                  }} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}
+                                  onNavigate={onNavigate} onRevert={onRevert}/>
         </>
     )
 }
