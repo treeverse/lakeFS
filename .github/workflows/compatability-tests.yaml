@@ -1,6 +1,7 @@
 name: lakeFS HadoopFS Compatability Tests
 
 on:
+  pull_request:
   push:
     branches:
       - master
@@ -216,9 +217,7 @@ jobs:
           path: /tmp
 
       - name: Load Docker image
-        run: |
-          docker load --input /tmp/lakefs.tar
-          docker image ls -a
+        run: docker load --input /tmp/lakefs.tar
 
       - uses: actions/setup-java@v3
         with:
@@ -284,5 +283,5 @@ jobs:
         payload: |
           {
             "mrkdwn": true,
-            "text": "Compatibility tests failure in master branch: https://github.com/treeverse/lakeFS/actions/workflows/compatability-tests.yaml"
+            "text": "Compatibility tests failure in master branch: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           }
