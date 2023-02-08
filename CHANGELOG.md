@@ -10,14 +10,15 @@ Deprecated:
 
 :new: What's new:
 
-- Export gob registration to let external services to use auth.Claims (#5184)
+- Export gob binary format registration to allow external services to use
+  auth.Claims (#5184)
 - Add copy URI button to objects navigator in web UI (#5185)
 - Configure web UI login URLs and details dynamically (#5093)
 - Enable configurable logout URL in the UI  (#5203)
-- Add an exchange refs option to UI compare view (#5200)
+- Add an exchange refs option to web UI compare view (#5200)
 
 :bug: Bugs fixed:
-- fix UI import compare link (#5189)
+- Fix broken "compare" link in web UI import wizard (#5189)
 - KV postgres: use advisory lock when creating tables during initial setup (#5193)
 
 ## v0.92.0
