@@ -36,15 +36,6 @@ type PluginHandshake struct {
 	Value string
 }
 
-// Handler is an interface used to handle the different plugin implementation.
-// T is the custom interface that the plugins implement.
-// G is the type of properties needed to support the plugin.
-// Look at Manager to get an example of an implementation for this interface.
-type Handler[T, G any] interface {
-	RegisterPlugin(string, G)
-	LoadPluginClient(string) (T, func(), error)
-}
-
 // Manager holds a clientStore and is responsible to register and unregister `plugin.Client`s, and to load
 // the underlying GRPC Client.
 // T is the custom interface type that the returned GRPC Client implementation implements, e.g. "Differ" for `plugin.Client`s that
