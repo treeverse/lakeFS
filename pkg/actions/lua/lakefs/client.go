@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 
 	"github.com/Shopify/go-lua"
@@ -86,7 +87,7 @@ func OpenClient(l *lua.State, ctx context.Context, user *model.User, server *htt
 					check(l, err)
 				}
 
-				path := fmt.Sprintf("/repositories/%s/tags", repo)
+				path := fmt.Sprintf("/repositories/%s/tags", url.PathEscape(repo))
 				req, err := newLakeFSJSONRequest(ctx, user, http.MethodPost, path, data)
 				if err != nil {
 					check(l, err)
@@ -97,8 +98,8 @@ func OpenClient(l *lua.State, ctx context.Context, user *model.User, server *htt
 				repo := lua.CheckString(l, 1)
 				leftRef := lua.CheckString(l, 2)
 				rightRef := lua.CheckString(l, 3)
-				url := fmt.Sprintf("/repositories/%s/refs/%s/diff/%s", repo, leftRef, rightRef)
-				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, url, nil)
+				reqURL := fmt.Sprintf("/repositories/%s/refs/%s/diff/%s", url.PathEscape(repo), url.PathEscape(leftRef), url.PathEscape(rightRef))
+				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
 				if err != nil {
 					check(l, err)
 				}
@@ -122,8 +123,8 @@ func OpenClient(l *lua.State, ctx context.Context, user *model.User, server *htt
 			{Name: "list_objects", Function: func(state *lua.State) int {
 				repo := lua.CheckString(l, 1)
 				ref := lua.CheckString(l, 2)
-				url := fmt.Sprintf("/repositories/%s/refs/%s/objects/ls", repo, ref)
-				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, url, nil)
+				reqURL := fmt.Sprintf("/repositories/%s/refs/%s/objects/ls", url.PathEscape(repo), url.PathEscape(ref))
+				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
 				if err != nil {
 					check(l, err)
 				}
@@ -154,8 +155,8 @@ func OpenClient(l *lua.State, ctx context.Context, user *model.User, server *htt
 			{Name: "get_object", Function: func(state *lua.State) int {
 				repo := lua.CheckString(l, 1)
 				ref := lua.CheckString(l, 2)
-				url := fmt.Sprintf("/repositories/%s/refs/%s/objects", repo, ref)
-				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, url, nil)
+				reqURL := fmt.Sprintf("/repositories/%s/refs/%s/objects", url.PathEscape(repo), url.PathEscape(ref))
+				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
 				if err != nil {
 					check(l, err)
 				}
