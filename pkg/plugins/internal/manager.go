@@ -36,8 +36,12 @@ type PluginHandshake struct {
 	Value string
 }
 
-type Controller[T any] interface {
-	RegisterPlugin(string, PluginIdentity, PluginHandshake, plugin.Plugin)
+// Handler is an interface used to handle the different plugin implementation.
+// T is the custom interface that the plugins implement.
+// G is the type of properties needed to support the plugin.
+// Look at Manager to get an example of an implementation for this interface.
+type Handler[T, G any] interface {
+	RegisterPlugin(string, G)
 	LoadPluginClient(string) (T, func(), error)
 }
 
@@ -59,8 +63,17 @@ func NewManager[T any]() *Manager[T] {
 	}
 }
 
+type HCPluginProperties struct {
+	ID        PluginIdentity
+	Handshake PluginHandshake
+	P         plugin.Plugin
+}
+
 // RegisterPlugin registers a new plugin client with the corresponding plugin type.
-func (m *Manager[T]) RegisterPlugin(name string, id PluginIdentity, auth PluginHandshake, p plugin.Plugin) {
+func (m *Manager[T]) RegisterPlugin(name string, pp HCPluginProperties) {
+	id := pp.ID
+	auth := pp.Handshake
+	p := pp.P
 	hc := plugin.HandshakeConfig{
 		ProtocolVersion:  id.ProtocolVersion,
 		MagicCookieKey:   auth.Key,
@@ -69,10 +82,10 @@ func (m *Manager[T]) RegisterPlugin(name string, id PluginIdentity, auth PluginH
 	cmd := exec.Command(id.ExecutableLocation, id.ExecutableArgs...) // #nosec G204
 	cmd.Env = id.ExecutableEnvVars
 	c := newPluginClient(name, p, hc, cmd)
-	cp := &clientProps{
-		ID:   id,
-		Auth: auth,
-		P:    p,
+	cp := &HCPluginProperties{
+		ID:        id,
+		Handshake: auth,
+		P:         p,
 	}
 	m.pluginApplicationClients.Insert(name, c, cp)
 }
@@ -123,11 +136,11 @@ func (m *Manager[T]) LoadPluginClient(name string) (T, func(), error) {
 	}
 	return ans, func() {
 		cp := m.closePluginClient(name)
-		m.RegisterPlugin(name, cp.ID, cp.Auth, cp.P)
+		m.RegisterPlugin(name, *cp)
 	}, nil
 }
 
-func (m *Manager[T]) closePluginClient(name string) *clientProps {
+func (m *Manager[T]) closePluginClient(name string) *HCPluginProperties {
 	c, cp, _ := m.pluginApplicationClients.Client(name)
 	c.Kill()
 	return cp

@@ -78,8 +78,13 @@ func TestManager_LoadPluginClient(t *testing.T) {
 			id.ExecutableLocation = loc
 			id.ExecutableArgs = args
 			id.ExecutableEnvVars = envVars
+			hcProps := HCPluginProperties{
+				ID:        id,
+				Handshake: basicHS,
+				P:         tc.p,
+			}
 			if tc.p != nil {
-				tc.m.RegisterPlugin(registeredPluginName, id, basicHS, tc.p)
+				tc.m.RegisterPlugin(registeredPluginName, hcProps)
 			}
 			_, closeClient, err := tc.m.LoadPluginClient(tc.name)
 			assertErr(t, err, tc.expectedErr, tc.description)
