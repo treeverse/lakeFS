@@ -134,11 +134,6 @@ func testSetIfMsg(t testing.TB, ctx context.Context, store kv.Store) {
 	testutil.MustDo(t, "cleanup", store.Delete(ctx, []byte(modelPartitionKey), setModel.Name))
 }
 
-type testItem struct {
-	key []byte
-	msg *kvtest.TestModel
-}
-
 func BenchmarkDrivers(b *testing.B) {
 	ctx := context.Background()
 

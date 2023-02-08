@@ -4,14 +4,13 @@ import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {
     ActionGroup,
     ActionsBar,
-    Error,
-    ExperimentalOverlayTooltip,
+    Error, ExperimentalOverlayTooltip,
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
-import {ArrowLeftIcon, DiffIcon, GitMergeIcon} from "@primer/octicons-react";
+import {ArrowLeftIcon, DiffIcon, GitMergeIcon, InfoIcon} from "@primer/octicons-react";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {refs, statistics} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
@@ -33,6 +32,8 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
     const [showComingSoonModal, setShowComingSoonModal] = useState(false);
+    const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
+
     const sendDeltaDiffStats = async () => {
         const deltaDiffStatEvents = [
             {
@@ -88,21 +89,29 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
             <div className="tree-container">
                 {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
                     <>
-                        <ComingSoonModal display={showComingSoonModal}
-                                         onCancel={() => setShowComingSoonModal(false)}>
-                            <div>lakeFS Delta Lake tables diff is under development</div>
-                        </ComingSoonModal>
-                        <ExperimentalOverlayTooltip>
-                            <Button className="action-bar"
-                                    variant="primary"
-                                    disabled={false}
-                                    onClick={async () => {
-                                        setShowComingSoonModal(true);
-                                        await sendDeltaDiffStats();
-                                    }}>
-                                <DiffIcon/> Compare Delta Lake tables
-                            </Button>
-                        </ExperimentalOverlayTooltip>
+                        {!enableDeltaDiff ?
+                            <>
+                                <ComingSoonModal display={showComingSoonModal}
+                                                 onCancel={() => setShowComingSoonModal(false)}>
+                                    <div>lakeFS Delta Lake tables diff is under development</div>
+                                </ComingSoonModal>
+                                <ExperimentalOverlayTooltip>
+                                    <Button className="action-bar"
+                                            variant="primary"
+                                            disabled={false}
+                                            onClick={async () => {
+                                                setShowComingSoonModal(true);
+                                                await sendDeltaDiffStats();
+                                            }}>
+                                        <DiffIcon/> Compare Delta Lake tables
+                                    </Button>
+                                </ExperimentalOverlayTooltip>
+                            </>
+                            :
+                            <div className="mr-1 mb-2">
+                                <Alert variant={"info"}><InfoIcon/> You can now use lakeFS to compare Delta Lake tables</Alert>
+                            </div>
+                        }
                         <Card>
                             <Card.Header>
                                 <span className="float-start">

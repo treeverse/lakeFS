@@ -10,9 +10,16 @@ import {Error} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 
-const OIDC_LOGIN_URL = "/oidc/login?prompt=login";
+interface LoginConfig {
+    login_url: string;
+    login_failed_message?: string;
+    fallback_login_url?: string;
+    fallback_login_label?: string;
+    login_cookie_names: string[];
+    logout_url: string;
+}
 
-const LoginForm = ({oidcEnabled}) => {
+const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const router = useRouter();
     const [loginError, setLoginError] = useState(null);
     const { response, error, loading } = useAPI(() => auth.getAuthCapabilities());
@@ -39,12 +46,10 @@ const LoginForm = ({oidcEnabled}) => {
                                 router.push(next ? next : '/');
                             } catch(err) {
                                 if (err instanceof AuthenticationError && err.status === 401) {
-                                    setLoginError("The credentials don't match.");
-                                    if (oidcEnabled) {
-                                        setLoginError(<>The credentials don&apos;t match. You may be registered through our <a href={"/oidc/login?prompt=login"}>SSO Provider.</a></>)
-                                    }
+                                    const contents = {__html: `${loginConfig.login_failed_message}` ||
+                                        "Credentials don't match."};
+                                    setLoginError(<span dangerouslySetInnerHTML={contents}/>);
                                 }
-
                             }
                         }}>
                             <Form.Group controlId="username" className="mb-3">
@@ -64,12 +69,15 @@ const LoginForm = ({oidcEnabled}) => {
                                 <Button variant="link" className={"text-secondary mt-2"}  onClick={()=> {router.push("/auth/resetpassword")}}>Reset password</Button>
                                 : ""
                             }
-                            { oidcEnabled ?
+                            { loginConfig.fallback_login_url ?
                                 <Button variant="link" className="text-secondary mt-2" onClick={async ()=> {
-                                    document.cookie = 'oidc_auth_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-                                    document.cookie = 'internal_auth_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-                                    window.location = OIDC_LOGIN_URL;
-                                }}>Sign in with SSO provider</Button>
+                                    loginConfig.login_cookie_names?.forEach(
+                                        cookie => {
+                                            document.cookie = `${cookie}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
+                                        }
+                                    );
+                                    window.location = loginConfig.fallback_login_url;
+                                }}>{loginConfig.fallback_login_label || 'Try another way to login'}</Button>
                                 : ""
                             }
                         </div>
@@ -90,19 +98,20 @@ const LoginPage = () => {
 
     if (!error && response && response.state !== SETUP_STATE_INITIALIZED) {
         router.push({pathname: '/setup', query: router.query})
-        return
+        return null;
     }
+    const loginConfig = response?.login_config;
     if (router.query.redirected)  {
-        if(!error && response && response.oidc_default_login) {
-            window.location = OIDC_LOGIN_URL;
-            return
+        if(!error && loginConfig?.login_url) {
+            window.location = loginConfig.login_url;
+            return null;
         }
         delete router.query.redirected;
         router.push({pathname: '/auth/login', query: router.query})
     }
     return (
         <Layout logged={false}>
-            <LoginForm oidcEnabled={!error  && response && response.oidc_enabled }/>
+            <LoginForm loginConfig={loginConfig}/>
         </Layout>
     );
 };
