@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"time"
 
 	"github.com/Shopify/go-lua"
@@ -94,8 +95,9 @@ func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 		if h.Endpoint == nil {
 			return fmt.Errorf("no endpoint configured, cannot request object: %s: %w", h.ScriptPath, ErrInvalidAction)
 		}
-		url := fmt.Sprintf("/api/v1/repositories/%s/refs/%s/objects", record.RepositoryID, record.SourceRef)
-		req, err := http.NewRequest(http.MethodGet, url, nil)
+		reqURL := fmt.Sprintf("/api/v1/repositories/%s/refs/%s/objects",
+			url.PathEscape(string(record.RepositoryID)), url.PathEscape(string(record.SourceRef)))
+		req, err := http.NewRequest(http.MethodGet, reqURL, nil)
 		if err != nil {
 			return err
 		}
