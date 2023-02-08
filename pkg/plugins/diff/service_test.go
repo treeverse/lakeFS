@@ -1,4 +1,4 @@
-package table_diff
+package tablediff
 
 import (
 	"context"

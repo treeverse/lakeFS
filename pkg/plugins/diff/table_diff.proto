@@ -5,7 +5,7 @@ Run from lakeFS root:
  */
 syntax = "proto3";
 package diff;
-option go_package = "github.com/treeverse/lakefs/plugins/table_diff";
+option go_package = "github.com/treeverse/lakefs/plugins/tablediff";
 
 import "google/protobuf/timestamp.proto";
 

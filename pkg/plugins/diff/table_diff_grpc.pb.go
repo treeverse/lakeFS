@@ -4,7 +4,7 @@
 // - protoc             v3.21.12
 // source: table_diff.proto
 
-package table_diff
+package tablediff
 
 import (
 	context "context"
