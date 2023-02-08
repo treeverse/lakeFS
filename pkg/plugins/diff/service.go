@@ -2,12 +2,11 @@ package table_diff
 
 import (
 	"context"
-	"github.com/hashicorp/go-plugin"
 	"github.com/treeverse/lakefs/pkg/plugins/internal"
 	"time"
 )
 
-type Entry struct {
+type DiffEntry struct {
 	Version          string
 	Timestamp        time.Time
 	Operation        string
@@ -15,10 +14,8 @@ type Entry struct {
 }
 
 type Response struct {
-	Diffs []Entry
+	Diffs []DiffEntry
 }
-
-type DiffResponseTransformer func(*DiffResponse) Response
 
 type RefPath struct {
 	Ref  string
@@ -46,45 +43,46 @@ type Differ interface {
 	Diff(context.Context, Params) (Response, error)
 }
 
-type PluginProperties struct {
-	ID        internal.PluginIdentity
-	Handshake internal.PluginHandshake
-	P         plugin.Plugin
-}
-
+// Service is responsible for registering new Differ plugins and executing them at will.
+// After initializing a Service, the CloseClients method should be called at some point to close gracefully all
+// remaining plugins.
 type Service struct {
-	pluginManager  internal.Controller[Differ]
+	pluginHandler  internal.Handler[Differ, internal.HCPluginProperties]
 	closeFunctions []func()
 }
 
-func NewService() *Service {
-	return &Service{
-		pluginManager:  internal.NewManager[Differ](),
+// NewService is used to initialize a new Differ service. The returned function is a closing function for the service.
+func NewService() (*Service, func()) {
+	service := &Service{
+		pluginHandler:  internal.NewManager[Differ](),
 		closeFunctions: make([]func(), 0),
 	}
+	return service, service.Close
 }
 
 func (s *Service) RunDiff(ctx context.Context, diffType string, diffParams Params) (Response, error) {
-	d, closeClient, err := s.pluginManager.LoadPluginClient(diffType)
+	d, closeClient, err := s.pluginHandler.LoadPluginClient(diffType)
 	if err != nil {
 		return Response{}, err
 	}
+	if closeClient != nil {
+		s.closeFunctions = append(s.closeFunctions, closeClient)
+	}
 
-	s.closeFunctions = append(s.closeFunctions, closeClient)
-
-	diffs, err := d.Diff(ctx, diffParams)
+	diffResponse, err := d.Diff(ctx, diffParams)
 	if err != nil {
 		return Response{}, err
 	}
-	return diffs, nil
+	return diffResponse, nil
 }
 
-func (s *Service) CloseClients() {
+// Close should be called upon the destruction of the Service.
+func (s *Service) Close() {
 	for _, cf := range s.closeFunctions {
 		cf()
 	}
 }
 
-func (s *Service) RegisterDiffClient(diffType string, props PluginProperties) {
-	s.pluginManager.RegisterPlugin(diffType, props.ID, props.Handshake, props.P)
+func (s *Service) RegisterDiffClient(diffType string, props internal.HCPluginProperties) {
+	s.pluginHandler.RegisterPlugin(diffType, props)
 }
