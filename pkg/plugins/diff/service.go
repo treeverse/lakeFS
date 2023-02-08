@@ -2,8 +2,9 @@ package table_diff
 
 import (
 	"context"
-	"github.com/treeverse/lakefs/pkg/plugins/internal"
 	"time"
+
+	"github.com/treeverse/lakefs/pkg/plugins/internal"
 )
 
 type DiffEntry struct {

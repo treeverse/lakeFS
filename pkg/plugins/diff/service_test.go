@@ -3,8 +3,9 @@ package table_diff
 import (
 	"context"
 	"errors"
-	"github.com/treeverse/lakefs/pkg/plugins/internal"
 	"testing"
+
+	"github.com/treeverse/lakefs/pkg/plugins/internal"
 )
 
 var errNotFound = errors.New("plugin not found")
