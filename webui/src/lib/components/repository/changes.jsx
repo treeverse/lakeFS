@@ -15,7 +15,7 @@ import {ComingSoonModal} from "../modals";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
-import {statistics} from "../../api";
+import {refs, statistics} from "../../api";
 
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
@@ -153,7 +153,7 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
 }
 
 /**
- * A container component for entries that represent diff between refs. this container is use by compare, commit changes,
+ * A container component for entries that represent a diff between refs. This container is used by the compare, commit changes,
  * and uncommitted changes views.
  *
  * @param results to be displayed in the changes tree container
@@ -176,48 +176,17 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
 export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton = false, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
                                          getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert}) => {
-    const [showComingSoonModal, setShowComingSoonModal] = useState(false);
     const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
-    const sendDeltaDiffStats = async () => {
-        const deltaDiffStatEvents = [
-            {
-                "class": "experimental-feature",
-                "name": "delta-diff",
-                "count": 1,
-            }
-        ];
-        await statistics.postStatsEvents(deltaDiffStatEvents);
-    }
 
-    return <>
-        <div className="tree-container">
-            {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
-                <>
-                    {!enableDeltaDiff ?
-                        <>
-                        {showExperimentalDeltaDiffButton
-                            ? <>
-                            <ComingSoonModal display={showComingSoonModal}
-                                             onCancel={() => setShowComingSoonModal(false)}>
-                                <div>lakeFS Delta Lake tables diff is under development</div>
-                            </ComingSoonModal>
-                            <ExperimentalOverlayTooltip>
-                                <Button className="action-bar"
-                                        variant="primary"
-                                        disabled={false}
-                                        onClick={async () => {
-                                            setShowComingSoonModal(true);
-                                            await sendDeltaDiffStats();
-                                        }}>
-                                    <DiffIcon/> Compare Delta Lake tables
-                                </Button>
-                            </ExperimentalOverlayTooltip>
-                            </>
-                            : ""}</>
-                        :
-                        <div className="mr-1 mb-2">
-                            <Alert variant={"info"}><InfoIcon/> You can now use lakeFS to compare Delta Lake tables</Alert>
-                        </div>
+    if (results.length === 0) {
+        return <div className="tree-container">
+            <Alert variant="info">No changes</Alert>
+        </div>
+    } else {
+        return <div className="tree-container">
+                    {!enableDeltaDiff
+                        ? <ExperimentalDeltaDiffButton showButton={showExperimentalDeltaDiffButton}/>
+                        : <div className="mr-1 mb-2"><Alert variant={"info"}><InfoIcon/> You can now use lakeFS to compare Delta Lake tables</Alert></div>
                     }
                     <Card>
                         <Card.Header>
@@ -246,8 +215,43 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                 </tbody>
                             </Table>
                         </Card.Body>
-                    </Card></>
-            )}
-        </div>
+                    </Card>
+            </div>
+    }
+}
+
+export const defaultGetMoreChanges = (repo, leftRefId, rightRefId, delimiter) => (afterUpdated, path, useDelimiter= true, amount = -1) => {
+    return refs.diff(repo.id, leftRefId, rightRefId, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined);
+};
+
+const ExperimentalDeltaDiffButton = ({showButton = false}) => {
+    const [showComingSoonModal, setShowComingSoonModal] = useState(false);
+    const sendDeltaDiffStats = async () => {
+        const deltaDiffStatEvents = [
+            {
+                "class": "experimental-feature",
+                "name": "delta-diff",
+                "count": 1,
+            }
+        ];
+        await statistics.postStatsEvents(deltaDiffStatEvents);
+    }
+
+    return <>
+        <ComingSoonModal display={showComingSoonModal}
+                         onCancel={() => setShowComingSoonModal(false)}>
+            <div>lakeFS Delta Lake tables diff is under development</div>
+        </ComingSoonModal>
+        <ExperimentalOverlayTooltip>
+            <Button className="action-bar"
+                    variant="primary"
+                    hidden={!showButton}
+                    onClick={async () => {
+                        setShowComingSoonModal(true);
+                        await sendDeltaDiffStats();
+                    }}>
+                <DiffIcon/> Compare Delta Lake tables
+            </Button>
+        </ExperimentalOverlayTooltip>
     </>
 }

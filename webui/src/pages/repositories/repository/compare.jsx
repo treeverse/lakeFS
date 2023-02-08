@@ -14,7 +14,7 @@ import {ArrowLeftIcon, GitMergeIcon, ArrowSwitchIcon} from "@primer/octicons-rea
 import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {refs} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
-import {ChangesTreeContainer} from "../../../lib/components/repository/changes";
+import {ChangesTreeContainer, defaultGetMoreChanges} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {appendMoreResults} from "./changes";
@@ -112,9 +112,8 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     else content = <ChangesTreeContainer results={results} showExperimentalDeltaDiffButton={true} delimiter={delimiter}
                                          uriNavigator={uriNavigator} leftDiffRefID={leftCommittedRef} rightDiffRefID={rightCommittedRef}
                                          repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
-                                         getMore={(afterUpdatedChild, path, useDelimiter = true, amount = -1) => {
-                                            return refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined);
-                                         }} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}/>
+                                         getMore={defaultGetMoreChanges(repo, reference.id, compareReference.id, delimiter)}
+                                         loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}/>
 
     const emptyDiff = (!loading && !error && !!results && results.length === 0);
 

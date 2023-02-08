@@ -7,7 +7,7 @@ import {useAPI, useAPIWithPagination} from "../../../../../lib/hooks/api";
 import {commits, refs} from "../../../../../lib/api";
 import dayjs from "dayjs";
 import Table from "react-bootstrap/Table";
-import {ChangesTreeContainer} from "../../../../../lib/components/repository/changes";
+import {ChangesTreeContainer, defaultGetMoreChanges} from "../../../../../lib/components/repository/changes";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-react";
 import {Link} from "../../../../../lib/components/nav";
@@ -52,9 +52,8 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
             {actionErrorDisplay}
             <ChangesTreeContainer results={results} delimiter={delimiter} uriNavigator={uriNavigator} leftDiffRefID={commit.parents[0]}
                                   rightDiffRefID={commit.id} repo={repo} reference={commit} prefix={prefix}
-                                  getMore={(afterUpdated, path, useDelimiter = true, amount = -1) => {
-                                      return refs.diff(repo.id, commit.parents[0], commit.id, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
-                                  }} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}/>
+                                  getMore={defaultGetMoreChanges(repo, commit.parents[0], commit.id, delimiter)}
+                                  loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}/>
         </>
     )
 };

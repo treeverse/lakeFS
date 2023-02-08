@@ -172,6 +172,10 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
 
     const delimiter = '/'
 
+    const getMoreUncommittedChanges = (afterUpdated, path, useDelimiter= true, amount = -1) => {
+        return refs.changes(repo.id, reference.id, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
+    }
+
     const { error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!repo) return
         return await appendMoreResults(resultsState, prefix, afterUpdated, setAfterUpdated, setResultsState,
@@ -184,6 +188,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
         setResultsState({prefix: prefix, results:[], pagination:{}})
         setInternalRefresh(!internalRefresh)
     }
+
 
     if (error) return <Error error={error}/>
     if (loading) return <Loading/>
@@ -208,7 +213,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
         }
     }
 
-   const uriNavigator =  <URINavigator path={prefix} reference={reference} repo={repo}
+    const uriNavigator =  <URINavigator path={prefix} reference={reference} repo={repo}
                                       pathURLBuilder={(params, query) => {
                                           return {
                                               pathname: '/repositories/:repoId/changes',
@@ -262,9 +267,8 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
             <ChangesTreeContainer results={results} delimiter={delimiter}
                                   uriNavigator={uriNavigator} leftDiffRefID={committedRef} rightDiffRefID={uncommittedRef}
                                   repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
-                                  getMore={(afterUpdated, path, useDelimiter= true, amount = -1) => {
-                                      return refs.changes(repo.id, reference.id, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
-                                  }} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}
+                                  getMore={getMoreUncommittedChanges}
+                                  loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}
                                   onNavigate={onNavigate} onRevert={onRevert}/>
         </>
     )
