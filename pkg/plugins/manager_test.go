@@ -53,7 +53,7 @@ func TestManager_LoadPluginClient(t *testing.T) {
 			NewManager[PingPongStub](),
 			"someNonExistingPlugin",
 			GRPCPlugin{Impl: &PingPongPlayer{}},
-			ErrPluginNameNotFound,
+			ErrPluginNotFound,
 			"unregistered service",
 		},
 		{
@@ -74,12 +74,22 @@ func TestManager_LoadPluginClient(t *testing.T) {
 				}(tc)
 			}
 			// Necessary to redefine in every test due to future setting of stdout by the go-plugin package
-			id.Cmd = *pluginServerCmd(id.ProtocolVersion, basicHS)
+			loc, args, envVars := pluginServerCmd(id.ProtocolVersion, basicHS)
+			id.ExecutableLocation = loc
+			id.ExecutableArgs = args
+			id.ExecutableEnvVars = envVars
 			if tc.p != nil {
 				tc.m.RegisterPlugin(registeredPluginName, id, basicHS, tc.p)
 			}
-			_, err := tc.m.LoadPluginClient(tc.name)
+			_, closeClient, err := tc.m.LoadPluginClient(tc.name)
 			assertErr(t, err, tc.expectedErr, tc.description)
+			if closeClient != nil {
+				closeClient()
+				// validate that after closing a Client it can be used again.
+				_, closeClient, err = tc.m.LoadPluginClient(tc.name)
+				defer closeClient()
+				assertErr(t, err, tc.expectedErr, tc.description)
+			}
 		})
 	}
 }
@@ -91,7 +101,7 @@ func assertErr(t *testing.T, err, cmpErr error, desc string) {
 }
 
 // Used to run the plugin server
-func pluginServerCmd(version uint, auth PluginHandshake) *exec.Cmd {
+func pluginServerCmd(version uint, auth PluginHandshake) (string, []string, []string) {
 	cs := []string{"-test.run=TestPluginServer", "--"}
 	cs = append(cs, auth.Key, auth.Value, strconv.Itoa(int(version)))
 	cmd := exec.Command(os.Args[0], cs...)
@@ -100,7 +110,7 @@ func pluginServerCmd(version uint, auth PluginHandshake) *exec.Cmd {
 		"RUN_PLUGIN_SERVER=1",
 	}
 	cmd.Env = append(env, os.Environ()...)
-	return cmd
+	return cmd.Path, cmd.Args[1:], cmd.Env
 }
 
 // This is not a real test. This is the plugin server that will be triggered by the tests
