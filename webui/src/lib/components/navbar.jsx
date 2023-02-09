@@ -6,9 +6,11 @@ import {Link} from "./nav";
 import {useAPI} from "../hooks/api";
 import {Navbar, Nav, NavDropdown} from "react-bootstrap";
 import Container from "react-bootstrap/Container";
+import {useLoginConfigContext} from "../hooks/conf";
 
 const NavUserInfo = () => {
     const { user, loading, error } = useUser();
+    const logoutUrl = useLoginConfigContext()?.logout_url || "/logout"
     const { response: versionResponse, loading: versionLoading, error: versionError } = useAPI(() => {
         return config.getLakeFSVersion()
     }, [])
@@ -19,7 +21,7 @@ const NavUserInfo = () => {
             <NavDropdown.Item
                 onClick={()=> {
                     auth.clearCurrentUser();
-                    window.location = '/logout';
+                    window.location = logoutUrl;
                 }}>
                 Logout
             </NavDropdown.Item>

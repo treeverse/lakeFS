@@ -1,23 +1,20 @@
-import React, {useState} from "react";
+import React, {useCallback, useState} from "react";
 
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {
     ActionGroup,
     ActionsBar,
     Error,
-    ExperimentalOverlayTooltip,
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
-import {ArrowLeftIcon, DiffIcon, GitMergeIcon} from "@primer/octicons-react";
+import {ArrowLeftIcon, GitMergeIcon, ArrowSwitchIcon} from "@primer/octicons-react";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
-import {refs, statistics} from "../../../lib/api";
+import {refs} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
-import Card from "react-bootstrap/Card";
-import Table from "react-bootstrap/Table";
-import {TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/changes";
+import {ChangesTreeContainer, defaultGetMoreChanges} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {appendMoreResults} from "./changes";
@@ -26,23 +23,22 @@ import Button from "react-bootstrap/Button";
 import {FormControl, FormHelperText, InputLabel, MenuItem, Select} from "@mui/material";
 import Modal from "react-bootstrap/Modal";
 import {RepoError} from "./error";
-import {ComingSoonModal} from "../../../lib/components/modals";
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import Tooltip from "react-bootstrap/Tooltip";
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
-    const [showComingSoonModal, setShowComingSoonModal] = useState(false);
-    const sendDeltaDiffStats = async () => {
-        const deltaDiffStatEvents = [
-            {
-                "class": "experimental-feature",
-                "name": "delta-diff",
-                "count": 1,
-            }
-        ];
-        await statistics.postStatsEvents(deltaDiffStatEvents);
-    }
+
+    const router = useRouter();
+    const handleSwitchRefs = useCallback(
+        (e) => {
+            e.preventDefault();
+            router.push({pathname: `/repositories/:repoId/compare`, params: {repoId: repo.id},
+                query: {ref: compareReference.id, compare: reference.id}});
+        },[]
+    );
 
     const refresh = () => {
         setResultsState({prefix: prefix, results:[], pagination:{}})
@@ -75,6 +71,35 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
 
         return `${fromId}...${toId}`
     }
+    const uriNavigator = <URINavigator
+            path={prefix}
+            reference={reference}
+            relativeTo={relativeTitle(reference, compareReference)}
+            repo={repo}
+            pathURLBuilder={(params, query) => {
+                const q = {
+                    delimiter: "/",
+                    prefix: query.path,
+                };
+                if (compareReference)
+                    q.compare = compareReference.id;
+                if (reference)
+                    q.ref = reference.id;
+                return {
+                    pathname: '/repositories/:repoId/compare',
+                    params: {repoId: repo.id},
+                    query: q
+                };
+            }}/>
+
+    let leftCommittedRef = reference.id;
+    let rightCommittedRef = compareReference.id;
+    if (reference.type === RefTypeBranch) {
+        leftCommittedRef += "@";
+    }
+    if (compareReference.type === RefTypeBranch) {
+        rightCommittedRef += "@";
+    }
 
     if (loading) content = <Loading/>
     else if (error) content = <Error error={error}/>
@@ -84,85 +109,11 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
             You’ll need to use two different sources to get a valid comparison.
         </Alert>
     )
-    else content = (
-            <div className="tree-container">
-                {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
-                    <>
-                        <ComingSoonModal display={showComingSoonModal}
-                                         onCancel={() => setShowComingSoonModal(false)}>
-                            <div>lakeFS Delta Lake tables diff is under development</div>
-                        </ComingSoonModal>
-                        <ExperimentalOverlayTooltip>
-                            <Button className="action-bar"
-                                    variant="primary"
-                                    disabled={false}
-                                    onClick={async () => {
-                                        setShowComingSoonModal(true);
-                                        await sendDeltaDiffStats();
-                                    }}>
-                                <DiffIcon/> Compare Delta Lake tables
-                            </Button>
-                        </ExperimentalOverlayTooltip>
-                        <Card>
-                            <Card.Header>
-                                <span className="float-start">
-                                    {(delimiter !== "") && (
-                                        <URINavigator
-                                            path={prefix}
-                                            reference={reference}
-                                            relativeTo={relativeTitle(reference, compareReference)}
-                                            repo={repo}
-                                            pathURLBuilder={(params, query) => {
-                                                const q = {
-                                                    delimiter: "/",
-                                                    prefix: query.path,
-                                                };
-                                                if (compareReference)
-                                                    q.compare = compareReference.id;
-                                                if (reference)
-                                                    q.ref = reference.id;
-                                                return {
-                                                    pathname: '/repositories/:repoId/compare',
-                                                    params: {repoId: repo.id},
-                                                    query: q
-                                                };
-                                            }}/>
-                                    )}
-                                </span>
-                            </Card.Header>
-                            <Card.Body>
-                                <Table borderless size="sm">
-                                    <tbody>
-                                    {results.map(entry => {
-                                        let leftCommittedRef = reference.id;
-                                        let rightCommittedRef = compareReference.id;
-                                        if (reference.type === RefTypeBranch) {
-                                            leftCommittedRef += "@";
-                                        }
-                                        if (compareReference.type === RefTypeBranch) {
-                                            rightCommittedRef += "@";
-                                        }
-                                        return (
-                                            <TreeItem key={entry.path + "-item"} entry={entry} repo={repo}
-                                                      reference={reference}
-                                                      internalReferesh={internalRefresh} leftDiffRefID={leftCommittedRef}
-                                                      rightDiffRefID={rightCommittedRef} delimiter={delimiter}
-                                                      relativeTo={prefix}
-                                                      onNavigate={onNavigate}
-                                                      getMore={(afterUpdatedChild, path, useDelimiter = true, amount = -1) => {
-                                                          return refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined);
-                                                      }}/>);
-                                    })}
-                                    {!!nextPage &&
-                                        <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage}
-                                                            setAfterUpdated={setAfterUpdated}/>}
-                                    </tbody>
-                                </Table>
-                            </Card.Body>
-                    </Card></>
-                )}
-            </div>
-    )
+    else content = <ChangesTreeContainer results={results} showExperimentalDeltaDiffButton={true} delimiter={delimiter}
+                                         uriNavigator={uriNavigator} leftDiffRefID={leftCommittedRef} rightDiffRefID={rightCommittedRef}
+                                         repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
+                                         getMore={defaultGetMoreChanges(repo, reference.id, compareReference.id, delimiter)}
+                                         loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}/>
 
     const emptyDiff = (!loading && !error && !!results && results.length === 0);
 
@@ -188,6 +139,17 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                         withCommits={true}
                         withWorkspace={false}
                         selectRef={onSelectCompare}/>
+
+                    <OverlayTrigger placement="bottom" overlay={
+                        <Tooltip>Switch directions</Tooltip>
+                    }>
+                    <span>
+                        <Button variant={"link"}
+                              onClick={handleSwitchRefs}>
+                            <ArrowSwitchIcon className="me-2 mt-2" size="small" verticalAlign="middle"/>
+                        </Button>
+                    </span>
+                    </OverlayTrigger>&#160;&#160;
                 </ActionGroup>
 
                 <ActionGroup orientation="right">
@@ -205,7 +167,6 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                     }
                 </ActionGroup>
             </ActionsBar>
-
             {content}
         </>
     );

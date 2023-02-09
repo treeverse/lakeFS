@@ -7,8 +7,7 @@ import {useAPI, useAPIWithPagination} from "../../../../../lib/hooks/api";
 import {commits, refs} from "../../../../../lib/api";
 import dayjs from "dayjs";
 import Table from "react-bootstrap/Table";
-import Alert from "react-bootstrap/Alert";
-import {TreeEntryPaginator, TreeItem} from "../../../../../lib/components/repository/changes";
+import {ChangesTreeContainer, defaultGetMoreChanges} from "../../../../../lib/components/repository/changes";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-react";
 import {Link} from "../../../../../lib/components/nav";
@@ -39,47 +38,22 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
     const actionErrorDisplay = (actionError) ?
         <Error error={actionError} onDismiss={() => setActionError(null)}/> : <></>
 
+    const uriNavigator = <URINavigator path={prefix} reference={commit} repo={repo}
+                                       relativeTo={`${commit.id.substring(0, 12)}`}
+                                       pathURLBuilder={(params, query) => {
+                                           return {
+                                               pathname: '/repositories/:repoId/commits/:commitId',
+                                               params: {repoId: repo.id, commitId: commit.id},
+                                               query: {prefix: query.path}
+                                           }
+                                       }}/>
     return (
         <>
             {actionErrorDisplay}
-            <div className="tree-container">
-                {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
-                    <Card>
-                        <Card.Header>
-                        <span className="float-start">
-                            {(delimiter !== "") && (
-                                <URINavigator path={prefix} reference={commit} repo={repo}
-                                              relativeTo={`${commit.id.substring(0, 12)}`}
-                                              pathURLBuilder={(params, query) => {
-                                                  return {
-                                                      pathname: '/repositories/:repoId/commits/:commitId',
-                                                      params: {repoId: repo.id, commitId: commit.id},
-                                                      query: {prefix: query.path}
-                                                  }
-                                              }}/>
-                            )}
-                        </span>
-                        </Card.Header>
-                        <Card.Body>
-                            <Table borderless size="sm">
-                                <tbody>
-                                {results.map(entry => (
-                                    <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo} reference={commit}
-                                              leftDiffRefID={commit.parents[0]} rightDiffRefID={commit.id} delimiter={delimiter}
-                                              after={afterUpdated} relativeTo={prefix} onNavigate={onNavigate}
-                                              getMore={(afterUpdated, path, useDelimiter = true, amount = -1) => {
-                                                  return refs.diff(repo.id, commit.parents[0], commit.id, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
-                                              }}/>
-                                ))}
-                                { !!nextPage &&
-                                    <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
-                                }
-                                </tbody>
-                            </Table>
-                        </Card.Body>
-                    </Card>
-                )}
-            </div>
+            <ChangesTreeContainer results={results} delimiter={delimiter} uriNavigator={uriNavigator} leftDiffRefID={commit.parents[0]}
+                                  rightDiffRefID={commit.id} repo={repo} reference={commit} prefix={prefix}
+                                  getMore={defaultGetMoreChanges(repo, commit.parents[0], commit.id, delimiter)}
+                                  loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}/>
         </>
     )
 };
