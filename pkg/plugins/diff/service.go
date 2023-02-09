@@ -2,9 +2,22 @@ package tablediff
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/plugins/internal"
+)
+
+var (
+	ErrTableNotFound = errors.New("table not found")
+)
+
+type ChangeType int
+
+const (
+	Changed ChangeType = iota
+	Dropped
+	Created
 )
 
 type DiffEntry struct {
@@ -15,6 +28,7 @@ type DiffEntry struct {
 }
 
 type Response struct {
+	ChangeType
 	Diffs []DiffEntry
 }
 

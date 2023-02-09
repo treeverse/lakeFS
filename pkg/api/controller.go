@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/plugins/diff"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -99,6 +100,7 @@ type Controller struct {
 	sessionStore          sessions.Store
 	oidcAuthenticator     *oidc.Authenticator
 	PathProvider          upload.PathProvider
+	otfDiffService        *tablediff.Service
 }
 
 func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, r *http.Request, body PrepareGarbageCollectionUncommittedJSONRequestBody, repository string) {
@@ -3901,6 +3903,92 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
+func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository string, leftRef string, rightRef string, params OtfDiffParams) {
+	ctx := r.Context()
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+	c.LogAction(ctx, fmt.Sprintf("table_format_%s_diff\n", params.Type), r, repository, rightRef, leftRef)
+	credentials, _, err := c.Auth.ListUserCredentials(ctx, user.Username, &model.PaginationParams{
+		Prefix: "",
+		After:  "",
+		Amount: 1,
+	})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	if len(credentials) == 0 {
+		writeError(w, r, http.StatusPreconditionFailed, "no programmatic credentials")
+		return
+	}
+
+	secretCredentials, err := c.Auth.GetCredentials(ctx, credentials[0].AccessKeyID)
+	if err != nil {
+		return
+	}
+
+	tdp := tablediff.Params{
+		// TODO(jonathan): add base RefPath
+		TablePaths: tablediff.TablePaths{
+			LeftTablePath: tablediff.RefPath{
+				Ref:  leftRef,
+				Path: params.TablePath,
+			},
+			RightTablePath: tablediff.RefPath{
+				Ref:  rightRef,
+				Path: params.TablePath,
+			},
+		},
+		S3Creds: tablediff.S3Creds{
+			Key:      secretCredentials.AccessKeyID,
+			Secret:   secretCredentials.SecretAccessKey,
+			Endpoint: fmt.Sprintf("http://%s", c.Config.ListenAddress),
+		},
+	}
+
+	entries, err := c.otfDiffService.RunDiff(ctx, params.Type, tdp)
+	if err != nil {
+		c.Logger.Error(err)
+		if errors.Is(err, tablediff.ErrTableNotFound) {
+			writeError(w, r, http.StatusNotFound, err)
+		} else {
+			writeError(w, r, http.StatusInternalServerError, err)
+		}
+		return
+	}
+	writeResponse(w, r, http.StatusOK, buildOtfDiffListResponse(entries))
+}
+
+func buildOtfDiffListResponse(tableDiffResponse tablediff.Response) OtfDiffList {
+	ol := make([]OtfDiff, 0)
+	for _, entry := range tableDiffResponse.Diffs {
+		content := make(map[string]interface{})
+		for k, v := range entry.OperationContent {
+			content[k] = v
+		}
+		ol = append(ol, OtfDiff{
+			Operation:        entry.Operation,
+			OperationContent: content,
+			Timestamp:        int(entry.Timestamp.UnixMilli()),
+			Version:          entry.Version,
+		})
+	}
+
+	t := "changed"
+	switch tableDiffResponse.ChangeType {
+	case tablediff.Created:
+		t = "created"
+	case tablediff.Dropped:
+		t = "dropped"
+	}
+	return OtfDiffList{
+		Results:  ol,
+		DiffType: &t,
+	}
+}
+
 func IsStatusCodeOK(statusCode int) bool {
 	return statusCode >= 200 && statusCode <= 299
 }
@@ -4048,6 +4136,7 @@ func NewController(
 	oidcAuthenticator *oidc.Authenticator,
 	sessionStore sessions.Store,
 	pathProvider upload.PathProvider,
+	otfDiffService *tablediff.Service,
 ) *Controller {
 	return &Controller{
 		Config:                cfg,
@@ -4067,6 +4156,7 @@ func NewController(
 		sessionStore:          sessionStore,
 		oidcAuthenticator:     oidcAuthenticator,
 		PathProvider:          pathProvider,
+		otfDiffService:        otfDiffService,
 	}
 }
 
