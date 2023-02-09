@@ -1,7 +1,5 @@
 # Managed Uncommitted Garbage Collection for lakeFS cloud - Execution Plan
 
-## Overview
-
 ### Goals
 1. Run UGC for lakeFS cloud users
 2. Allow Cloud users to clean up storage space by deleting objects from the underlying storage for cost efficiency.
