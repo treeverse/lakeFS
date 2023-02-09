@@ -15,7 +15,7 @@ import {ComingSoonModal} from "../modals";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
-import {refs, statistics} from "../../api";
+import {AuthenticationError, refs, statistics} from "../../api";
 
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
@@ -33,7 +33,7 @@ import {refs, statistics} from "../../api";
  * @param relativeTo prefix of the parent item ('' for root elements)
  * @param {(after : string, path : string, useDelimiter :? boolean, amount :? number) => Promise<any> } getMore callback to be called when more items need to be rendered
  */
-export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore, depth=0 }) => {
+export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore, depth=0 }) => {
     const [dirExpanded, setDirExpanded] = useState(false); // state of a non-leaf item expansion
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
@@ -58,7 +58,7 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
 
     const results = resultsState.results
     if (error)
-        return <Error error={error}/>
+        return <tr><td><Error error={error}/></td></tr>
 
     if (itemType.loading || (loading && results.length === 0))
         return <ObjectTreeEntryRow key={entry.path+"entry-row"} entry={entry} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} repo={repo} reference={reference}
@@ -89,9 +89,9 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
             <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
             {dirExpanded && results &&
             results.map(child =>
-                (<TreeItem key={child.path + "-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
-                           internalReferesh={internalRefresh} delimiter={delimiter} depth={depth + 1}
-                           relativeTo={entry.path} getMore={getMore}/>))}
+                (<TreeItemRow key={child.path + "-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
+                              internalReferesh={internalRefresh} delimiter={delimiter} depth={depth + 1}
+                              relativeTo={entry.path} getMore={getMore}/>))}
             {(!!nextPage || loading) &&
             <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage}
                                 setAfterUpdated={setAfterUpdated}/>
@@ -199,14 +199,14 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                 <tbody>
                                 {results.map(entry => {
                                     return (
-                                        <TreeItem key={entry.path + "-item"} entry={entry} repo={repo}
-                                                  reference={reference}
-                                                  internalReferesh={internalRefresh} leftDiffRefID={leftDiffRefID}
-                                                  rightDiffRefID={rightDiffRefID} delimiter={delimiter}
-                                                  relativeTo={prefix}
-                                                  onNavigate={onNavigate}
-                                                  getMore={getMore}
-                                                  onRevert={onRevert}
+                                        <TreeItemRow key={entry.path + "-item"} entry={entry} repo={repo}
+                                                     reference={reference}
+                                                     internalReferesh={internalRefresh} leftDiffRefID={leftDiffRefID}
+                                                     rightDiffRefID={rightDiffRefID} delimiter={delimiter}
+                                                     relativeTo={prefix}
+                                                     onNavigate={onNavigate}
+                                                     getMore={getMore}
+                                                     onRevert={onRevert}
                                                  />);
                                 })}
                                 {!!nextPage &&
