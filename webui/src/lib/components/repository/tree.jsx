@@ -9,6 +9,7 @@ import {
   FileIcon,
   GearIcon,
   InfoIcon,
+  LinkIcon,
   PencilIcon,
   PlusIcon,
   TrashIcon,
@@ -72,6 +73,16 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
         </Dropdown.Toggle>
 
         <Dropdown.Menu>
+          {entry.path_type === "object" && (
+              <Dropdown.Item
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowObjectStat(true);
+                  }}
+              >
+                <LinkIcon /> Get Presigned URL
+              </Dropdown.Item>
+          )}
           {entry.path_type === "object" && (
             <PathLink
               path={entry.path}

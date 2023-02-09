@@ -613,7 +613,7 @@ class Objects {
         }
     }
 
-    async get(repoId, ref, path) {
+    async get(repoId, ref, path, presign = false) {
         const query = qs({path});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query, {
             method: 'GET',
