@@ -1,59 +1,52 @@
 # Managed Uncommitted Garbage Collection for lakeFS cloud - Execution Plan
 
-### Goals
+## Goals
 1. Run UGC for lakeFS cloud users
-2. Allow Cloud users to clean up storage space by deleting objects from the underlying storage for cost efficiency.
-3. support both repository structure (new and old) cloud users to run this SLA.
+2. Allow Cloud users to clean up storage space by deleting objects from the underlying storage for cost efficiency
+3. Support new and existing cloud users (both repository structures)
 
-### Non-Goals
-1. UGC safe writes
-2. bette OSS support
+## Non-Goals
+1. Remove lakeFS limitations during the UGC job run
+2. Improve UGC OSS support
 
 ### User Story
+When creating a new cloud installation - on the GC initializations page,
+add UGC initialization (default run job=true for all repositories, default sweep = true).
+It can get the same rules as the GC.
+Add a link to the documentation costrains (lakeFS writes during the job, explain debugging and report).
 
-control plane interface
-when creating a new cloud installation - on the garabage collection page, 
-add uncoomitted garbage collection initialization with (default=true)
-document costrains (lakefs writes during, explain reporxt)
-default sweep = true?
+### Permissions
+Create default UGC user with permissions for every new cloud env (The permissions to Enigma was added to the GC user)
+- lakeFS permissions - prepare uncommitted gc
+- Bucket permissions - role to list, write, delete
 
-1. permissions
-Create user UGC with premissions for every new cloud env (enigma was added the permmision to the GC user)
-Lakefs permmision- prepera uncommittedgc
-Bucket permmision- read, write, list, delete
+### Managed UGC job
+- Control plane interface (design with cloud native team)
+  - Add step for the create cloud installation
+  - UGC to get configuration for the spark job (configured role, secret and access key, installation endpoint, repository)
+  - User to configure min age seconds time
+  - Backup & Restore
+- Deployment of new UGC version
+- UGC client and server compatibility
+- Run the UGC periodically (AWS lambda cron job, Airflow DAG, EMR serverless, etc.)
+- Declare SLA (might require performance improvements)
 
-it will be a diffrent user then the gc user / the same ?
-we want to combine the job together?
+### Metrics and Logging
+- Add UGC logging and metrics to the cloud monitoring tools
+- Alerti configuration / on-call guide
+- Access to the cloud user metadata for debugging
 
-1. managed / cron job
-- control plane interface (cloud native)
-  - ugc use configuration for the spark job
-  - confugrue min age seconds time
-  - Step for the create cloud installation
-    default = true
-  - deployment of new UGC version 
-  - ugc client and server compatability
-  - 
-- run the ugc peridioticly (aws lambda cron job, airflow dag, emr serverless, etc..)
-- declee SLA (might rewuire performance improvement)
-1. metrics and logging
-- add looging (run report) and metrics to the ugc to join to grafana / other cloud resources
-- alerti configuration / guide to on-call
-- debugging access to the user metadata
-
-## Testing
-- Test UGC on scale - 
-- (Enigma dev repo) Performance and correctnnes (WIP) only mark
-  - Ensure only objects that are eligible for deletion are marked for deletion 
+### Testing
+- Test UGC on scale
+  - (Enigma dev repo) Performance and correctness - mark only (WIP)
+    - Ensure only objects that are eligible for deletion are marked for deletion
 - Enigma production repo
-  - old repository structure performance
-- compatability test - UGC client and lakeFS server
-- test sweep functionality
-- E2E tests UGC cloud
+  - Old repository structure performance
+- Compatibility tests - UGC client and lakeFS server
+- Test sweep functionality
+- E2E tests for UGC cloud
 
-## Milestone ?
+### Performance improvements
+- In case one of the tests will suggest long running time, consider adding performance improvement (incremental run, parallel listing, etc.)
 
-## Performance improvements
-- 
-- if one of the tests will suggest long renning time consider adding perfomance importvment (incremental run, parrller listind, etc...)
 
