@@ -12,8 +12,6 @@ import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Alert from "react-bootstrap/Alert";
-import Table from "react-bootstrap/Table";
-import Card from "react-bootstrap/Card";
 import Button from "react-bootstrap/Button";
 
 import {refs, branches, commits} from "../../../lib/api";
@@ -24,7 +22,7 @@ import {ActionGroup, ActionsBar, Error, Loading, RefreshButton} from "../../../l
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {formatAlertText} from "../../../lib/components/repository/errors";
-import {TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/changes";
+import {ChangesTreeContainer} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {RepoError} from "./error";
@@ -174,6 +172,10 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
 
     const delimiter = '/'
 
+    const getMoreUncommittedChanges = (afterUpdated, path, useDelimiter= true, amount = -1) => {
+        return refs.changes(repo.id, reference.id, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
+    }
+
     const { error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!repo) return
         return await appendMoreResults(resultsState, prefix, afterUpdated, setAfterUpdated, setResultsState,
@@ -186,6 +188,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
         setResultsState({prefix: prefix, results:[], pagination:{}})
         setInternalRefresh(!internalRefresh)
     }
+
 
     if (error) return <Error error={error}/>
     if (loading) return <Loading/>
@@ -209,6 +212,16 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
             }
         }
     }
+
+    const uriNavigator =  <URINavigator path={prefix} reference={reference} repo={repo}
+                                      pathURLBuilder={(params, query) => {
+                                          return {
+                                              pathname: '/repositories/:repoId/changes',
+                                              params: params,
+                                              query: {ref: reference.id, prefix: query.path ?? ""},
+                                          }}}/>
+    const committedRef = reference.id + "@"
+    const uncommittedRef = reference.id
 
    const actionErrorDisplay = (actionError) ?
         <Error error={actionError} onDismiss={() => setActionError(null)}/> : <></>
@@ -251,50 +264,12 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
             </ActionsBar>
 
             {actionErrorDisplay}
-            <div className="tree-container">
-                {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
-                    <Card>
-                        <Card.Header>
-                        <span className="float-start">
-                            {(delimiter !== "") && (
-                                <URINavigator path={prefix} reference={reference} repo={repo}
-                                              pathURLBuilder={(params, query) => {
-                                                  return {
-                                                      pathname: '/repositories/:repoId/changes',
-                                                      params: params,
-                                                      query: {ref: reference.id, prefix: query.path ?? ""},
-                                                  }
-                                              }}/>
-                            )}
-                        </span>
-                        </Card.Header>
-                        <Card.Body>
-                            <Table borderless size="sm">
-                                <tbody>
-                                {results.map(entry => {
-                                    const committedRef = reference.id + "@"
-                                    const uncommittedRef = reference.id
-                                    return (
-                                        <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo}
-                                                  reference={reference}
-                                                  leftDiffRefID={committedRef} rightDiffRefID={uncommittedRef}
-                                                  internalReferesh={internalRefresh}
-                                                  onNavigate={onNavigate} onRevert={onRevert} delimiter={delimiter}
-                                                  relativeTo={prefix}
-                                                  getMore={(afterUpdated, path, useDelimiter= true, amount = -1) => {
-                                                      return refs.changes(repo.id, reference.id, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
-                                                  }}/>
-                                        )
-                                })}
-                                { !!nextPage &&
-                                    <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
-                                }
-                                </tbody>
-                            </Table>
-                        </Card.Body>
-                    </Card>
-                )}
-            </div>
+            <ChangesTreeContainer results={results} delimiter={delimiter}
+                                  uriNavigator={uriNavigator} leftDiffRefID={committedRef} rightDiffRefID={uncommittedRef}
+                                  repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
+                                  getMore={getMoreUncommittedChanges}
+                                  loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}
+                                  onNavigate={onNavigate} onRevert={onRevert}/>
         </>
     )
 }
