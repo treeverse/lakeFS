@@ -15,7 +15,7 @@ import {ComingSoonModal} from "../modals";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
-import {AuthenticationError, refs, statistics} from "../../api";
+import {refs, statistics} from "../../api";
 
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
