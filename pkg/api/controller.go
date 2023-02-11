@@ -4093,6 +4093,7 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 		"source_ref": ev.SourceRef,
 		"user_id":    ev.UserID,
 		"client":     ev.Client,
+		"source_ip":  httputil.SourceIP(),
 	}).Debug("performing API action")
 	c.Collector.CollectEvent(ev)
 }
