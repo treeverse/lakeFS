@@ -2,6 +2,7 @@ package httputil
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -53,6 +54,19 @@ func RequestID(r *http.Request) (*http.Request, string) {
 	return r, reqID
 }
 
+func SourceIP() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		return "Could not get IP address" //TODO: do we need better handling for this one?
+	}
+	defer conn.Close()
+
+	localAddress := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddress.IP.String()
+
+}
+
 func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields, middlewareLogLevel string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +74,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 			writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
 			r, reqID := RequestID(r)
 			client := GetRequestLakeFSClient(r)
+			sourceIP := SourceIP()
 
 			// add default fields to context
 			requestFields := logging.Fields{
@@ -81,6 +96,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 				"sent_bytes":     writer.ResponseSize,
 				"client":         client,
 				logging.LogAudit: true,
+				"source_ip":      sourceIP,
 			}
 
 			logLevel := strings.ToLower(middlewareLogLevel)
