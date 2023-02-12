@@ -654,3 +654,7 @@ td .form-group {
 .otf-diff-removed {
   background-color: var(--color-bg-removed);
 }
+
+.table.table-diff {
+  table-layout: fixed;
+}

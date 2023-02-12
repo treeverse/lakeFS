@@ -33,12 +33,12 @@ export const TableDiff = ({repo, leftRef, rightRef, tablePath}) => {
     let response = useAPI(() => repositories.otfDiff(repo.id, leftRef, rightRef, tablePath, OtfType.Delta), [])
     if (response && response.loading) return <Loading style={{margin: 0+"px"}}/>;
     const err = response && response.error;
-    if (err) return <Error error={"Table not found"}/>;
+    if (err) return <Error error={err}/>;
 
     const otfDiffs = response.response.results;
     return <>
         {(otfDiffs.length === 0) ?  <Alert variant="info" style={{margin: 0+"px"}}>No changes</Alert> :
-            <Table classname="table-diff" borderless size="md" style={{"table-layout": "fixed"}}>
+            <Table className="table-diff" size="md">
                 <tbody>
                 {
                     response.response.results.map(otfDiff => {
