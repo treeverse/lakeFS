@@ -44,20 +44,11 @@ type Differ interface {
 	Diff(context.Context, Params) (Response, error)
 }
 
-// Handler is an interface used to handle the different plugin implementation.
-// T is the custom interface that the plugins implement.
-// I is the type of input properties needed to support the plugin.
-// Look at internal.Manager to get an example of an implementation for this interface.
-type Handler[T, I any] interface {
-	RegisterPlugin(string, I)
-	LoadPluginClient(string) (T, func(), error)
-}
-
 // Service is responsible for registering new Differ plugins and executing them at will.
 // After initializing a Service, the CloseClients method should be called at some point to close gracefully all
 // remaining plugins.
 type Service struct {
-	pluginHandler  Handler[Differ, internal.HCPluginProperties]
+	pluginHandler  internal.Handler[Differ, internal.HCPluginProperties]
 	closeFunctions []func()
 }
 
