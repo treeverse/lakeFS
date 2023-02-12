@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"io"
 	"net"
 	"net/http"
@@ -277,6 +278,8 @@ var runCmd = &cobra.Command{
 				Scopes:       scopes,
 			}
 		}
+		otfDiffService, closeOtfService := tablediff.NewService()
+		defer closeOtfService()
 		apiHandler := api.Serve(
 			cfg,
 			c,
@@ -298,6 +301,7 @@ var runCmd = &cobra.Command{
 			oidcProvider,
 			oauthConfig,
 			upload.DefaultPathProvider,
+			otfDiffService,
 		)
 
 		// init gateway server
