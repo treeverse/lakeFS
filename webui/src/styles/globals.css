@@ -642,3 +642,15 @@ td .form-group {
 .required-field-label {
   color: red;
 }
+
+.otf-diff-changed {
+  background-color: var(--color-bg-changed);
+}
+
+.otf-diff-added {
+  background-color: var(--color-bg-added)
+}
+
+.otf-diff-removed {
+  background-color: var(--color-bg-removed);
+}
