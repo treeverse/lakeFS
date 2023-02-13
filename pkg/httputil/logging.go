@@ -54,17 +54,13 @@ func RequestID(r *http.Request) (*http.Request, string) {
 	return r, reqID
 }
 
-func SourceIP() string {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
+func SourceIP(r *http.Request) string {
+	sourceIP, sourcePort, err := net.SplitHostPort(r.RemoteAddr)
+
 	if err != nil {
-		return "Could not get IP address" //TODO: do we need better handling for this one?
+		return "Could not get IP address" //not sure of the error handling here
 	}
-	defer conn.Close()
-
-	localAddress := conn.LocalAddr().(*net.UDPAddr)
-
-	return localAddress.IP.String()
-
+	return sourceIP + sourcePort
 }
 
 func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields, middlewareLogLevel string) func(next http.Handler) http.Handler {
@@ -74,7 +70,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 			writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
 			r, reqID := RequestID(r)
 			client := GetRequestLakeFSClient(r)
-			sourceIP := SourceIP()
+			sourceIP := SourceIP(r)
 
 			// add default fields to context
 			requestFields := logging.Fields{
