@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"io"
 	"math"
 	"mime/multipart"
@@ -4047,4 +4048,81 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON400)
 	})
+}
+
+func TestController_OtfDiff(t *testing.T) {
+	clt, _ := setupClientWithAdmin(t)
+	repo := testUniqueRepoName()
+
+	diffParams := api.OtfDiffParams{
+		TablePath: "path/to/table",
+		Type:      "default",
+	}
+	testCases := []struct {
+		expectedHttpStatus int
+		err                error
+		resultDiffType     string
+		description        string
+	}{
+		{
+			expectedHttpStatus: http.StatusOK,
+			resultDiffType:     "changed",
+			description:        "success - table changed",
+		},
+		{
+			expectedHttpStatus: http.StatusOK,
+			resultDiffType:     "dropped",
+			description:        "success - table dropped",
+		},
+		{
+			expectedHttpStatus: http.StatusOK,
+			resultDiffType:     "created",
+			description:        "success - table created",
+		},
+		{
+			expectedHttpStatus: http.StatusNotFound,
+			err:                tablediff.ErrTableNotFound,
+			description:        "failure - table not found",
+		},
+		{
+			expectedHttpStatus: http.StatusInternalServerError,
+			err:                tablediff.ErrDiffFailed,
+			description:        "failure - internal error",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			currCtx := context.Background()
+
+			left := "left"
+			right := "right"
+
+			if tc.resultDiffType == "dropped" {
+				left = "dropped"
+			} else if tc.resultDiffType == "created" {
+				right = "created"
+			}
+			if errors.Is(tc.err, tablediff.ErrTableNotFound) {
+				left = "notfound"
+				right = "notfound"
+			} else if errors.Is(tc.err, tablediff.ErrDiffFailed) {
+				diffParams.Type = "nonExistingPlugin"
+			}
+
+			response, err := clt.OtfDiffWithResponse(currCtx, repo, left, right, &diffParams)
+
+			require.NoError(t, err)
+			require.NotNil(t, response)
+			require.NotEmpty(t, response.StatusCode())
+			require.Equal(t, tc.expectedHttpStatus, response.StatusCode())
+			if tc.expectedHttpStatus == http.StatusOK {
+				require.NotNil(t, response.JSON200)
+				require.Equal(t, tc.resultDiffType, *response.JSON200.DiffType)
+				if tc.resultDiffType != "dropped" {
+					require.NotEmpty(t, response.JSON200.Results)
+				}
+			}
+		})
+	}
 }

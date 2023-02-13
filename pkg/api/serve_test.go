@@ -3,6 +3,7 @@ package api_test
 import (
 	"context"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/plugins/diff"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -171,6 +172,8 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	emailer, err := email.NewEmailer(email.Params(cfg.Email))
 	tmpl := templater.NewService(templates.Content, cfg, authService)
 
+	otfDiffService := tablediff.NewMockService()
+
 	testutil.Must(t, err)
 	handler := api.Serve(
 		cfg,
@@ -193,7 +196,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		nil,
 		nil,
 		upload.DefaultPathProvider,
-		nil,
+		otfDiffService,
 	)
 
 	return handler, &dependencies{
