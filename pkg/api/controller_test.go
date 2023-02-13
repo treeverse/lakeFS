@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"io"
 	"math"
 	"mime/multipart"
@@ -22,6 +21,8 @@ import (
 	"testing"
 	"text/template"
 	"time"
+
+	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/swag"

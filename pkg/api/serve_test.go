@@ -3,7 +3,6 @@ package api_test
 import (
 	"context"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/plugins/diff"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
