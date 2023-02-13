@@ -23,8 +23,7 @@ Create default UGC user with permissions for every new cloud env (The permission
 ### Managed UGC job
 - Control plane interface (design with cloud native team)
   - Add step for the create cloud installation
-  - UGC to get configuration for the spark job (configured role, secret and access key, installation endpoint, repository)
-  - User to configure min age seconds time
+  - Configuration for the spark job (configured role, secret and access key, installation endpoint, repository)
   - Backup & Restore
 - Deployment of new UGC version
 - UGC client and server compatibility
@@ -33,7 +32,7 @@ Create default UGC user with permissions for every new cloud env (The permission
 
 ### Metrics and Logging
 - Add UGC logging and metrics to the cloud monitoring tools
-- Alerti configuration / on-call guide
+- Alerti configuration / on-call guide - for failed job runs add P3/P4 alerts 
 - Access to the cloud user metadata for debugging
 
 ### Testing
@@ -48,5 +47,8 @@ Create default UGC user with permissions for every new cloud env (The permission
 
 ### Performance improvements
 - In case one of the tests will suggest long running time, consider adding performance improvement (incremental run, parallel listing, etc.)
+  * [Optimaized listing on old repository structure](https://github.com/treeverse/lakeFS/issues/4620)
+  * [Efficient listing on committed entries](https://github.com/treeverse/lakeFS/issues/4600)
+  * [Implement optimized run flow](https://github.com/treeverse/lakeFS/issues/4489)
 
 ### Milestones
