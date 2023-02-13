@@ -91,11 +91,11 @@ func (np NopGRPCPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroke
 }
 
 func RunPluginServer(key, value string, v int) {
-	defer os.Exit(0)
 	if key == "" || value == "" {
 		fmt.Fprintf(os.Stderr, "Missing args\n")
-		os.Exit(2)
+		os.Exit(1)
 	}
+	defer os.Exit(0)
 
 	testGRPCPluginMap := map[string]plugin.Plugin{
 		"test": &GRPCPlugin{Impl: &PingPongPlayer{}},

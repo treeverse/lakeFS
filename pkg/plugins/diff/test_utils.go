@@ -103,12 +103,16 @@ func NewMockService() *Service {
 	}
 }
 
+type keyType string
+
+const errKey keyType = "error"
+
 func ContextWithError(ctx context.Context, e error) context.Context {
-	return context.WithValue(ctx, "error", e)
+	return context.WithValue(ctx, errKey, e)
 }
 
 func ErrorFromContext(ctx context.Context) error {
-	e, ok := ctx.Value("error").(error)
+	e, ok := ctx.Value(errKey).(error)
 	if !ok {
 		return nil
 	}
