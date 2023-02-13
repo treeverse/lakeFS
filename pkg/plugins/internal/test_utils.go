@@ -2,6 +2,8 @@ package internal
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
@@ -86,4 +88,28 @@ func (np NopGRPCPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) er
 
 func (np NopGRPCPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
 	return nil, nil
+}
+
+func RunPluginServer(key, value string, v int) {
+	defer os.Exit(0)
+	if key == "" || value == "" {
+		fmt.Fprintf(os.Stderr, "Missing args\n")
+		os.Exit(2)
+	}
+
+	testGRPCPluginMap := map[string]plugin.Plugin{
+		"test": &GRPCPlugin{Impl: &PingPongPlayer{}},
+	}
+
+	testHandshake := plugin.HandshakeConfig{
+		ProtocolVersion:  uint(v),
+		MagicCookieKey:   key,
+		MagicCookieValue: value,
+	}
+
+	plugin.Serve(&plugin.ServeConfig{
+		HandshakeConfig: testHandshake,
+		Plugins:         testGRPCPluginMap,
+		GRPCServer:      plugin.DefaultGRPCServer,
+	})
 }
