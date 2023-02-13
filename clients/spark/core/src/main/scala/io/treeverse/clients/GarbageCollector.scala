@@ -531,22 +531,28 @@ object GarbageCollector {
 
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
     writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
-    if (!expiredAddresses.isEmpty) {
+    try {
       writeParquetReport(expiredAddresses, reportExpiredDst, time)
       val expiredDF = spark.read.parquet(f"${reportExpiredDst}/dt=${time}/")
       println(f"Total of ${expiredDF.count()} addresses marked for deletion")
+    } catch {
+      // This exception is thrown when there are no expired addresses
+      case e: org.apache.spark.sql.AnalysisException => e.printStackTrace()
     }
     writeJsonSummary(configMapper, reportLogsDst, removed.count(), gcRules, time)
-    if (!removed.isEmpty) {
-      removed
-        .withColumn(MARK_ID_KEY, lit(markID))
-        .withColumn(RUN_ID_KEY, lit(runID))
-        .write
-        .partitionBy(MARK_ID_KEY, RUN_ID_KEY)
-        .mode(SaveMode.Overwrite)
-        .parquet(f"${deletedObjectsDst}/dt=$time/deleted.parquet")
+    removed
+      .withColumn(MARK_ID_KEY, lit(markID))
+      .withColumn(RUN_ID_KEY, lit(runID))
+      .write
+      .partitionBy(MARK_ID_KEY, RUN_ID_KEY)
+      .mode(SaveMode.Overwrite)
+      .parquet(f"${deletedObjectsDst}/dt=$time/deleted.parquet")
+    try {
       val deleteDF = spark.read.parquet(f"${deletedObjectsDst}/dt=$time/deleted.parquet")
-      println(f"Total of ${deleteDF.count()} objects deleted")
+      println(f"Total of ${deleteDF.count()} objects deleted (or had already been deleted)")
+    } catch {
+      // This exception is thrown when the deleted objects report is empty
+      case e: org.apache.spark.sql.AnalysisException => e.printStackTrace()
     }
   }
 
