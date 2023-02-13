@@ -394,7 +394,7 @@ components:
         - timestamp
         - operation_content
       properties:
-        version:
+        id:
           type: string
         timestamp:
           type: integer

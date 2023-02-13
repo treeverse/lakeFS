@@ -41,11 +41,11 @@ public class OtfDiffTest {
     }
 
     /**
-     * Test the property 'version'
+     * Test the property 'id'
      */
     @Test
-    public void versionTest() {
-        // TODO: test version
+    public void idTest() {
+        // TODO: test id
     }
 
     /**

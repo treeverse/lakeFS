@@ -29,9 +29,9 @@ import java.io.IOException;
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class OtfDiff {
-  public static final String SERIALIZED_NAME_VERSION = "version";
-  @SerializedName(SERIALIZED_NAME_VERSION)
-  private String version;
+  public static final String SERIALIZED_NAME_ID = "id";
+  @SerializedName(SERIALIZED_NAME_ID)
+  private String id;
 
   public static final String SERIALIZED_NAME_TIMESTAMP = "timestamp";
   @SerializedName(SERIALIZED_NAME_TIMESTAMP)
@@ -46,26 +46,26 @@ public class OtfDiff {
   private Object operationContent;
 
 
-  public OtfDiff version(String version) {
+  public OtfDiff id(String id) {
     
-    this.version = version;
+    this.id = id;
     return this;
   }
 
    /**
-   * Get version
-   * @return version
+   * Get id
+   * @return id
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
-  public String getVersion() {
-    return version;
+  public String getId() {
+    return id;
   }
 
 
-  public void setVersion(String version) {
-    this.version = version;
+  public void setId(String id) {
+    this.id = id;
   }
 
 
@@ -147,7 +147,7 @@ public class OtfDiff {
       return false;
     }
     OtfDiff otfDiff = (OtfDiff) o;
-    return Objects.equals(this.version, otfDiff.version) &&
+    return Objects.equals(this.id, otfDiff.id) &&
         Objects.equals(this.timestamp, otfDiff.timestamp) &&
         Objects.equals(this.operation, otfDiff.operation) &&
         Objects.equals(this.operationContent, otfDiff.operationContent);
@@ -155,14 +155,14 @@ public class OtfDiff {
 
   @Override
   public int hashCode() {
-    return Objects.hash(version, timestamp, operation, operationContent);
+    return Objects.hash(id, timestamp, operation, operationContent);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class OtfDiff {\n");
-    sb.append("    version: ").append(toIndentedString(version)).append("\n");
+    sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    timestamp: ").append(toIndentedString(timestamp)).append("\n");
     sb.append("    operation: ").append(toIndentedString(operation)).append("\n");
     sb.append("    operationContent: ").append(toIndentedString(operationContent)).append("\n");

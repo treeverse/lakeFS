@@ -82,10 +82,10 @@ class OtfDiff(ModelNormal):
                 and the value is attribute type.
         """
         return {
-            'version': (str,),  # noqa: E501
             'timestamp': (int,),  # noqa: E501
             'operation': (str,),  # noqa: E501
             'operation_content': ({str: (bool, date, datetime, dict, float, int, list, str, none_type)},),  # noqa: E501
+            'id': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -94,10 +94,10 @@ class OtfDiff(ModelNormal):
 
 
     attribute_map = {
-        'version': 'version',  # noqa: E501
         'timestamp': 'timestamp',  # noqa: E501
         'operation': 'operation',  # noqa: E501
         'operation_content': 'operation_content',  # noqa: E501
+        'id': 'id',  # noqa: E501
     }
 
     read_only_vars = {
@@ -107,11 +107,10 @@ class OtfDiff(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, version, timestamp, operation, operation_content, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, timestamp, operation, operation_content, *args, **kwargs):  # noqa: E501
         """OtfDiff - a model defined in OpenAPI
 
         Args:
-            version (str):
             timestamp (int):
             operation (str):
             operation_content ({str: (bool, date, datetime, dict, float, int, list, str, none_type)}): free form content describing the returned operation diff
@@ -147,6 +146,7 @@ class OtfDiff(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            id (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -174,7 +174,6 @@ class OtfDiff(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.version = version
         self.timestamp = timestamp
         self.operation = operation
         self.operation_content = operation_content
@@ -198,11 +197,10 @@ class OtfDiff(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, version, timestamp, operation, operation_content, *args, **kwargs):  # noqa: E501
+    def __init__(self, timestamp, operation, operation_content, *args, **kwargs):  # noqa: E501
         """OtfDiff - a model defined in OpenAPI
 
         Args:
-            version (str):
             timestamp (int):
             operation (str):
             operation_content ({str: (bool, date, datetime, dict, float, int, list, str, none_type)}): free form content describing the returned operation diff
@@ -238,6 +236,7 @@ class OtfDiff(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            id (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -263,7 +262,6 @@ class OtfDiff(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.version = version
         self.timestamp = timestamp
         self.operation = operation
         self.operation_content = operation_content

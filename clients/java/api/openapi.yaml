@@ -5464,11 +5464,11 @@ components:
     OtfDiff:
       example:
         operation_content: '{}'
-        version: version
+        id: id
         operation: operation
         timestamp: 0
       properties:
-        version:
+        id:
           type: string
         timestamp:
           type: integer
@@ -5488,11 +5488,11 @@ components:
         diff_type: created
         results:
         - operation_content: '{}'
-          version: version
+          id: id
           operation: operation
           timestamp: 0
         - operation_content: '{}'
-          version: version
+          id: id
           operation: operation
           timestamp: 0
       properties:
