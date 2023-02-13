@@ -3925,7 +3925,7 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository 
 	}
 
 	secretCredentials, err := c.Auth.GetCredentials(ctx, credentials[0].AccessKeyID)
-	if err != nil {
+	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
@@ -3972,7 +3972,7 @@ func buildOtfDiffListResponse(tableDiffResponse tablediff.Response) OtfDiffList 
 			Operation:        entry.Operation,
 			OperationContent: content,
 			Timestamp:        int(entry.Timestamp.UnixMilli()),
-			Version:          entry.Version,
+			Id:               &entry.Version,
 		})
 	}
 
