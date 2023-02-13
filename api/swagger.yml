@@ -386,6 +386,36 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Diff"
+    OtfDiff:
+      type: object
+      required:
+        - version
+        - operation
+        - timestamp
+        - operation_content
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: integer
+        operation:
+          type: string
+        operation_content:
+          type: object
+          description: free form content describing the returned operation diff
+
+    OtfDiffList:
+      type: object
+      required:
+        - results
+      properties:
+        diff_type:
+          type: string
+          enum: [ created, dropped, changed ]
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/OtfDiff"
 
     ResetCreation:
       type: object
@@ -2178,6 +2208,57 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: left_ref
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: right_ref
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: table_path
+        required: true
+        description: a path to the table location under the specified ref.
+        schema:
+          type: string
+      - in: query
+        name: type
+        required: true
+        description: the type of otf
+        schema:
+          type: string
+    get:
+      tags:
+        - experimental
+        - otf diff
+      operationId: otfDiff
+      summary: perform otf diff
+      responses:
+        200:
+          description: diff list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OtfDiffList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        412:
+          $ref: "#/components/responses/PreconditionFailed"
         default:
           $ref: "#/components/responses/ServerError"
 

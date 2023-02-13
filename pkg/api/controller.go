@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -99,6 +100,7 @@ type Controller struct {
 	sessionStore          sessions.Store
 	oidcAuthenticator     *oidc.Authenticator
 	PathProvider          upload.PathProvider
+	otfDiffService        *tablediff.Service
 }
 
 func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, r *http.Request, body PrepareGarbageCollectionUncommittedJSONRequestBody, repository string) {
@@ -3901,6 +3903,12 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
+func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository string, leftRef string, rightRef string, params OtfDiffParams) {
+	ctx := r.Context()
+	c.LogAction(ctx, fmt.Sprintf("table_format_%s_diff\n", params.Type), r, repository, rightRef, leftRef)
+	writeResponse(w, r, http.StatusOK, nil)
+}
+
 func IsStatusCodeOK(statusCode int) bool {
 	return statusCode >= 200 && statusCode <= 299
 }
@@ -4048,6 +4056,7 @@ func NewController(
 	oidcAuthenticator *oidc.Authenticator,
 	sessionStore sessions.Store,
 	pathProvider upload.PathProvider,
+	otfDiffService *tablediff.Service,
 ) *Controller {
 	return &Controller{
 		Config:                cfg,
@@ -4067,6 +4076,7 @@ func NewController(
 		sessionStore:          sessionStore,
 		oidcAuthenticator:     oidcAuthenticator,
 		PathProvider:          pathProvider,
+		otfDiffService:        otfDiffService,
 	}
 }
 
