@@ -536,7 +536,6 @@ object GarbageCollector {
       val expiredDF = spark.read.parquet(f"${reportExpiredDst}/dt=${time}/")
       println(f"Total expired addresses: ${expiredDF.count()}")
     } catch {
-      // This exception is thrown when there are no expired addresses
       case e: Throwable => {
         println("Error when trying to get expired addresses count, moving on:")
         e.printStackTrace()
