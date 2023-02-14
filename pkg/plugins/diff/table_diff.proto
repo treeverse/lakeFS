@@ -32,8 +32,15 @@ message DiffRequest {
   GatewayConfig gateway_config = 2;
 }
 
+enum Type {
+  CHANGED = 0;
+  CREATED = 1;
+  DROPPED = 2;
+}
+
 message DiffResponse {
   repeated TableOperation records = 1;
+  Type changeType = 2;
 }
 
 message HistoryRequest {

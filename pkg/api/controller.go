@@ -3947,6 +3947,7 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository 
 			Secret:   secretCredentials.SecretAccessKey,
 			Endpoint: fmt.Sprintf("http://%s", c.Config.ListenAddress),
 		},
+		Repo: repository,
 	}
 
 	entries, err := c.otfDiffService.RunDiff(ctx, params.Type, tdp)

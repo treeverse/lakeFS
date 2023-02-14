@@ -52,6 +52,7 @@ type S3Creds struct {
 type Params struct {
 	TablePaths TablePaths
 	S3Creds    S3Creds
+	Repo       string
 }
 
 type Differ interface {
