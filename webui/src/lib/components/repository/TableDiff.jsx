@@ -63,9 +63,9 @@ const OtfDiffRow = ({otfDiff}) => {
 
 const OperationMetadataRow = ({otfDiff, operationExpanded, onExpand, ...rest}) => {
     return <tr {...rest}>
-        <td className="pl-lg-10 col-10 table-operation-type" style={{"padding-left": 30+"px"}}>{otfDiff.operation}</td>
-        <td className="col-sm-auto table-version" style={{"text-align": "left", "width": "8%"}}>Version = {otfDiff.version}</td>
-        <td className="col-sm-auto operation-expansion" style={{"padding-right": 0 + "px", "width": "4%"}}>
+        <td className={"table-operation-type pl-lg-10 col-10"}>{otfDiff.operation}</td>
+        <td className="table-version col-sm-auto">Version = {otfDiff.version}</td>
+        <td className="operation-expansion col-sm-auto">
             <OperationExpansionSection operationExpanded={operationExpanded} onExpand={onExpand}/>
         </td>
     </tr>
@@ -76,7 +76,7 @@ const OperationDetailsRow = ({otfDiff}) => {
     const operationTimestamp = otfDiff.timestamp;
     const operationContent = parseOperationContent(otfDiff.operation_content);
     return <tr className="otf-diff-operation-details">
-        <td className="pl-lg-10 col-10 operation-details" style={{"padding-left": 30+"px"}}>
+        <td className="pl-lg-10 col-10 table-operation-details">
             <strong>Timestamp:</strong> {operationTimestamp}
             <br/>
             <strong>Commit Info:</strong>
@@ -88,7 +88,7 @@ const OperationDetailsRow = ({otfDiff}) => {
 
 const OperationExpansionSection = ({operationExpanded, onExpand}) => {
     return <OverlayTrigger placement="bottom" overlay={<Tooltip>{operationExpanded ? "Hide operation info" : "Show operation info"}</Tooltip>}>
-        <Button variant="link" style={{color: 'black'}} onClick={onExpand}>{operationExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}</Button>
+        <Button variant="link" className="table-operation-expansion" onClick={onExpand}>{operationExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}</Button>
     </OverlayTrigger>
 }
 
@@ -97,9 +97,17 @@ function operationToDiffType(operation) {
     return diffType !== undefined ? diffType : DiffType.Changed;
 }
 
+/**
+ * Parses otf operation content. operations sometimes include unparsed json strings and this methods aims to simplify
+ * reading those operations.
+ *
+ * @param content of the table operation
+ * @return a prettified string including the operation content.
+ */
 function parseOperationContent(content) {
     let parsedContent = "";
-    const JSONContent = JSON.parse(JSON.stringify(content, null, 2));
+    const JSONContentStr = JSON.stringify(content, null, 2);
+    const JSONContent = JSON.parse(JSONContentStr);
     for (let key in JSONContent) {
         const val = JSONContent[key];
         parsedContent += `${key}: `

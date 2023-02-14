@@ -658,3 +658,25 @@ td .form-group {
 .table.table-diff {
   table-layout: fixed;
 }
+
+td.table-operation-type {
+  padding-left: 30px;
+}
+
+td.table-version {
+  text-align: left;
+  width: 8%;
+}
+
+td.operation-expansion {
+  padding-right: 0px;
+  width: 4%;
+}
+
+td.table-operation-details {
+  padding-left: 30px;
+}
+
+.table-operation-expansion {
+  color: black;
+}
