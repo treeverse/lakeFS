@@ -158,38 +158,51 @@ To overcome this scenario, we'll use special diff credentials as follows:
 
 - GET `/repositories/repo/{repo}/otf/refs/{left_ref}/diff/{right_ref}?table_path={path}&type={diff_type}`
     - Tagged as experimental
-    - **Response**:  
-        The response includes an array of operations from different versions of the specified table format.
-        It has a general structure that enables formatting the different table format operation structs.
-      - version:
-        - type: string
-        - description: the version/snapshot/transaction id of the operation.
-      - timestamp (epoch):
-        - type: long
-        - description: operation's timestamp.
-      - operation:
-        - type: string
-        - description: operation's name.
-      - operationContent:
-        - type: map
-        - description: an operation content specific to the table format implemented.
+      - **Response**:  
+          The response includes an array of operations from different versions of the specified table format, and the type of diff:
+            `changed`, `created`, or `dropped`.  
+          It has a general structure that enables formatting the different table format operation structs.
+        - `DiffType`: 
+          - description: the type of change
+          - type: string
+        - `Results`:
+          - description: an array of differences
+          - type: array[
+            - id:
+              - type: string
+              - description: the version/snapshot/transaction id of the operation.
+            - timestamp (epoch):
+              - type: long
+              - description: operation's timestamp.
+            - operation:
+              - type: string
+              - description: operation's name.
+            - operationContent:
+              - type: map
+              - description: an operation content specific to the table format implemented.  
       
-      **Delta lake response example**:
-      ```json
-      [
-           {
-               "version": "1",
-               "timestamp":1515491537026,
-               "operation":"INSERT",
-               "operationContent":{
-                   "operationParameters": {
-                      "mode":"Append",
-                      "partitionBy":"[]"
-                    }
-          },
-          ...
-      ]
-      ```
+            ]  
+
+            **Delta lake response example**:
+          
+            ```json
+            {
+                "diff_type": "changed",
+                "results": [
+                  {
+                      "id": "1",
+                       "timestamp":1515491537026,
+                       "operation":"INSERT",
+                      "operationContent":{
+                           "operationParameters": {
+                              "mode":"Append",
+                              "partitionBy":"[]"
+                            }
+                  },
+                  ...
+              ]
+                
+            ```
     
 ---
 
