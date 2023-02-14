@@ -1,4 +1,4 @@
-package plugins
+package internal
 
 import (
 	"sync"
@@ -6,15 +6,9 @@ import (
 	"github.com/hashicorp/go-plugin"
 )
 
-type clientProps struct {
-	ID   PluginIdentity
-	Auth PluginHandshake
-	P    plugin.Plugin
-}
-
 type Client struct {
 	PluginClient *plugin.Client
-	ClientProps  *clientProps
+	ClientProps  *HCPluginProperties
 }
 
 // clientStore maps the available plugin names to the different kinds of plugin.Client plugin controllers and their properties.
@@ -32,7 +26,7 @@ func newClientsMap() *clientStore {
 	}
 }
 
-func (cs *clientStore) Insert(name string, c *plugin.Client, cp *clientProps) {
+func (cs *clientStore) Insert(name string, c *plugin.Client, cp *HCPluginProperties) {
 	cs.l.Lock()
 	defer cs.l.Unlock()
 	cl := &Client{
@@ -48,7 +42,7 @@ func (cs *clientStore) Remove(name string) {
 	delete(cs.pluginApplicationClients, name)
 }
 
-func (cs *clientStore) Client(name string) (*plugin.Client, *clientProps, error) {
+func (cs *clientStore) Client(name string) (*plugin.Client, *HCPluginProperties, error) {
 	cs.l.Lock()
 	defer cs.l.Unlock()
 	cl, ok := cs.pluginApplicationClients[name]

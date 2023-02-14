@@ -1,4 +1,4 @@
-package plugins
+package internal
 
 import (
 	"github.com/hashicorp/go-hclog"

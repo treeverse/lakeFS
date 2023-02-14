@@ -1,4 +1,4 @@
-package plugins
+package internal
 
 import (
 	"context"
