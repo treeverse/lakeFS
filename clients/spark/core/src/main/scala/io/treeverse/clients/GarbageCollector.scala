@@ -546,21 +546,20 @@ object GarbageCollector {
         e.printStackTrace()
       }
     }
-    writeJsonSummary(configMapper, reportLogsDst, removed.count(), gcRules, time)
-    removed
-      .withColumn(MARK_ID_KEY, lit(markID))
-      .withColumn(RUN_ID_KEY, lit(runID))
-      .write
-      .partitionBy(MARK_ID_KEY, RUN_ID_KEY)
-      .mode(SaveMode.Overwrite)
-      .parquet(f"${deletedObjectsDst}/dt=$time")
     try {
-      val deleteDF = spark.read.parquet(f"${deletedObjectsDst}/dt=$time")
-      println(f"Total objects deleted (or already had been deleted): ${deleteDF.count()}")
+      val removedCount = removed.count()
+      writeJsonSummary(configMapper, reportLogsDst, removedCount, gcRules, time)
+      removed
+        .withColumn(MARK_ID_KEY, lit(markID))
+        .withColumn(RUN_ID_KEY, lit(runID))
+        .write
+        .partitionBy(MARK_ID_KEY, RUN_ID_KEY)
+        .mode(SaveMode.Overwrite)
+        .parquet(f"${deletedObjectsDst}/dt=$time")
+      println(f"Total objects deleted (or already had been deleted): ${removedCount}")
     } catch {
-      // This exception is thrown when the deleted objects report is empty
       case e: Throwable => {
-        println("Error when trying to get deleted objects count, moving on:")
+        println("Error when trying to write the summary, moving on:")
         e.printStackTrace()
       }
     }
