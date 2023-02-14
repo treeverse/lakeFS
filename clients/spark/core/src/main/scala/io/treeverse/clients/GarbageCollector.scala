@@ -3,21 +3,25 @@ package io.treeverse.clients
 import com.amazonaws.services.s3.AmazonS3
 import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse
 import io.treeverse.clients.LakeFSContext._
+import org.apache.commons.lang3.StringUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs._
+import org.apache.spark.HashPartitioner
+import org.apache.spark.Partitioner
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import org.apache.spark.{HashPartitioner, Partitioner}
+import org.apache.spark.sql.types.StringType
+import org.apache.spark.sql.types.StructField
+import org.apache.spark.sql.types.StructType
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
 
 import java.net.URI
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import java.time.{LocalDateTime, ZoneOffset}
 import java.util.UUID
-import org.apache.commons.lang3.StringUtils
 
 trait RangeGetter extends Serializable {
 
@@ -537,7 +541,10 @@ object GarbageCollector {
       println(f"Total expired addresses: ${expiredDF.count()}")
     } catch {
       // This exception is thrown when there are no expired addresses
-      case e: org.apache.spark.sql.AnalysisException => e.printStackTrace()
+      case e: Throwable => {
+        println("Error when trying to get expired addresses count, moving on:")
+        e.printStackTrace()
+      }
     }
     writeJsonSummary(configMapper, reportLogsDst, removed.count(), gcRules, time)
     removed
@@ -552,7 +559,10 @@ object GarbageCollector {
       println(f"Total objects deleted (or already had been deleted): ${deleteDF.count()}")
     } catch {
       // This exception is thrown when the deleted objects report is empty
-      case e: org.apache.spark.sql.AnalysisException => e.printStackTrace()
+      case e: Throwable => {
+        println("Error when trying to get deleted objects count, moving on:")
+        e.printStackTrace()
+      }
     }
   }
 
