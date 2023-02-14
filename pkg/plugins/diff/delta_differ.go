@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/hashicorp/go-plugin"
+	"github.com/treeverse/lakefs/pkg/plugins"
+	"github.com/treeverse/lakefs/pkg/plugins/internal"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -66,8 +68,7 @@ func buildDiffEntries(dr *DiffResponse) []DiffEntry {
 	return result
 }
 
-// DeltaDiffGRPCPlugin is responsible for generating a client and a server for the Delta Diff plugin implementation.
-// If the plugin server is not implemented in Go, the GRPCServer method is useless.
+// DeltaDiffGRPCPlugin is responsible for generating a client and a server for the Delta Lake Diff plugin implementation.
 type DeltaDiffGRPCPlugin struct {
 	// DeltaDiffGRPCPlugin must implement the Plugin interface
 	plugin.Plugin
@@ -83,4 +84,13 @@ func (p DeltaDiffGRPCPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPC
 	return &DeltaLakeDiffer{
 		client: NewTableDifferClient(c),
 	}, nil
+}
+
+func RegisterDeltaLakeDiffPlugin(ds *Service, pid plugins.PluginIdentity, handshake plugins.PluginHandshake) {
+	props := internal.HCPluginProperties{
+		ID:        pid,
+		Handshake: handshake,
+		P:         DeltaDiffGRPCPlugin{},
+	}
+	ds.registerDiffClient("delta", props)
 }
