@@ -527,14 +527,14 @@ object GarbageCollector {
   ) = {
     val reportLogsDst = concatToGCLogsPrefix(storageNSForHadoopFS, "summary")
     val reportExpiredDst = concatToGCLogsPrefix(storageNSForHadoopFS, "expired_addresses")
-    val deletedObjectsDst = concatToGCLogsPrefix(storageNSForHadoopFS, s"deleted_objects")
+    val deletedObjectsDst = concatToGCLogsPrefix(storageNSForHadoopFS, "deleted_objects")
 
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
     writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
     try {
       writeParquetReport(expiredAddresses, reportExpiredDst, time)
       val expiredDF = spark.read.parquet(f"${reportExpiredDst}/dt=${time}/")
-      println(f"Total of ${expiredDF.count()} addresses marked for deletion")
+      println(f"Total expired addresses: ${expiredDF.count()}")
     } catch {
       // This exception is thrown when there are no expired addresses
       case e: org.apache.spark.sql.AnalysisException => e.printStackTrace()
@@ -546,10 +546,10 @@ object GarbageCollector {
       .write
       .partitionBy(MARK_ID_KEY, RUN_ID_KEY)
       .mode(SaveMode.Overwrite)
-      .parquet(f"${deletedObjectsDst}/dt=$time/deleted.parquet")
+      .parquet(f"${deletedObjectsDst}/dt=$time")
     try {
-      val deleteDF = spark.read.parquet(f"${deletedObjectsDst}/dt=$time/deleted.parquet")
-      println(f"Total of ${deleteDF.count()} objects deleted (or had already been deleted)")
+      val deleteDF = spark.read.parquet(f"${deletedObjectsDst}/dt=$time")
+      println(f"Total objects deleted (or already had been deleted): ${deleteDF.count()}")
     } catch {
       // This exception is thrown when the deleted objects report is empty
       case e: org.apache.spark.sql.AnalysisException => e.printStackTrace()
