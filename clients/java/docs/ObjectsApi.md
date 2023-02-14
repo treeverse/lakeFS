@@ -52,12 +52,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | destination branch for the copy
@@ -92,7 +86,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -144,12 +138,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
@@ -181,7 +169,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -232,12 +220,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
@@ -270,7 +252,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -321,12 +303,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
@@ -363,7 +339,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -418,12 +394,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
@@ -456,7 +426,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -507,12 +477,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
@@ -546,7 +510,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -600,12 +564,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
@@ -648,7 +606,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -699,12 +657,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
@@ -739,7 +691,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -791,12 +743,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
@@ -833,7 +779,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -885,12 +831,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
@@ -929,7 +869,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 

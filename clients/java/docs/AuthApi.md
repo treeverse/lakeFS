@@ -34,7 +34,6 @@ Method | HTTP request | Description
 [**listUserPolicies**](AuthApi.md#listUserPolicies) | **GET** /auth/users/{userId}/policies | list user policies
 [**listUsers**](AuthApi.md#listUsers) | **GET** /auth/users | list users
 [**login**](AuthApi.md#login) | **POST** /auth/login | perform a login
-[**oauthCallback**](AuthApi.md#oauthCallback) | **GET** /oidc/callback | 
 [**updatePassword**](AuthApi.md#updatePassword) | **POST** /auth/password | Update user password by reset_password token
 [**updatePolicy**](AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy
 
@@ -75,12 +74,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String groupId = "groupId_example"; // String | 
     String userId = "userId_example"; // String | 
@@ -110,7 +103,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -161,12 +154,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String groupId = "groupId_example"; // String | 
     String policyId = "policyId_example"; // String | 
@@ -196,7 +183,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -247,12 +234,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
     String policyId = "policyId_example"; // String | 
@@ -282,7 +263,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -333,12 +314,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
     try {
@@ -367,7 +342,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -418,12 +393,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     GroupCreation groupCreation = new GroupCreation(); // GroupCreation | 
     try {
@@ -452,7 +421,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -503,12 +472,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     Policy policy = new Policy(); // Policy | 
     try {
@@ -537,7 +500,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -589,12 +552,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     UserCreation userCreation = new UserCreation(); // UserCreation | 
     try {
@@ -623,7 +580,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -675,12 +632,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
     String accessKeyId = "accessKeyId_example"; // String | 
@@ -710,7 +661,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -761,12 +712,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String groupId = "groupId_example"; // String | 
     try {
@@ -794,7 +739,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -845,12 +790,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String groupId = "groupId_example"; // String | 
     String userId = "userId_example"; // String | 
@@ -880,7 +819,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -931,12 +870,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String policyId = "policyId_example"; // String | 
     try {
@@ -964,7 +897,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1015,12 +948,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
     try {
@@ -1048,7 +975,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1099,12 +1026,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String groupId = "groupId_example"; // String | 
     String policyId = "policyId_example"; // String | 
@@ -1134,7 +1055,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1185,12 +1106,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
     String policyId = "policyId_example"; // String | 
@@ -1220,7 +1135,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1389,12 +1304,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
     String accessKeyId = "accessKeyId_example"; // String | 
@@ -1425,7 +1334,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1476,12 +1385,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     try {
       CurrentUser result = apiInstance.getCurrentUser();
@@ -1506,7 +1409,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1554,12 +1457,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String groupId = "groupId_example"; // String | 
     try {
@@ -1588,7 +1485,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1639,12 +1536,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String policyId = "policyId_example"; // String | 
     try {
@@ -1673,7 +1564,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1724,12 +1615,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
     try {
@@ -1758,7 +1643,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1809,12 +1694,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String groupId = "groupId_example"; // String | 
     String prefix = "prefix_example"; // String | return items prefixed with this value
@@ -1849,7 +1728,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1899,12 +1778,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String groupId = "groupId_example"; // String | 
     String prefix = "prefix_example"; // String | return items prefixed with this value
@@ -1939,7 +1812,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1990,12 +1863,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String prefix = "prefix_example"; // String | return items prefixed with this value
     String after = "after_example"; // String | return items after this value
@@ -2028,7 +1895,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2078,12 +1945,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String prefix = "prefix_example"; // String | return items prefixed with this value
     String after = "after_example"; // String | return items after this value
@@ -2116,7 +1977,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2166,12 +2027,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
     String prefix = "prefix_example"; // String | return items prefixed with this value
@@ -2206,7 +2061,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2257,12 +2112,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
     String prefix = "prefix_example"; // String | return items prefixed with this value
@@ -2297,7 +2146,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2348,12 +2197,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
     String prefix = "prefix_example"; // String | return items prefixed with this value
@@ -2390,7 +2233,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2441,12 +2284,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String prefix = "prefix_example"; // String | return items prefixed with this value
     String after = "after_example"; // String | return items after this value
@@ -2479,7 +2316,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2553,66 +2390,6 @@ No authorization required
 |-------------|-------------|------------------|
 **200** | successful login |  * Set-Cookie -  <br>  |
 **401** | Unauthorized |  -  |
-**0** | Internal Server Error |  -  |
-
-<a name="oauthCallback"></a>
-# **oauthCallback**
-> Error oauthCallback()
-
-
-
-Deprecated: embedded OIDC support is now deprecated
-
-### Example
-```java
-// Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.AuthApi;
-
-public class Example {
-  public static void main(String[] args) {
-    ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
-
-    AuthApi apiInstance = new AuthApi(defaultClient);
-    try {
-      Error result = apiInstance.oauthCallback();
-      System.out.println(result);
-    } catch (ApiException e) {
-      System.err.println("Exception when calling AuthApi#oauthCallback");
-      System.err.println("Status code: " + e.getCode());
-      System.err.println("Reason: " + e.getResponseBody());
-      System.err.println("Response headers: " + e.getResponseHeaders());
-      e.printStackTrace();
-    }
-  }
-}
-```
-
-### Parameters
-This endpoint does not need any parameter.
-
-### Return type
-
-[**Error**](Error.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**302** | successfully got token |  -  |
-**401** | failed to exchange authorization code for token |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="updatePassword"></a>
@@ -2719,12 +2496,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     AuthApi apiInstance = new AuthApi(defaultClient);
     String policyId = "policyId_example"; // String | 
     Policy policy = new Policy(); // Policy | 
@@ -2755,7 +2526,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 

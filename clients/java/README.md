@@ -99,12 +99,6 @@ public class Example {
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
 
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
     ActionsApi apiInstance = new ActionsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String runId = "runId_example"; // String | 
@@ -163,7 +157,6 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**listUserPolicies**](docs/AuthApi.md#listUserPolicies) | **GET** /auth/users/{userId}/policies | list user policies
 *AuthApi* | [**listUsers**](docs/AuthApi.md#listUsers) | **GET** /auth/users | list users
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
-*AuthApi* | [**oauthCallback**](docs/AuthApi.md#oauthCallback) | **GET** /oidc/callback | 
 *AuthApi* | [**updatePassword**](docs/AuthApi.md#updatePassword) | **POST** /auth/password | Update user password by reset_password token
 *AuthApi* | [**updatePolicy**](docs/AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**createBranch**](docs/BranchesApi.md#createBranch) | **POST** /repositories/{repository}/branches | create branch
@@ -327,12 +320,6 @@ Authentication schemes defined for the API:
 ### jwt_token
 
 - **Type**: HTTP basic authentication
-
-### oidc_auth
-
-- **Type**: API key
-- **API key parameter name**: oidc_auth_session
-- **Location**: 
 
 
 ## Recommendation

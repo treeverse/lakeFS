@@ -42,8 +42,7 @@ class TemplatesApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/templates/{template_location}',
                 'operation_id': 'expand_template',

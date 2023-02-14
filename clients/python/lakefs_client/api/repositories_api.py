@@ -47,8 +47,7 @@ class RepositoriesApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/branch_protection',
                 'operation_id': 'create_branch_protection_rule',
@@ -108,8 +107,7 @@ class RepositoriesApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/repositories',
                 'operation_id': 'create_repository',
@@ -168,8 +166,7 @@ class RepositoriesApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/branch_protection',
                 'operation_id': 'delete_branch_protection_rule',
@@ -229,8 +226,7 @@ class RepositoriesApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}',
                 'operation_id': 'delete_repository',
@@ -283,8 +279,7 @@ class RepositoriesApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/branch_protection',
                 'operation_id': 'get_branch_protection_rules',
@@ -337,8 +332,7 @@ class RepositoriesApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}',
                 'operation_id': 'get_repository',
@@ -391,8 +385,7 @@ class RepositoriesApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/repositories',
                 'operation_id': 'list_repositories',

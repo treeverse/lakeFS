@@ -43,8 +43,7 @@ class MetadataApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/{branch}/symlink',
                 'operation_id': 'create_symlink_file',
@@ -108,8 +107,7 @@ class MetadataApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/metadata/meta_range/{meta_range}',
                 'operation_id': 'get_meta_range',
@@ -168,8 +166,7 @@ class MetadataApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/metadata/range/{range}',
                 'operation_id': 'get_range',

@@ -15,7 +15,6 @@ security:
   - jwt_token: []
   - basic_auth: []
   - cookie_auth: []
-  - oidc_auth: []
 components:
   securitySchemes:
     basic_auth:
@@ -29,10 +28,6 @@ components:
       type: apiKey
       in: cookie
       name: internal_auth_session
-    oidc_auth:
-      type: apiKey
-      in: cookie
-      name: oidc_auth_session
   parameters:
     PaginationPrefix:
       in: query
@@ -688,14 +683,6 @@ components:
           enum: [initialized, not_initialized, comm_prefs_done]
         login_config:
           $ref: "#/components/schemas/LoginConfig"
-        oidc_enabled:
-          deprecated: true
-          type: boolean
-          description: "Deprecated: embedded OIDC support is now deprecated"
-        oidc_default_login:
-          deprecated: true
-          type: boolean
-          description: "Deprecated: embedded OIDC support is now deprecated"
     AccessKeyCredentials:
       type: object
       properties:
@@ -1379,21 +1366,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/CurrentUser"
 
-  /oidc/callback:
-    get:
-      deprecated: true
-      description: "Deprecated: embedded OIDC support is now deprecated"
-      tags:
-        - auth
-      operationId: oauthCallback
-      security: []
-      responses:
-        302:
-          description: successfully got token
-        401:
-          description: failed to exchange authorization code for token
-        default:
-          $ref: "#/components/responses/ServerError"
   /auth/login:
     post:
       tags:

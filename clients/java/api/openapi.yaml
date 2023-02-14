@@ -13,7 +13,6 @@ security:
 - jwt_token: []
 - basic_auth: []
 - cookie_auth: []
-- oidc_auth: []
 paths:
   /setup_comm_prefs:
     post:
@@ -126,26 +125,6 @@ paths:
                 $ref: '#/components/schemas/CurrentUser'
           description: user
       summary: get current user
-      tags:
-      - auth
-      x-accepts: application/json
-  /oidc/callback:
-    get:
-      deprecated: true
-      description: 'Deprecated: embedded OIDC support is now deprecated'
-      operationId: oauthCallback
-      responses:
-        "302":
-          description: successfully got token
-        "401":
-          description: failed to exchange authorization code for token
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      security: []
       tags:
       - auth
       x-accepts: application/json
@@ -5727,8 +5706,6 @@ components:
       - location
       type: object
     Error:
-      example:
-        message: message
       properties:
         message:
           description: short message explaining the error
@@ -5880,7 +5857,6 @@ components:
       type: object
     SetupState:
       example:
-        oidc_enabled: true
         login_config:
           login_failed_message: login_failed_message
           logout_url: logout_url
@@ -5891,7 +5867,6 @@ components:
           - login_cookie_names
           - login_cookie_names
           fallback_login_label: fallback_login_label
-        oidc_default_login: true
         state: initialized
       properties:
         state:
@@ -5902,14 +5877,6 @@ components:
           type: string
         login_config:
           $ref: '#/components/schemas/LoginConfig'
-        oidc_enabled:
-          deprecated: true
-          description: 'Deprecated: embedded OIDC support is now deprecated'
-          type: boolean
-        oidc_default_login:
-          deprecated: true
-          description: 'Deprecated: embedded OIDC support is now deprecated'
-          type: boolean
       type: object
     AccessKeyCredentials:
       example:
@@ -6772,9 +6739,5 @@ components:
     cookie_auth:
       in: cookie
       name: internal_auth_session
-      type: apiKey
-    oidc_auth:
-      in: cookie
-      name: oidc_auth_session
       type: apiKey
 

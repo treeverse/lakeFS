@@ -45,8 +45,7 @@ class ActionsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/actions/runs/{run_id}',
                 'operation_id': 'get_run',
@@ -105,8 +104,7 @@ class ActionsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output',
                 'operation_id': 'get_run_hook_output',
@@ -172,8 +170,7 @@ class ActionsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/actions/runs',
                 'operation_id': 'list_repository_runs',
@@ -252,8 +249,7 @@ class ActionsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/actions/runs/{run_id}/hooks',
                 'operation_id': 'list_run_hooks',

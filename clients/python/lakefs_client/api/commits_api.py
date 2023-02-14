@@ -45,8 +45,7 @@ class CommitsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}/commits',
                 'operation_id': 'commit',
@@ -117,8 +116,7 @@ class CommitsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/commits/{commitId}',
                 'operation_id': 'get_commit',
@@ -177,8 +175,7 @@ class CommitsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth'
+                    'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}/commits',
                 'operation_id': 'log_branch_commits',
