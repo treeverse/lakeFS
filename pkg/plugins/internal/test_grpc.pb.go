@@ -4,7 +4,7 @@
 // - protoc             v3.21.12
 // source: test.proto
 
-package plugins
+package internal
 
 import (
 	context "context"
