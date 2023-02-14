@@ -8,7 +8,6 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers"
 	"github.com/getkin/kin-openapi/routers/legacy"
-	"github.com/go-openapi/swag"
 	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/auth"
