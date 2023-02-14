@@ -2,11 +2,6 @@
     <div class="footer-sidebar"></div>
     <div class="footer-main">
         <div class="row">
-            <a href="{{ site.logo_link }}" class="site-title lh-tight">
-                <div class="site-logo"></div>
-            </a>
-        </div>
-        <div class="row">
             <div class="left">
                 <ul class="footer-links">
                     {% if site.footer_links %}
@@ -38,9 +33,11 @@
             </div>
         </div>
         <div class="row top-border">
-            <div class="left"><a href="{{ site.baseurl }}{{ site.footer.img-bottom-link }}">
-                    <div class="other-logo"><img src="{{ site.baseurl }}{{ site.footer.img-bottom }}" /></div>
-                </a></div>
+            <div class="left">
+                <a href="{{ site.logo_link }}" class="lh-tight" style="margin-bottom: 0px;">
+                    <div class="site-logo"></div>
+                </a>                    
+            </div>
             <div class="right">
                 <ul class="bottom-footer-links">
                     {% if site.footer_bottom_links %}
