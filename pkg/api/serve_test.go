@@ -49,6 +49,7 @@ type dependencies struct {
 	catalog     catalog.Interface
 	authService auth.Service
 	collector   *memCollector
+	server      *httptest.Server
 }
 
 // memCollector in-memory collector stores events and metadata sent
@@ -260,6 +261,7 @@ func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFa
 	t.Helper()
 	handler, deps := setupHandlerWithWalkerFactory(t, factory)
 	server := setupServer(t, handler)
+	deps.server = server
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	_ = setupCommPrefs(t, clt)
 	cred := createDefaultAdminUser(t, clt)

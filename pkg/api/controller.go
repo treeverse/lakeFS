@@ -3906,11 +3906,7 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 
 func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository string, leftRef string, rightRef string, params OtfDiffParams) {
 	ctx := r.Context()
-	user, err := auth.GetUser(ctx)
-	if err != nil {
-		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
-		return
-	}
+	user, _ := auth.GetUser(ctx)
 	c.LogAction(ctx, fmt.Sprintf("table_format_%s_diff\n", params.Type), r, repository, rightRef, leftRef)
 	credentials, _, err := c.Auth.ListUserCredentials(ctx, user.Username, &model.PaginationParams{
 		Prefix: "",
@@ -3925,7 +3921,7 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository 
 		return
 	}
 
-	secretCredentials, err := c.Auth.GetCredentials(ctx, credentials[0].AccessKeyID)
+	baseCredential, err := c.Auth.GetCredentials(ctx, credentials[0].AccessKeyID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3943,8 +3939,8 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository 
 			},
 		},
 		S3Creds: tablediff.S3Creds{
-			Key:      secretCredentials.AccessKeyID,
-			Secret:   secretCredentials.SecretAccessKey,
+			Key:      baseCredential.AccessKeyID,
+			Secret:   baseCredential.SecretAccessKey,
 			Endpoint: fmt.Sprintf("http://%s", c.Config.ListenAddress),
 		},
 		Repo: repository,
@@ -3964,14 +3960,14 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository 
 }
 
 func buildOtfDiffListResponse(tableDiffResponse tablediff.Response) OtfDiffList {
-	ol := make([]OtfDiff, 0)
+	ol := make([]OtfDiffEntry, 0)
 	for _, entry := range tableDiffResponse.Diffs {
 		content := make(map[string]interface{})
 		for k, v := range entry.OperationContent {
 			content[k] = v
 		}
 		v := entry.Version
-		ol = append(ol, OtfDiff{
+		ol = append(ol, OtfDiffEntry{
 			Operation:        entry.Operation,
 			OperationContent: content,
 			Timestamp:        int(entry.Timestamp.UnixMilli()),
