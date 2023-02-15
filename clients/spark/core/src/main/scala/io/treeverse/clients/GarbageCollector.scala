@@ -411,7 +411,6 @@ object GarbageCollector {
                  removed,
                  configMapper
                 )
-
     spark.close()
   }
 
@@ -528,20 +527,37 @@ object GarbageCollector {
   ) = {
     val reportLogsDst = concatToGCLogsPrefix(storageNSForHadoopFS, "summary")
     val reportExpiredDst = concatToGCLogsPrefix(storageNSForHadoopFS, "expired_addresses")
+    val deletedObjectsDst = concatToGCLogsPrefix(storageNSForHadoopFS, "deleted_objects")
+
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
     writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
-    writeParquetReport(expiredAddresses, reportExpiredDst, time)
-    writeJsonSummary(configMapper, reportLogsDst, removed.count(), gcRules, time)
-
-    removed
-      .withColumn(MARK_ID_KEY, lit(markID))
-      .withColumn(RUN_ID_KEY, lit(runID))
-      .write
-      .partitionBy(MARK_ID_KEY, RUN_ID_KEY)
-      .mode(SaveMode.Overwrite)
-      .parquet(
-        concatToGCLogsPrefix(storageNSForHadoopFS, s"deleted_objects/$time/deleted.parquet")
-      )
+    try {
+      writeParquetReport(expiredAddresses, reportExpiredDst, time)
+      val expiredDF = spark.read.parquet(f"${reportExpiredDst}/dt=${time}/")
+      println(f"Total expired addresses: ${expiredDF.count()}")
+    } catch {
+      case e: Throwable => {
+        println("Error when trying to get expired addresses count, moving on:")
+        e.printStackTrace()
+      }
+    }
+    try {
+      val removedCount = removed.count()
+      writeJsonSummary(configMapper, reportLogsDst, removedCount, gcRules, time)
+      removed
+        .withColumn(MARK_ID_KEY, lit(markID))
+        .withColumn(RUN_ID_KEY, lit(runID))
+        .write
+        .partitionBy(MARK_ID_KEY, RUN_ID_KEY)
+        .mode(SaveMode.Overwrite)
+        .parquet(f"${deletedObjectsDst}/dt=$time")
+      println(f"Total objects deleted (or already had been deleted): ${removedCount}")
+    } catch {
+      case e: Throwable => {
+        println("Error when trying to write the summary, moving on:")
+        e.printStackTrace()
+      }
+    }
   }
 
   private def concatToGCLogsPrefix(storageNameSpace: String, key: String): String = {
