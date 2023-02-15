@@ -2,10 +2,8 @@ package api
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers"

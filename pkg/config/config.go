@@ -37,27 +37,6 @@ var (
 // without any other configuration like DB or blockstore.
 const UseLocalConfiguration = "local-settings"
 
-type OIDC struct {
-	Enabled        bool `mapstructure:"enabled"`
-	IsDefaultLogin bool `mapstructure:"is_default_login"`
-
-	// provider details:
-	URL          string `mapstructure:"url"`
-	ClientID     string `mapstructure:"client_id"`
-	ClientSecret string `mapstructure:"client_secret"`
-
-	// configure the OIDC authentication flow:
-	CallbackBaseURL                  string            `mapstructure:"callback_base_url"`
-	AuthorizeEndpointQueryParameters map[string]string `mapstructure:"authorize_endpoint_query_parameters"`
-
-	// configure how users are handled on the lakeFS side:
-	ValidateIDTokenClaims  map[string]string `mapstructure:"validate_id_token_claims"`
-	DefaultInitialGroups   []string          `mapstructure:"default_initial_groups"`
-	InitialGroupsClaimName string            `mapstructure:"initial_groups_claim_name"`
-	FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
-	AdditionalScopeClaims  []string          `mapstructure:"additional_scope_claims"`
-}
-
 // LDAP holds configuration for authenticating on an LDAP server.
 type LDAP struct {
 	ServerEndpoint    string `mapstructure:"server_endpoint"`
@@ -173,7 +152,6 @@ type Config struct {
 			SupportsInvites bool `mapstructure:"supports_invites"`
 		}
 		LDAP *LDAP
-		OIDC OIDC
 		// LogoutRedirectURL is the URL on which to mount the
 		// server-side logout.
 		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`

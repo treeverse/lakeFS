@@ -9,7 +9,6 @@ import (
 
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 
-	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/getkin/kin-openapi/routers"
@@ -20,7 +19,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/params"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/email"
-	authoidc "github.com/treeverse/lakefs/pkg/auth/oidc"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
@@ -30,7 +28,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
-	"golang.org/x/oauth2"
 )
 
 const (
@@ -59,8 +56,6 @@ func Serve(
 	templater templater.Service,
 	gatewayDomains []string,
 	snippets []params.CodeSnippet,
-	oidcProvider *oidc.Provider,
-	oauthConfig *oauth2.Config,
 	pathProvider upload.PathProvider,
 	otfService *tablediff.Service,
 ) http.Handler {
@@ -72,7 +67,6 @@ func Serve(
 
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
 	r := chi.NewRouter()
-	oidcConfig := cfg.Auth.OIDC
 	apiRouter := r.With(
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
 			AuthenticationFunc: openapi3filter.NoopAuthenticationFunc,
@@ -82,10 +76,9 @@ func Serve(
 			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
 			cfg.Logging.AuditLogLevel,
 			cfg.Logging.TraceRequestHeaders),
-		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &oidcConfig),
+		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore),
 		MetricsMiddleware(swagger),
 	)
-	oidcAuthenticator := authoidc.NewAuthenticator(oauthConfig, oidcProvider)
 	controller := NewController(
 		cfg,
 		catalog,
@@ -101,7 +94,6 @@ func Serve(
 		logger,
 		emailer,
 		templater,
-		oidcAuthenticator,
 		sessionStore,
 		pathProvider,
 		otfService,
@@ -113,9 +105,6 @@ func Serve(
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
 	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
-	if cfg.Auth.OIDC.Enabled {
-		r.Mount("/oidc/login", NewOIDCLoginPageHandler(oidcConfig, sessionStore, oauthConfig, logger))
-	}
 	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.Auth.LogoutRedirectURL))
 
 	// Configuration flag to control if the embedded UI is served
