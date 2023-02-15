@@ -74,19 +74,18 @@ object SSTableReader {
 }
 
 class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] private (
-    fp: java.io.RandomAccessFile,
+    file: java.io.File,
     companion: GeneratedMessageCompanion[Proto]
 ) extends Closeable {
+  private val fp = new java.io.RandomAccessFile(file, "r")
   private val reader = new BlockReadableFile(fp)
 
   def this(sstableFilename: String, companion: GeneratedMessageCompanion[Proto]) =
-    this(new java.io.RandomAccessFile(sstableFilename, "r"), companion)
-
-  def this(sstableFile: File, companion: GeneratedMessageCompanion[Proto]) =
-    this(new java.io.RandomAccessFile(sstableFile, "r"), companion)
+    this(new java.io.File(sstableFilename), companion)
 
   def close(): Unit = {
     fp.close()
+    file.delete()
   }
 
   def getProperties(): Map[String, Array[Byte]] = {
