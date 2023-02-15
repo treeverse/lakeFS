@@ -43,7 +43,7 @@ func NewMockHandler() *MockHandler {
 type TestDiffer struct{}
 
 func (ed TestDiffer) Diff(ctx context.Context, p Params) (Response, error) {
-	e := ErrorFromContext(ctx)
+	e := errorFromContext(ctx)
 	if e != nil {
 		return Response{}, e
 	}
@@ -58,8 +58,8 @@ func (ed TestDiffer) Diff(ctx context.Context, p Params) (Response, error) {
 type ControllerTestDiffer struct{}
 
 func (ctd ControllerTestDiffer) Diff(ctx context.Context, p Params) (Response, error) {
-	left := p.TablePaths.LeftTablePath.Ref
-	right := p.TablePaths.RightTablePath.Ref
+	left := p.TablePaths.Left.Ref
+	right := p.TablePaths.Right.Ref
 	notfound := "notfound"
 	if left == notfound && right == notfound {
 		return Response{}, ErrTableNotFound
@@ -107,11 +107,11 @@ type keyType string
 
 const errKey keyType = "error"
 
-func ContextWithError(ctx context.Context, e error) context.Context {
+func contextWithError(ctx context.Context, e error) context.Context {
 	return context.WithValue(ctx, errKey, e)
 }
 
-func ErrorFromContext(ctx context.Context) error {
+func errorFromContext(ctx context.Context) error {
 	e, ok := ctx.Value(errKey).(error)
 	if !ok {
 		return nil
