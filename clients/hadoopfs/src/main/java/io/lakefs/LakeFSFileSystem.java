@@ -236,7 +236,7 @@ public class LakeFSFileSystem extends FileSystem {
                                                       ObjectLocation objectLoc)
             throws ApiException, URISyntaxException, IOException {
         StagingApi staging = lfsClient.getStaging();
-        StagingLocation stagingLoc = staging.getPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), false);
+        StagingLocation stagingLoc = staging.getPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath()).execute();
         URI physicalUri = translateUri(new URI(Objects.requireNonNull(stagingLoc.getPhysicalAddress())));
 
         Path physicalPath = new Path(physicalUri.toString());
@@ -749,7 +749,7 @@ public class LakeFSFileSystem extends FileSystem {
                 .checksum(objectMetadata.getETag())
                 .sizeBytes(objectMetadata.getContentLength());
         StagingApi staging = lfsClient.getStaging();
-        staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), metadata);
+        staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), metadata).execute();
     }
 
     /**

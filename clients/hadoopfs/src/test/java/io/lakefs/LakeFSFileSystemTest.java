@@ -1,6 +1,8 @@
 package io.lakefs;
 
 import io.lakefs.clients.api.*;
+import io.lakefs.clients.api.StagingApi.APIgetPhysicalAddressRequest;
+import io.lakefs.clients.api.StagingApi.APIlinkPhysicalAddressRequest;
 import io.lakefs.clients.api.model.*;
 import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
 import io.lakefs.utils.ObjectLocation;
@@ -64,6 +66,8 @@ public class LakeFSFileSystemTest {
     protected BranchesApi branchesApi;
     protected RepositoriesApi repositoriesApi;
     protected StagingApi stagingApi;
+    protected APIgetPhysicalAddressRequest getPhysicalAddressRequest;
+    protected APIlinkPhysicalAddressRequest linkPhysicalAddressRequest;
 
     protected AmazonS3 s3Client;
 
@@ -150,6 +154,8 @@ public class LakeFSFileSystemTest {
         when(lfsClient.getRepositories()).thenReturn(repositoriesApi);
         stagingApi = mock(StagingApi.class, Answers.RETURNS_SMART_NULLS);
         when(lfsClient.getStaging()).thenReturn(stagingApi);
+        getPhysicalAddressRequest = mock(APIgetPhysicalAddressRequest.class);
+        linkPhysicalAddressRequest = mock(APIlinkPhysicalAddressRequest.class);
 
         when(repositoriesApi.getRepository("repo"))
             .thenReturn(new Repository().storageNamespace(s3Url("/repo-base")));
@@ -304,7 +310,9 @@ public class LakeFSFileSystemTest {
                     .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
         }
         StagingLocation stagingLocation = new StagingLocation().token("foo").physicalAddress(s3Url("/repo-base/dir-marker"));
-        when(stagingApi.getPhysicalAddress("repo", "main", "no/place/", false))
+        when(stagingApi.getPhysicalAddress("repo", "main", "no/place/"))
+                .thenReturn(getPhysicalAddressRequest);
+        when(getPhysicalAddressRequest.execute())
                 .thenReturn(stagingLocation);
 
         Path path = new Path("lakefs://repo/main/no/place/file.txt");
@@ -496,8 +504,20 @@ public class LakeFSFileSystemTest {
         mockNonExistingPath(new ObjectLocation("lakefs", "repo", "main", "sub1/sub2/create.me"));
 
         StagingLocation stagingLocation = new StagingLocation().token("foo").physicalAddress(s3Url("/repo-base/create"));
-        when(stagingApi.getPhysicalAddress("repo", "main", "sub1/sub2/create.me", false))
+        when(stagingApi.getPhysicalAddress("repo", "main", "sub1/sub2/create.me"))
+                .thenReturn(getPhysicalAddressRequest);
+        when(getPhysicalAddressRequest.execute())
                 .thenReturn(stagingLocation);
+
+        when(stagingApi.linkPhysicalAddress(eq("repo"), eq("main"), eq("sub1/sub2/create.me"), any(StagingMetadata.class)))
+                .thenReturn(linkPhysicalAddressRequest);
+        when(linkPhysicalAddressRequest.execute()).thenReturn(new ObjectStats().
+                                                            path(p.toString()).
+                                                            pathType(PathTypeEnum.OBJECT).
+                                                            physicalAddress(s3Url("/repo-base/create")).
+                                                            checksum(UNUSED_CHECKSUM).
+                                                            mtime(UNUSED_MTIME).
+                                                            sizeBytes((long)contents.getBytes().length));
 
         // mock sub1/sub2 was an empty directory
         ObjectLocation sub2Loc = new ObjectLocation("lakefs", "repo", "main", "sub1/sub2");
@@ -508,6 +528,7 @@ public class LakeFSFileSystemTest {
         out.close();
 
         ArgumentCaptor<StagingMetadata> metadataCapture = ArgumentCaptor.forClass(StagingMetadata.class);
+
         verify(stagingApi).linkPhysicalAddress(eq("repo"), eq("main"), eq("sub1/sub2/create.me"),
                                                metadataCapture.capture());
         StagingMetadata actualMetadata = metadataCapture.getValue();
@@ -556,13 +577,26 @@ public class LakeFSFileSystemTest {
             testPath = testPath.getParent();
         } while(testPath != null && !testPath.isRoot());
 
+        Path p = new Path("lakefs://repo/main/dir1/dir2/dir3");
+
         // physical address to directory marker object
         StagingLocation stagingLocation = new StagingLocation().token("foo").physicalAddress(s3Url("/repo-base/emptyDir"));
-        when(stagingApi.getPhysicalAddress("repo", "main", "dir1/dir2/dir3/", false))
+        when(stagingApi.getPhysicalAddress("repo", "main", "dir1/dir2/dir3/"))
+                .thenReturn(getPhysicalAddressRequest);
+        when(getPhysicalAddressRequest.execute())
                 .thenReturn(stagingLocation);
 
+        when(stagingApi.linkPhysicalAddress(eq("repo"), eq("main"), eq("dir1/dir2/dir3/"), any(StagingMetadata.class)))
+                .thenReturn(linkPhysicalAddressRequest);
+        when(linkPhysicalAddressRequest.execute()).thenReturn(new ObjectStats().
+                                                            path(p.toString()).
+                                                            pathType(PathTypeEnum.OBJECT).
+                                                            physicalAddress(s3Url("/repo-base/emptyDir")).
+                                                            checksum(UNUSED_CHECKSUM).
+                                                            mtime(UNUSED_MTIME).
+                                                            sizeBytes(1L));
+
         // call mkdirs
-        Path p = new Path("lakefs://repo/main/dir1/dir2/dir3");
         boolean mkdirs = fs.mkdirs(p);
         Assert.assertTrue("make dirs", mkdirs);
 

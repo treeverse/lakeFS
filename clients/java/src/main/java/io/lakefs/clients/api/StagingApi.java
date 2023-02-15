@@ -57,25 +57,7 @@ public class StagingApi {
         this.localVarApiClient = apiClient;
     }
 
-    /**
-     * Build call for getPhysicalAddress
-     * @param repository  (required)
-     * @param branch  (required)
-     * @param path relative to the branch (required)
-     * @param presign  (optional)
-     * @param _callback Callback for upload/download progress
-     * @return Call to execute
-     * @throws ApiException If fail to serialize the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> physical address for staging area </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call getPhysicalAddressCall(String repository, String branch, String path, Boolean presign, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call getPhysicalAddressCall(String repository, String branch, String path, Boolean presign, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -139,100 +121,135 @@ public class StagingApi {
 
     }
 
-    /**
-     * get a physical address and a return token to write object to underlying storage
-     * 
-     * @param repository  (required)
-     * @param branch  (required)
-     * @param path relative to the branch (required)
-     * @param presign  (optional)
-     * @return StagingLocation
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> physical address for staging area </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public StagingLocation getPhysicalAddress(String repository, String branch, String path, Boolean presign) throws ApiException {
-        ApiResponse<StagingLocation> localVarResp = getPhysicalAddressWithHttpInfo(repository, branch, path, presign);
-        return localVarResp.getData();
-    }
 
-    /**
-     * get a physical address and a return token to write object to underlying storage
-     * 
-     * @param repository  (required)
-     * @param branch  (required)
-     * @param path relative to the branch (required)
-     * @param presign  (optional)
-     * @return ApiResponse&lt;StagingLocation&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> physical address for staging area </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<StagingLocation> getPhysicalAddressWithHttpInfo(String repository, String branch, String path, Boolean presign) throws ApiException {
+    private ApiResponse<StagingLocation> getPhysicalAddressWithHttpInfo(String repository, String branch, String path, Boolean presign) throws ApiException {
         okhttp3.Call localVarCall = getPhysicalAddressValidateBeforeCall(repository, branch, path, presign, null);
         Type localVarReturnType = new TypeToken<StagingLocation>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    /**
-     * get a physical address and a return token to write object to underlying storage (asynchronously)
-     * 
-     * @param repository  (required)
-     * @param branch  (required)
-     * @param path relative to the branch (required)
-     * @param presign  (optional)
-     * @param _callback The callback to be executed when the API call finishes
-     * @return The request call
-     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> physical address for staging area </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call getPhysicalAddressAsync(String repository, String branch, String path, Boolean presign, final ApiCallback<StagingLocation> _callback) throws ApiException {
+    private okhttp3.Call getPhysicalAddressAsync(String repository, String branch, String path, Boolean presign, final ApiCallback<StagingLocation> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = getPhysicalAddressValidateBeforeCall(repository, branch, path, presign, _callback);
         Type localVarReturnType = new TypeToken<StagingLocation>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
+
+    public class APIgetPhysicalAddressRequest {
+        private final String repository;
+        private final String branch;
+        private final String path;
+        private Boolean presign;
+
+        private APIgetPhysicalAddressRequest(String repository, String branch, String path) {
+            this.repository = repository;
+            this.branch = branch;
+            this.path = path;
+        }
+
+        /**
+         * Set presign
+         * @param presign  (optional)
+         * @return APIgetPhysicalAddressRequest
+         */
+        public APIgetPhysicalAddressRequest presign(Boolean presign) {
+            this.presign = presign;
+            return this;
+        }
+
+        /**
+         * Build call for getPhysicalAddress
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> physical address for staging area </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return getPhysicalAddressCall(repository, branch, path, presign, _callback);
+        }
+
+        /**
+         * Execute getPhysicalAddress request
+         * @return StagingLocation
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> physical address for staging area </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public StagingLocation execute() throws ApiException {
+            ApiResponse<StagingLocation> localVarResp = getPhysicalAddressWithHttpInfo(repository, branch, path, presign);
+            return localVarResp.getData();
+        }
+
+        /**
+         * Execute getPhysicalAddress request with HTTP info returned
+         * @return ApiResponse&lt;StagingLocation&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> physical address for staging area </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<StagingLocation> executeWithHttpInfo() throws ApiException {
+            return getPhysicalAddressWithHttpInfo(repository, branch, path, presign);
+        }
+
+        /**
+         * Execute getPhysicalAddress request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> physical address for staging area </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<StagingLocation> _callback) throws ApiException {
+            return getPhysicalAddressAsync(repository, branch, path, presign, _callback);
+        }
+    }
+
     /**
-     * Build call for linkPhysicalAddress
+     * get a physical address and a return token to write object to underlying storage
+     * 
      * @param repository  (required)
      * @param branch  (required)
      * @param path relative to the branch (required)
-     * @param stagingMetadata  (required)
-     * @param _callback Callback for upload/download progress
-     * @return Call to execute
-     * @throws ApiException If fail to serialize the request body object
+     * @return APIgetPhysicalAddressRequest
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> object metadata </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> physical address for staging area </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
-        <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call linkPhysicalAddressCall(String repository, String branch, String path, StagingMetadata stagingMetadata, final ApiCallback _callback) throws ApiException {
+    public APIgetPhysicalAddressRequest getPhysicalAddress(String repository, String branch, String path) {
+        return new APIgetPhysicalAddressRequest(repository, branch, path);
+    }
+    private okhttp3.Call linkPhysicalAddressCall(String repository, String branch, String path, StagingMetadata stagingMetadata, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = stagingMetadata;
 
         // create path and map variables
@@ -297,67 +314,122 @@ public class StagingApi {
 
     }
 
-    /**
-     * associate staging on this physical address with a path
-     * If the supplied token matches the current staging token, associate the object as the physical address with the supplied path.  Otherwise, if staging has been committed and the token has expired, return a conflict and hint where to place the object to try again.  Caller should copy the object to the new physical address and PUT again with the new staging token.  (No need to back off, this is due to losing the race against a concurrent commit operation.) 
-     * @param repository  (required)
-     * @param branch  (required)
-     * @param path relative to the branch (required)
-     * @param stagingMetadata  (required)
-     * @return ObjectStats
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> object metadata </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
-        <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public ObjectStats linkPhysicalAddress(String repository, String branch, String path, StagingMetadata stagingMetadata) throws ApiException {
-        ApiResponse<ObjectStats> localVarResp = linkPhysicalAddressWithHttpInfo(repository, branch, path, stagingMetadata);
-        return localVarResp.getData();
-    }
 
-    /**
-     * associate staging on this physical address with a path
-     * If the supplied token matches the current staging token, associate the object as the physical address with the supplied path.  Otherwise, if staging has been committed and the token has expired, return a conflict and hint where to place the object to try again.  Caller should copy the object to the new physical address and PUT again with the new staging token.  (No need to back off, this is due to losing the race against a concurrent commit operation.) 
-     * @param repository  (required)
-     * @param branch  (required)
-     * @param path relative to the branch (required)
-     * @param stagingMetadata  (required)
-     * @return ApiResponse&lt;ObjectStats&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> object metadata </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
-        <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<ObjectStats> linkPhysicalAddressWithHttpInfo(String repository, String branch, String path, StagingMetadata stagingMetadata) throws ApiException {
+    private ApiResponse<ObjectStats> linkPhysicalAddressWithHttpInfo(String repository, String branch, String path, StagingMetadata stagingMetadata) throws ApiException {
         okhttp3.Call localVarCall = linkPhysicalAddressValidateBeforeCall(repository, branch, path, stagingMetadata, null);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
+    private okhttp3.Call linkPhysicalAddressAsync(String repository, String branch, String path, StagingMetadata stagingMetadata, final ApiCallback<ObjectStats> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = linkPhysicalAddressValidateBeforeCall(repository, branch, path, stagingMetadata, _callback);
+        Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public class APIlinkPhysicalAddressRequest {
+        private final String repository;
+        private final String branch;
+        private final String path;
+        private final StagingMetadata stagingMetadata;
+
+        private APIlinkPhysicalAddressRequest(String repository, String branch, String path, StagingMetadata stagingMetadata) {
+            this.repository = repository;
+            this.branch = branch;
+            this.path = path;
+            this.stagingMetadata = stagingMetadata;
+        }
+
+        /**
+         * Build call for linkPhysicalAddress
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> object metadata </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
+            <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return linkPhysicalAddressCall(repository, branch, path, stagingMetadata, _callback);
+        }
+
+        /**
+         * Execute linkPhysicalAddress request
+         * @return ObjectStats
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> object metadata </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
+            <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ObjectStats execute() throws ApiException {
+            ApiResponse<ObjectStats> localVarResp = linkPhysicalAddressWithHttpInfo(repository, branch, path, stagingMetadata);
+            return localVarResp.getData();
+        }
+
+        /**
+         * Execute linkPhysicalAddress request with HTTP info returned
+         * @return ApiResponse&lt;ObjectStats&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> object metadata </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
+            <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<ObjectStats> executeWithHttpInfo() throws ApiException {
+            return linkPhysicalAddressWithHttpInfo(repository, branch, path, stagingMetadata);
+        }
+
+        /**
+         * Execute linkPhysicalAddress request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> object metadata </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
+            <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<ObjectStats> _callback) throws ApiException {
+            return linkPhysicalAddressAsync(repository, branch, path, stagingMetadata, _callback);
+        }
+    }
+
     /**
-     * associate staging on this physical address with a path (asynchronously)
+     * associate staging on this physical address with a path
      * If the supplied token matches the current staging token, associate the object as the physical address with the supplied path.  Otherwise, if staging has been committed and the token has expired, return a conflict and hint where to place the object to try again.  Caller should copy the object to the new physical address and PUT again with the new staging token.  (No need to back off, this is due to losing the race against a concurrent commit operation.) 
      * @param repository  (required)
      * @param branch  (required)
      * @param path relative to the branch (required)
      * @param stagingMetadata  (required)
-     * @param _callback The callback to be executed when the API call finishes
-     * @return The request call
-     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @return APIlinkPhysicalAddressRequest
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
@@ -369,11 +441,7 @@ public class StagingApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call linkPhysicalAddressAsync(String repository, String branch, String path, StagingMetadata stagingMetadata, final ApiCallback<ObjectStats> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = linkPhysicalAddressValidateBeforeCall(repository, branch, path, stagingMetadata, _callback);
-        Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
-        return localVarCall;
+    public APIlinkPhysicalAddressRequest linkPhysicalAddress(String repository, String branch, String path, StagingMetadata stagingMetadata) {
+        return new APIlinkPhysicalAddressRequest(repository, branch, path, stagingMetadata);
     }
 }

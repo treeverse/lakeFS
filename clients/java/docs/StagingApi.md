@@ -10,7 +10,7 @@ Method | HTTP request | Description
 
 <a name="getPhysicalAddress"></a>
 # **getPhysicalAddress**
-> StagingLocation getPhysicalAddress(repository, branch, path, presign)
+> StagingLocation getPhysicalAddress(repository, branch, path).presign(presign).execute();
 
 get a physical address and a return token to write object to underlying storage
 
@@ -56,7 +56,9 @@ public class Example {
     String path = "path_example"; // String | relative to the branch
     Boolean presign = true; // Boolean | 
     try {
-      StagingLocation result = apiInstance.getPhysicalAddress(repository, branch, path, presign);
+      StagingLocation result = apiInstance.getPhysicalAddress(repository, branch, path)
+            .presign(presign)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling StagingApi#getPhysicalAddress");
@@ -101,7 +103,7 @@ Name | Type | Description  | Notes
 
 <a name="linkPhysicalAddress"></a>
 # **linkPhysicalAddress**
-> ObjectStats linkPhysicalAddress(repository, branch, path, stagingMetadata)
+> ObjectStats linkPhysicalAddress(repository, branch, path, stagingMetadata).execute();
 
 associate staging on this physical address with a path
 
@@ -149,7 +151,8 @@ public class Example {
     String path = "path_example"; // String | relative to the branch
     StagingMetadata stagingMetadata = new StagingMetadata(); // StagingMetadata | 
     try {
-      ObjectStats result = apiInstance.linkPhysicalAddress(repository, branch, path, stagingMetadata);
+      ObjectStats result = apiInstance.linkPhysicalAddress(repository, branch, path, stagingMetadata)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling StagingApi#linkPhysicalAddress");

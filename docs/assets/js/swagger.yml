@@ -3078,6 +3078,7 @@ paths:
       tags:
         - staging
       operationId: getPhysicalAddress
+      "x-group-parameters": true
       summary: get a physical address and a return token to write object to underlying storage
       parameters:
         - in: query
@@ -3103,6 +3104,7 @@ paths:
       tags:
         - staging
       operationId: linkPhysicalAddress
+      "x-group-parameters": true
       summary: associate staging on this physical address with a path
       description: |
         If the supplied token matches the current staging token, associate the object as the

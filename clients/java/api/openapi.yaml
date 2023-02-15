@@ -3302,6 +3302,7 @@ paths:
         storage
       tags:
       - staging
+      x-group-parameters: true
       x-accepts: application/json
     put:
       description: |
@@ -3382,6 +3383,7 @@ paths:
       summary: associate staging on this physical address with a path
       tags:
       - staging
+      x-group-parameters: true
       x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/metaranges:

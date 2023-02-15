@@ -49,7 +49,9 @@ public class StagingApiTest {
         String branch = null;
         String path = null;
         Boolean presign = null;
-                StagingLocation response = api.getPhysicalAddress(repository, branch, path, presign);
+                StagingLocation response = api.getPhysicalAddress(repository, branch, path)
+                .presign(presign)
+                .execute();
         // TODO: test validations
     }
     
@@ -67,7 +69,8 @@ public class StagingApiTest {
         String branch = null;
         String path = null;
         StagingMetadata stagingMetadata = null;
-                ObjectStats response = api.linkPhysicalAddress(repository, branch, path, stagingMetadata);
+                ObjectStats response = api.linkPhysicalAddress(repository, branch, path, stagingMetadata)
+                .execute();
         // TODO: test validations
     }
     
