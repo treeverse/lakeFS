@@ -14,7 +14,7 @@ For every cloud installation, The UGC will run as default as a background job (s
 We should have to ability to control the MUGC for the user - change configuration, or stop it.
 
 ### Permissions
-Create default UGC user with permissions for every new cloud env (The permissions to Enigma was added to the GC user)
+Create default UGC user with permissions for every new cloud env (The permissions to the existing users was added to the GC user)
 - lakeFS permissions - prepare uncommitted gc
 - Bucket permissions - role to list, write, delete (can get the same role as the GC)
 
@@ -24,7 +24,7 @@ Create default UGC user with permissions for every new cloud env (The permission
   - Configuration for the spark job (configured role, secret and access key, installation endpoint, repository)
   - Backup & Restore
 - Deployment of new UGC version
-- Migration (Enigma)
+- Migration of existing users
 - UGC client and server compatibility
 - Run the UGC periodically (AWS lambda cron job, Airflow DAG, EMR serverless, etc.)
 - Declare SLA (might require performance improvements)
@@ -37,9 +37,9 @@ Create default UGC user with permissions for every new cloud env (The permission
 ### Testing
 All the tests are pre-requisites for releasing the MUGC.
 - Test UGC on scale (WIP)
-  - (Enigma dev repo) Performance and correctness - mark only
+  - (Existing cloud user dev repo) Performance and correctness - mark only
     - Ensure only objects that are eligible for deletion are marked for deletion
-- Enigma production repo (WIP)
+- Existing cloud user production repo (WIP)
   - Old repository structure performance
 - Compatibility tests - UGC client and lakeFS server
 - Test sweep functionality
@@ -53,7 +53,7 @@ All the tests are pre-requisites for releasing the MUGC.
 
 ### Milestones
 1. Pre-tests
-   * Enigma tests - scale, correctness, production
+   * Existing cloud user tests - scale, correctness, production
    * Performance improvements / Bug fixes (if needed)
 2. Managed UGC job infrastructure
     * Cron job - decide on which platform the MUGC will run (same as GC, new one)
