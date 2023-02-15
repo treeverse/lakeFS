@@ -10,7 +10,7 @@ import {Error, Loading} from "../controls";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 
-export const TableDiff = ({repo, leftRef, rightRef, tablePath}) => {
+export const DeltaLakeDiff = ({repo, leftRef, rightRef, tablePath}) => {
     let { error, loading, response } = useAPI(() => repositories.otfDiff(repo.id, leftRef, rightRef, tablePath, OtfType.Delta), [])
     if (loading) return <Loading style={{margin: 0+"px"}}/>;
     if (!loading && error) return <Error error={error}/>;
@@ -82,10 +82,8 @@ const OperationExpansionSection = ({operationExpanded, onExpand}) => {
  */
 function parseOperationContent(content) {
     let parsedContent = "";
-    const JSONContentStr = JSON.stringify(content, null, 2);
-    const JSONContent = JSON.parse(JSONContentStr);
-    for (let key in JSONContent) {
-        const val = JSONContent[key];
+    for (let key in content) {
+        const val = content[key];
         parsedContent += `${key}: `
         let parsedVal = "";
         try {

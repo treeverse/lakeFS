@@ -17,7 +17,7 @@ import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
 import {refs, statistics} from "../../api";
-import {TableDiff} from "./TableDiff";
+import {DeltaLakeDiff} from "./TableDiff";
 
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
@@ -180,7 +180,7 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
                                          getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert}) => {
     const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
-    const [tableDiffState, setTableDiffState] = useState({isExpanded: false, expandedTablePath: ""});
+    const [tableDiffState, setTableDiffState] = useState({isShown: false, expandedTablePath: ""});
 
     if (results.length === 0) {
         return <div className="tree-container">
@@ -190,11 +190,11 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
         return <div className="tree-container">
                     {!enableDeltaDiff
                         ? <ExperimentalDeltaDiffButton showButton={showExperimentalDeltaDiffButton}/>
-                        : tableDiffState.isExpanded
+                        : tableDiffState.isShown
                                 ? <Button className="action-bar"
                                           variant="secondary"
                                           disabled={false}
-                                          onClick={() => setTableDiffState( {isExpanded: false, expandedTablePath: ""})}>
+                                          onClick={() => setTableDiffState( {isShown: false, expandedTablePath: ""})}>
                                     <ArrowLeftIcon/> Back to object comparison
                                   </Button>
                                 : <div className="mr-1 mb-2"><Alert variant={"info"}><InfoIcon/> You can now use lakeFS to
@@ -207,8 +207,8 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                 </span>
                         </Card.Header>
                         <Card.Body>
-                            {tableDiffState.isExpanded
-                                ? <TableDiff repo={repo} leftRef={leftDiffRefID} rightRef={rightDiffRefID} tablePath={tableDiffState.expandedTablePath}/>
+                            {tableDiffState.isShown
+                                ? <DeltaLakeDiff repo={repo} leftRef={leftDiffRefID} rightRef={rightDiffRefID} tablePath={tableDiffState.expandedTablePath}/>
                                 : <Table borderless size="sm">
                                 <tbody>
                                 {results.map(entry => {
@@ -221,7 +221,7 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                                      onNavigate={onNavigate}
                                                      getMore={getMore}
                                                      onRevert={onRevert}
-                                                     setTableDiffExpanded={() => setTableDiffState({isExpanded: true,  expandedTablePath: entry.path})}
+                                                     setTableDiffExpanded={() => setTableDiffState({isShown: true,  expandedTablePath: entry.path})}
                                                  />);
                                 })}
                                 {!!nextPage &&

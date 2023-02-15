@@ -478,13 +478,13 @@ class Repositories {
         }
     }
 
-    async otfDiff(repoId, leftRef, rightRef, table_path = "", type) {
+    async otfDiff(repoId, leftRef, rightRef, tablePath = "", type) {
         //TODO (Tals): enable while connecting with endpoint
-        // const query = qs({table_path, type});
+        // const query = qs({tablePath, type});
         // const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/otf/refs/${encodeURIComponent(leftRef)}/diff/${encodeURIComponent(rightRef)}?` + query);
         // if (response.status !== 200) {
         //     //TODO (Tals): improve error handling
-        //     throw new NotFoundError(`table ${table_path} not found`);
+        //     throw new NotFoundError(`table ${tablePath} not found`);
         // }
         // return response.json();
         // const mockRes = '{"results": []}'
