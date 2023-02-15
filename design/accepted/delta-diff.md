@@ -80,15 +80,15 @@ Plugins can be written and consumed in almost every major language. This is achi
   A single connection is made between any plugin and the core process. For gRPC-based plugins, the HTTP2 protocol handles [connection multiplexing](https://freecontent.manning.com/animation-http-1-1-vs-http-2-vs-http-2-with-push/).
 * The plugin and core system are separate processes, which means that a crash of a plugin won't cause the core system to crash (lakeFS in our case).
 
-![Microkernel architecture overview](diagrams/microkernel-overview.png)
-[(excalidraw file)](diagrams/microkernel-overview.excalidraw)
+![Microkernel architecture overview](../open/diagrams/microkernel-overview.png)
+[(excalidraw file)](../open/diagrams/microkernel-overview.excalidraw)
 
 ---
 
 ## Implementation
 
-![Delta Diff flow](diagrams/delta-diff-flow.png)
-[(excalidraw file)](diagrams/delta-diff-flow.excalidraw)
+![Delta Diff flow](../open/diagrams/delta-diff-flow.png)
+[(excalidraw file)](../open/diagrams/delta-diff-flow.excalidraw)
 
 #### DiffService
 
