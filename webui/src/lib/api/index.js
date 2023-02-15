@@ -27,9 +27,10 @@ class LocalCache {
 
 const cache = new LocalCache();
 
-export const linkToPath = (repoId, branchId, path) => {
+export const linkToPath = (repoId, branchId, path, presign=false) => {
     const query = qs({
         path: path,
+        presign: presign
     });
     return `${API_ENDPOINT}/repositories/${repoId}/refs/${branchId}/objects?${query}`;
 };
@@ -613,7 +614,7 @@ class Objects {
         }
     }
 
-    async get(repoId, ref, path, presign = false) {
+    async get(repoId, ref, path) {
         const query = qs({path});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query, {
             method: 'GET',

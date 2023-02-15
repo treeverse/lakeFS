@@ -74,14 +74,15 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
 
         <Dropdown.Menu>
           {entry.path_type === "object" && (
-              <Dropdown.Item
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setShowObjectStat(true);
-                  }}
+              <PathLink
+                  path={entry.path}
+                  reference={reference}
+                  repoId={repo.id}
+                  as={Dropdown.Item}
+                  presign={true}
               >
                 <LinkIcon /> Get Presigned URL
-              </Dropdown.Item>
+              </PathLink>
           )}
           {entry.path_type === "object" && (
             <PathLink
@@ -371,9 +372,9 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
   );
 };
 
-const PathLink = ({ repoId, reference, path, children, as = null }) => {
+const PathLink = ({ repoId, reference, path, children, presign = false, as = null }) => {
   const name = path.split("/").pop();
-  const link = linkToPath(repoId, reference.id, path);
+  const link = linkToPath(repoId, reference.id, path, presign);
   if (as === null)
     return (
       <a href={link} download={name}>

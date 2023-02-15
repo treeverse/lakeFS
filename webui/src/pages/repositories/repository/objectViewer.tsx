@@ -105,7 +105,7 @@ const FileObjectsViewerPage = () => {
 
 export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loading, error, contentType = null, fileExtension='', sizeBytes, showFullNavigator = true}) => {
 
-    const objectUrl = linkToPath(repoId, refId, path);
+    const objectUrl = linkToPath(repoId, refId, path, true);
 
     if (loading || error) {
         return <></>;
