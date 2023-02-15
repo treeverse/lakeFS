@@ -180,21 +180,24 @@ To overcome this scenario, we'll use special diff credentials as follows:
             - operationContent:
               - type: map
               - description: an operation content specific to the table format implemented.  
-      
+            - operationType:
+              - type: string
+              - description: the type of performed operation: created, updated, or deleted
             ]  
 
             **Delta lake response example**:
           
             ```json
             {
-                "diff_type": "changed",
+                "table_diff_type": "changed",
                 "results": [
                   {
                       "id": "1",
-                       "timestamp":1515491537026,
-                       "operation":"INSERT",
-                      "operationContent":{
-                           "operationParameters": {
+                      "timestamp":1515491537026,
+                      "operation_type": "update",
+                      "operation":"INSERT",
+                      "operation_content":{
+                           "operation_parameters": {
                               "mode":"Append",
                               "partitionBy":"[]"
                             }
