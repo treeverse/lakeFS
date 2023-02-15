@@ -13,8 +13,8 @@ import sys
 import unittest
 
 import lakefs_client
-from lakefs_client.model.otf_diff_entry import OtfDiffEntry
-globals()['OtfDiffEntry'] = OtfDiffEntry
+from lakefs_client.model.otf_diff import OtfDiff
+globals()['OtfDiff'] = OtfDiff
 from lakefs_client.model.otf_diff_list import OtfDiffList
 
 

@@ -386,14 +386,13 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Diff"
-    OtfDiffEntry:
+    OtfDiff:
       type: object
       required:
         - version
         - operation
         - timestamp
         - operation_content
-        - operation_type
       properties:
         id:
           type: string
@@ -404,10 +403,6 @@ components:
         operation_content:
           type: object
           description: free form content describing the returned operation diff
-        operation_type:
-          type: string
-          enum: [ create, update, delete ]
-          description: the operation category (CUD)
 
     OtfDiffList:
       type: object
@@ -420,7 +415,7 @@ components:
         results:
           type: array
           items:
-            $ref: "#/components/schemas/OtfDiffEntry"
+            $ref: "#/components/schemas/OtfDiff"
 
     ResetCreation:
       type: object

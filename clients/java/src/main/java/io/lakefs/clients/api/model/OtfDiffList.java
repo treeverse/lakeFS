@@ -20,7 +20,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.api.model.OtfDiffEntry;
+import io.lakefs.clients.api.model.OtfDiff;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
@@ -87,7 +87,7 @@ public class OtfDiffList {
 
   public static final String SERIALIZED_NAME_RESULTS = "results";
   @SerializedName(SERIALIZED_NAME_RESULTS)
-  private List<OtfDiffEntry> results = new ArrayList<OtfDiffEntry>();
+  private List<OtfDiff> results = new ArrayList<OtfDiff>();
 
 
   public OtfDiffList diffType(DiffTypeEnum diffType) {
@@ -113,13 +113,13 @@ public class OtfDiffList {
   }
 
 
-  public OtfDiffList results(List<OtfDiffEntry> results) {
+  public OtfDiffList results(List<OtfDiff> results) {
     
     this.results = results;
     return this;
   }
 
-  public OtfDiffList addResultsItem(OtfDiffEntry resultsItem) {
+  public OtfDiffList addResultsItem(OtfDiff resultsItem) {
     this.results.add(resultsItem);
     return this;
   }
@@ -131,12 +131,12 @@ public class OtfDiffList {
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
-  public List<OtfDiffEntry> getResults() {
+  public List<OtfDiff> getResults() {
     return results;
   }
 
 
-  public void setResults(List<OtfDiffEntry> results) {
+  public void setResults(List<OtfDiff> results) {
     this.results = results;
   }
 

@@ -31,8 +31,8 @@ from lakefs_client.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from lakefs_client.model.otf_diff_entry import OtfDiffEntry
-    globals()['OtfDiffEntry'] = OtfDiffEntry
+    from lakefs_client.model.otf_diff import OtfDiff
+    globals()['OtfDiff'] = OtfDiff
 
 
 class OtfDiffList(ModelNormal):
@@ -93,7 +93,7 @@ class OtfDiffList(ModelNormal):
         """
         lazy_import()
         return {
-            'results': ([OtfDiffEntry],),  # noqa: E501
+            'results': ([OtfDiff],),  # noqa: E501
             'diff_type': (str,),  # noqa: E501
         }
 
@@ -118,7 +118,7 @@ class OtfDiffList(ModelNormal):
         """OtfDiffList - a model defined in OpenAPI
 
         Args:
-            results ([OtfDiffEntry]):
+            results ([OtfDiff]):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -204,7 +204,7 @@ class OtfDiffList(ModelNormal):
         """OtfDiffList - a model defined in OpenAPI
 
         Args:
-            results ([OtfDiffEntry]):
+            results ([OtfDiff]):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

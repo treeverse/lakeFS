@@ -25,10 +25,10 @@ import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 
 /**
- * OtfDiffEntry
+ * OtfDiff
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class OtfDiffEntry {
+public class OtfDiff {
   public static final String SERIALIZED_NAME_ID = "id";
   @SerializedName(SERIALIZED_NAME_ID)
   private String id;
@@ -45,61 +45,8 @@ public class OtfDiffEntry {
   @SerializedName(SERIALIZED_NAME_OPERATION_CONTENT)
   private Object operationContent;
 
-  /**
-   * the operation category (CUD)
-   */
-  @JsonAdapter(OperationTypeEnum.Adapter.class)
-  public enum OperationTypeEnum {
-    CREATE("create"),
-    
-    UPDATE("update"),
-    
-    DELETE("delete");
 
-    private String value;
-
-    OperationTypeEnum(String value) {
-      this.value = value;
-    }
-
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    public static OperationTypeEnum fromValue(String value) {
-      for (OperationTypeEnum b : OperationTypeEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-
-    public static class Adapter extends TypeAdapter<OperationTypeEnum> {
-      @Override
-      public void write(final JsonWriter jsonWriter, final OperationTypeEnum enumeration) throws IOException {
-        jsonWriter.value(enumeration.getValue());
-      }
-
-      @Override
-      public OperationTypeEnum read(final JsonReader jsonReader) throws IOException {
-        String value =  jsonReader.nextString();
-        return OperationTypeEnum.fromValue(value);
-      }
-    }
-  }
-
-  public static final String SERIALIZED_NAME_OPERATION_TYPE = "operation_type";
-  @SerializedName(SERIALIZED_NAME_OPERATION_TYPE)
-  private OperationTypeEnum operationType;
-
-
-  public OtfDiffEntry id(String id) {
+  public OtfDiff id(String id) {
     
     this.id = id;
     return this;
@@ -122,7 +69,7 @@ public class OtfDiffEntry {
   }
 
 
-  public OtfDiffEntry timestamp(Integer timestamp) {
+  public OtfDiff timestamp(Integer timestamp) {
     
     this.timestamp = timestamp;
     return this;
@@ -145,7 +92,7 @@ public class OtfDiffEntry {
   }
 
 
-  public OtfDiffEntry operation(String operation) {
+  public OtfDiff operation(String operation) {
     
     this.operation = operation;
     return this;
@@ -168,7 +115,7 @@ public class OtfDiffEntry {
   }
 
 
-  public OtfDiffEntry operationContent(Object operationContent) {
+  public OtfDiff operationContent(Object operationContent) {
     
     this.operationContent = operationContent;
     return this;
@@ -191,29 +138,6 @@ public class OtfDiffEntry {
   }
 
 
-  public OtfDiffEntry operationType(OperationTypeEnum operationType) {
-    
-    this.operationType = operationType;
-    return this;
-  }
-
-   /**
-   * the operation category (CUD)
-   * @return operationType
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "the operation category (CUD)")
-
-  public OperationTypeEnum getOperationType() {
-    return operationType;
-  }
-
-
-  public void setOperationType(OperationTypeEnum operationType) {
-    this.operationType = operationType;
-  }
-
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -222,28 +146,26 @@ public class OtfDiffEntry {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    OtfDiffEntry otfDiffEntry = (OtfDiffEntry) o;
-    return Objects.equals(this.id, otfDiffEntry.id) &&
-        Objects.equals(this.timestamp, otfDiffEntry.timestamp) &&
-        Objects.equals(this.operation, otfDiffEntry.operation) &&
-        Objects.equals(this.operationContent, otfDiffEntry.operationContent) &&
-        Objects.equals(this.operationType, otfDiffEntry.operationType);
+    OtfDiff otfDiff = (OtfDiff) o;
+    return Objects.equals(this.id, otfDiff.id) &&
+        Objects.equals(this.timestamp, otfDiff.timestamp) &&
+        Objects.equals(this.operation, otfDiff.operation) &&
+        Objects.equals(this.operationContent, otfDiff.operationContent);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, timestamp, operation, operationContent, operationType);
+    return Objects.hash(id, timestamp, operation, operationContent);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class OtfDiffEntry {\n");
+    sb.append("class OtfDiff {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    timestamp: ").append(toIndentedString(timestamp)).append("\n");
     sb.append("    operation: ").append(toIndentedString(operation)).append("\n");
     sb.append("    operationContent: ").append(toIndentedString(operationContent)).append("\n");
-    sb.append("    operationType: ").append(toIndentedString(operationType)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -13,11 +13,11 @@ import sys
 import unittest
 
 import lakefs_client
-from lakefs_client.model.otf_diff_entry import OtfDiffEntry
+from lakefs_client.model.otf_diff import OtfDiff
 
 
-class TestOtfDiffEntry(unittest.TestCase):
-    """OtfDiffEntry unit test stubs"""
+class TestOtfDiff(unittest.TestCase):
+    """OtfDiff unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,10 +25,10 @@ class TestOtfDiffEntry(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testOtfDiffEntry(self):
-        """Test OtfDiffEntry"""
+    def testOtfDiff(self):
+        """Test OtfDiff"""
         # FIXME: construct object with mandatory attributes with example values
-        # model = OtfDiffEntry()  # noqa: E501
+        # model = OtfDiff()  # noqa: E501
         pass
 
 

@@ -56,7 +56,7 @@ from lakefs_client.model.object_stage_creation import ObjectStageCreation
 from lakefs_client.model.object_stats import ObjectStats
 from lakefs_client.model.object_stats_list import ObjectStatsList
 from lakefs_client.model.object_user_metadata import ObjectUserMetadata
-from lakefs_client.model.otf_diff_entry import OtfDiffEntry
+from lakefs_client.model.otf_diff import OtfDiff
 from lakefs_client.model.otf_diff_list import OtfDiffList
 from lakefs_client.model.pagination import Pagination
 from lakefs_client.model.path_list import PathList
