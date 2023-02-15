@@ -16,9 +16,9 @@ type DeltaLakeDiffer struct {
 }
 
 func (d *DeltaLakeDiffer) Diff(ctx context.Context, ps Params) (Response, error) {
-	ltp := ps.TablePaths.LeftTablePath
-	rtp := ps.TablePaths.RightTablePath
-	btp := ps.TablePaths.BaseTablePath
+	ltp := ps.TablePaths.Left
+	rtp := ps.TablePaths.Right
+	btp := ps.TablePaths.Base
 	s3Creds := ps.S3Creds
 	dr, err := d.client.TableDiff(ctx, &DiffRequest{
 		Props: &DiffProps{

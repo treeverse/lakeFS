@@ -3929,11 +3929,11 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository 
 	tdp := tablediff.Params{
 		// TODO(jonathan): add base RefPath
 		TablePaths: tablediff.TablePaths{
-			LeftTablePath: tablediff.RefPath{
+			Left: tablediff.RefPath{
 				Ref:  leftRef,
 				Path: params.TablePath,
 			},
-			RightTablePath: tablediff.RefPath{
+			Right: tablediff.RefPath{
 				Ref:  rightRef,
 				Path: params.TablePath,
 			},
