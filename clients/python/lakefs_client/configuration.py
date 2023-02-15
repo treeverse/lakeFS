@@ -427,6 +427,15 @@ conf = lakefs_client.Configuration(
                 'key': 'Authorization',
                 'value': 'Bearer ' + self.access_token
             }
+        if 'oidc_auth' in self.api_key:
+            auth['oidc_auth'] = {
+                'type': 'api_key',
+                'in': 'cookie',
+                'key': 'oidc_auth_session',
+                'value': self.get_api_key_with_prefix(
+                    'oidc_auth',
+                ),
+            }
         return auth
 
     def to_debug_report(self):

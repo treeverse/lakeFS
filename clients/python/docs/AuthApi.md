@@ -48,6 +48,7 @@ add group membership
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -82,6 +83,12 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -112,7 +119,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -141,6 +148,7 @@ attach policy to group
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -175,6 +183,12 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -205,7 +219,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -234,6 +248,7 @@ attach policy to user
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -269,6 +284,12 @@ configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
 
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
@@ -298,7 +319,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -327,6 +348,7 @@ create credentials
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -363,6 +385,12 @@ configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
 
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
@@ -391,7 +419,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -420,6 +448,7 @@ create group
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -457,6 +486,12 @@ configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
 
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
@@ -488,7 +523,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -517,6 +552,7 @@ create policy
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -552,6 +588,12 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -593,7 +635,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -623,6 +665,7 @@ create user
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -660,6 +703,12 @@ configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
 
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
@@ -692,7 +741,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -722,6 +771,7 @@ delete credentials
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -756,6 +806,12 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -786,7 +842,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -815,6 +871,7 @@ delete group
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -849,6 +906,12 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -877,7 +940,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -906,6 +969,7 @@ delete group membership
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -940,6 +1004,12 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -970,7 +1040,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -999,6 +1069,7 @@ delete policy
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -1033,6 +1104,12 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -1061,7 +1138,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -1090,6 +1167,7 @@ delete user
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -1124,6 +1202,12 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -1152,7 +1236,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -1181,6 +1265,7 @@ detach policy from group
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -1215,6 +1300,12 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -1245,7 +1336,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -1274,6 +1365,7 @@ detach policy from user
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -1309,6 +1401,12 @@ configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
 
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
@@ -1338,7 +1436,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -1499,6 +1597,7 @@ get credentials
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -1535,6 +1634,12 @@ configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
 
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
@@ -1565,7 +1670,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -1594,6 +1699,7 @@ get current user
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -1629,6 +1735,12 @@ configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
 
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
@@ -1653,7 +1765,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -1679,6 +1791,7 @@ get group
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -1715,6 +1828,12 @@ configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
 
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
@@ -1743,7 +1862,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -1772,6 +1891,7 @@ get policy
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -1808,6 +1928,12 @@ configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
 
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
@@ -1836,7 +1962,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -1865,6 +1991,7 @@ get user
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -1901,6 +2028,12 @@ configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
 
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
@@ -1929,7 +2062,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -1958,6 +2091,7 @@ list group members
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -1993,6 +2127,12 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -2037,7 +2177,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -2065,6 +2205,7 @@ list group policies
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -2100,6 +2241,12 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -2144,7 +2291,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -2173,6 +2320,7 @@ list groups
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -2209,6 +2357,12 @@ configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
 
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
@@ -2242,7 +2396,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -2270,6 +2424,7 @@ list policies
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -2306,6 +2461,12 @@ configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
 
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
@@ -2339,7 +2500,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -2367,6 +2528,7 @@ list user credentials
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -2402,6 +2564,12 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -2446,7 +2614,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -2475,6 +2643,7 @@ list user groups
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -2510,6 +2679,12 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -2554,7 +2729,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -2583,6 +2758,7 @@ list user policies
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -2618,6 +2794,12 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -2664,7 +2846,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -2693,6 +2875,7 @@ list users
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -2729,6 +2912,12 @@ configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
 
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
@@ -2762,7 +2951,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 
@@ -2945,6 +3134,7 @@ update policy
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+* Api Key Authentication (oidc_auth):
 
 ```python
 import time
@@ -2980,6 +3170,12 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -3023,7 +3219,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
 
 ### HTTP request headers
 

@@ -13,6 +13,7 @@ security:
 - jwt_token: []
 - basic_auth: []
 - cookie_auth: []
+- oidc_auth: []
 paths:
   /setup_comm_prefs:
     post:
@@ -6739,5 +6740,9 @@ components:
     cookie_auth:
       in: cookie
       name: internal_auth_session
+      type: apiKey
+    oidc_auth:
+      in: cookie
+      name: oidc_auth_session
       type: apiKey
 

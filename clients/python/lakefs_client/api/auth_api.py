@@ -59,7 +59,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}/members/{userId}',
                 'operation_id': 'add_group_membership',
@@ -118,7 +119,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}/policies/{policyId}',
                 'operation_id': 'attach_policy_to_group',
@@ -177,7 +179,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/users/{userId}/policies/{policyId}',
                 'operation_id': 'attach_policy_to_user',
@@ -236,7 +239,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/users/{userId}/credentials',
                 'operation_id': 'create_credentials',
@@ -289,7 +293,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/groups',
                 'operation_id': 'create_group',
@@ -341,7 +346,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/policies',
                 'operation_id': 'create_policy',
@@ -395,7 +401,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/users',
                 'operation_id': 'create_user',
@@ -447,7 +454,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/users/{userId}/credentials/{accessKeyId}',
                 'operation_id': 'delete_credentials',
@@ -506,7 +514,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}',
                 'operation_id': 'delete_group',
@@ -559,7 +568,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}/members/{userId}',
                 'operation_id': 'delete_group_membership',
@@ -618,7 +628,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/policies/{policyId}',
                 'operation_id': 'delete_policy',
@@ -671,7 +682,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/users/{userId}',
                 'operation_id': 'delete_user',
@@ -724,7 +736,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}/policies/{policyId}',
                 'operation_id': 'detach_policy_from_group',
@@ -783,7 +796,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/users/{userId}/policies/{policyId}',
                 'operation_id': 'detach_policy_from_user',
@@ -934,7 +948,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/users/{userId}/credentials/{accessKeyId}',
                 'operation_id': 'get_credentials',
@@ -993,7 +1008,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/user',
                 'operation_id': 'get_current_user',
@@ -1039,7 +1055,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}',
                 'operation_id': 'get_group',
@@ -1092,7 +1109,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/policies/{policyId}',
                 'operation_id': 'get_policy',
@@ -1145,7 +1163,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/users/{userId}',
                 'operation_id': 'get_user',
@@ -1198,7 +1217,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}/members',
                 'operation_id': 'list_group_members',
@@ -1272,7 +1292,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}/policies',
                 'operation_id': 'list_group_policies',
@@ -1346,7 +1367,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/groups',
                 'operation_id': 'list_groups',
@@ -1413,7 +1435,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/policies',
                 'operation_id': 'list_policies',
@@ -1480,7 +1503,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/users/{userId}/credentials',
                 'operation_id': 'list_user_credentials',
@@ -1554,7 +1578,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/users/{userId}/groups',
                 'operation_id': 'list_user_groups',
@@ -1628,7 +1653,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/users/{userId}/policies',
                 'operation_id': 'list_user_policies',
@@ -1707,7 +1733,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/users',
                 'operation_id': 'list_users',
@@ -1874,7 +1901,8 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/auth/policies/{policyId}',
                 'operation_id': 'update_policy',

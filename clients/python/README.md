@@ -82,6 +82,12 @@ configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
 
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -304,6 +310,13 @@ Class | Method | HTTP request | Description
 ## jwt_token
 
 - **Type**: Bearer authentication (JWT)
+
+
+## oidc_auth
+
+- **Type**: API key
+- **API key parameter name**: oidc_auth_session
+- **Location**: 
 
 
 ## Author

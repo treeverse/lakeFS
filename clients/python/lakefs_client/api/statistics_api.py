@@ -43,7 +43,8 @@ class StatisticsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/statistics',
                 'operation_id': 'post_stats_events',

@@ -15,6 +15,7 @@ security:
   - jwt_token: []
   - basic_auth: []
   - cookie_auth: []
+  - oidc_auth: []
 components:
   securitySchemes:
     basic_auth:
@@ -28,6 +29,11 @@ components:
       type: apiKey
       in: cookie
       name: internal_auth_session
+    oidc_auth:
+      type: apiKey
+      in: cookie
+      name: oidc_auth_session
+
   parameters:
     PaginationPrefix:
       in: query

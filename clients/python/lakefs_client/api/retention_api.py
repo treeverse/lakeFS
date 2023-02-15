@@ -47,7 +47,8 @@ class RetentionApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/gc/rules',
                 'operation_id': 'delete_garbage_collection_rules',
@@ -100,7 +101,8 @@ class RetentionApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/gc/rules',
                 'operation_id': 'get_garbage_collection_rules',
@@ -153,7 +155,8 @@ class RetentionApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/gc/prepare_commits',
                 'operation_id': 'prepare_garbage_collection_commits',
@@ -212,7 +215,8 @@ class RetentionApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/gc/prepare_uncommited',
                 'operation_id': 'prepare_garbage_collection_uncommitted',
@@ -271,7 +275,8 @@ class RetentionApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/gc/rules',
                 'operation_id': 'set_garbage_collection_rules',
