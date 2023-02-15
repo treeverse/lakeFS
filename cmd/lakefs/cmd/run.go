@@ -298,6 +298,7 @@ var runCmd = &cobra.Command{
 			oidcProvider,
 			oauthConfig,
 			upload.DefaultPathProvider,
+			ctx,
 		)
 
 		// init gateway server

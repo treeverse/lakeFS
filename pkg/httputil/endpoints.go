@@ -1,10 +1,14 @@
 package httputil
 
 import (
+	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/pprof"
 	"strings"
+
+	"github.com/treeverse/lakefs/pkg/health"
 )
 
 var healthInfo string
@@ -13,8 +17,13 @@ func SetHealthHandlerInfo(info string) {
 	healthInfo = info
 }
 
-func ServeHealth() http.Handler {
+func ServeHealth(healthService health.Service, ctx context.Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := json.MarshalIndent(healthService.Health(ctx), "", "\t")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		_, _ = io.WriteString(w, "alive!")
 		if healthInfo != "" {
 			_, _ = io.WriteString(w, " "+healthInfo)

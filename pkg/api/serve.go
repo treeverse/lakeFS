@@ -3,6 +3,7 @@ package api
 //go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.5.6 -package api -generate "types,client,chi-server,spec" -templates tmpl -o lakefs.gen.go ../../api/swagger.yml
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -23,6 +24,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/health"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -60,6 +62,7 @@ func Serve(
 	oidcProvider *oidc.Provider,
 	oauthConfig *oauth2.Config,
 	pathProvider upload.PathProvider,
+	ctx context.Context,
 ) http.Handler {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := GetSwagger()
@@ -104,7 +107,7 @@ func Serve(
 	)
 	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
 
-	r.Mount("/_health", httputil.ServeHealth())
+	r.Mount("/_health", httputil.ServeHealth(health.New(), ctx))
 	r.Mount("/metrics", promhttp.Handler())
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
