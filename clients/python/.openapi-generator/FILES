@@ -58,8 +58,8 @@ docs/ObjectStats.md
 docs/ObjectStatsList.md
 docs/ObjectUserMetadata.md
 docs/ObjectsApi.md
-docs/OtfDiff.md
 docs/OtfDiffApi.md
+docs/OtfDiffEntry.md
 docs/OtfDiffList.md
 docs/Pagination.md
 docs/PathList.md
@@ -172,7 +172,7 @@ lakefs_client/model/object_stage_creation.py
 lakefs_client/model/object_stats.py
 lakefs_client/model/object_stats_list.py
 lakefs_client/model/object_user_metadata.py
-lakefs_client/model/otf_diff.py
+lakefs_client/model/otf_diff_entry.py
 lakefs_client/model/otf_diff_list.py
 lakefs_client/model/pagination.py
 lakefs_client/model/path_list.py
@@ -271,8 +271,8 @@ test/test_object_stats.py
 test/test_object_stats_list.py
 test/test_object_user_metadata.py
 test/test_objects_api.py
-test/test_otf_diff.py
 test/test_otf_diff_api.py
+test/test_otf_diff_entry.py
 test/test_otf_diff_list.py
 test/test_pagination.py
 test/test_path_list.py

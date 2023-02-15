@@ -8,7 +8,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **diffType** | [**DiffTypeEnum**](#DiffTypeEnum) |  |  [optional]
-**results** | [**List&lt;OtfDiff&gt;**](OtfDiff.md) |  | 
+**results** | [**List&lt;OtfDiffEntry&gt;**](OtfDiffEntry.md) |  | 
 
 
 

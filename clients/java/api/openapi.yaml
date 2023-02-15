@@ -5461,9 +5461,10 @@ components:
       - pagination
       - results
       type: object
-    OtfDiff:
+    OtfDiffEntry:
       example:
         operation_content: '{}'
+        operation_type: create
         id: id
         operation: operation
         timestamp: 0
@@ -5477,9 +5478,17 @@ components:
         operation_content:
           description: free form content describing the returned operation diff
           type: object
+        operation_type:
+          description: the operation category (CUD)
+          enum:
+          - create
+          - update
+          - delete
+          type: string
       required:
       - operation
       - operation_content
+      - operation_type
       - timestamp
       - version
       type: object
@@ -5488,10 +5497,12 @@ components:
         diff_type: created
         results:
         - operation_content: '{}'
+          operation_type: create
           id: id
           operation: operation
           timestamp: 0
         - operation_content: '{}'
+          operation_type: create
           id: id
           operation: operation
           timestamp: 0
@@ -5504,7 +5515,7 @@ components:
           type: string
         results:
           items:
-            $ref: '#/components/schemas/OtfDiff'
+            $ref: '#/components/schemas/OtfDiffEntry'
           type: array
       required:
       - results

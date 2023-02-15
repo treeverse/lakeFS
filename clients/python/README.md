@@ -257,7 +257,7 @@ Class | Method | HTTP request | Description
  - [ObjectStats](docs/ObjectStats.md)
  - [ObjectStatsList](docs/ObjectStatsList.md)
  - [ObjectUserMetadata](docs/ObjectUserMetadata.md)
- - [OtfDiff](docs/OtfDiff.md)
+ - [OtfDiffEntry](docs/OtfDiffEntry.md)
  - [OtfDiffList](docs/OtfDiffList.md)
  - [Pagination](docs/Pagination.md)
  - [PathList](docs/PathList.md)
