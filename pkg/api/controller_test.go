@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"io"
 	"math"
 	"mime/multipart"
@@ -22,6 +21,8 @@ import (
 	"testing"
 	"text/template"
 	"time"
+
+	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 
