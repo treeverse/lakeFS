@@ -51,18 +51,18 @@ func (d *DeltaLakeDiffer) Diff(ctx context.Context, ps Params) (Response, error)
 	}
 	return Response{
 		Diffs:      buildDiffEntries(dr),
-		ChangeType: ChangeType(dr.ChangeType),
+		ChangeType: ChangeType(dr.GetChangeType()),
 	}, nil
 }
 
 func buildDiffEntries(dr *DiffResponse) []DiffEntry {
-	result := make([]DiffEntry, 0, len(dr.Records))
-	for _, diff := range dr.Records {
+	result := make([]DiffEntry, 0, len(dr.GetEntries()))
+	for _, diff := range dr.GetEntries() {
 		result = append(result, DiffEntry{
-			Version:          diff.Id,
-			Timestamp:        diff.Timestamp.AsTime(),
-			Operation:        diff.Operation,
-			OperationContent: diff.Content,
+			Version:          diff.GetId(),
+			Timestamp:        diff.GetTimestamp().AsTime(),
+			Operation:        diff.GetOperation(),
+			OperationContent: diff.GetContent(),
 		})
 	}
 	return result

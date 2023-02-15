@@ -39,7 +39,7 @@ enum Type {
 }
 
 message DiffResponse {
-  repeated TableOperation records = 1;
+  repeated TableOperation entries = 1;
   Type changeType = 2;
 }
 
@@ -48,7 +48,7 @@ message HistoryRequest {
 }
 
 message HistoryResponse {
-  repeated TableOperation records = 1;
+  repeated TableOperation entries = 1;
 }
 
 /*
