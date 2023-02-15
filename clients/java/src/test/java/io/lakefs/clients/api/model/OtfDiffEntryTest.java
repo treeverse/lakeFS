@@ -27,17 +27,17 @@ import org.junit.Test;
 
 
 /**
- * Model tests for OtfDiff
+ * Model tests for OtfDiffEntry
  */
-public class OtfDiffTest {
-    private final OtfDiff model = new OtfDiff();
+public class OtfDiffEntryTest {
+    private final OtfDiffEntry model = new OtfDiffEntry();
 
     /**
-     * Model tests for OtfDiff
+     * Model tests for OtfDiffEntry
      */
     @Test
-    public void testOtfDiff() {
-        // TODO: test OtfDiff
+    public void testOtfDiffEntry() {
+        // TODO: test OtfDiffEntry
     }
 
     /**
@@ -70,6 +70,14 @@ public class OtfDiffTest {
     @Test
     public void operationContentTest() {
         // TODO: test operationContent
+    }
+
+    /**
+     * Test the property 'operationType'
+     */
+    @Test
+    public void operationTypeTest() {
+        // TODO: test operationType
     }
 
 }

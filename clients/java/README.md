@@ -275,7 +275,7 @@ Class | Method | HTTP request | Description
  - [ObjectStageCreation](docs/ObjectStageCreation.md)
  - [ObjectStats](docs/ObjectStats.md)
  - [ObjectStatsList](docs/ObjectStatsList.md)
- - [OtfDiff](docs/OtfDiff.md)
+ - [OtfDiffEntry](docs/OtfDiffEntry.md)
  - [OtfDiffList](docs/OtfDiffList.md)
  - [Pagination](docs/Pagination.md)
  - [PathList](docs/PathList.md)
