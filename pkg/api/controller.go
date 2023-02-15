@@ -3906,11 +3906,7 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 
 func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository string, leftRef string, rightRef string, params OtfDiffParams) {
 	ctx := r.Context()
-	user, err := auth.GetUser(ctx)
-	if err != nil {
-		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
-		return
-	}
+	user, _ := auth.GetUser(ctx)
 	c.LogAction(ctx, fmt.Sprintf("table_format_%s_diff\n", params.Type), r, repository, rightRef, leftRef)
 	credentials, _, err := c.Auth.ListUserCredentials(ctx, user.Username, &model.PaginationParams{
 		Prefix: "",

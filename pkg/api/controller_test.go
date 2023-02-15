@@ -4058,7 +4058,9 @@ func TestController_OtfDiff(t *testing.T) {
 	_, _ = clt.CreateUserWithResponse(context.Background(), api.CreateUserJSONRequestBody{Id: username})
 	server := deps.server
 	authProvider := generateJWTToken(deps.authService, username)
+	nonExistingUserAuthProvider := generateJWTToken(deps.authService, username+"NE")
 	noCredsClient, _ := api.NewClientWithResponses(server.URL+api.BaseURL, api.WithRequestEditorFn(authProvider.Intercept))
+	noUserClient, _ := api.NewClientWithResponses(server.URL+api.BaseURL, api.WithRequestEditorFn(nonExistingUserAuthProvider.Intercept))
 
 	repo := testUniqueRepoName()
 
@@ -4104,9 +4106,13 @@ func TestController_OtfDiff(t *testing.T) {
 			description:        "failure - internal error",
 		},
 		{
+			clt:                noUserClient,
+			expectedHttpStatus: http.StatusUnauthorized,
+			description:        "failure - non existing user",
+		},
+		{
 			clt:                noCredsClient,
 			expectedHttpStatus: http.StatusPreconditionFailed,
-			err:                api.ErrAuthenticatingRequest,
 			description:        "failure - user without credentials",
 		},
 	}
