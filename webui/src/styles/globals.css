@@ -643,15 +643,15 @@ td .form-group {
   color: red;
 }
 
-.otf-diff-changed {
+.otf-diff-update {
   background-color: var(--color-bg-changed);
 }
 
-.otf-diff-added {
+.otf-diff-create {
   background-color: var(--color-bg-added)
 }
 
-.otf-diff-removed {
+.otf-diff-delete {
   background-color: var(--color-bg-removed);
 }
 
