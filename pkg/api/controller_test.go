@@ -2958,6 +2958,36 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 	})
 }
 
+func TestController_MergeInvalidStrategy(t *testing.T) {
+	clt, _ := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	const repoName = "repo7"
+	repoResp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+		DefaultBranch:    api.StringPtr("main"),
+		Name:             repoName,
+		StorageNamespace: "mem://",
+	})
+	verifyResponseOK(t, repoResp, err)
+
+	branchResp, err := clt.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{Name: "work", Source: "main"})
+	verifyResponseOK(t, branchResp, err)
+
+	const content = "awesome content"
+	resp, err := uploadObjectHelper(t, ctx, clt, "file1", strings.NewReader(content), repoName, "work")
+	verifyResponseOK(t, resp, err)
+
+	commitResp, err := clt.CommitWithResponse(ctx, repoName, "work", &api.CommitParams{}, api.CommitJSONRequestBody{Message: "file 1 commit to work"})
+	verifyResponseOK(t, commitResp, err)
+
+	strategy := "bad strategy"
+	mergeResp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "work", "main", api.MergeIntoBranchJSONRequestBody{
+		Message:  api.StringPtr("merge work to main"),
+		Strategy: &strategy,
+	})
+	require.Equal(t, http.StatusBadRequest, mergeResp.StatusCode())
+}
+
 func TestController_MergeDiffWithParent(t *testing.T) {
 	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()

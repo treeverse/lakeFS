@@ -21,9 +21,6 @@ import (
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -source=graveler.go -destination=mock/graveler.go -package=mock
 
 const (
-	MergeStrategySrcWins  = "source-wins"
-	MergeStrategyDestWins = "dest-wins"
-
 	BranchUpdateMaxInterval = 5 * time.Second
 	BranchUpdateMaxTries    = 10
 
@@ -111,8 +108,21 @@ type MergeStrategy int
 const (
 	MergeStrategyNone MergeStrategy = iota
 	MergeStrategyDest
-	MergeStrategySource
+	MergeStrategySrc
+
+	MergeStrategyNoneStr     = "default"
+	MergeStrategyDestWinsStr = "dest-wins"
+	MergeStrategySrcWinsStr  = "source-wins"
+
+	MergeStrategyMetadataKey = "lakefs.merge.strategy"
 )
+
+// mergeStrategyString String representation for MergeStrategy consts. Pay attention to the order!
+var mergeStrategyString = []string{
+	MergeStrategyNoneStr,
+	MergeStrategyDestWinsStr,
+	MergeStrategySrcWinsStr,
+}
 
 // MetaRangeAddress is the URI of a metarange file.
 type MetaRangeAddress string
@@ -307,14 +317,14 @@ const (
 
 // Commit represents commit metadata (author, time, MetaRangeID)
 type Commit struct {
-	Version      CommitVersion `db:"version"`
-	Committer    string        `db:"committer"`
-	Message      string        `db:"message"`
-	MetaRangeID  MetaRangeID   `db:"meta_range_id"`
-	CreationDate time.Time     `db:"creation_date"`
-	Parents      CommitParents `db:"parents"`
-	Metadata     Metadata      `db:"metadata"`
-	Generation   int           `db:"generation"`
+	Version      CommitVersion
+	Committer    string
+	Message      string
+	MetaRangeID  MetaRangeID
+	CreationDate time.Time
+	Parents      CommitParents
+	Metadata     Metadata
+	Generation   int
 }
 
 func NewCommit() Commit {
@@ -2265,14 +2275,24 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 			"source_meta_range":      fromCommit.MetaRangeID,
 			"destination_meta_range": toCommit.MetaRangeID,
 			"base_meta_range":        baseCommit.MetaRangeID,
+			"strategy":               strategy,
 		}).Trace("Merge")
-		mergeStrategy := MergeStrategyNone
-		if strategy == MergeStrategyDestWins {
+
+		var mergeStrategy MergeStrategy
+		switch strategy {
+		case MergeStrategyDestWinsStr:
 			mergeStrategy = MergeStrategyDest
+
+		case MergeStrategySrcWinsStr:
+			mergeStrategy = MergeStrategySrc
+
+		case "":
+			mergeStrategy = MergeStrategyNone
+
+		default:
+			return nil, ErrInvalidMergeStrategy
 		}
-		if strategy == MergeStrategySrcWins {
-			mergeStrategy = MergeStrategySource
-		}
+
 		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID, mergeStrategy)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
@@ -2291,6 +2311,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 			commit.Generation = fromCommit.Generation + 1
 		}
 		commit.Metadata = commitParams.Metadata
+		commit.Metadata[MergeStrategyMetadataKey] = mergeStrategyString[mergeStrategy]
 		preRunID = g.hooks.NewRunID()
 		err = g.hooks.PreMergeHook(ctx, HookRecord{
 			EventType:        EventTypePreMerge,
