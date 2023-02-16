@@ -24,7 +24,7 @@ var (
 	ErrInvalidMergeBase             = fmt.Errorf("only 2 commits allowed in FindMergeBase: %w", ErrInvalidValue)
 	ErrNoCommitGeneration           = errors.New("no commit generation")
 	ErrNoMergeBase                  = errors.New("no merge base")
-	ErrInvalidMergeStrategy         = errors.New("invalid merge strategy")
+	ErrInvalidMergeStrategy         = wrapError(ErrUserVisible, "invalid merge strategy")
 	ErrInvalidRef                   = fmt.Errorf("ref: %w", ErrInvalidValue)
 	ErrInvalidCommitID              = fmt.Errorf("commit id: %w", ErrInvalidValue)
 	ErrInvalidBranchID              = fmt.Errorf("branch id: %w", ErrInvalidValue)
