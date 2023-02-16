@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package pluginsTest;
+option go_package = "github.com/treeverse/lakefs/plugins";
+
+enum Sound {
+  PING = 0;
+  PONG = 1;
+  POING = 2;
+}
+
+message PingRequest {
+  Sound sound = 1;
+}
+
+message PongResponse {
+  Sound sound = 1;
+}
+
+service PingPong {
+  rpc Ping(PingRequest) returns (PongResponse) {}
+}

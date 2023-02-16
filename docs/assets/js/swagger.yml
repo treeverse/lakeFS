@@ -176,28 +176,33 @@ components:
           items:
             $ref: "#/components/schemas/Repository"
 
+    MergeResultSummary:
+      type: object
+      properties:
+        added:
+          type: integer
+          deprecated: true
+          description: "Deprecated: inaccurate and will be removed."
+        removed:
+          type: integer
+          deprecated: true
+          description: "Deprecated: inaccurate and will be removed."
+        changed:
+          type: integer
+          deprecated: true
+          description: "Deprecated: inaccurate and will be removed."
+        conflict:
+          type: integer
+          deprecated: true
+          description: "Deprecated: inaccurate and will be removed."
+
     MergeResult:
       type: object
       required:
-        - summary
         - reference
       properties:
         summary:
-          type: object
-          required:
-            - added
-            - removed
-            - changed
-            - conflict
-          properties:
-            added:
-              type: integer
-            removed:
-              type: integer
-            changed:
-              type: integer
-            conflict:
-              type: integer
+          $ref: "#/components/schemas/MergeResultSummary"
         reference:
           type: string
 
@@ -603,12 +608,51 @@ components:
           type: boolean
       required:
         - id
+
+    LoginConfig:
+      type: object
+      properties:
+        RBAC:
+          description: |
+            RBAC will remain enabled on GUI if "external".  That only works
+            with an external auth service.
+          type: string
+          enum: [simplified, external]
+        login_url:
+          description: primary URL to use for login.
+          type: string
+        login_failed_message:
+          description: |
+            message to display to users who fail to login; a full sentence that is rendered
+            in HTML and may contain a link to a secondary login method
+          type: string
+        fallback_login_url:
+          description: secondary URL to offer users to use for login.
+          type: string
+        fallback_login_label:
+          description: label to place on fallback_login_url.
+          type: string
+        login_cookie_names:
+          description: cookie names used to store JWT
+          type: array
+          items:
+            type: string
+        logout_url:
+          description: URL to use for logging out.
+          type: string
+      required:
+      - login_url
+      - login_cookie_names
+      - logout_url
+
     SetupState:
       type: object
       properties:
         state:
           type: string
           enum: [initialized, not_initialized, comm_prefs_done]
+        login_config:
+          $ref: "#/components/schemas/LoginConfig"
         oidc_enabled:
           deprecated: true
           type: boolean
@@ -2635,7 +2679,9 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         409:
-          description: conflict
+          description: |
+            Conflict
+            Deprecated: content schema will return Error format and not an empty MergeResult
           content:
             application/json:
               schema:

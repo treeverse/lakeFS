@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/mock"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -109,8 +108,7 @@ func TestRepositoryIterator_CloseTwice(t *testing.T) {
 	entIt.EXPECT().Close().Times(1)
 	store := mock.NewMockStore(ctrl)
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
-	msgStore := kv.StoreMessage{Store: store}
-	it, err := ref.NewRepositoryIterator(ctx, &msgStore)
+	it, err := ref.NewRepositoryIterator(ctx, store)
 	if err != nil {
 		t.Fatal("NewRepositoryIterator failed", err)
 	}
@@ -126,8 +124,7 @@ func TestRepositoryIterator_NextClosed(t *testing.T) {
 	entIt.EXPECT().Close().Times(1)
 	store := mock.NewMockStore(ctrl)
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
-	msgStore := kv.StoreMessage{Store: store}
-	it, err := ref.NewRepositoryIterator(ctx, &msgStore)
+	it, err := ref.NewRepositoryIterator(ctx, store)
 	if err != nil {
 		t.Fatal("NewRepositoryIterator failed", err)
 	}

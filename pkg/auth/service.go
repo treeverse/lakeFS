@@ -142,9 +142,9 @@ func (s *AuthService) ListKVPaged(ctx context.Context, protoType protoreflect.Me
 		_ = copy(after[l:], params.After)
 	}
 	if secondary {
-		it, err = kv.NewSecondaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, after)
+		it, err = kv.NewSecondaryIterator(ctx, s.store, protoType, model.PartitionKey, prefix, after)
 	} else {
-		it, err = kv.NewPrimaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, kv.IteratorOptionsAfter(after))
+		it, err = kv.NewPrimaryIterator(ctx, s.store, protoType, model.PartitionKey, prefix, kv.IteratorOptionsAfter(after))
 	}
 	if err != nil {
 		return nil, nil, fmt.Errorf("scan prefix(%s): %w", prefix, err)
@@ -175,14 +175,14 @@ func (s *AuthService) ListKVPaged(ctx context.Context, protoType protoreflect.Me
 }
 
 type AuthService struct {
-	store       *kv.StoreMessage
+	store       kv.Store
 	secretStore crypt.SecretStore
 	cache       Cache
 	log         logging.Logger
 	*EmailInviteHandler
 }
 
-func NewAuthService(store *kv.StoreMessage, secretStore crypt.SecretStore, emailer *email.Emailer, cacheConf params.ServiceCache, logger logging.Logger) *AuthService {
+func NewAuthService(store kv.Store, secretStore crypt.SecretStore, emailer *email.Emailer, cacheConf params.ServiceCache, logger logging.Logger) *AuthService {
 	logger.Info("initialized Auth service")
 	var cache Cache
 	if cacheConf.Enabled {
@@ -214,7 +214,7 @@ func (s *AuthService) CreateUser(ctx context.Context, user *model.User) (string,
 	}
 	userKey := model.UserPath(user.Username)
 
-	err := s.store.SetMsgIf(ctx, model.PartitionKey, userKey, model.ProtoFromUser(user), nil)
+	err := kv.SetMsgIf(ctx, s.store, model.PartitionKey, userKey, model.ProtoFromUser(user), nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = ErrAlreadyExists
@@ -232,7 +232,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, username string) error {
 
 	// delete policy attached to user
 	policiesKey := model.UserPolicyPath(username, "")
-	it, err := kv.NewSecondaryIterator(ctx, s.store.Store, (&model.PolicyData{}).ProtoReflect().Type(), model.PartitionKey, policiesKey, []byte(""))
+	it, err := kv.NewSecondaryIterator(ctx, s.store, (&model.PolicyData{}).ProtoReflect().Type(), model.PartitionKey, policiesKey, []byte(""))
 	if err != nil {
 		return err
 	}
@@ -250,7 +250,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, username string) error {
 
 	// delete user membership of group
 	groupKey := model.GroupPath("")
-	itr, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, kv.IteratorOptionsAfter([]byte("")))
+	itr, err := kv.NewPrimaryIterator(ctx, s.store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, kv.IteratorOptionsAfter([]byte("")))
 	if err != nil {
 		return err
 	}
@@ -267,7 +267,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, username string) error {
 	}
 
 	// delete user
-	err = s.store.DeleteMsg(ctx, model.PartitionKey, userPath)
+	err = s.store.Delete(ctx, []byte(model.PartitionKey), userPath)
 	if err != nil {
 		return fmt.Errorf("delete user (userKey %s): %w", userPath, err)
 	}
@@ -279,7 +279,7 @@ type UserPredicate func(u *model.UserData) bool
 func (s *AuthService) getUserByPredicate(ctx context.Context, key userKey, predicate UserPredicate) (*model.User, error) {
 	return s.cache.GetUser(key, func() (*model.User, error) {
 		m := &model.UserData{}
-		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), []byte(""))
+		itr, err := kv.NewPrimaryIterator(ctx, s.store, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), kv.IteratorOptionsAfter([]byte("")))
 		if err != nil {
 			return nil, fmt.Errorf("scan users: %w", err)
 		}
@@ -310,7 +310,7 @@ func (s *AuthService) GetUser(ctx context.Context, username string) (*model.User
 	return s.cache.GetUser(userKey{username: username}, func() (*model.User, error) {
 		userKey := model.UserPath(username)
 		m := model.UserData{}
-		_, err := s.store.GetMsg(ctx, model.PartitionKey, userKey, &m)
+		_, err := kv.GetMsg(ctx, s.store, model.PartitionKey, userKey, &m)
 		if err != nil {
 			if errors.Is(err, kv.ErrNotFound) {
 				err = ErrNotFound
@@ -369,7 +369,7 @@ func (s *AuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName 
 	policyKey := model.PolicyPath(policyDisplayName)
 	pu := model.UserPolicyPath(username, policyDisplayName)
 
-	err := s.store.SetMsgIf(ctx, model.PartitionKey, pu, &kv.SecondaryIndex{PrimaryKey: policyKey}, nil)
+	err := kv.SetMsgIf(ctx, s.store, model.PartitionKey, pu, &kv.SecondaryIndex{PrimaryKey: policyKey}, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = ErrAlreadyExists
@@ -381,7 +381,7 @@ func (s *AuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName 
 
 func (s *AuthService) DetachPolicyFromUserNoValidation(ctx context.Context, policyDisplayName, username string) error {
 	pu := model.UserPolicyPath(username, policyDisplayName)
-	err := s.store.DeleteMsg(ctx, model.PartitionKey, pu)
+	err := s.store.Delete(ctx, []byte(model.PartitionKey), pu)
 	if err != nil {
 		return fmt.Errorf("detaching policy: (key %s): %w", pu, err)
 	}
@@ -532,7 +532,7 @@ func (s *AuthService) CreateGroup(ctx context.Context, group *model.Group) error
 	}
 
 	groupKey := model.GroupPath(group.DisplayName)
-	err := s.store.SetMsgIf(ctx, model.PartitionKey, groupKey, model.ProtoFromGroup(group), nil)
+	err := kv.SetMsgIf(ctx, s.store, model.PartitionKey, groupKey, model.ProtoFromGroup(group), nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = ErrAlreadyExists
@@ -549,7 +549,7 @@ func (s *AuthService) DeleteGroup(ctx context.Context, groupDisplayName string) 
 
 	// delete user membership to group
 	usersKey := model.GroupUserPath(groupDisplayName, "")
-	it, err := kv.NewSecondaryIterator(ctx, s.store.Store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, []byte(""))
+	it, err := kv.NewSecondaryIterator(ctx, s.store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, []byte(""))
 	if err != nil {
 		return err
 	}
@@ -567,7 +567,7 @@ func (s *AuthService) DeleteGroup(ctx context.Context, groupDisplayName string) 
 
 	// delete policy attachment to group
 	policiesKey := model.GroupPolicyPath(groupDisplayName, "")
-	itr, err := kv.NewSecondaryIterator(ctx, s.store.Store, (&model.PolicyData{}).ProtoReflect().Type(), model.PartitionKey, policiesKey, []byte(""))
+	itr, err := kv.NewSecondaryIterator(ctx, s.store, (&model.PolicyData{}).ProtoReflect().Type(), model.PartitionKey, policiesKey, []byte(""))
 	if err != nil {
 		return err
 	}
@@ -585,7 +585,7 @@ func (s *AuthService) DeleteGroup(ctx context.Context, groupDisplayName string) 
 
 	// delete group
 	groupPath := model.GroupPath(groupDisplayName)
-	err = s.store.DeleteMsg(ctx, model.PartitionKey, groupPath)
+	err = s.store.Delete(ctx, []byte(model.PartitionKey), groupPath)
 	if err != nil {
 		return fmt.Errorf("delete user (userKey %s): %w", groupPath, err)
 	}
@@ -595,7 +595,7 @@ func (s *AuthService) DeleteGroup(ctx context.Context, groupDisplayName string) 
 func (s *AuthService) GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error) {
 	groupKey := model.GroupPath(groupDisplayName)
 	m := model.GroupData{}
-	_, err := s.store.GetMsg(ctx, model.PartitionKey, groupKey, &m)
+	_, err := kv.GetMsg(ctx, s.store, model.PartitionKey, groupKey, &m)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = ErrNotFound
@@ -626,7 +626,7 @@ func (s *AuthService) AddUserToGroup(ctx context.Context, username, groupDisplay
 
 	userKey := model.UserPath(username)
 	gu := model.GroupUserPath(groupDisplayName, username)
-	err := s.store.SetMsgIf(ctx, model.PartitionKey, gu, &kv.SecondaryIndex{PrimaryKey: userKey}, nil)
+	err := kv.SetMsgIf(ctx, s.store, model.PartitionKey, gu, &kv.SecondaryIndex{PrimaryKey: userKey}, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = ErrAlreadyExists
@@ -638,7 +638,7 @@ func (s *AuthService) AddUserToGroup(ctx context.Context, username, groupDisplay
 
 func (s *AuthService) removeUserFromGroupNoValidation(ctx context.Context, username, groupDisplayName string) error {
 	gu := model.GroupUserPath(groupDisplayName, username)
-	err := s.store.DeleteMsg(ctx, model.PartitionKey, gu)
+	err := s.store.Delete(ctx, []byte(model.PartitionKey), gu)
 	if err != nil {
 		return fmt.Errorf("remove user from group: (key %s): %w", gu, err)
 	}
@@ -675,7 +675,7 @@ func (s *AuthService) ListUserGroups(ctx context.Context, username string, param
 		for _, group := range groups {
 			path := model.GroupUserPath(group.DisplayName, username)
 			m := kv.SecondaryIndex{}
-			_, err := s.store.GetMsg(ctx, model.PartitionKey, path, &m)
+			_, err := kv.GetMsg(ctx, s.store, model.PartitionKey, path, &m)
 			if err != nil && !errors.Is(err, kv.ErrNotFound) {
 				return nil, nil, err
 			}
@@ -737,16 +737,16 @@ func (s *AuthService) WritePolicy(ctx context.Context, policy *model.Policy, upd
 	m := model.ProtoFromPolicy(policy)
 
 	if update {
-		_, err := s.store.GetMsg(ctx, model.PartitionKey, policyKey, &model.PolicyData{})
+		_, err := kv.GetMsg(ctx, s.store, model.PartitionKey, policyKey, &model.PolicyData{})
 		if err != nil {
 			return err
 		}
-		err = s.store.SetMsg(ctx, model.PartitionKey, policyKey, m)
+		err = kv.SetMsg(ctx, s.store, model.PartitionKey, policyKey, m)
 		if err != nil {
 			return err
 		}
 	} else {
-		err := s.store.SetMsgIf(ctx, model.PartitionKey, policyKey, m, nil)
+		err := kv.SetMsgIf(ctx, s.store, model.PartitionKey, policyKey, m, nil)
 		if err != nil {
 			if errors.Is(err, kv.ErrPredicateFailed) {
 				err = ErrAlreadyExists
@@ -760,7 +760,7 @@ func (s *AuthService) WritePolicy(ctx context.Context, policy *model.Policy, upd
 func (s *AuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
 	policyKey := model.PolicyPath(policyDisplayName)
 	p := model.PolicyData{}
-	_, err := s.store.GetMsg(ctx, model.PartitionKey, policyKey, &p)
+	_, err := kv.GetMsg(ctx, s.store, model.PartitionKey, policyKey, &p)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = ErrNotFound
@@ -778,7 +778,7 @@ func (s *AuthService) DeletePolicy(ctx context.Context, policyDisplayName string
 
 	// delete policy attachment to user
 	usersKey := model.UserPath("")
-	it, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, kv.IteratorOptionsAfter([]byte("")))
+	it, err := kv.NewPrimaryIterator(ctx, s.store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, kv.IteratorOptionsAfter([]byte("")))
 	if err != nil {
 		return err
 	}
@@ -793,7 +793,7 @@ func (s *AuthService) DeletePolicy(ctx context.Context, policyDisplayName string
 
 	// delete policy attachment to group
 	groupKey := model.GroupPath("")
-	it, err = kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, kv.IteratorOptionsAfter([]byte("")))
+	it, err = kv.NewPrimaryIterator(ctx, s.store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, kv.IteratorOptionsAfter([]byte("")))
 	if err != nil {
 		return err
 	}
@@ -807,7 +807,7 @@ func (s *AuthService) DeletePolicy(ctx context.Context, policyDisplayName string
 	}
 
 	// delete policy
-	err = s.store.DeleteMsg(ctx, model.PartitionKey, policyPath)
+	err = s.store.Delete(ctx, []byte(model.PartitionKey), policyPath)
 	if err != nil {
 		return fmt.Errorf("delete policy (policyKey %s): %w", policyPath, err)
 	}
@@ -858,7 +858,7 @@ func (s *AuthService) AddCredentials(ctx context.Context, username, accessKeyID,
 		Username: user.Username,
 	}
 	credentialsKey := model.CredentialPath(user.Username, c.AccessKeyID)
-	err = s.store.SetMsgIf(ctx, model.PartitionKey, credentialsKey, model.ProtoFromCredential(c), nil)
+	err = kv.SetMsgIf(ctx, s.store, model.PartitionKey, credentialsKey, model.ProtoFromCredential(c), nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = ErrAlreadyExists
@@ -883,7 +883,7 @@ func (s *AuthService) DeleteCredentials(ctx context.Context, username, accessKey
 	}
 
 	credPath := model.CredentialPath(username, accessKeyID)
-	err := s.store.DeleteMsg(ctx, model.PartitionKey, credPath)
+	err := s.store.Delete(ctx, []byte(model.PartitionKey), credPath)
 	if err != nil {
 		return fmt.Errorf("delete credentials (credentialsKey %s): %w", credPath, err)
 	}
@@ -901,7 +901,7 @@ func (s *AuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName
 	policyKey := model.PolicyPath(policyDisplayName)
 	pg := model.GroupPolicyPath(groupDisplayName, policyDisplayName)
 
-	err := s.store.SetMsgIf(ctx, model.PartitionKey, pg, &kv.SecondaryIndex{PrimaryKey: policyKey}, nil)
+	err := kv.SetMsgIf(ctx, s.store, model.PartitionKey, pg, &kv.SecondaryIndex{PrimaryKey: policyKey}, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = ErrAlreadyExists
@@ -913,7 +913,7 @@ func (s *AuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName
 
 func (s *AuthService) DetachPolicyFromGroupNoValidation(ctx context.Context, policyDisplayName, groupDisplayName string) error {
 	pg := model.GroupPolicyPath(groupDisplayName, policyDisplayName)
-	err := s.store.DeleteMsg(ctx, model.PartitionKey, pg)
+	err := s.store.Delete(ctx, []byte(model.PartitionKey), pg)
 	if err != nil {
 		return fmt.Errorf("policy detachment to group: (key %s): %w", pg, err)
 	}
@@ -936,7 +936,7 @@ func (s *AuthService) GetCredentialsForUser(ctx context.Context, username, acces
 	}
 	credentialsKey := model.CredentialPath(username, accessKeyID)
 	m := model.CredentialData{}
-	_, err := s.store.GetMsg(ctx, model.PartitionKey, credentialsKey, &m)
+	_, err := kv.GetMsg(ctx, s.store, model.PartitionKey, credentialsKey, &m)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = ErrNotFound
@@ -955,7 +955,7 @@ func (s *AuthService) GetCredentialsForUser(ctx context.Context, username, acces
 func (s *AuthService) GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error) {
 	return s.cache.GetCredential(accessKeyID, func() (*model.Credential, error) {
 		m := &model.UserData{}
-		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), []byte(""))
+		itr, err := kv.NewPrimaryIterator(ctx, s.store, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), kv.IteratorOptionsAfter([]byte("")))
 		if err != nil {
 			return nil, fmt.Errorf("scan users: %w", err)
 		}
@@ -969,7 +969,7 @@ func (s *AuthService) GetCredentials(ctx context.Context, accessKeyID string) (*
 			}
 			c := model.CredentialData{}
 			credentialsKey := model.CredentialPath(user.Username, accessKeyID)
-			_, err := s.store.GetMsg(ctx, model.PartitionKey, credentialsKey, &c)
+			_, err := kv.GetMsg(ctx, s.store, model.PartitionKey, credentialsKey, &c)
 			if err != nil && !errors.Is(err, kv.ErrNotFound) {
 				return nil, err
 			}
@@ -980,7 +980,7 @@ func (s *AuthService) GetCredentials(ctx context.Context, accessKeyID string) (*
 		if err = itr.Err(); err != nil {
 			return nil, err
 		}
-		return nil, ErrNotFound
+		return nil, fmt.Errorf("credentials %w", ErrNotFound)
 	})
 }
 
@@ -1002,7 +1002,7 @@ func (s *AuthService) HashAndUpdatePassword(ctx context.Context, username string
 		EncryptedPassword: pw,
 		Source:            user.Source,
 	}
-	err = s.store.SetMsgIf(ctx, model.PartitionKey, userKey, model.ProtoFromUser(&userUpdatePassword), user)
+	err = kv.SetMsgIf(ctx, s.store, model.PartitionKey, userKey, model.ProtoFromUser(&userUpdatePassword), user)
 	if err != nil {
 		return fmt.Errorf("update user password (userKey %s): %w", userKey, err)
 	}
@@ -1116,7 +1116,7 @@ func claimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64, mark
 func (s *AuthService) markTokenSingleUse(ctx context.Context, tokenID string, tokenExpiresAt time.Time) (bool, error) {
 	tokenPath := model.ExpiredTokenPath(tokenID)
 	m := model.TokenData{TokenId: tokenID, ExpiredAt: timestamppb.New(tokenExpiresAt)}
-	err := s.store.SetMsgIf(ctx, model.PartitionKey, tokenPath, &m, nil)
+	err := kv.SetMsgIf(ctx, s.store, model.PartitionKey, tokenPath, &m, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			return false, nil
@@ -1131,7 +1131,7 @@ func (s *AuthService) markTokenSingleUse(ctx context.Context, tokenID string, to
 }
 
 func (s *AuthService) deleteTokens(ctx context.Context) error {
-	it, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.TokenData{}).ProtoReflect().Type(), model.PartitionKey, model.ExpiredTokensPath(), kv.IteratorOptionsFrom([]byte("")))
+	it, err := kv.NewPrimaryIterator(ctx, s.store, (&model.TokenData{}).ProtoReflect().Type(), model.PartitionKey, model.ExpiredTokensPath(), kv.IteratorOptionsFrom([]byte("")))
 	if err != nil {
 		return err
 	}

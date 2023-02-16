@@ -9,7 +9,6 @@ import (
 )
 
 func TestResetAll(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	objPath := "1.txt"

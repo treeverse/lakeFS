@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -3377,27 +3376,36 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	if body.Metadata != nil {
 		metadata = body.Metadata.AdditionalProperties
 	}
-	res, err := c.Catalog.Merge(ctx,
+	reference, err := c.Catalog.Merge(ctx,
 		repository, destinationBranch, sourceRef,
 		user.Username,
 		StringValue(body.Message),
 		metadata,
 		StringValue(body.Strategy))
 
-	var hookAbortErr *graveler.HookAbortError
+	var (
+		hookAbortErr *graveler.HookAbortError
+		zero         int
+	)
 	switch {
 	case errors.As(err, &hookAbortErr):
 		c.Logger.WithError(err).WithField("run_id", hookAbortErr.RunID).Warn("aborted by hooks")
 		writeError(w, r, http.StatusPreconditionFailed, err)
 		return
 	case errors.Is(err, graveler.ErrConflictFound):
-		writeResponse(w, r, http.StatusConflict, MergeResult{Reference: res})
+		writeResponse(w, r, http.StatusConflict, MergeResult{
+			Reference: reference,
+			Summary:   &MergeResultSummary{Added: &zero, Changed: &zero, Conflict: &zero, Removed: &zero},
+		})
 		return
 	}
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	writeResponse(w, r, http.StatusOK, MergeResult{Reference: res})
+	writeResponse(w, r, http.StatusOK, MergeResult{
+		Reference: reference,
+		Summary:   &MergeResultSummary{Added: &zero, Changed: &zero, Conflict: &zero, Removed: &zero},
+	})
 }
 
 func (c *Controller) ListTags(w http.ResponseWriter, r *http.Request, repository string, params ListTagsParams) {
@@ -3494,6 +3502,36 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository s
 	writeResponse(w, r, http.StatusOK, response)
 }
 
+func makeLoginConfig(c *config.Config) *LoginConfig {
+	var (
+		cookieNames        = c.Auth.UIConfig.LoginCookieNames
+		loginFailedMessage = c.Auth.UIConfig.LoginFailedMessage
+		fallbackLoginURL   = c.Auth.UIConfig.FallbackLoginURL
+		fallbackLoginLabel = c.Auth.UIConfig.FallbackLoginLabel
+	)
+	if c.Auth.OIDC.Enabled {
+		var (
+			oidcFallbackLoginURL   = "/oidc/login?prompt=login"
+			oidcFallbackLoginLabel = "Sign in with SSO provider"
+		)
+
+		cookieNames = append(cookieNames, "oidc_auth_session")
+		loginFailedMessage = `The credentials don&apos;t match. You may be registered through our <a href={"/oidc/login?prompt=login"}>SSO Provider.</a>`
+		fallbackLoginURL = &oidcFallbackLoginURL
+		fallbackLoginLabel = &oidcFallbackLoginLabel
+	}
+
+	return &LoginConfig{
+		RBAC:               &c.Auth.UIConfig.RBAC,
+		LoginUrl:           c.Auth.UIConfig.LoginURL,
+		LoginFailedMessage: &loginFailedMessage,
+		FallbackLoginUrl:   fallbackLoginURL,
+		FallbackLoginLabel: fallbackLoginLabel,
+		LoginCookieNames:   cookieNames,
+		LogoutUrl:          c.Auth.UIConfig.LogoutURL,
+	}
+}
+
 func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	emailSubscriptionEnabled := c.Config.EmailSubscription.Enabled
@@ -3502,15 +3540,20 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
+
 	state := string(savedState)
 	// no need to create an admin user if users are managed externally
 	if c.Config.IsAuthTypeAPI() {
 		state = string(auth.SetupStateInitialized)
+	} else if savedState == auth.SetupStateNotInitialized {
+		c.Collector.CollectEvent(stats.Event{Class: "global", Name: "preinit", Client: httputil.GetRequestLakeFSClient(r)})
 	}
+	lc := makeLoginConfig(c.Config)
 	response := SetupState{
 		State:            swag.String(state),
 		OidcEnabled:      swag.Bool(c.Config.Auth.OIDC.Enabled),
 		OidcDefaultLogin: swag.Bool(c.Config.Auth.OIDC.IsDefaultLogin),
+		LoginConfig:      lc,
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
@@ -3596,8 +3639,14 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 		return
 	}
 
+	// this is the "natural" next step in the setup process
+	nextStep := auth.SetupStateCommPrefsDone
+	// if users are managed externally, we can skip the admin user creation step
+	if c.Config.IsAuthTypeAPI() {
+		nextStep = auth.SetupStateInitialized
+	}
 	response := NextStep{
-		NextStep: string(auth.SetupStateCommPrefsDone),
+		NextStep: string(nextStep),
 	}
 
 	if *body.Email == "" {
@@ -4000,7 +4049,6 @@ func NewController(
 	sessionStore sessions.Store,
 	pathProvider upload.PathProvider,
 ) *Controller {
-	gob.Register(oidc.Claims{})
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,

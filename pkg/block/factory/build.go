@@ -63,7 +63,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 		if err != nil {
 			return nil, err
 		}
-		return azure.NewAdapter(p), nil
+		return azure.NewAdapter(p)
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
 			ErrInvalidBlockstoreType, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeTransient, block.BlockstoreTypeGS})
@@ -108,6 +108,7 @@ func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adap
 		s3a.WithStreamingChunkTimeout(params.StreamingChunkTimeout),
 		s3a.WithStatsCollector(statsCollector),
 		s3a.WithDiscoverBucketRegion(params.DiscoverBucketRegion),
+		s3a.WithPreSignedExpiry(params.PreSignedExpiry),
 	}
 	if params.ServerSideEncryption != "" {
 		opts = append(opts, s3a.WithServerSideEncryption(params.ServerSideEncryption))
@@ -139,7 +140,7 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 	if err != nil {
 		return nil, err
 	}
-	adapter := gs.NewAdapter(client)
+	adapter := gs.NewAdapter(client, gs.WithPreSignedExpiry(params.PreSignedExpiry))
 	logging.Default().WithField("type", "gs").Info("initialized blockstore adapter")
 	return adapter, nil
 }

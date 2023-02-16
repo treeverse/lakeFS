@@ -12,16 +12,16 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-type gcsWalker struct {
+type GCSWalker struct {
 	client *storage.Client
 	mark   Mark
 }
 
-func NewGCSWalker(client *storage.Client) *gcsWalker {
-	return &gcsWalker{client: client}
+func NewGCSWalker(client *storage.Client) *GCSWalker {
+	return &GCSWalker{client: client}
 }
 
-func (w *gcsWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
+func (w *GCSWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
 	prefix := strings.TrimLeft(storageURI.Path, "/")
 	var basePath string
 	if idx := strings.LastIndex(prefix, "/"); idx != -1 {
@@ -71,6 +71,6 @@ func (w *gcsWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOption
 	return nil
 }
 
-func (w *gcsWalker) Marker() Mark {
+func (w *GCSWalker) Marker() Mark {
 	return w.mark
 }

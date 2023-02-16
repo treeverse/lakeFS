@@ -39,6 +39,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/validator"
 	"go.uber.org/atomic"
+	"go.uber.org/ratelimit"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -131,11 +132,12 @@ const (
 
 type Config struct {
 	Config                   *config.Config
-	KVStore                  *kv.StoreMessage
+	KVStore                  kv.Store
 	WalkerFactory            WalkerFactory
 	SettingsManagerOption    settings.ManagerOption
 	GCMaxUncommittedFileSize int // The maximum file size for uncommitted dump created during PrepareUncommittedGC
 	PathProvider             *upload.PathPartitionProvider
+	Limiter                  ratelimit.Limiter
 }
 
 type Catalog struct {
@@ -146,8 +148,10 @@ type Catalog struct {
 	walkerFactory            WalkerFactory
 	managers                 []io.Closer
 	workPool                 *pond.WorkerPool
-	StoreMessage             *kv.StoreMessage
 	PathProvider             *upload.PathPartitionProvider
+	BackgroundLimiter        ratelimit.Limiter
+	KVStore                  kv.Store
+	KVStoreLimited           kv.Store
 }
 
 const (
@@ -233,22 +237,24 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	executor := batch.NewConditionalExecutor(logging.Default())
 	go executor.Run(ctx)
 
+	storeLimiter := kv.NewStoreLimiter(cfg.KVStore, cfg.Limiter)
 	refManager := ref.NewRefManager(
 		ref.ManagerConfig{
 			Executor:              executor,
-			KvStore:               cfg.KVStore,
+			KVStore:               cfg.KVStore,
+			KVStoreLimited:        storeLimiter,
 			AddressProvider:       ident.NewHexAddressProvider(),
 			RepositoryCacheConfig: ref.CacheConfig(cfg.Config.Graveler.RepositoryCache),
 			CommitCacheConfig:     ref.CacheConfig(cfg.Config.Graveler.CommitCache),
 		})
 	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.Committed.BlockStoragePrefix)
-	settingManager := settings.NewManager(refManager, *cfg.KVStore)
+	settingManager := settings.NewManager(refManager, cfg.KVStore)
 	if cfg.SettingsManagerOption != nil {
 		cfg.SettingsManagerOption(settingManager)
 	}
 
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
-	stagingManager := staging.NewManager(ctx, *cfg.KVStore)
+	stagingManager := staging.NewManager(ctx, cfg.KVStore, storeLimiter)
 	gStore := graveler.NewGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
@@ -258,11 +264,13 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		Store:                    gStore,
 		GCMaxUncommittedFileSize: cfg.GCMaxUncommittedFileSize,
 		PathProvider:             cfg.PathProvider,
+		BackgroundLimiter:        cfg.Limiter,
 		log:                      logging.Default().WithField("service_name", "entry_catalog"),
 		walkerFactory:            cfg.WalkerFactory,
 		workPool:                 workPool,
-		StoreMessage:             cfg.KVStore,
+		KVStore:                  cfg.KVStore,
 		managers:                 []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
+		KVStoreLimited:           storeLimiter,
 	}, nil
 }
 
@@ -1819,7 +1827,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	uw := NewUncommittedWriter(fd)
 
 	// Write parquet to local storage
-	newMark, hasData, err := gcWriteUncommitted(ctx, c.Store, c.StoreMessage.Store, repository, uw, mark, runID, int64(c.GCMaxUncommittedFileSize))
+	newMark, hasData, err := gcWriteUncommitted(ctx, c.Store, c.KVStore, repository, uw, mark, runID, int64(c.GCMaxUncommittedFileSize))
 	if err != nil {
 		return nil, err
 	}
@@ -1946,7 +1954,7 @@ func (c *Catalog) TrackPhysicalAddress(ctx context.Context, repository, physical
 		Address:      physicalAddress,
 		LastModified: timestamppb.Now(),
 	}
-	err = c.StoreMessage.SetMsg(ctx, repoPartition, []byte(key), ent)
+	err = kv.SetMsg(ctx, c.KVStore, repoPartition, []byte(key), ent)
 	if err != nil {
 		return "", err
 	}
@@ -2042,7 +2050,7 @@ func (c *Catalog) deleteRepoTrackedPhysicalAddressHelper(ctx context.Context, re
 	repoPartition := graveler.RepoPartition(repo)
 	msgType := (&Entry{}).ProtoReflect().Type()
 	prefix := []byte(kv.FormatPath(kvTrackPrefix, ""))
-	it, err := kv.NewPrimaryIterator(ctx, c.StoreMessage.Store, msgType, repoPartition, prefix, kv.IteratorOptionsFrom([]byte{}))
+	it, err := kv.NewPrimaryIterator(ctx, c.KVStoreLimited, msgType, repoPartition, prefix, kv.IteratorOptionsFrom([]byte{}))
 	if err != nil {
 		return false, err
 	}
@@ -2071,7 +2079,7 @@ func (c *Catalog) deleteRepoTrackedPhysicalAddressHelper(ctx context.Context, re
 
 	// delete the collected keys
 	for _, key := range keysToDelete {
-		err := c.StoreMessage.Delete(ctx, []byte(repoPartition), []byte(key))
+		err := c.KVStoreLimited.Delete(ctx, []byte(repoPartition), []byte(key))
 		if err != nil {
 			c.log.WithError(err).
 				WithFields(logging.Fields{"repository": repo.RepositoryID, "key": key}).

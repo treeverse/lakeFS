@@ -12,18 +12,16 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/azure"
 )
 
-var (
-	ErrAzureInvalidURL = errors.New("invalid Azure storage URL")
-)
+var ErrAzureInvalidURL = errors.New("invalid Azure storage URL")
 
-func NewAzureBlobWalker(svc *service.Client) (*azureBlobWalker, error) {
-	return &azureBlobWalker{
+func NewAzureBlobWalker(svc *service.Client) (*AzureBlobWalker, error) {
+	return &AzureBlobWalker{
 		client: svc,
 		mark:   Mark{HasMore: true},
 	}, nil
 }
 
-type azureBlobWalker struct {
+type AzureBlobWalker struct {
 	client *service.Client
 	mark   Mark
 }
@@ -50,7 +48,7 @@ func getAzureBlobURL(containerURL *url.URL, blobName string) *url.URL {
 	return containerURL.ResolveReference(&relativePath)
 }
 
-func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
+func (a *AzureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
 	// we use bucket as container and prefix as path
 	containerURL, prefix, err := extractAzurePrefix(storageURI)
 	if err != nil {
@@ -68,7 +66,7 @@ func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 
 	container := a.client.NewContainerClient(qk.ContainerName)
 	listBlob := container.NewListBlobsFlatPager(&azblob.ListBlobsFlatOptions{
-		Prefix: &basePath,
+		Prefix: &prefix,
 		Marker: &op.ContinuationToken,
 	})
 
@@ -106,6 +104,6 @@ func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 	return nil
 }
 
-func (a *azureBlobWalker) Marker() Mark {
+func (a *AzureBlobWalker) Marker() Mark {
 	return a.mark
 }

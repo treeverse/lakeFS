@@ -36,7 +36,7 @@ type Tracker interface {
 }
 
 type tracker struct {
-	store kv.StoreMessage
+	store kv.Store
 }
 
 var (
@@ -44,9 +44,9 @@ var (
 	ErrInvalidUploadID         = errors.New("invalid upload id")
 )
 
-func NewTracker(ms kv.StoreMessage) Tracker {
+func NewTracker(store kv.Store) Tracker {
 	return &tracker{
-		store: ms,
+		store: store,
 	}
 }
 
@@ -76,7 +76,7 @@ func (m *tracker) Create(ctx context.Context, multipart Upload) error {
 	if multipart.UploadID == "" {
 		return ErrInvalidUploadID
 	}
-	return m.store.SetMsgIf(ctx, storePartitionKey, []byte(multipart.UploadID), protoFromMultipart(&multipart), nil)
+	return kv.SetMsgIf(ctx, m.store, storePartitionKey, []byte(multipart.UploadID), protoFromMultipart(&multipart), nil)
 }
 
 func (m *tracker) Get(ctx context.Context, uploadID string) (*Upload, error) {
@@ -84,7 +84,7 @@ func (m *tracker) Get(ctx context.Context, uploadID string) (*Upload, error) {
 		return nil, ErrInvalidUploadID
 	}
 	data := &UploadData{}
-	_, err := m.store.GetMsg(ctx, storePartitionKey, []byte(uploadID), data)
+	_, err := kv.GetMsg(ctx, m.store, storePartitionKey, []byte(uploadID), data)
 	if err != nil {
 		return nil, err
 	}
@@ -95,14 +95,13 @@ func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 	if uploadID == "" {
 		return ErrInvalidUploadID
 	}
-	store := m.store.Store
 	key := []byte(uploadID)
-	if _, err := store.Get(ctx, []byte(storePartitionKey), key); err != nil {
+	if _, err := m.store.Get(ctx, []byte(storePartitionKey), key); err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			return fmt.Errorf("%w uploadID=%s", ErrMultipartUploadNotFound, uploadID)
 		}
 		return err
 	}
 
-	return store.Delete(ctx, []byte(storePartitionKey), key)
+	return m.store.Delete(ctx, []byte(storePartitionKey), key)
 }

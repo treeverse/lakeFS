@@ -17,10 +17,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/rs/xid"
-	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"golang.org/x/exp/slices"
 )
@@ -38,15 +36,12 @@ type UncommittedFindings struct {
 
 func TestUncommittedGC(t *testing.T) {
 	SkipTestIfAskedTo(t)
-	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
-	if blockstoreType != block.BlockstoreTypeS3 {
-		t.Skip("Running on S3 only")
-	}
+	requireBlockstoreType(t, block.BlockstoreTypeS3)
 	ctx := context.Background()
 	prepareForUncommittedGC(t, ctx)
 
 	// upload files while ugc is running
-	ticker := time.NewTicker(time.Second * 1)
+	ticker := time.NewTicker(time.Second)
 	var durObjects []string
 	done := make(chan bool)
 	go func() {
@@ -375,8 +370,8 @@ func getReportCutoffTime(s3Client *s3.S3, bucket, reportPath string) (time.Time,
 		RunId             string    `json:"run_id"`
 		Success           bool      `json:"success"`
 		FirstSlice        string    `json:"first_slice"`
-		StartTime         time.Time `json:"start_time,time"`
-		CutoffTime        time.Time `json:"cutoff_time,time"`
+		StartTime         time.Time `json:"start_time"`
+		CutoffTime        time.Time `json:"cutoff_time"`
 		NumDeletedObjects int       `json:"num_deleted_objects"`
 	}
 

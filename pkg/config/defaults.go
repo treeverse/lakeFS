@@ -44,12 +44,17 @@ func setDefaults(local bool) {
 	viper.SetDefault("auth.logout_redirect_url", "/auth/login")
 	viper.SetDefault("auth.login_duration", 7*24*time.Hour)
 
+	viper.SetDefault("auth.ui_config.rbac", "simplified")
+	viper.SetDefault("auth.ui_config.login_failed_message", "The credentials don't match.")
+	viper.SetDefault("auth.ui_config.login_cookie_names", "internal_auth_session")
+
 	viper.SetDefault("blockstore.local.path", "~/lakefs/data/block")
 	viper.SetDefault("blockstore.s3.region", "us-east-1")
 	viper.SetDefault("blockstore.s3.streaming_chunk_size", 2<<19)          // 1MiB by default per chunk
 	viper.SetDefault("blockstore.s3.streaming_chunk_timeout", time.Second) // or 1 seconds, whatever comes first
 	viper.SetDefault("blockstore.s3.max_retries", 5)
 	viper.SetDefault("blockstore.s3.discover_bucket_region", true)
+	viper.SetDefault("blockstore.s3.pre_signed_expiry", 15*time.Minute)
 
 	viper.SetDefault("committed.local_cache.size_bytes", 1*1024*1024*1024)
 	viper.SetDefault("committed.local_cache.dir", "~/lakefs/data/cache")
@@ -67,6 +72,7 @@ func setDefaults(local bool) {
 	viper.SetDefault("gateways.s3.region", "us-east-1")
 
 	viper.SetDefault("blockstore.gs.s3_endpoint", "https://storage.googleapis.com")
+	viper.SetDefault("blockstore.gs.pre_signed_expiry", 15*time.Minute)
 
 	viper.SetDefault("stats.enabled", true)
 	viper.SetDefault("stats.address", "https://stats.treeverse.io")
@@ -76,7 +82,7 @@ func setDefaults(local bool) {
 	viper.SetDefault("email_subscription.enabled", true)
 
 	viper.SetDefault("blockstore.azure.try_timeout", 10*time.Minute)
-	viper.SetDefault("blockstore.azure.auth_method", "access-key")
+	viper.SetDefault("blockstore.azure.pre_signed_expiry", 15*time.Minute)
 
 	viper.SetDefault("security.audit_check_interval", 24*time.Hour)
 	viper.SetDefault("security.audit_check_url", "https://audit.lakefs.io/audit")

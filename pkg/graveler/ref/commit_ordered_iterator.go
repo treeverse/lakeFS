@@ -22,9 +22,9 @@ type OrderedCommitIterator struct {
 // Ordering is based on the Commit ID value.
 // WithOnlyAncestryLeaves causes the iterator to return only commits which are not the first parent of any other commit.
 // Consider a commit graph where all non-first-parent edges are removed. This graph is a tree, and ancestry leaves are its leaves.
-func NewOrderedCommitIterator(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord, onlyAncestryLeaves bool) (*OrderedCommitIterator, error) {
+func NewOrderedCommitIterator(ctx context.Context, store kv.Store, repo *graveler.RepositoryRecord, onlyAncestryLeaves bool) (*OrderedCommitIterator, error) {
 	repoPath := graveler.RepoPartition(repo)
-	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.CommitData{}).ProtoReflect().Type(), repoPath,
+	it, err := kv.NewPrimaryIterator(ctx, store, (&graveler.CommitData{}).ProtoReflect().Type(), repoPath,
 		[]byte(graveler.CommitPath("")), kv.IteratorOptionsFrom([]byte("")))
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func NewOrderedCommitIterator(ctx context.Context, store *kv.StoreMessage, repo 
 	return &OrderedCommitIterator{
 		ctx:                ctx,
 		it:                 it,
-		store:              store.Store,
+		store:              store,
 		repositoryPath:     repoPath,
 		onlyAncestryLeaves: onlyAncestryLeaves,
 		firstParents:       parents,
@@ -106,8 +106,8 @@ func (i *OrderedCommitIterator) Close() {
 }
 
 // getAllFirstParents returns a set of all commits that are not a first parent of other commit in the given repository.
-func getAllFirstParents(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord) (map[string]bool, error) {
-	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.CommitData{}).ProtoReflect().Type(),
+func getAllFirstParents(ctx context.Context, store kv.Store, repo *graveler.RepositoryRecord) (map[string]bool, error) {
+	it, err := kv.NewPrimaryIterator(ctx, store, (&graveler.CommitData{}).ProtoReflect().Type(),
 		graveler.RepoPartition(repo),
 		[]byte(graveler.CommitPath("")), kv.IteratorOptionsFrom([]byte("")))
 	if err != nil {

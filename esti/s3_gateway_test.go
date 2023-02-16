@@ -55,7 +55,6 @@ func newClient(t *testing.T, getCredentials GetCredentials) *minio.Client {
 }
 
 func TestS3UploadAndDownload(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	const parallelism = 10
 
 	ctx, _, repo := setupTest(t)
@@ -132,8 +131,6 @@ func verifyObjectInfo(t *testing.T, got minio.ObjectInfo, expectedSize int) {
 }
 
 func TestS3ReadObject(t *testing.T) {
-	SkipTestIfAskedTo(t)
-
 	const (
 		contents = "the quick brown fox jumps over the lazy dog"
 		goodPath = "main/exists"
@@ -213,8 +210,6 @@ func TestS3ReadObject(t *testing.T) {
 }
 
 func TestS3HeadBucket(t *testing.T) {
-	SkipTestIfAskedTo(t)
-
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
@@ -245,7 +240,6 @@ func TestS3HeadBucket(t *testing.T) {
 }
 
 func TestS3CopyObject(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 

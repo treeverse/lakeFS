@@ -95,7 +95,6 @@ func newLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAuth
 	}
 }
 
-// runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run lakeFS",
@@ -141,9 +140,8 @@ var runCmd = &cobra.Command{
 		}
 
 		migrator := kv.NewDatabaseMigrator(kvParams)
-		storeMessage := &kv.StoreMessage{Store: kvStore}
-		multipartTracker := multipart.NewTracker(*storeMessage)
-		actionsStore := actions.NewActionsKVStore(*storeMessage)
+		multipartTracker := multipart.NewTracker(kvStore)
+		actionsStore := actions.NewActionsKVStore(kvStore)
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
@@ -165,7 +163,7 @@ var runCmd = &cobra.Command{
 			}
 		} else {
 			authService = auth.NewAuthService(
-				storeMessage,
+				kvStore,
 				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
 				emailer,
 				cfg.Auth.Cache,
@@ -195,8 +193,9 @@ var runCmd = &cobra.Command{
 
 		c, err := catalog.New(ctx, catalog.Config{
 			Config:       cfg,
-			KVStore:      storeMessage,
+			KVStore:      kvStore,
 			PathProvider: upload.DefaultPathProvider,
+			Limiter:      cfg.NewGravelerBackgroundLimiter(),
 		})
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create catalog")
@@ -424,10 +423,10 @@ func scheduleCleanupJobs(ctx context.Context, s *gocron.Scheduler, c *catalog.Ca
 
 	// delete expired tracked physical addresses
 	const (
-		deleteTrackedLowerTimeSec = 50
-		deleteTrackedUpperTimeSec = 80
+		deleteTrackedLowerTimeMin = 50
+		deleteTrackedUpperTimeMin = 70
 	)
-	job2, err := s.EveryRandom(deleteTrackedLowerTimeSec, deleteTrackedUpperTimeSec).Minute().Do(func() {
+	job2, err := s.EveryRandom(deleteTrackedLowerTimeMin, deleteTrackedUpperTimeMin).Minute().Do(func() {
 		c.DeleteTrackedPhysicalAddresses(ctx)
 	})
 	if err != nil {

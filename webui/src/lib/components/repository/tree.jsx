@@ -30,9 +30,10 @@ import { ConfirmationModal } from "../modals";
 import { Paginator } from "../pagination";
 import { Link } from "../nav";
 import { RefTypeBranch, RefTypeCommit } from "../../../constants";
-import { copyTextToClipboard, Error, Loading } from "../controls";
+import {ClipboardButton, copyTextToClipboard, Error, Loading} from "../controls";
 import Modal from "react-bootstrap/Modal";
 import { useAPI } from "../../hooks/api";
+import noop from "lodash/noop";
 
 export const humanSize = (bytes) => {
   if (!bytes) return "0.0 B";
@@ -581,52 +582,68 @@ export const URINavigator = ({
   const params = { repoId: repo.id };
 
   return (
-    <span className="lakefs-uri">
-      {relativeTo === "" ? (
-        <>
-          <strong>{"lakefs://"}</strong>
-          <Link href={{ pathname: "/repositories/:repoId/objects", params }}>
-            {repo.id}
-          </Link>
-          <strong>{"/"}</strong>
-          <Link
-            href={{
-              pathname: "/repositories/:repoId/objects",
-              params,
-              query: { ref: reference.id },
-            }}
-          >
-            {reference.type === RefTypeCommit
-              ? reference.id.substr(0, 12)
-              : reference.id}
-          </Link>
-          <strong>{"/"}</strong>
-        </>
-      ) : (
-        <>
-          <Link href={pathURLBuilder(params, { path: "" })}>{relativeTo}</Link>
-          <strong>{"/"}</strong>
-        </>
-      )}
-
-      {parts.map((part, i) => {
-        const path =
-          parts
-            .slice(0, i + 1)
-            .map((p) => p.name)
-            .join("/") + "/";
-        const query = { path, ref: reference.id };
-        const edgeElement =
-          isPathToFile && i === parts.length - 1 ? (
-            <span>{part.name}</span>
-          ) : (
+    <span className="d-flex justify-content-between align-items-center">
+      <span className="lakefs-uri" style={{ display: "inline-flex" }}>
+        <div>
+          {relativeTo === "" ? (
             <>
-              <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
+              <strong>{"lakefs://"}</strong>
+              <Link href={{ pathname: "/repositories/:repoId/objects", params }}>
+                {repo.id}
+              </Link>
+              <strong>{"/"}</strong>
+              <Link
+                href={{
+                  pathname: "/repositories/:repoId/objects",
+                  params,
+                  query: { ref: reference.id },
+                }}
+              >
+                {reference.type === RefTypeCommit
+                  ? reference.id.substr(0, 12)
+                  : reference.id}
+              </Link>
               <strong>{"/"}</strong>
             </>
-          );
-        return <span key={part.name}>{edgeElement}</span>;
-      })}
+          ) : (
+            <>
+              <Link href={pathURLBuilder(params, { path: "" })}>{relativeTo}</Link>
+              <strong>{"/"}</strong>
+            </>
+          )}
+
+          {parts.map((part, i) => {
+            const path =
+              parts
+                .slice(0, i + 1)
+                .map((p) => p.name)
+                .join("/") + "/";
+            const query = { path, ref: reference.id };
+            const edgeElement =
+              isPathToFile && i === parts.length - 1 ? (
+                <span>{part.name}</span>
+              ) : (
+                <>
+                  <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
+                  <strong>{"/"}</strong>
+                </>
+              );
+            return <span key={part.name}>{edgeElement}</span>;
+          })}
+        </div>
+      </span>
+      <span className="object-viewer-buttons">
+          <ClipboardButton
+              text={`lakefs://${repo.id}/${reference.id}/${path}`}
+              variant="outline-primary"
+              size="sm"
+              onSuccess={noop}
+              onError={noop}
+              className={"me-1"}
+              tooltip={"copy URI to clipboard"}
+              hidden={isPathToFile}
+              disabled={isPathToFile}/>
+      </span>
     </span>
   );
 };
