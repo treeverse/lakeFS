@@ -68,14 +68,14 @@ func setPath(l *lua.State, field, env, def string) {
 	} else {
 		o := fmt.Sprintf("%c%c", pathListSeparator, pathListSeparator)
 		n := fmt.Sprintf("%c%s%c", pathListSeparator, def, pathListSeparator)
-		path = strings.Replace(path, o, n, -1)
+		path = strings.ReplaceAll(path, o, n)
 		l.PushString(path)
 	}
 	l.SetField(-2, field)
 }
 
 var packageLibrary = []lua.RegistryFunction{
-	{"loadlib", func(l *lua.State) int {
+	{Name: "loadlib", Function: func(l *lua.State) int {
 		_ = lua.CheckString(l, 1) // path
 		_ = lua.CheckString(l, 2) // init
 		l.PushNil()
@@ -83,7 +83,7 @@ var packageLibrary = []lua.RegistryFunction{
 		l.PushString("absent")
 		return 3 // Return nil, error message, and where.
 	}},
-	{"searchpath", func(l *lua.State) int {
+	{Name: "searchpath", Function: func(l *lua.State) int {
 		_ = lua.CheckString(l, 1)
 		_ = lua.CheckString(l, 2)
 		_ = lua.OptString(l, 3, ".")
@@ -110,30 +110,32 @@ func PackageOpen(l *lua.State) int {
 	l.SetField(-2, "preload")
 	l.PushGlobalTable()
 	l.PushValue(-2)
-	lua.SetFunctions(l, []lua.RegistryFunction{{"require", func(l *lua.State) int {
-		name := lua.CheckString(l, 1)
-		l.SetTop(1)
-		l.Field(lua.RegistryIndex, "_LOADED")
-		l.Field(2, name)
-		if l.ToBoolean(-1) {
+	lua.SetFunctions(l, []lua.RegistryFunction{
+		{Name: "require", Function: func(l *lua.State) int {
+			name := lua.CheckString(l, 1)
+			l.SetTop(1)
+			l.Field(lua.RegistryIndex, "_LOADED")
+			l.Field(2, name)
+			if l.ToBoolean(-1) {
+				return 1
+			}
+			l.Pop(1)
+			findLoader(l, name)
+			l.PushString(name)
+			l.Insert(-2)
+			l.Call(2, 1)
+			if !l.IsNil(-1) {
+				l.SetField(2, name)
+			}
+			l.Field(2, name)
+			if l.IsNil(-1) {
+				l.PushBoolean(true)
+				l.PushValue(-1)
+				l.SetField(2, name)
+			}
 			return 1
-		}
-		l.Pop(1)
-		findLoader(l, name)
-		l.PushString(name)
-		l.Insert(-2)
-		l.Call(2, 1)
-		if !l.IsNil(-1) {
-			l.SetField(2, name)
-		}
-		l.Field(2, name)
-		if l.IsNil(-1) {
-			l.PushBoolean(true)
-			l.PushValue(-1)
-			l.SetField(2, name)
-		}
-		return 1
-	}}}, 1)
+		}},
+	}, 1)
 	l.Pop(1)
 	return 1
 }
