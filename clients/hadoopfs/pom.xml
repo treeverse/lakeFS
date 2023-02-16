@@ -248,7 +248,7 @@ To export to S3:
         <dependency>
             <groupId>io.lakefs</groupId>
             <artifactId>api-client</artifactId>
-            <version>0.91.0</version>
+            <version>0.94.0-RC.grouped-params.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
