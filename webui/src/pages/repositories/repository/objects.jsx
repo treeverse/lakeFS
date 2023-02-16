@@ -305,7 +305,7 @@ const TreeContainer = ({
     );
 }
 
-const ReadmeContainer = ({repo, reference, path='', refreshDep=''}) => {
+const ReadmeContainer = ({config, repo, reference, path='', refreshDep=''}) => {
     let readmePath = '';
 
     if (path) {
@@ -323,6 +323,7 @@ const ReadmeContainer = ({repo, reference, path='', refreshDep=''}) => {
 
     const fileExtension = getFileExtension(readmePath);
     const contentType = getContentType(response?.headers);
+    // usePresigned={!(config.pre_sign_support === 'local' || config.blockstore_type === 'mem')}
 
     return (
         <FileContents 
@@ -334,6 +335,7 @@ const ReadmeContainer = ({repo, reference, path='', refreshDep=''}) => {
             error={error}
             loading={loading}
             showFullNavigator={false}
+            usePresigned={config.pre_sign_support}
         />
     );
 }
@@ -438,7 +440,7 @@ const ObjectsBrowser = ({config, configError}) => {
                     }}
                     onRefresh={refresh}/>
 
-                <ReadmeContainer reference={reference} repo={repo} path={path} refreshDep={refreshToken}/>
+                <ReadmeContainer config={config} reference={reference} repo={repo} path={path} refreshDep={refreshToken}/>
             </Box>
         </>
     );
