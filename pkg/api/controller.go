@@ -1849,6 +1849,9 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, kv.ErrNotFound):
 		cb(w, r, http.StatusNotFound, err)
 
+	case errors.Is(err, graveler.ErrWriteToProtectedBranch):
+		cb(w, r, http.StatusForbidden, err)
+
 	case errors.Is(err, graveler.ErrDirtyBranch),
 		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
 		errors.Is(err, graveler.ErrInvalidValue),

@@ -2605,6 +2605,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/ServerError"
         404:
           $ref: "#/components/responses/NotFound"
         default:
@@ -2656,6 +2658,8 @@ paths:
           description: branch deleted successfully
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/ServerError"
         404:
           $ref: "#/components/responses/NotFound"
         default:
@@ -2762,6 +2766,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/ServerError"
         404:
           $ref: "#/components/responses/NotFound"
         409:
@@ -3297,6 +3303,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/ServerError"
         404:
           $ref: "#/components/responses/NotFound"
         412:
@@ -3313,6 +3321,8 @@ paths:
           description: object deleted successfully
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/ServerError"
         404:
           $ref: "#/components/responses/NotFound"
         default:
@@ -3350,6 +3360,8 @@ paths:
                 $ref: "#/components/schemas/ObjectErrorList"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/ServerError"
         404:
           $ref: "#/components/responses/NotFound"
         default:

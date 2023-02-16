@@ -478,6 +478,7 @@ Name | Type | Description  | Notes
 **200** | merge completed |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
+**403** | Internal Server Error |  -  |
 **404** | Resource Not Found |  -  |
 **409** | Conflict Deprecated: content schema will return Error format and not an empty MergeResult  |  -  |
 **412** | precondition failed (e.g. a pre-merge hook returned a failure) |  -  |

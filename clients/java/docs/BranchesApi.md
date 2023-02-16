@@ -185,6 +185,7 @@ null (empty response body)
 |-------------|-------------|------------------|
 **204** | branch deleted successfully |  -  |
 **401** | Unauthorized |  -  |
+**403** | Internal Server Error |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
