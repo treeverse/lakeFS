@@ -3,8 +3,6 @@ package lua
 import (
 	"context"
 
-	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/parquet"
-
 	"github.com/Shopify/go-lua"
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/aes"
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/hmac"
@@ -12,6 +10,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/base64"
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/hex"
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/json"
+	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/parquet"
 	"github.com/treeverse/lakefs/pkg/actions/lua/path"
 	"github.com/treeverse/lakefs/pkg/actions/lua/regexp"
 	"github.com/treeverse/lakefs/pkg/actions/lua/storage/aws"
