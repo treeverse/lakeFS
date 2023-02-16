@@ -1740,6 +1740,83 @@ paths:
       tags:
       - repositories
       x-accepts: application/json
+  /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref}:
+    get:
+      operationId: otfDiff
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: left_ref
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: right_ref
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: a path to the table location under the specified ref.
+        explode: true
+        in: query
+        name: table_path
+        required: true
+        schema:
+          type: string
+        style: form
+      - description: the type of otf
+        explode: true
+        in: query
+        name: type
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtfDiffList'
+          description: diff list
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "412":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Precondition Failed
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: perform otf diff
+      tags:
+      - experimental
+      - otf diff
+      x-accepts: application/json
   /repositories/{repository}/refs/dump:
     put:
       operationId: dumpRefs
@@ -5382,6 +5459,65 @@ components:
           type: array
       required:
       - pagination
+      - results
+      type: object
+    OtfDiffEntry:
+      example:
+        operation_content: '{}'
+        operation_type: create
+        id: id
+        operation: operation
+        timestamp: 0
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: integer
+        operation:
+          type: string
+        operation_content:
+          description: free form content describing the returned operation diff
+          type: object
+        operation_type:
+          description: the operation category (CUD)
+          enum:
+          - create
+          - update
+          - delete
+          type: string
+      required:
+      - operation
+      - operation_content
+      - operation_type
+      - timestamp
+      - version
+      type: object
+    OtfDiffList:
+      example:
+        diff_type: created
+        results:
+        - operation_content: '{}'
+          operation_type: create
+          id: id
+          operation: operation
+          timestamp: 0
+        - operation_content: '{}'
+          operation_type: create
+          id: id
+          operation: operation
+          timestamp: 0
+      properties:
+        diff_type:
+          enum:
+          - created
+          - dropped
+          - changed
+          type: string
+        results:
+          items:
+            $ref: '#/components/schemas/OtfDiffEntry'
+          type: array
+      required:
       - results
       type: object
     ResetCreation:
