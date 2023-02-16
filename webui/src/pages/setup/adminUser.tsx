@@ -28,12 +28,11 @@ export const AdminUserSetup = forwardRef<HTMLInputElement, AdminUserSetupProps>(
                     <Card.Header>Initial Setup</Card.Header>
                     <Card.Body>
                         <Card.Text>
-                            This process will initialize the database schema and a first admin user to access the system.<br/>
-                            <a href="https://docs.lakefs.io/quickstart/repository.html#create-the-first-user" target="_blank" rel="noopener noreferrer">Learn more.</a>
+                            Please specify the name of the first admin account to create, or leave it as the default.
                         </Card.Text>
                         <Form onSubmit={submitHandler}>
                             <Form.Group controlId="user-name" className="mb-3">
-                                <Form.Control type="text" placeholder="Admin Username" ref={inputRef} autoFocus/>
+                                <Form.Control type="text" value="admin" placeholder="Admin Username" ref={inputRef} autoFocus/>
                             </Form.Group>
 
                             {!!setupError && <Error error={setupError}/>}

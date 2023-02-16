@@ -19,7 +19,7 @@ export const CommunicationPreferencesSetup: FC<CommunicationPreferencesSetupProp
 }) => {
     const [userEmail, setUserEmail] = useState<string>("");
     const [updatesCheck, setUpdatesCheck] = useState<boolean>(false);
-    const [securityCheck, setSecurityCheck] = useState<boolean>(false);
+    const [securityCheck, setSecurityCheck] = useState<boolean>(true);
 
     const submitHandler = useCallback((e: FormEvent) => {
         onSubmit(userEmail, updatesCheck, securityCheck);
@@ -44,10 +44,8 @@ export const CommunicationPreferencesSetup: FC<CommunicationPreferencesSetupProp
                 <Card className="setup-widget">
                     <Card.Header>Communication Preferences</Card.Header>
                     <Card.Body>
-                        <Card.Text>
-                            Please provide your email below. <br />
-                            We recommend at least signing up for security updates. <br />
-                            You may unsubscribe from either or both at any time.
+                    <Card.Text>
+                        Please provide your email address, and indicate what optional communications you&apos;d like to receive:
                         </Card.Text>
                         <Form onSubmit={submitHandler}>
                             <Form.Group controlId="user-email" className="mt-4">
@@ -56,13 +54,11 @@ export const CommunicationPreferencesSetup: FC<CommunicationPreferencesSetupProp
                             </Form.Group>
 
                             <Form.Group controlId="updates-check" className="mt-4">
-                                <Form.Label>News & feature updates</Form.Label>
                                 <Form.Check type="checkbox" checked={updatesCheck} onChange={handleUpdatesChange} label="I'd like to receive news and feature updates" />
                             </Form.Group>
 
                             <Form.Group controlId="security-check" className="mt-4 mb-3">
-                                <Form.Label>Security updates</Form.Label>
-                                <Form.Check type="checkbox" checked={securityCheck} onChange={handleSecurityChange} label="I'd like to receive security updates" />
+                                <Form.Check type="checkbox" checked={securityCheck} onChange={handleSecurityChange} label="I'd like to receive security updates (recommended)" />
                             </Form.Group>
 
                             {!!setupError && <Error error={setupError}/>}
