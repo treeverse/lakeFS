@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from "react";
 
 import {
+    ArrowLeftIcon,
     ClockIcon, DiffIcon, InfoIcon
 } from "@primer/octicons-react";
 
@@ -16,6 +17,7 @@ import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
 import {refs, statistics} from "../../api";
+import {DeltaLakeDiff} from "./TableDiff";
 
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
@@ -33,7 +35,8 @@ import {refs, statistics} from "../../api";
  * @param relativeTo prefix of the parent item ('' for root elements)
  * @param {(after : string, path : string, useDelimiter :? boolean, amount :? number) => Promise<any> } getMore callback to be called when more items need to be rendered
  */
-export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore, depth=0 }) => {
+export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore,
+                                depth=0, setTableDiffExpanded}) => {
     const [dirExpanded, setDirExpanded] = useState(false); // state of a non-leaf item expansion
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
@@ -91,14 +94,14 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
             results.map(child =>
                 (<TreeItemRow key={child.path + "-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
                               internalReferesh={internalRefresh} delimiter={delimiter} depth={depth + 1}
-                              relativeTo={entry.path} getMore={getMore}/>))}
+                              relativeTo={entry.path} getMore={getMore} setTableDiffExpanded={setTableDiffExpanded}/>))}
             {(!!nextPage || loading) &&
             <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage}
                                 setAfterUpdated={setAfterUpdated}/>
         }
     </>
     } else {
-        return <TableTreeEntryRow key={entry.path + "entry-row"} entry={entry} relativeTo={relativeTo} depth={depth} onRevert={onRevert}/>
+        return <TableTreeEntryRow key={entry.path + "entry-row"} entry={entry} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onClickExpandDiff={setTableDiffExpanded}/>
     }
 }
 
@@ -177,6 +180,7 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
                                          getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert}) => {
     const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
+    const [tableDiffState, setTableDiffState] = useState({isShown: false, expandedTablePath: ""});
 
     if (results.length === 0) {
         return <div className="tree-container">
@@ -186,7 +190,15 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
         return <div className="tree-container">
                     {!enableDeltaDiff
                         ? <ExperimentalDeltaDiffButton showButton={showExperimentalDeltaDiffButton}/>
-                        : <div className="mr-1 mb-2"><Alert variant={"info"}><InfoIcon/> You can now use lakeFS to compare Delta Lake tables</Alert></div>
+                        : tableDiffState.isShown
+                                ? <Button className="action-bar"
+                                          variant="secondary"
+                                          disabled={false}
+                                          onClick={() => setTableDiffState( {isShown: false, expandedTablePath: ""})}>
+                                    <ArrowLeftIcon/> Back to object comparison
+                                  </Button>
+                                : <div className="mr-1 mb-2"><Alert variant={"info"}><InfoIcon/> You can now use lakeFS to
+                                    compare Delta Lake tables</Alert></div>
                     }
                     <Card>
                         <Card.Header>
@@ -195,7 +207,9 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                 </span>
                         </Card.Header>
                         <Card.Body>
-                            <Table borderless size="sm">
+                            {tableDiffState.isShown
+                                ? <DeltaLakeDiff repo={repo} leftRef={leftDiffRefID} rightRef={rightDiffRefID} tablePath={tableDiffState.expandedTablePath}/>
+                                : <Table borderless size="sm">
                                 <tbody>
                                 {results.map(entry => {
                                     return (
@@ -207,13 +221,14 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                                      onNavigate={onNavigate}
                                                      getMore={getMore}
                                                      onRevert={onRevert}
+                                                     setTableDiffExpanded={() => setTableDiffState({isShown: true,  expandedTablePath: entry.path})}
                                                  />);
                                 })}
                                 {!!nextPage &&
                                 <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage}
                                                     setAfterUpdated={setAfterUpdated}/>}
                                 </tbody>
-                            </Table>
+                            </Table>}
                         </Card.Body>
                     </Card>
             </div>

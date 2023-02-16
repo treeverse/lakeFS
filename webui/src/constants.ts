@@ -6,3 +6,11 @@ export enum TreeItemType {
     Prefix,
     DeltaLakeTable
 }
+export enum TableOperationType {
+    Update = "update",
+    Create = "create",
+    Delete = "delete"
+}
+export enum OtfType {
+    Delta = "delta",
+}
