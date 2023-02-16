@@ -599,7 +599,7 @@ func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 		user:         "user3",
 		commitName:   "P",
 	})
-	mergeCommit, err := deps.catalog.Merge(ctx, "repo3", "main", "branch-b", "user3", "commitR", nil, "")
+	mergeCommit, err := deps.catalog.Merge(ctx, "repo3", "main", "branch-b", "user3", "commitR", catalog.Metadata{}, "")
 	testutil.Must(t, err)
 	commitsMap["commitR"] = mergeCommit
 	commitsMap["commitM"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
@@ -610,7 +610,7 @@ func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 		user:         "user2",
 		commitName:   "M",
 	})
-	mergeCommit, err = deps.catalog.Merge(ctx, "repo3", "main", "branch-a", "user2", "commitN", nil, "")
+	mergeCommit, err = deps.catalog.Merge(ctx, "repo3", "main", "branch-a", "user2", "commitN", catalog.Metadata{}, "")
 	testutil.Must(t, err)
 	commitsMap["commitN"] = mergeCommit
 	commitsMap["commitX"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
@@ -3272,7 +3272,7 @@ func TestController_Revert(t *testing.T) {
 		_, err = deps.catalog.Commit(ctx, repo, "branch1", "second", DefaultUserID, nil, nil, nil)
 		testutil.Must(t, err)
 		// merge branch1 to main
-		mergeRef, err := deps.catalog.Merge(ctx, repo, "main", "branch1", DefaultUserID, "merge to main", nil, "")
+		mergeRef, err := deps.catalog.Merge(ctx, repo, "main", "branch1", DefaultUserID, "merge to main", catalog.Metadata{}, "")
 		testutil.Must(t, err)
 
 		// revert changes should fail
