@@ -353,7 +353,7 @@ func OpenSafe(l *glua.State, ctx context.Context, buf io.StringWriter) {
 	//  along with a set of globals that omit anything that loads something external or reaches out to OS.
 	libs := []glua.RegistryFunction{
 		{Name: "_G", Function: BaseOpen(buf)},
-		{Name: "package", Function: glua.PackageOpen},
+		{Name: "package", Function: PackageOpen}, // using our own PackageOpen which disable loading sources from files
 		{Name: "table", Function: glua.TableOpen},
 		{Name: "string", Function: glua.StringOpen},
 		{Name: "bit32", Function: glua.Bit32Open},
@@ -367,5 +367,6 @@ func OpenSafe(l *glua.State, ctx context.Context, buf io.StringWriter) {
 
 	// utils adapted from goluago, skipping anything that allows network or storage access.
 	// additionally, the "goluago" namespace is removed from import tokens
+
 	Open(l, ctx)
 }
