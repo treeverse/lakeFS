@@ -50,7 +50,7 @@ server:
                     <Card.Body className="after-setup-card">
                         <h2>You&apos;re all set!</h2>
                         <Card.Text>
-                            Here are the credentials for your first user:<br/>
+                            Here are your credentials:<br/>
                         </Card.Text>
                         <div className="ms-2 row mt-4">
                             <div className="col-3">Access Key ID:</div>
@@ -62,32 +62,28 @@ server:
                         </div>
                         <Alert className="mt-4" variant="warning">
                             This is the <strong>only</strong> time that the secret access keys can be viewed or downloaded. You cannot recover them later.
+                            <div className="mt-3 text-md-center">
+                                <a className="btn p-2 pl-3 pr-3 after-setup-btn"
+                                   style={{backgroundColor: '#808080'}}
+                                   href={downloadContent}
+                                   target="_blank" rel="noreferrer" download="lakectl.yaml"><DownloadIcon/> Download credentials
+                                </a>
+                            </div>
                         </Alert>
+                        <h5>lakectl</h5>
+                        <div className="ms-2 mt-2">
+                            <a target="_blank" rel="noreferrer" 
+                               href="https://docs.lakefs.io/reference/commands.html">lakectl</a> is a CLI tool for working with lakeFS.
+                            <p className="mt-2">
+                            Download lakectl as part of the <a target="_blank" rel="noreferrer" href="https://github.com/treeverse/lakeFS/releases">lakeFS release package</a> and save the above credentials file as <code>~/.lakectl.yaml</code>.
+                            </p>
+                        </div>
                         <div className="mt-3 text-md-center">
                             <Button className="p-2 pl-3 pr-3 after-setup-btn" onClick={goToLoginHandler}>Go To Login</Button>
                         </div>
                     </Card.Body>
                 </Card>
             </Col>
-        </Row>
-            <Row>
-                <Col md={{offset: 4, span: 4}}>
-                    <Card className="mt-5">
-                        <Card.Body className="after-setup-card">
-                            <h5>Configure lakectl</h5>
-                            <div>Use the command-line tool to perform Git-like operations on your data.<br/> Save the configuration file under <code>~/.lakectl.yaml</code>:</div>
-                            <p className="mt-2">
-                                To use lakectl, you will need to download the binary. <a href="https://www.youtube.com/watch?v=8nO7RT411nA" rel="noreferrer" target={"_blank"}>Learn more</a>.
-                            </p>
-                            <div className="mt-3 text-md-center">
-                                <a className="btn p-2 pl-3 pr-3 after-setup-btn"
-                                   href={downloadContent}
-                                   target="_blank" rel="noreferrer" download="lakectl.yaml"><DownloadIcon/> Download Configuration
-                                </a>
-                            </div>
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row></>
+        </Row></>
     );
 }
