@@ -114,7 +114,7 @@ const (
 	MergeStrategyDestWinsStr = "dest-wins"
 	MergeStrategySrcWinsStr  = "source-wins"
 
-	MergeStrategyMetadataKey = "lakefs.merge.strategy"
+	MergeStrategyMetadataKey = ".lakefs.merge.strategy"
 )
 
 // mergeStrategyString String representation for MergeStrategy consts. Pay attention to the order!

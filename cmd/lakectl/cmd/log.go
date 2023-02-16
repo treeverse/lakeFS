@@ -20,7 +20,7 @@ Merge:         {{ $val.Parents|join ", "|bold }}
 
 Metadata:
 	{{ range $key, $value := $val.Metadata.AdditionalProperties }}
-	{{ $key }}	=	{{ $value }}
+	{{ $key | printf "%-18s" }} = {{ $value }}
 	{{ end -}}
 {{ end }}{{ if .Pagination  }}
 {{.Pagination | paginate }}{{ end }}`
