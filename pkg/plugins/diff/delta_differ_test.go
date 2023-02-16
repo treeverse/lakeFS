@@ -15,6 +15,42 @@ import (
 )
 
 func TestDeltaLakeDiffer_Diff(t *testing.T) {
+	changedDiffRes := DiffResponse{
+		Entries: []*TableOperation{
+			{
+				Id:        "id1",
+				Timestamp: timestamppb.Now(),
+				Operation: "OPA1",
+				Content: map[string]string{
+					"this":      "happened",
+					"this_also": "happened",
+				},
+				OperationType: OperationType_DELETE,
+			},
+			{
+				Id:        "id2",
+				Timestamp: timestamppb.Now(),
+				Operation: "OPA2",
+				Content: map[string]string{
+					"this":      "happened",
+					"this_also": "happened",
+				},
+				OperationType: OperationType_CREATE,
+			},
+			{
+				Id:        "id3",
+				Timestamp: timestamppb.Now(),
+				Operation: "OPA3",
+				Content: map[string]string{
+					"this":      "happened",
+					"this_also": "happened",
+				},
+				OperationType: OperationType_UPDATE,
+			},
+		},
+		DiffType: DiffType_CHANGED,
+	}
+
 	tests := []struct {
 		name         string
 		client       TableDifferClientMock
@@ -24,22 +60,9 @@ func TestDeltaLakeDiffer_Diff(t *testing.T) {
 		expectedErr  error
 	}{
 		{
-			name:   "success",
-			client: TableDifferClientMock{},
-			diffResponse: &DiffResponse{
-				Entries: []*TableOperation{
-					{
-						Id:        "id1",
-						Timestamp: timestamppb.Now(),
-						Operation: "OPA",
-						Content: map[string]string{
-							"this":      "happened",
-							"this_also": "happened",
-						},
-					},
-				},
-				ChangeType: Type(Changed),
-			},
+			name:         "success",
+			client:       TableDifferClientMock{},
+			diffResponse: &changedDiffRes,
 		},
 		{
 			name:         "failure - table not found",
@@ -140,9 +163,10 @@ func validateResults(t *testing.T, resp Response, dr *DiffResponse) {
 	if len(resp.Diffs) != len(dr.GetEntries()) {
 		t.Errorf("Diff() got = %v, returned from inner op = %v", resp, dr)
 	}
+
 	expectedResp := Response{
-		ChangeType: ChangeType(dr.ChangeType),
-		Diffs:      []DiffEntry{},
+		DiffType: getDiffType(dr.GetDiffType()),
+		Diffs:    []DiffEntry{},
 	}
 	for _, e := range dr.GetEntries() {
 		expectedResp.Diffs = append(expectedResp.Diffs, DiffEntry{
@@ -150,6 +174,7 @@ func validateResults(t *testing.T, resp Response, dr *DiffResponse) {
 			Timestamp:        e.Timestamp.AsTime(),
 			Operation:        e.Operation,
 			OperationContent: e.Content,
+			OperationType:    getOpType(e.GetOperationType()),
 		})
 	}
 	if !reflect.DeepEqual(resp, expectedResp) {

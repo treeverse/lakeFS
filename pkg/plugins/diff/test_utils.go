@@ -49,8 +49,8 @@ func (ed TestDiffer) Diff(ctx context.Context, p Params) (Response, error) {
 	}
 
 	r := Response{
-		ChangeType: Changed,
-		Diffs:      generateDiffs(),
+		DiffType: DiffTypeChanged,
+		Diffs:    generateDiffs(),
 	}
 	return r, nil
 }
@@ -65,20 +65,20 @@ func (ctd ControllerTestDiffer) Diff(ctx context.Context, p Params) (Response, e
 		return Response{}, ErrTableNotFound
 	}
 
-	var ct = Changed
+	var ct = DiffTypeChanged
 	switch {
 	case left == "dropped":
-		ct = Dropped
+		ct = DiffTypeDropped
 	case right == "created":
-		ct = Created
+		ct = DiffTypeCreated
 	}
 	var diffs []DiffEntry
-	if ct != Dropped {
+	if ct != DiffTypeDropped {
 		diffs = generateDiffs()
 	}
 	r := Response{
-		ChangeType: ct,
-		Diffs:      diffs,
+		DiffType: ct,
+		Diffs:    diffs,
 	}
 	return r, nil
 }
