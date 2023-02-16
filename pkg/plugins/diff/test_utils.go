@@ -43,7 +43,7 @@ func NewMockHandler() *MockHandler {
 type TestDiffer struct{}
 
 func (ed TestDiffer) Diff(ctx context.Context, p Params) (Response, error) {
-	e := errorFromContext(ctx)
+	e := ErrorFromContext(ctx)
 	if e != nil {
 		return Response{}, e
 	}
@@ -107,11 +107,11 @@ type keyType string
 
 const errKey keyType = "error"
 
-func contextWithError(ctx context.Context, e error) context.Context {
+func ContextWithError(ctx context.Context, e error) context.Context {
 	return context.WithValue(ctx, errKey, e)
 }
 
-func errorFromContext(ctx context.Context) error {
+func ErrorFromContext(ctx context.Context) error {
 	e, ok := ctx.Value(errKey).(error)
 	if !ok {
 		return nil

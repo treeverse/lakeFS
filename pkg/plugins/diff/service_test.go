@@ -39,7 +39,7 @@ func TestService_RunDiff(t *testing.T) {
 			if tc.register {
 				service.registerDiffClient(diffType, internal.HCPluginProperties{})
 			}
-			ctx = contextWithError(ctx, tc.expectedErr)
+			ctx = ContextWithError(ctx, tc.expectedErr)
 			_, err := service.RunDiff(ctx, diffType, Params{})
 			if err != nil && !errors.Is(err, tc.expectedErr) {
 				t.Errorf("'%s' failed: %s", tc.description, err)
