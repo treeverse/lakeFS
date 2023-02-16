@@ -82,16 +82,19 @@ const OperationExpansionSection = ({operationExpanded, onExpand}) => {
  */
 function parseOperationContent(content) {
     let parsedContent = "";
-    for (let key in content) {
-        const val = content[key];
-        parsedContent += `${key}: `
-        let parsedVal = "";
-        try {
-            parsedVal = JSON.parse(val);
-        } catch (err) {
-            parsedVal = val;
-        }
-        parsedContent += parsedVal + "\n";
+    for (const [key, value] of Object.entries(content)) {
+        parsedContent += `${key}: `;
+        parsedContent += parseValue(value) + "\n";
     }
     return parsedContent;
+}
+
+function parseValue(val) {
+    let parsedVal = "";
+    try {
+        parsedVal = JSON.parse(val);
+    } catch (err) {
+        parsedVal = val;
+    }
+    return parsedVal;
 }
