@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
+
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -47,6 +49,7 @@ type dependencies struct {
 	catalog     catalog.Interface
 	authService auth.Service
 	collector   *memCollector
+	server      *httptest.Server
 }
 
 // memCollector in-memory collector stores events and metadata sent
@@ -171,6 +174,8 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	emailer, err := email.NewEmailer(email.Params(cfg.Email))
 	tmpl := templater.NewService(templates.Content, cfg, authService)
 
+	otfDiffService := tablediff.NewMockService()
+
 	testutil.Must(t, err)
 	handler := api.Serve(
 		cfg,
@@ -193,7 +198,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		nil,
 		nil,
 		upload.DefaultPathProvider,
-		nil,
+		otfDiffService,
 	)
 
 	return handler, &dependencies{
@@ -256,6 +261,7 @@ func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFa
 	t.Helper()
 	handler, deps := setupHandlerWithWalkerFactory(t, factory)
 	server := setupServer(t, handler)
+	deps.server = server
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	_ = setupCommPrefs(t, clt)
 	cred := createDefaultAdminUser(t, clt)
