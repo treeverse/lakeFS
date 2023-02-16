@@ -40,16 +40,17 @@ const SetupContents = () => {
         }
     }, [setDisabled, setSetupError, setSetupData, setup]);
 
-    const onSubmitCommunicationPreferences = useCallback(async (userEmail, updatesChecked, securityChecked) => {
+    const onSubmitCommunicationPreferences = useCallback(async (adminUser, userEmail, updatesChecked, securityChecked) => {
         if (!userEmail) {
             setSetupError("Email is required.");
             return;
         }
         setDisabled(true);
         try {
-            const response = await setup.commPrefs(userEmail, updatesChecked, securityChecked);
+            await setup.commPrefs(userEmail, updatesChecked, securityChecked);
+            const response = await setup.lakeFS(adminUser);
             setSetupError(null);
-            setCurrentStep(response?.nextStep);
+            setSetupData(response);
         } catch (error) {
             setSetupError(error);
         } finally {

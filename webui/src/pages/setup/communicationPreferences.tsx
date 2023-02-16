@@ -18,17 +18,22 @@ export const CommunicationPreferencesSetup: FC<CommunicationPreferencesSetupProp
     disabled,
 }) => {
     const [userEmail, setUserEmail] = useState<string>("");
+    const [adminUser, setAdminUser] = useState<string>("admin");
     const [updatesCheck, setUpdatesCheck] = useState<boolean>(false);
     const [securityCheck, setSecurityCheck] = useState<boolean>(true);
 
     const submitHandler = useCallback((e: FormEvent) => {
-        onSubmit(userEmail, updatesCheck, securityCheck);
+        onSubmit(adminUser, userEmail, updatesCheck, securityCheck);
         e.preventDefault();
-    }, [onSubmit, userEmail, updatesCheck, securityCheck]);
+    }, [onSubmit, adminUser, userEmail, updatesCheck, securityCheck]);
 
     const handleEmailChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
         setUserEmail(e.target.value);
     }, [setUserEmail]);
+
+    const handleAdminUserChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+        setAdminUser(e.target.value);
+    }, [setAdminUser]);
 
     const handleUpdatesChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
         setUpdatesCheck(e.target.checked);
@@ -42,15 +47,24 @@ export const CommunicationPreferencesSetup: FC<CommunicationPreferencesSetupProp
         <Row>
             <Col md={{offset: 2, span: 8}}>
                 <Card className="setup-widget">
-                    <Card.Header>Communication Preferences</Card.Header>
+                    <Card.Header>User Configuration</Card.Header>
                     <Card.Body>
-                    <Card.Text>
-                        Please provide your email address, and indicate what optional communications you&apos;d like to receive:
+                        <Card.Text>
+                            Please specify the name of the first admin account to create, or leave it as the default.
                         </Card.Text>
+
                         <Form onSubmit={submitHandler}>
+
+                        <Form.Group controlId="user-name" className="mb-3">
+                            <Form.Control type="text" value={adminUser}  onChange={handleAdminUserChange} placeholder="Admin Username" autoFocus/>
+                        </Form.Group>
+
+                            <Card.Text>
+                            Please provide your email address, and indicate what optional communications you&apos;d like to receive:
+                            </Card.Text>
                             <Form.Group controlId="user-email" className="mt-4">
                                 <Form.Label>Email <span className="required-field-label">*</span></Form.Label>
-                                <Form.Control type="email" placeholder="name@company.com" value={userEmail}  onChange={handleEmailChange} autoFocus/>
+                                <Form.Control type="email" placeholder="name@company.com" value={userEmail}  onChange={handleEmailChange} />
                             </Form.Group>
 
                             <Form.Group controlId="updates-check" className="mt-4">
@@ -62,7 +76,7 @@ export const CommunicationPreferencesSetup: FC<CommunicationPreferencesSetupProp
                             </Form.Group>
 
                             {!!setupError && <Error error={setupError}/>}
-                            <Button variant="primary" disabled={disabled} type="submit">Continue</Button>
+                            <Button variant="primary" disabled={disabled} type="submit">Setup</Button>
                         </Form>
                     </Card.Body>
                 </Card>
