@@ -52,6 +52,7 @@ type S3Creds struct {
 type Params struct {
 	TablePaths TablePaths
 	S3Creds    S3Creds
+	Repo       string
 }
 
 type Differ interface {
@@ -98,6 +99,6 @@ func (s *Service) Close() {
 	}
 }
 
-func (s *Service) RegisterDiffClient(diffType string, props internal.HCPluginProperties) {
+func (s *Service) registerDiffClient(diffType string, props internal.HCPluginProperties) {
 	s.pluginHandler.RegisterPlugin(diffType, props)
 }

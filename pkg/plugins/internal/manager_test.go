@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/treeverse/lakefs/pkg/plugins"
+
 	"github.com/hashicorp/go-plugin"
 )
 
@@ -16,7 +18,7 @@ const registeredPluginName = "plugin"
 
 var errPanic = errors.New("")
 
-var basicHS = PluginHandshake{
+var basicHS = plugins.PluginHandshake{
 	Key:   "key",
 	Value: "value",
 }
@@ -32,7 +34,7 @@ type testCase struct {
 type testCases []testCase
 
 func TestManager_LoadPluginClient(t *testing.T) {
-	id := PluginIdentity{
+	id := plugins.PluginIdentity{
 		ProtocolVersion: 1,
 	}
 	cases := testCases{
