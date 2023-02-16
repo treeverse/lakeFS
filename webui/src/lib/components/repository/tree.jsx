@@ -389,8 +389,9 @@ const EntryRow = ({ repo, reference, path, entry, onDelete, showActions }) => {
       break;
   }
 
+  const subPath = path.lastIndexOf("/") !== -1 ? path.substr(0, path.lastIndexOf("/")) : "";
   const buttonText =
-    path.length > 0 ? entry.path.substr(path.length) : entry.path;
+      subPath.length > 0 ? entry.path.substr(subPath.length + 1) : entry.path;
 
   const params = { repoId: repo.id };
   const query = { ref: reference.id, path: entry.path };
@@ -528,14 +529,14 @@ const EntryRow = ({ repo, reference, path, entry, onDelete, showActions }) => {
   );
 };
 
-function pathParts(path) {
+function pathParts(path, isPathToFile) {
   let parts = path.split(/\//);
   let resolved = [];
   if (parts.length === 0) {
     return resolved;
   }
 
-  if (parts[parts.length - 1] === "") {
+  if (parts[parts.length - 1] === "" || !isPathToFile) {
     parts = parts.slice(0, parts.length - 1);
   }
 
@@ -566,7 +567,7 @@ export const URINavigator = ({
   pathURLBuilder = buildPathURL,
   isPathToFile = false,
 }) => {
-  const parts = pathParts(path);
+  const parts = pathParts(path, isPathToFile);
   const params = { repoId: repo.id };
 
   return (

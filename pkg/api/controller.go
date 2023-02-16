@@ -3175,6 +3175,11 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 	user, _ := auth.GetUser(ctx)
 	c.LogAction(ctx, "list_objects", r, repository, ref, "")
 
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
 	res, hasMore, err := c.Catalog.ListEntries(
 		ctx,
 		repository,
@@ -3184,11 +3189,6 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 		paginationDelimiter(params.Delimiter),
 		paginationAmount(params.Amount),
 	)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
