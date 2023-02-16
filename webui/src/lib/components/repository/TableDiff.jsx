@@ -81,12 +81,11 @@ const OperationExpansionSection = ({operationExpanded, onExpand}) => {
  * @return a prettified string including the operation content.
  */
 function stringifyOperationContent(content) {
-    let parsedContent = "";
+    let jsonData = {};
     for (const [key, value] of Object.entries(content)) {
-        parsedContent += `${key}: `;
-        parsedContent += parseValue(value) + "\n";
+        jsonData[key] = parseValue(value);
     }
-    return parsedContent;
+    return JSON.stringify(jsonData, null, 4);
 }
 
 function parseValue(val) {
