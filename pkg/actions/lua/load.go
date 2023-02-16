@@ -35,17 +35,6 @@ func findLoader(l *lua.State, name string) {
 	}
 }
 
-func checkLoad(l *lua.State, loaded bool, fileName string) int {
-	if loaded { // Module loaded successfully?
-		l.PushString(fileName) // Second argument to module.
-		return 2               // Return open function & file name.
-	}
-	m := lua.CheckString(l, 1)
-	e := lua.CheckString(l, -1)
-	lua.Errorf(l, "error loading module '%s' from file '%s':\n\t%s", m, fileName, e)
-	panic("unreachable")
-}
-
 func searcherPreload(l *lua.State) int {
 	name := lua.CheckString(l, 1)
 	l.Field(lua.RegistryIndex, "_PRELOAD")
