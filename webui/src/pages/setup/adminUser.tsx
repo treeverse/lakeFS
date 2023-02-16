@@ -32,7 +32,7 @@ export const AdminUserSetup = forwardRef<HTMLInputElement, AdminUserSetupProps>(
                         </Card.Text>
                         <Form onSubmit={submitHandler}>
                             <Form.Group controlId="user-name" className="mb-3">
-                                <Form.Control type="text" value="admin" placeholder="Admin Username" ref={inputRef} autoFocus/>
+                                <Form.Control type="text" defaultValue="admin" placeholder="Admin Username" ref={inputRef} autoFocus/>
                             </Form.Group>
 
                             {!!setupError && <Error error={setupError}/>}
