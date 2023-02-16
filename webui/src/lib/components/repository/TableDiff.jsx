@@ -3,7 +3,7 @@ import Table from "react-bootstrap/Table";
 import {ChevronDownIcon, ChevronRightIcon} from "@primer/octicons-react";
 import {OverlayTrigger} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
-import {TableOperationType, OtfType} from "../../../constants";
+import {OtfType} from "../../../constants";
 import {useAPI} from "../../hooks/api";
 import {repositories} from "../../api";
 import {Error, Loading} from "../controls";
