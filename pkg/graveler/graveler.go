@@ -2282,13 +2282,10 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		switch strategy {
 		case MergeStrategyDestWinsStr:
 			mergeStrategy = MergeStrategyDest
-
 		case MergeStrategySrcWinsStr:
 			mergeStrategy = MergeStrategySrc
-
 		case "":
 			mergeStrategy = MergeStrategyNone
-
 		default:
 			return nil, ErrInvalidMergeStrategy
 		}
