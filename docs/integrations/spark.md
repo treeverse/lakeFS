@@ -66,6 +66,10 @@ interact with your data on lakeFS.
   </div>
   <div markdown="2" id="install-databricks">
 
+**Note** For your convenience, follow this [step by step Databricks integration tutorial, including lakeFS Hadoop File System, Python client and lakeFS SPARK client](https://lakefs.io/blog/databricks-lakefs-integration-tutorial/).
+{: .note }
+
+
   Add the `hadoop-lakefs-assembly` jar to your Databricks cluster. Under `compute ➡️ Libraries` Add a Maven package as follows:
 
   Install a Maven package with the `io.lakefs:hadoop-lakefs-assembly:0.1.12` 
@@ -75,7 +79,7 @@ interact with your data on lakeFS.
 
   ![Databricks - Adding the lakeFS client Jar](../assets/img/databricks-install-package.png)
 
-  Alternatively, follow this [step by step Databricks integration tutorial, including lakeFS Hadoop File System, Python client and lakeFS SPARK client](https://lakefs.io/blog/databricks-lakefs-integration-tutorial/).
+  
   </div>
 </div>
 
