@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 
+	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
+
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
@@ -60,6 +62,7 @@ func Serve(
 	oidcProvider *oidc.Provider,
 	oauthConfig *oauth2.Config,
 	pathProvider upload.PathProvider,
+	otfService *tablediff.Service,
 ) http.Handler {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := GetSwagger()
@@ -101,6 +104,7 @@ func Serve(
 		oidcAuthenticator,
 		sessionStore,
 		pathProvider,
+		otfService,
 	)
 	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
 

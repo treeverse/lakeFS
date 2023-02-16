@@ -14,6 +14,8 @@ import (
 	"syscall"
 	"time"
 
+	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
+
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-co-op/gocron"
@@ -277,6 +279,10 @@ var runCmd = &cobra.Command{
 				Scopes:       scopes,
 			}
 		}
+
+		otfDiffService, closeOtfService := tablediff.NewService()
+		defer closeOtfService()
+
 		apiHandler := api.Serve(
 			cfg,
 			c,
@@ -298,6 +304,7 @@ var runCmd = &cobra.Command{
 			oidcProvider,
 			oauthConfig,
 			upload.DefaultPathProvider,
+			otfDiffService,
 		)
 
 		// init gateway server
