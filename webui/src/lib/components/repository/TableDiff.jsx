@@ -55,7 +55,7 @@ const OperationMetadataRow = ({otfDiff, operationExpanded, onExpand, ...rest}) =
 
 const OperationDetailsRow = ({otfDiff}) => {
     const operationTimestamp = otfDiff.timestamp;
-    const operationContent = parseOperationContent(otfDiff.operation_content);
+    const operationContent = stringifyOperationContent(otfDiff.operation_content);
     return <tr className="otf-diff-operation-details">
         <td className="pl-lg-10 col-10 table-operation-details">
             <strong>Timestamp:</strong> {operationTimestamp}
@@ -74,13 +74,13 @@ const OperationExpansionSection = ({operationExpanded, onExpand}) => {
 }
 
 /**
- * Parses otf operation content. operations sometimes include unparsed json strings and this methods aims to simplify
+ * Stringifies otf operation content. operations sometimes include unparsed json strings and this methods aims to simplify
  * reading those operations.
  *
  * @param content of the table operation
  * @return a prettified string including the operation content.
  */
-function parseOperationContent(content) {
+function stringifyOperationContent(content) {
     let parsedContent = "";
     for (const [key, value] of Object.entries(content)) {
         parsedContent += `${key}: `;
