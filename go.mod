@@ -112,8 +112,11 @@ require (
 	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/curioswitch/go-reassign v0.2.0 // indirect
 	github.com/denis-tingaikin/go-header v0.4.3 // indirect
+	github.com/docker/distribution v2.8.1+incompatible // indirect
+	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/ettle/strcase v0.1.1 // indirect
 	github.com/firefart/nonamedreturns v1.0.4 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.1 // indirect
 	github.com/getsentry/sentry-go v0.16.0 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/google/flatbuffers v2.0.0+incompatible // indirect
@@ -135,6 +138,7 @@ require (
 	github.com/nunnatsa/ginkgolinter v0.9.0 // indirect
 	github.com/oklog/run v1.0.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
+	github.com/pjbgf/sha1cd v0.2.3 // indirect
 	github.com/pkg/browser v0.0.0-20210115035449-ce105d075bb4 // indirect
 	github.com/quasilyte/gogrep v0.5.0 // indirect
 	github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567 // indirect
