@@ -9,6 +9,10 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/jedib0t/go-pretty/v6/text"
+
+	"github.com/docker/docker/api/types/mount"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -66,37 +70,27 @@ var cloneCmd = &cobra.Command{
 		}
 
 		maxParallelism, err := cmd.Flags().GetInt("parallelism")
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 
 		var fullPath string
 		var pathInRepository string
 		if isGit {
 			pathInRepository, err = repoCfg.RelativeToRoot(targetDirectory)
-			if err != nil {
-				DieErr(err)
-			}
+			DieIfErr(err)
 			fullPath = path.Join(repoCfg.Root(), pathInRepository)
 			hasSource, err := repoCfg.HasSource(pathInRepository)
-			if err != nil {
-				DieErr(err)
-			}
+			DieIfErr(err)
 			if hasSource {
 				DieFmt("directory already cloned. You can try running `pull`.")
 			}
 		} else {
 			var err error
 			fullPath, err = filepath.Abs(targetDirectory)
-			if err != nil {
-				DieErr(err)
-			}
+			DieIfErr(err)
 		}
 
 		locationExists, err := local.DirectoryExists(fullPath)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 		if locationExists {
 			DieFmt("directory already exists. Try a different location?")
 		}
@@ -104,9 +98,7 @@ var cloneCmd = &cobra.Command{
 		// let's try and dereference the branch
 		lakeFSClient := getClient()
 		stableRef, err := local.DereferenceBranch(cmd.Context(), lakeFSClient, source)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 
 		// sync the thing!
 		stableSource := &uri.URI{
@@ -115,28 +107,41 @@ var cloneCmd = &cobra.Command{
 			Path:       source.Path,
 		}
 		err = local.SyncDirectory(cmd.Context(), lakeFSClient, stableSource, fullPath, maxParallelism)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 
 		// write to config
 		if isGit {
 			err = repoCfg.AddSource(pathInRepository, source.String(), stableRef)
-			if err != nil {
-				DieErr(err)
-			}
+			DieIfErr(err)
 			err = repoCfg.GitIgnore(pathInRepository)
-			if err != nil {
-				DieErr(err)
-			}
+			DieIfErr(err)
 		}
 	},
+}
+
+func printDiffLine(diffType, path string) {
+	var color text.Color
+	var action string
+
+	switch diffType {
+	case "added":
+		color = text.FgGreen
+		action = "added"
+	case "removed":
+		color = text.FgRed
+		action = "removed"
+	case "changed":
+		color = text.FgYellow
+		action = "modified"
+	default:
+	}
+	fmt.Print(color.Sprintf("\t%s %s\n", action, path))
 }
 
 func printLocalDiff(d *local.Diff) (total int) {
 	if len(d.Modified) > 0 {
 		for _, p := range d.Modified {
-			fmt.Printf("\tmodified:\t%s\n", p)
+			printDiffLine("changed", p)
 			total += 1
 		}
 		fmt.Print("\n")
@@ -144,7 +149,7 @@ func printLocalDiff(d *local.Diff) (total int) {
 
 	if len(d.Added) > 0 {
 		for _, p := range d.Added {
-			fmt.Printf("\tadded:\t%s\n", p)
+			printDiffLine("added", p)
 			total += 1
 		}
 		fmt.Print("\n")
@@ -152,12 +157,12 @@ func printLocalDiff(d *local.Diff) (total int) {
 
 	if len(d.Removed) > 0 {
 		for _, p := range d.Removed {
-			fmt.Printf("\tremoved:\t%s\n", p)
+			printDiffLine("removed", p)
 			total += 1
 		}
 	}
 	if total == 0 {
-		fmt.Printf("\n\tNo local changes\n")
+		fmt.Print("\n\tNo local changes\n")
 	}
 	return
 }
@@ -181,23 +186,17 @@ var statusCmd = &cobra.Command{
 			if isGit {
 				fullPath, err = repoCfg.RelativeToRoot(args[0])
 				hasSource, err := repoCfg.HasSource(fullPath)
-				if err != nil {
-					DieErr(err)
-				}
+				DieIfErr(err)
 				if !hasSource {
 					DieFmt("'%s' doesn't seem to be a  data directory. You can try running `clone`.", args[0])
 				}
 			} else {
 				fullPath, err = filepath.Abs(args[0])
-				if err != nil {
-					DieErr(err)
-				}
+				DieIfErr(err)
 			}
 			fmt.Printf("Directory: '%s':\n\n", fullPath)
 			diffResults, err := local.DoDiff(fullPath)
-			if err != nil {
-				DieErr(err)
-			}
+			DieIfErr(err)
 			printLocalDiff(diffResults)
 			return
 		}
@@ -215,16 +214,12 @@ var statusCmd = &cobra.Command{
 		}
 
 		srcConfig, err := repoCfg.GetSourcesConfig()
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 		for pathInRepository := range srcConfig.Sources {
 			fmt.Printf("Directory: '%s':\n\n", pathInRepository)
 			fullPath := path.Join(repoCfg.Root(), pathInRepository)
 			diffResults, err := local.DoDiff(fullPath)
-			if err != nil {
-				DieErr(err)
-			}
+			DieIfErr(err)
 			printLocalDiff(diffResults)
 			fmt.Print("\n\n")
 		}
@@ -236,18 +231,42 @@ var runCmd = &cobra.Command{
 	Use:  "run",
 	Args: cobra.MaximumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
+		repoCfg, err := local.Config()
+		if errors.Is(err, git.ErrRepositoryNotExists) {
+			// not a git repo
+			DieFmt("run should be executed in the context if a Git repository, in a directory with a Runfile.yaml")
+		} else if err != nil {
+			DieErr(err)
+		}
+
 		specBytes, err := os.ReadFile(local.SpecFileName)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 		spec := &local.RunSpec{}
-		err = yaml.Unmarshal(specBytes, spec)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(yaml.Unmarshal(specBytes, spec))
 		if spec.SpecVersion != local.SpecVersion {
 			DieFmt("spec version not supported: %d (only %d supported)",
 				spec.SpecVersion, local.SpecVersion)
+		}
+
+		// set up mounts
+		mountedSources := make([]mount.Mount, 0)
+		for _, mountPoint := range spec.Sources {
+			hasSource, err := repoCfg.HasSource(mountPoint.Source)
+			DieIfErr(err)
+			if !hasSource {
+				DieFmt("'%s' is not a valid data source configured in this repository."+
+					" Try doing `lakectl repo clone` first?",
+					mountPoint.Source)
+			}
+			fullPath, err := repoCfg.RelativeToRoot(mountPoint.Source)
+			DieIfErr(err)
+			fullPath, err = filepath.Abs(fullPath)
+			DieIfErr(err)
+			mountedSources = append(mountedSources, mount.Mount{
+				Type:   mount.TypeBind,
+				Source: fullPath,
+				Target: mountPoint.Target,
+			})
 		}
 
 		// run container
@@ -255,22 +274,16 @@ var runCmd = &cobra.Command{
 			client.FromEnv,
 			client.WithAPIVersionNegotiation(),
 		)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 
 		// pull always?
 		out, err := docker.ImagePull(cmd.Context(), spec.Exec.Image, types.ImagePullOptions{})
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 		defer func() {
 			_ = out.Close()
 		}()
 		_, err = io.Copy(os.Stdout, out)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 
 		containerName := fmt.Sprintf("lakectl-run-%s", uuid.New().String())
 		resp, err := docker.ContainerCreate(
@@ -282,11 +295,10 @@ var runCmd = &cobra.Command{
 			},
 			&container.HostConfig{
 				AutoRemove: true,
+				Mounts:     mountedSources,
 			}, nil, nil, containerName,
 		)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 		done := make(chan struct{})
 		go func() {
 			attach, err := docker.ContainerAttach(cmd.Context(), containerName, types.ContainerAttachOptions{Stream: true, Stderr: true, Stdout: true})
@@ -295,19 +307,34 @@ var runCmd = &cobra.Command{
 			}
 			defer attach.Close()
 			_, err = stdcopy.StdCopy(os.Stdout, os.Stderr, attach.Reader)
-			if err != nil {
-				DieErr(err)
-			}
+			DieIfErr(err)
 			close(done)
 		}()
 
 		fmt.Printf("running container ID: %s\n", resp.ID)
-		err = docker.ContainerStart(cmd.Context(), resp.ID, types.ContainerStartOptions{})
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(docker.ContainerStart(cmd.Context(), resp.ID, types.ContainerStartOptions{}))
 		<-done // stdout closed
-		fmt.Printf("done!\n")
+
+		// run status to show changes:
+		fmt.Printf("Execution Complete! Changed sources:\n")
+		clean := true
+		for _, s := range mountedSources {
+			sourcePath, err := repoCfg.RelativeToRoot(s.Source)
+			DieIfErr(err)
+
+			diffResult, err := local.DoDiff(sourcePath)
+			DieIfErr(err)
+			if !diffResult.IsClean() {
+				clean = false
+				fmt.Printf("%s\n", sourcePath)
+				printLocalDiff(diffResult)
+			}
+		}
+		if clean {
+			fmt.Printf("no changes to data source\n")
+		} else {
+			fmt.Printf("You may commit these changes with `lakectl local commit <data source>`\n")
+		}
 	},
 }
 
@@ -324,50 +351,34 @@ var localCommitCmd = &cobra.Command{
 		}
 
 		kvPairs, err := getKV(cmd, "meta")
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 
 		maxParallelism, err := cmd.Flags().GetInt("parallelism")
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 
 		allowDirty, err := cmd.Flags().GetBool("allow-dirty")
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 
 		message, err := cmd.Flags().GetString("message")
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 
 		isClean, err := repoCfg.IsClean()
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 		if !isClean && !allowDirty {
 			DieFmt("you have uncommitted changes to your code (see `git status`). Either commit them or use --allow-dirty")
 		}
 
 		pathInRepository, err := repoCfg.RelativeToRoot(args[0])
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 		fullPath := path.Join(repoCfg.Root(), pathInRepository)
 
 		hasSource, err := repoCfg.HasSource(pathInRepository)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 		if !hasSource {
 			DieFmt("'%s' doesn't seem to be a  data directory. You can try running `clone`.", pathInRepository)
 		}
 		src, err := repoCfg.GetSource(pathInRepository)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 
 		source, err := src.RemoteURI()
 		if err != nil {
@@ -377,67 +388,45 @@ var localCommitCmd = &cobra.Command{
 		// make sure we don't have any dirty writes on the lakeFS branch
 		client := getClient()
 		hasUncommitted, err := local.HasUncommittedChanges(cmd.Context(), client, source)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 		if hasUncommitted {
 			DieFmt("your lakeFS branch already has uncommitted changes. Please commit/revert those first!")
 		}
 
 		// make sure our current ref is also the latest
 		latestCommitId, err := local.DereferenceBranch(cmd.Context(), client, source)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 		if latestCommitId != src.AtVersion {
 			DieFmt("local copy of lakeFS branch '%s' is not up to date with server. Please run `pull` first.", source.Ref)
 		}
 
 		// let's go!
-		err = local.UploadDirectoryChanges(cmd.Context(), client, source, fullPath, repoCfg.Root(), maxParallelism)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(local.UploadDirectoryChanges(cmd.Context(), client, source, fullPath, repoCfg.Root(), maxParallelism))
 
 		currentCommitId, err := repoCfg.CurrentCommitId()
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 
 		hasRemote, err := repoCfg.HasRemote(gitDefaultRemote)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 
 		kvPairs[gitCommitKeyName] = currentCommitId
 		kvPairs[gitPathKeyName] = pathInRepository
 		if hasRemote {
 			remote, err := repoCfg.GetRemote(gitDefaultRemote)
-			if err != nil {
-				DieErr(err)
-			}
+			DieIfErr(err)
 			kvPairs[gitRepoUrlKeyName] = remote
 		}
 
 		commitId, err := local.Commit(cmd.Context(), client, source, message, kvPairs)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 
 		updatedSource := &uri.URI{
 			Repository: source.Repository,
 			Ref:        commitId,
 			Path:       source.Path,
 		}
-		err = local.SyncDirectory(cmd.Context(), client, updatedSource, fullPath, maxParallelism)
-		if err != nil {
-			DieErr(err)
-		}
-
-		err = repoCfg.UpdateSourceVersion(pathInRepository, commitId)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(local.SyncDirectory(cmd.Context(), client, updatedSource, fullPath, maxParallelism))
+		DieIfErr(repoCfg.UpdateSourceVersion(pathInRepository, commitId))
 	},
 }
 
@@ -458,20 +447,14 @@ func pull(ctx context.Context, maxParallelism int, update bool, args ...string) 
 
 	if len(args) > 0 {
 		pathInRepository, err := repoCfg.RelativeToRoot(args[0])
-		if err != nil {
-			return err
-		}
+		DieIfErr(err)
 		hasSource, err := repoCfg.HasSource(pathInRepository)
-		if err != nil {
-			return err
-		}
+		DieIfErr(err)
 		if !hasSource {
 			return fmt.Errorf("'%s' doesn't seem to be a  data directory. You can try running `clone`.", args[0])
 		}
 		src, err := repoCfg.GetSource(pathInRepository)
-		if err != nil {
-			return err
-		}
+		DieIfErr(err)
 
 		source, err := src.RemoteURI()
 		if err != nil {
@@ -481,15 +464,10 @@ func pull(ctx context.Context, maxParallelism int, update bool, args ...string) 
 		currentStableRef := src.AtVersion
 		if update {
 			currentStableRef, err = local.DereferenceBranch(ctx, client, source)
-			if err != nil {
-				return err
-			}
+			DieIfErr(err)
 			err = repoCfg.UpdateSourceVersion(pathInRepository, currentStableRef)
-			if err != nil {
-				return err
-			}
+			DieIfErr(err)
 		}
-
 		// sync the thing!
 		fullPath := path.Join(repoCfg.Root(), pathInRepository)
 		return local.SyncDirectory(ctx, client, source, fullPath, maxParallelism)
@@ -497,27 +475,18 @@ func pull(ctx context.Context, maxParallelism int, update bool, args ...string) 
 
 	// let's pull all sources in the repo
 	srcConfig, err := repoCfg.GetSourcesConfig()
-	if err != nil {
-		return err
-	}
+	DieIfErr(err)
 
 	for targetDirectory, src := range srcConfig.Sources {
 		source, err := src.RemoteURI()
-		if err != nil {
-			return fmt.Errorf("could not parse remote source for '%s': %w", targetDirectory, err)
-		}
+		DieIfErr(err)
 
 		// sync the thing!
 		currentStableRef := src.AtVersion
 		if update {
 			currentStableRef, err = local.DereferenceBranch(ctx, client, source)
-			if err != nil {
-				return err
-			}
-			err = repoCfg.UpdateSourceVersion(targetDirectory, currentStableRef)
-			if err != nil {
-				return err
-			}
+			DieIfErr(err)
+			DieIfErr(repoCfg.UpdateSourceVersion(targetDirectory, currentStableRef))
 		}
 		stableSource := &uri.URI{
 			Repository: source.Repository,
@@ -525,10 +494,7 @@ func pull(ctx context.Context, maxParallelism int, update bool, args ...string) 
 			Path:       source.Path,
 		}
 		fullPath := path.Join(repoCfg.Root(), targetDirectory)
-		err = local.SyncDirectory(ctx, client, stableSource, fullPath, maxParallelism)
-		if err != nil {
-			return err
-		}
+		DieIfErr(local.SyncDirectory(ctx, client, stableSource, fullPath, maxParallelism))
 	}
 	return nil
 }
@@ -539,14 +505,9 @@ var localPullCmd = &cobra.Command{
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		maxParallelism, err := cmd.Flags().GetInt("parallelism")
-		if err != nil {
-			DieErr(err)
-		}
-
+		DieIfErr(err)
 		update, err := cmd.Flags().GetBool("update")
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 
 		// make sure no local changes
 		if len(args) > 0 {
@@ -560,15 +521,14 @@ var localPullCmd = &cobra.Command{
 			}
 			fullPath, err := repoCfg.RelativeToRoot(args[0])
 			hasSource, err := repoCfg.HasSource(fullPath)
-			if err != nil {
-				DieErr(err)
-			}
+			DieIfErr(err)
 			if !hasSource {
 				DieFmt("'%s' doesn't seem to be a  data directory. You can try running `clone`.", args[0])
 			}
 
 			fmt.Printf("Directory: '%s':\n\n", fullPath)
 			diffResults, err := local.DoDiff(fullPath)
+			DieIfErr(err)
 			if !diffResults.IsClean() {
 				DieFmt("Found uncommitted changes under '%s', please commit or reset first", fullPath)
 			}
@@ -584,25 +544,18 @@ var localPullCmd = &cobra.Command{
 		}
 
 		srcConfig, err := repoCfg.GetSourcesConfig()
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
 		for pathInRepository := range srcConfig.Sources {
 			fmt.Printf("Directory: '%s':\n\n", pathInRepository)
 			fullPath := path.Join(repoCfg.Root(), pathInRepository)
 			diffResults, err := local.DoDiff(fullPath)
-			if err != nil {
-				DieErr(err)
-			}
+			DieIfErr(err)
 			if !diffResults.IsClean() {
 				DieFmt("Found uncommitted changes under '%s', please commit or reset first", fullPath)
 			}
 		}
 
-		err = pull(cmd.Context(), maxParallelism, update, args...)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(pull(cmd.Context(), maxParallelism, update, args...))
 	},
 }
 
@@ -612,14 +565,8 @@ var localResetCmd = &cobra.Command{
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		maxParallelism, err := cmd.Flags().GetInt("parallelism")
-		if err != nil {
-			DieErr(err)
-		}
-
-		err = pull(cmd.Context(), maxParallelism, false, args...)
-		if err != nil {
-			DieErr(err)
-		}
+		DieIfErr(err)
+		DieIfErr(pull(cmd.Context(), maxParallelism, false, args...))
 	},
 }
 

@@ -211,6 +211,12 @@ func DieErr(err error) {
 	os.Exit(1)
 }
 
+func DieIfErr(err error) {
+	if err != nil {
+		DieErr(err)
+	}
+}
+
 type StatusCoder interface {
 	StatusCode() int
 }
