@@ -40,6 +40,7 @@ interface FileContentsProps {
     fileExtension: string;
     sizeBytes: number;
     showFullNavigator?: boolean;
+    usePresigned?: boolean;
 }
 
 
@@ -103,7 +104,7 @@ const FileObjectsViewerPage = () => {
     );
 };
 
-export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loading, error, contentType = null, fileExtension='', sizeBytes, showFullNavigator = true, usePresigned = false}) => {
+export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loading, error, contentType = null, fileExtension='', sizeBytes, showFullNavigator = true, usePresigned= false}) => {
 
     const objectUrl = linkToPath(repoId, refId, path, usePresigned);
 

@@ -45,7 +45,7 @@ export const humanSize = (bytes) => {
 
 const Na = () => <span>&mdash;</span>;
 
-const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
+const EntryRowActions = ({ repo, reference, entry, onDelete, usePresigned = false }) => {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const handleCloseDeleteConfirmation = () => setShowDeleteConfirmation(false);
   const handleShowDeleteConfirmation = () => setShowDeleteConfirmation(true);
@@ -74,7 +74,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
         </Dropdown.Toggle>
 
         <Dropdown.Menu>
-          {entry.path_type === "object" && (
+          {entry.path_type === "object" && usePresigned && (
               <PathLink
                   path={entry.path}
                   reference={reference}
@@ -385,7 +385,7 @@ const PathLink = ({ repoId, reference, path, children, presign = false, as = nul
   return React.createElement(as, { href: link, download: name }, children);
 };
 
-const EntryRow = ({ repo, reference, path, entry, onDelete, showActions }) => {
+const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions }) => {
   let rowClass = "change-entry-row ";
   switch (entry.diff_type) {
     case "changed":
@@ -508,6 +508,7 @@ const EntryRow = ({ repo, reference, path, entry, onDelete, showActions }) => {
       break;
   }
 
+  let usePresigned = config.pre_sign_support
   let entryActions;
   if (showActions && entry.diff_type !== "removed") {
     entryActions = (
@@ -516,6 +517,7 @@ const EntryRow = ({ repo, reference, path, entry, onDelete, showActions }) => {
         reference={reference}
         entry={entry}
         onDelete={onDelete}
+        usePresigned={usePresigned}
       />
     );
   }
@@ -742,6 +744,7 @@ export const Tree = ({
           <tbody>
             {results.map((entry) => (
               <EntryRow
+                config={config}
                 key={entry.path}
                 entry={entry}
                 path={path}

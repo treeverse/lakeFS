@@ -323,7 +323,6 @@ const ReadmeContainer = ({config, repo, reference, path='', refreshDep=''}) => {
 
     const fileExtension = getFileExtension(readmePath);
     const contentType = getContentType(response?.headers);
-    // usePresigned={!(config.pre_sign_support === 'local' || config.blockstore_type === 'mem')}
 
     return (
         <FileContents 
