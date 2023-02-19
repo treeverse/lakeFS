@@ -85,6 +85,9 @@ Clicking on the group takes us to the group's subpage with 2 tabs:
   groups using the same GUI mechanism as used today for memberships (and for
   policies, ironically).
 
+We shall add appropriate options to `lakectl` to control policies at the new
+levels of granularity.
+
 ### Upgrade to simplified
 
 On startup, lakeFS will check the KV schema version.  If it has not upgraded
@@ -135,6 +138,63 @@ If lakeFS is attached to an external authorization server, the existing PBAC
 GUI may continue to be used.  It is not possible to use both types of GUI at
 the same time: Moving from PBAC to simplified may only be performed once and
 **will** lose configuration.
+
+## Implementation
+
+lakeFS enforcement will remain backed by PBAC.  We shall add a "ui" field to
+policies.  It will contain a structure that backs the UI:
+
+<table>
+<tr><th>Read all repos</th><th>Read repos `foo`, `bar`</th></tr>
+<tr><td>
+```json
+{
+  "statement": [
+    {
+      "action": ["fs:List*", "fs:Read*"],
+      "effect": "allow",
+      "resource": "*"
+    }
+  ],
+  "ui": {
+    "permission": "Read",
+    "repositories": { "all": true }
+  }
+}
+```
+</td><td>
+```json
+{
+  "statement": [
+    {
+      "action": ["fs:List*", "fs:Read*"],
+      "effect": "allow",
+      "resource": "foo"
+    }, {
+      "action": ["fs:List*", "fs:Read*"],
+      "effect": "allow",
+      "resource": "bar"
+    }
+  ],
+  "ui": {
+    "permission": "Read",
+    "repositories": { "list": ["foo", "bar"] }
+  }
+}
+```
+</td></tr>
+</table>
+
+The UI receives and edits only the ui sub-object.  lakeFS translates it back
+to a statement when the UI posts it back.  In effect PBAC statements are the
+materialized form of the ui sub-object.
+
+## Milestones
+
+- Review and accept design
+- Server-side support: add ui sub-object and ui -> statement translations
+- lakectl support for simplified mode
+- GUI
 
 
 [auth-sec-update]:  https://docs.lakefs.io/posts/security_update.html#whats-changing
