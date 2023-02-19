@@ -3,10 +3,8 @@ package store
 import (
 	"context"
 	"crypto/md5" //nolint:gosec
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/fs"
 	"net/url"
@@ -16,18 +14,27 @@ import (
 	"sort"
 	"strings"
 
+	nanoid "github.com/matoous/go-nanoid/v2"
 	"golang.org/x/exp/slices"
 )
+
+const cacheDirName = "_lakefs_cache"
 
 type LocalWalker struct {
 	mark            Mark
 	allowedPrefixes []string
+	cacheLocation   string
 }
 
-func NewLocalWalker(allowedPrefixes []string) *LocalWalker {
+func NewLocalWalker(blockStorePath string, allowedPrefixes []string) *LocalWalker {
+	var cacheLocation string
+	if blockStorePath != "" {
+		cacheLocation = filepath.Join(blockStorePath, cacheDirName)
+	}
 	return &LocalWalker{
 		allowedPrefixes: allowedPrefixes,
 		mark:            Mark{HasMore: true},
+		cacheLocation:   cacheLocation,
 	}
 }
 
@@ -42,28 +49,35 @@ func (l *LocalWalker) Walk(_ context.Context, storageURI *url.URL, options WalkO
 
 	var entries []*ObjectStoreEntry
 
-	// use or create listing cache
-	rootHash := sha256.Sum256([]byte(root))
-	importCacheName := fmt.Sprintf("import_%s_cache.json", hex.EncodeToString(rootHash[:]))
-	cachePath := filepath.Join(os.TempDir(), importCacheName)
-	cacheData, err := os.ReadFile(cachePath)
-	if err == nil {
-		err = json.Unmarshal(cacheData, &entries)
-		// TODO(barak): log error
+	// verify and use cache - location is stored in continuation token
+	if options.ContinuationToken != "" && strings.HasPrefix(options.ContinuationToken, l.cacheLocation) {
+		cachePath := filepath.Join(options.ContinuationToken)
+		cacheData, err := os.ReadFile(cachePath)
+		if err == nil {
+			err = json.Unmarshal(cacheData, &entries)
+			if err != nil {
+				entries = nil
+			} else {
+				l.mark.ContinuationToken = options.ContinuationToken
+			}
+		}
 	}
+
+	// if needed scan all entries to import and calc etag
 	if entries == nil {
-		err = filepath.Walk(root, func(p string, info fs.FileInfo, err error) error {
+		if err := filepath.Walk(root, func(p string, info fs.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
 			key := filepath.ToSlash(p)
-			if key <= options.After {
+			if key < options.After {
 				return nil
 			}
 			if !info.Mode().IsRegular() {
 				return nil
 			}
 
+			// calculate etag for the file
 			f, err := os.Open(p)
 			if err != nil {
 				return err
@@ -91,28 +105,43 @@ func (l *LocalWalker) Walk(_ context.Context, storageURI *url.URL, options WalkO
 			}
 			entries = append(entries, ent)
 			return nil
-		})
-		if err != nil {
+		}); err != nil {
 			return err
 		}
 		sort.Slice(entries, func(i, j int) bool {
 			return entries[i].FullKey < entries[j].FullKey
 		})
 
-		jsonData, err := json.Marshal(entries)
-		if err != nil {
-			return err
+		// store entries to cache file
+		if l.cacheLocation != "" {
+			jsonData, err := json.Marshal(entries)
+			if err != nil {
+				return err
+			}
+			_ = os.MkdirAll(l.cacheLocation, 0o700)
+			cacheName := filepath.Join(l.cacheLocation, nanoid.Must()+"-import.json")
+			const cachePerm = 0o600
+			if err := os.WriteFile(cacheName, jsonData, cachePerm); err != nil {
+				return err
+			}
+			l.mark.ContinuationToken = cacheName
 		}
-		if err := os.WriteFile(cachePath+".tmp", jsonData, 0o600); err != nil {
-			return err
-		}
-		if err := os.Rename(cachePath+".tmp", cachePath); err != nil {
+	}
+
+	// search start position base on Last key
+	startIndex := sort.Search(len(entries), func(i int) bool {
+		return entries[i].FullKey > options.After
+	})
+	for i := startIndex; i < len(entries); i++ {
+		ent := *entries[i]
+		l.mark.LastKey = ent.FullKey
+		if err := walkFn(ent); err != nil {
 			return err
 		}
 	}
-	for _, ent := range entries {
-		l.mark.LastKey = ent.FullKey
-		if err := walkFn(*ent); err != nil {
+	// delete cache in case we completed the iteration
+	if l.mark.ContinuationToken != "" {
+		if err := os.Remove(l.mark.ContinuationToken); err != nil {
 			return err
 		}
 	}
