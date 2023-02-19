@@ -13,24 +13,48 @@ var (
 	ErrTableNotFound = errors.New("table not found")
 )
 
-type ChangeType int
-
 const (
-	Changed ChangeType = iota
-	Dropped
-	Created
+	DiffTypeChanged = "changed"
+	DiffTypeDropped = "dropped"
+	DiffTypeCreated = "created"
+	OpTypeCreate    = "create"
+	OpTypeUpdate    = "update"
+	OpTypeDelete    = "delete"
 )
+
+func getOpType(operationType OperationType) string {
+	switch operationType {
+	case OperationType_CREATE:
+		return OpTypeCreate
+	case OperationType_DELETE:
+		return OpTypeDelete
+	default:
+		return OpTypeUpdate
+	}
+}
+
+func getDiffType(diffType DiffType) string {
+	switch diffType {
+	case DiffType_CREATED:
+		return DiffTypeCreated
+	case DiffType_DROPPED:
+		return DiffTypeDropped
+	default:
+		return DiffTypeChanged
+	}
+}
 
 type DiffEntry struct {
 	Version          string
 	Timestamp        time.Time
 	Operation        string
 	OperationContent map[string]string
+	OperationType    string
 }
 
 type Response struct {
-	ChangeType
-	Diffs []DiffEntry
+	DiffType string
+	Diffs    []DiffEntry
 }
 
 type RefPath struct {

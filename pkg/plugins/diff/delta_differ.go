@@ -49,9 +49,10 @@ func (d *DeltaLakeDiffer) Diff(ctx context.Context, ps Params) (Response, error)
 		}
 		return Response{}, err
 	}
+
 	return Response{
-		Diffs:      buildDiffEntries(dr),
-		ChangeType: ChangeType(dr.GetChangeType()),
+		Diffs:    buildDiffEntries(dr),
+		DiffType: getDiffType(dr.GetDiffType()),
 	}, nil
 }
 
@@ -63,6 +64,7 @@ func buildDiffEntries(dr *DiffResponse) []DiffEntry {
 			Timestamp:        diff.GetTimestamp().AsTime(),
 			Operation:        diff.GetOperation(),
 			OperationContent: diff.GetContent(),
+			OperationType:    getOpType(diff.GetOperationType()),
 		})
 	}
 	return result

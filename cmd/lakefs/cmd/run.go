@@ -232,6 +232,9 @@ var runCmd = &cobra.Command{
 		}
 
 		if cfg.Auth.LDAP != nil {
+			logger.
+				WithField("feature", "LDAP").
+				Warn("Enabling LDAP on lakeFS server, but this functionality is deprecated")
 			middlewareAuthenticator = append(middlewareAuthenticator, newLDAPAuthenticator(cfg.Auth.LDAP, authService))
 		}
 		controllerAuthenticator := append(middlewareAuthenticator, auth.NewEmailAuthenticator(authService))
