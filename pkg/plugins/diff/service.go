@@ -31,6 +31,7 @@ func getOpType(operationType OperationType) string {
 		return OpTypeUpdate
 	}
 }
+
 func getDiffType(diffType DiffType) string {
 	switch diffType {
 	case DiffType_CREATED:
