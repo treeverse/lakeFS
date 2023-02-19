@@ -17,8 +17,7 @@ has_children: false
 
 ### User Authentication
 
-lakeFS authenticates users from a built-in authentication database, or,
-optionally, from a configured LDAP server.
+lakeFS authenticates users from a built-in authentication database.
 
 #### Built-in database
 
