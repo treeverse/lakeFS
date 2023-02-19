@@ -508,7 +508,6 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
       break;
   }
 
-  let usePresigned = config.pre_sign_support
   let entryActions;
   if (showActions && entry.diff_type !== "removed") {
     entryActions = (
@@ -517,7 +516,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
         reference={reference}
         entry={entry}
         onDelete={onDelete}
-        usePresigned={usePresigned}
+        usePresigned={config.config.pre_sign_support}
       />
     );
   }
