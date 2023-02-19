@@ -29,8 +29,8 @@ const cache = new LocalCache();
 
 export const linkToPath = (repoId, branchId, path, presign=false) => {
     const query = qs({
-        path: path,
-        presign: presign
+        path,
+        presign,
     });
     return `${API_ENDPOINT}/repositories/${repoId}/refs/${branchId}/objects?${query}`;
 };
