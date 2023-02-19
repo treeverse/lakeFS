@@ -18,13 +18,13 @@ Consequently, we decided to change the architecture to a pluggable one which ena
 
 ## What’s changing?
 
-With lakeFS [v0.91.0](https://github.com/treeverse/lakeFS/releases/tag/v0.91.0){: target="_blank" } Role-based access control and OIDC authentication are deprecated due to this architecture change. 
+With lakeFS [v0.91.0](https://github.com/treeverse/lakeFS/releases/tag/v0.91.0){: target="_blank" } Role-based access control and SSO (OIDC, LDAP) authentication are deprecated due to this architecture change.
 Within the lakeFS UI, you will see a deprecation notice on the administration screens when trying to update and create policies.
 
 In coming versions, we plan on making authorization and authentication pluggable, while bundling a simpler reference implementation into the core of lakeFS.
 This implementation will include basic identity management with built-in users and groups, as well as a simplified authorization mechanism based on ACLs.
 
-**If you currently rely on any of the deprecated features, please [contact us](mailto:support@treeverse.io?subject=RBAC+and+OIDC+deprecation){: target="_blank" } - we'll do our best to support you in the transition.**
+**If you currently rely on any of the deprecated features, please [contact us](mailto:support@treeverse.io?subject=RBAC+and+SSO+deprecation){: target="_blank" } - we'll do our best to support you in the transition.**
 {: .note }
 
 ## Why are we making this architectural change?
