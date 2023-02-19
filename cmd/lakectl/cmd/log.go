@@ -17,11 +17,12 @@ Date:          {{ $val.CreationDate|date }}
 Merge:         {{ $val.Parents|join ", "|bold }}
 {{ end }}
 	{{ $val.Message }}
-
+{{ if $val.Metadata.AdditionalProperties }}
 Metadata:
 	{{ range $key, $value := $val.Metadata.AdditionalProperties }}
 	{{ $key | printf "%-18s" }} = {{ $value }}
 	{{ end -}}
+{{ end -}}
 {{ end }}{{ if .Pagination  }}
 {{.Pagination | paginate }}{{ end }}`
 
