@@ -3972,14 +3972,15 @@ func buildOtfDiffListResponse(tableDiffResponse tablediff.Response) OtfDiffList 
 			OperationContent: content,
 			Timestamp:        int(entry.Timestamp.UnixMilli()),
 			Id:               &v,
+			OperationType:    entry.OperationType,
 		})
 	}
 
 	t := "changed"
-	switch tableDiffResponse.ChangeType {
-	case tablediff.Created:
+	switch tableDiffResponse.DiffType {
+	case tablediff.DiffTypeCreated:
 		t = "created"
-	case tablediff.Dropped:
+	case tablediff.DiffTypeDropped:
 		t = "dropped"
 	}
 	return OtfDiffList{
