@@ -638,6 +638,7 @@ export const URINavigator = ({
 };
 
 const GetStarted = ({ config, onUpload, onImport }) => {
+  const importDisabled = !config.config.import_support;
   return (
     <Container className="m-4 mb-5">
       <h2 className="mt-2">To get started with this repository:</h2>
@@ -648,7 +649,7 @@ const GetStarted = ({ config, onUpload, onImport }) => {
           <Button
             variant="link"
             className="mb-1"
-            disabled={config.config.blockstore_type === "mem"}
+            disabled={importDisabled}
             onClick={onImport}
           >
             Import

@@ -71,7 +71,10 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 }
 
 func buildLocalAdapter(params params.Local) (*local.Adapter, error) {
-	adapter, err := local.NewAdapter(params.Path, local.WithAllowedExternalPrefixes(params.AllowedExternalPrefixes))
+	adapter, err := local.NewAdapter(params.Path,
+		local.WithAllowedExternalPrefixes(params.AllowedExternalPrefixes),
+		local.WithImportEnabled(params.ImportEnabled),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("got error opening a local block adapter with path %s: %w", params.Path, err)
 	}

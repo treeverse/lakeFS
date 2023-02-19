@@ -244,7 +244,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
             </Modal>
 
             <Button
-                variant={(config.blockstore_type === 'mem') ? "success" : "light"}
+                variant={(!config.import_support) ? "success" : "light"}
                 onClick={onClick}>
                 <UploadIcon/> Upload Object
             </Button>
@@ -402,7 +402,7 @@ const ObjectsBrowser = ({config, configError}) => {
                     />
                     <ImportButton
                         onClick={() => setShowImport(true)}
-                        enabled={!(config.blockstore_type === 'mem')}
+                        enabled={config.blockstore_type.import_support}
                     />
                     <ImportModal
                         config={config}

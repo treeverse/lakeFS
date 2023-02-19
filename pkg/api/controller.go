@@ -19,11 +19,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/block/local"
-	"github.com/treeverse/lakefs/pkg/ingest/store"
-
-	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/swag"
@@ -34,15 +29,18 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/oidc"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/local"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
+	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -76,10 +74,10 @@ const (
 )
 
 type actionsHandler interface {
-	GetRunResult(ctx context.Context, repositoryID string, runID string) (*actions.RunResult, error)
-	GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*actions.TaskResult, error)
-	ListRunResults(ctx context.Context, repositoryID string, branchID, commitID string, after string) (actions.RunResultIterator, error)
-	ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (actions.TaskResultIterator, error)
+	GetRunResult(ctx context.Context, repositoryID, runID string) (*actions.RunResult, error)
+	GetTaskResult(ctx context.Context, repositoryID, runID, hookRunID string) (*actions.TaskResult, error)
+	ListRunResults(ctx context.Context, repositoryID, branchID, commitID, after string) (actions.RunResultIterator, error)
+	ListRunTaskResults(ctx context.Context, repositoryID, runID, after string) (actions.TaskResultIterator, error)
 }
 
 type Migrator interface {
@@ -166,7 +164,7 @@ func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request)
 	})
 }
 
-func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body DeleteObjectsJSONRequestBody, repository string, branch string) {
+func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body DeleteObjectsJSONRequestBody, repository, branch string) {
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_objects", r, repository, branch, "")
 
@@ -300,7 +298,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository string, branch string, params GetPhysicalAddressParams) {
+func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository, branch string, params GetPhysicalAddressParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.WriteObjectAction,
@@ -367,7 +365,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request, body LinkPhysicalAddressJSONRequestBody, repository string, branch string, params LinkPhysicalAddressParams) {
+func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request, body LinkPhysicalAddressJSONRequestBody, repository, branch string, params LinkPhysicalAddressParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.WriteObjectAction,
@@ -459,7 +457,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 
 // normalizePhysicalAddress return relative address based on storage namespace if possible. If address doesn't match
 // the storage namespace prefix, the return address type is full.
-func normalizePhysicalAddress(storageNamespace string, physicalAddress string) (string, catalog.AddressType) {
+func normalizePhysicalAddress(storageNamespace, physicalAddress string) (string, catalog.AddressType) {
 	prefix := storageNamespace
 	if !strings.HasSuffix(prefix, catalog.DefaultPathDelimiter) {
 		prefix += catalog.DefaultPathDelimiter
@@ -631,7 +629,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) DeleteGroupMembership(w http.ResponseWriter, r *http.Request, groupID string, userID string) {
+func (c *Controller) DeleteGroupMembership(w http.ResponseWriter, r *http.Request, groupID, userID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.RemoveGroupMemberAction,
@@ -650,7 +648,7 @@ func (c *Controller) DeleteGroupMembership(w http.ResponseWriter, r *http.Reques
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, groupID string, userID string) {
+func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, groupID, userID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.AddGroupMemberAction,
@@ -721,7 +719,7 @@ func serializePolicy(p *model.Policy) Policy {
 	}
 }
 
-func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupID string, policyID string) {
+func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DetachPolicyAction,
@@ -739,7 +737,7 @@ func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Reques
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request, groupID string, policyID string) {
+func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.AttachPolicyAction,
@@ -1135,7 +1133,7 @@ func (c *Controller) CreateCredentials(w http.ResponseWriter, r *http.Request, u
 	writeResponse(w, r, http.StatusCreated, response)
 }
 
-func (c *Controller) DeleteCredentials(w http.ResponseWriter, r *http.Request, userID string, accessKeyID string) {
+func (c *Controller) DeleteCredentials(w http.ResponseWriter, r *http.Request, userID, accessKeyID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DeleteCredentialsAction,
@@ -1158,7 +1156,7 @@ func (c *Controller) DeleteCredentials(w http.ResponseWriter, r *http.Request, u
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) GetCredentials(w http.ResponseWriter, r *http.Request, userID string, accessKeyID string) {
+func (c *Controller) GetCredentials(w http.ResponseWriter, r *http.Request, userID, accessKeyID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadCredentialsAction,
@@ -1264,7 +1262,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request, userID string, policyID string) {
+func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DetachPolicyAction,
@@ -1282,7 +1280,7 @@ func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, userID string, policyID string) {
+func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.AttachPolicyAction,
@@ -1317,6 +1315,7 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		BlockstoreNamespaceExample:       info.Example,
 		DefaultNamespacePrefix:           swag.String(c.Config.Blockstore.DefaultNamespacePrefix),
 		PreSignSupport:                   info.PreSignSupport,
+		ImportSupport:                    info.ImportSupport,
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
@@ -1597,7 +1596,7 @@ func runResultToActionRun(val *actions.RunResult) ActionRun {
 	return runResult
 }
 
-func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository string, runID string) {
+func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository, runID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadActionsAction,
@@ -1636,7 +1635,7 @@ func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository s
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, repository string, runID string, params ListRunHooksParams) {
+func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, repository, runID string, params ListRunHooksParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadActionsAction,
@@ -1701,7 +1700,7 @@ func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, reposi
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, repository string, runID string, hookRunID string) {
+func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, repository, runID, hookRunID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadActionsAction,
@@ -1800,7 +1799,7 @@ func (c *Controller) CreateBranch(w http.ResponseWriter, r *http.Request, body C
 	_, _ = io.WriteString(w, commitLog.Reference)
 }
 
-func (c *Controller) DeleteBranch(w http.ResponseWriter, r *http.Request, repository string, branch string) {
+func (c *Controller) DeleteBranch(w http.ResponseWriter, r *http.Request, repository, branch string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DeleteBranchAction,
@@ -1818,7 +1817,7 @@ func (c *Controller) DeleteBranch(w http.ResponseWriter, r *http.Request, reposi
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repository string, branch string) {
+func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repository, branch string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadBranchAction,
@@ -1910,7 +1909,7 @@ func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, 
 	return c.handleAPIErrorCallback(ctx, w, r, err, writeError)
 }
 
-func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body ResetBranchJSONRequestBody, repository string, branch string) {
+func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body ResetBranchJSONRequestBody, repository, branch string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.RevertBranchAction,
@@ -2017,7 +2016,7 @@ func (c *Controller) CreateMetaRange(w http.ResponseWriter, r *http.Request, bod
 	})
 }
 
-func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJSONRequestBody, repository string, branch string, params CommitParams) {
+func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJSONRequestBody, repository, branch string, params CommitParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,
@@ -2066,7 +2065,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 	writeResponse(w, r, http.StatusCreated, response)
 }
 
-func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, repository string, branch string, params DiffBranchParams) {
+func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, repository, branch string, params DiffBranchParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ListObjectsAction,
@@ -2114,7 +2113,7 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) DeleteObject(w http.ResponseWriter, r *http.Request, repository string, branch string, params DeleteObjectParams) {
+func (c *Controller) DeleteObject(w http.ResponseWriter, r *http.Request, repository, branch string, params DeleteObjectParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DeleteObjectAction,
@@ -2133,7 +2132,7 @@ func (c *Controller) DeleteObject(w http.ResponseWriter, r *http.Request, reposi
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, repository string, branch string, params UploadObjectParams) {
+func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, repository, branch string, params UploadObjectParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.WriteObjectAction,
@@ -2282,7 +2281,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	writeResponse(w, r, http.StatusCreated, response)
 }
 
-func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body StageObjectJSONRequestBody, repository string, branch string, params StageObjectParams) {
+func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body StageObjectJSONRequestBody, repository, branch string, params StageObjectParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.WriteObjectAction,
@@ -2352,7 +2351,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 	writeResponse(w, r, http.StatusCreated, response)
 }
 
-func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body CopyObjectJSONRequestBody, repository string, branch string, params CopyObjectParams) {
+func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body CopyObjectJSONRequestBody, repository, branch string, params CopyObjectParams) {
 	srcPath := body.SrcPath
 	destPath := params.DestPath
 	if !c.authorize(w, r, permissions.Node{
@@ -2428,7 +2427,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 	writeResponse(w, r, http.StatusCreated, response)
 }
 
-func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body RevertBranchJSONRequestBody, repository string, branch string) {
+func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body RevertBranchJSONRequestBody, repository, branch string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.RevertBranchAction,
@@ -2456,7 +2455,7 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body R
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repository string, commitID string) {
+func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repository, commitID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadCommitAction,
@@ -2639,7 +2638,7 @@ func (c *Controller) CreateBranchProtectionRule(w http.ResponseWriter, r *http.R
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, repository string, metaRange string) {
+func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, repository, metaRange string) {
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
@@ -2674,7 +2673,7 @@ func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, reposi
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) GetRange(w http.ResponseWriter, r *http.Request, repository string, pRange string) {
+func (c *Controller) GetRange(w http.ResponseWriter, r *http.Request, repository, pRange string) {
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
@@ -2843,7 +2842,7 @@ func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body Re
 	}
 }
 
-func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, repository string, branch string, params CreateSymlinkFileParams) {
+func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, repository, branch string, params CreateSymlinkFileParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.WriteObjectAction,
@@ -2920,7 +2919,7 @@ func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, r
 	writeResponse(w, r, http.StatusCreated, response)
 }
 
-func writeSymlink(ctx context.Context, repo *catalog.Repository, branch string, path string, addresses []string, adapter block.Adapter) error {
+func writeSymlink(ctx context.Context, repo *catalog.Repository, branch, path string, addresses []string, adapter block.Adapter) error {
 	address := fmt.Sprintf("%s/%s/%s/%s/symlink.txt", lakeFSPrefix, repo.Name, branch, path)
 	data := strings.Join(addresses, "\n")
 	symlinkReader := aws.ReadSeekCloser(strings.NewReader(data))
@@ -2932,7 +2931,7 @@ func writeSymlink(ctx context.Context, repo *catalog.Repository, branch string, 
 	return err
 }
 
-func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository string, leftRef string, rightRef string, params DiffRefsParams) {
+func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository, leftRef, rightRef string, params DiffRefsParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ListObjectsAction,
@@ -2982,18 +2981,18 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 }
 
 // LogBranchCommits deprecated replaced by LogCommits
-func (c *Controller) LogBranchCommits(w http.ResponseWriter, r *http.Request, repository string, branch string, params LogBranchCommitsParams) {
+func (c *Controller) LogBranchCommits(w http.ResponseWriter, r *http.Request, repository, branch string, params LogBranchCommitsParams) {
 	c.logCommitsHelper(w, r, repository, branch, LogCommitsParams{
 		After:  params.After,
 		Amount: params.Amount,
 	})
 }
 
-func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, repository string, ref string, params LogCommitsParams) {
+func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, repository, ref string, params LogCommitsParams) {
 	c.logCommitsHelper(w, r, repository, ref, params)
 }
 
-func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, repository string, ref string, params LogCommitsParams) {
+func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, repository, ref string, params LogCommitsParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadBranchAction,
@@ -3039,7 +3038,7 @@ func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, re
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, repository string, ref string, params HeadObjectParams) {
+func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, repository, ref string, params HeadObjectParams) {
 	if !c.authorizeCallback(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadObjectAction,
@@ -3088,7 +3087,7 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	}
 }
 
-func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repository string, ref string, params GetObjectParams) {
+func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repository, ref string, params GetObjectParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadObjectAction,
@@ -3180,7 +3179,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	}
 }
 
-func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, repository string, ref string, params ListObjectsParams) {
+func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, repository, ref string, params ListObjectsParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ListObjectsAction,
@@ -3284,7 +3283,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, repository string, ref string, params StatObjectParams) {
+func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, repository, ref string, params StatObjectParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadObjectAction,
@@ -3341,7 +3340,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 	writeResponse(w, r, code, objStat)
 }
 
-func (c *Controller) GetUnderlyingProperties(w http.ResponseWriter, r *http.Request, repository string, ref string, params GetUnderlyingPropertiesParams) {
+func (c *Controller) GetUnderlyingProperties(w http.ResponseWriter, r *http.Request, repository, ref string, params GetUnderlyingPropertiesParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadObjectAction,
@@ -3381,7 +3380,7 @@ func (c *Controller) GetUnderlyingProperties(w http.ResponseWriter, r *http.Requ
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, body MergeIntoBranchJSONRequestBody, repository string, sourceRef string, destinationBranch string) {
+func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, body MergeIntoBranchJSONRequestBody, repository, sourceRef, destinationBranch string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,
@@ -3487,7 +3486,7 @@ func (c *Controller) CreateTag(w http.ResponseWriter, r *http.Request, body Crea
 	writeResponse(w, r, http.StatusCreated, response)
 }
 
-func (c *Controller) DeleteTag(w http.ResponseWriter, r *http.Request, repository string, tag string) {
+func (c *Controller) DeleteTag(w http.ResponseWriter, r *http.Request, repository, tag string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DeleteTagAction,
@@ -3505,7 +3504,7 @@ func (c *Controller) DeleteTag(w http.ResponseWriter, r *http.Request, repositor
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository string, tag string) {
+func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, tag string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadTagAction,
@@ -3926,7 +3925,7 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository string, leftRef string, rightRef string, params OtfDiffParams) {
+func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository, leftRef, rightRef string, params OtfDiffParams) {
 	ctx := r.Context()
 	user, _ := auth.GetUser(ctx)
 	c.LogAction(ctx, fmt.Sprintf("table_format_%s_diff\n", params.Type), r, repository, rightRef, leftRef)
@@ -4108,7 +4107,7 @@ func paginationAmount(v *PaginationAmount) int {
 	return i
 }
 
-func resolvePathList(objects *[]string, prefixes *[]string) []catalog.PathRecord {
+func resolvePathList(objects, prefixes *[]string) []catalog.PathRecord {
 	var pathRecords []catalog.PathRecord
 	if objects == nil && prefixes == nil {
 		return make([]catalog.PathRecord, 0)
@@ -4259,7 +4258,7 @@ func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms per
 	return c.authorizeCallback(w, r, perms, writeError)
 }
 
-func (c *Controller) isNameValid(name string, nameType string) (bool, string) {
+func (c *Controller) isNameValid(name, nameType string) (bool, string) {
 	// URLs are % encoded. Allowing % signs in entity names would
 	// limit the ability to use these entity names in the URL for both
 	// client-side routing and API fetch requests

@@ -19,6 +19,7 @@ type Mem struct{}
 
 type Local struct {
 	Path                    string
+	ImportEnabled           bool
 	AllowedExternalPrefixes []string
 }
 

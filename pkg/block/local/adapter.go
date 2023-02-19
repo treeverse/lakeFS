@@ -25,6 +25,7 @@ type Adapter struct {
 	path                    string
 	removeEmptyDir          bool
 	allowedExternalPrefixes []string
+	importEnabled           bool
 }
 
 var (
@@ -44,6 +45,12 @@ func WithRemoveEmptyDir(b bool) func(a *Adapter) {
 func WithAllowedExternalPrefixes(prefixes []string) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.allowedExternalPrefixes = prefixes
+	}
+}
+
+func WithImportEnabled(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.importEnabled = b
 	}
 }
 
@@ -489,6 +496,7 @@ func (l *Adapter) BlockstoreType() string {
 func (l *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeLocal)
 	info.PreSignSupport = false
+	info.ImportSupport = l.importEnabled
 	return info
 }
 

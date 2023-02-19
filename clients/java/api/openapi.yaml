@@ -6280,6 +6280,7 @@ components:
         blockstore_namespace_example: blockstore_namespace_example
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
         blockstore_type: blockstore_type
+        import_support: true
         default_namespace_prefix: default_namespace_prefix
         pre_sign_support: true
       properties:
@@ -6293,10 +6294,13 @@ components:
           type: string
         pre_sign_support:
           type: boolean
+        import_support:
+          type: boolean
       required:
       - blockstore_namespace_ValidityRegex
       - blockstore_namespace_example
       - blockstore_type
+      - import_support
       - pre_sign_support
       type: object
     VersionConfig:
