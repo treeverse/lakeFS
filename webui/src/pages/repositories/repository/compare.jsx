@@ -115,7 +115,8 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                          uriNavigator={uriNavigator} leftDiffRefID={leftCommittedRef} rightDiffRefID={rightCommittedRef}
                                          repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
                                          getMore={defaultGetMoreChanges(repo, reference.id, compareReference.id, delimiter)}
-                                         loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}/>
+                                         loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}
+                                         setIsTableMerge={setIsTableMerge}/>
 
     const emptyDiff = (!loading && !error && !!results && results.length === 0);
 
@@ -165,6 +166,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                             source={compareReference.id}
                             dest={reference.id}
                             onDone={refresh}
+                            isTableMerge={isTableMerge}
                         />
                     }
                 </ActionGroup>
