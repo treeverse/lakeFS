@@ -48,7 +48,6 @@ func (l *LocalWalker) Walk(_ context.Context, storageURI *url.URL, options WalkO
 	}
 
 	var entries []*ObjectStoreEntry
-
 	// verify and use cache - location is stored in continuation token
 	if options.ContinuationToken != "" && strings.HasPrefix(options.ContinuationToken, l.cacheLocation) {
 		cacheData, err := os.ReadFile(options.ContinuationToken)
