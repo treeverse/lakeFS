@@ -51,8 +51,7 @@ func (l *LocalWalker) Walk(_ context.Context, storageURI *url.URL, options WalkO
 
 	// verify and use cache - location is stored in continuation token
 	if options.ContinuationToken != "" && strings.HasPrefix(options.ContinuationToken, l.cacheLocation) {
-		cachePath := filepath.Join(options.ContinuationToken)
-		cacheData, err := os.ReadFile(cachePath)
+		cacheData, err := os.ReadFile(options.ContinuationToken)
 		if err == nil {
 			err = json.Unmarshal(cacheData, &entries)
 			if err != nil {
@@ -118,9 +117,10 @@ func (l *LocalWalker) Walk(_ context.Context, storageURI *url.URL, options WalkO
 			if err != nil {
 				return err
 			}
-			_ = os.MkdirAll(l.cacheLocation, 0o700)
+			const dirPerm = 0o755
+			_ = os.MkdirAll(l.cacheLocation, dirPerm)
 			cacheName := filepath.Join(l.cacheLocation, nanoid.Must()+"-import.json")
-			const cachePerm = 0o600
+			const cachePerm = 0o644
 			if err := os.WriteFile(cacheName, jsonData, cachePerm); err != nil {
 				return err
 			}
