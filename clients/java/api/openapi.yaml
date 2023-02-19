@@ -2691,6 +2691,67 @@ paths:
       x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}:
+    get:
+      operationId: findMergeBase
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: source ref
+        explode: false
+        in: path
+        name: sourceRef
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: destination branch name
+        explode: false
+        in: path
+        name: destinationBranch
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FindMergeBaseResult'
+          description: Found the merge base
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: find the merge base for 2 references
+      tags:
+      - refs
+      x-accepts: application/json
     post:
       operationId: mergeIntoBranch
       parameters:
@@ -5147,6 +5208,22 @@ components:
       required:
       - pagination
       - results
+      type: object
+    FindMergeBaseResult:
+      example:
+        BaseCommitID: BaseCommitID
+        SourceCommitID: SourceCommitID
+        DestinationCommitID: DestinationCommitID
+      properties:
+        SourceCommitID:
+          description: The commit ID of the merge source
+          type: string
+        DestinationCommitID:
+          description: The commit ID of the merge destination
+          type: string
+        BaseCommitID:
+          description: The commit ID of the merge base
+          type: string
       type: object
     MergeResultSummary:
       example:

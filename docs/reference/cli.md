@@ -1843,6 +1843,26 @@ lakectl doctor [flags]
 
 
 
+### lakectl find-merge-base
+
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
+
+Find the commits for the merge operation
+
+```
+lakectl find-merge-base <source ref> <destination ref> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for find-merge-base
+```
+
+
+
 ### lakectl fs
 
 View and manipulate objects
