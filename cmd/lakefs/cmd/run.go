@@ -372,8 +372,11 @@ var runCmd = &cobra.Command{
 
 		if kvParams.DynamoDB.HealthCheckInterval > 0 {
 			go func() {
-				if _, err := kvStore.Scan(ctx, []byte{}, kv.ScanOptions{}); err != nil {
-					logger.Errorf(os.Stderr, "KV health check failed with: %v\n", err)
+				for {
+					if _, err := kvStore.Scan(ctx, []byte{}, kv.ScanOptions{}); err != nil {
+						logger.Errorf(os.Stderr, "KV health check failed with: %v\n", err)
+					}
+					time.Sleep(kvParams.DynamoDB.HealthCheckInterval)
 				}
 			}()
 		}
