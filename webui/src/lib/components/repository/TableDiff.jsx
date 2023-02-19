@@ -39,8 +39,8 @@ const TableDiffTypeRow = ({diffType}) => {
     }
     return <tr>
         <td className="table-diff-type pl-lg-10 col-10"><InfoIcon/> Table {diffType}</td>
-        <td className="table-version col-sm-auto"></td>
-        <td className="operation-expansion col-sm-auto"></td>
+        <td className="table-version-placeholder col-sm-auto"></td>
+        <td className="operation-expansion-placeholder col-sm-auto"></td>
     </tr>
 }
 

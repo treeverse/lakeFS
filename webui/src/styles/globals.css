@@ -663,12 +663,12 @@ td.table-operation-type {
   padding-left: 30px;
 }
 
-td.table-version {
+td.table-version, td.table-version-placeholder {
   text-align: left;
   width: 8%;
 }
 
-td.operation-expansion {
+td.operation-expansion, td.operation-expansion-placeholder {
   padding-right: 0px;
   width: 4%;
 }
