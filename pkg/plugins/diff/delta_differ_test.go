@@ -87,9 +87,9 @@ func TestDeltaLakeDiffer_Diff(t *testing.T) {
 	ctx := context.Background()
 	params := Params{
 		TablePaths: TablePaths{
-			LeftTablePath:  RefPath{Ref: "leftBranch", Path: "table/path"},
-			RightTablePath: RefPath{Ref: "rightBranch", Path: "table/path"},
-			BaseTablePath:  RefPath{Ref: "baseCommit", Path: "table/path"},
+			Left:  RefPath{Ref: "leftBranch", Path: "table/path"},
+			Right: RefPath{Ref: "rightBranch", Path: "table/path"},
+			Base:  RefPath{Ref: "baseCommit", Path: "table/path"},
 		},
 		S3Creds: S3Creds{
 			Key:      "niceKey",

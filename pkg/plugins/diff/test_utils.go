@@ -58,8 +58,8 @@ func (ed TestDiffer) Diff(ctx context.Context, p Params) (Response, error) {
 type ControllerTestDiffer struct{}
 
 func (ctd ControllerTestDiffer) Diff(ctx context.Context, p Params) (Response, error) {
-	left := p.TablePaths.LeftTablePath.Ref
-	right := p.TablePaths.RightTablePath.Ref
+	left := p.TablePaths.Left.Ref
+	right := p.TablePaths.Right.Ref
 	notfound := "notfound"
 	if left == notfound && right == notfound {
 		return Response{}, ErrTableNotFound

@@ -55,22 +55,21 @@ type HCPluginProperties struct {
 }
 
 // RegisterPlugin registers a new plugin client with the corresponding plugin type.
-func (m *Manager[T]) RegisterPlugin(name string, pp HCPluginProperties) {
-	id := pp.ID
-	auth := pp.Handshake
-	p := pp.P
+func (m *Manager[T]) RegisterPlugin(name string, props HCPluginProperties) {
+	id := props.ID
+
 	hc := plugin.HandshakeConfig{
 		ProtocolVersion:  id.ProtocolVersion,
-		MagicCookieKey:   auth.Key,
-		MagicCookieValue: auth.Value,
+		MagicCookieKey:   props.Handshake.Key,
+		MagicCookieValue: props.Handshake.Value,
 	}
 	cmd := exec.Command(id.ExecutableLocation, id.ExecutableArgs...) // #nosec G204
 	cmd.Env = id.ExecutableEnvVars
-	c := newPluginClient(name, p, hc, cmd)
+	c := newPluginClient(name, props.P, hc, cmd)
 	cp := &HCPluginProperties{
 		ID:        id,
-		Handshake: auth,
-		P:         p,
+		Handshake: props.Handshake,
+		P:         props.P,
 	}
 	m.pluginApplicationClients.Insert(name, c, cp)
 }
