@@ -648,10 +648,7 @@ const GetStarted = ({ config, onUpload, onImport }) => {
           <Button
             variant="link"
             className="mb-1"
-            disabled={
-              config.config.blockstore_type === "local" ||
-              config.config.blockstore_type === "mem"
-            }
+            disabled={config.config.blockstore_type === "mem"}
             onClick={onImport}
           >
             Import

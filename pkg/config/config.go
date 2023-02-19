@@ -192,7 +192,8 @@ type Config struct {
 		Type                   string `mapstructure:"type" validate:"required"`
 		DefaultNamespacePrefix string `mapstructure:"default_namespace_prefix"`
 		Local                  *struct {
-			Path string `mapstructure:"path"`
+			Path                    string   `mapstructure:"path"`
+			AllowedExternalPrefixes []string `mapstructure:"allowed_external_prefixes"`
 		}
 		S3 *struct {
 			S3AuthInfo                    `mapstructure:",squash"`
@@ -488,7 +489,10 @@ func (c *Config) BlockstoreLocalParams() (blockparams.Local, error) {
 		return blockparams.Local{}, fmt.Errorf("parse blockstore location URI %s: %w", localPath, err)
 	}
 
-	return blockparams.Local{Path: path}, nil
+	return blockparams.Local{
+		Path:                    path,
+		AllowedExternalPrefixes: c.Blockstore.Local.AllowedExternalPrefixes,
+	}, nil
 }
 
 func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {

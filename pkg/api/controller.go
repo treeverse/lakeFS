@@ -19,6 +19,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/block/local"
+	"github.com/treeverse/lakefs/pkg/ingest/store"
+
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -1454,7 +1457,11 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 		dummyData = "this is dummy data - created by lakeFS in order to check accessibility"
 	)
 
-	obj := block.ObjectPointer{StorageNamespace: storageNamespace, Identifier: dummyKey}
+	obj := block.ObjectPointer{
+		StorageNamespace: storageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       dummyKey,
+	}
 	objLen := int64(len(dummyData))
 	if _, err := c.BlockAdapter.Get(ctx, obj, objLen); err == nil {
 		return fmt.Errorf("found lakeFS objects in the storage namespace(%s): %w",
@@ -1724,6 +1731,7 @@ func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, re
 	logPath := taskResult.LogPath()
 	reader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       logPath,
 	}, -1)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -1848,6 +1856,10 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, auth.ErrNotFound),
 		errors.Is(err, kv.ErrNotFound):
 		cb(w, r, http.StatusNotFound, err)
+
+	case errors.Is(err, store.ErrForbidden),
+		errors.Is(err, local.ErrForbidden):
+		cb(w, r, http.StatusForbidden, err)
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
 		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
@@ -2759,6 +2771,7 @@ func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository
 	}
 	err = c.BlockAdapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       fmt.Sprintf("%s/refs_manifest.json", c.Config.Committed.BlockStoragePrefix),
 	}, int64(len(manifestBytes)), bytes.NewReader(manifestBytes), block.PutOpts{})
 	if err != nil {
@@ -2913,6 +2926,7 @@ func writeSymlink(ctx context.Context, repo *catalog.Repository, branch string, 
 	symlinkReader := aws.ReadSeekCloser(strings.NewReader(data))
 	err := adapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       address,
 	}, int64(len(data)), symlinkReader, block.PutOpts{})
 	return err
@@ -3103,7 +3117,11 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	}
 
 	// if pre-sign, return a redirect
-	pointer := block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}
+	pointer := block.ObjectPointer{
+		StorageNamespace: repo.StorageNamespace,
+		IdentifierType:   entry.AddressType.ToIdentifierType(),
+		Identifier:       entry.PhysicalAddress,
+	}
 	if swag.BoolValue(params.Presign) {
 		location, err := c.BlockAdapter.GetPreSignedURL(ctx, pointer, block.PreSignModeRead)
 		if c.handleAPIError(ctx, w, r, err) {
@@ -3240,8 +3258,8 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 				if authResponse.Allowed {
 					objStat.PhysicalAddress, err = c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
 						StorageNamespace: repo.StorageNamespace,
-						Identifier:       entry.PhysicalAddress,
 						IdentifierType:   entry.AddressType.ToIdentifierType(),
+						Identifier:       entry.PhysicalAddress,
 					}, block.PreSignModeRead)
 					if c.handleAPIError(ctx, w, r, err) {
 						return
@@ -3312,8 +3330,8 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		// need to pre-sign the physical address
 		preSignedURL, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
 			StorageNamespace: repo.StorageNamespace,
-			Identifier:       entry.PhysicalAddress,
 			IdentifierType:   entry.AddressType.ToIdentifierType(),
+			Identifier:       entry.PhysicalAddress,
 		}, block.PreSignModeRead)
 		if c.handleAPIError(ctx, w, r, err) {
 			return
@@ -3347,7 +3365,11 @@ func (c *Controller) GetUnderlyingProperties(w http.ResponseWriter, r *http.Requ
 	}
 
 	// read object properties from underlying storage
-	properties, err := c.BlockAdapter.GetProperties(ctx, block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress})
+	properties, err := c.BlockAdapter.GetProperties(ctx, block.ObjectPointer{
+		StorageNamespace: repo.StorageNamespace,
+		IdentifierType:   entry.AddressType.ToIdentifierType(),
+		Identifier:       entry.PhysicalAddress,
+	})
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return

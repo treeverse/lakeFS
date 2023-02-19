@@ -14,7 +14,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/params"
 )
 
-var ErrNotSupported = errors.New("no storage adapter found")
+var (
+	ErrNotSupported = errors.New("no storage adapter found")
+	ErrForbidden    = errors.New("forbidden")
+	ErrBadPath      = errors.New("bad path traversal blocked")
+)
 
 type ObjectStoreEntry struct {
 	// FullKey represents the fully qualified path in the object store namespace for the given entry
@@ -184,8 +188,21 @@ func (f *WalkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*Wal
 		if err != nil {
 			return nil, fmt.Errorf("creating Azure walker: %w", err)
 		}
+	case "local":
+		walker, err = f.buildLocalWalker()
+		if err != nil {
+			return nil, fmt.Errorf("creating local walker: %w", err)
+		}
 	default:
 		return nil, fmt.Errorf("%w: for scheme: %s", ErrNotSupported, uri.Scheme)
 	}
 	return NewWrapper(walker, uri), nil
+}
+
+func (f *WalkerFactory) buildLocalWalker() (*LocalWalker, error) {
+	localParams, err := f.params.BlockstoreLocalParams()
+	if err != nil {
+		return nil, err
+	}
+	return NewLocalWalker(localParams.AllowedExternalPrefixes), nil
 }

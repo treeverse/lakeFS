@@ -3420,6 +3420,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Access is forbidden
         "404":
           content:
             application/json:
@@ -5026,6 +5032,12 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
       description: Internal Server Error
+    Forbidden:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      description: Access is forbidden
     NotFound:
       content:
         application/json:

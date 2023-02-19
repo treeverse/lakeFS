@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/google/uuid"
@@ -417,13 +416,10 @@ func (tfs *TierFS) newLocalFileRef(namespace, nsPath, filename string) localFile
 }
 
 func (tfs *TierFS) objPointer(namespace, filename string) block.ObjectPointer {
-	if runtime.GOOS == "windows" {
-		filename = strings.ReplaceAll(filename, `\\`, "/")
-	}
-
 	return block.ObjectPointer{
 		StorageNamespace: namespace,
-		Identifier:       tfs.blockStoragePath(filename),
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       tfs.blockStoragePath(filepath.ToSlash(filename)),
 	}
 }
 
