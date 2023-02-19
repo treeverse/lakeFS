@@ -681,3 +681,8 @@ td.table-operation-details {
   color: black;
 }
 
+td.table-diff-type {
+  padding: 10px;
+  font-size: medium;
+}
+
