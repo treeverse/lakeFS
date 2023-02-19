@@ -113,46 +113,44 @@ export const ConfirmationButton: FC<ConfirmationButtonProps> = ({ msg, onConfirm
     );
 };
 
-const ModalContainer = ({children, show = false, heading, onCancel, footer=null}) => {
+const GenericModal =  ({children, show = false, heading, onCancel, footer=null}) => {
     return (
-        <Container fluid={true} className="justify-content-center">
-            <Modal show={show} onHide={onCancel}
-                   size="lg"
-                   restoreFocus={false}
-                   aria-labelledby="contained-modal-title-vcenter"
-                   centered>
-                <Row>
-                    <Col>
-                        <Modal.Header className="justify-content-center">
-                            <Modal.Title>{heading}</Modal.Title>
-                        </Modal.Header>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col>
-                        <Modal.Body className="justify-content-center">
-                            {children}
-                        </Modal.Body>
-                    </Col>
-                </Row>
-                {footer &&
-                    <Row>
-                        <Col>
-                            <Modal.Footer>
-                                {footer}
-                            </Modal.Footer>
-                        </Col>
-                    </Row>
-                }
-            </Modal>
-        </Container>
+        <Modal show={show} onHide={onCancel}
+               size="lg"
+               restoreFocus={false}
+               aria-labelledby="contained-modal-title-vcenter"
+               centered>
+            <Row>
+                <Col>
+                    <Modal.Header className="justify-content-center">
+                        <Modal.Title>{heading}</Modal.Title>
+                    </Modal.Header>
+                </Col>
+            </Row>
+            <Row>
+                <Col>
+                    <Modal.Body className="justify-content-center">
+                        {children}
+                    </Modal.Body>
+                </Col>
+            </Row>
+            {footer &&
+            <Row>
+                <Col>
+                    <Modal.Footer>
+                        {footer}
+                    </Modal.Footer>
+                </Col>
+            </Row>
+            }
+        </Modal>
     )
 };
 
 export const ComingSoonModal: FC<BasicModal> = ({display, children, onCancel}) => {
     return (
-        <ModalContainer show={display} heading={"Coming soon!"} onCancel={onCancel}>
+        <GenericModal show={display} heading={"Coming soon!"} onCancel={onCancel}>
             {children}
-        </ModalContainer>
+        </GenericModal>
     )
 };
