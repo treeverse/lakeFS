@@ -28,10 +28,10 @@ permissions, lakeFS provides only these permissions:
 
 | Permission | Allows                                     | Existing Group            |
 |------------|--------------------------------------------|---------------------------|
-| *Read*     | Read operations, creating access keys.     | Viewers                   |
-| *Write*    | Allows all data read and write operations. | Developers                |
-| *Super*    | Allows all operations except auth.         | SuperUsers (with changes) |
-| *Admin*    | Allows all operations.                     | Admins                    |
+| **Read**   | Read operations, creating access keys.     | Viewers                   |
+| **Write**  | Allows all data read and write operations. | Developers                |
+| **Super**  | Allows all operations except auth.         | SuperUsers (with changes) |
+| **Admin**  | Allows all operations.                     | Admins                    |
 
 In existing RBAC terms, the only permissions for non-admins are under `fs:*`
 and those to manage own credentials(`AuthManageOwnCredentials`).  The latter
@@ -72,10 +72,13 @@ group](./groups-with-perms.png)
 
 This gives information about the group and allows editing its permission.
 
+There are 4 default groups, named after the 4 permissions.  Each group is
+global (applies for all repositories).
+
 Clicking on the group takes us to the group's subpage with 2 tabs:
 
-* *Members*: The current "Group Memberships" tab.
-* *Repositories*: A list of configured repositories.
+* **Members**: The current "Group Memberships" tab.
+* **Repositories**: A list of configured repositories.
 
   This tab has an "all" toggle at the top.  If the permission is "Admin" the
   toggle is set and cannot be changed.  Otherwise it controls a selection of
@@ -83,6 +86,48 @@ Clicking on the group takes us to the group's subpage with 2 tabs:
   policies, ironically).
 
 ### Upgrade to simplified
+
+On startup, lakeFS will check the KV schema version.  If it has not upgraded
+to ACLs then lakeFS will check whether an upgrade is required:
+
+* If the 4 basic policies have not been modified, and no other policies have
+  been defined, and no users have attached policies: no upgrade is required.
+  lakeFS will merely upgrade the KV schema version.
+* Otherwise lakeFS will not start until an upgrade script runs.
+
+#### The upgrade script
+
+Admins will run the upgrade script if required to do so by lakeFS or if they
+want to be very sure (for instance, there is a minor race condition if there
+is more than one concurrent lakeFS).  We force admins to try the script on a
+dry run using a `--yes` flag: without it, the script only prints the planned
+changes.
+
+The upgrade script will _ensure_ that the 4 default global groups exist, and
+_modify_ existing groups to fit into the new ACLs scheme.
+
+* When creating the 4 default global groups: if another group exists and has
+  the desired name, upgrading will rename it by appending ".orig".  So after
+  upgrading the 4 default global groups exist, with these known names.
+* For any group, upgrading configured policies follows these rules, possibly
+  **increasing** access:
+
+  1. Any "Deny" rules are stripped, and a warning printed.
+  1. "Manage own credentials" is added.
+  1. If any actions outside of "fs:" are allowed, the group becomes an Admin
+     group, a warning is printed, and no further changes apply.
+  1. The upgrade script *unifies* repositories: If a permission applies to a
+     set of repositories with a wildcard, permissions are unified to **all**
+     repositories.  Otherwise they apply to the list of all repositories, in
+     all the policies.
+  1. The upgrade script *unifies* actions: it selects the _least_ permission
+     of Read, Write, Super that contains all of the allowed actions.  If any
+     allowed action contains a wildcard this still makes sense.
+* The upgrade script prints the new permissions of the group.[^1]
+
+
+[^1] Even JSON-diff cannot be used report detailed changes, as many policies
+	 are unified into a single policy.
 
 ### PBAC user experience with external authorization server
 
