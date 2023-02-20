@@ -1,5 +1,6 @@
 import React, {ChangeEvent, FC, FormEvent, useCallback, useState} from "react";
 import Button from "react-bootstrap/Button";
+import Spinner from 'react-bootstrap/Spinner';
 import Card from "react-bootstrap/Card";
 import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
@@ -76,7 +77,14 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                             </Form.Group>
 
                             {!!setupError && <Error error={setupError}/>}
-                            <Button variant="primary" disabled={disabled} type="submit">Setup</Button>
+                            <Button variant="primary" disabled={disabled} type="submit">
+                                {disabled ? <Spinner as="span"
+                                                     animation="border"
+                                                     size="sm"
+                                                     role="status"
+                                                     aria-hidden="true"
+                                                     /> : 'Setup'}
+                            </Button>
                         </Form>
                     </Card.Body>
                 </Card>
