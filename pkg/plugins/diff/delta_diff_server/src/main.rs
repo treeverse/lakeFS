@@ -75,7 +75,7 @@ impl TableDiffer for DifferService {
         // todo: if base table exists, use it's version to start the comparison instead of going from most recent to oldest.
         // let mut base_table: Option<DeltaTable> = None;
         // if let Some(table_path) = base_table_path {
-        //     base_table = Option::from(get_delta_table(&s3_config_map, &diff_props.repo, table_path).await?);
+        //     base_table = Option::from(delta_ops::get_delta_table(&s3_config_map, &diff_props.repo, table_path).await?);
         // }
 
         let left_table_history = delta_ops::history(&mut left_table, None).await?;
@@ -84,8 +84,6 @@ impl TableDiffer for DifferService {
         let mut left_history_version = HistoryAndVersion{ history: left_table_history, version: left_table.version() };
         let mut right_history_version = HistoryAndVersion{ history: right_table_history, version: right_table.version() };
 
-        // let ans = compare(&mut left_table_history, left_table.version(),
-        //                   &mut right_table_history, right_table.version()).unwrap();
         let ans = compare(&mut left_history_version,  &mut right_history_version).unwrap();
         return Ok(Response::new(DiffResponse { entries: ans, diff_type: differ::DiffType::Changed as i32 }))
     }
