@@ -498,5 +498,4 @@ func (s *Store) Check() {
 func (s *Store) StopPeriodicCheck() {
 	logging.Default().Info("Stopping DynamoDB health check")
 	s.ticker.Stop()
-
 }
