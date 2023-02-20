@@ -7,7 +7,7 @@ import Row from "react-bootstrap/Row";
 import {Error} from "../../lib/components/controls";
 
 interface CommunicationPreferencesSetupProps {
-    onSubmit: (email: string, updatesCheck: boolean, securityCheck: boolean) => Promise<void>;
+    onSubmit: (email: string, admin: string, updatesCheck: boolean, securityCheck: boolean) => Promise<void>;
     setupError: Error;
     disabled: boolean;
 }
