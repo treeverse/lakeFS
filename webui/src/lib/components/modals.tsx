@@ -6,7 +6,6 @@ import Tooltip from "react-bootstrap/Tooltip";
 import {OverlayTrigger} from "react-bootstrap";
 import { ButtonVariant } from "react-bootstrap/esm/types";
 import { GetUserEmailByIdContext } from "../../pages/auth/users";
-import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 
@@ -113,7 +112,7 @@ export const ConfirmationButton: FC<ConfirmationButtonProps> = ({ msg, onConfirm
     );
 };
 
-const GenericModal =  ({children, show = false, heading, onCancel, footer=null}) => {
+const SimpleModal =  ({children, show = false, heading, onCancel, footer=null}) => {
     return (
         <Modal show={show} onHide={onCancel}
                size="lg"
@@ -149,8 +148,8 @@ const GenericModal =  ({children, show = false, heading, onCancel, footer=null})
 
 export const ComingSoonModal: FC<BasicModal> = ({display, children, onCancel}) => {
     return (
-        <GenericModal show={display} heading={"Coming soon!"} onCancel={onCancel}>
+        <SimpleModal show={display} heading={"Coming soon!"} onCancel={onCancel}>
             {children}
-        </GenericModal>
+        </SimpleModal>
     )
 };
