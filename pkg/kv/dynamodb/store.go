@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -22,6 +23,8 @@ type Driver struct{}
 type Store struct {
 	svc    *dynamodb.DynamoDB
 	params *kvparams.DynamoDB
+	wg     sync.WaitGroup
+	cancel context.CancelFunc
 }
 
 type EntriesIterator struct {
@@ -94,10 +97,13 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
 	}
 
-	return &Store{
+	s := &Store{
 		svc:    svc,
-		params: params,
-	}, nil
+		params: params}
+
+	s.StartPeriodicCheck()
+
+	return s, nil
 }
 
 // isTableExist will try to describeTable and return bool status, error is returned only in case err != ResourceNotFoundException
@@ -454,4 +460,39 @@ func (e *EntriesIterator) Err() error {
 
 func (e *EntriesIterator) Close() {
 	e.err = kv.ErrClosedEntries
+}
+
+// StartPeriodicCheck performs one check and continues every 'interval' in the background
+func (s *Store) StartPeriodicCheck() {
+	interval := s.params.HealthCheckInterval
+	if interval <= 0 {
+		return
+	}
+	ctx := context.Background()
+	_, s.cancel = context.WithCancel(ctx)
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		// check first and loop for checking every interval
+		s.Check(ctx)
+		for {
+			select {
+			case <-time.After(interval):
+				s.Check(ctx)
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+}
+
+func (s *Store) Check(ctx context.Context) {
+	isTableExist(ctx, s.svc, s.params.TableName)
+}
+
+func (s *Store) StopPeriodicCheck() {
+	if s.cancel != nil {
+		s.cancel()
+	}
+	s.wg.Wait()
 }

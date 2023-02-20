@@ -369,17 +369,6 @@ var runCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		}()
-
-		if kvParams.DynamoDB.HealthCheckInterval > 0 {
-			go func() {
-				for {
-					if _, err := kvStore.Scan(ctx, []byte{}, kv.ScanOptions{}); err != nil {
-						logger.WithError(err).Warn("DynamoDB health check failed")
-					}
-					time.Sleep(kvParams.DynamoDB.HealthCheckInterval)
-				}
-			}()
-		}
 		gracefulShutdown(ctx, server)
 	},
 }
