@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"sync"
 	"time"
 
@@ -474,6 +475,7 @@ func (s *Store) StartPeriodicCheck() {
 	go func() {
 		defer s.wg.Done()
 		// check first and loop for checking every interval
+		logging.Default().WithField("interval", interval).Debug("Starting DynamoDB health check")
 		s.Check(ctx)
 		for {
 			select {
@@ -487,11 +489,17 @@ func (s *Store) StartPeriodicCheck() {
 }
 
 func (s *Store) Check(ctx context.Context) {
-	isTableExist(ctx, s.svc, s.params.TableName)
+	success, err := isTableExist(ctx, s.svc, s.params.TableName)
+	if success {
+		logging.Default().Debug("DynamoDB health check passed!")
+	} else {
+		logging.Default().WithError(err).Debug("DynamoDB health check failed")
+	}
 }
 
 func (s *Store) StopPeriodicCheck() {
 	if s.cancel != nil {
+		logging.Default().Info("Stopping DynamoDB health check")
 		s.cancel()
 	}
 	s.wg.Wait()
