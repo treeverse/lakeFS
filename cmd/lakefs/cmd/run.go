@@ -461,7 +461,7 @@ const runBanner = `
      ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝
 
 │
-│ If you're running lakeFS locally for the first time,
+│ If you're running lakeFS locally for the first time,         
 │     complete the setup process at http://127.0.0.1:8000/setup
 │
 
@@ -471,8 +471,8 @@ const runBanner = `
 │
 
 │
-│ For support or any other question,
-│     join our Slack channel https://docs.lakefs.io/slack
+│ For support or any other question,                            >(.＿.)<	
+│     join our Slack channel https://docs.lakefs.io/slack         (  )_
 │
 
 `
