@@ -82,14 +82,14 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 ) extends RecordReader[Array[Byte], WithIdentifier[Proto]] {
   val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
-  var sstableReader: SSTableReader[Proto] = _
+  private var sstableReader: SSTableReader[Proto] = _
   var it: SSTableIterator[Proto] = _
   var item: Item[Proto] = _
   var rangeID: String = ""
   override def initialize(split: InputSplit, context: TaskAttemptContext): Unit = {
     val localFile = File.createTempFile("lakefs.", ".range")
     localFile.deleteOnExit()
-    var gravelerSplit = split.asInstanceOf[GravelerSplit]
+    val gravelerSplit = split.asInstanceOf[GravelerSplit]
 
     val fs = gravelerSplit.path.getFileSystem(context.getConfiguration)
     fs.copyToLocalFile(gravelerSplit.path, new Path(localFile.getAbsolutePath))
@@ -124,7 +124,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 
   override def getCurrentValue = new WithIdentifier(item.id, item.message, rangeID)
 
-  override def close() = {
+  override def close(): Unit = {
     sstableReader.close()
   }
 
