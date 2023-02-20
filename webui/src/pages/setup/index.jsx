@@ -4,7 +4,6 @@ import {API_ENDPOINT, setup, SETUP_STATE_NOT_INITIALIZED, SETUP_STATE_INITIALIZE
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 import {SetupComplete} from "./setupComplete";
-import {AdminUserSetup} from "./adminUser";
 import {CommunicationPreferencesSetup} from "./communicationPreferences";
 
 
@@ -26,30 +25,17 @@ const SetupContents = () => {
         }
     }, [error, response]);
 
-    const onSubmitAdminUser = useCallback(async () => {
-        setDisabled(true);
-        try {
-            const response = await setup.lakeFS(usernameRef.current.value);
-            setSetupError(null);
-            setSetupData(response);
-        } catch (error) {
-            setSetupError(error);
-            setSetupData(null);
-        } finally {
-            setDisabled(false);
-        }
-    }, [setDisabled, setSetupError, setSetupData, setup]);
-
-    const onSubmitCommunicationPreferences = useCallback(async (userEmail, updatesChecked, securityChecked) => {
+    const onSubmitCommunicationPreferences = useCallback(async (adminUser, userEmail, updatesChecked, securityChecked) => {
         if (!userEmail) {
-            setSetupError("Email is required.");
+            setSetupError("Please enter your email address.");
             return;
         }
         setDisabled(true);
         try {
-            const response = await setup.commPrefs(userEmail, updatesChecked, securityChecked);
+            await setup.commPrefs(userEmail, updatesChecked, securityChecked);
+            const response = await setup.lakeFS(adminUser);
             setSetupError(null);
-            setCurrentStep(response?.nextStep);
+            setSetupData(response);
         } catch (error) {
             setSetupError(error);
         } finally {
@@ -75,15 +61,6 @@ const SetupContents = () => {
     switch (currentStep) {
         case SETUP_STATE_INITIALIZED:
             return router.push({pathname: '/', query: router.query});
-        case SETUP_STATE_COMMUNICATION_PERFS_DONE:
-            return (
-                <AdminUserSetup
-                    onSubmit={onSubmitAdminUser}
-                    setupError={setupError}
-                    disabled={disabled}
-                    ref={usernameRef}
-                />
-            );
         case SETUP_STATE_NOT_INITIALIZED:
             return (
                 <CommunicationPreferencesSetup
