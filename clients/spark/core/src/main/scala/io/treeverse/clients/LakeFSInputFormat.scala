@@ -83,19 +83,19 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
   val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
   private var sstableReader: SSTableReader[Proto] = _
+  var localFile: java.io.File = _
   var it: SSTableIterator[Proto] = _
   var item: Item[Proto] = _
   var rangeID: String = ""
   override def initialize(split: InputSplit, context: TaskAttemptContext): Unit = {
-    val localFile = File.createTempFile("lakefs.", ".range")
+    localFile = File.createTempFile("lakefs.", ".range")
     localFile.deleteOnExit()
     val gravelerSplit = split.asInstanceOf[GravelerSplit]
 
     val fs = gravelerSplit.path.getFileSystem(context.getConfiguration)
     fs.copyToLocalFile(gravelerSplit.path, new Path(localFile.getAbsolutePath))
     // TODO(johnnyaug) should we cache this?
-    sstableReader =
-      new SSTableReader(localFile.getAbsolutePath, companion)
+    sstableReader = new SSTableReader(localFile.getAbsolutePath, companion)
     if (!gravelerSplit.isValidated) {
       // this file may not be a valid range file, validate it
       val props = sstableReader.getProperties()
@@ -125,6 +125,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
   override def getCurrentValue = new WithIdentifier(item.id, item.message, rangeID)
 
   override def close(): Unit = {
+    localFile.delete()
     sstableReader.close()
   }
 
