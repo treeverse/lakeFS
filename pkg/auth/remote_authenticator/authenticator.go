@@ -13,6 +13,7 @@ import (
 
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -30,31 +31,23 @@ type AuthenticationResponse struct {
 	ExternalUserIdentifier string `json:"external_user_identifier"`
 }
 
-type AuthenticatorConfig struct {
-	// BaseURL is the base URL of the remote authentication service (e.g. https://my-auth.com)
-	BaseURL string
-	// AuthEndpoint is the endpoint to authenticate users (e.g. /auth)
-	AuthEndpoint string
-	// DefaultUserGroup is the default group to add users to in LakeFS permissions context
-	DefaultUserGroup string
-}
-
 // RemoteAuthenticator client
 type RemoteAuthenticator struct {
 	AuthService auth.Service
 	Logger      logging.Logger
-	Config      AuthenticatorConfig
+	Config      *config.RemoteAuthenticator
 	authURL     string
 	c           *http.Client
 }
 
-func NewRemoteAuthenticator(conf AuthenticatorConfig, logger logging.Logger) auth.Authenticator {
+func NewRemoteAuthenticator(conf *config.RemoteAuthenticator, authService auth.Service, logger logging.Logger) auth.Authenticator {
 	authUrl := path.Join(conf.BaseURL, conf.AuthEndpoint)
 	logger.Debugf("initializing remote authenticator with auth url %s", authUrl)
 	return &RemoteAuthenticator{
-		Logger:  logger,
-		Config:  conf,
-		authURL: authUrl,
+		Logger:      logger,
+		Config:      conf,
+		authURL:     authUrl,
+		AuthService: authService,
 	}
 }
 

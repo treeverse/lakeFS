@@ -69,6 +69,16 @@ type LDAP struct {
 	UserFilter        string `mapstructure:"user_filter"`
 }
 
+// RemoteAuthenticator holds remote authentication configuration.
+type RemoteAuthenticator struct {
+	// BaseURL is the base URL of the remote authentication service (e.g. https://my-auth.com)
+	BaseURL string `mapstructure:"base_url" validate:"required"`
+	// AuthEndpoint is the endpoint to authenticate users (e.g. /auth)
+	AuthEndpoint string `mapstructure:"auth_endpoint" validate:"required"`
+	// DefaultUserGroup is the default group to add users to in LakeFS permissions context
+	DefaultUserGroup string `mapstructure:"default_user_group" validate:"required"`
+}
+
 // S3AuthInfo holds S3-style authentication.
 type S3AuthInfo struct {
 	CredentialsFile string `mapstructure:"credentials_file"`
@@ -172,8 +182,9 @@ type Config struct {
 			Token           string
 			SupportsInvites bool `mapstructure:"supports_invites"`
 		}
-		LDAP *LDAP
-		OIDC OIDC
+		LDAP                *LDAP
+		RemoteAuthenticator *RemoteAuthenticator
+		OIDC                OIDC
 		// LogoutRedirectURL is the URL on which to mount the
 		// server-side logout.
 		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`

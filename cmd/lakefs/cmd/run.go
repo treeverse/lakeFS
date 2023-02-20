@@ -27,6 +27,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/email"
+	remoteauth "github.com/treeverse/lakefs/pkg/auth/remote_authenticator"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -59,6 +60,25 @@ const (
 
 type Shutter interface {
 	Shutdown(context.Context) error
+}
+
+func newExternalBasicAuthenticator(cfg *config.Config, service auth.Service, logger logging.Logger) (auth.Authenticator, error) {
+
+	if cfg.Auth.RemoteAuthenticator != nil && cfg.Auth.LDAP != nil {
+		return nil, fmt.Errorf("cannot configure both LDAP (Deprecated) and RemoteAuthenticator")
+	}
+
+	if cfg.Auth.RemoteAuthenticator != nil {
+		remoteAuthenticator := remoteauth.NewRemoteAuthenticator(cfg.Auth.RemoteAuthenticator, service, logger)
+		return remoteAuthenticator, nil
+	} else if cfg.Auth.LDAP != nil {
+		logger.
+			WithField("feature", "LDAP").
+			Warn("Enabling LDAP on lakeFS server, but this functionality is deprecated")
+		return newLDAPAuthenticator(cfg.Auth.LDAP, service), nil
+	}
+
+	return nil, nil
 }
 
 func newLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAuthenticator {
@@ -231,12 +251,17 @@ var runCmd = &cobra.Command{
 			auth.NewBuiltinAuthenticator(authService),
 		}
 
-		if cfg.Auth.LDAP != nil {
-			logger.
-				WithField("feature", "LDAP").
-				Warn("Enabling LDAP on lakeFS server, but this functionality is deprecated")
-			middlewareAuthenticator = append(middlewareAuthenticator, newLDAPAuthenticator(cfg.Auth.LDAP, authService))
+		externalAuthenticator, err := newExternalBasicAuthenticator(cfg, authService, logger)
+
+		if err != nil {
+			fmt.Printf("%s: %s\n", "failed to create external authenticator", err)
+			os.Exit(1)
 		}
+
+		if externalAuthenticator != nil {
+			middlewareAuthenticator = append(middlewareAuthenticator, externalAuthenticator)
+		}
+
 		controllerAuthenticator := append(middlewareAuthenticator, auth.NewEmailAuthenticator(authService))
 
 		auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, metadata.InstallationID)
