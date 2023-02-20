@@ -342,6 +342,7 @@ var runCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		}()
+
 		gracefulShutdown(ctx, server)
 	},
 }
