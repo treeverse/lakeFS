@@ -109,7 +109,7 @@ This reference uses `.` to denote the nesting of values.
    If specified, the storage namespace will be filled with this default value as a prefix when creating a repository from the UI.
    The user may still change it to something else.
 * `blockstore.local.path` `(string: "~/lakefs/data")` - When using the local Block Adapter, which directory to store files in
-* `blockstore.local.import_enabled` `(bool: false)` - Enable import for local Block Adapter, relevant if you are using shared location
+* `blockstore.local.import_enabled` `(bool: false)` - Enable import for local Block Adapter, relevant only if you are using shared location
 * `blockstore.local.allowed_external_prefixes` `([]string: [])` - List of prefixes used to match any access for external location used by local block adapter
 * `blockstore.gs.credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key
 * `blockstore.gs.credentials_json` `(string : )` - If specified will be used as JSON string that contains your Google service account key (when credentials_file is not set)
