@@ -16,9 +16,9 @@ type DeltaLakeDiffer struct {
 }
 
 func (d *DeltaLakeDiffer) Diff(ctx context.Context, ps Params) (Response, error) {
-	ltp := ps.TablePaths.LeftTablePath
-	rtp := ps.TablePaths.RightTablePath
-	btp := ps.TablePaths.BaseTablePath
+	ltp := ps.TablePaths.Left
+	rtp := ps.TablePaths.Right
+	btp := ps.TablePaths.Base
 	s3Creds := ps.S3Creds
 	dr, err := d.client.TableDiff(ctx, &DiffRequest{
 		Props: &DiffProps{
@@ -49,9 +49,10 @@ func (d *DeltaLakeDiffer) Diff(ctx context.Context, ps Params) (Response, error)
 		}
 		return Response{}, err
 	}
+
 	return Response{
-		Diffs:      buildDiffEntries(dr),
-		ChangeType: ChangeType(dr.GetChangeType()),
+		Diffs:    buildDiffEntries(dr),
+		DiffType: getDiffType(dr.GetDiffType()),
 	}, nil
 }
 
@@ -63,6 +64,7 @@ func buildDiffEntries(dr *DiffResponse) []DiffEntry {
 			Timestamp:        diff.GetTimestamp().AsTime(),
 			Operation:        diff.GetOperation(),
 			OperationContent: diff.GetContent(),
+			OperationType:    getOpType(diff.GetOperationType()),
 		})
 	}
 	return result

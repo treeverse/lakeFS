@@ -3929,11 +3929,11 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository 
 	tdp := tablediff.Params{
 		// TODO(jonathan): add base RefPath
 		TablePaths: tablediff.TablePaths{
-			LeftTablePath: tablediff.RefPath{
+			Left: tablediff.RefPath{
 				Ref:  leftRef,
 				Path: params.TablePath,
 			},
-			RightTablePath: tablediff.RefPath{
+			Right: tablediff.RefPath{
 				Ref:  rightRef,
 				Path: params.TablePath,
 			},
@@ -3972,14 +3972,15 @@ func buildOtfDiffListResponse(tableDiffResponse tablediff.Response) OtfDiffList 
 			OperationContent: content,
 			Timestamp:        int(entry.Timestamp.UnixMilli()),
 			Id:               &v,
+			OperationType:    entry.OperationType,
 		})
 	}
 
 	t := "changed"
-	switch tableDiffResponse.ChangeType {
-	case tablediff.Created:
+	switch tableDiffResponse.DiffType {
+	case tablediff.DiffTypeCreated:
 		t = "created"
-	case tablediff.Dropped:
+	case tablediff.DiffTypeDropped:
 		t = "dropped"
 	}
 	return OtfDiffList{
