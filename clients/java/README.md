@@ -163,7 +163,6 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**listUserPolicies**](docs/AuthApi.md#listUserPolicies) | **GET** /auth/users/{userId}/policies | list user policies
 *AuthApi* | [**listUsers**](docs/AuthApi.md#listUsers) | **GET** /auth/users | list users
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
-*AuthApi* | [**oauthCallback**](docs/AuthApi.md#oauthCallback) | **GET** /oidc/callback | 
 *AuthApi* | [**updatePassword**](docs/AuthApi.md#updatePassword) | **POST** /auth/password | Update user password by reset_password token
 *AuthApi* | [**updatePolicy**](docs/AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**createBranch**](docs/BranchesApi.md#createBranch) | **POST** /repositories/{repository}/branches | create branch
