@@ -42,7 +42,7 @@ const SetupContents = () => {
 
     const onSubmitCommunicationPreferences = useCallback(async (adminUser, userEmail, updatesChecked, securityChecked) => {
         if (!userEmail) {
-            setSetupError("Email is required.");
+            setSetupError("Please enter your email address.");
             return;
         }
         setDisabled(true);
