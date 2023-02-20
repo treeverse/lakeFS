@@ -143,10 +143,23 @@ type DBGroup struct {
 	Group
 }
 
+type Repositories struct {
+	All  bool     `json:"all,omitempty"`
+	List []string `json:"list,omitempty"`
+}
+
+type ACLPermission string
+
+type ACL struct {
+	Permission   ACLPermission `json:"permission"`
+	Repositories Repositories  `json:"repositories,omitempty"`
+}
+
 type Policy struct {
 	CreatedAt   time.Time  `db:"created_at"`
 	DisplayName string     `db:"display_name" json:"display_name"`
 	Statement   Statements `db:"statement"`
+	ACL         ACL        `db:"acl" json:"acl,omitempty"`
 }
 
 type DBPolicy struct {
@@ -261,11 +274,21 @@ func ProtoFromGroup(g *Group) *GroupData {
 }
 
 func PolicyFromProto(pb *PolicyData) *Policy {
-	return &Policy{
+	policy := &Policy{
 		CreatedAt:   pb.CreatedAt.AsTime(),
 		DisplayName: pb.DisplayName,
 		Statement:   *statementsFromProto(pb.Statements),
 	}
+	if pb.Acl != nil {
+		policy.ACL = ACL{
+			Permission: ACLPermission(pb.Acl.Permission),
+			Repositories: Repositories{
+				All:  pb.Acl.AllRepositories,
+				List: pb.Acl.Repositories,
+			},
+		}
+	}
+	return policy
 }
 
 func ProtoFromPolicy(p *Policy) *PolicyData {
@@ -273,6 +296,11 @@ func ProtoFromPolicy(p *Policy) *PolicyData {
 		CreatedAt:   timestamppb.New(p.CreatedAt),
 		DisplayName: p.DisplayName,
 		Statements:  protoFromStatements(&p.Statement),
+		Acl: &ACLData{
+			Permission:      string(p.ACL.Permission),
+			AllRepositories: p.ACL.Repositories.All,
+			Repositories:    p.ACL.Repositories.List,
+		},
 	}
 }
 

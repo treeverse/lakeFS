@@ -157,6 +157,13 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
+    def test_get_group_acl(self):
+        """Test case for get_group_acl
+
+        get ACL of group  # noqa: E501
+        """
+        pass
+
     def test_get_policy(self):
         """Test case for get_policy
 
@@ -231,6 +238,13 @@ class TestAuthApi(unittest.TestCase):
         """Test case for login
 
         perform a login  # noqa: E501
+        """
+        pass
+
+    def test_set_group_acl(self):
+        """Test case for set_group_acl
+
+        set ACL of group  # noqa: E501
         """
         pass
 
