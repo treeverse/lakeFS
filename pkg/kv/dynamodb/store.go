@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"sync"
 	"time"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type Driver struct{}
