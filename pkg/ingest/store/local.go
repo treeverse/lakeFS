@@ -2,12 +2,10 @@ package store
 
 import (
 	"context"
-	"crypto/md5"
-	"io"
-
-	//nolint:gosec
+	"crypto/md5" //nolint:gosec
 	"encoding/hex"
 	"encoding/json"
+	"io"
 	"io/fs"
 	"net/url"
 	"os"
