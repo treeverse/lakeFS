@@ -143,10 +143,21 @@ type DBGroup struct {
 	Group
 }
 
+type Repositories struct {
+	All  bool     `json:"all,omitempty"`
+	List []string `json:"list,omitempty"`
+}
+
+type UI struct {
+	Permission   string       `json:"permission,omitempty"`
+	Repositories Repositories `json:"repositories,omitempty"`
+}
+
 type Policy struct {
 	CreatedAt   time.Time  `db:"created_at"`
 	DisplayName string     `db:"display_name" json:"display_name"`
 	Statement   Statements `db:"statement"`
+	UI          UI         `db:"ui" json:"ui,omitempty"`
 }
 
 type DBPolicy struct {
