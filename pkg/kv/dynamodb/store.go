@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -24,8 +23,7 @@ type Driver struct{}
 type Store struct {
 	svc    *dynamodb.DynamoDB
 	params *kvparams.DynamoDB
-	wg     sync.WaitGroup
-	cancel context.CancelFunc
+	ticker *time.Ticker
 }
 
 type EntriesIterator struct {
@@ -103,7 +101,6 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		params: params}
 
 	s.StartPeriodicCheck()
-
 	return s, nil
 }
 
@@ -410,7 +407,9 @@ func handleClientError(err error) error {
 	return err
 }
 
-func (s *Store) Close() {}
+func (s *Store) Close() {
+	s.StopPeriodicCheck()
+}
 
 // DropTable used internally for testing purposes
 func (s *Store) DropTable() error {
@@ -469,27 +468,26 @@ func (s *Store) StartPeriodicCheck() {
 	if interval <= 0 {
 		return
 	}
-	ctx := context.Background()
-	_, s.cancel = context.WithCancel(ctx)
-	s.wg.Add(1)
+	s.ticker = time.NewTicker(interval)
+	quit := make(chan struct{})
+
 	go func() {
-		defer s.wg.Done()
 		// check first and loop for checking every interval
 		logging.Default().WithField("interval", interval).Debug("Starting DynamoDB health check")
-		s.Check(ctx)
+		s.Check()
 		for {
 			select {
-			case <-time.After(interval):
-				s.Check(ctx)
-			case <-ctx.Done():
+			case <-s.ticker.C:
+				s.Check()
+			case <-quit:
 				return
 			}
 		}
 	}()
 }
 
-func (s *Store) Check(ctx context.Context) {
-	success, err := isTableExist(ctx, s.svc, s.params.TableName)
+func (s *Store) Check() {
+	success, err := isTableExist(context.Background(), s.svc, s.params.TableName)
 	if success {
 		logging.Default().Debug("DynamoDB health check passed!")
 	} else {
@@ -498,9 +496,7 @@ func (s *Store) Check(ctx context.Context) {
 }
 
 func (s *Store) StopPeriodicCheck() {
-	if s.cancel != nil {
-		logging.Default().Info("Stopping DynamoDB health check")
-		s.cancel()
-	}
-	s.wg.Wait()
+	logging.Default().Info("Stopping DynamoDB health check")
+	s.ticker.Stop()
+
 }
