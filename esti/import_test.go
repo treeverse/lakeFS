@@ -26,9 +26,10 @@ const (
 )
 
 func TestImport(t *testing.T) {
-	importPath := ""
-	expectedContentLength := 1024
+	const defaultExpectedContentLength = 1024
 
+	importPath := ""
+	expectedContentLength := defaultExpectedContentLength
 	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
 	switch blockstoreType {
 	case block.BlockstoreTypeS3:
