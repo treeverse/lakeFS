@@ -59,10 +59,20 @@ func Commit(ctx context.Context, client api.ClientWithResponsesInterface, u *uri
 	if err != nil {
 		return "", err
 	}
-	if resp.StatusCode() != http.StatusCreated {
-		return "", fmt.Errorf("could not commit changes to lakeFS: HTTP %d", resp.StatusCode())
+	switch resp.StatusCode() {
+	case http.StatusCreated:
+		return resp.JSON201.Id, nil
+	case http.StatusBadRequest:
+		return "", fmt.Errorf(resp.JSON400.Message)
+	case http.StatusUnauthorized:
+		return "", fmt.Errorf(resp.JSON401.Message)
+	case http.StatusNotFound:
+		return "", fmt.Errorf(resp.JSON404.Message)
+	case http.StatusPreconditionFailed:
+		return "", fmt.Errorf(resp.JSON412.Message)
+	default:
+		return "", fmt.Errorf(resp.JSONDefault.Message)
 	}
-	return resp.JSON201.Id, nil
 }
 
 func GetCurrentUserId(ctx context.Context, client api.ClientWithResponsesInterface) (string, error) {

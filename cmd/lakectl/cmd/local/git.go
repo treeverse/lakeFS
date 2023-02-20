@@ -291,7 +291,7 @@ func (c *Conf) GitIgnore(pattern string) error {
 	if err != nil {
 		return err
 	}
-	_, err = f.WriteString(fmt.Sprintf("# ignored because versioned in lakeFS (i.e. do `git data pull`):\n%s\n", pattern))
+	_, err = f.WriteString(fmt.Sprintf("# ignored because versioned in lakeFS (i.e. do `lakectl local pull`):\n%s\n", pattern))
 	if err != nil {
 		return err
 	}
