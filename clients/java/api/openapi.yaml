@@ -2472,7 +2472,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: Internal Server Error
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -2528,7 +2528,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: Internal Server Error
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -2758,7 +2758,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: Internal Server Error
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -3548,7 +3548,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: Internal Server Error
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -3643,7 +3643,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: Internal Server Error
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -3776,7 +3776,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: Internal Server Error
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -5080,6 +5080,12 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
       description: Precondition Failed
+    Forbidden:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      description: Forbidden
     ValidationError:
       content:
         application/json:

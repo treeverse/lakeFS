@@ -96,6 +96,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     ValidationError:
       description: Validation Error
       content:
@@ -2606,7 +2612,7 @@ paths:
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
-          $ref: "#/components/responses/ServerError"
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:
@@ -2659,7 +2665,7 @@ paths:
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
-          $ref: "#/components/responses/ServerError"
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:
@@ -2767,7 +2773,7 @@ paths:
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
-          $ref: "#/components/responses/ServerError"
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         409:
@@ -3304,7 +3310,7 @@ paths:
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
-          $ref: "#/components/responses/ServerError"
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         412:
@@ -3322,7 +3328,7 @@ paths:
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
-          $ref: "#/components/responses/ServerError"
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:
@@ -3361,7 +3367,7 @@ paths:
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
-          $ref: "#/components/responses/ServerError"
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:

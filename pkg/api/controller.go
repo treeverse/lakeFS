@@ -19,8 +19,6 @@ import (
 	"strings"
 	"time"
 
-	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/swag"
@@ -40,6 +38,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
+	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -1849,7 +1848,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, kv.ErrNotFound):
 		cb(w, r, http.StatusNotFound, err)
 
-	case errors.Is(err, graveler.ErrWriteToProtectedBranch):
+	case errors.Is(err, graveler.ErrProtectedBranch):
 		cb(w, r, http.StatusForbidden, err)
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
