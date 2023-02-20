@@ -18,7 +18,7 @@ export const DeltaLakeDiff = ({repo, leftRef, rightRef, tablePath}) => {
     const otfDiffs = response.results;
     const diffType = response.diff_type;
     return <>
-        {(OtfDiffType.Dropped != diffType && otfDiffs.length === 0) ?  <Alert variant="info" style={{margin: 0+"px"}}>No changes</Alert> :
+        {(OtfDiffType.Dropped !== diffType && otfDiffs.length === 0) ?  <Alert variant="info" style={{margin: 0+"px"}}>No changes</Alert> :
             <Table className="table-diff" size="md">
                 <tbody>
                 <TableDiffTypeRow diffType={diffType}/>
@@ -34,7 +34,7 @@ export const DeltaLakeDiff = ({repo, leftRef, rightRef, tablePath}) => {
 }
 
 const TableDiffTypeRow = ({diffType}) => {
-    if (OtfDiffType.Changed == diffType) {
+    if (OtfDiffType.Changed === diffType) {
         return "";
     }
     return <tr>
