@@ -500,7 +500,7 @@ func SyncDirectory(ctx context.Context, client api.ClientWithResponsesInterface,
 		return err
 	}
 
-	fmt.Printf("Finishing syncing directory '%s' (%d/%d skipped)\n", localDirectory, skippedObjects, len(filesWeNeed))
+	fmt.Printf("Finishing syncing directory '%s' (%d/%d skipped)\n\n", localDirectory, skippedObjects, len(filesWeNeed))
 
 	// iterate over local files now
 	skipPrefix := ""

@@ -2552,6 +2552,142 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
 
 
 
+### lakectl local
+
+commands used to sync and reproduce data from lakeFS locally
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for local
+```
+
+
+
+### lakectl local clone
+
+clone a lakeFS directory locally (committed only)
+
+```
+lakectl local clone <lakeFS branch/path uri> [<target directory>] [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+clone lakefs://example-repo/main/path/to/data/
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help              help for clone
+  -p, --parallelism int   maximum objects to download in parallel (default 5)
+```
+
+
+
+### lakectl local commit
+
+upload & commit changes to data files to the remote lakeFS repository
+
+```
+lakectl local commit <target directory> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --allow-dirty       allow committing while the Git repository has uncommitted changes. Enabling this might hurt reproducibility.
+  -h, --help              help for commit
+  -m, --message string    commit message to use for the resulting lakeFS commit
+      --meta strings      key value pair in the form of key=value
+  -p, --parallelism int   maximum objects to download in parallel (default 5)
+```
+
+
+
+### lakectl local help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type local help [path to command] for full details.
+
+```
+lakectl local help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl local pull
+
+pull data files from lakeFS as described in $GIT_REPOSITORY/data.yaml
+
+```
+lakectl local pull [<target directory>] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help              help for pull
+  -p, --parallelism int   maximum objects to download in parallel (default 5)
+  -u, --update            pull the latest data available on the remote (and update data.yaml)
+```
+
+
+
+### lakectl local reset
+
+overwrite local data files with files from lakeFS as described in $GIT_REPOSITORY/data.yaml
+
+```
+lakectl local reset [<target directory>] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help              help for reset
+  -p, --parallelism int   maximum objects to download in parallel (default 5)
+```
+
+
+
+### lakectl local status
+
+show local changes to data pulled from lakeFS
+
+```
+lakectl local status [<target directory>] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for status
+```
+
+
+
 ### lakectl log
 
 Show log of commits
