@@ -69,7 +69,10 @@ func newExternalBasicAuthenticator(cfg *config.Config, service auth.Service, log
 	}
 
 	if cfg.Auth.RemoteAuthenticator != nil {
-		remoteAuthenticator := remoteauth.NewRemoteAuthenticator(cfg.Auth.RemoteAuthenticator, service, logger)
+		remoteAuthenticator, err := remoteauth.NewRemoteAuthenticator(cfg.Auth.RemoteAuthenticator, service, logger)
+		if err != nil {
+			return nil, fmt.Errorf("creating new remote authenticator: %w", err)
+		}
 		return remoteAuthenticator, nil
 	} else if cfg.Auth.LDAP != nil {
 		logger.

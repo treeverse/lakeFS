@@ -183,7 +183,7 @@ type Config struct {
 			SupportsInvites bool `mapstructure:"supports_invites"`
 		}
 		LDAP                *LDAP
-		RemoteAuthenticator *RemoteAuthenticator
+		RemoteAuthenticator *RemoteAuthenticator `mapstructure:"remote_authenticator"`
 		OIDC                OIDC
 		// LogoutRedirectURL is the URL on which to mount the
 		// server-side logout.

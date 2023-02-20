@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path"
+	"net/url"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -40,15 +40,18 @@ type RemoteAuthenticator struct {
 	c           *http.Client
 }
 
-func NewRemoteAuthenticator(conf *config.RemoteAuthenticator, authService auth.Service, logger logging.Logger) auth.Authenticator {
-	authUrl := path.Join(conf.BaseURL, conf.AuthEndpoint)
+func NewRemoteAuthenticator(conf *config.RemoteAuthenticator, authService auth.Service, logger logging.Logger) (auth.Authenticator, error) {
+	authUrl, err := url.JoinPath(conf.BaseURL, conf.AuthEndpoint)
+	if err != nil {
+		return nil, err
+	}
 	logger.Debugf("initializing remote authenticator with auth url %s", authUrl)
 	return &RemoteAuthenticator{
 		Logger:      logger,
 		Config:      conf,
 		authURL:     authUrl,
 		AuthService: authService,
-	}
+	}, nil
 }
 
 func (ra *RemoteAuthenticator) client() *http.Client {
@@ -72,7 +75,7 @@ func (ra *RemoteAuthenticator) newRequest(ctx context.Context, username, passwor
 func (ra *RemoteAuthenticator) doRequest(logger logging.Logger, req *http.Request) ([]byte, error) {
 	client := ra.client()
 	log := logger.WithField("url", req.URL.String())
-	log.Debug("sending request to remote authenticator")
+	log.Debug("starting http request to remote authenticator")
 
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := client.Do(req)
@@ -109,9 +112,9 @@ func (ra *RemoteAuthenticator) AuthenticateUser(ctx context.Context, username, p
 		return "", fmt.Errorf("doing http request %s: %w", username, err)
 	}
 
-	var res *AuthenticationResponse
+	res := AuthenticationResponse{}
 
-	if err := json.Unmarshal(data, res); err != nil {
+	if err := json.Unmarshal(data, &res); err != nil {
 		return "", fmt.Errorf("unmarshaling authenticator response %s: %w", username, err)
 	}
 
