@@ -195,8 +195,6 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		tmpl,
 		nil,
 		nil,
-		nil,
-		nil,
 		upload.DefaultPathProvider,
 		otfDiffService,
 	)
