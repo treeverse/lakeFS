@@ -50,3 +50,14 @@ message TokenData {
     google.protobuf.Timestamp expired_at = 2;
 }
 
+// message data model for repositories / all repositories in UI
+message RepositoriesData {
+    bool all = 1;
+    repeated string list = 2;
+}
+
+// message data model for UI structure
+message UIData {
+    string permission = 1;
+    RepositoriesData repositories = 2;
+}
