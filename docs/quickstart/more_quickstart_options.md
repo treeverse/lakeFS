@@ -48,7 +48,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
    ./lakefs run --local-settings
    ```
 
-   It will create `~/lakefs` to store configuration and metadata. 
+   It will create `~/lakefs` and store data and metadata in `data` and `metadata` subfolders respectively. 
 
 3. Complete the setup by opening [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank"} in your web browser and creating the admin user.
 
