@@ -2,10 +2,12 @@ package store
 
 import (
 	"context"
-	"crypto/md5" //nolint:gosec
+	"crypto/md5"
+	"io"
+
+	//nolint:gosec
 	"encoding/hex"
 	"encoding/json"
-	"io"
 	"io/fs"
 	"net/url"
 	"os"
@@ -75,29 +77,16 @@ func (l *LocalWalker) Walk(_ context.Context, storageURI *url.URL, options WalkO
 				return nil
 			}
 
-			// calculate etag for the file
-			f, err := os.Open(p)
-			if err != nil {
-				return err
-			}
-			defer func() { _ = f.Close() }()
-			hash := md5.New() //nolint:gosec
-			_, err = io.Copy(hash, f)
-			if err != nil {
-				return err
-			}
-
 			addr := "local://" + key
 			relativePath, err := filepath.Rel(root, p)
 			if err != nil {
 				return err
 			}
-			etag := hex.EncodeToString(hash.Sum(nil))
+			// etag is calculated during iteration
 			ent := &ObjectStoreEntry{
 				FullKey:     key,
 				RelativeKey: filepath.ToSlash(relativePath),
 				Address:     addr,
-				ETag:        etag,
 				Mtime:       info.ModTime(),
 				Size:        info.Size(),
 			}
@@ -133,6 +122,12 @@ func (l *LocalWalker) Walk(_ context.Context, storageURI *url.URL, options WalkO
 	})
 	for i := startIndex; i < len(entries); i++ {
 		ent := *entries[i]
+		etag, err := calcFileETag(ent)
+		if err != nil {
+			return err
+		}
+
+		ent.ETag = etag
 		l.mark.LastKey = ent.FullKey
 		if err := walkFn(ent); err != nil {
 			return err
@@ -146,6 +141,21 @@ func (l *LocalWalker) Walk(_ context.Context, storageURI *url.URL, options WalkO
 	}
 	l.mark = Mark{}
 	return nil
+}
+
+func calcFileETag(ent ObjectStoreEntry) (string, error) {
+	f, err := os.Open(ent.FullKey)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = f.Close() }()
+	hash := md5.New() //nolint:gosec
+	_, err = io.Copy(hash, f)
+	if err != nil {
+		return "", err
+	}
+	etag := hex.EncodeToString(hash.Sum(nil))
+	return etag, nil
 }
 
 func (l *LocalWalker) verifyAbsPath(root string) error {

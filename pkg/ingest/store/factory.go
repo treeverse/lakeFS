@@ -22,18 +22,18 @@ var (
 
 type ObjectStoreEntry struct {
 	// FullKey represents the fully qualified path in the object store namespace for the given entry
-	FullKey string
+	FullKey string `json:"full_key,omitempty"`
 	// RelativeKey represents a path relative to prefix (or directory). If none specified, will be identical to FullKey
-	RelativeKey string
+	RelativeKey string `json:"relative_key,omitempty"`
 	// Address is a full URI for the entry, including the storage namespace (i.e. s3://bucket/path/to/key)
-	Address string
+	Address string `json:"address,omitempty"`
 	// ETag represents a hash of the entry's content. Generally as hex encoded MD5,
 	// but depends on the underlying object store
-	ETag string
+	ETag string `json:"etag,omitempty"`
 	// Mtime is the last-modified datetime of the entry
-	Mtime time.Time
+	Mtime time.Time `json:"mtime,omitempty"`
 	// Size in bytes
-	Size int64
+	Size int64 `json:"size"`
 }
 
 type WalkOptions struct {
