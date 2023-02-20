@@ -3,6 +3,7 @@ package tablediff
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/plugins/internal"
@@ -12,24 +13,48 @@ var (
 	ErrTableNotFound = errors.New("table not found")
 )
 
-type ChangeType int
-
 const (
-	Changed ChangeType = iota
-	Dropped
-	Created
+	DiffTypeChanged = "changed"
+	DiffTypeDropped = "dropped"
+	DiffTypeCreated = "created"
+	OpTypeCreate    = "create"
+	OpTypeUpdate    = "update"
+	OpTypeDelete    = "delete"
 )
+
+func getOpType(operationType OperationType) string {
+	switch operationType {
+	case OperationType_CREATE:
+		return OpTypeCreate
+	case OperationType_DELETE:
+		return OpTypeDelete
+	default:
+		return OpTypeUpdate
+	}
+}
+
+func getDiffType(diffType DiffType) string {
+	switch diffType {
+	case DiffType_CREATED:
+		return DiffTypeCreated
+	case DiffType_DROPPED:
+		return DiffTypeDropped
+	default:
+		return DiffTypeChanged
+	}
+}
 
 type DiffEntry struct {
 	Version          string
 	Timestamp        time.Time
 	Operation        string
 	OperationContent map[string]string
+	OperationType    string
 }
 
 type Response struct {
-	ChangeType
-	Diffs []DiffEntry
+	DiffType string
+	Diffs    []DiffEntry
 }
 
 type RefPath struct {
@@ -38,9 +63,9 @@ type RefPath struct {
 }
 
 type TablePaths struct {
-	LeftTablePath  RefPath
-	RightTablePath RefPath
-	BaseTablePath  RefPath
+	Left  RefPath
+	Right RefPath
+	Base  RefPath
 }
 
 type S3Creds struct {
@@ -64,14 +89,15 @@ type Differ interface {
 // remaining plugins.
 type Service struct {
 	pluginHandler  internal.Handler[Differ, internal.HCPluginProperties]
-	closeFunctions []func()
+	closeFunctions map[string]func()
+	l              sync.Mutex
 }
 
 // NewService is used to initialize a new Differ service. The returned function is a closing function for the service.
 func NewService() (*Service, func()) {
 	service := &Service{
 		pluginHandler:  internal.NewManager[Differ](),
-		closeFunctions: make([]func(), 0),
+		closeFunctions: make(map[string]func()),
 	}
 	return service, service.Close
 }
@@ -82,7 +108,7 @@ func (s *Service) RunDiff(ctx context.Context, diffType string, diffParams Param
 		return Response{}, err
 	}
 	if closeClient != nil {
-		s.closeFunctions = append(s.closeFunctions, closeClient)
+		s.appendClosingFunction(diffType, closeClient)
 	}
 
 	diffResponse, err := d.Diff(ctx, diffParams)
@@ -101,4 +127,12 @@ func (s *Service) Close() {
 
 func (s *Service) registerDiffClient(diffType string, props internal.HCPluginProperties) {
 	s.pluginHandler.RegisterPlugin(diffType, props)
+}
+
+func (s *Service) appendClosingFunction(diffType string, f func()) {
+	s.l.Lock()
+	defer s.l.Unlock()
+	if _, ok := s.closeFunctions[diffType]; !ok {
+		s.closeFunctions[diffType] = f
+	}
 }

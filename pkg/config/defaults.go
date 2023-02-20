@@ -40,7 +40,6 @@ func setDefaults(local bool) {
 	viper.SetDefault("auth.cache.ttl", 20*time.Second)
 	viper.SetDefault("auth.cache.jitter", 3*time.Second)
 
-	viper.SetDefault("auth.oidc.initial_groups_claim_name", "initial_groups")
 	viper.SetDefault("auth.logout_redirect_url", "/auth/login")
 	viper.SetDefault("auth.login_duration", 7*24*time.Hour)
 

@@ -49,8 +49,8 @@ func (ed TestDiffer) Diff(ctx context.Context, p Params) (Response, error) {
 	}
 
 	r := Response{
-		ChangeType: Changed,
-		Diffs:      generateDiffs(),
+		DiffType: DiffTypeChanged,
+		Diffs:    generateDiffs(),
 	}
 	return r, nil
 }
@@ -58,27 +58,27 @@ func (ed TestDiffer) Diff(ctx context.Context, p Params) (Response, error) {
 type ControllerTestDiffer struct{}
 
 func (ctd ControllerTestDiffer) Diff(ctx context.Context, p Params) (Response, error) {
-	left := p.TablePaths.LeftTablePath.Ref
-	right := p.TablePaths.RightTablePath.Ref
+	left := p.TablePaths.Left.Ref
+	right := p.TablePaths.Right.Ref
 	notfound := "notfound"
 	if left == notfound && right == notfound {
 		return Response{}, ErrTableNotFound
 	}
 
-	var ct = Changed
+	var ct = DiffTypeChanged
 	switch {
 	case left == "dropped":
-		ct = Dropped
+		ct = DiffTypeDropped
 	case right == "created":
-		ct = Created
+		ct = DiffTypeCreated
 	}
 	var diffs []DiffEntry
-	if ct != Dropped {
+	if ct != DiffTypeDropped {
 		diffs = generateDiffs()
 	}
 	r := Response{
-		ChangeType: ct,
-		Diffs:      diffs,
+		DiffType: ct,
+		Diffs:    diffs,
 	}
 	return r, nil
 }

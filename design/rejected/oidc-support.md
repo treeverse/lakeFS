@@ -1,3 +1,6 @@
+_This design has moved out of scope of lakeFS, see our [security
+update](https://docs.lakefs.io/posts/security_update.html)._
+
 # OIDC support in lakeFS
 
 As suggested by @arielshaqed, we started researching the option to implement OIDC support as part of lakeFS.

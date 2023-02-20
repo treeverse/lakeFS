@@ -10,13 +10,11 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 
-	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-co-op/gocron"
 	"github.com/go-ldap/ldap/v3"
@@ -48,7 +46,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
 	"github.com/treeverse/lakefs/templates"
-	"golang.org/x/oauth2"
 )
 
 const (
@@ -232,6 +229,9 @@ var runCmd = &cobra.Command{
 		}
 
 		if cfg.Auth.LDAP != nil {
+			logger.
+				WithField("feature", "LDAP").
+				Warn("Enabling LDAP on lakeFS server, but this functionality is deprecated")
 			middlewareAuthenticator = append(middlewareAuthenticator, newLDAPAuthenticator(cfg.Auth.LDAP, authService))
 		}
 		controllerAuthenticator := append(middlewareAuthenticator, auth.NewEmailAuthenticator(authService))
@@ -255,31 +255,6 @@ var runCmd = &cobra.Command{
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
 		// start API server
-		var oauthConfig *oauth2.Config
-		var oidcProvider *oidc.Provider
-		if cfg.Auth.OIDC.Enabled {
-			logger.
-				WithField("feature", "oidc").
-				Warn("Enabling OIDC on lakeFS server, but this functionality is deprecated")
-			oidcProvider, err = oidc.NewProvider(
-				ctx,
-				cfg.Auth.OIDC.URL,
-			)
-			if err != nil {
-				logger.WithError(err).Fatal("Failed to initialize OIDC provider")
-			}
-			scopes := []string{oidc.ScopeOpenID, "profile"}
-
-			scopes = append(scopes, cfg.Auth.OIDC.AdditionalScopeClaims...)
-			oauthConfig = &oauth2.Config{
-				ClientID:     cfg.Auth.OIDC.ClientID,
-				ClientSecret: cfg.Auth.OIDC.ClientSecret,
-				RedirectURL:  strings.TrimSuffix(cfg.Auth.OIDC.CallbackBaseURL, "/") + api.BaseURL + "/oidc/callback",
-				Endpoint:     oidcProvider.Endpoint(),
-				Scopes:       scopes,
-			}
-		}
-
 		otfDiffService, closeOtfService := tablediff.NewService()
 		defer closeOtfService()
 
@@ -301,8 +276,6 @@ var runCmd = &cobra.Command{
 			templater,
 			cfg.Gateways.S3.DomainNames,
 			cfg.UISnippets(),
-			oidcProvider,
-			oauthConfig,
 			upload.DefaultPathProvider,
 			otfDiffService,
 		)
