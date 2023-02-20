@@ -36,12 +36,6 @@ var (
 	ErrForbidden             = errors.New("forbidden")
 )
 
-func WithRemoveEmptyDir(b bool) func(a *Adapter) {
-	return func(a *Adapter) {
-		a.removeEmptyDir = b
-	}
-}
-
 func WithAllowedExternalPrefixes(prefixes []string) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.allowedExternalPrefixes = prefixes
@@ -74,7 +68,7 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 	return localAdapter, nil
 }
 
-func (l *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+func (l *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, error) {
 	return "", fmt.Errorf("local adapter: %w", block.ErrOperationNotSupported)
 }
 
@@ -88,7 +82,7 @@ func (l *Adapter) verifyRelPath(p string) error {
 }
 
 func (l *Adapter) getPath(ptr block.ObjectPointer) (string, error) {
-	const prefix = "local://"
+	const prefix = block.BlockstoreTypeLocal + "://"
 	if strings.HasPrefix(ptr.Identifier, prefix) {
 		// check abs path
 		p := ptr.Identifier[len(prefix):]
