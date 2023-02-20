@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::str::FromStr;
 
 use deltalake::DeltaDataTypeVersion;
 use prost_types::Timestamp;
@@ -29,11 +28,13 @@ pub(crate) fn construct_table_op(commit_info: &Map<String, Value>, version: Delt
 
     let op_name = commit_info.get("operation").unwrap().as_str().unwrap().to_string();
     let op_type = ops.get_type(&op_name).unwrap();
+    eprintln!("Timestamp received:\n{}", commit_info.get("timestamp").unwrap().to_string());
+
+    let mut ts = Timestamp::default();
+    ts.seconds = commit_info.get("timestamp").unwrap().as_i64().unwrap();
     TableOperation{
         id: (version as u32).to_string(),
-        timestamp: Option::from(
-            Timestamp::from_str(&commit_info.get("timestamp").unwrap().to_string()).unwrap()
-        ),
+        timestamp: Option::from(ts),
         operation: op_name,
         content: op_content_hash,
         operation_type: op_type,
