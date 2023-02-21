@@ -271,7 +271,7 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false, isTableMerge
                 <div>lakeFS Delta Lake tables merge is under development</div>
             </ComingSoonModal>
             <Button variant="success" disabled={disabled} onClick={() => onClickMerge(isTableMerge)}>
-                <GitMergeIcon/> Merge
+                <GitMergeIcon/> {isTableMerge ? "Merge Tables" : "Merge"}
             </Button>
         </>
     );
