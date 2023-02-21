@@ -126,6 +126,8 @@ _modify_ existing groups to fit into the new ACLs scheme.
   1. The upgrade script *unifies* actions: it selects the _least_ permission
      of Read, Write, Super that contains all of the allowed actions.  If any
      allowed action contains a wildcard this still makes sense.
+
+  All warnings link to support@ and to Slack.
 * The upgrade script prints the new permissions of the group.[^1]
 
 
