@@ -237,10 +237,6 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 }
 
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSONRequestBody) {
-	err := clearSession(w, r, c.sessionStore, InternalAuthSessionName)
-	if err != nil {
-		c.Logger.WithError(err).Error("failed to logout previous session")
-	}
 	ctx := r.Context()
 	user, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
 	if errors.Is(err, ErrAuthenticatingRequest) {
