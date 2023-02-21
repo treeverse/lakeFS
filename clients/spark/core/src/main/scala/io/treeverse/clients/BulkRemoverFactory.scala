@@ -84,7 +84,7 @@ object BulkRemoverFactory {
 
     private def wrapDeleteObjectsCall(s3Client: AmazonS3): java.util.function.Function[DeleteObjectsRequest, DeleteObjectsResult] = {
       val intervalFn =
-        IntervalFunction.ofExponentialRandomBackoff(500, 2, 1.5)
+        IntervalFunction.ofExponentialRandomBackoff(500, 2, 0.5)
       val retryConfig = RetryConfig.custom()
         .maxAttempts(2)
         .intervalFunction(intervalFn)

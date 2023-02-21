@@ -140,7 +140,7 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
     "org.scalactic" %% "scalactic" % "3.2.9",
     "dev.failsafe" % "failsafe" % "3.2.4",
     "org.apache.hadoop" % "hadoop-distcp" % buildType.hadoopVersion,
-    "io.github.resilience4j" % "resilience4j-retry" % "2.0.2",
+    "io.github.resilience4j" % "resilience4j-retry" % "1.7.0",
     // https://mvnrepository.com/artifact/com.squareup.okhttp3/mockwebserver
     "com.squareup.okhttp3" % "mockwebserver" % "4.10.0" % "test",
     "xerces" % "xercesImpl" % "2.12.2" % "test",
