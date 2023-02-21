@@ -18,11 +18,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"golang.org/x/exp/slices"
 )
 
 type Adapter struct {
-	path           string
-	removeEmptyDir bool
+	path                    string
+	removeEmptyDir          bool
+	allowedExternalPrefixes []string
+	importEnabled           bool
 }
 
 var (
@@ -30,11 +33,18 @@ var (
 	ErrInventoryNotSupported = errors.New("inventory feature not implemented for local storage adapter")
 	ErrInvalidUploadIDFormat = errors.New("invalid upload id format")
 	ErrBadPath               = errors.New("bad path traversal blocked")
+	ErrForbidden             = errors.New("forbidden")
 )
 
-func WithRemoveEmptyDir(b bool) func(a *Adapter) {
+func WithAllowedExternalPrefixes(prefixes []string) func(a *Adapter) {
 	return func(a *Adapter) {
-		a.removeEmptyDir = b
+		a.allowedExternalPrefixes = prefixes
+	}
+}
+
+func WithImportEnabled(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.importEnabled = b
 	}
 }
 
@@ -58,37 +68,35 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 	return localAdapter, nil
 }
 
-func (l *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+func (l *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, error) {
 	return "", fmt.Errorf("local adapter: %w", block.ErrOperationNotSupported)
 }
 
-func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
-	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier, obj.IdentifierType)
-	if err != nil {
-		return qualifiedKey, err
-	}
-	if qualifiedKey.StorageType != block.StorageTypeLocal {
-		return qualifiedKey, block.ErrInvalidNamespace
-	}
-	return qualifiedKey, nil
-}
-
-// verifyPath ensures that p is under the directory controlled by this adapter.  It does not
+// verifyRelPath ensures that p is under the directory controlled by this adapter.  It does not
 // examine the filesystem and can mistakenly error out when symbolic links are involved.
-func (l *Adapter) verifyPath(p string) error {
+func (l *Adapter) verifyRelPath(p string) error {
 	if !strings.HasPrefix(filepath.Clean(p), l.path) {
 		return fmt.Errorf("%s: %w", p, ErrBadPath)
 	}
 	return nil
 }
 
-func (l *Adapter) getPath(identifier block.ObjectPointer) (string, error) {
-	obj, err := resolveNamespace(identifier)
-	if err != nil {
-		return "", err
+func (l *Adapter) getPath(ptr block.ObjectPointer) (string, error) {
+	const prefix = block.BlockstoreTypeLocal + "://"
+	if strings.HasPrefix(ptr.Identifier, prefix) {
+		// check abs path
+		p := ptr.Identifier[len(prefix):]
+		if err := l.verifyAbsPath(p); err != nil {
+			return "", err
+		}
+		return p, nil
 	}
-	p := path.Join(l.path, obj.StorageNamespace, obj.Key)
-	if err = l.verifyPath(p); err != nil {
+	// relative path
+	if !strings.HasPrefix(ptr.StorageNamespace, prefix) {
+		return "", fmt.Errorf("%w: storage namespace", ErrBadPath)
+	}
+	p := path.Join(l.path, ptr.StorageNamespace[len(prefix):], ptr.Identifier)
+	if err := l.verifyRelPath(p); err != nil {
 		return "", err
 	}
 	return p, nil
@@ -97,7 +105,7 @@ func (l *Adapter) getPath(identifier block.ObjectPointer) (string, error) {
 // maybeMkdir verifies path is allowed and runs f(path), but if f fails due to file-not-found
 // MkdirAll's its dir and then runs it again.
 func (l *Adapter) maybeMkdir(path string, f func(p string) (*os.File, error)) (*os.File, error) {
-	if err := l.verifyPath(path); err != nil {
+	if err := l.verifyRelPath(path); err != nil {
 		return nil, err
 	}
 	ret, err := f(path)
@@ -256,7 +264,6 @@ func (l *Adapter) Walk(_ context.Context, walkOpt block.WalkOpts, walkFn block.W
 		if err != nil {
 			return err
 		}
-
 		return walkFn(p)
 	})
 }
@@ -422,7 +429,7 @@ func (l *Adapter) unitePartFiles(identifier block.ObjectPointer, filenames []str
 		}
 	}()
 	for _, name := range filenames {
-		if err := l.verifyPath(name); err != nil {
+		if err := l.verifyRelPath(name); err != nil {
 			return 0, err
 		}
 		f, err := os.Open(filepath.Clean(name))
@@ -443,7 +450,7 @@ func (l *Adapter) unitePartFiles(identifier block.ObjectPointer, filenames []str
 func (l *Adapter) removePartFiles(files []string) error {
 	var firstErr error
 	for _, name := range files {
-		if err := l.verifyPath(name); err != nil {
+		if err := l.verifyRelPath(name); err != nil {
 			if firstErr == nil {
 				firstErr = err
 			}
@@ -483,10 +490,29 @@ func (l *Adapter) BlockstoreType() string {
 func (l *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeLocal)
 	info.PreSignSupport = false
+	info.ImportSupport = l.importEnabled
 	return info
 }
 
 func (l *Adapter) RuntimeStats() map[string]string {
+	return nil
+}
+
+func (l *Adapter) verifyAbsPath(p string) error {
+	// check we have a valid abs path
+	if !path.IsAbs(p) || path.Clean(p) != p {
+		return ErrBadPath
+	}
+	// point to storage namespace
+	if strings.HasPrefix(p, l.path) {
+		return nil
+	}
+	// allowed places
+	if !slices.ContainsFunc(l.allowedExternalPrefixes, func(prefix string) bool {
+		return strings.HasPrefix(p, prefix)
+	}) {
+		return ErrForbidden
+	}
 	return nil
 }
 
