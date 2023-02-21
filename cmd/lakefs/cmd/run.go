@@ -411,6 +411,7 @@ func checkMetadataPrefix(ctx context.Context, repo *catalog.Repository, logger l
 	if _, err := adapter.Get(ctx, block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
 		Identifier:       dummyFile,
+		IdentifierType:   block.IdentifierTypeRelative,
 	}, -1); err != nil {
 		logger.WithFields(logging.Fields{
 			"path":              dummyFile,
@@ -451,8 +452,8 @@ const runBanner = `
 │
 
 │
-│ For support or any other question,
-│     join our Slack channel https://docs.lakefs.io/slack
+│ For support or any other question,                            >(.＿.)<
+│     join our Slack channel https://docs.lakefs.io/slack         (  )_
 │
 
 `

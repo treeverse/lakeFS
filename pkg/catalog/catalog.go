@@ -1923,8 +1923,16 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 		dstEntry.Path = destPath
 		dstEntry.AddressType = AddressTypeRelative
 		dstEntry.PhysicalAddress = c.PathProvider.NewPath()
-		srcObject := block.ObjectPointer{StorageNamespace: srcRepo.StorageNamespace, Identifier: srcEntry.PhysicalAddress}
-		destObj := block.ObjectPointer{StorageNamespace: destRepo.StorageNamespace, Identifier: dstEntry.PhysicalAddress}
+		srcObject := block.ObjectPointer{
+			StorageNamespace: srcRepo.StorageNamespace,
+			IdentifierType:   srcEntry.AddressType.ToIdentifierType(),
+			Identifier:       srcEntry.PhysicalAddress,
+		}
+		destObj := block.ObjectPointer{
+			StorageNamespace: destRepo.StorageNamespace,
+			IdentifierType:   dstEntry.AddressType.ToIdentifierType(),
+			Identifier:       dstEntry.PhysicalAddress,
+		}
 		err = c.BlockAdapter.Copy(ctx, srcObject, destObj)
 		if err != nil {
 			return nil, false, err
