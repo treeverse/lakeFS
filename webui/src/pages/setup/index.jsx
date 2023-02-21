@@ -8,7 +8,6 @@ import {UserConfiguration} from "./userConfiguration";
 
 
 const SetupContents = () => {
-    const usernameRef = useRef(null);
     const [setupError, setSetupError] = useState(null);
     const [setupData, setSetupData] = useState(null);
     const [disabled, setDisabled] = useState(false);
