@@ -6,13 +6,13 @@ import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import {Error} from "../../lib/components/controls";
 
-interface CommunicationPreferencesSetupProps {
+interface UserConfigurationProps {
     onSubmit: (email: string, admin: string, updatesCheck: boolean, securityCheck: boolean) => Promise<void>;
     setupError: Error;
     disabled: boolean;
 }
 
-export const CommunicationPreferencesSetup: FC<CommunicationPreferencesSetupProps> = ({
+export const UserConfiguration: FC<UserConfigurationProps> = ({
     onSubmit,
     setupError,
     disabled,
