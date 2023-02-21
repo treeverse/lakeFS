@@ -40,38 +40,19 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
 1. Download the lakeFS binary for your operating system:
 
-   [Download lakefs](../index.md#downloads){: .btn .btn-green target="_blank"}
+   [Download lakefs](https://github.com/treeverse/lakeFS/releases){: .btn .btn-green target="_blank"}
 
-1. Create a configuration file:
-    
-   ```yaml
-   ---
-   database:
-     type: local
-     local:
-       path: "~/lakefs/metadata"
-    
-   blockstore: 
-     type: "local"
-     local:
-       path: "~/lakefs/data"
-   ```
-
-1. Create a local directories to store objects and metadata:
-
-   ```sh
-   mkdir -p ~/lakefs/data ~/lakefs/metadata
-   ```
-
-1. Run the server:
+2. Run the server:
     
    ```bash
-   ./lakefs --config /path/to/config.yaml run
+   ./lakefs run --local-settings
    ```
 
-1. Check your installation by opening [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank"} in your web browser.
+   It will create `~/lakefs` and store data and metadata in `data` and `metadata` subfolders respectively. 
 
-1. You are now ready to [create your first repository](repository.md) in lakeFS.
+3. Complete the setup by opening [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank"} in your web browser and creating the admin user.
+
+4. You are now ready to [create your first repository](repository.md#create-the-repository) in lakeFS.
 
 ## lakeFS "Everything Bagel"
 
