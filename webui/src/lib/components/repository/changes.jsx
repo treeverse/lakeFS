@@ -178,7 +178,7 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
  */
 export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton = false, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
-                                         getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert}) => {
+                                         getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert, setIsTableMerge}) => {
     const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
     const [tableDiffState, setTableDiffState] = useState({isShown: false, expandedTablePath: ""});
 
@@ -194,7 +194,12 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                 ? <Button className="action-bar"
                                           variant="secondary"
                                           disabled={false}
-                                          onClick={() => setTableDiffState( {isShown: false, expandedTablePath: ""})}>
+                                          onClick={() => {
+                                              setTableDiffState( {isShown: false, expandedTablePath: ""})
+                                              if (setIsTableMerge) {
+                                                  setIsTableMerge(false);
+                                              }
+                                          }}>
                                     <ArrowLeftIcon/> Back to object comparison
                                   </Button>
                                 : <div className="mr-1 mb-2"><Alert variant={"info"}><InfoIcon/> You can now use lakeFS to
@@ -221,7 +226,12 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                                      onNavigate={onNavigate}
                                                      getMore={getMore}
                                                      onRevert={onRevert}
-                                                     setTableDiffExpanded={() => setTableDiffState({isShown: true,  expandedTablePath: entry.path})}
+                                                     setTableDiffExpanded={() => {
+                                                         setTableDiffState({isShown: true,  expandedTablePath: entry.path})
+                                                         if (setIsTableMerge) {
+                                                             setIsTableMerge(true);
+                                                         }
+                                                     }}
                                                  />);
                                 })}
                                 {!!nextPage &&

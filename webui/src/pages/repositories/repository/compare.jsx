@@ -12,7 +12,7 @@ import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {ArrowLeftIcon, GitMergeIcon, ArrowSwitchIcon} from "@primer/octicons-react";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
-import {refs} from "../../../lib/api";
+import {refs, statistics} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
 import {ChangesTreeContainer, defaultGetMoreChanges} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
@@ -25,11 +25,13 @@ import Modal from "react-bootstrap/Modal";
 import {RepoError} from "./error";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
+import {ComingSoonModal} from "../../../lib/components/modals";
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
+    const [isTableMerge, setIsTableMerge] = useState(false);
 
     const router = useRouter();
     const handleSwitchRefs = useCallback(
@@ -113,7 +115,8 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                          uriNavigator={uriNavigator} leftDiffRefID={leftCommittedRef} rightDiffRefID={rightCommittedRef}
                                          repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
                                          getMore={defaultGetMoreChanges(repo, reference.id, compareReference.id, delimiter)}
-                                         loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}/>
+                                         loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}
+                                         setIsTableMerge={setIsTableMerge}/>
 
     const emptyDiff = (!loading && !error && !!results && results.length === 0);
 
@@ -163,6 +166,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                             source={compareReference.id}
                             dest={reference.id}
                             onDone={refresh}
+                            isTableMerge={isTableMerge}
                         />
                     }
                 </ActionGroup>
@@ -172,7 +176,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     );
 };
 
-const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
+const MergeButton = ({repo, onDone, source, dest, disabled = false, isTableMerge}) => {
     const initialMerge = {
         merging: false,
         show: false,
@@ -180,6 +184,27 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
         strategy: "none",
     }
     const [mergeState, setMergeState] = useState(initialMerge);
+
+    const [showDeltaMergeComingSoonModal, setShowDeltaMergeComingSoonModal] = useState(false);
+    const sendDeltaMergeStats = async () => {
+        const deltaMergeStatEvents = [
+            {
+                "class": "experimental-feature",
+                "name": "delta-merge",
+                "count": 1,
+            }
+        ];
+        await statistics.postStatsEvents(deltaMergeStatEvents);
+    }
+
+    const onClickMerge = useCallback((isTableMerge) => {
+        if (isTableMerge) {
+            sendDeltaMergeStats()
+            setShowDeltaMergeComingSoonModal(!showDeltaMergeComingSoonModal)
+        } else {
+            setMergeState({merging: mergeState.merging, err: mergeState.err, show: true, strategy: mergeState.strategy})}
+        }
+    );
 
     const onStrategyChange = (event) => {
         setMergeState({merging: mergeState.merging, err: mergeState.err, show: mergeState.show, strategy: event.target.value});
@@ -241,9 +266,12 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <Button variant="success" disabled={disabled} onClick={() => setMergeState({merging: mergeState.merging,
-                err: mergeState.err, show: true, strategy: mergeState.strategy})}>
-                <GitMergeIcon/> Merge
+            <ComingSoonModal display={showDeltaMergeComingSoonModal}
+                             onCancel={() => setShowDeltaMergeComingSoonModal(false)}>
+                <div>lakeFS Delta Lake tables merge is under development</div>
+            </ComingSoonModal>
+            <Button variant="success" disabled={disabled} onClick={() => onClickMerge(isTableMerge)}>
+                <GitMergeIcon/> {isTableMerge ? "Merge Tables" : "Merge"}
             </Button>
         </>
     );

@@ -6,7 +6,6 @@ import Tooltip from "react-bootstrap/Tooltip";
 import {OverlayTrigger} from "react-bootstrap";
 import { ButtonVariant } from "react-bootstrap/esm/types";
 import { GetUserEmailByIdContext } from "../../pages/auth/users";
-import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 
@@ -113,46 +112,44 @@ export const ConfirmationButton: FC<ConfirmationButtonProps> = ({ msg, onConfirm
     );
 };
 
-const ModalContainer = ({children, show = false, heading, onCancel, footer=null}) => {
+const SimpleModal =  ({children, show = false, heading, onCancel, footer=null}) => {
     return (
-        <Container fluid={true} className="justify-content-center">
-            <Modal show={show} onHide={onCancel}
-                   size="lg"
-                   restoreFocus={false}
-                   aria-labelledby="contained-modal-title-vcenter"
-                   centered>
-                <Row>
-                    <Col>
-                        <Modal.Header className="justify-content-center">
-                            <Modal.Title>{heading}</Modal.Title>
-                        </Modal.Header>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col>
-                        <Modal.Body className="justify-content-center">
-                            {children}
-                        </Modal.Body>
-                    </Col>
-                </Row>
-                {footer &&
-                    <Row>
-                        <Col>
-                            <Modal.Footer>
-                                {footer}
-                            </Modal.Footer>
-                        </Col>
-                    </Row>
-                }
-            </Modal>
-        </Container>
+        <Modal show={show} onHide={onCancel}
+               size="lg"
+               restoreFocus={false}
+               aria-labelledby="contained-modal-title-vcenter"
+               centered>
+            <Row>
+                <Col>
+                    <Modal.Header className="justify-content-center">
+                        <Modal.Title>{heading}</Modal.Title>
+                    </Modal.Header>
+                </Col>
+            </Row>
+            <Row>
+                <Col>
+                    <Modal.Body className="justify-content-center">
+                        {children}
+                    </Modal.Body>
+                </Col>
+            </Row>
+            {footer &&
+            <Row>
+                <Col>
+                    <Modal.Footer>
+                        {footer}
+                    </Modal.Footer>
+                </Col>
+            </Row>
+            }
+        </Modal>
     )
 };
 
 export const ComingSoonModal: FC<BasicModal> = ({display, children, onCancel}) => {
     return (
-        <ModalContainer show={display} heading={"Coming soon!"} onCancel={onCancel}>
+        <SimpleModal show={display} heading={"Coming soon!"} onCancel={onCancel}>
             {children}
-        </ModalContainer>
+        </SimpleModal>
     )
 };
