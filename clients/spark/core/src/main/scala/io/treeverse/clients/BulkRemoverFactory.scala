@@ -1,5 +1,6 @@
 package io.treeverse.clients
 
+import com.amazonaws.services.s3.model.{DeleteObjectsRequest, DeleteObjectsResult}
 import com.amazonaws.services.s3.{AmazonS3, model}
 import com.azure.core.http.HttpClient
 import com.azure.core.http.rest.Response
@@ -8,6 +9,8 @@ import com.azure.storage.blob.models.DeleteSnapshotsOptionType
 import com.azure.storage.blob.{BlobServiceClient, BlobServiceClientBuilder}
 import com.azure.storage.common.StorageSharedKeyCredential
 import com.azure.storage.common.policy.RequestRetryOptions
+import io.github.resilience4j.core.IntervalFunction
+import io.github.resilience4j.retry.{Retry, RetryConfig}
 import io.treeverse.clients.StorageUtils.AzureBlob._
 import io.treeverse.clients.StorageUtils.S3._
 import io.treeverse.clients.StorageUtils._
@@ -16,7 +19,7 @@ import org.apache.hadoop.conf.Configuration
 import java.net.URI
 import java.nio.charset.Charset
 import java.util.stream.Collectors
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 
 trait BulkRemover {
 
@@ -65,18 +68,35 @@ object BulkRemoverFactory {
 
   private class S3BulkRemover(hc: Configuration, storageNamespace: String, region: String)
       extends BulkRemover {
-    val uri = new URI(storageNamespace)
-    val bucket = uri.getHost
+    private val uri = new URI(storageNamespace)
+    private val bucket = uri.getHost
 
     override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
       val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, false, false)
-      println(s"Remove keys from ${bucket}: ${removeKeyNames.take(100).mkString(", ")}")
+      println(s"Remove keys from $bucket: ${removeKeyNames.take(100).mkString(", ")}")
       val removeKeys = removeKeyNames.map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
-
       val delObjReq = new model.DeleteObjectsRequest(bucket).withKeys(removeKeys)
       val s3Client = getS3Client(hc, bucket, region, S3NumRetries)
-      val res = s3Client.deleteObjects(delObjReq)
+      val deleteFun = wrapDeleteObjectsCall(s3Client)
+      val res = deleteFun.apply(delObjReq)
       res.getDeletedObjects.asScala.map(_.getKey())
+    }
+
+    private def wrapDeleteObjectsCall(s3Client: AmazonS3): java.util.function.Function[DeleteObjectsRequest, DeleteObjectsResult] = {
+      val intervalFn =
+        IntervalFunction.ofExponentialRandomBackoff(500, 2, 1.5)
+      val retryConfig = RetryConfig.custom()
+        .maxAttempts(2)
+        .intervalFunction(intervalFn)
+        .build()
+      val retry = Retry.of("deleteObjects", retryConfig)
+      val deleteObjectsFun = new java.util.function.Function[DeleteObjectsRequest, model.DeleteObjectsResult]() {
+        def apply(request: DeleteObjectsRequest): DeleteObjectsResult = {
+          s3Client.deleteObjects(request)
+        }
+      }
+      Retry
+        .decorateFunction(retry, deleteObjectsFun)
     }
 
     private def getS3Client(
@@ -94,10 +114,10 @@ object BulkRemoverFactory {
 
   private class AzureBlobBulkRemover(hc: Configuration, storageNamespace: String)
       extends BulkRemover {
-    val EmptyString = ""
-    val uri = new URI(storageNamespace)
-    val storageAccountUrl = StorageUtils.AzureBlob.uriToStorageAccountUrl(uri)
-    val storageAccountName = StorageUtils.AzureBlob.uriToStorageAccountName(uri)
+    private val EmptyString = ""
+    private val uri = new URI(storageNamespace)
+    private val storageAccountUrl = StorageUtils.AzureBlob.uriToStorageAccountUrl(uri)
+    private val storageAccountName = StorageUtils.AzureBlob.uriToStorageAccountName(uri)
 
     override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
       val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, true, true)
