@@ -210,14 +210,23 @@ func isSeekable(f io.Seeker) bool {
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	initCmd(rootCmd)
+	initLocalAsSubcommand(rootCmd)
 	err := rootCmd.Execute()
 	if err != nil {
 		DieErr(err)
 	}
 }
 
-//nolint:gochecknoinits
-func init() {
+// LocalExecute executes `lakectl local` directly.
+// Useful if we want to only ever execute that set of commands as e.g. a git plugin
+func LocalExecute(name string) {
+	initCmd(localCmd)
+	initLocal(name)
+	DieIfErr(localCmd.Execute())
+}
+
+func initCmd(cmd *cobra.Command) {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.

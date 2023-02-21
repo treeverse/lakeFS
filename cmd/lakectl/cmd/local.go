@@ -18,10 +18,11 @@ import (
 const (
 	DownloadConcurrency = 5
 
-	gitCommitKeyName  = "git.commit.id"
-	gitPathKeyName    = "git.repository.data_source_path"
-	gitRepoUrlKeyName = "git.repository.url"
+	gitCommitKeyName = "git.commit.id"
+	gitPathKeyName   = "git.repository.data_source_path"
 )
+
+var localCmdName = "local"
 
 func mustGitConf(path string) *local.Conf {
 	if path == "" {
@@ -122,7 +123,6 @@ func pull(ctx context.Context, maxParallelism int, update bool, args ...string) 
 
 // localCmd is for integration with local execution engines!
 var localCmd = &cobra.Command{
-	Use:   "local",
 	Short: "commands used to sync and reproduce data from lakeFS locally",
 }
 
@@ -372,10 +372,13 @@ var localResetCmd = &cobra.Command{
 	},
 }
 
-//nolint:gochecknoinits
-func init() {
-	rootCmd.AddCommand(localCmd)
+func initLocalAsSubcommand(root *cobra.Command) {
+	root.AddCommand(localCmd)
+	initLocal("local")
+}
 
+func initLocal(name string) {
+	localCmd.Use = name
 	localCmd.AddCommand(localStatusCmd)
 
 	localCmd.AddCommand(localCloneCmd)
