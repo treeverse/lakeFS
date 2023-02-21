@@ -27,7 +27,7 @@ type AuthenticationRequest struct {
 
 // Expected response from the remote authenticator service
 type AuthenticationResponse struct {
-	// optional, if returned then the user will be used as the official username in lakeFS
+	// ExternalUserIdentifier is optional, if returned then the user will be used as the official username in lakeFS
 	ExternalUserIdentifier string `json:"external_user_identifier"`
 }
 
@@ -36,20 +36,21 @@ type RemoteAuthenticator struct {
 	AuthService auth.Service
 	Logger      logging.Logger
 	Config      *config.RemoteAuthenticator
-	authURL     string
+	serviceURL  string
 	c           *http.Client
 }
 
 func NewRemoteAuthenticator(conf *config.RemoteAuthenticator, authService auth.Service, logger logging.Logger) (auth.Authenticator, error) {
-	authUrl, err := url.JoinPath(conf.BaseURL, conf.AuthEndpoint)
+	serviceURL, err := url.JoinPath(conf.BaseURL, conf.AuthEndpoint)
 	if err != nil {
 		return nil, err
 	}
-	logger.Debugf("initializing remote authenticator with auth url %s", authUrl)
+	logger.WithField("service_url", serviceURL).Info("initializing remote authenticator")
+
 	return &RemoteAuthenticator{
 		Logger:      logger,
 		Config:      conf,
-		authURL:     authUrl,
+		serviceURL:  serviceURL,
 		AuthService: authService,
 	}, nil
 }
@@ -61,23 +62,29 @@ func (ra *RemoteAuthenticator) client() *http.Client {
 	return ra.c
 }
 
-func (ra *RemoteAuthenticator) newRequest(ctx context.Context, username, password string) (*http.Request, error) {
+func (ra *RemoteAuthenticator) doRequest(ctx context.Context, username, password string, log logging.Logger) ([]byte, error) {
+	// build the request
 	payload, err := json.Marshal(&AuthenticationRequest{Username: username, Password: password})
 
 	if err != nil {
-		return nil, err
+		log.WithError(err).Error("failed marshaling request")
+		return nil, auth.ErrInvalidRequest
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", ra.authURL, bytes.NewBuffer(payload))
-	return req, err
-}
+	req, err := http.NewRequestWithContext(ctx, "POST", ra.serviceURL, bytes.NewBuffer(payload))
 
-func (ra *RemoteAuthenticator) doRequest(logger logging.Logger, req *http.Request) ([]byte, error) {
-	client := ra.client()
-	log := logger.WithField("url", req.URL.String())
-	log.Debug("starting http request to remote authenticator")
+	if err != nil {
+		log.WithError(err).Error("failed building new request")
+		return nil, auth.ErrInvalidRequest
+	}
 
 	req.Header.Set("Content-Type", "application/json")
+
+	// do the request
+	client := ra.client()
+	log = log.WithField("url", req.URL.String())
+	log.Debug("starting http request to remote authenticator")
+
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -97,22 +104,16 @@ func (ra *RemoteAuthenticator) doRequest(logger logging.Logger, req *http.Reques
 }
 
 func (ra *RemoteAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (string, error) {
-	log := ra.Logger.WithField("input_username", username)
-
-	req, err := ra.newRequest(ctx, username, password)
-
-	if err != nil {
-		log.WithError(err).Error("failed creating request")
-		return "", auth.ErrInvalidRequest
-	}
-
-	data, err := ra.doRequest(log, req)
+	// TODO(isan) logger: verify username appears here in ctx && verify that password doesnt
+	log := ra.Logger.WithContext(ctx)
+	data, err := ra.doRequest(ctx, username, password, log)
 
 	if err != nil {
 		return "", fmt.Errorf("doing http request %s: %w", username, err)
 	}
 
-	res := AuthenticationResponse{}
+	// TODO(isan) check that AuthenticationResponse{} does not brake memorty allocation
+	var res AuthenticationResponse
 
 	if err := json.Unmarshal(data, &res); err != nil {
 		return "", fmt.Errorf("unmarshaling authenticator response %s: %w", username, err)
@@ -129,11 +130,11 @@ func (ra *RemoteAuthenticator) AuthenticateUser(ctx context.Context, username, p
 	user, err := ra.AuthService.GetUser(ctx, dbUsername)
 
 	if err == nil {
-		log.WithField("user", fmt.Sprintf("%+v", user)).Debug("Got existing user")
+		log.WithField("user", fmt.Sprintf("%+v", user)).Debug("got existing user")
 		return user.Username, nil
 	}
 	if !errors.Is(err, auth.ErrNotFound) {
-		log.WithError(err).Info("Could not get user; createing them")
+		log.WithError(err).Info("Could not get user; creating them")
 	}
 
 	newUser := &model.User{

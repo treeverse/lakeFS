@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -89,36 +90,47 @@ func checkSecurityRequirements(r *http.Request,
 		for provider := range securityRequirement {
 			switch provider {
 			case "jwt_token":
+				fmt.Printf("?>>>> PROVIDER %s ENTER \n", provider)
 				// validate jwt token from header
 				authHeaderValue := r.Header.Get("Authorization")
 				if authHeaderValue == "" {
+					fmt.Println("exiting jwt_token not it dude")
 					continue
 				}
 				parts := strings.Fields(authHeaderValue)
 				if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+					fmt.Println("exiting jwt_token not it dude")
 					continue
 				}
+				fmt.Println("ITS JWT TOKEN!!!!! ")
 				token := parts[1]
 				user, err = userByToken(ctx, logger, authService, token)
 			case "basic_auth":
+				fmt.Printf("?>>>> PROVIDER %s ENTER << HERE!! \n", provider)
 				// validate using basic auth
 				accessKey, secretKey, ok := r.BasicAuth()
 				if !ok {
+					fmt.Println("exiting basic_auth not it dude")
 					continue
 				}
 				user, err = userByAuth(ctx, logger, authenticator, authService, accessKey, secretKey)
+				fmt.Printf("?>>>> PROVIDER %s ENTER << HERE FINISHED USER? %v error? %s!! \n", provider, user, err)
 			case "cookie_auth":
+				fmt.Printf("?>>>> PROVIDER %s ENTER \n", provider)
 				var internalAuthSession *sessions.Session
 				internalAuthSession, _ = sessionStore.Get(r, InternalAuthSessionName)
+				fmt.Printf(">>> cookie_auth: INTERNAL AUTH SESSION >  %v \n", internalAuthSession)
 				token := ""
 				if internalAuthSession != nil {
 					token, _ = internalAuthSession.Values[TokenSessionKeyName].(string)
 				}
+				fmt.Println(">>> cookie_auth: TOKEN VAL????  >  ", token)
 				if token == "" {
 					continue
 				}
 				user, err = userByToken(ctx, logger, authService, token)
 			case "oidc_auth":
+				fmt.Printf("?>>>> PROVIDER %s ENTER \n", provider)
 				var oidcSession *sessions.Session
 				oidcSession, err = sessionStore.Get(r, OIDCAuthSessionName)
 				if err != nil {
@@ -130,10 +142,14 @@ func checkSecurityRequirements(r *http.Request,
 				logger.WithField("provider", provider).Error("Authentication middleware unknown security requirement provider")
 				return nil, ErrAuthenticatingRequest
 			}
+			fmt.Printf("?>>>> PROVIDER %s AFTER EVAL \n", provider)
+			fmt.Println("111 here me err ?? ", err)
+			fmt.Println("111 BUT USER VAL???  ", user)
 			if err != nil {
 				return nil, err
 			}
 			if user != nil {
+				fmt.Println("@@@ TYEY YE YYE WORKING")
 				return user, nil
 			}
 		}
@@ -242,12 +258,18 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 
 func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, accessKey string, secretKey string) (*model.User, error) {
 	// TODO(ariels): Rename keys.
+	fmt.Println("@@@@@@@@@@@@@@!!! 1111111 START AuthenticateUser")
 	username, err := authenticator.AuthenticateUser(ctx, accessKey, secretKey)
+	fmt.Println(" err ???? ", err)
+	fmt.Println("username? ", username)
+	fmt.Println("@@@@@@@@@@@@@@!!! 2222 END AuthenticateUser")
 	if err != nil {
 		logger.WithError(err).WithField("user", accessKey).Error("authenticate")
 		return nil, ErrAuthenticatingRequest
 	}
 	user, err := authService.GetUser(ctx, username)
+	fmt.Println("AUTH USER FOUND USER ???? ? ", user != nil)
+	fmt.Println("HAS ERROR ?!?!?!  ", err != nil)
 	if err != nil {
 		logger.WithError(err).WithFields(logging.Fields{"user_name": username}).Debug("could not find user id by credentials")
 		return nil, ErrAuthenticatingRequest

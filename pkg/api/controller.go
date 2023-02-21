@@ -257,6 +257,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
+
 	internalAuthSession, _ := c.sessionStore.Get(r, InternalAuthSessionName)
 	internalAuthSession.Values[TokenSessionKeyName] = tokenString
 	err = c.sessionStore.Save(r, w, internalAuthSession)
@@ -265,6 +266,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
+	fmt.Printf("set cookie all good tokenString: >>> %s\n", tokenString)
 	response := AuthenticationToken{
 		Token:           tokenString,
 		TokenExpiration: Int64Ptr(expires.Unix()),

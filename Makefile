@@ -153,6 +153,11 @@ build: gen docs ## Download dependencies and build the default binary
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
 
+build-isan: gen-code
+	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
+	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
+
+
 lint: go-install  ## Lint code
 	$(GOBINPATH)/golangci-lint run $(GOLANGCI_LINT_FLAGS)
 	npx eslint $(UI_DIR)/src --ext .js,.jsx,.ts,.tsx
