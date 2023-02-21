@@ -82,10 +82,18 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	if rangeSpec == "" || err != nil {
 		// assemble a response body (range-less query)
 		expected = entry.Size
-		data, err = o.BlockStore.Get(req.Context(), block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: entry.PhysicalAddress}, entry.Size)
+		data, err = o.BlockStore.Get(req.Context(), block.ObjectPointer{
+			StorageNamespace: o.Repository.StorageNamespace,
+			IdentifierType:   entry.AddressType.ToIdentifierType(),
+			Identifier:       entry.PhysicalAddress,
+		}, entry.Size)
 	} else {
 		expected = rng.EndOffset - rng.StartOffset + 1 // both range ends are inclusive
-		data, err = o.BlockStore.GetRange(req.Context(), block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: entry.PhysicalAddress}, rng.StartOffset, rng.EndOffset)
+		data, err = o.BlockStore.GetRange(req.Context(), block.ObjectPointer{
+			StorageNamespace: o.Repository.StorageNamespace,
+			IdentifierType:   entry.AddressType.ToIdentifierType(),
+			Identifier:       entry.PhysicalAddress,
+		}, rng.StartOffset, rng.EndOffset)
 		o.SetHeader(w, "Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
 	}
 	if err != nil {

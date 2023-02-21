@@ -594,11 +594,10 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 }
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
-	return block.StorageNamespaceInfo{
-		ValidityRegex:  `^https?://`,
-		Example:        "https://mystorageaccount.blob.core.windows.net/mycontainer/",
-		PreSignSupport: true,
-	}
+	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeAzure)
+	info.ValidityRegex = `^https?://`
+	info.Example = "https://mystorageaccount.blob.core.windows.net/mycontainer/"
+	return info
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {
