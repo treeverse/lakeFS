@@ -45,12 +45,9 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                                 setLoginError(null);
                                 router.push(next ? next : '/');
                             } catch(err) {
-                                console.log("------------->>> ")
-                                console.log(JSON.stringify(err))
-                                console.log("<<------------->>> ")
                                 if (err instanceof AuthenticationError && err.status === 401) {
                                     const contents = {__html: `${loginConfig.login_failed_message}` ||
-                                        "Credentials don't match. @@@@@ "};
+                                        "Credentials don't match."};
                                     setLoginError(<span dangerouslySetInnerHTML={contents}/>);
                                 }
                             }

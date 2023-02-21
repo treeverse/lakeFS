@@ -58,8 +58,7 @@ type Shutter interface {
 }
 
 func newExternalBasicAuthenticator(cfg *config.Config, service auth.Service, logger logging.Logger) (auth.Authenticator, error) {
-	logger.Info("~~~~~~~~~")
-	logger.Debug("@@@@@@@@@@@@@@@@@@@@")
+
 	if cfg.Auth.RemoteAuthenticator != nil && cfg.Auth.RemoteAuthenticator.Enabled {
 		remoteAuthenticator, err := remoteauth.NewRemoteAuthenticator(cfg.Auth.RemoteAuthenticator, service, logger)
 		if err != nil {
