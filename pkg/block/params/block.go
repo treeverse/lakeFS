@@ -20,7 +20,7 @@ type Mem struct{}
 type Local struct {
 	Path                    string
 	ImportEnabled           bool
-	ImportIncludeHidden     bool
+	ImportHidden            bool
 	AllowedExternalPrefixes []string
 }
 

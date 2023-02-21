@@ -23,7 +23,7 @@ const cacheDirName = "_lakefs_cache"
 
 type LocalWalker struct {
 	mark            Mark
-	includeHidden   bool
+	importHidden    bool
 	allowedPrefixes []string
 	cacheLocation   string
 }
@@ -36,7 +36,7 @@ func NewLocalWalker(params params.Local) *LocalWalker {
 	}
 	return &LocalWalker{
 		mark:            Mark{HasMore: true},
-		includeHidden:   params.ImportIncludeHidden,
+		importHidden:    params.ImportHidden,
 		allowedPrefixes: params.AllowedExternalPrefixes,
 		cacheLocation:   cacheLocation,
 	}
@@ -125,7 +125,7 @@ func (l *LocalWalker) scanEntries(root string, options WalkOptions) ([]*ObjectSt
 		}
 
 		// skip hidden files and directories
-		if !l.includeHidden && strings.HasPrefix(info.Name(), ".") {
+		if !l.importHidden && strings.HasPrefix(info.Name(), ".") {
 			if info.IsDir() {
 				return fs.SkipDir
 			}
