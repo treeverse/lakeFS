@@ -204,5 +204,5 @@ func (f *WalkerFactory) buildLocalWalker() (*LocalWalker, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewLocalWalker(localParams.Path, localParams.AllowedExternalPrefixes), nil
+	return NewLocalWalker(localParams), nil
 }

@@ -110,7 +110,8 @@ This reference uses `.` to denote the nesting of values.
    The user may still change it to something else.
 * `blockstore.local.path` `(string: "~/lakefs/data")` - When using the local Block Adapter, which directory to store files in
 * `blockstore.local.import_enabled` `(bool: false)` - Enable import for local Block Adapter, relevant only if you are using shared location
-* `blockstore.local.allowed_external_prefixes` `([]string: [])` - List of prefixes used to match any access for external location used by local block adapter
+* `blockstore.local.import_hidden_files` `(bool: false)` - When enabled import will scan and import any file or folder that starts with a dot character.
+* `blockstore.local.allowed_external_prefixes` `([]string: [])` - List of absolute path prefixes used to match any access for external location by the local block adapter (ex: /var/data/).
 * `blockstore.gs.credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key
 * `blockstore.gs.credentials_json` `(string : )` - If specified will be used as JSON string that contains your Google service account key (when credentials_file is not set)
 * `blockstore.gs.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.

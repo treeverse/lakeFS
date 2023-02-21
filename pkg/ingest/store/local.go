@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	nanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/treeverse/lakefs/pkg/block/params"
 	"golang.org/x/exp/slices"
 )
 
@@ -22,18 +23,21 @@ const cacheDirName = "_lakefs_cache"
 
 type LocalWalker struct {
 	mark            Mark
+	includeHidden   bool
 	allowedPrefixes []string
 	cacheLocation   string
 }
 
-func NewLocalWalker(blockStorePath string, allowedPrefixes []string) *LocalWalker {
+func NewLocalWalker(params params.Local) *LocalWalker {
+	// without Path, we do not keep cache - will make walker very slow
 	var cacheLocation string
-	if blockStorePath != "" {
-		cacheLocation = filepath.Join(blockStorePath, cacheDirName)
+	if params.Path != "" {
+		cacheLocation = filepath.Join(params.Path, cacheDirName)
 	}
 	return &LocalWalker{
-		allowedPrefixes: allowedPrefixes,
 		mark:            Mark{HasMore: true},
+		includeHidden:   params.ImportIncludeHidden,
+		allowedPrefixes: params.AllowedExternalPrefixes,
 		cacheLocation:   cacheLocation,
 	}
 }
@@ -63,39 +67,11 @@ func (l *LocalWalker) Walk(_ context.Context, storageURI *url.URL, options WalkO
 
 	// if needed scan all entries to import and calc etag
 	if entries == nil {
-		if err := filepath.Walk(root, func(p string, info fs.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			key := filepath.ToSlash(p)
-			if key < options.After {
-				return nil
-			}
-			if !info.Mode().IsRegular() {
-				return nil
-			}
-
-			addr := "local://" + key
-			relativePath, err := filepath.Rel(root, p)
-			if err != nil {
-				return err
-			}
-			// etag is calculated during iteration
-			ent := &ObjectStoreEntry{
-				FullKey:     key,
-				RelativeKey: filepath.ToSlash(relativePath),
-				Address:     addr,
-				Mtime:       info.ModTime(),
-				Size:        info.Size(),
-			}
-			entries = append(entries, ent)
-			return nil
-		}); err != nil {
+		var err error
+		entries, err = l.scanEntries(root, options)
+		if err != nil {
 			return err
 		}
-		sort.Slice(entries, func(i, j int) bool {
-			return entries[i].FullKey < entries[j].FullKey
-		})
 
 		// store entries to cache file
 		if l.cacheLocation != "" {
@@ -139,6 +115,53 @@ func (l *LocalWalker) Walk(_ context.Context, storageURI *url.URL, options WalkO
 	}
 	l.mark = Mark{}
 	return nil
+}
+
+func (l *LocalWalker) scanEntries(root string, options WalkOptions) ([]*ObjectStoreEntry, error) {
+	var entries []*ObjectStoreEntry
+	if err := filepath.Walk(root, func(p string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// skip hidden files and directories
+		if !l.includeHidden && strings.HasPrefix(info.Name(), ".") {
+			if info.IsDir() {
+				return fs.SkipDir
+			}
+			return nil
+		}
+
+		key := filepath.ToSlash(p)
+		if key < options.After {
+			return nil
+		}
+		if !info.Mode().IsRegular() {
+			return nil
+		}
+
+		addr := "local://" + key
+		relativePath, err := filepath.Rel(root, p)
+		if err != nil {
+			return err
+		}
+		// etag is calculated during iteration
+		ent := &ObjectStoreEntry{
+			FullKey:     key,
+			RelativeKey: filepath.ToSlash(relativePath),
+			Address:     addr,
+			Mtime:       info.ModTime(),
+			Size:        info.Size(),
+		}
+		entries = append(entries, ent)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].FullKey < entries[j].FullKey
+	})
+	return entries, nil
 }
 
 func calcFileETag(ent ObjectStoreEntry) (string, error) {

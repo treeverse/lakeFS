@@ -194,6 +194,7 @@ type Config struct {
 		Local                  *struct {
 			Path                    string   `mapstructure:"path"`
 			ImportEnabled           bool     `mapstructure:"import_enabled"`
+			ImportIncludeHidden     bool     `mapstructure:"import_include_hidden"`
 			AllowedExternalPrefixes []string `mapstructure:"allowed_external_prefixes"`
 		}
 		S3 *struct {
