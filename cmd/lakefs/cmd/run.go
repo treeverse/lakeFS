@@ -471,8 +471,8 @@ const runBanner = `
 │
 
 │
-│ For support or any other question,
-│     join our Slack channel https://docs.lakefs.io/slack
+│ For support or any other question,                            >(.＿.)<
+│     join our Slack channel https://docs.lakefs.io/slack         (  )_
 │
 
 `
