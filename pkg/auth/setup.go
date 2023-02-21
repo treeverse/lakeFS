@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -15,6 +16,10 @@ const (
 	SuperUsersGroup = "SuperUsers"
 	DevelopersGroup = "Developers"
 	ViewersGroup    = "Viewers"
+)
+
+var (
+	ErrStatementNotFound = errors.New("statement not found")
 )
 
 func createGroups(ctx context.Context, authService Service, groups []*model.Group) error {
@@ -47,6 +52,83 @@ func attachPolicies(ctx context.Context, authService Service, groupID string, po
 	return nil
 }
 
+// statementForPolicyType holds the Statement for a policy by its name,
+// without the required ARN.
+var statementByName = map[string]model.Statement{
+	"AllAccess": {
+		Action: []string{"fs:*", "auth:*", "ci:*", "retention:*", "branches:*"},
+		Effect: model.StatementEffectAllow,
+	},
+	"FSFullAccess": {
+		Action: []string{
+			"fs:*",
+		},
+		Effect: model.StatementEffectAllow,
+	},
+	"FSReadWrite": {
+		Action: []string{
+			permissions.ListRepositoriesAction,
+			permissions.ReadRepositoryAction,
+			permissions.ReadCommitAction,
+			permissions.ListBranchesAction,
+			permissions.ListTagsAction,
+			permissions.ListObjectsAction,
+			permissions.ReadObjectAction,
+			permissions.WriteObjectAction,
+			permissions.DeleteObjectAction,
+			permissions.RevertBranchAction,
+			permissions.ReadBranchAction,
+			permissions.ReadTagAction,
+			permissions.CreateBranchAction,
+			permissions.CreateTagAction,
+			permissions.DeleteBranchAction,
+			permissions.DeleteTagAction,
+			permissions.CreateCommitAction,
+		},
+		Effect: model.StatementEffectAllow,
+	},
+	"FSRead": {
+		Action: []string{
+			"fs:List*",
+			"fs:Read*",
+		},
+
+		Effect: model.StatementEffectAllow,
+	},
+	"AuthManageOwnCredentials": {
+		Action: []string{
+			permissions.CreateCredentialsAction,
+			permissions.DeleteCredentialsAction,
+			permissions.ListCredentialsAction,
+			permissions.ReadCredentialsAction,
+		},
+		Effect: model.StatementEffectAllow,
+	},
+}
+
+// MakeStatementForPolicyType returns statements for policy type typ,
+// limited to resources.
+func MakeStatementForPolicyType(typ string, resources []string) (model.Statements, error) {
+	statement, ok := statementByName[typ]
+	if !ok {
+		return nil, fmt.Errorf("%w: %s", ErrStatementNotFound, typ)
+	}
+	statements := make(model.Statements, len(resources))
+	for i, resource := range resources {
+		statements[i] = statement
+		statements[i].Resource = resource
+	}
+	return statements, nil
+}
+
+func MakeStatementForPolicyTypeOrDie(typ string, resources []string) model.Statements {
+	statements, err := MakeStatementForPolicyType(typ, resources)
+	if err != nil {
+		panic(err)
+	}
+	return statements
+}
+
 func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) error {
 	var err error
 
@@ -60,62 +142,23 @@ func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) err
 		return err
 	}
 
+	all := []string{permissions.All}
+
 	err = createPolicies(ctx, authService, []*model.Policy{
 		{
 			CreatedAt:   ts,
 			DisplayName: "FSFullAccess",
-			Statement: model.Statements{
-				{
-					Action: []string{
-						"fs:*",
-					},
-					Resource: permissions.All,
-					Effect:   model.StatementEffectAllow,
-				},
-			},
+			Statement:   MakeStatementForPolicyTypeOrDie("FSFullAccess", all),
 		},
 		{
 			CreatedAt:   ts,
 			DisplayName: "FSReadWriteAll",
-			Statement: model.Statements{
-				{
-					Action: []string{
-						permissions.ListRepositoriesAction,
-						permissions.ReadRepositoryAction,
-						permissions.ReadCommitAction,
-						permissions.ListBranchesAction,
-						permissions.ListTagsAction,
-						permissions.ListObjectsAction,
-						permissions.ReadObjectAction,
-						permissions.WriteObjectAction,
-						permissions.DeleteObjectAction,
-						permissions.RevertBranchAction,
-						permissions.ReadBranchAction,
-						permissions.ReadTagAction,
-						permissions.CreateBranchAction,
-						permissions.CreateTagAction,
-						permissions.DeleteBranchAction,
-						permissions.DeleteTagAction,
-						permissions.CreateCommitAction,
-					},
-					Resource: permissions.All,
-					Effect:   model.StatementEffectAllow,
-				},
-			},
+			Statement:   MakeStatementForPolicyTypeOrDie("FSReadWrite", all),
 		},
 		{
 			CreatedAt:   ts,
 			DisplayName: "FSReadAll",
-			Statement: model.Statements{
-				{
-					Action: []string{
-						"fs:List*",
-						"fs:Read*",
-					},
-					Resource: permissions.All,
-					Effect:   model.StatementEffectAllow,
-				},
-			},
+			Statement:   MakeStatementForPolicyTypeOrDie("FSRead", all),
 		},
 		{
 			CreatedAt:   ts,
@@ -165,18 +208,10 @@ func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) err
 		{
 			CreatedAt:   ts,
 			DisplayName: "AuthManageOwnCredentials",
-			Statement: model.Statements{
-				{
-					Action: []string{
-						permissions.CreateCredentialsAction,
-						permissions.DeleteCredentialsAction,
-						permissions.ListCredentialsAction,
-						permissions.ReadCredentialsAction,
-					},
-					Resource: permissions.UserArn("${user}"),
-					Effect:   model.StatementEffectAllow,
-				},
-			},
+			Statement: MakeStatementForPolicyTypeOrDie(
+				"AuthManageOwnCredentials",
+				[]string{permissions.UserArn("${user}")},
+			),
 		},
 	})
 	if err != nil {
