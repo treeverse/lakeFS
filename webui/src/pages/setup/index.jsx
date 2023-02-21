@@ -61,8 +61,9 @@ const SetupContents = () => {
     switch (currentStep) {
         case SETUP_STATE_INITIALIZED:
             return router.push({pathname: '/', query: router.query});
+        case SETUP_STATE_COMMUNICATION_PERFS_DONE:
         case SETUP_STATE_NOT_INITIALIZED:
-            return (
+                return (
                 <CommunicationPreferencesSetup
                     onSubmit={onSubmitCommunicationPreferences}
                     setupError={setupError}
