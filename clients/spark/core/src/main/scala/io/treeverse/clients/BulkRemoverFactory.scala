@@ -77,12 +77,12 @@ object BulkRemoverFactory {
       val removeKeys = removeKeyNames.map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
       val delObjReq = new model.DeleteObjectsRequest(bucket).withKeys(removeKeys)
       val s3Client = getS3Client(hc, bucket, region, S3NumRetries)
-      val deleteFun = wrapDeleteObjectsCall(s3Client)
+      val deleteFun = generateDeleteObjectsFunc(s3Client)
       val res = deleteFun.apply(delObjReq)
       res.getDeletedObjects.asScala.map(_.getKey())
     }
 
-    private def wrapDeleteObjectsCall(s3Client: AmazonS3): java.util.function.Function[DeleteObjectsRequest, DeleteObjectsResult] = {
+    private def generateDeleteObjectsFunc(s3Client: AmazonS3): java.util.function.Function[DeleteObjectsRequest, DeleteObjectsResult] = {
       val intervalFn =
         IntervalFunction.ofExponentialRandomBackoff(500, 2, 0.5)
       val retryConfig = RetryConfig.custom()
