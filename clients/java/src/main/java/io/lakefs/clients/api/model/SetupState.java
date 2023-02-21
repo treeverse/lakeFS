@@ -87,14 +87,6 @@ public class SetupState {
   @SerializedName(SERIALIZED_NAME_LOGIN_CONFIG)
   private LoginConfig loginConfig;
 
-  public static final String SERIALIZED_NAME_OIDC_ENABLED = "oidc_enabled";
-  @SerializedName(SERIALIZED_NAME_OIDC_ENABLED)
-  private Boolean oidcEnabled;
-
-  public static final String SERIALIZED_NAME_OIDC_DEFAULT_LOGIN = "oidc_default_login";
-  @SerializedName(SERIALIZED_NAME_OIDC_DEFAULT_LOGIN)
-  private Boolean oidcDefaultLogin;
-
 
   public SetupState state(StateEnum state) {
     
@@ -142,56 +134,6 @@ public class SetupState {
   }
 
 
-  public SetupState oidcEnabled(Boolean oidcEnabled) {
-    
-    this.oidcEnabled = oidcEnabled;
-    return this;
-  }
-
-   /**
-   * Deprecated: embedded OIDC support is now deprecated
-   * @return oidcEnabled
-   * @deprecated
-  **/
-  @Deprecated
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "Deprecated: embedded OIDC support is now deprecated")
-
-  public Boolean getOidcEnabled() {
-    return oidcEnabled;
-  }
-
-
-  public void setOidcEnabled(Boolean oidcEnabled) {
-    this.oidcEnabled = oidcEnabled;
-  }
-
-
-  public SetupState oidcDefaultLogin(Boolean oidcDefaultLogin) {
-    
-    this.oidcDefaultLogin = oidcDefaultLogin;
-    return this;
-  }
-
-   /**
-   * Deprecated: embedded OIDC support is now deprecated
-   * @return oidcDefaultLogin
-   * @deprecated
-  **/
-  @Deprecated
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "Deprecated: embedded OIDC support is now deprecated")
-
-  public Boolean getOidcDefaultLogin() {
-    return oidcDefaultLogin;
-  }
-
-
-  public void setOidcDefaultLogin(Boolean oidcDefaultLogin) {
-    this.oidcDefaultLogin = oidcDefaultLogin;
-  }
-
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -202,14 +144,12 @@ public class SetupState {
     }
     SetupState setupState = (SetupState) o;
     return Objects.equals(this.state, setupState.state) &&
-        Objects.equals(this.loginConfig, setupState.loginConfig) &&
-        Objects.equals(this.oidcEnabled, setupState.oidcEnabled) &&
-        Objects.equals(this.oidcDefaultLogin, setupState.oidcDefaultLogin);
+        Objects.equals(this.loginConfig, setupState.loginConfig);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(state, loginConfig, oidcEnabled, oidcDefaultLogin);
+    return Objects.hash(state, loginConfig);
   }
 
   @Override
@@ -218,8 +158,6 @@ public class SetupState {
     sb.append("class SetupState {\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    loginConfig: ").append(toIndentedString(loginConfig)).append("\n");
-    sb.append("    oidcEnabled: ").append(toIndentedString(oidcEnabled)).append("\n");
-    sb.append("    oidcDefaultLogin: ").append(toIndentedString(oidcDefaultLogin)).append("\n");
     sb.append("}");
     return sb.toString();
   }
