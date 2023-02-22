@@ -46,17 +46,6 @@ func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	return qualifiedKey, nil
 }
 
-func resolveNamespacePrefix(opts block.WalkOpts) (block.QualifiedPrefix, error) {
-	qualifiedPrefix, err := block.ResolveNamespacePrefix(opts.StorageNamespace, opts.Prefix)
-	if err != nil {
-		return qualifiedPrefix, err
-	}
-	if qualifiedPrefix.StorageType != block.StorageTypeS3 {
-		return qualifiedPrefix, block.ErrInvalidNamespace
-	}
-	return qualifiedPrefix, nil
-}
-
 type Adapter struct {
 	clients                      *ClientCache
 	httpClient                   *http.Client
@@ -400,49 +389,6 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 	}
 	sizeBytes = *objectOutput.ContentLength
 	return objectOutput.Body, nil
-}
-
-func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
-	log := a.log(ctx).WithField("operation", "Walk")
-	var err error
-	var lenRes int64
-	defer reportMetrics("Walk", time.Now(), &lenRes, &err)
-
-	qualifiedPrefix, err := resolveNamespacePrefix(walkOpt)
-	if err != nil {
-		return err
-	}
-
-	listObjectInput := s3.ListObjectsInput{
-		Bucket: aws.String(qualifiedPrefix.StorageNamespace),
-		Prefix: aws.String(qualifiedPrefix.Prefix),
-	}
-
-	for {
-		listOutput, err := a.clients.Get(ctx, qualifiedPrefix.StorageNamespace).ListObjectsWithContext(ctx, &listObjectInput)
-		if err != nil {
-			log.WithError(err).WithFields(logging.Fields{
-				"bucket": qualifiedPrefix.StorageNamespace,
-				"prefix": qualifiedPrefix.Prefix,
-			}).Error("failed to list S3 objects")
-			return err
-		}
-
-		for _, obj := range listOutput.Contents {
-			if err := walkFn(*obj.Key); err != nil {
-				return err
-			}
-		}
-
-		if listOutput.IsTruncated == nil || !*listOutput.IsTruncated {
-			break
-		}
-
-		// start with the next marker
-		listObjectInput.Marker = listOutput.NextMarker
-	}
-
-	return nil
 }
 
 func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (block.Properties, error) {

@@ -88,10 +88,6 @@ func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, destinationO
 	}, nil
 }
 
-func (a *Adapter) Walk(_ context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
-	return nil
-}
-
 func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	uid := uuid.New()
 	uploadID := hex.EncodeToString(uid[:])
