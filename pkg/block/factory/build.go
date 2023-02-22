@@ -112,6 +112,7 @@ func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adap
 		s3a.WithStatsCollector(statsCollector),
 		s3a.WithDiscoverBucketRegion(params.DiscoverBucketRegion),
 		s3a.WithPreSignedExpiry(params.PreSignedExpiry),
+		s3a.WithDisablePreSigned(params.DisablePreSigned),
 	}
 	if params.ServerSideEncryption != "" {
 		opts = append(opts, s3a.WithServerSideEncryption(params.ServerSideEncryption))
@@ -143,7 +144,10 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 	if err != nil {
 		return nil, err
 	}
-	adapter := gs.NewAdapter(client, gs.WithPreSignedExpiry(params.PreSignedExpiry))
+	adapter := gs.NewAdapter(client,
+		gs.WithPreSignedExpiry(params.PreSignedExpiry),
+		gs.WithDisablePreSigned(params.DisablePreSigned),
+	)
 	logging.Default().WithField("type", "gs").Info("initialized blockstore adapter")
 	return adapter, nil
 }
