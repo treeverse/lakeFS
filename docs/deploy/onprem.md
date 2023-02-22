@@ -174,4 +174,15 @@ To install lakeFS with Helm:
 </div>
 </div>
 
+## Local Blockstore
+
+
+You can configure a block adapter to a POSIX compatible storage location shared by all lakeFS instances. 
+Using the shared storage location, both data and metadata will be stored there.
+
+Using the local blockstore import and allowing lakeFS access to a specific prefix, it is possible to import files from a shared location.
+Import is not enabled by default, as it doesn't assume the local path is shared and there is a security concern about accessing a path outside the specified in the blockstore configuration.
+Enabling is done by `blockstore.local.import_enabled` and `blockstore.local.allowed_external_prefixes` as described in the [configuration reference](../reference/configuration.md).
+
+
 {% include_relative includes/setup.md %}
