@@ -26,7 +26,7 @@ type Store struct {
 	params *kvparams.DynamoDB
 	wg     sync.WaitGroup
 	logger logging.Logger
-	cancel chan struct{}
+	cancel chan bool
 }
 
 type EntriesIterator struct {
@@ -476,12 +476,12 @@ func (s *Store) StartPeriodicCheck() {
 	if interval <= 0 {
 		return
 	}
-	s.cancel = make(chan struct{})
+	s.cancel = make(chan bool)
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
-		// check first and loop for checking every interval
 		s.logger.WithField("interval", interval).Debug("Starting DynamoDB health check")
+		// check first and loop for checking every interval
 		s.Check()
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
@@ -509,6 +509,7 @@ func (s *Store) Check() {
 func (s *Store) StopPeriodicCheck() {
 	if s.cancel != nil {
 		s.logger.Info("Stopping DynamoDB health check")
+		s.cancel <- true
 	}
 	s.wg.Wait()
 }
