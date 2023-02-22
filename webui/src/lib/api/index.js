@@ -904,7 +904,7 @@ class Config {
             case 200:
                 cfg = await response.json();
                 cfg.warnings = []
-                if (cfg.blockstore_type === 'local' || cfg.blockstore_type === 'mem') {
+                if (cfg.blockstore_type === 'mem') {
                     cfg.warnings.push(`Block adapter ${cfg.blockstore_type} not usable in production`)
                 }
                 return cfg;
