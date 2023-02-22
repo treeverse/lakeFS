@@ -54,8 +54,5 @@ type DynamoDB struct {
 	AwsAccessKeyID     string
 	AwsSecretAccessKey string
 
-	// Interval to run health check for the DynamoDB instance
-	// Won't run when is equal or less than 0
-	// Default: 0
 	HealthCheckInterval time.Duration
 }

@@ -142,9 +142,8 @@ type Config struct {
 			AwsAccessKeyID     string `mapstructure:"aws_access_key_id"`
 			AwsSecretAccessKey string `mapstructure:"aws_secret_access_key"`
 
-			// Interval to run health check for the DynamoDB instance
+			// HealthCheckInterval - Interval to run health check for the DynamoDB instance
 			// Won't run when is equal or less than 0.
-			// Default: 0.
 			HealthCheckInterval time.Duration `mapstructure:"health_check_interval"`
 		} `mapstructure:"dynamodb"`
 	}

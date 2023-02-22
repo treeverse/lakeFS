@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -23,7 +24,9 @@ type Driver struct{}
 type Store struct {
 	svc    *dynamodb.DynamoDB
 	params *kvparams.DynamoDB
-	ticker *time.Ticker
+	wg     sync.WaitGroup
+	logger logging.Logger
+	cancel chan struct{}
 }
 
 type EntriesIterator struct {
@@ -96,9 +99,12 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
 	}
 
+	logger := logging.FromContext(ctx).WithField("store", DriverName)
 	s := &Store{
 		svc:    svc,
-		params: params}
+		params: params,
+		logger: logger,
+	}
 
 	s.StartPeriodicCheck()
 	return s, nil
@@ -109,12 +115,12 @@ func isTableExist(ctx context.Context, svc *dynamodb.DynamoDB, table string) (bo
 	_, err := svc.DescribeTableWithContext(ctx, &dynamodb.DescribeTableInput{
 		TableName: aws.String(table),
 	})
-	const operation = "isTableExist"
+	const operation = "DescribeTable"
 	if err != nil {
-		dynamoFailures.WithLabelValues(operation).Inc()
 		if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() == dynamodb.ErrCodeResourceNotFoundException {
 			return false, nil
 		}
+		dynamoFailures.WithLabelValues(operation).Inc()
 		return false, err
 	}
 	return true, nil
@@ -470,18 +476,20 @@ func (s *Store) StartPeriodicCheck() {
 	if interval <= 0 {
 		return
 	}
-	s.ticker = time.NewTicker(interval)
-	quit := make(chan struct{})
-
+	s.cancel = make(chan struct{})
+	s.wg.Add(1)
 	go func() {
+		defer s.wg.Done()
 		// check first and loop for checking every interval
-		logging.Default().WithField("interval", interval).Debug("Starting DynamoDB health check")
+		s.logger.WithField("interval", interval).Debug("Starting DynamoDB health check")
 		s.Check()
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
 		for {
 			select {
-			case <-s.ticker.C:
+			case <-ticker.C:
 				s.Check()
-			case <-quit:
+			case <-s.cancel:
 				return
 			}
 		}
@@ -489,17 +497,18 @@ func (s *Store) StartPeriodicCheck() {
 }
 
 func (s *Store) Check() {
+	log := s.logger.WithField("store_type", DriverName)
 	success, err := isTableExist(context.Background(), s.svc, s.params.TableName)
 	if success {
-		logging.Default().Debug("DynamoDB health check passed!")
+		log.Debug("DynamoDB health check passed!")
 	} else {
-		logging.Default().WithError(err).Debug("DynamoDB health check failed")
+		log.WithError(err).Debug("DynamoDB health check failed")
 	}
 }
 
 func (s *Store) StopPeriodicCheck() {
-	if s.ticker != nil {
-		logging.Default().Info("Stopping DynamoDB health check")
-		s.ticker.Stop()
+	if s.cancel != nil {
+		s.logger.Info("Stopping DynamoDB health check")
 	}
+	s.wg.Wait()
 }
