@@ -149,12 +149,7 @@ The `lakectl ingest` command currently supports the standard `GOOGLE_APPLICATION
 
 Importing is only possible from the object storage service in which your installation stores its data. For example, if lakeFS is configured to use S3, you cannot import data from Azure.
 
-Importing is possible for local blockstore, with the following limitations:
-
-- Requires to enable by configuration `blockstore.local.import_enabled` (by default it is off)
-- Import will scan only directory level. Importing a single file or non-directory path is not supported
-- Import path should be specified by adding the directory prefix to the local blockstore configuration, under `blockstore.local.allowed_external_prefixes` (list of prefixes, by default no access to any external directory is blocked)
-
+Import is available for S3, GCP, Azure and the local storage adapters. While the first 3 don't require special configurations, for security reasons you need to enable it for the local storage adapter by setting `blockstore.local.import_enabled` and specifying the allowed import paths `blockstore.local.allowed_external_prefixes` described in the [configuration](link). Since there are some differences between object-stores and file-systems in the way directories/prefixes are treated, local import is allowed only for directories.
 Although created by lakeFS, import branches behave like any other branch:
 Authorization policies, CI/CD triggering, branch protection rules and all other lakeFS concepts apply to them as well.
 {: .note }
