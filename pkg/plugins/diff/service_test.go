@@ -37,7 +37,7 @@ func TestService_RunDiff(t *testing.T) {
 			ctx := context.Background()
 			service := NewMockService()
 			if tc.register {
-				service.RegisterDiffClient(diffType, internal.HCPluginProperties{})
+				service.registerDiffClient(diffType, internal.HCPluginProperties{})
 			}
 			ctx = ContextWithError(ctx, tc.expectedErr)
 			_, err := service.RunDiff(ctx, diffType, Params{})

@@ -80,4 +80,12 @@ public class StorageConfigTest {
         // TODO: test preSignSupport
     }
 
+    /**
+     * Test the property 'importSupport'
+     */
+    @Test
+    public void importSupportTest() {
+        // TODO: test importSupport
+    }
+
 }

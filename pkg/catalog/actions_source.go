@@ -94,6 +94,7 @@ func (s *ActionsSource) load(ctx context.Context, record graveler.HookRecord, na
 	blockAdapter := s.catalog.BlockAdapter
 	reader, err := blockAdapter.Get(ctx, block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       ent.PhysicalAddress,
 	}, 0)
 	if err != nil {

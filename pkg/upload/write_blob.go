@@ -20,6 +20,7 @@ func WriteBlob(ctx context.Context, adapter block.Adapter, bucketName, address s
 	hashReader := block.NewHashingReader(body, block.HashFunctionMD5, block.HashFunctionSHA256)
 	err := adapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: bucketName,
+		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       address,
 	}, contentLength, hashReader, opts)
 	if err != nil {

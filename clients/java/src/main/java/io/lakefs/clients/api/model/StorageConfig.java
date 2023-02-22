@@ -49,6 +49,10 @@ public class StorageConfig {
   @SerializedName(SERIALIZED_NAME_PRE_SIGN_SUPPORT)
   private Boolean preSignSupport;
 
+  public static final String SERIALIZED_NAME_IMPORT_SUPPORT = "import_support";
+  @SerializedName(SERIALIZED_NAME_IMPORT_SUPPORT)
+  private Boolean importSupport;
+
 
   public StorageConfig blockstoreType(String blockstoreType) {
     
@@ -165,6 +169,29 @@ public class StorageConfig {
   }
 
 
+  public StorageConfig importSupport(Boolean importSupport) {
+    
+    this.importSupport = importSupport;
+    return this;
+  }
+
+   /**
+   * Get importSupport
+   * @return importSupport
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+
+  public Boolean getImportSupport() {
+    return importSupport;
+  }
+
+
+  public void setImportSupport(Boolean importSupport) {
+    this.importSupport = importSupport;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -178,12 +205,13 @@ public class StorageConfig {
         Objects.equals(this.blockstoreNamespaceExample, storageConfig.blockstoreNamespaceExample) &&
         Objects.equals(this.blockstoreNamespaceValidityRegex, storageConfig.blockstoreNamespaceValidityRegex) &&
         Objects.equals(this.defaultNamespacePrefix, storageConfig.defaultNamespacePrefix) &&
-        Objects.equals(this.preSignSupport, storageConfig.preSignSupport);
+        Objects.equals(this.preSignSupport, storageConfig.preSignSupport) &&
+        Objects.equals(this.importSupport, storageConfig.importSupport);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport);
+    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport, importSupport);
   }
 
   @Override
@@ -195,6 +223,7 @@ public class StorageConfig {
     sb.append("    blockstoreNamespaceValidityRegex: ").append(toIndentedString(blockstoreNamespaceValidityRegex)).append("\n");
     sb.append("    defaultNamespacePrefix: ").append(toIndentedString(defaultNamespacePrefix)).append("\n");
     sb.append("    preSignSupport: ").append(toIndentedString(preSignSupport)).append("\n");
+    sb.append("    importSupport: ").append(toIndentedString(importSupport)).append("\n");
     sb.append("}");
     return sb.toString();
   }

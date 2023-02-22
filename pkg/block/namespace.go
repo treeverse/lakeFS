@@ -51,6 +51,7 @@ type StorageNamespaceInfo struct {
 	ValidityRegex  string // regex pattern that could be used to validate the namespace
 	Example        string // example of a valid namespace
 	PreSignSupport bool
+	ImportSupport  bool
 }
 
 type QualifiedKey struct {
@@ -181,5 +182,6 @@ func DefaultStorageNamespaceInfo(scheme string) StorageNamespaceInfo {
 		ValidityRegex:  DefaultValidationRegex(scheme),
 		Example:        DefaultExample(scheme),
 		PreSignSupport: true,
+		ImportSupport:  true,
 	}
 }

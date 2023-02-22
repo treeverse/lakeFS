@@ -18,7 +18,10 @@ type AdapterConfig interface {
 type Mem struct{}
 
 type Local struct {
-	Path string
+	Path                    string
+	ImportEnabled           bool
+	ImportHidden            bool
+	AllowedExternalPrefixes []string
 }
 
 type S3 struct {
