@@ -14,6 +14,7 @@
 package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.model.ACL;
 import io.lakefs.clients.api.model.AuthCapabilities;
 import io.lakefs.clients.api.model.AuthenticationToken;
 import io.lakefs.clients.api.model.Credentials;
@@ -21,6 +22,7 @@ import io.lakefs.clients.api.model.CredentialsList;
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.CurrentUser;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.ErrorNoACL;
 import io.lakefs.clients.api.model.ForgotPasswordRequest;
 import io.lakefs.clients.api.model.Group;
 import io.lakefs.clients.api.model.GroupCreation;
@@ -283,6 +285,18 @@ public class AuthApiTest {
     }
 
     /**
+     * get ACL of group
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getGroupACLTest() throws ApiException {
+        String groupId = null;
+        ACL response = api.getGroupACL(groupId);
+        // TODO: test validations
+    }
+
+    /**
      * get policy
      *
      * @throws ApiException if the Api call fails
@@ -433,6 +447,19 @@ public class AuthApiTest {
     public void loginTest() throws ApiException {
         LoginInformation loginInformation = null;
         AuthenticationToken response = api.login(loginInformation);
+        // TODO: test validations
+    }
+
+    /**
+     * set ACL of group
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void setGroupACLTest() throws ApiException {
+        String groupId = null;
+        ACL ACL = null;
+        api.setGroupACL(groupId, ACL);
         // TODO: test validations
     }
 

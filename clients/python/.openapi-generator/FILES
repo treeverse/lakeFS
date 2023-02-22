@@ -19,6 +19,7 @@ docs/apis/tags/StagingApi.md
 docs/apis/tags/StatisticsApi.md
 docs/apis/tags/TagsApi.md
 docs/apis/tags/TemplatesApi.md
+docs/models/ACL.md
 docs/models/AccessKeyCredentials.md
 docs/models/ActionRun.md
 docs/models/ActionRunList.md
@@ -38,6 +39,7 @@ docs/models/CurrentUser.md
 docs/models/Diff.md
 docs/models/DiffList.md
 docs/models/Error.md
+docs/models/ErrorNoACL.md
 docs/models/FindMergeBaseResult.md
 docs/models/ForgotPasswordRequest.md
 docs/models/GarbageCollectionConfig.md
@@ -127,6 +129,8 @@ lakefs_client/exceptions.py
 lakefs_client/model/__init__.py
 lakefs_client/model/access_key_credentials.py
 lakefs_client/model/access_key_credentials.pyi
+lakefs_client/model/acl.py
+lakefs_client/model/acl.pyi
 lakefs_client/model/action_run.py
 lakefs_client/model/action_run.pyi
 lakefs_client/model/action_run_list.py
@@ -163,6 +167,8 @@ lakefs_client/model/diff_list.py
 lakefs_client/model/diff_list.pyi
 lakefs_client/model/error.py
 lakefs_client/model/error.pyi
+lakefs_client/model/error_no_acl.py
+lakefs_client/model/error_no_acl.pyi
 lakefs_client/model/find_merge_base_result.py
 lakefs_client/model/find_merge_base_result.pyi
 lakefs_client/model/forgot_password_request.py
@@ -299,6 +305,7 @@ test-requirements.txt
 test/__init__.py
 test/test_models/__init__.py
 test/test_models/test_access_key_credentials.py
+test/test_models/test_acl.py
 test/test_models/test_action_run.py
 test/test_models/test_action_run_list.py
 test/test_models/test_auth_capabilities.py
@@ -317,6 +324,7 @@ test/test_models/test_current_user.py
 test/test_models/test_diff.py
 test/test_models/test_diff_list.py
 test/test_models/test_error.py
+test/test_models/test_error_no_acl.py
 test/test_models/test_find_merge_base_result.py
 test/test_models/test_forgot_password_request.py
 test/test_models/test_garbage_collection_config.py

@@ -25,6 +25,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -561,6 +562,161 @@ func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID st
 		CreationDate: g.CreatedAt.Unix(),
 	}
 	writeResponse(w, r, http.StatusOK, response)
+}
+
+func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID string) {
+	aclPolicyName := acl.ACLPolicyName(groupID)
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadGroupAction,
+					Resource: permissions.GroupArn(groupID),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadPolicyAction,
+					Resource: permissions.PolicyArn(aclPolicyName),
+				},
+			},
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "get_group_acl", r, "", "", "")
+	policies, _, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
+		Amount: 2, //nolint:gomnd
+	})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	if len(policies) != 1 {
+		response := NotFoundOrNoACL{
+			Message: "Multiple policies attached to group - no ACL",
+			NoAcl:   swag.Bool(true),
+		}
+		writeResponse(w, r, http.StatusNotFound, response)
+		return
+	}
+
+	acl := policies[0].ACL
+	if len(acl.Permission) == 0 {
+		response := NotFoundOrNoACL{
+			Message: "Policy attached to group has no ACL",
+			NoAcl:   swag.Bool(true),
+		}
+		writeResponse(w, r, http.StatusNotFound, response)
+		return
+	}
+
+	var repositories []string
+	if !acl.Repositories.All {
+		repositories = acl.Repositories.List
+	}
+	response := ACL{
+		Permission:   string(acl.Permission),
+		Repositories: &repositories,
+	}
+
+	writeResponse(w, r, http.StatusOK, response)
+}
+
+func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body SetGroupACLJSONRequestBody, groupID string) {
+	aclPolicyName := acl.ACLPolicyName(groupID)
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadGroupAction,
+					Resource: permissions.GroupArn(groupID),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.AttachPolicyAction,
+					Resource: permissions.PolicyArn(aclPolicyName),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.UpdatePolicyAction,
+					Resource: permissions.PolicyArn(aclPolicyName),
+				},
+			},
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "set_group_acl", r, "", "", "")
+
+	newACL := model.ACL{
+		Permission: model.ACLPermission(body.Permission),
+		Repositories: model.Repositories{
+			All:  len(*body.Repositories) == 0,
+			List: *body.Repositories,
+		},
+	}
+
+	statements, err := acl.ACLToStatement(newACL)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	policy := &model.Policy{
+		CreatedAt:   time.Now(),
+		DisplayName: aclPolicyName,
+		Statement:   statements,
+		ACL:         newACL,
+	}
+
+	err = c.Auth.WritePolicy(ctx, policy, true)
+	if errors.Is(err, auth.ErrNotFound) {
+		c.Logger.
+			WithContext(ctx).
+			WithField("group", groupID).
+			Info("defining an ACL for the first time because none was defined (bad migrate?)")
+		err = c.Auth.WritePolicy(ctx, policy, false)
+	}
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	existingPolicies, _, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
+		Amount: -1,
+	})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	ok := true
+	for _, existingPolicy := range existingPolicies {
+		if existingPolicy.DisplayName != aclPolicyName {
+			err = c.Auth.DetachPolicyFromGroup(ctx, existingPolicy.DisplayName, groupID)
+			if err != nil {
+				ok = false
+				c.Logger.
+					WithContext(ctx).
+					WithField("group", groupID).
+					WithField("policy", existingPolicy.DisplayName).
+					WithError(err).
+					Warn("failed to detach policy")
+			}
+		}
+	}
+	if !ok {
+		writeResponse(w, r, http.StatusInternalServerError, "failed to detach some policies")
+		return
+	}
+
+	writeResponse(w, r, http.StatusOK, nil)
 }
 
 func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, groupID string, params ListGroupMembersParams) {

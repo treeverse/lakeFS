@@ -165,6 +165,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**getCredentials**](docs/AuthApi.md#getCredentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 *AuthApi* | [**getCurrentUser**](docs/AuthApi.md#getCurrentUser) | **GET** /user | get current user
 *AuthApi* | [**getGroup**](docs/AuthApi.md#getGroup) | **GET** /auth/groups/{groupId} | get group
+*AuthApi* | [**getGroupACL**](docs/AuthApi.md#getGroupACL) | **GET** /auth/groups/{groupId}/acl | get ACL of group
 *AuthApi* | [**getPolicy**](docs/AuthApi.md#getPolicy) | **GET** /auth/policies/{policyId} | get policy
 *AuthApi* | [**getUser**](docs/AuthApi.md#getUser) | **GET** /auth/users/{userId} | get user
 *AuthApi* | [**listGroupMembers**](docs/AuthApi.md#listGroupMembers) | **GET** /auth/groups/{groupId}/members | list group members
@@ -176,6 +177,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**listUserPolicies**](docs/AuthApi.md#listUserPolicies) | **GET** /auth/users/{userId}/policies | list user policies
 *AuthApi* | [**listUsers**](docs/AuthApi.md#listUsers) | **GET** /auth/users | list users
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
+*AuthApi* | [**setGroupACL**](docs/AuthApi.md#setGroupACL) | **POST** /auth/groups/{groupId}/acl | set ACL of group
 *AuthApi* | [**updatePassword**](docs/AuthApi.md#updatePassword) | **POST** /auth/password | Update user password by reset_password token
 *AuthApi* | [**updatePolicy**](docs/AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**cherryPick**](docs/BranchesApi.md#cherryPick) | **POST** /repositories/{repository}/branches/{branch}/cherry-pick | Cherry-Pick the given reference commit into the given branch
@@ -243,6 +245,7 @@ Class | Method | HTTP request | Description
 
 ## Documentation for Models
 
+ - [ACL](docs/ACL.md)
  - [AccessKeyCredentials](docs/AccessKeyCredentials.md)
  - [ActionRun](docs/ActionRun.md)
  - [ActionRunList](docs/ActionRunList.md)
@@ -263,6 +266,7 @@ Class | Method | HTTP request | Description
  - [Diff](docs/Diff.md)
  - [DiffList](docs/DiffList.md)
  - [Error](docs/Error.md)
+ - [ErrorNoACL](docs/ErrorNoACL.md)
  - [FindMergeBaseResult](docs/FindMergeBaseResult.md)
  - [ForgotPasswordRequest](docs/ForgotPasswordRequest.md)
  - [GarbageCollectionConfig](docs/GarbageCollectionConfig.md)
