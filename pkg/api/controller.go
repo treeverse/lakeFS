@@ -3428,9 +3428,9 @@ func (c *Controller) FindMergeBase(w http.ResponseWriter, r *http.Request, repos
 		return
 	}
 	writeResponse(w, r, http.StatusOK, FindMergeBaseResult{
-		BaseCommitID:        swag.String(base),
-		DestinationCommitID: swag.String(dest),
-		SourceCommitID:      swag.String(source),
+		BaseCommitId:        swag.String(base),
+		DestinationCommitId: swag.String(dest),
+		SourceCommitId:      swag.String(source),
 	})
 }
 

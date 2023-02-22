@@ -179,13 +179,13 @@ components:
     FindMergeBaseResult:
       type: object
       properties:
-        SourceCommitID:
+        source_commit_id:
           type: string
           description: "The commit ID of the merge source"
-        DestinationCommitID:
+        destination_commit_id:
           type: string
           description: "The commit ID of the merge destination"
-        BaseCommitID:
+        base_commit_id:
           type: string
           description: "The commit ID of the merge base"
 

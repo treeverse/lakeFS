@@ -5211,17 +5211,17 @@ components:
       type: object
     FindMergeBaseResult:
       example:
-        BaseCommitID: BaseCommitID
-        SourceCommitID: SourceCommitID
-        DestinationCommitID: DestinationCommitID
+        destination_commit_id: destination_commit_id
+        base_commit_id: base_commit_id
+        source_commit_id: source_commit_id
       properties:
-        SourceCommitID:
+        source_commit_id:
           description: The commit ID of the merge source
           type: string
-        DestinationCommitID:
+        destination_commit_id:
           description: The commit ID of the merge destination
           type: string
-        BaseCommitID:
+        base_commit_id:
           description: The commit ID of the merge base
           type: string
       type: object

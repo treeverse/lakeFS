@@ -9,8 +9,7 @@ import (
 )
 
 const (
-	findMergeBaseCmdMinArgs = 2
-	findMergeBaseCmdMaxArgs = 2
+	findMergeBaseCmdExactArgs = 2
 
 	findMergeBaseTemplate = `Found base "{{.Merge.BaseRef|yellow}}" when merging "{{.Merge.FromRef|yellow}}" into "{{.Merge.ToRef|yellow}}".
 `
@@ -26,7 +25,7 @@ var findMergeBaseCmd = &cobra.Command{
 	Hidden: true,
 	Use:    "find-merge-base <source ref> <destination ref>",
 	Short:  "Find the commits for the merge operation",
-	Args:   cobra.RangeArgs(findMergeBaseCmdMinArgs, findMergeBaseCmdMaxArgs),
+	Args:   cobra.ExactArgs(findMergeBaseCmdExactArgs),
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		if len(args) >= mergeCmdMaxArgs {
 			return nil, cobra.ShellCompDirectiveNoFileComp
@@ -53,9 +52,9 @@ var findMergeBaseCmd = &cobra.Command{
 			Result *api.FindMergeBaseResult
 		}{
 			Merge: FromToBase{
-				FromRef: swag.StringValue(resp.JSON200.SourceCommitID),
-				ToRef:   swag.StringValue(resp.JSON200.DestinationCommitID),
-				BaseRef: swag.StringValue(resp.JSON200.BaseCommitID),
+				FromRef: swag.StringValue(resp.JSON200.SourceCommitId),
+				ToRef:   swag.StringValue(resp.JSON200.DestinationCommitId),
+				BaseRef: swag.StringValue(resp.JSON200.BaseCommitId),
 			},
 			Result: resp.JSON200,
 		})

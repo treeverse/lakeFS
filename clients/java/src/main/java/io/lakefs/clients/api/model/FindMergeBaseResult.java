@@ -29,85 +29,85 @@ import java.io.IOException;
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class FindMergeBaseResult {
-  public static final String SERIALIZED_NAME_SOURCE_COMMIT_I_D = "SourceCommitID";
-  @SerializedName(SERIALIZED_NAME_SOURCE_COMMIT_I_D)
-  private String sourceCommitID;
+  public static final String SERIALIZED_NAME_SOURCE_COMMIT_ID = "source_commit_id";
+  @SerializedName(SERIALIZED_NAME_SOURCE_COMMIT_ID)
+  private String sourceCommitId;
 
-  public static final String SERIALIZED_NAME_DESTINATION_COMMIT_I_D = "DestinationCommitID";
-  @SerializedName(SERIALIZED_NAME_DESTINATION_COMMIT_I_D)
-  private String destinationCommitID;
+  public static final String SERIALIZED_NAME_DESTINATION_COMMIT_ID = "destination_commit_id";
+  @SerializedName(SERIALIZED_NAME_DESTINATION_COMMIT_ID)
+  private String destinationCommitId;
 
-  public static final String SERIALIZED_NAME_BASE_COMMIT_I_D = "BaseCommitID";
-  @SerializedName(SERIALIZED_NAME_BASE_COMMIT_I_D)
-  private String baseCommitID;
+  public static final String SERIALIZED_NAME_BASE_COMMIT_ID = "base_commit_id";
+  @SerializedName(SERIALIZED_NAME_BASE_COMMIT_ID)
+  private String baseCommitId;
 
 
-  public FindMergeBaseResult sourceCommitID(String sourceCommitID) {
+  public FindMergeBaseResult sourceCommitId(String sourceCommitId) {
     
-    this.sourceCommitID = sourceCommitID;
+    this.sourceCommitId = sourceCommitId;
     return this;
   }
 
    /**
    * The commit ID of the merge source
-   * @return sourceCommitID
+   * @return sourceCommitId
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "The commit ID of the merge source")
 
-  public String getSourceCommitID() {
-    return sourceCommitID;
+  public String getSourceCommitId() {
+    return sourceCommitId;
   }
 
 
-  public void setSourceCommitID(String sourceCommitID) {
-    this.sourceCommitID = sourceCommitID;
+  public void setSourceCommitId(String sourceCommitId) {
+    this.sourceCommitId = sourceCommitId;
   }
 
 
-  public FindMergeBaseResult destinationCommitID(String destinationCommitID) {
+  public FindMergeBaseResult destinationCommitId(String destinationCommitId) {
     
-    this.destinationCommitID = destinationCommitID;
+    this.destinationCommitId = destinationCommitId;
     return this;
   }
 
    /**
    * The commit ID of the merge destination
-   * @return destinationCommitID
+   * @return destinationCommitId
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "The commit ID of the merge destination")
 
-  public String getDestinationCommitID() {
-    return destinationCommitID;
+  public String getDestinationCommitId() {
+    return destinationCommitId;
   }
 
 
-  public void setDestinationCommitID(String destinationCommitID) {
-    this.destinationCommitID = destinationCommitID;
+  public void setDestinationCommitId(String destinationCommitId) {
+    this.destinationCommitId = destinationCommitId;
   }
 
 
-  public FindMergeBaseResult baseCommitID(String baseCommitID) {
+  public FindMergeBaseResult baseCommitId(String baseCommitId) {
     
-    this.baseCommitID = baseCommitID;
+    this.baseCommitId = baseCommitId;
     return this;
   }
 
    /**
    * The commit ID of the merge base
-   * @return baseCommitID
+   * @return baseCommitId
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "The commit ID of the merge base")
 
-  public String getBaseCommitID() {
-    return baseCommitID;
+  public String getBaseCommitId() {
+    return baseCommitId;
   }
 
 
-  public void setBaseCommitID(String baseCommitID) {
-    this.baseCommitID = baseCommitID;
+  public void setBaseCommitId(String baseCommitId) {
+    this.baseCommitId = baseCommitId;
   }
 
 
@@ -120,23 +120,23 @@ public class FindMergeBaseResult {
       return false;
     }
     FindMergeBaseResult findMergeBaseResult = (FindMergeBaseResult) o;
-    return Objects.equals(this.sourceCommitID, findMergeBaseResult.sourceCommitID) &&
-        Objects.equals(this.destinationCommitID, findMergeBaseResult.destinationCommitID) &&
-        Objects.equals(this.baseCommitID, findMergeBaseResult.baseCommitID);
+    return Objects.equals(this.sourceCommitId, findMergeBaseResult.sourceCommitId) &&
+        Objects.equals(this.destinationCommitId, findMergeBaseResult.destinationCommitId) &&
+        Objects.equals(this.baseCommitId, findMergeBaseResult.baseCommitId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(sourceCommitID, destinationCommitID, baseCommitID);
+    return Objects.hash(sourceCommitId, destinationCommitId, baseCommitId);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class FindMergeBaseResult {\n");
-    sb.append("    sourceCommitID: ").append(toIndentedString(sourceCommitID)).append("\n");
-    sb.append("    destinationCommitID: ").append(toIndentedString(destinationCommitID)).append("\n");
-    sb.append("    baseCommitID: ").append(toIndentedString(baseCommitID)).append("\n");
+    sb.append("    sourceCommitId: ").append(toIndentedString(sourceCommitId)).append("\n");
+    sb.append("    destinationCommitId: ").append(toIndentedString(destinationCommitId)).append("\n");
+    sb.append("    baseCommitId: ").append(toIndentedString(baseCommitId)).append("\n");
     sb.append("}");
     return sb.toString();
   }

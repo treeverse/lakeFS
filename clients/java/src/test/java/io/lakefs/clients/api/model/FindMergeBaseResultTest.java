@@ -41,27 +41,27 @@ public class FindMergeBaseResultTest {
     }
 
     /**
-     * Test the property 'sourceCommitID'
+     * Test the property 'sourceCommitId'
      */
     @Test
-    public void sourceCommitIDTest() {
-        // TODO: test sourceCommitID
+    public void sourceCommitIdTest() {
+        // TODO: test sourceCommitId
     }
 
     /**
-     * Test the property 'destinationCommitID'
+     * Test the property 'destinationCommitId'
      */
     @Test
-    public void destinationCommitIDTest() {
-        // TODO: test destinationCommitID
+    public void destinationCommitIdTest() {
+        // TODO: test destinationCommitId
     }
 
     /**
-     * Test the property 'baseCommitID'
+     * Test the property 'baseCommitId'
      */
     @Test
-    public void baseCommitIDTest() {
-        // TODO: test baseCommitID
+    public void baseCommitIdTest() {
+        // TODO: test baseCommitId
     }
 
 }

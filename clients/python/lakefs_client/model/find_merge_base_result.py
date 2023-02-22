@@ -93,9 +93,9 @@ class FindMergeBaseResult(ModelNormal):
 
 
     attribute_map = {
-        'source_commit_id': 'SourceCommitID',  # noqa: E501
-        'destination_commit_id': 'DestinationCommitID',  # noqa: E501
-        'base_commit_id': 'BaseCommitID',  # noqa: E501
+        'source_commit_id': 'source_commit_id',  # noqa: E501
+        'destination_commit_id': 'destination_commit_id',  # noqa: E501
+        'base_commit_id': 'base_commit_id',  # noqa: E501
     }
 
     read_only_vars = {
