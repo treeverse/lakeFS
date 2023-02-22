@@ -71,6 +71,13 @@ components:
         type: string
 
   responses:
+    NotFoundOrNoACL:
+      description: Group not found, or group found but has no ACL
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorNoACL"
+            
     Unauthorized:
       description: Unauthorized
       content:
@@ -641,6 +648,18 @@ components:
           items:
             $ref: "#/components/schemas/ObjectError"
 
+    ErrorNoACL:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          description: short message explaining the error
+          type: string
+        no_acl:
+          description: "true if the group exists but has no ACL"
+          type: boolean
+
     User:
       type: object
       required:
@@ -970,6 +989,25 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Policy"
+
+    ACL:
+      type: object
+      required:
+        - permission
+      properties:
+        permission:
+          type: string
+          description: |
+            Permission level to give this ACL.  "Read", "Write", "Super" and
+            "Admin" are all supported.
+        repositories:
+          type: array
+          items:
+            type: string
+          description: |
+            Apply this ACL only to these repositories.  If missing then the
+            ACL applies to all repositories.  Admins can directly change
+            permissions so irrelevant restriction to them.
 
     StorageConfig:
       type: object
@@ -2140,6 +2178,54 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/groups/{groupId}/acl:
+    parameters:
+      - in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+
+    post:
+      tags:
+        - auth
+      operationId: setGroupACL
+      summary: set ACL of group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ACL"
+      responses:
+        201:
+          description: ACL successfully changed
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+    get:
+      tags:
+        - auth
+      operationId: getGroupACL
+      summary: get ACL of group
+      responses:
+        200:
+          description: ACL of group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ACL"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFoundOrNoACL"
         default:
           $ref: "#/components/responses/ServerError"
 

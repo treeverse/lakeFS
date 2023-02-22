@@ -28,6 +28,7 @@ class PathValues(str, enum.Enum):
     AUTH_USERS_USER_ID_POLICIES_POLICY_ID = "/auth/users/{userId}/policies/{policyId}"
     AUTH_GROUPS_GROUP_ID_POLICIES = "/auth/groups/{groupId}/policies"
     AUTH_GROUPS_GROUP_ID_POLICIES_POLICY_ID = "/auth/groups/{groupId}/policies/{policyId}"
+    AUTH_GROUPS_GROUP_ID_ACL = "/auth/groups/{groupId}/acl"
     REPOSITORIES = "/repositories"
     REPOSITORIES_REPOSITORY = "/repositories/{repository}"
     REPOSITORIES_REPOSITORY_OTF_REFS_LEFT_REF_DIFF_RIGHT_REF = "/repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref}"

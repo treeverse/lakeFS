@@ -24,6 +24,7 @@ Method | HTTP request | Description
 [**get_credentials**](#get_credentials) | **get** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 [**get_current_user**](#get_current_user) | **get** /user | get current user
 [**get_group**](#get_group) | **get** /auth/groups/{groupId} | get group
+[**get_group_acl**](#get_group_acl) | **get** /auth/groups/{groupId}/acl | get ACL of group
 [**get_policy**](#get_policy) | **get** /auth/policies/{policyId} | get policy
 [**get_user**](#get_user) | **get** /auth/users/{userId} | get user
 [**list_group_members**](#list_group_members) | **get** /auth/groups/{groupId}/members | list group members
@@ -35,6 +36,7 @@ Method | HTTP request | Description
 [**list_user_policies**](#list_user_policies) | **get** /auth/users/{userId}/policies | list user policies
 [**list_users**](#list_users) | **get** /auth/users | list users
 [**login**](#login) | **post** /auth/login | perform a login
+[**set_group_acl**](#set_group_acl) | **post** /auth/groups/{groupId}/acl | set ACL of group
 [**update_password**](#update_password) | **post** /auth/password | Update user password by reset_password token
 [**update_policy**](#update_policy) | **put** /auth/policies/{policyId} | update policy
 
@@ -3023,6 +3025,175 @@ Type | Description  | Notes
 
 [[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
 
+# **get_group_acl**
+<a name="get_group_acl"></a>
+> ACL get_group_acl(group_id)
+
+get ACL of group
+
+### Example
+
+* Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
+* Api Key Authentication (oidc_auth):
+* Api Key Authentication (saml_auth):
+* Bearer (JWT) Authentication (jwt_token):
+```python
+import lakefs_client
+from lakefs_client.apis.tags import auth_api
+from lakefs_client.model.acl import ACL
+from lakefs_client.model.error_no_acl import ErrorNoACL
+from lakefs_client.model.error import Error
+from pprint import pprint
+# Defining the host is optional and defaults to /api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_client.Configuration(
+    host = "/api/v1"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure HTTP basic authorization: basic_auth
+configuration = lakefs_client.Configuration(
+    username = 'YOUR_USERNAME',
+    password = 'YOUR_PASSWORD'
+)
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
+# Configure API key authorization: saml_auth
+configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['saml_auth'] = 'Bearer'
+
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_client.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+# Enter a context with an instance of the API client
+with lakefs_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = auth_api.AuthApi(api_client)
+
+    # example passing only required values which don't have defaults set
+    path_params = {
+        'groupId': "groupId_example",
+    }
+    try:
+        # get ACL of group
+        api_response = api_instance.get_group_acl(
+            path_params=path_params,
+        )
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling AuthApi->get_group_acl: %s\n" % e)
+```
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+path_params | RequestPathParams | |
+accept_content_types | typing.Tuple[str] | default is ('application/json', ) | Tells the server the content type(s) that are accepted by the client
+stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
+timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
+skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
+
+### path_params
+#### RequestPathParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+groupId | GroupIdSchema | | 
+
+# GroupIdSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### Return Types, Responses
+
+Code | Class | Description
+------------- | ------------- | -------------
+n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
+200 | [ApiResponseFor200](#get_group_acl.ApiResponseFor200) | ACL of group
+401 | [ApiResponseFor401](#get_group_acl.ApiResponseFor401) | Unauthorized
+404 | [ApiResponseFor404](#get_group_acl.ApiResponseFor404) | Group not found, or group found but has no ACL
+default | [ApiResponseForDefault](#get_group_acl.ApiResponseForDefault) | Internal Server Error
+
+#### get_group_acl.ApiResponseFor200
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ACL**](../../models/ACL.md) |  | 
+
+
+#### get_group_acl.ApiResponseFor401
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor401ResponseBodyApplicationJson, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor401ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**Error**](../../models/Error.md) |  | 
+
+
+#### get_group_acl.ApiResponseFor404
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor404ResponseBodyApplicationJson, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor404ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorNoACL**](../../models/ErrorNoACL.md) |  | 
+
+
+#### get_group_acl.ApiResponseForDefault
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor0ResponseBodyApplicationJson, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor0ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**Error**](../../models/Error.md) |  | 
+
+
+### Authorization
+
+[basic_auth](../../../README.md#basic_auth), [cookie_auth](../../../README.md#cookie_auth), [oidc_auth](../../../README.md#oidc_auth), [saml_auth](../../../README.md#saml_auth), [jwt_token](../../../README.md#jwt_token)
+
+[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+
 # **get_policy**
 <a name="get_policy"></a>
 > Policy get_policy(policy_id)
@@ -5106,6 +5277,184 @@ Type | Description  | Notes
 ### Authorization
 
 No authorization required
+
+[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+
+# **set_group_acl**
+<a name="set_group_acl"></a>
+> set_group_acl(group_idacl)
+
+set ACL of group
+
+### Example
+
+* Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
+* Api Key Authentication (oidc_auth):
+* Api Key Authentication (saml_auth):
+* Bearer (JWT) Authentication (jwt_token):
+```python
+import lakefs_client
+from lakefs_client.apis.tags import auth_api
+from lakefs_client.model.acl import ACL
+from lakefs_client.model.error import Error
+from pprint import pprint
+# Defining the host is optional and defaults to /api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_client.Configuration(
+    host = "/api/v1"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure HTTP basic authorization: basic_auth
+configuration = lakefs_client.Configuration(
+    username = 'YOUR_USERNAME',
+    password = 'YOUR_PASSWORD'
+)
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
+# Configure API key authorization: saml_auth
+configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['saml_auth'] = 'Bearer'
+
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_client.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+# Enter a context with an instance of the API client
+with lakefs_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = auth_api.AuthApi(api_client)
+
+    # example passing only required values which don't have defaults set
+    path_params = {
+        'groupId': "groupId_example",
+    }
+    body = ACL(
+        permission="permission_example",
+        repositories=[
+            "repositories_example"
+        ],
+    )
+    try:
+        # set ACL of group
+        api_response = api_instance.set_group_acl(
+            path_params=path_params,
+            body=body,
+        )
+    except lakefs_client.ApiException as e:
+        print("Exception when calling AuthApi->set_group_acl: %s\n" % e)
+```
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+body | typing.Union[SchemaForRequestBodyApplicationJson] | required |
+path_params | RequestPathParams | |
+content_type | str | optional, default is 'application/json' | Selects the schema and serialization of the request body
+accept_content_types | typing.Tuple[str] | default is ('application/json', ) | Tells the server the content type(s) that are accepted by the client
+stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
+timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
+skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
+
+### body
+
+# SchemaForRequestBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ACL**](../../models/ACL.md) |  | 
+
+
+### path_params
+#### RequestPathParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+groupId | GroupIdSchema | | 
+
+# GroupIdSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### Return Types, Responses
+
+Code | Class | Description
+------------- | ------------- | -------------
+n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
+201 | [ApiResponseFor201](#set_group_acl.ApiResponseFor201) | ACL successfully changed
+401 | [ApiResponseFor401](#set_group_acl.ApiResponseFor401) | Unauthorized
+404 | [ApiResponseFor404](#set_group_acl.ApiResponseFor404) | Resource Not Found
+default | [ApiResponseForDefault](#set_group_acl.ApiResponseForDefault) | Internal Server Error
+
+#### set_group_acl.ApiResponseFor201
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### set_group_acl.ApiResponseFor401
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor401ResponseBodyApplicationJson, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor401ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**Error**](../../models/Error.md) |  | 
+
+
+#### set_group_acl.ApiResponseFor404
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor404ResponseBodyApplicationJson, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor404ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**Error**](../../models/Error.md) |  | 
+
+
+#### set_group_acl.ApiResponseForDefault
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor0ResponseBodyApplicationJson, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor0ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**Error**](../../models/Error.md) |  | 
+
+
+### Authorization
+
+[basic_auth](../../../README.md#basic_auth), [cookie_auth](../../../README.md#cookie_auth), [oidc_auth](../../../README.md#oidc_auth), [saml_auth](../../../README.md#saml_auth), [jwt_token](../../../README.md#jwt_token)
 
 [[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
 

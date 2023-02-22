@@ -229,6 +229,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**get_credentials**](docs/apis/tags/AuthApi.md#get_credentials) | **get** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 *AuthApi* | [**get_current_user**](docs/apis/tags/AuthApi.md#get_current_user) | **get** /user | get current user
 *AuthApi* | [**get_group**](docs/apis/tags/AuthApi.md#get_group) | **get** /auth/groups/{groupId} | get group
+*AuthApi* | [**get_group_acl**](docs/apis/tags/AuthApi.md#get_group_acl) | **get** /auth/groups/{groupId}/acl | get ACL of group
 *AuthApi* | [**get_policy**](docs/apis/tags/AuthApi.md#get_policy) | **get** /auth/policies/{policyId} | get policy
 *AuthApi* | [**get_user**](docs/apis/tags/AuthApi.md#get_user) | **get** /auth/users/{userId} | get user
 *AuthApi* | [**list_group_members**](docs/apis/tags/AuthApi.md#list_group_members) | **get** /auth/groups/{groupId}/members | list group members
@@ -240,6 +241,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**list_user_policies**](docs/apis/tags/AuthApi.md#list_user_policies) | **get** /auth/users/{userId}/policies | list user policies
 *AuthApi* | [**list_users**](docs/apis/tags/AuthApi.md#list_users) | **get** /auth/users | list users
 *AuthApi* | [**login**](docs/apis/tags/AuthApi.md#login) | **post** /auth/login | perform a login
+*AuthApi* | [**set_group_acl**](docs/apis/tags/AuthApi.md#set_group_acl) | **post** /auth/groups/{groupId}/acl | set ACL of group
 *AuthApi* | [**update_password**](docs/apis/tags/AuthApi.md#update_password) | **post** /auth/password | Update user password by reset_password token
 *AuthApi* | [**update_policy**](docs/apis/tags/AuthApi.md#update_policy) | **put** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**cherry_pick**](docs/apis/tags/BranchesApi.md#cherry_pick) | **post** /repositories/{repository}/branches/{branch}/cherry-pick | Cherry-Pick the given reference commit into the given branch
@@ -306,6 +308,7 @@ Class | Method | HTTP request | Description
 
 ## Documentation For Models
 
+ - [ACL](docs/models/ACL.md)
  - [AccessKeyCredentials](docs/models/AccessKeyCredentials.md)
  - [ActionRun](docs/models/ActionRun.md)
  - [ActionRunList](docs/models/ActionRunList.md)
@@ -325,6 +328,7 @@ Class | Method | HTTP request | Description
  - [Diff](docs/models/Diff.md)
  - [DiffList](docs/models/DiffList.md)
  - [Error](docs/models/Error.md)
+ - [ErrorNoACL](docs/models/ErrorNoACL.md)
  - [FindMergeBaseResult](docs/models/FindMergeBaseResult.md)
  - [ForgotPasswordRequest](docs/models/ForgotPasswordRequest.md)
  - [GarbageCollectionConfig](docs/models/GarbageCollectionConfig.md)
