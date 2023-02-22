@@ -104,6 +104,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		svc:    svc,
 		params: params,
 		logger: logger,
+		cancel: make(chan bool),
 	}
 
 	s.StartPeriodicCheck()
@@ -473,14 +474,12 @@ func (e *EntriesIterator) Close() {
 // StartPeriodicCheck performs one check and continues every 'interval' in the background
 func (s *Store) StartPeriodicCheck() {
 	interval := s.params.HealthCheckInterval
-	if interval <= 0 || s.cancel != nil {
+	if interval <= 0 {
 		return
 	}
-	s.cancel = make(chan bool)
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
-		defer func() { s.cancel = nil }()
 		s.logger.WithField("interval", interval).Debug("Starting DynamoDB health check")
 		// check first and loop for checking every interval
 		s.Check()
@@ -508,9 +507,6 @@ func (s *Store) Check() {
 }
 
 func (s *Store) StopPeriodicCheck() {
-	if s.cancel != nil {
-		s.logger.Info("Stopping DynamoDB health check")
-		s.cancel <- true
-		s.wg.Wait()
-	}
+	close(s.cancel)
+	s.wg.Wait()
 }

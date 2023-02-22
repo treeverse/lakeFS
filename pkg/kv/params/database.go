@@ -49,10 +49,9 @@ type DynamoDB struct {
 	// in case there are no credentials configured in the system
 	// This is a client requirement as described in section 4 in
 	// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
-	AwsRegion          string
-	AwsProfile         string
-	AwsAccessKeyID     string
-	AwsSecretAccessKey string
-
+	AwsRegion           string
+	AwsProfile          string
+	AwsAccessKeyID      string
+	AwsSecretAccessKey  string
 	HealthCheckInterval time.Duration
 }
