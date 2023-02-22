@@ -3,14 +3,24 @@ package io.treeverse.clients.conditional
 import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
 import com.amazonaws.retry.RetryPolicy
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
-import com.amazonaws.{AmazonClientException, AmazonWebServiceRequest, ClientConfiguration, SdkClientException}
+import com.amazonaws.{
+  AmazonClientException,
+  AmazonWebServiceRequest,
+  ClientConfiguration,
+  SdkClientException
+}
 import io.treeverse.clients.StorageUtils.S3.createAndValidateS3Client
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.{Logger, LoggerFactory}
 
 class S3RetryCondition extends SDKDefaultRetryCondition {
-  override def shouldRetry(originalRequest: AmazonWebServiceRequest, exception: AmazonClientException, retriesAttempted: Int): Boolean =  {
-    super.shouldRetry(originalRequest, exception, retriesAttempted) || exception.isInstanceOf[SdkClientException]
+  override def shouldRetry(
+      originalRequest: AmazonWebServiceRequest,
+      exception: AmazonClientException,
+      retriesAttempted: Int
+  ): Boolean = {
+    super.shouldRetry(originalRequest, exception, retriesAttempted) || exception
+      .isInstanceOf[SdkClientException]
   }
 }
 
