@@ -433,7 +433,7 @@ func SyncDirectory(ctx context.Context, client api.ClientWithResponsesInterface,
 	}
 	pool := pb.NewPool()
 	mainBar := ProgressBar.New(len(filesWeNeed))
-	mainBar.Set("prefix", fmt.Sprintf("objects in '%s'", source.GetPath()))
+	mainBar.Set("prefix", fmt.Sprintf("objects in '%s'", source.String()))
 	pool.Add(mainBar)
 	pool.Add(bars...)
 	if err := pool.Start(); err != nil {
