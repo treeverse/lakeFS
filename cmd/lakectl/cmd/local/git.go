@@ -97,7 +97,10 @@ func (c *Conf) CurrentCommitId() (string, error) {
 	repo := c.Repository()
 	head, err := repo.Head()
 	if err != nil {
-		return "", err
+		if errors.Is(err, plumbing.ErrReferenceNotFound) {
+			return "", ErrNoCommitFound
+		}
+		return "", fmt.Errorf("could not get current git HEAD: %w", err)
 	}
 	return head.Hash().String(), nil
 }
@@ -194,7 +197,7 @@ func (c *Conf) HasSource(target string) (bool, error) {
 	return exists, nil
 }
 
-func (c *Conf) AddSource(target, remote, atVersion string) error {
+func (c *Conf) AddSource(target, remote, currentHead string) error {
 	conf, err := c.GetSourcesConfig()
 	if err != nil {
 		return err
@@ -203,19 +206,19 @@ func (c *Conf) AddSource(target, remote, atVersion string) error {
 		conf.Sources = make(map[string]Source)
 	}
 	conf.Sources[target] = Source{
-		Remote:    remote,
-		AtVersion: atVersion,
+		Remote: remote,
+		Head:   currentHead,
 	}
 	return c.SaveSourcesConfig(conf)
 }
 
-func (c *Conf) UpdateSourceVersion(target, atVersion string) error {
+func (c *Conf) UpdateSourceVersion(target, currentHead string) error {
 	conf, err := c.GetSourcesConfig()
 	if err != nil {
 		return err
 	}
 	source := conf.Sources[target]
-	source.AtVersion = atVersion
+	source.Head = currentHead
 	conf.Sources[target] = source
 	return c.SaveSourcesConfig(conf)
 }

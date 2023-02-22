@@ -195,6 +195,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
         ),
         checksum="checksum_example",
         size_bytes=1,
+        mtime=1,
         user_metadata={
             "key": "key_example",
         },

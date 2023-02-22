@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **staging** | [**StagingLocation**](StagingLocation.md) |  | 
 **checksum** | **String** | unique identifier of object content on backing store (typically ETag) | 
 **sizeBytes** | **Long** |  | 
+**mtime** | **Long** | Unix Epoch in seconds |  [optional]
 **userMetadata** | **Map&lt;String, String&gt;** |  |  [optional]
 **contentType** | **String** | Object media type |  [optional]
 

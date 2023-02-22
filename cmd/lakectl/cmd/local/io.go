@@ -32,8 +32,9 @@ const (
 )
 
 var (
-	ErrNotDirectory = errors.New("path is not a directory")
-	ErrNotFile      = errors.New("path is not a file")
+	ErrNotDirectory  = errors.New("path is not a directory")
+	ErrNotFile       = errors.New("path is not a file")
+	ErrNoCommitFound = errors.New("no commit found")
 
 	ErrNoIndex = errors.New("no index found")
 )
@@ -375,6 +376,16 @@ func ReadIndex(directory string) (*Index, error) {
 	return index, nil
 }
 
+func InitEmptyIndex(ctx context.Context, source *uri.URI, localDirectory string) error {
+	return WriteIndex(
+		localDirectory,
+		&Index{
+			Ref:     source.String(),
+			Objects: (&ObjectTracker{}).GetObjects(),
+		},
+	)
+}
+
 func SyncDirectory(ctx context.Context, client api.ClientWithResponsesInterface, source *uri.URI, localDirectory string, maxParallelism int) error {
 	indexer := &ObjectTracker{}
 
@@ -429,14 +440,12 @@ func SyncDirectory(ctx context.Context, client api.ClientWithResponsesInterface,
 		return err
 	}
 
-	type workerResponse struct {
-		bar *pb.ProgressBar
-		err error
+	ch := make(chan *pb.ProgressBar, parallelDownloads)
+	for _, bar := range bars {
+		ch <- bar
 	}
-	ch := make(chan *workerResponse, parallelDownloads)
-	for i := 0; i < parallelDownloads; i++ {
-		ch <- &workerResponse{bar: bars[i], err: nil}
-	}
+	errCh := make(chan error, 0)
+	doneCh := make(chan bool, 0)
 	var wg sync.WaitGroup
 	wg.Add(len(filesWeNeed))
 
@@ -457,10 +466,7 @@ func SyncDirectory(ctx context.Context, client api.ClientWithResponsesInterface,
 
 	// download the things
 	for _, obj := range filesWeNeed {
-		resp := <-ch // block until we have a slot
-		if resp.err != nil {
-			return err
-		}
+		bar := <-ch // block until we have a slot
 		go func(obj api.ObjectStats) {
 			currentPath := strings.TrimPrefix(obj.Path, prefix)
 			var entry *Object
@@ -468,12 +474,9 @@ func SyncDirectory(ctx context.Context, client api.ClientWithResponsesInterface,
 				// read this path from index
 				entry = index.Find(currentPath)
 			}
-			skipped, err := DownloadRemoteObject(obj, prefix, localDirectory, resp.bar, indexer, entry)
+			skipped, err := DownloadRemoteObject(obj, prefix, localDirectory, bar, indexer, entry)
 			if err != nil {
-				ch <- &workerResponse{
-					bar: resp.bar,
-					err: fmt.Errorf("could not download object %s: %w", obj.Path, err),
-				} // release
+				errCh <- err
 				return
 			}
 			// update fileset
@@ -489,13 +492,23 @@ func SyncDirectory(ctx context.Context, client api.ClientWithResponsesInterface,
 				d = path.Dir(d)
 			}
 			fileSetLock.Unlock()
-			wg.Done()
-			ch <- &workerResponse{bar: resp.bar, err: nil} // release
 			mainBar.Increment()
+			wg.Done()
+			ch <- bar // release
 		}(obj)
-
 	}
-	wg.Wait() // wait until all downloads are done
+	go func() {
+		wg.Wait() // wait until all downloads are done
+		doneCh <- true
+	}()
+
+	select {
+	case <-doneCh:
+		break
+	case err := <-errCh:
+		return err
+	}
+
 	if err := pool.Stop(); err != nil {
 		return err
 	}

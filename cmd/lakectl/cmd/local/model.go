@@ -11,20 +11,13 @@ import (
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
-const (
-	SpecVersion  = 1
-	IndexVersion = 1
-	SpecFileName = "Runfile.yaml"
-	LockFileName = "Runfile.lock.yaml"
-)
-
 var (
 	ErrUnorderedPaths = errors.New("paths are not sorted lexicographically")
 	ErrWrongSize      = errors.New("size read does not match object metadata")
 )
 
 type Object struct {
-	Path      string `yaml:"poth"`
+	Path      string `yaml:"path"`
 	Mtime     int64  `yaml:"mtime"`
 	SizeBytes int64  `yaml:"size"`
 	Sha1      string `yaml:"sha1"`
@@ -100,28 +93,9 @@ func (t *ObjectTracker) GetObjects() []Object {
 	return slice
 }
 
-type DockerExec struct {
-	Image        string   `yaml:"image,omitempty"`
-	BuildContext string   `yaml:"build,omitempty"`
-	Cmd          []string `yaml:"cmd,omitempty"`
-	Args         []string `yaml:"args,omitempty"`
-	Environ      []string `yaml:"environ,omitempty"`
-}
-
-type MountPoint struct {
-	Source string `yaml:"source"`
-	Target string `yaml:"target"`
-}
-
-type RunSpec struct {
-	SpecVersion int          `yaml:"spec_version"`
-	Exec        DockerExec   `yaml:"exec"`
-	Sources     []MountPoint `yaml:"sources,omitempty"`
-}
-
 type Source struct {
-	Remote    string `yaml:"remote"`
-	AtVersion string `yaml:"at_version,omitempty"`
+	Remote string `yaml:"remote_uri"`
+	Head   string `yaml:"local_head,omitempty"`
 }
 
 func (s Source) RemoteURI() (*uri.URI, error) {

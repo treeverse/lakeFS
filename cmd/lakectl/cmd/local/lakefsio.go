@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/go-openapi/swag"
@@ -116,6 +117,27 @@ func DeleteLakeFSFile(ctx context.Context, client api.ClientWithResponsesInterfa
 	return nil
 }
 
+func LakeFSPathExists(ctx context.Context, client api.ClientWithResponsesInterface, dest *uri.URI) (bool, error) {
+	pth := dest.GetPath()
+	if !strings.HasSuffix(pth, "/") {
+		pth = pth + "/"
+	}
+
+	response, err := client.ListObjectsWithResponse(ctx, dest.Repository, dest.Ref, &api.ListObjectsParams{
+		After:     nil,
+		Amount:    api.PaginationAmountPtr(1),
+		Delimiter: (*api.PaginationDelimiter)(swag.String("/")),
+		Prefix:    (*api.PaginationPrefix)(dest.Path),
+	})
+	if err != nil {
+		return false, err
+	}
+	if response.StatusCode() != http.StatusOK {
+		return false, fmt.Errorf("could not check path '%s': HTTP %d", dest.GetPath(), response.StatusCode())
+	}
+	return response.JSON200.Pagination.Results > 0, nil
+}
+
 func WriteLakeFSFile(ctx context.Context, client api.ClientWithResponsesInterface, localFile string, dest *uri.URI) error {
 	info, err := os.Stat(localFile)
 	if err != nil {
@@ -170,6 +192,7 @@ func WriteLakeFSFile(ctx context.Context, client api.ClientWithResponsesInterfac
 		Checksum:    uploadResponse.Header.Get("ETag"),
 		ContentType: swag.String(contentType),
 		SizeBytes:   info.Size(),
+		Mtime:       swag.Int64(info.ModTime().Unix()),
 		Staging: api.StagingLocation{
 			PhysicalAddress: phyResponse.JSON200.PhysicalAddress,
 			PresignedUrl:    uploadUrl,

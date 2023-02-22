@@ -403,6 +403,9 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	writeTime := time.Now()
+	if body.Mtime != nil {
+		writeTime = time.Unix(swag.Int64Value(body.Mtime), 0)
+	}
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, StringValue(body.Staging.PhysicalAddress))
 
 	// validate token

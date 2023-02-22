@@ -6471,6 +6471,7 @@ components:
           key: user_metadata
         content_type: content_type
         checksum: checksum
+        mtime: 6
         staging:
           physical_address: physical_address
           presigned_url: presigned_url
@@ -6483,6 +6484,10 @@ components:
             ETag)
           type: string
         size_bytes:
+          format: int64
+          type: integer
+        mtime:
+          description: Unix Epoch in seconds
           format: int64
           type: integer
         user_metadata:
