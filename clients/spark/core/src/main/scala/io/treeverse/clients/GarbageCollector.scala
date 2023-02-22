@@ -590,7 +590,7 @@ object GarbageCollector {
     bulkedKeyStrings
       .mapPartitions(iter => {
         // mapPartitions lambda executions are sent over to Spark executors, the executors don't have access to the
-        // bulkRemover created above because it was created on the driver and it is not a serializeable object. Therefore,
+        // bulkRemover created above because it was created on the driver and it is not a serializable object. Therefore,
         // we create new bulkRemovers.
         val bulkRemover =
           BulkRemoverFactory(storageType, configMapper.configuration, storageNamespace, region)

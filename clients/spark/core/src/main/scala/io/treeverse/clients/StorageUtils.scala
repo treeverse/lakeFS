@@ -117,8 +117,8 @@ object StorageUtils {
           builder.withRegion(region)
 
       val builderWithCredentials = credentialsProvider match {
-        case Some(cp) => builder.withCredentials(cp)
-        case None     => builder
+        case Some(cp) => builderWithEndpoint.withCredentials(cp)
+        case None     => builderWithEndpoint
       }
       builderWithCredentials.build
     }
