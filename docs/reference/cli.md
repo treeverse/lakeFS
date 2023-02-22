@@ -2257,6 +2257,31 @@ add path/to/data lakefs://example-repo/main/path/to/data/
 
 
 
+### lakectl local checkout
+
+sync the target directory with the specified ref
+
+```
+lakectl local checkout <target directory> <lakeFS ref> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+checkout path/to/data lakefs://example-repo/experiment-1
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help              help for checkout
+  -p, --parallelism int   maximum objects to download in parallel (default 20)
+```
+
+
+
 ### lakectl local clone
 
 clone a lakeFS directory locally (committed only)
@@ -2328,7 +2353,7 @@ lakectl local help [command] [flags]
 
 ### lakectl local pull
 
-pull data files from lakeFS as described in $GIT_REPOSITORY/data.yaml
+pull data files from lakeFS as described in data.yaml
 
 ```
 lakectl local pull [<target directory>] [flags]
