@@ -510,6 +510,6 @@ func (s *Store) StopPeriodicCheck() {
 	if s.cancel != nil {
 		s.logger.Info("Stopping DynamoDB health check")
 		s.cancel <- true
+		s.wg.Wait()
 	}
-	s.wg.Wait()
 }
