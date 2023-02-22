@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="24.970247"
+   height="24.970247"
+   viewBox="0 0 31.961917 31.961917"
+   version="1.1"
+   id="svg142"
+   sodipodi:docname="mastodon.svg"
+   inkscape:version="1.2.2 (b0a84865, 2022-12-01)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <title
+     id="title256">icon / slack copy 2@2x</title>
+  <defs
+     id="defs146" />
+  <sodipodi:namedview
+     id="namedview144"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="1.28375"
+     inkscape:cx="399.61052"
+     inkscape:cy="400"
+     inkscape:window-width="1390"
+     inkscape:window-height="1205"
+     inkscape:window-x="290"
+     inkscape:window-y="97"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg142" />
+  <circle
+     cx="-15.980959"
+     cy="-15.980959"
+     style="fill:#949494;stroke-width:0.0312128"
+     transform="scale(-1)"
+     id="circle138"
+     r="15.980959" />
+  <path
+     d="m 23.431456,13.98646 c 0,-3.464622 -2.272292,-4.4821592 -2.272292,-4.4821592 C 20.013653,8.9768042 18.047246,8.7583145 16.005928,8.7395864 h -0.04994 c -2.041317,0.015608 -4.007724,0.2372178 -5.153234,0.7647144 0,0 -2.2722933,1.0144162 -2.2722933,4.4821592 0,0.792805 -0.015608,1.741675 0.00937,2.749848 0.081153,3.389712 0.6211346,6.729483 3.7549003,7.559743 1.445153,0.380796 2.684303,0.46195 3.686234,0.408888 1.813463,-0.09988 2.831001,-0.646105 2.831001,-0.646105 l -0.0593,-1.31406 c 0,0 -1.295332,0.408889 -2.749849,0.358948 -1.442031,-0.04994 -2.962095,-0.156064 -3.196191,-1.92583 -0.02185,-0.165428 -0.03121,-0.330857 -0.03121,-0.496284 0,0 1.41394,0.346462 3.205556,0.427615 1.09557,0.04994 2.122471,-0.06555 3.1681,-0.187277 2.000741,-0.240338 3.745537,-1.473244 3.964026,-2.600026 0.346462,-1.77601 0.318371,-4.33546 0.318371,-4.33546 z m -2.678059,4.466553 h -1.663642 v -4.073271 c 0,-0.858353 -0.362069,-1.295333 -1.083085,-1.295333 -0.799048,0 -1.198572,0.518134 -1.198572,1.538792 v 2.231716 h -1.654279 v -2.231716 c 0,-1.02378 -0.399523,-1.538792 -1.198572,-1.538792 -0.721016,0 -1.083084,0.43698 -1.083084,1.295333 v 4.073271 H 11.20852 v -4.195001 c 0,-0.858353 0.218489,-1.538793 0.65859,-2.04444 0.452586,-0.505648 1.045629,-0.761592 1.77913,-0.761592 0.85211,0 1.495094,0.327735 1.92271,0.980082 l 0.412009,0.692925 0.41513,-0.692925 c 0.427616,-0.655468 1.070599,-0.980082 1.922709,-0.980082 0.733502,0 1.326545,0.259067 1.77913,0.761592 0.43698,0.502527 0.655469,1.186087 0.655469,2.04444 z"
+     style="fill:#ffffff;stroke-width:0.0312128"
+     id="path140" />
+  <metadata
+     id="metadata362">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>icon / slack copy 2@2x</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>
