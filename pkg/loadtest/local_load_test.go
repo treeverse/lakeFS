@@ -103,8 +103,6 @@ func TestLocalLoad(t *testing.T) {
 		nil,
 		nil,
 		nil,
-		nil,
-		nil,
 		upload.DefaultPathProvider,
 		nil,
 	)

@@ -105,6 +105,7 @@ func (a *mockAdapter) BlockstoreType() string {
 func (a *mockAdapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo("mock")
 	info.PreSignSupport = false
+	info.ImportSupport = false
 	return info
 }
 

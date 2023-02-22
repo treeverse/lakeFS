@@ -12,6 +12,7 @@ Name | Type | Description | Notes
 **blockstoreNamespaceValidityRegex** | **String** |  | 
 **defaultNamespacePrefix** | **String** |  |  [optional]
 **preSignSupport** | **Boolean** |  | 
+**importSupport** | **Boolean** |  | 
 
 
 

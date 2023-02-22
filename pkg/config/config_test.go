@@ -180,16 +180,6 @@ func verifyAWSConfig(t *testing.T, c *config.Config) {
 	}
 }
 
-func verifyOIDCConfig(t *testing.T, c *config.Config) {
-	if !c.Auth.OIDC.Enabled {
-		t.Fatal("expected oidc to be enabled")
-	}
-
-	if diffs := deep.Equal(c.Auth.OIDC.AdditionalScopeClaims, []string{"upn", "email"}); diffs != nil {
-		t.Fatalf("expected additional scopes upn and email, diffs %s", diffs)
-	}
-}
-
 func TestConfig_AWSConfig(t *testing.T) {
 	t.Run("use secret_access_key configuration", func(t *testing.T) {
 		c, err := newConfigFromFile("testdata/aws_credentials.yaml")
@@ -200,13 +190,5 @@ func TestConfig_AWSConfig(t *testing.T) {
 		c, err := newConfigFromFile("testdata/aws_credentials_with_alias.yaml")
 		testutil.Must(t, err)
 		verifyAWSConfig(t, c)
-	})
-}
-
-func TestConfig_OIDCConfig(t *testing.T) {
-	t.Run("use oidc configuration", func(t *testing.T) {
-		c, err := newConfigFromFile("testdata/valid_oidc_config.yaml")
-		testutil.Must(t, err)
-		verifyOIDCConfig(t, c)
 	})
 }

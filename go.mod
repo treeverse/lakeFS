@@ -67,7 +67,6 @@ require (
 
 require (
 	cloud.google.com/go/compute v1.15.0 // indirect
-	github.com/coreos/go-oidc/v3 v3.2.0
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af
 )
@@ -90,6 +89,7 @@ require (
 	github.com/hashicorp/go-hclog v1.2.0
 	github.com/hashicorp/go-plugin v1.4.8
 	github.com/hashicorp/go-retryablehttp v0.7.2
+	github.com/mitchellh/go-ps v1.0.0
 	github.com/puzpuzpuz/xsync v1.5.2
 	go.uber.org/ratelimit v0.2.0
 )
@@ -125,7 +125,6 @@ require (
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/matryer/is v1.4.0 // indirect
-	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mitchellh/go-testing-interface v0.0.0-20171004221916-a61a99592b77 // indirect
 	github.com/oklog/run v1.0.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
@@ -141,7 +140,6 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220827204233-334a2380cb91 // indirect
 	gonum.org/v1/gonum v0.9.3 // indirect
-	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 

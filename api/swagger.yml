@@ -33,6 +33,7 @@ components:
       type: apiKey
       in: cookie
       name: oidc_auth_session
+
   parameters:
     PaginationPrefix:
       in: query
@@ -74,6 +75,12 @@ components:
             $ref: "#/components/schemas/Error"
     ServerError:
       description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Access is forbidden
       content:
         application/json:
           schema:
@@ -688,14 +695,6 @@ components:
           enum: [initialized, not_initialized, comm_prefs_done]
         login_config:
           $ref: "#/components/schemas/LoginConfig"
-        oidc_enabled:
-          deprecated: true
-          type: boolean
-          description: "Deprecated: embedded OIDC support is now deprecated"
-        oidc_default_login:
-          deprecated: true
-          type: boolean
-          description: "Deprecated: embedded OIDC support is now deprecated"
     AccessKeyCredentials:
       type: object
       properties:
@@ -944,6 +943,7 @@ components:
         - blockstore_namespace_example
         - blockstore_namespace_ValidityRegex
         - pre_sign_support
+        - import_support
       properties:
         blockstore_type:
           type: string
@@ -954,6 +954,8 @@ components:
         default_namespace_prefix:
           type: string
         pre_sign_support:
+          type: boolean
+        import_support:
           type: boolean
 
     VersionConfig:
@@ -1383,21 +1385,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/CurrentUser"
 
-  /oidc/callback:
-    get:
-      deprecated: true
-      description: "Deprecated: embedded OIDC support is now deprecated"
-      tags:
-        - auth
-      operationId: oauthCallback
-      security: []
-      responses:
-        302:
-          description: successfully got token
-        401:
-          description: failed to exchange authorization code for token
-        default:
-          $ref: "#/components/responses/ServerError"
   /auth/login:
     post:
       tags:
@@ -3176,6 +3163,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:

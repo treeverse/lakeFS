@@ -409,13 +409,9 @@ Similar to the described [above](#gc-job-options).
 {: .no_toc }
 
 The uncommitted GC job has several limitations in its Beta version: 
-1. No writes to lakeFS during the execution of the job. Objects written to lakeFS
-during the job run may or may not be detected by the job. It can lead to unexpected behaviour 
-including the deletion of newly written data. Avoid any write operation while the job is 
-running, like `UploadObject`, `CopyObject`, `StageObject`, `LinkPhysicalAddress` or 
-any other non-read operation.
-2. Support is limited to S3 repositories, it was not tested on ABS, GS or MinIO.
-3. Scale may be limited, see performance results below.
+1. Support is limited to S3 repositories, it was not tested on ABS, GS or MinIO.
+1. Scale may be limited, see performance results below.
+1. [Issue](https://github.com/treeverse/lakeFS/issues/5088) associated to commit during copy object.
 
 #### Next steps
 {: .no_toc }
