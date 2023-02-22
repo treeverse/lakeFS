@@ -139,6 +139,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**get_credentials**](docs/AuthApi.md#get_credentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 *AuthApi* | [**get_current_user**](docs/AuthApi.md#get_current_user) | **GET** /user | get current user
 *AuthApi* | [**get_group**](docs/AuthApi.md#get_group) | **GET** /auth/groups/{groupId} | get group
+*AuthApi* | [**get_group_acl**](docs/AuthApi.md#get_group_acl) | **GET** /auth/groups/{groupId}/acl | get ACL of group
 *AuthApi* | [**get_policy**](docs/AuthApi.md#get_policy) | **GET** /auth/policies/{policyId} | get policy
 *AuthApi* | [**get_user**](docs/AuthApi.md#get_user) | **GET** /auth/users/{userId} | get user
 *AuthApi* | [**list_group_members**](docs/AuthApi.md#list_group_members) | **GET** /auth/groups/{groupId}/members | list group members
@@ -150,6 +151,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**list_user_policies**](docs/AuthApi.md#list_user_policies) | **GET** /auth/users/{userId}/policies | list user policies
 *AuthApi* | [**list_users**](docs/AuthApi.md#list_users) | **GET** /auth/users | list users
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
+*AuthApi* | [**set_group_acl**](docs/AuthApi.md#set_group_acl) | **POST** /auth/groups/{groupId}/acl | set ACL of group
 *AuthApi* | [**update_password**](docs/AuthApi.md#update_password) | **POST** /auth/password | Update user password by reset_password token
 *AuthApi* | [**update_policy**](docs/AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**create_branch**](docs/BranchesApi.md#create_branch) | **POST** /repositories/{repository}/branches | create branch
@@ -216,6 +218,7 @@ Class | Method | HTTP request | Description
 
 ## Documentation For Models
 
+ - [ACL](docs/ACL.md)
  - [AccessKeyCredentials](docs/AccessKeyCredentials.md)
  - [ActionRun](docs/ActionRun.md)
  - [ActionRunList](docs/ActionRunList.md)
@@ -234,6 +237,7 @@ Class | Method | HTTP request | Description
  - [Diff](docs/Diff.md)
  - [DiffList](docs/DiffList.md)
  - [Error](docs/Error.md)
+ - [ErrorNoACL](docs/ErrorNoACL.md)
  - [FindMergeBaseResult](docs/FindMergeBaseResult.md)
  - [ForgotPasswordRequest](docs/ForgotPasswordRequest.md)
  - [GarbageCollectionConfig](docs/GarbageCollectionConfig.md)

@@ -27,6 +27,7 @@ import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 
 
+import io.lakefs.clients.api.model.ACL;
 import io.lakefs.clients.api.model.AuthCapabilities;
 import io.lakefs.clients.api.model.AuthenticationToken;
 import io.lakefs.clients.api.model.Credentials;
@@ -34,6 +35,7 @@ import io.lakefs.clients.api.model.CredentialsList;
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.CurrentUser;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.ErrorNoACL;
 import io.lakefs.clients.api.model.ForgotPasswordRequest;
 import io.lakefs.clients.api.model.Group;
 import io.lakefs.clients.api.model.GroupCreation;
@@ -2414,6 +2416,130 @@ public class AuthApi {
         return localVarCall;
     }
     /**
+     * Build call for getGroupACL
+     * @param groupId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> ACL of group </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Group not found, or group found but has no ACL </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call getGroupACLCall(String groupId, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/auth/groups/{groupId}/acl"
+            .replaceAll("\\{" + "groupId" + "\\}", localVarApiClient.escapeString(groupId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call getGroupACLValidateBeforeCall(String groupId, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'groupId' is set
+        if (groupId == null) {
+            throw new ApiException("Missing the required parameter 'groupId' when calling getGroupACL(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = getGroupACLCall(groupId, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * get ACL of group
+     * 
+     * @param groupId  (required)
+     * @return ACL
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> ACL of group </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Group not found, or group found but has no ACL </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ACL getGroupACL(String groupId) throws ApiException {
+        ApiResponse<ACL> localVarResp = getGroupACLWithHttpInfo(groupId);
+        return localVarResp.getData();
+    }
+
+    /**
+     * get ACL of group
+     * 
+     * @param groupId  (required)
+     * @return ApiResponse&lt;ACL&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> ACL of group </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Group not found, or group found but has no ACL </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<ACL> getGroupACLWithHttpInfo(String groupId) throws ApiException {
+        okhttp3.Call localVarCall = getGroupACLValidateBeforeCall(groupId, null);
+        Type localVarReturnType = new TypeToken<ACL>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * get ACL of group (asynchronously)
+     * 
+     * @param groupId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> ACL of group </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Group not found, or group found but has no ACL </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call getGroupACLAsync(String groupId, final ApiCallback<ACL> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = getGroupACLValidateBeforeCall(groupId, _callback);
+        Type localVarReturnType = new TypeToken<ACL>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
      * Build call for getPolicy
      * @param policyId  (required)
      * @param _callback Callback for upload/download progress
@@ -3919,6 +4045,135 @@ public class AuthApi {
         okhttp3.Call localVarCall = loginValidateBeforeCall(loginInformation, _callback);
         Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for setGroupACL
+     * @param groupId  (required)
+     * @param ACL  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> ACL successfully changed </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call setGroupACLCall(String groupId, ACL ACL, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = ACL;
+
+        // create path and map variables
+        String localVarPath = "/auth/groups/{groupId}/acl"
+            .replaceAll("\\{" + "groupId" + "\\}", localVarApiClient.escapeString(groupId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call setGroupACLValidateBeforeCall(String groupId, ACL ACL, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'groupId' is set
+        if (groupId == null) {
+            throw new ApiException("Missing the required parameter 'groupId' when calling setGroupACL(Async)");
+        }
+        
+        // verify the required parameter 'ACL' is set
+        if (ACL == null) {
+            throw new ApiException("Missing the required parameter 'ACL' when calling setGroupACL(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = setGroupACLCall(groupId, ACL, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * set ACL of group
+     * 
+     * @param groupId  (required)
+     * @param ACL  (required)
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> ACL successfully changed </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public void setGroupACL(String groupId, ACL ACL) throws ApiException {
+        setGroupACLWithHttpInfo(groupId, ACL);
+    }
+
+    /**
+     * set ACL of group
+     * 
+     * @param groupId  (required)
+     * @param ACL  (required)
+     * @return ApiResponse&lt;Void&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> ACL successfully changed </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Void> setGroupACLWithHttpInfo(String groupId, ACL ACL) throws ApiException {
+        okhttp3.Call localVarCall = setGroupACLValidateBeforeCall(groupId, ACL, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    /**
+     * set ACL of group (asynchronously)
+     * 
+     * @param groupId  (required)
+     * @param ACL  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> ACL successfully changed </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call setGroupACLAsync(String groupId, ACL ACL, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = setGroupACLValidateBeforeCall(groupId, ACL, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
     /**

@@ -22,6 +22,7 @@ from lakefs_client.model_utils import (  # noqa: F401
     none_type,
     validate_and_convert_types
 )
+from lakefs_client.model.acl import ACL
 from lakefs_client.model.auth_capabilities import AuthCapabilities
 from lakefs_client.model.authentication_token import AuthenticationToken
 from lakefs_client.model.credentials import Credentials
@@ -29,6 +30,7 @@ from lakefs_client.model.credentials_list import CredentialsList
 from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
 from lakefs_client.model.current_user import CurrentUser
 from lakefs_client.model.error import Error
+from lakefs_client.model.error_no_acl import ErrorNoACL
 from lakefs_client.model.forgot_password_request import ForgotPasswordRequest
 from lakefs_client.model.group import Group
 from lakefs_client.model.group_creation import GroupCreation
@@ -1120,6 +1122,60 @@ class AuthApi(object):
             },
             api_client=api_client
         )
+        self.get_group_acl_endpoint = _Endpoint(
+            settings={
+                'response_type': (ACL,),
+                'auth': [
+                    'basic_auth',
+                    'cookie_auth',
+                    'jwt_token',
+                    'oidc_auth'
+                ],
+                'endpoint_path': '/auth/groups/{groupId}/acl',
+                'operation_id': 'get_group_acl',
+                'http_method': 'GET',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'group_id',
+                ],
+                'required': [
+                    'group_id',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'group_id':
+                        (str,),
+                },
+                'attribute_map': {
+                    'group_id': 'groupId',
+                },
+                'location_map': {
+                    'group_id': 'path',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [],
+            },
+            api_client=api_client
+        )
         self.get_policy_endpoint = _Endpoint(
             settings={
                 'response_type': (Policy,),
@@ -1856,6 +1912,67 @@ class AuthApi(object):
                 },
                 'location_map': {
                     'login_information': 'body',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [
+                    'application/json'
+                ]
+            },
+            api_client=api_client
+        )
+        self.set_group_acl_endpoint = _Endpoint(
+            settings={
+                'response_type': None,
+                'auth': [
+                    'basic_auth',
+                    'cookie_auth',
+                    'jwt_token',
+                    'oidc_auth'
+                ],
+                'endpoint_path': '/auth/groups/{groupId}/acl',
+                'operation_id': 'set_group_acl',
+                'http_method': 'POST',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'group_id',
+                    'acl',
+                ],
+                'required': [
+                    'group_id',
+                    'acl',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'group_id':
+                        (str,),
+                    'acl':
+                        (ACL,),
+                },
+                'attribute_map': {
+                    'group_id': 'groupId',
+                },
+                'location_map': {
+                    'group_id': 'path',
+                    'acl': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -3234,6 +3351,71 @@ class AuthApi(object):
             group_id
         return self.get_group_endpoint.call_with_http_info(**kwargs)
 
+    def get_group_acl(
+        self,
+        group_id,
+        **kwargs
+    ):
+        """get ACL of group  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.get_group_acl(group_id, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            group_id (str):
+
+        Keyword Args:
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            ACL
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['group_id'] = \
+            group_id
+        return self.get_group_acl_endpoint.call_with_http_info(**kwargs)
+
     def get_policy(
         self,
         policy_id,
@@ -3954,6 +4136,75 @@ class AuthApi(object):
         )
         kwargs['_host_index'] = kwargs.get('_host_index')
         return self.login_endpoint.call_with_http_info(**kwargs)
+
+    def set_group_acl(
+        self,
+        group_id,
+        acl,
+        **kwargs
+    ):
+        """set ACL of group  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.set_group_acl(group_id, acl, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            group_id (str):
+            acl (ACL):
+
+        Keyword Args:
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            None
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['group_id'] = \
+            group_id
+        kwargs['acl'] = \
+            acl
+        return self.set_group_acl_endpoint.call_with_http_info(**kwargs)
 
     def update_password(
         self,
