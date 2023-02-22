@@ -60,7 +60,7 @@ This reference uses `.` to denote the nesting of values.
     + `database.dynamodb.aws_region` `(string : )` - AWS Region of database instance
     + `database.dynamodb.aws_profile` `(string : )` - AWS named profile to use
     + `database.dynamodb.aws_access_key_id` `(string : )` - AWS access key ID
-    + `database.dynamodb.aws_secret_access_key` `(string : )` - AWS secret access key.
+    + `database.dynamodb.aws_secret_access_key` `(string : )` - AWS secret access key
     + **Note:** `endpoint` `aws_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials.
       {: .note }
     + `database.dynamodb.health_check_interval` `(duration : 0s)` - Interval to run health check for the DynamoDB instance (won't run if equal to 0).
