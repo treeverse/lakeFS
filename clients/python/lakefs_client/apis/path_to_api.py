@@ -23,6 +23,7 @@ from lakefs_client.apis.paths.auth_users_user_id_policies import AuthUsersUserId
 from lakefs_client.apis.paths.auth_users_user_id_policies_policy_id import AuthUsersUserIdPoliciesPolicyId
 from lakefs_client.apis.paths.auth_groups_group_id_policies import AuthGroupsGroupIdPolicies
 from lakefs_client.apis.paths.auth_groups_group_id_policies_policy_id import AuthGroupsGroupIdPoliciesPolicyId
+from lakefs_client.apis.paths.auth_groups_group_id_acl import AuthGroupsGroupIdAcl
 from lakefs_client.apis.paths.repositories import Repositories
 from lakefs_client.apis.paths.repositories_repository import RepositoriesRepository
 from lakefs_client.apis.paths.repositories_repository_otf_refs_left_ref_diff_right_ref import RepositoriesRepositoryOtfRefsLeftRefDiffRightRef
@@ -93,6 +94,7 @@ PathToApi = typing_extensions.TypedDict(
         PathValues.AUTH_USERS_USER_ID_POLICIES_POLICY_ID: AuthUsersUserIdPoliciesPolicyId,
         PathValues.AUTH_GROUPS_GROUP_ID_POLICIES: AuthGroupsGroupIdPolicies,
         PathValues.AUTH_GROUPS_GROUP_ID_POLICIES_POLICY_ID: AuthGroupsGroupIdPoliciesPolicyId,
+        PathValues.AUTH_GROUPS_GROUP_ID_ACL: AuthGroupsGroupIdAcl,
         PathValues.REPOSITORIES: Repositories,
         PathValues.REPOSITORIES_REPOSITORY: RepositoriesRepository,
         PathValues.REPOSITORIES_REPOSITORY_OTF_REFS_LEFT_REF_DIFF_RIGHT_REF: RepositoriesRepositoryOtfRefsLeftRefDiffRightRef,
@@ -164,6 +166,7 @@ path_to_api = PathToApi(
         PathValues.AUTH_USERS_USER_ID_POLICIES_POLICY_ID: AuthUsersUserIdPoliciesPolicyId,
         PathValues.AUTH_GROUPS_GROUP_ID_POLICIES: AuthGroupsGroupIdPolicies,
         PathValues.AUTH_GROUPS_GROUP_ID_POLICIES_POLICY_ID: AuthGroupsGroupIdPoliciesPolicyId,
+        PathValues.AUTH_GROUPS_GROUP_ID_ACL: AuthGroupsGroupIdAcl,
         PathValues.REPOSITORIES: Repositories,
         PathValues.REPOSITORIES_REPOSITORY: RepositoriesRepository,
         PathValues.REPOSITORIES_REPOSITORY_OTF_REFS_LEFT_REF_DIFF_RIGHT_REF: RepositoriesRepositoryOtfRefsLeftRefDiffRightRef,

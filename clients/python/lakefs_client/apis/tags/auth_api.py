@@ -29,6 +29,7 @@ from lakefs_client.paths.auth_capabilities.get import GetAuthCapabilities
 from lakefs_client.paths.auth_users_user_id_credentials_access_key_id.get import GetCredentials
 from lakefs_client.paths.user.get import GetCurrentUser
 from lakefs_client.paths.auth_groups_group_id.get import GetGroup
+from lakefs_client.paths.auth_groups_group_id_acl.get import GetGroupAcl
 from lakefs_client.paths.auth_policies_policy_id.get import GetPolicy
 from lakefs_client.paths.auth_users_user_id.get import GetUser
 from lakefs_client.paths.auth_groups_group_id_members.get import ListGroupMembers
@@ -40,6 +41,7 @@ from lakefs_client.paths.auth_users_user_id_groups.get import ListUserGroups
 from lakefs_client.paths.auth_users_user_id_policies.get import ListUserPolicies
 from lakefs_client.paths.auth_users.get import ListUsers
 from lakefs_client.paths.auth_login.post import Login
+from lakefs_client.paths.auth_groups_group_id_acl.post import SetGroupAcl
 from lakefs_client.paths.auth_password.post import UpdatePassword
 from lakefs_client.paths.auth_policies_policy_id.put import UpdatePolicy
 
@@ -64,6 +66,7 @@ class AuthApi(
     GetCredentials,
     GetCurrentUser,
     GetGroup,
+    GetGroupAcl,
     GetPolicy,
     GetUser,
     ListGroupMembers,
@@ -75,6 +78,7 @@ class AuthApi(
     ListUserPolicies,
     ListUsers,
     Login,
+    SetGroupAcl,
     UpdatePassword,
     UpdatePolicy,
 ):
