@@ -87,6 +87,7 @@ require (
 	github.com/hashicorp/go-plugin v1.4.8
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/puzpuzpuz/xsync v1.5.2
+	github.com/txn2/txeh v1.3.0
 	go.uber.org/ratelimit v0.2.0
 )
 

@@ -325,7 +325,7 @@ func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block
 					return err
 				}
 			}
-			if marker = resp.NextMarker; marker == nil {
+			if marker = resp.NextMarker; marker == nil || *marker == "" {
 				return nil
 			}
 		}

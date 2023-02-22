@@ -205,6 +205,8 @@ type Config struct {
 			// Deprecated: Value ignored
 			AuthMethod      string        `mapstructure:"auth_method"`
 			PreSignedExpiry time.Duration `mapstructure:"pre_signed_expiry"`
+			// URL for testing purposes
+			Url *string `mapstructure:"url"`
 		} `mapstructure:"azure"`
 		GS *struct {
 			S3Endpoint      string        `mapstructure:"s3_endpoint"`
@@ -500,6 +502,7 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 		StorageAccessKey: c.Blockstore.Azure.StorageAccessKey,
 		TryTimeout:       c.Blockstore.Azure.TryTimeout,
 		PreSignedExpiry:  c.Blockstore.Azure.PreSignedExpiry,
+		Url:              c.Blockstore.Azure.Url,
 	}, nil
 }
 

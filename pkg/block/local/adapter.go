@@ -259,13 +259,27 @@ func (l *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (read
 }
 
 func (l *Adapter) Walk(_ context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
-	p := filepath.Clean(path.Join(l.path, walkOpt.StorageNamespace, walkOpt.Prefix))
-	return filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
+	p, err := l.getPath(block.ObjectPointer{
+		StorageNamespace: walkOpt.StorageNamespace,
+		Identifier:       walkOpt.Prefix,
+		IdentifierType:   block.IdentifierTypeRelative,
+	})
+	if err != nil {
+		return err
+	}
+	err = filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		return walkFn(p)
+		if info.IsDir() {
+			return nil
+		}
+		return walkFn(path)
 	})
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	return err
 }
 
 func (l *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {
@@ -284,6 +298,9 @@ func (l *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, erro
 }
 
 func (l *Adapter) GetRange(_ context.Context, obj block.ObjectPointer, start int64, end int64) (io.ReadCloser, error) {
+	if start < 0 || end <= 0 {
+		return nil, block.ErrBadIndex
+	}
 	p, err := l.getPath(obj)
 	if err != nil {
 		return nil, err

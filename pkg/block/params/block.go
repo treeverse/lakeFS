@@ -46,4 +46,5 @@ type Azure struct {
 	StorageAccessKey string
 	TryTimeout       time.Duration
 	PreSignedExpiry  time.Duration
+	Url              *string
 }
