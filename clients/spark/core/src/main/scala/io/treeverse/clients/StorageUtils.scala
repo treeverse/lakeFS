@@ -2,9 +2,16 @@ package io.treeverse.clients
 
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.client.builder.AwsClientBuilder
+import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
 import com.amazonaws.services.s3.model.{HeadBucketRequest, Region}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
-import com.amazonaws.{AmazonServiceException, ClientConfiguration}
+import com.amazonaws.{
+  AmazonClientException,
+  AmazonServiceException,
+  AmazonWebServiceRequest,
+  ClientConfiguration,
+  SdkClientException
+}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
@@ -117,8 +124,8 @@ object StorageUtils {
           builder.withRegion(region)
 
       val builderWithCredentials = credentialsProvider match {
-        case Some(cp) => builder.withCredentials(cp)
-        case None     => builder
+        case Some(cp) => builderWithEndpoint.withCredentials(cp)
+        case None     => builderWithEndpoint
       }
       builderWithCredentials.build
     }
@@ -147,5 +154,16 @@ object StorageUtils {
       if (region.equals(Region.US_Standard)) "us-east-1"
       else region.toString
     }
+  }
+}
+
+class S3RetryCondition extends SDKDefaultRetryCondition {
+  override def shouldRetry(
+      originalRequest: AmazonWebServiceRequest,
+      exception: AmazonClientException,
+      retriesAttempted: Int
+  ): Boolean = {
+    super.shouldRetry(originalRequest, exception, retriesAttempted) || exception
+      .isInstanceOf[SdkClientException]
   }
 }
