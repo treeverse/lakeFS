@@ -23,6 +23,7 @@ Method | HTTP request | Description
 [**getCredentials**](AuthApi.md#getCredentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 [**getCurrentUser**](AuthApi.md#getCurrentUser) | **GET** /user | get current user
 [**getGroup**](AuthApi.md#getGroup) | **GET** /auth/groups/{groupId} | get group
+[**getGroupACL**](AuthApi.md#getGroupACL) | **GET** /auth/groups/{groupId}/acl | get ACL of group
 [**getPolicy**](AuthApi.md#getPolicy) | **GET** /auth/policies/{policyId} | get policy
 [**getUser**](AuthApi.md#getUser) | **GET** /auth/users/{userId} | get user
 [**listGroupMembers**](AuthApi.md#listGroupMembers) | **GET** /auth/groups/{groupId}/members | list group members
@@ -34,6 +35,7 @@ Method | HTTP request | Description
 [**listUserPolicies**](AuthApi.md#listUserPolicies) | **GET** /auth/users/{userId}/policies | list user policies
 [**listUsers**](AuthApi.md#listUsers) | **GET** /auth/users | list users
 [**login**](AuthApi.md#login) | **POST** /auth/login | perform a login
+[**setGroupACL**](AuthApi.md#setGroupACL) | **POST** /auth/groups/{groupId}/acl | set ACL of group
 [**updatePassword**](AuthApi.md#updatePassword) | **POST** /auth/password | Update user password by reset_password token
 [**updatePolicy**](AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy
 
@@ -1704,6 +1706,91 @@ Name | Type | Description  | Notes
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
+<a name="getGroupACL"></a>
+# **getGroupACL**
+> ACL getGroupACL(groupId)
+
+get ACL of group
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+    
+    // Configure HTTP basic authorization: basic_auth
+    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
+    basic_auth.setUsername("YOUR USERNAME");
+    basic_auth.setPassword("YOUR PASSWORD");
+
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
+    // Configure API key authorization: oidc_auth
+    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
+    oidc_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //oidc_auth.setApiKeyPrefix("Token");
+
+    AuthApi apiInstance = new AuthApi(defaultClient);
+    String groupId = "groupId_example"; // String | 
+    try {
+      ACL result = apiInstance.getGroupACL(groupId);
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling AuthApi#getGroupACL");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **groupId** | **String**|  |
+
+### Return type
+
+[**ACL**](ACL.md)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | ACL of group |  -  |
+**401** | Unauthorized |  -  |
+**404** | Group not found, or group found but has no ACL |  -  |
+**0** | Internal Server Error |  -  |
+
 <a name="getPolicy"></a>
 # **getPolicy**
 > Policy getPolicy(policyId)
@@ -2714,6 +2801,92 @@ No authorization required
 |-------------|-------------|------------------|
 **200** | successful login |  * Set-Cookie -  <br>  |
 **401** | Unauthorized |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="setGroupACL"></a>
+# **setGroupACL**
+> setGroupACL(groupId, ACL)
+
+set ACL of group
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+    
+    // Configure HTTP basic authorization: basic_auth
+    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
+    basic_auth.setUsername("YOUR USERNAME");
+    basic_auth.setPassword("YOUR PASSWORD");
+
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
+    // Configure API key authorization: oidc_auth
+    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
+    oidc_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //oidc_auth.setApiKeyPrefix("Token");
+
+    AuthApi apiInstance = new AuthApi(defaultClient);
+    String groupId = "groupId_example"; // String | 
+    ACL ACL = new ACL(); // ACL | 
+    try {
+      apiInstance.setGroupACL(groupId, ACL);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling AuthApi#setGroupACL");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **groupId** | **String**|  |
+ **ACL** | [**ACL**](ACL.md)|  |
+
+### Return type
+
+null (empty response body)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**201** | ACL successfully changed |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="updatePassword"></a>
