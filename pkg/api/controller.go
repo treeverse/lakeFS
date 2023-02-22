@@ -1830,7 +1830,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, store.ErrForbidden),
 		errors.Is(err, local.ErrForbidden),
 		errors.Is(err, graveler.ErrProtectedBranch):
-    cb(w, r, http.StatusForbidden, err)
+		cb(w, r, http.StatusForbidden, err)
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
 		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
