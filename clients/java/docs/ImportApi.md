@@ -93,7 +93,7 @@ Name | Type | Description  | Notes
 **201** | metarange metadata |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
-**403** | Access is forbidden |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
