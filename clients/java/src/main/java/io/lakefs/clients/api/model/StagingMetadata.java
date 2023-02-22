@@ -46,6 +46,10 @@ public class StagingMetadata {
   @SerializedName(SERIALIZED_NAME_SIZE_BYTES)
   private Long sizeBytes;
 
+  public static final String SERIALIZED_NAME_MTIME = "mtime";
+  @SerializedName(SERIALIZED_NAME_MTIME)
+  private Long mtime;
+
   public static final String SERIALIZED_NAME_USER_METADATA = "user_metadata";
   @SerializedName(SERIALIZED_NAME_USER_METADATA)
   private Map<String, String> userMetadata = null;
@@ -124,6 +128,29 @@ public class StagingMetadata {
   }
 
 
+  public StagingMetadata mtime(Long mtime) {
+    
+    this.mtime = mtime;
+    return this;
+  }
+
+   /**
+   * Unix Epoch in seconds
+   * @return mtime
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Unix Epoch in seconds")
+
+  public Long getMtime() {
+    return mtime;
+  }
+
+
+  public void setMtime(Long mtime) {
+    this.mtime = mtime;
+  }
+
+
   public StagingMetadata userMetadata(Map<String, String> userMetadata) {
     
     this.userMetadata = userMetadata;
@@ -190,13 +217,14 @@ public class StagingMetadata {
     return Objects.equals(this.staging, stagingMetadata.staging) &&
         Objects.equals(this.checksum, stagingMetadata.checksum) &&
         Objects.equals(this.sizeBytes, stagingMetadata.sizeBytes) &&
+        Objects.equals(this.mtime, stagingMetadata.mtime) &&
         Objects.equals(this.userMetadata, stagingMetadata.userMetadata) &&
         Objects.equals(this.contentType, stagingMetadata.contentType);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(staging, checksum, sizeBytes, userMetadata, contentType);
+    return Objects.hash(staging, checksum, sizeBytes, mtime, userMetadata, contentType);
   }
 
   @Override
@@ -206,6 +234,7 @@ public class StagingMetadata {
     sb.append("    staging: ").append(toIndentedString(staging)).append("\n");
     sb.append("    checksum: ").append(toIndentedString(checksum)).append("\n");
     sb.append("    sizeBytes: ").append(toIndentedString(sizeBytes)).append("\n");
+    sb.append("    mtime: ").append(toIndentedString(mtime)).append("\n");
     sb.append("    userMetadata: ").append(toIndentedString(userMetadata)).append("\n");
     sb.append("    contentType: ").append(toIndentedString(contentType)).append("\n");
     sb.append("}");

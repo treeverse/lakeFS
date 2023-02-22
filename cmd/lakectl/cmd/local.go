@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	DownloadConcurrency = 5
+	DownloadConcurrency = 20
 
 	gitCommitKeyName = "git.commit.id"
 	gitPathKeyName   = "git.repository.data_source_path"
@@ -83,7 +83,7 @@ func pull(ctx context.Context, maxParallelism int, update bool, args ...string) 
 			return fmt.Errorf("could not parse remote source for '%s': %w", pathInRepository, err)
 		}
 
-		currentStableRef := src.AtVersion
+		currentStableRef := src.Head
 		if update {
 			currentStableRef, err = local.DereferenceBranch(ctx, client, source)
 			DieIfErr(err)
@@ -104,7 +104,7 @@ func pull(ctx context.Context, maxParallelism int, update bool, args ...string) 
 		DieIfErr(err)
 
 		// sync the thing!
-		currentStableRef := src.AtVersion
+		currentStableRef := src.Head
 		if update {
 			currentStableRef, err = local.DereferenceBranch(ctx, client, source)
 			DieIfErr(err)
@@ -124,6 +124,57 @@ func pull(ctx context.Context, maxParallelism int, update bool, args ...string) 
 // localCmd is for integration with local execution engines!
 var localCmd = &cobra.Command{
 	Short: "commands used to sync and reproduce data from lakeFS locally",
+}
+
+var localAddCmd = &cobra.Command{
+	Use:     "add <directory> <lakefs branch+path uri>",
+	Short:   "add a local directory to a lakeFS branch under the specified uri",
+	Example: "add path/to/data lakefs://example-repo/main/path/to/data/",
+	Args:    cobra.ExactArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		targetDirectory := args[0]
+		source := MustParsePathURI("path", args[1])
+
+		repoCfg := mustGitConf(targetDirectory)
+
+		var fullPath string
+		var pathInRepository string
+		pathInRepository, err := repoCfg.RelativeToRoot(targetDirectory)
+		DieIfErr(err)
+		fullPath = path.Join(repoCfg.Root(), pathInRepository)
+		hasSource, err := repoCfg.HasSource(pathInRepository)
+		DieIfErr(err)
+		if hasSource {
+			DieFmt("directory already tracked in lakeFS. See data.yaml`.")
+		}
+		locationExists, err := local.DirectoryExists(fullPath)
+		DieIfErr(err)
+		if !locationExists {
+			DieFmt("directory '%s' doesn't exist. Create it first")
+		}
+
+		// make sure it *doesn't* exist on the server
+		client := getClient()
+		remotePathExists, err := local.LakeFSPathExists(cmd.Context(), client, source)
+		DieIfErr(err)
+		if remotePathExists {
+			DieFmt("lakeFS directory already exists at '%s' - perhaps clone it instead?")
+		}
+
+		// init an empty index
+		err = local.InitEmptyIndex(cmd.Context(), source, fullPath)
+		DieIfErr(err)
+
+		// add it to data.yaml
+		// make sure our current ref is also the latest
+		latestCommitId, err := local.DereferenceBranch(cmd.Context(), client, source)
+		DieIfErr(err)
+		err = repoCfg.AddSource(pathInRepository, source.String(), latestCommitId)
+		DieIfErr(err)
+		// add it to git ignore
+		err = repoCfg.GitIgnore(pathInRepository)
+		DieIfErr(err)
+	},
 }
 
 // localCloneCmd clones a lakeFS directory locally (committed only).
@@ -166,8 +217,8 @@ var localCloneCmd = &cobra.Command{
 		}
 
 		// let's try and dereference the branch
-		lakeFSClient := getClient()
-		stableRef, err := local.DereferenceBranch(cmd.Context(), lakeFSClient, source)
+		client := getClient()
+		stableRef, err := local.DereferenceBranch(cmd.Context(), client, source)
 		DieIfErr(err)
 
 		// sync the thing!
@@ -176,7 +227,7 @@ var localCloneCmd = &cobra.Command{
 			Ref:        stableRef,
 			Path:       source.Path,
 		}
-		err = local.SyncDirectory(cmd.Context(), lakeFSClient, stableSource, fullPath, maxParallelism)
+		err = local.SyncDirectory(cmd.Context(), client, stableSource, fullPath, maxParallelism)
 		DieIfErr(err)
 		// add it to data.yaml
 		err = repoCfg.AddSource(pathInRepository, source.String(), stableRef)
@@ -273,7 +324,7 @@ var localCommitCmd = &cobra.Command{
 		// make sure our current ref is also the latest
 		latestCommitId, err := local.DereferenceBranch(cmd.Context(), client, source)
 		DieIfErr(err)
-		if latestCommitId != src.AtVersion {
+		if latestCommitId != src.Head {
 			DieFmt("local copy of lakeFS branch '%s' is not up to date with server. Please run `pull` first.", source.Ref)
 		}
 
@@ -281,12 +332,18 @@ var localCommitCmd = &cobra.Command{
 		DieIfErr(local.UploadDirectoryChanges(cmd.Context(), client, source, fullPath, repoCfg.Root(), maxParallelism))
 
 		currentCommitId, err := repoCfg.CurrentCommitId()
-		DieIfErr(err)
+		if err != nil && errors.Is(err, local.ErrNoCommitFound) {
+			currentCommitId = ""
+		} else if err != nil {
+			DieErr(err)
+		}
 
 		repo := repoCfg.Repository()
 		remotes, err := repo.Remotes()
 		DieIfErr(err)
-		kvPairs[gitCommitKeyName] = currentCommitId
+		if currentCommitId != "" {
+			kvPairs[gitCommitKeyName] = currentCommitId
+		}
 		kvPairs[gitPathKeyName] = pathInRepository
 		for _, remote := range remotes {
 			urls := remote.Config().URLs
@@ -311,7 +368,7 @@ var localCommitCmd = &cobra.Command{
 
 var localPullCmd = &cobra.Command{
 	Use:   "pull [<target directory>]",
-	Short: "pull data files from lakeFS as described in $GIT_REPOSITORY/data.yaml",
+	Short: "pull data files from lakeFS as described in data.yaml",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		maxParallelism, err := cmd.Flags().GetInt("parallelism")
@@ -362,13 +419,50 @@ var localPullCmd = &cobra.Command{
 
 var localResetCmd = &cobra.Command{
 	Use:   "reset [<target directory>]",
-	Short: "overwrite local data files with files from lakeFS as described in $GIT_REPOSITORY/data.yaml",
+	Short: "overwrite local data files with files from lakeFS as described in data.yaml",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		maxParallelism, err := cmd.Flags().GetInt("parallelism")
 		DieIfErr(err)
 		// run pull without asking questions.
 		DieIfErr(pull(cmd.Context(), maxParallelism, false, args...))
+	},
+}
+
+var localCheckoutCmd = &cobra.Command{
+	Use:     "checkout <target directory> <lakeFS ref>",
+	Example: "checkout path/to/data lakefs://example-repo/experiment-1",
+	Short:   "sync the target directory with the specified ref",
+	Args:    cobra.ExactArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		targetDirectory := args[0]
+		repoCfg := mustGitConf(targetDirectory)
+		ref := MustParseRefURI("lakeFS ref", args[1])
+
+		maxParallelism, err := cmd.Flags().GetInt("parallelism")
+		DieIfErr(err)
+
+		fullPath, err := repoCfg.RelativeToRoot(args[0])
+		hasSource, err := repoCfg.HasSource(fullPath)
+		DieIfErr(err)
+		if !hasSource {
+			DieFmt("'%s' doesn't seem to be a  data directory. You can try running `clone`.", args[0])
+		}
+
+		sources, err := repoCfg.GetSourcesConfig()
+		DieIfErr(err)
+		src := sources.Sources[fullPath]
+		currentUri, err := src.RemoteURI()
+		DieIfErr(err)
+		sources.Sources[fullPath] = local.Source{
+			Remote: (&uri.URI{
+				Repository: ref.Repository,
+				Ref:        ref.Ref,
+				Path:       currentUri.Path,
+			}).String(),
+		}
+		DieIfErr(repoCfg.SaveSourcesConfig(sources))
+		DieIfErr(pull(cmd.Context(), maxParallelism, true, fullPath))
 	},
 }
 
@@ -383,6 +477,11 @@ func initLocal(name string) {
 
 	localCmd.AddCommand(localCloneCmd)
 	localCloneCmd.Flags().IntP("parallelism", "p", DownloadConcurrency, "maximum objects to download in parallel")
+
+	localCmd.AddCommand(localAddCmd)
+
+	localCmd.AddCommand(localCheckoutCmd)
+	localCheckoutCmd.Flags().IntP("parallelism", "p", DownloadConcurrency, "maximum objects to download in parallel")
 
 	localCmd.AddCommand(localCommitCmd)
 	localCommitCmd.Flags().StringSlice("meta", []string{}, "key value pair in the form of key=value")

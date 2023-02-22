@@ -66,47 +66,48 @@ var (
 	logOutputs []string
 )
 
+func rootPersistentPreRun(cmd *cobra.Command, args []string) {
+	logging.SetLevel(logLevel)
+	logging.SetOutputFormat(logFormat)
+	logging.SetOutputs(logOutputs, 0, 0)
+	if noColorRequested {
+		DisableColors()
+	}
+	if cmd == configCmd {
+		return
+	}
+
+	if cfg.Err() == nil {
+		logging.Default().
+			WithField("file", viper.ConfigFileUsed()).
+			Debug("loaded configuration from file")
+	}
+
+	if errors.As(cfg.Err(), &viper.ConfigFileNotFoundError{}) {
+		if cfgFile != "" {
+			// specific message in case the file isn't found
+			DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfg.Err())
+		}
+		// if the config file wasn't provided, try to run using the default values + env vars
+	} else if cfg.Err() != nil {
+		// other errors while reading the config file
+		DieFmt("error reading configuration file: %v", cfg.Err())
+	}
+
+	err := viper.UnmarshalExact(&cfg.Values, viper.DecodeHook(
+		mapstructure.ComposeDecodeHookFunc(
+			config_types.DecodeOnlyString,
+			mapstructure.StringToTimeDurationHookFunc())))
+	if err != nil {
+		DieFmt("error unmarshal configuration: %v", err)
+	}
+}
+
 // rootCmd represents the base command when called without any sub-commands
 var rootCmd = &cobra.Command{
 	Use:   "lakectl",
 	Short: "A cli tool to explore manage and work with lakeFS",
 	Long:  `lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment`,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		logging.SetLevel(logLevel)
-		logging.SetOutputFormat(logFormat)
-		logging.SetOutputs(logOutputs, 0, 0)
-		if noColorRequested {
-			DisableColors()
-		}
-		if cmd == configCmd {
-			return
-		}
-
-		if cfg.Err() == nil {
-			logging.Default().
-				WithField("file", viper.ConfigFileUsed()).
-				Debug("loaded configuration from file")
-		}
-
-		if errors.As(cfg.Err(), &viper.ConfigFileNotFoundError{}) {
-			if cfgFile != "" {
-				// specific message in case the file isn't found
-				DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfg.Err())
-			}
-			// if the config file wasn't provided, try to run using the default values + env vars
-		} else if cfg.Err() != nil {
-			// other errors while reading the config file
-			DieFmt("error reading configuration file: %v", cfg.Err())
-		}
-
-		err := viper.UnmarshalExact(&cfg.Values, viper.DecodeHook(
-			mapstructure.ComposeDecodeHookFunc(
-				config_types.DecodeOnlyString,
-				mapstructure.StringToTimeDurationHookFunc())))
-		if err != nil {
-			DieFmt("error unmarshal configuration: %v", err)
-		}
-	},
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if !MustBool(cmd.Flags().GetBool("version")) {
@@ -212,6 +213,7 @@ func isSeekable(f io.Seeker) bool {
 func Execute() {
 	initCmd(rootCmd)
 	initLocalAsSubcommand(rootCmd)
+	rootCmd.PersistentPreRun = rootPersistentPreRun
 	err := rootCmd.Execute()
 	if err != nil {
 		DieErr(err)
@@ -223,6 +225,7 @@ func Execute() {
 func LocalExecute(name string) {
 	initCmd(localCmd)
 	initLocal(name)
+	localCmd.PersistentPreRun = rootPersistentPreRun
 	DieIfErr(localCmd.Execute())
 }
 

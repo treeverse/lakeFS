@@ -2565,6 +2565,30 @@ commands used to sync and reproduce data from lakeFS locally
 
 
 
+### lakectl local add
+
+add a local directory to a lakeFS branch under the specified uri
+
+```
+lakectl local add <directory> <lakefs branch+path uri> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+add path/to/data lakefs://example-repo/main/path/to/data/
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for add
+```
+
+
+
 ### lakectl local clone
 
 clone a lakeFS directory locally (committed only)
@@ -2585,7 +2609,7 @@ clone lakefs://example-repo/main/path/to/data/
 
 ```
   -h, --help              help for clone
-  -p, --parallelism int   maximum objects to download in parallel (default 5)
+  -p, --parallelism int   maximum objects to download in parallel (default 20)
 ```
 
 
@@ -2606,7 +2630,7 @@ lakectl local commit <target directory> [flags]
   -h, --help              help for commit
   -m, --message string    commit message to use for the resulting lakeFS commit
       --meta strings      key value pair in the form of key=value
-  -p, --parallelism int   maximum objects to download in parallel (default 5)
+  -p, --parallelism int   maximum objects to download in parallel (default 20)
 ```
 
 
@@ -2647,7 +2671,7 @@ lakectl local pull [<target directory>] [flags]
 
 ```
   -h, --help              help for pull
-  -p, --parallelism int   maximum objects to download in parallel (default 5)
+  -p, --parallelism int   maximum objects to download in parallel (default 20)
   -u, --update            pull the latest data available on the remote (and update data.yaml)
 ```
 
@@ -2655,7 +2679,7 @@ lakectl local pull [<target directory>] [flags]
 
 ### lakectl local reset
 
-overwrite local data files with files from lakeFS as described in $GIT_REPOSITORY/data.yaml
+overwrite local data files with files from lakeFS as described in data.yaml
 
 ```
 lakectl local reset [<target directory>] [flags]
@@ -2666,7 +2690,7 @@ lakectl local reset [<target directory>] [flags]
 
 ```
   -h, --help              help for reset
-  -p, --parallelism int   maximum objects to download in parallel (default 5)
+  -p, --parallelism int   maximum objects to download in parallel (default 20)
 ```
 
 

@@ -91,6 +91,7 @@ class StagingMetadata(ModelNormal):
             'staging': (StagingLocation,),  # noqa: E501
             'checksum': (str,),  # noqa: E501
             'size_bytes': (int,),  # noqa: E501
+            'mtime': (int,),  # noqa: E501
             'user_metadata': ({str: (str,)},),  # noqa: E501
             'content_type': (str,),  # noqa: E501
         }
@@ -104,6 +105,7 @@ class StagingMetadata(ModelNormal):
         'staging': 'staging',  # noqa: E501
         'checksum': 'checksum',  # noqa: E501
         'size_bytes': 'size_bytes',  # noqa: E501
+        'mtime': 'mtime',  # noqa: E501
         'user_metadata': 'user_metadata',  # noqa: E501
         'content_type': 'content_type',  # noqa: E501
     }
@@ -154,6 +156,7 @@ class StagingMetadata(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            mtime (int): Unix Epoch in seconds. [optional]  # noqa: E501
             user_metadata ({str: (str,)}): [optional]  # noqa: E501
             content_type (str): Object media type. [optional]  # noqa: E501
         """
@@ -245,6 +248,7 @@ class StagingMetadata(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            mtime (int): Unix Epoch in seconds. [optional]  # noqa: E501
             user_metadata ({str: (str,)}): [optional]  # noqa: E501
             content_type (str): Object media type. [optional]  # noqa: E501
         """
