@@ -176,7 +176,6 @@ To install lakeFS with Helm:
 
 ## Local Blockstore
 
-
 You can configure a block adapter to a POSIX compatible storage location shared by all lakeFS instances. 
 Using the shared storage location, both data and metadata will be stored there.
 
