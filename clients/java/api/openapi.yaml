@@ -5478,11 +5478,11 @@ components:
           - delete
           type: string
       required:
+      - id
       - operation
       - operation_content
       - operation_type
       - timestamp
-      - version
       type: object
     OtfDiffList:
       example:

@@ -3947,12 +3947,12 @@ func buildOtfDiffListResponse(tableDiffResponse tablediff.Response) OtfDiffList 
 		for k, v := range entry.OperationContent {
 			content[k] = v
 		}
-		v := entry.Version
+		id := entry.Id
 		ol = append(ol, OtfDiffEntry{
 			Operation:        entry.Operation,
 			OperationContent: content,
 			Timestamp:        int(entry.Timestamp.UnixMilli()),
-			Id:               &v,
+			Id:               id,
 			OperationType:    entry.OperationType,
 		})
 	}

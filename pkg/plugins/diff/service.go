@@ -45,7 +45,7 @@ func getDiffType(diffType DiffType) string {
 }
 
 type DiffEntry struct {
-	Version          string
+	Id          string
 	Timestamp        time.Time
 	Operation        string
 	OperationContent map[string]string
