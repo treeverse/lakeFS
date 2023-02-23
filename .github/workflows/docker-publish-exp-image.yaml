@@ -22,10 +22,19 @@ jobs:
           # This is used to fetch all the history in order to get the latest tag (for step "Extract Version")
           fetch-depth: 0
 
+      - name: Determine if version is a production release
+        id: check_version
+        run: |
+          if [[ ${{ github.event.inputs.name }} =~ ^refs/tags/v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "name=is_valid::true" >> $GITHUB_OUTPUT
+          else
+            echo "name=is_valid::false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Dispatch lakeFS release trigger for Playground
         uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.GH_TOKEN_DISPATCH_EVENT }}
           repository: ${{ secrets.REPOSITORY_NAME }}
           event-type: lakefs-image-release
-          client-payload: '{"ref":"main", "inputs": { "lakefs_image": "0.94.0" }}'
+          client-payload: '{"ref":"main", "inputs": { "lakefs_image": "github.event.inputs.name" }}'

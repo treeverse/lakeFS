@@ -91,8 +91,18 @@ jobs:
             treeverse/lakefs:${{ steps.version.outputs.tag }}
             treeverse/lakefs:latest
 
+      - name: Determine if version is a production release
+        id: check_version
+        run: |
+          if [[ ${{  steps.version.outputs.tag }} =~ ^refs/tags/v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "name=is_valid::true" >> $GITHUB_OUTPUT
+          else
+            echo "name=is_valid::false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Dispatch lakeFS release trigger for Playground
         uses: peter-evans/repository-dispatch@v2
+        if: ${{ steps.check_version.outputs.is_valid == 'true' }}
         with:
           token: ${{ secrets.GH_TOKEN_DISPATCH_EVENT }}
           repository: ${{ secrets.REPOSITORY_NAME }}
