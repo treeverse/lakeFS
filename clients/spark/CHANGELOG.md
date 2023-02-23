@@ -2,7 +2,7 @@
 
 ## v0.6.2 - 2023-02-23
 
-What's new:
+Bug fix:
 * Add exponential backoff retry to the S3 client
 
 ## v0.6.1 - 2023-01-30
