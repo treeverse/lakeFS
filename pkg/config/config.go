@@ -45,19 +45,10 @@ type OIDC struct {
 	FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
 }
 
-// LDAP holds configuration for authenticating on an LDAP server.
-type LDAP struct {
-	ServerEndpoint    string `mapstructure:"server_endpoint"`
-	BindDN            string `mapstructure:"bind_dn"`
-	BindPassword      string `mapstructure:"bind_password"`
-	DefaultUserGroup  string `mapstructure:"default_user_group"`
-	UsernameAttribute string `mapstructure:"username_attribute"`
-	UserBaseDN        string `mapstructure:"user_base_dn"`
-	UserFilter        string `mapstructure:"user_filter"`
-}
-
 // RemoteAuthenticator holds remote authentication configuration.
 type RemoteAuthenticator struct {
+	// Enabled if set true will enable remote authentication
+	Enabled bool `mapstructure:"enabled"`
 	// BaseURL is the base URL of the remote authentication service (e.g. https://my-auth.com)
 	BaseURL string `mapstructure:"base_url" validate:"required"`
 	// AuthEndpoint is the endpoint to authenticate users (e.g. /auth)
@@ -173,7 +164,6 @@ type Config struct {
 			Token           string
 			SupportsInvites bool `mapstructure:"supports_invites"`
 		}
-		LDAP                *LDAP
 		RemoteAuthenticator *RemoteAuthenticator `mapstructure:"remote_authenticator"`
 		OIDC                OIDC
 		// LogoutRedirectURL is the URL on which to mount the

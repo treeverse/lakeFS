@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,7 +16,6 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-co-op/gocron"
-	"github.com/go-ldap/ldap/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -61,60 +59,14 @@ type Shutter interface {
 
 func newExternalBasicAuthenticator(cfg *config.Config, service auth.Service, logger logging.Logger) (auth.Authenticator, error) {
 
-	if cfg.Auth.RemoteAuthenticator != nil && cfg.Auth.LDAP != nil {
-		return nil, fmt.Errorf("cannot configure both LDAP (Deprecated) and RemoteAuthenticator")
-	}
-
-	if cfg.Auth.RemoteAuthenticator != nil {
+	if cfg.Auth.RemoteAuthenticator != nil && cfg.Auth.RemoteAuthenticator.Enabled {
 		remoteAuthenticator, err := remoteauth.NewRemoteAuthenticator(cfg.Auth.RemoteAuthenticator, service, logger)
 		if err != nil {
 			return nil, fmt.Errorf("creating new remote authenticator: %w", err)
 		}
 		return remoteAuthenticator, nil
-	} else if cfg.Auth.LDAP != nil {
-		logger.
-			WithField("feature", "LDAP").
-			Warn("Enabling LDAP on lakeFS server, but this functionality is deprecated")
-		return newLDAPAuthenticator(cfg.Auth.LDAP, service), nil
 	}
-
 	return nil, nil
-}
-
-func newLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAuthenticator {
-	const (
-		connectionTimeout = 15 * time.Second
-		requestTimeout    = 7 * time.Second
-	)
-	group := cfg.DefaultUserGroup
-	if group == "" {
-		group = auth.ViewersGroup
-	}
-	return &auth.LDAPAuthenticator{
-		AuthService:       service,
-		BindDN:            cfg.BindDN,
-		BindPassword:      cfg.BindPassword,
-		DefaultUserGroup:  group,
-		UsernameAttribute: cfg.UsernameAttribute,
-		MakeLDAPConn: func(_ context.Context) (*ldap.Conn, error) {
-			c, err := ldap.DialURL(
-				cfg.ServerEndpoint,
-				ldap.DialWithDialer(&net.Dialer{Timeout: connectionTimeout}),
-			)
-			if err != nil {
-				return nil, fmt.Errorf("dial %s: %w", cfg.ServerEndpoint, err)
-			}
-			c.SetTimeout(requestTimeout)
-			// TODO(ariels): Support StartTLS (& other TLS configuration).
-			return c, nil
-		},
-		BaseSearchRequest: ldap.SearchRequest{
-			BaseDN:     cfg.UserBaseDN,
-			Scope:      ldap.ScopeWholeSubtree,
-			Filter:     cfg.UserFilter,
-			Attributes: []string{cfg.UsernameAttribute},
-		},
-	}
 }
 
 var runCmd = &cobra.Command{
