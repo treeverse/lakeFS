@@ -1,4 +1,4 @@
-package remote_authenticator
+package remoteauthenticator
 
 import (
 	"bytes"
@@ -64,7 +64,6 @@ func (ra *RemoteAuthenticator) client() *http.Client {
 }
 
 func (ra *RemoteAuthenticator) doRequest(ctx context.Context, username, password string, log logging.Logger) ([]byte, error) {
-
 	payload, err := json.Marshal(&AuthenticationRequest{Username: username, Password: password})
 
 	if err != nil {
@@ -75,7 +74,6 @@ func (ra *RemoteAuthenticator) doRequest(ctx context.Context, username, password
 
 	if err != nil {
 		return nil, fmt.Errorf("failed creating request to remote authenticator: %w", err)
-
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -94,7 +92,7 @@ func (ra *RemoteAuthenticator) doRequest(ctx context.Context, username, password
 	log = log.WithField("status_code", resp.StatusCode)
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%s %d", auth.ErrUnexpectedStatusCode, resp.StatusCode)
+		return nil, fmt.Errorf("bad status code %d: %w", resp.StatusCode, auth.ErrUnexpectedStatusCode)
 	}
 
 	log.Debug("got response from remote authenticator")
@@ -166,6 +164,6 @@ func (ra *RemoteAuthenticator) AuthenticateUser(ctx context.Context, username, p
 	return newUser.Username, nil
 }
 
-func (la *RemoteAuthenticator) String() string {
+func (ra *RemoteAuthenticator) String() string {
 	return RemoteAuthSource
 }
