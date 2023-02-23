@@ -67,6 +67,7 @@ type Adapter struct {
 	ServerSideEncryption         string
 	ServerSideEncryptionKmsKeyID string
 	preSignedExpiry              time.Duration
+	disablePreSigned             bool
 }
 
 func WithStreamingChunkSize(sz int) func(a *Adapter) {
@@ -96,6 +97,14 @@ func WithDiscoverBucketRegion(b bool) func(a *Adapter) {
 func WithPreSignedExpiry(v time.Duration) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.preSignedExpiry = v
+	}
+}
+
+func WithDisablePreSigned(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		if b {
+			a.disablePreSigned = true
+		}
 	}
 }
 
@@ -315,6 +324,10 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 }
 
 func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+	if a.disablePreSigned {
+		return "", block.ErrOperationNotSupported
+	}
+
 	log := a.log(ctx).WithField("operation", "GetPreSignedURL")
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
@@ -697,7 +710,11 @@ func (a *Adapter) BlockstoreType() string {
 }
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
-	return block.DefaultStorageNamespaceInfo(block.BlockstoreTypeS3)
+	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeS3)
+	if a.disablePreSigned {
+		info.PreSignSupport = false
+	}
+	return info
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {
