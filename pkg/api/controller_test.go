@@ -603,7 +603,7 @@ func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 		user:         "user3",
 		commitName:   "P",
 	})
-	mergeCommit, err := deps.catalog.Merge(ctx, "repo3", "main", "branch-b", "user3", "commitR", nil, "")
+	mergeCommit, err := deps.catalog.Merge(ctx, "repo3", "main", "branch-b", "user3", "commitR", catalog.Metadata{}, "")
 	testutil.Must(t, err)
 	commitsMap["commitR"] = mergeCommit
 	commitsMap["commitM"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
@@ -614,7 +614,7 @@ func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 		user:         "user2",
 		commitName:   "M",
 	})
-	mergeCommit, err = deps.catalog.Merge(ctx, "repo3", "main", "branch-a", "user2", "commitN", nil, "")
+	mergeCommit, err = deps.catalog.Merge(ctx, "repo3", "main", "branch-a", "user2", "commitN", catalog.Metadata{}, "")
 	testutil.Must(t, err)
 	commitsMap["commitN"] = mergeCommit
 	commitsMap["commitX"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
@@ -2962,6 +2962,36 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 	})
 }
 
+func TestController_MergeInvalidStrategy(t *testing.T) {
+	clt, _ := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	const repoName = "repo7"
+	repoResp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+		DefaultBranch:    api.StringPtr("main"),
+		Name:             repoName,
+		StorageNamespace: "mem://",
+	})
+	verifyResponseOK(t, repoResp, err)
+
+	branchResp, err := clt.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{Name: "work", Source: "main"})
+	verifyResponseOK(t, branchResp, err)
+
+	const content = "awesome content"
+	resp, err := uploadObjectHelper(t, ctx, clt, "file1", strings.NewReader(content), repoName, "work")
+	verifyResponseOK(t, resp, err)
+
+	commitResp, err := clt.CommitWithResponse(ctx, repoName, "work", &api.CommitParams{}, api.CommitJSONRequestBody{Message: "file 1 commit to work"})
+	verifyResponseOK(t, commitResp, err)
+
+	strategy := "bad strategy"
+	mergeResp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "work", "main", api.MergeIntoBranchJSONRequestBody{
+		Message:  api.StringPtr("merge work to main"),
+		Strategy: &strategy,
+	})
+	require.Equal(t, http.StatusBadRequest, mergeResp.StatusCode())
+}
+
 func TestController_MergeDiffWithParent(t *testing.T) {
 	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()
@@ -3246,7 +3276,7 @@ func TestController_Revert(t *testing.T) {
 		_, err = deps.catalog.Commit(ctx, repo, "branch1", "second", DefaultUserID, nil, nil, nil)
 		testutil.Must(t, err)
 		// merge branch1 to main
-		mergeRef, err := deps.catalog.Merge(ctx, repo, "main", "branch1", DefaultUserID, "merge to main", nil, "")
+		mergeRef, err := deps.catalog.Merge(ctx, repo, "main", "branch1", DefaultUserID, "merge to main", catalog.Metadata{}, "")
 		testutil.Must(t, err)
 
 		// revert changes should fail

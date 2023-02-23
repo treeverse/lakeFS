@@ -63,6 +63,7 @@ This reference uses `.` to denote the nesting of values.
     + `database.dynamodb.aws_secret_access_key` `(string : )` - AWS secret access key
     + **Note:** `endpoint` `aws_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials.
       {: .note }
+    + `database.dynamodb.health_check_interval` `(duration : 0s)` - Interval to run health check for the DynamoDB instance (won't run if equal to 0).
   + `database.local` - Configuration section when using `database.type="local"`
     + `database.local.path` `(string : "~/lakefs/metadata")` - Local path on the filesystem to store embedded KV metadata, like branches and uncommitted entries
     + `database.local.sync_writes` `(bool: true)` - Ensure each write is written to the disk. Disable to increase performance
@@ -111,7 +112,7 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.local.path` `(string: "~/lakefs/data")` - When using the local Block Adapter, which directory to store files in
 * `blockstore.local.import_enabled` `(bool: false)` - Enable import for local Block Adapter, relevant only if you are using shared location
 * `blockstore.local.import_hidden` `(bool: false)` - When enabled import will scan and import any file or folder that starts with a dot character.
-* `blockstore.local.allowed_external_prefixes` `([]string: [])` - List of absolute path prefixes used to match any access for external location by the local block adapter (ex: /var/data/).
+* `blockstore.local.allowed_external_prefixes` `([]string: [])` - List of absolute path prefixes used to match any access for external location (ex: /var/data/). Empty list mean no access to external location.
 * `blockstore.gs.credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key
 * `blockstore.gs.credentials_json` `(string : )` - If specified will be used as JSON string that contains your Google service account key (when credentials_file is not set)
 * `blockstore.gs.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.

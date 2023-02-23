@@ -237,10 +237,6 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 }
 
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSONRequestBody) {
-	err := clearSession(w, r, c.sessionStore, InternalAuthSessionName)
-	if err != nil {
-		c.Logger.WithError(err).Error("failed to logout previous session")
-	}
 	ctx := r.Context()
 	user, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
 	if errors.Is(err, ErrAuthenticatingRequest) {
@@ -1845,7 +1841,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, model.ErrValidationError),
 		errors.Is(err, graveler.ErrInvalidRef),
 		errors.Is(err, actions.ErrParamConflict),
-		errors.Is(err, graveler.ErrDereferenceCommitWithStaging):
+		errors.Is(err, graveler.ErrDereferenceCommitWithStaging),
+		errors.Is(err, graveler.ErrInvalidMergeStrategy):
 		cb(w, r, http.StatusBadRequest, err)
 
 	case errors.Is(err, graveler.ErrNotUnique),
@@ -3371,10 +3368,11 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		writeError(w, r, http.StatusUnauthorized, "user not found")
 		return
 	}
-	var metadata map[string]string
+	metadata := map[string]string{}
 	if body.Metadata != nil {
 		metadata = body.Metadata.AdditionalProperties
 	}
+
 	reference, err := c.Catalog.Merge(ctx,
 		repository, destinationBranch, sourceRef,
 		user.Username,

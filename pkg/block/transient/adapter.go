@@ -35,7 +35,7 @@ func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, expectedSize i
 }
 
 func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer, _ block.PreSignMode) (string, error) {
-	return "", nil
+	return "", block.ErrOperationNotSupported
 }
 
 func (a *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {

@@ -195,7 +195,7 @@ var runCmd = &cobra.Command{
 
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		blockstoreType := cfg.BlockstoreType()
-		if blockstoreType == "local" || blockstoreType == "mem" {
+		if blockstoreType == "mem" {
 			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
 			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
 		}
