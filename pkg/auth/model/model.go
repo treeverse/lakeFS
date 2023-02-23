@@ -151,7 +151,7 @@ type Repositories struct {
 type ACLPermission string
 
 type ACL struct {
-	Permission   ACLPermission `json:"permission,omitempty"`
+	Permission   ACLPermission `json:"permission"`
 	Repositories Repositories  `json:"repositories,omitempty"`
 }
 
@@ -274,11 +274,21 @@ func ProtoFromGroup(g *Group) *GroupData {
 }
 
 func PolicyFromProto(pb *PolicyData) *Policy {
-	return &Policy{
+	policy := &Policy{
 		CreatedAt:   pb.CreatedAt.AsTime(),
 		DisplayName: pb.DisplayName,
 		Statement:   *statementsFromProto(pb.Statements),
 	}
+	if pb.Acl != nil {
+		policy.ACL = ACL{
+			Permission: ACLPermission(pb.Acl.Permission),
+			Repositories: Repositories{
+				All:  pb.Acl.AllRepositories,
+				List: pb.Acl.Repositories,
+			},
+		}
+	}
+	return policy
 }
 
 func ProtoFromPolicy(p *Policy) *PolicyData {
@@ -286,6 +296,11 @@ func ProtoFromPolicy(p *Policy) *PolicyData {
 		CreatedAt:   timestamppb.New(p.CreatedAt),
 		DisplayName: p.DisplayName,
 		Statements:  protoFromStatements(&p.Statement),
+		Acl: &ACLData{
+			Permission:      string(p.ACL.Permission),
+			AllRepositories: p.ACL.Repositories.All,
+			Repositories:    p.ACL.Repositories.List,
+		},
 	}
 }
 

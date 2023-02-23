@@ -27,7 +27,8 @@ const (
 var (
 	ACLPermissions = []model.ACLPermission{ACLRead, ACLWrite, ACLSuper, ACLAdmin}
 
-	all = []string{permissions.All}
+	ownUserARN = []string{permissions.UserArn("${user}")}
+	all        = []string{permissions.All}
 
 	ErrBadACLPermission = fmt.Errorf("%w: Bad ACL permission", model.ErrValidationError)
 )
@@ -45,10 +46,6 @@ func RepositoriesToARNs(repositories model.Repositories) []string {
 }
 
 func ACLToStatement(acl model.ACL) (model.Statements, error) {
-	// if err := ValidateACLPermission(acl.Permission); err != nil {
-	// 	return model.Statement{}, err
-	// }
-
 	var (
 		statements model.Statements
 		err        error
@@ -63,7 +60,7 @@ func ACLToStatement(acl model.ACL) (model.Statements, error) {
 			return nil, fmt.Errorf("%s: %w", acl.Permission, ErrBadACLPermission)
 		}
 
-		ownCredentialsStatement, err := auth.MakeStatementForPolicyType("AuthManageOwnCredentials", all)
+		ownCredentialsStatement, err := auth.MakeStatementForPolicyType("AuthManageOwnCredentials", ownUserARN)
 		if err != nil {
 			return nil, err
 		}
@@ -74,7 +71,7 @@ func ACLToStatement(acl model.ACL) (model.Statements, error) {
 			return nil, fmt.Errorf("%s: %w", acl.Permission, ErrBadACLPermission)
 		}
 
-		ownCredentialsStatement, err := auth.MakeStatementForPolicyType("AuthManageOwnCredentials", all)
+		ownCredentialsStatement, err := auth.MakeStatementForPolicyType("AuthManageOwnCredentials", ownUserARN)
 		if err != nil {
 			return nil, err
 		}
@@ -85,7 +82,7 @@ func ACLToStatement(acl model.ACL) (model.Statements, error) {
 			return nil, fmt.Errorf("%s: %w", acl.Permission, ErrBadACLPermission)
 		}
 
-		ownCredentialsStatement, err := auth.MakeStatementForPolicyType("AuthManageOwnCredentials", all)
+		ownCredentialsStatement, err := auth.MakeStatementForPolicyType("AuthManageOwnCredentials", ownUserARN)
 		if err != nil {
 			return nil, err
 		}
@@ -95,6 +92,8 @@ func ACLToStatement(acl model.ACL) (model.Statements, error) {
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", acl.Permission, ErrBadACLPermission)
 		}
+	default:
+		return nil, fmt.Errorf("Unknown permission \"%s\"")
 	}
 
 	return statements, nil
