@@ -13,6 +13,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/plugins"
+
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 
 	"github.com/fsnotify/fsnotify"
@@ -254,10 +256,10 @@ var runCmd = &cobra.Command{
 		// update health info with installation ID
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
-		// start API server
-		otfDiffService, closeOtfService := tablediff.NewService()
+		otfDiffService, closeOtfService := initDiffServiceWithDeltaPlugin()
 		defer closeOtfService()
 
+		// start API server
 		apiHandler := api.Serve(
 			cfg,
 			c,
@@ -529,4 +531,13 @@ func init() {
 		_, _ = fmt.Fprint(os.Stderr, err)
 		os.Exit(internalErrorCode)
 	}
+}
+
+func initDiffServiceWithDeltaPlugin() (*tablediff.Service, func()) {
+	s, cl := tablediff.NewService()
+	hd, _ := os.UserHomeDir()
+	pid := plugins.PluginIdentity{ProtocolVersion: 1, ExecutableLocation: fmt.Sprintf("%s/.lakefs/plugins/delta", hd)}
+	pa := plugins.PluginHandshake{Key: "deltaKey", Value: "deltaValue"}
+	tablediff.RegisterDeltaLakeDiffPlugin(s, pid, pa)
+	return s, cl
 }
