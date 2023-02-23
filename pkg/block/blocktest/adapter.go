@@ -12,8 +12,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 )
 
-func TestAdapter(t *testing.T, adapter block.Adapter, storageNamespace string) {
-	t.Run("Adapter_PutGet", func(t *testing.T) { testAdapterPutGet(t, adapter, storageNamespace) })
+func TestAdapter(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
+	t.Run("Adapter_PutGet", func(t *testing.T) { testAdapterPutGet(t, adapter, storageNamespace, externalPath) })
 	t.Run("Adapter_Copy", func(t *testing.T) { testAdapterCopy(t, adapter, storageNamespace) })
 	t.Run("Adapter_Remove", func(t *testing.T) { testAdapterRemove(t, adapter, storageNamespace) })
 	t.Run("Adapter_MultipartUpload", func(t *testing.T) { testAdapterMultipartUpload(t, adapter, storageNamespace) })
@@ -21,24 +21,41 @@ func TestAdapter(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	t.Run("Adapter_GetRange", func(t *testing.T) { testAdapterGetRange(t, adapter, storageNamespace) })
 }
 
-func testAdapterPutGet(t *testing.T, adapter block.Adapter, storageNamespace string) {
+func testAdapterPutGet(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
 	ctx := context.Background()
 	contents := "test_file"
 	size := int64(len(contents))
-	obj := block.ObjectPointer{
-		StorageNamespace: storageNamespace,
-		Identifier:       contents,
-		IdentifierType:   block.IdentifierTypeRelative,
-	}
-	err := adapter.Put(ctx, obj, size, strings.NewReader(contents), block.PutOpts{})
-	require.NoError(t, err)
 
-	reader, err := adapter.Get(ctx, obj, size)
-	require.NoError(t, err)
-	defer reader.Close()
-	got, err := io.ReadAll(reader)
-	require.NoError(t, err)
-	require.Equal(t, contents, string(got))
+	cases := []struct {
+		name           string
+		identifierType block.IdentifierType
+		path           string
+	}{
+		{"identifier_relative", block.IdentifierTypeRelative, "test_file"},
+		{"identifier_full", block.IdentifierTypeFull, externalPath + "/" + "test_file"},
+		{"identifier_unknown_relative", block.IdentifierTypeUnknownDeprecated, "test_file"},
+		{"identifier_unknown_full", block.IdentifierTypeUnknownDeprecated, externalPath + "/" + "test_file"},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			obj := block.ObjectPointer{
+				StorageNamespace: storageNamespace,
+				Identifier:       c.path,
+				IdentifierType:   block.IdentifierTypeRelative,
+			}
+
+			err := adapter.Put(ctx, obj, size, strings.NewReader(contents), block.PutOpts{})
+			require.NoError(t, err)
+
+			reader, err := adapter.Get(ctx, obj, size)
+			require.NoError(t, err)
+			defer reader.Close()
+			got, err := io.ReadAll(reader)
+			require.NoError(t, err)
+			require.Equal(t, contents, string(got))
+		})
+	}
 }
 
 func testAdapterCopy(t *testing.T, adapter block.Adapter, storageNamespace string) {
@@ -106,7 +123,8 @@ func testAdapterRemove(t *testing.T, adapter block.Adapter, storageNamespace str
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup env
-			envObjects := append(tt.additionalObjects, tt.path)
+			envObjects := tt.additionalObjects
+			envObjects = append(envObjects, tt.path)
 			for _, p := range envObjects {
 				obj := block.ObjectPointer{
 					StorageNamespace: storageNamespace,
