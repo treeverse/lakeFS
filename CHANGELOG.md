@@ -2,13 +2,21 @@
 
 ## UNRELEASED
 
+## v0.94.0
+
+What's new:
+- Local block adaptor import support (#5277)
+- Add merge strategy to commit data (#5252)
+- Configurable KV health check for DynamoDB (#5282)
+- Configurable pre-signed URL support (#5308)
+
+Bugs fixed:
+- Fix: UI prefix search widget functionality (#5249)
+- Fix: Branch protection return status code should return Forbidden(403) (#5273)
+
 Deprecated:
-- Authorization using Role-Based Access Control
-- LDAP Embedded Support
-
-## Upcoming (ASSIGN NEXT VERSION NUMBER to release!)
-
-- Deprecate embedded support for LDAP Authentication (#5262)
+- Authorization using Role-Based Access Control (#5233)
+- LDAP Embedded Support $(5262)
 
 ## v0.93.0
 
