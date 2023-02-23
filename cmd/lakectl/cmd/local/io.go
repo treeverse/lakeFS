@@ -35,8 +35,6 @@ var (
 	ErrNotDirectory  = errors.New("path is not a directory")
 	ErrNotFile       = errors.New("path is not a file")
 	ErrNoCommitFound = errors.New("no commit found")
-
-	ErrNoIndex = errors.New("no index found")
 )
 
 var ProgressBar pb.ProgressBarTemplate = `{{with string . "prefix"}}{{.}} {{end}}{{counters . }} {{bar . "[" "=" ">" "-" "]"}} {{percent . }}{{with string . "suffix"}} {{.}}{{end}}`
@@ -176,11 +174,11 @@ func DownloadRemoteObject(object api.ObjectStats, prefix, localDirectory string,
 		} else if api.Int64Value(object.SizeBytes) == 0 {
 			hashCode = EmptyFileHash
 		} else {
-			sha1, err := GetFileSha1(localObjectPath)
+			sha, err := GetFileSha1(localObjectPath)
 			if err != nil {
 				return false, err
 			}
-			hashCode = sha1
+			hashCode = sha
 		}
 		indexer.AddExisting(currentPath, hashCode, api.Int64Value(object.SizeBytes), object.Mtime)
 		return true, nil // done!
@@ -302,7 +300,124 @@ func DoDiff(localDirectory string) (*Diff, error) {
 	return list, nil
 }
 
-func UploadDirectoryChanges(ctx context.Context, client api.ClientWithResponsesInterface, dest *uri.URI, localDirectory, basePath string, maxParallelism int) error {
+func uploadDirectoryChangesConcurrent(ctx context.Context, client api.ClientWithResponsesInterface, dest *uri.URI, localDirectory string, maxParallelism int) error {
+	// find changes
+	diff, err := DoDiff(localDirectory)
+	if err != nil {
+		return err
+	}
+	if diff.IsClean() {
+		return nil
+	}
+
+	totalActions := len(diff.Modified) + len(diff.Removed) + len(diff.Added)
+	parallelDownloads := maxParallelism
+	if totalActions < parallelDownloads {
+		parallelDownloads = totalActions
+	}
+
+	bars := make([]*pb.ProgressBar, parallelDownloads)
+	for i := range bars {
+		bars[i] = ProgressBar.New(0)
+	}
+	pool := pb.NewPool()
+	mainBar := ProgressBar.New(totalActions)
+	mainBar.Set("prefix", "applying diff")
+	pool.Add(mainBar)
+	pool.Add(bars...)
+	if err := pool.Start(); err != nil {
+		return err
+	}
+
+	ch := make(chan *pb.ProgressBar, parallelDownloads)
+	for _, bar := range bars {
+		ch <- bar
+	}
+	errCh := make(chan error, 0)
+	doneCh := make(chan bool, 0)
+	var wg sync.WaitGroup
+	wg.Add(totalActions)
+
+	// upload them
+	for _, d := range diff.Added {
+		go func(d string) {
+			bar := <-ch
+			filePath := path.Join(localDirectory, d)
+			bar.Set("prefix", fmt.Sprintf("Adding %s", d))
+			err = WriteLakeFSFileWithProgress(ctx, client, filePath, &uri.URI{
+				Repository: dest.Repository,
+				Ref:        dest.Ref,
+				Path:       swag.String(path.Join(dest.GetPath(), d)),
+			}, bar)
+			if err != nil {
+				errCh <- err
+			} else {
+				mainBar.Increment()
+				wg.Done()
+				ch <- bar // release
+			}
+		}(d)
+	}
+	for _, d := range diff.Modified {
+		go func(d string) {
+			bar := <-ch
+			filePath := path.Join(localDirectory, d)
+			bar.Set("prefix", fmt.Sprintf("Replacing %s", d))
+			err = WriteLakeFSFileWithProgress(ctx, client, filePath, &uri.URI{
+				Repository: dest.Repository,
+				Ref:        dest.Ref,
+				Path:       swag.String(path.Join(dest.GetPath(), d)),
+			}, bar)
+			if err != nil {
+				errCh <- err
+			} else {
+				mainBar.Increment()
+				wg.Done()
+				ch <- bar // release
+			}
+		}(d)
+	}
+	for _, d := range diff.Removed {
+		go func(d string) {
+			bar := <-ch
+			bar.Set("prefix", fmt.Sprintf("Deleting %s", path.Join(dest.GetPath(), d)))
+			bar.SetTotal(100)
+			bar.SetCurrent(0)
+			err = DeleteLakeFSFile(ctx, client, &uri.URI{
+				Repository: dest.Repository,
+				Ref:        dest.Ref,
+				Path:       swag.String(path.Join(dest.GetPath(), d)),
+			})
+			if err != nil {
+				errCh <- err
+			} else {
+				bar.SetCurrent(100)
+				mainBar.Increment()
+				wg.Done()
+				ch <- bar // release
+			}
+		}(d)
+	}
+
+	go func() {
+		wg.Wait() // wait until all downloads are done
+		doneCh <- true
+	}()
+
+	select {
+	case <-doneCh:
+		break
+	case err := <-errCh:
+		return err
+	}
+
+	return pool.Stop()
+}
+
+func UploadDirectoryChanges(ctx context.Context, client api.ClientWithResponsesInterface, dest *uri.URI, localDirectory string, maxParallelism int) error {
+	if maxParallelism > 1 {
+		return uploadDirectoryChangesConcurrent(ctx, client, dest, localDirectory, maxParallelism)
+	}
 	// find changes
 	diff, err := DoDiff(localDirectory)
 	if err != nil {
@@ -376,7 +491,7 @@ func ReadIndex(directory string) (*Index, error) {
 	return index, nil
 }
 
-func InitEmptyIndex(ctx context.Context, source *uri.URI, localDirectory string) error {
+func InitEmptyIndex(source *uri.URI, localDirectory string) error {
 	return WriteIndex(
 		localDirectory,
 		&Index{

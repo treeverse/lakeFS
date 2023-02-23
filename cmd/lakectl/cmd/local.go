@@ -162,7 +162,7 @@ var localAddCmd = &cobra.Command{
 		}
 
 		// init an empty index
-		err = local.InitEmptyIndex(cmd.Context(), source, fullPath)
+		err = local.InitEmptyIndex(source, fullPath)
 		DieIfErr(err)
 
 		// add it to data.yaml
@@ -329,7 +329,7 @@ var localCommitCmd = &cobra.Command{
 		}
 
 		// let's go!
-		DieIfErr(local.UploadDirectoryChanges(cmd.Context(), client, source, fullPath, repoCfg.Root(), maxParallelism))
+		DieIfErr(local.UploadDirectoryChanges(cmd.Context(), client, source, fullPath, maxParallelism))
 
 		currentCommitId, err := repoCfg.CurrentCommitId()
 		if err != nil && errors.Is(err, local.ErrNoCommitFound) {

@@ -10,6 +10,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/cheggaaa/pb/v3"
+
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/go-openapi/swag"
 
@@ -183,6 +185,81 @@ func WriteLakeFSFile(ctx context.Context, client api.ClientWithResponsesInterfac
 		return err
 	}
 
+	if uploadResponse.StatusCode > 299 {
+		return fmt.Errorf("failed to upload file %s: HTTP %d", localFile, uploadResponse.StatusCode)
+	}
+	response, err := client.LinkPhysicalAddressWithResponse(ctx, dest.Repository, dest.Ref, &api.LinkPhysicalAddressParams{
+		Path: dest.GetPath(),
+	}, api.LinkPhysicalAddressJSONRequestBody{
+		Checksum:    uploadResponse.Header.Get("ETag"),
+		ContentType: swag.String(contentType),
+		SizeBytes:   info.Size(),
+		Mtime:       swag.Int64(info.ModTime().Unix()),
+		Staging: api.StagingLocation{
+			PhysicalAddress: phyResponse.JSON200.PhysicalAddress,
+			PresignedUrl:    uploadUrl,
+			Token:           phyResponse.JSON200.Token,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	if response.StatusCode() != http.StatusOK {
+		return fmt.Errorf("could not stage file %s on lakeFS: HTTP %d\n%s\n",
+			localFile, response.StatusCode(), response.Body)
+	}
+	return nil
+}
+
+func WriteLakeFSFileWithProgress(ctx context.Context, client api.ClientWithResponsesInterface, localFile string, dest *uri.URI, bar *pb.ProgressBar) error {
+	info, err := os.Stat(localFile)
+	if err != nil {
+		return err
+	}
+
+	contentType := "application/octet-stream"
+	var reader io.Reader
+	if info.Size() > 0 {
+		mime, err := mimetype.DetectFile(localFile)
+		if err == nil {
+			contentType = mime.String()
+		}
+		f, err := os.Open(localFile)
+		if err != nil {
+			return err
+		}
+		bar.SetTotal(info.Size())
+		bar.SetCurrent(0)
+		reader = bar.NewProxyReader(f)
+		defer func() {
+			_ = f.Close()
+		}()
+	}
+
+	phyResponse, err := client.GetPhysicalAddressWithResponse(ctx, dest.Repository, dest.Ref, &api.GetPhysicalAddressParams{
+		Path:    dest.GetPath(),
+		Presign: swag.Bool(true),
+	})
+	if err != nil {
+		return err
+	}
+	if phyResponse.StatusCode() != http.StatusOK {
+		return fmt.Errorf("could not upload object %s: got HTTP %d when requesting a pre-signed url", localFile, phyResponse.StatusCode())
+	}
+	uploadUrl := phyResponse.JSON200.PresignedUrl
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodPut, *uploadUrl, reader)
+	if err != nil {
+		return err
+	}
+	request.ContentLength = info.Size()
+
+	uploadResponse, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return err
+	}
+
+	bar.Finish()
 	if uploadResponse.StatusCode > 299 {
 		return fmt.Errorf("failed to upload file %s: HTTP %d", localFile, uploadResponse.StatusCode)
 	}
