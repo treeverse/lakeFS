@@ -492,12 +492,6 @@ class Repositories {
             }
         }
         return response.json();
-
-        // const mockRes = '{"results": []}'
-        // const mockRes = '{"diff_type": "changed", "results": [{"version": "1", "timestamp": 1515491537026, "operation": "INSERT", "operation_content": {"mode": "Append","partitionBy": "[]"}, "operation_type": "create"}, {"version": "2", "timestamp": 1515491537346, "operation": "DELETE", "operation_content": {"mode": "Append","partitionBy": "[]"}, "operation_type": "delete"}, {"version": "14", "timestamp": 1674393286223, "operation": "DELETE", "operation_content": {"predicate": "[\\"(spark_catalog.delta.lakefs://meetup-repo/experiment-2-branch/raw/.`rating` < 4.0D) aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\"]"}, "operation_type": "delete"}]}'
-        // const mockRes = '{"diff_type": "created", "results": [{"version": "1", "timestamp": 1515491537026, "operation": "INSERT", "operation_content": {"mode": "Append","partitionBy": "[]"}, "operation_type": "create"}]}'
-        // const mockRes = '{"diff_type": "dropped", "results": []}'
-        // return JSON.parse(mockRes);
     }
 }
 
