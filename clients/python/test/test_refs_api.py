@@ -38,6 +38,13 @@ class TestRefsApi(unittest.TestCase):
         """
         pass
 
+    def test_find_merge_base(self):
+        """Test case for find_merge_base
+
+        find the merge base for 2 references  # noqa: E501
+        """
+        pass
+
     def test_log_commits(self):
         """Test case for log_commits
 
