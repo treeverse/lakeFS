@@ -12,7 +12,7 @@ func TestAzureAdapter(t *testing.T) {
 	adapter, err := azure.NewAdapter(params.Azure{
 		StorageAccount:   accountName,
 		StorageAccessKey: accountKey,
-		Url:              &blockURL,
+		URL:              &blockURL,
 	})
 	if err != nil {
 		t.Fatal("Failed to create new adapter", err)

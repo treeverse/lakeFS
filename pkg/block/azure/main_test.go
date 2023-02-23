@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/ory/dockertest/v3"
 	"github.com/txn2/txeh"
 )
@@ -27,7 +26,7 @@ var (
 
 func runAzurite(dockerPool *dockertest.Pool) (string, func()) {
 	ctx := context.Background()
-	resource, err := dockerPool.Run("mcr.microsoft.com/azure-storage/azurite", "latest", []string{
+	resource, err := dockerPool.Run("mcr.microsoft.com/azure-storage/azurite", "3.22.0", []string{
 		fmt.Sprintf("AZURITE_ACCOUNTS=%s:%s", accountName, accountKey),
 	})
 
@@ -51,28 +50,17 @@ func runAzurite(dockerPool *dockertest.Pool) (string, func()) {
 	// expire, just to make sure
 	err = resource.Expire(azuriteContainerTimeoutSeconds)
 	if err != nil {
-		panic("could not expire postgres containerName")
+		panic("could not expire Azurite container")
 	}
 
-	// create connection
+	// create connection and test container
 	port := resource.GetPort("10000/tcp")
 	url := fmt.Sprintf("http://%s:%s", accountHost, port)
 	cred, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {
 		panic(err)
 	}
-	client, err := service.NewClientWithSharedKeyCredential(url, cred, nil)
-	if err != nil {
-		panic(err)
-	}
 
-	// Check connectivity with containerName
-	_, err = client.GetAccountInfo(ctx, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	// Create test container
 	blob, err := azblob.NewClientWithSharedKeyCredential(url, cred, nil)
 	if err != nil {
 		panic(err)
@@ -82,7 +70,7 @@ func runAzurite(dockerPool *dockertest.Pool) (string, func()) {
 		panic(err)
 	}
 
-	// return DB URI
+	// return container URL
 	return url, closer
 }
 

@@ -46,5 +46,6 @@ type Azure struct {
 	StorageAccessKey string
 	TryTimeout       time.Duration
 	PreSignedExpiry  time.Duration
-	Url              *string
+	// URL - For testing purposes, provide a custom URL to override the default URL template
+	URL *string
 }

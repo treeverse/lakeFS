@@ -502,7 +502,7 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 		StorageAccessKey: c.Blockstore.Azure.StorageAccessKey,
 		TryTimeout:       c.Blockstore.Azure.TryTimeout,
 		PreSignedExpiry:  c.Blockstore.Azure.PreSignedExpiry,
-		Url:              c.Blockstore.Azure.Url,
+		URL:              c.Blockstore.Azure.Url,
 	}, nil
 }
 
