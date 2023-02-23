@@ -510,5 +510,6 @@ func (s *Store) StopPeriodicCheck() {
 	if s.cancel != nil {
 		close(s.cancel)
 		s.wg.Wait()
+		s.cancel = nil
 	}
 }
