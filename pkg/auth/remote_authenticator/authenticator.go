@@ -116,7 +116,6 @@ func (ra *RemoteAuthenticator) AuthenticateUser(ctx context.Context, username, p
 		return "", fmt.Errorf("doing http request %s: %w", username, err)
 	}
 
-	// TODO(isan) check that this memory allocation works
 	var res AuthenticationResponse
 
 	if err := json.Unmarshal(data, &res); err != nil {
