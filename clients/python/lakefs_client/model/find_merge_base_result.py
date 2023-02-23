@@ -105,8 +105,13 @@ class FindMergeBaseResult(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, source_commit_id, destination_commit_id, base_commit_id, *args, **kwargs):  # noqa: E501
         """FindMergeBaseResult - a model defined in OpenAPI
+
+        Args:
+            source_commit_id (str): The commit ID of the merge source
+            destination_commit_id (str): The commit ID of the merge destination
+            base_commit_id (str): The commit ID of the merge base
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -139,9 +144,6 @@ class FindMergeBaseResult(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            source_commit_id (str): The commit ID of the merge source. [optional]  # noqa: E501
-            destination_commit_id (str): The commit ID of the merge destination. [optional]  # noqa: E501
-            base_commit_id (str): The commit ID of the merge base. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -169,6 +171,9 @@ class FindMergeBaseResult(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
+        self.source_commit_id = source_commit_id
+        self.destination_commit_id = destination_commit_id
+        self.base_commit_id = base_commit_id
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -189,8 +194,13 @@ class FindMergeBaseResult(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, *args, **kwargs):  # noqa: E501
+    def __init__(self, source_commit_id, destination_commit_id, base_commit_id, *args, **kwargs):  # noqa: E501
         """FindMergeBaseResult - a model defined in OpenAPI
+
+        Args:
+            source_commit_id (str): The commit ID of the merge source
+            destination_commit_id (str): The commit ID of the merge destination
+            base_commit_id (str): The commit ID of the merge base
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -223,9 +233,6 @@ class FindMergeBaseResult(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            source_commit_id (str): The commit ID of the merge source. [optional]  # noqa: E501
-            destination_commit_id (str): The commit ID of the merge destination. [optional]  # noqa: E501
-            base_commit_id (str): The commit ID of the merge base. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -251,6 +258,9 @@ class FindMergeBaseResult(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
+        self.source_commit_id = source_commit_id
+        self.destination_commit_id = destination_commit_id
+        self.base_commit_id = base_commit_id
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

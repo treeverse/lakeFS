@@ -178,6 +178,10 @@ components:
 
     FindMergeBaseResult:
       type: object
+      required:
+        - source_commit_id
+        - destination_commit_id
+        - base_commit_id
       properties:
         source_commit_id:
           type: string

@@ -52,8 +52,8 @@ public class FindMergeBaseResult {
    * The commit ID of the merge source
    * @return sourceCommitId
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "The commit ID of the merge source")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The commit ID of the merge source")
 
   public String getSourceCommitId() {
     return sourceCommitId;
@@ -75,8 +75,8 @@ public class FindMergeBaseResult {
    * The commit ID of the merge destination
    * @return destinationCommitId
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "The commit ID of the merge destination")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The commit ID of the merge destination")
 
   public String getDestinationCommitId() {
     return destinationCommitId;
@@ -98,8 +98,8 @@ public class FindMergeBaseResult {
    * The commit ID of the merge base
    * @return baseCommitId
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "The commit ID of the merge base")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The commit ID of the merge base")
 
   public String getBaseCommitId() {
     return baseCommitId;

@@ -7,9 +7,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**sourceCommitId** | **String** | The commit ID of the merge source |  [optional]
-**destinationCommitId** | **String** | The commit ID of the merge destination |  [optional]
-**baseCommitId** | **String** | The commit ID of the merge base |  [optional]
+**sourceCommitId** | **String** | The commit ID of the merge source | 
+**destinationCommitId** | **String** | The commit ID of the merge destination | 
+**baseCommitId** | **String** | The commit ID of the merge base | 
 
 
 

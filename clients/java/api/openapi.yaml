@@ -5224,6 +5224,10 @@ components:
         base_commit_id:
           description: The commit ID of the merge base
           type: string
+      required:
+      - base_commit_id
+      - destination_commit_id
+      - source_commit_id
       type: object
     MergeResultSummary:
       example:

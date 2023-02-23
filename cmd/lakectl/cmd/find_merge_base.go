@@ -3,7 +3,6 @@ package cmd
 import (
 	"net/http"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 )
@@ -36,7 +35,7 @@ var findMergeBaseCmd = &cobra.Command{
 		client := getClient()
 		sourceRef := MustParseRefURI("source ref", args[0])
 		destinationRef := MustParseRefURI("destination ref", args[1])
-		Fmt("Source: %s\nDestination: %s\n", sourceRef.String(), destinationRef)
+		Fmt("Source: %s\nDestination: %s\n", sourceRef, destinationRef)
 		if destinationRef.Repository != sourceRef.Repository {
 			Die("both references must belong to the same repository", 1)
 		}
@@ -52,9 +51,9 @@ var findMergeBaseCmd = &cobra.Command{
 			Result *api.FindMergeBaseResult
 		}{
 			Merge: FromToBase{
-				FromRef: swag.StringValue(resp.JSON200.SourceCommitId),
-				ToRef:   swag.StringValue(resp.JSON200.DestinationCommitId),
-				BaseRef: swag.StringValue(resp.JSON200.BaseCommitId),
+				FromRef: resp.JSON200.SourceCommitId,
+				ToRef:   resp.JSON200.DestinationCommitId,
+				BaseRef: resp.JSON200.BaseCommitId,
 			},
 			Result: resp.JSON200,
 		})
