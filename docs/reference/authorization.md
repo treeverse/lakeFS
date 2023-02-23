@@ -15,10 +15,9 @@ has_children: false
 
 ## Role Based Access Control
 
-**Note**
-This feature is deprecated and will be replaced with a simpler ACL-based authorization mechanism ([learn more](../posts/security_update.html)).<br/>
-Role based access control will remain fully supported on [lakeFS cloud](https://lakefs.cloud)
-{: .note }
+{: .note}
+> RBAC is only available in [lakeFS cloud](https://lakefs.cloud). This scalable fully-managed lakeFS service is also SOC 2 compliant.<br/>
+> A simpler ACL-based authorization mechanism is planned for open-source lakeFS. For more details see [this announcement](../posts/security_update.html). 
 
 ### RBAC Model
 
