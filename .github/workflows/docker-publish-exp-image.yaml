@@ -29,5 +29,5 @@ jobs:
           -H "Authorization: ${{ secrets.GH_TOKEN_DISPATCH_EVENT }}"\
           -H "Accept: application/vnd.github+json" \
           -H "Content-Type: application/json" \
-          ${{ secrets.DISPATCH_URL }} \
+          https://api.github.com/repos/treeverse/demo-lakefs/actions/workflows/deploy-new-lakefs-image.yml/dispatches \
           --data '{"ref":"main", "inputs": { "lakefs_image": "0.94.0" }}'
