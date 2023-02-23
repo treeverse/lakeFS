@@ -36,8 +36,9 @@ const (
 )
 
 type Adapter struct {
-	clientCache     *ClientCache
-	preSignedExpiry time.Duration
+	clientCache      *ClientCache
+	preSignedExpiry  time.Duration
+	disablePreSigned bool
 }
 
 func NewAdapter(params params.Azure) (*Adapter, error) {
@@ -51,8 +52,9 @@ func NewAdapter(params params.Azure) (*Adapter, error) {
 		return nil, err
 	}
 	return &Adapter{
-		clientCache:     cache,
-		preSignedExpiry: preSignedExpiry,
+		clientCache:      cache,
+		preSignedExpiry:  preSignedExpiry,
+		disablePreSigned: params.DisablePreSigned,
 	}, nil
 }
 
@@ -211,6 +213,10 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 }
 
 func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+	if a.disablePreSigned {
+		return "", block.ErrOperationNotSupported
+	}
+
 	permissions := sas.BlobPermissions{Read: true}
 	if mode == block.PreSignModeWrite {
 		permissions = sas.BlobPermissions{
@@ -223,6 +229,10 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 }
 
 func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions sas.BlobPermissions) (string, error) {
+	if a.disablePreSigned {
+		return "", block.ErrOperationNotSupported
+	}
+
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return "", err
@@ -597,6 +607,9 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeAzure)
 	info.ValidityRegex = `^https?://`
 	info.Example = "https://mystorageaccount.blob.core.windows.net/mycontainer/"
+	if a.disablePreSigned {
+		info.PreSignSupport = false
+	}
 	return info
 }
 

@@ -63,6 +63,7 @@ This reference uses `.` to denote the nesting of values.
     + `database.dynamodb.aws_secret_access_key` `(string : )` - AWS secret access key
     + **Note:** `endpoint` `aws_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials.
       {: .note }
+    + `database.dynamodb.health_check_interval` `(duration : 0s)` - Interval to run health check for the DynamoDB instance (won't run if equal to 0).
   + `database.local` - Configuration section when using `database.type="local"`
     + `database.local.path` `(string : "~/lakefs/metadata")` - Local path on the filesystem to store embedded KV metadata, like branches and uncommitted entries
     + `database.local.sync_writes` `(bool: true)` - Ensure each write is written to the disk. Disable to increase performance
