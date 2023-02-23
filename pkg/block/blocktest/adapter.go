@@ -33,8 +33,8 @@ func testAdapterPutGet(t *testing.T, adapter block.Adapter, storageNamespace, ex
 	}{
 		{"identifier_relative", block.IdentifierTypeRelative, "test_file"},
 		{"identifier_full", block.IdentifierTypeFull, externalPath + "/" + "test_file"},
-		{"identifier_unknown_relative", block.IdentifierTypeUnknownDeprecated, "test_file"},
-		{"identifier_unknown_full", block.IdentifierTypeUnknownDeprecated, externalPath + "/" + "test_file"},
+		{"identifier_unknown_relative", block.IdentifierTypeUnknownDeprecated, "test_file"},                  //nolint:staticcheck
+		{"identifier_unknown_full", block.IdentifierTypeUnknownDeprecated, externalPath + "/" + "test_file"}, //nolint:staticcheck
 	}
 
 	for _, c := range cases {
