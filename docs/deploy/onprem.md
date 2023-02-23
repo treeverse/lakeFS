@@ -74,9 +74,20 @@ Connect to your host using SSH:
    ⚠️ Notice that the lakeFS Blockstore type is set to `s3` - This configuration works with S3-compatible storage engines such as [MinIO](https://min.io/){: target="blank" }.
    {: .note }
 
+1. In the case the TLS/SSL termination is not done by your infrastrure's load balancer or cluster manager.
+   lakeFS can be configure to listen and serve HTTPS by adding the following to the configuration:
+
+   ```yaml
+   tls:
+     enabled: true
+     cert_file: server.crt   # provide path to your certificate file
+     key_file: server.key    # provide paht to your server private key
+   ```
+
 1. [Download the binary](../index.md#downloads) to the server.
+
 1. Run the `lakefs` binary:
-  
+
    ```sh
    lakefs --config config.yaml run
    ```
@@ -120,7 +131,7 @@ You can install lakeFS on Kubernetes using a [Helm chart](https://github.com/tre
 To install lakeFS with Helm:
 
 1. Copy the Helm values file relevant for S3-Compatible storage (MinIO in this example):
-   
+
    ```yaml
    secrets:
        # replace this with the connection string of the database you created in a previous step:
@@ -164,13 +175,13 @@ To install lakeFS with Helm:
 
    To configure a load balancer to direct requests to the lakeFS servers you can use the `LoadBalancer` Service type or a Kubernetes Ingress.
    By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that you can use for health checks.
-   
+
    💡 The NGINX Ingress Controller by default limits the client body size to 1 MiB.
    Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway](../understand/architecture.md#s3-gateway) or 
    a simple PUT request using the [OpenAPI Server](../understand/architecture.md#openapi-server).
    Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://docs.min.io/docs/setup-nginx-proxy-with-minio.html).
    {: .note }
-   
+
 </div>
 </div>
 
@@ -212,6 +223,5 @@ blockstore:
 - lakeFS doesn't control the way a shared location is managed across machines
 - Import works only for folders
 - Garbage collector (for committed and uncommitted) and lakeFS Hadoop FileSystem currently unsupported
-
 
 {% include_relative includes/setup.md %}
