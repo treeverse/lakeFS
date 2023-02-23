@@ -663,7 +663,7 @@ td.table-operation-type {
   padding-left: 30px;
 }
 
-td.table-version, td.table-version-placeholder {
+td.table-id, td.table-id-placeholder {
   text-align: left;
   width: 8%;
 }
