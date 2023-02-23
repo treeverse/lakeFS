@@ -22,11 +22,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
-
-	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
-
 	"github.com/davecgh/go-spew/spew"
+	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/hashicorp/go-multierror"
@@ -42,6 +39,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
+	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -866,6 +864,23 @@ func TestController_CommitHandler(t *testing.T) {
 		verifyResponseOK(t, resp, err)
 		if resp.JSON201.CreationDate != date {
 			t.Errorf("creation date expected %d, got: %d", date, resp.JSON201.CreationDate)
+		}
+	})
+
+	t.Run("protected branch", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, "create repository", err)
+		err = deps.catalog.CreateBranchProtectionRule(ctx, repo, "main", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_COMMIT})
+		testutil.MustDo(t, "protection rule", err)
+		err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil})
+		testutil.MustDo(t, "commit to protected branch", err)
+		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
+			Message: "committed to protected branch",
+		})
+		testutil.Must(t, err)
+		if resp.JSON403 == nil {
+			t.Fatalf("Commit to protected branch should be forbidden (403), got %s", resp.Status())
 		}
 	})
 }

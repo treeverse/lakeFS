@@ -193,6 +193,7 @@ null (empty response body)
 |-------------|-------------|------------------|
 **204** | object deleted successfully |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
@@ -282,6 +283,7 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | Delete objects response |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
@@ -942,6 +944,7 @@ Name | Type | Description  | Notes
 **201** | object metadata |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **412** | Precondition Failed |  -  |
 **0** | Internal Server Error |  -  |
