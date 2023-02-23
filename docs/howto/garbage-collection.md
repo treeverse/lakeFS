@@ -182,7 +182,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
-  s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.6.1/lakefs-spark-client-312-hadoop3-assembly-0.6.1.jar \
+  s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.6.2/lakefs-spark-client-312-hadoop3-assembly-0.6.2.jar \
   example-repo
   ```
 
