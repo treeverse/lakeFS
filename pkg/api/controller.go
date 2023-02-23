@@ -597,6 +597,11 @@ func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID
 	}
 
 	if len(policies) != 1 {
+		c.Logger.
+			WithContext(ctx).
+			WithField("num_policies", len(policies)).
+			WithField("group", groupID).
+			Warn("Wrong number of policies found")
 		response := NotFoundOrNoACL{
 			Message: "Multiple policies attached to group - no ACL",
 			NoAcl:   swag.Bool(true),
@@ -607,6 +612,12 @@ func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID
 
 	acl := policies[0].ACL
 	if len(acl.Permission) == 0 {
+		c.Logger.
+			WithContext(ctx).
+			WithField("policy", fmt.Sprintf("%+v", policies[0])).
+			WithField("acl", fmt.Sprintf("%+v", acl)).
+			WithField("group", groupID).
+			Warn("Policy attached to group has no ACL")
 		response := NotFoundOrNoACL{
 			Message: "Policy attached to group has no ACL",
 			NoAcl:   swag.Bool(true),
@@ -678,12 +689,24 @@ func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body Se
 		ACL:         newACL,
 	}
 
+	policyJSON, err := json.MarshalIndent(policy, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+
+	c.Logger.
+		WithContext(ctx).
+		WithField("group", groupID).
+		WithField("policy", fmt.Sprintf("%+v", policy)).
+		WithField("policyJSON", string(policyJSON)).
+		Debug("Set policy derived from ACL")
+
 	err = c.Auth.WritePolicy(ctx, policy, true)
 	if errors.Is(err, auth.ErrNotFound) {
 		c.Logger.
 			WithContext(ctx).
 			WithField("group", groupID).
-			Info("defining an ACL for the first time because none was defined (bad migrate?)")
+			Info("Define an ACL for the first time because none was defined (bad migrate?)")
 		err = c.Auth.WritePolicy(ctx, policy, false)
 	}
 	if c.handleAPIError(ctx, w, r, err) {
@@ -694,6 +717,11 @@ func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body Se
 		Amount: -1,
 	})
 	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	err = c.Auth.AttachPolicyToGroup(ctx, aclPolicyName, groupID)
+	if !errors.Is(err, auth.ErrAlreadyExists) && c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
@@ -717,7 +745,7 @@ func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body Se
 		return
 	}
 
-	writeResponse(w, r, http.StatusOK, nil)
+	writeResponse(w, r, http.StatusCreated, nil)
 }
 
 func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, groupID string, params ListGroupMembersParams) {
