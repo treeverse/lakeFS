@@ -208,7 +208,7 @@ blockstore:
 
 ### Limitations
 
-- Using local adapter on a shared location is relativly new and not battle-tested yet
+- Using a local adapter on a shared location is relativly new and not battle-tested yet
 - lakeFS doesn't control the way a shared location is managed across machines
 - Import works only for folders
 - Garbage collector (for committed and uncommitted) and lakeFS Hadoop FileSystem currently unsupported
