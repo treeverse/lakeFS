@@ -1820,11 +1820,14 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		return false
 	}
 
+	log := c.Logger.WithContext(ctx).WithError(err)
+
 	switch {
 	case errors.Is(err, graveler.ErrNotFound),
 		errors.Is(err, actions.ErrNotFound),
 		errors.Is(err, auth.ErrNotFound),
 		errors.Is(err, kv.ErrNotFound):
+		log.Debug("Not found")
 		cb(w, r, http.StatusNotFound, err)
 
 	case errors.Is(err, store.ErrForbidden),
@@ -1844,27 +1847,34 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, actions.ErrParamConflict),
 		errors.Is(err, graveler.ErrDereferenceCommitWithStaging),
 		errors.Is(err, graveler.ErrInvalidMergeStrategy):
+		log.Debug("Bad request")
 		cb(w, r, http.StatusBadRequest, err)
 
 	case errors.Is(err, graveler.ErrNotUnique),
 		errors.Is(err, graveler.ErrConflictFound),
 		errors.Is(err, graveler.ErrRevertMergeNoParent):
+		log.Debug("Conflict")
 		cb(w, r, http.StatusConflict, err)
 
 	case errors.Is(err, graveler.ErrLockNotAcquired):
+		log.Debug("Lock not acquired")
 		cb(w, r, http.StatusInternalServerError, "branch is currently locked, try again later")
 
 	case errors.Is(err, block.ErrDataNotFound):
+		log.Debug("No data")
 		cb(w, r, http.StatusGone, "No data")
 
 	case errors.Is(err, auth.ErrAlreadyExists):
+		log.Debug("Already exists")
 		cb(w, r, http.StatusConflict, "Already exists")
 
 	case errors.Is(err, graveler.ErrTooManyTries):
+		log.Debug("Retried too many times")
 		cb(w, r, http.StatusLocked, "Too many attempts, try again later")
 
 	case errors.Is(err, graveler.ErrAddressTokenNotFound),
 		errors.Is(err, graveler.ErrAddressTokenExpired):
+		log.Debug("Expired or invalid address token")
 		cb(w, r, http.StatusBadRequest, "bad address token (expired or invalid)")
 
 	case err != nil:
