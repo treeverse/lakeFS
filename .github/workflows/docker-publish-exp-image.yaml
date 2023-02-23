@@ -26,7 +26,7 @@ jobs:
         run: |
           curl \
           -X POST \
-          -H "Authorization: Bearer ${{ secrets.GH_TOKEN_DISPATCH_EVENT }}"\
+          -H "Authorization: ${{ secrets.GH_TOKEN_DISPATCH_EVENT }}"\
           -H "Accept: application/vnd.github+json" \
           -H "Content-Type: application/json" \
           https://api.github.com/repos/${{ secrets.REPOSITORY_NAME }}/actions/workflows/${{ secrets.WORKFLOW_ID }}/dispatches \
