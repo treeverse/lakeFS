@@ -152,6 +152,7 @@ type Catalog struct {
 	BackgroundLimiter        ratelimit.Limiter
 	KVStore                  kv.Store
 	KVStoreLimited           kv.Store
+	addressProvider          *ident.HexAddressProvider
 }
 
 const (
@@ -238,12 +239,13 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	go executor.Run(ctx)
 
 	storeLimiter := kv.NewStoreLimiter(cfg.KVStore, cfg.Limiter)
+	addressProvider := ident.NewHexAddressProvider()
 	refManager := ref.NewRefManager(
 		ref.ManagerConfig{
 			Executor:              executor,
 			KVStore:               cfg.KVStore,
 			KVStoreLimited:        storeLimiter,
-			AddressProvider:       ident.NewHexAddressProvider(),
+			AddressProvider:       addressProvider,
 			RepositoryCacheConfig: ref.CacheConfig(cfg.Config.Graveler.RepositoryCache),
 			CommitCacheConfig:     ref.CacheConfig(cfg.Config.Graveler.CommitCache),
 		})
@@ -271,6 +273,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		KVStore:                  cfg.KVStore,
 		managers:                 []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
 		KVStoreLimited:           storeLimiter,
+		addressProvider:          addressProvider,
 	}, nil
 }
 
@@ -1591,6 +1594,29 @@ func (c *Catalog) Merge(ctx context.Context, repositoryID string, destinationBra
 		return "", err
 	}
 	return commitID.String(), nil
+}
+
+func (c *Catalog) FindMergeBase(ctx context.Context, repositoryID string, destinationRef string, sourceRef string) (string, string, string, error) {
+	destination := graveler.Ref(destinationRef)
+	source := graveler.Ref(sourceRef)
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "destination", Value: destination, Fn: graveler.ValidateRef},
+		{Name: "source", Value: source, Fn: graveler.ValidateRef},
+	}); err != nil {
+		return "", "", "", err
+	}
+
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	fromCommit, toCommit, baseCommit, err := c.Store.FindMergeBase(ctx, repository, destination, source)
+	if err != nil {
+		return "", "", "", err
+	}
+	return fromCommit.CommitID.String(), toCommit.CommitID.String(), c.addressProvider.ContentAddress(baseCommit), nil
 }
 
 func (c *Catalog) DumpCommits(ctx context.Context, repositoryID string) (string, error) {

@@ -115,6 +115,7 @@ type Interface interface {
 	DiffUncommitted(ctx context.Context, repository, branch, prefix, delimiter string, limit int, after string) (Differences, bool, error)
 
 	Merge(ctx context.Context, repository, destinationBranch, sourceRef, committer, message string, metadata Metadata, strategy string) (string, error)
+	FindMergeBase(ctx context.Context, repositoryID string, destinationRef string, sourceRef string) (string, string, string, error)
 
 	// dump/load metadata
 	DumpCommits(ctx context.Context, repositoryID string) (string, error)

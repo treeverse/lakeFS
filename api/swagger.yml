@@ -183,6 +183,23 @@ components:
           items:
             $ref: "#/components/schemas/Repository"
 
+    FindMergeBaseResult:
+      type: object
+      required:
+        - source_commit_id
+        - destination_commit_id
+        - base_commit_id
+      properties:
+        source_commit_id:
+          type: string
+          description: "The commit ID of the merge source"
+        destination_commit_id:
+          type: string
+          description: "The commit ID of the merge destination"
+        base_commit_id:
+          type: string
+          description: "The commit ID of the merge base"
+
     MergeResultSummary:
       type: object
       properties:
@@ -2771,6 +2788,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        default:
+          $ref: "#/components/responses/ServerError"
+    get:
+      tags:
+        - refs
+      operationId: findMergeBase
+      summary: find the merge base for 2 references
+      responses:
+        200:
+          description: Found the merge base
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FindMergeBaseResult"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
 

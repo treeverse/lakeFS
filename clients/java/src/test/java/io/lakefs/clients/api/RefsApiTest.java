@@ -17,6 +17,7 @@ import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.CommitList;
 import io.lakefs.clients.api.model.DiffList;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.FindMergeBaseResult;
 import io.lakefs.clients.api.model.Merge;
 import io.lakefs.clients.api.model.MergeResult;
 import io.lakefs.clients.api.model.RefsDump;
@@ -71,6 +72,23 @@ public class RefsApiTest {
     public void dumpRefsTest() throws ApiException {
         String repository = null;
                 RefsDump response = api.dumpRefs(repository);
+        // TODO: test validations
+    }
+    
+    /**
+     * find the merge base for 2 references
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void findMergeBaseTest() throws ApiException {
+        String repository = null;
+        String sourceRef = null;
+        String destinationBranch = null;
+                FindMergeBaseResult response = api.findMergeBase(repository, sourceRef, destinationBranch);
         // TODO: test validations
     }
     
