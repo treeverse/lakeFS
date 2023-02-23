@@ -44,11 +44,6 @@ var (
 		SealedTokens: []graveler.StagingToken{stagingToken2, stagingToken3},
 	}
 
-	branch2 = graveler.Branch{
-		CommitID:     commit2ID,
-		StagingToken: stagingToken1,
-	}
-
 	commit1       = graveler.Commit{MetaRangeID: mr1ID, Parents: []graveler.CommitID{commit4ID}}
 	commit2       = graveler.Commit{MetaRangeID: mr2ID, Parents: []graveler.CommitID{commit4ID}}
 	commit3       = graveler.Commit{MetaRangeID: mr3ID}
@@ -61,8 +56,6 @@ var (
 	key2          = []byte("some/key/2")
 	value1        = &graveler.Value{Identity: []byte("id1"), Data: []byte("data1")}
 	value2        = &graveler.Value{Identity: []byte("id2"), Data: []byte("data2")}
-
-	ErrTestGraveler = errors.New("test error")
 )
 
 func TestGravelerGet(t *testing.T) {
@@ -223,7 +216,7 @@ func TestGravelerMerge(t *testing.T) {
 		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken2).Times(1)
 		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken3).Times(1)
 
-		val, err := test.Sut.Merge(ctx, repository, branch1ID, graveler.Ref(branch2ID), graveler.CommitParams{}, "")
+		val, err := test.Sut.Merge(ctx, repository, branch1ID, graveler.Ref(branch2ID), graveler.CommitParams{Metadata: graveler.Metadata{}}, "")
 
 		require.NoError(t, err)
 		require.NotNil(t, val)
@@ -256,7 +249,7 @@ func TestGravelerMerge(t *testing.T) {
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
 
-		val, err := test.Sut.Merge(ctx, repository, branch1ID, graveler.Ref(branch2ID), graveler.CommitParams{}, "")
+		val, err := test.Sut.Merge(ctx, repository, branch1ID, graveler.Ref(branch2ID), graveler.CommitParams{Metadata: graveler.Metadata{}}, "")
 		require.Equal(t, graveler.ErrDirtyBranch, err)
 		require.Equal(t, graveler.CommitID(""), val)
 	})
@@ -296,7 +289,7 @@ func TestGravelerMerge(t *testing.T) {
 		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken2).Times(1)
 		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken3).Times(1)
 
-		val, err := test.Sut.Merge(ctx, repository, branch1ID, graveler.Ref(branch2ID), graveler.CommitParams{}, "")
+		val, err := test.Sut.Merge(ctx, repository, branch1ID, graveler.Ref(branch2ID), graveler.CommitParams{Metadata: graveler.Metadata{}}, "")
 
 		require.NoError(t, err)
 		require.NotNil(t, val)
@@ -314,7 +307,7 @@ func TestGravelerMerge(t *testing.T) {
 				return kv.ErrPredicateFailed
 			}).Times(graveler.BranchUpdateMaxTries)
 
-		val, err := test.Sut.Merge(ctx, repository, branch1ID, graveler.Ref(branch2ID), graveler.CommitParams{}, "")
+		val, err := test.Sut.Merge(ctx, repository, branch1ID, graveler.Ref(branch2ID), graveler.CommitParams{Metadata: graveler.Metadata{}}, "")
 
 		require.ErrorIs(t, err, graveler.ErrTooManyTries)
 		require.Empty(t, val)

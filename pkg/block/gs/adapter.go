@@ -33,8 +33,9 @@ var (
 )
 
 type Adapter struct {
-	client          *storage.Client
-	preSignedExpiry time.Duration
+	client           *storage.Client
+	preSignedExpiry  time.Duration
+	disablePreSigned bool
 }
 
 func WithPreSignedExpiry(v time.Duration) func(a *Adapter) {
@@ -43,6 +44,14 @@ func WithPreSignedExpiry(v time.Duration) func(a *Adapter) {
 			a.preSignedExpiry = block.DefaultPreSignExpiryDuration
 		} else {
 			a.preSignedExpiry = v
+		}
+	}
+}
+
+func WithDisablePreSigned(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		if b {
+			a.disablePreSigned = false
 		}
 	}
 }
@@ -129,8 +138,13 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 }
 
 func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+	if a.disablePreSigned {
+		return "", block.ErrOperationNotSupported
+	}
+
 	var err error
 	defer reportMetrics("GetPreSignedURL", time.Now(), nil, &err)
+
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return "", err
@@ -581,7 +595,11 @@ func (a *Adapter) BlockstoreType() string {
 }
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
-	return block.DefaultStorageNamespaceInfo(block.BlockstoreTypeGS)
+	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeGS)
+	if a.disablePreSigned {
+		info.PreSignSupport = false
+	}
+	return info
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {

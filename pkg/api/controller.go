@@ -1841,7 +1841,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, model.ErrValidationError),
 		errors.Is(err, graveler.ErrInvalidRef),
 		errors.Is(err, actions.ErrParamConflict),
-		errors.Is(err, graveler.ErrDereferenceCommitWithStaging):
+		errors.Is(err, graveler.ErrDereferenceCommitWithStaging),
+		errors.Is(err, graveler.ErrInvalidMergeStrategy):
 		cb(w, r, http.StatusBadRequest, err)
 
 	case errors.Is(err, graveler.ErrNotUnique),
@@ -3367,10 +3368,11 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		writeError(w, r, http.StatusUnauthorized, "user not found")
 		return
 	}
-	var metadata map[string]string
+	metadata := map[string]string{}
 	if body.Metadata != nil {
 		metadata = body.Metadata.AdditionalProperties
 	}
+
 	reference, err := c.Catalog.Merge(ctx,
 		repository, destinationBranch, sourceRef,
 		user.Username,
