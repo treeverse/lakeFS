@@ -23,7 +23,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/email"
-	remoteauth "github.com/treeverse/lakefs/pkg/auth/remote_authenticator"
+	authremote "github.com/treeverse/lakefs/pkg/auth/remote_authenticator"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -55,18 +55,6 @@ const (
 
 type Shutter interface {
 	Shutdown(context.Context) error
-}
-
-func newExternalBasicAuthenticator(cfg *config.Config, service auth.Service, logger logging.Logger) (auth.Authenticator, error) {
-
-	if cfg.Auth.RemoteAuthenticator != nil && cfg.Auth.RemoteAuthenticator.Enabled {
-		remoteAuthenticator, err := remoteauth.NewRemoteAuthenticator(cfg.Auth.RemoteAuthenticator, service, logger)
-		if err != nil {
-			return nil, fmt.Errorf("creating new remote authenticator: %w", err)
-		}
-		return remoteAuthenticator, nil
-	}
-	return nil, nil
 }
 
 var runCmd = &cobra.Command{
@@ -203,15 +191,13 @@ var runCmd = &cobra.Command{
 			auth.NewBuiltinAuthenticator(authService),
 		}
 
-		externalAuthenticator, err := newExternalBasicAuthenticator(cfg, authService, logger)
-
-		if err != nil {
-			fmt.Printf("%s: %s\n", "failed to create external authenticator", err)
-			os.Exit(1)
-		}
-
-		if externalAuthenticator != nil {
-			middlewareAuthenticator = append(middlewareAuthenticator, externalAuthenticator)
+		// remote authenticator setup
+		if cfg.Auth.RemoteAuthenticator != nil && cfg.Auth.RemoteAuthenticator.Enabled {
+			remoteAuthenticator, err := authremote.NewRemoteAuthenticator(cfg.Auth.RemoteAuthenticator, authService, logger)
+			if err != nil {
+				logger.WithError(err).Fatal("failed to create remote authenticator")
+			}
+			middlewareAuthenticator = append(middlewareAuthenticator, remoteAuthenticator)
 		}
 
 		controllerAuthenticator := append(middlewareAuthenticator, auth.NewEmailAuthenticator(authService))
@@ -224,8 +210,7 @@ var runCmd = &cobra.Command{
 
 		allowForeign, err := cmd.Flags().GetBool(mismatchedReposFlagName)
 		if err != nil {
-			fmt.Printf("%s: %s\n", mismatchedReposFlagName, err)
-			os.Exit(1)
+			logger.WithError(err).Fatal(mismatchedReposFlagName)
 		}
 		if !allowForeign {
 			checkRepos(ctx, logger, authMetadataManager, blockStore, c)

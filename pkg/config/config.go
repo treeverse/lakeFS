@@ -49,12 +49,14 @@ type OIDC struct {
 type RemoteAuthenticator struct {
 	// Enabled if set true will enable remote authentication
 	Enabled bool `mapstructure:"enabled"`
-	// BaseURL is the base URL of the remote authentication service (e.g. https://my-auth.com)
+	// BaseURL is the base URL of the remote authentication service (e.g. https://my-auth.example.com)
 	BaseURL string `mapstructure:"base_url" validate:"required"`
 	// AuthEndpoint is the endpoint to authenticate users (e.g. /auth)
 	AuthEndpoint string `mapstructure:"auth_endpoint" validate:"required"`
-	// DefaultUserGroup is the default group to add users to in LakeFS permissions context
+	// DefaultUserGroup is the default group for the users authenticated by the remote service
 	DefaultUserGroup string `mapstructure:"default_user_group" validate:"required"`
+	// RequestTimeout time out for remote authentication requests
+	RequestTimeout time.Duration `mapstructure:"request_timeout" validate:"required"`
 }
 
 // S3AuthInfo holds S3-style authentication.
@@ -165,7 +167,7 @@ type Config struct {
 			SupportsInvites bool `mapstructure:"supports_invites"`
 		}
 		RemoteAuthenticator *RemoteAuthenticator `mapstructure:"remote_authenticator"`
-		OIDC                OIDC
+		OIDC                OIDC                 `mapstructure:"oidc"`
 		// LogoutRedirectURL is the URL on which to mount the
 		// server-side logout.
 		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
