@@ -141,6 +141,10 @@ type Config struct {
 			AwsProfile         string `mapstructure:"aws_profile"`
 			AwsAccessKeyID     string `mapstructure:"aws_access_key_id"`
 			AwsSecretAccessKey string `mapstructure:"aws_secret_access_key"`
+
+			// HealthCheckInterval - Interval to run health check for the DynamoDB instance
+			// Won't run when is equal or less than 0.
+			HealthCheckInterval time.Duration `mapstructure:"health_check_interval"`
 		} `mapstructure:"dynamodb"`
 	}
 
@@ -402,13 +406,14 @@ func (c *Config) DatabaseParams() (kvparams.Config, error) {
 
 	if c.Database.DynamoDB != nil {
 		p.DynamoDB = &kvparams.DynamoDB{
-			TableName:          c.Database.DynamoDB.TableName,
-			ScanLimit:          c.Database.DynamoDB.ScanLimit,
-			Endpoint:           c.Database.DynamoDB.Endpoint,
-			AwsRegion:          c.Database.DynamoDB.AwsRegion,
-			AwsProfile:         c.Database.DynamoDB.AwsProfile,
-			AwsAccessKeyID:     c.Database.DynamoDB.AwsAccessKeyID,
-			AwsSecretAccessKey: c.Database.DynamoDB.AwsSecretAccessKey,
+			TableName:           c.Database.DynamoDB.TableName,
+			ScanLimit:           c.Database.DynamoDB.ScanLimit,
+			Endpoint:            c.Database.DynamoDB.Endpoint,
+			AwsRegion:           c.Database.DynamoDB.AwsRegion,
+			AwsProfile:          c.Database.DynamoDB.AwsProfile,
+			AwsAccessKeyID:      c.Database.DynamoDB.AwsAccessKeyID,
+			AwsSecretAccessKey:  c.Database.DynamoDB.AwsSecretAccessKey,
+			HealthCheckInterval: c.Database.DynamoDB.HealthCheckInterval,
 		}
 	}
 	return p, nil
