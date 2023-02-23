@@ -1,25 +1,23 @@
 ---
 layout: default
-title: Authorization
-description: This section covers authorization (using AWS IAM)  of your lakeFS server.
+title: Role Based Access Control (RBAC)
+description: This section covers authorization (using RBAC)  of your lakeFS server.
 parent: Reference
 nav_order: 65
 has_children: false
 ---
 
 
-# Authorization
+# Role Based Access Control (RBAC)
 {: .no_toc }
 
 {% include toc.html %}
-
-## Role Based Access Control
 
 {: .note}
 > RBAC is only available in [lakeFS cloud](https://lakefs.cloud). This scalable fully-managed lakeFS service is also SOC 2 compliant.<br/>
 > A simpler ACL-based authorization mechanism is planned for open-source lakeFS. For more details see [this announcement](../posts/security_update.html). 
 
-### RBAC Model
+## RBAC Model
 
 Access to resources is managed very much like [AWS IAM](https://docs.aws.amazon.com/IAM/latest/UserGuide/intro-structure.html){:target="_blank"}.
 
@@ -38,7 +36,7 @@ There are five basic components to the system:
 
 Controlling access is done by attaching **Policies**, either directly to **Users**, or to **Groups** they belong to.
 
-### Authorization process
+## Authorization process
 
 Every action in the system - be it an API request, UI interaction, S3 Gateway call, or CLI command - requires a set of actions to be allowed for one or more resources.
 
@@ -49,7 +47,7 @@ When a user makes a request to perform that action, the following process takes 
 1. Effective policy resolution - the user's policies (either attached directly or through group memberships) are calculated.
 1. Policy/Permission evaluation - lakeFS will compare the given user policies with the request actions and determine whether or not the request is allowed to continue.
 
-### Policy Precedence
+## Policy Precedence
 
 Each policy attached to a user or a group has an `Effect` - either `allow` or `deny`.
 During evaluation of a request, `deny` would take precedence over any other `allow` policy.
@@ -57,7 +55,7 @@ During evaluation of a request, `deny` would take precedence over any other `all
 This helps us compose policies together. For example, we could attach a very permissive policy to a user and use `deny` rules to then selectively restrict what that user can do.
 
 
-### Resource naming - ARNs
+## Resource naming - ARNs
 
 lakeFS uses [ARN identifier](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html#identifiers-arns){:target="_blank"} - very similar in structure to those used by AWS.
 The resource segment of the ARN supports wildcards: use `*` to match 0 or more characters, or `?` to match exactly one character.
@@ -81,7 +79,7 @@ this allows us to create fine-grained policies affecting only a specific subset 
 See below for a full reference of ARNs and actions.
 
 
-### Actions and Permissions
+## Actions and Permissions
 
 For the full list of actions and their required permissions see the following table:
 
@@ -149,13 +147,11 @@ create a repository (`POST /repositories`), you need permission to
 `fs:CreateRepository` for the _name_ of the repository and also
 `fs:AttachStorageNamespace` for the _storage namespace_ used.
 
-### Preconfigured Policies
+## Preconfigured Policies
 
 The following Policies are created during initial setup:
 
-##### FSFullAccess
-
-Policy:
+### FSFullAccess
 
 ```json
 {
@@ -171,9 +167,7 @@ Policy:
 }
 ```
 
-##### FSReadAll
-
-Policy:
+### FSReadAll
 
 ```json
 {
@@ -190,9 +184,7 @@ Policy:
 }
 ```
 
-##### FSReadWriteAll
-
-Policy:
+### FSReadWriteAll
 
 ```json
 {
@@ -220,9 +212,7 @@ Policy:
 }
 ```
 
-##### AuthFullAccess
-
-Policy:
+### AuthFullAccess
 
 ```json
 {
@@ -238,9 +228,7 @@ Policy:
 }
 ```
 
-##### AuthManageOwnCredentials
-
-Policy:
+### AuthManageOwnCredentials
 
 ```json
 {
@@ -259,9 +247,7 @@ Policy:
 }
 ```
 
-##### RepoManagementFullAccess
-
-Policy:
+### RepoManagementFullAccess
 
 ```json
 {
@@ -283,9 +269,7 @@ Policy:
     ]
 }
 ```
-##### RepoManagementReadAll
-
-Policy:
+### RepoManagementReadAll
 
 ```json
 {
@@ -308,13 +292,10 @@ Policy:
 }
 ```
 
-### Additional Policies
+## Additional Policies
 
-The following examples can be used to create additional policies to further limit user access. Use the web UI or the [lakectl auth](./cli.md#lakectl-auth-policies-create) command to create policies.
+You can create additional policies to further limit user access. Use the web UI or the [lakectl auth](./cli.md#lakectl-auth-policies-create) command to create policies. Here is an example to define read/write access for a specific repository: 
 
-#### Read/write access for a specific repository
-
-Policy:
 ```json
 {
     "statement": [
@@ -368,24 +349,24 @@ Policy:
 }
 ```
 
-### Preconfigured Groups
+## Preconfigured Groups
 
-##### Admins
+lakeFS has four preconfigured groups: 
 
-Policies: `["FSFullAccess", "AuthFullAccess", "RepoManagementFullAccess", "ExportSetConfiguration"]`
+* Admins
+* SuperUsers
+* Developers
+* Viewers
 
-##### SuperUsers
+They have the following policies granted to them: 
 
-Policies: `["FSFullAccess", "AuthManageOwnCredentials", "RepoManagementReadAll"]`
+Policy                     | Admins | SuperUsers | Developers| Viewers|
+---------------------------|--------|------------|-----------|--------|
+[`FSFullAccess`](#fsfullaccess)             | ✅  |     ✅     |           |       |
+[`AuthFullAccess`](#authfullaccess)           |    ✅  |            |           |       |
+[`RepoManagementFullAccess`](#repomanagementfullaccess) |    ✅  |            |           |       |
+[`AuthManageOwnCredentials`](#authmanageowncredentials) |        |     ✅     |     ✅    |   ✅  |
+[`RepoManagementReadAll`](#repomanagementreadall)    |        |     ✅     |     ✅    |       |
+[`FSReadWriteAll`](#fsreadwriteall)           |        |            |     ✅    |       |
+[`FSReadAll`](#fsreadall)                |        |            |           |   ✅  |
 
-##### Developers
-
-Policies: `["FSReadWriteAll", "AuthManageOwnCredentials", "RepoManagementReadAll"]`
-
-##### Viewers
-
-Policies: `["FSReadAll", "AuthManageOwnCredentials"]`
-
-## SOC2 Compliance
-
-For a scalable managed lakeFS service with guaranteed SLAs, which is SOC 2 Compliant try [lakeFS cloud](https://lakefs.cloud)
