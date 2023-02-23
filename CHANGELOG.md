@@ -16,7 +16,7 @@ Bugs fixed:
 
 Deprecated:
 - Authorization using Role-Based Access Control (#5233)
-- LDAP Embedded Support $(5262)
+- LDAP Embedded Support (#5262)
 
 ## v0.93.0
 
