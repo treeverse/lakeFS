@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -15,6 +16,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type Driver struct{}
@@ -22,6 +24,9 @@ type Driver struct{}
 type Store struct {
 	svc    *dynamodb.DynamoDB
 	params *kvparams.DynamoDB
+	wg     sync.WaitGroup
+	logger logging.Logger
+	cancel chan bool
 }
 
 type EntriesIterator struct {
@@ -94,10 +99,16 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
 	}
 
-	return &Store{
+	logger := logging.FromContext(ctx).WithField("store", DriverName)
+	s := &Store{
 		svc:    svc,
 		params: params,
-	}, nil
+		logger: logger,
+		cancel: make(chan bool),
+	}
+
+	s.StartPeriodicCheck()
+	return s, nil
 }
 
 // isTableExist will try to describeTable and return bool status, error is returned only in case err != ResourceNotFoundException
@@ -105,10 +116,12 @@ func isTableExist(ctx context.Context, svc *dynamodb.DynamoDB, table string) (bo
 	_, err := svc.DescribeTableWithContext(ctx, &dynamodb.DescribeTableInput{
 		TableName: aws.String(table),
 	})
+	const operation = "DescribeTable"
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() == dynamodb.ErrCodeResourceNotFoundException {
 			return false, nil
 		}
+		dynamoFailures.WithLabelValues(operation).Inc()
 		return false, err
 	}
 	return true, nil
@@ -403,7 +416,9 @@ func handleClientError(err error) error {
 	return err
 }
 
-func (s *Store) Close() {}
+func (s *Store) Close() {
+	s.StopPeriodicCheck()
+}
 
 // DropTable used internally for testing purposes
 func (s *Store) DropTable() error {
@@ -454,4 +469,47 @@ func (e *EntriesIterator) Err() error {
 
 func (e *EntriesIterator) Close() {
 	e.err = kv.ErrClosedEntries
+}
+
+// StartPeriodicCheck performs one check and continues every 'interval' in the background
+func (s *Store) StartPeriodicCheck() {
+	interval := s.params.HealthCheckInterval
+	if interval <= 0 {
+		return
+	}
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		s.logger.WithField("interval", interval).Debug("Starting DynamoDB health check")
+		// check first and loop for checking every interval
+		s.Check()
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				s.Check()
+			case <-s.cancel:
+				return
+			}
+		}
+	}()
+}
+
+func (s *Store) Check() {
+	log := s.logger.WithField("store_type", DriverName)
+	success, err := isTableExist(context.Background(), s.svc, s.params.TableName)
+	if success {
+		log.Debug("DynamoDB health check passed!")
+	} else {
+		log.WithError(err).Debug("DynamoDB health check failed")
+	}
+}
+
+func (s *Store) StopPeriodicCheck() {
+	if s.cancel != nil {
+		close(s.cancel)
+		s.wg.Wait()
+		s.cancel = nil
+	}
 }
