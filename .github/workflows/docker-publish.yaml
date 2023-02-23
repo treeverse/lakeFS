@@ -91,12 +91,10 @@ jobs:
             treeverse/lakefs:${{ steps.version.outputs.tag }}
             treeverse/lakefs:latest
 
-      - name: Trigger playground deploy
-        run: |
-          curl \
-          -X POST \
-          -H "Authorization: Bearer ${{ secrets.GH_TOKEN_DISPATCH_EVENT }}"\
-          -H "Accept: application/vnd.github+json" \
-          -H "Content-Type: application/json" \
-          https://api.github.com/repos/${{ secrets.REPOSITORY_NAME }}/actions/workflows/${{ secrets.WORKFLOW_ID }}/dispatches \
-          --data '{"ref":"main", "inputs": { "lakefs_image": ${{ steps.version.outputs.tag }} }}'
+      - name: Dispatch lakeFS release trigger for Playground
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.GH_TOKEN_DISPATCH_EVENT }}
+          repository: ${{ secrets.REPOSITORY_NAME }}
+          event-type: lakefs-image-release
+          client-payload: '{"ref":"main", "inputs": { "lakefs_image": ${{ steps.version.outputs.tag }} }}'
