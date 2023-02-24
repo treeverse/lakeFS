@@ -212,6 +212,9 @@ func DieErr(err error) {
 	default:
 		WriteTo(DeathMessage, ErrData{Error: err.Error()}, os.Stderr)
 	}
+	if os.Getenv("LAKECTL_PANIC_ON_ERR") == "y" {
+		panic(err)
+	}
 	os.Exit(1)
 }
 

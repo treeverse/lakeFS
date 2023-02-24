@@ -7,8 +7,6 @@ import (
 	"io"
 	"sort"
 	"sync"
-
-	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 var (
@@ -24,7 +22,6 @@ type Object struct {
 }
 
 type Index struct {
-	Ref     string   `yaml:"ref"`
 	Objects []Object `yaml:"objects"`
 }
 
@@ -91,17 +88,4 @@ func (t *ObjectTracker) GetObjects() []Object {
 		return slice[i].Path < slice[j].Path
 	})
 	return slice
-}
-
-type Source struct {
-	Remote string `yaml:"remote_uri"`
-	Head   string `yaml:"local_head,omitempty"`
-}
-
-func (s Source) RemoteURI() (*uri.URI, error) {
-	return uri.Parse(s.Remote)
-}
-
-type SourcesConfig struct {
-	Sources map[string]Source `yaml:"sources"`
 }

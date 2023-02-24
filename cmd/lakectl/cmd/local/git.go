@@ -2,7 +2,6 @@ package local
 
 import (
 	"bufio"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -11,22 +10,19 @@ import (
 	"strings"
 
 	"github.com/go-git/go-git/v5"
+
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/storage/filesystem"
-	"gopkg.in/yaml.v3"
-)
-
-const (
-	ConfigFileName = "data.yaml"
 )
 
 var (
+	ErrNotInRepository               = errors.New("not in a git repository")
 	ErrGitConfiguration              = errors.New("configuration error")
 	ErrGitConfigurationNotFilesystem = fmt.Errorf("%w: not a valid local git repository", ErrGitConfiguration)
 	ErrInvalidKeyValueFormat         = errors.New("invalid key=value format")
 )
 
-type Conf struct {
+type Repository struct {
 	root       string
 	repository *git.Repository
 }
@@ -53,15 +49,7 @@ func findRepositoryRoot(repo *git.Repository) (string, error) {
 	), nil
 }
 
-func Config() (*Conf, error) {
-	currentLocation, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-	return PathConfig(currentLocation)
-}
-
-func PathConfig(p string) (*Conf, error) {
+func FindRepository(p string) (*Repository, error) {
 	repo, err := findRepository(p)
 	if err != nil {
 		return nil, err
@@ -70,32 +58,31 @@ func PathConfig(p string) (*Conf, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Conf{
+	return &Repository{
 		root:       root,
 		repository: repo,
 	}, nil
 }
 
-func (c *Conf) Repository() *git.Repository {
-	return c.repository
+func (c *Repository) GetRemoteURLs() (map[string]string, error) {
+	remotes, err := c.repository.Remotes()
+	if err != nil {
+		return nil, err
+	}
+	remoteMapping := make(map[string]string)
+	for _, remote := range remotes {
+		urls := remote.Config().URLs
+		if remote.Config().IsFirstURLLocal() && len(urls) > 1 {
+			urls = urls[1:]
+		}
+		remoteUrl := strings.Join(urls, " ; ")
+		remoteMapping[remote.Config().Name] = remoteUrl
+	}
+	return remoteMapping, nil
 }
 
-func (c *Conf) IsClean() (bool, error) {
-	repo := c.Repository()
-	workTree, err := repo.Worktree()
-	if err != nil {
-		return false, err
-	}
-	status, err := workTree.Status()
-	if err != nil {
-		return false, err
-	}
-	return status.IsClean(), nil
-}
-
-func (c *Conf) CurrentCommitId() (string, error) {
-	repo := c.Repository()
-	head, err := repo.Head()
+func (c *Repository) CurrentCommitId() (string, error) {
+	head, err := c.repository.Head()
 	if err != nil {
 		if errors.Is(err, plumbing.ErrReferenceNotFound) {
 			return "", ErrNoCommitFound
@@ -105,41 +92,12 @@ func (c *Conf) CurrentCommitId() (string, error) {
 	return head.Hash().String(), nil
 }
 
-func (c *Conf) GetRemote(name string) (string, error) {
-	repo := c.Repository()
-	remote, err := repo.Remote(name)
-	if err != nil {
-		return "", err
-	}
-	if remote.Config().IsFirstURLLocal() {
-		if len(remote.Config().URLs) > 1 {
-			return remote.Config().URLs[1], nil
-		}
-	}
-	if len(remote.Config().URLs) > 0 {
-		return remote.Config().URLs[0], nil
-	}
-	return "", fmt.Errorf("could not find remote URL for '%s'", name)
-}
-
-func (c *Conf) HasRemote(name string) (bool, error) {
-	repo := c.Repository()
-	_, err := repo.Remote(name)
-	if errors.Is(err, git.ErrRemoteNotFound) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-func (c *Conf) Root() string {
+func (c *Repository) Root() string {
 	return c.root
 }
 
 // RelativeToRoot returns a relative path from p that is relative to the root of the current git repository
-func (c *Conf) RelativeToRoot(p string) (string, error) {
+func (c *Repository) RelativeToRoot(p string) (string, error) {
 	if !path.IsAbs(p) {
 		// make it relative to where we are
 		var err error
@@ -148,7 +106,7 @@ func (c *Conf) RelativeToRoot(p string) (string, error) {
 			return "", err
 		}
 	}
-	relativePath, err := filepath.Rel(c.Root(), p)
+	relativePath, err := filepath.Rel(c.root, p)
 	if err != nil {
 		return "", err
 	}
@@ -158,115 +116,13 @@ func (c *Conf) RelativeToRoot(p string) (string, error) {
 	return relativePath, nil
 }
 
-func (c *Conf) getConfigPath() string {
-	root := c.Root()
-	return path.Join(root, ConfigFileName)
-}
-
-func (c *Conf) Initialized() (bool, error) {
-	return FileExists(c.getConfigPath())
-}
-
-func (c *Conf) GetSourcesConfig() (*SourcesConfig, error) {
-	cfg := &SourcesConfig{}
-	initialized, err := c.Initialized()
-	if err != nil {
-		return nil, err
-	}
-	if !initialized {
-		return cfg, nil
-	}
-	location := c.getConfigPath()
-	data, err := os.ReadFile(location)
-	if err != nil {
-		return nil, err
-	}
-	err = yaml.Unmarshal(data, &cfg)
-	if err != nil {
-		return nil, err
-	}
-	return cfg, nil
-}
-
-func (c *Conf) HasSource(target string) (bool, error) {
-	conf, err := c.GetSourcesConfig()
-	if err != nil {
-		return false, err
-	}
-	_, exists := conf.Sources[target]
-	return exists, nil
-}
-
-func (c *Conf) AddSource(target, remote, currentHead string) error {
-	conf, err := c.GetSourcesConfig()
-	if err != nil {
-		return err
-	}
-	if conf.Sources == nil {
-		conf.Sources = make(map[string]Source)
-	}
-	conf.Sources[target] = Source{
-		Remote: remote,
-		Head:   currentHead,
-	}
-	return c.SaveSourcesConfig(conf)
-}
-
-func (c *Conf) UpdateSourceVersion(target, currentHead string) error {
-	conf, err := c.GetSourcesConfig()
-	if err != nil {
-		return err
-	}
-	source := conf.Sources[target]
-	source.Head = currentHead
-	conf.Sources[target] = source
-	return c.SaveSourcesConfig(conf)
-}
-
-func (c *Conf) GetSource(target string) (Source, error) {
-	var src Source
-	conf, err := c.GetSourcesConfig()
-	if err != nil {
-		return src, err
-	}
-	return conf.Sources[target], nil
-}
-
-func (c *Conf) SaveSourcesConfig(cfg *SourcesConfig) error {
-	// ensure directory exists first
-	location := c.getConfigPath()
-	data, err := yaml.Marshal(cfg)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(location, data, DefaultFileMask)
-}
-
-func (c *Conf) CheckoutGitCommitId(gitCommitId string) error {
-	wt, err := c.repository.Worktree()
-	if err != nil {
-		return err
-	}
-	commitHashBytes, err := hex.DecodeString(gitCommitId)
-	if err != nil {
-		return err
-	}
-	var gitHash plumbing.Hash
-	copy(gitHash[:], commitHashBytes)
-	return wt.Checkout(&git.CheckoutOptions{
-		Hash:  gitHash,
-		Force: true,
-	})
-}
-
-func (c *Conf) GitIgnore(pattern string) error {
+func (c *Repository) AddIgnorePattern(pattern string) error {
 	if !strings.HasPrefix(pattern, PathSeparator) {
 		// prepend a leading '/' since we want to ignore a fully qualified path
 		//  within the git repository
 		pattern = PathSeparator + pattern
 	}
-	root := c.Root()
-	gitIgnoreLocation := path.Join(root, ".gitignore")
+	gitIgnoreLocation := path.Join(c.root, ".gitignore")
 	var mode os.FileMode = DefaultFileMask
 	info, err := os.Stat(gitIgnoreLocation)
 	if err == nil {
@@ -294,7 +150,7 @@ func (c *Conf) GitIgnore(pattern string) error {
 	if err != nil {
 		return err
 	}
-	_, err = f.WriteString(fmt.Sprintf("# ignored because versioned in lakeFS (i.e. do `lakectl local pull`):\n%s\n", pattern))
+	_, err = f.WriteString(fmt.Sprintf("# versioned in lakeFS:\n%s\n", pattern))
 	if err != nil {
 		return err
 	}
