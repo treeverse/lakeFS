@@ -102,7 +102,7 @@ func CreateManifest(location string) (*Manifest, error) {
 	return m, nil
 }
 
-func GetManifest(location string) (*Manifest, error) {
+func LoadManifest(location string) (*Manifest, error) {
 	manifestLocation := path.Join(location, ManifestFileName)
 	manifestExists, err := FileExists(manifestLocation)
 	if err != nil {
@@ -148,7 +148,7 @@ func IsDataClean(l Locator, manifest *Manifest) (bool, error) {
 			return false, err
 		}
 		if dirExists {
-			diffResults, err := DoDiff(fullPath)
+			diffResults, err := DiffPath(fullPath)
 			if err != nil {
 				return false, err
 			}

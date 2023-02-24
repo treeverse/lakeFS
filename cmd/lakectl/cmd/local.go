@@ -15,14 +15,11 @@ import (
 )
 
 const (
-	DownloadConcurrency = 20
-	gitCommitKeyName    = "git.commit.id"
+	LocalSyncConcurrency = 25
+	gitCommitKeyName     = "git.commit.id"
 )
 
 func mustGitConf(path string) *local.Repository {
-	if path == "" {
-		path = "."
-	}
 	gitRepo, err := local.FindRepository(path)
 	if errors.Is(err, local.ErrNotInRepository) {
 		// not a git repo
@@ -35,7 +32,7 @@ func mustGitConf(path string) *local.Repository {
 
 func mustLocalDeps(ctx context.Context, path string) (*local.Repository, *local.Manifest, *local.APIWrapper) {
 	gitRepo := mustGitConf(path)
-	manifest, err := local.GetManifest(gitRepo.Root())
+	manifest, err := local.LoadManifest(gitRepo.Root())
 	if err != nil {
 		DieErr(err)
 	}
@@ -65,7 +62,7 @@ func printLocalDiff(d *local.Diff) (total int) {
 	return
 }
 
-func pull(gitRepo *local.Repository, manifest *local.Manifest, client *local.APIWrapper, maxParallelism int, update bool) error {
+func syncDirectory(gitRepo *local.Repository, manifest *local.Manifest, client *local.APIWrapper, maxParallelism int, update bool) error {
 	source, err := manifest.RemoteURI()
 	DieIfErr(err)
 	currentStableRef := manifest.Head
@@ -149,12 +146,12 @@ var localAddCmd = &cobra.Command{
 	},
 }
 
-// localCloneCmd clones a lakeFS directory locally (committed only).
-// if the target directory is within a git repository, also add a `data.yaml` file that describes local clones of data
+// localCloneCmd clones a lakeFS directory locally (committed only)
+// and updates the `data.yaml` file that describes local cloned paths
 var localCloneCmd = &cobra.Command{
 	Use:     "clone <remote path> [<target directory>]",
 	Short:   "clone a lakeFS directory locally (committed data only)",
-	Example: "clone datasets/my/dataset/ local_data",
+	Example: "clone datasets/my/dataset/ my_input/",
 	Args:    cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		// parse args
@@ -163,7 +160,6 @@ var localCloneCmd = &cobra.Command{
 		if len(args) > 1 {
 			targetDirectory = args[1]
 		}
-
 		gitRepo, manifest, client := mustLocalDeps(cmd.Context(), targetDirectory)
 		maxParallelism, err := cmd.Flags().GetInt("parallelism")
 		DieIfErr(err)
@@ -177,29 +173,24 @@ var localCloneCmd = &cobra.Command{
 		if manifest.HasSource(pathInRepository) {
 			DieFmt("directory already cloned. You can try running `pull`.")
 		}
-
 		locationExists, err := local.DirectoryExists(fullPath)
 		DieIfErr(err)
 		if locationExists {
 			DieFmt("directory already exists. Try a different location?")
 		}
-
 		isClean, err := local.IsDataClean(gitRepo, manifest)
 		DieIfErr(err)
 		if !isClean {
 			DieFmt("cannot pull latest data while data directories have uncommitted changes. See `git-data status`")
 		}
-
 		// add it to data.yaml
 		manifest.SetSource(pathInRepository, remotePath)
 		DieIfErr(manifest.Save())
-
 		// add it to git ignore
 		err = gitRepo.AddIgnorePattern(pathInRepository)
 		DieIfErr(err)
-
 		// run the actual sync
-		DieIfErr(pull(gitRepo, manifest, client, maxParallelism, false))
+		DieIfErr(syncDirectory(gitRepo, manifest, client, maxParallelism, false))
 	},
 }
 
@@ -217,7 +208,7 @@ var localStatusCmd = &cobra.Command{
 				DieFmt("'%s' doesn't seem to be a  data directory. You can try running `clone`.", args[0])
 			}
 			fmt.Printf("Directory: '%s':\n\n", fullPath)
-			diffResults, err := local.DoDiff(fullPath)
+			diffResults, err := local.DiffPath(fullPath)
 			DieIfErr(err)
 			printLocalDiff(diffResults)
 			return
@@ -228,7 +219,7 @@ var localStatusCmd = &cobra.Command{
 			fmt.Printf("Directory: '%s':\n\n", pathInRepository)
 			fullPath, err := gitRepo.RelativeToRoot(pathInRepository)
 			DieIfErr(err)
-			diffResults, err := local.DoDiff(fullPath)
+			diffResults, err := local.DiffPath(fullPath)
 			DieIfErr(err)
 			printLocalDiff(diffResults)
 			fmt.Print("\n\n")
@@ -329,7 +320,7 @@ var localPullCmd = &cobra.Command{
 			DieFmt("you have uncommitted changes to data (see `status`). " +
 				"Either commit or use --force to overwrite them")
 		}
-		DieIfErr(pull(gitRepo, manifest, client, maxParallelism, update))
+		DieIfErr(syncDirectory(gitRepo, manifest, client, maxParallelism, update))
 	},
 }
 
@@ -349,7 +340,7 @@ var localCheckoutCmd = &cobra.Command{
 		manifest.Remote = ref.String()
 		manifest.Head = ""
 		DieIfErr(manifest.Save())
-		DieIfErr(pull(gitRepo, manifest, client, maxParallelism, true))
+		DieIfErr(syncDirectory(gitRepo, manifest, client, maxParallelism, true))
 	},
 }
 
@@ -381,20 +372,20 @@ func initLocal(name string) {
 	localCmd.AddCommand(localStatusCmd)
 
 	localCmd.AddCommand(localCloneCmd)
-	localCloneCmd.Flags().IntP("parallelism", "p", DownloadConcurrency, "maximum objects to download in parallel")
+	localCloneCmd.Flags().IntP("parallelism", "p", LocalSyncConcurrency, "maximum objects to download in parallel")
 
 	localCmd.AddCommand(localAddCmd)
 
 	localCmd.AddCommand(localCheckoutCmd)
-	localCheckoutCmd.Flags().IntP("parallelism", "p", DownloadConcurrency, "maximum objects to download in parallel")
+	localCheckoutCmd.Flags().IntP("parallelism", "p", LocalSyncConcurrency, "maximum objects to download in parallel")
 
 	localCmd.AddCommand(localCommitCmd)
 	localCommitCmd.Flags().StringSlice("meta", []string{}, "key value pair in the form of key=value")
 	localCommitCmd.Flags().StringP("message", "m", "", "commit message to use for the resulting lakeFS commit")
-	localCommitCmd.Flags().IntP("parallelism", "p", DownloadConcurrency, "maximum objects to download in parallel")
+	localCommitCmd.Flags().IntP("parallelism", "p", LocalSyncConcurrency, "maximum objects to upload in parallel")
 
 	localCmd.AddCommand(localPullCmd)
-	localPullCmd.Flags().IntP("parallelism", "p", DownloadConcurrency, "maximum objects to download in parallel")
+	localPullCmd.Flags().IntP("parallelism", "p", LocalSyncConcurrency, "maximum objects to download in parallel")
 	localPullCmd.Flags().BoolP("update", "u", false, "pull the latest data available on the remote (and update data.yaml)")
 	localPullCmd.Flags().BoolP("force", "f", false, "force pull data from the remote. Will overwrite any local changes.")
 }

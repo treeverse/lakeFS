@@ -51,11 +51,15 @@ func findRepositoryRoot(repo *git.Repository) (string, error) {
 
 func FindRepository(p string) (*Repository, error) {
 	repo, err := findRepository(p)
-	if err != nil {
+	if errors.Is(err, git.ErrRepositoryNotExists) {
+		return nil, ErrNotInRepository
+	} else if err != nil {
 		return nil, err
 	}
 	root, err := findRepositoryRoot(repo)
-	if err != nil {
+	if errors.Is(err, git.ErrRepositoryNotExists) {
+		return nil, ErrNotInRepository
+	} else if err != nil {
 		return nil, err
 	}
 	return &Repository{

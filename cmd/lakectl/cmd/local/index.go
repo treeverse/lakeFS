@@ -29,7 +29,7 @@ func (d *Diff) IsClean() bool {
 	return len(d.Added) == 0 && len(d.Modified) == 0 && len(d.Removed) == 0
 }
 
-func DoDiff(localDirectory string) (*Diff, error) {
+func DiffPath(localDirectory string) (*Diff, error) {
 	list := NewDiff()
 	index, err := ReadIndex(localDirectory)
 	if err != nil {

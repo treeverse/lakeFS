@@ -231,7 +231,7 @@ func (w *APIWrapper) ListDir(source *uri.URI) ([]api.ObjectStats, error) {
 
 func (w *APIWrapper) UploadDirectoryChanges(dest *uri.URI, localDirectory string, maxParallelism int) error {
 	// find changes
-	diff, err := DoDiff(localDirectory)
+	diff, err := DiffPath(localDirectory)
 	if err != nil {
 		return err
 	}
