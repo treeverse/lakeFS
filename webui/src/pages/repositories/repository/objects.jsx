@@ -402,7 +402,7 @@ const ObjectsBrowser = ({config, configError}) => {
                     />
                     <ImportButton
                         onClick={() => setShowImport(true)}
-                        enabled={config.blockstore_type.import_support}
+                        enabled={config.import_support}
                     />
                     <ImportModal
                         config={config}
