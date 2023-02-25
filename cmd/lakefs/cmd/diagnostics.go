@@ -2,69 +2,16 @@ package cmd
 
 import (
 	"log"
-	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/block/factory"
-	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/diagnostics"
-	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/upload"
 )
 
-// diagnosticsCmd represents the diagnostics command
 var diagnosticsCmd = &cobra.Command{
 	Use:   "diagnostics",
 	Short: "Collect lakeFS diagnostics",
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := loadConfig()
-		ctx := cmd.Context()
 		output, _ := cmd.Flags().GetString("output")
-
-		kvParams, err := cfg.DatabaseParams()
-		if err != nil {
-			log.Fatalf("Get KV params: %s", err)
-		}
-		kvStore, err := kv.Open(ctx, kvParams)
-		if err != nil {
-			log.Fatalf("Failed to open KV store: %s", err)
-		}
-		defer kvStore.Close()
-
-		adapter, err := factory.BuildBlockAdapter(ctx, &stats.NullCollector{}, cfg)
-		if err != nil {
-			log.Printf("Failed to create block adapter: %s", err)
-		}
-		c, err := catalog.New(ctx, catalog.Config{
-			Config:       cfg,
-			KVStore:      kvStore,
-			PathProvider: upload.DefaultPathProvider,
-			Limiter:      cfg.NewGravelerBackgroundLimiter(),
-		})
-		if err != nil {
-			log.Fatalf("Failed to create catalog: %s", err)
-		}
-		defer func() { _ = c.Close() }()
-		pyramidParams, err := cfg.GetCommittedTierFSParams(adapter)
-		if err != nil {
-			log.Fatalf("Failed to get pyramid params: %s", err)
-		}
-
-		collector := diagnostics.NewCollector(c, pyramidParams, adapter)
-
-		f, err := os.Create(output)
-		if err != nil {
-			log.Fatalf("Create zip file '%s' failed: %s", output, err)
-		}
-		defer func() { _ = f.Close() }()
-
-		log.Printf("Collecting data")
-		err = collector.Collect(ctx, f)
-		if err != nil {
-			log.Fatalf("Failed to collect data: %s", err)
-		}
-		log.Printf("Diagnostics collected into %s", output)
+		log.Printf("Currently nothing is collected (%s)", output)
 	},
 }
 

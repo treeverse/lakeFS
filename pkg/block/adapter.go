@@ -128,14 +128,6 @@ type Properties struct {
 	StorageClass *string
 }
 
-// WalkFunc is called for each object visited by the Walk.
-// The id argument contains the argument to Walk as a prefix; that is, if Walk is called with "test/data/",
-// which is a prefix containing the object "test/data/a", the walk function will be called with argument "test/data/a".
-// If there was a problem walking to the object, the incoming error will describe the problem and the function can decide
-// how to handle that error.
-// If an error is returned, processing stops.
-type WalkFunc func(id string) error
-
 type Adapter interface {
 	InventoryGenerator
 	Put(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) error

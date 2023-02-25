@@ -147,8 +147,8 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 	}
 
 	writeResponse(w, r, http.StatusCreated, PrepareGCUncommittedResponse{
-		RunId:                 uncommittedInfo.Metadata.RunId,
-		GcUncommittedLocation: uncommittedInfo.Metadata.UncommittedLocation,
+		RunId:                 uncommittedInfo.RunID,
+		GcUncommittedLocation: uncommittedInfo.Location,
 		ContinuationToken:     nextContinuationToken,
 	})
 }
@@ -2544,9 +2544,9 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 		return
 	}
 	writeResponse(w, r, http.StatusCreated, GarbageCollectionPrepareResponse{
-		GcCommitsLocation:   gcRunMetadata.CommitsCsvLocation,
+		GcCommitsLocation:   gcRunMetadata.CommitsCSVLocation,
 		GcAddressesLocation: gcRunMetadata.AddressLocation,
-		RunId:               gcRunMetadata.RunId,
+		RunId:               gcRunMetadata.RunID,
 	})
 }
 
