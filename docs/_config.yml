@@ -62,6 +62,8 @@ footer_social:
     - 'https://github.com/treeverse/lakeFS'
   'twitter':
     - 'https://twitter.com/lakeFS'
+  'mastodon':
+    - 'https://data-folks.masto.host/@lakeFS'
   'slack':
     - 'https://lakefs.io/slack'
 

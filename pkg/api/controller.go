@@ -1820,15 +1820,19 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		return false
 	}
 
+	log := c.Logger.WithContext(ctx).WithError(err)
+
 	switch {
 	case errors.Is(err, graveler.ErrNotFound),
 		errors.Is(err, actions.ErrNotFound),
 		errors.Is(err, auth.ErrNotFound),
 		errors.Is(err, kv.ErrNotFound):
+		log.Debug("Not found")
 		cb(w, r, http.StatusNotFound, err)
 
 	case errors.Is(err, store.ErrForbidden),
-		errors.Is(err, local.ErrForbidden):
+		errors.Is(err, local.ErrForbidden),
+		errors.Is(err, graveler.ErrProtectedBranch):
 		cb(w, r, http.StatusForbidden, err)
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
@@ -1843,27 +1847,34 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, actions.ErrParamConflict),
 		errors.Is(err, graveler.ErrDereferenceCommitWithStaging),
 		errors.Is(err, graveler.ErrInvalidMergeStrategy):
+		log.Debug("Bad request")
 		cb(w, r, http.StatusBadRequest, err)
 
 	case errors.Is(err, graveler.ErrNotUnique),
 		errors.Is(err, graveler.ErrConflictFound),
 		errors.Is(err, graveler.ErrRevertMergeNoParent):
+		log.Debug("Conflict")
 		cb(w, r, http.StatusConflict, err)
 
 	case errors.Is(err, graveler.ErrLockNotAcquired):
+		log.Debug("Lock not acquired")
 		cb(w, r, http.StatusInternalServerError, "branch is currently locked, try again later")
 
 	case errors.Is(err, block.ErrDataNotFound):
+		log.Debug("No data")
 		cb(w, r, http.StatusGone, "No data")
 
 	case errors.Is(err, auth.ErrAlreadyExists):
+		log.Debug("Already exists")
 		cb(w, r, http.StatusConflict, "Already exists")
 
 	case errors.Is(err, graveler.ErrTooManyTries):
+		log.Debug("Retried too many times")
 		cb(w, r, http.StatusLocked, "Too many attempts, try again later")
 
 	case errors.Is(err, graveler.ErrAddressTokenNotFound),
 		errors.Is(err, graveler.ErrAddressTokenExpired):
+		log.Debug("Expired or invalid address token")
 		cb(w, r, http.StatusBadRequest, "bad address token (expired or invalid)")
 
 	case err != nil:
@@ -3402,6 +3413,29 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	writeResponse(w, r, http.StatusOK, MergeResult{
 		Reference: reference,
 		Summary:   &MergeResultSummary{Added: &zero, Changed: &zero, Conflict: &zero, Removed: &zero},
+	})
+}
+
+func (c *Controller) FindMergeBase(w http.ResponseWriter, r *http.Request, repository string, sourceRef string, destinationRef string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ListCommitsAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "find_merge_base", r, repository, destinationRef, sourceRef)
+
+	source, dest, base, err := c.Catalog.FindMergeBase(ctx, repository, destinationRef, sourceRef)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusOK, FindMergeBaseResult{
+		BaseCommitId:        base,
+		DestinationCommitId: dest,
+		SourceCommitId:      source,
 	})
 }
 

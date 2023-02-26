@@ -530,6 +530,9 @@ type VersionController interface {
 	// This is similar to a three-dot (from...to) diff in git.
 	Compare(ctx context.Context, repository *RepositoryRecord, left, right Ref) (DiffIterator, error)
 
+	// FindMergeBase returns the 'from' commit, the 'to' commit and the merge base commit of 'from' and 'to' commits.
+	FindMergeBase(ctx context.Context, repository *RepositoryRecord, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error)
+
 	// SetHooksHandler set handler for all graveler hooks
 	SetHooksHandler(handler HooksHandler)
 
@@ -2264,7 +2267,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		if !empty {
 			return nil, fmt.Errorf("%s: %w", destination, ErrDirtyBranch)
 		}
-		fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repository, source, Ref(destination))
+		fromCommit, toCommit, baseCommit, err := g.FindMergeBase(ctx, repository, source, Ref(destination))
 		if err != nil {
 			return nil, err
 		}
@@ -2453,7 +2456,7 @@ func (g *Graveler) Diff(ctx context.Context, repository *RepositoryRecord, left,
 	return NewCombinedDiffIterator(diff, leftValueIterator, stagingIterator), nil
 }
 
-func (g *Graveler) getCommitsForMerge(ctx context.Context, repository *RepositoryRecord, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
+func (g *Graveler) FindMergeBase(ctx context.Context, repository *RepositoryRecord, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
 	fromCommit, err := g.dereferenceCommit(ctx, repository, from)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("get commit by ref %s: %w", from, err)
@@ -2473,7 +2476,7 @@ func (g *Graveler) getCommitsForMerge(ctx context.Context, repository *Repositor
 }
 
 func (g *Graveler) Compare(ctx context.Context, repository *RepositoryRecord, left, right Ref) (DiffIterator, error) {
-	fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repository, right, left)
+	fromCommit, toCommit, baseCommit, err := g.FindMergeBase(ctx, repository, right, left)
 	if err != nil {
 		return nil, err
 	}
