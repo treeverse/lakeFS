@@ -1,8 +1,21 @@
 package io.lakefs;
 
-import static io.lakefs.Constants.DEFAULT_LIST_AMOUNT;
-import static io.lakefs.Constants.LIST_AMOUNT_KEY_SUFFIX;
-import static io.lakefs.Constants.SEPARATOR;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import io.lakefs.clients.api.*;
+import io.lakefs.clients.api.model.*;
+import io.lakefs.utils.ObjectLocation;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.util.Progressable;
+import org.apache.http.HttpStatus;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nonnull;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -15,52 +28,14 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nonnull;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.BlockLocation;
-import org.apache.hadoop.fs.CreateFlag;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileAlreadyExistsException;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocatedFileStatus;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.RemoteIterator;
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.util.Progressable;
-import org.apache.http.HttpStatus;
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.BranchesApi;
-import io.lakefs.clients.api.ObjectsApi;
-import io.lakefs.clients.api.StagingApi;
-import io.lakefs.clients.api.model.ObjectCopyCreation;
-import io.lakefs.clients.api.model.ObjectErrorList;
-import io.lakefs.clients.api.model.ObjectStageCreation;
-import io.lakefs.clients.api.model.ObjectStats;
-import io.lakefs.clients.api.model.ObjectStatsList;
-import io.lakefs.clients.api.model.Pagination;
-import io.lakefs.clients.api.model.PathList;
-import io.lakefs.clients.api.model.StagingLocation;
-import io.lakefs.clients.api.model.StagingMetadata;
-import io.lakefs.utils.ObjectLocation;
+import static io.lakefs.Constants.*;
 
 /**
  * A dummy implementation of the core lakeFS Filesystem.
