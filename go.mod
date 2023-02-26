@@ -79,6 +79,7 @@ require (
 	github.com/IBM/pgxpoolprometheus v1.0.1
 	github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf
 	github.com/alitto/pond v1.8.2
+	github.com/benburkert/dns v0.0.0-20190225204957-d356cf78cdfc
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/go-co-op/gocron v1.18.0
 	github.com/gorilla/securecookie v1.1.1
@@ -87,7 +88,6 @@ require (
 	github.com/hashicorp/go-plugin v1.4.8
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/puzpuzpuz/xsync v1.5.2
-	github.com/txn2/txeh v1.3.0
 	go.uber.org/ratelimit v0.2.0
 )
 

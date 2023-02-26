@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/benburkert/dns"
 	"github.com/ory/dockertest/v3"
-	"github.com/txn2/txeh"
 )
 
 const (
@@ -24,23 +26,51 @@ var (
 	blockURL string
 )
 
+func createDNSServer(ctx context.Context, domain string) {
+	zone := &dns.Zone{
+		Origin: domain + ".",
+		TTL:    5 * time.Minute,
+		RRs: dns.RRSet{
+			accountName: map[dns.Type][]dns.Record{
+				dns.TypeA: {
+					&dns.A{A: net.IPv4(127, 0, 0, 1).To4()},
+				},
+			},
+		},
+	}
+
+	srv := &dns.Server{
+		Addr:    ":53",
+		Handler: zone,
+	}
+
+	go srv.ListenAndServe(ctx)
+
+	mux := new(dns.ResolveMux)
+	mux.Handle(dns.TypeANY, zone.Origin, zone)
+
+	client := &dns.Client{
+		Resolver: mux,
+	}
+
+	net.DefaultResolver = &net.Resolver{
+		PreferGo: true,
+		Dial:     client.Dial,
+	}
+}
+
 func runAzurite(dockerPool *dockertest.Pool) (string, func()) {
 	ctx := context.Background()
 	resource, err := dockerPool.Run("mcr.microsoft.com/azure-storage/azurite", "3.22.0", []string{
 		fmt.Sprintf("AZURITE_ACCOUNTS=%s:%s", accountName, accountKey),
 	})
 
-	accountHost := fmt.Sprintf("%s.blob.localhost", accountName)
-
-	hosts, err := txeh.NewHostsDefault()
-	if err != nil {
-		panic(err)
-	}
-	hosts.AddHost("127.0.0.1", accountHost)
+	domain := "blob.localhost"
+	accountHost := accountName + "." + domain
+	createDNSServer(ctx, domain)
 
 	// set cleanup
 	closer := func() {
-		hosts.RemoveHost(accountHost)
 		err := dockerPool.Purge(resource)
 		if err != nil {
 			panic("could not kill postgres containerName")
