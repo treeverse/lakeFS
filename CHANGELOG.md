@@ -2,6 +2,12 @@
 
 ## UNRELEASED
 
+## v0.94.1
+
+Bugs fixed:
+- UI: fix import button disabled even though enabled by configuration (#5336) (#5337)
+- Log actual error in debug when reporting it to an API call (#5327)
+
 ## v0.94.0
 
 What's new:
