@@ -45,20 +45,6 @@ type OIDC struct {
 	FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
 }
 
-// RemoteAuthenticator holds remote authentication configuration.
-type RemoteAuthenticator struct {
-	// Enabled if set true will enable remote authentication
-	Enabled bool `mapstructure:"enabled"`
-	// BaseURL is the base URL of the remote authentication service (e.g. https://my-auth.example.com)
-	BaseURL string `mapstructure:"base_url" validate:"required"`
-	// AuthEndpoint is the endpoint to authenticate users (e.g. /auth)
-	AuthEndpoint string `mapstructure:"auth_endpoint"`
-	// DefaultUserGroup is the default group for the users authenticated by the remote service
-	DefaultUserGroup string `mapstructure:"default_user_group" validate:"required"`
-	// RequestTimeout timeout for remote authentication requests
-	RequestTimeout time.Duration `mapstructure:"request_timeout"`
-}
-
 // S3AuthInfo holds S3-style authentication.
 type S3AuthInfo struct {
 	CredentialsFile string `mapstructure:"credentials_file"`
@@ -166,8 +152,19 @@ type Config struct {
 			Token           string
 			SupportsInvites bool `mapstructure:"supports_invites"`
 		}
-		RemoteAuthenticator *RemoteAuthenticator `mapstructure:"remote_authenticator"`
-		OIDC                OIDC                 `mapstructure:"oidc"`
+		RemoteAuthenticator struct {
+			// Enabled if set true will enable remote authentication
+			Enabled bool `mapstructure:"enabled"`
+			// BaseURL is the base URL of the remote authentication service (e.g. https://my-auth.example.com)
+			BaseURL string `mapstructure:"base_url"`
+			// AuthEndpoint is the endpoint to authenticate users (e.g. /auth)
+			AuthEndpoint string `mapstructure:"auth_endpoint"`
+			// DefaultUserGroup is the default group for the users authenticated by the remote service
+			DefaultUserGroup string `mapstructure:"default_user_group"`
+			// RequestTimeout timeout for remote authentication requests
+			RequestTimeout time.Duration `mapstructure:"request_timeout"`
+		} `mapstructure:"remote_authenticator"`
+		OIDC OIDC `mapstructure:"oidc"`
 		// LogoutRedirectURL is the URL on which to mount the
 		// server-side logout.
 		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`

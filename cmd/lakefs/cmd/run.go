@@ -192,8 +192,8 @@ var runCmd = &cobra.Command{
 		}
 
 		// remote authenticator setup
-		if cfg.Auth.RemoteAuthenticator != nil && cfg.Auth.RemoteAuthenticator.Enabled {
-			remoteAuthenticator, err := authremote.NewRemoteAuthenticator(cfg.Auth.RemoteAuthenticator, authService, logger)
+		if cfg.Auth.RemoteAuthenticator.Enabled {
+			remoteAuthenticator, err := authremote.NewRemoteAuthenticator(authremote.RemoteAuthenticatorConfig(cfg.Auth.RemoteAuthenticator), authService, logger)
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create remote authenticator")
 			}
