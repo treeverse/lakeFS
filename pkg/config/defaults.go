@@ -47,9 +47,8 @@ func setDefaults(local bool) {
 	viper.SetDefault("auth.ui_config.login_failed_message", "The credentials don't match.")
 	viper.SetDefault("auth.ui_config.login_cookie_names", "internal_auth_session")
 
-	viper.SetDefault("auth.remote_authenticator.enabled", false)
 	viper.SetDefault("auth.remote_authenticator.default_user_group", "Viewers")
-	viper.SetDefault("auth.remote_authenticator.request_timeout", 7*time.Second)
+	viper.SetDefault("auth.remote_authenticator.request_timeout", 10*time.Second)
 
 	viper.SetDefault("blockstore.local.path", "~/lakefs/data/block")
 	viper.SetDefault("blockstore.s3.region", "us-east-1")

@@ -54,7 +54,7 @@ type Authenticator struct {
 
 func NewAuthenticator(conf AuthenticatorConfig, authService auth.Service, logger logging.Logger) (*Authenticator, error) {
 	if conf.Endpoint == "" {
-		return nil, fmt.Errorf("base URL is empty: %w", ErrBadConfig)
+		return nil, fmt.Errorf("endpoint is empty: %w", ErrBadConfig)
 	}
 
 	httpClient := &http.Client{Timeout: conf.RequestTimeout}
