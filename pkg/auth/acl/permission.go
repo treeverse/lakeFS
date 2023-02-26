@@ -93,7 +93,7 @@ func ACLToStatement(acl model.ACL) (model.Statements, error) {
 			return nil, fmt.Errorf("%s: %w", acl.Permission, ErrBadACLPermission)
 		}
 	default:
-		return nil, fmt.Errorf("Unknown permission \"%s\"")
+		return nil, fmt.Errorf("%w \"%s\"", ErrBadACLPermission, acl.Permission)
 	}
 
 	return statements, nil
