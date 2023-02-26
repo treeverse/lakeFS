@@ -413,7 +413,7 @@ components:
     OtfDiffEntry:
       type: object
       required:
-        - version
+        - id
         - operation
         - timestamp
         - operation_content
