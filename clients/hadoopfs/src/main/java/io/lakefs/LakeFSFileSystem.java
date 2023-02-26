@@ -1,12 +1,45 @@
 package io.lakefs;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import io.lakefs.clients.api.*;
-import io.lakefs.clients.api.model.*;
-import io.lakefs.utils.ObjectLocation;
+import static io.lakefs.Constants.DEFAULT_LIST_AMOUNT;
+import static io.lakefs.Constants.LIST_AMOUNT_KEY_SUFFIX;
+import static io.lakefs.Constants.SEPARATOR;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AccessDeniedException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
+
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.BlockLocation;
+import org.apache.hadoop.fs.CreateFlag;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileAlreadyExistsException;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.Progressable;
 import org.apache.http.HttpStatus;
@@ -14,22 +47,20 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.AccessDeniedException;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import static io.lakefs.Constants.*;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.BranchesApi;
+import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.api.StagingApi;
+import io.lakefs.clients.api.model.ObjectCopyCreation;
+import io.lakefs.clients.api.model.ObjectErrorList;
+import io.lakefs.clients.api.model.ObjectStageCreation;
+import io.lakefs.clients.api.model.ObjectStats;
+import io.lakefs.clients.api.model.ObjectStatsList;
+import io.lakefs.clients.api.model.Pagination;
+import io.lakefs.clients.api.model.PathList;
+import io.lakefs.clients.api.model.StagingLocation;
+import io.lakefs.clients.api.model.StagingMetadata;
+import io.lakefs.utils.ObjectLocation;
 
 /**
  * A dummy implementation of the core lakeFS Filesystem.
@@ -106,20 +137,6 @@ public class LakeFSFileSystem extends FileSystem {
         setConf(conf);
 
         listAmount = FSConfiguration.getInt(conf, uri.getScheme(), LIST_AMOUNT_KEY_SUFFIX, DEFAULT_LIST_AMOUNT);
-
-        // based on path get underlying FileSystem
-        Path path = new Path(name);
-        ObjectLocation objectLoc = pathToObjectLocation(path);
-        RepositoriesApi repositoriesApi = lfsClient.getRepositories();
-        try {
-            Repository repository = repositoriesApi.getRepository(objectLoc.getRepository());
-            String storageNamespace = repository.getStorageNamespace();
-            URI storageURI = URI.create(storageNamespace);
-            Path physicalPath = new Path(translateUri(storageURI));
-            fsForConfig = physicalPath.getFileSystem(conf);
-        } catch (ApiException | URISyntaxException e) {
-            LOG.warn("get underlying filesystem for {}: {} (use default values)", path, e);
-        }
     }
 
     @FunctionalInterface
@@ -159,15 +176,15 @@ public class LakeFSFileSystem extends FileSystem {
         try {
             ObjectsApi objects = lfsClient.getObjects();
             ObjectLocation objectLoc = pathToObjectLocation(path);
-            ObjectStats stats = objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), false, false);
-            return withFileSystemAndTranslatedPhysicalPath(stats.getPhysicalAddress(), (FileSystem fs, Path p) -> fs.open(p, bufSize));
+            ObjectStats stats = objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(),
+                    false, true);
+
+            HttpURLConnection connection = (HttpURLConnection) new URL(stats.getPhysicalAddress()).openConnection();
+            return new FSDataInputStream(new LakeFSFileSystemInputStream(connection.getInputStream(), connection.getContentLength()));
         } catch (ApiException e) {
             throw translateException("open: " + path, e);
-        } catch (java.net.URISyntaxException e) {
-            throw new IOException("open physical", e);
         }
     }
-
 
     @Override
     public RemoteIterator<LocatedFileStatus> listFiles(Path f, boolean recursive) throws FileNotFoundException, IOException {
@@ -236,15 +253,15 @@ public class LakeFSFileSystem extends FileSystem {
                                                       ObjectLocation objectLoc)
             throws ApiException, URISyntaxException, IOException {
         StagingApi staging = lfsClient.getStaging();
-        StagingLocation stagingLoc = staging.getPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), false);
-        URI physicalUri = translateUri(new URI(Objects.requireNonNull(stagingLoc.getPhysicalAddress())));
-
-        Path physicalPath = new Path(physicalUri.toString());
-        FileSystem physicalFs = physicalPath.getFileSystem(conf);
-        OutputStream physicalOut = createStream.apply(physicalFs, physicalPath);
-        MetadataClient metadataClient = new MetadataClient(physicalFs);
-        LinkOnCloseOutputStream out = new LinkOnCloseOutputStream(this,
-                                                                  stagingLoc, objectLoc, physicalUri, metadataClient, physicalOut);
+        StagingLocation stagingLoc = staging.getPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(),
+                objectLoc.getPath(), true);
+        URL presignedUrl = new URL(stagingLoc.getPresignedUrl());
+        System.out.println("presignedUrl: " + presignedUrl);
+        HttpURLConnection connection = (HttpURLConnection) presignedUrl.openConnection();
+        connection.setDoOutput(true);
+        connection.setRequestProperty("Content-Type", "application/octet-stream"); // TODO be better than this
+        connection.setRequestMethod("PUT");
+        OutputStream out = new LakeFSFileSystemOutputStream(this, connection, objectLoc, stagingLoc);
         // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
         return new FSDataOutputStream(out, null);
     }
@@ -665,7 +682,8 @@ public class LakeFSFileSystem extends FileSystem {
         }
         // nothing to list - check if it is an empty directory marker
         try {
-            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath() + SEPARATOR, false, false);
+            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(),
+                    objectLoc.getPath() + SEPARATOR, false, false);
             LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(objectLoc, objectStat);
             if (fileStatus.isEmptyDirectory()) {
                 return new FileStatus[0];
@@ -742,14 +760,9 @@ public class LakeFSFileSystem extends FileSystem {
         }
     }
 
-    void linkPhysicalAddress(ObjectLocation objectLoc, StagingLocation stagingLoc, URI physicalUri, MetadataClient metadataClient) throws IOException, ApiException {
-        ObjectMetadata objectMetadata = metadataClient.getObjectMetadata(physicalUri);
-        StagingMetadata metadata = new StagingMetadata()
-                .staging(stagingLoc)
-                .checksum(objectMetadata.getETag())
-                .sizeBytes(objectMetadata.getContentLength());
+    void linkPhysicalAddress(ObjectLocation objectLoc, StagingMetadata stagingMetadata) throws IOException, ApiException {
         StagingApi staging = lfsClient.getStaging();
-        staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), metadata);
+        staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), stagingMetadata);
     }
 
     /**
@@ -1044,5 +1057,24 @@ public class LakeFSFileSystem extends FileSystem {
         } else {
             return this.create(path, permission, flags.contains(CreateFlag.OVERWRITE), bufferSize, replication, blockSize, progress);
         }
+    }
+
+    public static void main(String[] args) throws IOException {
+        Path p = new Path("lakefs://example-repo/main/2.txt");
+        Configuration conf = new Configuration();
+        conf.set("fs.lakefs.access.key", System.getenv("LAKEFS_ACCESS_KEY_ID"));
+        conf.set("fs.lakefs.secret.key", System.getenv("LAKEFS_SECRET_ACCESS_KEY"));
+        conf.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem");
+        conf.set("fs.lakefs.endpoint", System.getenv("LAKEFS_ENDPOINT"));
+        // conf.set("fs.s3a.access.key", System.getenv("AWS_ACCESS_KEY_ID"));
+        // conf.set("fs.s3a.secret.key", System.getenv("AWS_SECRET_ACCESS_KEY"));
+        FileSystem fs = p.getFileSystem(conf);
+        FSDataOutputStream os = fs.create(p);
+        BufferedOutputStream bos = new BufferedOutputStream(os);
+        bos.write("gasdjklfdsajlkf".getBytes());
+        bos.flush();
+        bos.close();
+
+        System.out.println(IOUtils.toString(fs.open(p), StandardCharsets.UTF_8));
     }
 }
