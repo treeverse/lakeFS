@@ -54,7 +54,7 @@ const ACLPermission = ({start, onSelect, variant}: ACLPermissionButtonProps) => 
         <Dropdown.Menu>
         {Object.entries(permissions).map(([key, text]) =>
             <Dropdown.Item variant={variant} key={key} eventKey={key}>
-            <div><b>{key}:</b><br/>{text}</div>
+            <div><b>{key}</b><br/>{text}</div>
             </Dropdown.Item>
         )}
             </Dropdown.Menu>
@@ -75,6 +75,7 @@ const getACLMaybe = async (groupId: string) => {
 const GroupsContainer = () => {
     const [selected, setSelected] = useState([]);
     const [deleteError, setDeleteError] = useState(null);
+    const [putACLError, setPutACLError] = useState(null);
     const [showCreate, setShowCreate] = useState(false);
     const [refresh, setRefresh] = useState(false);
 
@@ -128,6 +129,7 @@ const GroupsContainer = () => {
 
 
             {(!!deleteError) && <Error error={deleteError}/>}
+            {(!!putACLError) && <Error error={putACLError}/>}
 
             <EntityActionModal
                 show={showCreate}
@@ -158,7 +160,10 @@ const GroupsContainer = () => {
                     <Link href={{pathname: '/auth/groups/:groupId', params: {groupId: group.id}}}>
                         {group.id}
                     </Link>,
-                    group.acl ? <ACLPermission start={group.acl.permission}/> : <></>,
+                    group.acl ? <ACLPermission start={group.acl.permission} onSelect={
+                        ((permission) => auth.putACL(group.id, {...group.acl, permission})
+                            .then(() => setPutACLError(null), (e) => setPutACLError(e)))
+                    }/> : <></>,
                     <FormattedDate dateValue={group.creation_date}/>,
                     group.acl ? <span>{(group.acl.repositories ? group.acl.repositories.length : '*')}</span> :
                         <span>n/a</span>
