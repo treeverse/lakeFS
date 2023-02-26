@@ -54,7 +54,7 @@ type RemoteAuthenticator struct {
 	client      *http.Client
 }
 
-func NewRemoteAuthenticator(conf RemoteAuthenticatorConfig, authService auth.Service, logger logging.Logger) (auth.Authenticator, error) {
+func NewRemoteAuthenticator(conf RemoteAuthenticatorConfig, authService auth.Service, logger logging.Logger) (*RemoteAuthenticator, error) {
 
 	if conf.BaseURL == "" {
 		return nil, errors.New("remote authenticator base URL is required")
