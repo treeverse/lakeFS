@@ -659,6 +659,11 @@ func TestACL(t *testing.T) {
 								if aclPermission == from {
 									allow = true
 								}
+								origResource := n.Permission.Resource
+								defer func() {
+									n.Permission.Resource = origResource
+								}()
+								n.Permission.Resource = strings.ReplaceAll(n.Permission.Resource, "${user}", userID[aclPermission])
 
 								r, err := s.Authorize(ctx, &auth.AuthorizationRequest{
 									Username:            userID[aclPermission],
