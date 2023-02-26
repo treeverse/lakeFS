@@ -19,6 +19,8 @@ import (
 
 const remoteAuthSource = "remote_authenticator"
 
+var ErrBadConfig = errors.New("remote authenticator invalid configuration")
+
 // RemoteAuthenticatorConfig holds remote authentication configuration.
 type RemoteAuthenticatorConfig struct {
 	// Enabled if set true will enable remote authentication
@@ -55,9 +57,8 @@ type RemoteAuthenticator struct {
 }
 
 func NewRemoteAuthenticator(conf RemoteAuthenticatorConfig, authService auth.Service, logger logging.Logger) (*RemoteAuthenticator, error) {
-
 	if conf.BaseURL == "" {
-		return nil, errors.New("remote authenticator base URL is required")
+		return nil, fmt.Errorf("base URL is empty: %w", ErrBadConfig)
 	}
 
 	serviceURL, err := url.JoinPath(conf.BaseURL, conf.AuthEndpoint)
