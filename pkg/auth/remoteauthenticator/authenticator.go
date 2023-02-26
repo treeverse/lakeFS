@@ -61,7 +61,6 @@ func NewRemoteAuthenticator(conf RemoteAuthenticatorConfig, authService auth.Ser
 	}
 
 	serviceURL, err := url.JoinPath(conf.BaseURL, conf.AuthEndpoint)
-
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +143,6 @@ func (ra *RemoteAuthenticator) AuthenticateUser(ctx context.Context, username, p
 	}
 
 	user, err := ra.AuthService.GetUser(ctx, dbUsername)
-
 	if err == nil {
 		log.WithField("user", fmt.Sprintf("%+v", user)).Debug("Got existing user")
 		return user.Username, nil
