@@ -1783,7 +1783,6 @@ type UncommittedParquetObject struct {
 }
 
 func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, location string, fd *os.File, size int64) (string, error) {
-	io.see
 	_, err := fd.Seek(0, 0)
 	if err != nil {
 		return "", err
