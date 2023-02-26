@@ -86,7 +86,7 @@ func (ctd ControllerTestDiffer) Diff(ctx context.Context, p Params) (Response, e
 func generateDiffs() []DiffEntry {
 	return []DiffEntry{
 		{
-			Id:        "v0",
+			ID:        "v0",
 			Timestamp: time.Unix(0, 0),
 			Operation: "op",
 			OperationContent: map[string]string{

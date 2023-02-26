@@ -60,7 +60,7 @@ func buildDiffEntries(dr *DiffResponse) []DiffEntry {
 	result := make([]DiffEntry, 0, len(dr.GetEntries()))
 	for _, diff := range dr.GetEntries() {
 		result = append(result, DiffEntry{
-			Id:               diff.GetId(),
+			ID:               diff.GetId(),
 			Timestamp:        diff.GetTimestamp().AsTime(),
 			Operation:        diff.GetOperation(),
 			OperationContent: diff.GetContent(),
