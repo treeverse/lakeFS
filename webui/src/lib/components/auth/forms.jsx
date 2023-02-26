@@ -63,7 +63,7 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
         );
 
     return (
-        <Modal show={show} onHide={onHide}>
+        <Modal show={show} onHide={onHide} scrollable={true}>
             <Modal.Header closeButton>
                 <Modal.Title>{modalTitle}</Modal.Title>
             </Modal.Header>

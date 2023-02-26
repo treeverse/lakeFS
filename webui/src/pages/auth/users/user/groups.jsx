@@ -71,7 +71,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
                 filterPlaceholder={'Find Group...'}
                 modalTitle={'Add to Groups'}
                 addText={'Add to Groups'}
-                searchFn={prefix => auth.listGroups(prefix, "", 5).then(res => res.results)}
+                searchFn={prefix => auth.listGroups(prefix, "", 1000).then(res => res.results)}
                 onHide={() => setShowAddModal(false)}
                 onAttach={(selected) => {
                     Promise.all(selected.map(groupId => auth.addUserToGroup(userId, groupId)))

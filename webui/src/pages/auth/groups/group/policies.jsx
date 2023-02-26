@@ -75,7 +75,7 @@ const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
                     filterPlaceholder={'Find Policy...'}
                     modalTitle={'Attach Policies'}
                     addText={'Attach Policies'}
-                    searchFn={prefix => auth.listPolicies(prefix, "", 5).then(res => res.results)}
+                    searchFn={prefix => auth.listPolicies(prefix, "", 1000).then(res => res.results)}
                     onHide={() => setShowAddModal(false)}
                     onAttach={(selected) => {
                         Promise.all(selected.map(policyId => auth.attachPolicyToGroup(groupId, policyId)))
