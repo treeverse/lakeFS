@@ -39,7 +39,7 @@ const TableDiffTypeRow = ({diffType}) => {
     }
     return <tr>
         <td className="table-diff-type pl-lg-10 col-10"><InfoIcon/> Table {diffType}</td>
-        <td className="table-version-placeholder col-sm-auto"></td>
+        <td className="table-id-placeholder col-sm-auto"></td>
         <td className="operation-expansion-placeholder col-sm-auto"></td>
     </tr>
 }
@@ -58,7 +58,7 @@ const OtfDiffRow = ({otfDiff}) => {
 const OperationMetadataRow = ({otfDiff, operationExpanded, onExpand, ...rest}) => {
     return <tr {...rest}>
         <td className={"table-operation-type pl-lg-10 col-10"}>{otfDiff.operation}</td>
-        <td className="table-version col-sm-auto">Version = {otfDiff.version}</td>
+        <td className="table-id col-sm-auto">Version = {otfDiff.id}</td>
         <td className="operation-expansion col-sm-auto">
             <OperationExpansionSection operationExpanded={operationExpanded} onExpand={onExpand}/>
         </td>
