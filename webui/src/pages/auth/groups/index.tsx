@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from "react";
 
 import Button from "react-bootstrap/Button";
+import Dropdown from "react-bootstrap/Dropdown";
 
 import {AuthLayout} from "../../../lib/components/auth/layout";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
@@ -24,6 +25,53 @@ import {EntityActionModal} from "../../../lib/components/auth/forms";
 import { disallowPercentSign, INVALID_GROUP_NAME_ERROR_MESSAGE } from "../validation";
 
 
+const permissions = {
+    'Read': 'Read repository data and metadata, and manage own credentials.',
+    'Write': 'Read and write repository data and metadata, and manage own credentials.',
+    'Super': 'Perform all operations on repository, and manage own credentials.',
+    'Admin': 'Do anything.',
+};
+
+type ACLPermissionButtonProps = {
+    start?: string;
+    onSelect?: (newPermission: string) => unknown;
+    variant?: string;
+}
+
+const ACLPermission = ({start, onSelect, variant}: ACLPermissionButtonProps) => {
+    const [value, setValue] = useState(start);
+    const [title, setTitle] = useState(permissions[start] || '(unknown)');
+    variant ||= 'secondary';
+    return (<Dropdown variant={variant} onSelect={
+        (p) => {
+            if (value !== p) {
+                if (onSelect) { onSelect(p); }
+                setValue(p);
+                setTitle(permissions[p]);
+            }
+        }}>
+        <Dropdown.Toggle variant={variant} title={title}>{value}</Dropdown.Toggle>
+        <Dropdown.Menu>
+        {Object.entries(permissions).map(([key, text]) =>
+            <Dropdown.Item variant={variant} key={key} eventKey={key}>
+            <div><b>{key}:</b><br/>{text}</div>
+            </Dropdown.Item>
+        )}
+            </Dropdown.Menu>
+        </Dropdown>);
+};
+
+const getACLMaybe = async (groupId: string) => {
+    try {
+        return await auth.getACL(groupId);
+    } catch (e) {
+        if (e.message.toLowerCase().includes('no acl')) {
+            return null;
+        }
+        throw e;
+    }
+}
+
 const GroupsContainer = () => {
     const [selected, setSelected] = useState([]);
     const [deleteError, setDeleteError] = useState(null);
@@ -32,8 +80,10 @@ const GroupsContainer = () => {
 
     const router = useRouter();
     const after = (router.query.after) ? router.query.after : "";
-    const { results, loading, error, nextPage } =  useAPIWithPagination(() => {
-        return auth.listGroups(after);
+    const { results, loading, error, nextPage } =  useAPIWithPagination(async () => {
+        const groups = await auth.listGroups(after);
+	const enrichedResults = await Promise.all(groups?.results.map(async group => ({...group, acl: await getACLMaybe(group.id)})));
+	return {...groups, results: enrichedResults};
     }, [after, refresh]);
 
     useEffect(() => {
@@ -97,7 +147,7 @@ const GroupsContainer = () => {
 
             <DataTable
                 results={results}
-                headers={['', 'Group ID', 'Created At']}
+                headers={['', 'Group ID', 'Permission', 'Created At', 'Repositories']}
                 keyFn={group => group.id}
                 rowFn={group => [
                     <Checkbox
@@ -108,7 +158,10 @@ const GroupsContainer = () => {
                     <Link href={{pathname: '/auth/groups/:groupId', params: {groupId: group.id}}}>
                         {group.id}
                     </Link>,
-                    <FormattedDate dateValue={group.creation_date}/>
+                    group.acl ? <ACLPermission start={group.acl.permission}/> : <></>,
+                    <FormattedDate dateValue={group.creation_date}/>,
+                    group.acl ? <span>{(group.acl.repositories ? group.acl.repositories.length : '*')}</span> :
+                        <span>n/a</span>
                 ]}/>
 
             <Paginator
