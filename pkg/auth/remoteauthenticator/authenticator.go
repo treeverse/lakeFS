@@ -18,11 +18,11 @@ import (
 
 const remoteAuthSource = "remote_authenticator"
 
-var ErrBadConfig = errors.New("remote authenticator invalid configuration")
+var ErrBadConfig = errors.New("invalid configuration")
 
-// RemoteAuthenticatorConfig holds remote authentication configuration.
-type RemoteAuthenticatorConfig struct {
-	// Enabled if set true will enable remote authentication
+// AuthenticatorConfig holds authentication configuration.
+type AuthenticatorConfig struct {
+	// Enabled if set true will enable authenticator
 	Enabled bool
 	// Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth)
 	Endpoint string
@@ -44,29 +44,29 @@ type AuthenticationResponse struct {
 	ExternalUserIdentifier *string `json:"external_user_identifier,omitempty"`
 }
 
-// RemoteAuthenticator client
-type RemoteAuthenticator struct {
+// Authenticator client
+type Authenticator struct {
 	AuthService auth.Service
 	Logger      logging.Logger
-	Config      RemoteAuthenticatorConfig
+	Config      AuthenticatorConfig
 	client      *http.Client
 }
 
-func NewRemoteAuthenticator(conf RemoteAuthenticatorConfig, authService auth.Service, logger logging.Logger) (*RemoteAuthenticator, error) {
+func NewAuthenticator(conf AuthenticatorConfig, authService auth.Service, logger logging.Logger) (*Authenticator, error) {
 	if conf.Endpoint == "" {
 		return nil, fmt.Errorf("base URL is empty: %w", ErrBadConfig)
 	}
 
 	httpClient := &http.Client{Timeout: conf.RequestTimeout}
 
-	log := logger.WithField("service_name", "remote_authenticator")
+	log := logger.WithField("service_name", remoteAuthSource)
 
 	log.WithFields(logging.Fields{
 		"auth_url":        conf.Endpoint,
 		"request_timeout": httpClient.Timeout,
 	}).Info("initializing remote authenticator")
 
-	return &RemoteAuthenticator{
+	return &Authenticator{
 		Logger:      log,
 		Config:      conf,
 		AuthService: authService,
@@ -74,7 +74,7 @@ func NewRemoteAuthenticator(conf RemoteAuthenticatorConfig, authService auth.Ser
 	}, nil
 }
 
-func (ra *RemoteAuthenticator) doRequest(ctx context.Context, log logging.Logger, username, password string) (*AuthenticationResponse, error) {
+func (ra *Authenticator) doRequest(ctx context.Context, log logging.Logger, username, password string) (*AuthenticationResponse, error) {
 	payload, err := json.Marshal(&AuthenticationRequest{Username: username, Password: password})
 	if err != nil {
 		return nil, fmt.Errorf("failed marshaling request body: %w", err)
@@ -117,7 +117,7 @@ func (ra *RemoteAuthenticator) doRequest(ctx context.Context, log logging.Logger
 	return &res, nil
 }
 
-func (ra *RemoteAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (string, error) {
+func (ra *Authenticator) AuthenticateUser(ctx context.Context, username, password string) (string, error) {
 	log := ra.Logger.WithContext(ctx).WithField("input_username", username)
 
 	res, err := ra.doRequest(ctx, log, username, password)
@@ -164,6 +164,6 @@ func (ra *RemoteAuthenticator) AuthenticateUser(ctx context.Context, username, p
 	return newUser.Username, nil
 }
 
-func (ra *RemoteAuthenticator) String() string {
+func (ra *Authenticator) String() string {
 	return remoteAuthSource
 }
