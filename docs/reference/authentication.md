@@ -30,8 +30,7 @@ Server or the S3 Gateway.
 #### Remote Authenticator Service 
 
 lakeFS server supports external authentication, the feature can be configured by providing an HTTP endpoint to an external authentication service. This integration can be especially useful if you already have an existing authentication system in place, as it allows you to reuse that system instead of maintaining a new one.
-
-TBD 
+To configure a Remote Authenticator see the [configuration fields](../reference/configuration.md).
 
 #### LDAP server
 

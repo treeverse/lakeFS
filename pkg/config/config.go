@@ -55,7 +55,7 @@ type RemoteAuthenticator struct {
 	AuthEndpoint string `mapstructure:"auth_endpoint"`
 	// DefaultUserGroup is the default group for the users authenticated by the remote service
 	DefaultUserGroup string `mapstructure:"default_user_group" validate:"required"`
-	// RequestTimeout time out for remote authentication requests
+	// RequestTimeout timeout for remote authentication requests
 	RequestTimeout time.Duration `mapstructure:"request_timeout"`
 }
 
