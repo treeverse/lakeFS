@@ -622,8 +622,8 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 				}
 
 				// read parquet information if data was stored to location
-				if result.Location != "" && result.ObjectName != "" {
-					objLocation, err := url.JoinPath(result.Location, result.ObjectName)
+				if result.Location != "" && result.Filename != "" {
+					objLocation, err := url.JoinPath(result.Location, result.Filename)
 					require.NoError(t, err)
 					addresses := readPhysicalAddressesFromParquetObject(t, ctx, c, objLocation)
 					allRecords = append(allRecords, addresses...)

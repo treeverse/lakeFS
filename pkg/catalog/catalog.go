@@ -1771,10 +1771,10 @@ type GCUncommittedMark struct {
 }
 
 type PrepareGCUncommittedInfo struct {
-	RunID      string `json:"run_id"`
-	Location   string `json:"location"`
-	ObjectName string `json:"object_name"`
-	Mark       *GCUncommittedMark
+	RunID    string `json:"run_id"`
+	Location string `json:"location"`
+	Filename string `json:"filename"`
+	Mark     *GCUncommittedMark
 }
 
 type UncommittedParquetObject struct {
@@ -1856,10 +1856,10 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}
 
 	return &PrepareGCUncommittedInfo{
-		Mark:       newMark,
-		RunID:      runID,
-		Location:   uncommittedLocation,
-		ObjectName: name,
+		Mark:     newMark,
+		RunID:    runID,
+		Location: uncommittedLocation,
+		Filename: name,
 	}, nil
 }
 
