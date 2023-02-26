@@ -17,7 +17,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-const RemoteAuthSource = "remote_authenticator"
+const remoteAuthSource = "remote_authenticator"
 
 // RemoteAuthenticatorConfig holds remote authentication configuration.
 type RemoteAuthenticatorConfig struct {
@@ -157,7 +157,7 @@ func (ra *RemoteAuthenticator) AuthenticateUser(ctx context.Context, username, p
 		CreatedAt:    time.Now().UTC(),
 		Username:     dbUsername,
 		FriendlyName: &username,
-		Source:       RemoteAuthSource,
+		Source:       remoteAuthSource,
 	}
 
 	_, err = ra.AuthService.CreateUser(ctx, newUser)
@@ -173,5 +173,5 @@ func (ra *RemoteAuthenticator) AuthenticateUser(ctx context.Context, username, p
 }
 
 func (ra *RemoteAuthenticator) String() string {
-	return RemoteAuthSource
+	return remoteAuthSource
 }
