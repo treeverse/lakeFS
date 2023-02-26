@@ -52,11 +52,11 @@ type RemoteAuthenticator struct {
 	// BaseURL is the base URL of the remote authentication service (e.g. https://my-auth.example.com)
 	BaseURL string `mapstructure:"base_url" validate:"required"`
 	// AuthEndpoint is the endpoint to authenticate users (e.g. /auth)
-	AuthEndpoint string `mapstructure:"auth_endpoint" validate:"required"`
+	AuthEndpoint string `mapstructure:"auth_endpoint"`
 	// DefaultUserGroup is the default group for the users authenticated by the remote service
 	DefaultUserGroup string `mapstructure:"default_user_group" validate:"required"`
 	// RequestTimeout time out for remote authentication requests
-	RequestTimeout time.Duration `mapstructure:"request_timeout" validate:"required"`
+	RequestTimeout time.Duration `mapstructure:"request_timeout"`
 }
 
 // S3AuthInfo holds S3-style authentication.

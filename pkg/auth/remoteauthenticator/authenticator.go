@@ -17,6 +17,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
+const DefaultRequestTimeout = 7 * time.Second
 const RemoteAuthSource = "remote_authenticator"
 
 // AuthenticationRequest is the request object that will be sent to the remote authenticator service as JSON payload in a POST request
@@ -37,7 +38,7 @@ type RemoteAuthenticator struct {
 	Logger      logging.Logger
 	Config      *config.RemoteAuthenticator
 	serviceURL  string
-	httpClient  *http.Client
+	client      *http.Client
 }
 
 func NewRemoteAuthenticator(conf *config.RemoteAuthenticator, authService auth.Service, logger logging.Logger) (auth.Authenticator, error) {
@@ -45,25 +46,32 @@ func NewRemoteAuthenticator(conf *config.RemoteAuthenticator, authService auth.S
 	if err != nil {
 		return nil, err
 	}
-	logger.WithField("auth_url", serviceURL).Info("initializing remote authenticator")
+
+	httpClient := http.DefaultClient
+
+	if conf.RequestTimeout == 0 {
+		httpClient.Timeout = DefaultRequestTimeout
+	} else {
+		httpClient.Timeout = conf.RequestTimeout
+	}
+
+	log := logger.WithField("service_name", "remote_authenticator")
+
+	log.WithFields(logging.Fields{
+		"auth_url":        serviceURL,
+		"request_timeout": httpClient.Timeout,
+	}).Info("initializing remote authenticator")
 
 	return &RemoteAuthenticator{
-		Logger:      logger,
+		Logger:      log,
 		Config:      conf,
 		serviceURL:  serviceURL,
 		AuthService: authService,
+		client:      httpClient,
 	}, nil
 }
 
-func (ra *RemoteAuthenticator) client() *http.Client {
-	if ra.httpClient == nil {
-		ra.httpClient = http.DefaultClient
-		ra.httpClient.Timeout = ra.Config.RequestTimeout
-	}
-	return ra.httpClient
-}
-
-func (ra *RemoteAuthenticator) doRequest(ctx context.Context, username, password string, log logging.Logger) ([]byte, error) {
+func (ra *RemoteAuthenticator) doRequest(ctx context.Context, log logging.Logger, username, password string) (*AuthenticationResponse, error) {
 	payload, err := json.Marshal(&AuthenticationRequest{Username: username, Password: password})
 
 	if err != nil {
@@ -79,11 +87,9 @@ func (ra *RemoteAuthenticator) doRequest(ctx context.Context, username, password
 	req.Header.Set("Content-Type", "application/json")
 	log = log.WithField("url", req.URL.String())
 
-	client := ra.client()
+	log.Trace("starting http request to remote authenticator")
 
-	log.Debug("starting http request to remote authenticator")
-
-	resp, err := client.Do(req)
+	resp, err := ra.client.Do(req)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed sending request to remote authenticator: %w", err)
@@ -91,7 +97,7 @@ func (ra *RemoteAuthenticator) doRequest(ctx context.Context, username, password
 
 	log = log.WithField("status_code", resp.StatusCode)
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return nil, fmt.Errorf("bad status code %d: %w", resp.StatusCode, auth.ErrUnexpectedStatusCode)
 	}
 
@@ -102,22 +108,23 @@ func (ra *RemoteAuthenticator) doRequest(ctx context.Context, username, password
 	if err != nil {
 		return nil, fmt.Errorf("failed reading response body: %w", err)
 	}
-	return body, nil
+
+	var res AuthenticationResponse
+
+	if err := json.Unmarshal(body, &res); err != nil {
+		return nil, fmt.Errorf("unmarshaling authenticator response %s: %w", username, err)
+	}
+
+	return &res, nil
 }
 
 func (ra *RemoteAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (string, error) {
 	log := ra.Logger.WithContext(ctx).WithField("input_username", username)
 
-	data, err := ra.doRequest(ctx, username, password, log)
+	res, err := ra.doRequest(ctx, log, username, password)
 
 	if err != nil {
 		return "", fmt.Errorf("doing http request %s: %w", username, err)
-	}
-
-	var res AuthenticationResponse
-
-	if err := json.Unmarshal(data, &res); err != nil {
-		return "", fmt.Errorf("unmarshaling authenticator response %s: %w", username, err)
 	}
 
 	dbUsername := username
@@ -151,10 +158,6 @@ func (ra *RemoteAuthenticator) AuthenticateUser(ctx context.Context, username, p
 	_, err = ra.AuthService.CreateUser(ctx, newUser)
 	if err != nil {
 		return "", fmt.Errorf("create backing user for remote auth user %s: %w", newUser.Username, err)
-	}
-	_, err = ra.AuthService.CreateCredentials(ctx, newUser.Username)
-	if err != nil {
-		return "", fmt.Errorf("create credentials for remote auth user %s: %w", newUser.Username, err)
 	}
 
 	err = ra.AuthService.AddUserToGroup(ctx, newUser.Username, ra.Config.DefaultUserGroup)
