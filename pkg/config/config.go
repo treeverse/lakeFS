@@ -155,10 +155,8 @@ type Config struct {
 		RemoteAuthenticator struct {
 			// Enabled if set true will enable remote authentication
 			Enabled bool `mapstructure:"enabled"`
-			// BaseURL is the base URL of the remote authentication service (e.g. https://my-auth.example.com)
-			BaseURL string `mapstructure:"base_url"`
-			// AuthEndpoint is the endpoint to authenticate users (e.g. /auth)
-			AuthEndpoint string `mapstructure:"auth_endpoint"`
+			// Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth)
+			Endpoint string `mapstructure:"endpoint"`
 			// DefaultUserGroup is the default group for the users authenticated by the remote service
 			DefaultUserGroup string `mapstructure:"default_user_group"`
 			// RequestTimeout timeout for remote authentication requests

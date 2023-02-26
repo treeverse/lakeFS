@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/go-openapi/swag"
@@ -25,10 +24,8 @@ var ErrBadConfig = errors.New("remote authenticator invalid configuration")
 type RemoteAuthenticatorConfig struct {
 	// Enabled if set true will enable remote authentication
 	Enabled bool
-	// BaseURL is the base URL of the remote authentication service (e.g. https://my-auth.example.com)
-	BaseURL string
-	// AuthEndpoint is the endpoint to authenticate users (e.g. /auth)
-	AuthEndpoint string
+	// Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth)
+	Endpoint string
 	// DefaultUserGroup is the default group for the users authenticated by the remote service
 	DefaultUserGroup string
 	// RequestTimeout timeout for remote authentication requests
@@ -52,32 +49,26 @@ type RemoteAuthenticator struct {
 	AuthService auth.Service
 	Logger      logging.Logger
 	Config      RemoteAuthenticatorConfig
-	serviceURL  string
 	client      *http.Client
 }
 
 func NewRemoteAuthenticator(conf RemoteAuthenticatorConfig, authService auth.Service, logger logging.Logger) (*RemoteAuthenticator, error) {
-	if conf.BaseURL == "" {
+	if conf.Endpoint == "" {
 		return nil, fmt.Errorf("base URL is empty: %w", ErrBadConfig)
 	}
 
-	serviceURL, err := url.JoinPath(conf.BaseURL, conf.AuthEndpoint)
-	if err != nil {
-		return nil, err
-	}
 	httpClient := &http.Client{Timeout: conf.RequestTimeout}
 
 	log := logger.WithField("service_name", "remote_authenticator")
 
 	log.WithFields(logging.Fields{
-		"auth_url":        serviceURL,
+		"auth_url":        conf.Endpoint,
 		"request_timeout": httpClient.Timeout,
 	}).Info("initializing remote authenticator")
 
 	return &RemoteAuthenticator{
 		Logger:      log,
 		Config:      conf,
-		serviceURL:  serviceURL,
 		AuthService: authService,
 		client:      httpClient,
 	}, nil
@@ -89,7 +80,7 @@ func (ra *RemoteAuthenticator) doRequest(ctx context.Context, log logging.Logger
 		return nil, fmt.Errorf("failed marshaling request body: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, ra.serviceURL, bytes.NewReader(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, ra.Config.Endpoint, bytes.NewReader(payload))
 	if err != nil {
 		return nil, fmt.Errorf("failed creating request to remote authenticator: %w", err)
 	}

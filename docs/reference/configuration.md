@@ -83,9 +83,8 @@ This reference uses `.` to denote the nesting of values.
    **Note:** It is best to keep this somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
    {: .note }
 * `auth.remote_authenticator.enabled` `(bool : false)` - If specified, also authenticate users via this Remote Authenticator server.
-* `auth.remote_authenticator.base_url` `(string : required)` - The base URL of the remote authentication service.
-* `auth.remote_authenticator.auth_endpoint` `(string : '')` - If specified, path for the `base_url` endpoint to perform authentication requests.
-* `auth.remote_authenticator.default_user_group` `(string : required)` - Create users in this group (i.e `Viewers`, `Developers`, etc).
+* `auth.remote_authenticator.endpoint` `(string : required)` - Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth).
+* `auth.remote_authenticator.default_user_group` `(string : Viewers)` - Create users in this group (i.e `Viewers`, `Developers`, etc).
 * `auth.remote_authenticator.request_timeout` `(duration : 7s)` - If specified, timeout for remote authentication requests.
 * `auth.oidc.enabled` `(bool : false)` - Set to true to enable authentication with an external OIDC provider.
 * `auth.oidc.is_default_login` `(bool : false)` - If true, the lakeFS login page will redirect to the external provider by default.
