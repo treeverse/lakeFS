@@ -170,7 +170,7 @@ func validateResults(t *testing.T, resp Response, dr *DiffResponse) {
 	}
 	for _, e := range dr.GetEntries() {
 		expectedResp.Diffs = append(expectedResp.Diffs, DiffEntry{
-			Version:          e.Id,
+			Id:               e.Id,
 			Timestamp:        e.Timestamp.AsTime(),
 			Operation:        e.Operation,
 			OperationContent: e.Content,
