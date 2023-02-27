@@ -9,16 +9,18 @@ redirect_from:
   - ./commands.html
 ---
 
-# Commands (CLI) Reference
+# `lakectl` CLI Reference
 {:.no_toc}
 
-{% include toc.html %}
+`lakectl` is a command-line tool to explore manage and work with lakeFS.
 
-## Installing the lakectl command locally
+{% include toc.html h_max=2 %}
 
-`lakectl` is distributed as a single binary, with no external dependencies - and is available for MacOS, Windows and Linux.
+## Installing `lakectl` locally
 
-[Download lakectl](../index.md#downloads){: .btn .btn-green target="_blank"}
+`lakectl` is distributed as a single binary, with no external dependencies - and is available for MacOS, Windows and Linux. You can also run it from Docker - see [below](#runninglakectlfromdocker).
+
+[Download lakectl](https://github.com/treeverse/lakeFS/releases){: .btn .btn-green target="_blank"}
 
 
 ### Configuring credentials and API endpoint
@@ -41,40 +43,24 @@ will provide a link to download a preconfigured configuration file for you.
 `lakectl` configuration items can each be controlled by an environment variable. The variable name will have a prefix of
 *LAKECTL_*, followed by the name of the configuration, replacing every '.' with a '_'. Example: `LAKECTL_SERVER_ENDPOINT_URL` 
 controls `server.endpoint_url`.
-### lakectl
 
-A cli tool to explore manage and work with lakeFS
+## Running lakectl from Docker
 
-#### Synopsis
-{:.no_toc}
+If you'd rather run `lakectl` from a Docker container you can do so by passing configuration elements as environment variables. Here is an example: 
 
-lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment
-
-#### Options
-{:.no_toc}
-
-```
-      --base-uri string      base URI used for lakeFS address parse
-  -c, --config string        config file (default is $HOME/.lakectl.yaml)
-  -h, --help                 help for lakectl
-      --log-format string    set logging output format
-      --log-level string     set logging level (default "none")
-      --log-output strings   set logging output(s)
-      --no-color             don't use fancy output colors (default when not attached to an interactive terminal)
-      --verbose              run in verbose mode
+```bash
+$ docker run --rm --pull always \
+          -e LAKECTL_CREDENTIALS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE \
+          -e LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=xxxxx
+          -e LAKECTL_SERVER_ENDPOINT_URL=https://host.us-east-2.lakefscloud.io/ \
+          --entrypoint lakectl treeverse/lakefs \
+          repo list
 ```
 
-**note:** The `base-uri` option can be controlled with the `LAKECTL_BASE_URI` environment variable.
-{: .note .note-warning }
+_Bear in mind that if you are running lakeFS itself locally you will need to account for this in your networking configuration of the Docker container. That is to say, `localhost` to a Docker container is itself, not the host machine on which it is running._
 
-#### Example usage
-{:.no_toc}
+## Command Reference
 
-```shell
-$ export LAKECTL_BASE_URI="lakefs://my-repo/my-branch"
-# Once set, use relative lakefs uri's:
-$ lakectl fs ls /path
-```
 
 ### lakectl abuse
 
