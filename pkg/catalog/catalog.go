@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -1796,8 +1797,10 @@ type GCUncommittedMark struct {
 }
 
 type PrepareGCUncommittedInfo struct {
+	RunID    string `json:"run_id"`
+	Location string `json:"location"`
+	Filename string `json:"filename"`
 	Mark     *GCUncommittedMark
-	Metadata graveler.GarbageCollectionRunMetadata
 }
 
 type UncommittedParquetObject struct {
@@ -1805,20 +1808,27 @@ type UncommittedParquetObject struct {
 	CreationDate    int64  `parquet:"name=creation_date, type=INT64, convertedtype=INT_64"`
 }
 
-func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, location string, fd *os.File, size int64) error {
+func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, location string, fd *os.File, size int64) (string, error) {
 	_, err := fd.Seek(0, 0)
 	if err != nil {
-		return err
+		return "", err
 	}
-	if !strings.HasSuffix(location, "/") {
-		location += "/"
+	// location is full path to underlying storage - join a unique filename and upload data
+	name := xid.New().String()
+	identifier, err := url.JoinPath(location, name)
+	if err != nil {
+		return "", err
 	}
-	location += xid.New().String()
-	return c.BlockAdapter.Put(ctx, block.ObjectPointer{
+	obj := block.ObjectPointer{
 		StorageNamespace: ns.String(),
-		Identifier:       location,
+		Identifier:       identifier,
 		IdentifierType:   block.IdentifierTypeFull,
-	}, size, fd, block.PutOpts{})
+	}
+	err = c.BlockAdapter.Put(ctx, obj, size, fd, block.PutOpts{})
+	if err != nil {
+		return "", err
+	}
+	return name, nil
 }
 
 func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string, mark *GCUncommittedMark) (*PrepareGCUncommittedInfo, error) {
@@ -1864,19 +1874,19 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}
 
 	// Upload parquet file to object store
+	var name string
 	if hasData {
-		err = c.uploadFile(ctx, repository.StorageNamespace, uncommittedLocation, fd, uw.Size())
+		name, err = c.uploadFile(ctx, repository.StorageNamespace, uncommittedLocation, fd, uw.Size())
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return &PrepareGCUncommittedInfo{
-		Mark: newMark,
-		Metadata: graveler.GarbageCollectionRunMetadata{
-			RunId:               runID,
-			UncommittedLocation: uncommittedLocation,
-		},
+		Mark:     newMark,
+		RunID:    runID,
+		Location: uncommittedLocation,
+		Filename: name,
 	}, nil
 }
 

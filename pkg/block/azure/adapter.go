@@ -143,23 +143,6 @@ func resolveBlobURLInfo(obj block.ObjectPointer) (BlobURLInfo, error) {
 	return ResolveBlobURLInfoFromURL(parsedKey)
 }
 
-func resolveNamespacePrefix(lsOpts block.WalkOpts) (PrefixURLInfo, error) {
-	qualifiedPrefix, err := resolveBlobURLInfo(block.ObjectPointer{
-		StorageNamespace: lsOpts.StorageNamespace,
-		Identifier:       lsOpts.Prefix,
-	})
-	if err != nil {
-		return PrefixURLInfo{}, err
-	}
-
-	return PrefixURLInfo{
-		StorageAccountName: qualifiedPrefix.StorageAccountName,
-		ContainerURL:       qualifiedPrefix.ContainerURL,
-		ContainerName:      qualifiedPrefix.ContainerName,
-		Prefix:             qualifiedPrefix.BlobURL,
-	}, nil
-}
-
 func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
 	return nil, fmt.Errorf("inventory %w", ErrNotImplemented)
 }
@@ -302,44 +285,6 @@ func (a *Adapter) Download(ctx context.Context, obj block.ObjectPointer, offset,
 		return nil, err
 	}
 	return downloadResponse.Body, nil
-}
-
-func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
-	var err error
-	defer reportMetrics("Walk", time.Now(), nil, &err)
-
-	qualifiedPrefix, err := resolveNamespacePrefix(walkOpt)
-	if err != nil {
-		return err
-	}
-
-	containerClient, err := a.clientCache.NewContainerClient(qualifiedPrefix.StorageAccountName, qualifiedPrefix.ContainerName)
-	if err != nil {
-		return err
-	}
-
-	var marker *string
-	for {
-		listBlob := containerClient.NewListBlobsFlatPager(&azblob.ListBlobsFlatOptions{
-			Prefix: &qualifiedPrefix.Prefix,
-			Marker: marker,
-		})
-
-		for listBlob.More() {
-			resp, err := listBlob.NextPage(ctx)
-			if err != nil {
-				return err
-			}
-			for _, blobInfo := range resp.Segment.BlobItems {
-				if err := walkFn(*blobInfo.Name); err != nil {
-					return err
-				}
-			}
-			if marker = resp.NextMarker; marker == nil {
-				return nil
-			}
-		}
-	}
 }
 
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {
