@@ -15,7 +15,7 @@ has_children: false
 
 {: .note}
 > RBAC is only available in [lakeFS cloud](https://lakefs.cloud). This scalable fully-managed lakeFS service is also SOC 2 compliant.<br/>
-> A simpler ACL-based authorization mechanism is planned for open-source lakeFS. For more details see [this announcement](../posts/security_update.html). 
+> A simpler ACL-based authorization mechanism is planned for open-source lakeFS. For more details see [this announcement](/posts/security_update.html). 
 
 ## RBAC Model
 
