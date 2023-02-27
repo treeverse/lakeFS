@@ -74,9 +74,9 @@ const ImportProgress = ({numObjects}) => {
     return (<Row>
         <Col>
             <div className='import-text'>
-                Imported <strong>
+                Imported
                     <span className='import-num-objects'> {numObjects} </span>
-                </strong> objects so far...
+                objects so far...
             </div>
             <div>
                 <LinearProgress color="success"/>
@@ -95,10 +95,9 @@ const ImportDone = ({numObjects, importBranch, currBranch = ''}) => {
                 <p><strong>Success!</strong></p>
             </div>
             <div className='import-text'>
-                <p><strong>
-                    <div className='import-num-objects'> {numObjects} </div>
+                <strong>
+                    <span className='import-num-objects'> {numObjects} </span>
                 </strong> objects imported and committed into branch {importBranch}.
-                </p>
             </div>
             {(currBranch && importBranch !== currBranch) &&
                 <div className='import-text'>
@@ -119,6 +118,7 @@ const ExecuteImportButton = ({isEnabled, importPhase, importFunc, mergeFunc, don
                 disabled={!isEnabled}>
                     Merge Changes
             </Button>
+        case ImportPhase.Failed:
         case ImportPhase.NotStarted:
             return <Button
                 variant="success"
@@ -132,13 +132,6 @@ const ExecuteImportButton = ({isEnabled, importPhase, importFunc, mergeFunc, don
                 disabled={true}>
                 Importing...
             </Button>
-        case ImportPhase.Failed:
-            return <Button
-                variant="success"
-                disabled={!isEnabled}
-                onClick={importFunc}>
-                Import
-            </Button>
         case ImportPhase.Merging:
             return <Button
                 variant="success"
@@ -148,7 +141,7 @@ const ExecuteImportButton = ({isEnabled, importPhase, importFunc, mergeFunc, don
         case ImportPhase.MergeFailed:
             return <Button
                 variant="success"
-                onClick={mergeFunc}
+                onClick={importFunc}
                 disabled={!isEnabled}>
                 Try Again
             </Button>
@@ -176,6 +169,7 @@ const ImportForm = ({
                         setMetadataFields,
                         shouldAddPath = false,
                         err = null,
+
 
                     }) => {
     const [isSourceValid, setIsSourceValid] = useState(true);

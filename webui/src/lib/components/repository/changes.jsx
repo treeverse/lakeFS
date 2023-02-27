@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 
 import {
     ArrowLeftIcon,
@@ -285,31 +285,45 @@ const ExperimentalDeltaDiffButton = ({showButton = false}) => {
 }
 
 export const MetadataFields = ({ metadataFields, setMetadataFields}) => {
+    const onChangeKey = useCallback((i) => {
+        return e => {
+            console.log(e)
+            const key = e.currentTarget.value;
+            setMetadataFields(prev => [...prev.slice(0,i), {...prev[i], key}, ...prev.slice(i+1)]);
+            e.preventDefault()
+        };
+    }, [setMetadataFields]);
+
+    const onChangeValue = useCallback((i) => {
+        return e => {
+            const value = e.currentTarget.value;
+            setMetadataFields(prev => [...prev.slice(0,i),  {...prev[i], value}, ...prev.slice(i+1)]);
+        };
+    }, [setMetadataFields]);
+
+    const onRemovePair = useCallback((i) => {
+        return () => setMetadataFields(prev => [...prev.slice(0, i), ...prev.slice(i + 1)])
+    }, [setMetadataFields])
+
+    const onAddPair = useCallback(() => {
+        setMetadataFields(prev => [...prev, {key: "", value: ""}])
+    }, [setMetadataFields])
+
     return (
-        <div className="mt-3">
+        <div className="mt-3 mb-3">
             {metadataFields.map((f, i) => {
                 return (
-                    <Form.Group key={`commit-metadata-field-${f.key}-${f.value}-${i}`} className="mb-3">
+                    <Form.Group key={`commit-metadata-field-${i}`} className="mb-3">
                         <Row>
                             <Col md={{span: 5}}>
-                                <Form.Control type="text" placeholder="Key" defaultValue={f.key}
-                                              onChange={(e) => {
-                                                  metadataFields[i].key = e.currentTarget.value;
-                                                  setMetadataFields(metadataFields);
-                                              }}/>
+                                <Form.Control type="text" placeholder="Key" defaultValue={f.key} onChange={onChangeKey(i)}/>
                             </Col>
                             <Col md={{span: 5}}>
-                                <Form.Control type="text" placeholder="Value" defaultValue={f.value}
-                                              onChange={(e) => {
-                                                  metadataFields[i].value = e.currentTarget.value;
-                                                  setMetadataFields(metadataFields);
-                                              }}/>
+                                <Form.Control type="text" placeholder="Value" defaultValue={f.value}  onChange={onChangeValue(i)}/>
                             </Col>
                             <Col md={{span: 1}}>
                                 <Form.Text>
-                                    <Button size="sm" variant="secondary" onClick={() => {
-                                        setMetadataFields([...metadataFields.slice(0, i), ...metadataFields.slice(i + 1)]);
-                                    }}>
+                                    <Button size="sm" variant="secondary" onClick={onRemovePair(i)}>
                                         <XIcon/>
                                     </Button>
                                 </Form.Text>
@@ -318,10 +332,7 @@ export const MetadataFields = ({ metadataFields, setMetadataFields}) => {
                     </Form.Group>
                 )
             })}
-
-            <Button onClick={() => {
-                setMetadataFields([...metadataFields, {key: "", value: ""}]);
-            }} size="sm" variant="secondary">
+            <Button onClick={onAddPair} size="sm" variant="secondary">
                 <PlusIcon/>{' '}
                 Add Metadata field
             </Button>

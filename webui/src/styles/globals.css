@@ -550,6 +550,7 @@ td .form-group {
   display: inline-flex;
   color: green;
   font-weight: bolder;
+  margin: 0 2px;
 }
 
 .import-text {

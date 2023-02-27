@@ -126,7 +126,9 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                 </Modal.Header>
                 <Modal.Body>
                     {
-                        (importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed) &&
+                        (importPhase === ImportPhase.NotStarted ||
+                            importPhase === ImportPhase.Failed  ||
+                            importPhase === ImportPhase.MergeFailed) &&
                         <ImportForm
                             config={config}
                             pathStyle={pathStyle}
