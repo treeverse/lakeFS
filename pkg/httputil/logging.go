@@ -58,9 +58,9 @@ func SourceIP(r *http.Request) string {
 	sourceIP, sourcePort, err := net.SplitHostPort(r.RemoteAddr)
 
 	if err != nil {
-		return "Could not get IP address" //not sure of the error handling here
+		return err.Error()
 	}
-	return sourceIP + sourcePort
+	return sourceIP + ":" + sourcePort
 }
 
 func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields, middlewareLogLevel string) func(next http.Handler) http.Handler {
