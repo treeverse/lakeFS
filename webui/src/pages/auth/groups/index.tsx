@@ -165,7 +165,7 @@ const GroupsContainer = () => {
                             .then(() => setPutACLError(null), (e) => setPutACLError(e)))
                     }/> : <></>,
                     <FormattedDate dateValue={group.creation_date}/>,
-                    group.acl ? <span>{(group.acl.repositories ? group.acl.repositories.length : '*')}</span> :
+                    group.acl ? <span>{(group.acl.all_repositories ? '*' : group.acl.repositories.length)}</span> :
                         <span>n/a</span>
                 ]}/>
 
