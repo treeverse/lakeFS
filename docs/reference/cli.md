@@ -49,7 +49,7 @@ controls `server.endpoint_url`.
 If you'd rather run `lakectl` from a Docker container you can do so by passing configuration elements as environment variables. Here is an example: 
 
 ```bash
-$ docker run --rm --pull always \
+$ docker run --rm --interactive --tty \
           -e LAKECTL_CREDENTIALS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE \
           -e LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=xxxxx
           -e LAKECTL_SERVER_ENDPOINT_URL=https://host.us-east-2.lakefscloud.io/ \
